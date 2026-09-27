@@ -99,6 +99,12 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 		slog.Debug("issue not found for rollout creation", slog.String("project", ref.ProjectID), slog.Int("plan_id", int(planID)))
 		return
 	}
+	if issue.Payload.GetDraft() {
+		slog.Debug("issue is a draft, skipping rollout creation",
+			slog.String("project", ref.ProjectID),
+			slog.Int("plan_id", int(planID)))
+		return
+	}
 
 	// Skip canceled issues
 	if issue.Status == storepb.Issue_CANCELED {
@@ -119,9 +125,13 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 		slog.Error("project not found for rollout creation", slog.String("project_id", plan.ProjectID))
 		return
 	}
+	if project.Deleted {
+		slog.Debug("project is archived, skipping rollout creation", slog.String("project_id", plan.ProjectID))
+		return
+	}
 
 	// Check approval status (must be approved)
-	approved, err := utils.CheckIssueApproved(issue)
+	approved, err := utils.CheckIssueApprovedForPlan(issue, plan)
 	if err != nil {
 		slog.Error("failed to check if the issue is approved",
 			slog.String("project", ref.ProjectID),
@@ -146,8 +156,8 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 		return
 	}
 
-	// If plan checks exist, they must be DONE with no errors
-	if planCheckRun != nil {
+	// If current plan checks exist, they must be DONE with no errors.
+	if planCheckRunBlocksRollout(plan, planCheckRun) {
 		// Check if plan checks are in DONE status
 		if planCheckRun.Status != store.PlanCheckRunStatusDone {
 			slog.Debug("plan checks not in DONE status, skipping rollout creation",
@@ -176,6 +186,18 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	// Create rollout and pending tasks
 	// Use issue creator's email since this is auto-rollout for their issue
 	if err := apiv1.CreateRolloutAndPendingTasks(ctx, rc.store, issue.CreatorEmail, plan, issue, project, nil); err != nil {
+		if apiv1.IsDraftIssueNotSubmittedError(err) {
+			slog.Info("skip auto-rollout because issue is still a draft",
+				slog.String("project", ref.ProjectID),
+				slog.Int("plan_id", int(planID)))
+			return
+		}
+		if apiv1.IsStaleRolloutApprovalError(err) {
+			slog.Info("skip auto-rollout because issue approval is stale",
+				slog.String("project", ref.ProjectID),
+				slog.Int("plan_id", int(planID)))
+			return
+		}
 		slog.Error("failed to create rollout and pending tasks",
 			slog.String("project", ref.ProjectID),
 			slog.Int("plan_id", int(planID)),
@@ -183,10 +205,17 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 		return
 	}
 
-	// Tickle task run scheduler
-	rc.bus.TaskRunTickleChan <- 0
+	// Tickle the pending task run scheduler.
+	bus.Tickle(rc.bus.TaskRunPendingTickleChan)
 
 	slog.Info("successfully auto-created rollout", slog.String("project", ref.ProjectID), slog.Int("plan_id", int(planID)))
+}
+
+func planCheckRunBlocksRollout(plan *store.PlanMessage, planCheckRun *store.PlanCheckRunMessage) bool {
+	if planCheckRun == nil {
+		return false
+	}
+	return planCheckRun.Result.GetApprovalInputVersion() == plan.Config.GetApprovalInputVersion()
 }
 
 // hasOnlyChangeDatabaseSpecs checks if every spec in the plan is a change database spec.

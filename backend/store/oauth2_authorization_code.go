@@ -9,8 +9,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 type OAuth2AuthorizationCodeMessage struct {
@@ -25,6 +25,9 @@ type OAuth2AuthorizationCodeMessage struct {
 	Workspace string
 	Config    *storepb.OAuth2AuthorizationCodeConfig
 	ExpiresAt time.Time
+	// CreatedAt is when the code was issued, filled in by the database.
+	// Ignored on create.
+	CreatedAt time.Time
 }
 
 func (s *Store) CreateOAuth2AuthorizationCode(ctx context.Context, create *OAuth2AuthorizationCodeMessage) (*OAuth2AuthorizationCodeMessage, error) {
@@ -56,7 +59,7 @@ func (s *Store) CreateOAuth2AuthorizationCode(ctx context.Context, create *OAuth
 
 func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, clientID, code string) (*OAuth2AuthorizationCodeMessage, error) {
 	q := qb.Q().Space(`
-		SELECT code, client_id, user_email, workspace, config, expires_at
+		SELECT code, client_id, user_email, workspace, config, expires_at, created_at
 		FROM oauth2_authorization_code
 		WHERE code = ? AND client_id = ?
 	`, code, clientID)
@@ -70,7 +73,7 @@ func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, clientID, code s
 	var workspace sql.NullString
 	var configBytes []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan( // NOSONAR: query is parameterized via qb.Query
-		&msg.Code, &msg.ClientID, &msg.UserEmail, &workspace, &configBytes, &msg.ExpiresAt,
+		&msg.Code, &msg.ClientID, &msg.UserEmail, &workspace, &configBytes, &msg.ExpiresAt, &msg.CreatedAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -84,6 +87,36 @@ func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, clientID, code s
 		return nil, errors.Wrap(err, "failed to unmarshal config")
 	}
 	return msg, nil
+}
+
+// ConsumeOAuth2AuthorizationCode atomically deletes an authorization code and
+// reports whether this call is the one that claimed it. The DELETE ... RETURNING
+// is the single-use issuance gate: concurrent redemptions of the same code race
+// here and exactly one observes consumed=true, so the caller must issue tokens
+// only when consumed is true. RETURNING (not RowsAffected) is used deliberately
+// — Postgres row counts are unreliable for this check. A false return means the
+// code was already consumed or never existed; a non-nil error is a real failure
+// and must abort issuance.
+func (s *Store) ConsumeOAuth2AuthorizationCode(ctx context.Context, clientID, code string) (bool, error) {
+	q := qb.Q().Space(`
+		DELETE FROM oauth2_authorization_code
+		WHERE code = ? AND client_id = ?
+		RETURNING code
+	`, code, clientID)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, err
+	}
+
+	var consumedCode string
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&consumedCode); err != nil { // NOSONAR: query is parameterized via qb.Query
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrap(err, "failed to consume OAuth2 authorization code")
+	}
+	return true, nil
 }
 
 func (s *Store) DeleteOAuth2AuthorizationCode(ctx context.Context, clientID, code string) error {

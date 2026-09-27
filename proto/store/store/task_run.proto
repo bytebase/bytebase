@@ -32,6 +32,7 @@ message TaskRun {
 
 // TaskRunResult contains the outcome and metadata from a task run execution.
 message TaskRunResult {
+  reserved 2 to 4;
   // Error message for failed task runs. Empty for successful or canceled runs.
   string detail = 1;
 
@@ -41,9 +42,6 @@ message TaskRunResult {
   // When true, the task run can be rolled back using the backup tables.
   // Backup details are available in the task run logs (PRIOR_BACKUP log entries).
   bool has_prior_backup = 6;
-
-  // Resource ID of the export archive generated for export tasks.
-  string export_archive_id = 9;
 }
 
 // SchedulerInfo contains information about task scheduling and execution delays.
@@ -53,6 +51,7 @@ message SchedulerInfo {
 
   // WaitingCause indicates why a task run is waiting to execute.
   message WaitingCause {
+    reserved 1 to 2;
     oneof cause {
       // Task is waiting due to parallel execution limit.
       bool parallel_tasks_limit = 3;

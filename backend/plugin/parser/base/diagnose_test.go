@@ -1,6 +1,8 @@
 package base
 
 import (
+	"context"
+	"encoding/json"
 	"testing"
 
 	lsp "github.com/bytebase/lsp-protocol"
@@ -8,6 +10,32 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
+
+func TestDiagnoseNeverReturnsNil(t *testing.T) {
+	a := require.New(t)
+
+	// Engine diagnose funcs return a nil slice for valid statements.
+	RegisterDiagnoseFunc(storepb.Engine_MONGODB, func(_ context.Context, _ DiagnoseContext, _ string) ([]Diagnostic, error) {
+		return nil, nil
+	})
+
+	for _, engine := range []storepb.Engine{
+		storepb.Engine_MONGODB,
+		// Engine without a registered diagnose func.
+		storepb.Engine_ENGINE_UNSPECIFIED,
+	} {
+		diagnostics, err := Diagnose(context.Background(), DiagnoseContext{}, engine, "db.users.find()")
+		a.NoError(err)
+		a.NotNil(diagnostics)
+		a.Empty(diagnostics)
+
+		// The LSP spec requires publishing an empty array (not null) to clear
+		// previously published diagnostics on the client.
+		payload, err := json.Marshal(lsp.PublishDiagnosticsParams{Diagnostics: diagnostics})
+		a.NoError(err)
+		a.Contains(string(payload), `"diagnostics":[]`)
+	}
+}
 
 func TestConvertPositionToUTF16Position(t *testing.T) {
 	testCases := []struct {

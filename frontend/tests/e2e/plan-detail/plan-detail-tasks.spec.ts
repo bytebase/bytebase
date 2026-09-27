@@ -4,7 +4,7 @@
 // via permissive project settings):
 //   - Running a successful task transitions to Done.
 //   - Running a failing task (nonexistent target) transitions to Failed
-//     and surfaces a Retry button.
+//     and surfaces a Rerun button.
 
 import {
   test,
@@ -14,6 +14,7 @@ import {
 } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
+import { createSubmittedDatabaseChangePlanViaUI } from "../framework/ui-create-plan";
 import { PlanDetailPage } from "./plan-detail.page";
 
 test.setTimeout(180_000);
@@ -61,21 +62,21 @@ test.afterAll(async () => {
   await sharedContext?.close();
 });
 
-// Helper — create a plan + issue against env.database with the given SQL,
-// navigate to its detail page. Returns the plan id for re-navigation.
+// Helper — create + submit a plan against env.database with the given SQL
+// through the UI (the real user workflow: plan + draft review issue, then
+// "Ready for Review"), so a rollout auto-creates under the permissive settings
+// this file sets. Navigate to its detail page; return the plan id.
 async function createPlanAndNavigate(
   titlePrefix: string,
   sql: string,
 ): Promise<string> {
-  const ts = Date.now();
-  const sheet = await env.api.createSheet(env.project, sql);
-  const plan = await env.api.createPlan(
-    env.project,
-    `${titlePrefix} ${ts}`,
-    [{ id: `spec-${ts}`, targets: [env.database], sheet }],
-  );
-  const planId = plan.name.split("/").pop()!;
-  await env.api.createIssue(env.project, `${titlePrefix} ${ts}`, plan.name);
+  const { planId } = await createSubmittedDatabaseChangePlanViaUI(page, {
+    baseURL: env.baseURL,
+    projectId,
+    database: env.database,
+    title: `${titlePrefix} ${Date.now()}`,
+    sql,
+  });
   await planPage.goto(projectId, planId);
   await planPage.dismissModals();
   return planId;
@@ -100,8 +101,8 @@ test.describe("Successful task transitions to Done", () => {
   });
 });
 
-test.describe("Failing task transitions to Failed and shows Retry", () => {
-  test("Run → Failed + Retry button visible", async () => {
+test.describe("Failing task transitions to Failed and shows Rerun", () => {
+  test("Run → Failed + Rerun button visible", async () => {
     const missingTable = `nonexistent_table_e2e_${Date.now()}`;
     await createPlanAndNavigate(
       "E2E Task Failure",
@@ -117,7 +118,7 @@ test.describe("Failing task transitions to Failed and shows Retry", () => {
       timeout: 30_000,
     });
 
-    await expect(planPage.retryButton).toBeVisible({ timeout: 5_000 });
+    await expect(planPage.taskRerunButton).toBeVisible({ timeout: 5_000 });
   });
 });
 

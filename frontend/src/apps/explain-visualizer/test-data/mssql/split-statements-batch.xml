@@ -1,0 +1,144 @@
+﻿<ShowPlanXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Version="1.5" Build="13.0.1601.5" xmlns="http://schemas.microsoft.com/sqlserver/2004/07/showplan">
+  <BatchSequence>
+    <Batch>
+      <Statements>
+        <StmtSimple StatementCompId="1" StatementId="1" StatementText="Declare @UserID varchar(100)&#xD;&#xA;create table #users (UserID varchar(100))" StatementType="CREATE TABLE" RetrievedFromCache="false" />
+      </Statements>
+      <Statements>
+        <StmtSimple StatementCompId="2" StatementId="2" StatementText="&#xD;&#xA;&#xD;&#xA;declare @sqlstatement nvarchar(4000)&#xD;&#xA;set @sqlstatement = 'Insert into #users (userID) SELECT userId FROM users'&#xD;&#xA;" StatementType="ASSIGN" RetrievedFromCache="false" />
+      </Statements>
+      <Statements>
+        <StmtSimple StatementCompId="3" StatementId="3" StatementText="exec(@sqlstatement)" StatementType="EXECUTE STRING" RetrievedFromCache="false" />
+      </Statements>
+      <Statements>
+        <StmtCursor StatementCompId="4" StatementId="4" StatementText="&#xD;&#xA;&#xD;&#xA;declare users_cursor cursor for Select UserId from #Users" StatementType="DECLARE CURSOR" RetrievedFromCache="false">
+          <CursorPlan CursorName="users_cursor" CursorActualType="Dynamic" CursorRequestedType="Dynamic" CursorConcurrency="Optimistic" ForwardOnly="true">
+            <Operation OperationType="FetchQuery">
+              <QueryPlan NonParallelPlanReason="CouldNotGenerateValidParallelPlan" CachedPlanSize="24" CompileTime="0" CompileCPU="0" CompileMemory="160">
+                <MemoryGrantInfo SerialRequiredMemory="0" SerialDesiredMemory="0" />
+                <OptimizerHardwareDependentProperties EstimatedAvailableMemoryGrant="206734" EstimatedPagesCached="51683" EstimatedAvailableDegreeOfParallelism="2" />
+                <RelOp AvgRowSize="65" EstimateCPU="1E-06" EstimateIO="0.01" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row" EstimateRows="1" LogicalOp="Insert" NodeId="0" Parallel="false" PhysicalOp="Clustered Index Insert" EstimatedTotalSubtreeCost="0.0132842">
+                  <OutputList>
+                    <ColumnReference Database="[tempdb]" Schema="[dbo]" Table="[#Users]" Column="UserID" />
+                    <ColumnReference Column="Expr1006" />
+                  </OutputList>
+                  <Update DMLRequestSort="false">
+                    <Object Database="[tempdb]" Index="[CWT_PrimaryKey]" Storage="RowStore" />
+                    <SetPredicate>
+                      <ScalarOperator ScalarString="[CWT].[BMK0] = [Bmk1002],[CWT].[CHECKSUM1] = [Chk1003],[CWT].[ROWID] = [Expr1006]">
+                        <ScalarExpressionList>
+                          <ScalarOperator>
+                            <MultipleAssign>
+                              <Assign>
+                                <ColumnReference Table="[CWT]" Column="BMK0" />
+                                <ScalarOperator>
+                                  <Identifier>
+                                    <ColumnReference Column="Bmk1002" />
+                                  </Identifier>
+                                </ScalarOperator>
+                              </Assign>
+                              <Assign>
+                                <ColumnReference Table="[CWT]" Column="CHECKSUM1" />
+                                <ScalarOperator>
+                                  <Identifier>
+                                    <ColumnReference Column="Chk1003" />
+                                  </Identifier>
+                                </ScalarOperator>
+                              </Assign>
+                              <Assign>
+                                <ColumnReference Table="[CWT]" Column="ROWID" />
+                                <ScalarOperator>
+                                  <Identifier>
+                                    <ColumnReference Column="Expr1006" />
+                                  </Identifier>
+                                </ScalarOperator>
+                              </Assign>
+                            </MultipleAssign>
+                          </ScalarOperator>
+                        </ScalarExpressionList>
+                      </ScalarOperator>
+                    </SetPredicate>
+                    <RelOp AvgRowSize="77" EstimateCPU="1E-07" EstimateIO="0" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row" EstimateRows="1" LogicalOp="Compute Scalar" NodeId="1" Parallel="false" PhysicalOp="Compute Scalar" EstimatedTotalSubtreeCost="0.0032832">
+                      <OutputList>
+                        <ColumnReference Column="Bmk1002" />
+                        <ColumnReference Column="Chk1003" />
+                        <ColumnReference Database="[tempdb]" Schema="[dbo]" Table="[#Users]" Column="UserID" />
+                        <ColumnReference Column="Expr1006" />
+                      </OutputList>
+                      <ComputeScalar>
+                        <DefinedValues>
+                          <DefinedValue>
+                            <ColumnReference Column="Expr1006" />
+                            <ScalarOperator ScalarString="CWT_ROWID()">
+                              <Intrinsic FunctionName="CWT_ROWID" />
+                            </ScalarOperator>
+                          </DefinedValue>
+                        </DefinedValues>
+                        <RelOp AvgRowSize="73" EstimateCPU="7.96E-05" EstimateIO="0.0032035" EstimateRebinds="0" EstimateRewinds="0" EstimatedExecutionMode="Row" EstimateRows="1" LogicalOp="Table Scan" NodeId="2" Parallel="false" PhysicalOp="Table Scan" EstimatedTotalSubtreeCost="0.0032831" TableCardinality="0">
+                          <OutputList>
+                            <ColumnReference Column="Bmk1002" />
+                            <ColumnReference Column="Chk1003" />
+                            <ColumnReference Database="[tempdb]" Schema="[dbo]" Table="[#Users]" Column="UserID" />
+                          </OutputList>
+                          <TableScan Ordered="false" ForcedIndex="false" ForceScan="false" NoExpandHint="false" Storage="RowStore">
+                            <DefinedValues>
+                              <DefinedValue>
+                                <ColumnReference Column="Bmk1002" />
+                              </DefinedValue>
+                              <DefinedValue>
+                                <ColumnReference Column="Chk1003" />
+                              </DefinedValue>
+                              <DefinedValue>
+                                <ColumnReference Database="[tempdb]" Schema="[dbo]" Table="[#Users]" Column="UserID" />
+                              </DefinedValue>
+                            </DefinedValues>
+                            <Object Database="[tempdb]" Schema="[dbo]" Table="[#Users]" IndexKind="Heap" Storage="RowStore" />
+                          </TableScan>
+                        </RelOp>
+                      </ComputeScalar>
+                    </RelOp>
+                  </Update>
+                </RelOp>
+              </QueryPlan>
+            </Operation>
+          </CursorPlan>
+        </StmtCursor>
+      </Statements>
+      <Statements>
+        <StmtCursor StatementCompId="5" StatementId="5" StatementText="&#xD;&#xA;OPEN users_cursor&#xD;&#xA;" StatementType="OPEN CURSOR" RetrievedFromCache="false">
+          <CursorPlan CursorName="users_cursor" />
+        </StmtCursor>
+      </Statements>
+      <Statements>
+        <StmtCursor StatementCompId="6" StatementId="6" StatementText="FETCH NEXT FROM users_cursor&#xD;&#xA;INTO @UserId&#xD;&#xA;&#xD;&#xA;" StatementType="FETCH CURSOR" RetrievedFromCache="false">
+          <CursorPlan CursorName="users_cursor" />
+        </StmtCursor>
+      </Statements>
+      <Statements>
+        <StmtCond StatementCompId="7" StatementId="7" StatementText="WHILE @@FETCH_STATUS = 0" StatementType="COND" RetrievedFromCache="false">
+          <Condition />
+          <Then>
+            <Statements>
+              <StmtCursor StatementCompId="8" StatementId="8" StatementText="&#xD;&#xA;BEGIN&#xD;&#xA;&#xD;&#xA;--EXEC asp_DoSomethingStoredProc @UserId&#xD;&#xA;&#xD;&#xA;FETCH NEXT FROM users_cursor&#xD;&#xA;INTO @UserId&#xD;&#xA;&#xD;&#xA;" StatementType="FETCH CURSOR" RetrievedFromCache="false">
+                <CursorPlan CursorName="users_cursor" />
+              </StmtCursor>
+            </Statements>
+          </Then>
+        </StmtCond>
+      </Statements>
+      <Statements>
+        <StmtCursor StatementCompId="11" StatementId="9" StatementText="END&#xD;&#xA;CLOSE users_cursor&#xD;&#xA;" StatementType="CLOSE CURSOR" RetrievedFromCache="false">
+          <CursorPlan CursorName="users_cursor" />
+        </StmtCursor>
+      </Statements>
+      <Statements>
+        <StmtCursor StatementCompId="12" StatementId="10" StatementText="DEALLOCATE users_cursor&#xD;&#xA;&#xD;&#xA;" StatementType="DEALLOCATE CURSOR" RetrievedFromCache="false">
+          <CursorPlan CursorName="users_cursor" />
+        </StmtCursor>
+      </Statements>
+      <Statements>
+        <StmtSimple StatementCompId="13" StatementId="11" StatementText="drop table #users" StatementType="DROP OBJECT" RetrievedFromCache="false" />
+      </Statements>
+    </Batch>
+  </BatchSequence>
+</ShowPlanXML>

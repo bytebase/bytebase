@@ -205,8 +205,8 @@ const getSchemaDescription = `Inspect a Bytebase database's schema.
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | database  | Yes      | Database name or substring (e.g., "employee_db" or "employee") |
-| instance  | No       | Instance name to narrow resolution |
-| project   | No       | Project name to narrow resolution |
+| instance  | No       | Workspace instance ID/name, or the full canonical name for a project instance |
+| project   | No       | Project name or ID to narrow resolution |
 | schema    | No       | Schema name for multi-schema engines (PG/MSSQL/Oracle/Snowflake/Redshift/CockroachDB/Databricks/Trino/Spanner/Hive); ignored with a note on MySQL/TiDB/etc. |
 | table     | No       | Drill into a single table; implies include="details" |
 | include   | No       | Detail level: "summary" (default), "columns", "details" |
@@ -240,7 +240,7 @@ func (s *Server) handleGetSchema(ctx context.Context, req *mcp.CallToolRequest, 
 		return nil, nil, err
 	}
 
-	resolved, resolveResult := s.resolveSchemaTarget(ctx, req, input)
+	resolved, resolveResult := s.resolveTarget(ctx, req, input.Database, input.Instance, input.Project)
 	if resolveResult != nil {
 		return resolveResult, nil, nil
 	}
@@ -288,27 +288,6 @@ func resolveIncludeLevel(input SchemaInput) (string, error) {
 		return "", errors.Errorf("invalid include value %q (must be summary|columns|details)", input.Include)
 	}
 	return include, nil
-}
-
-// resolveSchemaTarget runs the shared database resolver and handles the ambiguous
-// case with elicitation fallback. Returns either a resolved database (on success)
-// or a non-nil CallToolResult describing the error for the caller to return.
-func (s *Server) resolveSchemaTarget(ctx context.Context, req *mcp.CallToolRequest, input SchemaInput) (*resolvedDatabase, *mcp.CallToolResult) {
-	resolveCtx, resolveCancel := context.WithTimeout(ctx, resolveTimeout)
-	defer resolveCancel()
-
-	resolved, err := s.resolveDatabase(resolveCtx, input.Database, input.Instance, input.Project)
-	if err != nil {
-		return nil, formatToolError(err)
-	}
-	if !resolved.ambiguous {
-		return resolved, nil
-	}
-	picked, elicitErr := s.elicitDatabaseChoice(ctx, req, resolved)
-	if elicitErr != nil {
-		return nil, formatAmbiguousResult(input.Database, resolved.candidates)
-	}
-	return picked, nil
 }
 
 // renderTableResult dispatches the `table=` drill-down path: it picks the unique
@@ -423,6 +402,9 @@ func translateMetadataError(resp *apiResponse) error {
 			Suggestion: "check the database name or use search_api to list available databases",
 		}
 	case http.StatusForbidden, http.StatusUnauthorized:
+		if IsPolicyRefusal(errMsg) {
+			return &toolError{Code: "PERMISSION_DENIED", Message: errMsg}
+		}
 		return &toolError{
 			Code:       "PERMISSION_DENIED",
 			Message:    "you don't have permission to read this database's schema",

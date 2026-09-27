@@ -1,0 +1,199 @@
+import type {
+  ButtonHTMLAttributes,
+  MouseEvent as ReactMouseEvent,
+  ReactElement,
+  ReactNode,
+} from "react";
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+vi.mock("./RouterLink", () => ({
+  RouterLink: ({
+    children,
+    className,
+    onClick,
+    to,
+  }: {
+    children?: ReactNode;
+    className?: string;
+    onClick?: (event: ReactMouseEvent<HTMLAnchorElement>) => void;
+    to: { name?: string };
+  }) =>
+    createElement(
+      "a",
+      {
+        className,
+        "data-route-name": to.name,
+        href: "#",
+        onClick,
+      },
+      children
+    ),
+}));
+
+vi.mock("@/components/ui/button", () => ({
+  Button: ({
+    children,
+    onClick,
+    ...props
+  }: ButtonHTMLAttributes<HTMLButtonElement>) =>
+    createElement(
+      "button",
+      {
+        ...props,
+        "data-ui-button": "true",
+        onClick,
+      },
+      children
+    ),
+}));
+
+let UserCell: typeof import("./UserCell").UserCell;
+
+const renderIntoContainer = (element: ReactElement) => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  act(() => {
+    root.render(element);
+  });
+  return {
+    container,
+    unmount: () =>
+      act(() => {
+        root.unmount();
+      }),
+  };
+};
+
+beforeEach(async () => {
+  vi.clearAllMocks();
+  ({ UserCell } = await import("./UserCell"));
+});
+
+describe("UserCell", () => {
+  test("uses the shared Button for callback name links", () => {
+    const onNameClick = vi.fn();
+    const onRowClick = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <div onClick={onRowClick}>
+        <UserCell
+          title="Dev User"
+          subtitle="dev@example.com"
+          nameLink={{ onClick: onNameClick }}
+        />
+      </div>
+    );
+
+    const button = container.querySelector("button");
+    expect(button?.getAttribute("data-ui-button")).toBe("true");
+
+    act(() => {
+      button?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+
+    expect(onNameClick).toHaveBeenCalledTimes(1);
+    expect(onRowClick).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("renders route name links without bubbling to row click handlers", () => {
+    const onRowClick = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <div onClick={onRowClick}>
+        <UserCell
+          title="Dev User"
+          subtitle="dev@example.com"
+          nameLink={{
+            to: { name: "workspace.groups" },
+          }}
+        />
+      </div>
+    );
+
+    const link = container.querySelector("a");
+    expect(link).toBeInstanceOf(HTMLAnchorElement);
+    expect(link?.getAttribute("data-route-name")).toBe("workspace.groups");
+    expect(link?.textContent).toBe("Dev User");
+
+    act(() => {
+      link?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+
+    expect(onRowClick).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("renders subtitle actions beside the email without bubbling to row clicks", () => {
+    const onRowClick = vi.fn();
+    const onCopy = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <div onClick={onRowClick}>
+        <UserCell
+          title="CI Bot"
+          subtitle="ci@example.com"
+          subtitleAction={
+            <button
+              type="button"
+              aria-label="Copy email"
+              onClick={onCopy}
+            />
+          }
+        />
+      </div>
+    );
+
+    const copyButton = container.querySelector('[aria-label="Copy email"]');
+    expect(copyButton?.parentElement?.previousElementSibling?.textContent).toBe(
+      "ci@example.com"
+    );
+
+    act(() => {
+      copyButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+
+    expect(onCopy).toHaveBeenCalledTimes(1);
+    expect(onRowClick).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test.each(["Enter", " "])(
+    "keeps %j activation on subtitle actions from reaching the row",
+    (key) => {
+      const onRowKeyDown = vi.fn();
+      const { container, unmount } = renderIntoContainer(
+        <div onKeyDown={onRowKeyDown}>
+          <UserCell
+            title="CI Bot"
+            subtitle="ci@example.com"
+            subtitleAction={<button type="button" aria-label="Copy email" />}
+          />
+        </div>
+      );
+
+      const copyButton = container.querySelector('[aria-label="Copy email"]');
+      act(() => {
+        copyButton?.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key,
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+
+      expect(onRowKeyDown).not.toHaveBeenCalled();
+      unmount();
+    }
+  );
+});

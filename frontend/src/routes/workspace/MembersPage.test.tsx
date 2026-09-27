@@ -1,0 +1,604 @@
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+} from "react";
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+const {
+  mockUseProductIntro,
+  mockPushNotification,
+  mockUpdateProjectIamPolicy,
+  maximumRoleExpirationSeconds,
+  maximumRequestExpirationSeconds,
+  accountSelectProps,
+} = vi.hoisted(() => ({
+  mockUseProductIntro: vi.fn(),
+  mockPushNotification: vi.fn(),
+  mockUpdateProjectIamPolicy: vi.fn(),
+  maximumRoleExpirationSeconds: { value: undefined as number | undefined },
+  maximumRequestExpirationSeconds: { value: undefined as number | undefined },
+  accountSelectProps: { value: undefined as { accountParents: string[] } | undefined },
+}));
+
+vi.mock("@/components/AccountMultiSelect", () => ({
+  AccountMultiSelect: ({
+    onChange,
+    accountParents,
+  }: {
+    onChange: (members: string[]) => void;
+    accountParents: string[];
+  }) => {
+    accountSelectProps.value = { accountParents };
+    return createElement(
+      "button",
+      {
+        "data-testid": "account-select",
+        onClick: () => onChange(["user:dev1@example.com"]),
+      },
+      "select account"
+    );
+  },
+}));
+
+vi.mock("@/components/DatabaseResourceSelector", () => ({
+  DatabaseResourceSelector: () =>
+    createElement("div", { "data-testid": "database-resource-selector" }),
+}));
+
+vi.mock("@/components/EnvironmentSelect", () => ({
+  EnvironmentSelect: () =>
+    createElement("div", { "data-testid": "environment-multi-select" }),
+}));
+
+vi.mock("@/components/ExprEditor", () => ({
+  ExprEditor: () => createElement("div", { "data-testid": "expr-editor" }),
+}));
+
+vi.mock("@/components/FeatureBadge", () => ({
+  FeatureBadge: () => createElement("span", {}),
+}));
+
+vi.mock("@/components/LearnMoreLink", () => ({
+  LearnMoreLink: () => createElement("a", {}),
+}));
+
+vi.mock("@/components/PermissionGuard", () => ({
+  PermissionGuard: ({
+    children,
+  }: {
+    children: (args: { disabled: boolean }) => ReactNode;
+  }) => createElement("div", {}, children({ disabled: false })),
+}));
+
+vi.mock("@/components/RoleSelect", () => ({
+  RoleSelect: ({
+    value,
+    onChange,
+  }: {
+    value: string[];
+    onChange: (roles: string[]) => void;
+  }) =>
+    createElement("input", {
+      "data-testid": "role-select",
+      value: value[0] ?? "",
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+        onChange(e.target.value ? [e.target.value] : []),
+    }),
+}));
+
+vi.mock("@/components/role-grant/DDLWarningCallout", () => ({
+  DDLWarningCallout: () => null,
+}));
+
+vi.mock("@/components/UserCell", () => ({
+  UserCell: () => createElement("span", {}),
+}));
+
+vi.mock("@/components/ui/alert", () => ({
+  Alert: ({
+    children,
+    description,
+    title,
+  }: {
+    children?: ReactNode;
+    description?: ReactNode;
+    title?: ReactNode;
+  }) => createElement("div", {}, title, description, children),
+}));
+
+vi.mock("@/components/ui/badge", () => ({
+  Badge: ({ children }: { children?: ReactNode }) =>
+    createElement("span", {}, children),
+}));
+
+vi.mock("@/components/ui/button", () => ({
+  Button: ({
+    children,
+    disabled,
+    onClick,
+    variant: _variant,
+    size: _size,
+    ...props
+  }: ButtonHTMLAttributes<HTMLButtonElement> & {
+    size?: string;
+    variant?: string;
+  }) => createElement("button", { ...props, disabled, onClick }, children),
+}));
+
+vi.mock("@/lib/productIntro", () => ({
+  GRANT_ACCESS_PRODUCT_INTRO: "grant-access",
+  useProductIntro: mockUseProductIntro,
+}));
+
+vi.mock("@/components/ui/checkbox", () => ({
+  Checkbox: () => createElement("input", { type: "checkbox" }),
+}));
+
+vi.mock("@/components/ui/input", () => ({
+  Input: (props: InputHTMLAttributes<HTMLInputElement>) =>
+    createElement("input", props),
+}));
+
+vi.mock("@/components/ui/search-input", () => ({
+  SearchInput: (props: InputHTMLAttributes<HTMLInputElement>) =>
+    createElement("input", props),
+}));
+
+vi.mock("@/components/ui/sheet", () => ({
+  Sheet: ({ children, open }: { children: ReactNode; open: boolean }) =>
+    open ? createElement("div", { "data-testid": "sheet" }, children) : null,
+  SheetBody: ({ children }: { children: ReactNode }) =>
+    createElement("div", {}, children),
+  SheetContent: ({ children }: { children: ReactNode }) =>
+    createElement("div", {}, children),
+  SheetFooter: ({ children }: { children: ReactNode }) =>
+    createElement("div", {}, children),
+  SheetHeader: ({ children }: { children: ReactNode }) =>
+    createElement("div", {}, children),
+  SheetTitle: ({ children }: { children: ReactNode }) =>
+    createElement("h2", {}, children),
+}));
+
+vi.mock("@/components/ui/table", () => ({
+  Table: ({ children }: { children: ReactNode }) =>
+    createElement("table", {}, children),
+  TableBody: ({ children }: { children: ReactNode }) =>
+    createElement("tbody", {}, children),
+  TableCell: ({ children }: { children: ReactNode }) =>
+    createElement("td", {}, children),
+  TableHead: ({ children }: { children: ReactNode }) =>
+    createElement("th", {}, children),
+  TableHeader: ({ children }: { children: ReactNode }) =>
+    createElement("thead", {}, children),
+  TableRow: ({ children }: { children: ReactNode }) =>
+    createElement("tr", {}, children),
+}));
+
+vi.mock("@/components/ui/tabs", () => ({
+  Tabs: ({ children }: { children: ReactNode }) =>
+    createElement("div", {}, children),
+  TabsList: ({ children }: { children: ReactNode }) =>
+    createElement("div", {}, children),
+  TabsPanel: ({ children }: { children: ReactNode }) =>
+    createElement("div", {}, children),
+  TabsTrigger: ({ children }: { children: ReactNode }) =>
+    createElement("button", {}, children),
+}));
+
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children: ReactNode }) =>
+    createElement("span", {}, children),
+}));
+
+vi.mock("@/hooks/useEscapeKey", () => ({
+  useEscapeKey: () => {},
+}));
+
+vi.mock("@/lib/project-member/utils", () => ({
+  getRoleEnvironmentLimitationKind: vi.fn(() => undefined),
+  roleHasDatabaseLimitation: vi.fn((role: string) =>
+    role.includes("sqlEditor")
+  ),
+}));
+
+vi.mock("@/app/router", () => ({
+  useNavigate: () => vi.fn(),
+  WORKSPACE_ROUTE_GROUPS: "groups",
+}));
+
+vi.mock("@/modules/cel", () => ({
+  buildCELExpr: vi.fn(),
+  emptySimpleExpr: () => ({}),
+  validateSimpleExpr: () => true,
+  wrapAsGroup: (expr: unknown) => expr,
+}));
+
+vi.mock("@/types", () => ({
+  ALL_USERS_USER_EMAIL: "allUsers",
+  isDefaultProject: () => false,
+  PresetRoleType: { PROJECT_OWNER: "roles/projectOwner" },
+  userBindingPrefix: "user:",
+}));
+
+vi.mock("@/types/proto-es/google/type/expr_pb", () => ({
+  ExprSchema: {},
+}));
+
+vi.mock("@/types/proto-es/v1/common_pb", () => ({
+  State: { ACTIVE: 1, DELETED: 2 },
+}));
+
+vi.mock("@/types/proto-es/v1/iam_policy_pb", () => ({
+  BindingSchema: {},
+}));
+
+vi.mock("@/types/proto-es/v1/setting_service_pb", () => ({
+  Setting_SettingName: { EMAIL: 1 },
+}));
+
+vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
+  PlanFeature: { FEATURE_REQUEST_ROLE_WORKFLOW: 1 },
+}));
+
+vi.mock("@/types/v1/user", () => ({
+  AccountType: { USER: "USER" },
+  getAccountTypeByEmail: () => "USER",
+}));
+
+vi.mock("@/utils", () => ({
+  batchConvertParsedExprToCELString: vi.fn(),
+  displayRoleTitle: (role: string) => role,
+  formatAbsoluteDateTime: () => "",
+  getDatabaseNameOptionConfig: () => ({ options: [] }),
+  hasProjectPermissionV2: () => true,
+  hasWorkspacePermissionV2: () => true,
+  isBindingPolicyExpired: () => false,
+  sortRoles: (roles: string[]) => roles,
+}));
+
+vi.mock("@/utils/cel-attributes", () => ({
+  CEL_ATTRIBUTE_RESOURCE_DATABASE: "resource.database",
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME: "resource.schema_name",
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME: "resource.table_name",
+}));
+
+vi.mock("@/utils/issue/cel", () => ({
+  buildConditionExpr: (args: Record<string, unknown>) => ({ ...args }),
+  convertFromExpr: () => ({}),
+  stringifyConditionExpression: () => "",
+}));
+
+vi.mock("@/lib/memberBindings", () => ({
+  getMemberBindings: () => [],
+  groupProjectRoleBindings: () => [],
+}));
+
+vi.mock("@bufbuild/protobuf", () => ({
+  create: (_schema: unknown, init?: Record<string, unknown>) => ({ ...init }),
+}));
+
+vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+
+const projectIamPolicy = { bindings: [] };
+
+vi.mock("@/stores", () => ({
+  pushNotification: mockPushNotification,
+}));
+
+vi.mock("@/hooks/useAppState", () => ({
+  useCurrentUser: () => ({
+    email: "me@example.com",
+    name: "users/me@example.com",
+  }),
+}));
+
+vi.mock("@/stores/app", () => {
+  const buildState = () => ({
+    batchGetOrFetchUsers: vi.fn(async () => []),
+    roleList: [{ name: "roles/sqlEditorUser", permissions: [] }],
+    workspacePolicy: { bindings: [] },
+    patchWorkspaceIamPolicy: vi.fn(),
+    findWorkspaceRolesByMember: () => [],
+    fetchWorkspaceIamPolicy: vi.fn(async () => undefined),
+    // MembersPage now subscribes to projectPoliciesByName directly so it
+    // re-renders when loadProjectIamPolicy() resolves. The getter form is
+    // still used inside async handlers.
+    projectPoliciesByName: { "projects/sample-project": projectIamPolicy },
+    getProjectIamPolicy: () => projectIamPolicy,
+    updateProjectIamPolicy: mockUpdateProjectIamPolicy,
+    loadProjectIamPolicy: vi.fn(async () => undefined),
+    projectsByName: {},
+    getProjectByName: (name: string) => ({
+      allowRequestRole: true,
+      name,
+      permissions: ["bb.projects.setIamPolicy"],
+      state: 1,
+    }),
+    isSaaSMode: () => false,
+    workspaceResourceName: () => "workspaces/default",
+    userCountInIam: () => 1,
+    userCountLimit: () => 10,
+    hasFeature: () => true,
+    settingsByName: {},
+    getOrFetchSettingByName: vi.fn(),
+    getSettingByName: () => undefined,
+    getWorkspaceProfile: () => ({
+      maximumRoleExpiration:
+        maximumRoleExpirationSeconds.value === undefined
+          ? undefined
+          : { seconds: BigInt(maximumRoleExpirationSeconds.value) },
+      maximumRequestExpiration:
+        maximumRequestExpirationSeconds.value === undefined
+          ? undefined
+          : { seconds: BigInt(maximumRequestExpirationSeconds.value) },
+    }),
+  });
+  const useAppStore = (selector?: (state: unknown) => unknown) =>
+    selector ? selector(buildState()) : buildState();
+  useAppStore.getState = () => buildState();
+  return { useAppStore };
+});
+
+vi.mock("./MemberBindingEnvironmentBanner", () => ({
+  MemberBindingEnvironmentBanner: () => null,
+}));
+
+vi.mock("./MemberDatabaseResourceName", () => ({
+  MemberDatabaseResourceName: () => null,
+}));
+
+vi.mock("@/modules/access-control/RequestRoleSheet", () => ({
+  RequestRoleSheet: () => null,
+}));
+
+import { buildCELExpr } from "@/modules/cel";
+import { nativeChange } from "@/test-utils/nativeChange";
+import { MembersPage } from "./MembersPage";
+
+let container: HTMLDivElement;
+let root: ReturnType<typeof createRoot>;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  maximumRoleExpirationSeconds.value = undefined;
+  maximumRequestExpirationSeconds.value = undefined;
+  accountSelectProps.value = undefined;
+  projectIamPolicy.bindings = [];
+  container = document.createElement("div");
+  document.body.appendChild(container);
+  root = createRoot(container);
+});
+
+afterEach(() => {
+  act(() => {
+    root.unmount();
+  });
+  document.body.removeChild(container);
+});
+
+async function renderPage(): Promise<void> {
+  await act(async () => {
+    root.render(createElement(MembersPage, { projectId: "sample-project" }));
+    await Promise.resolve();
+  });
+}
+
+async function renderWorkspacePage(): Promise<void> {
+  await act(async () => {
+    root.render(createElement(MembersPage));
+    await Promise.resolve();
+  });
+}
+
+async function flush(): Promise<void> {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+describe("MembersPage project role grant drawer", () => {
+  it("provides workspace and project parents to the account selector", async () => {
+    await renderPage();
+
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      grantButton.click();
+    });
+    await flush();
+
+    expect(accountSelectProps.value?.accountParents).toEqual([
+      "workspaces/default",
+      "projects/sample-project",
+    ]);
+  });
+
+  it("uses maximum role expiration instead of request expiration for direct role grants", async () => {
+    maximumRequestExpirationSeconds.value = 30 * 24 * 60 * 60;
+
+    await renderPage();
+
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      grantButton.click();
+    });
+    await flush();
+
+    const roleInput = container.querySelector(
+      "[data-testid='role-select']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      nativeChange(roleInput, "roles/sqlEditorUser");
+    });
+    await flush();
+
+    expect(container.textContent).not.toContain(
+      "common.expiration-max-hint"
+    );
+
+    maximumRoleExpirationSeconds.value = 7 * 24 * 60 * 60;
+    maximumRequestExpirationSeconds.value = undefined;
+
+    await renderPage();
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.textContent === "settings.members.grant-access"
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await flush();
+
+    const roleInputWithRoleCap = container.querySelector(
+      "[data-testid='role-select']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      nativeChange(roleInputWithRoleCap, "roles/sqlEditorUser");
+    });
+    await flush();
+
+    expect(container.textContent).toContain(
+      "common.expiration-max-hint"
+    );
+  });
+
+  it("uses the graphical expression editor for database CEL scope", async () => {
+    await renderPage();
+
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      grantButton.click();
+    });
+    await flush();
+
+    const accountButton = container.querySelector(
+      "[data-testid='account-select']"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      accountButton.click();
+    });
+
+    const roleInput = container.querySelector(
+      "[data-testid='role-select']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      nativeChange(roleInput, "roles/sqlEditorUser");
+    });
+    await flush();
+
+    const expressionRadio = [
+      ...container.querySelectorAll<HTMLElement>('[role="radio"]'),
+    ].find(
+      (radio) => radio.parentElement?.textContent === "CEL Expression"
+    ) as HTMLElement;
+    await act(async () => {
+      expressionRadio.click();
+    });
+    await flush();
+
+    expect(
+      container.querySelector("[data-testid='expr-editor']")
+    ).not.toBeNull();
+    expect(
+      container.querySelector(
+        "textarea[placeholder='e.g. resource.database_name.startsWith(\"employee_\")']"
+      )
+    ).toBeNull();
+  });
+
+  it("shows an error when CEL expression parsing fails", async () => {
+    vi.mocked(buildCELExpr).mockRejectedValueOnce(new Error("parse failed"));
+
+    await renderPage();
+
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      grantButton.click();
+    });
+    await flush();
+
+    const accountButton = container.querySelector(
+      "[data-testid='account-select']"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      accountButton.click();
+    });
+
+    const roleInput = container.querySelector(
+      "[data-testid='role-select']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      nativeChange(roleInput, "roles/sqlEditorUser");
+    });
+    await flush();
+
+    const expressionRadio = [
+      ...container.querySelectorAll<HTMLElement>('[role="radio"]'),
+    ].find(
+      (radio) => radio.parentElement?.textContent === "CEL Expression"
+    ) as HTMLElement;
+    await act(async () => {
+      expressionRadio.click();
+    });
+    await flush();
+
+    const createButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.create"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      createButton.click();
+    });
+    await flush();
+
+    expect(mockPushNotification).toHaveBeenCalledWith({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "project.members.request-role.failed-to-build-expression",
+    });
+    expect(mockUpdateProjectIamPolicy).not.toHaveBeenCalled();
+  });
+});
+
+describe("MembersPage onboarding intro", () => {
+  it("binds Grant Access only on the editable workspace page", async () => {
+    await renderWorkspacePage();
+
+    expect(mockUseProductIntro).toHaveBeenCalledWith({
+      id: "grant-access",
+      title: "workspace-setup-guide.intro.grant-access-title",
+      description: "workspace-setup-guide.intro.grant-access-description",
+      disabled: false,
+    });
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    );
+    expect(grantButton).toHaveAttribute(
+      "data-product-intro-target",
+      "grant-access"
+    );
+
+    mockUseProductIntro.mockClear();
+    await renderPage();
+    expect(mockUseProductIntro).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "grant-access", disabled: true })
+    );
+  });
+});

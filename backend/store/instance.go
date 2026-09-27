@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"strings"
 
-	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
@@ -15,15 +15,16 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // InstanceMessage is the message for instance.
 type InstanceMessage struct {
 	ResourceID    string
 	Workspace     string
+	ProjectID     *string
 	EnvironmentID *string
 	Deleted       bool
 	Metadata      *storepb.Instance
@@ -39,25 +40,41 @@ type UpdateInstanceMessage struct {
 	Deleted       *bool
 	EnvironmentID *string
 	Metadata      *storepb.Instance
+	// MoveDatabasesToProjectID atomically transfers all databases while changing
+	// the instance lifecycle. It is only valid when archiving a resource-scoped
+	// workspace instance.
+	MoveDatabasesToProjectID *string
 }
 
 // FindInstanceMessage is the message for finding instances.
 type FindInstanceMessage struct {
-	Workspace   string
-	ResourceID  *string
-	ResourceIDs *[]string
-	ShowDeleted bool
-	Limit       *int
-	Offset      *int
-	FilterQ     *qb.Query
-	OrderByKeys []*OrderByKey
+	Workspace string
+	// ProjectID filters instances to this exact project.
+	ProjectID *string
+	// WorkspaceOnly filters workspace-level instances.
+	WorkspaceOnly bool
+	ResourceID    *string
+	ResourceIDs   *[]string
+	ShowDeleted   bool
+	Limit         *int
+	Offset        *int
+	FilterQ       *qb.Query
+	OrderByKeys   []*OrderByKey
 }
 
 // GetInstance gets an instance by the resource_id.
 func (s *Store) GetInstance(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
+	if find.ProjectID != nil && find.WorkspaceOnly {
+		return nil, errors.New("project ID and workspace-only scope cannot both be set")
+	}
+
 	if find.ResourceID != nil {
 		if v, ok := s.instanceCache.Get(getInstanceCacheKey(*find.ResourceID)); ok && s.enableCache {
-			return v, nil
+			if (find.ProjectID == nil && !find.WorkspaceOnly) ||
+				(find.WorkspaceOnly && v.ProjectID == nil) ||
+				(find.ProjectID != nil && v.ProjectID != nil && *find.ProjectID == *v.ProjectID) {
+				return v, nil
+			}
 		}
 	}
 
@@ -82,7 +99,17 @@ func (s *Store) GetInstance(ctx context.Context, find *FindInstanceMessage) (*In
 
 // ListInstances lists all instance.
 func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([]*InstanceMessage, error) {
+	if find.ProjectID != nil && find.WorkspaceOnly {
+		return nil, errors.New("project ID and workspace-only scope cannot both be set")
+	}
+
 	where := qb.Q().Space("instance.workspace = ?", find.Workspace)
+	if v := find.ProjectID; v != nil {
+		where.And("instance.project = ?", *v)
+	}
+	if find.WorkspaceOnly {
+		where.And("instance.project IS NULL")
+	}
 	if filterQ := find.FilterQ; filterQ != nil {
 		where.And("?", filterQ)
 	}
@@ -101,6 +128,7 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 		SELECT
 			instance.resource_id,
 			instance.workspace,
+			instance.project,
 			instance.environment,
 			instance.deleted,
 			instance.metadata
@@ -108,15 +136,13 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 		WHERE ?
 	`, where)
 
-	if len(find.OrderByKeys) > 0 {
-		orderBy := []string{}
-		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
-	} else {
-		q.Space("ORDER BY resource_id ASC")
+	// Titles and environments are not unique; resource_id is the primary key.
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
+	orderBy = append(orderBy, "instance.resource_id ASC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
@@ -138,11 +164,13 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 	defer rows.Close()
 	for rows.Next() {
 		var instanceMessage InstanceMessage
+		var project sql.NullString
 		var environment sql.NullString
 		var metadata []byte
 		if err := rows.Scan(
 			&instanceMessage.ResourceID,
 			&instanceMessage.Workspace,
+			&project,
 			&environment,
 			&instanceMessage.Deleted,
 			&metadata,
@@ -151,6 +179,9 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 		}
 		if environment.Valid {
 			instanceMessage.EnvironmentID = &environment.String
+		}
+		if project.Valid {
+			instanceMessage.ProjectID = &project.String
 		}
 
 		instanceMetadata := &storepb.Instance{}
@@ -192,24 +223,54 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 		environment = instanceCreate.EnvironmentID
 	}
 
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	if instanceCreate.ProjectID != nil {
+		if common.IsDefaultProject(instanceCreate.Workspace, *instanceCreate.ProjectID) {
+			return nil, errors.Errorf("default project %s cannot own an instance", *instanceCreate.ProjectID)
+		}
+		var deleted bool
+		if err := tx.QueryRowContext(ctx, `
+			SELECT deleted
+			FROM project
+			WHERE resource_id = $1 AND workspace = $2
+		`, *instanceCreate.ProjectID, instanceCreate.Workspace).Scan(&deleted); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, common.Errorf(common.NotFound, "project %s not found", *instanceCreate.ProjectID)
+			}
+			return nil, errors.Wrapf(err, "failed to find project %s", *instanceCreate.ProjectID)
+		}
+		if deleted {
+			return nil, common.Errorf(common.NotFound, "project %s is deleted", *instanceCreate.ProjectID)
+		}
+	}
+
 	q := qb.Q().Space(`
 			INSERT INTO instance (
 				resource_id,
 				workspace,
+				project,
 				environment,
 				metadata
-			) VALUES (?, ?, ?, ?)
-		`, instanceCreate.ResourceID, instanceCreate.Workspace, environment, metadataBytes)
+			) VALUES (?, ?, ?, ?, ?)
+		`, instanceCreate.ResourceID, instanceCreate.Workspace, instanceCreate.ProjectID, environment, metadataBytes)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	instance := &InstanceMessage{
 		EnvironmentID: instanceCreate.EnvironmentID,
+		ProjectID:     instanceCreate.ProjectID,
 		ResourceID:    instanceCreate.ResourceID,
 		Workspace:     instanceCreate.Workspace,
 		Metadata:      instanceCreate.Metadata,
@@ -220,6 +281,9 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 
 // UpdateInstance updates an instance.
 func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
+	if patch.MoveDatabasesToProjectID != nil && (patch.ResourceID == nil || patch.Deleted == nil || !*patch.Deleted) {
+		return nil, errors.New("moving instance databases is only supported while archiving a resource-scoped instance")
+	}
 	set := qb.Q()
 
 	if v := patch.EnvironmentID; v != nil {
@@ -267,21 +331,204 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 	q := qb.Q().Space("UPDATE instance SET ?", set).
 		Space("WHERE ?", where)
 
+	if v := patch.ResourceID; v != nil {
+		if patch.Deleted != nil {
+			return s.updateInstanceLifecycle(ctx, patch, q)
+		}
+		q.Space("RETURNING workspace, project")
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to build sql")
+		}
+		var workspace string
+		var project sql.NullString
+		if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&workspace, &project); err != nil {
+			return nil, err
+		}
+		s.instanceCache.Remove(getInstanceCacheKey(*v))
+		find := &FindInstanceMessage{Workspace: workspace, ResourceID: v}
+		if project.Valid {
+			find.ProjectID = &project.String
+		} else {
+			find.WorkspaceOnly = true
+		}
+		return s.GetInstance(ctx, find)
+	}
+
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-
 	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 
-	if v := patch.ResourceID; v != nil {
-		s.instanceCache.Remove(getInstanceCacheKey(*v))
-		return s.GetInstance(ctx, &FindInstanceMessage{Workspace: patch.Workspace, ResourceID: v})
+	return nil, nil
+}
+
+func (s *Store) updateInstanceLifecycle(ctx context.Context, patch *UpdateInstanceMessage, q *qb.Query) (*InstanceMessage, error) {
+	resourceID := *patch.ResourceID
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin instance lifecycle transaction")
+	}
+	defer tx.Rollback()
+	activeTaskRunCount, err := lockActiveTaskRunsForInstance(ctx, tx, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	if activeTaskRunCount > 0 {
+		operation := "archiving"
+		if !*patch.Deleted {
+			operation = "restoring"
+		}
+		return nil, common.Errorf(common.Conflict, "instance %s has %d active task run(s); cancel them or wait for them to finish before %s", resourceID, activeTaskRunCount, operation)
 	}
 
-	return nil, nil
+	var movedDatabases []instanceDatabaseTarget
+	if destinationProjectID := patch.MoveDatabasesToProjectID; destinationProjectID != nil {
+		movedDatabases, err = lockInstanceDatabases(ctx, tx, resourceID)
+		if err != nil {
+			return nil, err
+		}
+		var instanceProject sql.NullString
+		if err := tx.QueryRowContext(ctx, `
+			SELECT project FROM instance WHERE resource_id = $1 FOR NO KEY UPDATE
+		`, resourceID).Scan(&instanceProject); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, common.Errorf(common.NotFound, "instance %s not found", resourceID)
+			}
+			return nil, errors.Wrapf(err, "failed to lock instance %s", resourceID)
+		}
+		if instanceProject.Valid {
+			return nil, common.Errorf(common.Invalid, "cannot transfer databases while archiving project instance %s", resourceID)
+		}
+
+		projectIDs := append([]string(nil), *destinationProjectID)
+		for _, database := range movedDatabases {
+			projectIDs = append(projectIDs, database.projectID)
+		}
+		slices.Sort(projectIDs)
+		projectIDs = slices.Compact(projectIDs)
+		for _, projectID := range projectIDs {
+			var foundProjectID string
+			if err := tx.QueryRowContext(ctx, "SELECT resource_id FROM project WHERE resource_id = $1 FOR UPDATE", projectID).Scan(&foundProjectID); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return nil, common.Errorf(common.NotFound, "project %s not found", projectID)
+				}
+				return nil, errors.Wrapf(err, "failed to lock project %s", projectID)
+			}
+		}
+		if _, err := tx.ExecContext(ctx, "UPDATE db SET project = $1 WHERE instance = $2", *destinationProjectID, resourceID); err != nil {
+			return nil, errors.Wrapf(err, "failed to transfer databases for instance %s", resourceID)
+		}
+	}
+
+	q.Space("RETURNING workspace, project")
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build instance lifecycle query")
+	}
+	var workspace string
+	var project sql.NullString
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&workspace, &project); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit instance lifecycle transaction")
+	}
+
+	s.instanceCache.Remove(getInstanceCacheKey(resourceID))
+	for _, database := range movedDatabases {
+		s.removeDatabaseCache(ctx, resourceID, database.name)
+	}
+	find := &FindInstanceMessage{Workspace: workspace, ResourceID: patch.ResourceID}
+	if project.Valid {
+		find.ProjectID = &project.String
+	} else {
+		find.WorkspaceOnly = true
+	}
+	return s.GetInstance(ctx, find)
+}
+
+type instanceDatabaseTarget struct {
+	name      string
+	projectID string
+}
+
+func lockInstanceDatabases(ctx context.Context, tx *sql.Tx, resourceID string) ([]instanceDatabaseTarget, error) {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT name, project
+		FROM db
+		WHERE instance = $1
+		ORDER BY instance, name
+		FOR UPDATE
+	`, resourceID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to lock databases for instance %s", resourceID)
+	}
+	defer rows.Close()
+	var databases []instanceDatabaseTarget
+	for rows.Next() {
+		var database instanceDatabaseTarget
+		if err := rows.Scan(&database.name, &database.projectID); err != nil {
+			return nil, errors.Wrap(err, "failed to scan instance database")
+		}
+		databases = append(databases, database)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read instance databases")
+	}
+	return databases, nil
+}
+
+// GetActiveTaskRunCountForInstance returns the number of task runs that would
+// block a direct instance archive or restore.
+func (s *Store) GetActiveTaskRunCountForInstance(ctx context.Context, resourceID string) (int, error) {
+	var count int
+	if err := s.GetDB().QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM task_run
+		JOIN task
+		  ON task.project = task_run.project
+		 AND task.id = task_run.task_id
+		WHERE task.instance = $1
+		  AND task_run.status IN ('PENDING', 'AVAILABLE', 'RUNNING')
+	`, resourceID).Scan(&count); err != nil {
+		return 0, errors.Wrapf(err, "failed to count active task runs for instance %s", resourceID)
+	}
+	return count, nil
+}
+
+func lockActiveTaskRunsForInstance(ctx context.Context, tx *sql.Tx, resourceID string) (int, error) {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT task_run.project, task_run.id
+		FROM task_run
+		JOIN task
+		  ON task.project = task_run.project
+		 AND task.id = task_run.task_id
+		WHERE task.instance = $1
+		  AND task_run.status IN ('PENDING', 'AVAILABLE', 'RUNNING')
+		ORDER BY task_run.project, task_run.id
+		FOR UPDATE OF task_run
+	`, resourceID)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to lock active task runs for instance %s", resourceID)
+	}
+	defer rows.Close()
+	activeTaskRunCount := 0
+	for rows.Next() {
+		var projectID string
+		var taskRunID int64
+		if err := rows.Scan(&projectID, &taskRunID); err != nil {
+			return 0, errors.Wrap(err, "failed to scan active task run")
+		}
+		activeTaskRunCount++
+	}
+	if err := rows.Err(); err != nil {
+		return 0, errors.Wrap(err, "failed to read active task runs")
+	}
+	return activeTaskRunCount, nil
 }
 
 // GetActivatedInstanceCount gets the number of activated instances.
@@ -353,55 +600,55 @@ func (s *Store) obfuscateInstance(ctx context.Context, instance *storepb.Instanc
 
 	redacted := proto.CloneOf(instance)
 	for _, ds := range redacted.GetDataSources() {
-		ds.ObfuscatedPassword = common.Obfuscate(ds.GetPassword(), secret)
+		ds.ObfuscatedPassword = obfuscate(ds.GetPassword(), secret)
 		ds.Password = ""
-		ds.ObfuscatedSslCa = common.Obfuscate(ds.GetSslCa(), secret)
+		ds.ObfuscatedSslCa = obfuscate(ds.GetSslCa(), secret)
 		ds.SslCa = ""
-		ds.ObfuscatedSslCaPath = common.Obfuscate(ds.GetSslCaPath(), secret)
+		ds.ObfuscatedSslCaPath = obfuscate(ds.GetSslCaPath(), secret)
 		ds.SslCaPath = ""
-		ds.ObfuscatedSslCert = common.Obfuscate(ds.GetSslCert(), secret)
+		ds.ObfuscatedSslCert = obfuscate(ds.GetSslCert(), secret)
 		ds.SslCert = ""
-		ds.ObfuscatedSslCertPath = common.Obfuscate(ds.GetSslCertPath(), secret)
+		ds.ObfuscatedSslCertPath = obfuscate(ds.GetSslCertPath(), secret)
 		ds.SslCertPath = ""
-		ds.ObfuscatedSslKey = common.Obfuscate(ds.GetSslKey(), secret)
+		ds.ObfuscatedSslKey = obfuscate(ds.GetSslKey(), secret)
 		ds.SslKey = ""
-		ds.ObfuscatedSslKeyPath = common.Obfuscate(ds.GetSslKeyPath(), secret)
+		ds.ObfuscatedSslKeyPath = obfuscate(ds.GetSslKeyPath(), secret)
 		ds.SslKeyPath = ""
-		ds.ObfuscatedSshPassword = common.Obfuscate(ds.GetSshPassword(), secret)
+		ds.ObfuscatedSshPassword = obfuscate(ds.GetSshPassword(), secret)
 		ds.SshPassword = ""
-		ds.ObfuscatedSshPrivateKey = common.Obfuscate(ds.GetSshPrivateKey(), secret)
+		ds.ObfuscatedSshPrivateKey = obfuscate(ds.GetSshPrivateKey(), secret)
 		ds.SshPrivateKey = ""
-		ds.ObfuscatedAuthenticationPrivateKey = common.Obfuscate(ds.GetAuthenticationPrivateKey(), secret)
+		ds.ObfuscatedAuthenticationPrivateKey = obfuscate(ds.GetAuthenticationPrivateKey(), secret)
 		ds.AuthenticationPrivateKey = ""
-		ds.ObfuscatedAuthenticationPrivateKeyPassphrase = common.Obfuscate(ds.GetAuthenticationPrivateKeyPassphrase(), secret)
+		ds.ObfuscatedAuthenticationPrivateKeyPassphrase = obfuscate(ds.GetAuthenticationPrivateKeyPassphrase(), secret)
 		ds.AuthenticationPrivateKeyPassphrase = ""
-		ds.ObfuscatedMasterPassword = common.Obfuscate(ds.GetMasterPassword(), secret)
+		ds.ObfuscatedMasterPassword = obfuscate(ds.GetMasterPassword(), secret)
 		ds.MasterPassword = ""
 
 		if azureCredential := ds.GetAzureCredential(); azureCredential != nil {
-			azureCredential.ObfuscatedClientSecret = common.Obfuscate(azureCredential.ClientSecret, secret)
+			azureCredential.ObfuscatedClientSecret = obfuscate(azureCredential.ClientSecret, secret)
 			azureCredential.ClientSecret = ""
 		}
 		if awsCredential := ds.GetAwsCredential(); awsCredential != nil {
-			awsCredential.ObfuscatedAccessKeyId = common.Obfuscate(awsCredential.AccessKeyId, secret)
+			awsCredential.ObfuscatedAccessKeyId = obfuscate(awsCredential.AccessKeyId, secret)
 			awsCredential.AccessKeyId = ""
 
-			awsCredential.ObfuscatedSecretAccessKey = common.Obfuscate(awsCredential.SecretAccessKey, secret)
+			awsCredential.ObfuscatedSecretAccessKey = obfuscate(awsCredential.SecretAccessKey, secret)
 			awsCredential.SecretAccessKey = ""
 
-			awsCredential.ObfuscatedSessionToken = common.Obfuscate(awsCredential.SessionToken, secret)
+			awsCredential.ObfuscatedSessionToken = obfuscate(awsCredential.SessionToken, secret)
 			awsCredential.SessionToken = ""
 		}
 		if gcpCredential := ds.GetGcpCredential(); gcpCredential != nil {
-			gcpCredential.ObfuscatedContent = common.Obfuscate(gcpCredential.Content, secret)
+			gcpCredential.ObfuscatedContent = obfuscate(gcpCredential.Content, secret)
 			gcpCredential.Content = ""
 		}
 		if externalSecret := ds.GetExternalSecret(); externalSecret != nil {
-			externalSecret.ObfuscatedVaultSslCa = common.Obfuscate(externalSecret.GetVaultSslCa(), secret)
+			externalSecret.ObfuscatedVaultSslCa = obfuscate(externalSecret.GetVaultSslCa(), secret)
 			externalSecret.VaultSslCa = ""
-			externalSecret.ObfuscatedVaultSslCert = common.Obfuscate(externalSecret.GetVaultSslCert(), secret)
+			externalSecret.ObfuscatedVaultSslCert = obfuscate(externalSecret.GetVaultSslCert(), secret)
 			externalSecret.VaultSslCert = ""
-			externalSecret.ObfuscatedVaultSslKey = common.Obfuscate(externalSecret.GetVaultSslKey(), secret)
+			externalSecret.ObfuscatedVaultSslKey = obfuscate(externalSecret.GetVaultSslKey(), secret)
 			externalSecret.VaultSslKey = ""
 		}
 	}
@@ -417,77 +664,77 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 
 	for _, instance := range instances {
 		for _, ds := range instance.Metadata.GetDataSources() {
-			password, err := common.Unobfuscate(ds.GetObfuscatedPassword(), secret)
+			password, err := unobfuscate(ds.GetObfuscatedPassword(), secret)
 			if err != nil {
 				return err
 			}
 			ds.Password = password
 
-			sslCa, err := common.Unobfuscate(ds.GetObfuscatedSslCa(), secret)
+			sslCa, err := unobfuscate(ds.GetObfuscatedSslCa(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslCa = sslCa
-			sslCaPath, err := common.Unobfuscate(ds.GetObfuscatedSslCaPath(), secret)
+			sslCaPath, err := unobfuscate(ds.GetObfuscatedSslCaPath(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslCaPath = sslCaPath
 
-			sslCert, err := common.Unobfuscate(ds.GetObfuscatedSslCert(), secret)
+			sslCert, err := unobfuscate(ds.GetObfuscatedSslCert(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslCert = sslCert
-			sslCertPath, err := common.Unobfuscate(ds.GetObfuscatedSslCertPath(), secret)
+			sslCertPath, err := unobfuscate(ds.GetObfuscatedSslCertPath(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslCertPath = sslCertPath
 
-			sslKey, err := common.Unobfuscate(ds.GetObfuscatedSslKey(), secret)
+			sslKey, err := unobfuscate(ds.GetObfuscatedSslKey(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslKey = sslKey
-			sslKeyPath, err := common.Unobfuscate(ds.GetObfuscatedSslKeyPath(), secret)
+			sslKeyPath, err := unobfuscate(ds.GetObfuscatedSslKeyPath(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslKeyPath = sslKeyPath
 
-			sshPassword, err := common.Unobfuscate(ds.GetObfuscatedSshPassword(), secret)
+			sshPassword, err := unobfuscate(ds.GetObfuscatedSshPassword(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SshPassword = sshPassword
 
-			sshPrivateKey, err := common.Unobfuscate(ds.GetObfuscatedSshPrivateKey(), secret)
+			sshPrivateKey, err := unobfuscate(ds.GetObfuscatedSshPrivateKey(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SshPrivateKey = sshPrivateKey
 
-			authenticationPrivateKey, err := common.Unobfuscate(ds.GetObfuscatedAuthenticationPrivateKey(), secret)
+			authenticationPrivateKey, err := unobfuscate(ds.GetObfuscatedAuthenticationPrivateKey(), secret)
 			if err != nil {
 				return err
 			}
 			ds.AuthenticationPrivateKey = authenticationPrivateKey
 
-			authenticationPrivateKeyPassphrase, err := common.Unobfuscate(ds.GetObfuscatedAuthenticationPrivateKeyPassphrase(), secret)
+			authenticationPrivateKeyPassphrase, err := unobfuscate(ds.GetObfuscatedAuthenticationPrivateKeyPassphrase(), secret)
 			if err != nil {
 				return err
 			}
 			ds.AuthenticationPrivateKeyPassphrase = authenticationPrivateKeyPassphrase
 
-			masterPassword, err := common.Unobfuscate(ds.GetObfuscatedMasterPassword(), secret)
+			masterPassword, err := unobfuscate(ds.GetObfuscatedMasterPassword(), secret)
 			if err != nil {
 				return err
 			}
 			ds.MasterPassword = masterPassword
 
 			if azureCredential := ds.GetAzureCredential(); azureCredential != nil {
-				clientSecret, err := common.Unobfuscate(azureCredential.ObfuscatedClientSecret, secret)
+				clientSecret, err := unobfuscate(azureCredential.ObfuscatedClientSecret, secret)
 				if err != nil {
 					return err
 				}
@@ -495,19 +742,19 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 			}
 
 			if awsCredential := ds.GetAwsCredential(); awsCredential != nil {
-				accessKeyID, err := common.Unobfuscate(awsCredential.ObfuscatedAccessKeyId, secret)
+				accessKeyID, err := unobfuscate(awsCredential.ObfuscatedAccessKeyId, secret)
 				if err != nil {
 					return err
 				}
 				awsCredential.AccessKeyId = accessKeyID
 
-				secretAccessKey, err := common.Unobfuscate(awsCredential.ObfuscatedSecretAccessKey, secret)
+				secretAccessKey, err := unobfuscate(awsCredential.ObfuscatedSecretAccessKey, secret)
 				if err != nil {
 					return err
 				}
 				awsCredential.SecretAccessKey = secretAccessKey
 
-				sessionToken, err := common.Unobfuscate(awsCredential.ObfuscatedSessionToken, secret)
+				sessionToken, err := unobfuscate(awsCredential.ObfuscatedSessionToken, secret)
 				if err != nil {
 					return err
 				}
@@ -515,7 +762,7 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 			}
 
 			if gcpCredential := ds.GetGcpCredential(); gcpCredential != nil {
-				content, err := common.Unobfuscate(gcpCredential.ObfuscatedContent, secret)
+				content, err := unobfuscate(gcpCredential.ObfuscatedContent, secret)
 				if err != nil {
 					return err
 				}
@@ -523,19 +770,19 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 			}
 
 			if externalSecret := ds.GetExternalSecret(); externalSecret != nil {
-				sslCa, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslCa(), secret)
+				sslCa, err := unobfuscate(externalSecret.GetObfuscatedVaultSslCa(), secret)
 				if err != nil {
 					return err
 				}
 				externalSecret.VaultSslCa = sslCa
 
-				sslCert, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslCert(), secret)
+				sslCert, err := unobfuscate(externalSecret.GetObfuscatedVaultSslCert(), secret)
 				if err != nil {
 					return err
 				}
 				externalSecret.VaultSslCert = sslCert
 
-				sslKey, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslKey(), secret)
+				sslKey, err := unobfuscate(externalSecret.GetObfuscatedVaultSslKey(), secret)
 				if err != nil {
 					return err
 				}
@@ -544,19 +791,6 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 		}
 	}
 	return nil
-}
-
-// HasSampleInstances checks if there are sample instances in the database.
-func (s *Store) HasSampleInstances(ctx context.Context, workspaceID string) (bool, error) {
-	instances, err := s.ListInstances(ctx, &FindInstanceMessage{
-		Workspace:   workspaceID,
-		ResourceIDs: &[]string{"test-sample-instance", "prod-sample-instance"},
-		ShowDeleted: false,
-	})
-	if err != nil {
-		return false, err
-	}
-	return len(instances) > 0, nil
 }
 
 // DeleteInstance permanently purges a soft-deleted instance and all related resources.
@@ -570,19 +804,18 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
-
-	// Delete query_history entries that reference this instance
-	// The database field contains instance reference like 'instances/{instance}/databases/{database}'
+	// Delete query history before database-scoped rows.
 	q := qb.Q().Space(`
 		DELETE FROM query_history
 		WHERE database LIKE 'instances/' || ? || '/databases/%'
-	`, resourceID)
+		   OR database LIKE 'projects/%/instances/' || ? || '/databases/%'
+	`, resourceID, resourceID)
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
+		return errors.Wrap(err, "failed to build query history delete query")
 	}
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete query_history for instance %s", resourceID)
+		return errors.Wrapf(err, "failed to delete query history for instance %s", resourceID)
 	}
 
 	// Delete task_run_log entries for tasks associated with this instance
@@ -667,20 +900,6 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Wrapf(err, "failed to delete revisions for instance %s", resourceID)
 	}
 
-	// Update worksheets to nullify instance and db_name references
-	q = qb.Q().Space(`
-		UPDATE worksheet
-		SET instance = NULL, db_name = NULL
-		WHERE instance = ?
-	`, resourceID)
-	query, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
-	}
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrapf(err, "failed to update worksheets for instance %s", resourceID)
-	}
-
 	// Delete db_schema entries associated with databases on this instance
 	q = qb.Q().Space(`
 		DELETE FROM db_schema WHERE instance = ?
@@ -705,7 +924,23 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Wrapf(err, "failed to delete databases for instance %s", resourceID)
 	}
 
-	// Finally, delete the instance itself (only if it's marked as deleted)
+	// Lock the instance while checking the required deleted state.
+	var deleted bool
+	if err := tx.QueryRowContext(ctx, `
+		SELECT deleted
+		FROM instance
+		WHERE resource_id = $1 AND workspace = $2
+		FOR UPDATE
+	`, resourceID, workspace).Scan(&deleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return errors.Errorf("instance %s not found or not marked as deleted", resourceID)
+		}
+		return errors.Wrapf(err, "failed to lock instance %s", resourceID)
+	}
+	if !deleted {
+		return errors.Errorf("instance %s not found or not marked as deleted", resourceID)
+	}
+	// Delete the soft-deleted instance.
 	q = qb.Q().Space(`
 		DELETE FROM instance
 		WHERE resource_id = ? AND deleted = TRUE AND workspace = ?
@@ -731,8 +966,23 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	// Clear the instance from cache
+	// Publish cache invalidation only after the purge commits. Descendant cache
+	// keys carry the instance ID, so invalidation does not need to read every
+	// database row before deleting it.
 	s.instanceCache.Remove(getInstanceCacheKey(resourceID))
+	unscopedDatabaseCachePrefix := getDatabaseCacheKey("", resourceID, "")
+	workspaceDatabaseCachePrefix := getDatabaseCacheKey(workspace, resourceID, "")
+	for _, key := range s.databaseCache.Keys() {
+		if strings.HasPrefix(key, unscopedDatabaseCachePrefix) || strings.HasPrefix(key, workspaceDatabaseCachePrefix) {
+			s.databaseCache.Remove(key)
+		}
+	}
+	dbSchemaCachePrefix := getDBSchemaCacheKey(resourceID, "")
+	for _, key := range s.dbSchemaCache.Keys() {
+		if strings.HasPrefix(key, dbSchemaCachePrefix) {
+			s.dbSchemaCache.Remove(key)
+		}
+	}
 
 	return nil
 }
@@ -742,45 +992,18 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 		return nil, nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return nil, errors.Errorf("failed to create cel env")
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, err
 	}
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
-
-	parseToLabelFilterSQL := func(resource, key string, value any) (*qb.Query, error) {
-		switch v := value.(type) {
-		case string:
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ?", resource, key), v), nil
-		case []any:
-			if len(v) == 0 {
-				return nil, errors.Errorf("empty label filter")
-			}
-
-			labelValueList := make([]any, len(v))
-			for i, raw := range v {
-				str, ok := raw.(string)
-				if !ok {
-					return nil, errors.Errorf("label value must be string, got %T", raw)
-				}
-				labelValueList[i] = str
-			}
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ANY(?)", resource, key), labelValueList), nil
-		default:
-			return nil, errors.Errorf("empty value %v for label filter", value)
-		}
-	}
 
 	parseToSQL := func(variable, value any) (*qb.Query, error) {
 		// Handle label filters like "labels.org_group"
 		if varStr, ok := variable.(string); ok {
 			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
-				return parseToLabelFilterSQL("instance.metadata", labelKey, value)
+				return buildLabelFilterSQL("instance.metadata", labelKey, value)
 			}
 		}
 
@@ -829,8 +1052,8 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 				return nil, errors.Errorf("invalid project filter %q", value)
 			}
 			return qb.Q().Space(
-				`EXISTS (SELECT 1 FROM db WHERE db.instance = instance.resource_id AND db.project = ?)`,
-				projectID), nil
+				`(instance.project = ? OR EXISTS (SELECT 1 FROM db WHERE db.instance = instance.resource_id AND db.project = ?))`,
+				projectID, projectID), nil
 		default:
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}
@@ -912,13 +1135,13 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 
 				switch variable {
 				case "name":
-					return qb.Q().Space("LOWER(instance.metadata->>'title') LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(instance.metadata->>'title') LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				case "resource_id":
-					return qb.Q().Space("LOWER(instance.resource_id) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(instance.resource_id) LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				case "host", "port":
 					return qb.Q().Space(
-						fmt.Sprintf(`EXISTS (SELECT 1 FROM jsonb_array_elements(instance.metadata -> 'dataSources') AS ds WHERE ds ->> '%s' LIKE ?)`, variable),
-						"%"+strValue+"%"), nil
+						fmt.Sprintf(`EXISTS (SELECT 1 FROM jsonb_array_elements(instance.metadata -> 'dataSources') AS ds WHERE ds ->> '%s' LIKE ? ESCAPE '\')`, variable),
+						containsPattern(strValue)), nil
 				default:
 					return nil, errors.Errorf("unsupport variable %q", variable)
 				}
@@ -927,7 +1150,7 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 				if variable == "engine" {
 					return parseToEngineSQL(expr)
 				} else if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
-					return parseToLabelFilterSQL("instance.metadata", labelKey, value)
+					return buildLabelFilterSQL("instance.metadata", labelKey, value)
 				}
 				return nil, errors.Errorf("unsupport variable %q", variable)
 			case celoperators.LogicalNot:

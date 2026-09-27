@@ -166,11 +166,13 @@ test.describe("disableCopyData hides the Copy button on results (M2)", () => {
       timeout: 10_000,
     });
 
-    // Copy button (rendered when !disallowCopyingData && rows.length > 0)
-    // must NOT be in the toolbar. Anchor exact-match so "Copy others"
-    // etc. don't bleed in.
+    // The results-toolbar Copy button reads "Copy all" (SingleResultView — the
+    // split-button main action, rendered when !disallowCopyingData && rows>0).
+    // It must be gone. NB: the status bar has a SEPARATE, always-present
+    // statement "Copy" button (ResultStatusBar) that this gate does not govern —
+    // target "Copy all" exactly so it isn't mistaken for the results Copy.
     await expect(
-      page.getByRole("button", { name: "Copy", exact: true }),
+      page.getByRole("button", { name: "Copy all", exact: true }),
     ).toHaveCount(0);
   });
 
@@ -185,7 +187,7 @@ test.describe("disableCopyData hides the Copy button on results (M2)", () => {
     });
 
     await expect(
-      page.getByRole("button", { name: "Copy", exact: true }).first(),
+      page.getByRole("button", { name: "Copy all", exact: true }).first(),
     ).toBeVisible({ timeout: 5_000 });
   });
 });

@@ -83,7 +83,6 @@ func init() {
 	RegisterIndexComparer(storepb.Engine_TIDB, defaultComparer)
 	RegisterIndexComparer(storepb.Engine_ORACLE, defaultComparer)
 	RegisterIndexComparer(storepb.Engine_MSSQL, defaultComparer)
-	RegisterIndexComparer(storepb.Engine_SQLITE, defaultComparer)
 	RegisterIndexComparer(storepb.Engine_MONGODB, defaultComparer)
 	RegisterIndexComparer(storepb.Engine_REDIS, defaultComparer)
 	RegisterIndexComparer(storepb.Engine_SNOWFLAKE, defaultComparer)

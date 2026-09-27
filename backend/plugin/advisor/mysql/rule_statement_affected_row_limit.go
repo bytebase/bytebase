@@ -3,16 +3,16 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -42,116 +42,68 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 
 	maxRow := int(numberPayload.Number)
 	driver := checkCtx.Driver
+	if driver == nil {
+		return nil, nil
+	}
 	title := checkCtx.Rule.Type.String()
 	var advice []*storepb.Advice
-	explainCount := 0
+	var explains advisor.ExplainBudget
 
-	if driver != nil {
-		for _, stmt := range checkCtx.ParsedStatements {
-			if stmt.AST == nil {
-				continue
-			}
-			node, ok := mysqlparser.GetOmniNode(stmt.AST)
-			if !ok {
-				continue
-			}
-
-			// Only handle UPDATE and DELETE statements.
-			switch node.(type) {
-			case *ast.UpdateStmt, *ast.DeleteStmt:
-			default:
-				continue
-			}
-
-			baseLine := stmt.BaseLine()
-			text := strings.TrimRight(strings.TrimSpace(stmt.Text), ";") + ";"
-			line := baseLine + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line)
-
-			explainCount++
-			res, err := advisor.Query(ctx, advisor.QueryContext{}, driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", text))
-			if err != nil {
-				advice = append(advice, &storepb.Advice{
-					Status:        level,
-					Code:          code.StatementAffectedRowExceedsLimit.Int32(),
-					Title:         title,
-					Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-					StartPosition: common.ConvertANTLRLineToPosition(line),
-				})
-			} else {
-				rowCount, err := getRows(res)
-				if err != nil {
-					advice = append(advice, &storepb.Advice{
-						Status:        level,
-						Code:          code.Internal.Int32(),
-						Title:         title,
-						Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
-						StartPosition: common.ConvertANTLRLineToPosition(line),
-					})
-				} else if rowCount > int64(maxRow) {
-					advice = append(advice, &storepb.Advice{
-						Status:        level,
-						Code:          code.StatementAffectedRowExceedsLimit.Int32(),
-						Title:         title,
-						Content:       fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", text, rowCount, maxRow),
-						StartPosition: common.ConvertANTLRLineToPosition(line),
-					})
-				}
-			}
-
-			if explainCount >= common.MaximumLintExplainSize {
-				break
-			}
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	}
-
-	return advice, nil
-}
-
-func getRows(res []any) (int64, error) {
-	// the res struct is []any{columnName, columnTable, rowDataList}
-	if len(res) != 3 {
-		return 0, errors.Errorf("expected 3 but got %d", len(res))
-	}
-	columns, ok := res[0].([]string)
-	if !ok {
-		return 0, errors.Errorf("expected []string but got %t", res[0])
-	}
-	rowList, ok := res[2].([]any)
-	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", res[2])
-	}
-	if len(rowList) < 1 {
-		return 0, errors.Errorf("not found any data")
-	}
-
-	rowsIndex, err := getColumnIndex(columns, "rows")
-	if err != nil {
-		return 0, errors.Errorf("failed to find rows column")
-	}
-
-	for _, rowAny := range rowList {
-		row, ok := rowAny.([]any)
+		node, ok := mysqlparser.GetOmniNode(stmt.AST)
 		if !ok {
-			return 0, errors.Errorf("expected []any but got %t", row)
+			continue
 		}
-
-		switch col := row[rowsIndex].(type) {
-		case int:
-			return int64(col), nil
-		case int32:
-			return int64(col), nil
-		case int64:
-			return col, nil
-		case string:
-			v, err := strconv.ParseInt(col, 10, 64)
-			if err != nil {
-				return 0, errors.Errorf("expected int or int64 but got string(%s)", col)
-			}
-			return v, nil
+		switch node.(type) {
+		case *ast.UpdateStmt, *ast.DeleteStmt:
 		default:
 			continue
 		}
+
+		baseLine := stmt.BaseLine()
+		text := strings.TrimRight(strings.TrimSpace(stmt.Text), ";") + ";"
+		position := base.ConvertANTLRLineToPosition(baseLine + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line))
+
+		if !explains.Spend(position) {
+			continue
+		}
+
+		query := mysqlparser.AffectedRowsQuery(node, stmt.Text)
+		plan, err := mysqldriver.ExplainJSON(ctx, driver, query)
+		if err != nil {
+			advice = append(advice, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementAffectedRowExceedsLimit.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
+				StartPosition: position,
+			})
+			continue
+		}
+		rowCount, err := mysqldriver.EstimateAffectedRows(ctx, driver, node, query, plan)
+		if err != nil {
+			advice = append(advice, &storepb.Advice{
+				Status:        level,
+				Code:          code.Internal.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
+				StartPosition: position,
+			})
+			continue
+		}
+		if rowCount > int64(maxRow) {
+			advice = append(advice, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementAffectedRowExceedsLimit.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", text, rowCount, maxRow),
+				StartPosition: position,
+			})
+		}
 	}
 
-	return 0, nil
+	return explains.AppendSkippedAdvice(advice, title, code.StatementAffectedRowExceedsLimit), nil
 }

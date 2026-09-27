@@ -11,7 +11,7 @@ export class WebStorageHelper {
     const fullKey = `${this.keyPrefix}.${key}`;
     try {
       const json = JSON.stringify(value);
-      localStorage.setItem(fullKey, json);
+      this.storage.setItem(fullKey, json);
     } catch {
       // nothing
     }
@@ -20,7 +20,7 @@ export class WebStorageHelper {
   load<T>(key: string, fallbackValue: T) {
     const fullKey = `${this.keyPrefix}.${key}`;
     try {
-      const json = localStorage.getItem(fullKey) || "";
+      const json = this.storage.getItem(fullKey) || "";
       return JSON.parse(json) as T;
     } catch {
       return fallbackValue;
@@ -30,17 +30,17 @@ export class WebStorageHelper {
   remove(key: string) {
     const fullKey = `${this.keyPrefix}.${key}`;
     try {
-      localStorage.removeItem(fullKey);
+      this.storage.removeItem(fullKey);
     } catch {
       // nothing
     }
   }
 
   keys(): string[] {
-    const { length } = localStorage;
+    const { length } = this.storage;
     const keys: string[] = [];
     for (let i = 0; i < length; i++) {
-      const key = localStorage.key(i);
+      const key = this.storage.key(i);
       if (key && key.startsWith(this.keyPrefix)) {
         keys.push(key);
       }
@@ -51,7 +51,7 @@ export class WebStorageHelper {
   clear() {
     const keys = this.keys();
     keys.forEach((key) => {
-      localStorage.removeItem(key);
+      this.storage.removeItem(key);
     });
   }
 }

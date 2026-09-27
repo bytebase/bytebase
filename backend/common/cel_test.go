@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"github.com/google/cel-go/cel"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestPartialEval(t *testing.T) {
@@ -73,48 +74,6 @@ func TestPartialEval(t *testing.T) {
 	}
 }
 
-func TestGetQueryExportFactors(t *testing.T) {
-	a := assert.New(t)
-	tests := []struct {
-		expression string
-		want       QueryExportFactors
-	}{
-		{
-			expression: "request.time < timestamp(\"2023-07-04T06:09:03.384Z\") && (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema_name == \"public\" && resource.table_name in [\"dept_manager\"])",
-			want: QueryExportFactors{
-				Databases: []string{"instances/postgres-sample/databases/employee"},
-			},
-		},
-		{
-			expression: "request.time < timestamp(\"2023-07-04T07:40:05.658Z\") && (resource.database in [\"instances/postgres-sample/databases/employee\"])",
-			want: QueryExportFactors{
-				Databases: []string{"instances/postgres-sample/databases/employee"},
-			},
-		},
-		{
-			expression: "request.time < timestamp(\"2023-08-02T07:33:45.686Z\") && (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema_name == \"public\" && resource.table_name in [\"dept_emp\",\"department\"])",
-			want: QueryExportFactors{
-				Databases: []string{"instances/postgres-sample/databases/employee"},
-			},
-		},
-		{
-			expression: "request.time < timestamp(\"2023-07-10T08:14:34.788Z\")",
-			want:       QueryExportFactors{},
-		},
-		{
-			expression: "request.time < timestamp(\"2023-07-10T08:15:46.773Z\") && ((resource.database in [\"instances/postgres-sample/databases/blog\"]) || (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema_name in [\"public\"]))",
-			want: QueryExportFactors{
-				Databases: []string{"instances/postgres-sample/databases/blog", "instances/postgres-sample/databases/employee"},
-			},
-		},
-	}
-	for _, tt := range tests {
-		factors, err := GetQueryExportFactors(tt.expression)
-		a.NoError(err)
-		a.Equal(tt.want, *factors)
-	}
-}
-
 func TestFallbackApprovalFactors(t *testing.T) {
 	a := require.New(t)
 
@@ -143,7 +102,7 @@ func TestFallbackApprovalFactorsOnlyAllowsProjectId(t *testing.T) {
 	a.Error(issues.Err())
 }
 
-func TestValidateFallbackApprovalExpr(t *testing.T) {
+func TestValidateApprovalExprForSourceFallbackOnlyAllowsProjectID(t *testing.T) {
 	tests := []struct {
 		name       string
 		expression string
@@ -179,7 +138,7 @@ func TestValidateFallbackApprovalExpr(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := require.New(t)
-			err := ValidateFallbackApprovalExpr(tt.expression)
+			err := ValidateApprovalExprForSource(tt.expression, storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED)
 			if tt.wantErr {
 				a.Error(err)
 			} else {
@@ -207,6 +166,87 @@ func TestApprovalFactorsIncludesRiskLevel(t *testing.T) {
 	// risk.level combined with other factors should compile
 	_, issues = e.Compile(`risk.level == "HIGH" && resource.environment_id == "prod"`)
 	a.Nil(issues)
+}
+
+func TestApprovalFactorsIncludesIssueLabels(t *testing.T) {
+	a := require.New(t)
+
+	e, err := cel.NewEnv(ApprovalFactors...)
+	a.NoError(err)
+
+	_, issues := e.Compile(`"prod" in issue.labels`)
+	a.Nil(issues)
+
+	_, issues = e.Compile(`!("security" in issue.labels) && risk.level == "HIGH"`)
+	a.Nil(issues)
+}
+
+func TestValidateApprovalExprForSourceAllowsIssueLabelsOnlyForDatabaseChange(t *testing.T) {
+	tests := []struct {
+		name       string
+		expression string
+		source     storepb.WorkspaceApprovalSetting_Rule_Source
+		wantErr    bool
+	}{
+		{
+			name:       "allows issue labels for database change",
+			expression: `"prod" in issue.labels`,
+			source:     storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+			wantErr:    false,
+		},
+		{
+			name:       "rejects issue labels for request role",
+			expression: `"prod" in issue.labels`,
+			source:     storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE,
+			wantErr:    true,
+		},
+		{
+			name:       "allows existing approval factors without issue labels",
+			expression: `request.role == "roles/projectViewer" && resource.project_id == "project-a"`,
+			source:     storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE,
+			wantErr:    false,
+		},
+		{
+			name:       "allows issue labels text in string literal",
+			expression: `"issue.labels" == "issue.labels"`,
+			source:     storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE,
+			wantErr:    false,
+		},
+		{
+			name:       "allows true",
+			expression: `true`,
+			source:     storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE,
+			wantErr:    false,
+		},
+		{
+			name:       "allows empty",
+			expression: ``,
+			source:     storepb.WorkspaceApprovalSetting_Rule_REQUEST_ROLE,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateApprovalExprForSource(tt.expression, tt.source)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestFallbackApprovalFactorsExcludesIssueLabels(t *testing.T) {
+	a := require.New(t)
+
+	e, err := cel.NewEnv(FallbackApprovalFactors...)
+	a.NoError(err)
+
+	_, issues := e.Compile(`"prod" in issue.labels`)
+	a.NotNil(issues)
+	a.Error(issues.Err())
 }
 
 func TestStringsExtensionEnabled(t *testing.T) {

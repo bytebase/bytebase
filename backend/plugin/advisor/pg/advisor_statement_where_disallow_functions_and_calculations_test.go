@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/component/sheet"
@@ -19,21 +20,21 @@ import (
 func TestSearchPathResolution(t *testing.T) {
 	// Custom mock: indexed `tech_book(name)` lives ONLY in `app_schema`.
 	// public is empty. SearchPath puts app_schema first.
-	dbSchema := &storepb.DatabaseSchemaMetadata{
+	dbSchema := &metadatapb.DatabaseSchemaMetadata{
 		Name:       "test",
 		SearchPath: "app_schema, public",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "public"},
 			{
 				Name: "app_schema",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "tech_book",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "name", Type: "text"},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "tech_book_name_idx", Expressions: []string{"name"}},
 						},
 					},
@@ -44,8 +45,9 @@ func TestSearchPathResolution(t *testing.T) {
 
 	stmt := "SELECT * FROM tech_book WHERE UPPER(name) = 'X';"
 	rule := &storepb.SQLReviewRule{
-		Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-		Level: storepb.SQLReviewRule_WARNING,
+		Type:   storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
+		Level:  storepb.SQLReviewRule_WARNING,
+		Engine: storepb.Engine_POSTGRES,
 	}
 	originalMetadata := model.NewDatabaseMetadata(dbSchema, nil, nil, storepb.Engine_POSTGRES, true /* isCaseSensitive */)
 	checkCtx := advisor.Context{
@@ -70,21 +72,21 @@ func TestSearchPathResolution(t *testing.T) {
 // using parameterless GetSearchPath drops `$user`, so deployments with
 // `search_path = "$user", public` miss tables in the session-user schema.
 func TestSearchPathSessionUserResolution(t *testing.T) {
-	dbSchema := &storepb.DatabaseSchemaMetadata{
+	dbSchema := &metadatapb.DatabaseSchemaMetadata{
 		Name:       "test",
 		SearchPath: `"$user", public`,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "public"},
 			{
 				Name: "alice",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "tech_book",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "name", Type: "text"},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "tech_book_name_idx", Expressions: []string{"name"}},
 						},
 					},
@@ -95,8 +97,9 @@ func TestSearchPathSessionUserResolution(t *testing.T) {
 
 	stmt := "SELECT * FROM tech_book WHERE UPPER(name) = 'X';"
 	rule := &storepb.SQLReviewRule{
-		Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
-		Level: storepb.SQLReviewRule_WARNING,
+		Type:   storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
+		Level:  storepb.SQLReviewRule_WARNING,
+		Engine: storepb.Engine_POSTGRES,
 	}
 	originalMetadata := model.NewDatabaseMetadata(dbSchema, nil, nil, storepb.Engine_POSTGRES, true)
 	checkCtx := advisor.Context{

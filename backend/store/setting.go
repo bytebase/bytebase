@@ -3,15 +3,17 @@ package store
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"math"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // SettingMessage is the message of setting.
@@ -20,6 +22,8 @@ type SettingMessage struct {
 	Workspace string
 	Value     proto.Message
 }
+
+var errSettingValueInvalid = errors.New("the stored setting value is invalid")
 
 func getSettingMessage(name storepb.SettingName) (proto.Message, error) {
 	switch name {
@@ -41,6 +45,8 @@ func getSettingMessage(name storepb.SettingName) (proto.Message, error) {
 		return &storepb.EnvironmentSetting{}, nil
 	case storepb.SettingName_EMAIL:
 		return &storepb.EmailSetting{}, nil
+	case storepb.SettingName_MCP:
+		return &storepb.MCPSetting{}, nil
 	default:
 		return nil, errors.Errorf("unknown setting name: %v", name)
 	}
@@ -114,6 +120,23 @@ func (s *Store) GetSystemSetting(ctx context.Context, workspaceID string) (*stor
 		return nil, errors.Errorf("cannot find setting %v", storepb.SettingName_SYSTEM)
 	}
 
+	val, ok := setting.Value.(*storepb.SystemSetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_SYSTEM)
+	}
+	return val, nil
+}
+
+// GetSystemSettingUncached gets the SYSTEM setting directly from the database,
+// bypassing the setting cache. Returns (nil, nil) if no SYSTEM setting exists.
+func (s *Store) GetSystemSettingUncached(ctx context.Context, workspaceID string) (*storepb.SystemSetting, error) {
+	setting, err := s.GetSettingUncached(ctx, workspaceID, storepb.SettingName_SYSTEM)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get setting %v", storepb.SettingName_SYSTEM)
+	}
+	if setting == nil {
+		return nil, nil
+	}
 	val, ok := setting.Value.(*storepb.SystemSetting)
 	if !ok {
 		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_SYSTEM)
@@ -237,10 +260,35 @@ type FindSettingMessage struct {
 
 // GetSetting returns the setting by name.
 func (s *Store) GetSetting(ctx context.Context, workspace string, name storepb.SettingName) (*SettingMessage, error) {
-	if v, ok := s.settingCache.Get(getSettingCacheKey(workspace, name)); ok && s.enableCache {
+	// With caching disabled (HA), every read goes straight to the database:
+	// there is no cache to fill, and taking the publish mutex here would
+	// serialize all setting reads in the process behind a single lock.
+	if !s.enableCache {
+		return s.GetSettingUncached(ctx, workspace, name)
+	}
+	if v, ok := s.settingCache.Get(getSettingCacheKey(workspace, name)); ok {
 		return v, nil
 	}
+	// Fill the cache under the publish mutex so the fill's content is current
+	// at publish time: an unordered fill could read a pre-commit snapshot and
+	// cache it after a concurrent writer already published a newer value. No
+	// row lock is held here, so the row-lock -> publish-lock order is kept.
+	s.settingPublishMu.Lock()
+	defer s.settingPublishMu.Unlock()
+	setting, err := s.GetSettingUncached(ctx, workspace, name)
+	if err != nil || setting == nil {
+		return setting, err
+	}
+	s.settingCache.Add(getSettingCacheKey(workspace, name), setting)
+	return setting, nil
+}
 
+// GetSettingUncached reads the setting directly from the database, bypassing
+// the setting cache. The cache has no TTL and only in-process writes refresh
+// it, so callers that must observe out-of-band writes (enforcement gates) or
+// that merge-and-write the value back (read-modify-write updates) use this to
+// avoid acting on a stale cached copy.
+func (s *Store) GetSettingUncached(ctx context.Context, workspace string, name storepb.SettingName) (*SettingMessage, error) {
 	settings, err := s.ListSettings(ctx, &FindSettingMessage{Workspace: workspace, Name: &name})
 	if err != nil {
 		return nil, err
@@ -293,7 +341,12 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 		}
 		value, ok := storepb.SettingName_value[nameString]
 		if !ok {
-			return nil, errors.Errorf("invalid setting name string: %s", nameString)
+			// A replica on a newer build writes setting names this enum does
+			// not carry. Returning here would fail the list for every setting
+			// this build does know.
+			slog.Warn("skipping a setting row whose name this build does not know",
+				slog.String("name", nameString), slog.String("workspace", settingMessage.Workspace))
+			continue
 		}
 		settingMessage.Name = storepb.SettingName(value)
 
@@ -302,7 +355,7 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 			return nil, err
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), msg); err != nil {
-			return nil, err
+			return nil, errors.Wrapf(errSettingValueInvalid, "failed to unmarshal setting %s: %v", settingMessage.Name, err)
 		}
 		settingMessage.Value = msg
 
@@ -312,10 +365,139 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 		return nil, err
 	}
 
-	for _, setting := range settingMessages {
-		s.settingCache.Add(getSettingCacheKey(setting.Workspace, setting.Name), setting)
-	}
+	// Deliberately no cache publication: this path runs outside the publish
+	// mutex (GetSettingUncached callers hit it on every read), and an
+	// unordered fill could pin a pre-commit snapshot over a newer published
+	// value. Publication happens only in GetSetting's fill, UpsertSetting,
+	// and UpdateSettingAtomic — all ordered by settingPublishMu.
 	return settingMessages, nil
+}
+
+// UpdateSettingAtomic performs a row-locking read-modify-write of a setting:
+// the current value is read under SELECT ... FOR UPDATE, apply transforms it,
+// and the result is written back in the same transaction — so a concurrent
+// write can never be silently reverted by a merge based on a stale read (the
+// lost-update hazard of read-then-UpsertSetting). apply receives the value
+// freshly unmarshaled from the locked row and may mutate it in place; an error
+// from apply aborts the transaction with no write and is returned unwrapped so
+// callers keep typed errors. After commit, the served state is refreshed via
+// publishSetting: the row is re-read under the publish mutex and the fresh
+// value goes to the cache and to postCommit (optional, for derived state) —
+// so publications always carry current truth regardless of the order in
+// which updaters reach the mutex. apply must stay free of database reads:
+// it runs while holding the transaction's pooled connection and the row
+// lock, and a nested read wanting a second connection is the bounded-pool
+// starvation cycle.
+//
+// A row this build cannot parse is refused: the only message this could hand
+// apply is the zero value, and a merging apply would write that back — a
+// caller that sets one field on current and returns it (RotateDirectorySyncToken)
+// would erase everything else the row held.
+func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, apply func(current proto.Message) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
+	return s.writeSettingAtomic(ctx, workspace, name, func(raw string) (proto.Message, error) {
+		current, err := getSettingMessage(name)
+		if err != nil {
+			return nil, err
+		}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), current); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal setting %s", name)
+		}
+		return apply(current)
+	}, postCommit)
+}
+
+// writeSettingAtomic locks the row, asks next for the value to store, and
+// writes it in the same transaction.
+func (s *Store) writeSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, next func(raw string) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	q := qb.Q().Space(`
+		SELECT value FROM setting WHERE workspace = ? AND name = ? FOR UPDATE
+	`, workspace, name.String())
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	var valueString string
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&valueString); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.Errorf("setting %s not found", name)
+		}
+		return nil, errors.Wrapf(err, "failed to lock setting %s", name)
+	}
+	value, err := next(valueString)
+	if err != nil {
+		return nil, err
+	}
+
+	nextBytes, err := protojson.Marshal(value)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal setting value")
+	}
+	q = qb.Q().Space(`
+		UPDATE setting SET value = ? WHERE workspace = ? AND name = ?
+	`, string(nextBytes), workspace, name.String())
+	query, args, err = q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return nil, errors.Wrapf(err, "failed to update setting %s", name)
+	}
+	// Commit BEFORE acquiring the publish mutex: commit returns the pooled
+	// connection and releases the row lock, so waiting for the mutex never
+	// holds pool resources (connection-holders never wait for the mutex, so
+	// the mutex/pool wait graph stays acyclic). Ordering is preserved because
+	// publishSetting re-reads the row under the mutex — whichever updater
+	// publishes last still publishes current truth.
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+	s.publishSetting(ctx, workspace, name, postCommit)
+	return &SettingMessage{Name: name, Workspace: workspace, Value: value}, nil
+}
+
+// publishSetting refreshes the served state for a setting after a committed
+// write: under settingPublishMu it re-reads the row and publishes the fresh
+// value to the cache (when enabled) and to postCommit for derived state. It
+// must be called with no transaction, row lock, or pooled connection held —
+// the mutex-then-connection order here is what keeps the publish protocol
+// deadlock-free against the bounded metadata pool. If the re-read fails, the
+// cache entry is evicted rather than risk publishing stale state, and
+// postCommit is skipped (derived state converges on the next write).
+func (s *Store) publishSetting(ctx context.Context, workspace string, name storepb.SettingName, postCommit func(current *SettingMessage)) {
+	if !s.enableCache && postCommit == nil {
+		return
+	}
+	s.settingPublishMu.Lock()
+	defer s.settingPublishMu.Unlock()
+	if s.settingPublishHookForTest != nil {
+		s.settingPublishHookForTest()
+	}
+	// The write is already committed, so publication must not depend on the
+	// caller still listening: re-read on a bounded context detached from
+	// request cancellation. If the read still fails (database unreachable),
+	// evict and skip postCommit — the cache heals on the next fill, and
+	// derived runtime state heals on the next successful publication of this
+	// setting (postCommit callbacks must therefore reconcile from the fresh
+	// value unconditionally, not only for fields their request touched).
+	publishCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	fresh, err := s.GetSettingUncached(publishCtx, workspace, name)
+	if err != nil || fresh == nil {
+		s.settingCache.Remove(getSettingCacheKey(workspace, name))
+		return
+	}
+	if s.enableCache {
+		s.settingCache.Add(getSettingCacheKey(workspace, name), fresh)
+	}
+	if postCommit != nil {
+		postCommit(fresh)
+	}
 }
 
 // UpsertSetting upserts the setting by name.
@@ -365,7 +547,7 @@ func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*Set
 	}
 	setting.Value = msg
 
-	s.settingCache.Add(getSettingCacheKey(setting.Workspace, setting.Name), &setting)
+	s.publishSetting(ctx, setting.Workspace, setting.Name, nil)
 	return &setting, nil
 }
 
@@ -381,6 +563,38 @@ func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storep
 		return err
 	}
 
+	// Invalidate under the ordering mutex: a cache-miss fill reads and
+	// publishes atomically under the same mutex, so once serialized against
+	// it, a fill can no longer resurrect the deleted row.
+	s.settingPublishMu.Lock()
+	defer s.settingPublishMu.Unlock()
 	s.settingCache.Remove(getSettingCacheKey(workspace, name))
 	return nil
+}
+
+// GetMCPSettingsUncached reads the workspace's stored MCP setting straight from
+// the database, bypassing the setting cache. The cache has no TTL and only
+// in-process writes refresh it, so a setting flipped out of band — direct SQL,
+// another replica — must still bite on the next request.
+//
+// Returns nil with any error; no caller may act on partially resolved settings.
+//
+// Existing workspaces without an MCP row retain the previous READ_WRITE
+// behavior. Workspace creation persists READ_ONLY for new workspaces. A present
+// row whose payload the store protocol cannot decode remains an error.
+func (s *Store) GetMCPSettingsUncached(ctx context.Context, workspace string) (*storepb.MCPSetting, error) {
+	stored, err := s.GetSettingUncached(ctx, workspace, storepb.SettingName_MCP)
+	if err != nil {
+		return nil, err
+	}
+	if stored == nil {
+		return &storepb.MCPSetting{
+			Capability: storepb.MCPSetting_READ_WRITE,
+		}, nil
+	}
+	setting, ok := stored.Value.(*storepb.MCPSetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP)
+	}
+	return setting, nil
 }

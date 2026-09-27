@@ -84,8 +84,12 @@ export class BytebaseApiClient {
     }
   }
 
-  async setupSample(): Promise<void> {
-    await this.request<unknown>("POST", "/v1/actuator:setupSample", {});
+  async prepareSampleProjectInstance(parent: string): Promise<{ name: string }> {
+    return this.request<{ name: string }>(
+      "POST",
+      `/v1/${parent}/instances:prepareSampleProjectInstance`,
+      {},
+    );
   }
 
   // Generic workspace setting upsert. Mirrors the frontend store's
@@ -242,9 +246,31 @@ export class BytebaseApiClient {
     });
   }
 
+  // Custom roles
+  async createRole(
+    roleId: string,
+    title: string,
+    permissions: string[],
+  ): Promise<{ name: string }> {
+    return this.request<{ name: string }>(
+      "POST",
+      `/v1/roles?roleId=${roleId}`,
+      { title, permissions },
+    );
+  }
+
+  async deleteRole(name: string): Promise<void> {
+    try {
+      await this.request<unknown>("DELETE", `/v1/${name}`);
+    } catch {
+      // Best-effort teardown for disposable E2E workspaces.
+    }
+  }
+
   // Discovery
-  async listInstances() {
-    return this.request<{ instances: { name: string; engine: string; title: string }[] }>("GET", "/v1/instances?pageSize=100&showDeleted=false");
+  async listInstances(parent?: string) {
+    const collection = parent ? `/v1/${parent}/instances` : "/v1/instances";
+    return this.request<{ instances: { name: string; engine: string; title: string }[] }>("GET", `${collection}?pageSize=100&showDeleted=false`);
   }
 
   async listDatabases(parent: string) {
@@ -273,6 +299,17 @@ export class BytebaseApiClient {
       "PATCH",
       `/v1/${databaseFullName}?updateMask=project`,
       { name: databaseFullName, project },
+    );
+  }
+
+  async updateDatabaseEnvironment(
+    databaseFullName: string,
+    environment: string,
+  ) {
+    return this.request<unknown>(
+      "PATCH",
+      `/v1/${databaseFullName}?updateMask=environment`,
+      { name: databaseFullName, environment },
     );
   }
 
@@ -324,6 +361,20 @@ export class BytebaseApiClient {
   // Instances
   async getInstance(instanceName: string) {
     return this.request<{ name: string; dataSources: { id: string; port: string; host: string }[] }>("GET", `/v1/${instanceName}`);
+  }
+
+  // Set the instance's database sync allowlist (Instance.sync_databases). A
+  // project-scoped sample instance is registered with an explicit allowlist of
+  // exactly its seeded database (selfhost sample manager: [hr_test]), and the
+  // schema syncer SKIPS any discovered database not on that list — so a
+  // database created directly in the sample Postgres is never persisted by
+  // syncInstance unless the allowlist is widened first.
+  async updateInstanceSyncDatabases(instanceName: string, databases: string[]) {
+    return this.request<unknown>(
+      "PATCH",
+      `/v1/${instanceName}?updateMask=sync_databases`,
+      { name: instanceName, syncDatabases: { databases } },
+    );
   }
 
   async updateInstanceDataSource(instanceName: string, dataSourceId: string, port: string) {
@@ -469,28 +520,25 @@ export class BytebaseApiClient {
     return resp.name;
   }
 
-  // Worksheets — distinct from Sheets. SQL Editor's left sidebar tree shows
-  // Worksheets, identified by `projects/{project}/worksheets/{uuid}`. The
-  // UUID portion is what the editor URL takes (`/sheets/{uuid}` confusingly
-  // routes to a worksheet).
-  async createWorksheet(project: string, title: string, database: string, content: string): Promise<{ name: string }> {
+  // SavedQueries — distinct from Sheets. SQL Editor's left sidebar tree shows
+  // SavedQueries, identified by `projects/{project}/savedQueries/{uuid}`. The
+  // UUID portion is what the editor URL takes (`/savedQueries/{uuid}`
+  // routes to a saved query).
+  async createSavedQuery(project: string, title: string, database: string, content: string): Promise<{ name: string }> {
     const b64 = Buffer.from(content).toString("base64");
     return this.request<{ name: string }>(
-      "POST", `/v1/${project}/worksheets`,
-      { title, database, content: b64, visibility: "PRIVATE" },
+      "POST", `/v1/${project}/savedQueries`,
+      { title, database, content: b64 },
     );
   }
 
-  async deleteWorksheet(name: string): Promise<void> {
+  async deleteSavedQuery(name: string): Promise<void> {
     try { await this.request<unknown>("DELETE", `/v1/${name}`); } catch { /* ignore */ }
   }
 
-  // Locate a database by short name (e.g., "family_prod") across every
-  // instance reachable to the test user. Used by tests that need a database
-  // outside the env-discovered default (e.g., R7 needs both hr_prod and a
-  // MySQL family_prod).
-  async findDatabaseByShortName(shortName: string): Promise<{ database: string; instance: string; engine: string } | null> {
-    const { instances } = await this.listInstances();
+  // Locate a database by short name across every instance owned by a project.
+  async findDatabaseByShortName(shortName: string, parent: string): Promise<{ database: string; instance: string; engine: string } | null> {
+    const { instances } = await this.listInstances(parent);
     for (const inst of instances) {
       const { databases } = await this.listDatabases(inst.name);
       const match = databases.find((d) => d.name.endsWith(`/${shortName}`));
@@ -512,7 +560,43 @@ export class BytebaseApiClient {
     });
   }
 
-  async getPlan(planName: string): Promise<{ name: string; hasRollout: boolean; state: string }> {
+  // Create a create-database plan (a single createDatabaseConfig spec). Unlike a
+  // change plan this shares the DATABASE_CHANGE issue type but is NOT a change
+  // plan, so shouldStayOnPlanDetailPage(plan) is false — used by the redirect
+  // spec to prove create-database issues stay on Issue Detail (BYT-9721).
+  async createCreateDatabasePlan(
+    project: string,
+    title: string,
+    spec: { id: string; target: string; database: string; environment?: string },
+  ): Promise<{ name: string }> {
+    return this.request<{ name: string }>("POST", `/v1/${project}/plans`, {
+      title,
+      specs: [
+        {
+          id: spec.id,
+          createDatabaseConfig: {
+            target: spec.target,
+            database: spec.database,
+            ...(spec.environment ? { environment: spec.environment } : {}),
+          },
+        },
+      ],
+    });
+  }
+
+  // `specs` carries each spec's id + targets. UI-created plans get product-
+  // generated UUID spec ids, so callers asserting spec-scoped URLs must read
+  // the real ids here rather than assuming the ids they would have chosen.
+  async getPlan(planName: string): Promise<{
+    name: string;
+    hasRollout: boolean;
+    issue: string;
+    state: string;
+    specs?: {
+      id: string;
+      changeDatabaseConfig?: { targets?: string[]; sheet?: string };
+    }[];
+  }> {
     return this.request("GET", `/v1/${planName}`);
   }
 
@@ -548,17 +632,96 @@ export class BytebaseApiClient {
     });
   }
 
+  // Draft review Issues are the UI-authored Plan lifecycle boundary. They stay
+  // hidden from active review until the Plan Detail "Ready for Review" action
+  // flips only the draft field.
+  async createDraftIssue(
+    project: string,
+    title: string,
+    plan: string,
+    labels: string[] = [],
+  ): Promise<{
+    name: string;
+    status: string;
+    approvalStatus: string;
+    draft: boolean;
+    labels: string[];
+  }> {
+    return this.request("POST", `/v1/${project}/issues`, {
+      title,
+      type: "DATABASE_CHANGE",
+      plan,
+      draft: true,
+      labels,
+    });
+  }
+
   // Post a comment to an issue. CreateIssueComment binds `body: "issue_comment"`,
   // so the HTTP body is the IssueComment payload directly. Used by the
   // markdown-link spec (BYT-9664) to seed a comment with links via the API
   // rather than driving the review popover.
-  async createIssueComment(issueName: string, comment: string): Promise<{ name: string }> {
+  // Set an issue's description (AIP-134 PATCH with an explicit update_mask —
+  // the backend rejects unnamed paths since T15/#21279).
+  async updateIssueDescription(issueName: string, description: string): Promise<void> {
+    await this.request(
+      "PATCH", `/v1/${issueName}?updateMask=description`,
+      { name: issueName, description },
+    );
+  }
+
+  // Resolve or reopen a thread root through the thread_state field mask.
+  // UpdateIssueComment is bound to the issue's :comment path with the comment
+  // as the body, like CreateIssueComment.
+  async setIssueCommentThreadState(
+    commentName: string,
+    threadState: "OPEN" | "RESOLVED",
+  ): Promise<void> {
+    const issueName = commentName.replace(/\/issueComments\/[^/]+$/, "");
+    await this.request(
+      "PATCH", `/v1/${issueName}:comment?updateMask=thread_state`,
+      { name: commentName, threadState },
+    );
+  }
+
+  // `root` creates a reply in that thread; `statementAnchor` starts a thread
+  // anchored to whole lines of the spec's saved sheet (zero columns, inclusive
+  // end line). Both omitted: a general comment.
+  async createIssueComment(
+    issueName: string,
+    comment: string,
+    thread: {
+      root?: string;
+      statementAnchor?: {
+        spec: string;
+        sheetSha256: string;
+        startLine: number;
+        endLine: number;
+      };
+    } = {},
+  ): Promise<{ name: string }> {
+    const anchor = thread.statementAnchor;
     return this.request<{ name: string }>("POST", `/v1/${issueName}:comment`, {
       comment,
+      ...(thread.root !== undefined && { root: thread.root }),
+      ...(anchor !== undefined && {
+        statementAnchor: {
+          spec: anchor.spec,
+          sheetSha256: anchor.sheetSha256,
+          startPosition: { line: anchor.startLine, column: 0 },
+          endPosition: { line: anchor.endLine, column: 0 },
+        },
+      }),
     });
   }
 
-  async getIssue(issueName: string): Promise<{ name: string; status: string; approvalStatus: string; approvalTemplate: unknown }> {
+  async getIssue(issueName: string): Promise<{
+    name: string;
+    status: string;
+    approvalStatus: string;
+    approvalTemplate: unknown;
+    draft?: boolean;
+    labels?: string[];
+  }> {
     return this.request("GET", `/v1/${issueName}`);
   }
 
@@ -593,6 +756,13 @@ export class BytebaseApiClient {
     settings: {
       requireIssueApproval?: boolean;
       requirePlanCheckNoError?: boolean;
+      enforceSqlReview?: boolean;
+      forceIssueLabels?: boolean;
+      issueLabels?: Array<{
+        value: string;
+        color?: Record<string, unknown>;
+        group?: string;
+      }>;
       allowJustInTimeAccess?: boolean;
       allowRequestRole?: boolean;
       // When license is installed, project.allow_self_approval defaults
@@ -616,6 +786,18 @@ export class BytebaseApiClient {
     if (settings.requirePlanCheckNoError !== undefined) {
       fields.push("require_plan_check_no_error");
       body.requirePlanCheckNoError = settings.requirePlanCheckNoError;
+    }
+    if (settings.enforceSqlReview !== undefined) {
+      fields.push("enforce_sql_review");
+      body.enforceSqlReview = settings.enforceSqlReview;
+    }
+    if (settings.forceIssueLabels !== undefined) {
+      fields.push("force_issue_labels");
+      body.forceIssueLabels = settings.forceIssueLabels;
+    }
+    if (settings.issueLabels !== undefined) {
+      fields.push("issue_labels");
+      body.issueLabels = settings.issueLabels;
     }
     if (settings.allowJustInTimeAccess !== undefined) {
       fields.push("allow_just_in_time_access");

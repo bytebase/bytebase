@@ -1,20 +1,29 @@
+// @vitest-environment node
+import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
+import sqlReviewMessages from "@/locales/sql-review/en-US.json";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   SQLReviewRule_Level,
+  SQLReviewRule_NumberRulePayloadSchema,
   SQLReviewRule_Type,
+  SQLReviewRuleSchema,
 } from "@/types/proto-es/v1/review_config_service_pb";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 import {
+  convertPolicyRuleToRuleTemplate,
   convertRuleMapToPolicyRuleList,
-  isBuiltinRule,
+  getRuleLocalizationKey,
   type RuleTemplateV2,
+  ruleTypeToString,
   TEMPLATE_LIST_V2,
   validateRuleMapByEngine,
 } from "./sqlReview";
+
+type LocaleMessages = { [key: string]: string | LocaleMessages };
 
 // Type for template rule data loaded from YAML
 interface TemplateRule {
@@ -236,6 +245,28 @@ describe("convertRuleMapToPolicyRuleList", () => {
     ],
   });
 
+  const numberRule = (
+    type: SQLReviewRule_Type,
+    value: number
+  ): RuleTemplateV2 => ({
+    type,
+    category: "BUILTIN",
+    engine: Engine.MYSQL,
+    level: SQLReviewRule_Level.ERROR,
+    componentList: [
+      {
+        key: "number",
+        payload: {
+          type: "NUMBER",
+          default: 2,
+          value,
+          unit: "MB",
+          factor: 1024 * 1024,
+        },
+      },
+    ],
+  });
+
   const requiredStringArrayRuleTypes = [
     SQLReviewRule_Type.COLUMN_REQUIRED,
     SQLReviewRule_Type.COLUMN_TYPE_DISALLOW_LIST,
@@ -248,23 +279,77 @@ describe("convertRuleMapToPolicyRuleList", () => {
     SQLReviewRule_Type.TABLE_DISALLOW_DML,
   ];
 
-  test.each(
-    requiredStringArrayRuleTypes
-  )("reports empty string-array rule %s", (type) => {
-    const ruleMap = new Map([
-      [Engine.MYSQL, new Map([[type, stringArrayRule(type, [])]])],
-    ]);
+  test.each(requiredStringArrayRuleTypes)(
+    "reports empty string-array rule %s",
+    (type) => {
+      const ruleMap = new Map([
+        [Engine.MYSQL, new Map([[type, stringArrayRule(type, [])]])],
+      ]);
 
-    expect(validateRuleMapByEngine(ruleMap)).toMatchObject({
-      type: "EMPTY_STRING_ARRAY",
-      rule: { type },
-    });
-  });
+      expect(validateRuleMapByEngine(ruleMap)).toMatchObject({
+        type: "EMPTY_STRING_ARRAY",
+        rule: { type },
+      });
+    }
+  );
 
   test("reports empty rule maps", () => {
     expect(validateRuleMapByEngine(new Map())).toEqual({
       type: "EMPTY_RULE_LIST",
     });
+  });
+
+  test("reports non-positive number payloads after unit conversion", () => {
+    const ruleMap = new Map([
+      [
+        Engine.MYSQL,
+        new Map([
+          [
+            SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+            numberRule(
+              SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+              0
+            ),
+          ],
+        ]),
+      ],
+    ]);
+
+    expect(validateRuleMapByEngine(ruleMap)).toMatchObject({
+      type: "INVALID_NUMBER",
+      rule: { type: SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE },
+    });
+  });
+
+  test("allows zero number payloads for naming rules", () => {
+    const rule: RuleTemplateV2 = {
+      type: SQLReviewRule_Type.NAMING_TABLE,
+      category: "NAMING",
+      engine: Engine.MYSQL,
+      level: SQLReviewRule_Level.ERROR,
+      componentList: [
+        {
+          key: "format",
+          payload: {
+            type: "STRING",
+            default: "^[a-z]+(_[a-z]+)*$",
+          },
+        },
+        {
+          key: "max-length",
+          payload: {
+            type: "NUMBER",
+            default: 0,
+            value: 0,
+          },
+        },
+      ],
+    };
+    const ruleMap = new Map([
+      [Engine.MYSQL, new Map([[SQLReviewRule_Type.NAMING_TABLE, rule]])],
+    ]);
+
+    expect(validateRuleMapByEngine(ruleMap)).toBeUndefined();
   });
 
   test("keeps configured table DDL and DML deny-list rules valid", () => {
@@ -300,16 +385,129 @@ describe("convertRuleMapToPolicyRuleList", () => {
     expect(getStringArrayList(rules[0])).toEqual(["audit_log"]);
     expect(getStringArrayList(rules[1])).toEqual(["user"]);
   });
+
+  test("stores maximum SQL size rule in bytes when edited in MB", () => {
+    const ruleMap: Map<
+      Engine,
+      Map<SQLReviewRule_Type, RuleTemplateV2>
+    > = new Map([
+      [
+        Engine.MYSQL,
+        new Map([
+          [
+            SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+            {
+              type: SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+              category: "BUILTIN",
+              engine: Engine.MYSQL,
+              level: SQLReviewRule_Level.WARNING,
+              componentList: [
+                {
+                  key: "number",
+                  payload: {
+                    type: "NUMBER",
+                    default: 2,
+                    value: 2,
+                    unit: "MB",
+                    factor: 1024 * 1024,
+                  },
+                },
+              ],
+            },
+          ],
+        ]),
+      ],
+    ]);
+
+    const [rule] = convertRuleMapToPolicyRuleList(ruleMap);
+
+    expect(rule.payload.case).toBe("numberPayload");
+    expect(
+      rule.payload.case === "numberPayload" ? rule.payload.value.number : 0
+    ).toBe(2 * 1024 * 1024);
+  });
+
+  test("displays maximum SQL size rule in MB when loaded from bytes", () => {
+    const ruleTemplate: RuleTemplateV2 = {
+      type: SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+      category: "BUILTIN",
+      engine: Engine.MYSQL,
+      level: SQLReviewRule_Level.WARNING,
+      componentList: [
+        {
+          key: "number",
+          payload: {
+            type: "NUMBER",
+            default: 2,
+            unit: "MB",
+            factor: 1024 * 1024,
+          },
+        },
+      ],
+    };
+    const policyRule = create(SQLReviewRuleSchema, {
+      type: SQLReviewRule_Type.BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+      engine: Engine.MYSQL,
+      level: SQLReviewRule_Level.WARNING,
+      payload: {
+        case: "numberPayload",
+        value: create(SQLReviewRule_NumberRulePayloadSchema, {
+          number: 10 * 1024 * 1024,
+        }),
+      },
+    });
+
+    const rule = convertPolicyRuleToRuleTemplate(policyRule, ruleTemplate);
+
+    expect(rule.componentList[0].payload.type).toBe("NUMBER");
+    expect(
+      rule.componentList[0].payload.type === "NUMBER"
+        ? rule.componentList[0].payload.value
+        : 0
+    ).toBe(10);
+  });
 });
 
 describe("TEMPLATE_LIST_V2", () => {
-  test("start from scratch still includes built-in rules", () => {
+  test("start from scratch does not persist built-in rules", () => {
     const template = TEMPLATE_LIST_V2.find(
       (template) => template.id === "bb.sql-review.empty"
     );
 
     expect(template).toBeTruthy();
-    expect(template?.ruleList.length).toBeGreaterThan(0);
-    expect(template?.ruleList.every(isBuiltinRule)).toBe(true);
+    expect(template?.ruleList).toHaveLength(0);
+  });
+
+  // Rule messages are looked up by computed keys, which check-i18n.mjs cannot
+  // trace; locale parity with en-US is enforced there.
+  test("localizes every template and rule", () => {
+    const section = (name: string) =>
+      (sqlReviewMessages as LocaleMessages)[name] as LocaleMessages;
+    for (const template of TEMPLATE_LIST_V2) {
+      const key = template.id.split(".").join("-");
+      expect(section("template")).toHaveProperty([key]);
+      expect(section("template")).toHaveProperty([`${key}-desc`]);
+      for (const rule of template.ruleList) {
+        const type = ruleTypeToString(rule.type);
+        const ruleMessages = section("rule")[getRuleLocalizationKey(type)];
+        expect(ruleMessages, type).toHaveProperty("title");
+        expect(ruleMessages, type).toHaveProperty("description");
+        for (const component of rule.componentList) {
+          expect(ruleMessages, type).toHaveProperty([
+            "component",
+            component.key,
+          ]);
+        }
+        expect(section("category"), type).toHaveProperty([
+          rule.category.toLowerCase(),
+        ]);
+        expect(section("level"), type).toHaveProperty([
+          SQLReviewRule_Level[rule.level].toLowerCase(),
+        ]);
+        expect(section("engine"), type).toHaveProperty([
+          Engine[rule.engine].toLowerCase(),
+        ]);
+      }
+    }
   });
 });

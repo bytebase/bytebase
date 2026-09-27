@@ -1,10 +1,12 @@
 package v1
 
 import (
+	"regexp"
 	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -17,7 +19,7 @@ func convertToV1Instance(instance *store.InstanceMessage, activation bool) *v1pb
 	dataSources := convertDataSources(instance.Metadata.GetDataSources())
 
 	return &v1pb.Instance{
-		Name:          buildInstanceName(instance.ResourceID),
+		Name:          buildInstanceName(instance.ResourceID, instance.ProjectID),
 		Title:         instance.Metadata.GetTitle(),
 		Engine:        engine,
 		EngineVersion: instance.Metadata.GetVersion(),
@@ -27,7 +29,7 @@ func convertToV1Instance(instance *store.InstanceMessage, activation bool) *v1pb
 		Environment:   buildEnvironmentName(instance.EnvironmentID),
 		Activation:    activation,
 		SyncInterval:  instance.Metadata.GetSyncInterval(),
-		SyncDatabases: instance.Metadata.GetSyncDatabases(),
+		SyncDatabases: convertToV1SyncDatabases(instance.Metadata.SyncDatabases),
 		Roles:         convertInstanceRoles(instance, instance.Metadata.GetRoles()),
 		LastSyncTime:  instance.Metadata.GetLastSyncTime(),
 		Labels:        instance.Metadata.GetLabels(),
@@ -35,10 +37,9 @@ func convertToV1Instance(instance *store.InstanceMessage, activation bool) *v1pb
 }
 
 // buildRoleName builds the role name with the given instance ID and role name.
-func buildRoleName(b *strings.Builder, instanceID, roleName string) string {
+func buildRoleName(b *strings.Builder, instanceID string, projectID *string, roleName string) string {
 	b.Reset()
-	_, _ = b.WriteString(common.InstanceNamePrefix)
-	_, _ = b.WriteString(instanceID)
+	_, _ = b.WriteString(buildInstanceName(instanceID, projectID))
 	_, _ = b.WriteString("/")
 	_, _ = b.WriteString(common.RolePrefix)
 	_, _ = b.WriteString(roleName)
@@ -53,10 +54,20 @@ func convertInstanceRoles(instance *store.InstanceMessage, roles []*storepb.Inst
 	b.Grow(len(common.InstanceNamePrefix) + len(instance.ResourceID) + 1 + len(common.RolePrefix) + 20)
 
 	for _, role := range roles {
+		// We don't return the credential in the role attribute on reads. On
+		// MariaDB the attribute is raw SHOW GRANTS text, which carries the
+		// account's password hash inline. The grant list around it is what the
+		// console renders, so the field stays and the credential is masked
+		// inside it; see redactRoleAttribute for what the mask takes with it.
+		var attribute *string
+		if role.Attribute != nil {
+			redacted := redactRoleAttribute(*role.Attribute)
+			attribute = &redacted
+		}
 		v1Roles = append(v1Roles, &v1pb.InstanceRole{
-			Name:      buildRoleName(&b, instance.ResourceID, role.Name),
+			Name:      buildRoleName(&b, instance.ResourceID, instance.ProjectID, role.Name),
 			RoleName:  role.Name,
-			Attribute: role.Attribute,
+			Attribute: attribute,
 		})
 	}
 	return v1Roles
@@ -67,6 +78,7 @@ func convertToStoreInstance(instanceID string, instance *v1pb.Instance) (*store.
 	if err != nil {
 		return nil, err
 	}
+	normalizeGCPDataSources(convertEngine(instance.Engine), datasources)
 
 	var environmentID *string
 	if instance.Environment != nil && *instance.Environment != "" {
@@ -87,21 +99,64 @@ func convertToStoreInstance(instanceID string, instance *v1pb.Instance) (*store.
 			Activation:    instance.GetActivation(),
 			DataSources:   datasources,
 			SyncInterval:  instance.GetSyncInterval(),
-			SyncDatabases: instance.GetSyncDatabases(),
+			SyncDatabases: convertToStoreSyncDatabases(instance.SyncDatabases),
 			Labels:        instance.GetLabels(),
 		},
 	}, nil
 }
 
+func convertToV1SyncDatabases(syncDatabases *storepb.SyncDatabases) *v1pb.SyncDatabases {
+	if syncDatabases == nil {
+		return nil
+	}
+	return &v1pb.SyncDatabases{
+		Databases: syncDatabases.Databases,
+	}
+}
+
+func convertToStoreSyncDatabases(syncDatabases *v1pb.SyncDatabases) *storepb.SyncDatabases {
+	if syncDatabases == nil {
+		return nil
+	}
+	return &storepb.SyncDatabases{
+		Databases: syncDatabases.Databases,
+	}
+}
+
 func convertToV1InstanceResource(instanceMessage *store.InstanceMessage, activation bool) *v1pb.InstanceResource {
 	return &v1pb.InstanceResource{
-		Name:          buildInstanceName(instanceMessage.ResourceID),
+		Name:          buildInstanceName(instanceMessage.ResourceID, instanceMessage.ProjectID),
 		Title:         instanceMessage.Metadata.GetTitle(),
 		Engine:        convertToEngine(instanceMessage.Metadata.GetEngine()),
 		EngineVersion: instanceMessage.Metadata.GetVersion(),
 		DataSources:   convertDataSources(instanceMessage.Metadata.GetDataSources()),
 		Activation:    activation,
 		Environment:   buildEnvironmentName(instanceMessage.EnvironmentID),
+	}
+}
+
+var legacySpannerHostRegexp = regexp.MustCompile(`^projects/([^/]+)/instances/([^/]+)$`)
+
+// normalizeGCPDataSources rewrites legacy GCP data sources in place. host used
+// to carry the Spanner instance path (projects/<p>/instances/<i>) or the
+// BigQuery project ID; these now live in project_id/instance_id while
+// host/port optionally override the default Google API endpoint.
+func normalizeGCPDataSources(engine storepb.Engine, dataSources []*storepb.DataSource) {
+	for _, ds := range dataSources {
+		switch engine {
+		case storepb.Engine_SPANNER:
+			if m := legacySpannerHostRegexp.FindStringSubmatch(ds.GetHost()); m != nil {
+				ds.ProjectId = m[1]
+				ds.InstanceId = m[2]
+				ds.Host = ""
+			}
+		case storepb.Engine_BIGQUERY:
+			if ds.GetProjectId() == "" && ds.GetHost() != "" {
+				ds.ProjectId = ds.GetHost()
+				ds.Host = ""
+			}
+		default:
+		}
 	}
 }
 
@@ -227,9 +282,12 @@ func convertDataSources(dataSources []*storepb.DataSource) []*v1pb.DataSource {
 			UseSsl:                    ds.GetUseSsl(),
 			VerifyTlsCertificate:      ds.GetVerifyTlsCertificate(),
 			RedisType:                 convertRedisType(ds.GetRedisType()),
+			CloudSqlIpType:            convertCloudSQLIPType(ds.GetCloudSqlIpType()),
 			MasterName:                ds.GetMasterName(),
 			MasterUsername:            ds.GetMasterUsername(),
 			ExtraConnectionParameters: ds.GetExtraConnectionParameters(),
+			ProjectId:                 ds.GetProjectId(),
+			InstanceId:                ds.GetInstanceId(),
 			SslCaSet:                  ds.GetSslCa() != "",
 			SslCertSet:                ds.GetSslCert() != "",
 			SslKeySet:                 ds.GetSslKey() != "",
@@ -249,12 +307,12 @@ func convertDataSources(dataSources []*storepb.DataSource) []*v1pb.DataSource {
 				}
 			}
 		case v1pb.DataSource_AWS_RDS_IAM:
-			if awsCredential := ds.GetAwsCredential(); awsCredential != nil {
+			if ds.GetAwsCredential() != nil {
+				// All AWSCredential fields are INPUT_ONLY (the external ID is
+				// the confused-deputy guard); presence alone signals that the
+				// credential is configured.
 				dataSource.IamExtension = &v1pb.DataSource_AwsCredential{
-					AwsCredential: &v1pb.DataSource_AWSCredential{
-						RoleArn:    awsCredential.RoleArn,
-						ExternalId: awsCredential.ExternalId,
-					},
+					AwsCredential: &v1pb.DataSource_AWSCredential{},
 				}
 			}
 		case v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM:
@@ -389,10 +447,10 @@ func convertDataSourceSaslConfig(saslConfig *storepb.SASLConfig) *v1pb.SASLConfi
 	case *storepb.SASLConfig_KrbConfig:
 		storeSaslConfig.Mechanism = &v1pb.SASLConfig_KrbConfig{
 			KrbConfig: &v1pb.KerberosConfig{
-				Primary:              m.KrbConfig.Primary,
-				Instance:             m.KrbConfig.Instance,
-				Realm:                m.KrbConfig.Realm,
-				Keytab:               m.KrbConfig.Keytab,
+				Primary:  m.KrbConfig.Primary,
+				Instance: m.KrbConfig.Instance,
+				Realm:    m.KrbConfig.Realm,
+				// The keytab is INPUT_ONLY and never returned on reads.
 				KdcHost:              m.KrbConfig.KdcHost,
 				KdcPort:              m.KrbConfig.KdcPort,
 				KdcTransportProtocol: m.KrbConfig.KdcTransportProtocol,
@@ -402,6 +460,111 @@ func convertDataSourceSaslConfig(saslConfig *storepb.SASLConfig) *v1pb.SASLConfi
 		return nil
 	}
 	return storeSaslConfig
+}
+
+// dataSourceDestination projects the fields through which a caller supplies an
+// address that the data source's own connection, or the keytab itself,
+// is made to. Two data sources with equal projections reach the same
+// caller-named endpoints.
+//
+// Both halves of that rule carry weight. external_secret.url is a
+// caller-supplied address Bytebase does dial (component/secret/vault.go), and
+// it is still out, because what travels there is the fetch of a password — the
+// keytab never does. A guard for the password would have to include it; this
+// one does not.
+//
+// In. host and port, plus each additional_addresses entry, are the data
+// source's own endpoints. ssh_host and ssh_port are the tunnel every byte
+// transits when it is set (plugin/db/util/ssh.go dials that pair). The
+// krb_config kdc_host and kdc_port are where kinit presents the keytab itself
+// (plugin/db/util/sasl.go writes them into krb5.conf), and that is the only
+// peer the keytab material reaches — the database server gets a ticket derived
+// from it, not the keytab. extra_connection_parameters is spliced verbatim
+// into the connection string the driver then parses, and both parsers take the
+// last key they read, so a host entry there overrides the host field on
+// PostgreSQL (plugin/db/pg/pg.go) and the server on SQL Server
+// (plugin/db/mssql/mssql.go).
+//
+// Out, and the line is one rule rather than a list of exceptions: a field is
+// out when the new endpoint comes from somewhere other than the caller.
+// direct_connection, replica_set, master_name and redis_type follow peers the
+// operator's own server advertises. srv resolves the operator's own hostname
+// through the operator's DNS. cloud_sql_ip_type and authentication_type pick
+// among the addresses Google resolves for an instance the operator named.
+// Reaching a host of the caller's choosing through any of them means moving
+// host or additional_addresses first, and those are in. Out for a second
+// reason — no endpoint at all — are database, authentication_database, sid,
+// service_name and warehouse_id, which name a target inside a server already
+// reached; region and project_id/instance_id, which select which cloud API
+// serves while host/port stay the dialed endpoint; and krb_config's primary,
+// instance and realm, which choose the principal kinit claims rather than
+// where it sends the claim, with kdc_transport_protocol reaching the same
+// kdc_host:kdc_port either way.
+func dataSourceDestination(ds *storepb.DataSource) *storepb.DataSource {
+	krb := ds.GetSaslConfig().GetKrbConfig()
+	return &storepb.DataSource{
+		Host:                      ds.GetHost(),
+		Port:                      ds.GetPort(),
+		AdditionalAddresses:       ds.GetAdditionalAddresses(),
+		SshHost:                   ds.GetSshHost(),
+		SshPort:                   ds.GetSshPort(),
+		ExtraConnectionParameters: ds.GetExtraConnectionParameters(),
+		SaslConfig: &storepb.SASLConfig{
+			Mechanism: &storepb.SASLConfig_KrbConfig{
+				KrbConfig: &storepb.KerberosConfig{
+					KdcHost: krb.GetKdcHost(),
+					KdcPort: krb.GetKdcPort(),
+				},
+			},
+		},
+	}
+}
+
+// retainStoredKeytabOnEmptyUpdate keeps the stored keytab when an update
+// carries an empty one. The keytab is INPUT_ONLY — reads return it blank — so
+// a read-modify-write client would otherwise wipe it on every update.
+//
+// It will not carry the keytab to a new destination. Retention exists to stop
+// a client from losing a credential it already holds, and an update that moves
+// where the data source connects is not that client: inheriting there would
+// hand the keytab to a host the caller picked, and among the data source's
+// secrets the keytab is the one that survives a wholesale replacement, so it
+// is the one worth moving. The caller has to supply it again, which is proof
+// they hold it.
+func retainStoredKeytabOnEmptyUpdate(updated, stored *storepb.DataSource) error {
+	updatedKrb := updated.GetSaslConfig().GetKrbConfig()
+	if updatedKrb == nil || len(updatedKrb.Keytab) > 0 {
+		return nil
+	}
+	storedKrb := stored.GetSaslConfig().GetKrbConfig()
+	if len(storedKrb.GetKeytab()) == 0 {
+		return nil
+	}
+	if !proto.Equal(dataSourceDestination(updated), dataSourceDestination(stored)) {
+		return errors.Errorf("data source %q connects somewhere new, so its Kerberos keytab must be supplied again", updated.GetId())
+	}
+	updatedKrb.Keytab = storedKrb.Keytab
+	return nil
+}
+
+// retainStoredKeytabs applies retainStoredKeytabOnEmptyUpdate across a full
+// data source replacement (UpdateInstance with update_mask=data_sources),
+// matching stored data sources by ID.
+func retainStoredKeytabs(updated, stored []*storepb.DataSource) error {
+	storedByID := make(map[string]*storepb.DataSource, len(stored))
+	for _, ds := range stored {
+		storedByID[ds.GetId()] = ds
+	}
+	for _, ds := range updated {
+		existing, ok := storedByID[ds.GetId()]
+		if !ok {
+			continue
+		}
+		if err := retainStoredKeytabOnEmptyUpdate(ds, existing); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func convertDataSourceAddresses(addresses []*storepb.DataSource_Address) []*v1pb.DataSource_Address {
@@ -469,6 +632,32 @@ func convertRedisType(redisType storepb.DataSource_RedisType) v1pb.DataSource_Re
 	}
 }
 
+func convertV1CloudSQLIPType(ipType v1pb.DataSource_CloudSQLIPType) storepb.DataSource_CloudSQLIPType {
+	switch ipType {
+	case v1pb.DataSource_PUBLIC:
+		return storepb.DataSource_PUBLIC
+	case v1pb.DataSource_PRIVATE:
+		return storepb.DataSource_PRIVATE
+	case v1pb.DataSource_PSC:
+		return storepb.DataSource_PSC
+	default:
+		return storepb.DataSource_CLOUD_SQL_IP_TYPE_UNSPECIFIED
+	}
+}
+
+func convertCloudSQLIPType(ipType storepb.DataSource_CloudSQLIPType) v1pb.DataSource_CloudSQLIPType {
+	switch ipType {
+	case storepb.DataSource_PUBLIC:
+		return v1pb.DataSource_PUBLIC
+	case storepb.DataSource_PRIVATE:
+		return v1pb.DataSource_PRIVATE
+	case storepb.DataSource_PSC:
+		return v1pb.DataSource_PSC
+	default:
+		return v1pb.DataSource_CLOUD_SQL_IP_TYPE_UNSPECIFIED
+	}
+}
+
 func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, error) {
 	dsType, err := convertV1DataSourceType(dataSource.Type)
 	if err != nil {
@@ -516,10 +705,13 @@ func convertV1DataSource(dataSource *v1pb.DataSource) (*storepb.DataSource, erro
 		UseSsl:                             dataSource.UseSsl,
 		VerifyTlsCertificate:               dataSource.VerifyTlsCertificate,
 		RedisType:                          convertV1RedisType(dataSource.RedisType),
+		CloudSqlIpType:                     convertV1CloudSQLIPType(dataSource.CloudSqlIpType),
 		MasterName:                         dataSource.MasterName,
 		MasterUsername:                     dataSource.MasterUsername,
 		MasterPassword:                     dataSource.MasterPassword,
 		ExtraConnectionParameters:          dataSource.ExtraConnectionParameters,
+		ProjectId:                          dataSource.ProjectId,
+		InstanceId:                         dataSource.InstanceId,
 	}
 
 	switch dataSource.AuthenticationType {

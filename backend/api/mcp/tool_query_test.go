@@ -211,6 +211,12 @@ func TestBuildDatabaseFilter(t *testing.T) {
 			project:  "hr-system",
 			expect:   `name.contains("employee_db") && instance == "instances/prod-pg" && project == "projects/hr-system"`,
 		},
+		{
+			name:     "with canonical project instance",
+			database: "employee_db",
+			instance: "projects/hr-system/instances/prod-pg",
+			expect:   `name.contains("employee_db") && instance == "projects/hr-system/instances/prod-pg"`,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -349,6 +355,39 @@ func TestQueryDatabase_AmbiguousWithInstance(t *testing.T) {
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
 	require.Equal(t, "ds-admin-1", resolved.dataSourceID)
+}
+
+func TestQueryDatabase_ProjectInstanceRequiresCanonicalInstanceFilter(t *testing.T) {
+	const (
+		instanceName = "projects/hr-system/instances/prod-pg"
+		databaseName = "projects/hr-system/instances/prod-pg/databases/employee_db"
+	)
+	databases := []map[string]any{
+		makeDatabase(databaseName, instanceName, "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	s := newTestServerWithMock(t, mockListDatabases(databases))
+
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", instanceName, "")
+	require.NoError(t, err)
+	require.Equal(t, databaseName, resolved.resourceName)
+
+	_, err = s.resolveDatabase(testContext(), "employee_db", "prod-pg", "")
+	require.Error(t, err)
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
+}
+
+func TestQueryDatabase_WorkspaceInstanceWithProjectFilter(t *testing.T) {
+	databaseName := "instances/prod-pg/databases/employee_db"
+	databases := []map[string]any{
+		makeDatabase(databaseName, "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	s := newTestServerWithMock(t, mockListDatabases(databases))
+
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", "prod-pg", "hr-system")
+	require.NoError(t, err)
+	require.Equal(t, databaseName, resolved.resourceName)
 }
 
 func TestQueryDatabase_ReadOnlyDatasource(t *testing.T) {
@@ -623,6 +662,41 @@ func TestQueryDatabase_QueryError(t *testing.T) {
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "syntax error")
+}
+
+// TestQueryDatabase_PolicyDenialGetsNoRoleAdvice is the same contract on the
+// read tool. The masked-write guard refuses through SQLService/Query, and a
+// project role cannot lift a workspace setting.
+func TestQueryDatabase_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "SQLService/Query") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"message": "/bytebase.v1.SQLService/Query is not available to MCP sessions " +
+					"for this request because its SQL contains \"******\"",
+				"code": "PERMISSION_DENIED",
+			})
+			return
+		}
+		mockListDatabases(databases).ServeHTTP(w, r)
+	})
+	s := newTestServerWithMock(t, handler)
+
+	result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "UPDATE users SET name = '******'",
+	})
+	require.NoError(t, err)
+	require.True(t, result.IsError)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "******")
+	require.NotContains(t, text, "SQL Editor role",
+		"no project role lifts a workspace setting")
 }
 
 func TestQueryDatabase_PermissionDenied(t *testing.T) {

@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -39,7 +39,7 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type namingIdentifierNoKeywordOmniRule struct {
@@ -135,7 +135,7 @@ func (r *namingIdentifierNoKeywordOmniRule) checkIdentifierAtLine(identifier str
 		Code:          code.NameIsKeywordIdentifier.Int32(),
 		Title:         r.Title,
 		Content:       fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
-		StartPosition: common.ConvertANTLRLineToPosition(absoluteLine),
+		StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
 	})
 }
 

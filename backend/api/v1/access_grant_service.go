@@ -90,7 +90,7 @@ func (s *AccessGrantService) ListAccessGrants(ctx context.Context, request *conn
 	if req.Filter != "" {
 		filterQ, err := store.GetListAccessGrantFilter(req.Filter)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse filter"))
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		find.FilterQ = filterQ
 	}
@@ -137,9 +137,6 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	if ag == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("access_grant is required"))
 	}
-	if ag.Creator == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("creator is required"))
-	}
 	if len(ag.Targets) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("targets is required"))
 	}
@@ -150,29 +147,27 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("reason is required"))
 	}
 
-	// Validate the query is a read-only statement (SELECT).
-	instanceID, _, err := common.GetInstanceDatabaseID(ag.Targets[0])
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid target %q", ag.Targets[0]))
-	}
+	// Validate every target before creating any access-grant or issue rows.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &instanceID})
+	instance, err := s.validateAccessGrantTargets(ctx, projectID, ag.Targets)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance %q", instanceID))
+		return nil, err
 	}
-	if instance == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
-	}
+	// Validate the query is a read-only statement (SELECT).
 	if ok, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), ag.Query); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid query"))
 	} else if !ok {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only read-only statements are allowed in access grants"))
 	}
 
-	creatorEmail, err := common.GetUserEmail(ag.Creator)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid creator"))
+	// Derive the creator from the authenticated caller. The client-supplied
+	// creator field is OUTPUT_ONLY and must never be trusted, otherwise any
+	// caller could forge grants and issues attributed to an arbitrary identity.
+	user, ok := GetUserFromContext(ctx)
+	if !ok || user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
 	}
+	creatorEmail := user.Email
 
 	var expireTime *time.Time
 	var requestedDuration *durationpb.Duration
@@ -200,11 +195,9 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	}
 	if maximumRequestExpiration := workspaceProfileSetting.GetMaximumRequestExpiration(); maximumRequestExpiration != nil {
 		maxExpireTime := time.Now().Add(maximumRequestExpiration.AsDuration())
-		switch {
-		case expireTime != nil && expireTime.After(maxExpireTime):
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expiration exceeds maximum request expiration %s", maximumRequestExpiration.AsDuration()))
-		case requestedDuration != nil && requestedDuration.AsDuration() > maximumRequestExpiration.AsDuration():
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expiration exceeds maximum request expiration %s", maximumRequestExpiration.AsDuration()))
+		if (expireTime != nil && expireTime.After(maxExpireTime)) ||
+			(requestedDuration != nil && requestedDuration.AsDuration() > maximumRequestExpiration.AsDuration()) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expiration exceeds maximum access grant expiration %s", maximumRequestExpiration.AsDuration()))
 		}
 	}
 
@@ -221,6 +214,8 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 			Export:            ag.Export,
 			Reason:            ag.Reason,
 			RequestedDuration: requestedDuration,
+			Schema:            ag.Schema,
+			Container:         ag.Container,
 		},
 	})
 	if err != nil {
@@ -231,7 +226,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	issue, err := s.store.CreateIssue(ctx, &store.IssueMessage{
 		ProjectID:    projectID,
 		CreatorEmail: creatorEmail,
-		Title:        fmt.Sprintf("JIT access request by %s", creatorEmail),
+		Title:        fmt.Sprintf("Access grant request by %s", creatorEmail),
 		Type:         storepb.Issue_ACCESS_GRANT,
 		Description:  ag.Reason,
 		Payload: &storepb.Issue{
@@ -260,7 +255,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %v", projectID))
 	}
 	if project != nil {
-		issue, err := postCreateIssue(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue)
+		issue, err := startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
@@ -277,6 +272,57 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	}
 
 	return connect.NewResponse(convertToAccessGrant(grant)), nil
+}
+
+func (s *AccessGrantService) validateAccessGrantTargets(ctx context.Context, projectID string, targets []string) (*store.InstanceMessage, error) {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %q", projectID))
+	}
+	if project == nil || project.Deleted {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
+	}
+
+	var firstInstance *store.InstanceMessage
+	for _, target := range targets {
+		targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid target %q", target))
+		}
+		if targetProjectID != nil && *targetProjectID != projectID {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", target, projectID))
+		}
+		database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+			Workspace:    workspaceID,
+			InstanceID:   &instanceID,
+			DatabaseName: &databaseName,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+		}
+		if database == nil || database.ProjectID != projectID {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", target, projectID))
+		}
+		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &instanceID})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance %q", instanceID))
+		}
+		if instance == nil || instance.Deleted {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+		}
+		if (targetProjectID == nil) != (instance.ProjectID == nil) ||
+			targetProjectID != nil && *targetProjectID != *instance.ProjectID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("target %q is not canonical for its instance", target))
+		}
+		if firstInstance == nil {
+			firstInstance = instance
+		}
+	}
+	return firstInstance, nil
 }
 
 // ActivateAccessGrant activates a pending access grant.
@@ -398,7 +444,7 @@ func (s *AccessGrantService) SearchMyAccessGrants(ctx context.Context, request *
 	if req.Filter != "" {
 		filterQ, err := store.GetListAccessGrantFilter(req.Filter)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse filter"))
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		find.FilterQ = filterQ
 	}
@@ -447,6 +493,8 @@ func convertToAccessGrant(msg *store.AccessGrantMessage) *v1pb.AccessGrant {
 		ag.Unmask = p.Unmask
 		ag.Export = p.Export
 		ag.Reason = p.Reason
+		ag.Schema = p.Schema
+		ag.Container = p.Container
 		if p.IssueId != 0 {
 			ag.Issue = common.FormatIssue(msg.ProjectID, p.IssueId)
 		}

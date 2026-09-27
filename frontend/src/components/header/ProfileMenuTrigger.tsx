@@ -1,0 +1,315 @@
+import { ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
+import {
+  ACCOUNT_ROUTE,
+  isSqlEditorRouteName,
+  useCurrentRoute,
+  useNavigate,
+  WORKSPACE_ROUTE_LANDING,
+} from "@/app/router";
+import { SQLEditorButton } from "@/components/SQLEditorButton";
+import { UserAvatar } from "@/components/UserAvatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSubmenu,
+  DropdownMenuSubmenuContent,
+  DropdownMenuSubmenuTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { BlockTooltip } from "@/components/ui/tooltip";
+import {
+  useIntroStateByKey,
+  useOptionalCurrentUser,
+  useSubscription,
+  useWorkspace,
+  useWorkspaceSetupGuideResume,
+} from "@/hooks/useAppState";
+import { guideCompletionAcknowledgedKey } from "@/modules/workspace-setup-guide/progress";
+import { getGuideJourney } from "@/modules/workspace-setup-guide/scenarios";
+import {
+  readGuideWorkspaceUsage,
+  readSelectedGuideScenarioId,
+} from "@/modules/workspace-setup-guide/selection";
+import { useAppStore } from "@/stores/app";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
+import { isDev } from "@/utils/util";
+import { HEADER_LANGUAGE_OPTIONS, setAppLocale } from "./common";
+import { VersionMenuItem } from "./VersionMenuItem";
+
+export interface ProfileMenuProps {
+  size?: "small" | "medium";
+  link?: boolean;
+}
+
+export function ProfileMenuTrigger({
+  size = "medium",
+  link = true,
+}: ProfileMenuProps) {
+  const { t, i18n } = useTranslation();
+  const currentUser = useOptionalCurrentUser();
+  const { subscription, uploadLicense } = useSubscription();
+  const workspace = useWorkspace();
+  const route = useCurrentRoute();
+  const navigate = useNavigate();
+  const resumeWorkspaceSetupGuide = useWorkspaceSetupGuideResume();
+  const scenarioId = readSelectedGuideScenarioId();
+  const workspaceUsage = readGuideWorkspaceUsage();
+  const journey = getGuideJourney(scenarioId, workspaceUsage);
+  const completionAcknowledged = useIntroStateByKey(
+    guideCompletionAcknowledgedKey(journey.id)
+  );
+  const allowMultipleMembers =
+    workspaceUsage === "team" && !completionAcknowledged;
+  const workspaceSetupGuideEnabled = useAppStore((state) =>
+    state.workspaceSetupGuideEnabled(allowMultipleMembers)
+  );
+  const currentPlan = subscription?.plan ?? PlanType.FREE;
+  const devLicenseOptions = [
+    {
+      label: t("subscription.plan.free.title"),
+      value: "",
+      plan: PlanType.FREE,
+    },
+    {
+      label: t("subscription.plan.team.title"),
+      value: import.meta.env.BB_DEV_TEAM_LICENSE as string,
+      plan: PlanType.TEAM,
+    },
+    {
+      label: t("subscription.plan.enterprise.title"),
+      value: import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string,
+      plan: PlanType.ENTERPRISE,
+    },
+  ];
+  const customLogo = workspace?.logo ?? "";
+  const [open, setOpen] = useState(false);
+
+  const wrapperClass = useMemo(() => {
+    if (!customLogo) {
+      return "flex items-center justify-center rounded-full bg-control-bg";
+    }
+    return size === "small"
+      ? "flex items-center justify-center rounded-full bg-control-bg md:px-1 md:py-0.5"
+      : "flex items-center justify-center rounded-full bg-control-bg md:px-2 md:py-1.5";
+  }, [customLogo, size]);
+
+  const logoClass = size === "small" ? "mr-2" : "mr-4";
+
+  const isInSQLEditor = isSqlEditorRouteName(route.name);
+  const sqlEditorMenuLabel = isInSQLEditor
+    ? t("settings.general.workspace.default-landing-page.go-to-workspace")
+    : t("settings.general.workspace.default-landing-page.go-to-sql-editor");
+
+  const handleProfileNavigate = () => {
+    if (!link) return;
+    setOpen(false);
+    void navigate.push({ name: ACCOUNT_ROUTE });
+  };
+
+  const handleWorkspaceToggle = () => {
+    const target = navigate.resolve({
+      name: WORKSPACE_ROUTE_LANDING,
+    });
+    setOpen(false);
+    window.open(target.fullPath, "_blank", "noopener,noreferrer");
+  };
+
+  const switchPlan = (license: string) => {
+    void uploadLicense(license);
+    setOpen(false);
+  };
+
+  return (
+    <div className={wrapperClass}>
+      {customLogo ? (
+        <img
+          src={customLogo}
+          alt={t("settings.general.workspace.logo")}
+          className={`ml-1 hidden h-6 bg-center bg-no-repeat object-contain md:block ${logoClass}`}
+        />
+      ) : null}
+
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              appearance="secondary"
+              size="xs"
+              type="button"
+              className="h-auto rounded-full p-0"
+            />
+          }
+        >
+          <UserAvatar
+            size="sm"
+            className="cursor-pointer"
+            title={currentUser?.title || currentUser?.email || ""}
+          />
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent className="w-56 max-w-[calc(100vw-1rem)] max-h-none overflow-visible p-0">
+          <BlockTooltip
+            content={
+              <>
+                <div>{currentUser?.title}</div>
+                <div>{currentUser?.email}</div>
+              </>
+            }
+            popupClassName="whitespace-normal [overflow-wrap:anywhere]"
+            render={
+              <DropdownMenuItem
+                className="w-full px-4 py-3"
+                onClick={handleProfileNavigate}
+              />
+            }
+          >
+            <div className="min-w-0 flex-1 text-left">
+              <p className="truncate text-sm font-medium text-main">
+                {currentUser?.title}
+              </p>
+              <p className="truncate text-sm text-control">
+                {currentUser?.email}
+              </p>
+            </div>
+          </BlockTooltip>
+
+          <DropdownMenuSeparator className="mx-0" />
+
+          <DropdownMenuSubmenu>
+            <DropdownMenuSubmenuTrigger className="justify-between">
+              {t("common.language")}
+              <ChevronRight className="h-4 w-4 text-control-light" />
+            </DropdownMenuSubmenuTrigger>
+            <DropdownMenuSubmenuContent className="w-48">
+              <RadioGroup
+                className="flex-col items-stretch gap-0"
+                value={i18n.language}
+                onValueChange={(value) => {
+                  setAppLocale(String(value));
+                  setOpen(false);
+                }}
+              >
+                {HEADER_LANGUAGE_OPTIONS.map((item) => (
+                  <DropdownMenuItem
+                    key={item.value}
+                    className={
+                      item.value === i18n.language ? "bg-control-bg" : ""
+                    }
+                    onClick={() => {
+                      setAppLocale(item.value);
+                      setOpen(false);
+                    }}
+                  >
+                    <RadioGroupItem value={item.value}>
+                      {item.label}
+                    </RadioGroupItem>
+                  </DropdownMenuItem>
+                ))}
+              </RadioGroup>
+            </DropdownMenuSubmenuContent>
+          </DropdownMenuSubmenu>
+
+          {isDev() ? (
+            <DropdownMenuSubmenu>
+              <DropdownMenuSubmenuTrigger className="justify-between">
+                {t("common.license")}
+                <ChevronRight className="h-4 w-4 text-control-light" />
+              </DropdownMenuSubmenuTrigger>
+              <DropdownMenuSubmenuContent className="w-48">
+                <RadioGroup
+                  className="flex-col items-stretch gap-0"
+                  value={String(currentPlan)}
+                  onValueChange={(value) => {
+                    const item = devLicenseOptions.find(
+                      (item) => String(item.plan) === value
+                    );
+                    if (item) {
+                      switchPlan(item.value);
+                    }
+                  }}
+                >
+                  {devLicenseOptions.map((item) => (
+                    <DropdownMenuItem
+                      key={item.plan}
+                      className={
+                        item.plan === currentPlan ? "bg-control-bg" : ""
+                      }
+                      onClick={() => switchPlan(item.value)}
+                    >
+                      <RadioGroupItem value={String(item.plan)}>
+                        {item.label}
+                      </RadioGroupItem>
+                    </DropdownMenuItem>
+                  ))}
+                </RadioGroup>
+              </DropdownMenuSubmenuContent>
+            </DropdownMenuSubmenu>
+          ) : null}
+
+          {workspaceSetupGuideEnabled ? (
+            <DropdownMenuItem
+              onClick={() => {
+                behaviorAnalytics.captureMetric(
+                  createBehaviorMetric("workspace setup guide opened", {
+                    properties: {
+                      journey: journey.id,
+                      scenario: scenarioId ?? "unselected",
+                      collaboration_type: workspaceUsage ?? "unselected",
+                    },
+                  })
+                );
+                resumeWorkspaceSetupGuide();
+                setOpen(false);
+              }}
+            >
+              {t("workspace-setup-guide.getting-started")}
+            </DropdownMenuItem>
+          ) : null}
+
+          {isInSQLEditor ? (
+            <DropdownMenuItem onClick={handleWorkspaceToggle}>
+              {sqlEditorMenuLabel}
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              render={
+                <SQLEditorButton
+                  openInNewTab
+                  appearance="secondary"
+                  size="sm"
+                  className="w-full justify-start"
+                  label={sqlEditorMenuLabel}
+                />
+              }
+            />
+          )}
+
+          <DropdownMenuSeparator className="mx-0" />
+
+          <VersionMenuItem onCloseMenu={() => setOpen(false)} />
+
+          <DropdownMenuSeparator className="mx-0" />
+
+          <DropdownMenuItem
+            onClick={() => {
+              setOpen(false);
+              // logout() computes the signin redirect itself and
+              // hard-redirects to clear state.
+              void useAppStore.getState().logout();
+            }}
+          >
+            {t("common.logout")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}

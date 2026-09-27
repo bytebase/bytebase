@@ -1,12 +1,12 @@
+import { instanceNamePrefix, projectNamePrefix } from "@/stores";
 import {
   batchGetOrFetchDatabases,
   fetchDatabases,
-} from "@/react/stores/app/databaseAccess";
+} from "@/stores/app/databaseAccess";
 import {
   batchGetOrFetchProjects,
   fetchProjectList,
-} from "@/react/stores/app/projectAccess";
-import { instanceNamePrefix, projectNamePrefix } from "@/store";
+} from "@/stores/app/projectAccess";
 import { isValidInstanceName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
@@ -103,7 +103,7 @@ export const getInstanceIdOptionConfig = (): OptionConfig => {
   return {
     options: [],
     fetch: async (instanceIds: string[]) => {
-      const { useAppStore } = await import("@/react/stores/app");
+      const { useAppStore } = await import("@/stores/app");
       // TODO(ed): batch fetch instances
       const instances = await Promise.all(
         instanceIds.map((instanceId) =>
@@ -122,7 +122,7 @@ export const getInstanceIdOptionConfig = (): OptionConfig => {
       return options;
     },
     search: async (params) => {
-      const { useAppStore } = await import("@/react/stores/app");
+      const { useAppStore } = await import("@/stores/app");
       return useAppStore
         .getState()
         .fetchInstanceList({

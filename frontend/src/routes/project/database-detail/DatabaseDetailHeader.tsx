@@ -1,0 +1,144 @@
+import { ShieldAlert } from "lucide-react";
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { InstanceLabel } from "@/components/InstanceLabel";
+import { RouterLink } from "@/components/RouterLink";
+import { CopyButton } from "@/components/ui/copy-button";
+import { useEnvironment, usePlanFeature } from "@/hooks/useAppState";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  DEFAULT_ENVIRONMENT_COLOR,
+  formatEnvironmentName,
+  isValidEnvironmentName,
+  UNKNOWN_ENVIRONMENT_NAME,
+} from "@/types/v1/environment";
+import {
+  extractInstanceResourceName,
+  getInstanceResource,
+  hexToRgb,
+} from "@/utils";
+import { extractReleaseUID } from "@/utils/v1/release";
+
+const extractDatabaseParts = (resource: string) => {
+  const matches = resource.match(
+    /(?:^|\/)instances\/(?<instanceName>[^/]+)\/databases\/(?<databaseName>[^/]+)(?:$|\/)/
+  );
+  return {
+    databaseName: matches?.groups?.databaseName ?? "",
+    instanceName: matches?.groups?.instanceName ?? "",
+  };
+};
+
+export function DatabaseDetailHeader({ database }: { database: Database }) {
+  const { t } = useTranslation();
+  const { databaseName } = useMemo(
+    () => extractDatabaseParts(database.name),
+    [database.name]
+  );
+
+  const instanceResource = getInstanceResource(database);
+  const instanceId = extractInstanceResourceName(instanceResource.name);
+
+  const environment = useEnvironment(database.effectiveEnvironment ?? "");
+  const hasEnvironmentTierFeature = usePlanFeature(
+    PlanFeature.FEATURE_ENVIRONMENT_TIERS
+  );
+
+  const isValidEnv =
+    !!environment &&
+    isValidEnvironmentName(environment.name) &&
+    environment.name !== UNKNOWN_ENVIRONMENT_NAME;
+
+  const environmentTitle = useMemo(() => {
+    if (!isValidEnv) {
+      return t("common.unassigned");
+    }
+    return environment.title || environment.id;
+  }, [environment, isValidEnv, t]);
+
+  const isProductionEnv =
+    isValidEnv &&
+    hasEnvironmentTierFeature &&
+    environment.tags?.protected === "protected";
+
+  const environmentColorRgb = useMemo(() => {
+    if (!isValidEnv) {
+      return "";
+    }
+    return hexToRgb(environment.color || DEFAULT_ENVIRONMENT_COLOR).join(", ");
+  }, [environment, isValidEnv]);
+
+  const environmentBadgeStyle: React.CSSProperties | undefined = useMemo(() => {
+    if (!environmentColorRgb) {
+      return undefined;
+    }
+    return {
+      backgroundColor: `rgba(${environmentColorRgb}, 0.1)`,
+      borderTopColor: `rgb(${environmentColorRgb})`,
+      color: `rgb(${environmentColorRgb})`,
+      padding: "0 6px",
+    };
+  }, [environmentColorRgb]);
+
+  return (
+    <div className="flex min-w-0 flex-1 shrink-0 flex-col gap-y-2">
+      <div className="flex w-full min-w-0 flex-col">
+        <div className="flex min-w-0 items-center gap-x-2 text-xl font-bold text-main">
+          <span className="min-w-0 truncate" title={databaseName}>
+            {databaseName}
+          </span>
+        </div>
+        <div className="mt-1 flex w-fit max-w-full min-w-0 items-center gap-x-1 text-sm text-control-light">
+          <span className="min-w-0 truncate" title={database.name}>
+            {database.name}
+          </span>
+          <CopyButton
+            content={database.name}
+            className="shrink-0 p-0.5 text-control-light hover:text-main"
+          />
+        </div>
+      </div>
+
+      <div
+        className="flex flex-col gap-y-1 text-sm md:flex-row md:flex-wrap md:items-center md:gap-x-4"
+        data-label="bb-database-detail-info-block"
+      >
+        <div className="flex items-center gap-x-1.5">
+          <span className="text-control-light">{t("common.environment")}</span>
+          {isValidEnv ? (
+            <RouterLink
+              to={{ path: `/${formatEnvironmentName(environment.id)}` }}
+              className="inline-flex cursor-pointer items-center gap-x-1 rounded-sm hover:underline"
+              style={environmentBadgeStyle}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span>{environmentTitle}</span>
+              {isProductionEnv && <ShieldAlert className="h-4 w-4 shrink-0" />}
+            </RouterLink>
+          ) : (
+            <span className="italic text-control-light">
+              {environmentTitle}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-x-1.5">
+          <span className="text-control-light">{t("common.instance")}</span>
+          <InstanceLabel
+            instance={instanceResource}
+            instanceName={instanceResource.name}
+            link={!!instanceId}
+            className="inline-flex items-center gap-x-1"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+        {database.release && (
+          <div className="flex items-center gap-x-1.5">
+            <span className="text-control-light">{t("common.release")}</span>
+            <span>{extractReleaseUID(database.release)}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

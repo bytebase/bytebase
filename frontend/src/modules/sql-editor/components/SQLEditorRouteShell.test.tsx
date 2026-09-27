@@ -1,0 +1,1182 @@
+import { create } from "@bufbuild/protobuf";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import type { ReactRoute } from "@/app/router";
+import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
+import type { SQLEditorTab } from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  DatabaseMetadataSchema,
+  DatabaseSchema$,
+} from "@/types/proto-es/v1/database_service_pb";
+import { SQLEditorRouteShell } from "./SQLEditorRouteShell";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+const mocks = vi.hoisted(() => {
+  const tabsState = {
+    tabsById: new Map(),
+    openTmpTabList: [],
+    currentTabId: "",
+    addTab: vi.fn((payload: Partial<SQLEditorTab> = {}) => {
+      const tab = {
+        id: "tab-1",
+        savedQuery: "",
+        connection: {
+          instance: "",
+          database: "",
+        },
+        ...payload,
+      } as SQLEditorTab;
+      tabsState.tabsById.set(tab.id, tab);
+      tabsState.currentTabId = tab.id;
+      return tab;
+    }),
+    initProject: vi.fn(async () => undefined),
+    updateCurrentTab: vi.fn(),
+  };
+  const editorState = {
+    project: "projects/proj1",
+    projectContextReady: true,
+    setProjectContextReady: vi.fn(),
+    setProject: vi.fn(),
+  };
+  return {
+    tabsState,
+    editorState,
+    maybeSwitchProject: vi.fn<(project: string) => Promise<string | undefined>>(
+      async (project: string) => project
+    ),
+    setAsidePanelTab: vi.fn(),
+    cleanupLegacyPouchDatabases: vi.fn(async () => undefined),
+    permissionState: {
+      missedBasicPermissions: [] as string[],
+      missedPermissions: [] as string[],
+      permitted: true,
+    },
+    getOrFetchDatabaseByName: vi.fn(async (name: string) => ({
+      name,
+      project: "projects/proj1",
+    })),
+    getOrFetchDatabaseMetadata: vi.fn(),
+    fetchInstance: vi.fn<
+      (name: string) => Promise<{ name: string } | undefined>
+    >(async (name: string) => ({ name })),
+    getSavedQueryByName: vi.fn(),
+    getOrFetchSavedQueryByName: vi.fn(),
+    searchProjects: vi.fn(),
+    beforeEach: vi.fn(() => vi.fn()),
+    navigateReplace: vi.fn(),
+    renderRoute: {
+      name: "sql-editor.database",
+      fullPath:
+        "/sql-editor/projects/proj1/instances/inst1/databases/db1?schema=public&table=users",
+      hash: "",
+      params: {
+        project: "proj1",
+        instance: "inst1",
+        database: "db1",
+      },
+      query: {
+        schema: "public",
+        table: "users",
+      },
+      requiredPermissions: [],
+      overrideDocumentTitle: false,
+      meta: {},
+    } as ReactRoute,
+    currentRoute: {
+      name: "sql-editor.database",
+      fullPath:
+        "/sql-editor/projects/proj1/instances/inst1/databases/db1?schema=public&table=users",
+      hash: "",
+      params: {
+        project: "proj1",
+        instance: "inst1",
+        database: "db1",
+      },
+      query: {
+        schema: "public",
+        table: "users",
+      },
+      requiredPermissions: [],
+      overrideDocumentTitle: false,
+      meta: {},
+    } as ReactRoute,
+  };
+});
+
+vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => undefined },
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
+vi.mock("@/components/ComponentPermissionGuard", () => ({
+  PermissionDeniedFallback: () => <div data-testid="denied" />,
+  useComponentPermissionState: vi.fn(() => mocks.permissionState),
+  usePermissionDataReady: () => true,
+}));
+
+vi.mock("@/hooks/useAppProject", () => ({
+  useAppProject: (name: string) => ({
+    name: name || "projects/-1",
+  }),
+}));
+
+vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
+  useClampResultRowsLimitToPolicy: vi.fn(),
+}));
+
+vi.mock("@/app/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/app/router")>()),
+  router: {
+    currentRoute: {
+      get value() {
+        return mocks.currentRoute;
+      },
+    },
+    beforeEach: mocks.beforeEach,
+  },
+  useCurrentRoute: () => mocks.renderRoute,
+  useNavigate: () => ({
+    replace: mocks.navigateReplace,
+  }),
+}));
+
+vi.mock("@/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({
+      getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
+      getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
+      fetchInstance: mocks.fetchInstance,
+      getSavedQueryByName: mocks.getSavedQueryByName,
+      getOrFetchSavedQueryByName: mocks.getOrFetchSavedQueryByName,
+      searchProjects: mocks.searchProjects,
+      serverInfo: {
+        defaultProject: "projects/proj1",
+      },
+    }),
+  },
+}));
+
+vi.mock("@/modules/sql-editor/store", () => ({
+  useSQLEditorStore: Object.assign(
+    (selector: (state: unknown) => unknown) =>
+      selector({
+        maybeSwitchProject: mocks.maybeSwitchProject,
+        setAsidePanelTab: mocks.setAsidePanelTab,
+        asidePanelTab: "SCHEMA",
+      }),
+    {
+      getState: () => ({
+        fetchQueryHistory: vi.fn(),
+        setLinkedQueryHistory: vi.fn(),
+      }),
+    }
+  ),
+}));
+
+vi.mock("@/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils")>()),
+  isSavedQueryReadableV1: vi.fn(() => true),
+}));
+
+vi.mock("@/modules/sql-editor/store/editor", () => ({
+  getSQLEditorEditorState: () => mocks.editorState,
+  useSQLEditorEditorState: (selector: (state: unknown) => unknown) =>
+    selector(mocks.editorState),
+}));
+
+vi.mock("@/modules/sql-editor/store/tab", () => ({
+  getSQLEditorTabsState: () => mocks.tabsState,
+  useSQLEditorTabState: (selector: (state: unknown) => unknown) =>
+    selector(mocks.tabsState),
+}));
+
+vi.mock("@/modules/sql-editor/legacy/migration", () => ({
+  cleanupLegacyPouchDatabases: mocks.cleanupLegacyPouchDatabases,
+}));
+
+vi.mock("./SQLEditorHomePage", () => ({
+  SQLEditorHomePage: () => <div data-testid="sql-editor-home" />,
+}));
+
+const renderShell = () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  act(() => {
+    root.render(<SQLEditorRouteShell />);
+  });
+  return {
+    container,
+    rerender: () =>
+      act(() => {
+        root.render(<SQLEditorRouteShell />);
+      }),
+    unmount: () =>
+      act(() => {
+        root.unmount();
+        container.remove();
+      }),
+  };
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear();
+  mocks.maybeSwitchProject.mockImplementation(
+    async (project: string) => project
+  );
+  mocks.tabsState.addTab.mockImplementation(
+    (payload: Partial<SQLEditorTab> = {}) => {
+      const tab = {
+        id: "tab-1",
+        savedQuery: "",
+        connection: {
+          instance: "",
+          database: "",
+        },
+        ...payload,
+      } as SQLEditorTab;
+      mocks.tabsState.tabsById.set(tab.id, tab);
+      mocks.tabsState.currentTabId = tab.id;
+      return tab;
+    }
+  );
+  mocks.getOrFetchDatabaseByName.mockImplementation(async (name: string) =>
+    create(DatabaseSchema$, {
+      name,
+      project: "projects/proj1",
+      instanceResource: {
+        name: "instances/inst1",
+        engine: Engine.POSTGRES,
+      },
+    })
+  );
+  mocks.getOrFetchDatabaseMetadata.mockResolvedValue(
+    create(DatabaseMetadataSchema, {
+      schemas: [
+        {
+          name: "public",
+          tables: [{ name: "users" }],
+        },
+      ],
+    })
+  );
+  mocks.fetchInstance.mockImplementation(async (name: string) => ({ name }));
+  mocks.getSavedQueryByName.mockImplementation((name: string) => ({
+    name,
+    project: "projects/proj1",
+  }));
+  mocks.getOrFetchSavedQueryByName.mockImplementation(async (name: string) => ({
+    name,
+    project: "projects/proj1",
+    database: "instances/inst1/databases/db1",
+    content: new TextEncoder().encode("select 1"),
+    contentSize: BigInt(new TextEncoder().encode("select 1").length),
+  }));
+  mocks.editorState.project = "projects/proj1";
+  mocks.cleanupLegacyPouchDatabases.mockResolvedValue(undefined);
+  mocks.permissionState = {
+    missedBasicPermissions: [],
+    missedPermissions: [],
+    permitted: true,
+  };
+  mocks.tabsState.tabsById = new Map();
+  mocks.tabsState.openTmpTabList = [];
+  mocks.tabsState.currentTabId = "";
+  mocks.renderRoute = {
+    ...mocks.renderRoute,
+    name: "sql-editor.database",
+    params: {
+      project: "proj1",
+      instance: "inst1",
+      database: "db1",
+    },
+    query: {
+      schema: "public",
+      table: "users",
+    },
+    requiredPermissions: [],
+  };
+  mocks.currentRoute = {
+    ...mocks.currentRoute,
+    name: "sql-editor.database",
+    params: {
+      project: "proj1",
+      instance: "inst1",
+      database: "db1",
+    },
+    query: {
+      schema: "public",
+      table: "users",
+    },
+    requiredPermissions: [],
+  };
+});
+
+describe("SQLEditorRouteShell", () => {
+  test("waits for bootstrap before rendering the project selector", async () => {
+    let finishCleanup: (value: undefined) => void;
+    const cleanup = new Promise<undefined>((resolve) => {
+      finishCleanup = resolve;
+    });
+    mocks.editorState.project = "";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.home",
+      params: {},
+      query: {},
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    mocks.cleanupLegacyPouchDatabases.mockReturnValueOnce(cleanup);
+
+    const { container, unmount } = renderShell();
+
+    expect(
+      container.querySelector('[data-testid="sql-editor-home"]')
+    ).toBeNull();
+
+    await act(async () => {
+      finishCleanup(undefined);
+      await cleanup;
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector('[data-testid="sql-editor-home"]')
+    ).not.toBeNull();
+    unmount();
+  });
+
+  test("renders the project selector before workspace-level route permissions", async () => {
+    mocks.editorState.project = "";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.home",
+      params: {},
+      query: {},
+      requiredPermissions: ["bb.projects.get"],
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    mocks.permissionState = {
+      missedBasicPermissions: ["bb.roles.list"],
+      missedPermissions: ["bb.projects.get"],
+      permitted: false,
+    };
+
+    const { container, unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector('[data-testid="sql-editor-home"]')
+    ).not.toBeNull();
+    expect(container.querySelector('[data-testid="denied"]')).toBeNull();
+    unmount();
+  });
+
+  test("does not auto-select a project when the editor has no selection", async () => {
+    mocks.editorState.project = "";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+    };
+    mocks.maybeSwitchProject.mockImplementation(async (project: string) =>
+      project ? project : undefined
+    );
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.searchProjects).not.toHaveBeenCalled();
+    expect(mocks.maybeSwitchProject).not.toHaveBeenCalledWith(
+      "projects/proj1"
+    );
+    expect(mocks.editorState.setProject).toHaveBeenCalledWith("");
+    unmount();
+  });
+
+  test("does not restore the default project when it is the only project", async () => {
+    mocks.editorState.project = "projects/proj1";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+    };
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.searchProjects).not.toHaveBeenCalled();
+    expect(mocks.maybeSwitchProject).not.toHaveBeenCalledWith(
+      "projects/proj1"
+    );
+    expect(mocks.editorState.setProject).toHaveBeenCalledWith("");
+    unmount();
+  });
+
+  test("keeps a restored data explorer tab that matches the database route", async () => {
+    mocks.tabsState.initProject.mockImplementationOnce(async () => {
+      const tab = {
+        id: "explorer",
+        savedQuery: "",
+        mode: "DATA_EXPLORER",
+        connection: {
+          instance: "instances/inst1",
+          database: "instances/inst1/databases/db1",
+          schema: "public",
+          table: "users",
+        },
+        dataExplorer: {
+          filter: "WHERE active = true",
+          initialized: false,
+        },
+      } as SQLEditorTab;
+      mocks.tabsState.tabsById.set(tab.id, tab);
+      mocks.tabsState.currentTabId = tab.id;
+    });
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).not.toHaveBeenCalled();
+    expect(mocks.tabsState.currentTabId).toBe("explorer");
+
+    unmount();
+  });
+
+  test("opens a query tab instead of reusing a restored data explorer tab for a guided query", async () => {
+    mocks.tabsState.initProject.mockImplementationOnce(async () => {
+      const tab = {
+        id: "explorer",
+        savedQuery: "",
+        mode: "DATA_EXPLORER",
+        connection: {
+          instance: "instances/inst1",
+          database: "instances/inst1/databases/db1",
+          schema: "public",
+          table: "users",
+        },
+        dataExplorer: {
+          filter: "WHERE active = true",
+          initialized: false,
+        },
+      } as SQLEditorTab;
+      mocks.tabsState.tabsById.set(tab.id, tab);
+      mocks.tabsState.currentTabId = tab.id;
+    });
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: {
+        schema: "public",
+        table: "users",
+        intro: "run-query",
+      },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+      statement: 'SELECT * FROM "public"."users" LIMIT 50;',
+    });
+    expect(mocks.tabsState.currentTabId).toBe("tab-1");
+
+    unmount();
+  });
+
+  test("seeds database route tabs with schema and table from the URL", async () => {
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+    });
+    expect(mocks.navigateReplace).toHaveBeenCalledWith({
+      name: "sql-editor.database",
+      params: {
+        project: "proj1",
+        instance: "inst1",
+        database: "db1",
+      },
+      query: {
+        table: "users",
+        schema: "public",
+      },
+    });
+
+    unmount();
+  });
+
+  test("generates a SELECT statement for a guided query target", async () => {
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: {
+        schema: "public",
+        table: "users",
+        intro: "run-query",
+      },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.getOrFetchDatabaseMetadata).toHaveBeenCalledWith({
+      database: "instances/inst1/databases/db1",
+      silent: true,
+    });
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+      statement: 'SELECT * FROM "public"."users" LIMIT 50;',
+    });
+
+    unmount();
+  });
+
+  test("generates a SELECT statement when a mounted editor receives a guided query route", async () => {
+    const { rerender, unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    mocks.tabsState.addTab.mockClear();
+
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: {
+        schema: "public",
+        table: "users",
+        intro: "run-query",
+      },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    rerender();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+      statement: 'SELECT * FROM "public"."users" LIMIT 50;',
+    });
+
+    unmount();
+  });
+
+  test("does not generate a statement outside the guided query intro", async () => {
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.getOrFetchDatabaseMetadata).not.toHaveBeenCalled();
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+    });
+
+    unmount();
+  });
+
+  test("does not generate a guided statement for an unknown table", async () => {
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: {
+        schema: "public",
+        table: "missing",
+        intro: "run-query",
+      },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "missing",
+      },
+      mode: "SAVED_QUERY",
+    });
+
+    unmount();
+  });
+
+  test("uses the render route when the imperative router snapshot is still on the parent route", async () => {
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+      requiredPermissions: [],
+    };
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+    });
+    expect(mocks.navigateReplace).toHaveBeenCalledWith({
+      name: "sql-editor.database",
+      params: {
+        project: "proj1",
+        instance: "inst1",
+        database: "db1",
+      },
+      query: {
+        table: "users",
+        schema: "public",
+      },
+    });
+
+    unmount();
+  });
+
+  test("opens the database route when the editor is already on that project", async () => {
+    mocks.editorState.project = "projects/proj1";
+    let switchProjectCallCount = 0;
+    mocks.maybeSwitchProject.mockImplementation(async (project: string) => {
+      switchProjectCallCount++;
+      return switchProjectCallCount === 1 ? project : undefined;
+    });
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+    });
+
+    unmount();
+  });
+
+  test("resolves a project instance database without a parent query", async () => {
+    const parent = "projects/proj1/instances/inst1";
+    mocks.getOrFetchDatabaseByName.mockImplementation(async (name: string) =>
+      name.startsWith("projects/")
+        ? { name, project: "projects/proj1" }
+        : {
+            name: "instances/-1/databases/-1",
+            project: "projects/-1",
+          }
+    );
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.getOrFetchDatabaseByName).toHaveBeenNthCalledWith(
+      1,
+      "instances/inst1/databases/db1"
+    );
+    expect(mocks.getOrFetchDatabaseByName).toHaveBeenNthCalledWith(
+      2,
+      `${parent}/databases/db1`
+    );
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: parent,
+        database: `${parent}/databases/db1`,
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+    });
+    expect(mocks.navigateReplace).toHaveBeenCalledWith({
+      name: "sql-editor.database",
+      params: {
+        project: "proj1",
+        instance: "inst1",
+        database: "db1",
+      },
+      query: {
+        table: "users",
+        schema: "public",
+      },
+    });
+
+    unmount();
+  });
+
+  test("restores a project instance connection without a parent query", async () => {
+    const parent = "projects/proj1/instances/inst1";
+    mocks.fetchInstance.mockImplementation(async (name: string) =>
+      name.startsWith("projects/") ? { name } : undefined
+    );
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.instance",
+      params: {
+        project: "proj1",
+        instance: "inst1",
+      },
+      query: {},
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor.instance",
+      params: {
+        project: "proj1",
+        instance: "inst1",
+      },
+      query: {},
+    };
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchInstance).toHaveBeenNthCalledWith(
+      1,
+      "instances/inst1"
+    );
+    expect(mocks.fetchInstance).toHaveBeenNthCalledWith(2, parent);
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: parent,
+        database: "",
+      },
+      mode: "SAVED_QUERY",
+    });
+    expect(mocks.navigateReplace).toHaveBeenCalledWith({
+      name: "sql-editor.instance",
+      params: {
+        project: "proj1",
+        instance: "inst1",
+      },
+      query: {},
+    });
+
+    unmount();
+  });
+
+  test("opens the database route when project context enrichment fails after database fetch", async () => {
+    mocks.editorState.project = "projects/other";
+    let switchProjectCallCount = 0;
+    mocks.maybeSwitchProject.mockImplementation(async (project: string) => {
+      switchProjectCallCount++;
+      return switchProjectCallCount === 1 ? project : undefined;
+    });
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.editorState.setProject).toHaveBeenCalledWith("projects/proj1");
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+    });
+
+    unmount();
+  });
+
+  test("does not downgrade a database deep link while the tab connection is pending", async () => {
+    mocks.tabsState.addTab.mockImplementation(
+      (payload: Partial<SQLEditorTab> = {}) =>
+        ({
+          id: "tab-pending",
+          savedQuery: "",
+          connection: {
+            instance: "",
+            database: "",
+          },
+          ...payload,
+        }) as SQLEditorTab
+    );
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+    });
+    expect(mocks.navigateReplace).not.toHaveBeenCalledWith({
+      name: "sql-editor.project",
+      params: {
+        project: "proj1",
+      },
+      query: {
+        table: "users",
+      },
+    });
+
+    unmount();
+  });
+
+  test("restores the sidebar tab from project-scoped localStorage", async () => {
+    localStorage.setItem(
+      "bb.sql-editor.sidebar.last-visited-tab.projects/proj1",
+      JSON.stringify("SAVED_QUERY")
+    );
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await sqlEditorEvents.emit("project-context-ready", {
+        project: "projects/proj1",
+      });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
+
+    expect(mocks.setAsidePanelTab).toHaveBeenCalledWith("SAVED_QUERY");
+
+    unmount();
+  });
+
+  test("defaults the sidebar to schema for a database route", async () => {
+    const { unmount } = renderShell();
+
+    mocks.setAsidePanelTab.mockClear();
+    await act(async () => {
+      await sqlEditorEvents.emit("project-context-ready", {
+        project: "projects/proj1",
+      });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
+
+    expect(mocks.setAsidePanelTab).toHaveBeenLastCalledWith("SCHEMA");
+
+    unmount();
+  });
+
+  test("defaults the sidebar to saved queries for a project route", async () => {
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.project",
+      params: { project: "proj1" },
+      query: {},
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor.project",
+      params: { project: "proj1" },
+      query: {},
+    };
+
+    const { unmount } = renderShell();
+
+    mocks.setAsidePanelTab.mockClear();
+    await act(async () => {
+      await sqlEditorEvents.emit("project-context-ready", {
+        project: "projects/proj1",
+      });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
+
+    expect(mocks.setAsidePanelTab).toHaveBeenLastCalledWith("SAVED_QUERY");
+
+    unmount();
+  });
+
+  test("updates a stale database URL when the active tab is disconnected", async () => {
+    mocks.tabsState.tabsById.set("tab-blank", {
+      id: "tab-blank",
+      savedQuery: "",
+      connection: {
+        instance: "",
+        database: "",
+      },
+    } as SQLEditorTab);
+    mocks.tabsState.currentTabId = "tab-blank";
+    mocks.tabsState.addTab.mockImplementation(
+      (payload: Partial<SQLEditorTab> = {}) => {
+        const tab = {
+          id: "tab-from-route",
+          savedQuery: "",
+          connection: {
+            instance: "",
+            database: "",
+          },
+          ...payload,
+        } as SQLEditorTab;
+        mocks.tabsState.tabsById.set(tab.id, tab);
+        return tab;
+      }
+    );
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.navigateReplace).toHaveBeenCalledWith({
+      name: "sql-editor.project",
+      params: {
+        project: "proj1",
+      },
+      query: {},
+    });
+
+    unmount();
+  });
+
+  test("seeds saved query route tabs with schema and table from the URL", async () => {
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.saved-query",
+      params: {
+        project: "proj1",
+        savedQuery: "sheet1",
+      },
+      query: {
+        schema: "public",
+        table: "SUPPORDERS_VIS.items",
+      },
+      requiredPermissions: [],
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor.saved-query",
+      params: {
+        project: "proj1",
+        savedQuery: "sheet1",
+      },
+      query: {
+        schema: "public",
+        table: "SUPPORDERS_VIS.items",
+      },
+      requiredPermissions: [],
+    };
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      id: undefined,
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "SUPPORDERS_VIS.items",
+      },
+      savedQuery: "projects/proj1/savedQueries/sheet1",
+      title: undefined,
+      statement: "select 1",
+      status: "CLEAN",
+    });
+
+    unmount();
+  });
+
+  test("keeps schema and table query parameters when syncing saved query tabs", async () => {
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.project",
+      params: {
+        project: "proj1",
+      },
+      query: {},
+      requiredPermissions: [],
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor.project",
+      params: {
+        project: "proj1",
+      },
+      query: {},
+      requiredPermissions: [],
+    };
+    mocks.tabsState.tabsById.set("tab-savedQuery", {
+      id: "tab-savedQuery",
+      savedQuery: "projects/proj1/savedQueries/sheet1",
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "SUPPORDERS_VIS.items",
+      },
+    } as SQLEditorTab);
+    mocks.tabsState.currentTabId = "tab-savedQuery";
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.navigateReplace).toHaveBeenCalledWith({
+      name: "sql-editor.saved-query",
+      params: {
+        project: "proj1",
+        savedQuery: "sheet1",
+      },
+      query: {
+        table: "SUPPORDERS_VIS.items",
+        schema: "public",
+      },
+    });
+
+    unmount();
+  });
+});

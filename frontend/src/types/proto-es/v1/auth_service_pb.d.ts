@@ -4,6 +4,8 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
+import type { WorkspaceProfileSetting_PasswordRestriction } from "./setting_service_pb";
+import type { IdentityProviderType } from "./idp_service_pb";
 import type { User } from "./user_service_pb";
 import type { EmptySchema } from "@bufbuild/protobuf/wkt";
 
@@ -13,18 +15,204 @@ import type { EmptySchema } from "@bufbuild/protobuf/wkt";
 export declare const file_v1_auth_service: GenFile;
 
 /**
+ * @generated from message bytebase.v1.GetAuthenticationInfoRequest
+ */
+export declare type GetAuthenticationInfoRequest = Message<"bytebase.v1.GetAuthenticationInfoRequest"> & {
+  /**
+   * Optional. The workspace whose authentication policy should be returned.
+   * Format: workspaces/{workspace}
+   * When unset, self-hosted resolves the singleton workspace and SaaS uses
+   * the deployment-level defaults.
+   *
+   * @generated from field: string workspace = 1;
+   */
+  workspace: string;
+};
+
+/**
+ * Describes the message bytebase.v1.GetAuthenticationInfoRequest.
+ * Use `create(GetAuthenticationInfoRequestSchema)` to create a new message.
+ */
+export declare const GetAuthenticationInfoRequestSchema: GenMessage<GetAuthenticationInfoRequest>;
+
+/**
+ * @generated from message bytebase.v1.AuthenticationInfo
+ */
+export declare type AuthenticationInfo = Message<"bytebase.v1.AuthenticationInfo"> & {
+  /**
+   * The workspace used for authentication, when one can be resolved.
+   * Format: workspaces/{workspace}
+   *
+   * @generated from field: string workspace = 1;
+   */
+  workspace: string;
+
+  /**
+   * The effective authentication restrictions.
+   *
+   * @generated from field: bytebase.v1.Restriction restriction = 2;
+   */
+  restriction?: Restriction | undefined;
+
+  /**
+   * The identity providers the login page renders, in display order.
+   *
+   * @generated from field: repeated bytebase.v1.LoginIdentityProvider identity_providers = 3;
+   */
+  identityProviders: LoginIdentityProvider[];
+};
+
+/**
+ * Describes the message bytebase.v1.AuthenticationInfo.
+ * Use `create(AuthenticationInfoSchema)` to create a new message.
+ */
+export declare const AuthenticationInfoSchema: GenMessage<AuthenticationInfo>;
+
+/**
+ * @generated from message bytebase.v1.Restriction
+ */
+export declare type Restriction = Message<"bytebase.v1.Restriction"> & {
+  /**
+   * Whether self-service user signup is disabled.
+   *
+   * @generated from field: bool disallow_signup = 1;
+   */
+  disallowSignup: boolean;
+
+  /**
+   * Whether password sign-in is disabled for all end users.
+   *
+   * @generated from field: bool disallow_password_signin = 2;
+   */
+  disallowPasswordSignin: boolean;
+
+  /**
+   * Password complexity and restriction requirements.
+   *
+   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 3;
+   */
+  passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction | undefined;
+
+  /**
+   * Whether email + 6-digit code signin is enabled for this workspace.
+   *
+   * @generated from field: bool allow_email_code_signin = 4;
+   */
+  allowEmailCodeSignin: boolean;
+
+  /**
+   * Whether password reset via email is available for this workspace.
+   * True when the workspace (or deployment) has an email setting configured.
+   *
+   * @generated from field: bool password_reset_enabled = 5;
+   */
+  passwordResetEnabled: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.Restriction.
+ * Use `create(RestrictionSchema)` to create a new message.
+ */
+export declare const RestrictionSchema: GenMessage<Restriction>;
+
+/**
+ * LoginIdentityProvider is an identity provider as the login page sees it.
+ * Deliberately not a view of IdentityProvider: this message is served without
+ * a credential, so every field it exposes is published by hand and no
+ * provider configuration reaches it by default.
+ *
+ * @generated from message bytebase.v1.LoginIdentityProvider
+ */
+export declare type LoginIdentityProvider = Message<"bytebase.v1.LoginIdentityProvider"> & {
+  /**
+   * The name of the identity provider.
+   * Format: idps/{idp}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The type of identity provider protocol.
+   *
+   * @generated from field: bytebase.v1.IdentityProviderType type = 2;
+   */
+  type: IdentityProviderType;
+
+  /**
+   * The display title of the identity provider.
+   *
+   * @generated from field: string title = 3;
+   */
+  title: string;
+
+  /**
+   * The parameters the browser needs to start the authorization redirect.
+   * Set for OAUTH2 and OIDC, absent for LDAP, whose bind happens server-side.
+   *
+   * @generated from field: bytebase.v1.AuthorizationRequest authorization_request = 4;
+   */
+  authorizationRequest?: AuthorizationRequest | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.LoginIdentityProvider.
+ * Use `create(LoginIdentityProviderSchema)` to create a new message.
+ */
+export declare const LoginIdentityProviderSchema: GenMessage<LoginIdentityProvider>;
+
+/**
+ * AuthorizationRequest is what a browser needs to start an SSO redirect.
+ *
+ * @generated from message bytebase.v1.AuthorizationRequest
+ */
+export declare type AuthorizationRequest = Message<"bytebase.v1.AuthorizationRequest"> & {
+  /**
+   * The OAuth2 auth_url, or the authorization endpoint from the OIDC issuer's
+   * discovery document.
+   *
+   * @generated from field: string endpoint = 1;
+   */
+  endpoint: string;
+
+  /**
+   * The OAuth2 or OIDC client identifier.
+   *
+   * @generated from field: string client_id = 2;
+   */
+  clientId: string;
+
+  /**
+   * The scopes to request.
+   *
+   * @generated from field: repeated string scopes = 3;
+   */
+  scopes: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.AuthorizationRequest.
+ * Use `create(AuthorizationRequestSchema)` to create a new message.
+ */
+export declare const AuthorizationRequestSchema: GenMessage<AuthorizationRequest>;
+
+/**
  * @generated from message bytebase.v1.LoginRequest
  */
 export declare type LoginRequest = Message<"bytebase.v1.LoginRequest"> & {
   /**
    * User's email address.
+   * Bounded so an oversized identity is refused at the edge before any
+   * handler runs; the login-attempt lockout keys rows by this value.
    *
    * @generated from field: string email = 1;
    */
   email: string;
 
   /**
-   * User's password for authentication.
+   * User's password for authentication. Bounded for abuse only: LDAP
+   * directories may accept passwords beyond bcrypt's 72-byte limit, and the
+   * local-password path rejects longer inputs itself.
    *
    * @generated from field: string password = 2;
    */
@@ -278,6 +466,8 @@ export declare const ExchangeTokenResponseSchema: GenMessage<ExchangeTokenRespon
 export declare type SignupRequest = Message<"bytebase.v1.SignupRequest"> & {
   /**
    * The email for the new account.
+   * Bounded so an oversized identity is refused at the edge before any
+   * handler runs; the login-attempt lockout keys rows by this value.
    *
    * @generated from field: string email = 1;
    */
@@ -338,6 +528,8 @@ export declare const RefreshResponseSchema: GenMessage<RefreshResponse>;
 export declare type RequestPasswordResetRequest = Message<"bytebase.v1.RequestPasswordResetRequest"> & {
   /**
    * The email address of the account to reset.
+   * Bounded so an oversized identity is refused at the edge before any
+   * handler runs; the login-attempt lockout keys rows by this value.
    *
    * @generated from field: string email = 1;
    */
@@ -366,6 +558,8 @@ export declare const RequestPasswordResetRequestSchema: GenMessage<RequestPasswo
 export declare type ResetPasswordRequest = Message<"bytebase.v1.ResetPasswordRequest"> & {
   /**
    * The email address of the account.
+   * Bounded so an oversized identity is refused at the edge before any
+   * handler runs; the login-attempt lockout keys rows by this value.
    *
    * @generated from field: string email = 1;
    */
@@ -398,6 +592,8 @@ export declare const ResetPasswordRequestSchema: GenMessage<ResetPasswordRequest
 export declare type SendEmailLoginCodeRequest = Message<"bytebase.v1.SendEmailLoginCodeRequest"> & {
   /**
    * The email address to send the code to.
+   * Bounded so an oversized identity is refused at the edge before any
+   * handler runs; the login-attempt lockout keys rows by this value.
    *
    * @generated from field: string email = 1;
    */
@@ -474,6 +670,18 @@ export declare const SwitchWorkspaceRequestSchema: GenMessage<SwitchWorkspaceReq
  */
 export declare const AuthService: GenService<{
   /**
+   * Gets everything the login page renders: the sign-in restrictions and the
+   * identity providers it offers.
+   * Permissions required: None
+   *
+   * @generated from rpc bytebase.v1.AuthService.GetAuthenticationInfo
+   */
+  getAuthenticationInfo: {
+    methodKind: "unary";
+    input: typeof GetAuthenticationInfoRequestSchema;
+    output: typeof AuthenticationInfoSchema;
+  },
+  /**
    * Authenticates a user and returns access tokens.
    * Permissions required: None
    *
@@ -545,6 +753,8 @@ export declare const AuthService: GenService<{
   /**
    * Requests a password reset email for the given email address.
    * Always returns success to avoid leaking whether the email exists.
+   * Requires the workspace's SMTP mail delivery setting; without it the
+   * recovery route is an admin password reset.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.AuthService.RequestPasswordReset
@@ -568,6 +778,8 @@ export declare const AuthService: GenService<{
   /**
    * Sends a 6-digit verification code to the email for login/signup.
    * Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+   * The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+   * REAUTH codes are not interchangeable.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.AuthService.SendEmailLoginCode

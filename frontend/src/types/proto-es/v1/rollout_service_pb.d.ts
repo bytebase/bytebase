@@ -215,7 +215,7 @@ export declare type ListRolloutsRequest = Message<"bytebase.v1.ListRolloutsReque
    *
    * For example:
    * update_time >= "2025-01-02T15:04:05Z07:00"
-   * task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]
+   * task_type in ["DATABASE_MIGRATE", "DATABASE_CREATE"]
    *
    * @generated from field: string filter = 4;
    */
@@ -295,6 +295,27 @@ export declare type ListTaskRunsRequest = Message<"bytebase.v1.ListTaskRunsReque
    * @generated from field: string parent = 1;
    */
   parent: string;
+
+  /**
+   * The maximum number of task runs to return. The service may return fewer
+   * than this value.
+   * If unspecified, at most 1000 task runs will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   *
+   * @generated from field: int32 page_size = 2;
+   */
+  pageSize: number;
+
+  /**
+   * A page token, received from a previous `ListTaskRuns` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListTaskRuns` must match
+   * the call that provided the page token.
+   *
+   * @generated from field: string page_token = 3;
+   */
+  pageToken: string;
 };
 
 /**
@@ -313,6 +334,14 @@ export declare type ListTaskRunsResponse = Message<"bytebase.v1.ListTaskRunsResp
    * @generated from field: repeated bytebase.v1.TaskRun task_runs = 1;
    */
   taskRuns: TaskRun[];
+
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   *
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
 };
 
 /**
@@ -482,8 +511,8 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
   type: Task_Type;
 
   /**
-   * Format: instances/{instance} if the task is DatabaseCreate.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance} or projects/{project}/instances/{instance} if the task is DatabaseCreate.
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string target = 6;
    */
@@ -504,12 +533,6 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
      */
     value: Task_DatabaseUpdate;
     case: "databaseUpdate";
-  } | {
-    /**
-     * @generated from field: bytebase.v1.Task.DatabaseDataExport database_data_export = 9;
-     */
-    value: Task_DatabaseDataExport;
-    case: "databaseDataExport";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -590,27 +613,6 @@ export declare type Task_DatabaseUpdate = Message<"bytebase.v1.Task.DatabaseUpda
  * Use `create(Task_DatabaseUpdateSchema)` to create a new message.
  */
 export declare const Task_DatabaseUpdateSchema: GenMessage<Task_DatabaseUpdate>;
-
-/**
- * Payload for exporting database data.
- *
- * @generated from message bytebase.v1.Task.DatabaseDataExport
- */
-export declare type Task_DatabaseDataExport = Message<"bytebase.v1.Task.DatabaseDataExport"> & {
-  /**
-   * The resource name of the sheet.
-   * Format: projects/{project}/sheets/{sheet}
-   *
-   * @generated from field: string sheet = 2;
-   */
-  sheet: string;
-};
-
-/**
- * Describes the message bytebase.v1.Task.DatabaseDataExport.
- * Use `create(Task_DatabaseDataExportSchema)` to create a new message.
- */
-export declare const Task_DatabaseDataExportSchema: GenMessage<Task_DatabaseDataExport>;
 
 /**
  * @generated from enum bytebase.v1.Task.Status
@@ -711,14 +713,6 @@ export enum Task_Type {
    * @generated from enum value: DATABASE_MIGRATE = 3;
    */
   DATABASE_MIGRATE = 3,
-
-  /**
-   * Database export task that exports query results or table data.
-   * Use payload DatabaseDataExport.
-   *
-   * @generated from enum value: DATABASE_EXPORT = 4;
-   */
-  DATABASE_EXPORT = 4,
 }
 
 /**
@@ -775,13 +769,6 @@ export declare type TaskRun = Message<"bytebase.v1.TaskRun"> & {
    * @generated from field: google.protobuf.Timestamp start_time = 9;
    */
   startTime?: Timestamp | undefined;
-
-  /**
-   * The export archive status for data export tasks.
-   *
-   * @generated from field: bytebase.v1.TaskRun.ExportArchiveStatus export_archive_status = 10;
-   */
-  exportArchiveStatus: TaskRun_ExportArchiveStatus;
 
   /**
    * Indicates whether a prior backup was created for this task run.
@@ -927,37 +914,6 @@ export enum TaskRun_Status {
  * Describes the enum bytebase.v1.TaskRun.Status.
  */
 export declare const TaskRun_StatusSchema: GenEnum<TaskRun_Status>;
-
-/**
- * @generated from enum bytebase.v1.TaskRun.ExportArchiveStatus
- */
-export enum TaskRun_ExportArchiveStatus {
-  /**
-   * Unspecified export archive status.
-   *
-   * @generated from enum value: EXPORT_ARCHIVE_STATUS_UNSPECIFIED = 0;
-   */
-  EXPORT_ARCHIVE_STATUS_UNSPECIFIED = 0,
-
-  /**
-   * Export archive is ready for download.
-   *
-   * @generated from enum value: READY = 1;
-   */
-  READY = 1,
-
-  /**
-   * Export archive has been downloaded by the user.
-   *
-   * @generated from enum value: EXPORTED = 2;
-   */
-  EXPORTED = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.TaskRun.ExportArchiveStatus.
- */
-export declare const TaskRun_ExportArchiveStatusSchema: GenEnum<TaskRun_ExportArchiveStatus>;
 
 /**
  * @generated from message bytebase.v1.TaskRunLog
@@ -1409,7 +1365,7 @@ export declare const TaskRunLogEntry_PriorBackup_PriorBackupDetail_ItemSchema: G
 export declare type TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_Table = Message<"bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table"> & {
   /**
    * The database information.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string database = 1;
    */
@@ -1909,7 +1865,7 @@ export declare const RolloutService: GenService<{
   },
   /**
    * Creates a new rollout for a plan.
-   * Permissions required: bb.rollouts.create (or issue creator for data export issues)
+   * Permissions required: bb.rollouts.create
    *
    * @generated from rpc bytebase.v1.RolloutService.CreateRollout
    */
@@ -1964,7 +1920,7 @@ export declare const RolloutService: GenService<{
   },
   /**
    * Executes multiple tasks in a rollout stage.
-   * Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+   * Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
    *
    * @generated from rpc bytebase.v1.RolloutService.BatchRunTasks
    */
@@ -1975,7 +1931,7 @@ export declare const RolloutService: GenService<{
   },
   /**
    * Skips multiple tasks in a rollout stage.
-   * Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+   * Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
    *
    * @generated from rpc bytebase.v1.RolloutService.BatchSkipTasks
    */
@@ -1989,7 +1945,7 @@ export declare const RolloutService: GenService<{
    * PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
    * a best-effort cancellation request and may continue running if the request is missed or the
    * executor does not stop. The response does not report which task runs were actually canceled.
-   * Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+   * Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
    *
    * @generated from rpc bytebase.v1.RolloutService.BatchCancelTaskRuns
    */

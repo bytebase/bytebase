@@ -3,16 +3,15 @@ package common
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"fmt"
+	"math"
 	"math/big"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 
-	"github.com/nyaruka/phonenumbers"
+	"github.com/nyaruka/phonenumbers/v2"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -31,6 +30,23 @@ const (
 	MaximumAdvicePerStatus = 50
 	MaximumLintExplainSize = 10
 )
+
+// RoundRows rounds a planner's row estimate to int64, saturating at math.MaxInt64 instead of
+// overflowing to a negative count.
+func RoundRows(rows float64) int64 {
+	if rows >= math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return int64(math.Round(rows))
+}
+
+// AddRows adds row counts, saturating at math.MaxInt64 instead of wrapping negative.
+func AddRows(a, b int64) int64 {
+	if b > 0 && a > math.MaxInt64-b {
+		return math.MaxInt64
+	}
+	return a + b
+}
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
@@ -58,21 +74,6 @@ func RandomString(n int) (string, error) {
 	return sb.String(), nil
 }
 
-// HasPrefixes returns true if the string s has any of the given prefixes.
-func HasPrefixes(src string, prefixes ...string) bool {
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(src, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
-// GetPostgresSocketDir returns the postgres socket directory of Bytebase.
-func GetPostgresSocketDir() string {
-	return "/tmp"
-}
-
 // TruncateString truncates the string to have a maximum length of `limit` characters.
 func TruncateString(str string, limit int) (string, bool) {
 	chars := 0
@@ -84,65 +85,6 @@ func TruncateString(str string, limit int) (string, bool) {
 		chars++
 	}
 	return str, false
-}
-
-// TruncateStringWithDescription tries to truncate the string and append "... (view details in Bytebase)" if truncated.
-func TruncateStringWithDescription(str string) string {
-	const limit = 450
-	if truncatedStr, truncated := TruncateString(str, limit); truncated {
-		return fmt.Sprintf("%s... (view details in Bytebase)", truncatedStr)
-	}
-	return str
-}
-
-// Obfuscate obfuscates a string with a seed string.
-func Obfuscate(src, seed string) string {
-	srcBytes, seedBytes := []byte(src), []byte(seed)
-	obfuscated := make([]byte, len(srcBytes))
-	for i, b := range srcBytes {
-		obfuscated[i] = b ^ seedBytes[i%len(seedBytes)]
-	}
-	return base64.StdEncoding.EncodeToString(obfuscated)
-}
-
-// Unobfuscate unobfuscates a string with a seed string.
-func Unobfuscate(dst, seed string) (string, error) {
-	obfuscated, err := base64.StdEncoding.DecodeString(dst)
-	if err != nil {
-		return "", err
-	}
-	unobfuscated, seedBytes := make([]byte, len(obfuscated)), []byte(seed)
-	for i, b := range obfuscated {
-		unobfuscated[i] = b ^ seedBytes[i%len(seedBytes)]
-	}
-	return string(unobfuscated), nil
-}
-
-// NormalizeExternalURL will format the external url.
-func NormalizeExternalURL(url string) (string, error) {
-	r := strings.TrimSpace(url)
-	r = strings.TrimSuffix(r, "/")
-	if !HasPrefixes(r, "http://", "https://") {
-		return "", errors.Errorf("%s must start with http:// or https://", url)
-	}
-	parts := strings.Split(r, ":")
-	if len(parts) > 3 {
-		return "", errors.Errorf("%s malformed", url)
-	}
-	if len(parts) == 3 {
-		port, err := strconv.Atoi(parts[2])
-		if err != nil {
-			return "", errors.Errorf("%s has non integer port", url)
-		}
-		// The external URL is used as the redirectURL in the get token process of OAuth, and the
-		// RedirectURL needs to be consistent with the RedirectURL in the get code process.
-		// The frontend gets it through window.location.origin in the get code
-		// process, so port 80/443 need to be cropped.
-		if port == 80 || port == 443 {
-			r = strings.Join(parts[0:2], ":")
-		}
-	}
-	return r, nil
 }
 
 // ValidatePhone validates the phone number.
@@ -219,10 +161,6 @@ func SanitizeUTF8String(s string) string {
 	}
 
 	return b.String()
-}
-
-func FormatMaximumSQLResultSizeMessage(limit int64) string {
-	return fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", limit/1024/1024)
 }
 
 func IsNil(val any) bool {

@@ -4,6 +4,7 @@
 package store
 
 import (
+	color "google.golang.org/genproto/googleapis/type/color"
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	proto "google.golang.org/protobuf/proto"
 )
@@ -28,10 +29,14 @@ func (x *WorkspaceProfileSetting_Announcement_AnnouncementTheme) Equal(y *Worksp
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Background != y.Background {
+	if equal, ok := interface{}(x.Background).(interface{ Equal(*color.Color) bool }); !ok || !equal.Equal(y.Background) {
+		return false
+	} else if !proto.Equal(x.Background, y.Background) {
 		return false
 	}
-	if x.Text != y.Text {
+	if equal, ok := interface{}(x.Text).(interface{ Equal(*color.Color) bool }); !ok || !equal.Equal(y.Text) {
+		return false
+	} else if !proto.Equal(x.Text, y.Text) {
 		return false
 	}
 	return true
@@ -141,9 +146,6 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.Watermark != y.Watermark {
 		return false
 	}
-	if x.DirectorySyncToken != y.DirectorySyncToken {
-		return false
-	}
 	if !x.PasswordRestriction.Equal(y.PasswordRestriction) {
 		return false
 	}
@@ -166,6 +168,25 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 		return false
 	}
 	if !x.SqlEditorCustomTheme.Equal(y.SqlEditorCustomTheme) {
+		return false
+	}
+	if p, q := x.MaximumRoleExpiration, y.MaximumRoleExpiration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if x.DirectorySyncTokenHash != y.DirectorySyncTokenHash {
+		return false
+	}
+	return true
+}
+
+func (x *MCPSetting) Equal(y *MCPSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Capability != y.Capability {
 		return false
 	}
 	return true
@@ -195,7 +216,9 @@ func (x *SQLEditorThemeSetting) Equal(y *SQLEditorThemeSetting) bool {
 		if !ok {
 			return false
 		}
-		if x.Tokens[k] != y.Tokens[k] {
+		if equal, ok := interface{}(x.Tokens[k]).(interface{ Equal(*color.Color) bool }); !ok || !equal.Equal(y.Tokens[k]) {
+			return false
+		} else if !proto.Equal(x.Tokens[k], y.Tokens[k]) {
 			return false
 		}
 	}
@@ -687,7 +710,9 @@ func (x *EnvironmentSetting_Environment) Equal(y *EnvironmentSetting_Environment
 			return false
 		}
 	}
-	if x.Color != y.Color {
+	if equal, ok := interface{}(x.Color).(interface{ Equal(*color.Color) bool }); !ok || !equal.Equal(y.Color) {
+		return false
+	} else if !proto.Equal(x.Color, y.Color) {
 		return false
 	}
 	return true

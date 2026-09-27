@@ -845,14 +845,22 @@ func (s *Service) validRequestURL(ctx context.Context, c *echo.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to get workspace profile setting")
 	}
-	if workspaceProfileSetting.DirectorySyncToken == "" {
+
+	return checkDirectorySyncToken(workspaceProfileSetting, authorization)
+}
+
+// checkDirectorySyncToken validates a presented SCIM bearer token against the
+// stored SHA-256 hash. The token value itself is never stored, so a leaked
+// database gives an attacker nothing they can present here.
+func checkDirectorySyncToken(setting *storepb.WorkspaceProfileSetting, presented string) error {
+	hash := setting.GetDirectorySyncTokenHash()
+	if hash == "" {
 		return errors.Errorf("directory sync token is not configured")
 	}
 
-	if subtle.ConstantTimeCompare([]byte(workspaceProfileSetting.DirectorySyncToken), []byte(authorization)) != 1 {
+	if subtle.ConstantTimeCompare([]byte(common.HashDirectorySyncToken(presented)), []byte(hash)) != 1 {
 		return errors.Errorf("invalid authorization token")
 	}
-
 	return nil
 }
 

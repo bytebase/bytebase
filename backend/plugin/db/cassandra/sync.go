@@ -5,9 +5,9 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -47,7 +47,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, errors.Wrapf(err, "failed to get databases")
 	}
 
-	var filteredDatabases []*storepb.DatabaseSchemaMetadata
+	var filteredDatabases []*metadatapb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		if isSystemDatabase(database.Name) {
 			continue
@@ -69,13 +69,13 @@ type primaryKey struct {
 }
 
 type columnOrderInfo struct {
-	column   *storepb.ColumnMetadata
+	column   *metadatapb.ColumnMetadata
 	kind     string // "partition_key", "clustering", or "regular"
 	position int    // Position within partition/clustering keys
 }
 
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	schemaMetadata := &storepb.SchemaMetadata{
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	schemaMetadata := &metadatapb.SchemaMetadata{
 		Name: "",
 	}
 
@@ -106,7 +106,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, errors.Wrapf(err, "failed to scan column")
 		}
 		columnOrderMap[tableName] = append(columnOrderMap[tableName], columnOrderInfo{
-			column: &storepb.ColumnMetadata{
+			column: &metadatapb.ColumnMetadata{
 				Name:     columnName,
 				Type:     columnType,
 				Nullable: true,
@@ -173,7 +173,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		columnOrderMap[tableName] = columns
 	}
 
-	indexMap := map[string][]*storepb.IndexMetadata{}
+	indexMap := map[string][]*metadatapb.IndexMetadata{}
 	indexScanner := d.session.Query(`
 		SELECT
 			table_name,
@@ -195,7 +195,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, errors.Wrapf(err, "failed to scan index")
 		}
 
-		indexMap[tableName] = append(indexMap[tableName], &storepb.IndexMetadata{
+		indexMap[tableName] = append(indexMap[tableName], &metadatapb.IndexMetadata{
 			Name:        indexName,
 			Type:        kind,
 			Expressions: []string{options},
@@ -236,7 +236,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			}
 			return 1
 		})
-		pk := &storepb.IndexMetadata{
+		pk := &metadatapb.IndexMetadata{
 			Name:        "PRIMARY KEY",
 			Expressions: getPKExpressions(pks),
 			Descending:  getPKDescending(pks),
@@ -245,12 +245,12 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 
 		// Extract the sorted column metadata
-		var sortedColumns []*storepb.ColumnMetadata
+		var sortedColumns []*metadatapb.ColumnMetadata
 		for _, colInfo := range columnOrderMap[tableName] {
 			sortedColumns = append(sortedColumns, colInfo.column)
 		}
 
-		table := &storepb.TableMetadata{
+		table := &metadatapb.TableMetadata{
 			Name:    tableName,
 			Comment: comment,
 			Columns: sortedColumns,
@@ -264,9 +264,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, errors.Wrapf(err, "table scanner err")
 	}
 
-	return &storepb.DatabaseSchemaMetadata{
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name:    d.config.ConnectionContext.DatabaseName,
-		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
+		Schemas: []*metadatapb.SchemaMetadata{schemaMetadata},
 	}, nil
 }
 
@@ -330,12 +330,12 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) getDatabases(ctx context.Context) ([]*metadatapb.DatabaseSchemaMetadata, error) {
 	scanner := d.session.Query("SELECT keyspace_name FROM system_schema.keyspaces").IterContext(ctx).Scanner()
 
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	for scanner.Next() {
-		var database storepb.DatabaseSchemaMetadata
+		var database metadatapb.DatabaseSchemaMetadata
 		if err := scanner.Scan(&database.Name); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
 		}

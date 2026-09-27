@@ -12,8 +12,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestParsePLSQLOmni(t *testing.T) {
-	list, err := ParsePLSQLOmni("SELECT * FROM T; INSERT INTO T VALUES (1);")
+func TestParsePLSQL(t *testing.T) {
+	list, err := ParsePLSQL("SELECT * FROM T; INSERT INTO T VALUES (1);")
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	require.Len(t, list.Items, 2)
@@ -27,8 +27,8 @@ func TestParsePLSQLOmni(t *testing.T) {
 	require.IsType(t, &ast.InsertStmt{}, second.Stmt)
 }
 
-func TestParsePLSQLOmniSplitsSlashTerminatedPLSQLScript(t *testing.T) {
-	list, err := ParsePLSQLOmni(`
+func TestParsePLSQLSplitsSlashTerminatedPLSQLScript(t *testing.T) {
+	list, err := ParsePLSQL(`
 CREATE TABLE AUDIT_LOG (
   LOG_ID NUMBER PRIMARY KEY
 );
@@ -54,8 +54,8 @@ END;
 	require.IsType(t, &ast.CreateTriggerStmt{}, second.Stmt)
 }
 
-func TestParsePLSQLOmniSkipsSQLPlusCommands(t *testing.T) {
-	list, err := ParsePLSQLOmni(`
+func TestParsePLSQLSkipsSQLPlusCommands(t *testing.T) {
+	list, err := ParsePLSQL(`
 SET DEFINE OFF
 PROMPT setup
 
@@ -86,8 +86,8 @@ SPOOL OFF
 	require.IsType(t, &ast.CreateTriggerStmt{}, second.Stmt)
 }
 
-func TestParsePLSQLOmniKeepsRemarkColumnInCreateTable(t *testing.T) {
-	list, err := ParsePLSQLOmni(`
+func TestParsePLSQLKeepsRemarkColumnInCreateTable(t *testing.T) {
+	list, err := ParsePLSQL(`
 CREATE TABLE parser_regression_remark_column (
   id                  NUMBER NOT NULL
       CONSTRAINT parser_regression_remark_column_pk
@@ -105,7 +105,7 @@ CREATE TABLE parser_regression_remark_column (
 	require.IsType(t, &ast.CreateTableStmt{}, raw.Stmt)
 }
 
-func TestParsePLSQLOmniMatchRecognize(t *testing.T) {
+func TestParsePLSQLMatchRecognize(t *testing.T) {
 	statement := `SELECT * FROM TRADES MATCH_RECOGNIZE (
   PARTITION BY ACCOUNT_ID
   ORDER BY TRADE_TIME
@@ -119,7 +119,7 @@ func TestParsePLSQLOmniMatchRecognize(t *testing.T) {
 	require.Len(t, stmts, 1)
 	require.Equal(t, statement, stmts[0].Text)
 
-	list, err := ParsePLSQLOmni(statement)
+	list, err := ParsePLSQL(statement)
 	require.NoError(t, err)
 	require.Len(t, list.Items, 1)
 	raw, ok := list.Items[0].(*ast.RawStmt)
@@ -127,13 +127,13 @@ func TestParsePLSQLOmniMatchRecognize(t *testing.T) {
 	require.IsType(t, &ast.SelectStmt{}, raw.Stmt)
 }
 
-func TestParsePLSQLOmniPreservesScriptOffsets(t *testing.T) {
+func TestParsePLSQLPreservesScriptOffsets(t *testing.T) {
 	sql := `PROMPT setup
 SELECT 1 FROM DUAL;
 
 SELECT name FROM users;
 `
-	list, err := ParsePLSQLOmni(sql)
+	list, err := ParsePLSQL(sql)
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	require.Len(t, list.Items, 2)
@@ -149,8 +149,8 @@ SELECT name FROM users;
 	require.Equal(t, strings.LastIndex(sql, ";"), second.Loc.End)
 }
 
-func TestParsePLSQLOmniReturnsParseError(t *testing.T) {
-	_, err := ParsePLSQLOmni("SELECT * FROM")
+func TestParsePLSQLReturnsParseError(t *testing.T) {
+	_, err := ParsePLSQL("SELECT * FROM")
 	require.Error(t, err)
 }
 

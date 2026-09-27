@@ -10,10 +10,10 @@ import (
 	"github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -41,7 +41,7 @@ func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 
 	rule := NewColumnRequireRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, stringArrayPayload.List)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 type columnSet map[string]bool
@@ -119,7 +119,7 @@ func (r *ColumnRequireRule) addMissingColumnsAdvice(tableName string, missing co
 		r.level,
 		code.NoRequiredColumn.Int32(),
 		fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-		common.ConvertANTLRLineToPosition(line),
+		base.ConvertANTLRLineToPosition(line),
 	)
 }
 

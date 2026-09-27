@@ -2,11 +2,33 @@ package store
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
+func TestGetActiveAccessGrantFilter(t *testing.T) {
+	t.Parallel()
+	expireTime := time.Date(2026, time.September, 3, 0, 0, 0, 0, time.UTC)
+	q := getActiveAccessGrantFilter(&FindActiveAccessGrantMessage{
+		Target:     "instances/prod/databases/app",
+		Statement:  "SELECT 1",
+		Schema:     "public",
+		Container:  "orders",
+		ExpireTime: expireTime,
+	})
+
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.Contains(t, sql, "access_grant.payload->'targets' @> jsonb_build_array(to_jsonb($3::text))")
+	require.Contains(t, sql, "btrim(access_grant.payload->>'query', E' \\t\\n\\r\\v\\f') = $4")
+	require.Contains(t, sql, "COALESCE(access_grant.payload->>'schema', '') = $5")
+	require.Contains(t, sql, "COALESCE(access_grant.payload->>'container', '') = $6")
+	require.Equal(t, []any{"ACTIVE", expireTime, "instances/prod/databases/app", "SELECT 1", "public", "orders"}, args)
+}
+
 func TestGetListAccessGrantFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -25,14 +47,14 @@ func TestGetListAccessGrantFilter(t *testing.T) {
 		{
 			name:     "query contains",
 			filter:   `query.contains("SELECT * FROM users")`,
-			wantSQL:  "(regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE $1)",
+			wantSQL:  "(regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%SELECT * FROM users%"},
 			wantErr:  false,
 		},
 		{
 			name:     "query contains normalizes whitespace",
 			filter:   `query.contains("SELECT   *   FROM users")`,
-			wantSQL:  "(regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE $1)",
+			wantSQL:  "(regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%SELECT * FROM users%"},
 			wantErr:  false,
 		},
@@ -149,10 +171,45 @@ func TestGetListAccessGrantFilter(t *testing.T) {
 			wantErr:     true,
 			errContains: "export value must be a boolean",
 		},
+		{
+			name:     "pending status excludes canceled and rejected pending grants",
+			filter:   `status == "PENDING"`,
+			wantSQL:  "((access_grant.status = $1 AND NOT EXISTS (SELECT 1 FROM issue WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND issue.status = $2) AND NOT EXISTS (SELECT 1 FROM issue, jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false) AND issue.payload->'approval'->'approvalTemplate' IS NOT NULL AND approver->>'status' = $3)))",
+			wantArgs: []any{"PENDING", "CANCELED", "REJECTED"},
+			wantErr:  false,
+		},
+		{
+			name:     "canceled status excludes rejected pending grants",
+			filter:   `status == "CANCELED"`,
+			wantSQL:  "((access_grant.status = $1 AND EXISTS (SELECT 1 FROM issue WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND issue.status = $2) AND NOT EXISTS (SELECT 1 FROM issue, jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false) AND issue.payload->'approval'->'approvalTemplate' IS NOT NULL AND approver->>'status' = $3)))",
+			wantArgs: []any{"PENDING", "CANCELED", "REJECTED"},
+			wantErr:  false,
+		},
+		{
+			name:     "rejected status matches rejected pending grants",
+			filter:   `status == "REJECTED"`,
+			wantSQL:  "((access_grant.status = $1 AND EXISTS (SELECT 1 FROM issue, jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false) AND issue.payload->'approval'->'approvalTemplate' IS NOT NULL AND approver->>'status' = $2)))",
+			wantArgs: []any{"PENDING", "REJECTED"},
+			wantErr:  false,
+		},
+		{
+			name:        "status rejects unknown status",
+			filter:      `status == "DONE"`,
+			wantErr:     true,
+			errContains: `unsupported status "DONE"`,
+		},
+		{
+			name:     "status in combines display-status filters",
+			filter:   `status in ["PENDING", "REJECTED"]`,
+			wantSQL:  "(((access_grant.status = $1 AND NOT EXISTS (SELECT 1 FROM issue WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND issue.status = $2) AND NOT EXISTS (SELECT 1 FROM issue, jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false) AND issue.payload->'approval'->'approvalTemplate' IS NOT NULL AND approver->>'status' = $3)) OR (access_grant.status = $4 AND EXISTS (SELECT 1 FROM issue, jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false) AND issue.payload->'approval'->'approvalTemplate' IS NOT NULL AND approver->>'status' = $5))))",
+			wantArgs: []any{"PENDING", "CANCELED", "REJECTED", "PENDING", "REJECTED"},
+			wantErr:  false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetListAccessGrantFilter(tt.filter)
 
 			if tt.wantErr {

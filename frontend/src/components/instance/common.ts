@@ -1,0 +1,307 @@
+import { cloneDeep, first, isEqual } from "lodash-es";
+import i18n from "@/lib/i18n";
+import { useAppStore } from "@/stores/app";
+import { UNKNOWN_INSTANCE_NAME, unknownDataSource } from "@/types";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import type {
+  DataSource,
+  Instance,
+} from "@/types/proto-es/v1/instance_service_pb";
+import {
+  DataSource_AuthenticationType,
+  DataSourceType,
+} from "@/types/proto-es/v1/instance_service_pb";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
+import { calcUpdateMask } from "@/utils";
+import { normalizeAuthenticationType } from "./authentication";
+import { hasSslConfig, SSL_UPDATE_MASK_FIELDS } from "./tls";
+
+export type TlsUpdateState =
+  | boolean
+  | {
+      useSsl?: boolean;
+      ca?: boolean;
+      clientCert?: boolean;
+    };
+
+const SSL_CA_UPDATE_MASK_FIELDS = ["use_ssl", "ssl_ca", "ssl_ca_path"] as const;
+
+const SSL_CLIENT_CERT_UPDATE_MASK_FIELDS = [
+  "use_ssl",
+  "ssl_cert",
+  "ssl_key",
+  "ssl_cert_path",
+  "ssl_key_path",
+] as const;
+
+export type BasicInfo = Omit<
+  Instance,
+  "$typeName" | "dataSources" | "engineVersion" | "lastSyncTime"
+>;
+
+export type DataSourceSecretField =
+  | "password"
+  | "masterPassword"
+  | "sshPassword"
+  | "sshPrivateKey"
+  | "authenticationPrivateKey"
+  | "authenticationPrivateKeyPassphrase";
+
+const SECRET_MASK_PATHS: Record<DataSourceSecretField, string> = {
+  password: "password",
+  masterPassword: "master_password",
+  sshPassword: "ssh_password",
+  sshPrivateKey: "ssh_private_key",
+  authenticationPrivateKey: "authentication_private_key",
+  authenticationPrivateKeyPassphrase: "authentication_private_key_passphrase",
+};
+
+export type EditDataSource = DataSource & {
+  pendingCreate: boolean;
+  updatedSecretFields?: DataSourceSecretField[];
+  updatedPassword: string;
+  updatedMasterPassword: string;
+  updatedToken: string;
+  useEmptyPassword?: boolean;
+  useEmptyMasterPassword?: boolean;
+  updateSsl?: TlsUpdateState;
+  extraConnectionParameters?: Record<string, string>;
+};
+
+export function getDataSourceSecretValue(
+  ds: EditDataSource,
+  field: DataSourceSecretField
+): string | undefined {
+  const value =
+    field === "password"
+      ? ds.updatedPassword
+      : field === "masterPassword"
+        ? ds.updatedMasterPassword
+        : field === "authenticationPrivateKey"
+          ? ds.updatedToken || ds.authenticationPrivateKey
+          : ds[field];
+  return ds.pendingCreate || ds.updatedSecretFields?.includes(field) || value
+    ? value
+    : undefined;
+}
+
+export function updateDataSourceSecret(
+  ds: EditDataSource,
+  field: DataSourceSecretField,
+  value: string
+): EditDataSource {
+  const next = {
+    ...ds,
+    [field]: value,
+    updatedSecretFields: [
+      ...new Set([...(ds.updatedSecretFields ?? []), field]),
+    ],
+  };
+  if (field === "password") {
+    next.updatedPassword = value;
+    next.useEmptyPassword = value === "";
+  } else if (field === "masterPassword") {
+    next.updatedMasterPassword = value;
+    next.useEmptyMasterPassword = value === "";
+  } else if (field === "authenticationPrivateKey") {
+    next.updatedToken = value;
+  }
+  return next;
+}
+
+export type DataSourceEditState = {
+  dataSources: EditDataSource[];
+  editingDataSourceId: string | undefined;
+};
+
+export const extractDataSourceEditState = (
+  instance: Instance | undefined
+): DataSourceEditState => {
+  const engine = instance?.engine ?? Engine.MYSQL;
+  const dataSources: EditDataSource[] = [];
+  instance?.dataSources.forEach((ds) => {
+    dataSources.push(createDataSourceDraft(engine, ds));
+  });
+  const adminDS = dataSources.find((ds) => ds.type === DataSourceType.ADMIN);
+  if (!adminDS) {
+    dataSources.unshift(createDataSourceDraft(engine));
+  }
+  const editingDataSourceId =
+    dataSources.find((ds) => ds.type === DataSourceType.ADMIN)?.id ??
+    first(dataSources)?.id ??
+    undefined;
+  return {
+    dataSources,
+    editingDataSourceId,
+  };
+};
+
+export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
+  const store = useAppStore.getState();
+
+  const availableLicenseCount = Math.max(
+    0,
+    store.instanceLicenseCount() - store.activatedInstanceCount()
+  );
+
+  return {
+    name: instance?.name ?? UNKNOWN_INSTANCE_NAME,
+    state: instance?.state ?? State.ACTIVE,
+    title: instance?.title ?? i18n.t("instance.new-instance"),
+    engine: instance?.engine ?? Engine.MYSQL,
+    externalLink: instance?.externalLink ?? "",
+    environment: instance?.environment,
+    activation: instance
+      ? instance.activation
+      : store.currentPlan() !== PlanType.FREE && availableLicenseCount > 0,
+
+    syncInterval: instance?.syncInterval,
+    syncDatabases: instance?.syncDatabases,
+    roles: instance?.roles ?? [],
+    labels: instance?.labels ?? {},
+  };
+};
+
+export const createDataSourceDraft = (
+  engine: Engine,
+  ds?: DataSource
+): EditDataSource => {
+  const draft = cloneDeep(ds ?? unknownDataSource());
+  if (ds === undefined) {
+    draft.authenticationType = normalizeAuthenticationType(
+      engine,
+      draft.authenticationType
+    );
+  }
+  return {
+    ...draft,
+    pendingCreate: ds === undefined,
+    updatedPassword: "",
+    updatedMasterPassword: "",
+    updatedToken: "",
+    useEmptyPassword: false,
+    useEmptyMasterPassword: false,
+  };
+};
+
+export const krbConfigOf = (dataSource: DataSource) =>
+  dataSource.saslConfig?.mechanism?.case === "krbConfig"
+    ? dataSource.saslConfig.mechanism.value
+    : undefined;
+
+// The fields through which the operator names where a data source connects.
+// Mirrors dataSourceDestination in
+// backend/api/v1/instance_service_converter.go, which the server compares to
+// decide whether a stored Kerberos keytab may be inherited.
+const dataSourceDestination = (dataSource: DataSource) => {
+  const krbConfig = krbConfigOf(dataSource);
+  return {
+    host: dataSource.host,
+    port: dataSource.port,
+    additionalAddresses: dataSource.additionalAddresses.map(
+      ({ host, port }) => ({ host, port })
+    ),
+    sshHost: dataSource.sshHost,
+    sshPort: dataSource.sshPort,
+    extraConnectionParameters: { ...dataSource.extraConnectionParameters },
+    kdcHost: krbConfig?.kdcHost ?? "",
+    kdcPort: krbConfig?.kdcPort ?? "",
+  };
+};
+
+/**
+ * Reports whether this update would carry the stored Kerberos keytab to a
+ * destination the operator moved, which the server refuses: the keytab has to
+ * be supplied again, and supplying it is proof the operator still holds it.
+ *
+ * Pass the value the form will send as `editing`. The server compares its
+ * merged result against the stored data source as read, so the default port
+ * `extractDataSourceFromEdit` fills in, and the SSH fields it clears, count as
+ * a move here exactly as they do there.
+ *
+ * The form is deliberately stricter than the server on one point. The server
+ * refuses only when a keytab is actually stored; the keytab is INPUT_ONLY and
+ * no `keytab_set` companion exists, so a read cannot tell, and a saved data
+ * source that still authenticates with Kerberos is taken to hold one. A
+ * Kerberos data source stored without a keytab — reachable through the API,
+ * not through this form — is blocked here on an edit the server would accept.
+ * Carrying a presence flag the way `ssl_ca_set` does would remove the guess.
+ */
+export const movesKeytabToNewDestination = (
+  editing: DataSource,
+  original: DataSource | undefined
+): boolean => {
+  const editingKrbConfig = krbConfigOf(editing);
+  if (!editingKrbConfig || editingKrbConfig.keytab.length > 0) {
+    return false;
+  }
+  if (!original || !krbConfigOf(original)) {
+    return false;
+  }
+  return !isEqual(
+    dataSourceDestination(editing),
+    dataSourceDestination(original)
+  );
+};
+
+export const calcDataSourceUpdateMask = (
+  editing: DataSource,
+  original: DataSource,
+  editState: EditDataSource
+) => {
+  const updateMask = new Set(
+    calcUpdateMask(editing, original, true /* toSnakeCase */)
+  );
+  const { useEmptyPassword, updateSsl } = editState;
+  for (const field of editState.updatedSecretFields ?? []) {
+    updateMask.add(SECRET_MASK_PATHS[field]);
+  }
+  if (editState.useEmptyMasterPassword) {
+    editing.masterPassword = "";
+    updateMask.add("master_password");
+  }
+  if (useEmptyPassword) {
+    editing.password = "";
+    updateMask.add("password");
+  }
+  updateMask.delete("ssl_ca_set");
+  updateMask.delete("ssl_cert_set");
+  updateMask.delete("ssl_key_set");
+  updateMask.delete("ssl_ca_path_set");
+  updateMask.delete("ssl_cert_path_set");
+  updateMask.delete("ssl_key_path_set");
+  if (updateSsl === true) {
+    SSL_UPDATE_MASK_FIELDS.forEach((field) => updateMask.add(field));
+  } else if (updateSsl) {
+    if (updateSsl.useSsl) {
+      updateMask.add("use_ssl");
+    }
+    if (updateSsl.ca) {
+      SSL_CA_UPDATE_MASK_FIELDS.forEach((field) => updateMask.add(field));
+    }
+    if (updateSsl.clientCert) {
+      SSL_CLIENT_CERT_UPDATE_MASK_FIELDS.forEach((field) =>
+        updateMask.add(field)
+      );
+    }
+  }
+
+  if (updateMask.has("iam_extension")) {
+    updateMask.delete("iam_extension");
+    switch (editing.authenticationType) {
+      case DataSource_AuthenticationType.AWS_RDS_IAM:
+        updateMask.add("aws_credential");
+        break;
+      case DataSource_AuthenticationType.AZURE_IAM:
+        updateMask.add("azure_credential");
+        break;
+      case DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM:
+        updateMask.add("gcp_credential");
+        break;
+    }
+  }
+
+  return Array.from(updateMask);
+};
+
+export { hasSslConfig };

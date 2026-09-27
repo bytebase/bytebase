@@ -9,12 +9,14 @@ import (
 	"unicode/utf8"
 
 	"connectrpc.com/connect"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/parsercontext"
+	"github.com/bytebase/bytebase/backend/component/review"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -22,6 +24,7 @@ import (
 	advisorpg "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	parsermysql "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
@@ -29,6 +32,42 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 )
+
+type releaseCheckTarget struct {
+	database *store.DatabaseMessage
+	name     string
+}
+
+// checkReleaseTargetProject refuses a database target that spells another
+// project: it asks for nothing this project could hold, so it is malformed
+// for this request rather than merely absent.
+func checkReleaseTargetProject(projectID, target string, targetProjectID *string) error {
+	if targetProjectID != nil && *targetProjectID != projectID {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q does not belong to project %q", target, projectID))
+	}
+	return nil
+}
+
+// checkReleaseDatabase refuses a target whose database is missing or belongs
+// to another project. One error for both: a distinct one would confirm what
+// lives in a project the caller cannot see.
+func checkReleaseDatabase(projectID, target string, database *store.DatabaseMessage) error {
+	if database == nil || database.ProjectID != projectID {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
+	}
+	return nil
+}
+
+// checkReleaseDatabaseInstance refuses a target whose instance is gone or whose
+// name is not the database's own canonical one — a project instance's database
+// is not reachable through the workspace form. The same error as
+// checkReleaseDatabase, for the same reason.
+func checkReleaseDatabaseInstance(target string, database *store.DatabaseMessage, instance *store.InstanceMessage) error {
+	if instance == nil || instance.Deleted || database.ResourceName() != target {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
+	}
+	return nil
+}
 
 func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[v1pb.CheckReleaseRequest]) (*connect.Response[v1pb.CheckReleaseResponse], error) {
 	request := req.Msg
@@ -48,6 +87,9 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
+	if project.Deleted {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("project %q is archived", projectID))
+	}
 
 	if request.GetRelease() == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("release is required"))
@@ -65,42 +107,45 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("targets cannot be empty"))
 	}
 
-	var targetDatabases []*store.DatabaseMessage
+	var targets []*releaseCheckTarget
 	for _, target := range request.Targets {
 		// Handle database target.
-		if instanceID, databaseName, err := common.GetInstanceDatabaseID(target); err == nil {
+		if targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target); err == nil {
+			if err := checkReleaseTargetProject(projectID, target, targetProjectID); err != nil {
+				return nil, err
+			}
 			database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-				Workspace:    common.GetWorkspaceIDFromContext(ctx),
+				Workspace:    workspaceID,
 				InstanceID:   &instanceID,
 				DatabaseName: &databaseName,
 			})
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", target))
 			}
-			if database == nil {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
+			if err := checkReleaseDatabase(projectID, target, database); err != nil {
+				return nil, err
 			}
-			targetDatabases = append(targetDatabases, database)
+			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
+				Workspace:  workspaceID,
+				ResourceID: &instanceID,
+			})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, err)
+			}
+			if err := checkReleaseDatabaseInstance(target, database, instance); err != nil {
+				return nil, err
+			}
+			targets = append(targets, &releaseCheckTarget{database: database, name: target})
 			continue
 		}
 
 		// Handle database group target. Extract all matched databases in the database group.
 		if projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
-			project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-				Workspace:  workspaceID,
-				ResourceID: &projectResourceID,
-			})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
-			if project == nil {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectResourceID))
-			}
-			if project.Deleted {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", projectResourceID))
+			if projectResourceID != projectID {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database group target %q does not belong to project %q", target, projectID))
 			}
 			existedDatabaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-				ProjectIDs: []string{project.ResourceID},
+				ProjectIDs: []string{projectID},
 				ResourceID: &databaseGroupResourceID,
 			})
 			if err != nil {
@@ -121,24 +166,33 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 			if err != nil {
 				return nil, err
 			}
-			targetDatabases = append(targetDatabases, matches...)
+			for _, database := range matches {
+				targets = append(targets, &releaseCheckTarget{
+					database: database,
+					name:     database.ResourceName(),
+				})
+			}
 			continue
 		}
 
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported target %q", target))
 	}
 
-	if project.Setting.GetCiSamplingSize() > 0 && len(targetDatabases) > int(project.Setting.GetCiSamplingSize()) {
-		targetDatabases = targetDatabases[:project.Setting.GetCiSamplingSize()]
+	if project.Setting.GetCiSamplingSize() > 0 && len(targets) > int(project.Setting.GetCiSamplingSize()) {
+		targets = targets[:project.Setting.GetCiSamplingSize()]
 	}
 
 	// Validate and sanitize release files.
-	sanitizedFiles, err := validateAndSanitizeReleaseFiles(ctx, s.store, request.Release.Files, request.Release.Type)
+	sanitizedFiles, err := validateAndSanitizeReleaseFiles(request.Release.Files, request.Release.Type)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid release files"))
 	}
 	if len(sanitizedFiles) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("release files cannot be empty"))
+	}
+	// The checks below run over the SQL itself, so load sheet content here.
+	if err := loadReleaseFileStatements(ctx, s.store, projectID, sanitizedFiles); err != nil {
+		return nil, err
 	}
 
 	if err := s.touchVCSProviderUser(ctx, workspaceID, request.GetVcsUser()); err != nil {
@@ -148,13 +202,13 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	var response *v1pb.CheckReleaseResponse
 	switch releaseType {
 	case v1pb.Release_DECLARATIVE:
-		resp, err := s.checkReleaseDeclarative(ctx, sanitizedFiles, targetDatabases, request.CustomRules)
+		resp, err := s.checkReleaseDeclarative(ctx, sanitizedFiles, targets, request.CustomRules)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check release declarative"))
 		}
 		response = resp
 	case v1pb.Release_VERSIONED:
-		resp, err := s.checkReleaseVersioned(ctx, project, sanitizedFiles, targetDatabases, request.CustomRules)
+		resp, err := s.checkReleaseVersioned(ctx, project, sanitizedFiles, targets, request.CustomRules)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check release versioned"))
 		}
@@ -164,6 +218,37 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	}
 
 	return connect.NewResponse(response), nil
+}
+
+// loadReleaseFileStatements populates Statement for files that reference a
+// sheet, reading full content through the project-scoped accessor. The scoped
+// read is also what scopes CheckRelease: a sheet without this project's ref
+// comes back absent and errors as not found.
+func loadReleaseFileStatements(ctx context.Context, s *store.Store, projectID string, files []*v1pb.Release_File) error {
+	var sheetSha256s []string
+	for _, f := range files {
+		if f.Sheet != "" {
+			sheetSha256s = append(sheetSha256s, f.SheetSha256)
+		}
+	}
+	if len(sheetSha256s) == 0 {
+		return nil
+	}
+	sheets, err := s.GetSheetsForProject(ctx, projectID, sheetSha256s, true)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheets"))
+	}
+	for _, f := range files {
+		if f.Sheet == "" {
+			continue
+		}
+		sheet, ok := sheets[f.SheetSha256]
+		if !ok {
+			return connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", f.Sheet))
+		}
+		f.Statement = []byte(sheet.Statement)
+	}
+	return nil
 }
 
 func (s *ReleaseService) touchVCSProviderUser(ctx context.Context, workspaceID string, vcsUser *v1pb.VCSUser) error {
@@ -229,7 +314,7 @@ func truncateVCSProviderUserMetadata(value string) string {
 	return string([]rune(value)[:maxVCSProviderUserFieldLength])
 }
 
-func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, project *store.ProjectMessage, files []*v1pb.Release_File, databases []*store.DatabaseMessage, customRules string) (*v1pb.CheckReleaseResponse, error) {
+func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, project *store.ProjectMessage, files []*v1pb.Release_File, targets []*releaseCheckTarget, customRules string) (*v1pb.CheckReleaseResponse, error) {
 	resp := &v1pb.CheckReleaseResponse{}
 	var errorAdviceCount, warningAdviceCount int
 
@@ -239,7 +324,8 @@ func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, project *sto
 	}
 
 loop:
-	for _, database := range databases {
+	for _, target := range targets {
+		database := target.database
 		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 			Workspace:  common.GetWorkspaceIDFromContext(ctx),
 			ResourceID: &database.InstanceID,
@@ -268,7 +354,7 @@ loop:
 		originMetadata := model.NewDatabaseMetadata(dbMetadata.GetProto(), nil, nil, engine, store.IsObjectCaseSensitive(instance))
 
 		// Clone metadata for final to avoid modifying the original
-		clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*storepb.DatabaseSchemaMetadata)
+		clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*metadatapb.DatabaseSchemaMetadata)
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.New("failed to clone database schema metadata"))
 		}
@@ -325,7 +411,7 @@ loop:
 					// Add a warning advice if SHA256 mismatch
 					checkResult := &v1pb.CheckReleaseResponse_CheckResult{
 						File:   file.Path,
-						Target: common.FormatDatabase(instance.ResourceID, database.DatabaseName),
+						Target: target.name,
 						Advices: []*v1pb.Advice{
 							{
 								Status:  v1pb.Advice_WARNING,
@@ -345,9 +431,9 @@ loop:
 			checkResult, err := func() (*v1pb.CheckReleaseResponse_CheckResult, error) {
 				checkResult := &v1pb.CheckReleaseResponse_CheckResult{
 					File:   file.Path,
-					Target: common.FormatDatabase(instance.ResourceID, database.DatabaseName),
+					Target: target.name,
 				}
-				// statement is guaranteed to be populated by validateAndSanitizeReleaseFiles
+				// statement is guaranteed to be populated by loadReleaseFileStatements
 				statement := string(file.Statement)
 				// Check if any syntax error in the statement.
 				if common.EngineSupportSyntaxCheck(engine) {
@@ -362,17 +448,25 @@ loop:
 
 				// Get SQL summary report for the statement and target database.
 				// Including affected rows.
-				summaryReport, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, statement)
+				summaryReport, estimateWarning, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, statement)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get SQL summary report"))
 				}
 				if summaryReport != nil {
 					checkResult.AffectedRows = summaryReport.AffectedRows
 					checkResult.RiskLevel = getRiskLevelFromStatementTypes(summaryReport.StatementTypes)
-					resp.AffectedRows += summaryReport.AffectedRows
+					resp.AffectedRows = common.AddRows(resp.AffectedRows, summaryReport.AffectedRows)
 					if checkResult.RiskLevel > resp.RiskLevel {
 						resp.RiskLevel = checkResult.RiskLevel
 					}
+				}
+				if estimateWarning != "" {
+					checkResult.Advices = append(checkResult.Advices, &v1pb.Advice{
+						Status:  v1pb.Advice_WARNING,
+						Code:    code.StatementExplainQueryFailed.Int32(),
+						Title:   plancheck.AffectedRowsEstimateIncompleteTitle,
+						Content: estimateWarning,
+					})
 				}
 				if common.EngineSupportSQLReview(engine) {
 					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, project, originMetadata, finalMetadata, instance, database, statement)
@@ -403,7 +497,7 @@ loop:
 			if err != nil {
 				checkResult = &v1pb.CheckReleaseResponse_CheckResult{
 					File:   file.Path,
-					Target: common.FormatDatabase(instance.ResourceID, database.DatabaseName),
+					Target: target.name,
 					Advices: []*v1pb.Advice{
 						{
 							Status:  v1pb.Advice_ERROR,
@@ -440,10 +534,21 @@ loop:
 	return resp, nil
 }
 
-func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v1pb.Release_File, databases []*store.DatabaseMessage, customRules string) (*v1pb.CheckReleaseResponse, error) {
+func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v1pb.Release_File, targets []*releaseCheckTarget, customRules string) (*v1pb.CheckReleaseResponse, error) {
 	var results []*v1pb.CheckReleaseResponse_CheckResult
 	var errorAdviceCount, warningAdviceCount int
-	for _, database := range databases {
+
+	// The declarative target text is loop-invariant: every database is checked against
+	// the same combined release files, so build it once.
+	var combinedSDLBuilder strings.Builder
+	for _, file := range files {
+		combinedSDLBuilder.Write(file.Statement)
+		combinedSDLBuilder.WriteString("\n\n")
+	}
+	combinedTargetSDL := combinedSDLBuilder.String()
+
+	for _, target := range targets {
+		database := target.database
 		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 			Workspace:  common.GetWorkspaceIDFromContext(ctx),
 			ResourceID: &database.InstanceID,
@@ -479,7 +584,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 				if fv.LessThanOrEqual(rv) {
 					checkResult := &v1pb.CheckReleaseResponse_CheckResult{
 						File:   file.Path,
-						Target: common.FormatDatabase(instance.ResourceID, database.DatabaseName),
+						Target: target.name,
 						Advices: []*v1pb.Advice{
 							{
 								Status:  v1pb.Advice_WARNING,
@@ -495,41 +600,47 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 			}
 		}
 
-		// Perform SDL style and integrity checks for PostgreSQL
+		// Perform SDL gating checks for engines with declarative support.
+		// PostgreSQL additionally runs style + integrity checks (no MySQL analog exists,
+		// so those stay PG-only rather than inventing MySQL rules); the DROP-operation
+		// data-loss check runs for every supported engine via the schema registry.
 		var sdlStyleAdvices map[string][]*storepb.Advice
 		var sdlIntegrityAdvices map[string][]*storepb.Advice
 		var sdlDropAdvices []*storepb.Advice
-		if engine == storepb.Engine_POSTGRES {
-			fileContents := make(map[string]string)
-			for _, file := range files {
-				fileContents[file.Path] = string(file.Statement)
-			}
+		if engineSupportsDeclarativeRelease(engine) {
+			// Style + integrity checks are PostgreSQL-specific.
+			if engine == storepb.Engine_POSTGRES {
+				fileContents := make(map[string]string)
+				for _, file := range files {
+					fileContents[file.Path] = string(file.Statement)
+				}
 
-			// Run SDL style checks (schema name requirements, index naming, etc.)
-			sdlStyleAdvices = make(map[string][]*storepb.Advice)
-			for filePath, content := range fileContents {
-				advices, err := advisorpg.CheckSDLStyle(content)
+				// Run SDL style checks (schema name requirements, index naming, etc.)
+				sdlStyleAdvices = make(map[string][]*storepb.Advice)
+				for filePath, content := range fileContents {
+					advices, err := advisorpg.CheckSDLStyle(content)
+					if err != nil {
+						// Continue with other checks even if style check fails
+						sdlStyleAdvices[filePath] = []*storepb.Advice{{
+							Status:  storepb.Advice_ERROR,
+							Code:    code.Internal.Int32(),
+							Title:   "Failed to check SDL style",
+							Content: err.Error(),
+						}}
+					} else {
+						sdlStyleAdvices[filePath] = advices
+					}
+				}
+
+				// Run SDL integrity checks (handles cross-file validation)
+				var err error
+				sdlIntegrityAdvices, err = advisorpg.CheckSDLIntegrity(fileContents)
 				if err != nil {
-					// Continue with other checks even if style check fails
-					sdlStyleAdvices[filePath] = []*storepb.Advice{{
-						Status:  storepb.Advice_ERROR,
-						Code:    code.Internal.Int32(),
-						Title:   "Failed to check SDL style",
-						Content: err.Error(),
-					}}
-				} else {
-					sdlStyleAdvices[filePath] = advices
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check SDL integrity"))
 				}
 			}
 
-			// Run SDL integrity checks (handles cross-file validation)
-			var err error
-			sdlIntegrityAdvices, err = advisorpg.CheckSDLIntegrity(fileContents)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check SDL integrity"))
-			}
-
-			// Run SDL DROP operation checks
+			// Run SDL DROP operation checks (all supported engines).
 			// This checks for data loss risks from DROP operations by analyzing the schema diff
 			dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 				Workspace:    common.GetWorkspaceIDFromContext(ctx),
@@ -537,14 +648,8 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 				DatabaseName: database.DatabaseName,
 			})
 			if err == nil && dbMetadata != nil {
-				// Combine all SDL files into single text
-				var combinedCurrentSDL strings.Builder
-				for _, file := range files {
-					combinedCurrentSDL.Write(file.Statement)
-					combinedCurrentSDL.WriteString("\n\n")
-				}
-
-				advices, err := schema.SDLDropAdvices(engine, combinedCurrentSDL.String(), dbMetadata)
+				// Thread the synced server version so MySQL builds the version-correct plan.
+				advices, err := schema.SDLDropAdvices(engine, combinedTargetSDL, dbMetadata, instance.Metadata.GetVersion())
 				if err == nil {
 					sdlDropAdvices = advices
 				}
@@ -578,10 +683,10 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 		for _, file := range files {
 			checkResult := &v1pb.CheckReleaseResponse_CheckResult{
 				File:   file.Path,
-				Target: common.FormatDatabase(instance.ResourceID, database.DatabaseName),
+				Target: target.name,
 			}
 
-			// statement is guaranteed to be populated by validateAndSanitizeReleaseFiles
+			// statement is guaranteed to be populated by loadReleaseFileStatements
 			statement := string(file.Statement)
 
 			// Check if any syntax error in the statement.
@@ -605,7 +710,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 					} else {
 						// Check all statement types against whitelist and collect disallowed ones with positions
 						for _, stmt := range statementsWithPos {
-							if !isAllowedInSDL(stmt.Type) {
+							if !isAllowedInSDL(engine, stmt.Type) {
 								// Create a separate advice for each disallowed statement with position
 								advice := &v1pb.Advice{
 									Status: v1pb.Advice_ERROR,
@@ -635,21 +740,25 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 						}
 					}
 
-					// Add SDL style and integrity check results for this file (PostgreSQL only)
-					if engine == storepb.Engine_POSTGRES && len(checkResult.Advices) == 0 {
-						// Add SDL style check results
-						if advices, exists := sdlStyleAdvices[file.Path]; exists {
-							for _, advice := range advices {
-								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+					// Add SDL style/integrity/DROP check results for this file.
+					if engineSupportsDeclarativeRelease(engine) && len(checkResult.Advices) == 0 {
+						// Style + integrity are PostgreSQL-only (no MySQL analog).
+						if engine == storepb.Engine_POSTGRES {
+							// Add SDL style check results
+							if advices, exists := sdlStyleAdvices[file.Path]; exists {
+								for _, advice := range advices {
+									checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+								}
+							}
+							// Add SDL integrity check results
+							if advices, exists := sdlIntegrityAdvices[file.Path]; exists {
+								for _, advice := range advices {
+									checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
+								}
 							}
 						}
-						// Add SDL integrity check results
-						if advices, exists := sdlIntegrityAdvices[file.Path]; exists {
-							for _, advice := range advices {
-								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
-							}
-						}
-						// Add SDL DROP operation warnings (only to first file since they apply to entire migration)
+						// Add SDL DROP operation warnings (all supported engines; only to the
+						// first file since they apply to the entire migration)
 						if file.Path == files[0].Path && len(sdlDropAdvices) > 0 {
 							for _, advice := range sdlDropAdvices {
 								checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
@@ -708,7 +817,7 @@ func getRiskLevelFromStatementTypes(statementTypes []storepb.StatementType) v1pb
 	for _, statementType := range statementTypes {
 		statementTypeStrings = append(statementTypeStrings, statementType.String())
 	}
-	switch common.GetRiskLevelFromStatementTypes(statementTypeStrings) {
+	switch review.GetRiskLevelFromStatementTypes(statementTypeStrings) {
 	case storepb.RiskLevel_LOW:
 		return v1pb.RiskLevel_LOW
 	case storepb.RiskLevel_MODERATE:
@@ -797,10 +906,16 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	return adviceLevel, advices, nil
 }
 
-// allowedSDLStatementTypes defines the whitelist of statement types allowed in SDL files.
-// SDL files should only contain CREATE and COMMENT statements to declare the desired schema.
-// ALTER SEQUENCE is allowed for setting ownership (OWNED BY).
-var allowedSDLStatementTypes = map[storepb.StatementType]bool{
+// commonAllowedSDLStatementTypes is the whitelist of statement types allowed in SDL
+// files for every declarative-capable engine. SDL files should only contain CREATE and
+// COMMENT statements to declare the desired schema. ALTER SEQUENCE is allowed for
+// setting ownership (OWNED BY). CREATE TRIGGER is deliberately shared: both SDL
+// pipelines fully manage triggers — the PostgreSQL dump emits CREATE TRIGGER and the pg
+// omni differ handles OpDropTrigger with a drop advice (pg/sdl_migration.go), the
+// same as MySQL — so a declared trigger is legal SDL on both engines.
+// STATEMENT_TYPE_UNSPECIFIED is (and must stay) absent from every allowlist so that a
+// parsed-but-unclassified statement fails CLOSED as disallowed.
+var commonAllowedSDLStatementTypes = map[storepb.StatementType]bool{
 	// CREATE statements - declare new objects
 	storepb.StatementType_CREATE_TABLE:     true,
 	storepb.StatementType_CREATE_INDEX:     true,
@@ -809,6 +924,7 @@ var allowedSDLStatementTypes = map[storepb.StatementType]bool{
 	storepb.StatementType_CREATE_FUNCTION:  true,
 	storepb.StatementType_CREATE_PROCEDURE: true,
 	storepb.StatementType_CREATE_SCHEMA:    true,
+	storepb.StatementType_CREATE_TRIGGER:   true,
 
 	// ALTER statements - limited to specific cases
 	storepb.StatementType_ALTER_SEQUENCE: true, // Allowed for OWNED BY and sequence options
@@ -817,9 +933,19 @@ var allowedSDLStatementTypes = map[storepb.StatementType]bool{
 	storepb.StatementType_COMMENT: true,
 }
 
-// isAllowedInSDL checks if a statement type is allowed in SDL files.
-func isAllowedInSDL(stmtType storepb.StatementType) bool {
-	return allowedSDLStatementTypes[stmtType]
+// extraAllowedSDLStatementTypesByEngine holds engine-specific additions to the common
+// SDL allowlist. MySQL declarative dumps also emit scheduled events as CREATE EVENT —
+// a MySQL-only object with no PostgreSQL analog (the pg parser can never classify one,
+// but keying it per engine documents the intent and keeps other engines' gates exact).
+var extraAllowedSDLStatementTypesByEngine = map[storepb.Engine]map[storepb.StatementType]bool{
+	storepb.Engine_MYSQL: {
+		storepb.StatementType_CREATE_EVENT: true,
+	},
+}
+
+// isAllowedInSDL checks if a statement type is allowed in SDL files for the engine.
+func isAllowedInSDL(engine storepb.Engine, stmtType storepb.StatementType) bool {
+	return commonAllowedSDLStatementTypes[stmtType] || extraAllowedSDLStatementTypesByEngine[engine][stmtType]
 }
 
 // statementTypeWithPosition contains statement type and its position information.
@@ -831,8 +957,7 @@ type statementTypeWithPosition struct {
 }
 
 // getStatementTypesWithPositionsForEngine returns statement types with position info for the given engine and ASTs.
-// The line numbers are one-based.
-// Currently only PostgreSQL is supported.
+// The line numbers are one-based. PostgreSQL and MySQL are supported.
 func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts []base.AST) ([]statementTypeWithPosition, error) {
 	switch engine {
 	case storepb.Engine_POSTGRES:
@@ -850,8 +975,33 @@ func getStatementTypesWithPositionsForEngine(engine storepb.Engine, asts []base.
 			}
 		}
 		return result, nil
+	case storepb.Engine_MYSQL:
+		mysqlStmts, err := parsermysql.GetStatementTypesWithPositions(asts)
+		if err != nil {
+			return nil, err
+		}
+		result := make([]statementTypeWithPosition, len(mysqlStmts))
+		for i, stmt := range mysqlStmts {
+			result[i] = statementTypeWithPosition{
+				Type: stmt.Type,
+				Line: stmt.Line,
+				Text: stmt.Text,
+			}
+		}
+		return result, nil
 	default:
 		// For unsupported engines, return empty list (skip check)
 		return []statementTypeWithPosition{}, nil
+	}
+}
+
+// engineSupportsDeclarativeRelease reports whether the engine participates in the
+// declarative-release SDL gating (drop-advice / statement-type / style checks).
+func engineSupportsDeclarativeRelease(engine storepb.Engine) bool {
+	switch engine {
+	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL:
+		return true
+	default:
+		return false
 	}
 }

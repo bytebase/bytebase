@@ -26,9 +26,6 @@ func (x *UpdateDatabaseCatalogRequest) Equal(y *UpdateDatabaseCatalogRequest) bo
 	if !x.Catalog.Equal(y.Catalog) {
 		return false
 	}
-	if x.AllowMissing != y.AllowMissing {
-		return false
-	}
 	return true
 }
 

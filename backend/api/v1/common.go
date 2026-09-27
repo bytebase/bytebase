@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -209,7 +210,12 @@ func normalizeFilter(filter string) (string, []string, error) {
 }
 
 func convertToEngine(engine storepb.Engine) v1pb.Engine {
+	// A missing arm reports as unspecified, which reads as "Bytebase does not
+	// know this engine". golangci checks only switches that ask for it
+	// (.golangci.yaml, explicit-exhaustive-switch).
+	//exhaustive:enforce
 	switch engine {
+	case storepb.Engine_ENGINE_UNSPECIFIED:
 	case storepb.Engine_CLICKHOUSE:
 		return v1pb.Engine_CLICKHOUSE
 	case storepb.Engine_MYSQL:
@@ -218,8 +224,6 @@ func convertToEngine(engine storepb.Engine) v1pb.Engine {
 		return v1pb.Engine_POSTGRES
 	case storepb.Engine_SNOWFLAKE:
 		return v1pb.Engine_SNOWFLAKE
-	case storepb.Engine_SQLITE:
-		return v1pb.Engine_SQLITE
 	case storepb.Engine_TIDB:
 		return v1pb.Engine_TIDB
 	case storepb.Engine_MONGODB:
@@ -275,8 +279,6 @@ func convertEngine(engine v1pb.Engine) storepb.Engine {
 		return storepb.Engine_POSTGRES
 	case v1pb.Engine_SNOWFLAKE:
 		return storepb.Engine_SNOWFLAKE
-	case v1pb.Engine_SQLITE:
-		return storepb.Engine_SQLITE
 	case v1pb.Engine_TIDB:
 		return storepb.Engine_TIDB
 	case v1pb.Engine_MONGODB:
@@ -350,12 +352,16 @@ type pageSize struct {
 type pageOffset struct {
 	limit  int
 	offset int
+	// createTimeUpperBound is set by a list whose own reads write rows it
+	// would page over. Inclusive.
+	createTimeUpperBound *timestamppb.Timestamp
 }
 
 func (p *pageOffset) getNextPageToken() (string, error) {
 	return marshalPageToken(&storepb.PageToken{
-		Limit:  int32(p.limit),
-		Offset: int32(p.offset + p.limit),
+		Limit:                int32(p.limit),
+		Offset:               int32(p.offset + p.limit),
+		CreateTimeUpperBound: p.createTimeUpperBound,
 	})
 }
 
@@ -371,6 +377,7 @@ func parseLimitAndOffset(size *pageSize) (*pageOffset, error) {
 		}
 		offset.limit = int(size.limit)
 		offset.offset = int(token.Offset)
+		offset.createTimeUpperBound = token.CreateTimeUpperBound
 	} else {
 		offset.limit = int(size.limit)
 	}
@@ -381,36 +388,6 @@ func parseLimitAndOffset(size *pageSize) (*pageOffset, error) {
 		offset.limit = size.maximum
 	}
 	return offset, nil
-}
-
-func convertExportFormat(format storepb.ExportFormat) v1pb.ExportFormat {
-	switch format {
-	case storepb.ExportFormat_CSV:
-		return v1pb.ExportFormat_CSV
-	case storepb.ExportFormat_JSON:
-		return v1pb.ExportFormat_JSON
-	case storepb.ExportFormat_SQL:
-		return v1pb.ExportFormat_SQL
-	case storepb.ExportFormat_XLSX:
-		return v1pb.ExportFormat_XLSX
-	default:
-	}
-	return v1pb.ExportFormat_FORMAT_UNSPECIFIED
-}
-
-func convertToExportFormat(format v1pb.ExportFormat) storepb.ExportFormat {
-	switch format {
-	case v1pb.ExportFormat_CSV:
-		return storepb.ExportFormat_CSV
-	case v1pb.ExportFormat_JSON:
-		return storepb.ExportFormat_JSON
-	case v1pb.ExportFormat_SQL:
-		return storepb.ExportFormat_SQL
-	case v1pb.ExportFormat_XLSX:
-		return storepb.ExportFormat_XLSX
-	default:
-	}
-	return storepb.ExportFormat_FORMAT_UNSPECIFIED
 }
 
 func GetUserFromContext(ctx context.Context) (*store.UserMessage, bool) {

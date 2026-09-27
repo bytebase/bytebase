@@ -1,0 +1,43 @@
+import { useSQLEditorStore } from "@/modules/sql-editor/store";
+import { useIsDisconnected } from "@/modules/sql-editor/store/tab";
+import { AccessPane } from "./AccessPane";
+import { ActionBar } from "./AsidePanel/ActionBar";
+import { GutterBar } from "./GutterBar";
+import { HistoryPane } from "./HistoryPane";
+import { SavedQueryPane } from "./SavedQueryPane";
+import { SchemaPane } from "./SchemaPane/SchemaPane";
+
+/**
+ * Three-column shell:
+ *   1. GutterBar (vertical icon rail) — fixed.
+ *   2. ActionBar — only when `asidePanelTab === "SCHEMA"` and the tab is
+ *      connected to a database. Vertical button column for view drill-downs.
+ *   3. Main column — active pane (SavedQuery / Schema / History / Access).
+ */
+export function AsidePanel() {
+  const asidePanelTab = useSQLEditorStore((s) => s.asidePanelTab);
+  const isDisconnected = useIsDisconnected();
+
+  return (
+    <div className="h-full flex flex-row overflow-hidden">
+      <div className="h-full border-r shrink-0">
+        <GutterBar />
+      </div>
+      {asidePanelTab === "SCHEMA" && !isDisconnected ? (
+        <div className="h-full border-r shrink-0">
+          <ActionBar />
+        </div>
+      ) : null}
+      <div className="h-full flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-row overflow-hidden">
+          <div className="h-full flex-1 flex flex-col pt-1 overflow-hidden">
+            {asidePanelTab === "SAVED_QUERY" ? <SavedQueryPane /> : null}
+            {asidePanelTab === "SCHEMA" ? <SchemaPane /> : null}
+            {asidePanelTab === "HISTORY" ? <HistoryPane /> : null}
+            {asidePanelTab === "ACCESS" ? <AccessPane /> : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

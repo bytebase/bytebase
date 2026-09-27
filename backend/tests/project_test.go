@@ -11,35 +11,32 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
+//nolint:tparallel // Subtests share one server lifecycle.
 func TestArchiveProject(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	instanceRootDir := t.TempDir()
-	instanceName := "testInstance1"
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	// Add an instance.
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "test",
-			Engine:      v1pb.Engine_SQLITE,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "test",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
 	t.Run("ArchiveProjectWithDatabase", func(_ *testing.T) {
-		databaseName := "db1"
+		databaseName := uniqueDB("db1")
 		err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
 		a.NoError(err)
 

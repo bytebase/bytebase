@@ -1,0 +1,14 @@
+/* The Explain Visualizer entry loads the product's Tailwind entry and nothing
+   else of the app, so the page itself has to fill the tab. */
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: rgb(var(--color-background));
+  color: rgb(var(--color-main));
+}

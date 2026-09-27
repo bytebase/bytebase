@@ -6,7 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/qb"
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // idMinValue is the minimum ID value for per-project auto-increment.
@@ -14,13 +15,46 @@ import (
 // reserving IDs below 101 for seed/test data.
 const idMinValue int64 = 101
 
+// requireActiveProject requires the project to exist and be active.
+func requireActiveProject(ctx context.Context, tx *sql.Tx, projectID string) error {
+	var deleted bool
+	if err := tx.QueryRowContext(ctx,
+		"SELECT deleted FROM project WHERE resource_id = $1", projectID).Scan(&deleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return common.Errorf(common.NotFound, "project %s not found", projectID)
+		}
+		return errors.Wrapf(err, "failed to find project %s", projectID)
+	}
+	if deleted {
+		return common.Errorf(common.NotFound, "project %s is deleted", projectID)
+	}
+	return nil
+}
+
+// lockActiveProject locks the project row and requires it to be active. This
+// serializes MAX(id) + 1 allocation for project-scoped tables.
+func lockActiveProject(ctx context.Context, tx *sql.Tx, projectID string) error {
+	var deleted bool
+	if err := tx.QueryRowContext(ctx,
+		"SELECT deleted FROM project WHERE resource_id = $1 FOR UPDATE", projectID).Scan(&deleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return common.Errorf(common.NotFound, "project %s not found", projectID)
+		}
+		return errors.Wrapf(err, "failed to lock project %s", projectID)
+	}
+	if deleted {
+		return common.Errorf(common.NotFound, "project %s is deleted", projectID)
+	}
+	return nil
+}
+
 // nextProjectID returns the next per-project auto-increment ID for the given table.
-// Must be called within a transaction. Locks the project row to serialize concurrent inserts.
+// Must be called within a transaction. Locks and validates the active project row to
+// serialize concurrent allocations.
 // Returns at least idMinValue (101) for new projects.
 func nextProjectID(ctx context.Context, tx *sql.Tx, table, projectID string) (int64, error) {
-	if _, err := tx.ExecContext(ctx,
-		"SELECT 1 FROM project WHERE resource_id = $1 FOR UPDATE", projectID); err != nil {
-		return 0, errors.Wrapf(err, "failed to lock project %s", projectID)
+	if err := lockActiveProject(ctx, tx, projectID); err != nil {
+		return 0, err
 	}
 	var maxID int64
 

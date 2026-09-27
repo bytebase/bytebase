@@ -1,0 +1,22 @@
+import { useAppDatabaseMetadata } from "@/hooks/useAppDatabaseMetadata";
+import { SchemaDiagram } from "@/modules/schema-diagram";
+import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
+
+/**
+ * Reads the current tab's database from the SQL Editor connection
+ * store + its metadata from the app store, and forwards both
+ * to `<SchemaDiagram>`. Mounted by `Panels`.
+ */
+export function DiagramPanel() {
+  const { database } = useConnectionOfCurrentSQLEditorTab();
+  // Parent `Panels.tsx` drives the metadata fetch; we only subscribe.
+  const databaseMetadata = useAppDatabaseMetadata(database.name, {
+    autoFetch: false,
+  });
+
+  return (
+    <div className="w-full h-full bb-react-schema-diagram">
+      <SchemaDiagram database={database} databaseMetadata={databaseMetadata} />
+    </div>
+  );
+}

@@ -8,9 +8,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -33,7 +33,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	databaseName := formatDatabaseName(*identity.Account, region)
 
 	return &db.InstanceMetadata{
-		Databases: []*storepb.DatabaseSchemaMetadata{
+		Databases: []*metadatapb.DatabaseSchemaMetadata{
 			{
 				Name: databaseName,
 			},
@@ -42,8 +42,8 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	schemaMetadata := &storepb.SchemaMetadata{}
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	schemaMetadata := &metadatapb.SchemaMetadata{}
 
 	tableNames, err := d.listAllTables(ctx)
 	if err != nil {
@@ -63,16 +63,16 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 	}
 
-	return &storepb.DatabaseSchemaMetadata{
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name: d.config.ConnectionContext.DatabaseName,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			schemaMetadata,
 		},
 	}, nil
 }
 
-func (d *Driver) syncTable(ctx context.Context, tableName string) (*storepb.TableMetadata, error) {
-	tableMetadata := &storepb.TableMetadata{
+func (d *Driver) syncTable(ctx context.Context, tableName string) (*metadatapb.TableMetadata, error) {
+	tableMetadata := &metadatapb.TableMetadata{
 		Name: tableName,
 	}
 	out, err := d.client.DescribeTable(ctx, &dynamodb.DescribeTableInput{
@@ -99,12 +99,12 @@ func (d *Driver) syncTable(ctx context.Context, tableName string) (*storepb.Tabl
 				// Unknown key type, ignore
 			}
 		}
-		tableMetadata.Indexes = append(tableMetadata.Indexes, &storepb.IndexMetadata{
+		tableMetadata.Indexes = append(tableMetadata.Indexes, &metadatapb.IndexMetadata{
 			Name:        strings.Join(hashKeyAttributes, ","),
 			Expressions: append([]string{}, hashKeyAttributes...),
 			Type:        "HASH",
 		})
-		tableMetadata.Indexes = append(tableMetadata.Indexes, &storepb.IndexMetadata{
+		tableMetadata.Indexes = append(tableMetadata.Indexes, &metadatapb.IndexMetadata{
 			Name:        strings.Join(rangeKeyAttributes, ","),
 			Expressions: append([]string{}, rangeKeyAttributes...),
 			Type:        "RANGE",
@@ -121,9 +121,9 @@ func (d *Driver) syncTable(ctx context.Context, tableName string) (*storepb.Tabl
 			sortedColumns = append(sortedColumns, key)
 		}
 		slices.Sort(sortedColumns)
-		tableMetadata.Columns = make([]*storepb.ColumnMetadata, 0, len(sortedColumns))
+		tableMetadata.Columns = make([]*metadatapb.ColumnMetadata, 0, len(sortedColumns))
 		for _, key := range sortedColumns {
-			tableMetadata.Columns = append(tableMetadata.Columns, &storepb.ColumnMetadata{
+			tableMetadata.Columns = append(tableMetadata.Columns, &metadatapb.ColumnMetadata{
 				Name: key,
 			})
 		}

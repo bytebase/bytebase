@@ -16,4 +16,5 @@ message Signal {
   Type type = 1;
   int64 uid = 2;
   string project = 3;
+  int64 approval_input_version = 4;
 }

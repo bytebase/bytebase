@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -25,27 +26,40 @@ import (
 
 const (
 	clientIDPrefix     = "bb_oauth_"
-	clientSecretPrefix = "bb_secret_"
 	refreshTokenPrefix = "bb_refresh_"
 	authCodePrefix     = "bb_code_"
 
-	authCodeExpiry       = 10 * time.Minute
-	accessTokenExpiry    = 1 * time.Hour
+	authCodeExpiry = 10 * time.Minute
+	// accessTokenExpiry aliases the shared constant so the /mcp middleware's
+	// legacy-audience migration window (one access-token lifetime from process
+	// start) stays exactly as long as the tokens it exists for.
+	accessTokenExpiry    = auth.OAuth2AccessTokenDuration
 	refreshTokenExpiry   = 30 * 24 * time.Hour
 	clientInactiveExpiry = 30 * 24 * time.Hour
+
+	// maxOAuth2BodyBytes caps request bodies on the OAuth2 POST routes. Echo's
+	// default JSON deserializer buffers the whole body in memory before
+	// unmarshalling, and /register is unauthenticated, so bodies must be
+	// bounded before Bind. OAuth2 payloads (RFC 7591 client metadata, RFC 6749
+	// token/revoke forms) are at most a few KB; 64 KB is generous.
+	maxOAuth2BodyBytes = 64 << 10
 )
 
 type Service struct {
 	store   *store.Store
 	profile *config.Profile
 	secret  string
+
+	// mcpCeiling is narrowed to an interface so a test can make the read fail.
+	mcpCeiling mcpCeilingReader
 }
 
-func NewService(store *store.Store, profile *config.Profile, secret string) *Service {
+func NewService(stores *store.Store, profile *config.Profile, secret string) *Service {
 	return &Service{
-		store:   store,
-		profile: profile,
-		secret:  secret,
+		store:      stores,
+		profile:    profile,
+		secret:     secret,
+		mcpCeiling: stores,
 	}
 }
 
@@ -60,23 +74,24 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	// authorization code / refresh token (set at consent time from the
 	// user's session), not on the URL or the client. Same routes serve
 	// self-hosted and SaaS.
-	e.POST("/api/oauth2/register", s.handleRegister)
+	bodyLimit := middleware.BodyLimit(maxOAuth2BodyBytes)
+	e.POST("/api/oauth2/register", s.handleRegister, bodyLimit)
 	e.GET("/api/oauth2/authorize", s.handleAuthorizeGet)
-	e.POST("/api/oauth2/authorize", s.handleAuthorizePost)
+	e.POST("/api/oauth2/authorize", s.handleAuthorizePost, bodyLimit)
 	e.GET("/api/oauth2/clients/:clientID", s.handleGetClient)
-	e.POST("/api/oauth2/token", s.handleToken)
-	e.POST("/api/oauth2/revoke", s.handleRevoke)
+	e.POST("/api/oauth2/token", s.handleToken, bodyLimit)
+	e.POST("/api/oauth2/revoke", s.handleRevoke, bodyLimit)
 
 	// Workspace-scoped routes are kept for backward compatibility with any
 	// client that hardcoded the older URL shape. The :workspaceID segment
 	// is now informational — workspace resolution comes from the session
 	// at consent time, just like the unscoped routes above.
-	e.POST("/api/workspaces/:workspaceID/oauth2/register", s.handleRegister)
+	e.POST("/api/workspaces/:workspaceID/oauth2/register", s.handleRegister, bodyLimit)
 	e.GET("/api/workspaces/:workspaceID/oauth2/authorize", s.handleAuthorizeGet)
-	e.POST("/api/workspaces/:workspaceID/oauth2/authorize", s.handleAuthorizePost)
+	e.POST("/api/workspaces/:workspaceID/oauth2/authorize", s.handleAuthorizePost, bodyLimit)
 	e.GET("/api/workspaces/:workspaceID/oauth2/clients/:clientID", s.handleGetClient)
-	e.POST("/api/workspaces/:workspaceID/oauth2/token", s.handleToken)
-	e.POST("/api/workspaces/:workspaceID/oauth2/revoke", s.handleRevoke)
+	e.POST("/api/workspaces/:workspaceID/oauth2/token", s.handleToken, bodyLimit)
+	e.POST("/api/workspaces/:workspaceID/oauth2/revoke", s.handleRevoke, bodyLimit)
 }
 
 // handleGetClient returns public client info for the consent page.
@@ -109,14 +124,6 @@ func generateClientID() (string, error) {
 	return clientIDPrefix + base64.RawURLEncoding.EncodeToString(bytes), nil
 }
 
-func generateClientSecret() (string, error) {
-	token, err := auth.GenerateOpaqueToken()
-	if err != nil {
-		return "", err
-	}
-	return clientSecretPrefix + token, nil
-}
-
 func generateAuthCode() (string, error) {
 	token, err := auth.GenerateOpaqueToken()
 	if err != nil {
@@ -131,14 +138,6 @@ func generateRefreshToken() (string, error) {
 		return "", err
 	}
 	return refreshTokenPrefix + token, nil
-}
-
-func hashSecret(secret string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hash), nil
 }
 
 func verifySecret(hash, secret string) bool {
@@ -249,10 +248,23 @@ func oauth2Error(c *echo.Context, statusCode int, errorCode, description string)
 }
 
 func oauth2ErrorRedirect(c *echo.Context, redirectURI, state, errorCode, description string) error {
-	u, err := url.Parse(redirectURI)
+	target, err := oauth2ErrorRedirectURL(redirectURI, state, errorCode, description)
 	if err != nil {
 		slog.Error("failed to parse redirect URI for OAuth2 error redirect", slog.String("redirectURI", redirectURI), log.BBError(err))
 		return oauth2Error(c, http.StatusInternalServerError, errorCode, description)
+	}
+	// Return HTML page that redirects to callback URL
+	// This avoids CSP form-action restrictions
+	return c.HTML(http.StatusOK, buildRedirectHTML(target))
+}
+
+// oauth2ErrorRedirectURL builds the client callback carrying an RFC 6749 error.
+// Split out so a refusal that renders its own page can still offer the link
+// back, rather than deciding between telling the user and telling the client.
+func oauth2ErrorRedirectURL(redirectURI, state, errorCode, description string) (string, error) {
+	u, err := url.Parse(redirectURI)
+	if err != nil {
+		return "", err
 	}
 	q := u.Query()
 	q.Set("error", errorCode)
@@ -261,9 +273,7 @@ func oauth2ErrorRedirect(c *echo.Context, redirectURI, state, errorCode, descrip
 		q.Set("state", state)
 	}
 	u.RawQuery = q.Encode()
-	// Return HTML page that redirects to callback URL
-	// This avoids CSP form-action restrictions
-	return c.HTML(http.StatusOK, buildRedirectHTML(u.String()))
+	return u.String(), nil
 }
 
 // buildRedirectHTML creates an HTML page that redirects to the given URL.

@@ -50,7 +50,7 @@ func applyDatabaseGroupSpecTransformations(ctx context.Context, s *store.Store, 
 
 					var databases []string
 					for _, db := range matchedDatabases {
-						databases = append(databases, common.FormatDatabase(db.InstanceID, db.DatabaseName))
+						databases = append(databases, db.ResourceName())
 					}
 					config.Targets = databases
 				}
@@ -61,20 +61,18 @@ func applyDatabaseGroupSpecTransformations(ctx context.Context, s *store.Store, 
 	return result, nil
 }
 
-func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, projectID string) ([]*store.TaskMessage, error) {
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, spec, config.CreateDatabaseConfig)
+		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, spec, config.CreateDatabaseConfig, projectID)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig)
-	case *storepb.PlanConfig_Spec_ExportDataConfig:
-		return getTaskCreatesFromExportDataConfig(ctx, s, spec, config.ExportDataConfig)
+		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig, projectID)
 	}
 
 	return nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, projectID string) ([]*store.TaskMessage, error) {
 	if c.Database == "" {
 		return nil, errors.Errorf("database name is required")
 	}
@@ -142,7 +140,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, err
 		}
-		sheets, err := s.CreateSheets(ctx, &store.SheetMessage{
+		sheets, err := s.CreateSheets(ctx, projectID, &store.SheetMessage{
 			Statement: statement,
 		})
 		if err != nil {
@@ -178,10 +176,31 @@ func getTaskCreatesFromChangeDatabaseConfig(
 	s *store.Store,
 	spec *storepb.PlanConfig_Spec,
 	c *storepb.PlanConfig_ChangeDatabaseConfig,
+	projectID string,
 ) ([]*store.TaskMessage, error) {
 	databases, err := getDatabaseMessagesByTargets(ctx, s, c.Targets)
 	if err != nil {
 		return nil, err
+	}
+
+	// Validate ghost directive at task creation time (parsed at execution
+	// time). c.SheetSha256 is loop-invariant: fetch it once, not once per
+	// target database.
+	if c.SheetSha256 != "" {
+		sheetContent, err := getSheetContentBySha256(ctx, s, projectID, c.SheetSha256)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet content")
+		}
+
+		if ghost.IsGhostEnabled(sheetContent) {
+			ghostFlags, err := ghost.ParseGhostDirective(sheetContent)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to parse ghost directive")
+			}
+			if _, err := ghost.GetUserFlags(ghostFlags); err != nil {
+				return nil, errors.Wrapf(err, "invalid ghost flags %q", ghostFlags)
+			}
+		}
 	}
 
 	var tasks []*store.TaskMessage
@@ -211,24 +230,6 @@ func getTaskCreatesFromChangeDatabaseConfig(
 			}
 		}
 
-		// Validate ghost directive at task creation time (parsed at execution time)
-		if c.SheetSha256 != "" {
-			sheetContent, err := getSheetContentBySha256(ctx, s, c.SheetSha256)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get sheet content")
-			}
-
-			if ghost.IsGhostEnabled(sheetContent) {
-				ghostFlags, err := ghost.ParseGhostDirective(sheetContent)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to parse ghost directive")
-				}
-				if _, err := ghost.GetUserFlags(ghostFlags); err != nil {
-					return nil, errors.Wrapf(err, "invalid ghost flags %q", ghostFlags)
-				}
-			}
-		}
-
 		taskCreate := &store.TaskMessage{
 			InstanceID:   database.InstanceID,
 			DatabaseName: &database.DatabaseName,
@@ -250,13 +251,13 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 	databases := []*store.DatabaseMessage{}
 
 	for _, target := range targets {
-		if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
+		if targetProjectID, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 			databaseGroup, err := getDatabaseGroupByName(ctx, s, target, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get database group %q", target)
 			}
 			for _, matched := range databaseGroup.MatchedDatabases {
-				instanceID, databaseName, err := common.GetInstanceDatabaseID(matched.Name)
+				_, instanceID, databaseName, err := common.GetDatabaseResourceName(matched.Name)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to parse %q", matched.Name)
 				}
@@ -271,13 +272,15 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 				if database == nil {
 					return nil, errors.Errorf("database %q not found", matched.Name)
 				}
+				if database.ProjectID != targetProjectID {
+					return nil, errors.Errorf("database %q does not belong to project %q", matched.Name, targetProjectID)
+				}
+				if database.ResourceName() != matched.Name {
+					return nil, errors.Errorf("database target %q is not canonical for its instance", matched.Name)
+				}
 				databases = append(databases, database)
 			}
-		} else if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
-			instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to parse %q", target)
-			}
+		} else if targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target); err == nil {
 			database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
 				Workspace:    common.GetWorkspaceIDFromContext(ctx),
 				InstanceID:   &instanceID,
@@ -289,47 +292,58 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 			if database == nil {
 				return nil, errors.Errorf("database %q not found", target)
 			}
+			if targetProjectID != nil && database.ProjectID != *targetProjectID {
+				return nil, errors.Errorf("database %q does not belong to project %q", target, *targetProjectID)
+			}
+			if database.ResourceName() != target {
+				return nil, errors.Errorf("database target %q is not canonical for its instance", target)
+			}
 			databases = append(databases, database)
 		} else {
 			return nil, errors.Errorf("invalid target %q", target)
 		}
 	}
+	if err := validateRolloutDatabaseInstances(ctx, s, databases); err != nil {
+		return nil, err
+	}
 	return databases, nil
 }
 
-func getTaskCreatesFromExportDataConfig(
-	ctx context.Context,
-	s *store.Store,
-	spec *storepb.PlanConfig_Spec,
-	c *storepb.PlanConfig_ExportDataConfig,
-) ([]*store.TaskMessage, error) {
-	databases, err := getDatabaseMessagesByTargets(ctx, s, c.Targets)
-	if err != nil {
-		return nil, err
-	}
-
-	payload := &storepb.Task{
-		SpecId: spec.Id,
-		Source: &storepb.Task_SheetSha256{
-			SheetSha256: c.SheetSha256,
-		},
-	}
-
-	tasks := []*store.TaskMessage{}
+func validateRolloutDatabaseInstances(ctx context.Context, s *store.Store, databases []*store.DatabaseMessage) error {
+	instanceIDs := make([]string, 0, len(databases))
+	seen := make(map[string]bool, len(databases))
 	for _, database := range databases {
-		env := ""
-		if database.EffectiveEnvironmentID != nil {
-			env = *database.EffectiveEnvironmentID
+		if !seen[database.InstanceID] {
+			seen[database.InstanceID] = true
+			instanceIDs = append(instanceIDs, database.InstanceID)
 		}
-		tasks = append(tasks, &store.TaskMessage{
-			InstanceID:   database.InstanceID,
-			DatabaseName: &database.DatabaseName,
-			Environment:  env,
-			Type:         storepb.Task_DATABASE_EXPORT,
-			Payload:      payload,
-		})
 	}
-	return tasks, nil
+	if len(instanceIDs) == 0 {
+		return nil
+	}
+
+	instances, err := s.ListInstances(ctx, &store.FindInstanceMessage{
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
+		ResourceIDs: &instanceIDs,
+		ShowDeleted: true,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to list rollout target instances")
+	}
+	instanceByID := make(map[string]*store.InstanceMessage, len(instances))
+	for _, instance := range instances {
+		instanceByID[instance.ResourceID] = instance
+	}
+	for _, database := range databases {
+		instance := instanceByID[database.InstanceID]
+		if instance == nil {
+			return errors.Errorf("instance %q not found", database.InstanceID)
+		}
+		if instance.Deleted {
+			return errors.Errorf("instance %q has been deleted", database.InstanceID)
+		}
+	}
+	return nil
 }
 
 // checkCharacterSetCollationOwner checks if the character set, collation and owner are legal according to the dbType.
@@ -370,7 +384,7 @@ func checkCharacterSetCollationOwner(dbType storepb.Engine, characterSet, collat
 		if owner == "" {
 			return errors.Errorf("database owner is required for CockroachDB")
 		}
-	case storepb.Engine_SQLITE, storepb.Engine_MONGODB, storepb.Engine_MSSQL, storepb.Engine_DORIS, storepb.Engine_STARROCKS:
+	case storepb.Engine_MONGODB, storepb.Engine_MSSQL, storepb.Engine_DORIS, storepb.Engine_STARROCKS:
 		// no-op.
 	default:
 		if characterSet == "" {
@@ -414,9 +428,6 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 		return fmt.Sprintf("CREATE DATABASE `%s`%s;", databaseName, clusterPart), nil
 	case storepb.Engine_SNOWFLAKE:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
-	case storepb.Engine_SQLITE:
-		// This is a fake CREATE DATABASE and USE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
-		return fmt.Sprintf("CREATE DATABASE '%s';", databaseName), nil
 	case storepb.Engine_MONGODB:
 		// MongoDB has no top-level CREATE DATABASE — a database is implicitly created
 		// when its first collection is. We pass the database name to the engine driver
@@ -451,8 +462,8 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 	}
 }
 
-func getSheetContentBySha256(ctx context.Context, s *store.Store, sha256 string) (string, error) {
-	sheet, err := s.GetSheetFull(ctx, sha256)
+func getSheetContentBySha256(ctx context.Context, s *store.Store, projectID, sha256 string) (string, error) {
+	sheet, err := s.GetSheetForProject(ctx, projectID, sha256, true)
 	if err != nil {
 		return "", err
 	}

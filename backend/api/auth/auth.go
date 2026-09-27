@@ -4,6 +4,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"slices"
 	"strings"
@@ -36,11 +37,27 @@ const (
 	AccessTokenAudience = "bb.user.access"
 	// MFATempTokenAudience is the audience for MFA temporary tokens.
 	MFATempTokenAudience = "bb.user.mfa-temp"
-	// OAuth2AccessTokenAudience is the audience for OAuth2 access tokens.
+	// OAuth2AccessTokenAudience is the audience OAuth2 access tokens carried
+	// before they were bound to the MCP resource URI (P1a PR 3). No longer
+	// minted; still recognized at /mcp so tokens issued by a pre-upgrade
+	// release keep working there until they expire. The general API refuses
+	// it like any other MCP-minted token.
 	OAuth2AccessTokenAudience = "bb.oauth2.access"
-	apiTokenDuration          = 1 * time.Hour
+	// TokenUseMCP is the token_use claim value marking a token as an MCP OAuth2
+	// credential. The audience of such a token is a per-deployment resource URI,
+	// so consumers that need to recognize "an MCP token, whatever the deployment"
+	// (the general API interceptor, the SwitchWorkspace guard) key on this claim
+	// instead of the audience.
+	TokenUseMCP      = "mcp"
+	apiTokenDuration = 1 * time.Hour
 	// DefaultAccessTokenDuration is the default access token expiration duration.
 	DefaultAccessTokenDuration = 1 * time.Hour
+	// OAuth2AccessTokenDuration is the lifetime of OAuth2 (MCP) access tokens,
+	// minted by the oauth2 token endpoint. It also bounds how long legacy
+	// bb.oauth2.access acceptance at /mcp outlives an upgrade: nothing mints
+	// that audience anymore, so acceptance drains no later than one of these
+	// lifetimes after the last legacy-capable replica leaves service.
+	OAuth2AccessTokenDuration = 1 * time.Hour
 	// DefaultRefreshTokenDuration is the default refresh token expiration duration.
 	DefaultRefreshTokenDuration = 7 * 24 * time.Hour
 
@@ -162,8 +179,52 @@ func (c *authStreamingConn) Receive(msg any) error {
 	return c.StreamingHandlerConn.Receive(msg)
 }
 
+// isMCPProvenance reports whether parsed claims identify a token minted by
+// the MCP authorization server: the modern shape carries token_use=mcp
+// (whatever audience it also carries), and the legacy pre-PR-3 shape is
+// recognized by its bb.oauth2.access audience, which nothing else ever
+// minted. The general-API rejection and IsMCPOriginatedToken (behind
+// SwitchWorkspace's guard) key on this one definition — keep them keying on
+// it: two security decision points drifting apart is how one surface ends up
+// admitting what the other refuses.
+func isMCPProvenance(tokenUse string, audience jwt.ClaimStrings) bool {
+	return tokenUse == TokenUseMCP || audienceContains(audience, OAuth2AccessTokenAudience)
+}
+
+// checkTokenAudience decides whether a token's audience admits it to the
+// general (non-/mcp) API. An MCP token (isMCPProvenance) is refused outright:
+// since PR 4's private in-memory transport, /mcp tool traffic authenticates
+// with the internal delegated credential, so nothing legitimate presents one
+// here anymore and admitting it would keep it a universal API bearer (P1a PR
+// 5, retiring PR 3's audit-only admission; the legacy audience keeps draining
+// at /mcp only, where old-replica tool traffic genuinely needs it during a
+// rolling upgrade). Web session tokens pass; anything else is refused.
+func checkTokenAudience(claims *claimsMessage) error {
+	if isMCPProvenance(claims.TokenUse, claims.Audience) {
+		// Warn rather than refuse silently: the audit-only observation window
+		// the spec planned never shipped in a release, so this is the only
+		// server-side signal that an integration was relying on the old
+		// admission. Denial auditing proper is PR 5b.
+		slog.Warn("refused an MCP token on the general API",
+			slog.String("principal", claims.Subject),
+			slog.String("workspace", claims.WorkspaceID),
+			slog.String("audience", strings.Join(claims.Audience, ",")),
+			slog.String("token_use", claims.TokenUse))
+		return errs.New("MCP tokens are only accepted at /mcp; use a service account for the API")
+	}
+	if audienceContains(claims.Audience, AccessTokenAudience) {
+		return nil
+	}
+	return errs.Errorf(
+		"invalid access token, audience mismatch, got %q, expected %q",
+		claims.Audience,
+		AccessTokenAudience,
+	)
+}
+
 // authenticate is the shared authentication logic that validates JWT tokens.
-// Returns the user and claims, or an error. This is the single source of truth for token validation.
+// Returns the user and claims, or an error. This is the single source of truth
+// for token validation.
 func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr string) (*store.UserMessage, *claimsMessage, error) {
 	if accessTokenStr == "" {
 		return nil, nil, errs.New("access token not found")
@@ -187,50 +248,56 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 		return nil, nil, errs.New("failed to parse claim")
 	}
 
-	// Accept both user access tokens (bb.user.access) and OAuth2 access tokens (bb.oauth2.access)
-	if !audienceContains(claims.Audience, AccessTokenAudience) && !audienceContains(claims.Audience, OAuth2AccessTokenAudience) {
-		return nil, nil, errs.Errorf(
-			"invalid access token, audience mismatch, got %q, expected %q or %q",
-			claims.Audience,
-			AccessTokenAudience,
-			OAuth2AccessTokenAudience,
-		)
+	if err := checkTokenAudience(claims); err != nil {
+		return nil, nil, err
 	}
 
-	account, err := in.store.GetAccountByEmail(ctx, claims.Subject)
+	user, err := resolvePrincipal(ctx, in.store, in.profile, claims.Subject, claims.WorkspaceID)
 	if err != nil {
-		return nil, nil, errs.Errorf("failed to find principal %q in the access token", claims.Subject)
+		return nil, nil, err
+	}
+	return user, claims, nil
+}
+
+// resolvePrincipal turns a verified token's identity claims into a live user:
+// account lookup, deactivation check, workspace-membership verification, and
+// principal resolution. Shared by the public interceptor and the internal MCP
+// interceptor so both surfaces re-resolve identity state identically on every
+// request — a credential is never trusted for anything beyond who and where.
+func resolvePrincipal(ctx context.Context, stores *store.Store, profile *config.Profile, subject, workspaceID string) (*store.UserMessage, error) {
+	account, err := stores.GetAccountByEmail(ctx, subject)
+	if err != nil {
+		return nil, errs.Errorf("failed to find principal %q in the access token", subject)
 	}
 	if account == nil {
-		return nil, nil, errs.Errorf("principal %q not exists in the access token", claims.Subject)
+		return nil, errs.Errorf("principal %q not exists in the access token", subject)
 	}
 	if account.MemberDeleted {
-		return nil, nil, errs.Errorf("principal %q has been deactivated by administrators", account.Email)
+		return nil, errs.Errorf("principal %q has been deactivated by administrators", account.Email)
 	}
 
 	// Verify workspace membership.
 	// We always require workspace_id in the claims even for non-SaaS (single workspace) mode
-	if claims.WorkspaceID == "" {
-		return nil, nil, errs.New("empty workspace in the token")
+	if workspaceID == "" {
+		return nil, errs.New("empty workspace in the token")
 	}
-	if err := in.verifyWorkspaceMembership(ctx, claims.WorkspaceID, account); err != nil {
-		return nil, nil, err
+	if err := verifyWorkspaceMembership(ctx, stores, profile, workspaceID, account); err != nil {
+		return nil, err
 	}
 
 	// Convert to UserMessage for context storage.
-	user, err := in.store.ResolvePrincipalAsUser(ctx, account)
+	user, err := stores.ResolvePrincipalAsUser(ctx, account)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if user == nil {
-		return nil, nil, errs.Errorf("user %q not found", account.Email)
+		return nil, errs.Errorf("user %q not found", account.Email)
 	}
-
-	return user, claims, nil
+	return user, nil
 }
 
 // verifyWorkspaceMembership checks that the account is a member of the workspace.
-func (in *APIAuthInterceptor) verifyWorkspaceMembership(ctx context.Context, workspaceID string, account *store.AccountMessage) error {
+func verifyWorkspaceMembership(ctx context.Context, stores *store.Store, profile *config.Profile, workspaceID string, account *store.AccountMessage) error {
 	switch account.Type {
 	case storepb.PrincipalType_SERVICE_ACCOUNT, storepb.PrincipalType_WORKLOAD_IDENTITY:
 		// Service accounts and workload identities have workspace on their record.
@@ -242,7 +309,7 @@ func (in *APIAuthInterceptor) verifyWorkspaceMembership(ctx context.Context, wor
 	case storepb.PrincipalType_END_USER:
 		// END_USER membership is verified via workspace IAM policy.
 		// Check direct membership, group membership, and allUsers.
-		iamPolicy, err := in.store.GetWorkspaceIamPolicy(ctx, workspaceID)
+		iamPolicy, err := stores.GetWorkspaceIamPolicy(ctx, workspaceID)
 		if err != nil {
 			return errs.Wrap(err, "failed to get workspace IAM policy")
 		}
@@ -252,12 +319,12 @@ func (in *APIAuthInterceptor) verifyWorkspaceMembership(ctx context.Context, wor
 				if member == userMember {
 					return nil
 				}
-				if member == common.AllUsers && !in.profile.SaaS {
+				if member == common.AllUsers && !profile.SaaS {
 					return nil
 				}
 				// Check group membership.
 				if strings.HasPrefix(member, common.GroupPrefix) {
-					groupMembers, _ := in.store.GetGroupMembersSnapshot(ctx, workspaceID, member)
+					groupMembers, _ := stores.GetGroupMembersSnapshot(ctx, workspaceID, member)
 					if groupMembers != nil && groupMembers[userMember] {
 						return nil
 					}
@@ -295,6 +362,12 @@ func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr
 
 // GetUserEmailFromMFATempToken returns the user email from the MFA temp token.
 func GetUserEmailFromMFATempToken(token string, secret string) (string, error) {
+	userEmail, _, err := GetUserEmailAndLoginMethodFromMFATempToken(token, secret)
+	return userEmail, err
+}
+
+// GetUserEmailAndLoginMethodFromMFATempToken returns the user email and original login method from the MFA temp token.
+func GetUserEmailAndLoginMethodFromMFATempToken(token, secret string) (string, string, error) {
 	claims := &claimsMessage{}
 	_, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
@@ -308,16 +381,17 @@ func GetUserEmailFromMFATempToken(token string, secret string) (string, error) {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("unexpected MFA temp token kid=%v", t.Header["kid"]))
 	})
 	if err != nil {
-		return "", connect.NewError(connect.CodeUnauthenticated, errs.New("failed to parse claim"))
+		return "", "", connect.NewError(connect.CodeUnauthenticated, errs.New("failed to parse claim"))
 	}
 	if !audienceContains(claims.Audience, MFATempTokenAudience) {
-		return "", connect.NewError(connect.CodeUnauthenticated, errs.New("invalid MFA temp token, audience mismatch"))
+		return "", "", connect.NewError(connect.CodeUnauthenticated, errs.New("invalid MFA temp token, audience mismatch"))
 	}
-	return claims.Subject, nil
+	return claims.Subject, claims.LoginMethod, nil
 }
 
 // AuthenticateToken validates a JWT access token and returns the user and token expiry.
 // This is a non-ConnectRPC version that returns regular errors instead of ConnectRPC errors.
+// Its only caller is the LSP websocket handshake.
 func (in *APIAuthInterceptor) AuthenticateToken(ctx context.Context, accessTokenStr string) (*store.UserMessage, string, time.Time, error) {
 	user, claims, err := in.authenticate(ctx, accessTokenStr)
 	if err != nil {
@@ -410,11 +484,79 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	if !ok {
 		return nil, errs.Errorf("invalid audit extension, full method name %q", fullMethod)
 	}
+	mcpMethodClassAny := proto.GetExtension(md, v1pb.E_McpMethodClass)
+	mcpMethodClass, ok := mcpMethodClassAny.(v1pb.MCPMethodClass)
+	if !ok {
+		return nil, errs.Errorf("invalid MCP method class extension, full method name %q", fullMethod)
+	}
+	mcpDenialReasonAny := proto.GetExtension(md, v1pb.E_McpDenialReason)
+	mcpDenialReason, ok := mcpDenialReasonAny.(v1pb.MCPDenialReason)
+	if !ok {
+		return nil, errs.Errorf("invalid MCP denial reason extension, full method name %q", fullMethod)
+	}
 
 	return &common.AuthContext{
 		AllowWithoutCredential: allowWithoutCredential,
 		Permission:             permission,
 		AuthMethod:             authMethod,
 		Audit:                  audit,
+		MCPMethodClass:         mcpMethodClass,
+		MCPDenialReason:        mcpDenialReason,
 	}, nil
+}
+
+// MCPClassIsRefused reports whether NO MCP capability ceiling serves methods of
+// this class, so a session can never call one whatever the workspace is
+// configured for. It exists here rather than beside the gate because two
+// packages need the same answer for different reasons — the gate refuses on it,
+// and the MCP OpenAPI index declines to advertise on it — and they must not
+// disagree about which methods an agent is offered.
+//
+// It is a predicate rather than a copy of the serving table: the table lives in
+// backend/api/v1 with the code that evaluates it, and
+// TestLintRefusedClassesMatchTheServingTable holds this function against it, so
+// adding a ceiling mode that serves a class cannot leave this stale.
+//
+// UNSPECIFIED counts as refused. The gate refuses an unclassified method, and
+// CI rejects one, so advertising it would offer work that cannot be done.
+func MCPClassIsRefused(class v1pb.MCPMethodClass) bool {
+	switch class {
+	case v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE:
+		return false
+	default:
+		return true
+	}
+}
+
+// MCPMethodClassOfProcedure resolves the MCP classification for a connect
+// procedure path such as "/bytebase.v1.AuthService/Login". Callers that only
+// decide what to ADVERTISE may treat an error as "not classified"; the
+// enforcement path must not — it reads the class off the AuthContext, which
+// fails the request outright when the annotation cannot be resolved.
+func MCPMethodClassOfProcedure(procedure string) (v1pb.MCPMethodClass, error) {
+	tokens := strings.Split(procedure, "/")
+	if len(tokens) != 3 {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid procedure name %q", procedure)
+	}
+	rd, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(tokens[1]))
+	if err != nil {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Wrapf(err, "invalid service descriptor for procedure %q", procedure)
+	}
+	sd, ok := rd.(protoreflect.ServiceDescriptor)
+	if !ok {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid service descriptor for procedure %q", procedure)
+	}
+	method := sd.Methods().ByName(protoreflect.Name(tokens[2]))
+	if method == nil {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("unknown method for procedure %q", procedure)
+	}
+	md, ok := method.Options().(*descriptorpb.MethodOptions)
+	if !ok {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid method options for procedure %q", procedure)
+	}
+	class, ok := proto.GetExtension(md, v1pb.E_McpMethodClass).(v1pb.MCPMethodClass)
+	if !ok {
+		return v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, errs.Errorf("invalid MCP method class extension for procedure %q", procedure)
+	}
+	return class, nil
 }

@@ -2,15 +2,38 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "v1/annotation.proto";
+import "v1/idp_service.proto";
+import "v1/setting_service.proto";
 import "v1/user_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 // AuthService handles user authentication operations.
 service AuthService {
+  // Gets everything the login page renders: the sign-in restrictions and the
+  // identity providers it offers.
+  // Permissions required: None
+  rpc GetAuthenticationInfo(GetAuthenticationInfoRequest) returns (AuthenticationInfo) {
+    option (google.api.http) = {
+      get: "/v1/auth/info"
+      additional_bindings: {get: "/v1/{workspace=workspaces/*}/auth/info"}
+    };
+    option (google.api.method_signature) = "";
+    option (bytebase.v1.allow_without_credential) = true;
+    // The sign-in restrictions the login page renders, served without a
+    // credential — #21184 split them out of GetActuatorInfo, which now needs
+    // one. Refusing it to an MCP session would protect nothing: any
+    // unauthenticated client reads the same response.
+    option (bytebase.v1.mcp_method_class) = READ;
+  }
+
   // Authenticates a user and returns access tokens.
   // Permissions required: None
   rpc Login(LoginRequest) returns (LoginResponse) {
@@ -20,6 +43,8 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
   // Logs out the current user session.
@@ -31,6 +56,8 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = ENDS_SESSION;
   }
 
   // Exchanges an external OIDC token for a Bytebase access token.
@@ -43,6 +70,8 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
   // Registers a new user account. Creates a principal and assigns a workspace:
@@ -56,6 +85,8 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
   // Refreshes the access token using the refresh token cookie.
@@ -66,6 +97,8 @@ service AuthService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
   // Switches the current user's active workspace and issues new tokens.
@@ -76,10 +109,14 @@ service AuthService {
       body: "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
   // Requests a password reset email for the given email address.
   // Always returns success to avoid leaking whether the email exists.
+  // Requires the workspace's SMTP mail delivery setting; without it the
+  // recovery route is an admin password reset.
   // Permissions required: None
   rpc RequestPasswordReset(RequestPasswordResetRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
@@ -87,6 +124,9 @@ service AuthService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = RESETS_CREDENTIAL;
   }
 
   // Resets the user's password using a password reset token from email.
@@ -97,10 +137,15 @@ service AuthService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = RESETS_CREDENTIAL;
   }
 
   // Sends a 6-digit verification code to the email for login/signup.
   // Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+  // The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+  // REAUTH codes are not interchangeable.
   // Permissions required: None
   rpc SendEmailLoginCode(SendEmailLoginCodeRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
@@ -109,15 +154,95 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = RESETS_CREDENTIAL;
   }
+}
+
+message GetAuthenticationInfoRequest {
+  // Optional. The workspace whose authentication policy should be returned.
+  // Format: workspaces/{workspace}
+  // When unset, self-hosted resolves the singleton workspace and SaaS uses
+  // the deployment-level defaults.
+  string workspace = 1 [(google.api.resource_reference) = {type: "bytebase.com/Workspace"}];
+}
+
+message AuthenticationInfo {
+  // The workspace used for authentication, when one can be resolved.
+  // Format: workspaces/{workspace}
+  string workspace = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The effective authentication restrictions.
+  Restriction restriction = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The identity providers the login page renders, in display order.
+  repeated LoginIdentityProvider identity_providers = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message Restriction {
+  // Whether self-service user signup is disabled.
+  bool disallow_signup = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether password sign-in is disabled for all end users.
+  bool disallow_password_signin = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Password complexity and restriction requirements.
+  WorkspaceProfileSetting.PasswordRestriction password_restriction = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether email + 6-digit code signin is enabled for this workspace.
+  bool allow_email_code_signin = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether password reset via email is available for this workspace.
+  // True when the workspace (or deployment) has an email setting configured.
+  bool password_reset_enabled = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// LoginIdentityProvider is an identity provider as the login page sees it.
+// Deliberately not a view of IdentityProvider: this message is served without
+// a credential, so every field it exposes is published by hand and no
+// provider configuration reaches it by default.
+message LoginIdentityProvider {
+  // The name of the identity provider.
+  // Format: idps/{idp}
+  string name = 1;
+
+  // The type of identity provider protocol.
+  IdentityProviderType type = 2;
+
+  // The display title of the identity provider.
+  string title = 3;
+
+  // The parameters the browser needs to start the authorization redirect.
+  // Set for OAUTH2 and OIDC, absent for LDAP, whose bind happens server-side.
+  AuthorizationRequest authorization_request = 4;
+}
+
+// AuthorizationRequest is what a browser needs to start an SSO redirect.
+message AuthorizationRequest {
+  // The OAuth2 auth_url, or the authorization endpoint from the OIDC issuer's
+  // discovery document.
+  string endpoint = 1;
+
+  // The OAuth2 or OIDC client identifier.
+  string client_id = 2;
+
+  // The scopes to request.
+  repeated string scopes = 3;
 }
 
 message LoginRequest {
   // User's email address.
-  string email = 1;
+  // Bounded so an oversized identity is refused at the edge before any
+  // handler runs; the login-attempt lockout keys rows by this value.
+  string email = 1 [(buf.validate.field).string.max_len = 254];
 
-  // User's password for authentication.
-  string password = 2;
+  // User's password for authentication. Bounded for abuse only: LDAP
+  // directories may accept passwords beyond bcrypt's 72-byte limit, and the
+  // local-password path rejects longer inputs itself.
+  string password = 2 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_bytes = 512
+  ];
 
   // If true, sets access token and refresh token as HTTP-only cookies instead of
   // returning the token in the response body. Use for browser-based clients.
@@ -125,30 +250,42 @@ message LoginRequest {
 
   // The name of the identity provider.
   // Format: idps/{idp}
-  string idp_name = 4;
+  string idp_name = 4 [(buf.validate.field).string.max_len = 256];
 
   // The idp_context is used to get the user information from identity provider.
   IdentityProviderContext idp_context = 5;
 
   // The otp_code is used to verify the user's identity by MFA.
-  optional string otp_code = 6;
+  optional string otp_code = 6 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 64
+  ];
 
   // The recovery_code is used to recovery the user's identity with MFA.
-  optional string recovery_code = 7;
+  optional string recovery_code = 7 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 64
+  ];
 
   // The mfa_temp_token is used to verify the user's identity by MFA.
-  optional string mfa_temp_token = 8;
+  optional string mfa_temp_token = 8 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 4096
+  ];
 
   // 6-digit code from email for passwordless login/signup.
   // Pairs with `email`. Mutually exclusive with `password` and `idp_name`.
-  optional string email_code = 9;
+  optional string email_code = 9 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 64
+  ];
 
   // Preferred workspace to land in after login. If the user is a member of this
   // workspace, the token is issued for it; otherwise falls back to the default
   // resolution (last login workspace → first membership). Typically populated
   // from the ?workspace= query parameter in invite links.
   // Format: workspaces/{workspace}
-  optional string workspace = 10;
+  optional string workspace = 10 [(buf.validate.field).string.max_len = 256];
 }
 
 // Context for identity provider authentication.
@@ -164,22 +301,28 @@ message IdentityProviderContext {
 // OAuth2 authentication context.
 message OAuth2IdentityProviderContext {
   // Authorization code from OAuth2 provider.
-  string code = 1;
+  string code = 1 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 4096
+  ];
 }
 
 // OpenID Connect authentication context.
 message OIDCIdentityProviderContext {
   // Authorization code from OIDC provider.
-  string code = 1;
+  string code = 1 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 4096
+  ];
 }
 
 message LoginResponse {
   // Access token for authenticated requests.
   // Only returned when web=false. For web=true, the token is set as an HTTP-only cookie.
-  string token = 1;
+  string token = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // Temporary token for MFA verification.
-  optional string mfa_temp_token = 2;
+  optional string mfa_temp_token = 2 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // Whether user must reset password before continuing.
   bool require_reset_password = 3;
@@ -193,27 +336,35 @@ message LogoutRequest {}
 
 message ExchangeTokenRequest {
   // External OIDC token (JWT) from CI/CD platform.
-  string token = 1;
+  string token = 1 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 65536
+  ];
 
   // Workload Identity email for identifying which identity to authenticate as.
   // Format: {name}@workload.bytebase.com
-  string email = 2;
+  string email = 2 [(buf.validate.field).string.max_len = 254];
 }
 
 message ExchangeTokenResponse {
   // Bytebase access token.
-  string access_token = 1;
+  string access_token = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }
 
 message SignupRequest {
   // The email for the new account.
-  string email = 1;
+  // Bounded so an oversized identity is refused at the edge before any
+  // handler runs; the login-attempt lockout keys rows by this value.
+  string email = 1 [(buf.validate.field).string.max_len = 254];
 
   // The password for the new account.
-  string password = 2;
+  string password = 2 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_bytes = 72
+  ];
 
   // The display name of the user.
-  string title = 3;
+  string title = 3 [(buf.validate.field).string.max_len = 200];
 }
 
 // Request to refresh the access token.
@@ -224,47 +375,68 @@ message RefreshResponse {}
 
 message RequestPasswordResetRequest {
   // The email address of the account to reset.
-  string email = 1;
+  // Bounded so an oversized identity is refused at the edge before any
+  // handler runs; the login-attempt lockout keys rows by this value.
+  string email = 1 [(buf.validate.field).string.max_len = 254];
   // Optional workspace context captured at send time, used to locate the EMAIL setting,
   // and later (at verify time) for signup gate checks and workspace assignment.
   // Unset for SaaS brand-new signup (no workspace exists yet).
   // Format: workspaces/{workspace}
-  optional string workspace = 2;
+  optional string workspace = 2 [(buf.validate.field).string.max_len = 256];
 }
 
 message ResetPasswordRequest {
   // The email address of the account.
-  string email = 1;
+  // Bounded so an oversized identity is refused at the edge before any
+  // handler runs; the login-attempt lockout keys rows by this value.
+  string email = 1 [(buf.validate.field).string.max_len = 254];
   // The 6-digit code from the reset email.
-  string code = 2;
+  string code = 2 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 64
+  ];
   // The new password to set.
-  string new_password = 3;
+  string new_password = 3 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_bytes = 72
+  ];
 }
 
 message SendEmailLoginCodeRequest {
   // The email address to send the code to.
-  string email = 1;
+  // Bounded so an oversized identity is refused at the edge before any
+  // handler runs; the login-attempt lockout keys rows by this value.
+  string email = 1 [(buf.validate.field).string.max_len = 254];
   // Optional workspace context captured at send time, used to locate the EMAIL setting,
   // and later (at verify time) for signup gate checks and workspace assignment.
   // Unset for SaaS brand-new signup (no workspace exists yet).
   // Format: workspaces/{workspace}
-  optional string workspace = 2;
+  optional string workspace = 2 [(buf.validate.field).string.max_len = 256];
 }
 
 message SwitchWorkspaceRequest {
   // The target workspace to switch to.
   // Format: workspaces/{workspace}
-  string workspace = 1;
+  string workspace = 1 [(buf.validate.field).string.max_len = 256];
 
   // If true, sets tokens as HTTP-only cookies (browser clients).
   bool web = 2;
 
   // OTP code for MFA verification. Required if the target workspace enforces MFA.
-  optional string otp_code = 3;
+  optional string otp_code = 3 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 64
+  ];
 
   // Recovery code for MFA verification (alternative to otp_code).
-  optional string recovery_code = 4;
+  optional string recovery_code = 4 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 64
+  ];
 
   // Temporary MFA token from a previous SwitchWorkspace call that returned mfa_temp_token.
-  optional string mfa_temp_token = 5;
+  optional string mfa_temp_token = 5 [
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 4096
+  ];
 }

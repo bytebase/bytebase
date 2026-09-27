@@ -1,0 +1,568 @@
+import { FileText, Loader2, MessagesSquare, Pencil } from "lucide-react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useTranslation } from "react-i18next";
+import { router } from "@/app/router";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/app/router/handles";
+import { HumanizeTs } from "@/components/HumanizeTs";
+import {
+  ActivityRowFrame,
+  ActivityRowShell,
+  CommentCreator,
+  CommentIconBadge,
+  canEditIssueComment,
+  IssueCommentRow,
+  type PlanChangeReferenceRenderer,
+  ReviewSubmissionIcon,
+  ReviewSubmissionSentence,
+} from "@/components/issue-activity/IssueCommentActivity";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { Button } from "@/components/ui/button";
+import { useProjectByName } from "@/hooks/useProjectByName";
+import {
+  collectPlanUpdateSpecs,
+  diffPlanSpecsForEvent,
+} from "@/lib/plan/diffPlanSpecs";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
+import {
+  getIssueCommentType,
+  IssueCommentType,
+  isThreadRoot,
+} from "@/stores/app/issueComment";
+import { projectNamePrefix } from "@/stores/modules/v1/common";
+import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import { hasProjectPermissionV2 } from "@/utils/iam/permission";
+import { usePlanChangeReferenceData } from "../../hooks/usePlanChangeReferenceData";
+import { placementOf } from "../../shared/stores/placementSlice";
+import {
+  usePlanDetailStore,
+  usePlanDetailStoreApi,
+} from "../../shared/stores/usePlanDetailStore";
+import { focusPlanPhase } from "../../shell/focusPhase";
+import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import { PlanSpecChangeReference } from "../PlanChangeReference";
+import { CommentThreadCard } from "../threads/CommentThreadCard";
+import { StatementAnchorContext } from "../threads/StatementAnchorContext";
+import {
+  type CommentThread,
+  groupThreads,
+  targetSha256OfSpec,
+} from "../threads/threadModel";
+import { consolidateConsecutive } from "./consolidateTimeline";
+import { foldTimeline } from "./foldTimeline";
+import { ReviewCommentComposer } from "./ReviewCommentComposer";
+import {
+  buildTimelineEntries,
+  type TimelineEntry,
+  type TimelineSource,
+} from "./timelineEvents";
+
+export function ReviewActivityTimeline({
+  comments,
+  issue,
+  plan,
+}: {
+  comments: IssueComment[];
+  issue: Issue;
+  plan: Plan;
+}) {
+  const { t } = useTranslation();
+  const page = usePlanDetailContext();
+  const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
+  const [expanded, setExpanded] = useState(false);
+  const planUpdateSpecs = useMemo(
+    () => collectPlanUpdateSpecs(comments),
+    [comments]
+  );
+  const threads = useMemo(() => groupThreads(comments), [comments]);
+  // Anchored threads reference the plan's current specs; hydrate them once
+  // here rather than once per card.
+  const referenceSpecs = useMemo(
+    () => [...planUpdateSpecs, ...plan.specs],
+    [planUpdateSpecs, plan.specs]
+  );
+  const changeReferenceResources = usePlanChangeReferenceData(referenceSpecs);
+  const renderPlanChangeReference = useCallback<PlanChangeReferenceRenderer>(
+    ({ siblings, spec }) => (
+      <PlanSpecChangeReference
+        className="font-medium"
+        resources={changeReferenceResources}
+        siblings={siblings}
+        spec={spec}
+      />
+    ),
+    [changeReferenceResources]
+  );
+
+  useEffect(() => {
+    setExpanded(false);
+  }, [page.pageKey]);
+
+  const entries = useMemo(
+    () =>
+      buildTimelineEntries({
+        planCreator: plan.creator,
+        planCreateTime: plan.createTime,
+        issueCreator: issue.creator,
+        issueCreateTime: issue.createTime,
+        issueDraft: issue.draft,
+        comments,
+      }),
+    [
+      comments,
+      issue.createTime,
+      issue.creator,
+      issue.draft,
+      plan.createTime,
+      plan.creator,
+    ]
+  );
+  const items = useMemo(() => {
+    const renderable = entries.filter(isRenderableEntry);
+    const consolidated = consolidateConsecutive(renderable);
+    return foldTimeline(consolidated, expanded);
+  }, [entries, expanded]);
+  // Permission-gated only — comments are allowed regardless of issue status
+  // (the backend and the issue-detail list allow commenting on done issues).
+  const allowComment = Boolean(
+    project && hasProjectPermissionV2(project, "bb.issueComments.create")
+  );
+
+  return (
+    <div className="flex flex-col gap-y-2 px-4 pb-3 pt-4">
+      <h4 className="text-sm font-medium text-main">
+        {t("plan.review.activity.self")}
+      </h4>
+      <ul className="flex flex-col">
+        {items.map((item, i) => {
+          if (item.type === "fold") {
+            return (
+              <TornSeparator
+                count={item.count}
+                key={`fold-${i}`}
+                onShowAll={() => setExpanded(true)}
+              />
+            );
+          }
+          const isLast = !items
+            .slice(i + 1)
+            .some((next) => next.type !== "fold");
+          return (
+            <ActivityRow
+              entry={item.entry}
+              issue={issue}
+              isLast={isLast}
+              key={item.entry.id}
+              plan={plan}
+              renderPlanChangeReference={renderPlanChangeReference}
+              threads={threads}
+            />
+          );
+        })}
+      </ul>
+      {allowComment && <ReviewCommentComposer issueName={issue.name} />}
+    </div>
+  );
+}
+
+// A plan update whose specs are proto-equal produces no sentence; drop it
+// entirely so the timeline doesn't show a verbless row (and so the connector
+// line's "last row" math stays correct).
+function isRenderableEntry(entry: TimelineEntry): boolean {
+  if (entry.source.type !== "comment") return true;
+  const comment = entry.source.comment;
+  if (
+    getIssueCommentType(comment) === IssueCommentType.PLAN_UPDATE &&
+    comment.event.case === "planUpdate"
+  ) {
+    return diffPlanSpecsForEvent(comment.event.value).length > 0;
+  }
+  return true;
+}
+
+// Torn-paper zigzag edge (a triangle-wave stroke) tiled horizontally on each
+// side of the fold marker. Encoded as an inline SVG data URI because no Tailwind
+// utility produces a sawtooth line.
+const TORN_EDGE_STYLE = {
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8'%3E%3Cpath d='M0 6 L12 2 L24 6' fill='none' stroke='%23cfd8e6' stroke-width='1'/%3E%3C/svg%3E\")",
+  backgroundRepeat: "repeat-x",
+  backgroundPosition: "center",
+} as const;
+
+function TornSeparator({
+  count,
+  onShowAll,
+}: {
+  count: number;
+  onShowAll: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center gap-x-2 py-2">
+      <div aria-hidden="true" className="h-2 flex-1" style={TORN_EDGE_STYLE} />
+      <Button
+        className="group shrink-0 bg-background px-2 text-control-light hover:text-control"
+        onClick={onShowAll}
+        size="xs"
+        appearance="secondary"
+      >
+        {t("plan.review.activity.n-hidden-events", { count })}
+        <span className="mx-1 text-control-placeholder">·</span>
+        <span className="text-accent group-hover:text-accent-hover">
+          {t("plan.review.activity.show-all")}
+        </span>
+      </Button>
+      <div aria-hidden="true" className="h-2 flex-1" style={TORN_EDGE_STYLE} />
+    </div>
+  );
+}
+
+function ActivityRow({
+  entry,
+  issue,
+  isLast,
+  plan,
+  renderPlanChangeReference,
+  threads,
+}: {
+  entry: TimelineEntry;
+  issue: Issue;
+  isLast: boolean;
+  plan: Plan;
+  renderPlanChangeReference: PlanChangeReferenceRenderer;
+  threads: CommentThread[];
+}) {
+  const source = entry.source;
+  if (source.type === "comment" && isThreadRoot(source.comment)) {
+    const thread = threads.find(
+      (candidate) => candidate.root.name === source.comment.name
+    );
+    if (thread) {
+      return (
+        <ThreadActivityRow
+          isLast={isLast}
+          issue={issue}
+          plan={plan}
+          renderPlanChangeReference={renderPlanChangeReference}
+          thread={thread}
+        />
+      );
+    }
+  }
+  if (source.type === "comment") {
+    return (
+      <ReviewCommentRow
+        comment={source.comment}
+        isLast={isLast}
+        issue={issue}
+        plan={plan}
+        renderPlanChangeReference={renderPlanChangeReference}
+        similarCount={entry.similarCount}
+      />
+    );
+  }
+  // Synthetic, review-only events (plan created / marked ready) have no backing
+  // issue comment, so render the shared row shell with a local icon + header.
+  return (
+    <ActivityRowShell
+      header={<SyntheticHeader source={source} />}
+      icon={<SyntheticIcon type={source.type} />}
+      isLast={isLast}
+    />
+  );
+}
+
+function SyntheticIcon({
+  type,
+}: {
+  type: "plan-created" | "ready-for-review";
+}) {
+  if (type === "ready-for-review") {
+    return <ReviewSubmissionIcon />;
+  }
+  return (
+    <CommentIconBadge
+      className="bg-control-bg text-control"
+      icon={<FileText className="size-4" />}
+    />
+  );
+}
+
+function SyntheticHeader({
+  source,
+}: {
+  source: Extract<
+    TimelineSource,
+    { type: "plan-created" | "ready-for-review" }
+  >;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <ActorName principal={source.creator} />
+      {source.type === "plan-created" ? (
+        <span className="wrap-break-word min-w-0 text-control-light">
+          {t("plan.review.activity.created-this-plan")}
+        </span>
+      ) : (
+        <ReviewSubmissionSentence />
+      )}
+      <HumanizeTs
+        className="text-xs text-control-light"
+        tsMs={getTimeForPbTimestampProtoEs(source.time)}
+      />
+    </>
+  );
+}
+
+function ActorName({ principal }: { principal: string }) {
+  const user = useAppStore((state) => state.getUserByIdentifier(principal));
+  return <CommentCreator creator={user ?? unknownUser(principal)} />;
+}
+
+// A comment-backed timeline row: delegates layout/icon/header to the shared
+// IssueCommentRow and owns the inline edit affordance (matching the issue page).
+function ReviewCommentRow({
+  comment,
+  isLast,
+  issue,
+  plan,
+  renderPlanChangeReference,
+  similarCount,
+}: {
+  comment: IssueComment;
+  isLast: boolean;
+  issue: Issue;
+  plan: Plan;
+  renderPlanChangeReference: PlanChangeReferenceRenderer;
+  similarCount?: number;
+}) {
+  const { t } = useTranslation();
+  const page = usePlanDetailContext();
+  const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.comment);
+  const [saving, setSaving] = useState(false);
+  const pageKeyRef = useRef(page.pageKey);
+  const commentNameRef = useRef(comment.name);
+  pageKeyRef.current = page.pageKey;
+  commentNameRef.current = comment.name;
+
+  useEffect(() => {
+    setIsEditing(false);
+    setEditContent(comment.comment);
+    setSaving(false);
+  }, [page.pageKey]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setEditContent(comment.comment);
+    }
+  }, [comment.comment, isEditing]);
+
+  const allowEdit = canEditIssueComment(comment, project);
+
+  const save = async () => {
+    if (!editContent || editContent === comment.comment) {
+      setIsEditing(false);
+      return;
+    }
+    const actionPageKey = page.pageKey;
+    const actionCommentName = comment.name;
+    try {
+      setSaving(true);
+      await useAppStore.getState().updateIssueComment({
+        issueCommentName: comment.name,
+        comment: editContent,
+      });
+      if (
+        pageKeyRef.current !== actionPageKey ||
+        commentNameRef.current !== actionCommentName
+      ) {
+        return;
+      }
+      setIsEditing(false);
+    } catch (error) {
+      if (
+        pageKeyRef.current !== actionPageKey ||
+        commentNameRef.current !== actionCommentName
+      ) {
+        return;
+      }
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.failed"),
+        description: String(error),
+      });
+    } finally {
+      if (
+        pageKeyRef.current === actionPageKey &&
+        commentNameRef.current === actionCommentName
+      ) {
+        setSaving(false);
+      }
+    }
+  };
+
+  let body: ReactNode;
+  if (comment.comment) {
+    body = isEditing ? (
+      <div>
+        <MarkdownEditor
+          content={editContent}
+          onChange={setEditContent}
+          onSubmit={() => void save()}
+        />
+        <div className="mt-2 flex items-center justify-end gap-x-2">
+          <Button
+            onClick={() => setIsEditing(false)}
+            size="xs"
+            appearance="secondary"
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            disabled={
+              saving ||
+              editContent.trim().length === 0 ||
+              editContent === comment.comment
+            }
+            onClick={() => void save()}
+            size="xs"
+          >
+            {saving && <Loader2 className="size-3.5 animate-spin" />}
+            {t("common.save")}
+          </Button>
+        </div>
+      </div>
+    ) : (
+      <MarkdownEditor content={comment.comment} mode="preview" />
+    );
+  }
+
+  const subjectSuffix =
+    allowEdit && !isEditing ? (
+      <Button
+        onClick={() => {
+          setEditContent(comment.comment);
+          setIsEditing(true);
+        }}
+        size="xs"
+        appearance="secondary"
+      >
+        <Pencil className="size-3.5" />
+      </Button>
+    ) : undefined;
+
+  return (
+    <IssueCommentRow
+      body={body}
+      comment={comment}
+      isLast={isLast}
+      issue={issue}
+      linkless
+      plan={plan}
+      renderPlanChangeReference={renderPlanChangeReference}
+      similarCount={similarCount}
+      subjectSuffix={subjectSuffix}
+    />
+  );
+}
+
+// A thread occupies one timeline entry at its root's position: the root with
+// its statement anchor, the replies, and the thread footer, in one card.
+function ThreadActivityRow({
+  isLast,
+  issue,
+  plan,
+  renderPlanChangeReference,
+  thread,
+}: {
+  isLast: boolean;
+  issue: Issue;
+  plan: Plan;
+  renderPlanChangeReference: PlanChangeReferenceRenderer;
+  thread: CommentThread;
+}) {
+  const page = usePlanDetailContext();
+  const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
+  const storeApi = usePlanDetailStoreApi();
+  const selectedSpecId = usePlanDetailStore((s) => s.selectedSpecId);
+  const anchor = thread.root.statementAnchor;
+  const targetSha256 = useMemo(
+    () =>
+      targetSha256OfSpec(
+        plan.specs.find((candidate) => candidate.id === anchor?.spec)
+      ),
+    [anchor?.spec, plan.specs]
+  );
+  const placement = usePlanDetailStore((s) =>
+    anchor
+      ? placementOf(s, thread.root.name, anchor.spec, targetSha256)
+      : undefined
+  );
+
+  // Open the Changes phase on the anchored spec; the statement editor picks
+  // up the focus request once it shows that spec.
+  const viewInStatement = () => {
+    const specId = anchor?.spec;
+    if (!specId) return;
+    storeApi.getState().requestThreadFocus({
+      commentName: thread.root.name,
+      specId,
+    });
+    focusPlanPhase("changes", page.expandPhase);
+    if (selectedSpecId !== specId) {
+      void router.push(
+        {
+          name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+          params: { planId: page.planId, projectId: page.projectId, specId },
+        },
+        { preventScrollReset: true }
+      );
+    }
+  };
+
+  return (
+    <ActivityRowFrame
+      icon={
+        <CommentIconBadge
+          className="bg-control-bg text-control"
+          icon={<MessagesSquare className="size-4" />}
+        />
+      }
+      id={thread.root.name}
+      isLast={isLast}
+    >
+      <CommentThreadCard
+        className="ml-3"
+        context={
+          anchor && (
+            <StatementAnchorContext
+              anchor={anchor}
+              onViewInStatement={viewInStatement}
+              placement={placement}
+              plan={plan}
+              renderPlanChangeReference={renderPlanChangeReference}
+              project={project}
+            />
+          )
+        }
+        issue={issue}
+        project={project}
+        thread={thread}
+      />
+    </ActivityRowFrame>
+  );
+}

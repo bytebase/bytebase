@@ -20,6 +20,8 @@ service AccessGrantService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.accessGrants.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Lists access grants in a project.
@@ -28,6 +30,8 @@ service AccessGrantService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.accessGrants.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Creates an access grant.
@@ -40,6 +44,8 @@ service AccessGrantService {
     option (bytebase.v1.permission) = "bb.accessGrants.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Activates a pending access grant.
@@ -52,6 +58,8 @@ service AccessGrantService {
     option (bytebase.v1.permission) = "bb.accessGrants.activate";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Revokes an active access grant.
@@ -64,6 +72,8 @@ service AccessGrantService {
     option (bytebase.v1.permission) = "bb.accessGrants.revoke";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Searches access grants created by the caller.
@@ -74,6 +84,7 @@ service AccessGrantService {
     };
     option (bytebase.v1.permission) = "bb.accessGrants.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 }
 
@@ -116,7 +127,7 @@ message AccessGrant {
   string issue = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The target databases for this access grant.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   repeated string targets = 6 [(google.api.field_behavior) = REQUIRED];
 
   // The query permission granted.
@@ -145,6 +156,12 @@ message AccessGrant {
 
   // Whether export the query result.
   bool export = 13;
+
+  // The default schema to execute the query.
+  string schema = 14;
+
+  // The container name to execute the query against, used for CosmosDB only.
+  string container = 15;
 }
 
 message GetAccessGrantRequest {

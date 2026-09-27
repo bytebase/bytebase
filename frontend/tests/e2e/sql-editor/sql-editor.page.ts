@@ -10,10 +10,17 @@ export class SqlEditorPage {
   readonly runButton: Locator;
   readonly saveButton: Locator;
   readonly adminModeButton: Locator;
-  readonly gutterWorksheetTab: Locator;
+  readonly gutterSavedQueryTab: Locator;
   readonly gutterSchemaTab: Locator;
   readonly gutterHistoryTab: Locator;
   readonly gutterAccessTab: Locator;
+  readonly requestAccessGrantButton: Locator;
+  readonly requestQueryButton: Locator;
+  readonly requestExportButton: Locator;
+  readonly requestUnmaskButton: Locator;
+  readonly requestRoleButton: Locator;
+  readonly accessGrantDrawer: Locator;
+  readonly accessGrantDrawerTitle: Locator;
 
   constructor(page: Page, baseURL = "") {
     this.page = page;
@@ -29,31 +36,74 @@ export class SqlEditorPage {
     this.runButton = page.locator("button").filter({ has: page.locator("svg.lucide-play") }).first();
     this.saveButton = page.getByRole("button", { name: "Save", exact: true });
     // AdminModeButton has a lucide-wrench icon and renders only when
-    // editorStore.allowAdmin && currentTab.mode === "WORKSHEET".
+    // editorStore.allowAdmin && currentTab.mode === "SAVED_QUERY".
     //
     // Scoping note: the workspace-level "Bytebase has not configured
-    // --external-url" banner (frontend/src/react/components/BannersWrapper.tsx)
+    // --external-url" banner (frontend/src/components/BannersWrapper.tsx)
     // ALSO renders a button with a lucide-wrench icon ("Configure now").
     // The framework's seed-test-data fixture silences that banner by
     // setting an external URL during setup, but we still anchor by the
     // editor's own warning-color class (`border-warning`, applied in
-    // frontend/src/react/components/sql-editor/AdminModeButton.tsx:53)
+    // frontend/src/components/sql-editor/AdminModeButton.tsx:53)
     // so the locator stays correct even if a future build re-introduces
     // the banner.
     this.adminModeButton = page
       .locator("button.border-warning")
       .filter({ has: page.locator("svg.lucide-wrench") })
       .first();
-    this.gutterWorksheetTab = page.getByRole("button", { name: "Worksheet", exact: true });
+    this.gutterSavedQueryTab = page.getByRole("button", {
+      name: "Saved queries",
+      exact: true,
+    });
     this.gutterSchemaTab = page.getByRole("button", { name: "Schema", exact: true });
     this.gutterHistoryTab = page.getByRole("button", { name: "History", exact: true });
     // ACCESS gutter tab only renders when project.allowJustInTimeAccess=true.
     // The button's screen-reader name comes from i18n key
-    // `sql-editor.jit` → "Just-In-Time Access" (not the shorter "Access"
-    // — that's the label of an entirely different "Data Access" sidebar
-    // entry in the workspace nav).
+    // `sql-editor.access-grants` → "Access Grants" (shared with the project
+    // sidebar's Access Grants page — both list the same objects).
     this.gutterAccessTab = page.getByRole("button", {
-      name: "Just-In-Time Access",
+      name: "Access Grants",
+      exact: true,
+    });
+    // Entry points into the access-grant drawer carry intent-specific labels
+    // ("Request query" / "Request export" / "Request unmask"); the generic
+    // "Request access grant" label (i18n key `sql-editor.request-access-grant`)
+    // remains only on the ACCESS pane CTA — where there is no prior intent —
+    // and on the drawer's own SheetTitle. Match buttons by role=button, and
+    // match the drawer by its accessible name (SheetTitle wraps
+    // BaseDialog.Title, which labels the dialog), so the two never collide.
+    this.requestAccessGrantButton = page.getByRole("button", {
+      name: "Request access grant",
+      exact: true,
+    });
+    // Permission-denied result CTA in JIT mode (i18n key
+    // `sql-editor.request-query`).
+    this.requestQueryButton = page.getByRole("button", {
+      name: "Request query",
+      exact: true,
+    });
+    // Export-blocked toolbar CTA (i18n key `sql-editor.request-export`).
+    this.requestExportButton = page.getByRole("button", {
+      name: "Request export",
+      exact: true,
+    });
+    // Masked-cell popover CTA (i18n key `sql-editor.request-unmask`).
+    this.requestUnmaskButton = page.getByRole("button", {
+      name: "Request unmask",
+      exact: true,
+    });
+    // Non-JIT permission-denied CTA (opens RequestRoleSheet); label comes from
+    // i18n key `issue.title.request-role`, shared with the Members page.
+    this.requestRoleButton = page.getByRole("button", {
+      name: "Request role",
+      exact: true,
+    });
+    this.accessGrantDrawer = page.getByRole("dialog", {
+      name: "Request access grant",
+      exact: true,
+    });
+    this.accessGrantDrawerTitle = this.accessGrantDrawer.getByRole("heading", {
+      name: "Request access grant",
       exact: true,
     });
   }
@@ -75,7 +125,7 @@ export class SqlEditorPage {
 
   async gotoSheet(projectId: string, sheetUuid: string) {
     await this.page.goto(
-      `${this.baseURL}/sql-editor/projects/${projectId}/sheets/${sheetUuid}`
+      `${this.baseURL}/sql-editor/projects/${projectId}/savedQueries/${sheetUuid}`
     );
     await this.page.keyboard.press("Escape").catch(() => {});
     await this.page.waitForTimeout(1000);
@@ -123,7 +173,12 @@ export class SqlEditorPage {
       opts.which === "last" ? this.codeEditor.last() : this.codeEditor;
     await editor.click();
     await this.page.waitForTimeout(150);
-    await this.page.keyboard.press("ControlOrMeta+a");
+    // `Control+a`, not `ControlOrMeta+a`: Monaco reads its CtrlCmd modifier
+    // from the user agent (Playwright's headless Chromium reports Windows on
+    // every host), while Playwright resolves ControlOrMeta from the host OS —
+    // on a macOS host that sent Meta+a, which Monaco ignored, so the "clear"
+    // only ever worked on editors that were already empty.
+    await this.page.keyboard.press("Control+a");
     await this.page.waitForTimeout(50);
     await this.page.keyboard.press("Delete");
     await this.page.waitForTimeout(50);
@@ -135,7 +190,7 @@ export class SqlEditorPage {
   // NOT exposed on the production React bundle, so any read MUST go through
   // the rendered `.view-lines` (a `monaco.editor.getEditors()` read returns
   // undefined and silently yields ""). `which`:
-  //   - "first"   the first role="code" surface (the worksheet editor)
+  //   - "first"   the first role="code" surface (the saved query editor)
   //   - "last"    the last surface (the admin terminal's editable prompt)
   //   - "longest" the surface with the most content (ignores empty panes)
   async readEditorContent(

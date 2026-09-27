@@ -1962,6 +1962,246 @@
 - type: STATEMENT_OBJECT_OWNER_CHECK
   category: STATEMENT
   engine: POSTGRES
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: MYSQL
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: TIDB
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: POSTGRES
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: ORACLE
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: OCEANBASE
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: SNOWFLAKE
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: MSSQL
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: REDSHIFT
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: MARIADB
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: CLICKHOUSE
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: MONGODB
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: REDIS
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: SPANNER
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: STARROCKS
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: HIVE
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: ELASTICSEARCH
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: BIGQUERY
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: DYNAMODB
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: DATABRICKS
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: COCKROACHDB
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: COSMOSDB
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: CASSANDRA
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: TRINO
+- type: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+  category: BUILTIN
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 2
+        unit: MB
+        factor: 1048576
+  engine: DORIS
 - type: BUILTIN_PRIOR_BACKUP_CHECK
   category: BUILTIN
   engine: MYSQL

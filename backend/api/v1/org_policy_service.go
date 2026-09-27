@@ -29,6 +29,8 @@ var (
 		storepb.Policy_QUERY_DATA:        {storepb.Policy_WORKSPACE, storepb.Policy_PROJECT},
 		storepb.Policy_MASKING_RULE:      {storepb.Policy_WORKSPACE},
 		storepb.Policy_MASKING_EXEMPTION: {storepb.Policy_PROJECT},
+		storepb.Policy_REVIEW_RULE:       {storepb.Policy_WORKSPACE, storepb.Policy_PROJECT},
+		storepb.Policy_REVIEW_AI:         {storepb.Policy_WORKSPACE, storepb.Policy_PROJECT},
 	}
 )
 
@@ -58,15 +60,25 @@ func (s *OrgPolicyService) GetPolicy(ctx context.Context, req *connect.Request[v
 	policy, parent, err := s.findPolicyMessage(ctx, req.Msg.Name)
 	if err != nil {
 		connectErr := connect.CodeOf(err)
-		// For ROLLOUT_POLICY, return default policy if not found
+		// Some policy types have a default that stands in for a missing row.
 		if connectErr == connect.CodeNotFound {
 			policyType, extractErr := extractPolicyTypeFromName(req.Msg.Name)
-			if extractErr == nil && policyType == storepb.Policy_ROLLOUT {
-				defaultPolicy, defaultErr := s.getDefaultRolloutPolicy(parent)
-				if defaultErr != nil {
-					return nil, defaultErr
+			if extractErr == nil {
+				switch policyType {
+				case storepb.Policy_ROLLOUT:
+					defaultPolicy, defaultErr := s.getDefaultRolloutPolicy(parent)
+					if defaultErr != nil {
+						return nil, defaultErr
+					}
+					policy = defaultPolicy
+				case storepb.Policy_REVIEW_RULE:
+					defaultPolicy, defaultErr := getDefaultReviewRulePolicy(parent)
+					if defaultErr != nil {
+						return nil, defaultErr
+					}
+					policy = defaultPolicy
+				default:
 				}
-				policy = defaultPolicy
 			}
 		} else {
 			return nil, err
@@ -226,9 +238,17 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 			"tag_policy",
 			"data_source_query_policy",
 			"export_data_policy",
-			"query_data_policy":
+			"query_data_policy",
+			"review_rule_policy",
+			"review_ai_policy":
 			if !pathMatchType(path, policy.Type) {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid path %s for policy type %s", path, policy.Type.String()))
+			}
+			// The payload is serialized by the type the request declares, so a
+			// request that names another type would store that type's empty
+			// payload under this policy.
+			if requestType, err := convertV1PBToStorePBPolicyType(req.Msg.Policy.Type); err != nil || requestType != policy.Type {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("policy type %s does not match the policy's type %s", req.Msg.Policy.Type, policy.Type))
 			}
 			if err := validatePolicyPayload(policy.Type, req.Msg.Policy); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid policy"))
@@ -270,6 +290,10 @@ func pathMatchType(path string, policyType storepb.Policy_Type) bool {
 		return path == "tag_policy"
 	case storepb.Policy_QUERY_DATA:
 		return path == "query_data_policy"
+	case storepb.Policy_REVIEW_RULE:
+		return path == "review_rule_policy"
+	case storepb.Policy_REVIEW_AI:
+		return path == "review_ai_policy"
 	default:
 		return false
 	}
@@ -335,6 +359,33 @@ func (*OrgPolicyService) getDefaultRolloutPolicy(parent string) (*store.PolicyMe
 	policy := &store.PolicyMessage{
 		ResourceType:      resourceType,
 		Type:              storepb.Policy_ROLLOUT,
+		InheritFromParent: false,
+		Enforce:           true,
+		Payload:           string(payloadBytes),
+	}
+	if v := resource; v != nil {
+		policy.Resource = *v
+	}
+	return policy, nil
+}
+
+// getDefaultReviewRulePolicy returns the review rule policy that stands in for
+// a missing row: every rule on. It is the same default the store applies when
+// neither the project nor the workspace has a policy.
+func getDefaultReviewRulePolicy(parent string) (*store.PolicyMessage, error) {
+	resourceType, resource, err := common.GetPolicyResourceTypeAndResource(parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	payloadBytes, err := protojson.Marshal(store.GetDefaultReviewRulePolicy())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal review rule policy")
+	}
+
+	policy := &store.PolicyMessage{
+		ResourceType:      resourceType,
+		Type:              storepb.Policy_REVIEW_RULE,
 		InheritFromParent: false,
 		Enforce:           true,
 		Payload:           string(payloadBytes),
@@ -475,7 +526,7 @@ func (s *OrgPolicyService) checkPolicyPermission(ctx context.Context, req connec
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		err := connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", perm))
+		err := permissionDeniedError(ctx, errors.Errorf("user does not have permission %q", perm))
 		if detail, detailErr := connect.NewErrorDetail(&v1pb.PermissionDeniedDetail{
 			Method:              req.Spec().Procedure,
 			RequiredPermissions: []string{string(perm)},
@@ -543,7 +594,66 @@ func validatePolicyPayload(policyType storepb.Policy_Type, policy *v1pb.Policy) 
 				}
 			}
 		}
+	case storepb.Policy_REVIEW_RULE:
+		reviewRulePolicy, ok := policy.Policy.(*v1pb.Policy_ReviewRulePolicy)
+		if !ok {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unmatched policy type %v and policy %v", policyType, policy.Policy))
+		}
+		if reviewRulePolicy.ReviewRulePolicy == nil {
+			return connect.NewError(connect.CodeInvalidArgument, errors.New("review rule policy must be set"))
+		}
+		if err := validateReviewRules(reviewRulePolicy.ReviewRulePolicy.Rules); err != nil {
+			return connect.NewError(connect.CodeInvalidArgument, err)
+		}
+	case storepb.Policy_REVIEW_AI:
+		reviewAIPolicy, ok := policy.Policy.(*v1pb.Policy_ReviewAiPolicy)
+		if !ok {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unmatched policy type %v and policy %v", policyType, policy.Policy))
+		}
+		if reviewAIPolicy.ReviewAiPolicy == nil {
+			return connect.NewError(connect.CodeInvalidArgument, errors.New("AI review policy must be set"))
+		}
+		if err := validateReviewAIPolicyContent(reviewAIPolicy.ReviewAiPolicy.Content); err != nil {
+			return connect.NewError(connect.CodeInvalidArgument, err)
+		}
 	default:
+	}
+	return nil
+}
+
+// validateReviewRules rejects unspecified, unknown, and repeated rules. The
+// list is a switch, so every entry must name one rule the server knows.
+func validateReviewRules(rules []v1pb.ReviewRuleType) error {
+	seen := make(map[v1pb.ReviewRuleType]bool, len(rules))
+	for _, rule := range rules {
+		if rule == v1pb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED {
+			return errors.New("review rule must be specified")
+		}
+		if _, ok := v1pb.ReviewRuleType_name[int32(rule)]; !ok {
+			return errors.Errorf("unknown review rule %d", rule)
+		}
+		if seen[rule] {
+			return errors.Errorf("review rule %s is listed twice", rule)
+		}
+		seen[rule] = true
+	}
+	return nil
+}
+
+// maxReviewAIPolicyBytes bounds the policy text. The whole text goes into
+// every review prompt, so the bound is a prompt budget, not a storage limit.
+const maxReviewAIPolicyBytes = 64 << 10
+
+// validateReviewAIPolicyContent rejects blank text, which would count as a
+// policy in force that says nothing, and text over the prompt budget. To
+// switch the AI review off for a resource, delete the policy or set enforce
+// to false.
+func validateReviewAIPolicyContent(content string) error {
+	if strings.TrimSpace(content) == "" {
+		return errors.New("AI review policy content must not be blank")
+	}
+	if len(content) > maxReviewAIPolicyBytes {
+		return errors.Errorf("AI review policy content is %d bytes, the limit is %d", len(content), maxReviewAIPolicyBytes)
 	}
 	return nil
 }
@@ -580,6 +690,19 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal policy")
+		}
+		return string(payloadBytes), nil
+	case v1pb.PolicyType_REVIEW_RULE:
+		payload := convertToStorePBReviewRulePolicy(policy.GetReviewRulePolicy())
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal review rule policy")
+		}
+		return string(payloadBytes), nil
+	case v1pb.PolicyType_REVIEW_AI:
+		payloadBytes, err := protojson.Marshal(convertToStorePBReviewAIPolicy(policy.GetReviewAiPolicy()))
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal AI review policy")
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_MASKING_RULE:
@@ -646,6 +769,18 @@ func convertToPolicy(policyMessage *store.PolicyMessage) (*v1pb.Policy, error) {
 		}
 	case storepb.Policy_QUERY_DATA:
 		payload, err := convertToV1PBQueryDataPolicy(policyMessage.Payload)
+		if err != nil {
+			return nil, err
+		}
+		policy.Policy = payload
+	case storepb.Policy_REVIEW_RULE:
+		payload, err := convertToV1PBReviewRulePolicy(policyMessage.Payload)
+		if err != nil {
+			return nil, err
+		}
+		policy.Policy = payload
+	case storepb.Policy_REVIEW_AI:
+		payload, err := convertToV1PBReviewAIPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}

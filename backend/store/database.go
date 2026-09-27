@@ -4,26 +4,26 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"strings"
 
-	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // DatabaseMessage is the message for database.
 type DatabaseMessage struct {
-	ProjectID    string
-	InstanceID   string
-	DatabaseName string
+	ProjectID         string
+	InstanceProjectID *string
+	InstanceID        string
+	DatabaseName      string
 
 	EnvironmentID          *string
 	EffectiveEnvironmentID *string
@@ -37,6 +37,14 @@ func (d *DatabaseMessage) String() string {
 	return common.FormatDatabase(d.InstanceID, d.DatabaseName)
 }
 
+// ResourceName returns the canonical database resource name for the owning instance scope.
+func (d *DatabaseMessage) ResourceName() string {
+	if d.InstanceProjectID != nil {
+		return common.FormatProjectDatabase(*d.InstanceProjectID, d.InstanceID, d.DatabaseName)
+	}
+	return common.FormatDatabase(d.InstanceID, d.DatabaseName)
+}
+
 // UpdateDatabaseMessage is the mssage for updating a database.
 type UpdateDatabaseMessage struct {
 	InstanceID   string
@@ -45,7 +53,9 @@ type UpdateDatabaseMessage struct {
 	ProjectID *string
 	Deleted   *bool
 	// Empty string will unset the environment.
-	EnvironmentID   *string
+	EnvironmentID *string
+	// MetadataUpdates run inside a write transaction. Callbacks must not acquire
+	// another store connection; compute any required store reads before UpdateDatabase.
 	MetadataUpdates []func(*storepb.DatabaseMetadata)
 }
 
@@ -168,6 +178,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	q := qb.Q().Space(`
 		SELECT
 			db.project,
+			instance.project,
 			COALESCE(
 				db.environment,
 				instance.environment
@@ -182,15 +193,23 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 		WHERE ?
 	`, from, where)
 
-	if len(find.OrderByKeys) > 0 {
-		orderBy := []string{}
-		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
-	} else {
-		q.Space("ORDER BY db.project, db.instance, db.name")
+	// Neither project nor name identifies a database; (instance, name) is the
+	// primary key. That stays unique in the result only because every join
+	// above is at most 1:1 — db_schema is joined on its own full primary key,
+	// and instance.resource_id is a primary key. A one-to-many join added here
+	// would duplicate rows and silently un-stabilize paging again.
+	//
+	// A caller sorting by instance or name repeats that column below, which
+	// PostgreSQL ignores as a redundant sort key.
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
+	if len(orderBy) == 0 {
+		orderBy = append(orderBy, "db.project ASC")
+	}
+	orderBy = append(orderBy, "db.instance ASC", "db.name ASC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
@@ -213,9 +232,10 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	for rows.Next() {
 		databaseMessage := &DatabaseMessage{}
 		var metadataString string
-		var effectiveEnvironment, environment, engine sql.NullString
+		var instanceProject, effectiveEnvironment, environment, engine sql.NullString
 		if err := rows.Scan(
 			&databaseMessage.ProjectID,
+			&instanceProject,
 			&effectiveEnvironment,
 			&environment,
 			&databaseMessage.InstanceID,
@@ -225,6 +245,9 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 			&engine,
 		); err != nil {
 			return nil, err
+		}
+		if instanceProject.Valid {
+			databaseMessage.InstanceProjectID = &instanceProject.String
 		}
 		if effectiveEnvironment.Valid {
 			databaseMessage.EffectiveEnvironmentID = &effectiveEnvironment.String
@@ -256,148 +279,126 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	return databases, nil
 }
 
-// CreateDatabaseDefault creates a new database in the default project.
+// CreateDatabaseDefault creates a database discovered by schema sync.
 func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
-	q := qb.Q().Space(`
-		INSERT INTO db (
-			instance,
-			project,
-			name,
-			deleted
-		)
-		VALUES (?, ?, ?, ?)
-		ON CONFLICT (instance, name) DO UPDATE SET
-			deleted = EXCLUDED.deleted`,
-		create.InstanceID,
-		create.ProjectID,
-		create.DatabaseName,
-		false,
-	)
-
-	query, args, err := q.ToSQL()
+	err := s.withDatabaseWrite(ctx, create.InstanceID, create.DatabaseName, nil, func(tx *sql.Tx, ownership *databaseOwnership) error {
+		projectID, err := ownership.projectForDefaultCreate(create.ProjectID)
+		if err != nil {
+			return err
+		}
+		query, args, err := qb.Q().Space(`INSERT INTO db (instance, project, name, deleted)
+			VALUES (?, ?, ?, ?)
+			ON CONFLICT (instance, name) DO UPDATE SET deleted = EXCLUDED.deleted`,
+			create.InstanceID, projectID, create.DatabaseName, false).ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build sql")
+		}
+		_, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
-
-	// Invalidate and update the cache.
 	s.removeDatabaseCache(ctx, create.InstanceID, create.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
 // UpsertDatabase upserts a database.
 func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
-	metadataString, err := protojson.Marshal(create.Metadata)
+	metadata, err := protojson.Marshal(create.Metadata)
 	if err != nil {
 		return nil, err
 	}
-
 	var environment *string
 	if create.EnvironmentID != nil && *create.EnvironmentID != "" {
 		environment = create.EnvironmentID
 	}
-
-	q := qb.Q().Space(`
-		INSERT INTO db (
-			instance,
-			project,
-			environment,
-			name,
-			deleted,
-			metadata
-		)
-		VALUES (?, ?, ?, ?, ?, ?)
-		ON CONFLICT (instance, name) DO UPDATE SET
-			project = EXCLUDED.project,
-			environment = EXCLUDED.environment,
-			name = EXCLUDED.name,
-			metadata = EXCLUDED.metadata`,
-		create.InstanceID,
-		create.ProjectID,
-		environment,
-		create.DatabaseName,
-		create.Deleted,
-		metadataString,
-	)
-
-	query, args, err := q.ToSQL()
+	err = s.withDatabaseWrite(ctx, create.InstanceID, create.DatabaseName, nil, func(tx *sql.Tx, ownership *databaseOwnership) error {
+		projectID, err := ownership.projectForUpsert(create.ProjectID)
+		if err != nil {
+			return err
+		}
+		query, args, err := qb.Q().Space(`INSERT INTO db (instance, project, environment, name, deleted, metadata)
+			VALUES (?, ?, ?, ?, ?, ?)
+			ON CONFLICT (instance, name) DO UPDATE SET
+				project = EXCLUDED.project, environment = EXCLUDED.environment,
+				name = EXCLUDED.name, metadata = EXCLUDED.metadata`,
+			create.InstanceID, projectID, environment, create.DatabaseName, create.Deleted, metadata).ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build sql")
+		}
+		_, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
-
-	// Invalidate and update the cache.
 	s.removeDatabaseCache(ctx, create.InstanceID, create.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
 // UpdateDatabase updates a database.
 func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage) (*DatabaseMessage, error) {
-	set := qb.Q()
-
-	if v := patch.ProjectID; v != nil {
-		set.Comma("project = ?", *v)
-	}
-	if v := patch.EnvironmentID; v != nil {
-		if *v == "" {
-			set.Comma("environment = NULL")
-		} else {
-			set.Comma("environment = ?", *v)
+	err := s.withDatabaseWrite(ctx, patch.InstanceID, patch.DatabaseName, nil, func(tx *sql.Tx, ownership *databaseOwnership) error {
+		if !ownership.exists {
+			return common.Errorf(common.NotFound, "database %s not found", common.FormatDatabase(patch.InstanceID, patch.DatabaseName))
 		}
-	}
-	if v := patch.Deleted; v != nil {
-		set.Comma("deleted = ?", *v)
-	}
-	if fs := patch.MetadataUpdates; len(fs) > 0 {
-		database, err := s.GetDatabase(ctx, &FindDatabaseMessage{
-			InstanceID:   &patch.InstanceID,
-			DatabaseName: &patch.DatabaseName,
-		})
+		projectID, err := ownership.projectForUpdate(patch.ProjectID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database %q", common.FormatDatabase(patch.InstanceID, patch.DatabaseName))
+			return err
 		}
-		md := proto.CloneOf(database.Metadata)
-		for _, f := range fs {
-			f(md)
+		set := qb.Q()
+		if patch.ProjectID != nil {
+			set.Comma("project = ?", projectID)
 		}
-		metadataBytes, err := protojson.Marshal(md)
+		if v := patch.EnvironmentID; v != nil {
+			if *v == "" {
+				set.Comma("environment = NULL")
+			} else {
+				set.Comma("environment = ?", *v)
+			}
+		}
+		if v := patch.Deleted; v != nil {
+			set.Comma("deleted = ?", *v)
+		}
+		if len(patch.MetadataUpdates) > 0 {
+			metadata := &storepb.DatabaseMetadata{}
+			if err := common.ProtojsonUnmarshaler.Unmarshal(ownership.metadata, metadata); err != nil {
+				return errors.Wrapf(err, "failed to unmarshal metadata for database %q", common.FormatDatabase(patch.InstanceID, patch.DatabaseName))
+			}
+			for _, update := range patch.MetadataUpdates {
+				update(metadata)
+			}
+			metadataBytes, err := protojson.Marshal(metadata)
+			if err != nil {
+				return err
+			}
+			set.Comma("metadata = ?", metadataBytes)
+		}
+		if set.Len() == 0 {
+			return errors.New("no fields to update")
+		}
+		query, args, err := qb.Q().Space("UPDATE db SET ? WHERE instance = ? AND name = ?", set, patch.InstanceID, patch.DatabaseName).ToSQL()
 		if err != nil {
-			return nil, err
+			return errors.Wrap(err, "failed to build sql")
 		}
-		set.Comma("metadata = ?", metadataBytes)
-	}
-
-	if set.Len() == 0 {
-		return nil, errors.New("no fields to update")
-	}
-
-	q := qb.Q().Space("UPDATE db SET ? WHERE instance = ? AND name = ?", set, patch.InstanceID, patch.DatabaseName)
-
-	query, args, err := q.ToSQL()
+		_, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
-
-	// Invalidate and update database cache.
 	s.removeDatabaseCache(ctx, patch.InstanceID, patch.DatabaseName)
 	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &patch.InstanceID, DatabaseName: &patch.DatabaseName, ShowDeleted: true})
 }
 
-// BatchUpdateDatabases update databases in batch.
+// BatchUpdateDatabases updates databases in batch.
 func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseMessage, update *BatchUpdateDatabases) error {
 	set := qb.Q()
-
 	if update.ProjectID != nil {
+		if *update.ProjectID == "" {
+			return common.Errorf(common.Invalid, "database project cannot be empty")
+		}
 		set.Comma("project = ?", *update.ProjectID)
 	}
 	if v := update.EnvironmentID; v != nil {
@@ -410,46 +411,300 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 	if set.Len() == 0 {
 		return errors.New("no update field specified")
 	}
-
 	where := qb.Q()
-
 	if v := update.FindByEnvironmentID; v != nil {
-		where.Or("environment = ?", *v)
+		where.Or("db.environment = ?", *v)
 	}
-
 	if len(databases) > 0 {
-		var dbInstances, dbNames []string
+		instances, names := make([]string, 0, len(databases)), make([]string, 0, len(databases))
 		for _, database := range databases {
-			dbInstances = append(dbInstances, database.InstanceID)
-			dbNames = append(dbNames, database.DatabaseName)
+			instances, names = append(instances, database.InstanceID), append(names, database.DatabaseName)
 		}
-		where.Or(`(db.instance, db.name) IN (SELECT * FROM unnest(?::TEXT[], ?::TEXT[]))`, dbInstances, dbNames)
+		where.Or(`(db.instance, db.name) IN (SELECT * FROM unnest(?::TEXT[], ?::TEXT[]))`, instances, names)
 	}
-
 	if where.Len() == 0 {
-		return errors.Errorf("empty where")
+		return errors.New("empty where")
 	}
-
 	if update.Workspace != "" {
 		where.And("db.instance IN (SELECT resource_id FROM instance WHERE workspace = ?)", update.Workspace)
 	}
 
-	q := qb.Q().Space("UPDATE db SET ? WHERE ?", set, where)
-
-	query, args, err := q.ToSQL()
+	var updated []databaseBatchTarget
+	err := s.withDatabaseBatchWrite(ctx, func(tx *sql.Tx) error {
+		locked, err := lockDatabaseBatchTargets(ctx, tx, where)
+		if err != nil {
+			return err
+		}
+		instances, err := lockDatabaseBatchInstances(ctx, tx, locked)
+		if err != nil {
+			return err
+		}
+		if update.ProjectID != nil {
+			for instanceID, instance := range instances {
+				if instance.deleted {
+					return common.Errorf(common.Conflict, "instance %s is archived", instanceID)
+				}
+			}
+		}
+		// Atomic validation: any invalid target rejects the whole batch before
+		// any row is updated.
+		if update.ProjectID != nil {
+			for _, target := range locked {
+				if instanceProject := instances[target.instanceID].projectID; instanceProject != "" {
+					if target.projectID != instanceProject || instanceProject != *update.ProjectID {
+						return common.Errorf(common.Invalid, "cannot move a project instance database to another project")
+					}
+				}
+			}
+		}
+		if len(locked) == 0 {
+			return nil
+		}
+		updateInstances, updateNames := make([]string, 0, len(locked)), make([]string, 0, len(locked))
+		for _, target := range locked {
+			updateInstances = append(updateInstances, target.instanceID)
+			updateNames = append(updateNames, target.databaseName)
+		}
+		q := qb.Q().Space(`
+			UPDATE db SET ?
+			FROM unnest(?::TEXT[], ?::TEXT[]) AS u(instance, name)
+			WHERE db.instance = u.instance AND db.name = u.name
+		`, set, updateInstances, updateNames)
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build batch database update sql")
+		}
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return errors.Wrap(err, "failed to update databases")
+		}
+		updated = locked
+		return nil
+	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
-	}
-
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
-
-	// Invalidate cache for updated databases
-	for _, database := range databases {
-		s.removeDatabaseCache(ctx, database.InstanceID, database.DatabaseName)
+	for _, target := range updated {
+		s.removeDatabaseCache(ctx, target.instanceID, target.databaseName)
 	}
 	return nil
+}
+
+type databaseBatchTarget struct {
+	instanceID   string
+	databaseName string
+	projectID    string
+}
+
+func (s *Store) withDatabaseBatchWrite(ctx context.Context, write func(*sql.Tx) error) error {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to begin batch database transaction")
+	}
+	defer tx.Rollback()
+	if err := write(tx); err != nil {
+		return err
+	}
+	return errors.Wrap(tx.Commit(), "failed to commit batch database transaction")
+}
+
+// lockDatabaseBatchTargets locks the batch targets in full primary-key order.
+// Only db rows are locked.
+func lockDatabaseBatchTargets(ctx context.Context, tx *sql.Tx, where *qb.Query) ([]databaseBatchTarget, error) {
+	q := qb.Q().Space(`
+		SELECT db.instance, db.name, db.project
+		FROM db
+		JOIN instance ON instance.resource_id = db.instance
+		WHERE ?
+	`, where)
+	q.Space("ORDER BY db.instance, db.name FOR UPDATE OF db")
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build batch database lock query")
+	}
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to lock batch database targets")
+	}
+	defer rows.Close()
+	var locked []databaseBatchTarget
+	for rows.Next() {
+		var target databaseBatchTarget
+		if err := rows.Scan(&target.instanceID, &target.databaseName, &target.projectID); err != nil {
+			return nil, errors.Wrap(err, "failed to scan locked batch database target")
+		}
+		locked = append(locked, target)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read locked batch database targets")
+	}
+	return locked, nil
+}
+
+type databaseBatchInstance struct {
+	projectID string
+	deleted   bool
+}
+
+// lockDatabaseBatchInstances locks the instances of the locked targets in
+// sorted order and returns their current lifecycle and owning project.
+func lockDatabaseBatchInstances(ctx context.Context, tx *sql.Tx, targets []databaseBatchTarget) (map[string]databaseBatchInstance, error) {
+	instanceIDs := make([]string, 0, len(targets))
+	for _, target := range targets {
+		instanceIDs = append(instanceIDs, target.instanceID)
+	}
+	slices.Sort(instanceIDs)
+	instanceIDs = slices.Compact(instanceIDs)
+	instances := make(map[string]databaseBatchInstance, len(instanceIDs))
+	if len(instanceIDs) == 0 {
+		return instances, nil
+	}
+	q := qb.Q().Space(`
+		SELECT resource_id, project, deleted
+		FROM instance
+		WHERE resource_id IN (SELECT * FROM unnest(?::TEXT[]))
+		ORDER BY resource_id
+		FOR NO KEY UPDATE
+	`, instanceIDs)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build batch database instance lock query")
+	}
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to lock batch database instances")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var instanceID string
+		var project sql.NullString
+		var deleted bool
+		if err := rows.Scan(&instanceID, &project, &deleted); err != nil {
+			return nil, errors.Wrap(err, "failed to scan locked batch database instance")
+		}
+		instance := databaseBatchInstance{deleted: deleted}
+		if project.Valid {
+			instance.projectID = project.String
+		}
+		instances[instanceID] = instance
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to read locked batch database instances")
+	}
+	for _, instanceID := range instanceIDs {
+		if _, ok := instances[instanceID]; !ok {
+			return nil, common.Errorf(common.NotFound, "instance %s not found", instanceID)
+		}
+	}
+	return instances, nil
+}
+
+type databaseOwnership struct {
+	exists          bool
+	projectID       string
+	metadata        []byte
+	instanceProject *string
+}
+
+func (s *Store) withDatabaseWrite(
+	ctx context.Context,
+	instanceID, databaseName string,
+	lockChild func(*sql.Tx) error,
+	write func(*sql.Tx, *databaseOwnership) error,
+) error {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to begin database write transaction")
+	}
+	defer tx.Rollback()
+	if lockChild != nil {
+		if err := lockChild(tx); err != nil {
+			return err
+		}
+	}
+
+	ownership, err := lockDatabaseOwnership(ctx, tx, instanceID, databaseName)
+	if err != nil {
+		return err
+	}
+	if err := write(tx, ownership); err != nil {
+		return err
+	}
+	return errors.Wrap(tx.Commit(), "failed to commit database write transaction")
+}
+
+func lockDatabaseOwnership(ctx context.Context, tx *sql.Tx, instanceID, databaseName string) (*databaseOwnership, error) {
+	ownership := &databaseOwnership{}
+	var databaseProject sql.NullString
+	if err := tx.QueryRowContext(ctx, `
+		SELECT project, metadata FROM db
+		WHERE instance = $1 AND name = $2
+		FOR UPDATE
+	`, instanceID, databaseName).Scan(&databaseProject, &ownership.metadata); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.Wrapf(err, "failed to lock database %s", common.FormatDatabase(instanceID, databaseName))
+	}
+	if databaseProject.Valid {
+		ownership.exists = true
+		ownership.projectID = databaseProject.String
+	}
+
+	var instanceProject sql.NullString
+	var deleted bool
+	if err := tx.QueryRowContext(ctx, `
+		SELECT project, deleted FROM instance WHERE resource_id = $1
+	`, instanceID).Scan(&instanceProject, &deleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, common.Errorf(common.NotFound, "instance %s not found", instanceID)
+		}
+		return nil, errors.Wrapf(err, "failed to find instance %s", instanceID)
+	}
+	if deleted {
+		return nil, common.Errorf(common.NotFound, "instance %s is deleted", instanceID)
+	}
+	if instanceProject.Valid {
+		projectID := instanceProject.String
+		ownership.instanceProject = &projectID
+	}
+	return ownership, nil
+}
+
+func (ownership *databaseOwnership) projectForDefaultCreate(requestedProjectID string) (string, error) {
+	if ownership.instanceProject != nil {
+		if ownership.exists && ownership.projectID != *ownership.instanceProject {
+			return "", common.Errorf(common.Invalid, "database on project instance must belong to project %s", *ownership.instanceProject)
+		}
+		return *ownership.instanceProject, nil
+	}
+	if requestedProjectID == "" {
+		return "", common.Errorf(common.Invalid, "database project cannot be empty")
+	}
+	return requestedProjectID, nil
+}
+
+func (ownership *databaseOwnership) projectForUpsert(requestedProjectID string) (string, error) {
+	if ownership.instanceProject != nil {
+		if ownership.exists && (requestedProjectID != *ownership.instanceProject || ownership.projectID != *ownership.instanceProject) {
+			return "", common.Errorf(common.Invalid, "database on project instance must belong to project %s", *ownership.instanceProject)
+		}
+		return *ownership.instanceProject, nil
+	}
+	if requestedProjectID == "" {
+		return "", common.Errorf(common.Invalid, "database project cannot be empty")
+	}
+	return requestedProjectID, nil
+}
+
+func (ownership *databaseOwnership) projectForUpdate(requestedProjectID *string) (string, error) {
+	projectID := ownership.projectID
+	if requestedProjectID != nil {
+		projectID = *requestedProjectID
+	}
+	if projectID == "" {
+		return "", common.Errorf(common.Invalid, "database project cannot be empty")
+	}
+	if ownership.instanceProject != nil && (ownership.projectID != *ownership.instanceProject || projectID != *ownership.instanceProject) {
+		return "", common.Errorf(common.Invalid, "database on project instance must belong to project %s", *ownership.instanceProject)
+	}
+	return projectID, nil
 }
 
 func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
@@ -457,34 +712,12 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 		return nil, nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return nil, errors.Errorf("failed to create cel env")
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, err
 	}
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
-
-	parseToLabelFilterSQL := func(resource, key string, value any) (*qb.Query, error) {
-		switch v := value.(type) {
-		case string:
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ?", resource, key), v), nil
-		case []any:
-			if len(v) == 0 {
-				return nil, errors.Errorf("empty label filter")
-			}
-			labelValueList := []any{}
-			for _, raw := range v {
-				labelValueList = append(labelValueList, raw.(string))
-			}
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ANY(?)", resource, key), labelValueList), nil
-		default:
-			return nil, errors.Errorf("empty value %v for label filter", value)
-		}
-	}
 
 	parseToEngineSQL := func(expr celast.Expr) (*qb.Query, error) {
 		variable, value := getVariableAndValueFromExpr(expr)
@@ -521,11 +754,18 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 			}
 			return qb.Q().Space("db.project = ?", projectID), nil
 		case "instance":
-			instanceID, err := common.GetInstanceID(value.(string))
+			instanceName, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("invalid instance filter %q", value)
+			}
+			if projectID, instanceID, err := common.GetProjectIDInstanceID(instanceName); err == nil {
+				return qb.Q().Space("db.instance = ? AND instance.project = ?", instanceID, projectID), nil
+			}
+			instanceID, err := common.GetInstanceID(instanceName)
 			if err != nil {
 				return nil, errors.Errorf("invalid instance filter %q", value)
 			}
-			return qb.Q().Space("db.instance = ?", instanceID), nil
+			return qb.Q().Space("db.instance = ? AND instance.project IS NULL", instanceID), nil
 		case "environment":
 			environment, ok := value.(string)
 			if !ok {
@@ -568,7 +808,7 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 				return nil, errors.Errorf("unsupport variable %q", variable)
 			}
 			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
-				return parseToLabelFilterSQL("db.metadata", labelKey, value)
+				return buildLabelFilterSQL("db.metadata", labelKey, value)
 			}
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}
@@ -616,13 +856,13 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 
 				switch variable {
 				case "name":
-					return qb.Q().Space("LOWER(db.name) LIKE ?", "%"+strValue+"%"), nil
+					return qb.Q().Space("LOWER(db.name) LIKE ? ESCAPE '\\'", containsPattern(strValue)), nil
 				case "table":
 					return qb.Q().Space(`EXISTS (
 						SELECT 1
 						FROM json_array_elements(ds.metadata->'schemas') AS s,
 						 	 json_array_elements(s->'tables') AS t
-						WHERE t->>'name' LIKE ?)`, "%"+strValue+"%"), nil
+						WHERE t->>'name' LIKE ? ESCAPE '\')`, containsPattern(strValue)), nil
 				default:
 					return nil, errors.Errorf(`only "name" or "table" support %q operator, but found %q`, celoverloads.Contains, variable)
 				}
@@ -631,7 +871,7 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 				if variable == "engine" {
 					return parseToEngineSQL(expr)
 				} else if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
-					return parseToLabelFilterSQL("db.metadata", labelKey, value)
+					return buildLabelFilterSQL("db.metadata", labelKey, value)
 				}
 				return nil, errors.Errorf("unsupport variable %q", variable)
 			case celoperators.LogicalNot:

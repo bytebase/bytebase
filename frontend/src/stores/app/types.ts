@@ -1,0 +1,1205 @@
+import type { FieldMask } from "@bufbuild/protobuf/wkt";
+import type { StateCreator } from "zustand";
+import type { DatabaseFilter } from "@/lib/databaseFilter";
+import type { ConditionGroupExpr } from "@/modules/cel";
+import type { AppFeatures } from "@/types/appProfile";
+import type { Permission } from "@/types/iam/permission";
+import type { NotificationCreate } from "@/types/notification";
+import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
+import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
+import type {
+  AuthenticationInfo,
+  LoginRequest,
+} from "@/types/proto-es/v1/auth_service_pb";
+import type {
+  Changelog,
+  ChangelogView,
+  GetChangelogRequest,
+  ListChangelogsRequest,
+} from "@/types/proto-es/v1/changelog_service_pb";
+import type { Engine, State } from "@/types/proto-es/v1/common_pb";
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
+import type {
+  DatabaseGroup,
+  DatabaseGroupView,
+} from "@/types/proto-es/v1/database_group_service_pb";
+import type {
+  BatchUpdateDatabasesRequest,
+  Database,
+  DatabaseMetadata,
+  DatabaseSchema,
+  DiffSchemaRequest,
+  DiffSchemaResponse,
+  ExtensionMetadata,
+  ExternalTableMetadata,
+  FunctionMetadata,
+  SchemaMetadata,
+  TableMetadata,
+  UpdateDatabaseRequest,
+  ViewMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import type { Group } from "@/types/proto-es/v1/group_service_pb";
+import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
+import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
+import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
+import type {
+  DataSource,
+  Instance,
+  InstanceResource,
+  ListInstanceDatabaseResponse,
+  SyncInstanceResponse,
+  UpdateInstanceRequest,
+} from "@/types/proto-es/v1/instance_service_pb";
+import type {
+  Issue,
+  IssueComment,
+  IssueComment_ThreadState,
+  ListIssueCommentsRequest,
+  StatementAnchor,
+} from "@/types/proto-es/v1/issue_service_pb";
+import type {
+  Policy,
+  PolicyType,
+  QueryDataPolicy,
+} from "@/types/proto-es/v1/org_policy_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Project, Webhook } from "@/types/proto-es/v1/project_service_pb";
+import type { Release } from "@/types/proto-es/v1/release_service_pb";
+import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import type {
+  SavedQuery,
+  SavedQueryBinding_Level,
+  SavedQueryPolicy,
+} from "@/types/proto-es/v1/saved_query_service_pb";
+import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
+import type {
+  DataClassificationSetting_DataClassificationConfig,
+  Setting,
+  Setting_SettingName,
+  SettingValue,
+  WorkspaceProfileSetting,
+} from "@/types/proto-es/v1/setting_service_pb";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import type {
+  ExportRequest,
+  QueryRequest,
+} from "@/types/proto-es/v1/sql_service_pb";
+import type {
+  BillingInterval,
+  PaymentInfo,
+  PlanFeature,
+  PlanType,
+  PurchasePlan,
+  Subscription,
+} from "@/types/proto-es/v1/subscription_service_pb";
+import type {
+  UpdateUserRequest,
+  User,
+} from "@/types/proto-es/v1/user_service_pb";
+import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
+import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
+import type { Environment } from "@/types/v1/environment";
+import type { IssueFilter } from "@/types/v1/issue/issue";
+import type { SQLResultSetV1 } from "@/types/v1/sql";
+import type { AccessGrantDisplayStatus } from "@/utils";
+
+export type ProjectListParams = {
+  pageSize: number;
+  pageToken: string;
+  query?: string;
+  excludeDefault?: boolean;
+};
+
+export type GroupFilter = {
+  query?: string;
+  project?: string;
+};
+
+export type AccountFilter = {
+  query?: string;
+  state?: State;
+};
+
+export type UserFilter = {
+  query?: string;
+  project?: string;
+  state?: State;
+};
+
+export type ListUsersParams = {
+  pageSize: number;
+  pageToken?: string;
+  filter?: UserFilter;
+  showDeleted?: boolean;
+};
+
+export type ListServiceAccountsParams = {
+  parent: string;
+  pageSize: number;
+  pageToken?: string;
+  showDeleted: boolean;
+  filter?: AccountFilter;
+  skipCache?: boolean;
+};
+
+export type ListWorkloadIdentitiesParams = {
+  parent: string;
+  pageSize: number;
+  pageToken?: string;
+  showDeleted: boolean;
+  filter?: AccountFilter;
+  skipCache?: boolean;
+};
+
+export type AccessGrantFilter = {
+  name?: string;
+  // Substring search via `query.contains(...)`. Use for free-text search
+  // UIs. Backend ILIKE-matches the stored grant query (whitespace
+  // normalized), so callers can pass any substring.
+  statement?: string;
+  // Exact-match via `query == ...`. Use for authorization-eligibility
+  // checks where the frontend needs to mirror the backend JIT match
+  // (e.g. "can the user export this exact statement?"). Backend trims
+  // boundary whitespace on both sides — internal whitespace preserved
+  // byte-for-byte. PR #20491 bot review #3349385091.
+  statementExact?: string;
+  creator?: string;
+  status?: Exclude<AccessGrantDisplayStatus, "UNKNOWN">[];
+  issue?: string;
+  target?: string;
+  createdTsAfter?: number;
+  createdTsBefore?: number;
+  unmask?: boolean;
+  export?: boolean;
+};
+
+export type ListAccessGrantsParams = {
+  parent: string;
+  filter?: AccessGrantFilter;
+  pageSize?: number;
+  pageToken?: string;
+  orderBy?: string;
+};
+
+export type AuthSlice = {
+  authenticationInfo?: AuthenticationInfo;
+  authenticationInfoRequest?: Promise<AuthenticationInfo | undefined>;
+  currentUser?: User;
+  currentUserRequest?: Promise<User | undefined>;
+  // Resource name `users/{email}` of the signed-in user; drives `isLoggedIn`.
+  currentUserName?: string;
+  unauthenticatedOccurred: boolean;
+  authSessionKey: string;
+  isSelfEmailUpdate: boolean;
+  loadAuthenticationInfo: () => Promise<AuthenticationInfo | undefined>;
+  fetchAuthenticationInfo: (
+    workspace?: string
+  ) => Promise<AuthenticationInfo | undefined>;
+  loadCurrentUser: () => Promise<User | undefined>;
+  isLoggedIn: () => boolean;
+  requireResetPassword: () => boolean;
+  setRequireResetPassword: (value: boolean) => void;
+  setUnauthenticatedOccurred: (value: boolean) => void;
+  fetchCurrentUser: (silent?: boolean) => Promise<User | undefined>;
+  // Adopt a user a mutation just returned. Preferred over refetching when the
+  // caller already holds the authoritative row: a refetch can fail, and
+  // fetchCurrentUser swallows that, leaving guards reading stale state.
+  setCurrentUser: (user: User) => void;
+  login: (params: {
+    request: LoginRequest;
+    redirect?: boolean;
+    redirectUrl?: string;
+    silent?: boolean;
+  }) => Promise<void>;
+  signup: (request: Partial<User>) => Promise<void>;
+  logout: () => Promise<void>;
+  sendEmailLoginCode: (email: string, workspace?: string) => Promise<void>;
+  updateCurrentUserNameForEmailChange: (newName: string) => void;
+  setIsSelfEmailUpdate: (value: boolean) => void;
+};
+
+export type WorkspaceSlice = {
+  serverInfo?: ActuatorInfo;
+  serverInfoTs: number;
+  serverInfoRequest?: Promise<ActuatorInfo | undefined>;
+  workspace?: Workspace;
+  workspaceList: Workspace[];
+  workspaceRequest?: Promise<Workspace | undefined>;
+  workspaceProfile?: WorkspaceProfileSetting;
+  workspaceProfileRequest?: Promise<WorkspaceProfileSetting | undefined>;
+  environmentList: Environment[];
+  environmentRequest?: Promise<Environment[]>;
+  // General-purpose setting cache keyed by the setting's resource name
+  // (`settings/{Setting_SettingName}`).
+  settingsByName: Record<string, Setting>;
+  settingRequests: Record<string, Promise<Setting | undefined>>;
+  appFeatures: AppFeatures;
+  subscription?: Subscription;
+  subscriptionRequest?: Promise<Subscription | undefined>;
+  // Subscription purchase metadata (SaaS).
+  purchasePlans: PurchasePlan[];
+  paymentInfo?: PaymentInfo;
+  loadServerInfo: () => Promise<ActuatorInfo | undefined>;
+  refreshServerInfo: () => Promise<ActuatorInfo | undefined>;
+  fetchServerInfo: () => Promise<ActuatorInfo | undefined>;
+  loadWorkspace: () => Promise<Workspace | undefined>;
+  loadWorkspaceList: () => Promise<Workspace[]>;
+  updateWorkspace: (
+    workspace: Workspace,
+    updateMask: string[]
+  ) => Promise<Workspace>;
+  switchWorkspace: (
+    workspaceName: string,
+    redirect?: boolean,
+    recordVisit?: boolean
+  ) => Promise<void>;
+  loadWorkspaceProfile: (
+    force?: boolean
+  ) => Promise<WorkspaceProfileSetting | undefined>;
+  loadEnvironmentList: (force?: boolean) => Promise<Environment[]>;
+  refreshEnvironmentList: () => Promise<Environment[]>;
+  getEnvironmentByName: (name: string, fallback?: boolean) => Environment;
+  getSettingByName: (name: Setting_SettingName) => Setting | undefined;
+  getOrFetchSettingByName: (
+    name: Setting_SettingName,
+    silent?: boolean
+  ) => Promise<Setting | undefined>;
+  // Puts a saved setting into the cache so consumers see fresh values without
+  // a refresh.
+  setSettingByName: (setting: Setting) => void;
+  // Writes a setting to the server and updates the cache.
+  upsertSetting: (params: {
+    name: Setting_SettingName;
+    value: SettingValue;
+    validateOnly?: boolean;
+    updateMask?: FieldMask;
+  }) => Promise<Setting>;
+  loadSubscription: () => Promise<Subscription | undefined>;
+  refreshSubscription: () => Promise<Subscription | undefined>;
+  startTrial: () => Promise<Subscription>;
+  uploadLicense: (license: string) => Promise<Subscription | undefined>;
+  currentPlan: () => PlanType;
+  isFreePlan: () => boolean;
+  isTrialing: () => boolean;
+  canStartTrial: () => boolean;
+  isExpired: () => boolean;
+  daysBeforeExpire: () => number;
+  trialingDays: () => number;
+  showTrial: () => boolean;
+  expireAt: () => string;
+  instanceCountLimit: () => number;
+  userCountLimit: () => number;
+  instanceLicenseCount: () => number;
+  hasUnifiedInstanceLicense: () => boolean;
+  hasFeature: (feature: PlanFeature) => boolean;
+  hasInstanceFeature: (
+    feature: PlanFeature,
+    instance?: Instance | InstanceResource
+  ) => boolean;
+  instanceMissingLicense: (
+    feature: PlanFeature,
+    instance?: Instance | InstanceResource
+  ) => boolean;
+  getMinimumRequiredPlan: (feature: PlanFeature) => PlanType;
+  isSaaSMode: () => boolean;
+  workspaceResourceName: () => string;
+  externalUrl: () => string;
+  needConfigureExternalUrl: () => boolean;
+  version: () => string;
+  changelogURL: () => string;
+  activatedInstanceCount: () => number;
+  totalInstanceCount: () => number;
+  userCountInIam: () => number;
+  activeVcsUserCount: () => number;
+  enableOnboarding: () => boolean;
+  workspaceSetupGuideEnabled: (allowMultipleMembers?: boolean) => boolean;
+  // Always returns a profile (never undefined) so consumers read fields
+  // without null checks.
+  getWorkspaceProfile: () => WorkspaceProfileSetting;
+  // Data-classification config from the DATA_CLASSIFICATION setting cache.
+  classification: () => DataClassificationSetting_DataClassificationConfig[];
+  getProjectClassification: (
+    classificationId: string
+  ) => DataClassificationSetting_DataClassificationConfig | undefined;
+  updateWorkspaceProfile: (params: {
+    payload: Partial<WorkspaceProfileSetting>;
+    updateMask: FieldMask;
+  }) => Promise<void>;
+  fetchEnvironments: (silent?: boolean) => Promise<void>;
+  createEnvironment: (
+    environment: Partial<Environment>
+  ) => Promise<Environment>;
+  updateEnvironment: (update: Partial<Environment>) => Promise<Environment>;
+  deleteEnvironment: (name: string) => Promise<void>;
+  reorderEnvironmentList: (
+    orderedEnvironmentList: Environment[]
+  ) => Promise<Environment[]>;
+  setSubscription: (subscription: Subscription) => void;
+  hasSplitInstanceLicense: () => boolean;
+  pollSubscriptionUntil: (
+    predicate: (subscription: Subscription) => boolean,
+    options?: { timeoutMs?: number; intervalMs?: number; signal?: AbortSignal }
+  ) => Promise<Subscription | undefined>;
+  createPurchase: (
+    plan: PlanType,
+    interval: BillingInterval,
+    seats: number
+  ) => Promise<string>;
+  updatePurchase: (
+    plan: PlanType,
+    interval: BillingInterval,
+    seats: number,
+    etag: string
+  ) => Promise<string>;
+  cancelPurchase: (feedback: string, comment: string) => Promise<void>;
+  fetchPaymentInfo: () => Promise<PaymentInfo | undefined>;
+  verifyCheckoutSession: (sessionId: string) => Promise<string>;
+  fetchPurchasePlans: () => Promise<PurchasePlan[] | undefined>;
+};
+
+export type IamSlice = {
+  workspacePolicy?: IamPolicy;
+  workspacePolicyRequest?: Promise<IamPolicy | undefined>;
+  projectPoliciesByName: Record<string, IamPolicy>;
+  projectPolicyRequests: Record<string, Promise<IamPolicy | undefined>>;
+  roles: Role[];
+  rolesRequest?: Promise<Role[]>;
+  loadWorkspacePermissionState: () => Promise<void>;
+  loadProjectIamPolicy: (project: string) => Promise<IamPolicy | undefined>;
+  getProjectIamPolicy: (project: string) => IamPolicy;
+  updateProjectIamPolicy: (
+    project: string,
+    policy: IamPolicy
+  ) => Promise<IamPolicy>;
+  fetchWorkspaceIamPolicy: (silent?: boolean) => Promise<IamPolicy>;
+  patchWorkspaceIamPolicy: (
+    batchPatch: { member: string; roles: string[] }[]
+  ) => Promise<void>;
+  workspaceRoleMapToUsers: () => Map<string, Set<string>>;
+  workspaceUserMapToRoles: () => Map<string, Set<string>>;
+  findWorkspaceRolesByMember: (member: string) => string[];
+  getWorkspaceRolesByName: (name: string) => Set<string>;
+  hasWorkspacePermission: (permission: Permission) => boolean;
+  hasProjectPermission: (project: Project, permission: Permission) => boolean;
+  hasProjectWidePermission: (
+    project: Project,
+    permission: Permission
+  ) => boolean;
+};
+
+export interface ProjectFilter {
+  query?: string;
+  excludeDefault?: boolean;
+  state?: State;
+  // label should be "{label key}:{label value}" format
+  labels?: string[];
+}
+
+export type ProjectSlice = {
+  projectsByName: Record<string, Project>;
+  projectRequests: Record<string, Promise<Project | undefined>>;
+  projectErrorsByName: Record<string, Error | undefined>;
+  getProjectByName: (name: string) => Project;
+  fetchProject: (
+    name: string,
+    silent?: boolean
+  ) => Promise<Project | undefined>;
+  getOrFetchProjectByName: (name: string, silent?: boolean) => Promise<Project>;
+  batchFetchProjects: (names: string[], silent?: boolean) => Promise<Project[]>;
+  // Returns ALL requested projects (fetching the missing ones first),
+  // resolved through `getProjectByName` so the placeholder is filled in.
+  batchGetOrFetchProjects: (names: string[]) => Promise<Project[]>;
+  searchProjects: (params: ProjectListParams) => Promise<{
+    projects: Project[];
+    nextPageToken?: string;
+  }>;
+  fetchProjectList: (params: {
+    pageSize?: number;
+    pageToken?: string;
+    silent?: boolean;
+    filter?: ProjectFilter;
+    orderBy?: string;
+    cache?: boolean;
+  }) => Promise<{ projects: Project[]; nextPageToken?: string }>;
+  createProject: (title: string, resourceId: string) => Promise<Project>;
+  updateProject: (project: Project, updateMask: string[]) => Promise<Project>;
+  archiveProject: (project: Project) => Promise<void>;
+  restoreProject: (project: Project) => Promise<void>;
+  deleteProject: (project: string) => Promise<void>;
+  batchDeleteProjects: (projectNames: string[]) => Promise<void>;
+  batchPurgeProjects: (projectNames: string[]) => Promise<void>;
+  // Immutably upsert a single project into the by-name cache.
+  updateProjectCache: (project: Project) => void;
+  resetProjects: () => void;
+};
+
+export interface InstanceFilter {
+  environment?: string;
+  project?: string;
+  host?: string;
+  port?: string;
+  query?: string;
+  engines?: Engine[];
+  state?: State;
+  labels?: string[];
+}
+
+export type InstanceSlice = {
+  instancesByName: Record<string, Instance>;
+  instanceRequests: Record<string, Promise<Instance | undefined>>;
+  instanceErrorsByName: Record<string, Error | undefined>;
+  resetInstances: () => void;
+  fetchInstance: (name: string) => Promise<Instance | undefined>;
+  getInstanceByName: (name: string) => Instance;
+  getOrFetchInstanceByName: (
+    name: string,
+    silent?: boolean
+  ) => Promise<Instance>;
+  createInstance: (
+    instance: Instance,
+    validateOnly?: boolean,
+    options?: { parent?: string }
+  ) => Promise<Instance>;
+  prepareSampleProjectInstance: (parent: string) => Promise<Instance>;
+  updateInstance: (
+    instance: Instance,
+    updateMask: string[]
+  ) => Promise<Instance>;
+  archiveInstance: (instance: Instance, force?: boolean) => Promise<Instance>;
+  restoreInstance: (instance: Instance) => Promise<Instance>;
+  deleteInstance: (instance: string) => Promise<void>;
+  syncInstance: (
+    instance: string,
+    enableFullSync: boolean
+  ) => Promise<SyncInstanceResponse>;
+  batchSyncInstances: (
+    instanceNameList: string[],
+    enableFullSync: boolean,
+    parent?: string
+  ) => Promise<void>;
+  batchUpdateInstances: (
+    requests: UpdateInstanceRequest[],
+    parent?: string
+  ) => Promise<Instance[]>;
+  createDataSource: (params: {
+    instance: string;
+    dataSource: DataSource;
+    validateOnly?: boolean;
+  }) => Promise<Instance>;
+  updateDataSource: (params: {
+    instance: string;
+    dataSource: DataSource;
+    updateMask: string[];
+    validateOnly?: boolean;
+  }) => Promise<Instance>;
+  deleteDataSource: (
+    instance: Instance,
+    dataSource: DataSource
+  ) => Promise<Instance>;
+  listInstanceDatabases: (
+    name: string,
+    instance?: Instance
+  ) => Promise<ListInstanceDatabaseResponse>;
+  fetchInstanceList: (params: {
+    parent?: string;
+    pageSize?: number;
+    pageToken?: string;
+    orderBy?: string;
+    filter?: InstanceFilter;
+    silent?: boolean;
+  }) => Promise<{ instances: Instance[]; nextPageToken: string }>;
+};
+
+export type DatabaseListParams = {
+  parent: string;
+  pageSize: number;
+  pageToken?: string;
+  // Either a pre-built CEL filter string or a structured `DatabaseFilter`
+  // (built via `buildDatabaseFilter`).
+  filter?: string | DatabaseFilter;
+  orderBy?: string;
+  silent?: boolean;
+  // When listing by instance parent, stale cached databases for that instance
+  // are evicted first unless this is set (e.g. paginated "load more").
+  skipCacheRemoval?: boolean;
+};
+
+export type DatabaseSlice = {
+  databasesByName: Record<string, Database>;
+  databaseRequests: Record<string, Promise<Database | undefined>>;
+  databaseErrorsByName: Record<string, Error | undefined>;
+  resetDatabases: () => void;
+  getDatabaseList: () => Database[];
+  // Synchronous read with the `unknownDatabase` fallback (never null), so
+  // callers can read `.project` / `.instanceResource` without null checks.
+  getDatabaseByName: (name: string) => Database;
+  fetchDatabase: (name: string) => Promise<Database | undefined>;
+  // Async read that resolves to the cached/fetched database, or the
+  // `unknownDatabase` fallback for invalid names / fetch failures.
+  getOrFetchDatabaseByName: (
+    name: string,
+    silent?: boolean
+  ) => Promise<Database>;
+  batchFetchDatabases: (
+    names: string[],
+    silent?: boolean
+  ) => Promise<Database[]>;
+  batchGetOrFetchDatabases: (
+    names: string[],
+    silent?: boolean
+  ) => Promise<Database[]>;
+  fetchDatabases: (params: DatabaseListParams) => Promise<{
+    databases: Database[];
+    nextPageToken: string;
+  }>;
+  syncDatabase: (name: string, refresh?: boolean) => Promise<void>;
+  batchSyncDatabases: (databases: string[]) => Promise<void>;
+  batchUpdateDatabases: (
+    params: BatchUpdateDatabasesRequest
+  ) => Promise<Database[]>;
+  updateDatabase: (params: UpdateDatabaseRequest) => Promise<Database>;
+  // Drops cached databases (and their schema metadata) for the given instance.
+  removeCacheByInstance: (instance: string) => void;
+  // Patches the cached `instanceResource` of every database under `instance`.
+  updateDatabaseInstance: (instance: Instance) => void;
+  fetchDatabaseSchema: (database: string) => Promise<DatabaseSchema>;
+  diffSchema: (params: DiffSchemaRequest) => Promise<DiffSchemaResponse>;
+};
+
+export type DBGroupSlice = {
+  dbGroupsByName: Record<string, DatabaseGroup>;
+  // Tracks which view (BASIC/FULL) the cached entry was fetched with, so a
+  // FULL request (needs `matchedDatabases`) refetches when only BASIC is
+  // cached.
+  dbGroupViewByName: Record<string, DatabaseGroupView>;
+  dbGroupRequests: Record<string, Promise<DatabaseGroup | undefined>>;
+  dbGroupErrorsByName: Record<string, Error | undefined>;
+  fetchDBGroup: (
+    name: string,
+    view?: DatabaseGroupView
+  ) => Promise<DatabaseGroup | undefined>;
+  listDBGroupsForProject: (project: string) => Promise<DatabaseGroup[]>;
+  // Synchronous cache read. Returns a stable unknownDatabaseGroup when absent or
+  // when a FULL view is requested but only BASIC is cached.
+  getDBGroupByName: (name: string, view?: DatabaseGroupView) => DatabaseGroup;
+  getOrFetchDBGroupByName: (
+    name: string,
+    options?: {
+      skipCache?: boolean;
+      silent?: boolean;
+      view?: DatabaseGroupView;
+    }
+  ) => Promise<DatabaseGroup>;
+  fetchDBGroupListByProjectName: (
+    projectName: string,
+    view: DatabaseGroupView
+  ) => Promise<DatabaseGroup[]>;
+  createDatabaseGroup: (params: {
+    projectName: string;
+    databaseGroup: Pick<
+      DatabaseGroup,
+      "$typeName" | "name" | "title" | "databaseExpr"
+    >;
+    databaseGroupId: string;
+    validateOnly?: boolean;
+  }) => Promise<DatabaseGroup>;
+  updateDatabaseGroup: (
+    databaseGroup: DatabaseGroup,
+    updateMask: string[]
+  ) => Promise<DatabaseGroup>;
+  deleteDatabaseGroup: (name: string) => Promise<void>;
+  fetchDatabaseGroupMatchList: (params: {
+    projectName: string;
+    expr: ConditionGroupExpr;
+  }) => Promise<string[]>;
+};
+
+export type SheetSlice = {
+  sheetsByName: Record<string, Sheet>;
+  sheetRequests: Record<
+    string,
+    { raw: boolean; request: Promise<Sheet | undefined> }
+  >;
+  sheetErrorsByName: Record<string, Error | undefined>;
+  fetchSheet: (name: string, raw?: boolean) => Promise<Sheet | undefined>;
+  createSheet: (parent: string, sheet: Sheet) => Promise<Sheet>;
+  getSheetByName: (name: string) => Sheet | undefined;
+  getOrFetchSheetByName: (name: string) => Promise<Sheet | undefined>;
+};
+
+export type SavedQueryView = "FULL" | "BASIC";
+
+export type SavedQuerySlice = {
+  // Keyed by `${uid}:${view}` so FULL and BASIC views are kept separately —
+  // BASIC list entries omit the statement, FULL entries carry it.
+  savedQueriesByKey: Record<string, SavedQuery>;
+  savedQueryRequests: Record<string, Promise<SavedQuery | undefined>>;
+  getSavedQueryByName: (
+    name: string,
+    view?: SavedQueryView
+  ) => SavedQuery | undefined;
+  getOrFetchSavedQueryByName: (
+    name: string,
+    silent?: boolean
+  ) => Promise<SavedQuery | undefined>;
+  fetchSavedQueryList: (
+    parent: string,
+    filter: string,
+    params?: {
+      pageSize?: number;
+      pageToken?: string;
+    }
+  ) => Promise<{ savedQueries: SavedQuery[]; nextPageToken: string }>;
+  searchSavedQueryFolders: (
+    parent: string,
+    filter?: string
+  ) => Promise<string[]>;
+  createSavedQuery: (
+    savedQuery: SavedQuery,
+    signal?: AbortSignal
+  ) => Promise<SavedQuery>;
+  patchSavedQuery: (
+    savedQuery: SavedQuery,
+    updateMask: string[],
+    signal?: AbortSignal
+  ) => Promise<SavedQuery | undefined>;
+  deleteSavedQueryByName: (name: string) => Promise<void>;
+  updateSavedQueryStar: (name: string, starred: boolean) => Promise<void>;
+  /**
+   * Move the caller's saved queries filed under `sourceFolder`, descendants
+   * included, into `targetFolder`. Only the caller's own saved queries move;
+   * the returned count reports how many did. Re-filing a single saved query
+   * is `patchSavedQuery` with the `folder` field.
+   */
+  moveMySavedQueries: (
+    parent: string,
+    params: {
+      sourceFolder: string;
+      targetFolder: string;
+    }
+  ) => Promise<number>;
+  /**
+   * Mirror a completed server-side folder move onto the cached rows. The
+   * batch RPC answers with a count, not the moved resources, so the caller
+   * names the rows it already holds.
+   */
+  patchSavedQueryFolderInCache: (names: string[], folder: string) => void;
+  /**
+   * The calling user's grant level per saved query, keyed by resource name.
+   * Nothing caller-relative rides on the SavedQuery resource, so this is
+   * resolved from the policy when a saved query somebody else created is
+   * fetched, and read back synchronously by the readable/writable predicates.
+   */
+  savedQueryLevelByName: Record<string, SavedQueryBinding_Level>;
+  /**
+   * Resolve and cache the caller's level on a saved query by reading its
+   * policy and matching the bindings against the caller's own principals
+   * (themselves plus their groups), the same set the server uses.
+   */
+  fetchSavedQueryLevel: (
+    savedQuery: SavedQuery
+  ) => Promise<SavedQueryBinding_Level>;
+  /**
+   * Read a saved query's grants. Anyone who can read the saved query can read
+   * its policy, so this is also how a grantee learns whether they may edit —
+   * nothing caller-relative rides on the resource itself.
+   */
+  getSavedQueryPolicy: (name: string) => Promise<SavedQueryPolicy>;
+  /**
+   * Replace a saved query's grants. `policy.etag` must carry the etag from the
+   * last read; the server aborts on a mismatch rather than clobbering a
+   * concurrent revocation.
+   */
+  setSavedQueryPolicy: (
+    name: string,
+    policy: SavedQueryPolicy
+  ) => Promise<SavedQueryPolicy>;
+};
+
+export type InstanceRoleSlice = {
+  rolesByInstance: Record<string, InstanceRole[]>;
+  roleRequests: Record<string, Promise<InstanceRole[]>>;
+  fetchInstanceRoles: (instance: string) => Promise<InstanceRole[]>;
+};
+
+export type GroupSlice = {
+  groupsByName: Record<string, Group>;
+  groupRequests: Record<string, Promise<Group | undefined>>;
+  groupErrorsByName: Record<string, Error | undefined>;
+  listGroups: (params: {
+    pageSize: number;
+    pageToken?: string;
+    filter?: GroupFilter;
+  }) => Promise<{ groups: Group[]; nextPageToken: string }>;
+  batchFetchGroups: (names: string[]) => Promise<Group[]>;
+  batchGetOrFetchGroups: (names: string[]) => Promise<(Group | undefined)[]>;
+  fetchGroup: (id: string) => Promise<Group | undefined>;
+  getGroupByIdentifier: (id: string) => Group | undefined;
+  createGroup: (group: Group) => Promise<Group>;
+  updateGroup: (group: Group) => Promise<Group>;
+  deleteGroup: (name: string) => Promise<void>;
+};
+
+export type ServiceAccountSlice = {
+  serviceAccountsByName: Record<string, ServiceAccount>;
+  serviceAccountRequests: Record<string, Promise<ServiceAccount | undefined>>;
+  listServiceAccounts: (
+    params: ListServiceAccountsParams
+  ) => Promise<{ serviceAccounts: ServiceAccount[]; nextPageToken: string }>;
+  fetchServiceAccount: (
+    name: string,
+    silent?: boolean
+  ) => Promise<ServiceAccount | undefined>;
+  getServiceAccount: (name: string) => ServiceAccount;
+  createServiceAccount: (
+    serviceAccountId: string,
+    serviceAccount: Partial<ServiceAccount>,
+    parent: string
+  ) => Promise<ServiceAccount>;
+  updateServiceAccount: (
+    serviceAccount: Partial<ServiceAccount>,
+    updateMask: { paths: string[] }
+  ) => Promise<ServiceAccount>;
+  deleteServiceAccount: (name: string) => Promise<void>;
+  undeleteServiceAccount: (name: string) => Promise<ServiceAccount>;
+};
+
+export type WorkloadIdentitySlice = {
+  workloadIdentitiesByName: Record<string, WorkloadIdentity>;
+  workloadIdentityRequests: Record<
+    string,
+    Promise<WorkloadIdentity | undefined>
+  >;
+  listWorkloadIdentities: (params: ListWorkloadIdentitiesParams) => Promise<{
+    workloadIdentities: WorkloadIdentity[];
+    nextPageToken: string;
+  }>;
+  fetchWorkloadIdentity: (
+    name: string,
+    silent?: boolean
+  ) => Promise<WorkloadIdentity | undefined>;
+  getWorkloadIdentity: (name: string) => WorkloadIdentity;
+  createWorkloadIdentity: (
+    workloadIdentityId: string,
+    workloadIdentity: Partial<WorkloadIdentity>,
+    parent: string
+  ) => Promise<WorkloadIdentity>;
+  updateWorkloadIdentity: (
+    workloadIdentity: Partial<WorkloadIdentity>,
+    updateMask: { paths: string[] }
+  ) => Promise<WorkloadIdentity>;
+  deleteWorkloadIdentity: (name: string) => Promise<void>;
+  undeleteWorkloadIdentity: (name: string) => Promise<WorkloadIdentity>;
+};
+
+export type IdentityProviderSlice = {
+  identityProvidersByName: Record<string, IdentityProvider>;
+  identityProviderRequests: Record<
+    string,
+    Promise<IdentityProvider | undefined>
+  >;
+  identityProviderList: () => IdentityProvider[];
+  listIdentityProviders: (parent: string) => Promise<IdentityProvider[]>;
+  fetchIdentityProvider: (
+    name: string,
+    silent?: boolean
+  ) => Promise<IdentityProvider | undefined>;
+  getIdentityProvider: (name: string) => IdentityProvider | undefined;
+  createIdentityProvider: (
+    identityProvider: IdentityProvider
+  ) => Promise<IdentityProvider>;
+  updateIdentityProvider: (
+    update: Partial<IdentityProvider>
+  ) => Promise<IdentityProvider>;
+  deleteIdentityProvider: (name: string) => Promise<void>;
+};
+
+export type AccessGrantSlice = {
+  accessGrantsByName: Record<string, AccessGrant>;
+  accessGrantRequests: Record<string, Promise<AccessGrant | undefined>>;
+  fetchAccessGrant: (name: string) => Promise<AccessGrant | undefined>;
+  searchMyAccessGrants: (
+    params: ListAccessGrantsParams
+  ) => Promise<{ accessGrants: AccessGrant[]; nextPageToken: string }>;
+  listAccessGrants: (
+    params: ListAccessGrantsParams
+  ) => Promise<{ accessGrants: AccessGrant[]; nextPageToken: string }>;
+  createAccessGrant: (
+    parent: string,
+    accessGrant: AccessGrant
+  ) => Promise<AccessGrant>;
+  activateAccessGrant: (name: string) => Promise<AccessGrant>;
+  revokeAccessGrant: (name: string) => Promise<AccessGrant>;
+};
+
+export type UserSlice = {
+  usersByName: Record<string, User>;
+  userRequests: Record<string, Promise<User | undefined>>;
+  listUsers: (
+    params: ListUsersParams
+  ) => Promise<{ users: User[]; nextPageToken: string }>;
+  fetchUser: (name: string, silent?: boolean) => Promise<User | undefined>;
+  batchGetOrFetchUsers: (names: string[]) => Promise<User[]>;
+  getOrFetchUserByIdentifier: (params: {
+    identifier: string;
+    silent?: boolean;
+    fallback?: boolean;
+  }) => Promise<User>;
+  getUserByIdentifier: (identifier: string) => User | undefined;
+  createUser: (user: User) => Promise<User>;
+  updateUser: (request: UpdateUserRequest) => Promise<User>;
+  updateEmail: (oldEmail: string, newEmail: string) => Promise<User>;
+  archiveUser: (name: string) => Promise<void>;
+  restoreUser: (name: string) => Promise<User>;
+};
+
+export type RoleSlice = {
+  roleList: Role[];
+  listRoles: (silent?: boolean) => Promise<Role[]>;
+  getRoleByName: (name: string) => Role | undefined;
+  upsertRole: (role: Role) => Promise<Role>;
+  deleteRole: (role: Role) => Promise<void>;
+};
+
+export type ReleaseSlice = {
+  releasesByName: Record<string, Release>;
+  releaseRequests: Record<string, Promise<Release | undefined>>;
+  listReleasesByProject: (
+    project: string,
+    pagination?: { pageSize?: number; pageToken?: string },
+    showDeleted?: boolean,
+    filter?: string
+  ) => Promise<{ releases: Release[]; nextPageToken: string }>;
+  fetchRelease: (
+    name: string,
+    silent?: boolean
+  ) => Promise<Release | undefined>;
+  getReleasesByProject: (project: string) => Release[];
+  getReleaseByName: (name: string) => Release | undefined;
+  updateRelease: (
+    release: Partial<Release>,
+    updateMask: string[]
+  ) => Promise<Release>;
+  deleteRelease: (name: string) => Promise<void>;
+  undeleteRelease: (name: string) => Promise<Release>;
+};
+
+export type RevisionSlice = {
+  revisionsByName: Record<string, Revision>;
+  listRevisionsByDatabase: (
+    database: string,
+    pagination?: { pageSize?: number; pageToken?: string }
+  ) => Promise<{ revisions: Revision[]; nextPageToken: string }>;
+  listAllRevisionsByDatabase: (
+    database: string,
+    pagination?: { pageSize?: number }
+  ) => Promise<Revision[]>;
+  fetchRevision: (name: string) => Promise<Revision>;
+  getRevisionsByDatabase: (database: string) => Revision[];
+  getRevisionByName: (name: string) => Revision | undefined;
+  deleteRevision: (name: string) => Promise<void>;
+};
+
+export type ChangelogSlice = {
+  changelogsByCacheKey: Record<string, Changelog>;
+  changelogsByDatabase: Record<string, Changelog[]>;
+  changelogRequests: Record<string, Promise<Changelog | undefined>>;
+  clearChangelogCache: (parent: string) => void;
+  listChangelogs: (
+    params: Partial<ListChangelogsRequest>
+  ) => Promise<{ changelogs: Changelog[]; nextPageToken: string }>;
+  getOrFetchChangelogListOfDatabase: (
+    database: string,
+    pageSize: number,
+    view?: ChangelogView
+  ) => Promise<Changelog[]>;
+  changelogListByDatabase: (database: string) => Changelog[];
+  fetchChangelog: (
+    params: Partial<GetChangelogRequest>
+  ) => Promise<Changelog | undefined>;
+  getOrFetchChangelogByName: (
+    name: string,
+    view?: ChangelogView
+  ) => Promise<Changelog | undefined>;
+  getChangelogByName: (
+    name: string,
+    view?: ChangelogView
+  ) => Changelog | undefined;
+  fetchPreviousChangelog: (name: string) => Promise<Changelog | undefined>;
+};
+
+export type ProjectWebhookSlice = {
+  getProjectWebhookFromProjectById: (
+    project: Project,
+    webhookId: string
+  ) => Webhook | undefined;
+  createProjectWebhook: (project: string, webhook: Webhook) => Promise<Project>;
+  updateProjectWebhook: (
+    webhook: Webhook,
+    updateMask: string[]
+  ) => Promise<Project>;
+  deleteProjectWebhook: (webhook: Webhook) => Promise<Project>;
+  testProjectWebhook: (
+    project: Project,
+    webhook: Webhook
+  ) => Promise<{ error: string }>;
+};
+
+export type NotificationSlice = {
+  notify: (notification: NotificationCreate) => void;
+};
+
+export type PreferencesSlice = {
+  // Bumped on every intro-state write so `useIntroStateByKey` can re-read the
+  // flags, which live in localStorage rather than Zustand state.
+  introStateVersion: number;
+  setRecentProject: (name: string) => void;
+  recordRecentVisit: (path: string, workspaceName?: string) => void;
+  removeRecentVisit: (path: string) => void;
+  resumeWorkspaceSetupGuide: () => void;
+  getIntroStateByKey: (key: string) => boolean;
+  saveIntroStateByKey: (params: { key: string; newState: boolean }) => void;
+};
+
+// Org policy slice: keyed by the policy resource name. Async fetchers dedupe
+// via `policyRequests`. `getQueryDataPolicyByParent` returns a stable empty
+// fallback when the policy isn't cached.
+export type PolicySlice = {
+  policyMapByName: Record<string, Policy>;
+  policyRequests: Record<string, Promise<Policy | undefined>>;
+  getPolicyByName: (name: string) => Policy | undefined;
+  getOrFetchPolicyByName: (
+    name: string,
+    refresh?: boolean
+  ) => Promise<Policy | undefined>;
+  getPolicyByParentAndType: (params: {
+    parentPath: string;
+    policyType: PolicyType;
+  }) => Policy | undefined;
+  getOrFetchPolicyByParentAndType: (params: {
+    parentPath: string;
+    policyType: PolicyType;
+    refresh?: boolean;
+  }) => Promise<Policy | undefined>;
+  getQueryDataPolicyByParent: (parent: string) => QueryDataPolicy;
+  upsertPolicy: (params: {
+    parentPath: string;
+    policy: Partial<Policy>;
+  }) => Promise<Policy>;
+  deletePolicy: (name: string) => Promise<void>;
+};
+
+// Stateless issue service slice: thin wrapper around
+// `issueServiceClientConnect.getIssue`. Returns the fresh issue (no cache) and
+// pre-fetches the owning project into the app store so downstream code can
+// read it synchronously.
+export type ListIssueParams = {
+  find: IssueFilter;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type IssueSlice = {
+  fetchIssueByName: (name: string, silent?: boolean) => Promise<Issue>;
+  listIssues: (
+    params: ListIssueParams
+  ) => Promise<{ nextPageToken: string; issues: Issue[] }>;
+};
+
+// Stateless SQL service slice: thin wrappers around
+// `sqlServiceClientConnect.query` / `.export` with the SQL editor's
+// permission-denied / silent context conventions.
+export type SQLSlice = {
+  query: (params: QueryRequest, signal: AbortSignal) => Promise<SQLResultSetV1>;
+  exportData: (params: ExportRequest) => Promise<Uint8Array>;
+};
+
+export interface GetOrFetchDatabaseMetadataParams {
+  database: string;
+  skipCache?: boolean;
+  silent?: boolean;
+  // Limit the number of returned tables per schema.
+  limit?: number;
+  // CEL filter, e.g. `schema == "public" && table.contains("user")`.
+  filter?: string;
+}
+
+export type DBSchemaSlice = {
+  // Cache key: `${metadataResourceName}::${filter}::${limit}`, so
+  // filtered/sliced fetches don't collide with full-metadata fetches.
+  metadataByName: Record<string, DatabaseMetadata>;
+  metadataRequests: Record<string, Promise<DatabaseMetadata>>;
+
+  getDatabaseMetadata: (database: string) => DatabaseMetadata;
+  // Returns the cached metadata reference (or undefined when uncached)
+  // without the fresh-placeholder fallback `getDatabaseMetadata` adds. Used by
+  // consumers (e.g. SchemaPane) that need to distinguish "not loaded yet" from
+  // "loaded but empty".
+  getCachedDatabaseMetadata: (database: string) => DatabaseMetadata | undefined;
+  getSchemaList: (database: string) => SchemaMetadata[];
+  getSchemaMetadata: (params: {
+    database: string;
+    schema: string;
+  }) => SchemaMetadata | undefined;
+  // List getters compose from the cached `DatabaseMetadata` and fall back to
+  // an empty array if metadata isn't loaded yet.
+  getTableList: (params: {
+    database: string;
+    schema?: string;
+  }) => TableMetadata[];
+  getViewList: (params: {
+    database: string;
+    schema?: string;
+  }) => ViewMetadata[];
+  getExternalTableList: (params: {
+    database: string;
+    schema?: string;
+  }) => ExternalTableMetadata[];
+  getFunctionList: (params: {
+    database: string;
+    schema?: string;
+  }) => FunctionMetadata[];
+  getExtensionList: (database: string) => ExtensionMetadata[];
+  // Invalidates all cache entries (across filter/limit variants) for a
+  // database. Used by list pages that want a fresh metadata fetch on
+  // next access.
+  removeDatabaseMetadataCache: (database: string) => void;
+  getTableMetadata: (params: {
+    database: string;
+    table: string;
+    schema?: string;
+  }) => TableMetadata;
+  getExternalTableMetadata: (params: {
+    database: string;
+    schema?: string;
+    externalTable: string;
+  }) => ExternalTableMetadata;
+  getViewMetadata: (params: {
+    database: string;
+    schema?: string;
+    view: string;
+  }) => ViewMetadata;
+
+  getOrFetchDatabaseMetadata: (
+    params: GetOrFetchDatabaseMetadataParams
+  ) => Promise<DatabaseMetadata>;
+};
+
+export type DatabaseCatalogSlice = {
+  catalogsByName: Record<string, DatabaseCatalog>;
+  catalogRequests: Record<string, Promise<DatabaseCatalog>>;
+  getDatabaseCatalog: (database: string) => DatabaseCatalog;
+  getOrFetchDatabaseCatalog: (params: {
+    database: string;
+    skipCache?: boolean;
+    silent?: boolean;
+  }) => Promise<DatabaseCatalog>;
+  updateDatabaseCatalog: (catalog: DatabaseCatalog) => Promise<DatabaseCatalog>;
+};
+
+export type IssueCommentSlice = {
+  // Cache keyed by issue resource name → its comments. A timeline fetch stores
+  // events and root comments; a thread fetch also appends the replies.
+  issueCommentsByIssue: Record<string, IssueComment[]>;
+  // Arbitrary CEL queries return results without changing the timeline cache.
+  listIssueComments: (
+    request: ListIssueCommentsRequest
+  ) => Promise<{ nextPageToken: string; issueComments: IssueComment[] }>;
+  // Fetch an unfiltered timeline page and replace the cached page for this issue.
+  fetchIssueCommentTimeline: (request: {
+    parent: string;
+    pageSize?: number;
+    pageToken?: string;
+  }) => Promise<{ nextPageToken: string; issueComments: IssueComment[] }>;
+  // Fetch every comment of the issue: the whole timeline plus the replies of
+  // each thread root. Replaces the cache for this issue.
+  fetchIssueCommentThreads: (request: {
+    parent: string;
+  }) => Promise<IssueComment[]>;
+  // Omit `root` and `statementAnchor` for a general comment. An anchor starts
+  // a thread; `root` creates a reply in that thread.
+  createIssueComment: (params: {
+    issueName: string;
+    comment: string;
+    root?: string;
+    statementAnchor?: StatementAnchor;
+  }) => Promise<IssueComment>;
+  // Only the provided fields join the update mask.
+  updateIssueComment: (params: {
+    issueCommentName: string;
+    comment?: string;
+    threadState?: IssueComment_ThreadState;
+  }) => Promise<IssueComment>;
+  // Synchronous cache read; returns a stable empty array on miss.
+  getIssueComments: (issueName: string) => IssueComment[];
+};
+
+export interface PlanFind {
+  project: string;
+  query?: string;
+  creator?: string;
+  createdTsAfter?: number;
+  createdTsBefore?: number;
+  hasRollout?: boolean;
+  specType?: string;
+  state?: "ACTIVE" | "DELETED";
+}
+
+export type ListPlanParams = {
+  find: PlanFind;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type PlanSlice = {
+  listPlans: (
+    params: ListPlanParams
+  ) => Promise<{ plans: Plan[]; nextPageToken: string }>;
+};
+
+export type RolloutSlice = {
+  rolloutsByName: Record<string, Rollout>;
+  fetchRolloutByName: (name: string, silent?: boolean) => Promise<Rollout>;
+  // Synchronous cache read; returns a stable unknownRollout on miss.
+  getRolloutByName: (name: string) => Rollout;
+  // Seed/refresh the cache with a rollout fetched elsewhere. Returns the
+  // stored, identity-preserved instance — use it instead of the wire object so
+  // consumers share references.
+  upsertRollout: (rollout: Rollout) => Rollout;
+};
+
+export type AppStoreState = AuthSlice &
+  WorkspaceSlice &
+  IamSlice &
+  ProjectSlice &
+  InstanceSlice &
+  DatabaseSlice &
+  DBGroupSlice &
+  SheetSlice &
+  SavedQuerySlice &
+  InstanceRoleSlice &
+  GroupSlice &
+  ServiceAccountSlice &
+  WorkloadIdentitySlice &
+  IdentityProviderSlice &
+  AccessGrantSlice &
+  UserSlice &
+  RoleSlice &
+  ReleaseSlice &
+  RevisionSlice &
+  ChangelogSlice &
+  ProjectWebhookSlice &
+  NotificationSlice &
+  PreferencesSlice &
+  SQLSlice &
+  IssueSlice &
+  PolicySlice &
+  DBSchemaSlice &
+  RolloutSlice &
+  PlanSlice &
+  IssueCommentSlice &
+  DatabaseCatalogSlice;
+
+export type AppSliceCreator<Slice> = StateCreator<AppStoreState, [], [], Slice>;

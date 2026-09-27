@@ -1,0 +1,970 @@
+package store
+
+import (
+	"context"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
+
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
+	celoverloads "github.com/google/cel-go/common/overloads"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
+)
+
+// SavedQueryMessage is the message for a saved query.
+type SavedQueryMessage struct {
+	ProjectID  string
+	ResourceID string
+	// The connected database's canonical resource name, or "" for none.
+	// Validated against the saved query's own project at write time; the
+	// reference is soft and may dangle afterwards.
+	Database string
+
+	Creator string
+
+	Title     string
+	Statement string
+	// The folder path this saved query lives in ("a/b/c", "" = unfiled).
+	Folder string
+
+	// Bindings are the per-object grants. Empty means private to the creator
+	// (the admin backstop aside).
+	Bindings []*storepb.SavedQueryBinding
+
+	// Output only fields
+	Size      int64
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	// Whether FindSavedQueryMessage.PrincipalEmail starred this saved query.
+	Starred bool
+}
+
+// FindSavedQueryMessage is the API message for finding sheets.
+type FindSavedQueryMessage struct {
+	// Either ProjectIDs or Workspace is required.
+	ProjectIDs []string
+	Workspace  string
+
+	PrincipalEmail string
+
+	// AccessMembers restricts results to saved queries the caller can read:
+	// their own, plus any whose bindings name one of these principals in the
+	// stored member form ("users/{email}" and "groups/{email}" — the caller
+	// and their groups).
+	// Leave nil to skip the access clause entirely: the auditor List, and
+	// Search for a caller with project-level bb.savedQueries.get.
+	//
+	// Must describe the same caller as PrincipalEmail: the clause reads "own"
+	// from PrincipalEmail and "granted" from here. Setting one without the
+	// other narrows the result rather than widening it, but the two disagreeing
+	// would be a bug.
+	AccessMembers []string
+
+	ResourceID *string
+
+	// LoadFull is used if we want to load the full sheet.
+	LoadFull bool
+
+	// OrderByKeys overrides the default title order.
+	OrderByKeys []*OrderByKey
+
+	FilterQ *qb.Query
+
+	Limit  *int
+	Offset *int
+}
+
+// PatchSavedQueryMessage is the message to patch a saved query.
+type PatchSavedQueryMessage struct {
+	ResourceID string
+	// ProjectID scopes the write to the project the caller was authorized in:
+	// a purge reassigns surviving saved queries to the default project, and a
+	// patch racing it must not land on the reassigned row.
+	ProjectID string
+	Title     *string
+	Statement *string
+	// Database sets the connected database ("" clears it).
+	Database *string
+	// Folder re-files the saved query ("" = unfiled).
+	Folder *string
+}
+
+// GetSavedQuery gets a sheet.
+func (s *Store) GetSavedQuery(ctx context.Context, find *FindSavedQueryMessage) (*SavedQueryMessage, error) {
+	sheets, err := s.ListSavedQueries(ctx, find)
+	if err != nil {
+		return nil, err
+	}
+	if len(sheets) == 0 {
+		return nil, nil
+	}
+	if len(sheets) > 1 {
+		return nil, errors.Errorf("expected 1 sheet, got %d", len(sheets))
+	}
+	sheet := sheets[0]
+
+	return sheet, nil
+}
+
+// ListSavedQueries returns a list of sheets.
+func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessage) ([]*SavedQueryMessage, error) {
+	if len(find.ProjectIDs) == 0 && find.Workspace == "" {
+		return nil, errors.Errorf("empty project filter")
+	}
+	statementField := fmt.Sprintf("LEFT(saved_query.statement, %d)", common.MaxSheetSize)
+	if find.LoadFull {
+		statementField = "saved_query.statement"
+	}
+
+	q := qb.Q().Space(fmt.Sprintf(`
+		SELECT
+			saved_query.resource_id,
+			saved_query.creator,
+			saved_query.created_at,
+			saved_query.updated_at,
+			saved_query.project,
+			saved_query.payload,
+			saved_query.folder,
+			saved_query.name,
+			saved_query.bindings,
+			%s,
+			OCTET_LENGTH(saved_query.statement),
+			EXISTS (SELECT 1 FROM saved_query_star WHERE saved_query_star.saved_query = saved_query.resource_id AND saved_query_star.principal = ?)
+		FROM saved_query
+		WHERE TRUE`, statementField), find.PrincipalEmail)
+
+	// The read predicate, pushed into SQL rather than applied to the page
+	// afterwards: filtering after LIMIT would silently return short pages.
+	if find.AccessMembers != nil {
+		access := qb.Q().Space("saved_query.creator = ?", find.PrincipalEmail)
+		for _, member := range find.AccessMembers {
+			probe, err := bindingProbe(member)
+			if err != nil {
+				return nil, err
+			}
+			access.Or("saved_query.bindings @> ?", probe)
+		}
+		q.And("(?)", access)
+	}
+
+	if find.Workspace != "" {
+		q.And("EXISTS (SELECT 1 FROM project WHERE project.resource_id = saved_query.project AND project.workspace = ? AND project.deleted = FALSE)", find.Workspace)
+	}
+	if len(find.ProjectIDs) == 1 {
+		q.And("saved_query.project = ?", find.ProjectIDs[0])
+	} else if len(find.ProjectIDs) > 1 {
+		q.And("saved_query.project = ANY(?)", find.ProjectIDs)
+	}
+
+	if filterQ := find.FilterQ; filterQ != nil {
+		q.And("?", filterQ)
+	}
+
+	if v := find.ResourceID; v != nil {
+		q.And("saved_query.resource_id = ?", *v)
+	}
+
+	// Default title order; List overrides via order_by. The resource_id
+	// tiebreak keeps pages stable and follows the last key's direction so
+	// "update_time desc" matches the
+	// (creator, updated_at DESC, resource_id DESC) index exactly.
+	keys := find.OrderByKeys
+	if len(keys) == 0 {
+		keys = []*OrderByKey{{Key: "saved_query.name", SortOrder: ASC}}
+	}
+	orderBy := []string{}
+	for _, v := range keys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
+	}
+	last := keys[len(keys)-1]
+	orderBy = append(orderBy, fmt.Sprintf("saved_query.resource_id %s", last.SortOrder.String()))
+	q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
+	if v := find.Limit; v != nil {
+		q.Space("LIMIT ?", *v)
+	}
+	if v := find.Offset; v != nil {
+		q.Space("OFFSET ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var sheets []*SavedQueryMessage
+	for rows.Next() {
+		var sheet SavedQueryMessage
+		var payloadBytes, bindingsBytes []byte
+		if err := rows.Scan(
+			&sheet.ResourceID,
+			&sheet.Creator,
+			&sheet.CreatedAt,
+			&sheet.UpdatedAt,
+			&sheet.ProjectID,
+			&payloadBytes,
+			&sheet.Folder,
+			&sheet.Title,
+			&bindingsBytes,
+			&sheet.Statement,
+			&sheet.Size,
+			&sheet.Starred,
+		); err != nil {
+			return nil, err
+		}
+
+		var payload storepb.SavedQueryPayload
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payloadBytes, &payload); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal saved query payload")
+		}
+		sheet.Database = payload.Database
+
+		bindings, err := unmarshalSavedQueryBindings(bindingsBytes)
+		if err != nil {
+			return nil, err
+		}
+		sheet.Bindings = bindings
+
+		sheets = append(sheets, &sheet)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return sheets, nil
+}
+
+// bindingProbe builds the jsonb containment operand that matches any binding
+// naming this principal, e.g. `[{"members":["users/a@corp.com"]}]` — the
+// stored member form. `@>` on a jsonb array is "contains an element
+// containing this", so one probe per principal, BitmapOr'd by the planner,
+// answers "shared with me".
+//
+// The probe is level-blind on purpose: every current level's bundle grants
+// get (bindingGrants in api/v1/saved_query_service.go). A future level that
+// does not grant get must add a level term here, or Search would return
+// previews GetSavedQuery denies.
+func bindingProbe(member string) (string, error) {
+	probe, err := json.Marshal([]map[string]any{{"members": []string{member}}})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to build binding probe for %q", member)
+	}
+	return string(probe), nil
+}
+
+// marshalSavedQueryBindings writes the bindings as a protojson array at the
+// jsonb root. protojson has no top-level array form, so each element is
+// marshalled on its own and the array assembled here; the shape is pinned
+// because the GIN containment probes above depend on it.
+func marshalSavedQueryBindings(bindings []*storepb.SavedQueryBinding) (string, error) {
+	elements := make([]json.RawMessage, 0, len(bindings))
+	for _, binding := range bindings {
+		element, err := protojson.Marshal(binding)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to marshal saved query binding")
+		}
+		elements = append(elements, element)
+	}
+	out, err := json.Marshal(elements)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to marshal saved query bindings")
+	}
+	return string(out), nil
+}
+
+func unmarshalSavedQueryBindings(b []byte) ([]*storepb.SavedQueryBinding, error) {
+	if len(b) == 0 {
+		return nil, nil
+	}
+	var elements []json.RawMessage
+	if err := json.Unmarshal(b, &elements); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal saved query bindings")
+	}
+	bindings := make([]*storepb.SavedQueryBinding, 0, len(elements))
+	for _, element := range elements {
+		var binding storepb.SavedQueryBinding
+		if err := common.ProtojsonUnmarshaler.Unmarshal(element, &binding); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal saved query binding")
+		}
+		bindings = append(bindings, &binding)
+	}
+	return bindings, nil
+}
+
+// SavedQueryPolicyEtag derives the etag from the stored bindings themselves,
+// so no column has to be kept in step with them. Two policies with the same
+// grants produce the same etag, which is what compare-and-swap needs: a write
+// is rejected only when the grants actually moved.
+func SavedQueryPolicyEtag(bindings []*storepb.SavedQueryBinding) (string, error) {
+	marshalled, err := marshalSavedQueryBindings(bindings)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256([]byte(marshalled))
+	return hex.EncodeToString(sum[:]), nil
+}
+
+// SetSavedQueryBindings replaces a saved query's grants under compare-and-swap.
+// The row is locked and its current etag compared before the write, so a
+// full-replacement write can never silently undo a concurrent revocation.
+// Returns ErrSavedQueryEtagMismatch when the caller's etag is stale, and
+// reports false when the saved query is gone from the named project -- deleted,
+// or re-parented to the default project by a purge.
+func (s *Store) SetSavedQueryBindings(ctx context.Context, projectID, resourceID string, bindings []*storepb.SavedQueryBinding, expectedEtag string) (bool, error) {
+	marshalled, err := marshalSavedQueryBindings(bindings)
+	if err != nil {
+		return false, err
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	// Scoped to the project the caller named, not the saved query's global id.
+	// A project purge re-parents its members' saved queries to the default
+	// project, so a write resolved against the old project must land on
+	// nothing rather than on a row that has since moved out from under it.
+	var currentBytes []byte
+	if err := tx.QueryRowContext(ctx,
+		`SELECT bindings FROM saved_query WHERE resource_id = $1 AND project = $2 FOR UPDATE`,
+		resourceID, projectID).Scan(&currentBytes); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrapf(err, "failed to lock saved query %s", resourceID)
+	}
+	current, err := unmarshalSavedQueryBindings(currentBytes)
+	if err != nil {
+		return false, err
+	}
+	currentEtag, err := SavedQueryPolicyEtag(current)
+	if err != nil {
+		return false, err
+	}
+	if expectedEtag != currentEtag {
+		return false, ErrSavedQueryEtagMismatch
+	}
+
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE saved_query SET bindings = $1 WHERE resource_id = $2 AND project = $3`,
+		marshalled, resourceID, projectID); err != nil {
+		return false, errors.Wrapf(err, "failed to update bindings for saved query %s", resourceID)
+	}
+	if err := tx.Commit(); err != nil {
+		return false, errors.Wrap(err, "failed to commit transaction")
+	}
+	return true, nil
+}
+
+// ErrSavedQueryEtagMismatch reports that the policy moved under a
+// compare-and-swap write; the caller refetches and reapplies.
+var ErrSavedQueryEtagMismatch = errors.New("saved query policy etag mismatch")
+
+// CreateSavedQuery creates a new saved query under an active project.
+func (s *Store) CreateSavedQuery(ctx context.Context, create *SavedQueryMessage) (*SavedQueryMessage, error) {
+	payloadStr, err := protojson.Marshal(&storepb.SavedQueryPayload{Database: create.Database})
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	// A saved query is a new child row, so its project must be active.
+	if err := requireActiveProject(ctx, tx, create.ProjectID); err != nil {
+		return nil, err
+	}
+
+	query, args, err := qb.Q().Space(`
+		INSERT INTO saved_query (
+			creator,
+			project,
+			name,
+			statement,
+			folder,
+			payload
+		)
+		VALUES (?, ?, ?, ?, ?, ?)
+		RETURNING resource_id, created_at, updated_at, OCTET_LENGTH(statement)
+	`, create.Creator, create.ProjectID, create.Title, create.Statement, create.Folder, payloadStr).ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(
+		&create.ResourceID,
+		&create.CreatedAt,
+		&create.UpdatedAt,
+		&create.Size,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+
+	return create, nil
+}
+
+// PatchSavedQuery updates a sheet.
+func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessage) error {
+	set := qb.Q()
+	// The DB clock, not the app clock: updated_at is an order_by sort key,
+	// and creation stamps it with DEFAULT now(), so a skewed app server
+	// must not interleave edits out of true sequence.
+	set.Comma("updated_at = now()")
+	if v := patch.Title; v != nil {
+		set.Comma("name = ?", *v)
+	}
+	if v := patch.Statement; v != nil {
+		set.Comma("statement = ?", *v)
+	}
+	if v := patch.Folder; v != nil {
+		set.Comma("folder = ?", *v)
+	}
+	if v := patch.Database; v != nil {
+		if *v == "" {
+			set.Comma("payload = payload - 'database'")
+		} else {
+			set.Comma("payload = payload || jsonb_build_object('database', ?::text)", *v)
+		}
+	}
+
+	query, args, err := qb.Q().Space("UPDATE saved_query SET ? WHERE resource_id = ? AND project = ?", set, patch.ResourceID, patch.ProjectID).ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteSavedQuery deletes an existing saved query and reports whether it was
+// still there to delete. Star rows are deleted first, in full primary-key
+// order — explicitly, not via the FK cascade (which would lock the parent
+// first) — so a delete racing a star toggle cannot deadlock.
+//
+// Both statements scope by the project the caller was authorized in. The row
+// delete is the arbiter — when it matches nothing, the transaction rolls back,
+// which also restores any stars the first statement removed, and the caller
+// gets false to answer NotFound.
+//
+// Writers on existing rows — delete, patch, star — require the row in the
+// authorized project, not an active project. Only creation requires an active
+// project.
+func (s *Store) DeleteSavedQuery(ctx context.Context, projectID, resourceID string) (bool, error) {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `
+		DELETE FROM saved_query_star
+		WHERE (saved_query, principal) IN (
+			SELECT saved_query, principal
+			FROM saved_query_star
+			WHERE saved_query = $1
+			  AND EXISTS (
+				SELECT 1 FROM saved_query
+				WHERE resource_id = $1 AND project = $2
+			  )
+			ORDER BY saved_query, principal
+			FOR UPDATE
+		)
+	`, resourceID, projectID); err != nil {
+		return false, errors.Wrapf(err, "failed to delete stars for saved query %s", resourceID)
+	}
+	result, err := tx.ExecContext(ctx, `DELETE FROM saved_query WHERE resource_id = $1 AND project = $2`, resourceID, projectID)
+	if err != nil {
+		return false, err
+	}
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return false, errors.Wrap(err, "failed to count deleted saved queries")
+	}
+	if deleted == 0 {
+		return false, nil
+	}
+	return true, tx.Commit()
+}
+
+// SetSavedQueryStar stars or unstars a saved query for a principal, and
+// reports whether the saved query was still there to star. Toggling or removing
+// an existing star locks that row directly. The first star instead locks the
+// saved query row before inserting, so it serializes with deletion and verifies
+// that the query still belongs to the project the caller was authorized in.
+// Removing an existing star stays project-blind: the star is the caller's own
+// marker, removable wherever its row went.
+func (s *Store) SetSavedQueryStar(ctx context.Context, projectID, savedQueryResourceID, principal string, starred bool) (bool, error) {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	var exists bool
+	if err := tx.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM saved_query_star
+			WHERE saved_query = $1 AND principal = $2
+			FOR UPDATE
+		)
+	`, savedQueryResourceID, principal).Scan(&exists); err != nil {
+		return false, errors.Wrap(err, "failed to lock star row")
+	}
+
+	switch {
+	case starred && !exists:
+		var one int
+		if err := tx.QueryRowContext(ctx, `
+			SELECT 1
+			FROM saved_query
+			WHERE resource_id = $1 AND project = $2
+			FOR UPDATE
+		`, savedQueryResourceID, projectID).Scan(&one); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return false, nil
+			}
+			return false, errors.Wrapf(err, "failed to lock saved query %s", savedQueryResourceID)
+		}
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO saved_query_star (saved_query, principal)
+			VALUES ($1, $2)
+			ON CONFLICT (saved_query, principal) DO NOTHING
+		`, savedQueryResourceID, principal); err != nil {
+			return false, errors.Wrap(err, "failed to insert star")
+		}
+	case !starred && exists:
+		if _, err := tx.ExecContext(ctx, `
+			DELETE FROM saved_query_star
+			WHERE saved_query = $1 AND principal = $2
+		`, savedQueryResourceID, principal); err != nil {
+			return false, errors.Wrap(err, "failed to delete star")
+		}
+	default:
+		// Already in the requested state: an unstar of a row that is gone
+		// needs no parent, so it is reported as applied.
+	}
+
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// BatchUpdateSavedQueryFolder re-files the given saved queries into folder.
+// MoveSavedQueryFolder rewrites the folder prefix for one creator's saved
+// queries: moving "a/b" to "a/c" also moves "a/b/deep" to "a/c/deep". The
+// suffix keeps each descendant's own tail, and ltrim drops the separator when
+// the target is empty so a row is unfiled rather than left at "/deep".
+//
+// The CTE takes every row lock in full primary-key order (resource_id) before
+// the update touches anything -- the store's batch rule, so two overlapping
+// moves serialize instead of deadlocking -- and one statement needs no
+// explicit transaction. A row deleted mid-move simply updates zero rows.
+func (s *Store) MoveSavedQueryFolder(ctx context.Context, projectID, creator, source, target string) (int, error) {
+	if source == "" {
+		return 0, errors.New("source folder cannot be empty")
+	}
+	result, err := s.GetDB().ExecContext(ctx, `
+		WITH locked AS (
+			SELECT resource_id FROM saved_query
+			WHERE project = $1 AND creator = $2 AND (folder = $3 OR folder LIKE $4)
+			ORDER BY resource_id
+			FOR UPDATE
+		)
+		UPDATE saved_query
+		SET folder = ltrim($5 || substring(folder from length($3) + 1), '/'),
+		    updated_at = now()
+		WHERE resource_id IN (SELECT resource_id FROM locked)
+	`, projectID, creator, source, escapeLikePattern(source)+"/%", target)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to move saved query folder")
+	}
+	moved, err := result.RowsAffected()
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to count moved saved queries")
+	}
+	return int(moved), nil
+}
+
+// ListSavedQueryFolderPaths returns the distinct folder paths of the saved
+// queries a caller can read, narrowed by filterQ. Access is the same predicate
+// SearchSavedQueries applies (nil accessMembers skips the clause, for a
+// caller with project-level bb.savedQueries.get), and for the same reason: a
+// folder is only useful if its contents are reachable. Scoping these to the
+// caller's *own* rows instead would hide a shared saved query filed by its
+// creator — the tree is seeded from here, and a row whose folder has no node
+// can never be expanded into. workspaceID fences the project to the caller's
+// workspace and to active projects, exactly as the List query does.
+func (s *Store) ListSavedQueryFolderPaths(ctx context.Context, workspaceID string, projectID string, principalEmail string, accessMembers []string, filterQ *qb.Query) ([]string, error) {
+	q := qb.Q().Space(`
+		SELECT DISTINCT folder
+		FROM saved_query
+		WHERE TRUE`)
+	q.And("saved_query.project = ?", projectID)
+	q.And("EXISTS (SELECT 1 FROM project WHERE project.resource_id = saved_query.project AND project.workspace = ? AND project.deleted = FALSE)", workspaceID)
+	q.And("saved_query.folder <> ''")
+	if accessMembers != nil {
+		access := qb.Q().Space("saved_query.creator = ?", principalEmail)
+		for _, member := range accessMembers {
+			probe, err := bindingProbe(member)
+			if err != nil {
+				return nil, err
+			}
+			access.Or("saved_query.bindings @> ?", probe)
+		}
+		q.And("(?)", access)
+	}
+	if filterQ != nil {
+		q.And("?", filterQ)
+	}
+	q.Space("ORDER BY folder")
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var folders []string
+	for rows.Next() {
+		var folder string
+		if err := rows.Scan(&folder); err != nil {
+			return nil, err
+		}
+		folders = append(folders, folder)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return folders, nil
+}
+
+// NormalizeSavedQueryFolder puts a client-supplied folder path into the one
+// form that is stored and matched. Boundary slashes are trimmed, so "/team/"
+// and "team" name the same folder, and an empty path segment is rejected
+// rather than stored: every write path and the `folder ==` filter share this
+// function, so a folder that can be stored is always a folder that can be
+// found. "" means unfiled.
+func NormalizeSavedQueryFolder(folder string) (string, error) {
+	normalized := strings.Trim(folder, "/")
+	if strings.Contains(normalized, "//") {
+		return "", errors.Errorf("invalid folder %q: empty path segment", folder)
+	}
+	return normalized, nil
+}
+
+func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, accessMembers []string, filter string, allowTitleContains bool) (*qb.Query, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	ast, err := common.ParseCELFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	var getFilter func(expr celast.Expr) (*qb.Query, error)
+
+	getUserID := func(name string) (string, error) {
+		creatorEmail := strings.TrimPrefix(name, "users/")
+		if creatorEmail == "" {
+			return "", errors.New("invalid empty creator identifier")
+		}
+		user, err := s.GetUserByEmail(ctx, creatorEmail)
+		if err != nil {
+			return "", errors.Errorf("failed to get user: %v", err)
+		}
+		if user == nil {
+			return "", errors.Errorf("user with email %s not found", creatorEmail)
+		}
+		return user.Email, nil
+	}
+	getSavedQueryID := func(name string) (string, error) {
+		_, savedQueryID, err := common.GetProjectIDSavedQueryID(name)
+		if err != nil {
+			return "", errors.Errorf("invalid saved query name %q", name)
+		}
+		return savedQueryID, nil
+	}
+
+	parseToSQL := func(variable, value any) (*qb.Query, error) {
+		switch variable {
+		case "name":
+			name, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("invalid name value %q", value)
+			}
+			savedQueryID, err := getSavedQueryID(name)
+			if err != nil {
+				return nil, err
+			}
+			return qb.Q().Space("saved_query.resource_id = ?", savedQueryID), nil
+		case "creator":
+			creator, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("invalid creator value %v, expect a string", value)
+			}
+			userID, err := getUserID(creator)
+			if err != nil {
+				return nil, err
+			}
+			return qb.Q().Space("saved_query.creator = ?", userID), nil
+		case "starred":
+			if starred, ok := value.(bool); ok {
+				if starred {
+					return qb.Q().Space("EXISTS (SELECT 1 FROM saved_query_star WHERE saved_query_star.saved_query = saved_query.resource_id AND saved_query_star.principal = ?)", caller), nil
+				}
+				return qb.Q().Space("NOT EXISTS (SELECT 1 FROM saved_query_star WHERE saved_query_star.saved_query = saved_query.resource_id AND saved_query_star.principal = ?)", caller), nil
+			}
+			return nil, errors.Errorf("invalid starred value %v, expect true or false", value)
+		case "shared":
+			// Reached through a binding, which is narrower than "somebody else
+			// created it": a project-level bb.savedQueries.get holder sees
+			// saved queries nobody shared with them, and those must not show
+			// up in a Shared view.
+			shared, ok := value.(bool)
+			if !ok {
+				return nil, errors.Errorf("invalid shared value %v, expect true or false", value)
+			}
+			granted := qb.Q().Space("FALSE")
+			for _, principal := range accessMembers {
+				probe, err := bindingProbe(principal)
+				if err != nil {
+					return nil, err
+				}
+				granted.Or("saved_query.bindings @> ?", probe)
+			}
+			if shared {
+				return qb.Q().Space("(saved_query.creator <> ? AND (?))", caller, granted), nil
+			}
+			return qb.Q().Space("(NOT (saved_query.creator <> ? AND (?)))", caller, granted), nil
+		case "folder":
+			folder, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("invalid folder value %q", value)
+			}
+			folder, err := NormalizeSavedQueryFolder(folder)
+			if err != nil {
+				return nil, err
+			}
+			return qb.Q().Space("saved_query.folder = ?", folder), nil
+		default:
+			return nil, errors.Errorf("unsupport variable %q", variable)
+		}
+	}
+
+	getFilter = func(expr celast.Expr) (*qb.Query, error) {
+		q := qb.Q()
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalOr:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.Or("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.LogicalAnd:
+				for _, arg := range expr.AsCall().Args() {
+					qq, err := getFilter(arg)
+					if err != nil {
+						return nil, err
+					}
+					q.And("?", qq)
+				}
+				return qb.Q().Space("(?)", q), nil
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				return parseToSQL(variable, value)
+			case celoverloads.Contains:
+				if expr.AsCall().Target().Kind() != celast.IdentKind {
+					return nil, errors.Errorf(`invalid args for %q`, celoverloads.Contains)
+				}
+				variable := expr.AsCall().Target().AsIdent()
+				args := expr.AsCall().Args()
+				if len(args) != 1 || args[0].Kind() != celast.LiteralKind {
+					return nil, errors.Errorf(`invalid args for %q`, variable)
+				}
+				value := args[0].AsLiteral().Value()
+				strValue, ok := value.(string)
+				if !ok {
+					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
+				}
+				if strValue == "" {
+					return nil, errors.Errorf(`empty value for %q`, variable)
+				}
+
+				switch variable {
+				case "title":
+					if !allowTitleContains {
+						return nil, errors.Errorf("unsupport variable %q", variable)
+					}
+					return qb.Q().Space("LOWER(saved_query.name) LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
+				default:
+					return nil, errors.Errorf("unsupport variable %q", variable)
+				}
+			case celoperators.NotEquals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				if variable != "creator" {
+					return nil, errors.Errorf(`only "creator" support "!=" operator`)
+				}
+				creator, ok := value.(string)
+				if !ok {
+					return nil, errors.Errorf("invalid creator value %v, expect a string", value)
+				}
+				userID, err := getUserID(creator)
+				if err != nil {
+					return nil, err
+				}
+				return qb.Q().Space("saved_query.creator != ?", userID), nil
+			case celoperators.In:
+				variable, value := getVariableAndValueFromExpr(expr)
+				rawList, ok := value.([]any)
+				if !ok {
+					return nil, errors.Errorf("invalid %s value %q", variable, value)
+				}
+				if len(rawList) == 0 {
+					return nil, errors.Errorf("empty %s filter", variable)
+				}
+				switch variable {
+				case "name":
+					savedQueryIDs := []string{}
+					for _, raw := range rawList {
+						name, ok := raw.(string)
+						if !ok {
+							return nil, errors.Errorf("invalid name value %q", raw)
+						}
+						savedQueryID, err := getSavedQueryID(name)
+						if err != nil {
+							return nil, err
+						}
+						savedQueryIDs = append(savedQueryIDs, savedQueryID)
+					}
+					return qb.Q().Space("saved_query.resource_id = ANY(?)", savedQueryIDs), nil
+				default:
+					return nil, errors.Errorf(`only "name" supports "in" filter`)
+				}
+			default:
+				return nil, errors.Errorf("unexpected function %v", functionName)
+			}
+		default:
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+	}
+
+	q, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+	return qb.Q().Space("(?)", q), nil
+}
+
+// GetSavedQueryOrders parses an AIP-132 order_by string into OrderByKey
+// entries for ListSavedQueries. Supported fields: update_time, create_time,
+// title.
+func GetSavedQueryOrders(orderBy string) ([]*OrderByKey, error) {
+	return getOrderByKeys(orderBy, map[string]string{
+		"update_time": "saved_query.updated_at",
+		"create_time": "saved_query.created_at",
+		"title":       "saved_query.name",
+	})
+}
+
+func GetListSavedQueryFilter(filter string) (*qb.Query, error) {
+	if filter == "" {
+		return nil, nil
+	}
+
+	ast, err := common.ParseCELFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	var getFilter func(expr celast.Expr) (*qb.Query, error)
+	getFilter = func(expr celast.Expr) (*qb.Query, error) {
+		if expr.Kind() != celast.CallKind {
+			return nil, errors.Errorf("unexpected expr kind %v", expr.Kind())
+		}
+		q := qb.Q()
+		functionName := expr.AsCall().FunctionName()
+		switch functionName {
+		case celoperators.LogicalOr:
+			for _, arg := range expr.AsCall().Args() {
+				qq, err := getFilter(arg)
+				if err != nil {
+					return nil, err
+				}
+				q.Or("?", qq)
+			}
+			return qb.Q().Space("(?)", q), nil
+		case celoperators.LogicalAnd:
+			for _, arg := range expr.AsCall().Args() {
+				qq, err := getFilter(arg)
+				if err != nil {
+					return nil, err
+				}
+				q.And("?", qq)
+			}
+			return qb.Q().Space("(?)", q), nil
+		case celoperators.Equals, celoperators.NotEquals:
+			variable, value := getVariableAndValueFromExpr(expr)
+			if variable != "creator" {
+				return nil, errors.Errorf("unsupported variable %q", variable)
+			}
+			creator, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("invalid creator value %q", value)
+			}
+			creatorEmail := strings.TrimPrefix(creator, "users/")
+			if creatorEmail == "" {
+				return nil, errors.New("invalid empty creator identifier")
+			}
+			if functionName == celoperators.Equals {
+				return qb.Q().Space("saved_query.creator = ?", creatorEmail), nil
+			}
+			return qb.Q().Space("saved_query.creator != ?", creatorEmail), nil
+		default:
+			return nil, errors.Errorf("unexpected function %v", functionName)
+		}
+	}
+
+	q, err := getFilter(ast.NativeRep().Expr())
+	if err != nil {
+		return nil, err
+	}
+	return qb.Q().Space("(?)", q), nil
+}

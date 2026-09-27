@@ -1,0 +1,62 @@
+import type { ReactNode } from "react";
+import { MCPModeBadge } from "@/components/mcp/MCPModeBadge";
+import type { MCPMode } from "@/components/mcp/mcpPolicy";
+
+export interface MCPConsentLine {
+  readonly key: string;
+  readonly icon: ReactNode;
+  readonly text: string;
+}
+
+interface Props {
+  readonly label: string;
+  /** Omitted by the panel for a ceiling this build has no name for. */
+  readonly mode?: MCPMode;
+  readonly headerAction?: ReactNode;
+  readonly lines?: readonly MCPConsentLine[];
+  readonly children?: ReactNode;
+}
+
+/**
+ * The panel each consent screen shows: the workspace's policy, and what it
+ * means for the session being approved. Shared so the three screens cannot
+ * drift apart.
+ */
+export function MCPConsentPolicyCard({
+  label,
+  mode,
+  headerAction,
+  lines,
+  children,
+}: Props) {
+  return (
+    <div className="bg-control-bg rounded-sm p-4 flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-control-light">{label}</p>
+          {headerAction && (
+            <div className="ml-auto shrink-0">{headerAction}</div>
+          )}
+        </div>
+        {mode !== undefined && (
+          <div className="flex max-w-full flex-wrap items-center gap-2">
+            <MCPModeBadge mode={mode} />
+          </div>
+        )}
+      </div>
+      {children}
+      {lines && (
+        <ul role="list" className="text-sm text-main flex flex-col gap-2">
+          {lines.map((line) => (
+            <li key={line.key} className="flex items-start gap-2">
+              <span className="mt-0.5 shrink-0" aria-hidden="true">
+                {line.icon}
+              </span>
+              <span>{line.text}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

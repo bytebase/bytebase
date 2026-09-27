@@ -1,0 +1,187 @@
+{
+  "planNodes": [
+    {
+      "index": 0,
+      "kind": "RELATIONAL",
+      "displayName": "Distributed Union",
+      "childLinks": [
+        { "childIndex": 1 },
+        { "childIndex": 23, "type": "Split Range" }
+      ],
+      "metadata": { "subquery_cluster_node": "1" }
+    },
+    {
+      "index": 1,
+      "kind": "RELATIONAL",
+      "displayName": "Serialize Result",
+      "childLinks": [
+        { "childIndex": 2 },
+        { "childIndex": 21 },
+        { "childIndex": 22 }
+      ]
+    },
+    {
+      "index": 2,
+      "kind": "RELATIONAL",
+      "displayName": "Hash Join",
+      "childLinks": [
+        { "childIndex": 3, "type": "Build" },
+        { "childIndex": 8, "type": "Probe" },
+        { "childIndex": 13, "type": "Condition" },
+        { "childIndex": 20, "type": "Build", "variable": "AlbumTitle'" }
+      ],
+      "metadata": { "join_type": "INNER" }
+    },
+    {
+      "index": 3,
+      "kind": "RELATIONAL",
+      "displayName": "Distributed Union",
+      "childLinks": [{ "childIndex": 4 }],
+      "metadata": { "call_type": "Local", "subquery_cluster_node": "4" }
+    },
+    {
+      "index": 4,
+      "kind": "RELATIONAL",
+      "displayName": "Scan",
+      "childLinks": [
+        { "childIndex": 5, "variable": "SingerId" },
+        { "childIndex": 6, "variable": "AlbumId" },
+        { "childIndex": 7, "variable": "AlbumTitle" }
+      ],
+      "metadata": {
+        "Full scan": "true",
+        "scan_target": "Albums",
+        "scan_type": "TableScan"
+      }
+    },
+    {
+      "index": 5,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "SingerId" }
+    },
+    {
+      "index": 6,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "AlbumId" }
+    },
+    {
+      "index": 7,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "AlbumTitle" }
+    },
+    {
+      "index": 8,
+      "kind": "RELATIONAL",
+      "displayName": "Distributed Union",
+      "childLinks": [{ "childIndex": 9 }],
+      "metadata": { "call_type": "Local", "subquery_cluster_node": "9" }
+    },
+    {
+      "index": 9,
+      "kind": "RELATIONAL",
+      "displayName": "Scan",
+      "childLinks": [
+        { "childIndex": 10, "variable": "AlbumId_1" },
+        { "childIndex": 11, "variable": "SingerId_1" },
+        { "childIndex": 12, "variable": "SongName" }
+      ],
+      "metadata": {
+        "Full scan": "true",
+        "scan_target": "SongsBySingerAlbumSongNameDesc",
+        "scan_type": "IndexScan"
+      }
+    },
+    {
+      "index": 10,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "AlbumId" }
+    },
+    {
+      "index": 11,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "SingerId" }
+    },
+    {
+      "index": 12,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "SongName" }
+    },
+    {
+      "index": 13,
+      "kind": "SCALAR",
+      "displayName": "Function",
+      "childLinks": [{ "childIndex": 14 }, { "childIndex": 17 }],
+      "shortRepresentation": {
+        "description": "(($SingerId = $SingerId_1) AND ($AlbumId = $AlbumId_1))"
+      }
+    },
+    {
+      "index": 14,
+      "kind": "SCALAR",
+      "displayName": "Function",
+      "childLinks": [{ "childIndex": 15 }, { "childIndex": 16 }],
+      "shortRepresentation": { "description": "($SingerId = $SingerId_1)" }
+    },
+    {
+      "index": 15,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "$SingerId" }
+    },
+    {
+      "index": 16,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "$SingerId_1" }
+    },
+    {
+      "index": 17,
+      "kind": "SCALAR",
+      "displayName": "Function",
+      "childLinks": [{ "childIndex": 18 }, { "childIndex": 19 }],
+      "shortRepresentation": { "description": "($AlbumId = $AlbumId_1)" }
+    },
+    {
+      "index": 18,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "$AlbumId" }
+    },
+    {
+      "index": 19,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "$AlbumId_1" }
+    },
+    {
+      "index": 20,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "$AlbumTitle" }
+    },
+    {
+      "index": 21,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "$AlbumTitle'" }
+    },
+    {
+      "index": 22,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "$SongName" }
+    },
+    {
+      "index": 23,
+      "kind": "SCALAR",
+      "displayName": "Constant",
+      "shortRepresentation": { "description": "true" }
+    }
+  ]
+}

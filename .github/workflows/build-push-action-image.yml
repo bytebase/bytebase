@@ -22,7 +22,7 @@ jobs:
   build-alpine:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Extract build args
         id: extract_build_args
         run: |
@@ -59,7 +59,7 @@ jobs:
   build-debian:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Extract build args
         id: extract_build_args
         run: |

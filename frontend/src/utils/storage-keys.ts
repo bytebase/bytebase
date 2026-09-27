@@ -31,8 +31,12 @@ export const STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT = "bb.sql-editor.result-limit";
 export const STORAGE_KEY_SQL_EDITOR_REDIS_NODE = "bb.sql-editor.redis-node";
 export const STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE =
   "bb.sql-editor.ai-panel-size";
+export const STORAGE_KEY_SQL_EDITOR_RESULT_PANEL_SIZE =
+  "bb.sql-editor.result-panel-size";
 export const STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB =
   "bb.sql-editor.sidebar.last-visited-tab";
+export const storageKeySqlEditorSidebarTab = (project: string) =>
+  `${STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB}.${project}`;
 export const STORAGE_KEY_SQL_EDITOR_CODE_VIEWER_FORMAT =
   "bb.sql-editor.editor-panel.code-viewer.format";
 export const STORAGE_KEY_SQL_EDITOR_DETAIL_FORMAT =
@@ -55,8 +59,20 @@ export const storageKeyLastActivity = (email: string) =>
   `bb.last-activity.${email}`;
 export const storageKeyCollapseState = (email: string) =>
   `bb.collapse-state.${email}`;
-export const storageKeyIntroState = (email: string) =>
-  `bb.intro-state.${email}`;
+// Always workspace-scoped, including self-host, because browser storage can
+// outlive the server data associated with a workspace id.
+export const storageKeyIntroState = (scope: string, email: string) =>
+  withScope("bb.intro-state", scope, email);
+export const storageKeyWorkspaceSetupGuideScenario = (
+  scope: string,
+  email: string
+) => withScope("bb.workspace-setup-guide.scenario", scope, email);
+export const storageKeyWorkspaceSetupGuideWorkspaceUsage = (
+  scope: string,
+  email: string
+) => withScope("bb.workspace-setup-guide.workspace-usage", scope, email);
+export const storageKeyWorkspaceSetupFinished = (workspace: string) =>
+  withScope("bb.workspace-setup.finished", workspace);
 // Workspace-scoped: value keys embed project resource names.
 export const storageKeyIamRemind = (scope: string, email: string) =>
   withScope("bb.iam-remind", scope, email);
@@ -86,27 +102,35 @@ export const storageKeySqlEditorConnExpanded = (
 ) => withScope("bb.sql-editor.conn-expanded", scope, env, email);
 export const storageKeySqlEditorShowMissingQueryDb = (email: string) =>
   `bb.sql-editor.show-missing-query-db.${email}`;
-export const storageKeySqlEditorWorksheetFilter = (
+export const storageKeySqlEditorSavedQueryFilter = (
   scope: string,
   project: string,
   email: string
-) => withScope("bb.sql-editor.worksheet-filter", scope, project, email);
-export const storageKeySqlEditorWorksheetTree = (
+) => withScope("bb.sql-editor.saved-query-filter", scope, project, email);
+export const storageKeySqlEditorSavedQueryTree = (
   scope: string,
   project: string,
   email: string
-) => withScope("bb.sql-editor.worksheet-tree", scope, project, email);
-export const storageKeySqlEditorWorksheetFolder = (
+) => withScope("bb.sql-editor.saved-query-tree", scope, project, email);
+export const storageKeySqlEditorSavedQueryFolder = (
   scope: string,
   project: string,
   viewMode: string,
   email: string
 ) =>
-  withScope("bb.sql-editor.worksheet-folder", scope, project, viewMode, email);
+  withScope(
+    "bb.sql-editor.saved-query-folder",
+    scope,
+    project,
+    viewMode,
+    email
+  );
 export const storageKeySqlEditorAiSuggestion = (email: string) =>
   `bb.sql-editor.ai-suggestion.${email}`;
 
 // --- AI ---
+export const storageKeyAiConversations = (scope: string, email: string) =>
+  withScope("bb.ai.conversations", scope, email);
 export const storageKeyAiSuggestions = (hash: string) =>
   `bb.ai.suggestions.${hash}`;
 

@@ -1,0 +1,24 @@
+{
+  "query_block": {
+    "select_id": 1,
+    "cost": 0.10505784,
+    "nested_loop": [
+      {
+        "table": {
+          "table_name": "t",
+          "access_type": "range",
+          "possible_keys": ["idx_c"],
+          "key": "idx_c",
+          "key_length": "4",
+          "used_key_parts": ["c"],
+          "loops": 1,
+          "rows": 100,
+          "cost": 0.10505784,
+          "filtered": 14.30000019,
+          "index_condition": "t.c < 10",
+          "attached_condition": "t.d = 3"
+        }
+      }
+    ]
+  }
+}

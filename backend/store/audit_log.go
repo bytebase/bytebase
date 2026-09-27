@@ -6,15 +6,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 type AuditLog struct {
@@ -72,15 +71,17 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		q.And("payload->>'parent' = ?", *v)
 	}
 
-	if len(find.OrderByKeys) > 0 {
-		orderBy := []string{}
-		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
-	} else {
-		q.Space("ORDER BY created_at DESC")
+	// created_at defaults to now() and is not unique; resource_id is the
+	// primary key. Audit exports page through this at 5000 rows a time.
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
+	if len(orderBy) == 0 {
+		orderBy = append(orderBy, "created_at DESC")
+	}
+	orderBy = append(orderBy, "audit_log.resource_id DESC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -129,18 +130,65 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 	return logs, nil
 }
 
+// auditLogEqualsFilter turns one `variable == "literal"` clause of the audit
+// search grammar into its SQL predicate.
+//
+// The payload is protojson, so its keys are camelCase and a filter name is not
+// always the key it reads. The four plain columns keep the historical rule that
+// the name IS the key; the two MCP filters do not, because the provenance they
+// read lives on a nested message (AuditLog.mcp_delegation, marshalled as
+// "mcpDelegation").
+func auditLogEqualsFilter(variable string, rawValue any) (*qb.Query, error) {
+	// The variable decides the literal's type, so an unknown key is reported as
+	// one whatever it was compared against.
+	switch variable {
+	case "mcp":
+		// A real boolean, like every other boolean filter key in this codebase
+		// (saved_query.starred, database.exclude_unassigned).
+		mcp, ok := rawValue.(bool)
+		if !ok {
+			return nil, errors.Errorf("invalid mcp value %v, expect true or false", rawValue)
+		}
+		// Presence of the mcpDelegation message is the MCP-origin marker, and
+		// the whole of it: the audit interceptor sets that message exactly for
+		// calls carrying the delegated credential, and leaves it off every
+		// public-chain call (proto/store/store/audit_log.proto). Its fields are
+		// empty for a legacy session, so no field of it can stand in for the
+		// test.
+		//
+		// `??` is qb's escape for a literal question mark, which is what the
+		// JSONB key-exists operator is; a bare ? is qb's bind placeholder.
+		if mcp {
+			return qb.Q().Space("payload ?? 'mcpDelegation'"), nil
+		}
+		return qb.Q().Space("NOT (payload ?? 'mcpDelegation')"), nil
+
+	case "resource", "method", "actor", "severity", "mcp_correlation_id":
+		value, ok := rawValue.(string)
+		if !ok {
+			return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
+		}
+		if variable == "mcp_correlation_id" {
+			return qb.Q().Space("payload->'mcpDelegation'->>'correlationId' = ?", value), nil
+		}
+		if variable == "actor" {
+			return qb.Q().Space("payload->>'user' = ?", value), nil
+		}
+		return qb.Q().Space(fmt.Sprintf("payload->>'%s' = ?", variable), value), nil
+
+	default:
+		return nil, errors.Errorf("unknown variable %s", variable)
+	}
+}
+
 func GetSearchAuditLogsFilter(filter string) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return nil, errors.New("failed to create cel env")
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, err
 	}
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
@@ -171,16 +219,7 @@ func GetSearchAuditLogsFilter(filter string) (*qb.Query, error) {
 				return qb.Q().Space("(?)", q), nil
 			case celoperators.Equals:
 				variable, rawValue := getVariableAndValueFromExpr(expr)
-				value, ok := rawValue.(string)
-				if !ok {
-					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
-				}
-				switch variable {
-				case "resource", "method", "user", "severity":
-				default:
-					return nil, errors.Errorf("unknown variable %s", variable)
-				}
-				return qb.Q().Space(fmt.Sprintf("payload->>'%s' = ?", variable), value), nil
+				return auditLogEqualsFilter(variable, rawValue)
 
 			case celoperators.GreaterEquals, celoperators.LessEquals:
 				variable, rawValue := getVariableAndValueFromExpr(expr)
@@ -232,6 +271,31 @@ func ApplyRetentionFilter(userFilterQ *qb.Query, cutoff *time.Time) *qb.Query {
 	q := qb.Q()
 	q.Space("?", userFilterQ)
 	q.And("?", retentionQ)
+	return qb.Q().Space("(?)", q)
+}
+
+// AuditLogTraversalStart is the bound a paged audit-log traversal pins on its
+// first page. It is read from the database because created_at is written
+// there: a time taken in this process is not comparable with it.
+func (s *Store) AuditLogTraversalStart(ctx context.Context) (time.Time, error) {
+	var now time.Time
+	if err := s.GetDB().QueryRowContext(ctx, "SELECT now()").Scan(&now); err != nil {
+		return time.Time{}, errors.Wrapf(err, "failed to read the database time")
+	}
+	return now, nil
+}
+
+// ApplyCreateTimeUpperBound bounds a search to the rows that existed when the
+// traversal started. A search writes its own audit row, so without it an
+// offset traversal never reaches the end of the set.
+func ApplyCreateTimeUpperBound(userFilterQ *qb.Query, upperBound time.Time) *qb.Query {
+	boundQ := qb.Q().Space("created_at <= ?", upperBound)
+	if userFilterQ == nil {
+		return qb.Q().Space("(?)", boundQ)
+	}
+	q := qb.Q()
+	q.Space("?", userFilterQ)
+	q.And("?", boundQ)
 	return qb.Q().Space("(?)", q)
 }
 

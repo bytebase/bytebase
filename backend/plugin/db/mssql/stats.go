@@ -3,8 +3,8 @@ package mssql
 import (
 	"context"
 	"database/sql"
-	"math"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
@@ -47,7 +47,7 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 		}
 
 		if rowsColumn.Valid {
-			return int64(math.Round(rowsColumn.Float64)), nil
+			return common.RoundRows(rowsColumn.Float64), nil
 		}
 	}
 	if err := rows.Err(); err != nil {

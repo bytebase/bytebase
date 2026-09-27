@@ -1,0 +1,37 @@
+import {
+  FileCode,
+  FolderCode,
+  FolderOpen,
+  FolderPen,
+  FolderSync,
+} from "lucide-react";
+import type { SavedQueryFolderNode } from "@/modules/sql-editor/model/Sheet";
+import type { SheetViewMode } from "@/modules/sql-editor/model/Sheet/types";
+
+type Props = {
+  readonly node: SavedQueryFolderNode;
+  readonly isOpen: boolean;
+  readonly rootPath: string;
+  readonly view: SheetViewMode;
+};
+
+export function TreeNodePrefix({ node, isOpen, rootPath, view }: Props) {
+  const cls = "size-4 text-control shrink-0";
+
+  if (node.savedQuery) {
+    return <FileCode className={cls} />;
+  }
+  if (isOpen) {
+    return <FolderOpen className={cls} />;
+  }
+  if (node.key === rootPath) {
+    if (view === "draft") {
+      return <FolderPen className={cls} />;
+    }
+    if (view === "shared") {
+      return <FolderSync className={cls} />;
+    }
+    return <FolderCode className={cls} />;
+  }
+  return <FolderCode className={cls} />;
+}

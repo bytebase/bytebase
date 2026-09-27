@@ -329,6 +329,9 @@ func validateSQLReviewRules(rules []*v1pb.SQLReviewRule) error {
 		if rule.Type == v1pb.SQLReviewRule_TYPE_UNSPECIFIED {
 			return errors.Errorf("invalid rule type: TYPE_UNSPECIFIED is not allowed")
 		}
+		if rule.Engine == v1pb.Engine_ENGINE_UNSPECIFIED {
+			return errors.Errorf("invalid rule engine: ENGINE_UNSPECIFIED is not allowed for rule %q", rule.Type)
+		}
 		if err := validateSQLReviewRule(rule); err != nil {
 			return err
 		}
@@ -391,6 +394,7 @@ func validateSQLReviewRule(rule *v1pb.SQLReviewRule) error {
 		storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
 		storepb.SQLReviewRule_STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT,
 		storepb.SQLReviewRule_STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION,
+		storepb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
 		storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH,
 		storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH,
 		storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE,

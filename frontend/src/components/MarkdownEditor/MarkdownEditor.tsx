@@ -1,0 +1,357 @@
+import DOMPurify from "dompurify";
+import { Bold, Code2, Hash, Heading1, Link2 } from "lucide-react";
+import MarkdownIt from "markdown-it";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import "./MarkdownEditor.css";
+import { cn } from "@/lib/utils";
+
+const markdown = new MarkdownIt({
+  html: true,
+  linkify: true,
+});
+
+const editorBoxClassName =
+  "w-full rounded-xs border border-control-border bg-transparent px-3 py-2 text-sm";
+
+type CommonProps = {
+  content: string;
+  autoFocus?: boolean;
+  /** Start with three lines while still growing to fit the draft. */
+  compact?: boolean;
+  placeholder?: string;
+  maxLength?: number;
+  transform?: (raw: string) => string;
+  maxHeight?: number;
+};
+
+type EditorProps = CommonProps & {
+  mode?: "editor";
+  onChange: (value: string) => void;
+  onSubmit?: () => void;
+};
+
+type PreviewProps = CommonProps & {
+  mode: "preview";
+  onChange?: (value: string) => void;
+  onSubmit?: () => void;
+};
+
+type Props = EditorProps | PreviewProps;
+
+export function MarkdownEditor({
+  content,
+  autoFocus = false,
+  compact = false,
+  onChange,
+  onSubmit,
+  placeholder,
+  maxLength = 65536,
+  mode = "editor",
+  transform,
+  maxHeight,
+}: Props) {
+  const { t } = useTranslation();
+  const boxClassName = cn(
+    editorBoxClassName,
+    compact ? "min-h-20" : "min-h-34"
+  );
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [tab, setTab] = useState<"write" | "preview">(
+    mode === "preview" ? "preview" : "write"
+  );
+  const previewHtml = useMemo(() => {
+    if (!content) {
+      return "";
+    }
+    const source = transform ? transform(content) : content;
+    const rendered = markdown.render(source);
+    return sanitizePreviewHtml(rendered);
+  }, [content, transform]);
+
+  useEffect(() => {
+    setTab(mode === "preview" ? "preview" : "write");
+  }, [mode]);
+
+  useEffect(() => {
+    if (!textareaRef.current) {
+      return;
+    }
+    const textarea = textareaRef.current;
+    textarea.style.height = "auto";
+    // Let rows and the CSS minimum define the initial height. scrollHeight
+    // includes padding but not borders; account for both when growing.
+    const borderHeight = textarea.offsetHeight - textarea.clientHeight;
+    textarea.style.height = `${textarea.scrollHeight + borderHeight}px`;
+  }, [compact, content, tab]);
+
+  useEffect(() => {
+    if (autoFocus) textareaRef.current?.focus({ preventScroll: true });
+  }, [autoFocus, tab]);
+
+  const insertTemplate = (template: string, cursorOffset: number) => {
+    const textarea = textareaRef.current;
+    if (!textarea || !onChange) {
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const next = `${content.slice(0, start)}${template.slice(
+      0,
+      cursorOffset
+    )}${content.slice(start, end)}${template.slice(cursorOffset)}${content.slice(end)}`;
+    onChange(next);
+    window.requestAnimationFrame(() => {
+      if (!textareaRef.current) {
+        return;
+      }
+      const cursor = start + cursorOffset;
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(cursor, cursor);
+    });
+  };
+
+  if (mode === "preview") {
+    return (
+      <PreviewBody
+        className="markdown-body min-h-6 wrap-break-word"
+        html={previewHtml}
+      />
+    );
+  }
+
+  return (
+    <Tabs
+      className="bb-markdown-editor"
+      value={tab}
+      onValueChange={(value) => {
+        if (value === "write" || value === "preview") setTab(value);
+      }}
+    >
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 pb-1">
+        <TabsList className="border-0">
+          <TabsTrigger
+            className="pb-1 font-normal focus-visible:bg-control-bg focus-visible:ring-0 focus-visible:ring-offset-0"
+            value="write"
+          >
+            {t("issue.comment-editor.write")}
+          </TabsTrigger>
+          <TabsTrigger
+            className="pb-1 font-normal focus-visible:bg-control-bg focus-visible:ring-0 focus-visible:ring-offset-0"
+            value="preview"
+          >
+            {t("issue.comment-editor.preview")}
+          </TabsTrigger>
+        </TabsList>
+        {tab === "write" && (
+          <div className="flex flex-wrap items-center gap-2">
+            <ToolbarButton
+              icon={<Heading1 className="h-4 w-4" />}
+              label={t("issue.comment-editor.toolbar.header")}
+              onClick={() => insertTemplate("### ", 4)}
+            />
+            <ToolbarButton
+              icon={<Bold className="h-4 w-4" />}
+              label={t("issue.comment-editor.toolbar.bold")}
+              onClick={() => insertTemplate("****", 2)}
+            />
+            <ToolbarButton
+              icon={<Code2 className="h-4 w-4" />}
+              label={t("issue.comment-editor.toolbar.code")}
+              onClick={() => insertTemplate("```sql\n\n```", 7)}
+            />
+            <ToolbarButton
+              icon={<Link2 className="h-4 w-4" />}
+              label={t("issue.comment-editor.toolbar.link")}
+              onClick={() => insertTemplate("[](url)", 1)}
+            />
+            <ToolbarButton
+              icon={<Hash className="h-4 w-4" />}
+              label={t("issue.comment-editor.toolbar.hashtag")}
+              onClick={() => insertTemplate("#", 1)}
+            />
+          </div>
+        )}
+      </div>
+
+      <TabsPanel className="mt-0" value={tab}>
+        {tab === "preview" ? (
+          <PreviewBody
+            className={cn(boxClassName, "markdown-body")}
+            html={previewHtml}
+          />
+        ) : (
+          <Textarea
+            className={boxClassName}
+            maxLength={maxLength}
+            onChange={(e) => onChange?.(e.target.value)}
+            onKeyDown={(e) => {
+              const listContinuation = applyMarkdownListContinuation(
+                content,
+                e.currentTarget.selectionStart,
+                e.currentTarget.selectionEnd
+              );
+              if (
+                e.key === "Enter" &&
+                !e.nativeEvent.isComposing &&
+                !e.metaKey &&
+                !e.ctrlKey &&
+                listContinuation
+              ) {
+                e.preventDefault();
+                onChange?.(listContinuation.content);
+                window.requestAnimationFrame(() => {
+                  const target = textareaRef.current;
+                  if (!target) {
+                    return;
+                  }
+                  target.focus();
+                  target.setSelectionRange(
+                    listContinuation.cursor,
+                    listContinuation.cursor
+                  );
+                });
+                return;
+              }
+              if (
+                e.key === "Enter" &&
+                !e.nativeEvent.isComposing &&
+                (e.metaKey || e.ctrlKey)
+              ) {
+                e.preventDefault();
+                onSubmit?.();
+              }
+            }}
+            placeholder={placeholder ?? t("issue.leave-a-comment")}
+            ref={textareaRef}
+            rows={compact ? 3 : 4}
+            style={{ maxHeight }}
+            value={content}
+          />
+        )}
+      </TabsPanel>
+    </Tabs>
+  );
+}
+
+function sanitizePreviewHtml(html: string) {
+  const sanitized = DOMPurify.sanitize(html);
+  const template = document.createElement("template");
+  template.innerHTML = sanitized;
+  for (const link of template.content.querySelectorAll("a")) {
+    link.setAttribute("target", "_blank");
+    link.setAttribute("rel", "noopener noreferrer");
+  }
+  return template.innerHTML;
+}
+
+function PreviewBody({ className, html }: { className: string; html: string }) {
+  const { t } = useTranslation();
+  if (html) {
+    return (
+      <div className={className} dangerouslySetInnerHTML={{ __html: html }} />
+    );
+  }
+  return (
+    <div className={className}>
+      <span className="italic text-control-placeholder">
+        {t("issue.comment-editor.nothing-to-preview")}
+      </span>
+    </div>
+  );
+}
+
+function ToolbarButton({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      aria-label={label}
+      appearance="secondary"
+      size="xs"
+      className="text-control hover:bg-control-bg hover:text-main"
+      onClick={onClick}
+      title={label}
+      type="button"
+    >
+      {icon}
+    </Button>
+  );
+}
+
+function applyMarkdownListContinuation(
+  text: string,
+  selectionStart: number,
+  selectionEnd: number
+) {
+  if (selectionStart !== selectionEnd) {
+    return undefined;
+  }
+
+  const lines = text.split("\n");
+  const lineIndex = getActiveLineIndex(text, selectionStart);
+  const currentLine = lines[lineIndex] ?? "";
+  const lineStart = getCursorPosition(lines.slice(0, lineIndex));
+  const indexInCurrentLine = selectionStart - lineStart;
+
+  if (/^\s{0,}(\d{1,}\.|-)\s{1,}$/.test(currentLine)) {
+    lines[lineIndex] = "";
+    return {
+      content: lines.join("\n"),
+      cursor: getCursorPosition(lines.slice(0, lineIndex)),
+    };
+  }
+
+  if (!/^\s{0,}(\d{1,}\.|-)\s/.test(currentLine)) {
+    return undefined;
+  }
+
+  const indent = " ".repeat(
+    currentLine.length - currentLine.trimStart().length
+  );
+  const trailing = currentLine.slice(indexInCurrentLine);
+  lines[lineIndex] = currentLine.slice(0, indexInCurrentLine);
+
+  let nextListStart = "-";
+  if (/^\s{0,}\d{1,}\.\s/.test(currentLine)) {
+    const currentNumber = Number(currentLine.match(/\d+/)?.[0] ?? "1");
+    nextListStart = `${currentNumber + 1}.`;
+  }
+
+  lines.splice(lineIndex + 1, 0, `${indent}${nextListStart} ${trailing}`);
+  return {
+    content: lines.join("\n"),
+    cursor: getCursorPosition(lines.slice(0, lineIndex + 2)) - 1,
+  };
+}
+
+function getActiveLineIndex(content: string, cursorPosition: number): number {
+  const lines = content.split("\n");
+  let count = 0;
+  for (let i = 0; i < lines.length; i++) {
+    count += lines[i].length;
+    if (count >= cursorPosition) {
+      return i;
+    }
+    count += 1;
+  }
+  return lines.length - 1;
+}
+
+function getCursorPosition(lines: string[]): number {
+  let count = 0;
+  for (const line of lines) {
+    count += line.length;
+    count += 1;
+  }
+  return count;
+}

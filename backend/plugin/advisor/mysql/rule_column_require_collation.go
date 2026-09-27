@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -37,7 +37,7 @@ func (*ColumnRequireCollationAdvisor) Check(_ context.Context, checkCtx advisor.
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type columnRequireCollationOmniRule struct {
@@ -72,7 +72,7 @@ func (r *columnRequireCollationOmniRule) checkCreateTable(n *ast.CreateTableStmt
 				Code:          code.NoCollation.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("Column %s does not have a collation specified", col.Name),
-				StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(col.Loc))),
+				StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(col.Loc))),
 			})
 		}
 	}
@@ -93,7 +93,7 @@ func (r *columnRequireCollationOmniRule) checkAlterTable(n *ast.AlterTableStmt) 
 					Code:          code.NoCollation.Int32(),
 					Title:         r.Title,
 					Content:       fmt.Sprintf("Column %s does not have a collation specified", cmd.Column.Name),
-					StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
+					StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
 				})
 			}
 		}
@@ -107,7 +107,7 @@ func (r *columnRequireCollationOmniRule) checkAlterTable(n *ast.AlterTableStmt) 
 					Code:          code.NoCollation.Int32(),
 					Title:         r.Title,
 					Content:       fmt.Sprintf("Column %s does not have a collation specified", col.Name),
-					StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
+					StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
 				})
 			}
 		}

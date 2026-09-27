@@ -10,10 +10,10 @@ import (
 )
 
 // frontendFlagManifestPath is the gh-ost flag manifest the "Configure" UI builds
-// its parameter list from (frontend/src/react/components/ghost/constants.ts
+// its parameter list from (frontend/src/components/ghost/constants.ts
 // imports it). The path is relative to this package directory, where `go test`
 // runs.
-const frontendFlagManifestPath = "../../../frontend/src/react/components/ghost/flags.json"
+const frontendFlagManifestPath = "../../../frontend/src/components/ghost/flags.json"
 
 // TestFrontendFlagManifestInSync fails if the frontend gh-ost flag manifest
 // drifts from the backend allowlist/defaults, so a flag added, removed, or
@@ -57,6 +57,7 @@ func TestFrontendFlagManifestInSync(t *testing.T) {
 		"default-retries":                  strconv.FormatInt(defaultConfig.defaultNumRetries, 10),
 		"cut-over-lock-timeout-seconds":    strconv.FormatInt(defaultConfig.cutoverLockTimeoutSeconds, 10),
 		"exponential-backoff-max-interval": strconv.FormatInt(defaultConfig.exponentialBackoffMaxInterval, 10),
+		"skip-metadata-lock-check":         strconv.FormatBool(defaultConfig.skipMetadataLockCheck),
 	}
 	for _, f := range manifest {
 		want, ok := backendDefaults[f.Key]

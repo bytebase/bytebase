@@ -6,6 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, FieldMask } from "@bufbuild/protobuf/wkt";
 import type { WebhookType } from "./common_pb";
+import type { Color } from "../google/type/color_pb";
 import type { ApprovalTemplate } from "./issue_service_pb";
 import type { Expr } from "../google/type/expr_pb";
 
@@ -197,6 +198,11 @@ export enum Setting_SettingName {
    * @generated from enum value: EMAIL = 8;
    */
   EMAIL = 8,
+
+  /**
+   * @generated from enum value: MCP = 9;
+   */
+  MCP = 9,
 }
 
 /**
@@ -261,6 +267,12 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
      */
     value: EmailSetting;
     case: "email";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.MCPSetting mcp = 9;
+     */
+    value: MCPSetting;
+    case: "mcp";
   } | { case: undefined; value?: undefined };
 };
 
@@ -525,7 +537,7 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   announcement?: Announcement | undefined;
 
   /**
-   * The max expiration duration for role grants and data access requests.
+   * The max expiration duration for data access requests.
    *
    * @generated from field: google.protobuf.Duration maximum_request_expiration = 6;
    */
@@ -553,7 +565,7 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   databaseChangeMode: DatabaseChangeMode;
 
   /**
-   * Whether to disallow password signin. (Except workspace admins)
+   * Whether password sign-in is disabled for all end users.
    *
    * @generated from field: bool disallow_password_signin = 10;
    */
@@ -588,13 +600,6 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool watermark = 14;
    */
   watermark: boolean;
-
-  /**
-   * The token for directory sync authentication.
-   *
-   * @generated from field: string directory_sync_token = 15;
-   */
-  directorySyncToken: string;
 
   /**
    * Password restriction settings.
@@ -655,6 +660,23 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bytebase.v1.SQLEditorThemeSetting sql_editor_custom_theme = 24;
    */
   sqlEditorCustomTheme?: SQLEditorThemeSetting | undefined;
+
+  /**
+   * The max expiration duration for request role.
+   * Deprecated: use just-in-time access request flows instead.
+   *
+   * @generated from field: google.protobuf.Duration maximum_role_expiration = 25;
+   */
+  maximumRoleExpiration?: Duration | undefined;
+
+  /**
+   * Whether a directory sync token has been generated for this workspace.
+   * The token itself is never returned; this only lets the UI decide between
+   * offering "generate" and "regenerate".
+   *
+   * @generated from field: bool directory_sync_token_configured = 27;
+   */
+  directorySyncTokenConfigured: boolean;
 };
 
 /**
@@ -724,6 +746,76 @@ export declare type WorkspaceProfileSetting_PasswordRestriction = Message<"byteb
 export declare const WorkspaceProfileSetting_PasswordRestrictionSchema: GenMessage<WorkspaceProfileSetting_PasswordRestriction>;
 
 /**
+ * MCPSetting is what an MCP (Model Context Protocol) session may do in this
+ * workspace.
+ *
+ * @generated from message bytebase.v1.MCPSetting
+ */
+export declare type MCPSetting = Message<"bytebase.v1.MCPSetting"> & {
+  /**
+   * The maximum capability available to MCP sessions in this workspace, acting
+   * as an admin-set ceiling. Enforced server-side at three points: the /mcp
+   * endpoint decides whether a connection is admitted at all, the ceiling gate
+   * on the internal MCP chain decides, per request, which method classes are
+   * served, and under READ_ONLY the SQL clamp decides, per statement, whether
+   * it only reads.
+   *
+   * @generated from field: bytebase.v1.MCPSetting.Capability capability = 1;
+   */
+  capability: MCPSetting_Capability;
+};
+
+/**
+ * Describes the message bytebase.v1.MCPSetting.
+ * Use `create(MCPSettingSchema)` to create a new message.
+ */
+export declare const MCPSettingSchema: GenMessage<MCPSetting>;
+
+/**
+ * Capability is the ceiling: a session runs at this level or lower.
+ * Writing CAPABILITY_UNSPECIFIED, explicitly or by leaving
+ * value.mcp.capability out of the update mask, is rejected.
+ *
+ * @generated from enum bytebase.v1.MCPSetting.Capability
+ */
+export enum MCPSetting_Capability {
+  /**
+   * @generated from enum value: CAPABILITY_UNSPECIFIED = 0;
+   */
+  CAPABILITY_UNSPECIFIED = 0,
+
+  /**
+   * MCP connections are rejected.
+   *
+   * @generated from enum value: DISABLED = 1;
+   */
+  DISABLED = 1,
+
+  /**
+   * MCP may inspect metadata and run read-only queries. A session opens, and
+   * what it may do is decided per method by the capability gate and per
+   * statement by the SQL clamp: a request holding a statement that is not a
+   * read is refused whole, and where the engine's driver has one the
+   * database session is opened read-only as well.
+   *
+   * @generated from enum value: READ_ONLY = 3;
+   */
+  READ_ONLY = 3,
+
+  /**
+   * MCP may perform mutations, still bounded by the user's RBAC.
+   *
+   * @generated from enum value: READ_WRITE = 4;
+   */
+  READ_WRITE = 4,
+}
+
+/**
+ * Describes the enum bytebase.v1.MCPSetting.Capability.
+ */
+export declare const MCPSetting_CapabilitySchema: GenEnum<MCPSetting_Capability>;
+
+/**
  * @generated from message bytebase.v1.SQLEditorThemeSetting
  */
 export declare type SQLEditorThemeSetting = Message<"bytebase.v1.SQLEditorThemeSetting"> & {
@@ -743,9 +835,11 @@ export declare type SQLEditorThemeSetting = Message<"bytebase.v1.SQLEditorThemeS
   monacoBase: string;
 
   /**
-   * @generated from field: map<string, string> tokens = 4;
+   * CSS token colors.
+   *
+   * @generated from field: map<string, google.type.Color> tokens = 4;
    */
-  tokens: { [key: string]: string };
+  tokens: { [key: string]: Color };
 };
 
 /**
@@ -792,18 +886,14 @@ export declare const AnnouncementSchema: GenMessage<Announcement>;
  */
 export declare type Announcement_AnnouncementTheme = Message<"bytebase.v1.Announcement.AnnouncementTheme"> & {
   /**
-   * "r g b"
-   *
-   * @generated from field: string background = 1;
+   * @generated from field: google.type.Color background = 1;
    */
-  background: string;
+  background?: Color | undefined;
 
   /**
-   * "r g b"
-   *
-   * @generated from field: string text = 2;
+   * @generated from field: google.type.Color text = 2;
    */
-  text: string;
+  text?: Color | undefined;
 };
 
 /**
@@ -1398,9 +1488,9 @@ export declare type EnvironmentSetting_Environment = Message<"bytebase.v1.Enviro
   tags: { [key: string]: string };
 
   /**
-   * @generated from field: string color = 5;
+   * @generated from field: google.type.Color color = 5;
    */
-  color: string;
+  color?: Color | undefined;
 };
 
 /**

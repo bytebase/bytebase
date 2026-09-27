@@ -12,26 +12,21 @@ import (
 )
 
 func TestDataSource(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
-	instanceRootDir := t.TempDir()
-	instanceName := "testInstance1"
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
-	a.NoError(err)
+	pgContainer := provisionPgInstance(t)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "test",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Id: "admin-ds", Host: instanceDir}},
+			DataSources: []*v1pb.DataSource{pgContainer.dataSource(v1pb.DataSourceType_ADMIN, "admin-ds")},
 		},
 	}))
 	instance := instanceResp.Msg
@@ -40,12 +35,8 @@ func TestDataSource(t *testing.T) {
 	err = ctl.removeLicense(ctx)
 	a.NoError(err)
 	_, err = ctl.instanceServiceClient.AddDataSource(ctx, connect.NewRequest(&v1pb.AddDataSourceRequest{
-		Name: instance.Name,
-		DataSource: &v1pb.DataSource{
-			Id:   "readonly-validate-only",
-			Type: v1pb.DataSourceType_READ_ONLY,
-			Host: instanceDir,
-		},
+		Name:         instance.Name,
+		DataSource:   pgContainer.dataSource(v1pb.DataSourceType_READ_ONLY, "readonly-validate-only"),
 		ValidateOnly: true,
 	}))
 	a.ErrorContains(err, "TEAM feature, please upgrade to access it")
@@ -133,13 +124,13 @@ func TestDataSource(t *testing.T) {
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "invalid",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{
-				{Type: v1pb.DataSourceType_ADMIN, Id: "admin", Host: instanceDir},
-				{Type: v1pb.DataSourceType_READ_ONLY, Id: "readonly-1", Host: instanceDir},
-				{Type: v1pb.DataSourceType_READ_ONLY, Id: "readonly-2", Host: instanceDir},
+				pgContainer.adminDataSource(),
+				pgContainer.dataSource(v1pb.DataSourceType_READ_ONLY, "readonly-1"),
+				pgContainer.dataSource(v1pb.DataSourceType_READ_ONLY, "readonly-2"),
 			},
 		},
 	}))
@@ -149,9 +140,9 @@ func TestDataSource(t *testing.T) {
 		Instance: &v1pb.Instance{
 			Name: instance.Name,
 			DataSources: []*v1pb.DataSource{
-				{Type: v1pb.DataSourceType_ADMIN, Id: "admin-ds", Host: instanceDir},
+				pgContainer.dataSource(v1pb.DataSourceType_ADMIN, "admin-ds"),
 				{Type: v1pb.DataSourceType_READ_ONLY, Id: "readonly", Username: "ro_ds", Host: "127.0.0.1", Port: "8000"},
-				{Type: v1pb.DataSourceType_READ_ONLY, Id: "readonly-2", Host: instanceDir},
+				pgContainer.dataSource(v1pb.DataSourceType_READ_ONLY, "readonly-2"),
 			},
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"data_sources"}},
@@ -166,26 +157,21 @@ func TestDataSource(t *testing.T) {
 }
 
 func TestDataSourceValidateOnly(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
-	instanceRootDir := t.TempDir()
-	instanceName := "testInstanceValidateOnly"
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
-	a.NoError(err)
+	pgContainer := provisionPgInstance(t)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
 			Title:       "test",
-			Engine:      v1pb.Engine_SQLITE,
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Id: "admin-ds", Host: instanceDir}},
+			DataSources: []*v1pb.DataSource{pgContainer.dataSource(v1pb.DataSourceType_ADMIN, "admin-ds")},
 		},
 	}))
 	a.NoError(err)
@@ -195,12 +181,8 @@ func TestDataSourceValidateOnly(t *testing.T) {
 	a.NoError(err)
 
 	addResp, err := ctl.instanceServiceClient.AddDataSource(ctx, connect.NewRequest(&v1pb.AddDataSourceRequest{
-		Name: instance.Name,
-		DataSource: &v1pb.DataSource{
-			Id:   "readonly-validate-only",
-			Type: v1pb.DataSourceType_READ_ONLY,
-			Host: instanceDir,
-		},
+		Name:         instance.Name,
+		DataSource:   pgContainer.dataSource(v1pb.DataSourceType_READ_ONLY, "readonly-validate-only"),
 		ValidateOnly: true,
 	}))
 	a.NoError(err)
@@ -213,12 +195,8 @@ func TestDataSourceValidateOnly(t *testing.T) {
 	a.Nil(findDataSource(instanceResp.Msg.DataSources, "readonly-validate-only"))
 
 	updateResp, err := ctl.instanceServiceClient.UpdateDataSource(ctx, connect.NewRequest(&v1pb.UpdateDataSourceRequest{
-		Name: instance.Name,
-		DataSource: &v1pb.DataSource{
-			Id:   "readonly-allow-missing",
-			Type: v1pb.DataSourceType_READ_ONLY,
-			Host: instanceDir,
-		},
+		Name:         instance.Name,
+		DataSource:   pgContainer.dataSource(v1pb.DataSourceType_READ_ONLY, "readonly-allow-missing"),
 		UpdateMask:   &fieldmaskpb.FieldMask{Paths: []string{"host"}},
 		ValidateOnly: true,
 		AllowMissing: true,
@@ -233,13 +211,13 @@ func TestDataSourceValidateOnly(t *testing.T) {
 	a.Nil(findDataSource(instanceResp.Msg.DataSources, "readonly-allow-missing"))
 
 	_, err = ctl.instanceServiceClient.AddDataSource(ctx, connect.NewRequest(&v1pb.AddDataSourceRequest{
-		Name: instance.Name,
-		DataSource: &v1pb.DataSource{
-			Id:   "readonly",
-			Type: v1pb.DataSourceType_READ_ONLY,
-			Host: instanceDir,
-		},
+		Name:       instance.Name,
+		DataSource: pgContainer.dataSource(v1pb.DataSourceType_READ_ONLY, "readonly"),
 	}))
+	a.NoError(err)
+
+	// Create the role so the validate-only connection test with the updated username succeeds.
+	_, err = pgContainer.GetDB().Exec(`CREATE ROLE "updated-user" LOGIN PASSWORD 'root-password'`)
 	a.NoError(err)
 
 	updateResp, err = ctl.instanceServiceClient.UpdateDataSource(ctx, connect.NewRequest(&v1pb.UpdateDataSourceRequest{
@@ -260,7 +238,7 @@ func TestDataSourceValidateOnly(t *testing.T) {
 	a.NoError(err)
 	persisted := findDataSource(instanceResp.Msg.DataSources, "readonly")
 	a.NotNil(persisted)
-	a.Equal("", persisted.Username)
+	a.Equal("postgres", persisted.Username)
 }
 
 func findDataSource(dataSources []*v1pb.DataSource, id string) *v1pb.DataSource {

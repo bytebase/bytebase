@@ -1,0 +1,434 @@
+import type { ReactElement } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+const mocks = vi.hoisted(() => ({
+  useTranslation: vi.fn(() => ({
+    t: (key: string, fallback?: string) => fallback ?? key,
+  })),
+  // Stubbed state read by the migrated Zustand selector hooks.
+  tabState: {
+    currentTabId: "t1",
+    tabsById: new Map<string, unknown>(),
+  },
+  currentTab: null as unknown,
+  isDisconnected: false,
+  resultRowsLimit: 500,
+  updateCurrentTab: vi.fn(),
+  useUIStateStore: vi.fn(),
+  getSavedQueryByName: vi.fn<(name: string) => unknown>(),
+  useSavedQueryAndTab: vi.fn(),
+  useConnectionOfCurrentSQLEditorTab: vi.fn(),
+  isSavedQueryWritableV1: vi.fn(() => true),
+  canCreateSavedQueryInProject: vi.fn(() => true),
+  keyboardShortcutStr: vi.fn((s: string) => s),
+  emit: vi.fn(),
+  useProductIntro: vi.fn(),
+}));
+
+vi.mock("react-i18next", () => ({
+  useTranslation: mocks.useTranslation,
+}));
+
+vi.mock("@/stores", () => ({
+  useUIStateStore: mocks.useUIStateStore,
+}));
+
+vi.mock("@/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({
+      getSavedQueryByName: mocks.getSavedQueryByName,
+      // `EditorAction.handleRunQuery` records the data-query intro flag via
+      // the migrated preferences slice. Tests don't assert against this, so a
+      // bare noop keeps the call surface satisfied.
+      saveIntroStateByKey: vi.fn(),
+    }),
+  },
+}));
+
+vi.mock("@/hooks/useSavedQueryAndTab", () => ({
+  useSavedQueryAndTab: mocks.useSavedQueryAndTab,
+}));
+
+vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
+  useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
+}));
+
+vi.mock("@/modules/sql-editor/store/tab", () => ({
+  useSQLEditorTabState: (selector: (s: unknown) => unknown) =>
+    selector(mocks.tabState),
+  useCurrentSQLEditorTab: () => mocks.currentTab,
+  useIsDisconnected: () => mocks.isDisconnected,
+  getSQLEditorTabsState: () => ({ updateCurrentTab: mocks.updateCurrentTab }),
+}));
+
+vi.mock("@/modules/sql-editor/store/editor", () => ({
+  useSQLEditorEditorState: (selector: (s: unknown) => unknown) =>
+    selector({ resultRowsLimit: mocks.resultRowsLimit }),
+}));
+
+vi.mock("@/utils", () => ({
+  isSavedQueryWritableV1: mocks.isSavedQueryWritableV1,
+  canCreateSavedQueryInProject: mocks.canCreateSavedQueryInProject,
+  keyboardShortcutStr: mocks.keyboardShortcutStr,
+  isDev: () => true,
+}));
+
+vi.mock("@/modules/sql-editor/model/events", () => ({
+  sqlEditorEvents: { emit: mocks.emit },
+}));
+
+vi.mock("@/lib/productIntro", () => ({
+  RUN_QUERY_PRODUCT_INTRO: "run-query",
+  useProductIntro: mocks.useProductIntro,
+}));
+
+vi.mock("@/components/ui/button", () => ({
+  Button: ({
+    children,
+    onClick,
+    disabled,
+    className,
+    "aria-label": ariaLabel,
+    "data-product-intro-target": productIntroTarget,
+  }: {
+    children: React.ReactNode;
+    onClick?: (e: React.MouseEvent) => void;
+    disabled?: boolean;
+    className?: string;
+    "aria-label"?: string;
+    "data-product-intro-target"?: string;
+  }) => (
+    <button
+      data-testid="button"
+      aria-label={ariaLabel}
+      className={className}
+      data-product-intro-target={productIntroTarget}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  ),
+}));
+
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+vi.mock("@/components/ui/popover", () => ({
+  Popover: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="popover">{children}</div>
+  ),
+  PopoverTrigger: ({ render }: { render?: React.ReactElement }) => (
+    <div data-testid="popover-trigger">{render}</div>
+  ),
+  PopoverContent: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="popover-content">{children}</div>
+  ),
+}));
+
+vi.mock("./AdminModeButton", () => ({
+  AdminModeButton: () => <div data-testid="admin-mode-button" />,
+}));
+vi.mock("./ChooserGroup", () => ({
+  ChooserGroup: () => <div data-testid="chooser-group" />,
+}));
+vi.mock("./ContainerChooser", () => ({
+  ContainerChooser: ({ variant }: { variant?: string }) => (
+    <div data-testid="run-container-chooser" data-variant={variant} />
+  ),
+}));
+vi.mock("./OpenAIButton", () => ({
+  OpenAIButton: () => <div data-testid="openai-button" />,
+}));
+vi.mock("./QueryContextSettingPopover", () => ({
+  QueryContextSettingPopover: ({ disabled }: { disabled?: boolean }) => (
+    <div
+      data-testid="query-context-setting-popover"
+      data-disabled={String(disabled)}
+    />
+  ),
+}));
+vi.mock("./SharePopoverBody", () => ({
+  SharePopoverBody: () => <div data-testid="share-popover-body" />,
+}));
+
+let EditorAction: typeof import("./EditorAction").EditorAction;
+
+const renderIntoContainer = (element: ReactElement) => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  document.body.appendChild(container);
+  return {
+    container,
+    render: () => {
+      act(() => {
+        root.render(element);
+      });
+    },
+    unmount: () => {
+      act(() => {
+        root.unmount();
+      });
+      container.remove();
+    },
+  };
+};
+
+type SetupOptions = {
+  mode?: "SAVED_QUERY" | "ADMIN";
+  isDisconnected?: boolean;
+  statement?: string;
+  status?: "CLEAN" | "DIRTY" | "SAVING";
+  savedQuery?: string;
+  engine?: Engine;
+  table?: string;
+};
+
+const setup = (options: SetupOptions = {}) => {
+  const {
+    mode = "SAVED_QUERY",
+    isDisconnected = false,
+    statement = "SELECT 1",
+    status = "DIRTY",
+    savedQuery,
+    engine = Engine.POSTGRES,
+    table,
+  } = options;
+
+  const currentTab = {
+    id: "t1",
+    mode,
+    statement,
+    selectedStatement: "",
+    status,
+    savedQuery,
+    connection: { database: "databases/db1", table },
+    editorState: { selection: null },
+  };
+  const saveIntroStateByKey = vi.fn();
+
+  // Drive the migrated Zustand selector hooks off this single tab.
+  mocks.currentTab = currentTab;
+  mocks.isDisconnected = isDisconnected;
+  mocks.resultRowsLimit = 500;
+  mocks.tabState = {
+    currentTabId: "t1",
+    tabsById: new Map<string, unknown>([["t1", currentTab]]),
+  };
+  const updateCurrentTab = mocks.updateCurrentTab;
+
+  mocks.useUIStateStore.mockReturnValue({ saveIntroStateByKey });
+  mocks.getSavedQueryByName.mockImplementation(() => ({
+    name: savedQuery ?? "",
+    database: "databases/db1",
+  }));
+  mocks.useSavedQueryAndTab.mockReturnValue({
+    currentSheet: savedQuery ? { name: savedQuery, title: "sheet" } : undefined,
+    isCreator: false,
+    isReadOnly: false,
+  });
+  // useConnectionOfCurrentSQLEditorTab returns plain values now.
+  mocks.useConnectionOfCurrentSQLEditorTab.mockReturnValue({
+    instance: { engine },
+  });
+
+  return { currentTab, updateCurrentTab, saveIntroStateByKey };
+};
+
+beforeEach(async () => {
+  vi.clearAllMocks();
+  mocks.useTranslation.mockReturnValue({
+    t: (key: string, fallback?: string) => fallback ?? key,
+  });
+  mocks.isSavedQueryWritableV1.mockReturnValue(true);
+  ({ EditorAction } = await import("./EditorAction"));
+});
+
+describe("EditorAction", () => {
+  test("1. Run button fires onExecute with current statement + connection", () => {
+    setup();
+    const onExecute = vi.fn();
+
+    const { container, render, unmount } = renderIntoContainer(
+      <EditorAction onExecute={onExecute} />
+    );
+    render();
+
+    const runButton = Array.from(
+      container.querySelectorAll("[data-testid='button']")
+    ).find((el) => el.textContent?.includes("limit")) as
+      | HTMLButtonElement
+      | undefined;
+    expect(runButton).not.toBeUndefined();
+    expect(runButton?.disabled).toBe(false);
+
+    act(() => {
+      runButton?.click();
+    });
+
+    expect(onExecute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statement: "SELECT 1",
+        engine: Engine.POSTGRES,
+        explain: false,
+      })
+    );
+
+    unmount();
+  });
+
+  test("2. Run button is disabled when disconnected OR statement empty", () => {
+    setup({ statement: "" });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <EditorAction onExecute={vi.fn()} />
+    );
+    render();
+
+    const runButton = Array.from(
+      container.querySelectorAll("[data-testid='button']")
+    ).find((el) => el.textContent?.includes("limit")) as
+      | HTMLButtonElement
+      | undefined;
+    expect(runButton?.disabled).toBe(true);
+    expect(
+      container
+        .querySelector("[data-testid='query-context-setting-popover']")
+        ?.getAttribute("data-disabled")
+    ).toBe("false");
+
+    unmount();
+  });
+
+  test.each([
+    { isDisconnected: false, statement: "SELECT 1", disabled: false },
+    { isDisconnected: true, statement: "SELECT 1", disabled: true },
+    { isDisconnected: false, statement: "", disabled: true },
+  ])(
+    "highlights Run only when connection and statement are ready",
+    ({ isDisconnected, statement, disabled }) => {
+      setup({ isDisconnected, statement });
+
+      const { container, render, unmount } = renderIntoContainer(
+        <EditorAction onExecute={vi.fn()} />
+      );
+      render();
+
+      expect(mocks.useProductIntro).toHaveBeenCalledWith({
+        id: "run-query",
+        title: "workspace-setup-guide.steps.query-data",
+        description: "workspace-setup-guide.descriptions.query-data",
+        disabled,
+      });
+      expect(
+        container.querySelector('[data-product-intro-target="run-query"]')
+      ).not.toBeNull();
+
+      unmount();
+    }
+  );
+
+  test("CosmosDB Run button renders an inline container selector when container is missing", () => {
+    setup({ engine: Engine.COSMOSDB });
+    const onExecute = vi.fn();
+
+    const { container, render, unmount } = renderIntoContainer(
+      <EditorAction onExecute={onExecute} />
+    );
+    render();
+
+    expect(
+      container
+        .querySelector("[data-testid='run-container-chooser']")
+        ?.getAttribute("data-variant")
+    ).toBe("run");
+    expect(onExecute).not.toHaveBeenCalled();
+    expect(
+      container
+        .querySelector("[data-testid='query-context-setting-popover']")
+        ?.getAttribute("data-disabled")
+    ).toBe("false");
+
+    unmount();
+  });
+
+  test("3. In ADMIN mode, renders Exit-Admin button instead of Run", () => {
+    const { updateCurrentTab } = setup({ mode: "ADMIN" });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <EditorAction onExecute={vi.fn()} />
+    );
+    render();
+
+    const exitBtn = Array.from(
+      container.querySelectorAll("[data-testid='button']")
+    ).find((el) => el.textContent?.includes("sql-editor.admin-mode.exit")) as
+      | HTMLButtonElement
+      | undefined;
+    expect(exitBtn).not.toBeUndefined();
+
+    // No Run button
+    const runButton = Array.from(
+      container.querySelectorAll("[data-testid='button']")
+    ).find((el) => el.textContent?.includes("limit"));
+    expect(runButton).toBeUndefined();
+
+    act(() => {
+      exitBtn?.click();
+    });
+    expect(updateCurrentTab).toHaveBeenCalledWith({ mode: "SAVED_QUERY" });
+
+    unmount();
+  });
+
+  test("4. Save button disabled when status=CLEAN; emits save-sheet when dirty", () => {
+    const { currentTab } = setup({ status: "DIRTY" });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <EditorAction onExecute={vi.fn()} />
+    );
+    render();
+
+    const saveBtn = Array.from(
+      container.querySelectorAll("[data-testid='button']")
+    ).find((el) => el.getAttribute("aria-label") === "common.save") as
+      | HTMLButtonElement
+      | undefined;
+    expect(saveBtn).not.toBeUndefined();
+    expect(saveBtn?.disabled).toBe(false);
+
+    act(() => {
+      saveBtn?.click();
+    });
+    expect(mocks.emit).toHaveBeenCalledWith("save-sheet", { tab: currentTab });
+
+    unmount();
+  });
+
+  test("5. Share button disabled when disconnected or empty statement", () => {
+    setup({ isDisconnected: true });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <EditorAction onExecute={vi.fn()} />
+    );
+    render();
+
+    const shareBtn = Array.from(
+      container.querySelectorAll("[data-testid='button']")
+    ).find((el) => el.getAttribute("aria-label") === "common.share") as
+      | HTMLButtonElement
+      | undefined;
+    expect(shareBtn).not.toBeUndefined();
+    expect(shareBtn?.disabled).toBe(true);
+
+    unmount();
+  });
+});

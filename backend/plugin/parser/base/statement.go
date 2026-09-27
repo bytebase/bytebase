@@ -32,6 +32,23 @@ func (s *Statement) BaseLine() int {
 	return int(s.Start.Line) - 1
 }
 
+// TruncateAtSemicolonToken returns sql[start:end], where end is the Loc of
+// the first token at or after start whose type is ';' (the end of the
+// statement containing start), or len(sql) when there is none. Scanning the
+// token stream rather than raw bytes means a ';' inside a string literal,
+// comment, or quoted identifier never counts as a statement boundary.
+// Completers use this to bound clause fragments to the current statement so
+// fragment re-parsing cannot scale with the size of the whole sheet
+// (BYT-9886). loc and typ adapt the engine-specific token type.
+func TruncateAtSemicolonToken[T any](sql string, start int, tokens []T, loc func(T) int, typ func(T) int) string {
+	for _, tok := range tokens {
+		if loc(tok) >= start && typ(tok) == ';' {
+			return sql[start:loc(tok)]
+		}
+	}
+	return sql[start:]
+}
+
 // NewStatementFromRange builds a Statement from a split segment range.
 func NewStatementFromRange(sql string, mapper *ByteOffsetPositionMapper, byteStart, byteEnd int, empty bool) Statement {
 	if byteEnd < len(sql) && sql[byteEnd] == ';' {

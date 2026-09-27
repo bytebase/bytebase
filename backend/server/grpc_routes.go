@@ -27,7 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/sampleinstance"
+	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -50,8 +50,8 @@ func configureGrpcRouters(
 	webhookManager *webhook.Manager,
 	iamManager *iam.Manager,
 	secret string,
-	sampleInstanceManager *sampleinstance.Manager,
-) error {
+	sampleManager sample.Manager,
+) (http.Handler, error) {
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
 	gatewayMarshaler := &grpcruntime.HTTPBodyMarshaler{
@@ -92,21 +92,23 @@ func configureGrpcRouters(
 	)
 	aiService := apiv1.NewAIService(stores)
 	accessGrantService := apiv1.NewAccessGrantService(stores, licenseService, webhookManager, bus)
-	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService, sampleInstanceManager)
+	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService, sampleManager)
 	auditLogService := apiv1.NewAuditLogService(stores, licenseService)
 	authService := apiv1.NewAuthService(stores, secret, licenseService, profile, iamManager)
 	celService := apiv1.NewCelService()
+	changelogService := apiv1.NewChangelogService(stores)
 	databaseCatalogService := apiv1.NewDatabaseCatalogService(stores)
 	databaseGroupService := apiv1.NewDatabaseGroupService(stores, licenseService)
 	databaseService := apiv1.NewDatabaseService(stores, schemaSyncer, profile, iamManager, licenseService)
 	groupService := apiv1.NewGroupService(stores, iamManager, licenseService)
 	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService, profile)
 	instanceRoleService := apiv1.NewInstanceRoleService(stores)
-	instanceService := apiv1.NewInstanceService(stores, profile, licenseService, dbFactory, schemaSyncer, sampleInstanceManager)
+	instanceService := apiv1.NewInstanceService(stores, profile, licenseService, dbFactory, schemaSyncer, sampleManager)
 	issueService := apiv1.NewIssueService(stores, webhookManager, bus, licenseService, iamManager)
 	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService, iamManager)
 	planService := apiv1.NewPlanService(stores, bus, iamManager, webhookManager, licenseService)
-	projectService := apiv1.NewProjectService(stores, profile, iamManager)
+	projectService := apiv1.NewProjectService(stores, profile, iamManager, sampleManager)
+	queryHistoryService := apiv1.NewQueryHistoryService(stores)
 	releaseService := apiv1.NewReleaseService(stores, sheetManager, dbFactory, licenseService)
 	reviewConfigService := apiv1.NewReviewConfigService(stores)
 	revisionService := apiv1.NewRevisionService(stores)
@@ -114,128 +116,110 @@ func configureGrpcRouters(
 	rolloutService := apiv1.NewRolloutService(stores, dbFactory, bus, webhookManager, iamManager)
 	settingService := apiv1.NewSettingService(stores, profile, licenseService, iamManager)
 	sheetService := apiv1.NewSheetService(stores)
-	sqlService := apiv1.NewSQLService(stores, schemaSyncer, dbFactory, licenseService, iamManager)
+	sqlService := apiv1.NewSQLService(stores, schemaSyncer, dbFactory, licenseService, iamManager, queryHistoryService)
 	subscriptionService := apiv1.NewSubscriptionService(profile, stores, licenseService)
-	userService := apiv1.NewUserService(stores, licenseService, profile, iamManager)
+	userService := apiv1.NewUserService(stores, secret, licenseService, profile, iamManager)
 	serviceAccountService := apiv1.NewServiceAccountService(stores, profile, iamManager)
 	workloadIdentityService := apiv1.NewWorkloadIdentityService(stores, profile, iamManager)
-	worksheetService := apiv1.NewWorksheetService(stores, iamManager)
+	savedQueryService := apiv1.NewSavedQueryService(stores, iamManager)
 	workspaceService := apiv1.NewWorkspaceService(stores, iamManager, profile, licenseService, authService)
 
 	onPanic := func(_ context.Context, s connect.Spec, _ http.Header, p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
 		// keep a multiline stack
 		slog.Error("v1 server panic error", "method", s.Procedure, log.BBError(errors.Errorf("error: %v\n%s", p, stack)))
-		return connect.NewError(connect.CodeInternal, errors.Errorf("error: %v\n%s", p, stack))
+		return connect.NewError(connect.CodeInternal, errors.New("internal error"))
 	}
 
 	// Create validation interceptor.
 	validateInterceptor := validate.NewInterceptor()
 
+	// The first-listed interceptor is outermost. Audit wraps ACL, so a call ACL
+	// refuses is still streamed to the stdout audit log. Auth stays outside
+	// audit: it populates the identity and workspace every row needs. ACL stays
+	// last on both chains, because its admission is what the audit interceptor
+	// reads as the call reaching its handler.
 	handlerOpts := connect.WithHandlerOptions(
+		connect.WithRecover(onPanic),
 		connect.WithInterceptors(
 			validateInterceptor,
 			auth.New(stores, secret, licenseService, bus, profile),
-			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 			apiv1.NewAuditInterceptor(stores, secret, profile),
+			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 		),
-		connect.WithRecover(onPanic),
 	)
 
-	connectHandlers := make(map[string]http.Handler)
+	// registerServiceHandlers builds one connect handler per v1 service with the
+	// given interceptor chain. Called twice: once for the public chain and once
+	// for the internal MCP chain — same service instances, different auth.
+	registerServiceHandlers := func(opts connect.HandlerOption) map[string]http.Handler {
+		handlers := make(map[string]http.Handler)
+		add := func(path string, handler http.Handler) {
+			handlers[path] = handler
+		}
+		add(v1connect.NewAIServiceHandler(aiService, opts))
+		add(v1connect.NewAccessGrantServiceHandler(accessGrantService, opts))
+		add(v1connect.NewActuatorServiceHandler(actuatorService, opts))
+		add(v1connect.NewAuditLogServiceHandler(auditLogService, opts))
+		add(v1connect.NewAuthServiceHandler(authService, opts))
+		add(v1connect.NewCelServiceHandler(celService, opts))
+		add(v1connect.NewChangelogServiceHandler(changelogService, opts))
+		add(v1connect.NewDatabaseCatalogServiceHandler(databaseCatalogService, opts))
+		add(v1connect.NewDatabaseGroupServiceHandler(databaseGroupService, opts))
+		add(v1connect.NewDatabaseServiceHandler(databaseService, opts))
+		add(v1connect.NewGroupServiceHandler(groupService, opts))
+		add(v1connect.NewIdentityProviderServiceHandler(identityProviderService, opts))
+		add(v1connect.NewInstanceRoleServiceHandler(instanceRoleService, opts))
+		add(v1connect.NewInstanceServiceHandler(instanceService, opts))
+		add(v1connect.NewIssueServiceHandler(issueService, opts))
+		add(v1connect.NewOrgPolicyServiceHandler(orgPolicyService, opts))
+		add(v1connect.NewPlanServiceHandler(planService, opts))
+		add(v1connect.NewProjectServiceHandler(projectService, opts))
+		add(v1connect.NewQueryHistoryServiceHandler(queryHistoryService, opts))
+		add(v1connect.NewReleaseServiceHandler(releaseService, opts))
+		add(v1connect.NewReviewConfigServiceHandler(reviewConfigService, opts))
+		add(v1connect.NewRevisionServiceHandler(revisionService, opts))
+		add(v1connect.NewRoleServiceHandler(roleService, opts))
+		add(v1connect.NewRolloutServiceHandler(rolloutService, opts))
+		add(v1connect.NewSettingServiceHandler(settingService, opts))
+		add(v1connect.NewSheetServiceHandler(sheetService, opts))
+		add(v1connect.NewSQLServiceHandler(sqlService, opts))
+		add(v1connect.NewSubscriptionServiceHandler(subscriptionService, opts))
+		add(v1connect.NewUserServiceHandler(userService, opts))
+		add(v1connect.NewServiceAccountServiceHandler(serviceAccountService, opts))
+		add(v1connect.NewWorkloadIdentityServiceHandler(workloadIdentityService, opts))
+		add(v1connect.NewSavedQueryServiceHandler(savedQueryService, opts))
+		add(v1connect.NewWorkspaceServiceHandler(workspaceService, opts))
+		return handlers
+	}
 
-	aiPath, aiHandler := v1connect.NewAIServiceHandler(aiService, handlerOpts)
-	connectHandlers[aiPath] = aiHandler
+	connectHandlers := registerServiceHandlers(handlerOpts)
 
-	accessGrantPath, accessGrantHandler := v1connect.NewAccessGrantServiceHandler(accessGrantService, handlerOpts)
-	connectHandlers[accessGrantPath] = accessGrantHandler
-
-	actuatorPath, actuatorHandler := v1connect.NewActuatorServiceHandler(actuatorService, handlerOpts)
-	connectHandlers[actuatorPath] = actuatorHandler
-
-	auditLogPath, auditLogHandler := v1connect.NewAuditLogServiceHandler(auditLogService, handlerOpts)
-	connectHandlers[auditLogPath] = auditLogHandler
-
-	authPath, authHandler := v1connect.NewAuthServiceHandler(authService, handlerOpts)
-	connectHandlers[authPath] = authHandler
-
-	celPath, celHandler := v1connect.NewCelServiceHandler(celService, handlerOpts)
-	connectHandlers[celPath] = celHandler
-
-	databaseCatalogPath, databaseCatalogHandler := v1connect.NewDatabaseCatalogServiceHandler(databaseCatalogService, handlerOpts)
-	connectHandlers[databaseCatalogPath] = databaseCatalogHandler
-
-	databaseGroupPath, databaseGroupHandler := v1connect.NewDatabaseGroupServiceHandler(databaseGroupService, handlerOpts)
-	connectHandlers[databaseGroupPath] = databaseGroupHandler
-
-	databasePath, databaseHandler := v1connect.NewDatabaseServiceHandler(databaseService, handlerOpts)
-	connectHandlers[databasePath] = databaseHandler
-
-	groupPath, groupHandler := v1connect.NewGroupServiceHandler(groupService, handlerOpts)
-	connectHandlers[groupPath] = groupHandler
-
-	identityProviderPath, identityProviderHandler := v1connect.NewIdentityProviderServiceHandler(identityProviderService, handlerOpts)
-	connectHandlers[identityProviderPath] = identityProviderHandler
-
-	instanceRolePath, instanceRoleHandler := v1connect.NewInstanceRoleServiceHandler(instanceRoleService, handlerOpts)
-	connectHandlers[instanceRolePath] = instanceRoleHandler
-
-	instancePath, instanceHandler := v1connect.NewInstanceServiceHandler(instanceService, handlerOpts)
-	connectHandlers[instancePath] = instanceHandler
-
-	issuePath, issueHandler := v1connect.NewIssueServiceHandler(issueService, handlerOpts)
-	connectHandlers[issuePath] = issueHandler
-
-	orgPolicyPath, orgPolicyHandler := v1connect.NewOrgPolicyServiceHandler(orgPolicyService, handlerOpts)
-	connectHandlers[orgPolicyPath] = orgPolicyHandler
-
-	planPath, planHandler := v1connect.NewPlanServiceHandler(planService, handlerOpts)
-	connectHandlers[planPath] = planHandler
-
-	projectPath, projectHandler := v1connect.NewProjectServiceHandler(projectService, handlerOpts)
-	connectHandlers[projectPath] = projectHandler
-
-	releasePath, releaseHandler := v1connect.NewReleaseServiceHandler(releaseService, handlerOpts)
-	connectHandlers[releasePath] = releaseHandler
-
-	reviewConfigPath, reviewConfigHandler := v1connect.NewReviewConfigServiceHandler(reviewConfigService, handlerOpts)
-	connectHandlers[reviewConfigPath] = reviewConfigHandler
-
-	revisionPath, revisionHandler := v1connect.NewRevisionServiceHandler(revisionService, handlerOpts)
-	connectHandlers[revisionPath] = revisionHandler
-
-	rolePath, roleHandler := v1connect.NewRoleServiceHandler(roleService, handlerOpts)
-	connectHandlers[rolePath] = roleHandler
-
-	rolloutPath, rolloutHandler := v1connect.NewRolloutServiceHandler(rolloutService, handlerOpts)
-	connectHandlers[rolloutPath] = rolloutHandler
-
-	settingPath, settingHandler := v1connect.NewSettingServiceHandler(settingService, handlerOpts)
-	connectHandlers[settingPath] = settingHandler
-
-	sheetPath, sheetHandler := v1connect.NewSheetServiceHandler(sheetService, handlerOpts)
-	connectHandlers[sheetPath] = sheetHandler
-
-	sqlPath, sqlHandler := v1connect.NewSQLServiceHandler(sqlService, handlerOpts)
-	connectHandlers[sqlPath] = sqlHandler
-
-	subscriptionPath, subscriptionHandler := v1connect.NewSubscriptionServiceHandler(subscriptionService, handlerOpts)
-	connectHandlers[subscriptionPath] = subscriptionHandler
-
-	userPath, userHandler := v1connect.NewUserServiceHandler(userService, handlerOpts)
-	connectHandlers[userPath] = userHandler
-
-	serviceAccountPath, serviceAccountHandler := v1connect.NewServiceAccountServiceHandler(serviceAccountService, handlerOpts)
-	connectHandlers[serviceAccountPath] = serviceAccountHandler
-
-	workloadIdentityPath, workloadIdentityHandler := v1connect.NewWorkloadIdentityServiceHandler(workloadIdentityService, handlerOpts)
-	connectHandlers[workloadIdentityPath] = workloadIdentityHandler
-
-	worksheetPath, worksheetHandler := v1connect.NewWorksheetServiceHandler(worksheetService, handlerOpts)
-	connectHandlers[worksheetPath] = worksheetHandler
-
-	workspacePath, workspaceHandler := v1connect.NewWorkspaceServiceHandler(workspaceService, handlerOpts)
-	connectHandlers[workspacePath] = workspaceHandler
+	// The internal MCP handler chain: the same service handlers behind an auth
+	// interceptor that accepts ONLY the delegated credential minted at the /mcp
+	// boundary. It is reachable exclusively through the in-memory transport
+	// handed to the MCP server — never bound to a listener, so the internal
+	// credential never touches a socket. ACL runs exactly as on the public
+	// chain: the credential carries identity + grant state, while authorization
+	// is re-resolved live per request.
+	//
+	// The order is the public chain's plus the MCP ceiling gate, which sits
+	// inside audit, so its refusals are streamed like ACL's, and outside ACL,
+	// because the ceiling refuses whatever the caller's RBAC would have allowed.
+	internalHandlerOpts := connect.WithHandlerOptions(
+		connect.WithRecover(onPanic),
+		connect.WithInterceptors(
+			validateInterceptor,
+			auth.NewInternalMCPAuthInterceptor(stores, secret, profile),
+			apiv1.NewAuditInterceptor(stores, secret, profile),
+			apiv1.NewInternalMCPGateInterceptor(stores),
+			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
+		),
+	)
+	internalMCPMux := http.NewServeMux()
+	for path, handler := range registerServiceHandlers(internalHandlerOpts) {
+		internalMCPMux.Handle(path, handler)
+	}
 
 	// grpc reflection handlers.
 	reflector := grpcreflect.NewStaticReflector(
@@ -245,6 +229,7 @@ func configureGrpcRouters(
 		v1connect.AuditLogServiceName,
 		v1connect.AuthServiceName,
 		v1connect.CelServiceName,
+		v1connect.ChangelogServiceName,
 		v1connect.DatabaseCatalogServiceName,
 		v1connect.DatabaseGroupServiceName,
 		v1connect.DatabaseServiceName,
@@ -256,6 +241,7 @@ func configureGrpcRouters(
 		v1connect.OrgPolicyServiceName,
 		v1connect.PlanServiceName,
 		v1connect.ProjectServiceName,
+		v1connect.QueryHistoryServiceName,
 		v1connect.ReleaseServiceName,
 		v1connect.ReviewConfigServiceName,
 		v1connect.RevisionServiceName,
@@ -268,7 +254,7 @@ func configureGrpcRouters(
 		v1connect.SubscriptionServiceName,
 		v1connect.UserServiceName,
 		v1connect.WorkloadIdentityServiceName,
-		v1connect.WorksheetServiceName,
+		v1connect.SavedQueryServiceName,
 		v1connect.WorkspaceServiceName,
 	)
 	reflectPath, reflectHandler := grpcreflect.NewHandlerV1(reflector)
@@ -287,101 +273,107 @@ func configureGrpcRouters(
 		),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := v1pb.RegisterAIServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterAccessGrantServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterAuditLogServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterCelServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
+	}
+	if err := v1pb.RegisterChangelogServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
 	}
 	if err := v1pb.RegisterDatabaseCatalogServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterDatabaseGroupServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterDatabaseServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterGroupServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterIdentityProviderServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterInstanceRoleServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterInstanceServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterIssueServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterOrgPolicyServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterPlanServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterProjectServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
+	}
+	if err := v1pb.RegisterQueryHistoryServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
 	}
 	if err := v1pb.RegisterReleaseServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterReviewConfigServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterRevisionServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterRoleServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterRolloutServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterSettingServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterSheetServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterSQLServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterSubscriptionServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterUserServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterServiceAccountServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	if err := v1pb.RegisterWorkloadIdentityServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
-	if err := v1pb.RegisterWorksheetServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+	if err := v1pb.RegisterSavedQueryServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, err
 	}
 	if err := v1pb.RegisterWorkspaceServiceHandler(ctx, mux, grpcConn); err != nil {
-		return err
+		return nil, err
 	}
 	// Register echo routes for mux and connectHandlers
 	e.GET("/v1:adminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(
@@ -397,5 +389,5 @@ func configureGrpcRouters(
 		e.Any(path+"*", echo.WrapHandler(handler))
 	}
 
-	return nil
+	return internalMCPMux, nil
 }

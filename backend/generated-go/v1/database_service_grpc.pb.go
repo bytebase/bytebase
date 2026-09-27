@@ -30,8 +30,7 @@ const (
 	DatabaseService_GetDatabaseSchema_FullMethodName    = "/bytebase.v1.DatabaseService/GetDatabaseSchema"
 	DatabaseService_GetDatabaseSDLSchema_FullMethodName = "/bytebase.v1.DatabaseService/GetDatabaseSDLSchema"
 	DatabaseService_DiffSchema_FullMethodName           = "/bytebase.v1.DatabaseService/DiffSchema"
-	DatabaseService_ListChangelogs_FullMethodName       = "/bytebase.v1.DatabaseService/ListChangelogs"
-	DatabaseService_GetChangelog_FullMethodName         = "/bytebase.v1.DatabaseService/GetChangelog"
+	DatabaseService_DiffMetadata_FullMethodName         = "/bytebase.v1.DatabaseService/DiffMetadata"
 	DatabaseService_GetSchemaString_FullMethodName      = "/bytebase.v1.DatabaseService/GetSchemaString"
 )
 
@@ -45,7 +44,9 @@ type DatabaseServiceClient interface {
 	// Permissions required: bb.databases.get
 	GetDatabase(ctx context.Context, in *GetDatabaseRequest, opts ...grpc.CallOption) (*Database, error)
 	// Retrieves multiple databases by their names.
-	// Permissions required: bb.databases.get
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
+	// Permissions required: bb.databases.get (on each named database's project)
 	BatchGetDatabases(ctx context.Context, in *BatchGetDatabasesRequest, opts ...grpc.CallOption) (*BatchGetDatabasesResponse, error)
 	// Lists databases in a project, instance, or workspace.
 	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
@@ -74,12 +75,10 @@ type DatabaseServiceClient interface {
 	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(ctx context.Context, in *DiffSchemaRequest, opts ...grpc.CallOption) (*DiffSchemaResponse, error)
-	// Lists migration history for a database.
-	// Permissions required: bb.changelogs.list
-	ListChangelogs(ctx context.Context, in *ListChangelogsRequest, opts ...grpc.CallOption) (*ListChangelogsResponse, error)
-	// Retrieves a specific changelog entry.
-	// Permissions required: bb.changelogs.get
-	GetChangelog(ctx context.Context, in *GetChangelogRequest, opts ...grpc.CallOption) (*Changelog, error)
+	// Generates migration statements from the database's current schema to the
+	// given target metadata.
+	// Permissions required: bb.databases.diffMetadata
+	DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error)
 	// Generates schema DDL for a database object.
 	// Permissions required: bb.databases.getSchema
 	GetSchemaString(ctx context.Context, in *GetSchemaStringRequest, opts ...grpc.CallOption) (*GetSchemaStringResponse, error)
@@ -203,20 +202,10 @@ func (c *databaseServiceClient) DiffSchema(ctx context.Context, in *DiffSchemaRe
 	return out, nil
 }
 
-func (c *databaseServiceClient) ListChangelogs(ctx context.Context, in *ListChangelogsRequest, opts ...grpc.CallOption) (*ListChangelogsResponse, error) {
+func (c *databaseServiceClient) DiffMetadata(ctx context.Context, in *DiffMetadataRequest, opts ...grpc.CallOption) (*DiffMetadataResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListChangelogsResponse)
-	err := c.cc.Invoke(ctx, DatabaseService_ListChangelogs_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *databaseServiceClient) GetChangelog(ctx context.Context, in *GetChangelogRequest, opts ...grpc.CallOption) (*Changelog, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Changelog)
-	err := c.cc.Invoke(ctx, DatabaseService_GetChangelog_FullMethodName, in, out, cOpts...)
+	out := new(DiffMetadataResponse)
+	err := c.cc.Invoke(ctx, DatabaseService_DiffMetadata_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +232,9 @@ type DatabaseServiceServer interface {
 	// Permissions required: bb.databases.get
 	GetDatabase(context.Context, *GetDatabaseRequest) (*Database, error)
 	// Retrieves multiple databases by their names.
-	// Permissions required: bb.databases.get
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
+	// Permissions required: bb.databases.get (on each named database's project)
 	BatchGetDatabases(context.Context, *BatchGetDatabasesRequest) (*BatchGetDatabasesResponse, error)
 	// Lists databases in a project, instance, or workspace.
 	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
@@ -272,12 +263,10 @@ type DatabaseServiceServer interface {
 	// Compares and generates migration statements between two schemas.
 	// Permissions required: bb.databases.get
 	DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error)
-	// Lists migration history for a database.
-	// Permissions required: bb.changelogs.list
-	ListChangelogs(context.Context, *ListChangelogsRequest) (*ListChangelogsResponse, error)
-	// Retrieves a specific changelog entry.
-	// Permissions required: bb.changelogs.get
-	GetChangelog(context.Context, *GetChangelogRequest) (*Changelog, error)
+	// Generates migration statements from the database's current schema to the
+	// given target metadata.
+	// Permissions required: bb.databases.diffMetadata
+	DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error)
 	// Generates schema DDL for a database object.
 	// Permissions required: bb.databases.getSchema
 	GetSchemaString(context.Context, *GetSchemaStringRequest) (*GetSchemaStringResponse, error)
@@ -324,11 +313,8 @@ func (UnimplementedDatabaseServiceServer) GetDatabaseSDLSchema(context.Context, 
 func (UnimplementedDatabaseServiceServer) DiffSchema(context.Context, *DiffSchemaRequest) (*DiffSchemaResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DiffSchema not implemented")
 }
-func (UnimplementedDatabaseServiceServer) ListChangelogs(context.Context, *ListChangelogsRequest) (*ListChangelogsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListChangelogs not implemented")
-}
-func (UnimplementedDatabaseServiceServer) GetChangelog(context.Context, *GetChangelogRequest) (*Changelog, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetChangelog not implemented")
+func (UnimplementedDatabaseServiceServer) DiffMetadata(context.Context, *DiffMetadataRequest) (*DiffMetadataResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DiffMetadata not implemented")
 }
 func (UnimplementedDatabaseServiceServer) GetSchemaString(context.Context, *GetSchemaStringRequest) (*GetSchemaStringResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSchemaString not implemented")
@@ -552,38 +538,20 @@ func _DatabaseService_DiffSchema_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DatabaseService_ListChangelogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListChangelogsRequest)
+func _DatabaseService_DiffMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DiffMetadataRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DatabaseServiceServer).ListChangelogs(ctx, in)
+		return srv.(DatabaseServiceServer).DiffMetadata(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DatabaseService_ListChangelogs_FullMethodName,
+		FullMethod: DatabaseService_DiffMetadata_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).ListChangelogs(ctx, req.(*ListChangelogsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DatabaseService_GetChangelog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetChangelogRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DatabaseServiceServer).GetChangelog(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DatabaseService_GetChangelog_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DatabaseServiceServer).GetChangelog(ctx, req.(*GetChangelogRequest))
+		return srv.(DatabaseServiceServer).DiffMetadata(ctx, req.(*DiffMetadataRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -658,12 +626,8 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DatabaseService_DiffSchema_Handler,
 		},
 		{
-			MethodName: "ListChangelogs",
-			Handler:    _DatabaseService_ListChangelogs_Handler,
-		},
-		{
-			MethodName: "GetChangelog",
-			Handler:    _DatabaseService_GetChangelog_Handler,
+			MethodName: "DiffMetadata",
+			Handler:    _DatabaseService_DiffMetadata_Handler,
 		},
 		{
 			MethodName: "GetSchemaString",

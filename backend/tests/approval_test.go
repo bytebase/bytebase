@@ -11,9 +11,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/review"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // TestDirectApprovalRuleMatching tests the new direct approval rule API
@@ -22,26 +27,19 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Create instance in prod environment
-	instanceDir := t.TempDir()
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
-			Title:       "Prod Instance",
-			Engine:      v1pb.Engine_SQLITE,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "Prod Instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -64,7 +62,7 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 							{
 								Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
 								Condition: &expr.Expr{
-									Expression: `resource.db_engine == "SQLITE"`, // Use db_engine to test CEL with variables
+									Expression: `resource.db_engine == "POSTGRES"`, // Use db_engine to test CEL with variables
 								},
 								Template: &v1pb.ApprovalTemplate{
 									Title:       "Prod Change Database Approval",
@@ -150,32 +148,354 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 	a.Equal("Prod Change Database Approval", issue.GetApprovalTemplate().GetTitle(), "Correct approval template should be applied")
 }
 
+func TestApprovalFindingRerunsPlanCheckForStaleApprovalInputVersion(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+
+	pgContainer := sharedPgTarget(t)
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst"),
+		Instance: &v1pb.Instance{
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "Approval Input Version Instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
+		},
+	}))
+	a.NoError(err)
+
+	dbName := generateRandomString("db")
+	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	a.NoError(err)
+	databaseName := fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)
+
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		AllowMissing: true,
+		Setting: &v1pb.Setting{
+			Name: "settings/WORKSPACE_APPROVAL",
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{
+						Rules: []*v1pb.WorkspaceApprovalSetting_Rule{
+							{
+								Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+								Condition: &expr.Expr{
+									Expression: `statement.text.contains("stale_approval_b")`,
+								},
+								Template: &v1pb.ApprovalTemplate{
+									Title: "Postgres change approval B",
+									Flow: &v1pb.ApprovalFlow{
+										Roles: []string{"roles/workspaceOwner"},
+									},
+								},
+							},
+							{
+								Source: v1pb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+								Condition: &expr.Expr{
+									Expression: `statement.text.contains("stale_approval_a")`,
+								},
+								Template: &v1pb.ApprovalTemplate{
+									Title: "Postgres change approval A",
+									Flow: &v1pb.ApprovalFlow{
+										Roles: []string{"roles/workspaceOwner"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}))
+	a.NoError(err)
+
+	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: ctl.project.Name,
+		Sheet: &v1pb.Sheet{
+			Content: []byte("CREATE TABLE stale_approval_a (id INTEGER PRIMARY KEY);"),
+		},
+	}))
+	a.NoError(err)
+	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: ctl.project.Name,
+		Sheet: &v1pb.Sheet{
+			Content: []byte("CREATE TABLE stale_approval_b (id INTEGER PRIMARY KEY);"),
+		},
+	}))
+	a.NoError(err)
+
+	specID := uuid.NewString()
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: ctl.project.Name,
+		Plan: &v1pb.Plan{
+			Title: "Approval input version plan",
+			Specs: []*v1pb.Plan_Spec{{
+				Id: specID,
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Targets: []string{databaseName},
+						Sheet:   sheet1.Msg.Name,
+					},
+				},
+			}},
+		},
+	}))
+	a.NoError(err)
+
+	issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		Parent: ctl.project.Name,
+		Issue: &v1pb.Issue{
+			Title:       "Approval input version issue",
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Description: "Testing approval input version rerun",
+			Plan:        planResp.Msg.Name,
+		},
+	}))
+	a.NoError(err)
+
+	waitForApprovalFindingDone(ctx, t, ctl, issueResp.Msg)
+
+	gotIssueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueResp.Msg.Name}))
+	a.NoError(err)
+	a.NotEqual(v1pb.ApprovalStatus_CHECKING, gotIssueResp.Msg.ApprovalStatus)
+	a.Equal("Postgres change approval A", gotIssueResp.Msg.GetApprovalTemplate().GetTitle())
+
+	updatedPlanResp, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+		Plan: &v1pb.Plan{
+			Name: planResp.Msg.Name,
+			Specs: []*v1pb.Plan_Spec{{
+				Id: specID,
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Targets: []string{databaseName},
+						Sheet:   sheet2.Msg.Name,
+					},
+				},
+			}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
+	}))
+	a.NoError(err)
+
+	waitForApprovalFindingDone(ctx, t, ctl, issueResp.Msg)
+
+	gotIssueResp, err = ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueResp.Msg.Name}))
+	a.NoError(err)
+	a.NotEqual(v1pb.ApprovalStatus_CHECKING, gotIssueResp.Msg.ApprovalStatus)
+	a.Equal("Postgres change approval B", gotIssueResp.Msg.GetApprovalTemplate().GetTitle())
+
+	checkResp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
+		Name: fmt.Sprintf("%s/planCheckRun", updatedPlanResp.Msg.Name),
+	}))
+	a.NoError(err)
+	a.Equal(v1pb.PlanCheckRun_DONE, checkResp.Msg.Status)
+}
+
+//nolint:tparallel // Subtests share one server lifecycle.
+func TestApprovalActionRejectsStaleApprovalInputVersion(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+
+	stores := getStore(t, ctl.server)
+
+	t.Run("ApproveIssue", func(t *testing.T) {
+		issue, staleApproval, approver := createStaleApprovalInputVersionIssue(ctx, t, ctl, stores, "stale-approve")
+
+		withImpersonation(ctx, t, ctl, approver, func() {
+			_, err := ctl.issueServiceClient.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{
+				Name:    issue.Name,
+				Comment: "approve stale approval",
+			}))
+			require.Error(t, err)
+			require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+		})
+
+		got, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issue.Name}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.ApprovalStatus_PENDING, got.Msg.ApprovalStatus)
+		requireApprovalPayloadApproverCount(ctx, t, stores, issue.Name, len(staleApproval.Approvers))
+	})
+
+	t.Run("RejectIssue", func(t *testing.T) {
+		issue, staleApproval, approver := createStaleApprovalInputVersionIssue(ctx, t, ctl, stores, "stale-reject")
+
+		withImpersonation(ctx, t, ctl, approver, func() {
+			_, err := ctl.issueServiceClient.RejectIssue(ctx, connect.NewRequest(&v1pb.RejectIssueRequest{
+				Name:    issue.Name,
+				Comment: "reject stale approval",
+			}))
+			require.Error(t, err)
+			require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+		})
+
+		got, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issue.Name}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.ApprovalStatus_PENDING, got.Msg.ApprovalStatus)
+		requireApprovalPayloadApproverCount(ctx, t, stores, issue.Name, len(staleApproval.Approvers))
+	})
+
+	t.Run("RequestIssue", func(t *testing.T) {
+		issue, staleApproval, approver := createStaleApprovalInputVersionIssue(ctx, t, ctl, stores, "stale-request")
+		staleApproval.Approvers = append(staleApproval.Approvers, &storepb.IssuePayloadApproval_Approver{
+			Status:    storepb.IssuePayloadApproval_Approver_REJECTED,
+			Principal: common.FormatUserEmail(approver.Email),
+		})
+		writeIssueApprovalPayload(ctx, t, stores, issue.Name, staleApproval)
+
+		_, err := ctl.issueServiceClient.RequestIssue(ctx, connect.NewRequest(&v1pb.RequestIssueRequest{
+			Name:    issue.Name,
+			Comment: "request stale approval",
+		}))
+		require.Error(t, err)
+		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+
+		got, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issue.Name}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.ApprovalStatus_REJECTED, got.Msg.ApprovalStatus)
+		requireApprovalPayloadApproverCount(ctx, t, stores, issue.Name, len(staleApproval.Approvers))
+	})
+}
+
+func createStaleApprovalInputVersionIssue(ctx context.Context, t *testing.T, ctl *controller, stores *store.Store, suffix string) (*v1pb.Issue, *storepb.IssuePayloadApproval, testApprover) {
+	t.Helper()
+	project := ctl.createTestProject(ctx, t, suffix)
+
+	pgContainer := sharedPgTarget(t)
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst"),
+		Instance: &v1pb.Instance{
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "Stale Approval Instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
+		},
+	}))
+	require.NoError(t, err)
+
+	dbName := generateRandomString("db")
+	require.NoError(t, ctl.createDatabase(ctx, project, instanceResp.Msg, nil, dbName, ""))
+	target := dbTargetName(instanceResp.Msg, dbName)
+
+	disableSelfApproval(ctx, t, ctl, project)
+	installWorkspaceApprovalRule(ctx, t, ctl, project, []string{"roles/projectOwner"})
+	approver := provisionApprover(ctx, t, ctl, project, suffix, "roles/projectOwner")
+
+	sheet1 := createSheetWithContent(ctx, t, ctl, project, []byte(fmt.Sprintf("CREATE TABLE %s_a (id INTEGER PRIMARY KEY);", strings.ReplaceAll(suffix, "-", "_"))))
+
+	specID := uuid.NewString()
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: project.Name,
+		Plan: &v1pb.Plan{
+			Title: "Stale approval input version plan " + suffix,
+			Specs: []*v1pb.Plan_Spec{{
+				Id: specID,
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Targets: []string{target},
+						Sheet:   sheet1,
+					},
+				},
+			}},
+		},
+	}))
+	require.NoError(t, err)
+
+	issue := createIssueForPlan(ctx, t, ctl, project, planResp.Msg, "stale approval input version "+suffix)
+	waitForIssuePending(ctx, t, ctl, issue)
+
+	_, issueUID, err := common.GetProjectIDIssueUID(issue.Name)
+	require.NoError(t, err)
+	projectID, err := common.GetProjectID(project.Name)
+	require.NoError(t, err)
+	storeIssue, err := stores.GetIssue(ctx, &store.FindIssueMessage{
+		ProjectIDs: []string{projectID},
+		UID:        &issueUID,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, storeIssue)
+	staleApproval := proto.CloneOf(storeIssue.Payload.Approval)
+
+	_, planUID, err := common.GetProjectIDPlanID(planResp.Msg.Name)
+	require.NoError(t, err)
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: &planUID})
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+	storeProject, err := stores.GetProjectByResourceID(ctx, projectID)
+	require.NoError(t, err)
+	require.NotNil(t, storeProject)
+	_, err = review.NewWorkflow(stores).UpdatePlanSpecs(ctx, review.UpdatePlanSpecsInput{
+		Workspace: storeProject.Workspace,
+		PlanUID:   plan.UID,
+		ProjectID: plan.ProjectID,
+		Specs:     proto.CloneOf(plan.Config).GetSpecs(),
+	})
+	require.NoError(t, err)
+
+	writeIssueApprovalPayload(ctx, t, stores, issue.Name, staleApproval)
+	return issue, staleApproval, approver
+}
+
+func createSheetWithContent(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, content []byte) string {
+	t.Helper()
+	resp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: project.Name,
+		Sheet:  &v1pb.Sheet{Content: content},
+	}))
+	require.NoError(t, err)
+	return resp.Msg.Name
+}
+
+func writeIssueApprovalPayload(ctx context.Context, t *testing.T, stores *store.Store, issueName string, approval *storepb.IssuePayloadApproval) {
+	t.Helper()
+	projectID, issueUID, err := common.GetProjectIDIssueUID(issueName)
+	require.NoError(t, err)
+	_, err = stores.UpdateIssue(ctx, projectID, issueUID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{
+			Approval: approval,
+		},
+	})
+	require.NoError(t, err)
+}
+
+func requireApprovalPayloadApproverCount(ctx context.Context, t *testing.T, stores *store.Store, issueName string, count int) {
+	t.Helper()
+	projectID, issueUID, err := common.GetProjectIDIssueUID(issueName)
+	require.NoError(t, err)
+	issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{
+		ProjectIDs: []string{projectID},
+		UID:        &issueUID,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, issue)
+	require.Len(t, issue.Payload.GetApproval().GetApprovers(), count)
+}
+
 // TestApprovalRuleFirstMatchWins tests that the first matching approval rule is applied
 // when multiple rules could potentially match.
 func TestApprovalRuleFirstMatchWins(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Create instance in prod environment
-	instanceDir := t.TempDir()
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
-			Title:       "Prod Instance",
-			Engine:      v1pb.Engine_SQLITE,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "Prod Instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -301,26 +621,19 @@ func TestApprovalRuleNoMatch(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Create instance in test environment (not prod)
-	instanceDir := t.TempDir()
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
-			Title:       "Test Instance",
-			Engine:      v1pb.Engine_SQLITE,
-			Environment: new("environments/test"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "Test Instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/test"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -434,14 +747,10 @@ func TestFallbackRuleValidation(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Test 1: Valid fallback rule with project_id should succeed
-	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+	_, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: "settings/WORKSPACE_APPROVAL",
@@ -502,26 +811,19 @@ func TestFallbackRuleMatchesWhenSourceSpecificDoesNot(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Create instance in TEST environment (not prod)
-	instanceDir := t.TempDir()
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
-			Title:       "Test Instance",
-			Engine:      v1pb.Engine_SQLITE,
-			Environment: new("environments/test"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "Test Instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/test"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -641,26 +943,19 @@ func TestSourceSpecificRuleTakesPriorityOverFallback(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Create instance in prod environment
-	instanceDir := t.TempDir()
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
-			Title:       "Prod Instance",
-			Engine:      v1pb.Engine_SQLITE,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "Prod Instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -779,11 +1074,7 @@ func TestSelfApprovalBlocked(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Create a dedicated project (initially with self-approval enabled for database creation)
 	projectID := generateRandomString("self-approval-test")
@@ -799,19 +1090,16 @@ func TestSelfApprovalBlocked(t *testing.T) {
 	project := projectResp.Msg
 
 	// Create instance
-	instanceDir := t.TempDir()
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
-			Title:       "Prod Instance",
-			Engine:      v1pb.Engine_SQLITE,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{
-				Type: v1pb.DataSourceType_ADMIN,
-				Host: instanceDir,
-				Id:   "admin",
-			}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "Prod Instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)

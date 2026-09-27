@@ -20,15 +20,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_Login_FullMethodName                = "/bytebase.v1.AuthService/Login"
-	AuthService_Logout_FullMethodName               = "/bytebase.v1.AuthService/Logout"
-	AuthService_ExchangeToken_FullMethodName        = "/bytebase.v1.AuthService/ExchangeToken"
-	AuthService_Signup_FullMethodName               = "/bytebase.v1.AuthService/Signup"
-	AuthService_Refresh_FullMethodName              = "/bytebase.v1.AuthService/Refresh"
-	AuthService_SwitchWorkspace_FullMethodName      = "/bytebase.v1.AuthService/SwitchWorkspace"
-	AuthService_RequestPasswordReset_FullMethodName = "/bytebase.v1.AuthService/RequestPasswordReset"
-	AuthService_ResetPassword_FullMethodName        = "/bytebase.v1.AuthService/ResetPassword"
-	AuthService_SendEmailLoginCode_FullMethodName   = "/bytebase.v1.AuthService/SendEmailLoginCode"
+	AuthService_GetAuthenticationInfo_FullMethodName = "/bytebase.v1.AuthService/GetAuthenticationInfo"
+	AuthService_Login_FullMethodName                 = "/bytebase.v1.AuthService/Login"
+	AuthService_Logout_FullMethodName                = "/bytebase.v1.AuthService/Logout"
+	AuthService_ExchangeToken_FullMethodName         = "/bytebase.v1.AuthService/ExchangeToken"
+	AuthService_Signup_FullMethodName                = "/bytebase.v1.AuthService/Signup"
+	AuthService_Refresh_FullMethodName               = "/bytebase.v1.AuthService/Refresh"
+	AuthService_SwitchWorkspace_FullMethodName       = "/bytebase.v1.AuthService/SwitchWorkspace"
+	AuthService_RequestPasswordReset_FullMethodName  = "/bytebase.v1.AuthService/RequestPasswordReset"
+	AuthService_ResetPassword_FullMethodName         = "/bytebase.v1.AuthService/ResetPassword"
+	AuthService_SendEmailLoginCode_FullMethodName    = "/bytebase.v1.AuthService/SendEmailLoginCode"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -37,6 +38,10 @@ const (
 //
 // AuthService handles user authentication operations.
 type AuthServiceClient interface {
+	// Gets everything the login page renders: the sign-in restrictions and the
+	// identity providers it offers.
+	// Permissions required: None
+	GetAuthenticationInfo(ctx context.Context, in *GetAuthenticationInfoRequest, opts ...grpc.CallOption) (*AuthenticationInfo, error)
 	// Authenticates a user and returns access tokens.
 	// Permissions required: None
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
@@ -60,6 +65,8 @@ type AuthServiceClient interface {
 	SwitchWorkspace(ctx context.Context, in *SwitchWorkspaceRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	// Requests a password reset email for the given email address.
 	// Always returns success to avoid leaking whether the email exists.
+	// Requires the workspace's SMTP mail delivery setting; without it the
+	// recovery route is an admin password reset.
 	// Permissions required: None
 	RequestPasswordReset(ctx context.Context, in *RequestPasswordResetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Resets the user's password using a password reset token from email.
@@ -67,6 +74,8 @@ type AuthServiceClient interface {
 	ResetPassword(ctx context.Context, in *ResetPasswordRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Sends a 6-digit verification code to the email for login/signup.
 	// Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+	// The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+	// REAUTH codes are not interchangeable.
 	// Permissions required: None
 	SendEmailLoginCode(ctx context.Context, in *SendEmailLoginCodeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -77,6 +86,16 @@ type authServiceClient struct {
 
 func NewAuthServiceClient(cc grpc.ClientConnInterface) AuthServiceClient {
 	return &authServiceClient{cc}
+}
+
+func (c *authServiceClient) GetAuthenticationInfo(ctx context.Context, in *GetAuthenticationInfoRequest, opts ...grpc.CallOption) (*AuthenticationInfo, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuthenticationInfo)
+	err := c.cc.Invoke(ctx, AuthService_GetAuthenticationInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *authServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
@@ -175,6 +194,10 @@ func (c *authServiceClient) SendEmailLoginCode(ctx context.Context, in *SendEmai
 //
 // AuthService handles user authentication operations.
 type AuthServiceServer interface {
+	// Gets everything the login page renders: the sign-in restrictions and the
+	// identity providers it offers.
+	// Permissions required: None
+	GetAuthenticationInfo(context.Context, *GetAuthenticationInfoRequest) (*AuthenticationInfo, error)
 	// Authenticates a user and returns access tokens.
 	// Permissions required: None
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
@@ -198,6 +221,8 @@ type AuthServiceServer interface {
 	SwitchWorkspace(context.Context, *SwitchWorkspaceRequest) (*LoginResponse, error)
 	// Requests a password reset email for the given email address.
 	// Always returns success to avoid leaking whether the email exists.
+	// Requires the workspace's SMTP mail delivery setting; without it the
+	// recovery route is an admin password reset.
 	// Permissions required: None
 	RequestPasswordReset(context.Context, *RequestPasswordResetRequest) (*emptypb.Empty, error)
 	// Resets the user's password using a password reset token from email.
@@ -205,6 +230,8 @@ type AuthServiceServer interface {
 	ResetPassword(context.Context, *ResetPasswordRequest) (*emptypb.Empty, error)
 	// Sends a 6-digit verification code to the email for login/signup.
 	// Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+	// The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+	// REAUTH codes are not interchangeable.
 	// Permissions required: None
 	SendEmailLoginCode(context.Context, *SendEmailLoginCodeRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedAuthServiceServer()
@@ -217,6 +244,9 @@ type AuthServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAuthServiceServer struct{}
 
+func (UnimplementedAuthServiceServer) GetAuthenticationInfo(context.Context, *GetAuthenticationInfoRequest) (*AuthenticationInfo, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAuthenticationInfo not implemented")
+}
 func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
 }
@@ -263,6 +293,24 @@ func RegisterAuthServiceServer(s grpc.ServiceRegistrar, srv AuthServiceServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&AuthService_ServiceDesc, srv)
+}
+
+func _AuthService_GetAuthenticationInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAuthenticationInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GetAuthenticationInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GetAuthenticationInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GetAuthenticationInfo(ctx, req.(*GetAuthenticationInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _AuthService_Login_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -434,6 +482,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "bytebase.v1.AuthService",
 	HandlerType: (*AuthServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetAuthenticationInfo",
+			Handler:    _AuthService_GetAuthenticationInfo_Handler,
+		},
 		{
 			MethodName: "Login",
 			Handler:    _AuthService_Login_Handler,

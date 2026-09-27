@@ -1,0 +1,827 @@
+import { debounce, omit } from "lodash-es";
+import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { router, useCurrentRoute, useNavigate } from "@/app/router";
+import {
+  SQL_EDITOR_DATABASE_MODULE,
+  SQL_EDITOR_HOME_MODULE,
+  SQL_EDITOR_INSTANCE_MODULE,
+  SQL_EDITOR_PROJECT_MODULE,
+  SQL_EDITOR_QUERY_HISTORY_MODULE,
+  SQL_EDITOR_SAVED_QUERY_MODULE,
+} from "@/app/router/handles";
+import {
+  PermissionDeniedFallback,
+  useComponentPermissionState,
+  usePermissionDataReady,
+} from "@/components/ComponentPermissionGuard";
+import { useAppProject } from "@/hooks/useAppProject";
+import {
+  PRODUCT_INTRO_QUERY_KEY,
+  RUN_QUERY_PRODUCT_INTRO,
+} from "@/lib/productIntro";
+import { extractSavedQueryConnection } from "@/lib/sqlEditorConnection";
+import { useClampResultRowsLimitToPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
+import { cleanupLegacyPouchDatabases } from "@/modules/sql-editor/legacy/migration";
+import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
+import type { AsidePanelTab } from "@/modules/sql-editor/store";
+import { useSQLEditorStore } from "@/modules/sql-editor/store";
+import {
+  getSQLEditorEditorState,
+  useSQLEditorEditorState,
+} from "@/modules/sql-editor/store/editor";
+import {
+  getSQLEditorTabsState,
+  useSQLEditorTabState,
+} from "@/modules/sql-editor/store/tab";
+import { useAppStore } from "@/stores/app";
+import {
+  DEFAULT_SQL_EDITOR_TAB_MODE,
+  isValidDatabaseName,
+  isValidInstanceName,
+  isValidProjectName,
+  type SQLEditorConnection,
+} from "@/types";
+import {
+  autoSQLEditorDatabaseRoute,
+  extractDatabaseResourceName,
+  extractInstanceResourceName,
+  extractProjectResourceName,
+  extractSavedQueryID,
+  generateSimpleSelectAllStatement,
+  getDatabaseEngine,
+  getSheetStatement,
+  isSavedQueryReadableV1,
+  storageKeySqlEditorSidebarTab,
+} from "@/utils";
+import { queryHistoryTabTitle } from "@/utils/v1/queryHistory";
+import { SQLEditorHomePage } from "./SQLEditorHomePage";
+
+// Route-name set for the unsaved-changes leave guard. `router.beforeEach`
+// is global, so this set scopes the prompt to navigations that actually
+// leave the SQL Editor — internal SQL Editor route sync
+// (`navigate.replace(...)` between saved query/database/instance modules)
+// must not trigger it.
+const SQL_EDITOR_MODULES = new Set<string>([
+  SQL_EDITOR_HOME_MODULE,
+  SQL_EDITOR_PROJECT_MODULE,
+  SQL_EDITOR_INSTANCE_MODULE,
+  SQL_EDITOR_DATABASE_MODULE,
+  SQL_EDITOR_SAVED_QUERY_MODULE,
+  SQL_EDITOR_QUERY_HISTORY_MODULE,
+]);
+
+// Fingerprint of a query-history draft tab's seeded statement + connection
+// target. The "Opened from link" banner is dropped once this changes (edit,
+// connection switch, or tab close).
+const linkedDraftFingerprint = (tab: {
+  statement: string;
+  connection: { instance: string; database: string };
+}) =>
+  JSON.stringify([
+    tab.statement,
+    tab.connection.instance,
+    tab.connection.database,
+  ]);
+
+const ASIDE_PANEL_TABS: readonly AsidePanelTab[] = [
+  "SCHEMA",
+  "SAVED_QUERY",
+  "HISTORY",
+  "ACCESS",
+];
+
+const GUIDED_QUERY_ROW_LIMIT = 50;
+
+/**
+ * Owns the SQL Editor route bootstrap chain:
+ *  - on mount, resolves the active project from URL params/query or the
+ *    persisted last-viewed project, then sets up the per-project tab list.
+ *  - hydrates the active tab from the URL: opens the saved query for
+ *    `/projects/:project/savedQueries/:savedQuery`, or opens an instance/database
+ *    connection for the `instances/:instance/databases/:database` form.
+ *  - keeps the URL synced with the active tab's connection (tab state →
+ *    `navigate.replace`), so reload restores the right surface.
+ *  - restores the sidebar tab from localStorage (or the `?panel=`
+ *    override) once `editorStore.projectContextReady` flips true.
+ *  - renders `<SQLEditorHomePage>` once the user has permission for the
+ *    matched route.
+ */
+export function SQLEditorRouteShell() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const route = useCurrentRoute();
+  const guidedQueryRequested =
+    route.name === SQL_EDITOR_DATABASE_MODULE &&
+    route.query[PRODUCT_INTRO_QUERY_KEY] === RUN_QUERY_PRODUCT_INTRO;
+  const previousGuidedQueryRequestedRef = useRef(guidedQueryRequested);
+  const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
+  const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
+
+  const projectContextReady = useSQLEditorEditorState(
+    (s) => s.projectContextReady
+  );
+  const projectNameState = useSQLEditorEditorState((s) => s.project);
+  const resolvedProject = useAppProject(projectNameState);
+  const project = isValidProjectName(resolvedProject.name)
+    ? resolvedProject
+    : undefined;
+
+  // Keep the persisted result-row limit within the project's
+  // query-data policy maximum (re-clamps if the policy lowers the cap).
+  useClampResultRowsLimitToPolicy(projectNameState);
+
+  // ---- one-shot bootstrap on mount -------------------------------------
+
+  const bootstrappedRef = useRef(false);
+  // Gate the URL ⇄ connection sync until the bootstrap chain completes.
+  // Otherwise it fires on first render with empty store values (no tab
+  // loaded yet), navigates the route to `SQL_EDITOR_HOME_MODULE`, and
+  // clobbers the user's `/projects/.../databases/...` URL.
+  const [bootstrapDone, setBootstrapDone] = useState(false);
+  useEffect(() => {
+    if (bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
+    void (async () => {
+      getSQLEditorEditorState().setProjectContextReady(false);
+      const project = await initializeProject();
+      await cleanupLegacyPouchDatabases();
+      await getSQLEditorTabsState().initProject(project);
+      await initializeConnectionFromQuery();
+      setBootstrapDone(true);
+    })();
+  }, []);
+
+  const initializeProject = async () => {
+    const projectInQuery = route.query.project as string | undefined;
+    const projectInParams = route.params.project as string | undefined;
+    let project = "";
+
+    if (typeof projectInQuery === "string" && projectInQuery) {
+      project = `projects/${projectInQuery}`;
+    } else if (typeof projectInParams === "string" && projectInParams) {
+      project = `projects/${projectInParams}`;
+    } else {
+      // `project` is the persisted last-viewed project.
+      project = getSQLEditorEditorState().project;
+    }
+
+    if (
+      !projectInQuery &&
+      !projectInParams &&
+      project === useAppStore.getState().serverInfo?.defaultProject
+    ) {
+      project = "";
+    }
+
+    const initializeSuccess = !!(await maybeSwitchProject(project));
+    if (!initializeSuccess) {
+      getSQLEditorEditorState().setProject("");
+    }
+    return getSQLEditorEditorState().project;
+  };
+
+  const switchSavedQuery = async (sheetName: string) => {
+    const tabsState = getSQLEditorTabsState();
+    const openedSheetTab = Array.from(tabsState.tabsById.values()).find(
+      (t) => t.savedQuery === sheetName
+    );
+    const sheet = await useAppStore
+      .getState()
+      .getOrFetchSavedQueryByName(sheetName);
+    if (!sheet) {
+      if (openedSheetTab) {
+        tabsState.updateTab(openedSheetTab.id, {
+          savedQuery: "",
+          status: "DIRTY",
+        });
+      }
+      return false;
+    }
+    if (!isSavedQueryReadableV1(sheet)) {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.access-denied"),
+      });
+      return false;
+    }
+    const connection = await extractSavedQueryConnection(sheet);
+    const schema = route.query.schema;
+    const table = route.query.table;
+    if (typeof schema === "string" && schema) {
+      connection.schema = schema;
+    }
+    if (typeof table === "string" && table) {
+      connection.table = table;
+      connection.schema ??= "";
+    }
+    tabsState.addTab({
+      id: openedSheetTab?.id,
+      connection,
+      savedQuery: sheet.name,
+      title: sheet.title,
+      statement: getSheetStatement(sheet),
+      status: "CLEAN",
+    });
+    return true;
+  };
+
+  const prepareSheet = async () => {
+    const projectId = route.params.project;
+    const sheetId = route.params.savedQuery;
+    if (typeof projectId !== "string" || !projectId) return false;
+    if (typeof sheetId !== "string" || !sheetId) return false;
+    await maybeSwitchProject(`projects/${projectId}`);
+    return await switchSavedQuery(
+      `projects/${projectId}/savedQueries/${sheetId}`
+    );
+  };
+
+  const prepareConnectionParams = async () => {
+    if (
+      ![SQL_EDITOR_INSTANCE_MODULE, SQL_EDITOR_DATABASE_MODULE].includes(
+        route.name as string
+      )
+    ) {
+      return false;
+    }
+    const instanceId = route.params.instance;
+    if (typeof instanceId !== "string" || !instanceId) return false;
+    const projectId = route.params.project;
+    if (typeof projectId !== "string" || !projectId) return false;
+
+    if (route.name === SQL_EDITOR_INSTANCE_MODULE) {
+      let instance = await useAppStore
+        .getState()
+        .fetchInstance(`instances/${instanceId}`);
+      if (!instance || !isValidInstanceName(instance.name)) {
+        instance = await useAppStore
+          .getState()
+          .fetchInstance(`projects/${projectId}/instances/${instanceId}`);
+      }
+      if (!instance || !isValidInstanceName(instance.name)) return false;
+      getSQLEditorTabsState().addTab({
+        connection: {
+          instance: instance.name,
+          database: "",
+        },
+        mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+      });
+      return true;
+    }
+
+    const databaseId = route.params.database;
+    if (typeof databaseId !== "string" || !databaseId) return false;
+    let database = await useAppStore
+      .getState()
+      .getOrFetchDatabaseByName(
+        `instances/${instanceId}/databases/${databaseId}`
+      );
+    if (!isValidDatabaseName(database.name)) {
+      database = await useAppStore
+        .getState()
+        .getOrFetchDatabaseByName(
+          `projects/${projectId}/instances/${instanceId}/databases/${databaseId}`
+        );
+    }
+    if (!isValidDatabaseName(database.name)) return false;
+    if (
+      getSQLEditorEditorState().project !== database.project &&
+      !(await maybeSwitchProject(database.project))
+    ) {
+      getSQLEditorEditorState().setProject(database.project);
+    }
+    const { instance } = extractDatabaseResourceName(database.name);
+    const connection: SQLEditorConnection = {
+      instance,
+      database: database.name,
+    };
+    const schema = route.query.schema;
+    const table = route.query.table;
+    if (typeof schema === "string" && schema) {
+      connection.schema = schema;
+    }
+    if (typeof table === "string" && table) {
+      connection.table = table;
+      connection.schema ??= "";
+    }
+    const isGuidedQuery =
+      route.query[PRODUCT_INTRO_QUERY_KEY] === RUN_QUERY_PRODUCT_INTRO;
+    let statement: string | undefined;
+    if (isGuidedQuery && typeof table === "string" && table) {
+      const metadata = await useAppStore
+        .getState()
+        .getOrFetchDatabaseMetadata({
+          database: database.name,
+          silent: true,
+        })
+        .catch(() => undefined);
+      const schemaName = typeof schema === "string" ? schema : "";
+      const targetExists = metadata?.schemas.some(
+        (schemaMetadata) =>
+          schemaMetadata.name === schemaName &&
+          schemaMetadata.tables.some(
+            (tableMetadata) => tableMetadata.name === table
+          )
+      );
+      if (targetExists) {
+        statement = generateSimpleSelectAllStatement(
+          getDatabaseEngine(database),
+          schemaName,
+          table,
+          GUIDED_QUERY_ROW_LIMIT
+        );
+      }
+    }
+    const tabsState = getSQLEditorTabsState();
+    const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
+    if (
+      !isGuidedQuery &&
+      currentTab?.mode === "DATA_EXPLORER" &&
+      currentTab.connection.instance === connection.instance &&
+      currentTab.connection.database === connection.database &&
+      (currentTab.connection.schema ?? "") === (connection.schema ?? "") &&
+      currentTab.connection.table === connection.table
+    ) {
+      return true;
+    }
+    tabsState.addTab({
+      connection,
+      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+      ...(statement ? { statement } : {}),
+    });
+    return true;
+  };
+
+  // Hydrates a query-history deep link
+  // (`/sql-editor/projects/:project/queryHistories/:queryHistory`): fetches the
+  // history and opens its statement in a new draft tab, seeding the connection
+  // from the history's database when it is still accessible in the project. The
+  // queryHistory URL is a one-shot entry point — once the draft tab is seeded,
+  // the reactive `syncURL` effect rewrites the URL to the resulting
+  // database/project route.
+  const prepareQueryHistory = async () => {
+    if (route.name !== SQL_EDITOR_QUERY_HISTORY_MODULE) return false;
+    const projectId = route.params.project;
+    const queryHistoryId = route.params.queryHistory;
+    if (typeof projectId !== "string" || !projectId) return false;
+    if (typeof queryHistoryId !== "string" || !queryHistoryId) return false;
+
+    const projectName = `projects/${projectId}`;
+    await maybeSwitchProject(projectName);
+
+    const historyName = `${projectName}/queryHistories/${queryHistoryId}`;
+    const history = await useSQLEditorStore
+      .getState()
+      .fetchQueryHistory(historyName)
+      .catch(() => undefined);
+    if (!history) {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("sql-editor.query-history-not-found"),
+      });
+      return false;
+    }
+
+    // Resolve the connection from the history's database. Leave it empty (a
+    // statement-only draft) and warn when the database is gone or no longer
+    // belongs to this project.
+    let connection: { instance: string; database: string } | undefined;
+    if (isValidDatabaseName(history.database)) {
+      const database = await useAppStore
+        .getState()
+        .getOrFetchDatabaseByName(history.database);
+      if (
+        isValidDatabaseName(database.name) &&
+        database.project === projectName
+      ) {
+        const { instance } = extractDatabaseResourceName(database.name);
+        connection = { instance, database: database.name };
+      } else {
+        useAppStore.getState().notify({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("sql-editor.unable-to-connect-database", {
+            name: history.database,
+          }),
+        });
+      }
+    }
+
+    const tab = getSQLEditorTabsState().addTab(
+      {
+        title: queryHistoryTabTitle(history),
+        statement: history.statement,
+        ...(connection ? { connection } : {}),
+      },
+      /* beside */ true
+    );
+
+    // Surface the history in the sidebar: remember it (and its draft tab's
+    // baseline) for the "Opened from link" section and force the HISTORY panel
+    // open. `setAsidePanelTab` here wins over the localStorage restore that the
+    // `project-context-ready` event schedules (`restoreLastVisitedSidebarTab`
+    // also prefers HISTORY while a linked history is set, covering either
+    // ordering).
+    useSQLEditorStore.getState().setLinkedQueryHistory(history, {
+      tabId: tab.id,
+      baseline: linkedDraftFingerprint(tab),
+    });
+    setAsidePanelTab("HISTORY");
+    return true;
+  };
+
+  const initializeConnectionFromQuery = async () => {
+    if (await prepareQueryHistory()) return;
+    if (await prepareSheet()) return;
+    if (await prepareConnectionParams()) return;
+  };
+
+  useEffect(() => {
+    if (!bootstrapDone) return;
+    const previouslyRequested = previousGuidedQueryRequestedRef.current;
+    previousGuidedQueryRequestedRef.current = guidedQueryRequested;
+    if (!guidedQueryRequested || previouslyRequested) return;
+    void prepareConnectionParams();
+  }, [bootstrapDone, guidedQueryRequested]);
+
+  // ---- URL ⇄ connection sync (reactive) --------------------------------
+
+  // Subscribe to each Zustand field; the effect below fires whenever any
+  // changes. The dependency array does the multi-source coalescing.
+  const projName = useSQLEditorEditorState((s) => s.project);
+  const sheetName = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.savedQuery
+  );
+  const instanceName = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.instance
+  );
+  const dbName = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.database
+  );
+  const schema = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.schema
+  );
+  const table = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.table
+  );
+
+  useEffect(() => {
+    // Skip until bootstrap is done — see the `bootstrapDone` declaration.
+    if (!bootstrapDone) return;
+    void syncURL({
+      projName: projName ?? "",
+      sheetName: sheetName ?? undefined,
+      instanceName: instanceName ?? undefined,
+      dbName: dbName ?? undefined,
+      schema: schema ?? undefined,
+      table: table ?? undefined,
+    });
+    // The route navigation reads stores again at fire time, so capturing
+    // these as deps is sufficient — we don't need full closures over them.
+  }, [bootstrapDone, projName, sheetName, instanceName, dbName, schema, table]);
+
+  const syncURL = async (vals: {
+    projName: string;
+    sheetName: string | undefined;
+    instanceName: string | undefined;
+    dbName: string | undefined;
+    schema: string | undefined;
+    table: string | undefined;
+  }) => {
+    const currentRoute = router.currentRoute.value;
+    const query = omit(
+      currentRoute.query,
+      "filter",
+      "parent",
+      "project",
+      "schema",
+      "database",
+      "table",
+      "panel"
+    ) as Record<string, string>;
+
+    const tabsState = getSQLEditorTabsState();
+    const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
+
+    if (
+      currentRoute.name === SQL_EDITOR_DATABASE_MODULE &&
+      !vals.sheetName &&
+      !vals.dbName &&
+      !currentTab
+    ) {
+      return;
+    }
+
+    if (vals.sheetName) {
+      const sheet = useAppStore.getState().getSavedQueryByName(vals.sheetName);
+      if (sheet) {
+        if (vals.schema) query.schema = vals.schema;
+        if (vals.table) {
+          query.table = vals.table;
+          query.schema = vals.schema ?? "";
+        }
+        await navigate.replace({
+          name: SQL_EDITOR_SAVED_QUERY_MODULE,
+          params: {
+            project: extractProjectResourceName(sheet.project),
+            savedQuery: extractSavedQueryID(sheet.name),
+          },
+          query,
+        });
+        return;
+      } else {
+        tabsState.updateCurrentTab({
+          savedQuery: "",
+          status: "DIRTY",
+        });
+      }
+    }
+    if (vals.dbName && isValidDatabaseName(vals.dbName)) {
+      const database = await useAppStore
+        .getState()
+        .getOrFetchDatabaseByName(vals.dbName);
+      // The app-store getter returns the `unknownDatabase` fallback (rather
+      // than throwing) when the database can't be resolved — deleted or
+      // permission revoked. Skip navigation in that case so we don't rewrite
+      // the URL to a bogus `projects/-1/instances/-1/databases/-1` route;
+      // fall through to the instance / default sync instead.
+      if (isValidDatabaseName(database.name)) {
+        if (vals.schema) query.schema = vals.schema;
+        if (vals.table) {
+          query.table = vals.table;
+          query.schema = vals.schema ?? "";
+        }
+        const route = autoSQLEditorDatabaseRoute(database);
+        await navigate.replace({
+          ...route,
+          query,
+        });
+        return;
+      }
+    }
+    if (vals.instanceName && isValidInstanceName(vals.instanceName)) {
+      if (vals.table) {
+        query.table = vals.table;
+        query.schema = vals.schema ?? "";
+      }
+      await navigate.replace({
+        name: SQL_EDITOR_INSTANCE_MODULE,
+        params: {
+          project: extractProjectResourceName(
+            getSQLEditorEditorState().project
+          ),
+          instance: extractInstanceResourceName(vals.instanceName),
+        },
+        query,
+      });
+      return;
+    }
+    if (vals.projName && isValidProjectName(vals.projName)) {
+      await navigate.replace({
+        name: SQL_EDITOR_PROJECT_MODULE,
+        params: {
+          project: extractProjectResourceName(vals.projName),
+        },
+        query,
+      });
+      return;
+    }
+    await navigate.replace({ name: SQL_EDITOR_HOME_MODULE });
+  };
+
+  // ---- dismiss "Opened from link" when its draft tab diverges -----------
+
+  const linkedQueryHistory = useSQLEditorStore((s) => s.linkedQueryHistory);
+  const linkedQueryHistoryTabId = useSQLEditorStore(
+    (s) => s.linkedQueryHistoryTabId
+  );
+  const linkedQueryHistoryBaseline = useSQLEditorStore(
+    (s) => s.linkedQueryHistoryBaseline
+  );
+  const linkedTabFingerprint = useSQLEditorTabState((s) => {
+    if (!linkedQueryHistoryTabId) return undefined;
+    const tab = s.tabsById.get(linkedQueryHistoryTabId);
+    return tab ? linkedDraftFingerprint(tab) : undefined;
+  });
+  useEffect(() => {
+    if (!linkedQueryHistory || !linkedQueryHistoryBaseline) return;
+    // Drop the banner once the seeded draft diverges from its baseline — the
+    // user edited the statement, switched the connection, or closed the tab
+    // (fingerprint becomes undefined). It matches at seed time, so this won't
+    // fire on load.
+    if (linkedTabFingerprint !== linkedQueryHistoryBaseline) {
+      useSQLEditorStore.getState().setLinkedQueryHistory(undefined);
+    }
+  }, [linkedQueryHistory, linkedQueryHistoryBaseline, linkedTabFingerprint]);
+
+  // Running a query consumes the deep-link context — drop the "Opened from
+  // link" banner on the first execution (saved query or terminal).
+  useEffect(() => {
+    const off = sqlEditorEvents.on("query-executed", () => {
+      if (useSQLEditorStore.getState().linkedQueryHistory) {
+        useSQLEditorStore.getState().setLinkedQueryHistory(undefined);
+      }
+    });
+    return () => {
+      off();
+    };
+  }, []);
+
+  // ---- sidebar tab restore (after project context ready) ----------------
+
+  useEffect(() => {
+    const off = sqlEditorEvents.on(
+      "project-context-ready",
+      ({ data: { project } }) => {
+        if (!project) return;
+        requestAnimationFrame(() => restoreLastVisitedSidebarTab(project));
+      }
+    );
+    return () => {
+      off();
+    };
+  }, []);
+
+  const sidebarRestoredProjectRef = useRef("");
+  const restoreLastVisitedSidebarTab = (project: string) => {
+    // A query-history deep link forces the HISTORY panel open, ahead of the
+    // `?panel=` override and the localStorage default.
+    if (useSQLEditorStore.getState().linkedQueryHistory) {
+      setAsidePanelTab("HISTORY");
+      sidebarRestoredProjectRef.current = project;
+      return;
+    }
+
+    let stored: AsidePanelTab | undefined;
+    try {
+      const raw = window.localStorage.getItem(
+        storageKeySqlEditorSidebarTab(project)
+      );
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (
+          typeof parsed === "string" &&
+          ASIDE_PANEL_TABS.includes(parsed as AsidePanelTab)
+        ) {
+          stored = parsed as AsidePanelTab;
+        }
+      }
+    } catch {
+      // ignore — fall back to default
+    }
+
+    const defaultTab =
+      router.currentRoute.value.name === SQL_EDITOR_DATABASE_MODULE
+        ? "SCHEMA"
+        : "SAVED_QUERY";
+    const fallbackTab = stored ?? defaultTab;
+
+    const panelQuery = router.currentRoute.value.query.panel;
+    if (typeof panelQuery === "string" && panelQuery) {
+      const raw = panelQuery.toUpperCase();
+      // Pre-rename links used ?panel=worksheet.
+      const tab = (raw === "WORKSHEET" ? "SAVED_QUERY" : raw) as AsidePanelTab;
+      setAsidePanelTab(ASIDE_PANEL_TABS.includes(tab) ? tab : fallbackTab);
+    } else {
+      setAsidePanelTab(fallbackTab);
+    }
+    sidebarRestoredProjectRef.current = project;
+  };
+
+  // Persist sidebar tab changes back to localStorage (debounced).
+  const asidePanelTab = useSQLEditorStore((s) => s.asidePanelTab);
+  const persistSidebarRef = useRef(
+    debounce((project: string, tab: AsidePanelTab) => {
+      try {
+        window.localStorage.setItem(
+          storageKeySqlEditorSidebarTab(project),
+          JSON.stringify(tab)
+        );
+      } catch {
+        // ignore
+      }
+    }, 100)
+  );
+  useEffect(() => {
+    if (!isValidProjectName(projectNameState)) return;
+    if (sidebarRestoredProjectRef.current !== projectNameState) return;
+    persistSidebarRef.current(projectNameState, asidePanelTab);
+  }, [asidePanelTab, projectNameState]);
+
+  // ---- unsaved-tabs guard -----------------------------------------------
+
+  useEffect(() => {
+    const dirtyMsg = () =>
+      `${t("sql-editor.tab.unsaved-changes")} ${t("common.leave-without-saving")}`;
+    const findDirtyTab = () => {
+      const tabsState = getSQLEditorTabsState();
+      for (const persisted of tabsState.openTmpTabList) {
+        const tab = tabsState.tabsById.get(persisted.id);
+        if (tab && tab.status !== "CLEAN") return tab;
+      }
+      return undefined;
+    };
+    const handler = (e: BeforeUnloadEvent) => {
+      const dirty = findDirtyTab();
+      if (!dirty) return;
+      e.returnValue = dirtyMsg();
+      return e.returnValue;
+    };
+    window.addEventListener("beforeunload", handler);
+    // `router.beforeEach` is a global hook — it fires on every navigation
+    // while the SQL Editor shell is mounted, including the internal
+    // `navigate.replace(...)` calls used to sync the URL with the current
+    // connection. Without scoping, every internal route sync would prompt
+    // the user when any tab is dirty, an annoying loop. Only prompt when
+    // the destination route is OUTSIDE the SQL Editor module.
+    const removeGuard = router.beforeEach((to, _from, next) => {
+      const stayingInSqlEditor = SQL_EDITOR_MODULES.has(to.name as string);
+      if (stayingInSqlEditor) {
+        next();
+        return;
+      }
+      const dirty = findDirtyTab();
+      if (dirty && !window.confirm(dirtyMsg())) {
+        next(false);
+        return;
+      }
+      next();
+    });
+    return () => {
+      window.removeEventListener("beforeunload", handler);
+      removeGuard();
+    };
+  }, [t]);
+
+  // ---- permission gate (children-style) --------------------------------
+
+  // Use the underlying permission hooks directly instead of the
+  // `RoutePermissionGuardShell` + `createPortal(target)` pattern. The
+  // shell-with-portal flow toggled `target` between `null` and the real
+  // DOM ref on every `route.fullPath` change (its internal `useEffect`
+  // chain calls `onReady(null)` then `onReady(targetRef.current)`),
+  // which **unmounted and remounted `<SQLEditorHomePage />` on every
+  // tab switch / connection change** — wiping React state in
+  // ResultPanel, Monaco editor, and the auto-run effect chain. That
+  // showed up as: tab switches blanking the whole page, the Run button
+  // staying disabled (re-mounted tab had empty `currentTab.statement`),
+  // and PENDING contexts never advancing because `<DatabaseQueryContext>`
+  // was unmounted before its auto-run `useEffect` fired.
+  //
+  // Rendering `<SQLEditorHomePage />` as a stable child of this branch
+  // keeps the React tree mounted across SQL Editor sub-route changes;
+  // only `useCurrentRoute()` refreshes inside it.
+  const permissions = route.requiredPermissions;
+  const permissionReady = usePermissionDataReady(project);
+  const { missedBasicPermissions, missedPermissions, permitted } =
+    useComponentPermissionState({
+      permissions,
+      project,
+      checkBasicWorkspacePermissions: true,
+    });
+
+  // The SQL Editor home route is where a project-scoped user chooses the
+  // project whose IAM policy grants access. Do not require workspace-level
+  // editor permissions before showing that selector.
+  if (!project && route.name === SQL_EDITOR_HOME_MODULE && bootstrapDone) {
+    return (
+      <div className="h-full min-h-0 flex flex-col">
+        <SQLEditorHomePage />
+      </div>
+    );
+  }
+
+  if (
+    (!project && route.name === SQL_EDITOR_HOME_MODULE && !bootstrapDone) ||
+    !projectContextReady ||
+    !permissionReady
+  ) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <span className="text-control-light">…</span>
+      </div>
+    );
+  }
+
+  if (!permitted) {
+    return (
+      <PermissionDeniedFallback
+        missedBasicPermissions={missedBasicPermissions}
+        missedPermissions={missedPermissions}
+        project={project}
+        className="m-6"
+        path={route.fullPath}
+        enableRequestRole
+      />
+    );
+  }
+
+  return (
+    <div className="h-full min-h-0 flex flex-col">
+      <SQLEditorHomePage />
+    </div>
+  );
+}

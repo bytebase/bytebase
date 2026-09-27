@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"context"
 	"fmt"
 	"slices"
 
@@ -23,19 +22,15 @@ func formatEnvironmentFromStageID(stageID string) string {
 	return stageID
 }
 
-func convertToTaskRuns(ctx context.Context, s *store.Store, taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
+func convertToTaskRuns(taskRuns []*store.TaskRunMessage) []*v1pb.TaskRun {
 	var taskRunsV1 []*v1pb.TaskRun
 	for _, taskRun := range taskRuns {
-		taskRunV1, err := convertToTaskRun(ctx, s, taskRun)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert task run")
-		}
-		taskRunsV1 = append(taskRunsV1, taskRunV1)
+		taskRunsV1 = append(taskRunsV1, convertToTaskRun(taskRun))
 	}
-	return taskRunsV1, nil
+	return taskRunsV1
 }
 
-func convertToTaskRun(ctx context.Context, s *store.Store, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
+func convertToTaskRun(taskRun *store.TaskRunMessage) *v1pb.TaskRun {
 	stageID := common.FormatStageID(taskRun.Environment)
 	t := &v1pb.TaskRun{
 		Name:       common.FormatTaskRun(taskRun.ProjectID, taskRun.PlanUID, stageID, taskRun.TaskUID, taskRun.ID),
@@ -56,21 +51,9 @@ func convertToTaskRun(ctx context.Context, s *store.Store, taskRun *store.TaskRu
 		t.SchedulerInfo = convertToSchedulerInfo(taskRun.PayloadProto.SchedulerInfo)
 	}
 
-	if taskRun.ResultProto.ExportArchiveId != "" {
-		t.ExportArchiveStatus = v1pb.TaskRun_EXPORTED
-		exportArchiveID := taskRun.ResultProto.ExportArchiveId
-		exportArchive, err := s.GetExportArchive(ctx, common.GetWorkspaceIDFromContext(ctx), exportArchiveID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get export archive")
-		}
-		if exportArchive != nil {
-			t.ExportArchiveStatus = v1pb.TaskRun_READY
-		}
-	}
-
 	t.HasPriorBackup = taskRun.ResultProto.HasPriorBackup
 
-	return t, nil
+	return t
 }
 
 func convertToSchedulerInfo(si *storepb.SchedulerInfo) *v1pb.TaskRun_SchedulerInfo {
@@ -106,6 +89,8 @@ func convertToTaskRunStatus(status storepb.TaskRun_Status) v1pb.TaskRun_Status {
 		return v1pb.TaskRun_STATUS_UNSPECIFIED
 	case storepb.TaskRun_PENDING:
 		return v1pb.TaskRun_PENDING
+	case storepb.TaskRun_AVAILABLE:
+		return v1pb.TaskRun_AVAILABLE
 	case storepb.TaskRun_RUNNING:
 		return v1pb.TaskRun_RUNNING
 	case storepb.TaskRun_DONE:
@@ -231,8 +216,6 @@ func convertToTask(project *store.ProjectMessage, task *store.TaskMessage) (*v1p
 	case storepb.Task_DATABASE_MIGRATE:
 		// All DATABASE_MIGRATE tasks are treated as schema updates (DDL or GHOST)
 		return convertToTaskFromSchemaUpdate(project, task)
-	case storepb.Task_DATABASE_EXPORT:
-		return convertToTaskFromDatabaseDataExport(project, task)
 	case storepb.Task_TASK_TYPE_UNSPECIFIED:
 		return nil, errors.Errorf("task type %v is not supported", task.Type)
 	default:
@@ -242,13 +225,17 @@ func convertToTask(project *store.ProjectMessage, task *store.TaskMessage) (*v1p
 
 func convertToTaskFromDatabaseCreate(project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	stageID := common.FormatStageID(task.Environment)
+	target, err := formatTaskInstanceTarget(project, task)
+	if err != nil {
+		return nil, err
+	}
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PlanID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
 		Type:          convertToTaskType(task),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
 		SkippedReason: task.Payload.GetSkippedReason(),
-		Target:        common.FormatInstance(task.InstanceID),
+		Target:        target,
 		Payload: &v1pb.Task_DatabaseCreate_{
 			DatabaseCreate: &v1pb.Task_DatabaseCreate{
 				Sheet: common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256()),
@@ -270,6 +257,11 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 	}
 
 	stageID := common.FormatStageID(task.Environment)
+	instanceTarget, err := formatTaskInstanceTarget(project, task)
+	if err != nil {
+		return nil, err
+	}
+	target := fmt.Sprintf("%s/%s%s", instanceTarget, common.DatabaseIDPrefix, *task.DatabaseName)
 
 	// Build DatabaseUpdate payload
 	databaseUpdate := &v1pb.Task_DatabaseUpdate{}
@@ -291,7 +283,7 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 		Type:          convertToTaskType(task),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
 		SkippedReason: task.Payload.GetSkippedReason(),
-		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, task.InstanceID, common.DatabaseIDPrefix, *(task.DatabaseName)),
+		Target:        target,
 		Payload: &v1pb.Task_DatabaseUpdate_{
 			DatabaseUpdate: databaseUpdate,
 		},
@@ -305,34 +297,14 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 	return v1pbTask, nil
 }
 
-func convertToTaskFromDatabaseDataExport(project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	if task.DatabaseName == nil {
-		return nil, errors.Errorf("data export task database is nil")
+func formatTaskInstanceTarget(project *store.ProjectMessage, task *store.TaskMessage) (string, error) {
+	if task.InstanceProjectID == nil {
+		return common.FormatInstance(task.InstanceID), nil
 	}
-
-	targetDatabaseName := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, task.InstanceID, common.DatabaseIDPrefix, *(task.DatabaseName))
-	sheet := common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256())
-	stageID := common.FormatStageID(task.Environment)
-	v1pbTask := &v1pb.Task{
-		Name:          common.FormatTask(project.ResourceID, task.PlanID, stageID, task.ID),
-		SpecId:        task.Payload.GetSpecId(),
-		Type:          convertToTaskType(task),
-		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
-		SkippedReason: task.Payload.GetSkippedReason(),
-		Target:        targetDatabaseName,
-		Payload: &v1pb.Task_DatabaseDataExport_{
-			DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
-				Sheet: sheet,
-			},
-		},
+	if *task.InstanceProjectID != project.ResourceID {
+		return "", errors.Errorf("task instance %q belongs to project %q, not %q", task.InstanceID, *task.InstanceProjectID, project.ResourceID)
 	}
-	if task.UpdatedAt != nil {
-		v1pbTask.UpdateTime = timestamppb.New(*task.UpdatedAt)
-	}
-	if task.RunAt != nil {
-		v1pbTask.RunTime = timestamppb.New(*task.RunAt)
-	}
-	return v1pbTask, nil
+	return common.FormatProjectInstance(project.ResourceID, task.InstanceID), nil
 }
 
 func convertToTaskStatus(latestTaskRunStatus storepb.TaskRun_Status, skipped bool) v1pb.Task_Status {
@@ -366,8 +338,6 @@ func convertToTaskType(task *store.TaskMessage) v1pb.Task_Type {
 		return v1pb.Task_DATABASE_CREATE
 	case storepb.Task_DATABASE_MIGRATE:
 		return v1pb.Task_DATABASE_MIGRATE
-	case storepb.Task_DATABASE_EXPORT:
-		return v1pb.Task_DATABASE_EXPORT
 	case storepb.Task_TASK_TYPE_UNSPECIFIED:
 		return v1pb.Task_TYPE_UNSPECIFIED
 	default:
@@ -384,6 +354,23 @@ func convertToTaskRunLog(parent string, logs []*store.TaskRunLog) *v1pb.TaskRunL
 
 func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntry {
 	var entries []*v1pb.TaskRunLogEntry
+	// task_run_log rows have no per-row sequence and can share a created_at
+	// microsecond, so an end/response event may not directly follow its start
+	// entry. Attach each one to the nearest entry of the matching type that is
+	// still awaiting its end instead of requiring strict adjacency.
+	unpaired := map[v1pb.TaskRunLogEntry_Type][]int{}
+	push := func(t v1pb.TaskRunLogEntry_Type) {
+		unpaired[t] = append(unpaired[t], len(entries)-1)
+	}
+	pop := func(t v1pb.TaskRunLogEntry_Type) *v1pb.TaskRunLogEntry {
+		stack := unpaired[t]
+		if len(stack) == 0 {
+			return nil
+		}
+		i := stack[len(stack)-1]
+		unpaired[t] = stack[:len(stack)-1]
+		return entries[i]
+	}
 	for _, l := range logs {
 		switch l.Payload.Type {
 		case storepb.TaskRunLog_SCHEMA_DUMP_START:
@@ -395,13 +382,11 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					StartTime: timestamppb.New(l.T),
 				},
 			})
+			push(v1pb.TaskRunLogEntry_SCHEMA_DUMP)
 
 		case storepb.TaskRunLog_SCHEMA_DUMP_END:
-			if len(entries) == 0 {
-				continue
-			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_SCHEMA_DUMP {
+			prev := pop(v1pb.TaskRunLogEntry_SCHEMA_DUMP)
+			if prev == nil {
 				continue
 			}
 			prev.SchemaDump.EndTime = timestamppb.New(l.T)
@@ -418,13 +403,11 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					Statement: l.Payload.CommandExecute.Statement,
 				},
 			})
+			push(v1pb.TaskRunLogEntry_COMMAND_EXECUTE)
 
 		case storepb.TaskRunLog_COMMAND_RESPONSE:
-			if len(entries) == 0 {
-				continue
-			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_COMMAND_EXECUTE {
+			prev := pop(v1pb.TaskRunLogEntry_COMMAND_EXECUTE)
+			if prev == nil {
 				continue
 			}
 			prev.CommandExecute.Response = &v1pb.TaskRunLogEntry_CommandExecute_CommandResponse{
@@ -443,13 +426,11 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					StartTime: timestamppb.New(l.T),
 				},
 			})
+			push(v1pb.TaskRunLogEntry_DATABASE_SYNC)
 
 		case storepb.TaskRunLog_DATABASE_SYNC_END:
-			if len(entries) == 0 {
-				continue
-			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_DATABASE_SYNC {
+			prev := pop(v1pb.TaskRunLogEntry_DATABASE_SYNC)
+			if prev == nil {
 				continue
 			}
 			prev.DatabaseSync.EndTime = timestamppb.New(l.T)
@@ -475,13 +456,11 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					StartTime: timestamppb.New(l.T),
 				},
 			})
+			push(v1pb.TaskRunLogEntry_PRIOR_BACKUP)
 
 		case storepb.TaskRunLog_PRIOR_BACKUP_END:
-			if len(entries) == 0 {
-				continue
-			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_PRIOR_BACKUP {
+			prev := pop(v1pb.TaskRunLogEntry_PRIOR_BACKUP)
+			if prev == nil {
 				continue
 			}
 			prev.PriorBackup.EndTime = timestamppb.New(l.T)
@@ -497,13 +476,11 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					StartTime: timestamppb.New(l.T),
 				},
 			})
+			push(v1pb.TaskRunLogEntry_COMPUTE_DIFF)
 
 		case storepb.TaskRunLog_COMPUTE_DIFF_END:
-			if len(entries) == 0 {
-				continue
-			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_COMPUTE_DIFF {
+			prev := pop(v1pb.TaskRunLogEntry_COMPUTE_DIFF)
+			if prev == nil {
 				continue
 			}
 			prev.ComputeDiff.EndTime = timestamppb.New(l.T)
@@ -541,13 +518,11 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					StartTime: timestamppb.New(l.T),
 				},
 			})
+			push(v1pb.TaskRunLogEntry_GHOST_MIGRATION)
 
 		case storepb.TaskRunLog_GHOST_MIGRATION_END:
-			if len(entries) == 0 {
-				continue
-			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_GHOST_MIGRATION {
+			prev := pop(v1pb.TaskRunLogEntry_GHOST_MIGRATION)
+			if prev == nil {
 				continue
 			}
 			prev.GhostMigration.EndTime = timestamppb.New(l.T)

@@ -14,6 +14,43 @@ import type { LoginResponseSchema } from "./auth_service_pb";
 export declare const file_v1_workspace_service: GenFile;
 
 /**
+ * @generated from message bytebase.v1.RotateDirectorySyncTokenRequest
+ */
+export declare type RotateDirectorySyncTokenRequest = Message<"bytebase.v1.RotateDirectorySyncTokenRequest"> & {
+  /**
+   * The workspace whose directory sync token is rotated.
+   * Format: workspaces/{workspace}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.RotateDirectorySyncTokenRequest.
+ * Use `create(RotateDirectorySyncTokenRequestSchema)` to create a new message.
+ */
+export declare const RotateDirectorySyncTokenRequestSchema: GenMessage<RotateDirectorySyncTokenRequest>;
+
+/**
+ * @generated from message bytebase.v1.RotateDirectorySyncTokenResponse
+ */
+export declare type RotateDirectorySyncTokenResponse = Message<"bytebase.v1.RotateDirectorySyncTokenResponse"> & {
+  /**
+   * The new token, in plaintext. This is the only time it is ever returned.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+};
+
+/**
+ * Describes the message bytebase.v1.RotateDirectorySyncTokenResponse.
+ * Use `create(RotateDirectorySyncTokenResponseSchema)` to create a new message.
+ */
+export declare const RotateDirectorySyncTokenResponseSchema: GenMessage<RotateDirectorySyncTokenResponse>;
+
+/**
  * @generated from message bytebase.v1.ListWorkspacesRequest
  */
 export declare type ListWorkspacesRequest = Message<"bytebase.v1.ListWorkspacesRequest"> & {
@@ -232,6 +269,20 @@ export declare const WorkspaceService: GenService<{
     methodKind: "unary";
     input: typeof SetIamPolicyRequestSchema;
     output: typeof IamPolicySchema;
+  },
+  /**
+   * Mints a new directory sync (SCIM) token, immediately invalidating the
+   * previous one. The plaintext token is returned exactly once and cannot be
+   * retrieved afterwards; only its hash is stored. Callers that lose it must
+   * rotate again and update their identity provider.
+   * Permissions required: bb.workspaces.rotateDirectorySyncToken
+   *
+   * @generated from rpc bytebase.v1.WorkspaceService.RotateDirectorySyncToken
+   */
+  rotateDirectorySyncToken: {
+    methodKind: "unary";
+    input: typeof RotateDirectorySyncTokenRequestSchema;
+    output: typeof RotateDirectorySyncTokenResponseSchema;
   },
 }>;
 

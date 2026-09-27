@@ -11,6 +11,8 @@ import (
 	"github.com/pkg/errors"
 	exprproto "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	"google.golang.org/genproto/googleapis/type/expr"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 const celLimit = 1024 * 1024
@@ -38,6 +40,8 @@ var ApprovalFactors = []cel.EnvOption{
 	cel.Variable(CELAttributeRequestExport, cel.BoolType),
 	// Risk scope
 	cel.Variable(CELAttributeRiskLevel, cel.StringType),
+	// Issue scope
+	cel.Variable(CELAttributeIssueLabels, cel.ListType(cel.StringType)),
 	// String extension functions (split, join, trim, etc.)
 	ext.Strings(),
 	// Size limit
@@ -52,25 +56,45 @@ var FallbackApprovalFactors = []cel.EnvOption{
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
-// ValidateFallbackApprovalExpr validates that a CEL expression only uses
-// variables allowed in fallback approval rules (only resource.project_id).
-func ValidateFallbackApprovalExpr(expression string) error {
+// ValidateApprovalExprForSource validates source-specific approval expressions.
+func ValidateApprovalExprForSource(expression string, source storepb.WorkspaceApprovalSetting_Rule_Source) error {
 	if expression == "" || expression == "true" {
 		return nil
 	}
 
-	e, err := cel.NewEnv(FallbackApprovalFactors...)
+	factors := ApprovalFactors
+	if source == storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED {
+		factors = FallbackApprovalFactors
+	}
+	e, err := cel.NewEnv(factors...)
 	if err != nil {
 		return errors.Wrap(err, "failed to create CEL env")
 	}
 
-	_, issues := e.Compile(expression)
+	ast, issues := e.Compile(expression)
 	if issues != nil && issues.Err() != nil {
-		return connect.NewError(connect.CodeInvalidArgument,
-			errors.Errorf("fallback rules can only use resource.project_id in conditions: %v", issues.Err()))
+		if source == storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED {
+			return connect.NewError(connect.CodeInvalidArgument,
+				errors.Errorf("fallback rules can only use resource.project_id in conditions: %v", issues.Err()))
+		}
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid approval rule condition: %v", issues.Err()))
+	}
+	if source != storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED && source != storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE {
+		if astReferencesIssueLabels(ast) {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue.labels is only supported for database change approval rules"))
+		}
 	}
 
 	return nil
+}
+
+func astReferencesIssueLabels(ast *cel.Ast) bool {
+	for _, reference := range ast.NativeRep().ReferenceMap() {
+		if reference.Name == CELAttributeIssueLabels {
+			return true
+		}
+	}
+	return false
 }
 
 // IAMPolicyConditionCELAttributes are the variables when evaluating IAM policy condition.
@@ -206,61 +230,6 @@ func validateCELExpr(expression *expr.Expr, conditionCELAttributes []cel.EnvOpti
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	return prog, nil
-}
-
-// QueryExportFactors is the factors for query and export.
-type QueryExportFactors struct {
-	Databases []string
-}
-
-// GetQueryExportFactors is used to get risk factors from query and export expressions.
-func GetQueryExportFactors(expression string) (*QueryExportFactors, error) {
-	// If the expression is empty, return an empty struct.
-	if expression == "" {
-		return &QueryExportFactors{}, nil
-	}
-
-	factors := &QueryExportFactors{}
-	e, err := cel.NewEnv(IAMPolicyConditionCELAttributes...)
-	if err != nil {
-		return nil, err
-	}
-	ast, issues := e.Compile(expression)
-	if issues != nil {
-		return nil, errors.Errorf("found issue %v", issues)
-	}
-	parsedExpr, err := cel.AstToParsedExpr(ast)
-	if err != nil {
-		return nil, err
-	}
-	callExpr := parsedExpr.Expr.GetCallExpr()
-	findField(callExpr, factors)
-	return factors, nil
-}
-
-func findField(callExpr *exprproto.Expr_Call, factors *QueryExportFactors) {
-	if callExpr == nil {
-		return
-	}
-	if len(callExpr.Args) == 2 {
-		idExpr := callExpr.Args[0].GetIdentExpr()
-		if idExpr != nil {
-			if idExpr.Name == CELAttributeResourceDatabase && callExpr.Function == "_==_" {
-				factors.Databases = append(factors.Databases, callExpr.Args[1].GetConstExpr().GetStringValue())
-			}
-			if idExpr.Name == CELAttributeResourceDatabase && callExpr.Function == "@in" {
-				list := callExpr.Args[1].GetListExpr()
-				for _, element := range list.Elements {
-					factors.Databases = append(factors.Databases, element.GetConstExpr().GetStringValue())
-				}
-			}
-			return
-		}
-	}
-	for _, arg := range callExpr.Args {
-		callExpr := arg.GetCallExpr()
-		findField(callExpr, factors)
-	}
 }
 
 func EvalBindingCondition(expr string, requestTime time.Time) (bool, error) {

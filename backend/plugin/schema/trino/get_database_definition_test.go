@@ -3,10 +3,10 @@ package trino
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -15,16 +15,16 @@ func TestGetDatabaseDefinition(t *testing.T) {
 		name     string
 		catalog  string
 		schema   string
-		table    *storepb.TableMetadata
+		table    *metadatapb.TableMetadata
 		expected string
 	}{
 		{
 			name:    "Simple table",
 			catalog: "testcatalog",
 			schema:  "testschema",
-			table: &storepb.TableMetadata{
+			table: &metadatapb.TableMetadata{
 				Name: "testtable",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{
 						Name:     "id",
 						Type:     "bigint",
@@ -48,9 +48,9 @@ func TestGetDatabaseDefinition(t *testing.T) {
 			name:    "Empty columns",
 			catalog: "testcatalog",
 			schema:  "testschema",
-			table: &storepb.TableMetadata{
+			table: &metadatapb.TableMetadata{
 				Name:    "empty_table",
-				Columns: []*storepb.ColumnMetadata{},
+				Columns: []*metadatapb.ColumnMetadata{},
 			},
 			expected: `CREATE TABLE IF NOT EXISTS "testschema"."empty_table" (
 
@@ -62,9 +62,9 @@ func TestGetDatabaseDefinition(t *testing.T) {
 			name:    "Special characters in identifiers",
 			catalog: "test-catalog",
 			schema:  "test_schema",
-			table: &storepb.TableMetadata{
+			table: &metadatapb.TableMetadata{
 				Name: "test.table",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{
 						Name:     "id-field",
 						Type:     "bigint",
@@ -82,12 +82,12 @@ func TestGetDatabaseDefinition(t *testing.T) {
 	a := require.New(t)
 	for _, tt := range tests {
 		t.Run(tt.name, func(_ *testing.T) {
-			metadata := &storepb.DatabaseSchemaMetadata{
+			metadata := &metadatapb.DatabaseSchemaMetadata{
 				Name: tt.catalog,
-				Schemas: []*storepb.SchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name:   tt.schema,
-						Tables: []*storepb.TableMetadata{tt.table},
+						Tables: []*metadatapb.TableMetadata{tt.table},
 					},
 				},
 			}
@@ -109,16 +109,16 @@ func TestWriteCreateTable(t *testing.T) {
 		name     string
 		catalog  string
 		schema   string
-		table    *storepb.TableMetadata
+		table    *metadatapb.TableMetadata
 		expected string
 	}{
 		{
 			name:    "Simple table",
 			catalog: "catalog",
 			schema:  "schema",
-			table: &storepb.TableMetadata{
+			table: &metadatapb.TableMetadata{
 				Name: "table",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{
 						Name:     "col1",
 						Type:     "integer",
@@ -136,12 +136,12 @@ func TestWriteCreateTable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metadata := &storepb.DatabaseSchemaMetadata{
+			metadata := &metadatapb.DatabaseSchemaMetadata{
 				Name: tt.catalog,
-				Schemas: []*storepb.SchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name:   tt.schema,
-						Tables: []*storepb.TableMetadata{tt.table},
+						Tables: []*metadatapb.TableMetadata{tt.table},
 					},
 				},
 			}

@@ -589,6 +589,8 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 				SheetSha256: file.SheetSha256,
 				TaskRun:     taskRunName,
 				Type:        storepb.SchemaChangeType_VERSIONED,
+				// The authoring project: where this rollout ran.
+				Project: task.ProjectID,
 			},
 		}
 
@@ -783,13 +785,16 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	}
 
 	sourceDatabaseName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
-	// Format: instances/{instance}/databases/{database}
 	backupDBName := common.BackupDatabaseNameOfEngine(database.Engine)
 	targetDatabaseName := common.FormatDatabase(database.InstanceID, backupDBName)
+	if instance.ProjectID != nil {
+		sourceDatabaseName = common.FormatProjectDatabase(*instance.ProjectID, database.InstanceID, database.DatabaseName)
+		targetDatabaseName = common.FormatProjectDatabase(*instance.ProjectID, database.InstanceID, backupDBName)
+	}
 	var backupDatabase *store.DatabaseMessage
 	var backupDriver db.Driver
 
-	backupInstanceID, backupDatabaseName, err := common.GetInstanceDatabaseID(targetDatabaseName)
+	_, backupInstanceID, backupDatabaseName, err := common.GetDatabaseResourceName(targetDatabaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse backup database")
 	}
@@ -1015,7 +1020,11 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 		return "", errors.Errorf("database schema %q not found", database.DatabaseName)
 	}
 
-	migrationSQL, err := schema.SDLMigration(instance.Metadata.GetEngine(), sheetContent, dbMetadata)
+	// instance.Metadata.GetVersion() is the synced server version (e.g. "5.7.25"); thread
+	// it so MySQL canonicalizes a 5.7 database's schema as 5.7 rather than the default 8.0
+	// stored form. model.DatabaseMetadata drops the version, so it is sourced here where the
+	// instance message still carries it. Other engines ignore the version.
+	migrationSQL, err := schema.SDLMigration(instance.Metadata.GetEngine(), sheetContent, dbMetadata, instance.Metadata.GetVersion())
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to compute SDL migration")
 	}
@@ -1028,14 +1037,12 @@ func computeNeedDump(taskType storepb.Task_Type, engine storepb.Engine, statemen
 	//exhaustive:enforce
 	switch taskType {
 	case storepb.Task_DATABASE_MIGRATE:
-		// For DATABASE_MIGRATE, skip dump if all statements are DML
-		// (INSERT, UPDATE, DELETE) since they don't change schema.
+		// For DATABASE_MIGRATE, skip dump if all statements are DML since they
+		// don't change schema. IsAllDML owns the type list.
 		return !parserbase.IsAllDML(engine, statement)
 	case storepb.Task_DATABASE_CREATE:
 		return true
-	case
-		storepb.Task_TASK_TYPE_UNSPECIFIED,
-		storepb.Task_DATABASE_EXPORT:
+	case storepb.Task_TASK_TYPE_UNSPECIFIED:
 		return false
 	default:
 		return false

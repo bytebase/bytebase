@@ -1,0 +1,1 @@
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `prettyfmt_edge`.`v_lit` AS select concat(`prettyfmt_edge`.`t1`.`b`,' from ','x\'y','z"q') AS `weird` from `prettyfmt_edge`.`t1` where (`prettyfmt_edge`.`t1`.`b` <> 'union all')

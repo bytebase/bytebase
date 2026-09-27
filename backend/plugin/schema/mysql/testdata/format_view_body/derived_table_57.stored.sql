@@ -1,0 +1,1 @@
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `prettyfmt_edge`.`v_derived` AS select `dt`.`s` AS `s` from (select sum(`prettyfmt_edge`.`t1`.`c`) AS `s` from `prettyfmt_edge`.`t1` group by `prettyfmt_edge`.`t1`.`b`) `dt` where (`dt`.`s` > 1)

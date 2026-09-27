@@ -15,7 +15,7 @@ func init() {
 // SELECT (no SELECT INTO). Returns (valid, allAlike, err). For MSSQL the two
 // booleans move together — we reject on the first non-SELECT.
 func ValidateSQLForEditor(statement string) (bool, bool, error) {
-	stmts, err := ParseTSQLOmni(statement)
+	stmts, err := ParseTSQL(statement)
 	if err != nil {
 		return false, false, err
 	}

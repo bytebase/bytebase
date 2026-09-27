@@ -1,0 +1,1 @@
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `prettyfmt_edge`.`v_cte` AS with `x` as (select `prettyfmt_edge`.`t1`.`a` AS `a`,`prettyfmt_edge`.`t1`.`b` AS `b` from `prettyfmt_edge`.`t1` where (`prettyfmt_edge`.`t1`.`c` > 0)) select `x`.`a` AS `a`,`x`.`b` AS `b` from `x` order by `x`.`a` limit 10

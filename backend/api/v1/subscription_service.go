@@ -11,7 +11,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
-	"google.golang.org/genproto/googleapis/api/httpbody"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -49,7 +48,7 @@ func NewSubscriptionService(
 // GetSubscription gets the subscription.
 func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Request[v1pb.GetSubscriptionRequest]) (*connect.Response[v1pb.Subscription], error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	subscription := s.licenseService.LoadSubscription(ctx, workspaceID)
+	subscription := s.licenseService.LoadEffectiveSubscription(ctx, workspaceID)
 	// Attach etag from subscription table for optimistic concurrency.
 	if subscription.Plan != v1pb.PlanType_FREE {
 		if existing, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID); err == nil && existing != nil {
@@ -60,7 +59,7 @@ func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Re
 }
 
 // ExportVCSProviderUsers exports active VCS provider users as CSV.
-func (s *SubscriptionService) ExportVCSProviderUsers(ctx context.Context, _ *connect.Request[v1pb.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error) {
+func (s *SubscriptionService) ExportVCSProviderUsers(ctx context.Context, _ *connect.Request[v1pb.ExportVCSProviderUsersRequest]) (*connect.Response[v1pb.ExportVCSProviderUsersResponse], error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	users, err := s.store.ListActiveVCSProviderUsers(ctx, workspaceID, vcsProviderUserActiveWindow)
 	if err != nil {
@@ -88,9 +87,8 @@ func (s *SubscriptionService) ExportVCSProviderUsers(ctx context.Context, _ *con
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return connect.NewResponse(&httpbody.HttpBody{
-		ContentType: "text/csv; charset=utf-8",
-		Data:        buf.Bytes(),
+	return connect.NewResponse(&v1pb.ExportVCSProviderUsersResponse{
+		Content: buf.Bytes(),
 	}), nil
 }
 
@@ -108,7 +106,7 @@ func escapeCSVFormula(value string) string {
 
 // UploadLicense uploads an enterprise license (self-hosted only).
 func (s *SubscriptionService) UploadLicense(ctx context.Context, req *connect.Request[v1pb.UploadLicenseRequest]) (*connect.Response[v1pb.Subscription], error) {
-	if s.profile.SaaS && s.profile.Mode == common.ReleaseModeProd {
+	if s.profile.SaaS {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("use purchase APIs in SaaS mode"))
 	}
 
@@ -119,8 +117,47 @@ func (s *SubscriptionService) UploadLicense(ctx context.Context, req *connect.Re
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to store license"))
 	}
 
-	subscription := s.licenseService.LoadSubscription(ctx, common.GetWorkspaceIDFromContext(ctx))
+	subscription := s.licenseService.LoadEffectiveSubscription(ctx, common.GetWorkspaceIDFromContext(ctx))
 	return connect.NewResponse(subscription), nil
+}
+
+// StartTrial starts a free trial for an eligible SaaS workspace.
+func (s *SubscriptionService) StartTrial(ctx context.Context, _ *connect.Request[v1pb.StartTrialRequest]) (*connect.Response[v1pb.Subscription], error) {
+	if !s.profile.SaaS {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("trial is only available in SaaS mode"))
+	}
+
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	params := newTrialLicenseParams(workspaceID, time.Now())
+
+	existing, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get subscription"))
+	}
+	if existing != nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace is not eligible for a free trial"))
+	}
+
+	currentSubscription, err := s.licenseService.LoadSubscriptionFromDB(ctx, workspaceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to load subscription"))
+	}
+	if currentSubscription != nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace is not eligible for a free trial"))
+	}
+
+	license, err := s.licenseService.CreateLicense(params)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create trial license"))
+	}
+	if err := s.store.CreateTrialLicense(ctx, workspaceID, license); errors.Is(err, store.ErrTrialNotEligible) {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace is not eligible for a free trial"))
+	} else if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to store trial license"))
+	}
+	s.licenseService.InvalidateCache(workspaceID)
+
+	return connect.NewResponse(subscriptionFromTrialParams(params)), nil
 }
 
 // CreatePurchase creates a Stripe Checkout session (SaaS only).

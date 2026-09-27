@@ -8,6 +8,7 @@ import (
 )
 
 func TestGetListPlanFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -15,7 +16,6 @@ func TestGetListPlanFilter(t *testing.T) {
 		wantArgs    []any
 		wantErr     bool
 		errContains string
-		skipTest    bool // Skip tests that require database access
 	}{
 		{
 			name:     "empty filter",
@@ -39,18 +39,10 @@ func TestGetListPlanFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "has_issue filter - true",
-			filter:   `has_issue == true`,
-			wantSQL:  "(issue.id IS NOT NULL)",
-			wantArgs: []any{},
-			wantErr:  false,
-		},
-		{
-			name:     "has_issue filter - false",
-			filter:   `has_issue == false`,
-			wantSQL:  "(issue.id IS NULL)",
-			wantArgs: []any{},
-			wantErr:  false,
+			name:        "has_issue filter is unsupported",
+			filter:      `has_issue == true`,
+			wantErr:     true,
+			errContains: `unsupported variable "has_issue"`,
 		},
 		{
 			name:     "title filter",
@@ -68,7 +60,7 @@ func TestGetListPlanFilter(t *testing.T) {
 		{
 			name:     "title contains",
 			filter:   `title.contains("test")`,
-			wantSQL:  "(LOWER(plan.name) LIKE $1)",
+			wantSQL:  "(LOWER(plan.name) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%test%"},
 			wantErr:  false,
 		},
@@ -87,11 +79,10 @@ func TestGetListPlanFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "spec_type filter - export_data_config",
-			filter:   `spec_type == "export_data_config"`,
-			wantSQL:  "(EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'exportDataConfig' IS NOT NULL))",
-			wantArgs: []any{},
-			wantErr:  false,
+			name:        "spec_type filter - retired export_data_config",
+			filter:      `spec_type == "export_data_config"`,
+			wantErr:     true,
+			errContains: "invalid spec_type value",
 		},
 		{
 			name:     "state filter - ACTIVE",
@@ -128,13 +119,6 @@ func TestGetListPlanFilter(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:     "AND condition with has_rollout and has_issue",
-			filter:   `has_rollout == true && has_issue == true`,
-			wantSQL:  "((plan.config->>'hasRollout' = $1 AND issue.id IS NOT NULL))",
-			wantArgs: []any{"true"},
-			wantErr:  false,
-		},
-		{
 			name:     "complex AND condition",
 			filter:   `title == "Test Plan" && state == "STATE_ACTIVE" && has_rollout == true`,
 			wantSQL:  "(((plan.name = $1 AND plan.deleted = $2) AND plan.config->>'hasRollout' = $3))",
@@ -142,17 +126,17 @@ func TestGetListPlanFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:        "creator filter requires database",
-			filter:      `creator == "users/test@example.com"`,
-			skipTest:    true,
-			wantErr:     false, // Would work with database
-			errContains: "",
+			name:     "creator filter",
+			filter:   `creator == "users/test@example.com"`,
+			wantSQL:  "(plan.creator = $1)",
+			wantArgs: []any{"test@example.com"},
+			wantErr:  false,
 		},
 		{
 			name:        "invalid filter syntax",
 			filter:      `invalid syntax {{`,
 			wantErr:     true,
-			errContains: "failed to parse filter",
+			errContains: "invalid filter expression",
 		},
 		{
 			name:        "unsupported variable",
@@ -179,12 +163,6 @@ func TestGetListPlanFilter(t *testing.T) {
 			errContains: `"has_rollout" should be bool`,
 		},
 		{
-			name:        "has_issue with non-bool value",
-			filter:      `has_issue == "true"`,
-			wantErr:     true,
-			errContains: `"has_issue" should be bool`,
-		},
-		{
 			name:        "invalid time format",
 			filter:      `create_time >= "invalid-time"`,
 			wantErr:     true,
@@ -200,10 +178,7 @@ func TestGetListPlanFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.skipTest {
-				t.Skip("Test requires database connection")
-			}
-
+			t.Parallel()
 			q, err := GetListPlanFilter(tt.filter)
 
 			if tt.wantErr {

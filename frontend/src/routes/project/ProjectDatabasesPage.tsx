@@ -1,0 +1,940 @@
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import { Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
+import { router, useCurrentRoute } from "@/app/router";
+import {
+  PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_INSTANCE_CREATE,
+} from "@/app/router/handles";
+import { markListScrollRestorationEntry } from "@/app/router/NavigationScrollRestoration";
+import {
+  AdvancedSearch,
+  getValueFromScopes,
+  type ScopeOption,
+  type SearchParams,
+  type ValueOption,
+} from "@/components/AdvancedSearch";
+import {
+  CreateDatabaseSheet,
+  DatabaseBatchOperationsBar,
+  DatabaseTable,
+  LabelEditorSheet,
+  TransferProjectSheet,
+} from "@/components/database";
+import { EditEnvironmentSheet } from "@/components/EditEnvironmentSheet";
+import { InstanceLabel } from "@/components/InstanceLabel";
+import { PermissionGuard } from "@/components/PermissionGuard";
+import {
+  ProjectPageLayout,
+  ProjectPageToolbar,
+} from "@/components/ProjectPageLayout";
+import { SQLEditorButton } from "@/components/SQLEditorButton";
+import { Alert } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { useProjectByName } from "@/hooks/useProjectByName";
+import type { DatabaseFilter } from "@/lib/databaseFilter";
+import { preCreateIssue } from "@/lib/plan/issue";
+import {
+  CONNECT_DATABASE_PRODUCT_INTRO,
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+  useProductIntro,
+} from "@/lib/productIntro";
+import { normalizeInstanceName } from "@/lib/resourceName";
+import { readSelectedGuideScenarioId } from "@/modules/workspace-setup-guide/selection";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
+import {
+  environmentNamePrefix,
+  projectNamePrefix,
+} from "@/stores/modules/v1/common";
+import type { Permission } from "@/types";
+import {
+  isDefaultProject,
+  isValidDatabaseName,
+  UNKNOWN_ENVIRONMENT_NAME,
+  unknownEnvironment,
+} from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  BatchUpdateDatabasesRequestSchema,
+  DatabaseSchema$,
+  UpdateDatabaseRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import { unknownDatabase } from "@/types/v1/database";
+import {
+  autoDatabaseRoute,
+  engineNameV1,
+  extractInstanceResourceName,
+  getDefaultPagination,
+  hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
+  PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
+  supportedEngineV1List,
+} from "@/utils";
+import { getDatabaseEngine } from "@/utils/v1/database";
+import { extractProjectResourceName } from "@/utils/v1/project";
+
+const fetchAvailableInstanceCount = async (
+  projectName: string,
+  shouldListProjectInstances: boolean
+) => {
+  const results = await Promise.all([
+    hasWorkspacePermissionV2("bb.instances.list")
+      ? useAppStore.getState().fetchInstanceList({ pageSize: 2 })
+      : Promise.resolve({ instances: [], nextPageToken: "" }),
+    shouldListProjectInstances
+      ? useAppStore
+          .getState()
+          .fetchInstanceList({ parent: projectName, pageSize: 2 })
+      : Promise.resolve({ instances: [], nextPageToken: "" }),
+  ]);
+  const instances = results.flatMap((result) => result.instances);
+  return new Set(instances.map((instance) => instance.name)).size;
+};
+
+export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
+  const { t } = useTranslation();
+  const currentRoute = useCurrentRoute();
+  const removeDatabaseMetadataCache = useAppStore(
+    (s) => s.removeDatabaseMetadataCache
+  );
+  const databasesByName = useAppStore((s) => s.databasesByName);
+
+  const projectName = `${projectNamePrefix}${projectId}`;
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  void projectsByName;
+  const project = useProjectByName(projectName);
+  const isDefault = isDefaultProject(projectName);
+
+  const hasProjectPermission = useCallback(
+    (permission: Permission) =>
+      project ? hasProjectPermissionV2(project, permission) : false,
+    [project]
+  );
+  const canListProjectInstances = hasProjectPermission("bb.instances.list");
+
+  const [syncing, setSyncing] = useState(false);
+  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
+  const [showLabelEditor, setShowLabelEditor] = useState(false);
+  const [showEditEnvDrawer, setShowEditEnvDrawer] = useState(false);
+  const [showTransferDrawer, setShowTransferDrawer] = useState(false);
+  const [showUnassignConfirm, setShowUnassignConfirm] = useState(false);
+  const [refreshToken, setRefreshToken] = useState(0);
+  const [availableInstanceCount, setAvailableInstanceCount] = useState<
+    number | undefined
+  >(undefined);
+  const hasAvailableInstance =
+    availableInstanceCount === undefined
+      ? undefined
+      : availableInstanceCount > 0;
+  const [syncingRefreshExhausted, setSyncingRefreshExhausted] = useState(false);
+  const autoRefreshCountRef = useRef(0);
+
+  const [searchParams, setSearchParams] = useState<SearchParams>({
+    query: "",
+    scopes: [],
+  });
+
+  // Reset state when navigating between projects
+  useEffect(() => {
+    setSelectedNames(new Set());
+    setSearchParams({ query: "", scopes: [] });
+    setRefreshToken((prev) => prev + 1);
+  }, [projectId]);
+
+  const environments = useAppStore((s) => s.environmentList);
+
+  const searchInstances = useCallback(
+    async (keyword: string): Promise<ValueOption[]> => {
+      const params = {
+        pageSize: getDefaultPagination(),
+        filter: keyword.trim() ? { query: keyword } : undefined,
+      };
+      const results = await Promise.all([
+        hasWorkspacePermissionV2("bb.instances.list")
+          ? useAppStore.getState().fetchInstanceList(params)
+          : Promise.resolve({ instances: [], nextPageToken: "" }),
+        canListProjectInstances && !isDefault
+          ? useAppStore
+              .getState()
+              .fetchInstanceList({ ...params, parent: projectName })
+          : Promise.resolve({ instances: [], nextPageToken: "" }),
+      ]);
+      const instances = [
+        ...new Map(
+          results.flatMap((result) => result.instances).map((i) => [i.name, i])
+        ).values(),
+      ];
+      return instances.map((i) => {
+        const id = extractInstanceResourceName(i.name);
+        return { value: i.name, keywords: [id, i.title] };
+      });
+    },
+    [canListProjectInstances, isDefault, projectName]
+  );
+
+  const scopeOptions: ScopeOption[] = useMemo(() => {
+    return [
+      {
+        id: "environment",
+        title: t("common.environment"),
+        description: t("common.environment"),
+        options: [unknownEnvironment(), ...environments].map((env) => {
+          const isUnknown = env.name === UNKNOWN_ENVIRONMENT_NAME;
+          return {
+            value: env.id,
+            keywords: isUnknown
+              ? ["unassigned", "none", env.id]
+              : [env.id, env.title],
+            render: isUnknown
+              ? () => (
+                  <span className="italic text-control-light">
+                    {t("common.unassigned")}
+                  </span>
+                )
+              : undefined,
+            custom: isUnknown,
+          };
+        }),
+      },
+      {
+        id: "instance",
+        title: t("common.instance"),
+        description: t("issue.advanced-search.scope.instance.description"),
+        onSearch: searchInstances,
+      },
+      {
+        id: "engine",
+        title: t("database.engine"),
+        description: t("database.engine"),
+        options: supportedEngineV1List().map((engine) => ({
+          value: Engine[engine],
+          keywords: [Engine[engine].toLowerCase(), engineNameV1(engine)],
+        })),
+        allowMultiple: true,
+      },
+      {
+        id: "label",
+        title: t("common.labels"),
+        description: t("issue.advanced-search.scope.label.description"),
+        allowMultiple: true,
+      },
+    ];
+  }, [t, environments, searchInstances]);
+
+  // Derived filter values
+  const envVal = getValueFromScopes(searchParams, "environment");
+  const selectedEnvironment = envVal
+    ? `${environmentNamePrefix}${envVal}`
+    : undefined;
+
+  const instanceVal = getValueFromScopes(searchParams, "instance");
+  const selectedInstance = instanceVal
+    ? normalizeInstanceName(instanceVal)
+    : undefined;
+
+  const selectedEngines = useMemo(
+    () =>
+      searchParams.scopes
+        .filter((s) => s.id === "engine")
+        .map((s) => Engine[s.value as keyof typeof Engine])
+        .filter((e): e is Engine => e !== undefined),
+    [searchParams]
+  );
+
+  const selectedLabels = useMemo(
+    () =>
+      searchParams.scopes.filter((s) => s.id === "label").map((s) => s.value),
+    [searchParams]
+  );
+
+  const filter: DatabaseFilter = useMemo(
+    () => ({
+      instance: selectedInstance,
+      environment: selectedEnvironment,
+      query: searchParams.query,
+      labels: selectedLabels.length > 0 ? selectedLabels : undefined,
+      engines: selectedEngines,
+    }),
+    [
+      selectedInstance,
+      selectedEnvironment,
+      searchParams.query,
+      selectedLabels,
+      selectedEngines,
+    ]
+  );
+
+  // Selection state
+  const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
+  const [visibleDatabases, setVisibleDatabases] = useState<Database[]>([]);
+  const syncingInstanceId = useMemo(() => {
+    const { syncingInstance } = currentRoute.query;
+    return typeof syncingInstance === "string" && syncingInstance
+      ? syncingInstance
+      : undefined;
+  }, [currentRoute.query]);
+  const syncingInstanceName = syncingInstanceId
+    ? `${projectName}/instances/${syncingInstanceId}`
+    : undefined;
+
+  const selectedDatabases = useMemo(() => {
+    if (selectedNames.size === 0) return [];
+    return Array.from(selectedNames)
+      .filter((name) => isValidDatabaseName(name))
+      .map((name) => databasesByName[name] ?? unknownDatabase());
+  }, [selectedNames, databasesByName]);
+
+  const selectedDatabaseNames = useMemo(
+    () => selectedDatabases.map((db) => db.name),
+    [selectedDatabases]
+  );
+  const canCreateInstance = hasProjectPermission("bb.instances.create");
+
+  // Mirror `selectedDatabases` into a ref so the batch-operation handlers
+  // below can read the latest value without listing it as a dep. Otherwise
+  // every selection toggle re-creates the handler closures, which cascades
+  // down as fresh prop refs into `DatabaseBatchOperationsBar` and forces
+  // it to re-render (with N selected items, this compounds quickly).
+  const selectedDatabasesRef = useRef(selectedDatabases);
+  selectedDatabasesRef.current = selectedDatabases;
+
+  const refresh = useCallback(() => {
+    setRefreshToken((prev) => prev + 1);
+    setSelectedNames(new Set());
+  }, []);
+
+  useEffect(() => {
+    if (!syncingInstanceId || visibleDatabases.length > 0) {
+      setSyncingRefreshExhausted(false);
+      return;
+    }
+    setSyncingRefreshExhausted(false);
+    autoRefreshCountRef.current = 0;
+    const timer = window.setInterval(() => {
+      autoRefreshCountRef.current += 1;
+      refresh();
+      if (autoRefreshCountRef.current >= 12) {
+        setSyncingRefreshExhausted(true);
+        window.clearInterval(timer);
+      }
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [syncingInstanceId, visibleDatabases.length, refresh]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAvailableInstanceCount(undefined);
+    fetchAvailableInstanceCount(
+      projectName,
+      canListProjectInstances && !isDefault
+    )
+      .then((count) => {
+        if (!cancelled) {
+          setAvailableInstanceCount(count);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAvailableInstanceCount(0);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canListProjectInstances, isDefault, projectName]);
+
+  // Batch operation handlers
+  const handleSyncSchema = useCallback(async () => {
+    if (syncing) return;
+    setSyncing(true);
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: t("db.start-to-sync-schema"),
+    });
+    try {
+      await useAppStore
+        .getState()
+        .batchSyncDatabases(Array.from(selectedNames));
+      for (const name of selectedNames) {
+        removeDatabaseMetadataCache(name);
+      }
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("db.successfully-synced-schema"),
+      });
+      setSelectedNames(new Set());
+    } catch {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("db.failed-to-sync-schema"),
+      });
+    } finally {
+      setSyncing(false);
+    }
+  }, [syncing, selectedNames, removeDatabaseMetadataCache, t]);
+
+  const handleLabelsApply = useCallback(
+    async (labelsList: { [key: string]: string }[]) => {
+      try {
+        await useAppStore.getState().batchUpdateDatabases(
+          create(BatchUpdateDatabasesRequestSchema, {
+            parent: "-",
+            requests: selectedDatabasesRef.current.map((database, i) =>
+              create(UpdateDatabaseRequestSchema, {
+                database: create(DatabaseSchema$, {
+                  ...database,
+                  labels: labelsList[i],
+                }),
+                updateMask: create(FieldMaskSchema, { paths: ["labels"] }),
+              })
+            ),
+          })
+        );
+        refresh();
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.updated"),
+        });
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+        });
+      }
+    },
+    [refresh, t]
+  );
+
+  const handleEnvironmentUpdate = useCallback(
+    async (environment: string) => {
+      try {
+        await useAppStore.getState().batchUpdateDatabases(
+          create(BatchUpdateDatabasesRequestSchema, {
+            parent: "-",
+            requests: selectedDatabasesRef.current.map((database) =>
+              create(UpdateDatabaseRequestSchema, {
+                database: create(DatabaseSchema$, {
+                  name: database.name,
+                  environment,
+                }),
+                updateMask: create(FieldMaskSchema, { paths: ["environment"] }),
+              })
+            ),
+          })
+        );
+        refresh();
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.updated"),
+        });
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+        });
+      }
+    },
+    [refresh, t]
+  );
+
+  const handleTransferProject = useCallback(
+    async (projectName: string) => {
+      try {
+        await useAppStore.getState().batchUpdateDatabases(
+          create(BatchUpdateDatabasesRequestSchema, {
+            parent: "-",
+            requests: selectedDatabasesRef.current.map((database) =>
+              create(UpdateDatabaseRequestSchema, {
+                database: create(DatabaseSchema$, {
+                  name: database.name,
+                  project: projectName,
+                }),
+                updateMask: create(FieldMaskSchema, { paths: ["project"] }),
+              })
+            ),
+          })
+        );
+        refresh();
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("database.successfully-transferred-databases"),
+        });
+        router.push({
+          name: PROJECT_V1_ROUTE_DATABASES,
+          params: {
+            projectId: extractProjectResourceName(projectName),
+          },
+        });
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+        });
+      }
+    },
+    [refresh, t]
+  );
+
+  const handleUnassign = useCallback(async () => {
+    const defaultProject =
+      useAppStore.getState().serverInfo?.defaultProject ?? "";
+    try {
+      await useAppStore.getState().batchUpdateDatabases(
+        create(BatchUpdateDatabasesRequestSchema, {
+          parent: "-",
+          requests: selectedDatabasesRef.current.map((database) =>
+            create(UpdateDatabaseRequestSchema, {
+              database: create(DatabaseSchema$, {
+                name: database.name,
+                project: defaultProject,
+              }),
+              updateMask: create(FieldMaskSchema, { paths: ["project"] }),
+            })
+          ),
+        })
+      );
+      refresh();
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("database.successfully-transferred-databases"),
+      });
+    } catch {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.failed"),
+      });
+    }
+  }, [refresh, t]);
+
+  const handleChangeDatabase = useCallback(() => {
+    preCreateIssue(projectName, selectedDatabaseNames);
+  }, [projectName, selectedDatabaseNames]);
+
+  const hasVisibleDatabase = visibleDatabases.length > 0;
+  const showSyncingInstanceHint =
+    !!syncingInstanceId && !hasVisibleDatabase && !syncingRefreshExhausted;
+  const databaseNextActionRequested =
+    (availableInstanceCount === 1 && !!syncingInstanceId) ||
+    currentRoute.query[PRODUCT_INTRO_QUERY_KEY] ===
+      PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO;
+  const [databaseNextActionProject, setDatabaseNextActionProject] = useState<
+    string | undefined
+  >(() => (databaseNextActionRequested ? projectName : undefined));
+  useEffect(() => {
+    if (databaseNextActionRequested) {
+      setDatabaseNextActionProject(projectName);
+    }
+  }, [databaseNextActionRequested, projectName]);
+  const showDatabaseNextAction =
+    hasVisibleDatabase && databaseNextActionProject === projectName;
+  const selectedGuideScenarioId = readSelectedGuideScenarioId();
+  const databaseNextAction =
+    selectedGuideScenarioId === "create-database-change"
+      ? {
+          title: t("db.project-instance-synced-create-change-title"),
+          description: t(
+            "db.project-instance-synced-create-change-description"
+          ),
+          showCreateChange: true,
+          showSqlEditor: false,
+          showMarkSensitiveData: false,
+        }
+      : selectedGuideScenarioId === "query-data"
+        ? {
+            title: t("db.project-instance-synced-query-data-title"),
+            description: t("db.project-instance-synced-query-data-description"),
+            showCreateChange: false,
+            showSqlEditor: true,
+            showMarkSensitiveData: false,
+          }
+        : selectedGuideScenarioId === "mark-sensitive-data"
+          ? {
+              title: t("db.project-instance-synced-mark-sensitive-data-title"),
+              description: t(
+                "db.project-instance-synced-mark-sensitive-data-description"
+              ),
+              showCreateChange: false,
+              showSqlEditor: false,
+              showMarkSensitiveData: true,
+            }
+          : {
+              title: t("db.project-instance-synced-title"),
+              description: t("db.project-instance-synced-description"),
+              showCreateChange: true,
+              showSqlEditor: true,
+              showMarkSensitiveData: false,
+            };
+  const checkingAvailableInstance =
+    !hasVisibleDatabase &&
+    !showSyncingInstanceHint &&
+    !syncingRefreshExhausted &&
+    hasAvailableInstance === undefined;
+  const emptyProjectHasInstance =
+    !hasVisibleDatabase &&
+    (hasAvailableInstance === true || syncingRefreshExhausted) &&
+    !showSyncingInstanceHint;
+  const emptyProjectShouldConnectInstance =
+    !hasVisibleDatabase &&
+    hasAvailableInstance === false &&
+    !syncingRefreshExhausted &&
+    !showSyncingInstanceHint;
+
+  const handleCreateFirstChange = useCallback(() => {
+    const firstDatabase = visibleDatabases[0];
+    if (!firstDatabase) return;
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("post sync first change clicked", {
+        routeId: router.currentRoute.value.name?.toString(),
+        resource: projectName,
+      })
+    );
+    preCreateIssue(projectName, [firstDatabase.name]);
+  }, [projectName, visibleDatabases]);
+
+  const handleOpenFirstDatabaseInSQLEditor = useCallback(() => {
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("post sync sql editor clicked", {
+        routeId: router.currentRoute.value.name?.toString(),
+        resource: projectName,
+      })
+    );
+  }, [projectName]);
+
+  const maskingDatabase = visibleDatabases.find(
+    (database) => getDatabaseEngine(database) !== Engine.REDIS
+  );
+  const handleMarkSensitiveData = useCallback(() => {
+    if (!maskingDatabase) return;
+    const target = autoDatabaseRoute(maskingDatabase);
+    void router.push({
+      ...target,
+      query: {
+        ...target.query,
+        [PRODUCT_INTRO_QUERY_KEY]: MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+      },
+      hash: "#catalog",
+    });
+  }, [maskingDatabase]);
+
+  useProductIntro({
+    id: CONNECT_DATABASE_PRODUCT_INTRO,
+    title: t("project.connect-instance-intro-title"),
+    description: t("project.connect-instance-intro-description"),
+    disabled:
+      showSyncingInstanceHint ||
+      hasVisibleDatabase ||
+      hasAvailableInstance !== false ||
+      !canCreateInstance,
+  });
+  useProductIntro({
+    id: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+    title: databaseNextAction.title,
+    description: databaseNextAction.description,
+    disabled: !showDatabaseNextAction,
+  });
+
+  const handleCreateDatabaseAction = useCallback(() => {
+    if (checkingAvailableInstance) return;
+    if (emptyProjectShouldConnectInstance) {
+      if (!hasProjectPermission("bb.instances.create")) return;
+      behaviorAnalytics.captureMetric(
+        createBehaviorMetric("connect database clicked", {
+          routeId: router.currentRoute.value.name?.toString(),
+          resource: projectName,
+        })
+      );
+      router.push({
+        name: PROJECT_V1_ROUTE_INSTANCE_CREATE,
+        params: { projectId },
+      });
+      return;
+    }
+    setShowCreateDrawer(true);
+  }, [
+    checkingAvailableInstance,
+    emptyProjectShouldConnectInstance,
+    hasProjectPermission,
+    projectId,
+    projectName,
+  ]);
+
+  return (
+    <ProjectPageLayout>
+      <ProjectPageToolbar className="flex-col items-start gap-2 sm:flex-row sm:items-end">
+        <AdvancedSearch
+          params={searchParams}
+          onParamsChange={setSearchParams}
+          placeholder={t("database.filter-database")}
+          scopeOptions={scopeOptions}
+        />
+        {!showSyncingInstanceHint && (
+          <PermissionGuard
+            permissions={
+              hasVisibleDatabase || emptyProjectHasInstance
+                ? ["bb.instances.list", "bb.plans.create", "bb.sheets.create"]
+                : ["bb.instances.create"]
+            }
+            project={
+              hasVisibleDatabase || emptyProjectHasInstance
+                ? project
+                : undefined
+            }
+          >
+            <Button
+              data-product-intro-target={
+                emptyProjectShouldConnectInstance
+                  ? CONNECT_DATABASE_PRODUCT_INTRO
+                  : undefined
+              }
+              disabled={
+                checkingAvailableInstance
+                  ? true
+                  : hasVisibleDatabase || emptyProjectHasInstance
+                    ? !hasProjectPermission("bb.instances.list") ||
+                      !PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every(
+                        (permission) => hasProjectPermission(permission)
+                      )
+                    : !canCreateInstance
+              }
+              onClick={handleCreateDatabaseAction}
+            >
+              <Plus className="size-4 mr-1" />
+              {hasVisibleDatabase
+                ? t("common.create")
+                : emptyProjectHasInstance
+                  ? t("database.create-database")
+                  : t("project.connect-instance")}
+            </Button>
+          </PermissionGuard>
+        )}
+      </ProjectPageToolbar>
+
+      {showSyncingInstanceHint && (
+        <Alert
+          variant="info"
+          title={
+            <Trans
+              t={t}
+              i18nKey="db.project-instance-syncing-title"
+              components={{
+                instance: (
+                  <InstanceLabel
+                    instanceName={syncingInstanceName ?? ""}
+                    link
+                  />
+                ),
+              }}
+            />
+          }
+          description={
+            <div className="flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
+              <span>{t("db.project-instance-syncing-description")}</span>
+              <Button size="sm" appearance="outline" onClick={refresh}>
+                {t("common.refresh")}
+              </Button>
+            </div>
+          }
+        />
+      )}
+
+      {showDatabaseNextAction && (
+        <Alert
+          variant="info"
+          data-product-intro-target={PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO}
+          title={databaseNextAction.title}
+          description={
+            <div className="flex flex-col gap-y-3">
+              <span>{databaseNextAction.description}</span>
+              <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-2">
+                {databaseNextAction.showCreateChange && (
+                  <PermissionGuard
+                    permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
+                    project={project}
+                  >
+                    <Button
+                      size="sm"
+                      appearance={
+                        databaseNextAction.showSqlEditor ? "outline" : undefined
+                      }
+                      onClick={handleCreateFirstChange}
+                    >
+                      {t("db.project-instance-synced-action")}
+                    </Button>
+                  </PermissionGuard>
+                )}
+                {databaseNextAction.showSqlEditor && (
+                  <PermissionGuard
+                    permissions={["bb.sql.select"]}
+                    project={project}
+                  >
+                    <span
+                      className="inline-flex"
+                      onClickCapture={handleOpenFirstDatabaseInSQLEditor}
+                    >
+                      <SQLEditorButton
+                        size="sm"
+                        database={visibleDatabases[0]}
+                        label={t(
+                          "db.project-instance-synced-sql-editor-action"
+                        )}
+                      />
+                    </span>
+                  </PermissionGuard>
+                )}
+                {databaseNextAction.showMarkSensitiveData && (
+                  <Button
+                    size="sm"
+                    disabled={!maskingDatabase}
+                    onClick={handleMarkSensitiveData}
+                  >
+                    {t("db.project-instance-synced-mark-sensitive-data-action")}
+                  </Button>
+                )}
+              </div>
+            </div>
+          }
+        />
+      )}
+
+      <DatabaseTable
+        filter={filter}
+        parent={projectName}
+        mode="PROJECT"
+        onOpenDatabase={markListScrollRestorationEntry}
+        selectedNames={selectedNames}
+        onSelectedNamesChange={setSelectedNames}
+        onDatabasesChange={setVisibleDatabases}
+        refreshToken={refreshToken}
+        emptyPlaceholder={
+          showSyncingInstanceHint ? (
+            <div className="flex flex-col items-center gap-y-3 text-center">
+              <div className="text-sm text-control-light">
+                {t("db.project-instance-syncing-empty")}
+              </div>
+              <Button size="sm" appearance="outline" onClick={refresh}>
+                {t("common.refresh")}
+              </Button>
+            </div>
+          ) : (
+            <span className="text-sm text-control-light">
+              {emptyProjectHasInstance
+                ? t("project.add-database-empty-placeholder")
+                : t("project.connect-instance-empty-placeholder")}
+            </span>
+          )
+        }
+      />
+
+      {/* Batch operations bar */}
+      <DatabaseBatchOperationsBar
+        databases={selectedDatabases}
+        project={project}
+        onSyncSchema={handleSyncSchema}
+        onEditLabels={() => setShowLabelEditor(true)}
+        onEditEnvironment={() => setShowEditEnvDrawer(true)}
+        onTransferProject={
+          isDefault ? () => setShowTransferDrawer(true) : undefined
+        }
+        onUnassign={isDefault ? undefined : () => setShowUnassignConfirm(true)}
+        onChangeDatabase={isDefault ? undefined : handleChangeDatabase}
+        allSelected={
+          visibleDatabases.length > 0 &&
+          visibleDatabases.every((d) => selectedNames.has(d.name))
+        }
+        onToggleSelectAll={() => {
+          const allOnPage =
+            visibleDatabases.length > 0 &&
+            visibleDatabases.every((d) => selectedNames.has(d.name));
+          if (allOnPage) setSelectedNames(new Set());
+          else setSelectedNames(new Set(visibleDatabases.map((d) => d.name)));
+        }}
+      />
+
+      {/* Modals (portaled, position-independent) */}
+      <CreateDatabaseSheet
+        open={showCreateDrawer}
+        onClose={() => setShowCreateDrawer(false)}
+        projectName={projectName}
+      />
+      <EditEnvironmentSheet
+        open={showEditEnvDrawer}
+        onClose={() => setShowEditEnvDrawer(false)}
+        onUpdate={handleEnvironmentUpdate}
+      />
+      <LabelEditorSheet
+        open={showLabelEditor}
+        databases={selectedDatabases}
+        onClose={() => setShowLabelEditor(false)}
+        onApply={handleLabelsApply}
+      />
+      <TransferProjectSheet
+        open={showTransferDrawer}
+        databases={selectedDatabases}
+        onClose={() => setShowTransferDrawer(false)}
+        onTransfer={handleTransferProject}
+      />
+
+      {/* Unassign confirmation dialog */}
+      {showUnassignConfirm && (
+        <AlertDialog
+          open
+          onOpenChange={(nextOpen) =>
+            !nextOpen && setShowUnassignConfirm(false)
+          }
+        >
+          <AlertDialogContent>
+            <AlertDialogTitle>
+              {t("database.unassign-alert-title")}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="mt-2">
+              {t("database.unassign-alert-description")}
+            </AlertDialogDescription>
+            <div className="mt-6 flex items-center justify-end gap-x-2">
+              <Button
+                appearance="secondary"
+                onClick={() => setShowUnassignConfirm(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={async () => {
+                  setShowUnassignConfirm(false);
+                  await handleUnassign();
+                }}
+              >
+                {t("common.confirm")}
+              </Button>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+    </ProjectPageLayout>
+  );
+}

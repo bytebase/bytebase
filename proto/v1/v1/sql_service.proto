@@ -10,7 +10,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
-import "v1/database_service.proto";
+import "v1/query_history_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -22,10 +22,22 @@ service SQLService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:query"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*/databases/*}:query"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    // READ here is conditional, and it is the one row in the classification
+    // where the method is not the whole story: on every engine in
+    // EngineSupportQueryNewACL this handler classifies each statement and
+    // authorizes DML with bb.sql.dml and DDL with bb.sql.ddl, so what it does
+    // is decided by its argument. That is what the SQL clamp in the handler
+    // settles: under a read-only ceiling every statement in the request must
+    // classify as a read, or the whole request is refused.
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Executes SQL with admin privileges via streaming connection.
@@ -36,23 +48,40 @@ service SQLService {
     option (bytebase.v1.permission) = "bb.sql.admin";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = OPENS_AN_ADMIN_CONNECTION;
   }
 
-  // SearchQueryHistories searches query histories for the caller.
+  // Deprecated: use QueryHistoryService.SearchQueryHistories instead.
+  // Delegating alias kept for upgrade transition; will be removed in a future release.
+  // No HTTP binding: the REST route is served by QueryHistoryService.
   // Permissions required: None (only returns caller's own query histories)
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
-    option (google.api.http) = {
-      post: "/v1/queryHistories:search"
-      body: "*"
-    };
+    option deprecated = true;
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
-  // GetQueryHistory gets a single query history for the caller.
+  // Deprecated: use QueryHistoryService.ListQueryHistories instead.
+  // Delegating alias kept for upgrade transition; will be removed in a future release.
+  // No HTTP binding: the REST route is served by QueryHistoryService.
+  // Permissions required: bb.queryHistories.list
+  rpc ListQueryHistories(ListQueryHistoriesRequest) returns (ListQueryHistoriesResponse) {
+    option deprecated = true;
+    option (bytebase.v1.permission) = "bb.queryHistories.list";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = READS_OTHER_USERS_SQL;
+  }
+
+  // Deprecated: use QueryHistoryService.GetQueryHistory instead.
+  // Delegating alias kept for upgrade transition; will be removed in a future release.
+  // No HTTP binding: the REST route is served by QueryHistoryService.
   // Permissions required: None (only returns the caller's own query history)
   rpc GetQueryHistory(GetQueryHistoryRequest) returns (QueryHistory) {
-    option (google.api.http) = {get: "/v1/{name=projects/*/queryHistories/*}"};
+    option deprecated = true;
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Exports query results to a file format.
@@ -61,46 +90,22 @@ service SQLService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:export"
       body: "*"
-
       additional_bindings: {
-        post: "/v1/{name=projects/*/plans/*/rollout}:export"
-        body: "*"
-      }
-      additional_bindings: {
-        post: "/v1/{name=projects/*/plans/*/rollout/stages/*}:export"
+        post: "/v1/{name=projects/*/instances/*/databases/*}:export"
         body: "*"
       }
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-  }
-
-  // Computes schema differences between two database metadata.
-  // Permissions required: None
-  rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
-    option (google.api.http) = {
-      post: "/v1/schemaDesign:diffMetadata"
-      body: "*"
-    };
-    option (bytebase.v1.allow_without_credential) = true;
-    // This is a util method requiring no authentication thus no authorization.
-  }
-
-  // Provides AI-powered SQL completion and generation.
-  // Permissions required: None (authenticated users only, requires AI to be enabled)
-  rpc AICompletion(AICompletionRequest) returns (AICompletionResponse) {
-    option (google.api.http) = {
-      post: "/v1/sql/aiCompletion"
-      body: "*"
-    };
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 }
 
 message AdminExecuteRequest {
   // The name is the instance name to execute the query against.
-  // Format: instances/{instance}/databases/{databaseName}
+  // Format: instances/{instance}/databases/{databaseName} or
+  // projects/{project}/instances/{instance}/databases/{databaseName}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -127,8 +132,9 @@ message AdminExecuteResponse {
 }
 
 message QueryRequest {
-  // The name is the instance name to execute the query against.
-  // Format: instances/{instance}/databases/{databaseName}
+  // The name is the database resource name to execute the query against.
+  // Format: instances/{instance}/databases/{databaseName} or
+  // projects/{project}/instances/{instance}/databases/{databaseName}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -182,15 +188,34 @@ message QueryOption {
   }
   RedisRunCommandsOn redis_run_commands_on = 1;
 
-  enum MSSQLExplainFormat {
-    // defaults to SHOWPLAN_ALL
-    MSSQL_EXPLAIN_FORMAT_UNSPECIFIED = 0;
-    // SHOWPLAN_ALL
-    MSSQL_EXPLAIN_FORMAT_ALL = 1;
-    // SHOWPLAN_XML
-    MSSQL_EXPLAIN_FORMAT_XML = 2;
+  // 2 was mssql_explain_format, replaced by the engine-neutral explain_format.
+  reserved 2;
+  reserved "mssql_explain_format";
+
+  // The output format of a query plan.
+  enum ExplainFormat {
+    // The engine's default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. On a
+    // result, a default the server could not resolve, as when MySQL follows the
+    // session's explain_format; read such a plan as text.
+    EXPLAIN_FORMAT_UNSPECIFIED = 0;
+    // The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server:
+    // SHOWPLAN_ALL.
+    TEXT = 1;
+    // The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON).
+    JSON = 2;
+    // The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server:
+    // SHOWPLAN_XML.
+    XML = 3;
+    // The plan tree as YAML. PostgreSQL: EXPLAIN (FORMAT YAML).
+    YAML = 4;
   }
-  MSSQLExplainFormat mssql_explain_format = 2;
+  // Which explain output the caller wants, for an explain request.
+  //
+  // Leave it unspecified for the engine's own default, which is the only
+  // output most engines have. Naming a format an engine cannot produce is
+  // INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+  // against an engine that has no explain at all.
+  ExplainFormat explain_format = 3;
 }
 
 message QueryResult {
@@ -202,7 +227,7 @@ message QueryResult {
   repeated string column_type_names = 2;
 
   // Rows of the query result.
-  repeated QueryRow rows = 3;
+  repeated QueryRow rows = 3 [(bytebase.v1.audit_behavior) = OMIT];
 
   int64 rows_count = 4;
 
@@ -288,10 +313,22 @@ message QueryResult {
 
   // Informational or debug messages returned by the database engine during query execution.
   // Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
-  repeated Message messages = 11;
+  repeated Message messages = 11 [(bytebase.v1.audit_behavior) = OMIT];
 
   // Masking reasons for each column (empty for non-masked columns).
   repeated MaskingReason masked = 12;
+
+  // A query plan held in the result's rows.
+  message QueryPlan {
+    QueryOption.ExplainFormat format = 1;
+
+    // Whether producing the plan executed the statement, as EXPLAIN ANALYZE
+    // does.
+    bool executed = 2;
+  }
+
+  // Set when the result is a query plan. Unset for any other result.
+  QueryPlan query_plan = 14;
 }
 
 message MaskingReason {
@@ -314,7 +351,7 @@ message MaskingReason {
   int32 classification_level = 6;
 
   // Icon associated with the semantic type (if any).
-  string semantic_type_icon = 7;
+  string semantic_type_icon = 7 [(bytebase.v1.audit_behavior) = OMIT];
 }
 
 message QueryRow {
@@ -413,10 +450,8 @@ message Advice {
 
 message ExportRequest {
   // The name is the resource name to execute the export against.
-  // Format: instances/{instance}/databases/{database}
-  // Format: instances/{instance}
-  // Format: projects/{project}/plans/{plan}/rollout
-  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
+  // Format: instances/{instance}/databases/{database} or
+  // projects/{project}/instances/{instance}/databases/{database}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -436,7 +471,7 @@ message ExportRequest {
   bool admin = 5;
 
   // The zip password provide by users.
-  string password = 6;
+  string password = 6 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // The id of data source.
   // If omitted, Export resolves the data source server-side by using the
@@ -448,133 +483,18 @@ message ExportRequest {
   // The default schema to search objects. Equals to the current schema in
   // Oracle and search path in Postgres.
   optional string schema = 8;
+
+  // Container is the container name to execute the query against, used for
+  // CosmosDB only.
+  optional string container = 9;
 }
 
 message ExportResponse {
   // The export file content.
-  bytes content = 1;
+  bytes content = 1 [(bytebase.v1.audit_behavior) = OMIT];
 
   // The just-in-time access grant applied to this export, if any.
   // Format: projects/{project}/accessGrants/{accessGrant}.
   // Empty when the user was authorized through normal ACL rather than a grant.
   string applied_access_grant = 2;
-}
-
-message DiffMetadataRequest {
-  // The metadata of the source schema.
-  DatabaseMetadata source_metadata = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The metadata of the target schema.
-  DatabaseMetadata target_metadata = 2 [(google.api.field_behavior) = REQUIRED];
-
-  // The database engine of the schema.
-  Engine engine = 3;
-}
-
-message DiffMetadataResponse {
-  // The diff of the metadata.
-  string diff = 1;
-}
-
-message SearchQueryHistoriesRequest {
-  // The maximum number of histories to return.
-  // The service may return fewer than this value.
-  // If unspecified, at most 10 history entries will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 1;
-
-  // A page token, received from a previous `ListQueryHistory` call.
-  // Provide this to retrieve the subsequent page.
-  string page_token = 2;
-
-  // Filter is the filter to apply on the search query history
-  // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-  //
-  // Supported filter:
-  // - project: the project full name in "projects/{id}" format, support "==" operator.
-  // - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
-  // - instance: the instance full name in "instances/{id}" format, support "==" operator.
-  // - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-  // - statement: the SQL statement, support ".contains()" operator.
-  //
-  // For example:
-  // project == "projects/{project}"
-  // database == "instances/{instance}/databases/{database}"
-  // instance == "instances/{instance}"
-  // type == "QUERY"
-  // type == "EXPORT"
-  // statement.contains("select")
-  // type == "QUERY" && statement.contains("select")
-  string filter = 3;
-}
-
-message GetQueryHistoryRequest {
-  // The name of the query history to retrieve.
-  // Format: projects/{project}/queryHistories/{id}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message SearchQueryHistoriesResponse {
-  // The list of history.
-  repeated QueryHistory query_histories = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // A token to retrieve next page of history.
-  // Pass this value in the page_token field in the subsequent call to
-  // `ListQueryHistory` method to retrieve the next page of history.
-  string next_page_token = 2;
-}
-
-message QueryHistory {
-  // The name for the query history.
-  // Format: projects/{project}/queryHistories/{id}
-  string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The database name to execute the query.
-  // Format: instances/{instance}/databases/{databaseName}
-  string database = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  string statement = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  optional string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  google.protobuf.Duration duration = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  enum Type {
-    // Unspecified query history type.
-    TYPE_UNSPECIFIED = 0;
-    // Query execution for data retrieval.
-    QUERY = 1;
-    // Data export operation to file.
-    EXPORT = 2;
-  }
-
-  Type type = 8;
-}
-
-message AICompletionRequest {
-  message Message {
-    string role = 1;
-    string content = 2;
-  }
-  repeated Message messages = 1;
-}
-
-message AICompletionResponse {
-  message Candidate {
-    message Content {
-      message Part {
-        string text = 1;
-      }
-      // parts is used for a result content with multiple parts.
-      repeated Part parts = 1;
-    }
-    Content content = 1;
-  }
-  // candidates is used for results with multiple choices and candidates. Used
-  // for OpenAI and Gemini.
-  repeated Candidate candidates = 1;
 }

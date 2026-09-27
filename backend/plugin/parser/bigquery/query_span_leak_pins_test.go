@@ -3,6 +3,7 @@ package bigquery
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -18,7 +19,7 @@ import (
 // failure, never silently empty/misaligned attribution (bytebase's masker is
 // positional and fail-open).
 
-func leakPinSpan(t *testing.T, statement string, tables []*storepb.TableMetadata) []base.QuerySpanResult {
+func leakPinSpan(t *testing.T, statement string, tables []*metadatapb.TableMetadata) []base.QuerySpanResult {
 	t.Helper()
 	span, err := googlesqltest.GetSpan(t, storepb.Engine_BIGQUERY, GetQuerySpan, statement, "ds1",
 		googlesqltest.DefaultSchemaTables(tables...))
@@ -34,9 +35,9 @@ func leakPinSpan(t *testing.T, statement string, tables []*storepb.TableMetadata
 // coalesces case-insensitively: one key column whose lineage reads BOTH sides,
 // then the non-key columns, positionally aligned with the real output.
 func TestLeakPin_LowercaseUsingCoalesce(t *testing.T) {
-	results := leakPinSpan(t, "SELECT * FROM a JOIN b USING (k);", []*storepb.TableMetadata{
-		{Name: "a", Columns: []*storepb.ColumnMetadata{{Name: "k"}, {Name: "x"}}},
-		{Name: "b", Columns: []*storepb.ColumnMetadata{{Name: "k"}, {Name: "y"}}},
+	results := leakPinSpan(t, "SELECT * FROM a JOIN b USING (k);", []*metadatapb.TableMetadata{
+		{Name: "a", Columns: []*metadatapb.ColumnMetadata{{Name: "k"}, {Name: "x"}}},
+		{Name: "b", Columns: []*metadatapb.ColumnMetadata{{Name: "k"}, {Name: "y"}}},
 	})
 	require.Len(t, results, 3, "USING key must be coalesced: real output is [k, x, y]")
 	require.Equal(t, []string{"a.k", "b.k"}, googlesqltest.SourcesOf(results[0]), "coalesced key reads both sides")
@@ -50,8 +51,8 @@ func TestLeakPin_LowercaseUsingCoalesce(t *testing.T) {
 // must attribute correctly — silently-empty lineage would return the sensitive
 // array elements unmasked.
 func TestLeakPin_UnnestLineage(t *testing.T) {
-	results := leakPinSpan(t, "SELECT elem FROM victim, UNNEST(victim.secret_tokens) AS elem", []*storepb.TableMetadata{
-		{Name: "victim", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "secret_tokens"}}},
+	results := leakPinSpan(t, "SELECT elem FROM victim, UNNEST(victim.secret_tokens) AS elem", []*metadatapb.TableMetadata{
+		{Name: "victim", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "secret_tokens"}}},
 	})
 	require.Len(t, results, 1)
 	require.Equal(t, []string{"victim.secret_tokens"}, googlesqltest.SourcesOf(results[0]),
@@ -62,8 +63,8 @@ func TestLeakPin_UnnestLineage(t *testing.T) {
 // positional metadata, not data — empty lineage is correct for it, while the
 // element column keeps the array lineage.
 func TestLeakPin_UnnestWithOffsetNoLineage(t *testing.T) {
-	results := leakPinSpan(t, "SELECT elem, pos FROM victim, UNNEST(victim.secret_tokens) AS elem WITH OFFSET AS pos", []*storepb.TableMetadata{
-		{Name: "victim", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "secret_tokens"}}},
+	results := leakPinSpan(t, "SELECT elem, pos FROM victim, UNNEST(victim.secret_tokens) AS elem WITH OFFSET AS pos", []*metadatapb.TableMetadata{
+		{Name: "victim", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "secret_tokens"}}},
 	})
 	require.Len(t, results, 2)
 	require.Equal(t, []string{"victim.secret_tokens"}, googlesqltest.SourcesOf(results[0]))
@@ -76,9 +77,9 @@ func TestLeakPin_UnnestWithOffsetNoLineage(t *testing.T) {
 // the right arm's sensitive column to the wrong output position (verified leak
 // pre-fix: ID <- rt.b_secret).
 func TestLeakPin_ByNameMerge(t *testing.T) {
-	results := leakPinSpan(t, "SELECT id, label FROM lt UNION ALL BY NAME SELECT b_secret AS label, id FROM rt", []*storepb.TableMetadata{
-		{Name: "lt", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "label"}}},
-		{Name: "rt", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "b_secret"}}},
+	results := leakPinSpan(t, "SELECT id, label FROM lt UNION ALL BY NAME SELECT b_secret AS label, id FROM rt", []*metadatapb.TableMetadata{
+		{Name: "lt", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "label"}}},
+		{Name: "rt", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "b_secret"}}},
 	})
 	require.Len(t, results, 2)
 	require.Equal(t, []string{"lt.id", "rt.id"}, googlesqltest.SourcesOf(results[0]),
@@ -92,9 +93,9 @@ func TestLeakPin_ByNameMerge(t *testing.T) {
 // The consumer must name-merge there too — pre-fix it ordinal-merged, which
 // mis-attributes whenever the arms' column orders differ (round-3 gate finding).
 func TestLeakPin_ByNameStarArmReversedOrder(t *testing.T) {
-	results := leakPinSpan(t, "SELECT * FROM pub UNION ALL BY NAME SELECT secret AS label, id FROM priv", []*storepb.TableMetadata{
-		{Name: "pub", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "label"}}},
-		{Name: "priv", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "secret"}}},
+	results := leakPinSpan(t, "SELECT * FROM pub UNION ALL BY NAME SELECT secret AS label, id FROM priv", []*metadatapb.TableMetadata{
+		{Name: "pub", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "label"}}},
+		{Name: "priv", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "secret"}}},
 	})
 	require.Len(t, results, 2)
 	require.Equal(t, []string{"priv.id", "pub.id"}, googlesqltest.SourcesOf(results[0]),
@@ -108,9 +109,9 @@ func TestLeakPin_ByNameStarArmReversedOrder(t *testing.T) {
 // (wrong arity), shifting the positional masker off every real output column —
 // the real single `label` column would have received `id`'s masker.
 func TestLeakPin_ByNameOnMatchColumns(t *testing.T) {
-	results := leakPinSpan(t, "SELECT * FROM pub UNION ALL BY NAME ON (label) SELECT id, secret AS label FROM priv", []*storepb.TableMetadata{
-		{Name: "pub", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "label"}}},
-		{Name: "priv", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "secret"}}},
+	results := leakPinSpan(t, "SELECT * FROM pub UNION ALL BY NAME ON (label) SELECT id, secret AS label FROM priv", []*metadatapb.TableMetadata{
+		{Name: "pub", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "label"}}},
+		{Name: "priv", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "secret"}}},
 	})
 	require.Len(t, results, 1, "ON (label) restricts the output to exactly the listed column")
 	require.Equal(t, "label", results[0].Name)

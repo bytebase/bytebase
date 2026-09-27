@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -135,7 +136,7 @@ func (c *statementDmlDryRunChecker) appendFailure(ostmt OmniStmt, reason string)
 		Code:          code.StatementDMLDryRunFailed.Int32(),
 		Title:         c.title,
 		Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", ostmt.TrimmedText(), reason),
-		StartPosition: common.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
+		StartPosition: base.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
 	})
 }
 

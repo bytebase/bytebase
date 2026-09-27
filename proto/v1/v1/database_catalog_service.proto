@@ -15,10 +15,14 @@ service DatabaseCatalogService {
   // Gets the catalog metadata for a database.
   // Permissions required: bb.databaseCatalogs.get
   rpc GetDatabaseCatalog(GetDatabaseCatalogRequest) returns (DatabaseCatalog) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/catalog}"};
+    option (google.api.http) = {
+      get: "/v1/{name=instances/*/databases/*/catalog}"
+      additional_bindings: {get: "/v1/{name=projects/*/instances/*/databases/*/catalog}"}
+    };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.databaseCatalogs.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Updates catalog metadata such as classifications and labels.
@@ -27,18 +31,24 @@ service DatabaseCatalogService {
     option (google.api.http) = {
       patch: "/v1/{catalog.name=instances/*/databases/*/catalog}"
       body: "catalog"
+      additional_bindings: {
+        patch: "/v1/{catalog.name=projects/*/instances/*/databases/*/catalog}"
+        body: "catalog"
+      }
     };
-    option (google.api.method_signature) = "catalog,update_mask";
+    option (google.api.method_signature) = "catalog";
     option (bytebase.v1.permission) = "bb.databaseCatalogs.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 }
 
 // Request message for getting a database catalog.
 message GetDatabaseCatalogRequest {
   // The name of the database catalog to retrieve.
-  // Format: instances/{instance}/databases/{database}/catalog
+  // Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/DatabaseCatalog"}
@@ -47,15 +57,18 @@ message GetDatabaseCatalogRequest {
 
 // Request message for updating a database catalog.
 message UpdateDatabaseCatalogRequest {
-  // The database catalog to update.
+  // The database catalog to update, identified by its `name` field.
+  // Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
   //
-  // The catalog's `name` field is used to identify the database catalog to update.
-  // Format: instances/{instance}/databases/{database}/catalog
+  // Replaces the whole catalog: send the complete value, since anything omitted
+  // is erased. There is no `update_mask` because `schemas` is a repeated field,
+  // and AIP-161 forbids addressing one element of one.
   DatabaseCatalog catalog = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // If set to true, and the database catalog is not found, a new database catalog will be created.
-  // In this situation, `update_mask` is ignored.
-  bool allow_missing = 2;
+  // No allow_missing. A catalog is not independently creatable — it exists once
+  // its database is synced — so there is nothing for the flag to create.
+  reserved 2;
+  reserved "allow_missing";
 }
 
 // Catalog metadata for a database including schemas, tables, and columns.
@@ -63,10 +76,11 @@ message DatabaseCatalog {
   option (google.api.resource) = {
     type: "bytebase.com/DatabaseCatalog"
     pattern: "instances/{instance}/databases/{database}/catalog"
+    pattern: "projects/{project}/instances/{instance}/databases/{database}/catalog"
   };
 
   // The name of the database catalog.
-  // Format: instances/{instance}/databases/{database}/catalog
+  // Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
   string name = 1;
 
   // The schemas in the database.

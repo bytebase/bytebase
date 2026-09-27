@@ -18,7 +18,7 @@ const (
 	maxCommentLength = 1000
 
 	// errMsgFailedToGetSourceDB is the wrap-error format string used at
-	// every common.GetInstanceDatabaseID(SourceTable.Database) call site.
+	// every common.GetDatabaseResourceName(SourceTable.Database) call site.
 	// Centralized to avoid string drift across the three error-wrap sites
 	// (GenerateRestoreSQL / doGenerate / extractStatement).
 	errMsgFailedToGetSourceDB = "failed to get source database ID for %s"
@@ -45,7 +45,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		return "", errors.Errorf("backup item target table is nil")
 	}
 
-	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
+	_, _, sourceDatabase, err := common.GetDatabaseResourceName(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, errMsgFailedToGetSourceDB, backupItem.SourceTable.Database)
 	}
@@ -145,11 +145,11 @@ func findMatchingDMLs(statement, database, table string, targetCols map[string]b
 }
 
 func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, nodes []ast.Node, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
-	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
+	_, _, sourceDatabase, err := common.GetDatabaseResourceName(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, errMsgFailedToGetSourceDB, backupItem.SourceTable.Database)
 	}
-	_, targetDatabase, err := common.GetInstanceDatabaseID(backupItem.TargetTable.Database)
+	_, _, targetDatabase, err := common.GetDatabaseResourceName(backupItem.TargetTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get target database ID for %s", backupItem.TargetTable.Database)
 	}

@@ -6,13 +6,12 @@ import (
 	"io"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/cockroachdb/cockroach-go/v2/crdb"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // Dump dumps the database.
-func (d *Driver) Dump(ctx context.Context, w io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (d *Driver) Dump(ctx context.Context, w io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
 	sb := &strings.Builder{}
 	if err := crdb.ExecuteTx(ctx, d.db, &sql.TxOptions{
 		ReadOnly: true,

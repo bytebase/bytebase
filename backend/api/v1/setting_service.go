@@ -4,15 +4,14 @@ import (
 	"context"
 	"log/slog"
 	"regexp"
-	"strconv"
+	"slices"
 	"strings"
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	"google.golang.org/protobuf/proto" // Added
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -165,6 +164,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+
 	existedSetting, err := s.store.GetSetting(ctx, workspaceID, storeSettingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", settingName, err))
@@ -173,7 +173,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
 	}
 	// audit log.
-	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && existedSetting != nil {
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok && existedSetting != nil {
 		v1pbSetting, err := convertToSettingMessage(existedSetting)
 		if err != nil {
 			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
@@ -186,198 +186,36 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	var storeSettingValue proto.Message
-	var resetAuditLogStdout bool
 	var resetClassification bool
 
 	switch storeSettingName {
-	case storepb.SettingName_WORKSPACE_PROFILE:
+	case storepb.SettingName_MCP:
 		if request.Msg.UpdateMask == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 		}
-		payload := convertWorkspaceProfileSetting(request.Msg.Setting.Value.GetWorkspaceProfile())
-		oldSetting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", storeSettingName, err))
+		payload := request.Msg.Setting.Value.GetMcp()
+		if payload == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("mcp setting is required"))
 		}
 
+		// Built from the request alone because capability is the only field. A
+		// second field needs a merge onto the stored row, or saving one erases
+		// the other.
+		mcpSetting := &storepb.MCPSetting{}
 		for _, path := range request.Msg.UpdateMask.Paths {
 			switch path {
-			case "value.workspace_profile.enable_debug":
-				oldSetting.EnableDebug = payload.EnableDebug
-				level := slog.LevelInfo
-				if payload.EnableDebug {
-					level = slog.LevelDebug
-				}
-				log.LogLevel.Set(level)
-			case "value.workspace_profile.disallow_signup":
-				if s.profile.SaaS {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the disallow_signup cannot be changed in SaaS mode"))
-				}
-				if payload.DisallowSignup {
-					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err != nil {
-						return nil, connect.NewError(connect.CodePermissionDenied, err)
-					}
-				}
-				oldSetting.DisallowSignup = payload.DisallowSignup
-			case "value.workspace_profile.external_url":
-				if s.profile.SaaS {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the external_url cannot be changed in SaaS mode"))
-				}
-				// Prevent changing external URL via UI when it's set via command-line flag
-				if s.profile.ExternalURL != "" {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("external URL is managed via --external-url command-line flag and cannot be changed through the UI"))
-				}
-				if payload.ExternalUrl != "" {
-					externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid external url: %v", err))
-					}
-					payload.ExternalUrl = externalURL
-				}
-				oldSetting.ExternalUrl = payload.ExternalUrl
-			case "value.workspace_profile.require_mfa":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TWO_FA); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				oldSetting.Require_2Fa = payload.Require_2Fa
-			case "value.workspace_profile.access_token_duration":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				if payload.AccessTokenDuration != nil && payload.AccessTokenDuration.Seconds > 0 && payload.AccessTokenDuration.AsDuration() < time.Minute {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("access token duration should be at least one minute"))
-				}
-				oldSetting.AccessTokenDuration = payload.AccessTokenDuration
-			case "value.workspace_profile.refresh_token_duration":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				if payload.RefreshTokenDuration != nil && payload.RefreshTokenDuration.Seconds > 0 && payload.RefreshTokenDuration.AsDuration() < time.Hour {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("refresh token duration should be at least one hour"))
-				}
-				oldSetting.RefreshTokenDuration = payload.RefreshTokenDuration
-			case "value.workspace_profile.inactive_session_timeout":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				oldSetting.InactiveSessionTimeout = payload.InactiveSessionTimeout
-			case "value.workspace_profile.announcement":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				oldSetting.Announcement = payload.Announcement
-			case "value.workspace_profile.maximum_request_expiration":
-				if payload.MaximumRequestExpiration != nil {
-					// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
-					if payload.MaximumRequestExpiration.Seconds <= 0 {
-						payload.MaximumRequestExpiration = nil
-					}
-				}
-				oldSetting.MaximumRequestExpiration = payload.MaximumRequestExpiration
-			case "value.workspace_profile.domains":
-				if err := validateDomains(payload.Domains); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid domains, error %v", err))
-				}
-				oldSetting.Domains = payload.Domains
-			case "value.workspace_profile.enforce_identity_domain":
-				if payload.EnforceIdentityDomain {
-					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION); err != nil {
-						return nil, connect.NewError(connect.CodePermissionDenied, err)
-					}
-				}
-				oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
-			case "value.workspace_profile.database_change_mode":
-				oldSetting.DatabaseChangeMode = payload.DatabaseChangeMode
-			case "value.workspace_profile.allow_email_code_signin":
-				if s.profile.SaaS {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("allow_email_code_signin cannot be changed in SaaS mode"))
-				}
-				if payload.AllowEmailCodeSignin {
-					emailSetting, err := s.store.GetSetting(ctx, workspaceID, storepb.SettingName_EMAIL)
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to load email setting"))
-					}
-					if emailSetting == nil {
-						return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot enable email code signin without an EMAIL setting"))
-					}
-				}
-				oldSetting.AllowEmailCodeSignin = payload.AllowEmailCodeSignin
-			case "value.workspace_profile.disallow_password_signin":
-				if s.profile.SaaS {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the disallow_password_signin cannot be changed in SaaS mode"))
-				}
-				if payload.DisallowPasswordSignin {
-					// We should still allow users to turn it off.
-					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err != nil {
-						return nil, connect.NewError(connect.CodePermissionDenied, err)
-					}
-
-					settingWsID := common.GetWorkspaceIDFromContext(ctx)
-					identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: &settingWsID})
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list identity providers: %v", err))
-					}
-					if len(identityProviders) == 0 {
-						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot disallow password signin when no identity provider is set"))
-					}
-				}
-				oldSetting.DisallowPasswordSignin = payload.DisallowPasswordSignin
-			case "value.workspace_profile.enable_metric_collection":
-				oldSetting.EnableMetricCollection = payload.EnableMetricCollection
-			case "value.workspace_profile.enable_audit_log_stdout":
-				if payload.EnableAuditLogStdout {
-					// Require TEAM or ENTERPRISE license
-					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
-						return nil, connect.NewError(connect.CodePermissionDenied, err)
-					}
-				}
-				resetAuditLogStdout = true
-				oldSetting.EnableAuditLogStdout = payload.EnableAuditLogStdout
-			case "value.workspace_profile.watermark":
-				if payload.Watermark {
-					if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_WATERMARK); err != nil {
-						return nil, connect.NewError(connect.CodePermissionDenied, err)
-					}
-				}
-				oldSetting.Watermark = payload.Watermark
-			case "value.workspace_profile.directory_sync_token":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DIRECTORY_SYNC); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				// Generate a new token if the payload is empty.
-				// This handles both initial setup and token reset (when user explicitly sends empty string).
-				if payload.DirectorySyncToken == "" {
-					payload.DirectorySyncToken = uuid.New().String()
-				}
-				oldSetting.DirectorySyncToken = payload.DirectorySyncToken
-			case "value.workspace_profile.password_restriction":
-				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
-					return nil, connect.NewError(connect.CodePermissionDenied, err)
-				}
-				if payload.PasswordRestriction != nil && payload.PasswordRestriction.MinLength < 8 {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid password minimum length, should no less than 8"))
-				}
-				oldSetting.PasswordRestriction = payload.PasswordRestriction
-			case "value.workspace_profile.sql_result_size":
-				oldSetting.SqlResultSize = payload.SqlResultSize
-			case "value.workspace_profile.query_timeout":
-				oldSetting.QueryTimeout = payload.QueryTimeout
-			case "value.workspace_profile.sql_editor_theme_id":
-				oldSetting.SqlEditorThemeId = payload.SqlEditorThemeId
-			case "value.workspace_profile.sql_editor_custom_theme":
-				if err := validateSQLEditorCustomTheme(payload.SqlEditorCustomTheme); err != nil {
-					return nil, err
-				}
-				oldSetting.SqlEditorCustomTheme = payload.SqlEditorCustomTheme
+			case "value.mcp.capability":
+				mcpSetting.Capability = convertToStoreMCPCapability(payload.Capability)
 			default:
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
 			}
 		}
-
-		if len(oldSetting.Domains) == 0 && oldSetting.EnforceIdentityDomain {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("identity domain can be enforced only when workspace domains are set"))
+		if err := validateMCPCapability(mcpSetting.GetCapability()); err != nil {
+			return nil, err
 		}
-		storeSettingValue = oldSetting
+		storeSettingValue = mcpSetting
+	case storepb.SettingName_WORKSPACE_PROFILE:
+		return s.updateWorkspaceProfileSetting(ctx, request, workspaceID)
 	case storepb.SettingName_WORKSPACE_APPROVAL:
 		if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
@@ -393,16 +231,13 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			if _, err := common.ConvertUnparsedApproval(rule.Condition); err != nil {
 				return nil, err
 			}
+			conditionExpr := ""
+			if rule.Condition != nil {
+				conditionExpr = rule.Condition.Expression
+			}
 
-			// For SOURCE_UNSPECIFIED (fallback) rules, validate that only project_id is used
-			if rule.Source == v1pb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED {
-				conditionExpr := ""
-				if rule.Condition != nil {
-					conditionExpr = rule.Condition.Expression
-				}
-				if err := common.ValidateFallbackApprovalExpr(conditionExpr); err != nil {
-					return nil, err
-				}
+			if err := common.ValidateApprovalExprForSource(conditionExpr, storepb.WorkspaceApprovalSetting_Rule_Source(rule.Source)); err != nil {
+				return nil, err
 			}
 
 			if err := validateApprovalTemplate(rule.Template); err != nil {
@@ -422,84 +257,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = payload
 	case storepb.SettingName_APP_IM:
-		payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppIm())
-		if err != nil {
-			return nil, err
-		}
-
-		// Helper function to find or create an IM setting entry by type
-		findIMSetting := func(imType storepb.WebhookType) *storepb.AppIMSetting_IMSetting {
-			for _, s := range payload.Settings {
-				if s.Type == imType {
-					return s
-				}
-			}
-			return nil
-		}
-
-		for _, path := range request.Msg.GetUpdateMask().GetPaths() {
-			switch path {
-			case "value.app_im.slack":
-				slackSetting := findIMSetting(storepb.WebhookType_SLACK)
-				if slackSetting == nil || slackSetting.GetSlack() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found slack setting"))
-				}
-				if err := slack.ValidateToken(ctx, slackSetting.GetSlack().GetToken()); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im.feishu":
-				feishuSetting := findIMSetting(storepb.WebhookType_FEISHU)
-				if feishuSetting == nil || feishuSetting.GetFeishu() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found feishu setting"))
-				}
-				if err := feishu.Validate(ctx, feishuSetting.GetFeishu().GetAppId(), feishuSetting.GetFeishu().GetAppSecret(), user.Email); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im.wecom":
-				wecomSetting := findIMSetting(storepb.WebhookType_WECOM)
-				if wecomSetting == nil || wecomSetting.GetWecom() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found wecom setting"))
-				}
-				if err := wecom.Validate(ctx, wecomSetting.GetWecom().GetCorpId(), wecomSetting.GetWecom().GetAgentId(), wecomSetting.GetWecom().GetSecret()); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im.lark":
-				larkSetting := findIMSetting(storepb.WebhookType_LARK)
-				if larkSetting == nil || larkSetting.GetLark() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found lark setting"))
-				}
-				if err := lark.Validate(ctx, larkSetting.GetLark().GetAppId(), larkSetting.GetLark().GetAppSecret(), user.Email); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im.dingtalk":
-				dingtalkSetting := findIMSetting(storepb.WebhookType_DINGTALK)
-				if dingtalkSetting == nil || dingtalkSetting.GetDingtalk() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found dingtalk setting"))
-				}
-				if err := dingtalk.Validate(ctx, dingtalkSetting.GetDingtalk().GetClientId(), dingtalkSetting.GetDingtalk().GetClientSecret(), dingtalkSetting.GetDingtalk().GetRobotCode(), user.Phone); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im_setting_value.teams":
-				teamsSetting := findIMSetting(storepb.WebhookType_TEAMS)
-				if teamsSetting == nil || teamsSetting.GetTeams() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found teams setting"))
-				}
-				if err := teams.Validate(ctx, teamsSetting.GetTeams().GetTenantId(), teamsSetting.GetTeams().GetClientId(), teamsSetting.GetTeams().GetClientSecret(), user.Email); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			default:
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
-			}
-		}
-
-		storeSettingValue = payload
-
+		return s.updateAppIMSetting(ctx, request, workspaceID, user)
 	case storepb.SettingName_DATA_CLASSIFICATION:
 		if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
@@ -706,15 +464,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
 	}
 
-	// Dynamically update audit logger runtime flag if enable_audit_log_stdout was changed
-	if resetAuditLogStdout {
-		workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get workspace setting message: %v", err))
-		}
-		s.profile.RuntimeEnableAuditLogStdout.Store(workspaceProfile.EnableAuditLogStdout)
-	}
-
 	// It's a temporary solution to map the classification to all projects before we support it in the UX.
 	if resetClassification {
 		classification, err := s.store.GetDataClassificationSetting(ctx, workspaceID)
@@ -752,6 +501,549 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	return connect.NewResponse(settingMessage), nil
+}
+
+// appIMSettingMaskPath maps each accepted APP_IM mask path to the provider it
+// addresses. The paths do not name real proto fields — AppIMSetting holds one
+// repeated `settings`, and AIP-161 does not let a mask address a repeated
+// element — so they are matched as a fixed vocabulary rather than traversed.
+var appIMSettingMaskPath = map[string]storepb.WebhookType{
+	"value.app_im.slack":               storepb.WebhookType_SLACK,
+	"value.app_im.feishu":              storepb.WebhookType_FEISHU,
+	"value.app_im.wecom":               storepb.WebhookType_WECOM,
+	"value.app_im.lark":                storepb.WebhookType_LARK,
+	"value.app_im.dingtalk":            storepb.WebhookType_DINGTALK,
+	"value.app_im_setting_value.teams": storepb.WebhookType_TEAMS,
+}
+
+// updateAppIMSetting handles the APP_IM branch of UpdateSetting through the
+// store's row-locking read-modify-write primitive: the merge runs inside the
+// transaction against the value of the locked row, so two admins configuring
+// different providers at once cannot each merge onto the same stale snapshot
+// and have the later write restore the other's provider from it. The row is
+// seeded at workspace creation, so the primitive always finds it.
+func (s *SettingService) updateAppIMSetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string, user *store.UserMessage) (*connect.Response[v1pb.Setting], error) {
+	if request.Msg.UpdateMask == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+	}
+	payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppIm())
+	if err != nil {
+		return nil, err
+	}
+	if err := preflightAppIMPaths(ctx, payload, request.Msg.UpdateMask.Paths, user); err != nil {
+		return nil, err
+	}
+
+	var lockedBefore *storepb.AppIMSetting
+	apply := func(current proto.Message) (proto.Message, error) {
+		stored, ok := current.(*storepb.AppIMSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_APP_IM))
+		}
+		// The audit before-image is the row this merge actually ran against,
+		// not the possibly stale pre-lock snapshot captured by UpdateSetting.
+		lockedBefore = proto.CloneOf(stored)
+		return mergeAppIMSetting(stored, payload, request.Msg.UpdateMask.Paths)
+	}
+
+	if request.Msg.ValidateOnly {
+		fresh, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_APP_IM)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", storepb.SettingName_APP_IM, err))
+		}
+		if fresh == nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("cannot find setting %v", storepb.SettingName_APP_IM))
+		}
+		merged, err := apply(fresh.Value)
+		if err != nil {
+			return nil, err
+		}
+		// Return the merged value, not the request: the request carries only
+		// the masked providers, so echoing it would show every provider this
+		// update preserves as gone.
+		return newAppIMSettingResponse(workspaceID, merged)
+	}
+
+	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_APP_IM, apply, nil)
+	if err != nil {
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, err
+		}
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
+	}
+
+	// Re-capture the audit before-image from the locked row the merge ran
+	// against, overwriting UpdateSetting's earlier pre-lock snapshot.
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
+		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
+			Name:      storepb.SettingName_APP_IM,
+			Workspace: workspaceID,
+			Value:     lockedBefore,
+		})
+		if err != nil {
+			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
+		}
+		p, err := anypb.New(v1pbSetting)
+		if err != nil {
+			slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
+		}
+		setServiceData(p)
+	}
+
+	settingMessage, err := convertToSettingMessage(setting)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+	return connect.NewResponse(settingMessage), nil
+}
+
+func newAppIMSettingResponse(workspaceID string, value proto.Message) (*connect.Response[v1pb.Setting], error) {
+	settingMessage, err := convertToSettingMessage(&store.SettingMessage{
+		Name:      storepb.SettingName_APP_IM,
+		Workspace: workspaceID,
+		Value:     value,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+	return connect.NewResponse(settingMessage), nil
+}
+
+// preflightAppIMPaths validates the credentials of every provider the mask
+// names and the payload carries. It runs BEFORE the row-locking transaction:
+// each check is a round trip to the provider's own API, and holding the
+// setting row lock across one would let a slow vendor block every other write
+// to this row. None of it depends on the locked row.
+func preflightAppIMPaths(ctx context.Context, payload *storepb.AppIMSetting, paths []string, user *store.UserMessage) error {
+	for _, path := range paths {
+		imType, ok := appIMSettingMaskPath[path]
+		if !ok {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+		}
+		incoming := findIMSetting(payload.GetSettings(), imType)
+		if incoming == nil || incoming.GetPayload() == nil {
+			// A masked provider the payload omits is a removal.
+			continue
+		}
+		if err := validateIMSetting(ctx, incoming, user); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// mergeAppIMSetting splices only the masked providers of payload into stored.
+// Assigning the request wholesale used to drop every provider it left out, so
+// saving Slack wiped the stored Feishu, WeCom, Lark, DingTalk and Teams
+// secrets. A masked provider the payload omits is removed, which is how one is
+// deleted. stored is not modified.
+func mergeAppIMSetting(stored, payload *storepb.AppIMSetting, paths []string) (*storepb.AppIMSetting, error) {
+	merged := proto.CloneOf(stored)
+	for _, path := range paths {
+		imType, ok := appIMSettingMaskPath[path]
+		if !ok {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+		}
+		incoming := findIMSetting(payload.GetSettings(), imType)
+		if incoming == nil || incoming.GetPayload() == nil {
+			merged.Settings = slices.DeleteFunc(merged.Settings, func(s *storepb.AppIMSetting_IMSetting) bool {
+				return s.GetType() == imType
+			})
+			continue
+		}
+		if existing := findIMSetting(merged.GetSettings(), imType); existing != nil {
+			proto.Reset(existing)
+			proto.Merge(existing, incoming)
+		} else {
+			merged.Settings = append(merged.Settings, incoming)
+		}
+	}
+	return merged, nil
+}
+
+func findIMSetting(settings []*storepb.AppIMSetting_IMSetting, imType storepb.WebhookType) *storepb.AppIMSetting_IMSetting {
+	for _, setting := range settings {
+		if setting.GetType() == imType {
+			return setting
+		}
+	}
+	return nil
+}
+
+// validateIMSetting checks the provider's credentials against its own API.
+func validateIMSetting(ctx context.Context, setting *storepb.AppIMSetting_IMSetting, user *store.UserMessage) error {
+	var err error
+	switch setting.GetType() {
+	case storepb.WebhookType_SLACK:
+		err = slack.ValidateToken(ctx, setting.GetSlack().GetToken())
+	case storepb.WebhookType_FEISHU:
+		err = feishu.Validate(ctx, setting.GetFeishu().GetAppId(), setting.GetFeishu().GetAppSecret(), user.Email)
+	case storepb.WebhookType_WECOM:
+		err = wecom.Validate(ctx, setting.GetWecom().GetCorpId(), setting.GetWecom().GetAgentId(), setting.GetWecom().GetSecret())
+	case storepb.WebhookType_LARK:
+		err = lark.Validate(ctx, setting.GetLark().GetAppId(), setting.GetLark().GetAppSecret(), user.Email)
+	case storepb.WebhookType_DINGTALK:
+		err = dingtalk.Validate(ctx, setting.GetDingtalk().GetClientId(), setting.GetDingtalk().GetClientSecret(), setting.GetDingtalk().GetRobotCode(), user.Phone)
+	case storepb.WebhookType_TEAMS:
+		err = teams.Validate(ctx, setting.GetTeams().GetTenantId(), setting.GetTeams().GetClientId(), setting.GetTeams().GetClientSecret(), user.Email)
+	default:
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported IM type %v", setting.GetType()))
+	}
+	if err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
+	}
+	return nil
+}
+
+// updateWorkspaceProfileSetting handles the WORKSPACE_PROFILE branch of
+// UpdateSetting through the store's row-locking read-modify-write primitive:
+// the update-mask merge and its validations run inside the transaction against
+// the value of the locked row, so validation sees the true final state and a
+// concurrent write (another admin, emergency SQL) can never be silently
+// reverted by a merge based on a stale read. Validate-only requests run the
+// same merge and validations against an uncached snapshot and write nothing.
+func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string) (*connect.Response[v1pb.Setting], error) {
+	if request.Msg.UpdateMask == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+	}
+	payload := convertWorkspaceProfileSetting(request.Msg.Setting.Value.GetWorkspaceProfile())
+	// License, store, and profile checks run before the row-locking
+	// transaction so apply stays free of database reads.
+	if err := s.preflightWorkspaceProfilePaths(ctx, workspaceID, request, payload); err != nil {
+		return nil, err
+	}
+	var lockedBefore *storepb.WorkspaceProfileSetting
+	apply := func(current proto.Message) (proto.Message, error) {
+		oldSetting, ok := current.(*storepb.WorkspaceProfileSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_WORKSPACE_PROFILE))
+		}
+		// The audit before-image is the row this merge actually ran against,
+		// not the possibly stale pre-lock snapshot captured by UpdateSetting.
+		lockedBefore = proto.CloneOf(oldSetting)
+		if err := mergeWorkspaceProfilePaths(request, payload, oldSetting); err != nil {
+			return nil, err
+		}
+		if len(oldSetting.Domains) == 0 && oldSetting.EnforceIdentityDomain {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("identity domain can be enforced only when workspace domains are set"))
+		}
+		return oldSetting, nil
+	}
+
+	if request.Msg.ValidateOnly {
+		freshSetting, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", storepb.SettingName_WORKSPACE_PROFILE, err))
+		}
+		if freshSetting == nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("cannot find setting %v", storepb.SettingName_WORKSPACE_PROFILE))
+		}
+		profileValue, ok := freshSetting.Value.(*storepb.WorkspaceProfileSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_WORKSPACE_PROFILE))
+		}
+		// GetSettingUncached returns a fresh object today (uncached reads no
+		// longer populate the cache), but validate against a clone anyway so
+		// a validate-only request can never mutate shared state should the
+		// read path change.
+		if _, err := apply(proto.CloneOf(profileValue)); err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(&v1pb.Setting{
+			Name:  request.Msg.Setting.Name,
+			Value: request.Msg.Setting.Value,
+		}), nil
+	}
+
+	// Runtime derivatives (audit stdout flag, debug log level, pprof gate)
+	// reconcile from the freshly re-read committed state on EVERY successful
+	// profile publication — not only when this request touched those fields —
+	// so a publication skipped by an earlier failure is repaired by the next
+	// profile write, mirroring startup derivation (server.go). Skipped in
+	// SaaS, where workspace-scoped stored values must not drive process-global
+	// state on a shared replica (the corresponding mask paths are also
+	// rejected in preflight).
+	//
+	// The audit-log entitlement is computed here, outside the publish mutex:
+	// runtime audit stdout requires the stored flag AND a valid license, same
+	// as startup — and postCommit must not call IsFeatureEnabled itself,
+	// because it runs under settingPublishMu and a setting cache miss there
+	// would re-acquire that mutex.
+	auditLogFeatureEnabled := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG) == nil
+	postCommit := func(current *store.SettingMessage) {
+		if s.profile.SaaS {
+			return
+		}
+		profile, ok := current.Value.(*storepb.WorkspaceProfileSetting)
+		if !ok {
+			return
+		}
+		s.profile.RuntimeEnableAuditLogStdout.Store(profile.EnableAuditLogStdout && auditLogFeatureEnabled)
+		s.profile.RuntimeDebug.Store(profile.EnableDebug)
+		level := slog.LevelInfo
+		if profile.EnableDebug {
+			level = slog.LevelDebug
+		}
+		log.LogLevel.Set(level)
+	}
+	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE, apply, postCommit)
+	if err != nil {
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, err
+		}
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
+	}
+
+	// Re-capture the audit before-image from the locked row the merge ran
+	// against, overwriting UpdateSetting's earlier pre-lock snapshot.
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
+		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
+			Name:      storepb.SettingName_WORKSPACE_PROFILE,
+			Workspace: workspaceID,
+			Value:     lockedBefore,
+		})
+		if err != nil {
+			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
+		}
+		p, err := anypb.New(v1pbSetting)
+		if err != nil {
+			slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
+		}
+		setServiceData(p)
+	}
+
+	settingMessage, err := convertToSettingMessage(setting)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+	return connect.NewResponse(settingMessage), nil
+}
+
+// preflightWorkspaceProfilePaths runs the update-mask validations that need
+// license, store, or profile lookups. It runs BEFORE the row-locking
+// transaction: apply must stay free of database reads, because it executes
+// while holding the transaction's pooled connection and the row lock, and a
+// nested read wanting a second connection is a bounded-pool starvation cycle.
+// None of these checks depend on the locked row's state, so hoisting them is
+// behavior-preserving. May normalize payload fields (e.g. external_url).
+func (s *SettingService) preflightWorkspaceProfilePaths(ctx context.Context, workspaceID string, request *connect.Request[v1pb.UpdateSettingRequest], payload *storepb.WorkspaceProfileSetting) error {
+	for _, path := range request.Msg.UpdateMask.Paths {
+		switch path {
+		case "value.workspace_profile.enable_debug":
+			// Debug flips the process-global log level and pprof exposure; on
+			// a shared SaaS replica that would affect other workspaces.
+			if s.profile.SaaS {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the enable_debug cannot be changed in SaaS mode"))
+			}
+		case "value.workspace_profile.disallow_signup":
+			if s.profile.SaaS {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the disallow_signup cannot be changed in SaaS mode"))
+			}
+			if payload.DisallowSignup {
+				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err != nil {
+					return connect.NewError(connect.CodePermissionDenied, err)
+				}
+			}
+		case "value.workspace_profile.external_url":
+			if s.profile.SaaS {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the external_url cannot be changed in SaaS mode"))
+			}
+			// Prevent changing external URL via UI when it's set via command-line flag
+			if s.profile.ExternalURL != "" {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("external URL is managed via --external-url command-line flag and cannot be changed through the UI"))
+			}
+			if payload.ExternalUrl != "" {
+				externalURL, err := config.NormalizeExternalURL(payload.ExternalUrl)
+				if err != nil {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid external url: %v", err))
+				}
+				payload.ExternalUrl = externalURL
+			}
+		case "value.workspace_profile.require_mfa":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TWO_FA); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+		case "value.workspace_profile.access_token_duration":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+			if payload.AccessTokenDuration != nil && payload.AccessTokenDuration.Seconds > 0 && payload.AccessTokenDuration.AsDuration() < time.Minute {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("access token duration should be at least one minute"))
+			}
+		case "value.workspace_profile.refresh_token_duration":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+			if payload.RefreshTokenDuration != nil && payload.RefreshTokenDuration.Seconds > 0 && payload.RefreshTokenDuration.AsDuration() < time.Hour {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("refresh token duration should be at least one hour"))
+			}
+		case "value.workspace_profile.inactive_session_timeout":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+		case "value.workspace_profile.announcement":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+			if payload.Announcement != nil {
+				if err := validateAnnouncementTheme(payload.Announcement.Theme); err != nil {
+					return err
+				}
+			}
+		case "value.workspace_profile.enforce_identity_domain":
+			if payload.EnforceIdentityDomain {
+				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION); err != nil {
+					return connect.NewError(connect.CodePermissionDenied, err)
+				}
+			}
+		case "value.workspace_profile.allow_email_code_signin":
+			if s.profile.SaaS {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("allow_email_code_signin cannot be changed in SaaS mode"))
+			}
+			if payload.AllowEmailCodeSignin {
+				emailSetting, err := s.store.GetSetting(ctx, workspaceID, storepb.SettingName_EMAIL)
+				if err != nil {
+					return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to load email setting"))
+				}
+				if emailSetting == nil {
+					return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot enable email code signin without an EMAIL setting"))
+				}
+			}
+		case "value.workspace_profile.disallow_password_signin":
+			if s.profile.SaaS {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the disallow_password_signin cannot be changed in SaaS mode"))
+			}
+			if payload.DisallowPasswordSignin {
+				// We should still allow users to turn it off.
+				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err != nil {
+					return connect.NewError(connect.CodePermissionDenied, err)
+				}
+
+				settingWsID := common.GetWorkspaceIDFromContext(ctx)
+				identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: &settingWsID})
+				if err != nil {
+					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to list identity providers: %v", err))
+				}
+				if len(identityProviders) == 0 {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot disallow password signin when no identity provider is set"))
+				}
+			}
+		case "value.workspace_profile.enable_audit_log_stdout":
+			// Audit stdout output is process-global; on a shared SaaS replica
+			// it would affect other workspaces.
+			if s.profile.SaaS {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the enable_audit_log_stdout cannot be changed in SaaS mode"))
+			}
+			if payload.EnableAuditLogStdout {
+				// Require TEAM or ENTERPRISE license
+				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
+					return connect.NewError(connect.CodePermissionDenied, err)
+				}
+			}
+		case "value.workspace_profile.watermark":
+			if payload.Watermark {
+				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_WATERMARK); err != nil {
+					return connect.NewError(connect.CodePermissionDenied, err)
+				}
+			}
+		case "value.workspace_profile.directory_sync_token":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DIRECTORY_SYNC); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+		case "value.workspace_profile.password_restriction":
+			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
+				return connect.NewError(connect.CodePermissionDenied, err)
+			}
+			if payload.PasswordRestriction != nil && payload.PasswordRestriction.MinLength < 8 {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid password minimum length, should no less than 8"))
+			}
+		default:
+			// Unknown paths are rejected by the merge pass.
+		}
+	}
+	return nil
+}
+
+// mergeWorkspaceProfilePaths applies the request's update-mask paths onto
+// oldSetting. It is pure apart from directory-sync token generation: it
+// performs no database or license reads — those ran in
+// preflightWorkspaceProfilePaths — because it executes inside the row-locking
+// transaction. Only validations that are payload-local or need the merged
+// state live here.
+func mergeWorkspaceProfilePaths(request *connect.Request[v1pb.UpdateSettingRequest], payload *storepb.WorkspaceProfileSetting, oldSetting *storepb.WorkspaceProfileSetting) error {
+	for _, path := range request.Msg.UpdateMask.Paths {
+		switch path {
+		case "value.workspace_profile.enable_debug":
+			oldSetting.EnableDebug = payload.EnableDebug
+		case "value.workspace_profile.disallow_signup":
+			oldSetting.DisallowSignup = payload.DisallowSignup
+		case "value.workspace_profile.external_url":
+			oldSetting.ExternalUrl = payload.ExternalUrl
+		case "value.workspace_profile.require_mfa":
+			oldSetting.Require_2Fa = payload.Require_2Fa
+		case "value.workspace_profile.access_token_duration":
+			oldSetting.AccessTokenDuration = payload.AccessTokenDuration
+		case "value.workspace_profile.refresh_token_duration":
+			oldSetting.RefreshTokenDuration = payload.RefreshTokenDuration
+		case "value.workspace_profile.inactive_session_timeout":
+			oldSetting.InactiveSessionTimeout = payload.InactiveSessionTimeout
+		case "value.workspace_profile.announcement":
+			oldSetting.Announcement = payload.Announcement
+		case "value.workspace_profile.maximum_request_expiration":
+			if payload.MaximumRequestExpiration != nil {
+				// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
+				if payload.MaximumRequestExpiration.Seconds <= 0 {
+					payload.MaximumRequestExpiration = nil
+				}
+			}
+			oldSetting.MaximumRequestExpiration = payload.MaximumRequestExpiration
+		case "value.workspace_profile.maximum_role_expiration":
+			if payload.MaximumRoleExpiration != nil {
+				// If the value is less than or equal to 0, we will remove the setting. AKA no limit.
+				if payload.MaximumRoleExpiration.Seconds <= 0 {
+					payload.MaximumRoleExpiration = nil
+				}
+			}
+			oldSetting.MaximumRoleExpiration = payload.MaximumRoleExpiration
+		case "value.workspace_profile.domains":
+			if err := validateDomains(payload.Domains); err != nil {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid domains, error %v", err))
+			}
+			oldSetting.Domains = payload.Domains
+		case "value.workspace_profile.enforce_identity_domain":
+			oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
+		case "value.workspace_profile.database_change_mode":
+			oldSetting.DatabaseChangeMode = payload.DatabaseChangeMode
+		case "value.workspace_profile.allow_email_code_signin":
+			oldSetting.AllowEmailCodeSignin = payload.AllowEmailCodeSignin
+		case "value.workspace_profile.disallow_password_signin":
+			oldSetting.DisallowPasswordSignin = payload.DisallowPasswordSignin
+		case "value.workspace_profile.enable_metric_collection":
+			oldSetting.EnableMetricCollection = payload.EnableMetricCollection
+		case "value.workspace_profile.enable_audit_log_stdout":
+			oldSetting.EnableAuditLogStdout = payload.EnableAuditLogStdout
+		case "value.workspace_profile.watermark":
+			oldSetting.Watermark = payload.Watermark
+		case "value.workspace_profile.password_restriction":
+			oldSetting.PasswordRestriction = payload.PasswordRestriction
+		case "value.workspace_profile.sql_result_size":
+			oldSetting.SqlResultSize = payload.SqlResultSize
+		case "value.workspace_profile.query_timeout":
+			oldSetting.QueryTimeout = payload.QueryTimeout
+		case "value.workspace_profile.sql_editor_theme_id":
+			oldSetting.SqlEditorThemeId = payload.SqlEditorThemeId
+		case "value.workspace_profile.sql_editor_custom_theme":
+			if err := validateSQLEditorCustomTheme(payload.SqlEditorCustomTheme); err != nil {
+				return err
+			}
+			oldSetting.SqlEditorCustomTheme = payload.SqlEditorCustomTheme
+		default:
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+		}
+	}
+	return nil
 }
 
 // TestEmailSetting sends a test email using the provided config.
@@ -809,7 +1101,7 @@ func (s *SettingService) checkSettingPermission(ctx context.Context, req connect
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		err := connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", perm))
+		err := permissionDeniedError(ctx, errors.Errorf("user does not have permission %q", perm))
 		if detail, detailErr := connect.NewErrorDetail(&v1pb.PermissionDeniedDetail{
 			Method:              req.Spec().Procedure,
 			RequiredPermissions: []string{string(perm)},
@@ -861,10 +1153,18 @@ func (*SettingService) isSettingDisallowed(name storepb.SettingName) bool {
 }
 
 func validateApprovalTemplate(template *v1pb.ApprovalTemplate) error {
-	if template.Flow == nil {
+	if template == nil {
 		return errors.Errorf("approval template cannot be nil")
 	}
+	if template.Flow == nil {
+		return errors.Errorf("approval template flow cannot be nil")
+	}
 	// Empty roles means "no approval required" - issue will be auto-approved
+	for i, role := range template.Flow.Roles {
+		if strings.TrimSpace(role) == "" {
+			return errors.Errorf("approval template role at position %d cannot be empty", i+1)
+		}
+	}
 	return nil
 }
 
@@ -883,7 +1183,7 @@ func validateDomains(domains []string) error {
 // validateSQLEditorCustomTheme checks the SHAPE of a custom theme, not the
 // frontend's token vocabulary. The `--color-*` token keys are a frontend/CSS
 // concern owned by SQL_EDITOR_THEME_TOKENS; the server only ensures the stored
-// value isn't garbage (non-empty tokens, each an "r g b" triple). The frontend
+// value isn't garbage (non-empty tokens, each an opaque Color). The frontend
 // derives the full token set and falls back to a built-in if one is missing, so
 // the backend stays theme-catalog-agnostic.
 func validateSQLEditorCustomTheme(t *storepb.SQLEditorThemeSetting) error {
@@ -906,25 +1206,35 @@ func validateSQLEditorCustomTheme(t *storepb.SQLEditorThemeSetting) error {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("sql_editor_custom_theme.tokens is required"))
 	}
 	for k, v := range t.Tokens {
-		if !isRGBTriple(v) {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("sql_editor_custom_theme token %s invalid: %q", k, v))
+		if !isOpaqueColor(v) {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("sql_editor_custom_theme token %s invalid", k))
 		}
 	}
 	return nil
 }
 
-func isRGBTriple(s string) bool {
-	parts := strings.Fields(s)
-	if len(parts) != 3 {
-		return false
+func validateAnnouncementTheme(t *storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme) error {
+	if t == nil {
+		return nil
 	}
-	for _, p := range parts {
-		n, err := strconv.Atoi(p)
-		if err != nil || n < 0 || n > 255 {
-			return false
-		}
+	if !isOpaqueColor(t.Background) {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("announcement theme background invalid"))
 	}
-	return true
+	if !isOpaqueColor(t.Text) {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("announcement theme text invalid"))
+	}
+	return nil
+}
+
+// validateMCPCapability rejects UNSPECIFIED and unknown enum numbers.
+func validateMCPCapability(capability storepb.MCPSetting_Capability) error {
+	if capability == storepb.MCPSetting_CAPABILITY_UNSPECIFIED {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("capability must be specified"))
+	}
+	if _, ok := storepb.MCPSetting_Capability_name[int32(capability)]; !ok {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown capability value %d", capability))
+	}
+	return nil
 }
 
 func (s *SettingService) validateEnvironments(ctx context.Context, workspaceID string, envs []*v1pb.EnvironmentSetting_Environment) error {
@@ -938,6 +1248,9 @@ func (s *SettingService) validateEnvironments(ctx context.Context, workspaceID s
 		}
 		if used[env.Id] {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("duplicate environment ID %v", env.Id))
+		}
+		if env.Color != nil && !isOpaqueColor(env.Color) {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("environment color invalid"))
 		}
 		if v, ok := env.Tags["protected"]; ok && v == "protected" {
 			if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_ENVIRONMENT_TIERS); err != nil {

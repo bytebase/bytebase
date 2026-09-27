@@ -44,13 +44,22 @@ test.beforeAll(async ({ browser }) => {
 
   // Create a real plan + issue. The description carries a markdown link (sibling
   // surface); the comment is posted right after (the reported surface).
-  const sheet = await env.api.createSheet(
+  //
+  // Re-based onto a create-database plan (BYT-9721, #20722): schema/data CHANGE
+  // issues now redirect off Issue Detail to Plan Detail, so a change issue would
+  // bounce away from the page this test asserts on. A create-database issue
+  // shares the DATABASE_CHANGE type but stays on Issue Detail (its plan is not a
+  // change plan), so it exercises the same MarkdownEditor read-only render path
+  // on the surface those issues still use.
+  const plan = await env.api.createCreateDatabasePlan(
     env.project,
-    "SELECT 1; -- byt9664",
+    `BYT-9664 ${STAMP}`,
+    {
+      id: `spec-${STAMP}`,
+      target: env.instance,
+      database: `e2e_byt9664_${STAMP}`,
+    },
   );
-  const plan = await env.api.createPlan(env.project, `BYT-9664 ${STAMP}`, [
-    { id: `spec-${STAMP}`, targets: [env.database], sheet },
-  ]);
   const issue = await env.api.createIssue(
     env.project,
     `BYT-9664 ${STAMP}`,

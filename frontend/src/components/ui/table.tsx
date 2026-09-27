@@ -1,0 +1,187 @@
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from "react";
+import { ColumnResizeHandle } from "@/components/ui/column-resize-handle";
+import { cn } from "@/lib/utils";
+
+function Table({ className, ...props }: ComponentPropsWithoutRef<"table">) {
+  return (
+    <table
+      className={cn("w-full caption-bottom text-sm", className)}
+      {...props}
+    />
+  );
+}
+
+function TableHeader({
+  className,
+  ...props
+}: ComponentPropsWithoutRef<"thead">) {
+  return <thead className={cn("[&_tr]:border-b", className)} {...props} />;
+}
+
+interface TableBodyProps extends ComponentPropsWithoutRef<"tbody"> {
+  striped?: boolean;
+}
+
+function TableBody({ className, striped = true, ...props }: TableBodyProps) {
+  return (
+    <tbody
+      className={cn(
+        "[&_tr:last-child]:border-0",
+        striped && "[&_tr:nth-child(even)]:bg-control-bg/50",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+interface TableRowProps extends ComponentPropsWithoutRef<"tr"> {
+  striped?: boolean;
+}
+
+function TableRow({ className, striped = true, ...props }: TableRowProps) {
+  return (
+    <tr
+      data-striped={striped ? undefined : "false"}
+      className={cn(
+        "border-b border-block-border transition-colors hover:bg-control-bg/60 data-[state=selected]:!bg-control-bg",
+        !striped && "!bg-transparent",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+export type TableHeadSortDirection = "asc" | "desc";
+
+interface TableHeadProps extends ComponentPropsWithoutRef<"th"> {
+  /** Show a sort indicator and make the header clickable. */
+  sortable?: boolean;
+  /** Whether this column is the currently active sort column. */
+  sortActive?: boolean;
+  /** Current direction when `sortActive` is true. */
+  sortDir?: TableHeadSortDirection;
+  /** Called when the user clicks to toggle sort. */
+  onSort?: () => void;
+  /** Render a drag-to-resize handle on the right edge. */
+  resizable?: boolean;
+  /** Called when the user starts dragging the resize handle. */
+  onResizeStart?: (e: React.MouseEvent) => void;
+}
+
+function TableHead({
+  className,
+  children,
+  sortable,
+  sortActive,
+  sortDir,
+  onSort,
+  resizable,
+  onResizeStart,
+  onClick,
+  ...props
+}: TableHeadProps) {
+  return (
+    <th
+      className={cn(
+        "h-10 px-4 py-2 text-left align-middle font-medium text-control-light",
+        sortable && "cursor-pointer select-none hover:text-control",
+        resizable && "relative",
+        className
+      )}
+      onClick={(e) => {
+        onClick?.(e);
+        if (sortable) onSort?.();
+      }}
+      {...props}
+    >
+      {sortable ? (
+        <span className="inline-flex items-center gap-x-1">
+          {children}
+          <SortIndicator active={!!sortActive} dir={sortDir} />
+        </span>
+      ) : (
+        children
+      )}
+      {resizable && onResizeStart && (
+        <ColumnResizeHandle onMouseDown={onResizeStart} />
+      )}
+    </th>
+  );
+}
+
+function SortIndicator({
+  active,
+  dir,
+}: {
+  active: boolean;
+  dir?: TableHeadSortDirection;
+}) {
+  const Icon = active ? (dir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
+  return (
+    <Icon
+      className={cn(
+        "w-3.5 h-3.5",
+        active ? "text-accent" : "text-control-placeholder"
+      )}
+    />
+  );
+}
+
+function TableCell({ className, ...props }: ComponentPropsWithoutRef<"td">) {
+  return (
+    <td
+      className={cn("px-4 py-3 align-middle text-sm text-control", className)}
+      {...props}
+    />
+  );
+}
+
+interface TableEmptyViewProps
+  extends Omit<ComponentPropsWithoutRef<"td">, "children"> {
+  children?: ReactNode;
+  contentClassName?: string;
+  contentStyle?: CSSProperties;
+  contentTestId?: string;
+}
+
+function TableEmptyView({
+  className,
+  children,
+  contentClassName,
+  contentStyle,
+  contentTestId,
+  ...props
+}: Readonly<TableEmptyViewProps>) {
+  return (
+    <TableRow>
+      <TableCell
+        className={cn("text-center text-control-placeholder", className)}
+        {...props}
+      >
+        <div
+          data-testid={contentTestId}
+          className={cn(
+            "flex min-h-40 items-center justify-center",
+            contentClassName
+          )}
+          style={contentStyle}
+        >
+          {children}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+export {
+  Table,
+  TableBody,
+  TableCell,
+  TableEmptyView,
+  TableHead,
+  TableHeader,
+  TableRow,
+};

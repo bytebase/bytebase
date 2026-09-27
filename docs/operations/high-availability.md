@@ -44,6 +44,8 @@ user=bb-meta@project-id.iam dbname=bytebase bytebase_gcp_cloud_sql_iam=true byte
 
 The Cloud SQL IAM database user must exist and have the needed PostgreSQL privileges. The Google principal used by each Bytebase process must have permission to connect to the Cloud SQL instance, typically through ambient Application Default Credentials such as GKE Workload Identity. Do not put Google service account keys in `PG_URL`.
 
+By default the connector dials the instance's public IP. For a private-IP-only instance (the recommended production posture), add `bytebase_gcp_cloud_sql_ip_type=private` (or `psc` for Private Service Connect); `public` is the default. Bytebase must have a network path to the selected IP — for private IP, run it inside the same VPC (Private Service Access).
+
 ## How replica detection works
 
 Bytebase tracks live replicas with heartbeats:
@@ -78,6 +80,19 @@ Use this checklist when enabling or validating HA:
 4. After adding or restarting replicas, allow at least 30 seconds for the active replica count to settle.
 5. Review logs for HA-license warnings before declaring the topology healthy.
 
+## Administrator recovery
+
+Stop every Bytebase replica before running the interactive administrator
+recovery command. Run `bytebase recovery` with the exact same shared `PG_URL`
+used by every replica. The command connects directly to the metadata database
+and does not start an HTTP server, scheduler, or background runner. Restart all
+replicas after recovery so they reload the updated settings and IAM policy.
+
+Follow the [administrator recovery runbook](./admin-recovery.md) for backup,
+terminal, action-selection, login, and cleanup requirements. Recovery is not an
+alternative to HA licensing or replica coordination, and it does not repair the
+deployment topology.
+
 ## Troubleshooting
 
 ### `replicaCount` stays at `1`
@@ -105,5 +120,6 @@ Stale heartbeat rows are cleaned up separately and do not define the active repl
 
 ## Related docs
 
+- [Administrator recovery](./admin-recovery.md)
 - [Upgrade guidance](./upgrade.md)
 - [Helm chart README](../../helm-charts/bytebase/README.md)

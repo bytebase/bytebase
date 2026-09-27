@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -101,7 +101,7 @@ func (*ColumnDisallowSetCharsetAdvisor) Check(_ context.Context, checkCtx adviso
 			Code:          advisorcode.SetColumnCharset.Int32(),
 			Title:         title,
 			Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", ostmt.TrimmedText()),
-			StartPosition: common.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
+			StartPosition: base.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
 		})
 	}
 

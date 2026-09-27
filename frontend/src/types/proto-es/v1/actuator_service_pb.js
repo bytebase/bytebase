@@ -7,7 +7,7 @@ import { file_google_api_annotations } from "../google/api/annotations_pb";
 import { file_google_api_client } from "../google/api/client_pb";
 import { file_google_api_field_behavior } from "../google/api/field_behavior_pb";
 import { file_google_api_resource } from "../google/api/resource_pb";
-import { file_google_protobuf_empty, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_v1_annotation } from "./annotation_pb";
 import { file_v1_setting_service } from "./setting_service_pb";
 
@@ -15,42 +15,35 @@ import { file_v1_setting_service } from "./setting_service_pb";
  * Describes the file v1/actuator_service.proto.
  */
 export const file_v1_actuator_service = /*@__PURE__*/
-  fileDesc("Chl2MS9hY3R1YXRvcl9zZXJ2aWNlLnByb3RvEgtieXRlYmFzZS52MSIUChJTZXR1cFNhbXBsZVJlcXVlc3QiQwoWR2V0QWN0dWF0b3JJbmZvUmVxdWVzdBIpCgRuYW1lGAEgASgJQhv6QRgKFmJ5dGViYXNlLmNvbS9Xb3Jrc3BhY2UiFAoSRGVsZXRlQ2FjaGVSZXF1ZXN0IvoBCgtSZXN0cmljdGlvbhIcCg9kaXNhbGxvd19zaWdudXAYASABKAhCA+BBAxIlChhkaXNhbGxvd19wYXNzd29yZF9zaWduaW4YAiABKAhCA+BBAxJbChRwYXNzd29yZF9yZXN0cmljdGlvbhgDIAEoCzI4LmJ5dGViYXNlLnYxLldvcmtzcGFjZVByb2ZpbGVTZXR0aW5nLlBhc3N3b3JkUmVzdHJpY3Rpb25CA+BBAxIkChdhbGxvd19lbWFpbF9jb2RlX3NpZ25pbhgEIAEoCEID4EEDEiMKFnBhc3N3b3JkX3Jlc2V0X2VuYWJsZWQYBSABKAhCA+BBAyK8BQoMQWN0dWF0b3JJbmZvEhQKB3ZlcnNpb24YASABKAlCA+BBAxIXCgpnaXRfY29tbWl0GAIgASgJQgPgQQMSFQoIcmVhZG9ubHkYAyABKAhCA+BBAxIRCgRzYWFzGAQgASgIQgPgQQMSEQoEaG9zdBgGIAEoCUID4EEDEhEKBHBvcnQYByABKAlCA+BBAxIZCgxleHRlcm5hbF91cmwYCCABKAlCA+BBAxI5ChBsYXN0X2FjdGl2ZV90aW1lGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEID4EEDEhYKCXdvcmtzcGFjZRgNIAEoCUID4EEDEiAKE3VubGljZW5zZWRfZmVhdHVyZXMYDyADKAlCA+BBAxITCgZkb2NrZXIYEiABKAhCA+BBAxIhChRhY3RpdmF0ZWRfdXNlcl9jb3VudBgTIAEoBUID4EEDEiUKGGFjdGl2YXRlZF9pbnN0YW5jZV9jb3VudBgUIAEoBUID4EEDEiEKFHRvdGFsX2luc3RhbmNlX2NvdW50GBUgASgFQgPgQQMSGgoNZW5hYmxlX3NhbXBsZRgWIAEoCEID4EEDEiMKFmV4dGVybmFsX3VybF9mcm9tX2ZsYWcYFyABKAhCA+BBAxIaCg1yZXBsaWNhX2NvdW50GBggASgFQgPgQQMSMgoLcmVzdHJpY3Rpb24YGSABKAsyGC5ieXRlYmFzZS52MS5SZXN0cmljdGlvbkID4EEDEhwKD2RlZmF1bHRfcHJvamVjdBgaIAEoCUID4EEDEh4KEXVzZXJfY291bnRfaW5faWFtGBsgASgFQgPgQQMSIgoVYWN0aXZlX3Zjc191c2VyX2NvdW50GBwgASgFQgPgQQNKBAgFEAZKBAgJEApKBAgKEAtKBAgMEA1KBAgQEBFKBAgREBJKBAgOEA8ynQMKD0FjdHVhdG9yU2VydmljZRKcAQoPR2V0QWN0dWF0b3JJbmZvEiMuYnl0ZWJhc2UudjEuR2V0QWN0dWF0b3JJbmZvUmVxdWVzdBoZLmJ5dGViYXNlLnYxLkFjdHVhdG9ySW5mbyJJ2kEAgOowAYLT5JMCPFonEiUvdjEve25hbWU9d29ya3NwYWNlcy8qfS9hY3R1YXRvci9pbmZvEhEvdjEvYWN0dWF0b3IvaW5mbxKCAQoLU2V0dXBTYW1wbGUSHy5ieXRlYmFzZS52MS5TZXR1cFNhbXBsZVJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiOorqMBJiYi5wcm9qZWN0cy5jcmVhdGWQ6jABgtPkkwIaIhgvdjEvYWN0dWF0b3I6c2V0dXBTYW1wbGUSZgoLRGVsZXRlQ2FjaGUSHy5ieXRlYmFzZS52MS5EZWxldGVDYWNoZVJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiHoDqMAGC0+STAhQqEi92MS9hY3R1YXRvci9jYWNoZUKqAQoPY29tLmJ5dGViYXNlLnYxQhRBY3R1YXRvclNlcnZpY2VQcm90b1ABWjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxogIDQlhYqgILQnl0ZWJhc2UuVjHKAgtCeXRlYmFzZVxWMeICF0J5dGViYXNlXFYxXEdQQk1ldGFkYXRh6gIMQnl0ZWJhc2U6OlYxYgZwcm90bzM", [file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_empty, file_google_protobuf_timestamp, file_v1_annotation, file_v1_setting_service]);
-
-/**
- * Describes the message bytebase.v1.SetupSampleRequest.
- * Use `create(SetupSampleRequestSchema)` to create a new message.
- */
-export const SetupSampleRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_actuator_service, 0);
+  fileDesc("Chl2MS9hY3R1YXRvcl9zZXJ2aWNlLnByb3RvEgtieXRlYmFzZS52MSIYChZHZXRBY3R1YXRvckluZm9SZXF1ZXN0ItEBCgpTYW1wbGVJbmZvEhYKCWF2YWlsYWJsZRgBIAEoCEID4EEDEjgKCWluc3RhbmNlcxgCIAMoCzIgLmJ5dGViYXNlLnYxLlNhbXBsZUluZm8uSW5zdGFuY2VCA+BBAxpxCghJbnN0YW5jZRIvCghpbnN0YW5jZRgBIAEoCUId4EED+kEXChVieXRlYmFzZS5jb20vSW5zdGFuY2USNAoLZXhwaXJlX3RpbWUYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgPgQQMi5AQKDEFjdHVhdG9ySW5mbxIUCgd2ZXJzaW9uGAEgASgJQgPgQQMSFwoKZ2l0X2NvbW1pdBgCIAEoCUID4EEDEhEKBHNhYXMYBCABKAhCA+BBAxIZCgxleHRlcm5hbF91cmwYCCABKAlCA+BBAxI5ChBsYXN0X2FjdGl2ZV90aW1lGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEID4EEDEhYKCXdvcmtzcGFjZRgNIAEoCUID4EEDEiAKE3VubGljZW5zZWRfZmVhdHVyZXMYDyADKAlCA+BBAxIlChhhY3RpdmF0ZWRfaW5zdGFuY2VfY291bnQYFCABKAVCA+BBAxIhChR0b3RhbF9pbnN0YW5jZV9jb3VudBgVIAEoBUID4EEDEiMKFmV4dGVybmFsX3VybF9mcm9tX2ZsYWcYFyABKAhCA+BBAxIaCg1yZXBsaWNhX2NvdW50GBggASgFQgPgQQMSHAoPZGVmYXVsdF9wcm9qZWN0GBogASgJQgPgQQMSHgoRdXNlcl9jb3VudF9pbl9pYW0YGyABKAVCA+BBAxIiChVhY3RpdmVfdmNzX3VzZXJfY291bnQYHCABKAVCA+BBAxIsCgZzYW1wbGUYHSABKAsyFy5ieXRlYmFzZS52MS5TYW1wbGVJbmZvQgPgQQMSMQoLbWNwX3NldHRpbmcYHiABKAsyFy5ieXRlYmFzZS52MS5NQ1BTZXR0aW5nQgPgQQNKBAgDEARKBAgFEAhKBAgJEApKBAgKEAtKBAgMEA1KBAgOEA9KBAgQEBRKBAgWEBdKBAgZEBoyhgEKD0FjdHVhdG9yU2VydmljZRJzCg9HZXRBY3R1YXRvckluZm8SIy5ieXRlYmFzZS52MS5HZXRBY3R1YXRvckluZm9SZXF1ZXN0GhkuYnl0ZWJhc2UudjEuQWN0dWF0b3JJbmZvIiDaQQCg6jABgtPkkwITEhEvdjEvYWN0dWF0b3IvaW5mb0KqAQoPY29tLmJ5dGViYXNlLnYxQhRBY3R1YXRvclNlcnZpY2VQcm90b1ABWjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxogIDQlhYqgILQnl0ZWJhc2UuVjHKAgtCeXRlYmFzZVxWMeICF0J5dGViYXNlXFYxXEdQQk1ldGFkYXRh6gIMQnl0ZWJhc2U6OlYxYgZwcm90bzM", [file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_timestamp, file_v1_annotation, file_v1_setting_service]);
 
 /**
  * Describes the message bytebase.v1.GetActuatorInfoRequest.
  * Use `create(GetActuatorInfoRequestSchema)` to create a new message.
  */
 export const GetActuatorInfoRequestSchema = /*@__PURE__*/
+  messageDesc(file_v1_actuator_service, 0);
+
+/**
+ * Describes the message bytebase.v1.SampleInfo.
+ * Use `create(SampleInfoSchema)` to create a new message.
+ */
+export const SampleInfoSchema = /*@__PURE__*/
   messageDesc(file_v1_actuator_service, 1);
 
 /**
- * Describes the message bytebase.v1.DeleteCacheRequest.
- * Use `create(DeleteCacheRequestSchema)` to create a new message.
+ * Describes the message bytebase.v1.SampleInfo.Instance.
+ * Use `create(SampleInfo_InstanceSchema)` to create a new message.
  */
-export const DeleteCacheRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_actuator_service, 2);
-
-/**
- * Describes the message bytebase.v1.Restriction.
- * Use `create(RestrictionSchema)` to create a new message.
- */
-export const RestrictionSchema = /*@__PURE__*/
-  messageDesc(file_v1_actuator_service, 3);
+export const SampleInfo_InstanceSchema = /*@__PURE__*/
+  messageDesc(file_v1_actuator_service, 1, 0);
 
 /**
  * Describes the message bytebase.v1.ActuatorInfo.
  * Use `create(ActuatorInfoSchema)` to create a new message.
  */
 export const ActuatorInfoSchema = /*@__PURE__*/
-  messageDesc(file_v1_actuator_service, 4);
+  messageDesc(file_v1_actuator_service, 2);
 
 /**
  * ActuatorService manages system health and operational information.

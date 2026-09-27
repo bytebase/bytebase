@@ -1,4 +1,4 @@
-import { getCurrentUserV1 } from "@/store";
+import { getCurrentUserV1 } from "@/stores";
 
 export const getDefaultPagination = () => {
   if (getCurrentUserV1().email.endsWith("@bytebase.com")) {

@@ -1,4 +1,3 @@
-import { unknown } from './src/types/common';
 import { config } from "dotenv";
 import { promises as fs } from "fs";
 

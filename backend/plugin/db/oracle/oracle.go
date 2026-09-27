@@ -17,11 +17,11 @@ import (
 	goora "github.com/sijms/go-ora/v2"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -113,28 +113,16 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
-	var commands []base.Statement
-	if len(statement) <= common.MaxSheetCheckSize {
-		// Use Oracle sql parser.
-		singleSQLs, err := plsqlparser.SplitSQL(statement)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to split sql")
-		}
-		singleSQLs = base.FilterEmptyStatements(singleSQLs)
-		if len(singleSQLs) == 0 {
-			return 0, nil
-		}
-		commands = singleSQLs
-	} else {
-		commands = []base.Statement{
-			{
-				Text: statement,
-			},
-		}
+	commands, err := buildExecuteCommands(statement)
+	if err != nil {
+		return 0, err
+	}
+	if len(commands) == 0 {
+		return 0, nil
 	}
 
 	conn, err := d.db.Conn(ctx)
@@ -144,10 +132,18 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	defer conn.Close()
 
 	// Execute based on transaction mode
-	if transactionMode == common.TransactionModeOff {
+	if transactionMode == transaction.ModeOff {
 		return d.executeInAutoCommitMode(ctx, conn, commands, opts)
 	}
 	return d.executeInTransactionMode(ctx, conn, commands, opts)
+}
+
+func buildExecuteCommands(statement string) ([]base.Statement, error) {
+	commands, err := plsqlparser.SplitSQL(statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split sql")
+	}
+	return base.FilterEmptyStatements(commands), nil
 }
 
 // executeInTransactionMode executes statements within a single transaction
@@ -225,6 +221,17 @@ func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, comm
 	return totalRowsAffected, nil
 }
 
+// OwnsPrivateDatabaseLink reports whether the session's account owns a private database link.
+// SYS.USER_DB_LINKS lists the links owned by the current user; the SYS qualifier keeps a
+// same-named local object from standing in for the dictionary view.
+func (*Driver) OwnsPrivateDatabaseLink(ctx context.Context, conn *sql.Conn) (bool, error) {
+	var count int
+	if err := conn.QueryRowContext(ctx, "SELECT COUNT(*) FROM SYS.USER_DB_LINKS").Scan(&count); err != nil {
+		return false, errors.Wrap(err, "failed to count private database links")
+	}
+	return count > 0, nil
+}
+
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
@@ -254,7 +261,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		}
 
 		if !queryContext.Explain && queryContext.Limit > 0 {
-			statement = addResultLimit(statement, queryContext.Limit, d.connectionCtx.EngineVersion)
+			statement = base.StatementWithResultLimit(storepb.Engine_ORACLE, statement, queryContext.Limit, d.connectionCtx.EngineVersion)
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_ORACLE, statement)

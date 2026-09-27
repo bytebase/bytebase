@@ -2,20 +2,23 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/type/color.proto";
+
 option go_package = "generated-go/store";
 
 // Label represents a categorization tag that can be applied to issues.
 message Label {
   // The display text of the label.
   string value = 1;
-  // The color for the label in hex format (e.g., "#FF0000").
-  string color = 2;
+  // The color for the label.
+  google.type.Color color = 2;
   // Optional group name for organizing related labels.
   string group = 3;
 }
 
 // Project contains settings and configuration for a Bytebase project.
 message Project {
+  reserved 3 to 4, 6 to 7;
   // Available labels that can be applied to issues in this project.
   repeated Label issue_labels = 1;
   // Force issue labels to be used when creating an issue.
@@ -68,4 +71,7 @@ message Project {
 
   // Once enabled, users can request and use the just-in-time access in the SQL Editor.
   bool allow_just_in_time_access = 19;
+
+  // Whether to allow the last Plan editor to approve a database change issue.
+  bool allow_last_plan_editor_approval = 20;
 }

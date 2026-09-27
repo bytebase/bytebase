@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/qb"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // UpsertReplicaHeartbeat updates or inserts a replica heartbeat.

@@ -69,14 +69,9 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 		if role == nil {
 			return nil, errors.Errorf("approle is invalid")
 		}
-		appRoleSecret := &approle.SecretID{}
-		switch role.Type {
-		case storepb.DataSourceExternalSecret_AppRoleAuthOption_PLAIN:
-			appRoleSecret.FromString = role.SecretId
-		case storepb.DataSourceExternalSecret_AppRoleAuthOption_ENVIRONMENT:
-			appRoleSecret.FromEnv = role.SecretId
-		default:
-			return nil, errors.Errorf("unsupported app role auth type: %v", role.Type)
+		appRoleSecret, err := resolveVaultAppRoleSecretID(role)
+		if err != nil {
+			return nil, err
 		}
 
 		opts := []approle.LoginOption{}
@@ -106,6 +101,19 @@ func getVaultClient(ctx context.Context, externalSecret *storepb.DataSourceExter
 	client.SetToken(token)
 
 	return client, nil
+}
+
+func resolveVaultAppRoleSecretID(role *storepb.DataSourceExternalSecret_AppRoleAuthOption) (*approle.SecretID, error) {
+	appRoleSecret := &approle.SecretID{}
+	switch role.GetType() {
+	case storepb.DataSourceExternalSecret_AppRoleAuthOption_SECRET_TYPE_UNSPECIFIED, storepb.DataSourceExternalSecret_AppRoleAuthOption_PLAIN:
+		appRoleSecret.FromString = role.GetSecretId()
+	case storepb.DataSourceExternalSecret_AppRoleAuthOption_ENVIRONMENT:
+		appRoleSecret.FromEnv = role.GetSecretId()
+	default:
+		return nil, errors.Errorf("unsupported app role auth type: %v", role.GetType())
+	}
+	return appRoleSecret, nil
 }
 
 // resolveVaultToken resolves the Vault token from the external secret config.

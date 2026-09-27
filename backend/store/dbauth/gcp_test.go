@@ -136,3 +136,58 @@ func TestConfigureRejectsMultipleMetadataDBAuthProviders(t *testing.T) {
 
 	require.ErrorContains(t, err, "multiple metadata database IAM auth providers are enabled")
 }
+
+func TestGCPConfigFromPGXConfigParsesIPType(t *testing.T) {
+	tests := []struct {
+		name   string
+		param  string
+		expect string
+	}{
+		{"default", "", ""},
+		{"public", "&bytebase_gcp_cloud_sql_ip_type=public", "public"},
+		{"private", "&bytebase_gcp_cloud_sql_ip_type=private", "private"},
+		{"psc", "&bytebase_gcp_cloud_sql_ip_type=psc", "psc"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			pgxConfig := mustParsePGXConfig(t, "postgres://bb@example.com:5432/bytebase?bytebase_gcp_cloud_sql_iam=true&bytebase_gcp_cloud_sql_instance_connection_name=project:region:instance"+tc.param)
+
+			authConfig, err := gcpConfigFromPGXConfig(pgxConfig)
+
+			require.NoError(t, err)
+			require.NotNil(t, authConfig)
+			require.Equal(t, tc.expect, authConfig.ipType)
+			require.NotContains(t, pgxConfig.RuntimeParams, gcpCloudSQLIPTypeParam)
+		})
+	}
+}
+
+func TestGCPConfigFromPGXConfigRejectsInvalidIPType(t *testing.T) {
+	pgxConfig := mustParsePGXConfig(t, "postgres://bb@example.com:5432/bytebase?bytebase_gcp_cloud_sql_iam=true&bytebase_gcp_cloud_sql_instance_connection_name=project:region:instance&bytebase_gcp_cloud_sql_ip_type=bogus")
+
+	_, err := gcpConfigFromPGXConfig(pgxConfig)
+
+	require.ErrorContains(t, err, gcpCloudSQLIPTypeParam)
+}
+
+func TestGCPDialIPOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		ipType  string
+		wantLen int
+	}{
+		{"empty defaults to public", "", 0},
+		{"public", "public", 0},
+		{"private", "private", 1},
+		{"psc", "psc", 1},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Len(t, gcpDialIPOptions(tc.ipType), tc.wantLen)
+		})
+	}
+}
+
+func TestIsKeywordValueRuntimeParamIncludesIPType(t *testing.T) {
+	require.True(t, IsKeywordValueRuntimeParam(gcpCloudSQLIPTypeParam))
+}

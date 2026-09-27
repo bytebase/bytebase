@@ -1,0 +1,1272 @@
+import { create } from "@bufbuild/protobuf";
+import { Check, Info, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { v4 as uuidv4 } from "uuid";
+import { FeatureAttention } from "@/components/FeatureAttention";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tooltip } from "@/components/ui/tooltip";
+import {
+  WorkspacePageInfo,
+  WorkspacePageLayout,
+  WorkspacePageToolbar,
+} from "@/components/WorkspacePageLayout";
+import { useSemanticTypes } from "@/hooks/useSemanticTypes";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
+import type {
+  Algorithm,
+  SemanticTypeSetting_SemanticType,
+} from "@/types/proto-es/v1/setting_service_pb";
+import {
+  Algorithm_InnerOuterMask_MaskType,
+  Algorithm_InnerOuterMaskSchema,
+  Algorithm_RangeMask_SliceSchema,
+  AlgorithmSchema,
+  Algorithm_FullMaskSchema as FullMaskSchema,
+  Algorithm_MD5MaskSchema as MD5MaskSchema,
+  Algorithm_RangeMaskSchema as RangeMaskSchema,
+  SemanticTypeSetting_SemanticTypeSchema,
+  Setting_SettingName,
+  SettingValueSchema as SettingSettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { isBuiltinSemanticTypeId } from "@/types/semanticTypes";
+import { hasWorkspacePermissionV2 } from "@/utils";
+
+type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
+
+interface SemanticItem {
+  mode: SemanticItemMode;
+  dirty: boolean;
+  item: SemanticTypeSetting_SemanticType;
+}
+
+type MaskingType = "full-mask" | "range-mask" | "md5-mask" | "inner-outer-mask";
+
+function getMaskingType(
+  algorithm: Algorithm | undefined
+): MaskingType | undefined {
+  if (!algorithm?.mask) return undefined;
+  switch (algorithm.mask.case) {
+    case "fullMask":
+      return "full-mask";
+    case "rangeMask":
+      return "range-mask";
+    case "innerOuterMask":
+      return "inner-outer-mask";
+    case "md5Mask":
+      return "md5-mask";
+    default:
+      return undefined;
+  }
+}
+
+function isBuiltinSemanticType(item: SemanticTypeSetting_SemanticType) {
+  return isBuiltinSemanticTypeId(item.id);
+}
+
+function getPersistedSemanticTypes(items: SemanticItem[]) {
+  return items
+    .filter(
+      ({ item, mode }) => mode === "NORMAL" && !isBuiltinSemanticType(item)
+    )
+    .map(({ item }) => item);
+}
+
+function toSemanticItems(
+  semanticTypeList: SemanticTypeSetting_SemanticType[]
+): SemanticItem[] {
+  return semanticTypeList.map((item) => ({
+    dirty: false,
+    item,
+    mode: "NORMAL",
+  }));
+}
+
+function useEscapeKey(onEscape: () => void) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onEscape();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onEscape]);
+}
+
+export function SemanticTypesPage() {
+  const { t } = useTranslation();
+
+  const hasPermission = hasWorkspacePermissionV2("bb.policies.update");
+  const hasSensitiveDataFeature = useAppStore((s) =>
+    s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
+  );
+  const isReadonly = !hasPermission || !hasSensitiveDataFeature;
+  const { configuredSemanticTypes, semanticTypes } = useSemanticTypes();
+
+  const [items, setItems] = useState<SemanticItem[]>(() =>
+    toSemanticItems(semanticTypes)
+  );
+  const [loaded, setLoaded] = useState(false);
+  const [algorithmDrawer, setAlgorithmDrawer] = useState<{
+    index: number;
+    algorithm?: Algorithm;
+  } | null>(null);
+
+  useEffect(() => {
+    useAppStore
+      .getState()
+      .getOrFetchSettingByName(Setting_SettingName.SEMANTIC_TYPES)
+      .then(() => setLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+    setItems(toSemanticItems(semanticTypes));
+  }, [loaded]);
+
+  const upsertSetting = useCallback(
+    async (types: SemanticTypeSetting_SemanticType[], notification: string) => {
+      await useAppStore.getState().upsertSetting({
+        name: Setting_SettingName.SEMANTIC_TYPES,
+        value: create(SettingSettingValueSchema, {
+          value: {
+            case: "semanticType",
+            value: { types },
+          },
+        }),
+      });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: notification,
+      });
+    },
+    []
+  );
+
+  const onAdd = useCallback(() => {
+    setItems((prev) => [
+      ...prev,
+      {
+        mode: "CREATE",
+        dirty: false,
+        item: create(SemanticTypeSetting_SemanticTypeSchema, {
+          id: uuidv4(),
+        }),
+      },
+    ]);
+  }, []);
+
+  const onStartEdit = useCallback((index: number) => {
+    setItems((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], mode: "EDIT" };
+      return next;
+    });
+  }, []);
+
+  const onRemove = useCallback(
+    (index: number) => {
+      const current = items[index];
+      if (!current) return;
+      const next = [...items];
+      next.splice(index, 1);
+      setItems(next);
+      if (current.mode !== "CREATE") {
+        const types = getPersistedSemanticTypes(next);
+        void upsertSetting(types, t("common.deleted"));
+      }
+    },
+    [upsertSetting, t, items]
+  );
+
+  const onConfirm = useCallback(
+    (index: number) => {
+      const current = items[index];
+      if (!current) return;
+      const msg = t(
+        current.mode === "CREATE" ? "common.created" : "common.updated"
+      );
+      const next = [...items];
+      next[index] = { ...current, dirty: false, mode: "NORMAL" };
+      setItems(next);
+      const types = getPersistedSemanticTypes(next);
+      void upsertSetting(types, msg);
+    },
+    [upsertSetting, t, items]
+  );
+
+  const onCancel = useCallback(
+    (index: number) => {
+      setItems((prev) => {
+        const next = [...prev];
+        const item = next[index];
+        if (item.mode === "CREATE") {
+          next.splice(index, 1);
+        } else {
+          const origin = configuredSemanticTypes.find(
+            (s) => s.id === item.item.id
+          );
+          if (origin) {
+            next[index] = { item: origin, mode: "NORMAL", dirty: false };
+          }
+        }
+        return next;
+      });
+    },
+    [configuredSemanticTypes]
+  );
+
+  const onInput = useCallback(
+    (
+      index: number,
+      updater: (
+        item: SemanticTypeSetting_SemanticType
+      ) => SemanticTypeSetting_SemanticType
+    ) => {
+      setItems((prev) => {
+        const next = [...prev];
+        const current = next[index];
+        if (!current) return prev;
+        next[index] = {
+          ...current,
+          dirty: true,
+          item: updater(current.item),
+        };
+        return next;
+      });
+    },
+    []
+  );
+
+  const algorithmDrawerRef = useRef(algorithmDrawer);
+  algorithmDrawerRef.current = algorithmDrawer;
+
+  const onAlgorithmApply = useCallback(
+    (algorithm: Algorithm) => {
+      const drawer = algorithmDrawerRef.current;
+      if (drawer === null) return;
+      const { index } = drawer;
+      const current = items[index];
+      if (!current) return;
+      const updated: SemanticItem = {
+        ...current,
+        dirty: true,
+        item: { ...current.item, algorithm },
+      };
+      if (updated.item.title) {
+        updated.dirty = false;
+        updated.mode = "NORMAL";
+        const next = [...items];
+        next[index] = updated;
+        setItems(next);
+        const types = getPersistedSemanticTypes(next);
+        const msg = t(
+          current.mode === "CREATE" ? "common.created" : "common.updated"
+        );
+        void upsertSetting(types, msg);
+      } else {
+        const next = [...items];
+        next[index] = updated;
+        setItems(next);
+      }
+      setAlgorithmDrawer(null);
+    },
+    [upsertSetting, t, items]
+  );
+
+  const onOpenAlgorithmDrawer = useCallback(
+    (index: number, algorithm?: Algorithm) => {
+      setAlgorithmDrawer({ index, algorithm });
+    },
+    []
+  );
+
+  const getConfirmDisabledReason = (data: SemanticItem): string | undefined => {
+    if (!data.item.title.trim()) {
+      return t("settings.sensitive-data.semantic-types.error.title-required");
+    }
+    if (data.mode === "EDIT" && !data.dirty) {
+      return t(
+        "settings.sensitive-data.semantic-types.error.no-changes-to-save"
+      );
+    }
+    return undefined;
+  };
+
+  return (
+    <WorkspacePageLayout>
+      <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
+      <WorkspacePageInfo
+        description={t("settings.sensitive-data.semantic-types.label")}
+      />
+
+      <WorkspacePageToolbar align="end">
+        <Button disabled={isReadonly} onClick={onAdd}>
+          <Plus />
+          {t("common.create")}
+        </Button>
+      </WorkspacePageToolbar>
+
+      <div className="overflow-x-auto rounded-sm border">
+        <Table className="min-w-5xl">
+          <TableHeader>
+            <TableRow className="bg-control-bg">
+              <TableHead className="w-20 text-center">
+                {t("settings.sensitive-data.semantic-types.table.icon")}
+              </TableHead>
+              <TableHead className="w-36">ID</TableHead>
+              <TableHead>
+                {t("settings.sensitive-data.semantic-types.table.title")}
+              </TableHead>
+              <TableHead className="w-48">
+                {t("settings.sensitive-data.semantic-types.table.description")}
+              </TableHead>
+              <TableHead>
+                {t(
+                  "settings.sensitive-data.semantic-types.table.masking-algorithm"
+                )}
+              </TableHead>
+              {!isReadonly && (
+                <TableHead className="w-28 text-right">
+                  {t("common.edit")}
+                </TableHead>
+              )}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((row, index) => (
+              <SemanticTypeRow
+                key={row.item.id}
+                row={row}
+                index={index}
+                readonly={isReadonly}
+                getConfirmDisabledReason={getConfirmDisabledReason}
+                onInput={onInput}
+                onRemove={onRemove}
+                onConfirm={onConfirm}
+                onCancel={onCancel}
+                onStartEdit={onStartEdit}
+                onOpenAlgorithmDrawer={onOpenAlgorithmDrawer}
+              />
+            ))}
+            {items.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={isReadonly ? 5 : 6}
+                  className="px-3 py-8 text-center text-control-placeholder"
+                >
+                  {t("common.no-data")}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {algorithmDrawer !== null && (
+        <MaskingAlgorithmDrawer
+          algorithm={algorithmDrawer.algorithm}
+          onApply={onAlgorithmApply}
+          onDismiss={() => setAlgorithmDrawer(null)}
+        />
+      )}
+    </WorkspacePageLayout>
+  );
+}
+
+// --- MaskingAlgorithmDrawer (React) ---
+
+interface MaskingAlgorithmDrawerProps {
+  algorithm?: Algorithm;
+  onApply: (algorithm: Algorithm) => void;
+  onDismiss: () => void;
+}
+
+interface RangeMaskSlice {
+  start: number;
+  end: number;
+  substitution: string;
+}
+
+function MaskingAlgorithmDrawer({
+  algorithm,
+  onApply,
+  onDismiss,
+}: MaskingAlgorithmDrawerProps) {
+  const { t } = useTranslation();
+  useEscapeKey(onDismiss);
+
+  const initialType = getMaskingType(algorithm) ?? "full-mask";
+  const [maskingType, setMaskingType] = useState<MaskingType>(initialType);
+  const [fullMaskSubstitution, setFullMaskSubstitution] = useState(
+    algorithm?.mask?.case === "fullMask"
+      ? (algorithm.mask.value.substitution ?? "")
+      : ""
+  );
+  const [rangeMaskSlices, setRangeMaskSlices] = useState<RangeMaskSlice[]>(
+    algorithm?.mask?.case === "rangeMask"
+      ? algorithm.mask.value.slices.map((s) => ({
+          start: s.start,
+          end: s.end,
+          substitution: s.substitution,
+        }))
+      : [{ start: 0, end: 1, substitution: "*" }]
+  );
+  const [md5Salt, setMd5Salt] = useState(
+    algorithm?.mask?.case === "md5Mask" ? (algorithm.mask.value.salt ?? "") : ""
+  );
+  const [innerOuterType, setInnerOuterType] = useState(
+    algorithm?.mask?.case === "innerOuterMask"
+      ? algorithm.mask.value.type
+      : Algorithm_InnerOuterMask_MaskType.INNER
+  );
+  // `number | null`: `null` represents an empty input while the user is
+  // typing; coerced to `0` on save.
+  const [innerOuterPrefix, setInnerOuterPrefix] = useState<number | null>(
+    algorithm?.mask?.case === "innerOuterMask"
+      ? algorithm.mask.value.prefixLen
+      : 0
+  );
+  const [innerOuterSuffix, setInnerOuterSuffix] = useState<number | null>(
+    algorithm?.mask?.case === "innerOuterMask"
+      ? algorithm.mask.value.suffixLen
+      : 0
+  );
+  const [innerOuterSubstitution, setInnerOuterSubstitution] = useState(
+    algorithm?.mask?.case === "innerOuterMask"
+      ? (algorithm.mask.value.substitution ?? "*")
+      : "*"
+  );
+
+  const maskingTypeOptions: { value: MaskingType; label: string }[] = [
+    {
+      value: "full-mask",
+      label: t("settings.sensitive-data.algorithms.full-mask.self"),
+    },
+    {
+      value: "range-mask",
+      label: t("settings.sensitive-data.algorithms.range-mask.self"),
+    },
+    {
+      value: "md5-mask",
+      label: t("settings.sensitive-data.algorithms.md5-mask.self"),
+    },
+    {
+      value: "inner-outer-mask",
+      label: t("settings.sensitive-data.algorithms.inner-outer-mask.self"),
+    },
+  ];
+
+  const onMaskingTypeChange = (type: MaskingType) => {
+    setMaskingType(type);
+    if (type === "full-mask") setFullMaskSubstitution("");
+    if (type === "range-mask")
+      setRangeMaskSlices([{ start: 0, end: 1, substitution: "*" }]);
+    if (type === "md5-mask") setMd5Salt("");
+    if (type === "inner-outer-mask") {
+      setInnerOuterType(Algorithm_InnerOuterMask_MaskType.INNER);
+      setInnerOuterPrefix(0);
+      setInnerOuterSuffix(0);
+      setInnerOuterSubstitution("*");
+    }
+  };
+
+  const rangeMaskErrorMessage = useMemo(() => {
+    if (rangeMaskSlices.length === 0) {
+      return t("settings.sensitive-data.algorithms.error.slice-required");
+    }
+    for (let i = 0; i < rangeMaskSlices.length; i++) {
+      const slice = rangeMaskSlices[i];
+      if (Number.isNaN(slice.start) || Number.isNaN(slice.end)) {
+        return t(
+          "settings.sensitive-data.algorithms.error.slice-invalid-number"
+        );
+      }
+      for (let j = 0; j < i; j++) {
+        const pre = rangeMaskSlices[j];
+        if (!(slice.start >= pre.end || pre.start >= slice.end)) {
+          return t("settings.sensitive-data.algorithms.error.slice-overlap");
+        }
+      }
+      if (!slice.substitution) {
+        return t(
+          "settings.sensitive-data.algorithms.error.substitution-required"
+        );
+      }
+      if (slice.substitution.length > 16) {
+        return t(
+          "settings.sensitive-data.algorithms.error.substitution-length"
+        );
+      }
+    }
+    return "";
+  }, [rangeMaskSlices, t]);
+
+  const errorMessage = useMemo(() => {
+    switch (maskingType) {
+      case "full-mask":
+        if (!fullMaskSubstitution)
+          return t(
+            "settings.sensitive-data.algorithms.error.substitution-required"
+          );
+        if (fullMaskSubstitution.length > 16)
+          return t(
+            "settings.sensitive-data.algorithms.error.substitution-length"
+          );
+        return "";
+      case "md5-mask":
+        if (!md5Salt)
+          return t("settings.sensitive-data.algorithms.error.salt-required");
+        return "";
+      case "range-mask":
+        return rangeMaskErrorMessage;
+      case "inner-outer-mask":
+        if (!innerOuterSubstitution)
+          return t(
+            "settings.sensitive-data.algorithms.error.substitution-required"
+          );
+        if (innerOuterSubstitution.length > 16)
+          return t(
+            "settings.sensitive-data.algorithms.error.substitution-length"
+          );
+        return "";
+    }
+    return "";
+  }, [
+    maskingType,
+    fullMaskSubstitution,
+    md5Salt,
+    rangeMaskErrorMessage,
+    innerOuterSubstitution,
+    t,
+  ]);
+
+  const buildAlgorithm = (): Algorithm => {
+    switch (maskingType) {
+      case "full-mask":
+        return create(AlgorithmSchema, {
+          mask: {
+            case: "fullMask",
+            value: create(FullMaskSchema, {
+              substitution: fullMaskSubstitution,
+            }),
+          },
+        });
+      case "range-mask":
+        return create(AlgorithmSchema, {
+          mask: {
+            case: "rangeMask",
+            value: create(RangeMaskSchema, {
+              slices: rangeMaskSlices.map((s) =>
+                create(Algorithm_RangeMask_SliceSchema, s)
+              ),
+            }),
+          },
+        });
+      case "md5-mask":
+        return create(AlgorithmSchema, {
+          mask: {
+            case: "md5Mask",
+            value: create(MD5MaskSchema, { salt: md5Salt }),
+          },
+        });
+      case "inner-outer-mask":
+        return create(AlgorithmSchema, {
+          mask: {
+            case: "innerOuterMask",
+            value: create(Algorithm_InnerOuterMaskSchema, {
+              type: innerOuterType,
+              // Proto field is int32 — floor any fractional input defensively.
+              prefixLen: Math.floor(innerOuterPrefix ?? 0),
+              suffixLen: Math.floor(innerOuterSuffix ?? 0),
+              substitution: innerOuterSubstitution,
+            }),
+          },
+        });
+    }
+  };
+
+  const updateSlice = (index: number, patch: Partial<RangeMaskSlice>) => {
+    setRangeMaskSlices((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], ...patch };
+      return next;
+    });
+  };
+
+  return (
+    <Sheet open onOpenChange={(nextOpen) => !nextOpen && onDismiss()}>
+      <SheetContent width="medium">
+        <SheetHeader>
+          <SheetTitle>
+            {t(
+              "settings.sensitive-data.semantic-types.table.masking-algorithm"
+            )}
+          </SheetTitle>
+        </SheetHeader>
+
+        <SheetBody className="p-6">
+          {/* Masking type selector */}
+          <div className="mb-6">
+            <label className="text-sm font-medium">
+              {t("settings.sensitive-data.algorithms.table.masking-type")}
+              <span className="text-error ml-0.5">*</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {maskingTypeOptions.map((opt) => (
+                <Button
+                  appearance="secondary"
+                  size="md"
+                  key={opt.value}
+                  className={`px-3 py-2 text-sm border rounded-sm transition-colors ${
+                    maskingType === opt.value
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-control-border hover:bg-control-bg"
+                  }`}
+                  onClick={() => onMaskingTypeChange(opt.value)}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-control-border pt-6 flex flex-col gap-y-6">
+            {maskingType === "full-mask" && (
+              <div>
+                <label className="text-sm font-medium">
+                  {t(
+                    "settings.sensitive-data.algorithms.full-mask.substitution"
+                  )}
+                  <span className="text-error ml-0.5">*</span>
+                </label>
+                <p className="text-sm text-control-placeholder mt-1">
+                  {t(
+                    "settings.sensitive-data.algorithms.full-mask.substitution-label"
+                  )}
+                </p>
+                <Input
+                  value={fullMaskSubstitution}
+                  className="mt-2"
+                  placeholder={t(
+                    "settings.sensitive-data.algorithms.full-mask.substitution"
+                  )}
+                  onChange={(e) => setFullMaskSubstitution(e.target.value)}
+                />
+              </div>
+            )}
+
+            {maskingType === "range-mask" && (
+              <>
+                <p className="text-sm text-control-placeholder">
+                  {t("settings.sensitive-data.algorithms.range-mask.label")}
+                </p>
+                {rangeMaskSlices.map((slice, i) => (
+                  <div key={i} className="flex gap-x-2 items-end">
+                    <div className="flex flex-col gap-y-1">
+                      <label className="text-sm font-medium">
+                        {t(
+                          "settings.sensitive-data.algorithms.range-mask.slice-start"
+                        )}
+                        <span className="text-error ml-0.5">*</span>
+                      </label>
+                      <Input
+                        type="number"
+                        value={slice.start}
+                        className="w-20"
+                        onChange={(e) =>
+                          updateSlice(i, {
+                            start: Number(e.target.value),
+                            end: Math.max(
+                              Number(e.target.value) + 1,
+                              slice.end
+                            ),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col gap-y-1">
+                      <label className="text-sm font-medium">
+                        {t(
+                          "settings.sensitive-data.algorithms.range-mask.slice-end"
+                        )}
+                        <span className="text-error ml-0.5">*</span>
+                      </label>
+                      <Input
+                        type="number"
+                        value={slice.end}
+                        className="w-20"
+                        onChange={(e) =>
+                          updateSlice(i, { end: Number(e.target.value) })
+                        }
+                      />
+                    </div>
+                    <div className="flex-1 flex flex-col gap-y-1">
+                      <label className="text-sm font-medium">
+                        {t(
+                          "settings.sensitive-data.algorithms.range-mask.substitution"
+                        )}
+                        <span className="text-error ml-0.5">*</span>
+                      </label>
+                      <Input
+                        value={slice.substitution}
+                        onChange={(e) =>
+                          updateSlice(i, { substitution: e.target.value })
+                        }
+                      />
+                    </div>
+                    <Button
+                      appearance="secondary"
+                      size="xs"
+                      className="p-1 rounded-xs hover:bg-error/10 text-error mb-0.5"
+                      onClick={() =>
+                        setRangeMaskSlices((prev) =>
+                          prev.filter((_, idx) => idx !== i)
+                        )
+                      }
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                {rangeMaskErrorMessage && (
+                  <p className="text-error text-sm">{rangeMaskErrorMessage}</p>
+                )}
+                <Button
+                  appearance="outline"
+                  className="ml-auto"
+                  onClick={() =>
+                    setRangeMaskSlices((prev) => {
+                      const last = prev[prev.length - 1];
+                      return [
+                        ...prev,
+                        {
+                          start: (last?.start ?? -1) + 1,
+                          end: (last?.end ?? 0) + 1,
+                          substitution: "*",
+                        },
+                      ];
+                    })
+                  }
+                >
+                  {t("common.add")}
+                </Button>
+              </>
+            )}
+
+            {maskingType === "md5-mask" && (
+              <div>
+                <label className="text-sm font-medium">
+                  {t("settings.sensitive-data.algorithms.md5-mask.salt")}
+                  <span className="text-error ml-0.5">*</span>
+                </label>
+                <p className="text-sm text-control-placeholder mt-1">
+                  {t("settings.sensitive-data.algorithms.md5-mask.salt-label")}
+                </p>
+                <Input
+                  value={md5Salt}
+                  className="mt-2"
+                  placeholder={t(
+                    "settings.sensitive-data.algorithms.md5-mask.salt"
+                  )}
+                  onChange={(e) => setMd5Salt(e.target.value)}
+                />
+              </div>
+            )}
+
+            {maskingType === "inner-outer-mask" && (
+              <>
+                <div>
+                  <label className="text-sm font-medium">
+                    {t(
+                      "settings.sensitive-data.algorithms.inner-outer-mask.type"
+                    )}
+                    <span className="text-error ml-0.5">*</span>
+                  </label>
+                  <p className="text-sm text-control-placeholder mt-1">
+                    {innerOuterType === Algorithm_InnerOuterMask_MaskType.INNER
+                      ? t(
+                          "settings.sensitive-data.algorithms.inner-outer-mask.inner-label"
+                        )
+                      : t(
+                          "settings.sensitive-data.algorithms.inner-outer-mask.outer-label"
+                        )}
+                  </p>
+                  <RadioGroup
+                    className="mt-2 gap-x-4"
+                    value={String(innerOuterType)}
+                    onValueChange={(value) =>
+                      setInnerOuterType(
+                        Number(value) as Algorithm_InnerOuterMask_MaskType
+                      )
+                    }
+                  >
+                    <RadioGroupItem
+                      value={String(Algorithm_InnerOuterMask_MaskType.INNER)}
+                    >
+                      {t(
+                        "settings.sensitive-data.algorithms.inner-outer-mask.inner-mask"
+                      )}
+                    </RadioGroupItem>
+                    <RadioGroupItem
+                      value={String(Algorithm_InnerOuterMask_MaskType.OUTER)}
+                    >
+                      {t(
+                        "settings.sensitive-data.algorithms.inner-outer-mask.outer-mask"
+                      )}
+                    </RadioGroupItem>
+                  </RadioGroup>
+                </div>
+                <div className="flex gap-x-2 items-end">
+                  <div className="flex flex-col gap-y-1">
+                    <label className="text-sm font-medium">
+                      {t(
+                        "settings.sensitive-data.algorithms.inner-outer-mask.prefix-length"
+                      )}
+                      <span className="text-error ml-0.5">*</span>
+                    </label>
+                    <NumberInput
+                      value={innerOuterPrefix}
+                      className="w-24"
+                      min={0}
+                      step={1}
+                      onValueChange={setInnerOuterPrefix}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-y-1">
+                    <label className="text-sm font-medium">
+                      {t(
+                        "settings.sensitive-data.algorithms.inner-outer-mask.suffix-length"
+                      )}
+                      <span className="text-error ml-0.5">*</span>
+                    </label>
+                    <NumberInput
+                      value={innerOuterSuffix}
+                      className="w-24"
+                      min={0}
+                      step={1}
+                      onValueChange={setInnerOuterSuffix}
+                    />
+                  </div>
+                  <div className="flex-1 flex flex-col gap-y-1">
+                    <label className="text-sm font-medium">
+                      {t(
+                        "settings.sensitive-data.algorithms.range-mask.substitution"
+                      )}
+                      <span className="text-error ml-0.5">*</span>
+                    </label>
+                    <Input
+                      value={innerOuterSubstitution}
+                      onChange={(e) =>
+                        setInnerOuterSubstitution(e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </SheetBody>
+
+        <SheetFooter>
+          <Button appearance="outline" onClick={onDismiss}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            disabled={!!errorMessage}
+            onClick={() => onApply(buildAlgorithm())}
+            title={errorMessage || undefined}
+          >
+            {algorithm ? t("common.update") : t("common.create")}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+// --- SemanticTypeRow ---
+
+interface SemanticTypeRowProps {
+  row: SemanticItem;
+  index: number;
+  readonly: boolean;
+  getConfirmDisabledReason: (data: SemanticItem) => string | undefined;
+  onInput: (
+    index: number,
+    updater: (
+      item: SemanticTypeSetting_SemanticType
+    ) => SemanticTypeSetting_SemanticType
+  ) => void;
+  onRemove: (index: number) => void;
+  onConfirm: (index: number) => void;
+  onCancel: (index: number) => void;
+  onStartEdit: (index: number) => void;
+  onOpenAlgorithmDrawer: (index: number, algorithm?: Algorithm) => void;
+}
+
+function SemanticTypeRow({
+  row,
+  index,
+  readonly,
+  getConfirmDisabledReason,
+  onInput,
+  onRemove,
+  onConfirm,
+  onCancel,
+  onStartEdit,
+  onOpenAlgorithmDrawer,
+}: SemanticTypeRowProps) {
+  const { t } = useTranslation();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const isBuiltin = isBuiltinSemanticType(row.item);
+  const isItemReadonly = readonly || isBuiltin;
+  const isEditing = row.mode !== "NORMAL";
+  const confirmDisabledReason = getConfirmDisabledReason(row);
+
+  return (
+    <TableRow>
+      <TableCell className="text-center">
+        {isEditing && !isItemReadonly ? (
+          <IconPicker
+            value={row.item.icon ?? ""}
+            onChange={(icon) => onInput(index, (item) => ({ ...item, icon }))}
+          />
+        ) : row.item.icon ? (
+          <div className="flex items-center justify-center">
+            <img
+              src={row.item.icon}
+              className="w-6 h-6 object-contain"
+              alt=""
+            />
+          </div>
+        ) : (
+          <span className="text-control-placeholder">-</span>
+        )}
+      </TableCell>
+      <TableCell className="truncate max-w-36" title={row.item.id}>
+        {row.item.id}
+      </TableCell>
+      <TableCell>
+        {isEditing ? (
+          <Input
+            value={row.item.title}
+            size="sm"
+            placeholder={t(
+              "settings.sensitive-data.semantic-types.table.title"
+            )}
+            onChange={(e) =>
+              onInput(index, (item) => ({ ...item, title: e.target.value }))
+            }
+          />
+        ) : (
+          <span className="truncate">{row.item.title}</span>
+        )}
+      </TableCell>
+      <TableCell>
+        {isEditing ? (
+          <Input
+            value={row.item.description}
+            size="sm"
+            placeholder={t(
+              "settings.sensitive-data.semantic-types.table.description"
+            )}
+            onChange={(e) =>
+              onInput(index, (item) => ({
+                ...item,
+                description: e.target.value,
+              }))
+            }
+          />
+        ) : (
+          <span className="truncate">{row.item.description}</span>
+        )}
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-x-1">
+          {isBuiltin ? (
+            <>
+              <span>
+                {t(
+                  `dynamic.settings.sensitive-data.semantic-types.template.${row.item.id.split(".").join("-")}.title`
+                )}
+              </span>
+              <Tooltip
+                content={
+                  <div className="whitespace-pre-line">
+                    {t(
+                      `dynamic.settings.sensitive-data.semantic-types.template.${row.item.id.split(".").join("-")}.algorithm.description`
+                    )}
+                  </div>
+                }
+              >
+                <span className="text-control-placeholder cursor-help">
+                  <Info className="w-4 h-4" />
+                </span>
+              </Tooltip>
+            </>
+          ) : (
+            <span>
+              {getMaskingType(row.item.algorithm)
+                ? t(
+                    `settings.sensitive-data.algorithms.${getMaskingType(row.item.algorithm)?.toLowerCase()}.self`
+                  )
+                : "N/A"}
+            </span>
+          )}
+          {!isItemReadonly && (
+            <Button
+              appearance="secondary"
+              size="xs"
+              className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
+              onClick={() => {
+                const algo = getMaskingType(row.item.algorithm)
+                  ? row.item.algorithm
+                  : undefined;
+                onOpenAlgorithmDrawer(index, algo);
+              }}
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      </TableCell>
+      {!readonly && (
+        <TableCell>
+          <div className="flex items-center justify-end gap-x-1">
+            {!isBuiltin && (
+              <>
+                {isEditing && (
+                  <Button
+                    appearance="secondary"
+                    size="xs"
+                    className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
+                    onClick={() => onCancel(index)}
+                  >
+                    <Undo2 className="w-4 h-4" />
+                  </Button>
+                )}
+                {row.mode === "EDIT" && (
+                  <DeleteConfirmButton
+                    show={showDeleteConfirm}
+                    onShowChange={setShowDeleteConfirm}
+                    message={t(
+                      "settings.sensitive-data.semantic-types.table.delete"
+                    )}
+                    onConfirm={() => onRemove(index)}
+                  />
+                )}
+                {isEditing && (
+                  <Tooltip content={confirmDisabledReason}>
+                    <span className="inline-flex">
+                      <Button
+                        appearance="secondary"
+                        size="xs"
+                        type="button"
+                        aria-label={t("common.confirm")}
+                        className="p-1 rounded-xs hover:bg-accent/10 text-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!!confirmDisabledReason}
+                        onClick={() => onConfirm(index)}
+                      >
+                        <Check className="w-4 h-4" />
+                      </Button>
+                    </span>
+                  </Tooltip>
+                )}
+                {row.mode === "NORMAL" && (
+                  <Button
+                    appearance="secondary"
+                    size="xs"
+                    className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
+                    onClick={() => onStartEdit(index)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        </TableCell>
+      )}
+    </TableRow>
+  );
+}
+
+// --- DeleteConfirmButton ---
+
+// --- IconPicker ---
+
+const SUPPORTED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".svg"];
+const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2 MiB
+
+interface IconPickerProps {
+  value: string;
+  onChange: (base64: string) => void;
+}
+
+function IconPicker({ value, onChange }: IconPickerProps) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [tempValue, setTempValue] = useState(value);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setTempValue(value);
+    }
+    setOpen(nextOpen);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE_BYTES) return;
+    const reader = new FileReader();
+    reader.onload = () => setTempValue(reader.result as string);
+    reader.readAsDataURL(file);
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+  };
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger
+        className={
+          value
+            ? "flex items-center gap-1 rounded-xs text-control-light outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+            : "p-1 rounded-xs hover:bg-control-bg-hover text-control-light outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+        }
+      >
+        {value ? (
+          <>
+            <img src={value} className="w-6 h-6 object-contain" alt="" />
+            <span className="p-0.5 rounded-xs hover:bg-control-bg-hover">
+              <Pencil className="w-3 h-3" />
+            </span>
+          </>
+        ) : (
+          <Pencil className="w-4 h-4" />
+        )}
+      </PopoverTrigger>
+      <PopoverContent align="start" className="p-3">
+        <div
+          className="w-48 h-48 flex justify-center items-center border border-dashed border-control-border rounded-sm relative cursor-pointer"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {tempValue ? (
+            <div
+              className="w-1/3 h-1/3 bg-no-repeat bg-contain bg-center rounded-sm"
+              style={{ backgroundImage: `url(${tempValue})` }}
+            />
+          ) : (
+            <span className="text-sm text-control-placeholder">
+              {t("common.upload")}
+            </span>
+          )}
+          <Input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept={SUPPORTED_IMAGE_EXTENSIONS.join(",")}
+            onChange={handleFileSelect}
+          />
+        </div>
+        <div className="flex justify-end gap-x-2 mt-2">
+          <Button
+            appearance="outline"
+            size="sm"
+            onClick={() => setTempValue("")}
+          >
+            {t("common.clear")}
+          </Button>
+          <Button appearance="outline" size="sm" onClick={() => setOpen(false)}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              onChange(tempValue);
+              setOpen(false);
+            }}
+          >
+            {t("common.update")}
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// --- DeleteConfirmButton ---
+
+interface DeleteConfirmButtonProps {
+  show: boolean;
+  onShowChange: (show: boolean) => void;
+  message: string;
+  onConfirm: () => void;
+}
+
+function DeleteConfirmButton({
+  show,
+  onShowChange,
+  message,
+  onConfirm,
+}: DeleteConfirmButtonProps) {
+  const { t } = useTranslation();
+
+  return (
+    <Popover open={show} onOpenChange={onShowChange}>
+      <PopoverTrigger className="p-1 rounded-xs hover:bg-error/10 text-error">
+        <Trash2 className="w-4 h-4" />
+      </PopoverTrigger>
+      <PopoverContent className="whitespace-nowrap">
+        <p className="text-sm mb-2">{message}</p>
+        <div className="flex justify-end gap-x-2">
+          <Button
+            appearance="outline"
+            size="sm"
+            onClick={() => onShowChange(false)}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              onConfirm();
+              onShowChange(false);
+            }}
+          >
+            {t("common.delete")}
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}

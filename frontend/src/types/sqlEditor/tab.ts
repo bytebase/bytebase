@@ -1,5 +1,5 @@
-import type { Selection as MonacoSelection } from "@/react/components/monaco/types";
-import i18n from "@/react/i18n";
+import type { Selection as MonacoSelection } from "@/components/monaco/types";
+import i18n from "@/lib/i18n";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import type { SQLResultSetV1 } from "../v1/sql";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "./editor";
@@ -10,8 +10,14 @@ export type SQLEditorTabStatus =
   | "SAVING" // auto-saving in progress
   | "CLEAN"; // saved to a remote sheet
 
-export type SQLEditorTabMode = "WORKSHEET" | "ADMIN";
-export const DEFAULT_SQL_EDITOR_TAB_MODE: SQLEditorTabMode = "WORKSHEET";
+export type SQLEditorTabMode = "SAVED_QUERY" | "ADMIN" | "DATA_EXPLORER";
+export const DEFAULT_SQL_EDITOR_TAB_MODE: SQLEditorTabMode = "SAVED_QUERY";
+
+export type DataExplorerState = {
+  filter: string;
+  initialized: boolean;
+  selectedRowKey?: number;
+};
 export type QueryDataSourceType =
   | DataSourceType.ADMIN
   | DataSourceType.READ_ONLY;
@@ -66,12 +72,13 @@ export type SQLEditorTab = {
   // basic fields
   id: string; // uuid
   title: string; // display title, should be synced with sheet's title once saved
-  worksheet: string; // if ref to a local or remote sheet
+  savedQuery: string; // if ref to a local or remote sheet
   connection: SQLEditorConnection;
   status: SQLEditorTabStatus;
   statement: string; // local editing statement, might be out-of-sync to ref sheet's statement
   selectedStatement: string;
   mode: SQLEditorTabMode;
+  dataExplorer?: DataExplorerState;
 
   // SQL query related fields
   // won't be saved to localStorage
@@ -94,5 +101,5 @@ export type SQLEditorTab = {
 
 export type CoreSQLEditorTab = Pick<
   SQLEditorTab,
-  "worksheet" | "connection" | "mode"
+  "savedQuery" | "connection" | "mode"
 >;

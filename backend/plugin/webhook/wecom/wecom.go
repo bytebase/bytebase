@@ -10,11 +10,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
@@ -187,7 +186,7 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) bool {
 		return errs
 	}
 
-	if err := common.Retry(ctx, fn); err != nil {
+	if err := webhook.Retry(ctx, fn); err != nil {
 		slog.Warn("failed to send direct message to wecom users", log.BBError(err))
 		return false
 	}

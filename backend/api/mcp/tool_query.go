@@ -49,13 +49,18 @@ const queryDatabaseDescription = `Execute a SQL query against a Bytebase databas
 |-----------|----------|-------------|
 | database  | Yes      | Database name or substring (e.g., "employee_db" or "employee") |
 | statement | Yes      | SQL query to execute |
-| instance  | No       | Instance name to narrow resolution |
-| project   | No       | Project name to narrow resolution |
+| instance  | No       | Workspace instance ID/name, or the full canonical name for a project instance |
+| project   | No       | Project name or ID to narrow resolution |
 | limit     | No       | Max rows (default: 100, max: 1000) |
 
 **Examples:**
 query_database(database="employee_db", statement="SELECT * FROM users LIMIT 10")
-query_database(database="employee", instance="prod-pg", statement="SELECT count(*) FROM orders")`
+query_database(database="employee", instance="prod-pg", statement="SELECT count(*) FROM orders")
+query_database(database="employee", instance="projects/hr/instances/prod-pg", statement="SELECT count(*) FROM orders")
+
+**Notes:**
+- Masked data: a masked column reads back as "******". That is a placeholder, not a value anything holds, so never write it back and never filter on it. Any statement containing it is refused.
+`
 
 func (s *Server) registerQueryTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
@@ -82,20 +87,9 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	}
 
 	// Resolve database.
-	resolveCtx, resolveCancel := context.WithTimeout(ctx, resolveTimeout)
-	defer resolveCancel()
-
-	resolved, err := s.resolveDatabase(resolveCtx, input.Database, input.Instance, input.Project)
-	if err != nil {
-		return formatToolError(err), nil, nil
-	}
-	if resolved.ambiguous {
-		picked, elicitErr := s.elicitDatabaseChoice(ctx, req, resolved)
-		if elicitErr != nil {
-			// Elicitation unsupported or user cancelled — fall back to AMBIGUOUS_TARGET.
-			return formatAmbiguousResult(input.Database, resolved.candidates), nil, nil
-		}
-		resolved = picked
+	resolved, resolveResult := s.resolveTarget(ctx, req, input.Database, input.Instance, input.Project)
+	if resolveResult != nil {
+		return resolveResult, nil, nil
 	}
 
 	// Execute query.
@@ -198,7 +192,14 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 		}
 		suggestion := "check your SQL syntax and try again"
 		if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
-			suggestion = "you may not have permission to query this database — request the SQL Editor role on the project"
+			// A refusal that already names its own way out gets none added.
+			// Telling an agent to request a project role for one sends the
+			// person it acts for after a grant that cannot lift a workspace
+			// setting.
+			suggestion = ""
+			if !IsPolicyRefusal(errMsg) {
+				suggestion = "you may not have permission to query this database — request the SQL Editor role on the project"
+			}
 		}
 		return nil, &toolError{
 			Code:       "QUERY_ERROR",
@@ -330,4 +331,25 @@ func parseLatencyMs(latency string) int64 {
 		return 0
 	}
 	return d.Milliseconds()
+}
+
+// IsPolicyRefusal reports whether a 403 came from the MCP enforcement chain
+// rather than from the caller's own RBAC. It matches wording because the verdict
+// crosses a process boundary as an error body and nothing else survives the
+// trip; the producers call this, not a copy of it, in
+// TestMCPRefusalsNameThemselvesToTheQueryTool (backend/api/v1).
+func IsPolicyRefusal(message string) bool {
+	for _, phrase := range []string{
+		"MCP capability ceiling",
+		// Singular, so it also matches the plural the gate uses and the two
+		// refusals that live outside it (rejectMCPOriginatedGrantIssue,
+		// rejectMCPOriginatedIssuelessRollout).
+		"MCP session",
+		"MCP classification",
+	} {
+		if strings.Contains(message, phrase) {
+			return true
+		}
+	}
+	return false
 }

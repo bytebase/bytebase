@@ -117,7 +117,7 @@ func (x *QueryOption) Equal(y *QueryOption) bool {
 	if x.RedisRunCommandsOn != y.RedisRunCommandsOn {
 		return false
 	}
-	if x.MssqlExplainFormat != y.MssqlExplainFormat {
+	if x.ExplainFormat != y.ExplainFormat {
 		return false
 	}
 	return true
@@ -226,6 +226,22 @@ func (x *QueryResult_Message) Equal(y *QueryResult_Message) bool {
 	return true
 }
 
+func (x *QueryResult_QueryPlan) Equal(y *QueryResult_QueryPlan) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Format != y.Format {
+		return false
+	}
+	if x.Executed != y.Executed {
+		return false
+	}
+	return true
+}
+
 func (x *QueryResult) Equal(y *QueryResult) bool {
 	if x == y {
 		return true
@@ -296,6 +312,9 @@ func (x *QueryResult) Equal(y *QueryResult) bool {
 		if !x.Masked[i].Equal(y.Masked[i]) {
 			return false
 		}
+	}
+	if !x.QueryPlan.Equal(y.QueryPlan) {
+		return false
 	}
 	return true
 }
@@ -500,6 +519,9 @@ func (x *ExportRequest) Equal(y *ExportRequest) bool {
 	if p, q := x.Schema, y.Schema; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
+	if p, q := x.Container, y.Container; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	return true
 }
 
@@ -515,221 +537,6 @@ func (x *ExportResponse) Equal(y *ExportResponse) bool {
 	}
 	if x.AppliedAccessGrant != y.AppliedAccessGrant {
 		return false
-	}
-	return true
-}
-
-func (x *DiffMetadataRequest) Equal(y *DiffMetadataRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if !x.SourceMetadata.Equal(y.SourceMetadata) {
-		return false
-	}
-	if !x.TargetMetadata.Equal(y.TargetMetadata) {
-		return false
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	return true
-}
-
-func (x *DiffMetadataResponse) Equal(y *DiffMetadataResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Diff != y.Diff {
-		return false
-	}
-	return true
-}
-
-func (x *SearchQueryHistoriesRequest) Equal(y *SearchQueryHistoriesRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
-	if x.Filter != y.Filter {
-		return false
-	}
-	return true
-}
-
-func (x *GetQueryHistoryRequest) Equal(y *GetQueryHistoryRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Name != y.Name {
-		return false
-	}
-	return true
-}
-
-func (x *SearchQueryHistoriesResponse) Equal(y *SearchQueryHistoriesResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.QueryHistories) != len(y.QueryHistories) {
-		return false
-	}
-	for i := 0; i < len(x.QueryHistories); i++ {
-		if !x.QueryHistories[i].Equal(y.QueryHistories[i]) {
-			return false
-		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
-	}
-	return true
-}
-
-func (x *QueryHistory) Equal(y *QueryHistory) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Name != y.Name {
-		return false
-	}
-	if x.Database != y.Database {
-		return false
-	}
-	if x.Creator != y.Creator {
-		return false
-	}
-	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
-	}
-	if x.Statement != y.Statement {
-		return false
-	}
-	if p, q := x.Error, y.Error; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
-		return false
-	}
-	if p, q := x.Duration, y.Duration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
-	}
-	if x.Type != y.Type {
-		return false
-	}
-	return true
-}
-
-func (x *AICompletionRequest_Message) Equal(y *AICompletionRequest_Message) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Role != y.Role {
-		return false
-	}
-	if x.Content != y.Content {
-		return false
-	}
-	return true
-}
-
-func (x *AICompletionRequest) Equal(y *AICompletionRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Messages) != len(y.Messages) {
-		return false
-	}
-	for i := 0; i < len(x.Messages); i++ {
-		if !x.Messages[i].Equal(y.Messages[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *AICompletionResponse_Candidate_Content_Part) Equal(y *AICompletionResponse_Candidate_Content_Part) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Text != y.Text {
-		return false
-	}
-	return true
-}
-
-func (x *AICompletionResponse_Candidate_Content) Equal(y *AICompletionResponse_Candidate_Content) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Parts) != len(y.Parts) {
-		return false
-	}
-	for i := 0; i < len(x.Parts); i++ {
-		if !x.Parts[i].Equal(y.Parts[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *AICompletionResponse_Candidate) Equal(y *AICompletionResponse_Candidate) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if !x.Content.Equal(y.Content) {
-		return false
-	}
-	return true
-}
-
-func (x *AICompletionResponse) Equal(y *AICompletionResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Candidates) != len(y.Candidates) {
-		return false
-	}
-	for i := 0; i < len(x.Candidates); i++ {
-		if !x.Candidates[i].Equal(y.Candidates[i]) {
-			return false
-		}
 	}
 	return true
 }

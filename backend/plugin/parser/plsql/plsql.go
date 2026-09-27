@@ -32,7 +32,7 @@ func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		list, err := ParsePLSQLOmni(stmt.Text)
+		list, err := ParsePLSQL(stmt.Text)
 		if err != nil {
 			return nil, convertOmniError(err, stmt)
 		}

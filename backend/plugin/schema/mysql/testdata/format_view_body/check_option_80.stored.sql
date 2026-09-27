@@ -1,0 +1,1 @@
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `prettyfmt_edge`.`v_check` AS select `prettyfmt_edge`.`t1`.`a` AS `a`,`prettyfmt_edge`.`t1`.`c` AS `c` from `prettyfmt_edge`.`t1` where (`prettyfmt_edge`.`t1`.`c` > 5) WITH CASCADED CHECK OPTION

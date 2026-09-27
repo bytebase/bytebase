@@ -1,0 +1,166 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCurrentUser } from "@/hooks/useAppState";
+import { useProjectByName } from "@/hooks/useProjectByName";
+import { useAppStore } from "@/stores/app";
+import { ensureGroupIdentifier } from "@/stores/app/group";
+import { projectNamePrefix, userNamePrefix } from "@/stores/modules/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
+import {
+  AccountType,
+  getAccountTypeByEmail,
+  groupBindingPrefix,
+} from "@/types/v1/user";
+import {
+  ensureUserFullName,
+  isBindingPolicyExpired,
+  memberMapToRolesInProjectIAM,
+} from "@/utils";
+import {
+  type ApprovalIneligibility,
+  getApprovalEligibility,
+} from "../../../approvalEligibility";
+
+export interface ApprovalCandidate {
+  canApprove: boolean;
+  canReview: boolean;
+  ineligibilities: ApprovalIneligibility[];
+  user: User;
+}
+
+export interface ApprovalCandidates {
+  // Active human users holding the role. They stay visible even when a project
+  // policy means they cannot approve.
+  candidates: ApprovalCandidate[];
+  // Role membership remains distinct from review and approval eligibility.
+  canCurrentUserApprove: boolean;
+  isCurrentUserReviewCandidate: boolean;
+  isCurrentUserRoleMember: boolean;
+}
+
+export function useApprovalCandidates(
+  issue: Issue,
+  projectId: string,
+  role: string,
+  lastPlanEditor: string
+): ApprovalCandidates {
+  const currentUser = useCurrentUser();
+  const currentUserEmail = currentUser?.email ?? "";
+  const projectName = `${projectNamePrefix}${projectId}`;
+  const project = useProjectByName(projectName);
+  const projectIamPolicy = useAppStore(
+    (state) => state.projectPoliciesByName[projectName]
+  );
+  const batchGetOrFetchUsers = useAppStore(
+    (state) => state.batchGetOrFetchUsers
+  );
+  const batchGetOrFetchGroups = useAppStore(
+    (state) => state.batchGetOrFetchGroups
+  );
+  const groupsByName = useAppStore((state) => state.groupsByName);
+  const getGroupByIdentifier = useCallback(
+    (identifier: string) => groupsByName[ensureGroupIdentifier(identifier)],
+    [groupsByName]
+  );
+  const [users, setUsers] = useState<User[]>([]);
+
+  // Prefetch any groups bound to this role so candidate expansion can see
+  // their members (same dance as the existing useApprovalStep).
+  const groupNamesKey = useMemo(() => {
+    if (!projectIamPolicy) return "";
+    const names: string[] = [];
+    for (const binding of projectIamPolicy.bindings) {
+      if (binding.role !== role || isBindingPolicyExpired(binding)) continue;
+      for (const member of binding.members) {
+        if (member.startsWith(groupBindingPrefix)) {
+          names.push(member);
+        }
+      }
+    }
+    return JSON.stringify([...new Set(names)].sort());
+  }, [projectIamPolicy, role]);
+
+  useEffect(() => {
+    const names = groupNamesKey ? (JSON.parse(groupNamesKey) as string[]) : [];
+    void batchGetOrFetchGroups(names).catch(() => undefined);
+  }, [groupNamesKey, batchGetOrFetchGroups]);
+
+  const candidateEmailsKey = useMemo(() => {
+    // An empty role would make memberMapToRolesInProjectIAM skip its role
+    // filter and return every project member — guard so callers that pass a
+    // placeholder role (e.g. when no step is current) get no candidates.
+    if (!projectIamPolicy || !role) return "";
+    const memberMap = memberMapToRolesInProjectIAM(
+      projectIamPolicy,
+      role,
+      getGroupByIdentifier
+    );
+    const names: string[] = [];
+    for (const fullname of memberMap.keys()) {
+      if (fullname.startsWith(userNamePrefix)) {
+        names.push(fullname);
+      }
+    }
+    return JSON.stringify([...new Set(names)].sort());
+  }, [projectIamPolicy, role, getGroupByIdentifier]);
+
+  useEffect(() => {
+    let canceled = false;
+    const load = async () => {
+      const emails = candidateEmailsKey
+        ? (JSON.parse(candidateEmailsKey) as string[])
+        : [];
+      if (emails.length === 0) {
+        setUsers([]);
+        return;
+      }
+      const nextUsers = await batchGetOrFetchUsers(
+        emails.map(ensureUserFullName)
+      );
+      if (canceled) return;
+      setUsers(
+        nextUsers
+          .filter(
+            (user) =>
+              user &&
+              user.state === State.ACTIVE &&
+              getAccountTypeByEmail(user.email) === AccountType.USER
+          )
+          .sort((left, right) => {
+            if (left.email === currentUserEmail) return -1;
+            if (right.email === currentUserEmail) return 1;
+            return left.title.localeCompare(right.title);
+          })
+      );
+    };
+    void load();
+    return () => {
+      canceled = true;
+    };
+  }, [batchGetOrFetchUsers, candidateEmailsKey, currentUserEmail]);
+
+  const candidates = useMemo(
+    () =>
+      users.map((user) => ({
+        ...getApprovalEligibility({
+          actor: user.name,
+          issueCreator: issue.creator,
+          lastPlanEditor,
+          project,
+        }),
+        user,
+      })),
+    [issue.creator, lastPlanEditor, project, users]
+  );
+  const currentUserCandidate = candidates.find(
+    (candidate) => candidate.user.email === currentUserEmail
+  );
+
+  return {
+    candidates,
+    canCurrentUserApprove: currentUserCandidate?.canApprove ?? false,
+    isCurrentUserReviewCandidate: currentUserCandidate?.canReview ?? false,
+    isCurrentUserRoleMember: currentUserCandidate !== undefined,
+  };
+}

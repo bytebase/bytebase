@@ -1,0 +1,328 @@
+import type { ReactElement } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+const mocks = vi.hoisted(() => ({
+  appStoreState: {
+    authenticationInfo: {
+      restriction: {
+        passwordRestriction: undefined as unknown,
+        disallowPasswordSignin: false,
+      },
+    },
+    requireResetPassword: (() => true) as () => boolean,
+  },
+  useAuthStore: vi.fn(() => ({
+    setRequireResetPassword: vi.fn(),
+    login: vi.fn(async () => {}),
+  })),
+  updateUser: vi.fn(),
+  changePassword: vi.fn(async () => ({ name: "users/1" })),
+  fetchCurrentUser: vi.fn(async () => ({ name: "users/1" })),
+  setCurrentUser: vi.fn(),
+  pushNotification: vi.fn(),
+  routerReplace: vi.fn(),
+  routerPush: vi.fn(),
+  currentRoute: {
+    value: { query: {} as Record<string, string> },
+  },
+  resetPassword: vi.fn(),
+  requestPasswordReset: vi.fn(),
+  resolveWorkspaceName: vi.fn(() => undefined),
+  login: vi.fn(async () => {}),
+  setRequireResetPassword: vi.fn(),
+}));
+
+vi.mock("@/hooks/useAppState", () => ({
+  useCurrentUser: () => ({ name: "users/1", email: "u@e" }),
+}));
+
+vi.mock("@/stores", () => ({
+  useAuthStore: mocks.useAuthStore,
+  pushNotification: mocks.pushNotification,
+}));
+
+vi.mock("@/stores/app", () => {
+  const getState = () => ({
+    ...mocks.appStoreState,
+    updateUser: mocks.updateUser,
+    fetchCurrentUser: mocks.fetchCurrentUser,
+    setCurrentUser: mocks.setCurrentUser,
+    loadAuthenticationInfo: vi.fn().mockResolvedValue(undefined),
+    login: mocks.login,
+    setRequireResetPassword: mocks.setRequireResetPassword,
+    workspaceResourceName: () => "",
+  });
+  return {
+    useAppStore: Object.assign(
+      (selector?: (state: ReturnType<typeof getState>) => unknown) =>
+        selector ? selector(getState()) : getState(),
+      { getState }
+    ),
+  };
+});
+
+vi.mock("@/app/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/app/router")>()),
+  router: {
+    replace: mocks.routerReplace,
+    push: mocks.routerPush,
+    currentRoute: mocks.currentRoute,
+    resolve: (to: unknown) => ({ href: String(to), fullPath: String(to) }),
+  },
+}));
+
+vi.mock("@/api", () => ({
+  authServiceClientConnect: {
+    resetPassword: mocks.resetPassword,
+    requestPasswordReset: mocks.requestPasswordReset,
+  },
+  userServiceClientConnect: {
+    changePassword: mocks.changePassword,
+  },
+}));
+
+vi.mock("@/lib/workspace", () => ({
+  resolveWorkspaceName: mocks.resolveWorkspaceName,
+}));
+
+vi.mock("@bufbuild/protobuf", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@bufbuild/protobuf")>();
+  return {
+    ...actual,
+    create: (_schema: unknown, data: Record<string, unknown>) => data,
+  };
+});
+
+vi.mock("@/types/proto-es/v1/auth_service_pb", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("@/types/proto-es/v1/auth_service_pb")
+    >();
+  return {
+    ...actual,
+    LoginRequestSchema: {},
+    ResetPasswordRequestSchema: {},
+  };
+});
+
+vi.mock("@/types/proto-es/v1/user_service_pb", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("@/types/proto-es/v1/user_service_pb")
+    >();
+  return {
+    ...actual,
+    UpdateUserRequestSchema: {},
+  };
+});
+
+vi.mock("@/assets/logo-full.svg", () => ({
+  default: "/assets/logo-full.svg",
+}));
+
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string, vars?: Record<string, unknown>) =>
+      vars ? `${key}:${JSON.stringify(vars)}` : key,
+  }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
+}));
+
+let PasswordResetPage: typeof import("./PasswordResetPage").PasswordResetPage;
+
+const renderIntoContainer = (element: ReactElement) => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  return {
+    container,
+    render: () => {
+      act(() => {
+        root.render(element);
+      });
+    },
+    unmount: () =>
+      act(() => {
+        root.unmount();
+      }),
+  };
+};
+
+const flushPromises = () =>
+  act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+
+const setInputValue = (input: HTMLInputElement, value: string) => {
+  act(() => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value"
+    );
+    descriptor?.set?.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+};
+
+beforeEach(async () => {
+  vi.clearAllMocks();
+  mocks.currentRoute.value.query = {};
+  mocks.appStoreState.authenticationInfo.restriction.disallowPasswordSignin =
+    false;
+  mocks.appStoreState.requireResetPassword = () => true;
+  mocks.useAuthStore.mockReturnValue({
+    setRequireResetPassword: vi.fn(),
+    login: vi.fn(async () => {}),
+  });
+  ({ PasswordResetPage } = await import("./PasswordResetPage"));
+});
+
+describe("PasswordResetPage", () => {
+  test("forced-reset mode: redirects when requireResetPassword is false", () => {
+    mocks.appStoreState.requireResetPassword = () => false;
+    const { render, unmount } = renderIntoContainer(<PasswordResetPage />);
+    render();
+    expect(mocks.routerReplace).toHaveBeenCalled();
+    unmount();
+  });
+
+  test("code mode: redirects to signin when password signin is disallowed", () => {
+    mocks.currentRoute.value.query = { email: "u@e.com" };
+    mocks.appStoreState.authenticationInfo.restriction.disallowPasswordSignin =
+      true;
+    const { render, unmount } = renderIntoContainer(<PasswordResetPage />);
+    render();
+    expect(mocks.routerReplace).toHaveBeenCalledWith({
+      name: "auth.signin",
+      query: { email: "u@e.com" },
+    });
+    unmount();
+  });
+
+  test("code mode: renders email + verification code + password fields", () => {
+    mocks.currentRoute.value.query = { email: "u@e.com" };
+    const { container, render, unmount } = renderIntoContainer(
+      <PasswordResetPage />
+    );
+    render();
+    const emailInput = container.querySelector<HTMLInputElement>(
+      'input[type="email"]'
+    );
+    expect(emailInput?.value).toBe("u@e.com");
+    expect(emailInput?.disabled).toBe(true);
+    const otpInputs = container.querySelectorAll('input[inputmode="numeric"]');
+    expect(otpInputs.length).toBe(6);
+    const passwordInputs = container.querySelectorAll<HTMLInputElement>(
+      'input[type="password"]'
+    );
+    expect(passwordInputs.length).toBe(2);
+    unmount();
+  });
+
+  test("confirm button is disabled until valid password + matching confirm", () => {
+    mocks.currentRoute.value.query = {};
+    const { container, render, unmount } = renderIntoContainer(
+      <PasswordResetPage />
+    );
+    render();
+    const confirmBtn = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button")
+    ).find((b) => b.textContent === "common.confirm");
+    expect(confirmBtn?.disabled).toBe(true);
+    const passwordInputs = container.querySelectorAll<HTMLInputElement>(
+      'input[type="password"]'
+    );
+    // A matching new password is not enough on its own: the forced reset is a
+    // credential change, so it proves the current password too.
+    setInputValue(passwordInputs[1], "Passw0rd!");
+    setInputValue(passwordInputs[2], "Passw0rd!");
+    expect(confirmBtn?.disabled).toBe(true);
+    setInputValue(passwordInputs[0], "0ldPassw0rd!");
+    expect(confirmBtn?.disabled).toBe(false);
+    unmount();
+  });
+
+  // The forced reset is the caller changing their own password, which
+  // UpdateUser refuses — it keeps the password mask for administrators
+  // resetting someone else. Sending it there strands the user on this page
+  // with no way to finish signing in.
+  test("forced-reset mode: confirm calls changePassword", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <PasswordResetPage />
+    );
+    render();
+
+    const passwordInputs = container.querySelectorAll<HTMLInputElement>(
+      'input[type="password"]'
+    );
+    setInputValue(passwordInputs[0], "0ldPassw0rd!");
+    setInputValue(passwordInputs[1], "Passw0rd!");
+    setInputValue(passwordInputs[2], "Passw0rd!");
+    const confirmBtn = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button")
+    ).find((b) => b.textContent === "common.confirm")!;
+    act(() => {
+      confirmBtn.click();
+    });
+    await flushPromises();
+
+    expect(mocks.changePassword).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "users/1",
+        newPassword: "Passw0rd!",
+        // The proof travels with the change; without it the server refuses.
+        credential: expect.objectContaining({
+          proof: { case: "currentPassword", value: "0ldPassw0rd!" },
+        }),
+      }),
+      expect.anything()
+    );
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+    // The response is adopted rather than refetched, so the shared user the
+    // guards read is current before this page navigates away.
+    expect(mocks.setCurrentUser).toHaveBeenCalledWith({ name: "users/1" });
+    unmount();
+  });
+
+  test("code mode: confirm calls resetPassword and logs in on success", async () => {
+    mocks.currentRoute.value.query = { email: "u@e.com" };
+    mocks.resetPassword.mockResolvedValue({});
+    const { container, render, unmount } = renderIntoContainer(
+      <PasswordResetPage />
+    );
+    render();
+    // Fill OTP
+    const otpInputs = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[inputmode="numeric"]')
+    );
+    "111111".split("").forEach((d, i) => setInputValue(otpInputs[i], d));
+    // Fill passwords
+    const passwordInputs = container.querySelectorAll<HTMLInputElement>(
+      'input[type="password"]'
+    );
+    setInputValue(passwordInputs[0], "Passw0rd!");
+    setInputValue(passwordInputs[1], "Passw0rd!");
+    const confirmBtn = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button")
+    ).find((b) => b.textContent === "common.confirm")!;
+    act(() => {
+      confirmBtn.click();
+    });
+    await flushPromises();
+    expect(mocks.resetPassword).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "u@e.com",
+        code: "111111",
+        newPassword: "Passw0rd!",
+      })
+    );
+    expect(mocks.login).toHaveBeenCalled();
+    unmount();
+  });
+});

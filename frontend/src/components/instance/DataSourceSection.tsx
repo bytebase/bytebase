@@ -1,0 +1,255 @@
+import { Plus } from "lucide-react";
+import { type ReactNode, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { FormFieldGroup } from "@/components/ui/form";
+import { useAppStore } from "@/stores/app";
+import { DATASOURCE_READONLY_USER_NAME } from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
+import { CreateDataSourceExample } from "./CreateDataSourceExample";
+import type { EditDataSource } from "./common";
+import { createDataSourceDraft } from "./common";
+import { DataSourceForm } from "./DataSourceForm";
+import { useInstanceFormContext } from "./InstanceFormContext";
+import type { InfoSection } from "./info-content";
+
+interface DataSourceSectionProps {
+  children?: ReactNode;
+  hideOptions?: boolean;
+  hideAuthentication?: boolean;
+  onOpenInfoPanel?: (section: InfoSection) => void;
+}
+
+export function DataSourceSection({
+  children,
+  hideOptions = false,
+  hideAuthentication = false,
+  onOpenInfoPanel,
+}: DataSourceSectionProps) {
+  const { t } = useTranslation();
+  const ctx = useInstanceFormContext();
+  const {
+    instance,
+    isCreating,
+    allowEdit,
+    basicInfo,
+    dataSourceEditState,
+    setDataSourceEditState,
+    adminDataSource,
+    editingDataSource,
+    readonlyDataSourceList,
+    hasReadOnlyDataSource,
+    hasPermission,
+    checkDataSource,
+    isEditing,
+  } = ctx;
+
+  // Only the open tab renders its own field errors, and any data source that
+  // fails the check disables Update from anywhere. Say which tab to open —
+  // while there is an edit to save, which is when those buttons are on screen.
+  const incompleteMarker = (ds: EditDataSource) =>
+    !isEditing || checkDataSource([ds]) ? null : (
+      <span className="ml-1 text-error" title={t("instance.open-data-source")}>
+        *<span className="sr-only"> {t("instance.open-data-source")}</span>
+      </span>
+    );
+
+  const allowUpdate = hasPermission("bb.instances.update");
+
+  const handleCreateRODataSource = useCallback(() => {
+    if (isCreating) return;
+    const ds = {
+      ...createDataSourceDraft(basicInfo.engine),
+      type: DataSourceType.READ_ONLY,
+      host: adminDataSource.host,
+      port: adminDataSource.port,
+      database: adminDataSource.database,
+      username: DATASOURCE_READONLY_USER_NAME,
+    };
+    if (
+      basicInfo.engine === Engine.SPANNER ||
+      basicInfo.engine === Engine.BIGQUERY
+    ) {
+      ds.projectId = adminDataSource.projectId;
+      ds.instanceId = adminDataSource.instanceId;
+    }
+    setDataSourceEditState((prev) => ({
+      dataSources: [...prev.dataSources, ds],
+      editingDataSourceId: ds.id,
+    }));
+  }, [isCreating, adminDataSource, basicInfo.engine, setDataSourceEditState]);
+
+  const handleDeleteDataSource = useCallback(
+    async (ds: EditDataSource) => {
+      if (instance && !ds.pendingCreate) {
+        await useAppStore.getState().deleteDataSource(instance, ds);
+      }
+      setDataSourceEditState((prev) => {
+        const dataSources = prev.dataSources.filter((d) => d.id !== ds.id);
+        let editingDataSourceId = prev.editingDataSourceId;
+        if (ds.id === editingDataSourceId) {
+          const index = prev.dataSources.findIndex((d) => d.id === ds.id);
+          const siblingIndex = Math.min(index, dataSources.length - 1);
+          editingDataSourceId = dataSources[siblingIndex]?.id;
+        }
+        return { dataSources, editingDataSourceId };
+      });
+    },
+    [instance, setDataSourceEditState]
+  );
+
+  const handleDataSourceChange = useCallback(
+    (updated: EditDataSource) => {
+      setDataSourceEditState((prev) => ({
+        ...prev,
+        dataSources: prev.dataSources.map((ds) =>
+          ds.id === updated.id ? updated : ds
+        ),
+      }));
+    },
+    [setDataSourceEditState]
+  );
+
+  const handleTabChange = useCallback(
+    (tabId: string | number | null) => {
+      if (typeof tabId === "string") {
+        setDataSourceEditState((prev) => ({
+          ...prev,
+          editingDataSourceId: tabId,
+        }));
+      }
+    },
+    [setDataSourceEditState]
+  );
+
+  // DynamoDB normally has a single admin data source, so the read-only
+  // tabs are hidden unless a read-only data source already exists
+  // (creatable via the API), which must stay reachable.
+  const showDataSourceTabs =
+    !isCreating &&
+    (basicInfo.engine !== Engine.DYNAMODB || hasReadOnlyDataSource);
+
+  const showROTips = showDataSourceTabs && !hasReadOnlyDataSource;
+
+  return (
+    <FormFieldGroup density="compact">
+      {/* Data source tabs */}
+      {showDataSourceTabs && (
+        <div className="flex items-center gap-x-2 border-b border-block-border">
+          <Button
+            type="button"
+            appearance="secondary"
+            size="md"
+            className={`h-auto pb-2 px-1 text-sm font-medium border-b-2 ${
+              dataSourceEditState.editingDataSourceId === adminDataSource.id
+                ? "border-accent text-accent"
+                : "border-transparent text-control-light hover:text-main"
+            }`}
+            onClick={() => handleTabChange(adminDataSource.id)}
+          >
+            {t("common.admin")}
+            {incompleteMarker(adminDataSource)}
+          </Button>
+          {readonlyDataSourceList.map((ds) => (
+            <div key={ds.id} className="flex items-center">
+              <Button
+                type="button"
+                appearance="secondary"
+                size="md"
+                className={`h-auto pb-2 px-1 text-sm font-medium border-b-2 ${
+                  dataSourceEditState.editingDataSourceId === ds.id
+                    ? "border-accent text-accent"
+                    : "border-transparent text-control-light hover:text-main"
+                }`}
+                onClick={() => handleTabChange(ds.id)}
+              >
+                {t("common.read-only")}
+                {incompleteMarker(ds)}
+              </Button>
+              {hasReadOnlyDataSource && (
+                <Button
+                  type="button"
+                  appearance="secondary"
+                  size="xs"
+                  className="ml-1 h-auto pb-2 text-error hover:text-error-hover"
+                  disabled={!allowUpdate}
+                  onClick={() => {
+                    if (
+                      ds.pendingCreate ||
+                      window.confirm(
+                        `${t("data-source.delete-read-only-data-source")}?`
+                      )
+                    ) {
+                      handleDeleteDataSource(ds);
+                    }
+                  }}
+                >
+                  ✕
+                </Button>
+              )}
+            </div>
+          ))}
+          {!hasReadOnlyDataSource && (
+            <span className="pb-2 px-1 text-sm text-control-light">
+              {t("common.read-only")}
+            </span>
+          )}
+          {allowEdit && (
+            <Button
+              type="button"
+              appearance="secondary"
+              size="md"
+              className="h-auto px-1 pb-2 text-control-light hover:text-main"
+              disabled={!allowUpdate}
+              onClick={handleCreateRODataSource}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      )}
+
+      {showROTips && (
+        <Alert
+          variant="warning"
+          description={
+            <div className="flex items-center justify-between gap-x-2">
+              <span>{t("data-source.no-read-only-data-source")}</span>
+              <Button
+                appearance="outline"
+                size="sm"
+                onClick={handleCreateRODataSource}
+              >
+                {t("common.create")}
+              </Button>
+            </div>
+          }
+        />
+      )}
+
+      {!isCreating && editingDataSource && (
+        <CreateDataSourceExample
+          key={editingDataSource.id}
+          engine={basicInfo.engine}
+          dataSourceType={editingDataSource.type}
+          authenticationType={editingDataSource.authenticationType}
+          createInstanceFlag={false}
+        />
+      )}
+
+      {children}
+
+      {editingDataSource && (
+        <DataSourceForm
+          dataSource={editingDataSource}
+          hideOptions={hideOptions}
+          hideAuthentication={hideAuthentication}
+          onDataSourceChange={handleDataSourceChange}
+          onOpenInfoPanel={onOpenInfoPanel}
+        />
+      )}
+    </FormFieldGroup>
+  );
+}

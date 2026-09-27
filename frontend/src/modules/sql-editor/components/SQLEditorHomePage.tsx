@@ -1,0 +1,314 @@
+import { ChevronLeft } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+import {
+  Panel,
+  Group as PanelGroup,
+  type PanelImperativeHandle,
+  Separator as PanelResizeHandle,
+} from "react-resizable-panels";
+import { useNavigate } from "@/app/router";
+import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
+import { IAMRemindDialog } from "@/components/IAMRemindDialog";
+import { Button } from "@/components/ui/button";
+import {
+  getLayerRoot,
+  LAYER_BACKDROP_CLASS,
+  LAYER_SURFACE_CLASS,
+} from "@/components/ui/layer";
+import { useAppProject } from "@/hooks/useAppProject";
+import { applyPlanTitleToQuery } from "@/lib/plan/title";
+import { cn } from "@/lib/utils";
+import { resizeHandleClass } from "@/modules/schema-editor/resize";
+import { AsidePanel } from "@/modules/sql-editor/components/AsidePanel";
+import { ConnectionPanel } from "@/modules/sql-editor/components/ConnectionPanel";
+import { Panels } from "@/modules/sql-editor/components/Panels/Panels";
+import { SQLEditorHeader } from "@/modules/sql-editor/components/SQLEditorHeader";
+import { TabList } from "@/modules/sql-editor/components/TabList";
+import {
+  SQLEditorThemeScope,
+  useSQLEditorTheme,
+} from "@/modules/sql-editor/components/theme/SQLEditorThemeScope";
+import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
+import { useSQLEditorStore } from "@/modules/sql-editor/store";
+import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
+import {
+  getSQLEditorTabsState,
+  useCurrentSQLEditorTab,
+  useIsDisconnected,
+} from "@/modules/sql-editor/store/tab";
+import { WorkspaceSetupGuide } from "@/modules/workspace-setup-guide/WorkspaceSetupGuide";
+import { useAppStore } from "@/stores/app";
+import { unknownProject } from "@/types";
+import {
+  extractDatabaseResourceName,
+  extractProjectResourceName,
+} from "@/utils";
+
+/**
+ * Top-level shell of the SQL Editor route:
+ *  - desktop: a horizontal split between `<AsidePanel>` (workspace
+ *    tree, etc.) and the main column (`<TabList>` + `<Panels>`).
+ *  - mobile (window width < 800px): the aside collapses behind a
+ *    floating chevron + drawer.
+ *
+ * Two emittery listeners:
+ *  - `alter-schema` opens a new tab to the plan editor with a
+ *    pre-filled `ALTER TABLE` statement.
+ *  - `insert-at-caret` flips back to the CODE view and stages the
+ *    content into `pendingInsertAtCaret`; `<SQLEditor>` reads it and
+ *    inserts at the cursor.
+ */
+export function SQLEditorHomePage() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const setPendingInsertAtCaret = useSQLEditorStore(
+    (s) => s.setPendingInsertAtCaret
+  );
+
+  const projectContextReady = useSQLEditorEditorState(
+    (s) => s.projectContextReady
+  );
+  const projectName = useSQLEditorEditorState((s) => s.project);
+  const resolvedProject = useAppProject(projectName);
+  const project =
+    projectName && resolvedProject.name === projectName
+      ? resolvedProject
+      : undefined;
+  const tab = useCurrentSQLEditorTab();
+  const isDisconnected = useIsDisconnected();
+  // Read the active theme once so portaled overlays (which mount outside the
+  // chrome DOM subtree) can re-write the chrome CSS vars on their own root.
+  const theme = useSQLEditorTheme();
+
+  const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
+  useEffect(() => {
+    const handler = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  // Two separate reasons to give up the sidebar, and only one of them wants
+  // the phone treatment. A narrow window moves the tree into a drawer behind a
+  // floating toggle; a maximized result pane collapses it in place, so the
+  // tree keeps its scroll position and its dragged width for the trip back.
+  const isNarrowWindow = windowWidth < 800;
+  const collapseSidebar = useSQLEditorStore((s) => s.resultPanelMaximized);
+
+  const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
+  // `isNarrowWindow` is a dependency because the panel it drives only exists on
+  // the desktop layout: widening the window past the breakpoint mounts a fresh
+  // panel that still has to be collapsed for a pane maximized while narrow.
+  useLayoutEffect(() => {
+    const panel = sidebarPanelRef.current;
+    if (!panel) return;
+    if (collapseSidebar) {
+      panel.collapse();
+    } else {
+      panel.expand();
+    }
+  }, [collapseSidebar, isNarrowWindow]);
+
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+
+  // alter-schema: open a new tab to the plan editor with a pre-filled
+  // ALTER TABLE template.
+  useEffect(() => {
+    const off = sqlEditorEvents.on(
+      "alter-schema",
+      async ({ data: { databaseName, schema, table } }) => {
+        const database = await useAppStore
+          .getState()
+          .getOrFetchDatabaseByName(databaseName);
+        const project =
+          (await useAppStore.getState().fetchProject(database.project)) ??
+          unknownProject();
+        const exampleSQL = ["ALTER TABLE"];
+        if (table) {
+          if (schema) exampleSQL.push(`${schema}.${table}`);
+          else exampleSQL.push(`${table}`);
+        }
+        const { databaseName: dbName } = extractDatabaseResourceName(
+          database.name
+        );
+        const query: Record<string, string> = {
+          databaseList: database.name,
+          sql: exampleSQL.join(" "),
+        };
+        applyPlanTitleToQuery(
+          query,
+          project,
+          () => `[${dbName}] ${t("issue.title.edit-schema")}`
+        );
+        const route = navigate.resolve(
+          buildPlanCreateRoute(
+            extractProjectResourceName(database.project),
+            query
+          )
+        );
+        window.open(route.fullPath, "_blank");
+      }
+    );
+    return () => {
+      off();
+    };
+  }, [navigate, t]);
+
+  // insert-at-caret: flip view to CODE, stage content into
+  // pendingInsertAtCaret. `<SQLEditor>` reads it from the SQL Editor
+  // store and inserts at the cursor.
+  useEffect(() => {
+    const off = sqlEditorEvents.on(
+      "insert-at-caret",
+      ({ data: { content } }) => {
+        const tabsState = getSQLEditorTabsState();
+        const t = tabsState.tabsById.get(tabsState.currentTabId);
+        if (!t) return;
+        tabsState.updateTab(t.id, {
+          viewState: { ...(t.viewState ?? {}), view: "CODE" },
+        });
+        requestAnimationFrame(() => {
+          setPendingInsertAtCaret(content);
+        });
+      }
+    );
+    return () => {
+      off();
+    };
+  }, [setPendingInsertAtCaret]);
+
+  const mobileToggle = isNarrowWindow
+    ? createPortal(
+        <SQLEditorThemeScope theme={theme} asContents>
+          <Button
+            appearance="secondary"
+            size="lg"
+            type="button"
+            className={cn(
+              "fixed rounded-full border border-control-border shadow-lg bottom-16 flex items-center justify-center bg-background hover:bg-control-bg cursor-pointer transition-all",
+              LAYER_SURFACE_CLASS,
+              sidebarExpanded ? "left-[80%] -translate-x-5" : "left-4"
+            )}
+            style={{
+              transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+              transitionDuration: "300ms",
+            }}
+            onClick={() => setSidebarExpanded((prev) => !prev)}
+            aria-label={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            <ChevronLeft
+              className={cn(
+                "w-6 h-6 transition-transform",
+                !sidebarExpanded && "-scale-100"
+              )}
+            />
+          </Button>
+        </SQLEditorThemeScope>,
+        getLayerRoot("overlay")
+      )
+    : null;
+
+  return (
+    <div className="sqleditor--wrapper w-full flex-1 overflow-hidden flex flex-col bg-background text-main">
+      <SQLEditorHeader />
+      {mobileToggle}
+      {isNarrowWindow &&
+        sidebarExpanded &&
+        createPortal(
+          <SQLEditorThemeScope theme={theme} asContents>
+            <div
+              className={cn(
+                "fixed inset-0 bg-overlay/40",
+                LAYER_BACKDROP_CLASS
+              )}
+              onClick={() => setSidebarExpanded(false)}
+            />
+            <div
+              className={cn(
+                "fixed inset-y-0 left-0 h-full w-[80vw] bg-background shadow-lg",
+                LAYER_SURFACE_CLASS
+              )}
+              role="dialog"
+              aria-label="Sidebar"
+            >
+              <AsidePanel />
+            </div>
+          </SQLEditorThemeScope>,
+          getLayerRoot("overlay")
+        )}
+      <PanelGroup orientation="horizontal" className="h-full">
+        {!isNarrowWindow && (
+          <>
+            <Panel
+              panelRef={sidebarPanelRef}
+              collapsible
+              collapsedSize="0%"
+              defaultSize="25%"
+              minSize="10%"
+              maxSize="40%"
+            >
+              <div className="h-full">
+                <AsidePanel />
+              </div>
+            </Panel>
+            {/* Dragging a collapsed sidebar back open would leave the result
+                pane short of the width its control still claims. */}
+            <PanelResizeHandle
+              disabled={collapseSidebar}
+              className={resizeHandleClass("vertical", "w-0.5")}
+            />
+          </>
+        )}
+        <Panel>
+          <div className="h-full relative flex flex-col">
+            <div className="w-full">
+              <TabList />
+            </div>
+            <div className="flex-1 min-h-0 flex">
+              <Panels />
+            </div>
+          </div>
+        </Panel>
+      </PanelGroup>
+
+      <WorkspaceSetupGuide />
+      {projectContextReady && project && <IAMRemindDialog project={project} />}
+
+      <ConnectionPanel />
+
+      <DebugProbe
+        isDisconnected={isDisconnected}
+        tabId={tab?.id}
+        connection={tab?.connection}
+      />
+    </div>
+  );
+}
+
+/**
+ * Renders the `[Page]…` debug strings into `#sql-editor-debug`. The
+ * portal is a no-op when that target isn't in the DOM.
+ */
+function DebugProbe({
+  isDisconnected,
+  tabId,
+  connection,
+}: {
+  isDisconnected: boolean;
+  tabId: string | undefined;
+  connection: unknown;
+}) {
+  const target =
+    typeof document !== "undefined"
+      ? document.querySelector("#sql-editor-debug")
+      : null;
+  if (!target) return null;
+  return createPortal(
+    <>
+      <li>[Page]isDisconnected: {String(isDisconnected)}</li>
+      <li>[Page]currentTab.id: {tabId ?? ""}</li>
+      <li>[Page]currentTab.connection: {JSON.stringify(connection ?? null)}</li>
+    </>,
+    target
+  );
+}

@@ -2,10 +2,10 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"time"
 
-	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
@@ -13,10 +13,13 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
+
+// ErrPlanHasRollout indicates that a plan update was rejected because rollout already started.
+var ErrPlanHasRollout = errors.New("plan has rollout")
 
 // PlanMessage is the message for plan.
 type PlanMessage struct {
@@ -25,11 +28,12 @@ type PlanMessage struct {
 	Description string
 	Config      *storepb.PlanConfig
 	// output only
-	UID       int64
-	Creator   string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Deleted   bool
+	UID            int64
+	Creator        string
+	LastPlanEditor *string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Deleted        bool
 }
 
 // FindPlanMessage is the message to find a plan.
@@ -41,30 +45,14 @@ type FindPlanMessage struct {
 	ProjectID string
 
 	HasRollout *bool
+	// ExcludeMalformedUIPlans excludes active issue-less database plans, except
+	// homogeneous release-backed change database plans.
+	ExcludeMalformedUIPlans bool
 
 	Limit  *int
 	Offset *int
 
 	FilterQ *qb.Query
-}
-
-// UpdatePlanMessage is the message to update a plan.
-type UpdatePlanMessage struct {
-	UID       int64
-	ProjectID string
-
-	Name        *string
-	Description *string
-	// Config replaces the entire plan config.
-	// Callers should clone the existing config and modify only the fields they want to change.
-	// Example: config := proto.CloneOf(plan.Config); config.HasRollout = true; patch.Config = config
-	Config *storepb.PlanConfig
-	// BumpApprovalInputVersion increments config.approvalInputVersion from the
-	// current stored row while applying Config as a full replacement. Use this
-	// only for approval-relevant full config replacements such as spec updates.
-	// This flag is not a partial JSONB patch mechanism for unrelated config fields.
-	BumpApprovalInputVersion bool
-	Deleted                  *bool
 }
 
 // CreatePlan creates a new plan.
@@ -85,18 +73,20 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 		return nil, err
 	}
 
+	lastPlanEditor := strings.ToLower(creator)
 	q := qb.Q().Space(`
 		INSERT INTO plan (
 			id,
 			creator,
+			last_plan_editor,
 			project,
 			name,
 			description,
 			config
 		) VALUES (
-			?, ?, ?, ?, ?, ?
+			?, ?, ?, ?, ?, ?, ?
 		) RETURNING created_at, updated_at
-	`, nextID, creator, plan.ProjectID, plan.Name, plan.Description, config)
+	`, nextID, creator, lastPlanEditor, plan.ProjectID, plan.Name, plan.Description, config)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -113,6 +103,7 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 
 	plan.UID = nextID
 	plan.Creator = creator
+	plan.LastPlanEditor = &lastPlanEditor
 	return plan, nil
 }
 
@@ -137,6 +128,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		SELECT
 			plan.id,
 			plan.creator,
+			plan.last_plan_editor,
 			plan.created_at,
 			plan.updated_at,
 			plan.project,
@@ -145,7 +137,6 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.config,
 			plan.deleted
 		FROM plan
-		LEFT JOIN issue on plan.project = issue.project AND plan.id = issue.plan_id
 		WHERE plan.project = ?
 	`, find.ProjectID)
 
@@ -166,8 +157,37 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			q.And("(plan.config->>'hasRollout' IS NULL OR plan.config->>'hasRollout' = ?)", "false")
 		}
 	}
+	if find.ExcludeMalformedUIPlans {
+		q.And(`(
+			plan.deleted
+			OR EXISTS (
+				SELECT 1
+				FROM issue
+				WHERE issue.project = plan.project
+				  AND issue.plan_id = plan.id
+			)
+			OR NOT EXISTS (
+				SELECT 1
+				FROM jsonb_array_elements(plan.config->'specs') AS spec
+				WHERE spec->'createDatabaseConfig' IS NOT NULL
+					OR spec->'changeDatabaseConfig' IS NOT NULL
+			)
+			OR (
+				NOT EXISTS (
+					SELECT 1
+					FROM jsonb_array_elements(plan.config->'specs') AS spec
+					WHERE spec->'changeDatabaseConfig' IS NULL
+				)
+				AND EXISTS (
+					SELECT 1
+					FROM jsonb_array_elements(plan.config->'specs') AS spec
+					WHERE NULLIF(spec->'changeDatabaseConfig'->>'release', '') IS NOT NULL
+				)
+			)
+		)`)
+	}
 
-	q.Space("ORDER BY id DESC")
+	q.Space("ORDER BY plan.id DESC, plan.project DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -192,9 +212,11 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			Config: &storepb.PlanConfig{},
 		}
 		var config []byte
+		var lastPlanEditor sql.NullString
 		if err := rows.Scan(
 			&plan.UID,
 			&plan.Creator,
+			&lastPlanEditor,
 			&plan.CreatedAt,
 			&plan.UpdatedAt,
 			&plan.ProjectID,
@@ -208,6 +230,9 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal plan config")
 		}
+		if lastPlanEditor.Valid {
+			plan.LastPlanEditor = &lastPlanEditor.String
+		}
 		plans = append(plans, &plan)
 	}
 	if err := rows.Err(); err != nil {
@@ -217,77 +242,15 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	return plans, nil
 }
 
-// UpdatePlan updates an existing plan and returns the updated plan.
-func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*PlanMessage, error) {
-	set := qb.Q().Comma("updated_at = ?", time.Now())
-
-	if v := patch.Name; v != nil {
-		set.Comma("name = ?", *v)
-	}
-	if v := patch.Description; v != nil {
-		set.Comma("description = ?", *v)
-	}
-	if v := patch.Deleted; v != nil {
-		set.Comma("deleted = ?", *v)
-	}
-	if v := patch.Config; v != nil {
-		config, err := protojson.Marshal(v)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal plan config")
-		}
-		if patch.BumpApprovalInputVersion {
-			set.Comma("config = jsonb_set(?::jsonb, '{approvalInputVersion}', to_jsonb(COALESCE((config->>'approvalInputVersion')::bigint, 0) + 1), true)", config)
-		} else {
-			set.Comma("config = ?", config)
-		}
-	}
-
-	q := qb.Q().Space(`UPDATE plan SET ? WHERE id = ? AND project = ?
-		RETURNING id, creator, created_at, updated_at, project, name, description, config, deleted`,
-		set, patch.UID, patch.ProjectID)
-
-	query, finalArgs, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	plan := PlanMessage{
-		Config: &storepb.PlanConfig{},
-	}
-	var config []byte
-	if err := s.GetDB().QueryRowContext(ctx, query, finalArgs...).Scan(
-		&plan.UID,
-		&plan.Creator,
-		&plan.CreatedAt,
-		&plan.UpdatedAt,
-		&plan.ProjectID,
-		&plan.Name,
-		&plan.Description,
-		&config,
-		&plan.Deleted,
-	); err != nil {
-		return nil, errors.Wrapf(err, "failed to update plan")
-	}
-	if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal plan config")
-	}
-
-	return &plan, nil
-}
-
 // GetListPlanFilter parses a CEL filter expression into a query builder query for listing plans.
 func GetListPlanFilter(filter string) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return nil, errors.Errorf("failed to create cel env")
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, err
 	}
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
@@ -325,15 +288,6 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 						return qb.Q().Space("(plan.config->>'hasRollout' IS NULL OR plan.config->>'hasRollout' = ?)", "false"), nil
 					}
 					return qb.Q().Space("plan.config->>'hasRollout' = ?", "true"), nil
-				case "has_issue":
-					hasIssue, ok := value.(bool)
-					if !ok {
-						return nil, errors.Errorf(`"has_issue" should be bool`)
-					}
-					if !hasIssue {
-						return qb.Q().Space("issue.id IS NULL"), nil
-					}
-					return qb.Q().Space("issue.id IS NOT NULL"), nil
 				case "title":
 					return qb.Q().Space("plan.name = ?", value), nil
 				case "spec_type":
@@ -346,10 +300,8 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 						return qb.Q().Space("EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'createDatabaseConfig' IS NOT NULL)"), nil
 					case "change_database_config":
 						return qb.Q().Space("EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'changeDatabaseConfig' IS NOT NULL)"), nil
-					case "export_data_config":
-						return qb.Q().Space("EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->>'exportDataConfig' IS NOT NULL)"), nil
 					default:
-						return nil, errors.Errorf("invalid spec_type value: %s, must be one of: create_database_config, change_database_config, export_data_config", specType)
+						return nil, errors.Errorf("invalid spec_type value: %s, must be one of: create_database_config, change_database_config", specType)
 					}
 				case "state":
 					stateStr, ok := value.(string)
@@ -402,7 +354,7 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 
 				switch variable {
 				case "title":
-					return qb.Q().Space("LOWER(plan.name) LIKE ?", "%"+strValue+"%"), nil
+					return qb.Q().Space("LOWER(plan.name) LIKE ? ESCAPE '\\'", containsPattern(strValue)), nil
 				default:
 					return nil, errors.Errorf(`only "title" supports %q operator, but found %q`, celoverloads.Contains, variable)
 				}

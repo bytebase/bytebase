@@ -8,10 +8,10 @@ import (
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -52,7 +52,7 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		format: format,
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type tableDropNamingConventionOmniRule struct {
@@ -77,7 +77,7 @@ func (r *tableDropNamingConventionOmniRule) OnStatement(node ast.Node) {
 				Code:          code.TableDropNamingConventionMismatch.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tbl.Name, r.format),
-				StartPosition: common.ConvertANTLRLineToPosition(absoluteLine),
+				StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
 			})
 		}
 	}

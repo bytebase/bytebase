@@ -11,6 +11,7 @@ import (
 )
 
 func TestExtractQueryOperation(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		sql      string
@@ -32,6 +33,7 @@ func TestExtractQueryOperation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result := extractQueryOperation(tt.sql)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -39,6 +41,7 @@ func TestExtractQueryOperation(t *testing.T) {
 }
 
 func TestMetadataDBTracer_TraceQueryEnd(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		err            error
@@ -53,6 +56,7 @@ func TestMetadataDBTracer_TraceQueryEnd(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tracer := &metadataDBTracer{}
 
 			// Start trace
@@ -80,6 +84,7 @@ func TestMetadataDBTracer_TraceQueryEnd(t *testing.T) {
 }
 
 func TestMetadataDBTracer_TraceQueryEnd_MissingContext(t *testing.T) {
+	t.Parallel()
 	tracer := &metadataDBTracer{}
 
 	// End trace without start - should not panic

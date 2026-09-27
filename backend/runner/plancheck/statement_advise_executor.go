@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
@@ -48,30 +49,12 @@ func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *Chec
 	if fullSheet == nil {
 		return nil, errors.Errorf("sheet full %s not found", target.SheetSha256)
 	}
-	if fullSheet.Size > common.MaxSheetCheckSize {
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.Advice_WARNING,
-				Code:    common.SizeExceeded.Int32(),
-				Title:   "Large SQL review policy is disabled",
-				Content: "",
-			},
-		}, nil
-	}
 	enablePriorBackup := target.EnablePriorBackup
 	enableGhost := target.EnableGhost
 
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(target.Target)
+	instance, database, err := ResolveDatabaseTarget(ctx, e.store, target.Target)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse target %s", target.Target)
-	}
-
-	instance, err := e.store.GetInstanceByResourceID(ctx, instanceID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance %s not found", instanceID)
+		return nil, err
 	}
 	if !common.EngineSupportStatementAdvise(instance.Metadata.GetEngine()) {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -82,14 +65,6 @@ func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *Chec
 				Content: "",
 			},
 		}, nil
-	}
-
-	database, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found %q", databaseName)
 	}
 
 	results, err := e.runReview(ctx, instance, database, fullSheet.Statement, enablePriorBackup, enableGhost)
@@ -148,7 +123,7 @@ func (e *StatementAdviseExecutor) runReview(
 	originMetadata := model.NewDatabaseMetadata(dbMetadata.GetProto(), nil, nil, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
 
 	// Clone metadata for final to avoid modifying the original
-	clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*storepb.DatabaseSchemaMetadata)
+	clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*metadatapb.DatabaseSchemaMetadata)
 	if !ok {
 		return nil, common.Wrapf(errors.New("failed to clone database schema metadata"), common.Internal, "failed to create a catalog")
 	}

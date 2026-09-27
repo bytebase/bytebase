@@ -1,7 +1,7 @@
 import {
   getReviewConfigId,
   reviewConfigNamePrefix,
-} from "@/store/modules/v1/common";
+} from "@/stores/modules/v1/common";
 import type { SQLReviewPolicy } from "../types";
 
 export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {

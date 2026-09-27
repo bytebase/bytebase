@@ -1,0 +1,22 @@
+distribution: local
+vectorized: true
+
+• delete
+│ from: t
+│ auto commit
+│
+└── • limit
+    │ count: 10
+    │
+    └── • filter
+        │ estimated row count: 143
+        │ filter: d = 3
+        │
+        └── • scan
+              estimated row count: 70 - 1,000 (100% of the table; stats collected 40 seconds ago)
+              table: t@t_pkey
+              spans: FULL SCAN (SOFT LIMIT)
+
+index recommendations: 1
+1. type: index creation
+   SQL command: CREATE INDEX ON capture.public.t (d) STORING (c);

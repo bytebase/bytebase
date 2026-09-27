@@ -40,15 +40,14 @@ const (
 	// SQLServiceSearchQueryHistoriesProcedure is the fully-qualified name of the SQLService's
 	// SearchQueryHistories RPC.
 	SQLServiceSearchQueryHistoriesProcedure = "/bytebase.v1.SQLService/SearchQueryHistories"
+	// SQLServiceListQueryHistoriesProcedure is the fully-qualified name of the SQLService's
+	// ListQueryHistories RPC.
+	SQLServiceListQueryHistoriesProcedure = "/bytebase.v1.SQLService/ListQueryHistories"
 	// SQLServiceGetQueryHistoryProcedure is the fully-qualified name of the SQLService's
 	// GetQueryHistory RPC.
 	SQLServiceGetQueryHistoryProcedure = "/bytebase.v1.SQLService/GetQueryHistory"
 	// SQLServiceExportProcedure is the fully-qualified name of the SQLService's Export RPC.
 	SQLServiceExportProcedure = "/bytebase.v1.SQLService/Export"
-	// SQLServiceDiffMetadataProcedure is the fully-qualified name of the SQLService's DiffMetadata RPC.
-	SQLServiceDiffMetadataProcedure = "/bytebase.v1.SQLService/DiffMetadata"
-	// SQLServiceAICompletionProcedure is the fully-qualified name of the SQLService's AICompletion RPC.
-	SQLServiceAICompletionProcedure = "/bytebase.v1.SQLService/AICompletion"
 )
 
 // SQLServiceClient is a client for the bytebase.v1.SQLService service.
@@ -59,21 +58,30 @@ type SQLServiceClient interface {
 	// Executes SQL with admin privileges via streaming connection.
 	// Permissions required: bb.sql.admin
 	AdminExecute(context.Context) *connect.BidiStreamForClient[v1.AdminExecuteRequest, v1.AdminExecuteResponse]
-	// SearchQueryHistories searches query histories for the caller.
+	// Deprecated: use QueryHistoryService.SearchQueryHistories instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: None (only returns caller's own query histories)
+	//
+	// Deprecated: do not use.
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
-	// GetQueryHistory gets a single query history for the caller.
+	// Deprecated: use QueryHistoryService.ListQueryHistories instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
+	// Permissions required: bb.queryHistories.list
+	//
+	// Deprecated: do not use.
+	ListQueryHistories(context.Context, *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error)
+	// Deprecated: use QueryHistoryService.GetQueryHistory instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: None (only returns the caller's own query history)
+	//
+	// Deprecated: do not use.
 	GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
-	// Computes schema differences between two database metadata.
-	// Permissions required: None
-	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
-	// Provides AI-powered SQL completion and generation.
-	// Permissions required: None (authenticated users only, requires AI to be enabled)
-	AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error)
 }
 
 // NewSQLServiceClient constructs a client for the bytebase.v1.SQLService service. By default, it
@@ -105,6 +113,12 @@ func NewSQLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sQLServiceMethods.ByName("SearchQueryHistories")),
 			connect.WithClientOptions(opts...),
 		),
+		listQueryHistories: connect.NewClient[v1.ListQueryHistoriesRequest, v1.ListQueryHistoriesResponse](
+			httpClient,
+			baseURL+SQLServiceListQueryHistoriesProcedure,
+			connect.WithSchema(sQLServiceMethods.ByName("ListQueryHistories")),
+			connect.WithClientOptions(opts...),
+		),
 		getQueryHistory: connect.NewClient[v1.GetQueryHistoryRequest, v1.QueryHistory](
 			httpClient,
 			baseURL+SQLServiceGetQueryHistoryProcedure,
@@ -117,18 +131,6 @@ func NewSQLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sQLServiceMethods.ByName("Export")),
 			connect.WithClientOptions(opts...),
 		),
-		diffMetadata: connect.NewClient[v1.DiffMetadataRequest, v1.DiffMetadataResponse](
-			httpClient,
-			baseURL+SQLServiceDiffMetadataProcedure,
-			connect.WithSchema(sQLServiceMethods.ByName("DiffMetadata")),
-			connect.WithClientOptions(opts...),
-		),
-		aICompletion: connect.NewClient[v1.AICompletionRequest, v1.AICompletionResponse](
-			httpClient,
-			baseURL+SQLServiceAICompletionProcedure,
-			connect.WithSchema(sQLServiceMethods.ByName("AICompletion")),
-			connect.WithClientOptions(opts...),
-		),
 	}
 }
 
@@ -137,10 +139,9 @@ type sQLServiceClient struct {
 	query                *connect.Client[v1.QueryRequest, v1.QueryResponse]
 	adminExecute         *connect.Client[v1.AdminExecuteRequest, v1.AdminExecuteResponse]
 	searchQueryHistories *connect.Client[v1.SearchQueryHistoriesRequest, v1.SearchQueryHistoriesResponse]
+	listQueryHistories   *connect.Client[v1.ListQueryHistoriesRequest, v1.ListQueryHistoriesResponse]
 	getQueryHistory      *connect.Client[v1.GetQueryHistoryRequest, v1.QueryHistory]
 	export               *connect.Client[v1.ExportRequest, v1.ExportResponse]
-	diffMetadata         *connect.Client[v1.DiffMetadataRequest, v1.DiffMetadataResponse]
-	aICompletion         *connect.Client[v1.AICompletionRequest, v1.AICompletionResponse]
 }
 
 // Query calls bytebase.v1.SQLService.Query.
@@ -154,11 +155,22 @@ func (c *sQLServiceClient) AdminExecute(ctx context.Context) *connect.BidiStream
 }
 
 // SearchQueryHistories calls bytebase.v1.SQLService.SearchQueryHistories.
+//
+// Deprecated: do not use.
 func (c *sQLServiceClient) SearchQueryHistories(ctx context.Context, req *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error) {
 	return c.searchQueryHistories.CallUnary(ctx, req)
 }
 
+// ListQueryHistories calls bytebase.v1.SQLService.ListQueryHistories.
+//
+// Deprecated: do not use.
+func (c *sQLServiceClient) ListQueryHistories(ctx context.Context, req *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error) {
+	return c.listQueryHistories.CallUnary(ctx, req)
+}
+
 // GetQueryHistory calls bytebase.v1.SQLService.GetQueryHistory.
+//
+// Deprecated: do not use.
 func (c *sQLServiceClient) GetQueryHistory(ctx context.Context, req *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error) {
 	return c.getQueryHistory.CallUnary(ctx, req)
 }
@@ -166,16 +178,6 @@ func (c *sQLServiceClient) GetQueryHistory(ctx context.Context, req *connect.Req
 // Export calls bytebase.v1.SQLService.Export.
 func (c *sQLServiceClient) Export(ctx context.Context, req *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
 	return c.export.CallUnary(ctx, req)
-}
-
-// DiffMetadata calls bytebase.v1.SQLService.DiffMetadata.
-func (c *sQLServiceClient) DiffMetadata(ctx context.Context, req *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {
-	return c.diffMetadata.CallUnary(ctx, req)
-}
-
-// AICompletion calls bytebase.v1.SQLService.AICompletion.
-func (c *sQLServiceClient) AICompletion(ctx context.Context, req *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error) {
-	return c.aICompletion.CallUnary(ctx, req)
 }
 
 // SQLServiceHandler is an implementation of the bytebase.v1.SQLService service.
@@ -186,21 +188,30 @@ type SQLServiceHandler interface {
 	// Executes SQL with admin privileges via streaming connection.
 	// Permissions required: bb.sql.admin
 	AdminExecute(context.Context, *connect.BidiStream[v1.AdminExecuteRequest, v1.AdminExecuteResponse]) error
-	// SearchQueryHistories searches query histories for the caller.
+	// Deprecated: use QueryHistoryService.SearchQueryHistories instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: None (only returns caller's own query histories)
+	//
+	// Deprecated: do not use.
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
-	// GetQueryHistory gets a single query history for the caller.
+	// Deprecated: use QueryHistoryService.ListQueryHistories instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
+	// Permissions required: bb.queryHistories.list
+	//
+	// Deprecated: do not use.
+	ListQueryHistories(context.Context, *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error)
+	// Deprecated: use QueryHistoryService.GetQueryHistory instead.
+	// Delegating alias kept for upgrade transition; will be removed in a future release.
+	// No HTTP binding: the REST route is served by QueryHistoryService.
 	// Permissions required: None (only returns the caller's own query history)
+	//
+	// Deprecated: do not use.
 	GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error)
 	// Exports query results to a file format.
 	// Permissions required: bb.databases.get
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
-	// Computes schema differences between two database metadata.
-	// Permissions required: None
-	DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error)
-	// Provides AI-powered SQL completion and generation.
-	// Permissions required: None (authenticated users only, requires AI to be enabled)
-	AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error)
 }
 
 // NewSQLServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -228,6 +239,12 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sQLServiceMethods.ByName("SearchQueryHistories")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sQLServiceListQueryHistoriesHandler := connect.NewUnaryHandler(
+		SQLServiceListQueryHistoriesProcedure,
+		svc.ListQueryHistories,
+		connect.WithSchema(sQLServiceMethods.ByName("ListQueryHistories")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sQLServiceGetQueryHistoryHandler := connect.NewUnaryHandler(
 		SQLServiceGetQueryHistoryProcedure,
 		svc.GetQueryHistory,
@@ -240,18 +257,6 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sQLServiceMethods.ByName("Export")),
 		connect.WithHandlerOptions(opts...),
 	)
-	sQLServiceDiffMetadataHandler := connect.NewUnaryHandler(
-		SQLServiceDiffMetadataProcedure,
-		svc.DiffMetadata,
-		connect.WithSchema(sQLServiceMethods.ByName("DiffMetadata")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sQLServiceAICompletionHandler := connect.NewUnaryHandler(
-		SQLServiceAICompletionProcedure,
-		svc.AICompletion,
-		connect.WithSchema(sQLServiceMethods.ByName("AICompletion")),
-		connect.WithHandlerOptions(opts...),
-	)
 	return "/bytebase.v1.SQLService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SQLServiceQueryProcedure:
@@ -260,14 +265,12 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 			sQLServiceAdminExecuteHandler.ServeHTTP(w, r)
 		case SQLServiceSearchQueryHistoriesProcedure:
 			sQLServiceSearchQueryHistoriesHandler.ServeHTTP(w, r)
+		case SQLServiceListQueryHistoriesProcedure:
+			sQLServiceListQueryHistoriesHandler.ServeHTTP(w, r)
 		case SQLServiceGetQueryHistoryProcedure:
 			sQLServiceGetQueryHistoryHandler.ServeHTTP(w, r)
 		case SQLServiceExportProcedure:
 			sQLServiceExportHandler.ServeHTTP(w, r)
-		case SQLServiceDiffMetadataProcedure:
-			sQLServiceDiffMetadataHandler.ServeHTTP(w, r)
-		case SQLServiceAICompletionProcedure:
-			sQLServiceAICompletionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -289,18 +292,14 @@ func (UnimplementedSQLServiceHandler) SearchQueryHistories(context.Context, *con
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.SearchQueryHistories is not implemented"))
 }
 
+func (UnimplementedSQLServiceHandler) ListQueryHistories(context.Context, *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.ListQueryHistories is not implemented"))
+}
+
 func (UnimplementedSQLServiceHandler) GetQueryHistory(context.Context, *connect.Request[v1.GetQueryHistoryRequest]) (*connect.Response[v1.QueryHistory], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.GetQueryHistory is not implemented"))
 }
 
 func (UnimplementedSQLServiceHandler) Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.Export is not implemented"))
-}
-
-func (UnimplementedSQLServiceHandler) DiffMetadata(context.Context, *connect.Request[v1.DiffMetadataRequest]) (*connect.Response[v1.DiffMetadataResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.DiffMetadata is not implemented"))
-}
-
-func (UnimplementedSQLServiceHandler) AICompletion(context.Context, *connect.Request[v1.AICompletionRequest]) (*connect.Response[v1.AICompletionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SQLService.AICompletion is not implemented"))
 }

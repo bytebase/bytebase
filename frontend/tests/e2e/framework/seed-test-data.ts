@@ -7,7 +7,7 @@ import { BytebaseApiClient } from "./api-client";
 const TEST_EXTERNAL_URL = "https://e2e.bytebase.test";
 
 /**
- * Provisions WORKSPACE-LEVEL baseline data on top of `api.setupSample()`.
+ * Provisions workspace-level baseline data after the project-scoped sample.
  * Called once per disposable server boot from setup-project.ts.
  *
  * Scope is intentionally narrow: only changes that EVERY spec wants. Any
@@ -21,7 +21,7 @@ const TEST_EXTERNAL_URL = "https://e2e.bytebase.test";
  *
  * Specifically does NOT:
  *   - Create extra projects (would change the SQL editor's default
- *     landing project; see the worksheet specs that gotoHome() and
+ *     landing project; see the saved query specs that gotoHome() and
  *     expect to land on `project-sample`).
  *   - Flip per-project feature flags (allowRequestRole,
  *     allowJustInTimeAccess) — those are SUT for individual specs.

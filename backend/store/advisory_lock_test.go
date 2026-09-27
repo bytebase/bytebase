@@ -4,18 +4,17 @@ import (
 	"context"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestTryAdvisoryXactLockWithStringKeyScopesByKey(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
+	db, _, _ := testcontainer.NewMetadataDB(t)
 	tx1, err := db.BeginTx(ctx, nil)
 	require.NoError(t, err)
 	defer tx1.Rollback()

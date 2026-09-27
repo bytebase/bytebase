@@ -55,7 +55,8 @@ export declare type SetIamPolicyRequest = Message<"bytebase.v1.SetIamPolicyReque
   policy?: IamPolicy | undefined;
 
   /**
-   * The current etag of the policy.
+   * The current etag of the policy. Equivalent to setting `policy.etag`;
+   * supplying both with different values returns INVALID_ARGUMENT.
    *
    * @generated from field: string etag = 3;
    */
@@ -83,9 +84,10 @@ export declare type IamPolicy = Message<"bytebase.v1.IamPolicy"> & {
   bindings: Binding[];
 
   /**
-   * The current etag of the policy.
-   * If an etag is provided and does not match the current etag of the policy,
-   * the call will be blocked and an ABORTED error will be returned.
+   * The current etag of the policy, returned by GetIamPolicy and SetIamPolicy.
+   * Sending it back on SetIamPolicy makes the write conditional: if the policy
+   * changed since the read, the call returns ABORTED. Omitting it applies the
+   * write unconditionally, overwriting any concurrent change (AIP-154).
    *
    * @generated from field: string etag = 2;
    */
@@ -130,7 +132,7 @@ export declare type Binding = Message<"bytebase.v1.Binding"> & {
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
    * Support variables:
-   * resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
+   * resource.database: the canonical database full name in "instances/{instance}/databases/{database}" or "projects/{project}/instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
    * resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
    * resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
    * resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support "in" operator.

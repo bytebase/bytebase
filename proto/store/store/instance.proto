@@ -8,8 +8,13 @@ import "store/common.proto";
 
 option go_package = "generated-go/store";
 
+message SyncDatabases {
+  repeated string databases = 1;
+}
+
 // Instance is the proto for instances.
 message Instance {
+  reserved 8;
   string title = 1;
   Engine engine = 2;
   bool activation = 3;
@@ -22,8 +27,8 @@ message Instance {
   google.protobuf.Duration sync_interval = 7;
 
   // Enable sync for the following databases.
-  // Default empty, means sync all schemas & databases.
-  repeated string sync_databases = 9;
+  // Not set means sync all schemas & databases.
+  SyncDatabases sync_databases = 9;
 
   // The lower_case_table_names config for MySQL instances.
   // It is used to determine whether the table names and database names are case sensitive.
@@ -56,6 +61,8 @@ message InstanceRole {
 }
 
 message DataSource {
+  reserved 35;
+
   string id = 1;
   DataSourceType type = 2;
   string username = 3;
@@ -128,6 +135,17 @@ message DataSource {
   }
   AuthenticationType authentication_type = 22;
 
+  // CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM connections.
+  enum CloudSQLIPType {
+    CLOUD_SQL_IP_TYPE_UNSPECIFIED = 0;
+    PUBLIC = 1;
+    PRIVATE = 2;
+    PSC = 3;
+  }
+  // cloud_sql_ip_type selects the Cloud SQL IP type for Google Cloud SQL IAM connections.
+  // CLOUD_SQL_IP_TYPE_UNSPECIFIED is treated as PUBLIC for backward compatibility.
+  CloudSQLIPType cloud_sql_ip_type = 56;
+
   message AzureCredential {
     string tenant_id = 1;
     string client_id = 2;
@@ -191,12 +209,18 @@ message DataSource {
     CLUSTER = 3;
   }
   RedisType redis_type = 34;
-  // Cluster is the cluster name for the data source. Used by CockroachDB.
-  string cluster = 35;
 
   // Extra connection parameters for the database connection.
   // For PostgreSQL HA, this can be used to set target_session_attrs=read-write
   map<string, string> extra_connection_parameters = 36;
+
+  // project_id and instance_id are the GCP resource identifiers.
+  // project_id is used by Spanner and BigQuery; instance_id is used by Spanner.
+  // For these engines, host and port optionally override the default Google API
+  // endpoint (e.g. a Private Service Connect endpoint like
+  // spanner-nonprod.p.googleapis.com).
+  string project_id = 57;
+  string instance_id = 58;
 }
 
 message SASLConfig {

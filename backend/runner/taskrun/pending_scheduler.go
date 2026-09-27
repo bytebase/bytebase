@@ -13,6 +13,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -39,7 +41,7 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 			if err := s.schedulePendingTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule pending task runs", log.BBError(err))
 			}
-		case <-s.bus.TaskRunTickleChan:
+		case <-s.bus.TaskRunPendingTickleChan:
 			if err := s.licenseService.CheckReplicaLimit(ctx); err != nil {
 				// Grace period is tracked by the ticker branch; just skip here.
 				continue
@@ -56,6 +58,20 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 
 func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) (err error) {
 	startedAt := time.Now()
+	result := productmetrics.ResultFailure
+	defer func() {
+		if r := recover(); r != nil {
+			panicErr, ok := r.(error)
+			if !ok {
+				panicErr = errors.Errorf("%v", r)
+			}
+			err = errors.Wrap(panicErr, "pending task runs scheduler panic")
+			slog.Error("Pending task runs scheduler PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+		}
+		if !errors.Is(ctx.Err(), context.Canceled) && s.productMetrics != nil {
+			s.productMetrics.RecordRunnerRun(productmetrics.RunnerTaskPending, result, time.Since(startedAt))
+		}
+	}()
 	tx, err := s.store.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin pending scheduler transaction")
@@ -75,6 +91,7 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) (err error) {
 		slog.Debug("Pending scheduler advisory lock held by another replica, skipping",
 			slog.Duration("duration", time.Since(startedAt)),
 		)
+		result = productmetrics.ResultSkipped
 		return nil
 	}
 
@@ -91,8 +108,12 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) (err error) {
 		return errors.Wrapf(err, "failed to create scheduling context")
 	}
 
+	var processingErr error
 	for _, taskRun := range taskRuns {
 		if err := s.schedulePendingTaskRun(ctx, taskRun, sc); err != nil {
+			if processingErr == nil {
+				processingErr = err
+			}
 			slog.Error("failed to schedule pending task run",
 				slog.Int64("taskRunID", taskRun.ID),
 				log.BBError(err),
@@ -103,7 +124,11 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) (err error) {
 	if err := tx.Commit(); err != nil {
 		return errors.Wrapf(err, "failed to commit pending scheduler transaction")
 	}
+	if processingErr != nil {
+		return errors.Wrap(processingErr, "failed to process one or more pending task runs")
+	}
 
+	result = productmetrics.ResultSuccess
 	return nil
 }
 
@@ -112,19 +137,42 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
 	}
-
 	// Check 1: RunAt time
 	if taskRun.RunAt != nil && time.Now().Before(*taskRun.RunAt) {
 		return nil
 	}
 
-	// Check 3: Database mutual exclusion (for sequential tasks)
+	project, err := s.store.GetProjectByResourceID(ctx, task.ProjectID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get project")
+	}
+	if project == nil {
+		return errors.Errorf("project %v not found", task.ProjectID)
+	}
+	if project.Deleted {
+		return nil
+	}
+
+	// Check 3: Instance archival. A pending task run must not be promoted to
+	// AVAILABLE while its target instance is archived.
+	instance, err := s.store.GetInstanceByResourceID(ctx, task.InstanceID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get instance")
+	}
+	if instance == nil {
+		return errors.Errorf("instance %v not found", task.InstanceID)
+	}
+	if instance.Deleted {
+		return nil
+	}
+
+	// Check 4: Database mutual exclusion (for sequential tasks)
 	canProceed, _ := sc.checkDatabaseMutualExclusion(task)
 	if !canProceed {
 		return nil
 	}
 
-	// Check 4: Parallel task limit per rollout
+	// Check 5: Parallel task limit per rollout
 	maxParallel, err := s.getMaxParallelForTask(ctx, task)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get max parallel limit")
@@ -200,10 +248,9 @@ func (s *Scheduler) promoteTaskRun(ctx context.Context, taskRun *store.TaskRunMe
 		return errors.Wrapf(err, "failed to update task run status to available")
 	}
 
-	select {
-	case s.bus.TaskRunTickleChan <- 0:
-	default:
-	}
+	// The task run is available now, which is the running scheduler's business,
+	// not this one's.
+	bus.Tickle(s.bus.TaskRunRunningTickleChan)
 
 	return nil
 }

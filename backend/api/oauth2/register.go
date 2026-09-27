@@ -13,8 +13,8 @@ import (
 // Bounds on Dynamic Client Registration input. These are loose enough that no
 // realistic MCP client trips them, but tight enough that degenerate input
 // (megabyte-sized client_name fields, hundreds of redirect URIs) is rejected
-// before any DB or bcrypt work happens — the endpoint is unauthenticated and
-// publicly reachable on SaaS.
+// before any DB work happens — the endpoint is unauthenticated and publicly
+// reachable on SaaS.
 const (
 	maxClientNameLen  = 200
 	maxRedirectURIs   = 5
@@ -30,7 +30,6 @@ type clientRegistrationRequest struct {
 
 type clientRegistrationResponse struct {
 	ClientID                string   `json:"client_id"`
-	ClientSecret            string   `json:"client_secret,omitempty"`
 	ClientName              string   `json:"client_name"`
 	RedirectURIs            []string `json:"redirect_uris"`
 	GrantTypes              []string `json:"grant_types"`
@@ -84,30 +83,13 @@ func (s *Service) handleRegister(c *echo.Context) error {
 	if req.TokenEndpointAuthMethod == "" {
 		req.TokenEndpointAuthMethod = "none"
 	}
-	allowedAuthMethods := []string{"none"}
-	if !slices.Contains(allowedAuthMethods, req.TokenEndpointAuthMethod) {
+	if req.TokenEndpointAuthMethod != "none" {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_client_metadata", "unsupported token_endpoint_auth_method")
 	}
 
 	clientID, err := generateClientID()
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to generate client ID")
-	}
-
-	// Public clients (token_endpoint_auth_method=none) do not authenticate
-	// at the token endpoint and never receive a usable secret, so skip the
-	// (expensive) bcrypt round entirely. The token.go grant path already
-	// gates secret verification on Config.TokenEndpointAuthMethod != "none".
-	var clientSecret, secretHash string
-	if req.TokenEndpointAuthMethod != "none" {
-		clientSecret, err = generateClientSecret()
-		if err != nil {
-			return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to generate client secret")
-		}
-		secretHash, err = hashSecret(clientSecret)
-		if err != nil {
-			return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to hash client secret")
-		}
 	}
 
 	config := &storepb.OAuth2ClientConfig{
@@ -117,23 +99,17 @@ func (s *Service) handleRegister(c *echo.Context) error {
 		TokenEndpointAuthMethod: req.TokenEndpointAuthMethod,
 	}
 	if _, err := s.store.CreateOAuth2Client(ctx, &store.OAuth2ClientMessage{
-		ClientID:         clientID,
-		ClientSecretHash: secretHash,
-		Config:           config,
+		ClientID: clientID,
+		Config:   config,
 	}); err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to create client")
 	}
 
-	resp := &clientRegistrationResponse{
+	return c.JSON(http.StatusCreated, &clientRegistrationResponse{
 		ClientID:                clientID,
 		ClientName:              req.ClientName,
 		RedirectURIs:            req.RedirectURIs,
 		GrantTypes:              req.GrantTypes,
 		TokenEndpointAuthMethod: req.TokenEndpointAuthMethod,
-	}
-	// Only include client_secret for confidential clients.
-	if req.TokenEndpointAuthMethod != "none" {
-		resp.ClientSecret = clientSecret
-	}
-	return c.JSON(http.StatusCreated, resp)
+	})
 }

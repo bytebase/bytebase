@@ -48,15 +48,17 @@ test.describe("Cold-open lands on the SQL Editor home view", () => {
     await sqlEditor.gotoHome();
     await page.waitForTimeout(800);
 
-    // Project picker is rendered as a Combobox with `.project-select`.
-    // (AsidePanel.tsx mounts <ProjectSelect className="...project-select"/>.)
-    await expect(page.locator(".project-select").first()).toBeVisible({
-      timeout: 10_000,
-    });
+    // Project switching now lives in the shared SQL Editor header
+    // (SQLEditorHeader → HeaderBreadcrumb → ProjectSegment). The route-ownership
+    // refactor removed the old AsidePanel `.project-select` combobox, so the
+    // stable home-view landmark is the header's "Select project" switcher.
+    await expect(
+      page.getByRole("button", { name: "Select project" }).first(),
+    ).toBeVisible({ timeout: 10_000 });
 
-    // Gutter rail buttons are stable user-facing labels (Worksheet /
+    // Gutter rail buttons are stable user-facing labels (SavedQuery /
     // Schema / History gutter tabs).
-    await expect(sqlEditor.gutterWorksheetTab).toBeVisible();
+    await expect(sqlEditor.gutterSavedQueryTab).toBeVisible();
     await expect(sqlEditor.gutterSchemaTab).toBeVisible();
     await expect(sqlEditor.gutterHistoryTab).toBeVisible();
 
@@ -69,36 +71,36 @@ test.describe("Cold-open lands on the SQL Editor home view", () => {
   });
 });
 
-test.describe("Opening a worksheet by UUID restores its title in a tab", () => {
-  // C2 — deep-linking into /projects/<p>/sheets/<uuid> must hydrate
-  // the worksheet and render its title as the active tab. This is the
+test.describe("Opening a saved query by UUID restores its title in a tab", () => {
+  // C2 — deep-linking into /projects/<p>/savedQueries/<uuid> must hydrate
+  // the saved query and render its title as the active tab. This is the
   // shareable-link contract: a URL pasted from chat / the Recent menu
-  // must reproducibly land the user on that worksheet.
+  // must reproducibly land the user on that savedQuery.
 
   const SOURCE_TITLE = `e2e-cuj-c2-${Date.now()}`;
   const SOURCE_CONTENT = "SELECT 1;";
 
-  let sourceWorksheet = "";
+  let sourceSavedQuery = "";
 
   test.beforeAll(async () => {
-    const created = await env.api.createWorksheet(
+    const created = await env.api.createSavedQuery(
       env.project,
       SOURCE_TITLE,
       env.database,
       SOURCE_CONTENT,
     );
-    sourceWorksheet = created.name;
+    sourceSavedQuery = created.name;
   });
 
   test.afterAll(async () => {
-    if (sourceWorksheet) await env.api.deleteWorksheet(sourceWorksheet);
+    if (sourceSavedQuery) await env.api.deleteSavedQuery(sourceSavedQuery);
   });
 
-  test("active tab text matches the worksheet title after deep-link", async () => {
+  test("active tab text matches the saved query title after deep-link", async () => {
     test.setTimeout(120_000);
 
     const projectId = env.project.split("/").pop()!;
-    const sheetUuid = sourceWorksheet.split("/").pop()!;
+    const sheetUuid = sourceSavedQuery.split("/").pop()!;
     await sqlEditor.gotoSheet(projectId, sheetUuid);
     await page.waitForTimeout(1500);
 
@@ -136,7 +138,7 @@ test.describe("Instance-only URL lands without a connected database", () => {
 test.describe("Project switcher updates the editor's project context", () => {
   // C5 — choosing a different project from the picker must update the
   // editor's project context (URL changes to /projects/<newProj>) so
-  // the sidebar tree, schema panel, and worksheet list all refresh
+  // the sidebar tree, schema panel, and saved query list all refresh
   // against the new project's databases.
   //
   // The post-demo bootstrap (#20393) only creates one sample project
@@ -144,7 +146,7 @@ test.describe("Project switcher updates the editor's project context", () => {
   // project to be a meaningful test. We provision it on-demand here
   // (NOT in the global seedTestData) so that adding a second project
   // doesn't shift the SQL editor's default landing project for other
-  // specs (e.g. sql-editor-worksheet.spec.ts uses gotoHome() and
+  // specs (e.g. sql-editor-saved-query.spec.ts uses gotoHome() and
   // assumes `project-sample` is current).
 
   test.beforeAll(async () => {
@@ -167,35 +169,34 @@ test.describe("Project switcher updates the editor's project context", () => {
     await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
     await page.waitForTimeout(800);
 
-    // The Combobox primitive (combobox.tsx) renders the trigger as a
-    // bare <div> with onClick — no implicit role="combobox". We click
-    // the wrapper directly. Options inside the dropdown are <button>
-    // elements containing the project label text.
-    const projectSelectTrigger = page.locator(".project-select").first();
-    await expect(projectSelectTrigger).toBeVisible({ timeout: 10_000 });
+    // Project switching moved to the header breadcrumb (ProjectSegment). Open
+    // its "Select project" switcher; the popover shows Recent/All tabs, a
+    // filter, and a project table whose rows select on click.
+    const projectSwitcher = page
+      .getByRole("button", { name: "Select project" })
+      .first();
+    await expect(projectSwitcher).toBeVisible({ timeout: 10_000 });
+    await projectSwitcher.click();
 
-    // Pick the secondary project — different from the env default.
-    await projectSelectTrigger.click();
-    // Each project option's accessible name combines label + slug
-    // (e.g., "Sample Project project-sample"), so `exact: true` on
-    // the label alone won't match. We match the button containing the
-    // label as visible text — narrower than role-only and still
-    // resilient to slug renames.
+    // Filter by the secondary project's name so it surfaces regardless of
+    // recency, then click its row.
+    const filter = page.getByPlaceholder("Filter by name");
+    await expect(filter).toBeVisible({ timeout: 5000 });
+    await filter.fill(SECONDARY_PROJECT_TITLE);
     const option = page
-      .getByRole("button")
-      .filter({ hasText: SECONDARY_PROJECT_TITLE })
+      .getByText(SECONDARY_PROJECT_TITLE, { exact: true })
       .first();
     await expect(option).toBeVisible({ timeout: 5000 });
     await option.click();
 
-    // The editor's project context switches to the picked project — the
-    // project-select trigger now displays it. (The SQL-editor route is
-    // database-centric: the URL's project segment only changes once a
-    // database in the new project is opened, so an empty project like the
-    // secondary one keeps the prior DB URL while the context switches.)
-    await expect(projectSelectTrigger).toContainText(SECONDARY_PROJECT_TITLE, {
-      timeout: 10_000,
-    });
+    // The editor's project context switches — the header breadcrumb's project
+    // segment now displays the picked project. (The SQL-editor route is
+    // database-centric: the URL's project segment only changes once a database
+    // in the new project is opened, so an empty project like the secondary one
+    // keeps the prior DB URL while the context switches.)
+    await expect(
+      page.locator("header").getByText(SECONDARY_PROJECT_TITLE, { exact: true }),
+    ).toBeVisible({ timeout: 10_000 });
   });
 });
 
@@ -270,8 +271,13 @@ test.describe("SQL Editor entry from the database page connects the tab (BYT-961
 
     const projectId = env.project.split("/").pop()!;
     // Database detail page (cold load — do NOT visit /sql-editor first).
+    // Navigate exactly as the product links to it (autoDatabaseRoute): the
+    // `parent` query carries the project-parented instance name. Without it the
+    // page falls back to the legacy `instances/<id>` parent, GetDatabase 404s,
+    // and the route bounces to the landing page.
+    const parent = env.database.replace(/\/databases\/[^/]+$/, "");
     await dbPage.goto(
-      `${env.baseURL}/projects/${projectId}/instances/${env.instanceId}/databases/${env.databaseId}`,
+      `${env.baseURL}/projects/${projectId}/instances/${env.instanceId}/databases/${env.databaseId}?parent=${encodeURIComponent(parent)}`,
     );
     await dbPage.keyboard.press("Escape").catch(() => {});
     await dbPage.waitForTimeout(1500);

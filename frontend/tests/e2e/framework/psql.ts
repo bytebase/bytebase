@@ -3,8 +3,7 @@ import type { TestEnv } from "./env";
 import type { BytebaseApiClient } from "./api-client";
 
 // Resolve the Postgres port for the database's instance by reading the data
-// source from the API. Avoids hardcoding PORT+3 / PORT+4 offsets which would
-// break if discovery picks the "test" sample instance instead of "prod".
+// source from the API instead of hardcoding the sample Postgres port.
 export async function getInstancePgPort(
   env: TestEnv & { api: BytebaseApiClient },
 ): Promise<string> {
@@ -32,6 +31,22 @@ export function execSql(dbName: string, port: string, sql: string): void {
       "-c", sql,
     ],
     { stdio: "pipe" },
+  );
+}
+
+// Execute a larger SQL script through stdin so it does not hit the operating
+// system's command-line length limit.
+export function execSqlScript(dbName: string, port: string, sql: string): void {
+  execFileSync(
+    "psql",
+    [
+      "-h", "/tmp",
+      "-p", port,
+      "-U", "bbsample",
+      "-d", dbName,
+      "-v", "ON_ERROR_STOP=1",
+    ],
+    { input: sql, stdio: ["pipe", "pipe", "pipe"] },
   );
 }
 

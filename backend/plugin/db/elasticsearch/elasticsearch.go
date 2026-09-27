@@ -435,8 +435,8 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 				}
 				req.Header.Set("Content-Type", "application/json")
 
-				// Use OpenSearch client's Perform method which handles AWS signing
-				resp, err = d.opensearchClient.Perform(req)
+				// Use OpenSearch client's Stream method which handles AWS signing
+				resp, err = d.opensearchClient.Stream(req)
 				if err != nil {
 					return errors.Wrapf(err, "failed to send HTTP request via OpenSearch client")
 				}

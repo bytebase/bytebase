@@ -70,10 +70,16 @@ func NewFullMasker(substitution string) *FullMasker {
 	}
 }
 
+// DefaultFullMaskSubstitution is what a full mask puts in place of a value when
+// no substitution is configured. It is the one mask output fixed in code rather
+// than chosen by an admin or derived from the value, which is what lets
+// maskedWriteRefusal recognize it.
+const DefaultFullMaskSubstitution = "******"
+
 // NewDefaultFullMasker returns a new FullMasker with default substitution(`******`).
 func NewDefaultFullMasker() *FullMasker {
 	return &FullMasker{
-		substitution: "******",
+		substitution: DefaultFullMaskSubstitution,
 	}
 }
 
@@ -256,14 +262,14 @@ func (m *RangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 		if kind.NullValue == structpb.NullValue_NULL_VALUE {
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
-					StringValue: "******",
+					StringValue: DefaultFullMaskSubstitution,
 				},
 			}
 		}
 	case *v1pb.RowValue_BoolValue:
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_StringValue{
-				StringValue: "******",
+				StringValue: DefaultFullMaskSubstitution,
 			},
 		}
 	case *v1pb.RowValue_BytesValue:
@@ -378,14 +384,14 @@ func (*DefaultRangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 		if kind.NullValue == structpb.NullValue_NULL_VALUE {
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
-					StringValue: "******",
+					StringValue: DefaultFullMaskSubstitution,
 				},
 			}
 		}
 	case *v1pb.RowValue_BoolValue:
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_StringValue{
-				StringValue: "******",
+				StringValue: DefaultFullMaskSubstitution,
 			},
 		}
 	case *v1pb.RowValue_BytesValue:
@@ -495,14 +501,14 @@ func (m *MD5Masker) Mask(data *MaskData) *v1pb.RowValue {
 		if kind.NullValue == structpb.NullValue_NULL_VALUE {
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
-					StringValue: "******",
+					StringValue: DefaultFullMaskSubstitution,
 				},
 			}
 		}
 	case *v1pb.RowValue_BoolValue:
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_StringValue{
-				StringValue: "******",
+				StringValue: DefaultFullMaskSubstitution,
 			},
 		}
 	case *v1pb.RowValue_BytesValue:

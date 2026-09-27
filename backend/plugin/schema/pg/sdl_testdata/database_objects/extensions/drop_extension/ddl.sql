@@ -1,2 +1,0 @@
-DROP EXTENSION "uuid-ossp";
-

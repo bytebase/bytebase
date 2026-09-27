@@ -1,0 +1,112 @@
+import { useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import type { Conversation } from "../../types";
+import { useAIContext } from "../context";
+import { AIMessageView } from "./AIMessageView";
+import { ChatViewProvider, type Mode } from "./context";
+import { EmptyView } from "./EmptyView";
+import { UserMessageView } from "./UserMessageView";
+
+type Props = {
+  readonly mode?: Mode;
+  readonly conversation?: Conversation;
+};
+
+/**
+ * Scrollable message list. A `ResizeObserver` auto-scrolls to the bottom
+ * whenever the inner container's height changes (a new message arrives, an
+ * AI response streams in, etc.).
+ *
+ * Two empty paths:
+ *   - `mode="VIEW"` with a conversation that has no messages → `<EmptyView>`.
+ *   - `mode="CHAT"` with no conversation at all → "select or create"
+ *     prompt with a clickable Create. The `select-or-create` i18n
+ *     string uses a `{{create}}` interpolation slot; we split manually
+ *     because `react-i18next`'s `Trans` v17 wipes child slots on
+ *     empty placeholder tags (see SelectionCopyTooltips for the same fix).
+ */
+export function ChatView({ mode = "CHAT", conversation }: Props) {
+  const { t } = useTranslation();
+  const { events } = useAIContext();
+
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const scroller = scrollerRef.current;
+    if (!container || !scroller) return;
+    const scrollToBottom = () => {
+      scroller.scrollTo(0, container.scrollHeight);
+    };
+    scrollToBottom();
+    const observer = new ResizeObserver(scrollToBottom);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [conversation?.id, conversation?.messageList.length]);
+
+  const chatViewValue = useMemo(() => ({ mode }), [mode]);
+
+  // i18n: "Select or {{create}} a conversation to start." — split on the
+  // placeholder so we can render the localized prefix/suffix around a
+  // clickable button. With no `create` value passed, i18next leaves the
+  // `{{create}}` token in the output (skipOnVariables default), so the
+  // split round-trips cleanly across every locale.
+  const selectOrCreateTemplate = t("plugin.ai.conversation.select-or-create");
+  const selectOrCreateParts = selectOrCreateTemplate.split("{{create}}");
+
+  return (
+    <ChatViewProvider value={chatViewValue}>
+      <div
+        ref={scrollerRef}
+        className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto"
+      >
+        {conversation ? (
+          conversation.messageList.length === 0 ? (
+            mode === "VIEW" ? (
+              <EmptyView />
+            ) : null
+          ) : (
+            <div
+              ref={containerRef}
+              className="flex min-w-0 max-w-full flex-col justify-end gap-y-4 px-2 pt-2"
+            >
+              {conversation.messageList.map((message) => (
+                <div
+                  key={message.id}
+                  className={`message flex min-w-0 w-full ${
+                    message.author === "AI" ? "justify-start" : "justify-end"
+                  }`}
+                >
+                  {message.author === "USER" && (
+                    <UserMessageView message={message} />
+                  )}
+                  {message.author === "AI" && (
+                    <AIMessageView message={message} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        ) : mode === "CHAT" ? (
+          <div className="w-full h-full flex flex-col justify-end items-center pb-8">
+            <p className="text-sm text-control-light">
+              {selectOrCreateParts[0]}
+              <Button
+                appearance="secondary"
+                size="xs"
+                type="button"
+                className="text-accent underline hover:text-accent-hover cursor-pointer"
+                onClick={() => events.emit("new-conversation", { input: "" })}
+              >
+                {t("common.create")}
+              </Button>
+              {selectOrCreateParts[1] ?? ""}
+            </p>
+          </div>
+        ) : null}
+      </div>
+    </ChatViewProvider>
+  );
+}

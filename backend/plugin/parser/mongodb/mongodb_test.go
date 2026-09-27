@@ -179,6 +179,16 @@ func TestDiagnose(t *testing.T) {
 			wantHasDiagnostics: false,
 		},
 		{
+			description:        "valid statement without arguments",
+			statement:          `db.users.find()`,
+			wantHasDiagnostics: false,
+		},
+		{
+			description:        "syntax error - mid-typing prefix without parentheses",
+			statement:          `db.users.find`,
+			wantHasDiagnostics: true,
+		},
+		{
 			description:        "syntax error - unclosed brace",
 			statement:          `db.collection.find({`,
 			wantHasDiagnostics: true,

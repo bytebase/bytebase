@@ -7,6 +7,7 @@ import (
 	"slices"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -83,12 +84,12 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 		return "", nil, nil
 	}
 
-	return "test", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+	return "test", model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: databaseName,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{Name: "users"},
 					{Name: "orders"},
 					{Name: "my-collection"}, // special char - needs bracket notation

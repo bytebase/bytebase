@@ -8,6 +8,7 @@ import (
 )
 
 func TestGetListRolloutFilter(t *testing.T) {
+	t.Parallel()
 	// The subquery used for update_time filtering
 	updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.project = task.project AND task_run.task_id = task.id WHERE task.project = plan.project AND task.plan_id = plan.id), plan.created_at)`
 
@@ -28,10 +29,16 @@ func TestGetListRolloutFilter(t *testing.T) {
 		},
 		{
 			name:     "task_type in filter",
-			filter:   `task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]`,
+			filter:   `task_type in ["DATABASE_MIGRATE", "DATABASE_CREATE"]`,
 			wantSQL:  "(EXISTS (SELECT 1 FROM task WHERE task.project = plan.project AND task.plan_id = plan.id AND task.type = ANY($1)))",
-			wantArgs: []any{[]string{"DATABASE_MIGRATE", "DATABASE_EXPORT"}},
+			wantArgs: []any{[]string{"DATABASE_MIGRATE", "DATABASE_CREATE"}},
 			wantErr:  false,
+		},
+		{
+			name:        "task_type in filter - retired DATABASE_EXPORT",
+			filter:      `task_type in ["DATABASE_EXPORT"]`,
+			wantErr:     true,
+			errContains: "invalid task_type value",
 		},
 		{
 			name:    "update_time greater than or equal",
@@ -77,7 +84,7 @@ func TestGetListRolloutFilter(t *testing.T) {
 			name:        "invalid filter syntax",
 			filter:      `invalid syntax {{`,
 			wantErr:     true,
-			errContains: "failed to parse filter",
+			errContains: "invalid filter expression",
 		},
 		{
 			name:        "unsupported variable",
@@ -119,6 +126,7 @@ func TestGetListRolloutFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetListRolloutFilter(tt.filter)
 
 			if tt.wantErr {

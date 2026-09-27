@@ -21,6 +21,8 @@ type Profile struct {
 	Port int
 	// When we are running in SaaS mode, some features are not allowed to edit by users.
 	SaaS bool
+	// MetricsRemoteAccess allows non-loopback clients to scrape /metrics.
+	MetricsRemoteAccess bool
 	// Stripe configuration for SaaS subscription purchase. Only used when SaaS is true.
 	StripeAPISecret     string
 	StripeWebhookSecret string
@@ -39,6 +41,10 @@ type Profile struct {
 	GitCommit string
 	// PgURL is the optional external PostgreSQL instance connection url
 	PgURL string
+	// SampleProjectInstancePgURL is the Cloud PostgreSQL target for managed
+	// Sample Project Instances. It is read only from the environment and must
+	// never be logged.
+	SampleProjectInstancePgURL string
 
 	// LastActiveTS is the service last active timestamp, any API calls will refresh this value.
 	LastActiveTS atomic.Int64

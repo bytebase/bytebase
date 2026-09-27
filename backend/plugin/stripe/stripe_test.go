@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	stripego "github.com/stripe/stripe-go/v85"
+	stripego "github.com/stripe/stripe-go/v86"
 )
 
 func TestIsResourceMissingError(t *testing.T) {

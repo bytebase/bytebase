@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -82,7 +82,7 @@ func (v *noSelectAllVisitor) Visit(node ast.Node) ast.Visitor {
 		Code:          code.StatementSelectAll.Int32(),
 		Title:         v.title,
 		Content:       fmt.Sprintf("\"%s\" uses SELECT all", v.text),
-		StartPosition: common.ConvertANTLRLineToPosition(v.line),
+		StartPosition: base.ConvertANTLRLineToPosition(v.line),
 	})
 	return v
 }

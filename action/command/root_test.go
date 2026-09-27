@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log/slog"
@@ -10,7 +11,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -120,6 +120,20 @@ func TestCheckVersionCompatibility(t *testing.T) {
 	}
 }
 
+func TestRootTargetsHelp(t *testing.T) {
+	t.Parallel()
+
+	var output bytes.Buffer
+	cmd := NewRootCommand(&world.World{})
+	cmd.SetArgs([]string{"--help"})
+	cmd.SetOut(&output)
+	cmd.SetErr(&output)
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, output.String(), "workspace or project-instance databases")
+	require.Contains(t, output.String(), "single project database group")
+}
+
 func TestRecommendedActionTag(t *testing.T) {
 	t.Parallel()
 
@@ -199,12 +213,4 @@ type actuatorInfoTestService struct {
 
 func (s *actuatorInfoTestService) GetActuatorInfo(context.Context, *connect.Request[v1pb.GetActuatorInfoRequest]) (*connect.Response[v1pb.ActuatorInfo], error) {
 	return connect.NewResponse(&v1pb.ActuatorInfo{Version: s.version}), nil
-}
-
-func (*actuatorInfoTestService) SetupSample(context.Context, *connect.Request[v1pb.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error) {
-	return connect.NewResponse(&emptypb.Empty{}), nil
-}
-
-func (*actuatorInfoTestService) DeleteCache(context.Context, *connect.Request[v1pb.DeleteCacheRequest]) (*connect.Response[emptypb.Empty], error) {
-	return connect.NewResponse(&emptypb.Empty{}), nil
 }

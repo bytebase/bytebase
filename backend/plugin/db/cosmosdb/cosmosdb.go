@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -138,7 +139,7 @@ func (*Driver) Execute(_ context.Context, _ string, _ db.ExecuteOptions) (int64,
 }
 
 // Dump dumps the database.
-func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (*Driver) Dump(_ context.Context, _ io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
 	return nil
 }
 
@@ -192,6 +193,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	result := &v1pb.QueryResult{
 		ColumnNames:     []string{"result"},
 		ColumnTypeNames: []string{"TEXT"},
+		Statement:       statement,
 	}
 	for _, item := range items {
 		result.Rows = append(result.Rows, &v1pb.QueryRow{
@@ -202,6 +204,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	}
 
 	result.Latency = durationpb.New(time.Since(startTime))
+	result.RowsCount = int64(len(result.Rows))
 
 	return []*v1pb.QueryResult{result}, nil
 }

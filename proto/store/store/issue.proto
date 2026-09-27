@@ -13,13 +13,12 @@ option go_package = "generated-go/store";
 message Issue {
   // Type represents the category of issue.
   enum Type {
+    reserved 3;
     ISSUE_TYPE_UNSPECIFIED = 0;
     // Issue for database schema or data changes.
     DATABASE_CHANGE = 1;
     // Role grant request.
     ROLE_GRANT = 2;
-    // Issue for exporting data from databases.
-    DATABASE_EXPORT = 3;
     // Temporary access grant request.
     ACCESS_GRANT = 4;
   }
@@ -46,6 +45,9 @@ message Issue {
 
   // The access grant id for ACCESS_GRANT type issue.
   string access_grant_id = 5;
+  // Whether this issue is a Draft Review Issue.
+  // Missing from persisted payloads means false.
+  bool draft = 6;
 }
 
 // RoleGrant contains details for requesting a project role.

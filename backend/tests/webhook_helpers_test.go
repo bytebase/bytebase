@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -57,14 +56,22 @@ func firstSlackSectionText(body []byte) string {
 }
 
 // matchesEvent reports whether a captured Slack payload matches the given
-// project and event title. Project filtering prevents cross-subtest
-// contamination from the async webhook dispatcher.
-func matchesEvent(req webhookRequest, projectName, eventTitle string) bool {
+// project, event title, and optional resource names. Project and resource
+// filtering prevents contamination from the async webhook dispatcher.
+func matchesEvent(req webhookRequest, projectName, eventTitle string, resources ...string) bool {
 	body := string(req.Body)
 	if !strings.Contains(body, projectName) {
 		return false
 	}
-	return strings.Contains(firstSlackSectionText(req.Body), eventTitle)
+	if !strings.Contains(firstSlackSectionText(req.Body), eventTitle) {
+		return false
+	}
+	for _, resource := range resources {
+		if !strings.Contains(body, resource) {
+			return false
+		}
+	}
+	return true
 }
 
 // webhookWaitTimeout is the deadline for waitForWebhookCount and the issue-state
@@ -97,10 +104,10 @@ func requireWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTi
 	require.Equalf(t, n, got, "expected %d %q webhooks on %s, got %d", n, eventTitle, projectName, got)
 }
 
-func countWebhooksFor(c *webhookCollector, projectName, eventTitle string) int {
+func countWebhooksFor(c *webhookCollector, projectName, eventTitle string, resources ...string) int {
 	n := 0
 	for _, req := range c.getRequests() {
-		if matchesEvent(req, projectName, eventTitle) {
+		if matchesEvent(req, projectName, eventTitle, resources...) {
 			n++
 		}
 	}
@@ -167,17 +174,16 @@ func seedFailingSheet(ctx context.Context, t *testing.T, ctl *controller, projec
 	return resp.Msg.Name
 }
 
-// unblockFailingTask creates the missing table inside the SQLite database file
-// so subsequent runs of seedFailingSheet's SQL succeed. db.Close() flushes
-// WAL/journal so the file is consistent before the retry is enqueued.
-func unblockFailingTask(t *testing.T, instanceDir, dbName string) {
+// unblockFailingTask creates the missing table inside the test database on the
+// instance's Postgres container so subsequent runs of seedFailingSheet's SQL
+// succeed.
+func unblockFailingTask(t *testing.T, pgContainer *Container, dbName string) {
 	t.Helper()
-	dbPath := filepath.Join(instanceDir, dbName+".db")
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=%s", pgContainer.GetHost(), pgContainer.GetPort(), dbName))
 	require.NoError(t, err)
 	defer func() {
 		if cerr := db.Close(); cerr != nil {
-			t.Errorf("close sqlite handle for %s: %v", dbPath, cerr)
+			t.Errorf("close postgres handle for %s: %v", dbName, cerr)
 		}
 	}()
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS __force_fail_target(id INT);")
@@ -280,49 +286,6 @@ func skipTaskByDB(ctx context.Context, t *testing.T, ctl *controller, rollout *v
 		Reason: "test: skip task by db",
 	}))
 	require.NoError(t, err)
-}
-
-// skipFailedTasks finds every FAILED task in the rollout and skips them.
-func skipFailedTasks(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout) {
-	t.Helper()
-	fresh := refreshRollout(ctx, t, ctl, rollout)
-	perStage := map[string][]string{}
-	for _, stage := range fresh.Stages {
-		for _, task := range stage.Tasks {
-			if task.Status == v1pb.Task_FAILED {
-				perStage[stage.Name] = append(perStage[stage.Name], task.Name)
-			}
-		}
-	}
-	require.NotEmpty(t, perStage, "expected at least one failed task to skip")
-	for stageName, names := range perStage {
-		_, err := ctl.rolloutServiceClient.BatchSkipTasks(ctx, connect.NewRequest(&v1pb.BatchSkipTasksRequest{
-			Parent: stageName,
-			Tasks:  names,
-			Reason: "test: skip failed tasks",
-		}))
-		require.NoError(t, err)
-	}
-}
-
-func skipAllTasks(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout) {
-	t.Helper()
-	fresh := refreshRollout(ctx, t, ctl, rollout)
-	for _, stage := range fresh.Stages {
-		var names []string
-		for _, task := range stage.Tasks {
-			names = append(names, task.Name)
-		}
-		if len(names) == 0 {
-			continue
-		}
-		_, err := ctl.rolloutServiceClient.BatchSkipTasks(ctx, connect.NewRequest(&v1pb.BatchSkipTasksRequest{
-			Parent: stage.Name,
-			Tasks:  names,
-			Reason: "test: skip all",
-		}))
-		require.NoError(t, err)
-	}
 }
 
 // retryFailedTasks reruns BatchRunTasks on every FAILED task. Caller decides

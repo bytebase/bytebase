@@ -14,6 +14,7 @@ import (
 )
 
 func TestShouldDiffSchemaViaSDL(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		engine storepb.Engine
@@ -53,8 +54,37 @@ func TestShouldDiffSchemaViaSDL(t *testing.T) {
 			want: true,
 		},
 		{
-			name:   "mysql raw schema text uses metadata parser",
+			name:   "mysql raw schema text uses SDL",
 			engine: storepb.Engine_MYSQL,
+			req: &v1pb.DiffSchemaRequest{
+				Target: &v1pb.DiffSchemaRequest_Schema{Schema: "CREATE TABLE t(id int);"},
+			},
+			want: true,
+		},
+		{
+			name:   "mysql changelog target uses metadata diff",
+			engine: storepb.Engine_MYSQL,
+			req: &v1pb.DiffSchemaRequest{
+				Target: &v1pb.DiffSchemaRequest_Changelog{Changelog: "instances/prod/databases/app/changelogs/123"},
+			},
+			want: false,
+		},
+		{
+			// The gate keys off the REAL engine: MariaDB is excluded from the SDL path even
+			// though it aliases to MySQL for parsing (canonicalizing it as MySQL 8.0 would emit
+			// utf8mb4_0900_ai_ci, which MariaDB lacks).
+			name:   "mariadb raw schema text does NOT use SDL",
+			engine: storepb.Engine_MARIADB,
+			req: &v1pb.DiffSchemaRequest{
+				Target: &v1pb.DiffSchemaRequest_Schema{Schema: "CREATE TABLE t(id int);"},
+			},
+			want: false,
+		},
+		{
+			// OceanBase is excluded from every SDL path pending a live oracle, despite aliasing
+			// to MySQL for parsing.
+			name:   "oceanbase raw schema text does NOT use SDL",
+			engine: storepb.Engine_OCEANBASE,
 			req: &v1pb.DiffSchemaRequest{
 				Target: &v1pb.DiffSchemaRequest_Schema{Schema: "CREATE TABLE t(id int);"},
 			},
@@ -64,12 +94,25 @@ func TestShouldDiffSchemaViaSDL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, tt.want, shouldDiffSchemaViaSDL(tt.engine, tt.req))
 		})
 	}
 }
 
+func TestFormatDatabaseResourceName(t *testing.T) {
+	t.Parallel()
+	database := &store.DatabaseMessage{InstanceID: "instance-a", DatabaseName: "app"}
+	require.Equal(t, "instances/instance-a/databases/app", formatDatabaseResourceName(&store.InstanceMessage{ResourceID: "instance-a"}, database))
+	projectID := "project-a"
+	require.Equal(t, "projects/project-a/instances/instance-a/databases/app", formatDatabaseResourceName(&store.InstanceMessage{
+		ResourceID: "instance-a",
+		ProjectID:  &projectID,
+	}, database))
+}
+
 func TestListDatabaseFilter(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		input    string
 		wantSQL  string
@@ -92,12 +135,12 @@ func TestListDatabaseFilter(t *testing.T) {
 		},
 		{
 			input:    `name.contains("Employee")`,
-			wantSQL:  `(LOWER(db.name) LIKE $1)`,
+			wantSQL:  `(LOWER(db.name) LIKE $1 ESCAPE '\')`,
 			wantArgs: []any{"%employee%"},
 		},
 		{
 			input:    `table.contains("user")`,
-			wantSQL:  "(EXISTS (\n\t\t\t\t\t\tSELECT 1\n\t\t\t\t\t\tFROM json_array_elements(ds.metadata->'schemas') AS s,\n\t\t\t\t\t\t \t json_array_elements(s->'tables') AS t\n\t\t\t\t\t\tWHERE t->>'name' LIKE $1))",
+			wantSQL:  "(EXISTS (\n\t\t\t\t\t\tSELECT 1\n\t\t\t\t\t\tFROM json_array_elements(ds.metadata->'schemas') AS s,\n\t\t\t\t\t\t \t json_array_elements(s->'tables') AS t\n\t\t\t\t\t\tWHERE t->>'name' LIKE $1 ESCAPE '\\'))",
 			wantArgs: []any{"%user%"},
 		},
 		{
@@ -111,18 +154,18 @@ func TestListDatabaseFilter(t *testing.T) {
 		},
 		{
 			input:    `labels.region == "asia" && labels.tenant == "bytebase"`,
-			wantSQL:  `((db.metadata->'labels'->>'region' = $1 AND db.metadata->'labels'->>'tenant' = $2))`,
-			wantArgs: []any{"asia", "bytebase"},
+			wantSQL:  `((db.metadata->'labels'->>$1::text = $2 AND db.metadata->'labels'->>$3::text = $4))`,
+			wantArgs: []any{"region", "asia", "tenant", "bytebase"},
 		},
 		{
 			input:    `(labels.region == "asia" || labels.tenant == "bytebase") && exclude_unassigned == true`,
-			wantSQL:  `(((db.metadata->'labels'->>'region' = $1 OR db.metadata->'labels'->>'tenant' = $2) AND db.project != $3 AND db.project != 'default'))`,
-			wantArgs: []any{"asia", "bytebase", common.DefaultProjectID("test-workspace")},
+			wantSQL:  `(((db.metadata->'labels'->>$1::text = $2 OR db.metadata->'labels'->>$3::text = $4) AND db.project != $5 AND db.project != 'default'))`,
+			wantArgs: []any{"region", "asia", "tenant", "bytebase", common.DefaultProjectID("test-workspace")},
 		},
 		{
 			input:    `labels.region in ["asia", "europe"] && labels.tenant == "bytebase"`,
-			wantSQL:  `((db.metadata->'labels'->>'region' = ANY($1) AND db.metadata->'labels'->>'tenant' = $2))`,
-			wantArgs: []any{[]any{"asia", "europe"}, "bytebase"},
+			wantSQL:  `((db.metadata->'labels'->>$1::text = ANY($2) AND db.metadata->'labels'->>$3::text = $4))`,
+			wantArgs: []any{"region", []any{"asia", "europe"}, "tenant", "bytebase"},
 		},
 	}
 
@@ -142,6 +185,7 @@ func TestListDatabaseFilter(t *testing.T) {
 }
 
 func TestGetDatabaseMetadataFilter(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name         string
 		input        string
@@ -172,6 +216,7 @@ func TestGetDatabaseMetadataFilter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			filter, err := getDatabaseMetadataFilter(tc.input)
 			if tc.errContains != "" {
 				require.Error(t, err)
@@ -193,6 +238,65 @@ func TestGetDatabaseMetadataFilter(t *testing.T) {
 	}
 }
 
+func TestGetDatabaseMetadataFilterRedactsSyntaxError(t *testing.T) {
+	t.Parallel()
+	_, err := getDatabaseMetadataFilter(`table == "sensitive SQL" &&`)
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	require.ErrorContains(t, err, "invalid filter expression")
+	require.NotContains(t, err.Error(), "sensitive SQL")
+}
+
 func ptrValue[T any](v T) *T {
 	return &v
+}
+
+// TestResolveDiffSchemaTargetSDL pins the X11 fix: the SDL target is selected by ONEOF
+// PRESENCE, not string emptiness — an intentionally empty schema text is a legal target
+// meaning "empty schema" (the diff previews dropping everything), while a request with
+// no target at all still errors.
+func TestResolveDiffSchemaTargetSDL(t *testing.T) {
+	s := &DatabaseService{}
+	ctx := t.Context()
+
+	t.Run("empty_schema_text_is_a_valid_target", func(t *testing.T) {
+		got, err := s.resolveDiffSchemaTargetSDL(ctx, &v1pb.DiffSchemaRequest{
+			Target: &v1pb.DiffSchemaRequest_Schema{Schema: ""},
+		}, storepb.Engine_MYSQL)
+		require.NoError(t, err)
+		require.Empty(t, got)
+	})
+
+	t.Run("non_empty_schema_text_passed_through", func(t *testing.T) {
+		got, err := s.resolveDiffSchemaTargetSDL(ctx, &v1pb.DiffSchemaRequest{
+			Target: &v1pb.DiffSchemaRequest_Schema{Schema: "CREATE TABLE t(id int);"},
+		}, storepb.Engine_POSTGRES)
+		require.NoError(t, err)
+		require.Equal(t, "CREATE TABLE t(id int);", got)
+	})
+
+	t.Run("no_target_at_all_errors", func(t *testing.T) {
+		_, err := s.resolveDiffSchemaTargetSDL(ctx, &v1pb.DiffSchemaRequest{}, storepb.Engine_MYSQL)
+		require.ErrorContains(t, err, "target must be either schema text or changelog")
+	})
+}
+
+// TestCheckDiffSchemaTargetProject pins the gate DiffSchema puts on a changelog
+// target. The ACL interceptor authorizes request.name only, so without it a
+// changelog under another project's database would hand over that project's
+// schema. A foreign changelog is indistinguishable from one that does not
+// exist, or the error itself answers the question.
+func TestCheckDiffSchemaTargetProject(t *testing.T) {
+	t.Parallel()
+	source := &store.DatabaseMessage{ProjectID: "project-a", InstanceID: "shared-instance", DatabaseName: "app-a"}
+
+	require.NoError(t, checkDiffSchemaTargetProject(source.ProjectID, source, "instances/shared-instance/databases/app-a/changelogs/1"))
+
+	foreign := checkDiffSchemaTargetProject(source.ProjectID,
+		&store.DatabaseMessage{ProjectID: "project-b", InstanceID: "shared-instance", DatabaseName: "app-b"},
+		"instances/shared-instance/databases/app-b/changelogs/2")
+	require.Equal(t, connect.CodeNotFound, connect.CodeOf(foreign))
+	require.NotContains(t, foreign.Error(), "project-b")
+
+	missing := checkDiffSchemaTargetProject(source.ProjectID, nil, "instances/shared-instance/databases/no-such-db/changelogs/1")
+	require.Equal(t, connect.CodeOf(foreign), connect.CodeOf(missing))
 }

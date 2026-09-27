@@ -19,6 +19,9 @@
 bytebase:
   version: latest
   registryMirrorHost: ""
+  # Tag for the BusyBox init container used to escape PostgreSQL passwords.
+  # May also embed a digest, for example 1.37.0@sha256:abc123.
+  busyboxVersion: "1.37.0"
   option:
     port: 8080
     data: "/var/opt/bytebase"
@@ -61,6 +64,12 @@ bytebase:
   #    requests:
   #      cpu: 1000m
   #      memory: 1Gi
+
+  # -- Annotations added to the Bytebase pod. Useful for metrics scrapers and
+  # other tooling that discovers pods by annotation.
+  podAnnotations: {}
+  #    prometheus.io/scrape: "true"
+  #    prometheus.io/port: "8080"
 
   # Additional Bytebase secret mounts
   # Defines additional mounts with secret. Secret must be manually created in the namespace.

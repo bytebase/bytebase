@@ -10,7 +10,7 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
   return {
     id: uuidv1(),
     // Tabs are created untitled. The UI renders a localized "Untitled"
-    // placeholder when the title is empty; users name worksheets explicitly
+    // placeholder when the title is empty; users name saved queries explicitly
     // when (and if) they save.
     title: "",
     connection: emptySQLEditorConnection(),
@@ -18,7 +18,7 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
     selectedStatement: "",
     status: "CLEAN",
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-    worksheet: "",
+    savedQuery: "",
     treeState: {
       database: UNKNOWN_DATABASE_NAME,
       keys: [],
@@ -48,6 +48,6 @@ export const isSameSQLEditorConnection = (
 };
 
 // `getConnectionForSQLEditorTab` / `isConnectedSQLEditorTab` and
-// `getValidDataSourceByPolicy` moved to `@/react/lib/*` so the database and
+// `getValidDataSourceByPolicy` moved to `@/lib/*` so the database and
 // policy lookups read the React app store directly without dragging
-// `@/react/stores/app` into the `@/utils` import graph (a static ESM cycle).
+// `@/stores/app` into the `@/utils` import graph (a static ESM cycle).

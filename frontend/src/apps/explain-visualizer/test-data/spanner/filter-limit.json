@@ -1,0 +1,172 @@
+{
+  "planNodes": [
+    {
+      "index": 0,
+      "kind": "RELATIONAL",
+      "displayName": "Serialize Result",
+      "childLinks": [{ "childIndex": 1 }, { "childIndex": 22 }]
+    },
+    {
+      "index": 1,
+      "kind": "RELATIONAL",
+      "displayName": "Filter",
+      "childLinks": [
+        { "childIndex": 2 },
+        { "childIndex": 19, "type": "Condition" }
+      ]
+    },
+    {
+      "index": 2,
+      "kind": "RELATIONAL",
+      "displayName": "Limit",
+      "childLinks": [
+        { "childIndex": 3 },
+        { "childIndex": 18, "type": "Limit" }
+      ],
+      "metadata": { "call_type": "Global" }
+    },
+    {
+      "index": 3,
+      "kind": "RELATIONAL",
+      "displayName": "Distributed Union",
+      "childLinks": [
+        { "childIndex": 4 },
+        { "childIndex": 15, "type": "Split Range" }
+      ],
+      "metadata": { "subquery_cluster_node": "4" }
+    },
+    {
+      "index": 4,
+      "kind": "RELATIONAL",
+      "displayName": "Limit",
+      "childLinks": [
+        { "childIndex": 5 },
+        { "childIndex": 14, "type": "Limit" }
+      ],
+      "metadata": { "call_type": "Local" }
+    },
+    {
+      "index": 5,
+      "kind": "RELATIONAL",
+      "displayName": "Distributed Union",
+      "childLinks": [{ "childIndex": 6 }],
+      "metadata": { "call_type": "Local", "subquery_cluster_node": "6" }
+    },
+    {
+      "index": 6,
+      "kind": "RELATIONAL",
+      "displayName": "FilterScan",
+      "childLinks": [
+        { "childIndex": 7 },
+        { "childIndex": 13, "type": "Seek Condition" }
+      ]
+    },
+    {
+      "index": 7,
+      "kind": "RELATIONAL",
+      "displayName": "Scan",
+      "childLinks": [
+        { "childIndex": 8, "variable": "FirstName" },
+        { "childIndex": 9, "variable": "LastName" }
+      ],
+      "metadata": {
+        "scan_target": "SingersByFirstLastName",
+        "scan_type": "IndexScan"
+      }
+    },
+    {
+      "index": 8,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "FirstName" }
+    },
+    {
+      "index": 9,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "LastName" }
+    },
+    {
+      "index": 10,
+      "kind": "SCALAR",
+      "displayName": "Function",
+      "childLinks": [{ "childIndex": 11 }, { "childIndex": 12 }],
+      "shortRepresentation": { "description": "STARTS_WITH($FirstName, 'A')" }
+    },
+    {
+      "index": 11,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "$FirstName" }
+    },
+    {
+      "index": 12,
+      "kind": "SCALAR",
+      "displayName": "Constant",
+      "shortRepresentation": { "description": "'A'" }
+    },
+    {
+      "index": 13,
+      "kind": "SCALAR",
+      "displayName": "Function",
+      "childLinks": [{ "childIndex": 10 }],
+      "shortRepresentation": { "description": "STARTS_WITH($FirstName, 'A')" }
+    },
+    {
+      "index": 14,
+      "kind": "SCALAR",
+      "displayName": "Constant",
+      "shortRepresentation": { "description": "3" }
+    },
+    {
+      "index": 15,
+      "kind": "SCALAR",
+      "displayName": "Function",
+      "childLinks": [{ "childIndex": 16 }, { "childIndex": 17 }],
+      "shortRepresentation": { "description": "STARTS_WITH($FirstName, 'A')" }
+    },
+    {
+      "index": 16,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "$FirstName" }
+    },
+    {
+      "index": 17,
+      "kind": "SCALAR",
+      "displayName": "Constant",
+      "shortRepresentation": { "description": "'A'" }
+    },
+    {
+      "index": 18,
+      "kind": "SCALAR",
+      "displayName": "Constant",
+      "shortRepresentation": { "description": "3" }
+    },
+    {
+      "index": 19,
+      "kind": "SCALAR",
+      "displayName": "Function",
+      "childLinks": [{ "childIndex": 20 }, { "childIndex": 21 }],
+      "shortRepresentation": { "description": "STARTS_WITH($LastName, 'Rich')" }
+    },
+    {
+      "index": 20,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "$LastName" }
+    },
+    {
+      "index": 21,
+      "kind": "SCALAR",
+      "displayName": "Constant",
+      "shortRepresentation": { "description": "'Rich'" }
+    },
+    {
+      "index": 22,
+      "kind": "SCALAR",
+      "displayName": "Reference",
+      "shortRepresentation": { "description": "$LastName" }
+    }
+  ]
+}

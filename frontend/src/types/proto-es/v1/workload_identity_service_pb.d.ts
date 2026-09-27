@@ -77,32 +77,46 @@ export declare const WorkloadIdentitySchema: GenMessage<WorkloadIdentity>;
  */
 export declare type WorkloadIdentityConfig = Message<"bytebase.v1.WorkloadIdentityConfig"> & {
   /**
-   * Platform type (currently only GITHUB is supported)
+   * Provider configuration mode.
    *
    * @generated from field: bytebase.v1.WorkloadIdentityConfig.ProviderType provider_type = 1;
    */
   providerType: WorkloadIdentityConfig_ProviderType;
 
   /**
-   * OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
+   * HTTPS URL of the OIDC issuer. The exchange fetches
+   * {issuer_url}/.well-known/openid-configuration to verify a token, unless
+   * jwks_url names the key set directly.
    *
    * @generated from field: string issuer_url = 2;
    */
   issuerUrl: string;
 
   /**
-   * Allowed audiences for token validation
+   * Audiences a token may be minted for. A token authenticates if its `aud`
+   * claim matches any entry.
    *
    * @generated from field: repeated string allowed_audiences = 3;
    */
   allowedAudiences: string[];
 
   /**
-   * Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+   * The subject a token must carry, e.g. "repo:owner/repo:ref:refs/heads/main".
+   * A trailing "*" is a prefix match. For GitHub and GitLab subjects it must
+   * complete an owner or group segment, so "repo:my-org/*" is accepted and
+   * "repo:*" is not. Other issuers write other vocabularies, so a wildcard
+   * outside those two is accepted as given.
    *
    * @generated from field: string subject_pattern = 4;
    */
   subjectPattern: string;
+
+  /**
+   * Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url.
+   *
+   * @generated from field: string jwks_url = 5;
+   */
+  jwksUrl: string;
 };
 
 /**
@@ -112,7 +126,7 @@ export declare type WorkloadIdentityConfig = Message<"bytebase.v1.WorkloadIdenti
 export declare const WorkloadIdentityConfigSchema: GenMessage<WorkloadIdentityConfig>;
 
 /**
- * ProviderType identifies the CI/CD platform.
+ * ProviderType identifies the workload identity configuration mode.
  *
  * @generated from enum bytebase.v1.WorkloadIdentityConfig.ProviderType
  */
@@ -131,6 +145,11 @@ export enum WorkloadIdentityConfig_ProviderType {
    * @generated from enum value: GITLAB = 2;
    */
   GITLAB = 2,
+
+  /**
+   * @generated from enum value: OIDC = 3;
+   */
+  OIDC = 3,
 }
 
 /**

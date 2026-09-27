@@ -1,0 +1,5 @@
+language js
+
+`crypto.randomUUID($args)` as $call where {
+  register_diagnostic(span=$call, message="Use v4 from the uuid package instead of crypto.randomUUID() for compatibility.")
+}

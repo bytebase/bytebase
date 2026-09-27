@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -174,7 +174,7 @@ func (c *columnNoNullChecker) generateAdvice() []*storepb.Advice {
 				Code:          code.ColumnCannotNull.Int32(),
 				Title:         c.title,
 				Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
-				StartPosition: common.ConvertANTLRLineToPosition(column.line),
+				StartPosition: base.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 	}

@@ -1,0 +1,877 @@
+import { create } from "@bufbuild/protobuf";
+import {
+  Check,
+  ChevronDown,
+  EllipsisVertical,
+  ExternalLink,
+  Loader2,
+  MessageCircle,
+  X,
+} from "lucide-react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useTranslation } from "react-i18next";
+import { issueServiceClientConnect, rolloutServiceClientConnect } from "@/api";
+import { router } from "@/app/router";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+} from "@/app/router/handles";
+import {
+  buildPlanDeployRouteFromRolloutName,
+  buildPlanRolloutRouteFromPlanName,
+} from "@/app/router/routeHelpers";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { RouterLink } from "@/components/RouterLink";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Tooltip } from "@/components/ui/tooltip";
+import { useCurrentUser } from "@/hooks/useAppState";
+import { useClickOutside } from "@/hooks/useClickOutside";
+import { useProjectByName } from "@/hooks/useProjectByName";
+import { cn } from "@/lib/utils";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
+import { projectNamePrefix } from "@/stores/modules/v1/common";
+import { IssueStatus } from "@/types/proto-es/v1/common_pb";
+import {
+  ApproveIssueRequestSchema,
+  BatchUpdateIssuesStatusRequestSchema,
+  RejectIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
+import {
+  BatchRunTasksRequestSchema,
+  CreateRolloutRequestSchema,
+} from "@/types/proto-es/v1/rollout_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
+import { extractPlanUID, extractProjectResourceName } from "@/utils";
+import { useIssueDetailContext } from "../context/IssueDetailContext";
+import { useIssueDetailSpecValidation } from "../hooks/useIssueDetailSpecValidation";
+import {
+  type ActionContext,
+  type ActionDefinition,
+  buildIssueDetailActionContext,
+  createIssueDetailActions,
+  type UnifiedAction,
+} from "../utils/actionRegistry";
+import { isApprovalCompleted } from "../utils/approval";
+import { refreshIssueDetailState } from "../utils/refreshIssueDetailState";
+import { IssueDetailTaskRolloutActionPanel } from "./IssueDetailTaskRolloutActionPanel";
+
+export function IssueDetailActionBar() {
+  const { t } = useTranslation();
+  const page = useIssueDetailContext();
+  // subscribe to re-render on project cache change
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  const currentUser = useCurrentUser();
+  const [pendingConfirmAction, setPendingConfirmAction] =
+    useState<ActionDefinition>();
+  const [pendingReviewOpen, setPendingReviewOpen] = useState(false);
+  const [pendingRolloutAction, setPendingRolloutAction] = useState<
+    "ROLLOUT_START" | "ROLLOUT_CANCEL" | undefined
+  >();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const projectName = `${projectNamePrefix}${page.projectId}`;
+  const project = useProjectByName(projectName);
+  void projectsByName;
+  const { isSpecEmpty } = useIssueDetailSpecValidation(page.plan?.specs ?? []);
+
+  const context = useMemo<ActionContext | undefined>(() => {
+    if (!page.plan || !project || !currentUser) {
+      return undefined;
+    }
+    const statusCount = page.plan.planCheckRunStatusCount ?? {};
+    const planCheckStatus =
+      statusCount.ERROR > 0 || statusCount.FAILED > 0
+        ? Advice_Level.ERROR
+        : statusCount.WARNING > 0
+          ? Advice_Level.WARNING
+          : Advice_Level.SUCCESS;
+
+    return buildIssueDetailActionContext({
+      plan: page.plan,
+      issue: page.issue,
+      rollout: page.rollout,
+      project,
+      currentUser,
+      isCreating: page.isCreating,
+      planCheckStatus,
+      hasRunningPlanChecks: (statusCount.RUNNING ?? 0) > 0,
+      isSpecEmpty,
+    });
+  }, [
+    currentUser,
+    page.isCreating,
+    page.issue,
+    page.plan,
+    page.rollout,
+    project,
+    isSpecEmpty,
+  ]);
+
+  const globalDisabledReason = useMemo(() => {
+    return page.isEditing
+      ? t("plan.editor.save-changes-before-continuing")
+      : undefined;
+  }, [page.isEditing, t]);
+  const issueDetailActions = useMemo(() => createIssueDetailActions(t), [t]);
+
+  const getCategory = useCallback(
+    (action: ActionDefinition) => {
+      if (!context) {
+        return "secondary";
+      }
+      return typeof action.category === "function"
+        ? action.category(context)
+        : action.category;
+    },
+    [context]
+  );
+
+  const visibleActions = useMemo(() => {
+    if (!context || page.isCreating) {
+      return [];
+    }
+    return issueDetailActions.filter((action) => action.isVisible(context));
+  }, [context, page.isCreating]);
+
+  const primaryAction = useMemo(() => {
+    return visibleActions.find((action) => getCategory(action) === "primary");
+  }, [getCategory, visibleActions]);
+
+  const secondaryActions = useMemo(() => {
+    return visibleActions.filter(
+      (action) =>
+        getCategory(action) === "secondary" ||
+        (getCategory(action) === "primary" && action.id !== primaryAction?.id)
+    );
+  }, [getCategory, primaryAction?.id, visibleActions]);
+
+  const shouldShowPlanLink = useMemo(() => {
+    if (!page.plan || !page.issue) {
+      return false;
+    }
+    if (page.issueType !== "DATABASE_CHANGE") {
+      return false;
+    }
+    return page.plan.hasRollout || isApprovalCompleted(page.issue);
+  }, [page.issue, page.issueType, page.plan]);
+
+  const planRoute = useMemo(() => {
+    if (!page.plan) {
+      return undefined;
+    }
+    if (page.plan.hasRollout) {
+      return buildPlanRolloutRouteFromPlanName(page.plan.name);
+    }
+    return {
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(page.plan.name),
+        planId: extractPlanUID(page.plan.name),
+      },
+    };
+  }, [page.plan]);
+
+  const isActionDisabled = useCallback(
+    (action: ActionDefinition) => {
+      if (!context) {
+        return true;
+      }
+      return page.isEditing || action.isDisabled(context);
+    },
+    [context, page.isEditing]
+  );
+
+  const getDisabledReason = useCallback(
+    (action: ActionDefinition) => {
+      if (!context) {
+        return undefined;
+      }
+      return globalDisabledReason || action.disabledReason(context);
+    },
+    [context, globalDisabledReason]
+  );
+
+  const refreshIssueComments = useCallback(async () => {
+    if (!page.issue?.name) {
+      return;
+    }
+    await useAppStore.getState().fetchIssueCommentTimeline({
+      parent: page.issue.name,
+      pageSize: 1000,
+    });
+  }, [page.issue?.name]);
+
+  const handleRefreshIssueDetailState = useCallback(async () => {
+    await refreshIssueDetailState(page);
+  }, [page]);
+
+  const handleCreateRollout = useCallback(
+    async (options?: { runAllTasks?: boolean }) => {
+      if (!page.plan) {
+        return;
+      }
+      const createdRollout = await rolloutServiceClientConnect.createRollout(
+        create(CreateRolloutRequestSchema, {
+          parent: page.plan.name,
+        })
+      );
+
+      if (options?.runAllTasks) {
+        for (const stage of createdRollout.stages) {
+          await rolloutServiceClientConnect.batchRunTasks(
+            create(BatchRunTasksRequestSchema, {
+              parent: stage.name,
+              tasks: stage.tasks.map((task) => task.name),
+            })
+          );
+        }
+      }
+
+      await handleRefreshIssueDetailState();
+
+      if (createdRollout.stages.length > 0) {
+        void router.push(
+          buildPlanDeployRouteFromRolloutName(createdRollout.name)
+        );
+      }
+    },
+    [handleRefreshIssueDetailState, page.plan]
+  );
+
+  const handleIssueStatusAction = useCallback(
+    async (action: "ISSUE_STATUS_CLOSE" | "ISSUE_STATUS_REOPEN") => {
+      if (!page.issue || !project) {
+        return;
+      }
+      const nextStatus =
+        action === "ISSUE_STATUS_CLOSE"
+          ? IssueStatus.CANCELED
+          : IssueStatus.OPEN;
+      await issueServiceClientConnect.batchUpdateIssuesStatus(
+        create(BatchUpdateIssuesStatusRequestSchema, {
+          parent: project.name,
+          issues: [page.issue.name],
+          status: nextStatus,
+        })
+      );
+      await Promise.all([
+        handleRefreshIssueDetailState(),
+        refreshIssueComments(),
+      ]);
+    },
+    [handleRefreshIssueDetailState, page.issue, project, refreshIssueComments]
+  );
+
+  const confirmLabel =
+    pendingConfirmAction && context ? pendingConfirmAction.label(context) : "";
+  const confirmContent = pendingConfirmAction
+    ? pendingConfirmAction.id === "ISSUE_STATUS_CLOSE"
+      ? t("issue.status-transition.modal.close")
+      : pendingConfirmAction.id === "ISSUE_STATUS_REOPEN"
+        ? t("issue.status-transition.modal.reopen")
+        : ""
+    : "";
+
+  const executeAction = useCallback(
+    async (action: UnifiedAction) => {
+      if (!context) {
+        return;
+      }
+      if (action === "ISSUE_REVIEW") {
+        setPendingReviewOpen(true);
+        return;
+      }
+      if (action === "ISSUE_STATUS_CLOSE" || action === "ISSUE_STATUS_REOPEN") {
+        const definition = visibleActions.find((item) => item.id === action);
+        setPendingConfirmAction(definition);
+        return;
+      }
+      if (action === "ROLLOUT_START") {
+        if (context.hasDeferredRollout && !page.rollout) {
+          try {
+            setIsSubmitting(true);
+            await handleCreateRollout({ runAllTasks: true });
+          } catch (error) {
+            pushNotification({
+              module: "bytebase",
+              style: "CRITICAL",
+              title: t("common.failed"),
+              description: String(error),
+            });
+          } finally {
+            setIsSubmitting(false);
+          }
+          return;
+        }
+        setPendingRolloutAction("ROLLOUT_START");
+        return;
+      }
+      if (action === "ROLLOUT_CANCEL") {
+        setPendingRolloutAction("ROLLOUT_CANCEL");
+      }
+    },
+    [context, handleCreateRollout, page.rollout, t, visibleActions]
+  );
+
+  const confirmAction = useCallback(async () => {
+    if (!pendingConfirmAction) {
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      if (
+        pendingConfirmAction.id === "ISSUE_STATUS_CLOSE" ||
+        pendingConfirmAction.id === "ISSUE_STATUS_REOPEN"
+      ) {
+        await handleIssueStatusAction(pendingConfirmAction.id);
+      }
+      setPendingConfirmAction(undefined);
+    } catch (error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.failed"),
+        description: String(error),
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [handleIssueStatusAction, pendingConfirmAction, t]);
+
+  if (!context || !page.plan) {
+    return null;
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-x-2">
+        {shouldShowPlanLink && planRoute && (
+          <RouterLink
+            to={planRoute}
+            className={buttonVariants({
+              appearance: "outline",
+              className: "gap-x-1",
+            })}
+          >
+            <span>#{extractPlanUID(page.plan.name)}</span>
+            <span>{t("common.plan")}</span>
+            <ExternalLink className="size-3.5" />
+          </RouterLink>
+        )}
+
+        {primaryAction &&
+          (primaryAction.id === "ISSUE_REVIEW" ? (
+            <IssueDetailReviewTrigger
+              action={primaryAction}
+              context={context}
+              disabled={isSubmitting || isActionDisabled(primaryAction)}
+              disabledReason={getDisabledReason(primaryAction)}
+              loading={isSubmitting}
+              onExecute={executeAction}
+            >
+              <IssueDetailReviewPopover
+                canApprove={context.permissions.canApproveIssue}
+                context={context}
+                mobile={page.sidebarMode === "MOBILE"}
+                onOpenChange={setPendingReviewOpen}
+                onRefreshIssueComments={refreshIssueComments}
+                onRefreshState={handleRefreshIssueDetailState}
+                open={pendingReviewOpen}
+              />
+            </IssueDetailReviewTrigger>
+          ) : (
+            <IssueDetailActionButton
+              action={primaryAction}
+              context={context}
+              disabled={isSubmitting || isActionDisabled(primaryAction)}
+              disabledReason={getDisabledReason(primaryAction)}
+              onExecute={executeAction}
+            />
+          ))}
+
+        {secondaryActions.length > 0 && (
+          <DropdownMenu>
+            <Tooltip
+              content={
+                primaryAction ? getDisabledReason(primaryAction) : undefined
+              }
+            >
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    aria-label={t("common.more")}
+                    className="px-1"
+                    disabled={Boolean(
+                      primaryAction && isActionDisabled(primaryAction)
+                    )}
+                    appearance="secondary"
+                  >
+                    <EllipsisVertical className="h-4 w-4" />
+                  </Button>
+                }
+              />
+            </Tooltip>
+            <DropdownMenuContent className="min-w-44">
+              {secondaryActions.map((action) => {
+                const disabled = isActionDisabled(action) || isSubmitting;
+                return (
+                  <DropdownMenuItem
+                    key={action.id}
+                    disabled={disabled}
+                    title={disabled ? getDisabledReason(action) : undefined}
+                    onClick={() => {
+                      void executeAction(action.id);
+                    }}
+                  >
+                    {action.label(context)}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+
+      <IssueDetailConfirmDialog
+        busy={isSubmitting}
+        content={confirmContent}
+        label={confirmLabel}
+        onConfirm={() => {
+          void confirmAction();
+        }}
+        open={Boolean(pendingConfirmAction)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingConfirmAction(undefined);
+          }
+        }}
+      />
+
+      <IssueDetailTaskRolloutActionPanel
+        action={
+          pendingRolloutAction === "ROLLOUT_START"
+            ? "RUN"
+            : pendingRolloutAction === "ROLLOUT_CANCEL"
+              ? "CANCEL"
+              : undefined
+        }
+        onConfirm={handleRefreshIssueDetailState}
+        open={Boolean(pendingRolloutAction && page.rollout)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingRolloutAction(undefined);
+          }
+        }}
+        target={{ type: "tasks", stage: page.rollout?.stages[0] }}
+      />
+    </>
+  );
+}
+
+function IssueDetailReviewTrigger({
+  action,
+  children,
+  context,
+  disabled,
+  disabledReason,
+  loading,
+  onExecute,
+}: {
+  action: ActionDefinition;
+  children: ReactNode;
+  context: ActionContext;
+  disabled: boolean;
+  disabledReason?: string;
+  loading?: boolean;
+  onExecute: (action: UnifiedAction) => Promise<void>;
+}) {
+  const button = (
+    <Button
+      className="gap-x-1.5"
+      disabled={disabled}
+      onClick={() => {
+        void onExecute(action.id);
+      }}
+      appearance={action.buttonType === "default" ? "outline" : "solid"}
+    >
+      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+      <span>{action.label(context)}</span>
+      <ChevronDown className="h-4 w-4" />
+    </Button>
+  );
+
+  return (
+    <div className="relative inline-flex">
+      <Tooltip content={disabled ? disabledReason : undefined}>
+        <span className="inline-flex">{button}</span>
+      </Tooltip>
+      {children}
+    </div>
+  );
+}
+
+function IssueDetailActionButton({
+  action,
+  context,
+  disabled,
+  disabledReason,
+  onExecute,
+}: {
+  action: ActionDefinition;
+  context: ActionContext;
+  disabled: boolean;
+  disabledReason?: string;
+  onExecute: (action: UnifiedAction) => Promise<void>;
+}) {
+  const button = (
+    <Button
+      className={cn(
+        action.buttonType === "success" &&
+          "bg-success text-accent-text hover:bg-success/90",
+        action.id === "ISSUE_REVIEW" && "gap-x-1.5"
+      )}
+      disabled={disabled}
+      onClick={() => {
+        void onExecute(action.id);
+      }}
+      appearance={action.buttonType === "default" ? "outline" : "solid"}
+    >
+      <span>{action.label(context)}</span>
+      {action.id === "ISSUE_REVIEW" && <ChevronDown className="h-4 w-4" />}
+    </Button>
+  );
+
+  return (
+    <Tooltip content={disabled ? disabledReason : undefined}>
+      <span className="inline-flex">{button}</span>
+    </Tooltip>
+  );
+}
+
+function IssueDetailConfirmDialog({
+  busy,
+  content,
+  label,
+  onConfirm,
+  open,
+  onOpenChange,
+}: {
+  busy: boolean;
+  content: string;
+  label: string;
+  onConfirm: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="max-w-md p-6">
+        {open && (
+          <>
+            <DialogTitle>{label}</DialogTitle>
+            <div className="mt-3 text-sm text-control-light">{content}</div>
+            <div className="mt-6 flex items-center justify-end gap-x-2">
+              <Button
+                onClick={() => onOpenChange(false)}
+                appearance="secondary"
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button disabled={busy} onClick={onConfirm}>
+                {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+                {label}
+              </Button>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type IssueReviewAction = "COMMENT" | "APPROVE" | "REJECT";
+
+function IssueDetailReviewPopover({
+  canApprove,
+  context,
+  mobile,
+  onOpenChange,
+  onRefreshIssueComments,
+  onRefreshState,
+  open,
+}: {
+  canApprove: boolean;
+  context: ActionContext;
+  mobile: boolean;
+  onOpenChange: (open: boolean) => void;
+  onRefreshIssueComments: () => Promise<void>;
+  onRefreshState: () => Promise<void>;
+  open: boolean;
+}) {
+  const { t } = useTranslation();
+  const page = useIssueDetailContext();
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
+  const [comment, setComment] = useState("");
+  const [selectedAction, setSelectedAction] =
+    useState<IssueReviewAction>("COMMENT");
+  const issue = page.issue;
+  const submitDisabled =
+    loading ||
+    (selectedAction === "APPROVE" && !canApprove) ||
+    (selectedAction === "COMMENT" && comment.trim().length === 0);
+
+  useEffect(() => {
+    if (!open) {
+      setComment("");
+      setSelectedAction("COMMENT");
+    }
+  }, [open]);
+
+  useClickOutside(popoverRef, open && !mobile, () => onOpenChange(false));
+
+  const handleSubmit = useCallback(async () => {
+    if (!issue) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      if (selectedAction === "APPROVE") {
+        const response = await issueServiceClientConnect.approveIssue(
+          create(ApproveIssueRequestSchema, {
+            comment,
+            name: issue.name,
+          })
+        );
+        page.patchState({ issue: response });
+      } else if (selectedAction === "REJECT") {
+        const response = await issueServiceClientConnect.rejectIssue(
+          create(RejectIssueRequestSchema, {
+            comment,
+            name: issue.name,
+          })
+        );
+        page.patchState({ issue: response });
+      } else {
+        await useAppStore.getState().createIssueComment({
+          issueName: issue.name,
+          comment,
+        });
+      }
+
+      await Promise.all([onRefreshState(), onRefreshIssueComments()]);
+      onOpenChange(false);
+
+      if (
+        selectedAction === "APPROVE" &&
+        page.plan &&
+        !page.plan.specs.some(
+          (spec) => spec.config.case === "createDatabaseConfig"
+        ) &&
+        page.plan.hasRollout
+      ) {
+        void router.push(buildPlanRolloutRouteFromPlanName(page.plan.name));
+      } else if (selectedAction !== "COMMENT" && issue) {
+        void router.push({
+          name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+          params: {
+            issueId: page.issueId,
+            projectId: extractProjectResourceName(issue.name),
+          },
+          hash: "#issue-comment-editor",
+        });
+      }
+    } catch (error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.failed"),
+        description: String(error),
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    comment,
+    issue,
+    onOpenChange,
+    onRefreshIssueComments,
+    onRefreshState,
+    page.issueId,
+    page.patchState,
+    page.plan,
+    selectedAction,
+    t,
+  ]);
+
+  if (!open) {
+    return null;
+  }
+
+  const content = (
+    <div className="flex flex-col gap-y-3">
+      <MarkdownEditor
+        content={comment}
+        onChange={setComment}
+        onSubmit={() => {
+          void handleSubmit();
+        }}
+      />
+
+      <RadioGroup
+        className="flex-col items-stretch gap-y-2"
+        value={selectedAction}
+        onValueChange={(value) => setSelectedAction(value as IssueReviewAction)}
+      >
+        <IssueDetailReviewOption
+          description={t("issue.review.comment-description")}
+          icon={<MessageCircle className="size-4 text-control" />}
+          label={t("common.comment")}
+          selected={selectedAction === "COMMENT"}
+          value="COMMENT"
+        />
+        {context.permissions.isReviewCandidate && (
+          <IssueDetailReviewOption
+            disabled={!canApprove}
+            disabledReason={
+              canApprove
+                ? undefined
+                : t("plan.review.last-plan-editor-cannot-approve")
+            }
+            description={t("issue.review.approve-description")}
+            icon={<Check className="size-4 text-success" />}
+            label={t("common.approve")}
+            selected={selectedAction === "APPROVE"}
+            value="APPROVE"
+          />
+        )}
+        {context.permissions.isReviewCandidate && (
+          <IssueDetailReviewOption
+            description={t("issue.review.reject-description")}
+            icon={<X className="size-4 text-error" />}
+            label={t("common.reject")}
+            selected={selectedAction === "REJECT"}
+            value="REJECT"
+          />
+        )}
+      </RadioGroup>
+
+      <div className="flex items-center justify-start gap-x-2 pt-1">
+        <Button
+          disabled={submitDisabled}
+          onClick={() => {
+            void handleSubmit();
+          }}
+          size="sm"
+        >
+          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {t("common.submit")}
+        </Button>
+        <Button
+          onClick={() => onOpenChange(false)}
+          size="sm"
+          appearance="secondary"
+        >
+          {t("common.cancel")}
+        </Button>
+      </div>
+    </div>
+  );
+
+  if (mobile) {
+    return (
+      <Sheet onOpenChange={onOpenChange} open={open}>
+        <SheetContent width="panel">
+          <SheetHeader>
+            <SheetTitle>{t("issue.review.self")}</SheetTitle>
+          </SheetHeader>
+          <SheetBody className="py-4">{content}</SheetBody>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "absolute right-0 top-full mt-2 w-[min(34rem,calc(100vw-2rem))] rounded-sm border border-control-border bg-background px-4 py-4 shadow-lg",
+        LAYER_SURFACE_CLASS
+      )}
+      ref={popoverRef}
+    >
+      {content}
+    </div>
+  );
+}
+
+function IssueDetailReviewOption({
+  disabled = false,
+  disabledReason,
+  description,
+  icon,
+  label,
+  selected,
+  value,
+}: {
+  disabled?: boolean;
+  disabledReason?: string;
+  description?: string;
+  icon?: ReactNode;
+  label: string;
+  selected: boolean;
+  value: IssueReviewAction;
+}) {
+  const option = (
+    <RadioGroupItem
+      disabled={disabled}
+      value={value}
+      radioClassName="mt-1"
+      className={cn(
+        "items-start gap-3 text-left transition-colors",
+        selected ? "text-main" : "text-control"
+      )}
+      contentClassName="flex items-start gap-3"
+    >
+      {icon && <span className="mt-1 shrink-0">{icon}</span>}
+      <span className="flex flex-col">
+        <span className="text-sm font-medium leading-6">{label}</span>
+        {description && (
+          <span className="text-xs text-control-light">{description}</span>
+        )}
+      </span>
+    </RadioGroupItem>
+  );
+  if (!disabledReason) {
+    return option;
+  }
+  return (
+    <Tooltip content={disabledReason}>
+      <span className="block">{option}</span>
+    </Tooltip>
+  );
+}

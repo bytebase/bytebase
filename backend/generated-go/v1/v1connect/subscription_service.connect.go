@@ -9,7 +9,6 @@ import (
 	context "context"
 	errors "errors"
 	v1 "github.com/bytebase/bytebase/backend/generated-go/v1"
-	httpbody "google.golang.org/genproto/googleapis/api/httpbody"
 	http "net/http"
 	strings "strings"
 )
@@ -43,6 +42,9 @@ const (
 	// SubscriptionServiceUploadLicenseProcedure is the fully-qualified name of the
 	// SubscriptionService's UploadLicense RPC.
 	SubscriptionServiceUploadLicenseProcedure = "/bytebase.v1.SubscriptionService/UploadLicense"
+	// SubscriptionServiceStartTrialProcedure is the fully-qualified name of the SubscriptionService's
+	// StartTrial RPC.
+	SubscriptionServiceStartTrialProcedure = "/bytebase.v1.SubscriptionService/StartTrial"
 	// SubscriptionServiceCreatePurchaseProcedure is the fully-qualified name of the
 	// SubscriptionService's CreatePurchase RPC.
 	SubscriptionServiceCreatePurchaseProcedure = "/bytebase.v1.SubscriptionService/CreatePurchase"
@@ -70,9 +72,11 @@ type SubscriptionServiceClient interface {
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 	// Exports active VCS users as CSV.
-	ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error)
+	ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[v1.ExportVCSProviderUsersResponse], error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error)
+	// StartTrial starts a free trial for an eligible SaaS workspace.
+	StartTrial(context.Context, *connect.Request[v1.StartTrialRequest]) (*connect.Response[v1.Subscription], error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
 	// Returns a Stripe Checkout URL for the user to complete payment.
 	CreatePurchase(context.Context, *connect.Request[v1.CreatePurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error)
@@ -106,7 +110,7 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 			connect.WithSchema(subscriptionServiceMethods.ByName("GetSubscription")),
 			connect.WithClientOptions(opts...),
 		),
-		exportVCSProviderUsers: connect.NewClient[v1.ExportVCSProviderUsersRequest, httpbody.HttpBody](
+		exportVCSProviderUsers: connect.NewClient[v1.ExportVCSProviderUsersRequest, v1.ExportVCSProviderUsersResponse](
 			httpClient,
 			baseURL+SubscriptionServiceExportVCSProviderUsersProcedure,
 			connect.WithSchema(subscriptionServiceMethods.ByName("ExportVCSProviderUsers")),
@@ -116,6 +120,12 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 			httpClient,
 			baseURL+SubscriptionServiceUploadLicenseProcedure,
 			connect.WithSchema(subscriptionServiceMethods.ByName("UploadLicense")),
+			connect.WithClientOptions(opts...),
+		),
+		startTrial: connect.NewClient[v1.StartTrialRequest, v1.Subscription](
+			httpClient,
+			baseURL+SubscriptionServiceStartTrialProcedure,
+			connect.WithSchema(subscriptionServiceMethods.ByName("StartTrial")),
 			connect.WithClientOptions(opts...),
 		),
 		createPurchase: connect.NewClient[v1.CreatePurchaseRequest, v1.PurchaseResponse](
@@ -160,8 +170,9 @@ func NewSubscriptionServiceClient(httpClient connect.HTTPClient, baseURL string,
 // subscriptionServiceClient implements SubscriptionServiceClient.
 type subscriptionServiceClient struct {
 	getSubscription        *connect.Client[v1.GetSubscriptionRequest, v1.Subscription]
-	exportVCSProviderUsers *connect.Client[v1.ExportVCSProviderUsersRequest, httpbody.HttpBody]
+	exportVCSProviderUsers *connect.Client[v1.ExportVCSProviderUsersRequest, v1.ExportVCSProviderUsersResponse]
 	uploadLicense          *connect.Client[v1.UploadLicenseRequest, v1.Subscription]
+	startTrial             *connect.Client[v1.StartTrialRequest, v1.Subscription]
 	createPurchase         *connect.Client[v1.CreatePurchaseRequest, v1.PurchaseResponse]
 	updatePurchase         *connect.Client[v1.UpdatePurchaseRequest, v1.PurchaseResponse]
 	cancelPurchase         *connect.Client[v1.CancelPurchaseRequest, v1.PurchaseResponse]
@@ -176,13 +187,18 @@ func (c *subscriptionServiceClient) GetSubscription(ctx context.Context, req *co
 }
 
 // ExportVCSProviderUsers calls bytebase.v1.SubscriptionService.ExportVCSProviderUsers.
-func (c *subscriptionServiceClient) ExportVCSProviderUsers(ctx context.Context, req *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error) {
+func (c *subscriptionServiceClient) ExportVCSProviderUsers(ctx context.Context, req *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[v1.ExportVCSProviderUsersResponse], error) {
 	return c.exportVCSProviderUsers.CallUnary(ctx, req)
 }
 
 // UploadLicense calls bytebase.v1.SubscriptionService.UploadLicense.
 func (c *subscriptionServiceClient) UploadLicense(ctx context.Context, req *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error) {
 	return c.uploadLicense.CallUnary(ctx, req)
+}
+
+// StartTrial calls bytebase.v1.SubscriptionService.StartTrial.
+func (c *subscriptionServiceClient) StartTrial(ctx context.Context, req *connect.Request[v1.StartTrialRequest]) (*connect.Response[v1.Subscription], error) {
+	return c.startTrial.CallUnary(ctx, req)
 }
 
 // CreatePurchase calls bytebase.v1.SubscriptionService.CreatePurchase.
@@ -222,9 +238,11 @@ type SubscriptionServiceHandler interface {
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(context.Context, *connect.Request[v1.GetSubscriptionRequest]) (*connect.Response[v1.Subscription], error)
 	// Exports active VCS users as CSV.
-	ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error)
+	ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[v1.ExportVCSProviderUsersResponse], error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error)
+	// StartTrial starts a free trial for an eligible SaaS workspace.
+	StartTrial(context.Context, *connect.Request[v1.StartTrialRequest]) (*connect.Response[v1.Subscription], error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
 	// Returns a Stripe Checkout URL for the user to complete payment.
 	CreatePurchase(context.Context, *connect.Request[v1.CreatePurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error)
@@ -264,6 +282,12 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 		SubscriptionServiceUploadLicenseProcedure,
 		svc.UploadLicense,
 		connect.WithSchema(subscriptionServiceMethods.ByName("UploadLicense")),
+		connect.WithHandlerOptions(opts...),
+	)
+	subscriptionServiceStartTrialHandler := connect.NewUnaryHandler(
+		SubscriptionServiceStartTrialProcedure,
+		svc.StartTrial,
+		connect.WithSchema(subscriptionServiceMethods.ByName("StartTrial")),
 		connect.WithHandlerOptions(opts...),
 	)
 	subscriptionServiceCreatePurchaseHandler := connect.NewUnaryHandler(
@@ -310,6 +334,8 @@ func NewSubscriptionServiceHandler(svc SubscriptionServiceHandler, opts ...conne
 			subscriptionServiceExportVCSProviderUsersHandler.ServeHTTP(w, r)
 		case SubscriptionServiceUploadLicenseProcedure:
 			subscriptionServiceUploadLicenseHandler.ServeHTTP(w, r)
+		case SubscriptionServiceStartTrialProcedure:
+			subscriptionServiceStartTrialHandler.ServeHTTP(w, r)
 		case SubscriptionServiceCreatePurchaseProcedure:
 			subscriptionServiceCreatePurchaseHandler.ServeHTTP(w, r)
 		case SubscriptionServiceUpdatePurchaseProcedure:
@@ -335,12 +361,16 @@ func (UnimplementedSubscriptionServiceHandler) GetSubscription(context.Context, 
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.GetSubscription is not implemented"))
 }
 
-func (UnimplementedSubscriptionServiceHandler) ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error) {
+func (UnimplementedSubscriptionServiceHandler) ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[v1.ExportVCSProviderUsersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.ExportVCSProviderUsers is not implemented"))
 }
 
 func (UnimplementedSubscriptionServiceHandler) UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.UploadLicense is not implemented"))
+}
+
+func (UnimplementedSubscriptionServiceHandler) StartTrial(context.Context, *connect.Request[v1.StartTrialRequest]) (*connect.Response[v1.Subscription], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SubscriptionService.StartTrial is not implemented"))
 }
 
 func (UnimplementedSubscriptionServiceHandler) CreatePurchase(context.Context, *connect.Request[v1.CreatePurchaseRequest]) (*connect.Response[v1.PurchaseResponse], error) {

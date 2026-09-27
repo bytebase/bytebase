@@ -20,19 +20,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	InstanceService_GetInstance_FullMethodName          = "/bytebase.v1.InstanceService/GetInstance"
-	InstanceService_ListInstances_FullMethodName        = "/bytebase.v1.InstanceService/ListInstances"
-	InstanceService_CreateInstance_FullMethodName       = "/bytebase.v1.InstanceService/CreateInstance"
-	InstanceService_UpdateInstance_FullMethodName       = "/bytebase.v1.InstanceService/UpdateInstance"
-	InstanceService_DeleteInstance_FullMethodName       = "/bytebase.v1.InstanceService/DeleteInstance"
-	InstanceService_UndeleteInstance_FullMethodName     = "/bytebase.v1.InstanceService/UndeleteInstance"
-	InstanceService_SyncInstance_FullMethodName         = "/bytebase.v1.InstanceService/SyncInstance"
-	InstanceService_ListInstanceDatabase_FullMethodName = "/bytebase.v1.InstanceService/ListInstanceDatabase"
-	InstanceService_BatchSyncInstances_FullMethodName   = "/bytebase.v1.InstanceService/BatchSyncInstances"
-	InstanceService_BatchUpdateInstances_FullMethodName = "/bytebase.v1.InstanceService/BatchUpdateInstances"
-	InstanceService_AddDataSource_FullMethodName        = "/bytebase.v1.InstanceService/AddDataSource"
-	InstanceService_RemoveDataSource_FullMethodName     = "/bytebase.v1.InstanceService/RemoveDataSource"
-	InstanceService_UpdateDataSource_FullMethodName     = "/bytebase.v1.InstanceService/UpdateDataSource"
+	InstanceService_GetInstance_FullMethodName                  = "/bytebase.v1.InstanceService/GetInstance"
+	InstanceService_ListInstances_FullMethodName                = "/bytebase.v1.InstanceService/ListInstances"
+	InstanceService_CreateInstance_FullMethodName               = "/bytebase.v1.InstanceService/CreateInstance"
+	InstanceService_PrepareSampleProjectInstance_FullMethodName = "/bytebase.v1.InstanceService/PrepareSampleProjectInstance"
+	InstanceService_UpdateInstance_FullMethodName               = "/bytebase.v1.InstanceService/UpdateInstance"
+	InstanceService_DeleteInstance_FullMethodName               = "/bytebase.v1.InstanceService/DeleteInstance"
+	InstanceService_UndeleteInstance_FullMethodName             = "/bytebase.v1.InstanceService/UndeleteInstance"
+	InstanceService_SyncInstance_FullMethodName                 = "/bytebase.v1.InstanceService/SyncInstance"
+	InstanceService_ListInstanceDatabase_FullMethodName         = "/bytebase.v1.InstanceService/ListInstanceDatabase"
+	InstanceService_BatchSyncInstances_FullMethodName           = "/bytebase.v1.InstanceService/BatchSyncInstances"
+	InstanceService_BatchUpdateInstances_FullMethodName         = "/bytebase.v1.InstanceService/BatchUpdateInstances"
+	InstanceService_AddDataSource_FullMethodName                = "/bytebase.v1.InstanceService/AddDataSource"
+	InstanceService_RemoveDataSource_FullMethodName             = "/bytebase.v1.InstanceService/RemoveDataSource"
+	InstanceService_UpdateDataSource_FullMethodName             = "/bytebase.v1.InstanceService/UpdateDataSource"
 )
 
 // InstanceServiceClient is the client API for InstanceService service.
@@ -44,19 +45,26 @@ type InstanceServiceClient interface {
 	// Gets a database instance by name.
 	// Permissions required: bb.instances.get
 	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
-	// Lists all database instances.
+	// Lists database instances, optionally within a project.
 	// Permissions required: bb.instances.list
 	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
 	// Creates a new database instance.
 	// Permissions required: bb.instances.create
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
+	// Prepares a Sample Project Instance for a project.
+	// Permissions required: bb.instances.create
+	PrepareSampleProjectInstance(ctx context.Context, in *PrepareSampleProjectInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	// Updates a database instance.
 	// Permissions required: bb.instances.update
 	UpdateInstance(ctx context.Context, in *UpdateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	// Deletes or soft-deletes a database instance.
+	// Soft-delete requests fail with FAILED_PRECONDITION while any task run
+	// targeting the instance is pending, available, or running.
 	// Permissions required: bb.instances.delete
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Restores a soft-deleted database instance.
+	// Restore requests fail with FAILED_PRECONDITION while any task run targeting
+	// the instance is pending, available, or running.
 	// Permissions required: bb.instances.undelete
 	UndeleteInstance(ctx context.Context, in *UndeleteInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	// Syncs database schemas and metadata from an instance.
@@ -114,6 +122,16 @@ func (c *instanceServiceClient) CreateInstance(ctx context.Context, in *CreateIn
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Instance)
 	err := c.cc.Invoke(ctx, InstanceService_CreateInstance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceServiceClient) PrepareSampleProjectInstance(ctx context.Context, in *PrepareSampleProjectInstanceRequest, opts ...grpc.CallOption) (*Instance, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Instance)
+	err := c.cc.Invoke(ctx, InstanceService_PrepareSampleProjectInstance_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -229,19 +247,26 @@ type InstanceServiceServer interface {
 	// Gets a database instance by name.
 	// Permissions required: bb.instances.get
 	GetInstance(context.Context, *GetInstanceRequest) (*Instance, error)
-	// Lists all database instances.
+	// Lists database instances, optionally within a project.
 	// Permissions required: bb.instances.list
 	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
 	// Creates a new database instance.
 	// Permissions required: bb.instances.create
 	CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error)
+	// Prepares a Sample Project Instance for a project.
+	// Permissions required: bb.instances.create
+	PrepareSampleProjectInstance(context.Context, *PrepareSampleProjectInstanceRequest) (*Instance, error)
 	// Updates a database instance.
 	// Permissions required: bb.instances.update
 	UpdateInstance(context.Context, *UpdateInstanceRequest) (*Instance, error)
 	// Deletes or soft-deletes a database instance.
+	// Soft-delete requests fail with FAILED_PRECONDITION while any task run
+	// targeting the instance is pending, available, or running.
 	// Permissions required: bb.instances.delete
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*emptypb.Empty, error)
 	// Restores a soft-deleted database instance.
+	// Restore requests fail with FAILED_PRECONDITION while any task run targeting
+	// the instance is pending, available, or running.
 	// Permissions required: bb.instances.undelete
 	UndeleteInstance(context.Context, *UndeleteInstanceRequest) (*Instance, error)
 	// Syncs database schemas and metadata from an instance.
@@ -283,6 +308,9 @@ func (UnimplementedInstanceServiceServer) ListInstances(context.Context, *ListIn
 }
 func (UnimplementedInstanceServiceServer) CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateInstance not implemented")
+}
+func (UnimplementedInstanceServiceServer) PrepareSampleProjectInstance(context.Context, *PrepareSampleProjectInstanceRequest) (*Instance, error) {
+	return nil, status.Error(codes.Unimplemented, "method PrepareSampleProjectInstance not implemented")
 }
 func (UnimplementedInstanceServiceServer) UpdateInstance(context.Context, *UpdateInstanceRequest) (*Instance, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateInstance not implemented")
@@ -385,6 +413,24 @@ func _InstanceService_CreateInstance_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InstanceServiceServer).CreateInstance(ctx, req.(*CreateInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InstanceService_PrepareSampleProjectInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PrepareSampleProjectInstanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServiceServer).PrepareSampleProjectInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InstanceService_PrepareSampleProjectInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServiceServer).PrepareSampleProjectInstance(ctx, req.(*PrepareSampleProjectInstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -587,6 +633,10 @@ var InstanceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateInstance",
 			Handler:    _InstanceService_CreateInstance_Handler,
+		},
+		{
+			MethodName: "PrepareSampleProjectInstance",
+			Handler:    _InstanceService_PrepareSampleProjectInstance_Handler,
 		},
 		{
 			MethodName: "UpdateInstance",

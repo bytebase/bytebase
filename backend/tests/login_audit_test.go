@@ -2,17 +2,301 @@ package tests
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
+	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
+	"github.com/pquerna/otp/totp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
+
+func TestLoginFailureLockout(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+
+	workspaceResp, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
+		Name: "workspaces/-",
+	}))
+	a.NoError(err)
+	workspace := workspaceResp.Msg.Name
+	a.NotEmpty(workspace)
+	workspaceID, err := common.GetWorkspaceID(workspace)
+	a.NoError(err)
+
+	metadataDB, err := sql.Open("pgx", ctl.profile.PgURL)
+	a.NoError(err)
+	defer metadataDB.Close()
+	userName := common.FormatUserEmail("demo@example.com")
+	mfaSetup, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+		Name: userName,
+	}))
+	a.NoError(err)
+	validOTP, err := totp.GenerateCode(mfaSetup.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	passwordProof := &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}}
+	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
+		Name:           userName,
+		OtpCode:        validOTP,
+		Credential:     passwordProof,
+		PendingVersion: mfaSetup.Msg.PendingVersion,
+	}))
+	a.NoError(err)
+	confirmOTP, err := totp.GenerateCode(mfaSetup.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
+		Name:           userName,
+		Credential:     passwordProof,
+		PendingVersion: mfaSetup.Msg.PendingVersion,
+		OtpCode:        confirmOTP,
+	}))
+	a.NoError(err)
+
+	// A second account and an unreachable LDAP provider for the arms below;
+	// both need the admin session the login attempts run without.
+	_, err = ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Title: "clearing", Email: "clearing@example.com", Password: "1024bytebase"},
+	}))
+	a.NoError(err)
+	_, err = ctl.identityProviderServiceClient.CreateIdentityProvider(ctx, connect.NewRequest(&v1pb.CreateIdentityProviderRequest{
+		IdentityProviderId: "ldap-lockout",
+		IdentityProvider: &v1pb.IdentityProvider{
+			Title: "Unreachable directory",
+			Type:  v1pb.IdentityProviderType_LDAP,
+			Config: &v1pb.IdentityProviderConfig{Config: &v1pb.IdentityProviderConfig_LdapConfig{LdapConfig: &v1pb.LDAPIdentityProviderConfig{
+				Host:         "127.0.0.1",
+				Port:         1,
+				BindDn:       "cn=admin,dc=example,dc=com",
+				BindPassword: "unused",
+				BaseDn:       "dc=example,dc=com",
+				UserFilter:   "(uid=%s)",
+				FieldMapping: &v1pb.FieldMapping{Identifier: "uid"},
+			}}},
+		},
+	}))
+	a.NoError(err)
+
+	adminToken := ctl.authInterceptor.token
+	ctl.authInterceptor.token = ""
+
+	// Every MFA attempt runs under a fresh temp token: slots are claimed per
+	// identity, so a new token must not buy new guesses.
+	var mfaTempTokens []string
+	mfaLogin := func(otpCode *string) error {
+		start, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:    "demo@example.com",
+			Password: "1024bytebase",
+		}))
+		a.NoError(err)
+		mfaTempToken := start.Msg.GetMfaTempToken()
+		a.NotEmpty(mfaTempToken)
+		mfaTempTokens = append(mfaTempTokens, mfaTempToken)
+		_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			OtpCode:      otpCode,
+			MfaTempToken: &mfaTempToken,
+		}))
+		return err
+	}
+	// A request carrying no code is not a guess: nothing is compared, so no
+	// slot is consumed and the full allowance is still there afterwards.
+	for range 6 {
+		err := mfaLogin(nil)
+		a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
+		a.ErrorContains(err, "OTP or recovery code is required")
+	}
+	invalidOTP := "not-a-code"
+	for range 5 {
+		err := mfaLogin(&invalidOTP)
+		a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
+		a.ErrorContains(err, "invalid MFA code")
+	}
+	err = mfaLogin(&invalidOTP)
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+	a.ErrorContains(err, "too many failed MFA attempts")
+	// A locked identity is refused before the TOTP comparison.
+	lockedOTP, err := totp.GenerateCode(mfaSetup.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(mfaLogin(&lockedOTP)))
+	mfaTempToken := mfaTempTokens[len(mfaTempTokens)-1]
+
+	// MFA completion on a workspace switch draws from the same per-identity
+	// bucket, so the lock demo's guesses earned holds there too: the first
+	// wrong code is refused as exhausted, before any TOTP comparison.
+	ctl.authInterceptor.token = adminToken
+	_, err = ctl.authServiceClient.SwitchWorkspace(ctx, connect.NewRequest(&v1pb.SwitchWorkspaceRequest{
+		Workspace:    workspace,
+		MfaTempToken: &mfaTempToken,
+		OtpCode:      &invalidOTP,
+	}))
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+	a.ErrorContains(err, "too many failed MFA attempts")
+	ctl.authInterceptor.token = ""
+
+	for _, email := range []string{" Demo@Example.com ", " Unknown@Example.com "} {
+		for range 5 {
+			_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+				Email:    email,
+				Password: "wrong-password",
+			}))
+			a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
+			a.ErrorContains(err, "invalid email or password")
+		}
+		_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:    email,
+			Password: "wrong-password",
+		}))
+		a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+		a.ErrorContains(err, "too many failed login attempts")
+	}
+
+	// A locked identity is refused before bcrypt: the correct password must
+	// not slip through the lock, or the lock would only slow a guesser down
+	// until the right guess.
+	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    "demo@example.com",
+		Password: "1024bytebase",
+	}))
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+
+	// Success clears the counter: three wrong guesses, the right password,
+	// then the full allowance again before the lock engages — the forgotten
+	// failures must not count against the fresh window.
+	clearingLogin := func(password string) error {
+		_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:    "clearing@example.com",
+			Password: password,
+		}))
+		return err
+	}
+	for range 3 {
+		a.Equal(connect.CodeUnauthenticated, connect.CodeOf(clearingLogin("wrong-password")))
+	}
+	a.NoError(clearingLogin("1024bytebase"))
+	for range 5 {
+		a.Equal(connect.CodeUnauthenticated, connect.CodeOf(clearingLogin("wrong-password")))
+	}
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(clearingLogin("wrong-password")))
+
+	// LDAP logins claim under a provider-scoped key before the bind, so an
+	// unreachable directory still counts guesses and locks at the same attempt.
+	ldapLogin := func() error {
+		_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			IdpName:  "idps/ldap-lockout",
+			Email:    "Alice",
+			Password: "wrong",
+		}))
+		return err
+	}
+	for range 5 {
+		err := ldapLogin()
+		a.Error(err, "the directory is unreachable")
+		a.NotEqual(connect.CodeResourceExhausted, connect.CodeOf(err))
+	}
+	err = ldapLogin()
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+	a.ErrorContains(err, "too many failed login attempts")
+
+	// Email-code guessing is bounded by the same per-identity claims, taken
+	// before the code row is even loaded — no code needs to be pending and no
+	// audit-log counter is consulted, so the bound holds on Cloud and
+	// self-hosted alike.
+	wrongCode := "000000"
+	for range 5 {
+		_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:     "code-victim@example.com",
+			EmailCode: &wrongCode,
+		}))
+		a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
+		a.ErrorContains(err, "invalid or expired code")
+	}
+	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:     "code-victim@example.com",
+		EmailCode: &wrongCode,
+	}))
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+	a.ErrorContains(err, "too many attempts, please try again later")
+
+	ctl.authInterceptor.token = adminToken
+	search, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent:   workspace,
+		Filter:   `method == "/bytebase.v1.AuthService/Login"`,
+		OrderBy:  "create_time desc",
+		PageSize: 100,
+	}))
+	a.NoError(err)
+
+	invalidPasswordCount := map[string]int{}
+	passwordLockoutCount := map[string]int{}
+	invalidMFACount := 0
+	mfaLockoutCount := 0
+	invalidEmailCodeCount := 0
+	emailCodeLockoutCount := 0
+	for _, auditLog := range search.Msg.AuditLogs {
+		if auditLog.Status == nil {
+			continue
+		}
+		a.True(strings.HasPrefix(auditLog.Name, workspace+"/auditLogs/"))
+		request := &v1pb.LoginRequest{}
+		a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(auditLog.Request), request))
+		a.Empty(request.Password)
+		a.Empty(request.GetOtpCode())
+		a.Empty(request.GetMfaTempToken())
+		a.NotEqual(wrongCode, request.GetEmailCode())
+		a.NotContains(auditLog.Request, "wrong-password")
+		a.NotContains(auditLog.Request, invalidOTP)
+		for _, token := range mfaTempTokens {
+			a.NotContains(auditLog.Request, token)
+		}
+
+		switch auditLog.Status.Message {
+		case "invalid email or password":
+			invalidPasswordCount[auditLog.Resource]++
+		case "too many failed login attempts, please try again later":
+			passwordLockoutCount[auditLog.Resource]++
+		case "invalid MFA code":
+			invalidMFACount++
+		case "too many failed MFA attempts, please try again later":
+			mfaLockoutCount++
+		case "invalid or expired code":
+			invalidEmailCodeCount++
+		case "too many attempts, please try again later":
+			emailCodeLockoutCount++
+		default:
+		}
+	}
+	a.Equal(5, invalidPasswordCount["demo@example.com"])
+	a.Equal(5, invalidPasswordCount["unknown@example.com"])
+	a.Equal(2, passwordLockoutCount["demo@example.com"], "the sixth wrong guess and the refused correct password")
+	a.Equal(1, passwordLockoutCount["unknown@example.com"])
+	a.Equal(5, invalidMFACount)
+	a.Equal(2, mfaLockoutCount, "the sixth wrong guess and the refused valid code")
+	a.Equal(5, invalidEmailCodeCount)
+	a.Equal(1, emailCodeLockoutCount)
+
+	var misownedRows int
+	a.NoError(metadataDB.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM audit_log
+		WHERE workspace != $1
+			AND payload->>'method' = '/bytebase.v1.AuthService/Login'
+			AND payload->>'resource' IN ('demo@example.com', 'unknown@example.com')
+	`, workspaceID).Scan(&misownedRows))
+	a.Zero(misownedRows)
+}
 
 // TestAuditLogFormat is both a regression test for the 3.17.0 bug where
 // AuthService/Login (and Signup/ExchangeToken) silently dropped audit entries,
@@ -20,13 +304,13 @@ import (
 // AuditLogService/SearchAuditLogs. Downstream consumers (SIEMs, compliance
 // tooling, `docker logs | grep log_type:audit`) depend on this shape being
 // stable across releases — changes here are user-visible breaking changes.
+//
+//nolint:tparallel // Subtests share one server lifecycle.
 func TestAuditLogFormat(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// --- Part 1: Login (workspace-scoped, allow_without_credential) ---
 	//
@@ -63,7 +347,7 @@ func TestAuditLogFormat(t *testing.T) {
 	a.True(strings.HasPrefix(entry.Name, workspace+"/auditLogs/"),
 		"audit log must be parented under the login workspace")
 	a.NotNil(entry.CreateTime, "CreateTime must be set")
-	a.Equal("users/demo@example.com", entry.User, "User must be users/{email}")
+	a.Equal("users/demo@example.com", entry.Actor, "Actor must be users/{email}")
 	a.Equal("/bytebase.v1.AuthService/Login", entry.Method,
 		"Method is part of the filter API contract and must be the full procedure name")
 	a.Equal(v1pb.AuditLog_INFO, entry.Severity, "successful Login is INFO severity")
@@ -91,6 +375,183 @@ func TestAuditLogFormat(t *testing.T) {
 	a.NotContains(entry.Response, loginResp.Msg.Token,
 		"actual access token must never appear in audit Response")
 
+	// Project creation happens during fixture setup. Select by resource because
+	// setup and future fixtures may create more than one project.
+	createProjectLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: workspace,
+		Filter: `method == "/bytebase.v1.ProjectService/CreateProject"`,
+	}))
+	a.NoError(err)
+	createProjectMatches := 0
+	for _, auditLog := range createProjectLogs.Msg.AuditLogs {
+		if auditLog.Resource == ctl.project.Name {
+			createProjectMatches++
+			a.True(strings.HasPrefix(auditLog.Name, workspace+"/auditLogs/"))
+		}
+	}
+	a.Equal(1, createProjectMatches, "fixture project creation must produce exactly one matching workspace audit row")
+
+	updatedTitle := ctl.project.Title + " updated"
+	updatedProject, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project: &v1pb.Project{
+			Name:  ctl.project.Name,
+			Title: updatedTitle,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title"}},
+	}))
+	a.NoError(err)
+	ctl.project = updatedProject.Msg
+
+	updateProjectLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: ctl.project.Name,
+		Filter: `method == "/bytebase.v1.ProjectService/UpdateProject"`,
+	}))
+	a.NoError(err)
+	a.Len(updateProjectLogs.Msg.AuditLogs, 1)
+	a.Equal(ctl.project.Name, updateProjectLogs.Msg.AuditLogs[0].Resource)
+
+	webhookSecretURL := "https://hooks.slack.com/services/audit-status-secret"
+	missingWebhookName := ctl.project.Name + "/webhooks/missing-webhook"
+	for _, test := range []struct {
+		method string
+		call   func() error
+	}{
+		{
+			method: "/bytebase.v1.ProjectService/UpdateWebhook",
+			call: func() error {
+				_, err := ctl.projectServiceClient.UpdateWebhook(ctx, connect.NewRequest(&v1pb.UpdateWebhookRequest{
+					Webhook: &v1pb.Webhook{Name: missingWebhookName, Url: webhookSecretURL},
+				}))
+				return err
+			},
+		},
+		{
+			method: "/bytebase.v1.ProjectService/RemoveWebhook",
+			call: func() error {
+				_, err := ctl.projectServiceClient.RemoveWebhook(ctx, connect.NewRequest(&v1pb.RemoveWebhookRequest{
+					Webhook: &v1pb.Webhook{Name: missingWebhookName, Url: webhookSecretURL},
+				}))
+				return err
+			},
+		},
+	} {
+		t.Run(test.method, func(t *testing.T) {
+			a := require.New(t)
+			err := test.call()
+			a.Error(err)
+			a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+			a.NotContains(err.Error(), webhookSecretURL)
+
+			auditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+				Parent: ctl.project.Name,
+				Filter: fmt.Sprintf("method == %q", test.method),
+			}))
+			a.NoError(err)
+			a.Len(auditLogs.Msg.AuditLogs, 1)
+			a.NotNil(auditLogs.Msg.AuditLogs[0].Status)
+			a.NotContains(auditLogs.Msg.AuditLogs[0].Status.Message, webhookSecretURL)
+		})
+	}
+
+	malformedWebhookURL := "https://hooks.slack.com/services/audit-status-secret/%zz"
+	_, err = ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
+		Project: ctl.project.Name,
+		Webhook: &v1pb.Webhook{
+			Type:  v1pb.WebhookType_SLACK,
+			Title: "Malformed audit webhook",
+			Url:   malformedWebhookURL,
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	a.NotContains(err.Error(), malformedWebhookURL)
+
+	validWebhook, err := ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
+		Project: ctl.project.Name,
+		Webhook: &v1pb.Webhook{
+			Type:  v1pb.WebhookType_SLACK,
+			Title: "Webhook audit status update",
+			Url:   "https://hooks.slack.com/services/audit-status-update",
+		},
+	}))
+	a.NoError(err)
+	var validWebhookName string
+	for _, webhook := range validWebhook.Msg.Webhooks {
+		if webhook.Title == "Webhook audit status update" {
+			validWebhookName = webhook.Name
+			break
+		}
+	}
+	a.NotEmpty(validWebhookName)
+	_, err = ctl.projectServiceClient.UpdateWebhook(ctx, connect.NewRequest(&v1pb.UpdateWebhookRequest{
+		Webhook: &v1pb.Webhook{
+			Name: validWebhookName,
+			Url:  malformedWebhookURL,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"url"}},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	a.NotContains(err.Error(), malformedWebhookURL)
+
+	for _, method := range []string{
+		"/bytebase.v1.ProjectService/AddWebhook",
+		"/bytebase.v1.ProjectService/UpdateWebhook",
+	} {
+		auditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+			Parent: ctl.project.Name,
+			Filter: fmt.Sprintf("method == %q", method),
+		}))
+		a.NoError(err)
+		foundInvalidArgument := false
+		for _, auditLog := range auditLogs.Msg.AuditLogs {
+			if auditLog.GetStatus().GetCode() == int32(connect.CodeInvalidArgument) {
+				foundInvalidArgument = true
+				a.NotContains(auditLog.GetStatus().GetMessage(), malformedWebhookURL)
+			}
+		}
+		a.True(foundInvalidArgument, "%s must persist the failed request", method)
+	}
+
+	savedQueryContent := "SELECT secret_audit_saved_query_content;"
+	savedQuery, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
+		Parent: ctl.project.Name,
+		SavedQuery: &v1pb.SavedQuery{
+			Title:   "Audit saved query",
+			Content: []byte(savedQueryContent),
+		},
+	}))
+	a.NoError(err)
+
+	createSavedQueryLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: ctl.project.Name,
+		Filter: `method == "/bytebase.v1.SavedQueryService/CreateSavedQuery"`,
+	}))
+	a.NoError(err)
+	a.Len(createSavedQueryLogs.Msg.AuditLogs, 1)
+	a.Equal(ctl.project.Name, createSavedQueryLogs.Msg.AuditLogs[0].Resource)
+	a.True(strings.HasPrefix(createSavedQueryLogs.Msg.AuditLogs[0].Name, ctl.project.Name+"/auditLogs/"))
+	auditedCreateSavedQueryRequest := &v1pb.CreateSavedQueryRequest{}
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(createSavedQueryLogs.Msg.AuditLogs[0].Request), auditedCreateSavedQueryRequest))
+	a.Empty(auditedCreateSavedQueryRequest.GetSavedQuery().GetContent())
+	auditedSavedQuery := &v1pb.SavedQuery{}
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(createSavedQueryLogs.Msg.AuditLogs[0].Response), auditedSavedQuery))
+	a.Empty(auditedSavedQuery.Content)
+
+	_, err = ctl.savedQueryServiceClient.DeleteSavedQuery(ctx, connect.NewRequest(&v1pb.DeleteSavedQueryRequest{
+		Name: savedQuery.Msg.Name,
+	}))
+	a.NoError(err)
+
+	deleteSavedQueryLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: ctl.project.Name,
+		Filter: `method == "/bytebase.v1.SavedQueryService/DeleteSavedQuery"`,
+	}))
+	a.NoError(err)
+	a.Len(deleteSavedQueryLogs.Msg.AuditLogs, 1)
+	a.Equal(savedQuery.Msg.Name, deleteSavedQueryLogs.Msg.AuditLogs[0].Resource)
+	a.True(strings.HasPrefix(deleteSavedQueryLogs.Msg.AuditLogs[0].Name, ctl.project.Name+"/auditLogs/"))
+
 	// --- Part 2: Signup (workspace-scoped, allow_without_credential) ---
 	//
 	// The initial `signupAndLogin` in setup already produced a Signup audit
@@ -107,6 +568,317 @@ func TestAuditLogFormat(t *testing.T) {
 	a.Equal(v1pb.AuditLog_INFO, signupEntry.Severity)
 	a.NotContains(signupEntry.Request, "1024bytebase",
 		"plaintext password must never appear in Signup audit Request")
+
+	// --- Part 2.25: Email-code login audit events ---
+	// SendEmailLoginCode is attributed only for an existing active workspace
+	// member. Signup-capable targets are audited by Login after authentication.
+	workspaceName := workspace
+	invitedEmail := "invited-email-code@example.com"
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, workspace, "user:"+invitedEmail, "roles/workspaceMember")
+	a.NoError(err)
+
+	ctl.authInterceptor.token = ""
+	_, err = ctl.authServiceClient.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
+		Email:     " Demo@Example.com ",
+		Workspace: &workspaceName,
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
+	_, err = ctl.authServiceClient.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
+		Email:     invitedEmail,
+		Workspace: &workspaceName,
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
+
+	ctl.authInterceptor.token = adminToken
+	_, err = ctl.authServiceClient.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
+		Email:     "unknown-authenticated-email-code@example.com",
+		Workspace: &workspaceName,
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
+
+	emailCodeLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: workspace,
+		Filter: `method == "/bytebase.v1.AuthService/SendEmailLoginCode"`,
+	}))
+	a.NoError(err)
+	a.Len(emailCodeLogs.Msg.AuditLogs, 1)
+	emailCodeByResource := make(map[string]*v1pb.AuditLog)
+	for _, auditLog := range emailCodeLogs.Msg.AuditLogs {
+		emailCodeByResource[auditLog.Resource] = auditLog
+	}
+	a.Contains(emailCodeByResource, "demo@example.com")
+	a.Equal(v1pb.AuditLog_INFO, emailCodeByResource["demo@example.com"].Severity)
+	a.Equal(int32(connect.CodeFailedPrecondition), emailCodeByResource["demo@example.com"].GetStatus().GetCode())
+	a.Empty(emailCodeByResource[invitedEmail], "an invite without an account has no SendEmailLoginCode audit row")
+	a.Empty(emailCodeByResource["unknown-authenticated-email-code@example.com"])
+
+	// --- Part 2.5: Password reset security events ---
+	// Only active end users with a validated workspace are auditable. The
+	// endpoint still returns success for every target to prevent enumeration.
+	deletedUser, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Email: "deleted-reset@example.com", Title: "Deleted reset user", Password: "1024bytebase"},
+	}))
+	a.NoError(err)
+	_, err = ctl.userServiceClient.DeleteUser(ctx, connect.NewRequest(&v1pb.DeleteUserRequest{Name: deletedUser.Msg.Name}))
+	a.NoError(err)
+
+	serviceAccount, err := ctl.serviceAccountServiceClient.CreateServiceAccount(ctx, connect.NewRequest(&v1pb.CreateServiceAccountRequest{
+		Parent:           workspace,
+		ServiceAccountId: "audit-reset",
+		ServiceAccount:   &v1pb.ServiceAccount{Title: "Audit reset service account"},
+	}))
+	a.NoError(err)
+	workloadIdentity, err := ctl.workloadIdentityServiceClient.CreateWorkloadIdentity(ctx, connect.NewRequest(&v1pb.CreateWorkloadIdentityRequest{
+		Parent:             workspace,
+		WorkloadIdentityId: "audit-reset",
+		WorkloadIdentity: &v1pb.WorkloadIdentity{
+			Title: "Audit reset workload identity",
+			WorkloadIdentityConfig: &v1pb.WorkloadIdentityConfig{
+				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
+				IssuerUrl:        "https://token.actions.githubusercontent.com",
+				AllowedAudiences: []string{"audit-reset"},
+				SubjectPattern:   "repo:bytebase/bytebase:*",
+			},
+		},
+	}))
+	a.NoError(err)
+
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, workspace, common.AllUsers, "roles/workspaceMember")
+	a.NoError(err)
+
+	passwordResetTargets := []string{
+		"demo@example.com",
+		"unknown-reset@example.com",
+		deletedUser.Msg.Email,
+		serviceAccount.Msg.Email,
+		workloadIdentity.Msg.Email,
+	}
+	ctl.authInterceptor.token = ""
+	for _, email := range passwordResetTargets {
+		_, err := ctl.authServiceClient.RequestPasswordReset(ctx, connect.NewRequest(&v1pb.RequestPasswordResetRequest{
+			Email:     email,
+			Workspace: &workspaceName,
+		}))
+		a.NoError(err, "password-reset request must not reveal target validity")
+	}
+	_, err = ctl.authServiceClient.RequestPasswordReset(ctx, connect.NewRequest(&v1pb.RequestPasswordResetRequest{
+		Email: "demo@example.com",
+	}))
+	a.NoError(err, "no-workspace password-reset request must preserve existing behavior")
+	ctl.authInterceptor.token = adminToken
+	for _, email := range passwordResetTargets[1:] {
+		_, err := ctl.authServiceClient.RequestPasswordReset(ctx, connect.NewRequest(&v1pb.RequestPasswordResetRequest{
+			Email:     email,
+			Workspace: &workspaceName,
+		}))
+		a.NoError(err, "authenticated password-reset request must not reveal target validity")
+	}
+	_, err = ctl.authServiceClient.RequestPasswordReset(ctx, connect.NewRequest(&v1pb.RequestPasswordResetRequest{
+		Email: "demo@example.com",
+	}))
+	a.NoError(err, "authenticated no-workspace request must preserve existing behavior")
+
+	requestResetLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: workspace,
+		Filter: `method == "/bytebase.v1.AuthService/RequestPasswordReset"`,
+	}))
+	a.NoError(err)
+	requestResetByEmail := make(map[string][]*v1pb.AuditLog)
+	for _, auditLog := range requestResetLogs.Msg.AuditLogs {
+		requestResetByEmail[auditLog.Resource] = append(requestResetByEmail[auditLog.Resource], auditLog)
+	}
+	a.Len(requestResetByEmail["demo@example.com"], 1,
+		"only the workspace-bound request for the active end user is auditable")
+	for _, email := range passwordResetTargets[1:] {
+		a.Empty(requestResetByEmail[email], "non-end-user target %q must not produce an audit row", email)
+	}
+	requestResetPayload := &v1pb.RequestPasswordResetRequest{}
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(requestResetByEmail["demo@example.com"][0].Request), requestResetPayload))
+	a.Equal("demo@example.com", requestResetPayload.Email)
+	a.Equal(workspace, requestResetPayload.GetWorkspace())
+
+	metadataDB, err := sql.Open("pgx", ctl.profile.PgURL)
+	a.NoError(err)
+	defer metadataDB.Close()
+	var authSecret string
+	a.NoError(metadataDB.QueryRowContext(ctx, `SELECT payload->>'authSecret' FROM server_config LIMIT 1`).Scan(&authSecret))
+	insertVerificationCode := func(email, purpose, code string) {
+		mac := hmac.New(sha256.New, []byte(authSecret))
+		_, err := mac.Write([]byte(code))
+		a.NoError(err)
+		_, err = metadataDB.ExecContext(ctx, `
+			INSERT INTO email_verification_code (email, purpose, code_hash, expires_at, last_sent_at)
+			VALUES ($1, $2, $3, $4, $5)
+			ON CONFLICT (email, purpose) DO UPDATE SET code_hash = EXCLUDED.code_hash,
+				expires_at = EXCLUDED.expires_at, last_sent_at = EXCLUDED.last_sent_at
+		`, email, purpose, hex.EncodeToString(mac.Sum(nil)), time.Now().Add(time.Hour), time.Now())
+		a.NoError(err)
+	}
+
+	var invitedUserCount int
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		Setting: &v1pb.Setting{
+			Name: "settings/" + v1pb.Setting_EMAIL.String(),
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_Email{Email: &v1pb.EmailSetting{
+				From: "noreply@example.com",
+				Type: v1pb.EmailSetting_SMTP,
+				Config: &v1pb.EmailSetting_Smtp{Smtp: &v1pb.EmailSetting_SMTPConfig{
+					Host:           "localhost",
+					Port:           1,
+					Encryption:     v1pb.EmailSetting_SMTPConfig_ENCRYPTION_NONE,
+					Authentication: v1pb.EmailSetting_SMTPConfig_AUTHENTICATION_NONE,
+				}},
+			}}},
+		},
+		AllowMissing: true,
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{
+			"value.email.from",
+			"value.email.type",
+			"value.email.smtp",
+		}},
+	}))
+	a.NoError(err)
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		Setting: &v1pb.Setting{
+			Name: "settings/" + v1pb.Setting_WORKSPACE_PROFILE.String(),
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_WorkspaceProfile{WorkspaceProfile: &v1pb.WorkspaceProfileSetting{
+				AllowEmailCodeSignin: true,
+			}}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{
+			"value.workspace_profile.allow_email_code_signin",
+		}},
+	}))
+	a.NoError(err)
+	loginCode := "765432"
+	insertVerificationCode(invitedEmail, "LOGIN", loginCode)
+	ctl.authInterceptor.token = ""
+	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:     invitedEmail,
+		EmailCode: &loginCode,
+		Workspace: &workspaceName,
+	}))
+	a.NoError(err)
+	ctl.authInterceptor.token = adminToken
+	a.NoError(metadataDB.QueryRowContext(ctx, `SELECT COUNT(*) FROM principal WHERE email = $1`, invitedEmail).Scan(&invitedUserCount))
+	a.Equal(1, invitedUserCount)
+	loginAuditLogs, err = ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent:  workspace,
+		Filter:  `method == "/bytebase.v1.AuthService/Login"`,
+		OrderBy: "create_time desc",
+	}))
+	a.NoError(err)
+	var invitedLoginAudit *v1pb.AuditLog
+	for _, auditLog := range loginAuditLogs.Msg.AuditLogs {
+		if auditLog.Resource == invitedEmail {
+			invitedLoginAudit = auditLog
+			break
+		}
+	}
+	a.NotNil(invitedLoginAudit, "successful email-code signup must be audited by Login")
+	invitedLoginRequest := &v1pb.LoginRequest{}
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(invitedLoginAudit.Request), invitedLoginRequest))
+	a.Equal(invitedEmail, invitedLoginRequest.Email)
+	a.NotEqual(loginCode, invitedLoginRequest.GetEmailCode())
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		Setting: &v1pb.Setting{
+			Name:  "settings/" + v1pb.Setting_WORKSPACE_PROFILE.String(),
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_WorkspaceProfile{WorkspaceProfile: &v1pb.WorkspaceProfileSetting{}}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{
+			"value.workspace_profile.allow_email_code_signin",
+		}},
+	}))
+	a.NoError(err)
+
+	resetCode := "123456"
+	newPassword := "new-password-1024"
+	insertVerificationCode("demo@example.com", "PASSWORD_RESET", resetCode)
+	ctl.authInterceptor.token = ""
+	_, err = ctl.authServiceClient.ResetPassword(ctx, connect.NewRequest(&v1pb.ResetPasswordRequest{
+		Email:       "demo@example.com",
+		Code:        resetCode,
+		NewPassword: newPassword,
+	}))
+	a.NoError(err)
+	ctl.authInterceptor.token = adminToken
+
+	resetLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: workspace,
+		Filter: `method == "/bytebase.v1.AuthService/ResetPassword"`,
+	}))
+	a.NoError(err)
+	a.Len(resetLogs.Msg.AuditLogs, 1)
+	a.Equal("demo@example.com", resetLogs.Msg.AuditLogs[0].Resource)
+	resetPayload := &v1pb.ResetPasswordRequest{}
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(resetLogs.Msg.AuditLogs[0].Request), resetPayload))
+	a.Equal("demo@example.com", resetPayload.Email)
+	a.Empty(resetPayload.Code)
+	a.Empty(resetPayload.NewPassword)
+	a.NotContains(resetLogs.Msg.AuditLogs[0].Request, resetCode)
+	a.NotContains(resetLogs.Msg.AuditLogs[0].Request, newPassword)
+
+	failedResetCode := "654321"
+	failedPassword := "short"
+	insertVerificationCode("demo@example.com", "PASSWORD_RESET", failedResetCode)
+	ctl.authInterceptor.token = ""
+	_, resetErr := ctl.authServiceClient.ResetPassword(ctx, connect.NewRequest(&v1pb.ResetPasswordRequest{
+		Email:       "demo@example.com",
+		Code:        failedResetCode,
+		NewPassword: failedPassword,
+	}))
+	a.Error(resetErr, "password policy must reject a short password")
+	ctl.authInterceptor.token = adminToken
+	resetLogs, err = ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: workspace,
+		Filter: `method == "/bytebase.v1.AuthService/ResetPassword"`,
+	}))
+	a.NoError(err)
+	a.Len(resetLogs.Msg.AuditLogs, 2, "post-verification failures retain the validated workspace audit parent")
+	var failedResetLog *v1pb.AuditLog
+	for _, auditLog := range resetLogs.Msg.AuditLogs {
+		if auditLog.Status != nil {
+			failedResetLog = auditLog
+			break
+		}
+	}
+	a.NotNil(failedResetLog)
+	a.Equal(int32(connect.CodeInvalidArgument), failedResetLog.Status.Code)
+	a.NotContains(failedResetLog.Request, failedResetCode)
+	a.NotContains(failedResetLog.Request, failedPassword)
+
+	// Reset requests carry no workspace context at all: the audit workspace is
+	// resolved from the user's own memberships (here via the allUsers grant), so
+	// these rows land under the workspace even though the caller named none.
+	noWorkspaceUser, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Email: "no-workspace-reset@example.com", Title: "No workspace reset", Password: "1024bytebase"},
+	}))
+	a.NoError(err)
+	insertVerificationCode(noWorkspaceUser.Msg.Email, "PASSWORD_RESET", resetCode)
+	ctl.authInterceptor.token = ""
+	_, err = ctl.authServiceClient.ResetPassword(ctx, connect.NewRequest(&v1pb.ResetPasswordRequest{
+		Email:       noWorkspaceUser.Msg.Email,
+		Code:        resetCode,
+		NewPassword: newPassword,
+	}))
+	a.NoError(err, "no-workspace reset must preserve existing API behavior")
+	ctl.authInterceptor.token = adminToken
+	insertVerificationCode(noWorkspaceUser.Msg.Email, "PASSWORD_RESET", resetCode)
+	_, err = ctl.authServiceClient.ResetPassword(ctx, connect.NewRequest(&v1pb.ResetPasswordRequest{
+		Email:       noWorkspaceUser.Msg.Email,
+		Code:        resetCode,
+		NewPassword: "another-new-password-1024",
+	}))
+	a.NoError(err, "authenticated no-workspace reset must preserve existing API behavior")
+	resetLogs, err = ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent: workspace,
+		Filter: `method == "/bytebase.v1.AuthService/ResetPassword"`,
+	}))
+	a.NoError(err)
+	a.Len(resetLogs.Msg.AuditLogs, 4, "resets resolve their audit workspace from the user's membership, not the request")
 
 	// --- Part 2.5: Denied Signup is still audited ---
 	//
@@ -202,7 +974,7 @@ func TestAuditLogFormat(t *testing.T) {
 	a.True(strings.HasPrefix(projEntry.Name, projectResource+"/auditLogs/"),
 		"audit entry must be parented under the target project, not the workspace")
 	a.Equal("/bytebase.v1.ProjectService/SetIamPolicy", projEntry.Method)
-	a.Equal("users/demo@example.com", projEntry.User)
+	a.Equal("users/demo@example.com", projEntry.Actor)
 	a.Equal(v1pb.AuditLog_INFO, projEntry.Severity)
 	a.Equal(projectResource, projEntry.Resource,
 		"SetIamPolicy's Resource is the target project name")
@@ -240,4 +1012,124 @@ func TestAuditLogFormat(t *testing.T) {
 	a.NoError(err)
 	a.Empty(workspaceSearch.Msg.AuditLogs,
 		"project-scoped SetIamPolicy audit must not leak into the workspace-scoped log stream")
+}
+
+// TestLoginAuditsTheRequestedWorkspace pins where a failed login is filed when
+// the request names a workspace: under that workspace, before the account is
+// even looked up, so an attempt against an unknown address still leaves a row
+// where the workspace's operators read. A workspace that does not exist is
+// refused outright rather than audited nowhere. Pre-authentication, the login
+// page learns only the restriction and the workspace.
+func TestLoginAuditsTheRequestedWorkspace(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+
+	workspaceResp, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{Name: "workspaces/-"}))
+	a.NoError(err)
+	workspace := workspaceResp.Msg.Name
+
+	adminToken := ctl.authInterceptor.token
+	ctl.authInterceptor.token = ""
+
+	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:     "stranger@example.com",
+		Password:  "wrong-password",
+		Workspace: &workspace,
+	}))
+	a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
+
+	missing := "workspaces/missing"
+	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:     "stranger@example.com",
+		Password:  "wrong-password",
+		Workspace: &missing,
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	info, err := ctl.authServiceClient.GetAuthenticationInfo(ctx, connect.NewRequest(&v1pb.GetAuthenticationInfoRequest{}))
+	a.NoError(err)
+	var populated []string
+	info.Msg.ProtoReflect().Range(func(field protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+		populated = append(populated, string(field.Name()))
+		return true
+	})
+	slices.Sort(populated)
+	a.Equal([]string{"restriction", "workspace"}, populated, "nothing but the restriction and the workspace is disclosed before authentication")
+	a.Equal(workspace, info.Msg.Workspace)
+
+	ctl.authInterceptor.token = adminToken
+	search, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent:   workspace,
+		Filter:   `method == "/bytebase.v1.AuthService/Login"`,
+		PageSize: 100,
+	}))
+	a.NoError(err)
+	strangerRows := 0
+	for _, auditLog := range search.Msg.AuditLogs {
+		if auditLog.Resource == "stranger@example.com" {
+			strangerRows++
+			a.True(strings.HasPrefix(auditLog.Name, workspace+"/auditLogs/"))
+		}
+	}
+	a.Equal(1, strangerRows, "the named workspace gets the row; the nonexistent one is refused before any row")
+}
+
+// TestLoginEnforcesWorkspaceDomains pins the identity-domain gate on the two
+// doors that lead to a session: password login of an existing user — an admin
+// included — and the sign-in code for an address the workspace would never
+// accept, which is refused before a code is written.
+func TestLoginEnforcesWorkspaceDomains(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+
+	// The blocked admin exists before the domains are enforced, as an account
+	// created under a looser policy would.
+	const blockedAdmin = "admin@blocked.example"
+	created, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Title: "Blocked admin", Email: blockedAdmin, Password: "1024bytebase"},
+	}))
+	a.NoError(err)
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, created.Msg.Workspace, "user:"+blockedAdmin, "roles/workspaceAdmin")
+	a.NoError(err)
+
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		AllowMissing: true,
+		Setting: &v1pb.Setting{
+			Name: "settings/" + v1pb.Setting_WORKSPACE_PROFILE.String(),
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_WorkspaceProfile{WorkspaceProfile: &v1pb.WorkspaceProfileSetting{
+				Domains:               []string{"example.com"},
+				EnforceIdentityDomain: true,
+			}}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{
+			"value.workspace_profile.domains",
+			"value.workspace_profile.enforce_identity_domain",
+		}},
+	}))
+	a.NoError(err)
+
+	adminToken := ctl.authInterceptor.token
+	ctl.authInterceptor.token = ""
+	defer func() { ctl.authInterceptor.token = adminToken }()
+
+	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    blockedAdmin,
+		Password: "1024bytebase",
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err), "%v", err)
+	a.ErrorContains(err, "does not belong to allowed domains")
+
+	// The code request names the workspace, as the login page does: an
+	// address nobody has seen resolves to no workspace on its own, and the
+	// domain gate is the named workspace's.
+	_, err = ctl.authServiceClient.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
+		Email:     "new@blocked.example",
+		Workspace: &created.Msg.Workspace,
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err), "%v", err)
+	a.ErrorContains(err, "does not belong to allowed domains")
 }

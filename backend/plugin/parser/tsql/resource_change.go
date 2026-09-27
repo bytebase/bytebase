@@ -7,7 +7,6 @@ import (
 	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -22,13 +21,11 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 	changedResources := model.NewChangedResources(dbMetadata)
 
 	var dmlCount, insertCount int
-	var sampleDMLs []string
+	var dmlStatements []string
 
 	addDML := func(text string) {
 		dmlCount++
-		if len(sampleDMLs) < common.MaximumLintExplainSize {
-			sampleDMLs = append(sampleDMLs, trimStatement(text))
-		}
+		dmlStatements = append(dmlStatements, trimStatement(text))
 	}
 
 	addTable := func(ref *ast.TableRef, affectData bool) {
@@ -116,6 +113,12 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 				insertCount += vc.Rows.Len()
 				continue
 			}
+			// SHOWPLAN estimates one row for INSERT ... EXEC whatever the procedure returns, so the
+			// statement is counted without an estimate.
+			if _, ok := n.Source.(*ast.ExecStmt); ok {
+				dmlCount++
+				continue
+			}
 			addDML(omniAST.Text)
 
 		case *ast.UpdateStmt:
@@ -170,7 +173,7 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,
-		SampleDMLS:       sampleDMLs,
+		DMLStatements:    dmlStatements,
 		DMLCount:         dmlCount,
 		InsertCount:      insertCount,
 	}, nil

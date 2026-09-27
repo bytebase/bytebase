@@ -1,0 +1,2371 @@
+import { create } from "@bufbuild/protobuf";
+import { Info } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { LearnMoreLink } from "@/components/LearnMoreLink";
+import { Button } from "@/components/ui/button";
+import {
+  FormControlGroup,
+  FormControlRow,
+  FormError,
+  FormFieldGroup,
+  ResponsiveFormLayout,
+} from "@/components/ui/form";
+import { Input as SharedInput } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/app";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  DataSource_AuthenticationType,
+  DataSourceExternalSecret_AppRoleAuthOption_SecretType,
+  DataSourceExternalSecret_AppRoleAuthOptionSchema,
+  DataSourceExternalSecret_AuthType,
+  DataSourceExternalSecret_SecretType,
+  DataSourceExternalSecret_TokenType,
+  DataSourceExternalSecretSchema,
+  KerberosConfigSchema,
+  SASLConfigSchema,
+} from "@/types/proto-es/v1/instance_service_pb";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
+import { onlyAllowNumber } from "@/utils";
+import { CredentialSourceForm } from "./CredentialSourceForm";
+import {
+  type EditDataSource,
+  getDataSourceSecretValue,
+  type TlsUpdateState,
+  updateDataSourceSecret,
+} from "./common";
+import {
+  deactivateExternalSecret,
+  invalidateSourceDrafts,
+} from "./data-source-drafts";
+import { useInstanceFormContext } from "./InstanceFormContext";
+import { hasInfoContent, type InfoSection } from "./info-content";
+import { OracleConnectionFields } from "./OracleConnectionFields";
+import { SshConnectionForm } from "./SshConnectionForm";
+import { SslCertificateForm } from "./SslCertificateForm";
+import {
+  applyLocalTlsCaSource,
+  applyLocalTlsClientCertSource,
+  applyLocalTlsPosture,
+  disableLocalTls,
+  getLocalTlsCaSource,
+  getLocalTlsClientCertSource,
+  getLocalTlsPosture,
+  LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM,
+  LOCAL_TLS_CLIENT_CERT_SOURCE_NONE,
+  LOCAL_TLS_POSTURE_DISABLED,
+  LOCAL_TLS_POSTURE_MUTUAL_TLS,
+  LOCAL_TLS_POSTURE_TLS,
+  type LocalTlsPosture,
+} from "./tls";
+import {
+  ValidationField as FormField,
+  ValidationInput as Input,
+  ValidationSecretInput as SecretInput,
+  ValidationProvider,
+} from "./ValidationField";
+
+interface DataSourceFormProps {
+  dataSource: EditDataSource;
+  authOnly?: boolean;
+  hideAuthentication?: boolean;
+  hideOptions?: boolean;
+  optionsOnly?: boolean;
+  onDataSourceChange: (ds: EditDataSource) => void;
+  onOpenInfoPanel?: (section: InfoSection) => void;
+}
+
+const mergeTlsUpdateState = (
+  current: TlsUpdateState | undefined,
+  next: TlsUpdateState
+): TlsUpdateState => {
+  if (current === true || next === true) {
+    return true;
+  }
+  if (!current) {
+    return next;
+  }
+  if (typeof current === "boolean") {
+    return next;
+  }
+  if (typeof next === "boolean") {
+    return current;
+  }
+  return {
+    useSsl: current.useSsl || next.useSsl,
+    ca: current.ca || next.ca,
+    clientCert: current.clientCert || next.clientCert,
+  };
+};
+
+export function RedisSentinelFields({
+  dataSource,
+  isCreating,
+  allowEdit,
+  allowUsingEmptyPassword,
+  onDataSourceChange,
+}: Readonly<{
+  dataSource: EditDataSource;
+  isCreating: boolean;
+  allowEdit: boolean;
+  allowUsingEmptyPassword: boolean;
+  onDataSourceChange: (dataSource: EditDataSource) => void;
+}>) {
+  const { t } = useTranslation();
+  const update = (partial: Partial<EditDataSource>) => {
+    onDataSourceChange({ ...dataSource, ...partial });
+  };
+
+  return (
+    <FormFieldGroup density="compact">
+      <FormField
+        validationField="masterName"
+        title={
+          <>
+            {t("instance.master-name")} <span className="text-error">*</span>
+          </>
+        }
+      >
+        <Input
+          value={dataSource.masterName ?? ""}
+          className="w-full"
+          disabled={!allowEdit}
+          onChange={(e) => update({ masterName: e.target.value })}
+        />
+      </FormField>
+      <FormField title={t("instance.master-username")}>
+        <Input
+          value={dataSource.masterUsername ?? ""}
+          className="w-full"
+          disabled={!allowEdit}
+          onChange={(e) => update({ masterUsername: e.target.value })}
+        />
+      </FormField>
+      <FormField title={t("instance.master-password")}>
+        <SecretInput
+          resetKey={dataSource.id}
+          aria-label={t("instance.master-password")}
+          value={getDataSourceSecretValue(dataSource, "masterPassword")}
+          isCreating={isCreating || dataSource.pendingCreate}
+          disabled={!allowEdit}
+          allowEmpty={allowUsingEmptyPassword}
+          onValueChange={(value) =>
+            onDataSourceChange(
+              updateDataSourceSecret(dataSource, "masterPassword", value)
+            )
+          }
+        />
+      </FormField>
+    </FormFieldGroup>
+  );
+}
+
+export function DataSourceForm({
+  dataSource,
+  authOnly = false,
+  hideAuthentication = false,
+  hideOptions = false,
+  optionsOnly = false,
+  onDataSourceChange,
+  onOpenInfoPanel,
+}: Readonly<DataSourceFormProps>) {
+  const { t } = useTranslation();
+  const [showExtraParameters, setShowExtraParameters] = useState(false);
+  const currentPlan = useAppStore((s) => s.currentPlan());
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
+  const ctx = useInstanceFormContext();
+  const {
+    instance,
+    specs,
+    isCreating,
+    allowEdit,
+    basicInfo,
+    hideAdvancedFeatures,
+    needsKeytabResupply,
+    dataSourceResetEvent,
+  } = ctx;
+
+  const {
+    showDatabase,
+    showSSL,
+    showSSH,
+    allowUsingEmptyPassword,
+    showAuthenticationDatabase,
+    hasExtraParameters,
+  } = specs;
+
+  const [passwordType, setPasswordType] = useState(
+    dataSource.externalSecret?.secretType ??
+      DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED
+  );
+  const [newParamKey, setNewParamKey] = useState("");
+  const [newParamValue, setNewParamValue] = useState("");
+  const [localTlsCaSource, setLocalTlsCaSource] = useState(
+    getLocalTlsCaSource(dataSource)
+  );
+  const [localTlsClientCertSource, setLocalTlsClientCertSource] = useState(
+    getLocalTlsClientCertSource(dataSource)
+  );
+  const [localTlsPosture, setLocalTlsPosture] = useState(
+    getLocalTlsPosture(dataSource)
+  );
+  const previousDataSourceIdRef = useRef(dataSource.id);
+  const sourceDraftsRef = useRef(
+    new Map<
+      string,
+      Map<
+        DataSourceExternalSecret_SecretType,
+        NonNullable<EditDataSource["externalSecret"]>
+      >
+    >()
+  );
+  const sourceDraftStateRef = useRef({
+    instanceName: instance?.name,
+    resetEvent: dataSourceResetEvent,
+  });
+
+  useEffect(() => {
+    sourceDraftStateRef.current = invalidateSourceDrafts(
+      sourceDraftsRef.current,
+      sourceDraftStateRef.current,
+      {
+        instanceName: instance?.name,
+        resetEvent: dataSourceResetEvent,
+      }
+    );
+  }, [dataSourceResetEvent, instance?.name]);
+
+  // Sync passwordType when externalSecret changes
+  useEffect(() => {
+    if (dataSource.externalSecret) {
+      setPasswordType(dataSource.externalSecret.secretType);
+    } else {
+      setPasswordType(
+        DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED
+      );
+    }
+  }, [dataSource.externalSecret]);
+
+  useEffect(() => {
+    if (previousDataSourceIdRef.current !== dataSource.id) {
+      previousDataSourceIdRef.current = dataSource.id;
+      setLocalTlsCaSource(getLocalTlsCaSource(dataSource));
+      setLocalTlsClientCertSource(getLocalTlsClientCertSource(dataSource));
+      setLocalTlsPosture(getLocalTlsPosture(dataSource));
+      return;
+    }
+    if (!dataSource.updateSsl) {
+      setLocalTlsCaSource(getLocalTlsCaSource(dataSource));
+      setLocalTlsClientCertSource(getLocalTlsClientCertSource(dataSource));
+      setLocalTlsPosture(getLocalTlsPosture(dataSource));
+    }
+  }, [
+    dataSource.id,
+    dataSource.useSsl,
+    dataSource.sslCa,
+    dataSource.sslCert,
+    dataSource.sslKey,
+    dataSource.sslCaPath,
+    dataSource.sslCertPath,
+    dataSource.sslKeyPath,
+    dataSource.sslCaSet,
+    dataSource.sslCertSet,
+    dataSource.sslKeySet,
+    dataSource.sslCaPathSet,
+    dataSource.sslCertPathSet,
+    dataSource.sslKeyPathSet,
+    dataSource.updateSsl,
+  ]);
+
+  const update = useCallback(
+    (partial: Partial<EditDataSource>) => {
+      onDataSourceChange({ ...dataSource, ...partial });
+    },
+    [dataSource, onDataSourceChange]
+  );
+
+  const hasAuthenticationInfo = hasInfoContent(
+    basicInfo.engine,
+    "authentication"
+  );
+  const hasSslInfo = hasInfoContent(basicInfo.engine, "ssl");
+  const hasSshInfo = hasInfoContent(basicInfo.engine, "ssh");
+
+  const hiveAuthentication =
+    dataSource.saslConfig?.mechanism?.case === "krbConfig"
+      ? "KERBEROS"
+      : "PASSWORD";
+
+  const supportedAuthenticationTypes = useMemo(() => {
+    switch (basicInfo.engine) {
+      case Engine.COSMOSDB:
+        return [
+          {
+            value: DataSource_AuthenticationType.AZURE_IAM,
+            label: t("instance.password-type.azure-iam"),
+          },
+        ];
+      case Engine.MSSQL:
+        return [
+          {
+            value: DataSource_AuthenticationType.PASSWORD,
+            label: t("instance.password-type.password"),
+          },
+          {
+            value: DataSource_AuthenticationType.AZURE_IAM,
+            label: t("instance.password-type.azure-iam"),
+          },
+        ];
+      case Engine.ELASTICSEARCH:
+        return [
+          {
+            value: DataSource_AuthenticationType.PASSWORD,
+            label: t("instance.password-type.password"),
+          },
+          {
+            value: DataSource_AuthenticationType.AWS_RDS_IAM,
+            label: t("instance.password-type.aws-iam"),
+          },
+        ];
+      case Engine.SPANNER:
+      case Engine.BIGQUERY:
+        return [
+          {
+            value: DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM,
+            label: t("instance.password-type.google-cloud-iam"),
+          },
+        ];
+      case Engine.MYSQL:
+      case Engine.POSTGRES:
+        return [
+          {
+            value: DataSource_AuthenticationType.PASSWORD,
+            label: t("instance.password-type.password"),
+          },
+          {
+            value: DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM,
+            label: t("instance.password-type.google-iam"),
+          },
+          {
+            value: DataSource_AuthenticationType.AWS_RDS_IAM,
+            label: t("instance.password-type.aws-iam"),
+          },
+        ];
+      default:
+        return [
+          {
+            value: DataSource_AuthenticationType.PASSWORD,
+            label: t("instance.password-type.password"),
+          },
+        ];
+    }
+  }, [basicInfo.engine, t]);
+
+  // DynamoDB always authenticates with AWS IAM, but data sources created
+  // before the form exposed credentials still carry PASSWORD. Render those in
+  // the AWS IAM mode and stamp the real authentication type only when a
+  // credential field is edited, so opening an old instance stays pristine.
+  // (In SaaS mode the shared CredentialSourceForm instead forces
+  // specific-credential mode on open — the policy every IAM engine inherits
+  // there, since the default credential chain is the host's own identity.)
+  const dynamoDBDataSource = useMemo(
+    () => ({
+      ...dataSource,
+      authenticationType: DataSource_AuthenticationType.AWS_RDS_IAM,
+    }),
+    [dataSource]
+  );
+  const updateDynamoDB = useCallback(
+    (updates: Partial<EditDataSource>) => {
+      update({
+        authenticationType: DataSource_AuthenticationType.AWS_RDS_IAM,
+        ...updates,
+      });
+    },
+    [update]
+  );
+
+  const extraConnectionParamsList = useMemo(() => {
+    const params = dataSource.extraConnectionParameters || {};
+    return Object.entries(params).map(([key, value]) => ({ key, value }));
+  }, [dataSource.extraConnectionParameters]);
+
+  const changeSecretType = (
+    secretType: DataSourceExternalSecret_SecretType
+  ) => {
+    const ds = {
+      ...dataSource,
+      authenticationType: DataSource_AuthenticationType.PASSWORD,
+      ...(basicInfo.engine === Engine.HIVE ? { saslConfig: undefined } : {}),
+    };
+    const drafts =
+      sourceDraftsRef.current.get(dataSource.id) ??
+      new Map<
+        DataSourceExternalSecret_SecretType,
+        NonNullable<EditDataSource["externalSecret"]>
+      >();
+    if (dataSource.externalSecret) {
+      drafts.set(
+        dataSource.externalSecret.secretType,
+        dataSource.externalSecret
+      );
+    }
+    sourceDraftsRef.current.set(dataSource.id, drafts);
+    const existingDraft = drafts.get(secretType);
+    if (existingDraft) {
+      ds.externalSecret = existingDraft;
+      setPasswordType(secretType);
+      onDataSourceChange(ds);
+      return;
+    }
+    switch (secretType) {
+      case DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED:
+        ds.externalSecret = undefined;
+        break;
+      case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
+        ds.externalSecret = create(DataSourceExternalSecretSchema, {
+          authType: DataSourceExternalSecret_AuthType.TOKEN,
+          secretType,
+          authOption: { case: "token", value: "" },
+          secretName: "",
+          passwordKeyName: "",
+        });
+        break;
+      case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
+        ds.externalSecret = create(DataSourceExternalSecretSchema, {
+          authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
+          secretType,
+          authOption: { case: "token", value: "" },
+          secretName: "",
+          passwordKeyName: "",
+        });
+        break;
+      case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+        ds.externalSecret = create(DataSourceExternalSecretSchema, {
+          authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
+          secretType,
+          authOption: { case: "token", value: "" },
+          secretName: "",
+          passwordKeyName: "",
+        });
+        break;
+      case DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT:
+        ds.externalSecret = create(DataSourceExternalSecretSchema, {
+          authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
+          secretType,
+          authOption: { case: "token", value: "" },
+          url: "",
+          secretName: "",
+          passwordKeyName: "",
+        });
+        break;
+    }
+    setPasswordType(secretType);
+    onDataSourceChange(ds);
+  };
+
+  const changeExternalSecretAuthType = (
+    authType: DataSourceExternalSecret_AuthType
+  ) => {
+    if (!dataSource.externalSecret) return;
+    const ds = { ...dataSource };
+    if (authType === DataSourceExternalSecret_AuthType.VAULT_APP_ROLE) {
+      ds.externalSecret = {
+        ...ds.externalSecret!,
+        authOption: {
+          case: "appRole" as const,
+          value: create(DataSourceExternalSecret_AppRoleAuthOptionSchema, {
+            type: DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN,
+          }),
+        },
+        authType,
+      };
+    } else {
+      ds.externalSecret = {
+        ...ds.externalSecret!,
+        authOption: { case: "token" as const, value: "" },
+        authType,
+      };
+    }
+    onDataSourceChange(ds);
+  };
+
+  const handleSSHChange = (
+    value: Partial<{
+      sshHost: string;
+      sshPort: string;
+      sshUser: string;
+      sshPassword: string;
+      sshPrivateKey: string;
+    }>
+  ) => {
+    let next = { ...dataSource, ...value };
+    for (const field of ["sshPassword", "sshPrivateKey"] as const) {
+      if (value[field] !== undefined)
+        next = updateDataSourceSecret(next, field, value[field]);
+    }
+    onDataSourceChange(next);
+  };
+
+  const addNewParameter = () => {
+    if (!newParamKey.trim()) return;
+    const params = { ...(dataSource.extraConnectionParameters || {}) };
+    params[newParamKey.trim()] = newParamValue;
+    update({ extraConnectionParameters: params });
+    setNewParamKey("");
+    setNewParamValue("");
+  };
+
+  const updateExtraConnectionParamKey = (index: number, newKey: string) => {
+    const params = extraConnectionParamsList;
+    if (index >= params.length) return;
+    const plain = { ...(dataSource.extraConnectionParameters || {}) };
+    const oldKey = params[index].key;
+    const value = params[index].value;
+    if (oldKey === newKey) return;
+    delete plain[oldKey];
+    if (newKey.trim()) plain[newKey] = value;
+    update({ extraConnectionParameters: plain });
+  };
+
+  const updateExtraConnectionParamValue = (index: number, newValue: string) => {
+    const params = extraConnectionParamsList;
+    if (index >= params.length) return;
+    const plain = { ...(dataSource.extraConnectionParameters || {}) };
+    plain[params[index].key] = newValue;
+    update({ extraConnectionParameters: plain });
+  };
+
+  const removeExtraConnectionParam = (index: number) => {
+    const params = extraConnectionParamsList;
+    if (index >= params.length) return;
+    const plain = { ...(dataSource.extraConnectionParameters || {}) };
+    delete plain[params[index].key];
+    update({ extraConnectionParameters: plain });
+  };
+
+  const secretNameLabel = useMemo(() => {
+    switch (passwordType) {
+      case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
+        return t("instance.external-secret-vault.vault-secret-path");
+      case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+        return t("instance.external-secret-gcp.secret-name");
+      case DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT:
+        return t("instance.external-secret-azure.secret-name");
+      default:
+        return t("instance.external-secret.secret-name");
+    }
+  }, [passwordType, t]);
+
+  const secretNameDescription = useMemo(() => {
+    switch (passwordType) {
+      case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
+        return t("instance.external-secret-gcp.secret-name-tips");
+      case DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT:
+        return t("instance.external-secret-azure.secret-name-tips");
+      default:
+        return undefined;
+    }
+  }, [passwordType, t]);
+
+  const secretKeyLabel = useMemo(() => {
+    if (passwordType === DataSourceExternalSecret_SecretType.VAULT_KV_V2) {
+      return t("instance.external-secret-vault.vault-secret-key");
+    }
+    return t("instance.external-secret.key-name");
+  }, [passwordType, t]);
+
+  const showMainFields =
+    basicInfo.engine !== Engine.SPANNER &&
+    basicInfo.engine !== Engine.BIGQUERY &&
+    basicInfo.engine !== Engine.DYNAMODB &&
+    basicInfo.engine !== Engine.DATABRICKS;
+
+  const isPasswordAuth =
+    dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD;
+  const isAzureIAM =
+    dataSource.authenticationType === DataSource_AuthenticationType.AZURE_IAM;
+  const isAwsIAM =
+    dataSource.authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM;
+  const isGoogleIAM =
+    dataSource.authenticationType ===
+    DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
+  const isIAM = isAzureIAM || isAwsIAM || isGoogleIAM;
+
+  const [keytabFileName, setKeytabFileName] = useState("");
+
+  // The stored keytab cannot follow the data source to a new destination, so
+  // the operator has to upload it again before this edit can be saved.
+  const keytabResupplyRequired = needsKeytabResupply(dataSource);
+
+  const handleKeytabUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const data = new Uint8Array(reader.result as ArrayBuffer);
+      if (dataSource.saslConfig?.mechanism?.case === "krbConfig") {
+        const krbValue = dataSource.saslConfig.mechanism.value;
+        setKeytabFileName(file.name);
+        update({
+          saslConfig: create(SASLConfigSchema, {
+            ...dataSource.saslConfig,
+            mechanism: {
+              case: "krbConfig",
+              value: create(KerberosConfigSchema, {
+                ...krbValue,
+                keytab: data,
+              }),
+            },
+          }),
+        });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const onLocalTlsPostureChange = useCallback(
+    (posture: LocalTlsPosture) => {
+      setLocalTlsPosture(posture);
+      if (posture === LOCAL_TLS_POSTURE_DISABLED) {
+        setLocalTlsCaSource("SYSTEM_TRUST");
+        setLocalTlsClientCertSource(LOCAL_TLS_CLIENT_CERT_SOURCE_NONE);
+        update({ ...disableLocalTls(dataSource), updateSsl: true });
+        return;
+      }
+
+      const next = applyLocalTlsPosture(dataSource, posture);
+      const enablingTls = !dataSource.useSsl;
+      if (posture === LOCAL_TLS_POSTURE_TLS) {
+        setLocalTlsClientCertSource(LOCAL_TLS_CLIENT_CERT_SOURCE_NONE);
+      }
+      if (
+        posture === LOCAL_TLS_POSTURE_MUTUAL_TLS &&
+        localTlsClientCertSource === LOCAL_TLS_CLIENT_CERT_SOURCE_NONE
+      ) {
+        setLocalTlsClientCertSource(LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM);
+      }
+
+      update({
+        ...next,
+        verifyTlsCertificate: enablingTls
+          ? true
+          : dataSource.verifyTlsCertificate,
+        updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+          useSsl: true,
+          clientCert: posture === LOCAL_TLS_POSTURE_TLS,
+        }),
+      });
+    },
+    [dataSource, localTlsClientCertSource, update]
+  );
+
+  const passwordSourceOptions = [
+    {
+      value: DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED,
+      label: t("instance.password-source.bytebase"),
+    },
+    {
+      value: DataSourceExternalSecret_SecretType.VAULT_KV_V2,
+      label: t("instance.password-type.external-secret-vault"),
+    },
+    {
+      value: DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER,
+      label: t("instance.password-type.external-secret-aws"),
+    },
+    {
+      value: DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER,
+      label: t("instance.password-type.external-secret-gcp"),
+    },
+    {
+      value: DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT,
+      label: t("instance.password-type.external-secret-azure"),
+    },
+  ];
+
+  const secretOptions = passwordSourceOptions.map((item) => ({
+    value: `secret:${item.value}`,
+    label: (
+      <span className="flex items-center gap-x-1.5">
+        {item.value ===
+        DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED
+          ? t("common.password")
+          : item.label}
+        {item.value !==
+          DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED &&
+          currentPlan === PlanType.FREE && (
+            <span className="rounded-full border border-current px-1.5 py-0.5 text-xs">
+              Pro
+            </span>
+          )}
+      </span>
+    ),
+  }));
+
+  const authenticationOptions = supportedAuthenticationTypes.flatMap((item) =>
+    item.value === DataSource_AuthenticationType.PASSWORD
+      ? hideAdvancedFeatures
+        ? secretOptions.slice(0, 1)
+        : secretOptions
+      : [{ value: `auth:${item.value}`, label: <>{item.label}</> }]
+  );
+  if (basicInfo.engine === Engine.HIVE) {
+    authenticationOptions.push({
+      value: "sasl:kerberos",
+      label: <>{t("instance.kerberos")}</>,
+    });
+  }
+  const authenticationValue =
+    basicInfo.engine === Engine.HIVE && hiveAuthentication === "KERBEROS"
+      ? "sasl:kerberos"
+      : isPasswordAuth
+        ? `secret:${passwordType}`
+        : `auth:${dataSource.authenticationType}`;
+
+  const authenticationTypeControl = (showMainFields ||
+    basicInfo.engine === Engine.SPANNER ||
+    basicInfo.engine === Engine.BIGQUERY) && (
+    <FormField title={t("instance.authentication")}>
+      <Select
+        value={authenticationValue}
+        onValueChange={(value) => {
+          if (!value) return;
+          const [kind, type] = value.split(":");
+          if (kind === "secret") {
+            changeSecretType(
+              Number(type) as DataSourceExternalSecret_SecretType
+            );
+          } else if (kind === "sasl") {
+            onDataSourceChange({
+              ...deactivateExternalSecret(dataSource, sourceDraftsRef.current),
+              saslConfig: create(SASLConfigSchema, {
+                mechanism: {
+                  case: "krbConfig",
+                  value: create(KerberosConfigSchema, {
+                    kdcTransportProtocol: "tcp",
+                  }),
+                },
+              }),
+            });
+          } else {
+            update({
+              authenticationType: Number(type) as DataSource_AuthenticationType,
+            });
+          }
+        }}
+        disabled={!allowEdit}
+      >
+        <SelectTrigger
+          aria-label={t("instance.authentication")}
+          className="w-full sm:w-80"
+        >
+          <SelectValue>
+            {
+              authenticationOptions.find(
+                (item) => item.value === authenticationValue
+              )?.label
+            }
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {authenticationOptions.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </FormField>
+  );
+
+  return (
+    <ValidationProvider errors={ctx.getDataSourceErrors(dataSource)}>
+      <FormFieldGroup density="compact" className="empty:hidden">
+        {authOnly
+          ? authenticationTypeControl
+          : !optionsOnly && (
+              <>
+                {!hideAuthentication && authenticationTypeControl}
+                {/* Main credential fields */}
+                {showMainFields && (
+                  <>
+                    {/* Kerberos config */}
+                    {dataSource.saslConfig?.mechanism?.case === "krbConfig" && (
+                      <FormField title="Kerberos">
+                        <ResponsiveFormLayout>
+                          <fieldset
+                            aria-label="Kerberos"
+                            className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
+                          >
+                            <FormField
+                              validationField={[
+                                "saslConfig.primary",
+                                "saslConfig.realm",
+                              ]}
+                              title={
+                                <>
+                                  {t("instance.kerberos-principal")}{" "}
+                                  <span className="text-error">*</span>
+                                </>
+                              }
+                            >
+                              <FormControlRow>
+                                <Input
+                                  className="min-w-0 flex-1"
+                                  value={
+                                    dataSource.saslConfig.mechanism.value
+                                      .primary ?? ""
+                                  }
+                                  disabled={!allowEdit}
+                                  placeholder={t(
+                                    "instance.kerberos-primary-placeholder"
+                                  )}
+                                  onChange={(e) => {
+                                    const updated = { ...dataSource };
+                                    if (
+                                      updated.saslConfig?.mechanism?.case ===
+                                      "krbConfig"
+                                    ) {
+                                      updated.saslConfig.mechanism.value.primary =
+                                        e.target.value;
+                                    }
+                                    onDataSourceChange(updated);
+                                  }}
+                                />
+                                <span className="shrink-0 whitespace-nowrap text-sm leading-5 text-control-light">
+                                  /
+                                </span>
+                                <Input
+                                  className="min-w-0 flex-1"
+                                  value={
+                                    dataSource.saslConfig.mechanism.value
+                                      .instance ?? ""
+                                  }
+                                  disabled={!allowEdit}
+                                  placeholder={t(
+                                    "instance.kerberos-instance-placeholder"
+                                  )}
+                                  onChange={(e) => {
+                                    const updated = { ...dataSource };
+                                    if (
+                                      updated.saslConfig?.mechanism?.case ===
+                                      "krbConfig"
+                                    ) {
+                                      updated.saslConfig.mechanism.value.instance =
+                                        e.target.value;
+                                    }
+                                    onDataSourceChange(updated);
+                                  }}
+                                />
+                                <span className="shrink-0 whitespace-nowrap text-sm leading-5 text-control-light">
+                                  @
+                                </span>
+                                <Input
+                                  className="min-w-0 flex-1"
+                                  value={
+                                    dataSource.saslConfig.mechanism.value
+                                      .realm ?? ""
+                                  }
+                                  disabled={!allowEdit}
+                                  placeholder={t(
+                                    "instance.kerberos-realm-placeholder"
+                                  )}
+                                  onChange={(e) => {
+                                    const updated = { ...dataSource };
+                                    if (
+                                      updated.saslConfig?.mechanism?.case ===
+                                      "krbConfig"
+                                    ) {
+                                      updated.saslConfig.mechanism.value.realm =
+                                        e.target.value;
+                                    }
+                                    onDataSourceChange(updated);
+                                  }}
+                                />
+                              </FormControlRow>
+                            </FormField>
+                            <FormField
+                              validationField="saslConfig.kdcHost"
+                              title={
+                                <>
+                                  {t("instance.kerberos-kdc")}{" "}
+                                  <span className="text-error">*</span>
+                                </>
+                              }
+                            >
+                              <FormControlRow>
+                                <RadioGroup
+                                  className="w-fit textlabel gap-x-3"
+                                  value={
+                                    dataSource.saslConfig?.mechanism?.value
+                                      ?.kdcTransportProtocol ?? "tcp"
+                                  }
+                                  onValueChange={(protocol) => {
+                                    const updated = { ...dataSource };
+                                    if (
+                                      updated.saslConfig?.mechanism?.case ===
+                                      "krbConfig"
+                                    ) {
+                                      updated.saslConfig.mechanism.value.kdcTransportProtocol =
+                                        protocol as string;
+                                    }
+                                    onDataSourceChange(updated);
+                                  }}
+                                  aria-label={t("instance.kerberos-kdc")}
+                                >
+                                  {["tcp", "udp"].map((protocol) => (
+                                    <RadioGroupItem
+                                      key={protocol}
+                                      value={protocol}
+                                      disabled={!allowEdit}
+                                    >
+                                      {protocol.toUpperCase()}
+                                    </RadioGroupItem>
+                                  ))}
+                                </RadioGroup>
+                                <Input
+                                  className="min-w-0 flex-1"
+                                  value={
+                                    dataSource.saslConfig.mechanism.value
+                                      .kdcHost ?? ""
+                                  }
+                                  disabled={!allowEdit}
+                                  placeholder={t(
+                                    "instance.kerberos-kdc-host-placeholder"
+                                  )}
+                                  onChange={(e) => {
+                                    const updated = { ...dataSource };
+                                    if (
+                                      updated.saslConfig?.mechanism?.case ===
+                                      "krbConfig"
+                                    ) {
+                                      updated.saslConfig.mechanism.value.kdcHost =
+                                        e.target.value;
+                                    }
+                                    onDataSourceChange(updated);
+                                  }}
+                                />
+                                <span className="shrink-0 whitespace-nowrap text-sm leading-5 text-control-light">
+                                  :
+                                </span>
+                                <Input
+                                  className="min-w-0 flex-1"
+                                  value={
+                                    dataSource.saslConfig.mechanism.value
+                                      .kdcPort ?? ""
+                                  }
+                                  disabled={!allowEdit}
+                                  placeholder={t(
+                                    "instance.kerberos-kdc-port-placeholder"
+                                  )}
+                                  onChange={(e) => {
+                                    if (
+                                      e.target.value &&
+                                      !onlyAllowNumber(e.target.value)
+                                    )
+                                      return;
+                                    const updated = { ...dataSource };
+                                    if (
+                                      updated.saslConfig?.mechanism?.case ===
+                                      "krbConfig"
+                                    ) {
+                                      updated.saslConfig.mechanism.value.kdcPort =
+                                        e.target.value;
+                                    }
+                                    onDataSourceChange(updated);
+                                  }}
+                                />
+                              </FormControlRow>
+                            </FormField>
+                            <FormField
+                              validationField={
+                                keytabResupplyRequired
+                                  ? undefined
+                                  : "saslConfig.keytab"
+                              }
+                              title={
+                                <>
+                                  {t("instance.keytab-file")}
+                                  {(dataSource.pendingCreate ||
+                                    keytabResupplyRequired) && (
+                                    <>
+                                      {" "}
+                                      <span className="text-error">*</span>
+                                    </>
+                                  )}
+                                </>
+                              }
+                            >
+                              <div
+                                className={cn(
+                                  "mt-3 border-2 border-dashed rounded-sm p-6 text-center",
+                                  keytabResupplyRequired && "border-error"
+                                )}
+                              >
+                                <SharedInput
+                                  type="file"
+                                  accept=".keytab"
+                                  className="hidden"
+                                  id="keytab-upload"
+                                  onChange={handleKeytabUpload}
+                                />
+                                <label
+                                  htmlFor="keytab-upload"
+                                  className="cursor-pointer textinfolabel"
+                                >
+                                  {t("instance.keytab-upload-placeholder")}
+                                </label>
+                                {keytabFileName && (
+                                  <p className="mt-2 textinfolabel truncate">
+                                    {keytabFileName}
+                                  </p>
+                                )}
+                              </div>
+                              {/* The write-only hint offers to keep the stored keytab,
+                        which is the offer the resupply error withdraws. */}
+                              {!dataSource.pendingCreate &&
+                                !keytabResupplyRequired && (
+                                  <p className="mt-1 textinfolabel">
+                                    {t("instance.keytab-write-only")}
+                                  </p>
+                                )}
+                              {keytabResupplyRequired && (
+                                <FormError className="mt-1">
+                                  {t("instance.keytab-resupply-required")}
+                                </FormError>
+                              )}
+                            </FormField>
+                          </fieldset>
+                        </ResponsiveFormLayout>
+                      </FormField>
+                    )}
+
+                    {/* Username field (non-Kerberos, non-Azure IAM) */}
+                    {dataSource.saslConfig?.mechanism?.case !== "krbConfig" &&
+                      !isAzureIAM && (
+                        <FormField
+                          title={
+                            <span className="flex items-center gap-x-1">
+                              {t("common.username")}
+                              {onOpenInfoPanel && hasAuthenticationInfo && (
+                                <Button
+                                  type="button"
+                                  appearance="link"
+                                  size="xs"
+                                  className="-ml-1 w-6 shrink-0 p-0"
+                                  aria-label={t("instance.authentication")}
+                                  onClick={() =>
+                                    onOpenInfoPanel("authentication")
+                                  }
+                                >
+                                  <Info className="size-3.5" />
+                                </Button>
+                              )}
+                            </span>
+                          }
+                        >
+                          <Input
+                            aria-label={t("common.username")}
+                            value={dataSource.username}
+                            className="w-full"
+                            disabled={!allowEdit}
+                            placeholder={
+                              basicInfo.engine === Engine.CLICKHOUSE
+                                ? t("common.default")
+                                : ""
+                            }
+                            onChange={(e) =>
+                              update({ username: e.target.value })
+                            }
+                          />
+                        </FormField>
+                      )}
+
+                    {/* IAM-specific configuration */}
+                    {isIAM && (
+                      <FormField
+                        title={
+                          supportedAuthenticationTypes.find(
+                            (item) =>
+                              item.value === dataSource.authenticationType
+                          )?.label
+                        }
+                      >
+                        <ResponsiveFormLayout>
+                          <fieldset
+                            aria-label={t(
+                              "instance.iam-extension.credential-source"
+                            )}
+                            className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
+                          >
+                            <CredentialSourceForm
+                              dataSource={dataSource}
+                              engine={basicInfo.engine}
+                              allowEdit={allowEdit}
+                              onDataSourceChange={update}
+                            />
+                            {isAwsIAM && (
+                              <AwsRegionField
+                                region={dataSource.region ?? ""}
+                                required
+                                allowEdit={allowEdit}
+                                onChange={(region) => update({ region })}
+                              />
+                            )}
+                          </fieldset>
+                        </ResponsiveFormLayout>
+                      </FormField>
+                    )}
+
+                    {/* Password / External Secret */}
+                    {isPasswordAuth &&
+                      dataSource.saslConfig?.mechanism?.case !==
+                        "krbConfig" && (
+                        <div>
+                          {/* Plain password */}
+                          {passwordType ===
+                            DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED && (
+                            <FormField
+                              title={<>{t("common.password")}</>}
+                              description={
+                                !hideAdvancedFeatures
+                                  ? t(
+                                      "instance.password-source.stored-in-bytebase"
+                                    )
+                                  : undefined
+                              }
+                            >
+                              <div className="flex flex-col gap-2">
+                                <SecretInput
+                                  resetKey={dataSource.id}
+                                  aria-label={t("common.password")}
+                                  value={getDataSourceSecretValue(
+                                    dataSource,
+                                    "password"
+                                  )}
+                                  isCreating={
+                                    isCreating || dataSource.pendingCreate
+                                  }
+                                  disabled={!allowEdit}
+                                  allowEmpty={allowUsingEmptyPassword}
+                                  onValueChange={(value) =>
+                                    onDataSourceChange(
+                                      updateDataSourceSecret(
+                                        dataSource,
+                                        "password",
+                                        value
+                                      )
+                                    )
+                                  }
+                                />
+                              </div>
+                            </FormField>
+                          )}
+
+                          {/* External secret fields */}
+                          {passwordType !==
+                            DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED &&
+                            dataSource.externalSecret && (
+                              <div className="flex flex-col gap-y-4">
+                                <FormField
+                                  title={
+                                    passwordSourceOptions.find(
+                                      (item) => item.value === passwordType
+                                    )?.label
+                                  }
+                                  description={
+                                    <LearnMoreLink
+                                      href="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration"
+                                      className="text-sm text-accent"
+                                    />
+                                  }
+                                >
+                                  <ResponsiveFormLayout className="mt-2">
+                                    <fieldset
+                                      className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
+                                      aria-label={t(
+                                        "instance.password-source.self"
+                                      )}
+                                    >
+                                      {/* Vault KV V2 */}
+                                      {passwordType ===
+                                        DataSourceExternalSecret_SecretType.VAULT_KV_V2 && (
+                                        <div className="flex flex-col gap-y-4">
+                                          <FormField
+                                            validationField="externalSecret.url"
+                                            title={
+                                              <>
+                                                {t(
+                                                  "instance.external-secret-vault.vault-url"
+                                                )}{" "}
+                                                <span className="text-error">
+                                                  *
+                                                </span>
+                                              </>
+                                            }
+                                          >
+                                            <Input
+                                              value={
+                                                dataSource.externalSecret.url ??
+                                                ""
+                                              }
+                                              required
+                                              className="w-full"
+                                              disabled={!allowEdit}
+                                              placeholder={t(
+                                                "instance.external-secret-vault.vault-url"
+                                              )}
+                                              onChange={(e) => {
+                                                const ds = { ...dataSource };
+                                                ds.externalSecret = {
+                                                  ...ds.externalSecret!,
+                                                  url: e.target.value,
+                                                };
+                                                onDataSourceChange(ds);
+                                              }}
+                                            />
+                                          </FormField>
+                                          <FormField
+                                            title={
+                                              <>
+                                                {t(
+                                                  "instance.external-secret-vault.vault-auth-type.self"
+                                                )}
+                                              </>
+                                            }
+                                          >
+                                            <RadioGroup
+                                              className="textlabel gap-x-4"
+                                              value={String(
+                                                dataSource.externalSecret
+                                                  .authType
+                                              )}
+                                              onValueChange={(value) =>
+                                                changeExternalSecretAuthType(
+                                                  Number(
+                                                    value
+                                                  ) as DataSourceExternalSecret_AuthType
+                                                )
+                                              }
+                                              aria-label={t(
+                                                "instance.external-secret-vault.vault-auth-type.self"
+                                              )}
+                                            >
+                                              <RadioGroupItem
+                                                value={String(
+                                                  DataSourceExternalSecret_AuthType.TOKEN
+                                                )}
+                                                disabled={!allowEdit}
+                                              >
+                                                {t(
+                                                  "instance.external-secret-vault.vault-auth-type.token.self"
+                                                )}
+                                              </RadioGroupItem>
+                                              <RadioGroupItem
+                                                value={String(
+                                                  DataSourceExternalSecret_AuthType.VAULT_APP_ROLE
+                                                )}
+                                                disabled={!allowEdit}
+                                              >
+                                                {t(
+                                                  "instance.external-secret-vault.vault-auth-type.approle.self"
+                                                )}
+                                              </RadioGroupItem>
+                                            </RadioGroup>
+                                          </FormField>
+                                          {/* Token input */}
+                                          {dataSource.externalSecret
+                                            .authType ===
+                                            DataSourceExternalSecret_AuthType.TOKEN &&
+                                            (() => {
+                                              const tokenType =
+                                                dataSource.externalSecret
+                                                  .tokenType ===
+                                                  DataSourceExternalSecret_TokenType.ENVIRONMENT ||
+                                                dataSource.externalSecret
+                                                  .tokenType ===
+                                                  DataSourceExternalSecret_TokenType.FILE
+                                                  ? dataSource.externalSecret
+                                                      .tokenType
+                                                  : DataSourceExternalSecret_TokenType.PLAIN;
+                                              const changeTokenType = (
+                                                type: DataSourceExternalSecret_TokenType
+                                              ) => {
+                                                const ds = { ...dataSource };
+                                                ds.externalSecret = {
+                                                  ...ds.externalSecret!,
+                                                  tokenType: type,
+                                                };
+                                                onDataSourceChange(ds);
+                                              };
+                                              const tokenLabel = t(
+                                                "instance.external-secret-vault.vault-auth-type.token.self"
+                                              );
+                                              let tokenPlaceholder = `${tokenLabel} - ${t("common.write-only")}`;
+                                              if (
+                                                tokenType ===
+                                                DataSourceExternalSecret_TokenType.ENVIRONMENT
+                                              ) {
+                                                tokenPlaceholder = t(
+                                                  "instance.external-secret-vault.vault-auth-type.token.env-name"
+                                                );
+                                              } else if (
+                                                tokenType ===
+                                                DataSourceExternalSecret_TokenType.FILE
+                                              ) {
+                                                tokenPlaceholder = t(
+                                                  "instance.external-secret-vault.vault-auth-type.token.file-path"
+                                                );
+                                              }
+                                              return (
+                                                <FormField
+                                                  validationField="externalSecret.token"
+                                                  title={
+                                                    <>
+                                                      {tokenLabel}{" "}
+                                                      <span className="text-error">
+                                                        *
+                                                      </span>
+                                                    </>
+                                                  }
+                                                >
+                                                  {/* Token source is host-backed for env/file,
+                                          which is disallowed in SaaS mode; only
+                                          plain is offered there. */}
+                                                  {!isSaaSMode && (
+                                                    <Select
+                                                      value={String(tokenType)}
+                                                      onValueChange={(
+                                                        value
+                                                      ) => {
+                                                        if (value) {
+                                                          changeTokenType(
+                                                            Number(
+                                                              value
+                                                            ) as DataSourceExternalSecret_TokenType
+                                                          );
+                                                        }
+                                                      }}
+                                                      disabled={!allowEdit}
+                                                    >
+                                                      <SelectTrigger className="my-1 w-full sm:w-80">
+                                                        <SelectValue>
+                                                          {tokenType ===
+                                                          DataSourceExternalSecret_TokenType.ENVIRONMENT
+                                                            ? t(
+                                                                "instance.external-secret-vault.vault-auth-type.token.type-environment"
+                                                              )
+                                                            : tokenType ===
+                                                                DataSourceExternalSecret_TokenType.FILE
+                                                              ? t(
+                                                                  "instance.external-secret-vault.vault-auth-type.token.type-file"
+                                                                )
+                                                              : t(
+                                                                  "instance.external-secret-vault.vault-auth-type.token.type-plain"
+                                                                )}
+                                                        </SelectValue>
+                                                      </SelectTrigger>
+                                                      <SelectContent>
+                                                        <SelectItem
+                                                          value={String(
+                                                            DataSourceExternalSecret_TokenType.PLAIN
+                                                          )}
+                                                        >
+                                                          {t(
+                                                            "instance.external-secret-vault.vault-auth-type.token.type-plain"
+                                                          )}
+                                                        </SelectItem>
+                                                        <SelectItem
+                                                          value={String(
+                                                            DataSourceExternalSecret_TokenType.ENVIRONMENT
+                                                          )}
+                                                        >
+                                                          {t(
+                                                            "instance.external-secret-vault.vault-auth-type.token.type-environment"
+                                                          )}
+                                                        </SelectItem>
+                                                        <SelectItem
+                                                          value={String(
+                                                            DataSourceExternalSecret_TokenType.FILE
+                                                          )}
+                                                        >
+                                                          {t(
+                                                            "instance.external-secret-vault.vault-auth-type.token.type-file"
+                                                          )}
+                                                        </SelectItem>
+                                                      </SelectContent>
+                                                    </Select>
+                                                  )}
+                                                  <Input
+                                                    value={
+                                                      dataSource.externalSecret
+                                                        .authOption?.case ===
+                                                      "token"
+                                                        ? (dataSource
+                                                            .externalSecret
+                                                            .authOption
+                                                            .value as string)
+                                                        : ""
+                                                    }
+                                                    className="w-full"
+                                                    disabled={!allowEdit}
+                                                    placeholder={
+                                                      tokenPlaceholder
+                                                    }
+                                                    onChange={(e) => {
+                                                      const ds = {
+                                                        ...dataSource,
+                                                      };
+                                                      ds.externalSecret = {
+                                                        ...ds.externalSecret!,
+                                                        authOption: {
+                                                          case: "token" as const,
+                                                          value: e.target.value,
+                                                        },
+                                                      };
+                                                      onDataSourceChange(ds);
+                                                    }}
+                                                  />
+                                                </FormField>
+                                              );
+                                            })()}
+                                          {/* AppRole fields */}
+                                          {dataSource.externalSecret.authOption
+                                            ?.case === "appRole" && (
+                                            <div className="flex flex-col gap-y-4">
+                                              <FormField
+                                                validationField="externalSecret.roleId"
+                                                title={
+                                                  <>
+                                                    {t(
+                                                      "instance.external-secret-vault.vault-auth-type.approle.role-id"
+                                                    )}{" "}
+                                                    <span className="text-error">
+                                                      *
+                                                    </span>
+                                                  </>
+                                                }
+                                              >
+                                                <Input
+                                                  value={
+                                                    dataSource.externalSecret
+                                                      .authOption.value
+                                                      .roleId ?? ""
+                                                  }
+                                                  className="w-full"
+                                                  disabled={!allowEdit}
+                                                  placeholder={`${t("instance.external-secret-vault.vault-auth-type.approle.role-id")} - ${t("common.write-only")}`}
+                                                  onChange={(e) => {
+                                                    const ds = {
+                                                      ...dataSource,
+                                                    };
+                                                    if (
+                                                      ds.externalSecret
+                                                        ?.authOption?.case ===
+                                                      "appRole"
+                                                    ) {
+                                                      ds.externalSecret = {
+                                                        ...ds.externalSecret,
+                                                        authOption: {
+                                                          ...ds.externalSecret
+                                                            .authOption,
+                                                          value: {
+                                                            ...ds.externalSecret
+                                                              .authOption.value,
+                                                            roleId:
+                                                              e.target.value,
+                                                          },
+                                                        },
+                                                      };
+                                                    }
+                                                    onDataSourceChange(ds);
+                                                  }}
+                                                />
+                                              </FormField>
+                                              <FormField
+                                                validationField="externalSecret.secretId"
+                                                title={
+                                                  <>
+                                                    {t(
+                                                      "instance.external-secret-vault.vault-auth-type.approle.secret-id"
+                                                    )}{" "}
+                                                    <span className="text-error">
+                                                      *
+                                                    </span>
+                                                  </>
+                                                }
+                                              >
+                                                {/* Environment secret id reads from the host,
+                                        which is disallowed in SaaS mode; only plain
+                                        is offered there. */}
+                                                {!isSaaSMode && (
+                                                  <FormControlRow className="my-1 w-fit">
+                                                    <Switch
+                                                      id="appRoleSecretType"
+                                                      checked={
+                                                        dataSource
+                                                          .externalSecret
+                                                          .authOption.value
+                                                          .type ===
+                                                        DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT
+                                                      }
+                                                      disabled={!allowEdit}
+                                                      onCheckedChange={(
+                                                        checked
+                                                      ) => {
+                                                        const ds = {
+                                                          ...dataSource,
+                                                        };
+                                                        if (
+                                                          ds.externalSecret
+                                                            ?.authOption
+                                                            ?.case === "appRole"
+                                                        ) {
+                                                          ds.externalSecret = {
+                                                            ...ds.externalSecret,
+                                                            authOption: {
+                                                              ...ds
+                                                                .externalSecret
+                                                                .authOption,
+                                                              value: {
+                                                                ...ds
+                                                                  .externalSecret
+                                                                  .authOption
+                                                                  .value,
+                                                                type: checked
+                                                                  ? DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT
+                                                                  : DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN,
+                                                              },
+                                                            },
+                                                          };
+                                                        }
+                                                        onDataSourceChange(ds);
+                                                      }}
+                                                    />
+                                                    <label
+                                                      htmlFor="appRoleSecretType"
+                                                      className="text-sm"
+                                                    >
+                                                      {t(
+                                                        "instance.external-secret-vault.vault-auth-type.approle.secret-env-name"
+                                                      )}
+                                                    </label>
+                                                  </FormControlRow>
+                                                )}
+                                                <Input
+                                                  value={
+                                                    dataSource.externalSecret
+                                                      .authOption.value
+                                                      .secretId ?? ""
+                                                  }
+                                                  className="mt-2 w-full"
+                                                  disabled={!allowEdit}
+                                                  onChange={(e) => {
+                                                    const ds = {
+                                                      ...dataSource,
+                                                    };
+                                                    if (
+                                                      ds.externalSecret
+                                                        ?.authOption?.case ===
+                                                      "appRole"
+                                                    ) {
+                                                      ds.externalSecret = {
+                                                        ...ds.externalSecret,
+                                                        authOption: {
+                                                          ...ds.externalSecret
+                                                            .authOption,
+                                                          value: {
+                                                            ...ds.externalSecret
+                                                              .authOption.value,
+                                                            secretId:
+                                                              e.target.value,
+                                                          },
+                                                        },
+                                                      };
+                                                    }
+                                                    onDataSourceChange(ds);
+                                                  }}
+                                                />
+                                              </FormField>
+                                            </div>
+                                          )}
+                                          {/* Vault TLS config */}
+                                          <FormField
+                                            title={
+                                              <>
+                                                {t(
+                                                  "instance.external-secret-vault.vault-tls-config"
+                                                )}
+                                              </>
+                                            }
+                                          >
+                                            <SslCertificateForm
+                                              verify={
+                                                !dataSource.externalSecret
+                                                  .skipVaultTlsVerification
+                                              }
+                                              onVerifyChange={(val) => {
+                                                const ds = { ...dataSource };
+                                                ds.externalSecret = {
+                                                  ...ds.externalSecret!,
+                                                  skipVaultTlsVerification:
+                                                    !val,
+                                                };
+                                                onDataSourceChange(ds);
+                                              }}
+                                              ca={
+                                                dataSource.externalSecret
+                                                  .vaultSslCa
+                                              }
+                                              onCaChange={(val) => {
+                                                const ds = { ...dataSource };
+                                                ds.externalSecret = {
+                                                  ...ds.externalSecret!,
+                                                  vaultSslCa: val,
+                                                };
+                                                onDataSourceChange(ds);
+                                              }}
+                                              cert={
+                                                dataSource.externalSecret
+                                                  .vaultSslCert
+                                              }
+                                              onCertChange={(val) => {
+                                                const ds = { ...dataSource };
+                                                ds.externalSecret = {
+                                                  ...ds.externalSecret!,
+                                                  vaultSslCert: val,
+                                                };
+                                                onDataSourceChange(ds);
+                                              }}
+                                              sslKey={
+                                                dataSource.externalSecret
+                                                  .vaultSslKey
+                                              }
+                                              onKeyChange={(val) => {
+                                                const ds = { ...dataSource };
+                                                ds.externalSecret = {
+                                                  ...ds.externalSecret!,
+                                                  vaultSslKey: val,
+                                                };
+                                                onDataSourceChange(ds);
+                                              }}
+                                              disabled={!allowEdit}
+                                              showKeyAndCert
+                                            />
+                                          </FormField>
+                                          {/* Engine name */}
+                                          <FormField
+                                            validationField="externalSecret.engineName"
+                                            title={
+                                              <>
+                                                {t(
+                                                  "instance.external-secret-vault.vault-secret-engine-name"
+                                                )}{" "}
+                                                <span className="text-error">
+                                                  *
+                                                </span>
+                                              </>
+                                            }
+                                            description={
+                                              <>
+                                                {t(
+                                                  "instance.external-secret-vault.vault-secret-engine-tips"
+                                                )}
+                                              </>
+                                            }
+                                          >
+                                            <Input
+                                              value={
+                                                dataSource.externalSecret
+                                                  .engineName ?? ""
+                                              }
+                                              required
+                                              className="w-full"
+                                              disabled={!allowEdit}
+                                              placeholder={t(
+                                                "instance.external-secret-vault.vault-secret-engine-name"
+                                              )}
+                                              onChange={(e) => {
+                                                const ds = { ...dataSource };
+                                                ds.externalSecret = {
+                                                  ...ds.externalSecret!,
+                                                  engineName: e.target.value,
+                                                };
+                                                onDataSourceChange(ds);
+                                              }}
+                                            />
+                                          </FormField>
+                                        </div>
+                                      )}
+
+                                      {/* Azure Key Vault URL */}
+                                      {passwordType ===
+                                        DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT && (
+                                        <FormField
+                                          validationField="externalSecret.url"
+                                          title={
+                                            <>
+                                              {t(
+                                                "instance.external-secret-azure.vault-url"
+                                              )}{" "}
+                                              <span className="text-error">
+                                                *
+                                              </span>
+                                            </>
+                                          }
+                                          description={
+                                            <>
+                                              {t(
+                                                "instance.external-secret-azure.vault-url-tips"
+                                              )}
+                                            </>
+                                          }
+                                        >
+                                          <Input
+                                            value={
+                                              dataSource.externalSecret.url ??
+                                              ""
+                                            }
+                                            required
+                                            className="w-full"
+                                            disabled={!allowEdit}
+                                            placeholder={t(
+                                              "instance.external-secret-azure.vault-url"
+                                            )}
+                                            onChange={(e) => {
+                                              const ds = { ...dataSource };
+                                              ds.externalSecret = {
+                                                ...ds.externalSecret!,
+                                                url: e.target.value,
+                                              };
+                                              onDataSourceChange(ds);
+                                            }}
+                                          />
+                                        </FormField>
+                                      )}
+
+                                      {/* Secret name (common) */}
+                                      <FormField
+                                        validationField="externalSecret.secretName"
+                                        title={
+                                          <>
+                                            {secretNameLabel}{" "}
+                                            <span className="text-error">
+                                              *
+                                            </span>
+                                          </>
+                                        }
+                                        description={secretNameDescription}
+                                      >
+                                        <Input
+                                          value={
+                                            dataSource.externalSecret
+                                              .secretName ?? ""
+                                          }
+                                          required
+                                          className="w-full"
+                                          disabled={!allowEdit}
+                                          placeholder={secretNameLabel}
+                                          onChange={(e) => {
+                                            const ds = { ...dataSource };
+                                            ds.externalSecret = {
+                                              ...ds.externalSecret!,
+                                              secretName: e.target.value,
+                                            };
+                                            onDataSourceChange(ds);
+                                          }}
+                                        />
+                                      </FormField>
+
+                                      {/* Secret key (not for GCP/Azure) */}
+                                      {passwordType !==
+                                        DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER &&
+                                        passwordType !==
+                                          DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT && (
+                                          <FormField
+                                            validationField="externalSecret.passwordKeyName"
+                                            title={
+                                              <>
+                                                {secretKeyLabel}{" "}
+                                                <span className="text-error">
+                                                  *
+                                                </span>
+                                              </>
+                                            }
+                                          >
+                                            <Input
+                                              value={
+                                                dataSource.externalSecret
+                                                  .passwordKeyName ?? ""
+                                              }
+                                              required
+                                              className="w-full"
+                                              disabled={!allowEdit}
+                                              placeholder={secretKeyLabel}
+                                              onChange={(e) => {
+                                                const ds = { ...dataSource };
+                                                ds.externalSecret = {
+                                                  ...ds.externalSecret!,
+                                                  passwordKeyName:
+                                                    e.target.value,
+                                                };
+                                                onDataSourceChange(ds);
+                                              }}
+                                            />
+                                          </FormField>
+                                        )}
+                                    </fieldset>
+                                  </ResponsiveFormLayout>
+                                </FormField>
+                              </div>
+                            )}
+                        </div>
+                      )}
+                  </>
+                )}
+
+                {/* Spanner/BigQuery auth */}
+                {(basicInfo.engine === Engine.SPANNER ||
+                  basicInfo.engine === Engine.BIGQUERY) && (
+                  <>
+                    <CredentialSourceForm
+                      dataSource={dataSource}
+                      engine={basicInfo.engine}
+                      allowEdit={allowEdit}
+                      onDataSourceChange={update}
+                    />
+                  </>
+                )}
+
+                {/* DynamoDB AWS IAM credentials */}
+                {basicInfo.engine === Engine.DYNAMODB && (
+                  <>
+                    <CredentialSourceForm
+                      dataSource={dynamoDBDataSource}
+                      engine={basicInfo.engine}
+                      allowEdit={allowEdit}
+                      onDataSourceChange={updateDynamoDB}
+                    />
+                    <AwsRegionField
+                      region={dataSource.region ?? ""}
+                      required={
+                        dataSource.iamExtension?.case === "awsCredential"
+                      }
+                      allowEdit={allowEdit}
+                      onChange={(region) => updateDynamoDB({ region })}
+                    />
+                  </>
+                )}
+
+                {/* Oracle SID/Service Name */}
+                {basicInfo.engine === Engine.ORACLE && (
+                  <OracleConnectionFields
+                    dataSourceId={dataSource.id}
+                    instanceName={instance?.name}
+                    sid={dataSource.sid ?? ""}
+                    serviceName={dataSource.serviceName ?? ""}
+                    resetEvent={dataSourceResetEvent}
+                    allowEdit={allowEdit}
+                    onChange={update}
+                  />
+                )}
+
+                {/* Snowflake keypair */}
+                {basicInfo.engine === Engine.SNOWFLAKE && (
+                  <>
+                    <FormField
+                      validationField="authenticationPrivateKey"
+                      title={<>{t("data-source.ssh.private-key")}</>}
+                    >
+                      <SecretInput
+                        resetKey={dataSource.id}
+                        aria-label={t("data-source.ssh.private-key")}
+                        value={getDataSourceSecretValue(
+                          dataSource,
+                          "authenticationPrivateKey"
+                        )}
+                        isCreating={isCreating || dataSource.pendingCreate}
+                        disabled={!allowEdit}
+                        multiline
+                        allowEmpty={false}
+                        onValueChange={(value) =>
+                          onDataSourceChange(
+                            updateDataSourceSecret(
+                              dataSource,
+                              "authenticationPrivateKey",
+                              value
+                            )
+                          )
+                        }
+                      />
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                        <span className="text-control-light">
+                          {t("data-source.snowflake-keypair-tip")}
+                        </span>
+                        <LearnMoreLink
+                          href="https://docs.snowflake.com/en/user-guide/key-pair-auth"
+                          className="text-sm text-accent"
+                        />
+                      </div>
+                    </FormField>
+                    <FormField
+                      title={<>{t("data-source.private-key-passphrase")}</>}
+                      description={
+                        <>{t("data-source.private-key-passphrase-tip")}</>
+                      }
+                    >
+                      <SecretInput
+                        resetKey={dataSource.id}
+                        aria-label={t("data-source.private-key-passphrase")}
+                        value={getDataSourceSecretValue(
+                          dataSource,
+                          "authenticationPrivateKeyPassphrase"
+                        )}
+                        isCreating={isCreating || dataSource.pendingCreate}
+                        disabled={!allowEdit}
+                        onValueChange={(value) =>
+                          onDataSourceChange(
+                            updateDataSourceSecret(
+                              dataSource,
+                              "authenticationPrivateKeyPassphrase",
+                              value
+                            )
+                          )
+                        }
+                      />
+                    </FormField>
+                  </>
+                )}
+
+                {/* Databricks */}
+                {basicInfo.engine === Engine.DATABRICKS && (
+                  <>
+                    <FormField
+                      validationField="warehouseId"
+                      title={
+                        <>
+                          Warehouse ID <span className="text-error">*</span>
+                        </>
+                      }
+                    >
+                      <Input
+                        value={dataSource.warehouseId ?? ""}
+                        disabled={!allowEdit}
+                        onChange={(e) =>
+                          update({ warehouseId: e.target.value })
+                        }
+                      />
+                    </FormField>
+                    <FormField
+                      validationField="updatedToken"
+                      title={
+                        <>
+                          {t("common.token")}{" "}
+                          <span className="text-error">*</span>
+                        </>
+                      }
+                    >
+                      <SecretInput
+                        resetKey={dataSource.id}
+                        aria-label={t("common.token")}
+                        value={getDataSourceSecretValue(
+                          dataSource,
+                          "authenticationPrivateKey"
+                        )}
+                        isCreating={isCreating || dataSource.pendingCreate}
+                        disabled={!allowEdit}
+                        allowEmpty={false}
+                        onValueChange={(value) =>
+                          onDataSourceChange(
+                            updateDataSourceSecret(
+                              dataSource,
+                              "authenticationPrivateKey",
+                              value
+                            )
+                          )
+                        }
+                      />
+                    </FormField>
+                  </>
+                )}
+
+                {/* MongoDB authentication database */}
+                {showAuthenticationDatabase && (
+                  <FormField
+                    title={<>{t("instance.authentication-database")}</>}
+                  >
+                    <Input
+                      className="w-full"
+                      autoComplete="off"
+                      placeholder="admin"
+                      disabled={!allowEdit}
+                      value={dataSource.authenticationDatabase ?? ""}
+                      onChange={(e) =>
+                        update({
+                          authenticationDatabase: e.target.value.trim(),
+                        })
+                      }
+                    />
+                  </FormField>
+                )}
+
+                {/* Database field */}
+                {showDatabase && (
+                  <FormField title={<>{t("instance.connection-database")}</>}>
+                    <Input
+                      value={dataSource.database ?? ""}
+                      className="w-full"
+                      disabled={!allowEdit}
+                      placeholder={t("common.database")}
+                      onChange={(e) => update({ database: e.target.value })}
+                    />
+                  </FormField>
+                )}
+              </>
+            )}
+
+        {/* Connection options (SSL, SSH, Extra params) */}
+        {!authOnly && !hideOptions && (
+          <>
+            {/* SSL */}
+            {showSSL && (isPasswordAuth || dataSource.useSsl) && (
+              <FormField
+                title={
+                  <span className="flex items-center justify-start gap-x-1">
+                    {t("data-source.ssl.connection-security")}
+                    {onOpenInfoPanel && hasSslInfo && (
+                      <Button
+                        type="button"
+                        appearance="link"
+                        size="xs"
+                        className="-ml-1 w-6 shrink-0 p-0"
+                        aria-label={t("data-source.ssl.connection-security")}
+                        onClick={() => onOpenInfoPanel("ssl")}
+                      >
+                        <Info className="size-3.5" />
+                      </Button>
+                    )}
+                  </span>
+                }
+              >
+                <SslCertificateForm
+                  useSsl={dataSource.useSsl}
+                  onUseSslChange={(useSsl) => {
+                    if (useSsl) {
+                      update({
+                        useSsl: true,
+                        updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                          useSsl: true,
+                        }),
+                      });
+                      return;
+                    }
+                    setLocalTlsCaSource("SYSTEM_TRUST");
+                    setLocalTlsClientCertSource("NONE");
+                    update({ ...disableLocalTls(dataSource), updateSsl: true });
+                  }}
+                  posture={localTlsPosture}
+                  onPostureChange={onLocalTlsPostureChange}
+                  isSaaSMode={isSaaSMode}
+                  caSource={localTlsCaSource}
+                  onCaSourceChange={(source) => {
+                    setLocalTlsCaSource(source);
+                    update({
+                      ...applyLocalTlsCaSource(dataSource, source),
+                      updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                        ca: true,
+                      }),
+                    });
+                  }}
+                  clientCertSource={localTlsClientCertSource}
+                  onClientCertSourceChange={(source) => {
+                    setLocalTlsClientCertSource(source);
+                    update({
+                      ...applyLocalTlsClientCertSource(dataSource, source),
+                      updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                        clientCert: true,
+                      }),
+                    });
+                  }}
+                  verify={dataSource.verifyTlsCertificate}
+                  onVerifyChange={(val) =>
+                    update({ verifyTlsCertificate: val })
+                  }
+                  ca={dataSource.sslCa}
+                  onCaChange={(val) =>
+                    update({
+                      sslCa: val,
+                      updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                        ca: true,
+                      }),
+                    })
+                  }
+                  caPath={dataSource.sslCaPath}
+                  hasCa={dataSource.sslCaSet}
+                  hasCaPath={dataSource.sslCaPathSet}
+                  onCaPathChange={(val) =>
+                    update({
+                      sslCaPath: val,
+                      updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                        ca: true,
+                      }),
+                    })
+                  }
+                  cert={dataSource.sslCert}
+                  hasCert={dataSource.sslCertSet}
+                  onCertChange={(val) =>
+                    update({
+                      sslCert: val,
+                      updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                        clientCert: true,
+                      }),
+                    })
+                  }
+                  certPath={dataSource.sslCertPath}
+                  hasCertPath={dataSource.sslCertPathSet}
+                  onCertPathChange={(val) =>
+                    update({
+                      sslCertPath: val,
+                      updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                        clientCert: true,
+                      }),
+                    })
+                  }
+                  sslKey={dataSource.sslKey}
+                  hasKey={dataSource.sslKeySet}
+                  onKeyChange={(val) =>
+                    update({
+                      sslKey: val,
+                      updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                        clientCert: true,
+                      }),
+                    })
+                  }
+                  keyPath={dataSource.sslKeyPath}
+                  hasKeyPath={dataSource.sslKeyPathSet}
+                  onKeyPathChange={(val) =>
+                    update({
+                      sslKeyPath: val,
+                      updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                        clientCert: true,
+                      }),
+                    })
+                  }
+                  engineType={basicInfo.engine}
+                  disabled={!allowEdit}
+                />
+              </FormField>
+            )}
+
+            {/* SSH */}
+            {!hideAdvancedFeatures && showSSH && isPasswordAuth && (
+              <div>
+                <SshConnectionForm
+                  key={dataSource.id}
+                  title={
+                    <span className="flex flex-row items-center gap-x-1">
+                      {t("data-source.ssh-connection")}
+                      {onOpenInfoPanel && hasSshInfo && (
+                        <Button
+                          type="button"
+                          appearance="link"
+                          size="xs"
+                          className="-ml-1 w-6 shrink-0 p-0"
+                          aria-label={t("data-source.ssh-connection")}
+                          onClick={() => onOpenInfoPanel("ssh")}
+                        >
+                          <Info className="size-3.5" />
+                        </Button>
+                      )}
+                    </span>
+                  }
+                  value={dataSource}
+                  isCreating={isCreating || dataSource.pendingCreate}
+                  secretValues={{
+                    sshPassword: getDataSourceSecretValue(
+                      dataSource,
+                      "sshPassword"
+                    ),
+                    sshPrivateKey: getDataSourceSecretValue(
+                      dataSource,
+                      "sshPrivateKey"
+                    ),
+                  }}
+                  instance={instance}
+                  disabled={!allowEdit}
+                  onChange={handleSSHChange}
+                />
+              </div>
+            )}
+
+            {/* Extra connection parameters */}
+            {hasExtraParameters && (
+              <FormField
+                title={t("data-source.extra-params.self")}
+                description={t("data-source.extra-params.description")}
+              >
+                {showExtraParameters || extraConnectionParamsList.length > 0 ? (
+                  <>
+                    <FormControlGroup className="mt-2">
+                      {allowEdit && (
+                        <FormControlRow>
+                          <Input
+                            value={newParamKey}
+                            className="min-w-0 flex-1"
+                            aria-label={t(
+                              "instance.parameter-name-placeholder"
+                            )}
+                            placeholder={t(
+                              "instance.parameter-name-placeholder"
+                            )}
+                            onChange={(e) => setNewParamKey(e.target.value)}
+                          />
+                          <Input
+                            value={newParamValue}
+                            className="min-w-0 flex-1"
+                            aria-label={t(
+                              "instance.parameter-value-placeholder"
+                            )}
+                            placeholder={t(
+                              "instance.parameter-value-placeholder"
+                            )}
+                            onChange={(e) => setNewParamValue(e.target.value)}
+                          />
+                          <Button
+                            appearance="outline"
+                            className="w-24 shrink-0"
+                            disabled={!newParamKey.trim()}
+                            onClick={addNewParameter}
+                          >
+                            {t("common.add")}
+                          </Button>
+                        </FormControlRow>
+                      )}
+
+                      {extraConnectionParamsList.map((param, index) => (
+                        <FormField
+                          key={param.key}
+                          validationField={`extraConnectionParameters.${param.key}`}
+                          showErrors
+                        >
+                          <FormControlRow>
+                            <Input
+                              className="min-w-0 flex-1"
+                              value={param.key}
+                              disabled={!allowEdit}
+                              aria-label={t(
+                                "instance.parameter-name-placeholder"
+                              )}
+                              placeholder={t(
+                                "instance.parameter-name-placeholder"
+                              )}
+                              onChange={(e) =>
+                                updateExtraConnectionParamKey(
+                                  index,
+                                  e.target.value
+                                )
+                              }
+                            />
+                            <Input
+                              className="min-w-0 flex-1"
+                              value={param.value}
+                              disabled={!allowEdit}
+                              aria-label={t(
+                                "instance.parameter-value-placeholder"
+                              )}
+                              placeholder={t(
+                                "instance.parameter-value-placeholder"
+                              )}
+                              onChange={(e) =>
+                                updateExtraConnectionParamValue(
+                                  index,
+                                  e.target.value
+                                )
+                              }
+                            />
+                            {allowEdit && (
+                              <Button
+                                variant="destructive"
+                                className="w-24 shrink-0"
+                                onClick={() =>
+                                  removeExtraConnectionParam(index)
+                                }
+                              >
+                                {t("common.remove")}
+                              </Button>
+                            )}
+                          </FormControlRow>
+                        </FormField>
+                      ))}
+                    </FormControlGroup>
+
+                    {extraConnectionParamsList.length === 0 && (
+                      <div className="textinfolabel text-sm italic mt-2">
+                        {allowEdit
+                          ? t("instance.no-params-yet-add-above")
+                          : t("instance.no-extra-params-configured")}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Button
+                    appearance="link"
+                    size="sm"
+                    className="self-start"
+                    onClick={() => setShowExtraParameters(true)}
+                    disabled={!allowEdit}
+                  >
+                    {t("instance.add-parameter")}
+                  </Button>
+                )}
+              </FormField>
+            )}
+          </>
+        )}
+      </FormFieldGroup>
+    </ValidationProvider>
+  );
+}
+
+function AwsRegionField({
+  region,
+  required,
+  allowEdit,
+  onChange,
+}: Readonly<{
+  region: string;
+  required: boolean;
+  allowEdit: boolean;
+  onChange: (region: string) => void;
+}>) {
+  const { t } = useTranslation();
+  return (
+    <FormField
+      validationField="region"
+      title={
+        <>
+          {t("instance.database-region")}
+          {required && <span className="text-error"> *</span>}
+        </>
+      }
+    >
+      <Input
+        value={region}
+        className="w-full"
+        disabled={!allowEdit}
+        placeholder={t("instance.database-region-placeholder")}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </FormField>
+  );
+}

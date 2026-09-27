@@ -82,16 +82,7 @@ func buildCatalog(ctx context.Context, cCtx base.CompletionContext) *catalog.Cat
 		return cat
 	}
 
-	for _, schema := range metadata.ListSchemaNames() {
-		schemaMeta := metadata.GetSchemaMetadata(schema)
-		if schemaMeta == nil {
-			continue
-		}
-		for _, table := range schemaMeta.ListTableNames() {
-			cat.AddCollection(table)
-		}
-	}
-
+	cat.LoadMetadata(metadata.GetProto())
 	return cat
 }
 

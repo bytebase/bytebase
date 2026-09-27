@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/bytebase/gomongo"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -91,6 +92,11 @@ func (*Driver) GetDB() *sql.DB {
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	stmts, err := mongodbparser.SplitSQL(statement)
 	if err != nil {
+		// Log the unparseable input as a failed command so the parse error is
+		// visible in the task run log instead of the statement silently
+		// disappearing from it (BYT-9950).
+		opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
+		opts.LogCommandResponse(0, nil, err.Error())
 		return 0, errors.Wrap(err, "failed to split MongoDB statement")
 	}
 
@@ -115,7 +121,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 }
 
 // Dump dumps the database.
-func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (*Driver) Dump(_ context.Context, _ io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
 	return nil
 }
 
@@ -237,5 +243,5 @@ func marshalValueToExtJSON(v any) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(jsonBytes), nil
+	return string(normalizeExtJSONNumbers(jsonBytes)), nil
 }

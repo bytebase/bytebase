@@ -90,7 +90,7 @@ func (l *Listener) handleNotification(payload string) {
 
 	switch signal.Type {
 	case storepb.Signal_CANCEL_PLAN_CHECK_RUN:
-		ref := bus.PlanCheckRunRef{ProjectID: signal.Project, UID: signal.Uid}
+		ref := bus.PlanCheckRunRef{ProjectID: signal.Project, UID: signal.Uid, ApprovalInputVersion: signal.ApprovalInputVersion}
 		if cancel, ok := l.bus.RunningPlanCheckRunsCancelFunc.Load(ref); ok {
 			cancel.(context.CancelFunc)()
 		}

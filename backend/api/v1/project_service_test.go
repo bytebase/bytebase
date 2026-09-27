@@ -1,24 +1,37 @@
 package v1
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	colorpb "google.golang.org/genproto/googleapis/type/color"
 	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/sample"
+	"github.com/bytebase/bytebase/backend/component/sample/selfhost"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestValidateMembers(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		member  string
 		wantErr bool
@@ -81,6 +94,7 @@ func TestValidateMembers(t *testing.T) {
 }
 
 func TestValidateBindings(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		bindings []*v1pb.Binding
 		roles    []*store.RoleMessage
@@ -255,47 +269,48 @@ func TestValidateBindings(t *testing.T) {
 }
 
 func TestValidateIAMPolicyExpression(t *testing.T) {
+	t.Parallel()
 	timeNow := time.Now()
 	thirtyDays := &durationpb.Duration{Seconds: 60 * 60 * 24 * 30}
 	withinCap := fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 15).Format(time.RFC3339))
 	overCap := fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 60).Format(time.RFC3339))
 	tests := []struct {
-		name                     string
-		expr                     string
-		maximumRequestExpiration *durationpb.Duration
-		wantErr                  bool
+		name              string
+		expr              string
+		maximumExpiration *durationpb.Duration
+		wantErr           bool
 	}{
 		{
-			name:                     "within cap",
-			expr:                     withinCap,
-			maximumRequestExpiration: thirtyDays,
+			name:              "within cap",
+			expr:              withinCap,
+			maximumExpiration: thirtyDays,
 		},
 		{
-			name:                     "exceeds cap",
-			expr:                     overCap,
-			maximumRequestExpiration: thirtyDays,
-			wantErr:                  true,
+			name:              "exceeds cap",
+			expr:              overCap,
+			maximumExpiration: thirtyDays,
+			wantErr:           true,
 		},
 		{
-			name:                     "no cap configured",
-			expr:                     overCap,
-			maximumRequestExpiration: nil,
+			name:              "no cap configured",
+			expr:              overCap,
+			maximumExpiration: nil,
 		},
 		{
-			name:                     "bound with database scoping",
-			expr:                     fmt.Sprintf(`%s && (resource.database == "a" || resource.database == "b")`, withinCap),
-			maximumRequestExpiration: thirtyDays,
+			name:              "bound with database scoping",
+			expr:              fmt.Sprintf(`%s && (resource.database == "a" || resource.database == "b")`, withinCap),
+			maximumExpiration: thirtyDays,
 		},
 		{
-			name:                     "missing request.time",
-			expr:                     `resource.database == "a"`,
-			maximumRequestExpiration: thirtyDays,
-			wantErr:                  true,
+			name:              "missing request.time",
+			expr:              `resource.database == "a"`,
+			maximumExpiration: thirtyDays,
+			wantErr:           true,
 		},
 	}
 
 	for _, tt := range tests {
-		err := validateExpirationInExpression(tt.expr, tt.maximumRequestExpiration)
+		err := validateExpirationInExpression(tt.expr, tt.maximumExpiration)
 		if tt.wantErr {
 			require.Error(t, err, tt.name)
 		} else {
@@ -305,6 +320,7 @@ func TestValidateIAMPolicyExpression(t *testing.T) {
 }
 
 func TestFindIamPolicyDeltas(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		oldPolicy    *storepb.IamPolicy
 		newIamPolicy *storepb.IamPolicy
@@ -515,4 +531,163 @@ func TestValidateLabels(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateIssueLabelsColor(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		labels  []*v1pb.Label
+		wantErr bool
+	}{
+		{
+			name: "missing color",
+			labels: []*v1pb.Label{
+				{Value: "review"},
+			},
+		},
+		{
+			name: "opaque color",
+			labels: []*v1pb.Label{
+				{Value: "review", Color: &colorpb.Color{Red: 0.1, Green: 0.2, Blue: 0.3}},
+			},
+		},
+		{
+			name: "explicit alpha one",
+			labels: []*v1pb.Label{
+				{Value: "review", Color: &colorpb.Color{Red: 0.1, Green: 0.2, Blue: 0.3, Alpha: wrapperspb.Float(1)}},
+			},
+		},
+		{
+			name: "channel out of range",
+			labels: []*v1pb.Label{
+				{Value: "review", Color: &colorpb.Color{Red: 1.1, Green: 0.2, Blue: 0.3}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "transparent color",
+			labels: []*v1pb.Label{
+				{Value: "review", Color: &colorpb.Color{Red: 0.1, Green: 0.2, Blue: 0.3, Alpha: wrapperspb.Float(0.5)}},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateIssueLabels(tc.labels)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestProjectPurgeCleansSampleBeforeDeletingMetadata(t *testing.T) {
+	t.Parallel()
+	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
+	manager := &sampleManagerStub{}
+	cleanupErr := errors.New("sample cleanup failed")
+	manager.projectPurge = func(ctx context.Context, workspaceID, gotProjectID string) error {
+		require.Equal(t, "default", workspaceID)
+		require.Equal(t, projectID, gotProjectID)
+		instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
+			Workspace:  workspaceID,
+			ProjectID:  &gotProjectID,
+			ResourceID: &instanceID,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, instance)
+		if cleanupErr != nil {
+			return cleanupErr
+		}
+		return nil
+	}
+	projectService := NewProjectService(stores, nil, nil, manager)
+	projectName := common.FormatProject(projectID)
+
+	_, err := projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName}))
+	require.NoError(t, err)
+	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName, Purge: true}))
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:   "default",
+		ResourceID:  &projectID,
+		ShowDeleted: true,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, project)
+
+	cleanupErr = nil
+	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName, Purge: true}))
+	require.NoError(t, err)
+	require.Equal(t, []string{projectID, projectID}, manager.projectPurgeCalls)
+
+	project, err = stores.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:   "default",
+		ResourceID:  &projectID,
+		ShowDeleted: true,
+	})
+	require.NoError(t, err)
+	require.Nil(t, project)
+}
+
+func TestProjectPurgeRemovesSelfHostSample(t *testing.T) {
+	t.Parallel()
+	ctx, stores, projectID, instanceID, databaseName := setupProjectInstanceLifecycleAPITest(t)
+	payload, err := protojson.Marshal(&storepb.SelfHostSampleInstanceSetupPayload{
+		Instances: []*storepb.SelfHostSampleInstanceSetupPayload_Instance{{
+			InstanceId:   instanceID,
+			ProjectId:    &projectID,
+			Title:        "Sample Project Instance",
+			DatabaseName: databaseName,
+			RoleName:     "sample-role",
+		}},
+	})
+	require.NoError(t, err)
+	const replicaID = "replica-a"
+	_, created, err := stores.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
+		WorkspaceID: "default",
+		ReplicaID:   replicaID,
+		Payload:     payload,
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+	activated, err := stores.ActivateSampleInstanceSetup(ctx, "default", replicaID, []string{projectID}, time.Now(), nil)
+	require.NoError(t, err)
+	require.True(t, activated)
+
+	dataRoot := t.TempDir()
+	dataDir := filepath.Join(dataRoot, "pgdata-sample-managed", instanceID)
+	require.NoError(t, os.MkdirAll(dataDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dataDir, "sample-data"), []byte("sample"), 0o644))
+	manager := selfhost.NewManager(
+		stores,
+		&config.Profile{DataDir: dataRoot, Port: 8080},
+		nil,
+		sample.ManagerOptions{ReplicaID: replicaID},
+	)
+	projectService := NewProjectService(stores, nil, nil, manager)
+	projectName := common.FormatProject(projectID)
+
+	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName}))
+	require.NoError(t, err)
+	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName, Purge: true}))
+	require.NoError(t, err)
+
+	_, err = os.Stat(dataDir)
+	require.ErrorIs(t, err, os.ErrNotExist)
+	setup, err := stores.GetSampleInstanceSetup(ctx, "default")
+	require.NoError(t, err)
+	require.NotNil(t, setup)
+	require.NotNil(t, setup.DeletedAt)
+	instances, err := manager.ListInstances(ctx, "default")
+	require.NoError(t, err)
+	require.Len(t, instances, 1)
+	require.Equal(t, common.FormatProjectInstance(projectID, instanceID), instances[0].Name)
+	require.Nil(t, instances[0].ExpireTime)
 }

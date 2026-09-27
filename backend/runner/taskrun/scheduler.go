@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -33,11 +34,16 @@ type Scheduler struct {
 	bus            *bus.Bus
 	webhookManager *webhook.Manager
 	licenseService *enterprise.LicenseService
+	productMetrics *productmetrics.ProductMetrics
 	executorMap    map[storepb.Task_Type]Executor
 	profile        *config.Profile
 	// haFailSince is when CheckReplicaLimit first started failing.
 	// Zero means the check is currently passing.
 	haFailSince time.Time
+
+	// runs tracks the task goroutines; the scheduler that spawns them waits for
+	// them before it returns, or they outlive the store.
+	runs sync.WaitGroup
 }
 
 // NewScheduler will create a new scheduler.
@@ -47,6 +53,7 @@ func NewScheduler(
 	webhookManager *webhook.Manager,
 	licenseService *enterprise.LicenseService,
 	profile *config.Profile,
+	productMetrics *productmetrics.ProductMetrics,
 ) *Scheduler {
 	return &Scheduler{
 		store:          store,
@@ -54,6 +61,7 @@ func NewScheduler(
 		webhookManager: webhookManager,
 		licenseService: licenseService,
 		profile:        profile,
+		productMetrics: productMetrics,
 		executorMap:    map[storepb.Task_Type]Executor{},
 	}
 }
@@ -155,7 +163,7 @@ func (s *Scheduler) failTaskRunsForHA(ctx context.Context, haErr error) {
 func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	go s.runTaskCompletionListener(ctx)
+	wg.Go(func() { s.runTaskCompletionListener(ctx) })
 
 	// Start rollout creator component
 	rolloutCreator := NewRolloutCreator(s.store, s.bus, s.webhookManager)
@@ -190,9 +198,26 @@ func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 	}
 }
 
+// planTasksComplete reports whether every task has reached a state that counts
+// as finishing the pipeline: a task run that is DONE or SKIPPED, or a task the
+// user skipped. FAILED and CANCELED do not count, so a pipeline holding one is
+// not complete until it is retried into DONE or skipped.
+func planTasksComplete(tasks []*store.TaskMessage) bool {
+	for _, task := range tasks {
+		switch {
+		case task.LatestTaskRunStatus == storepb.TaskRun_DONE,
+			task.LatestTaskRunStatus == storepb.TaskRun_SKIPPED,
+			task.Payload.GetSkipped():
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 // checkPlanCompletion checks if all tasks in a plan are complete and successful.
 // If so, sends PIPELINE_COMPLETED webhook and auto-resolves issues for deferred rollout plans.
-// Deferred rollout plans (exportDataConfig, createDatabaseConfig) auto-resolve when tasks complete.
+// Deferred rollout plans (createDatabaseConfig) auto-resolve when tasks complete.
 // Called when tasks are marked DONE/SKIPPED, or when tasks are skipped/canceled via API.
 func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 	planID := ref.PlanID
@@ -209,20 +234,19 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 		return
 	}
 
-	// Check if all tasks are complete (DONE or SKIPPED)
-	for _, task := range tasks {
-		status := task.LatestTaskRunStatus
+	if !planTasksComplete(tasks) {
+		return
+	}
 
-		// Only DONE and SKIPPED are considered complete
-		// FAILED and CANCELED are not complete states
-		isComplete := status == storepb.TaskRun_DONE ||
-			status == storepb.TaskRun_SKIPPED ||
-			task.Payload.GetSkipped()
-
-		if !isComplete {
-			// Not all tasks complete - no webhook
-			return
-		}
+	project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID)
+	if err != nil || project == nil {
+		slog.Error("failed to get project for completion webhook", log.BBError(err))
+		return
+	}
+	environmentSetting, err := s.store.GetEnvironment(ctx, project.Workspace)
+	if err != nil {
+		slog.Error("failed to get environments for completion webhook", log.BBError(err))
+		return
 	}
 
 	// All tasks complete and successful - try to claim completion notification
@@ -235,30 +259,18 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 		return // Already sent
 	}
 
-	project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID)
-	if err != nil || project == nil {
-		slog.Error("failed to get project for completion webhook", log.BBError(err))
-		return
-	}
-
-	// Use environment from the first task (all tasks should be in the same environment for a rollout)
-	environment := ""
-	if len(tasks) > 0 {
-		environment = tasks[0].Environment
-	}
-
 	// Send PIPELINE_COMPLETED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Type:    storepb.Activity_PIPELINE_COMPLETED,
 		Project: webhook.NewProject(project),
 		RolloutCompleted: &webhook.EventRolloutCompleted{
 			Rollout:     webhook.NewRollout(plan),
-			Environment: environment,
+			Environment: completionWebhookEnvironment(tasks, common.EnvironmentOrderMap(environmentSetting.GetEnvironments())),
 		},
 	})
 
 	// Auto-resolve issue for deferred rollout plans.
-	// Deferred rollout plans are those with only exportDataConfig or createDatabaseConfig specs.
+	// Deferred rollout plans are those with only createDatabaseConfig specs.
 	// These are simple single-phase operations that don't require manual resolution.
 	if isDeferredRolloutPlan(plan) {
 		s.autoResolveIssue(ctx, ref.ProjectID, planID)
@@ -266,14 +278,14 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 }
 
 // isDeferredRolloutPlan returns true if the plan contains only deferred rollout specs
-// (exportDataConfig or createDatabaseConfig).
+// (createDatabaseConfig).
 func isDeferredRolloutPlan(plan *store.PlanMessage) bool {
 	specs := plan.Config.GetSpecs()
 	if len(specs) == 0 {
 		return false
 	}
 	for _, spec := range specs {
-		if spec.GetExportDataConfig() == nil && spec.GetCreateDatabaseConfig() == nil {
+		if spec.GetCreateDatabaseConfig() == nil {
 			return false
 		}
 	}
@@ -299,4 +311,20 @@ func (s *Scheduler) autoResolveIssue(ctx context.Context, projectID string, plan
 		return
 	}
 	slog.Info("auto-resolved deferred rollout issue", slog.String("project", projectID), slog.Int64("issueUID", issue.UID), slog.Int64("planID", planID))
+}
+
+func completionWebhookEnvironment(tasks []*store.TaskMessage, environmentOrderMap map[string]int) string {
+	lastEnvironment := ""
+	lastOrder := -1
+	for _, task := range tasks {
+		order, ok := environmentOrderMap[task.Environment]
+		if !ok {
+			continue
+		}
+		if lastEnvironment == "" || order > lastOrder {
+			lastEnvironment = task.Environment
+			lastOrder = order
+		}
+	}
+	return lastEnvironment
 }

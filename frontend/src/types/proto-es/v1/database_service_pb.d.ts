@@ -19,7 +19,7 @@ export declare const file_v1_database_service: GenFile;
 export declare type GetDatabaseRequest = Message<"bytebase.v1.GetDatabaseRequest"> & {
   /**
    * The name of the database to retrieve.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string name = 1;
    */
@@ -39,7 +39,8 @@ export declare type BatchGetDatabasesRequest = Message<"bytebase.v1.BatchGetData
   /**
    * The parent resource shared by all databases being retrieved.
    * - projects/{project}: batch get databases in a project;
-   * - instances/{instances}: batch get databases in a instance;
+   * - instances/{instance}: batch get databases in an instance;
+   * - projects/{project}/instances/{instance}: batch get databases in a project instance;
    * Use "-" as wildcard to batch get databases across parent.
    *
    * @generated from field: string parent = 1;
@@ -65,7 +66,7 @@ export declare const BatchGetDatabasesRequestSchema: GenMessage<BatchGetDatabase
  */
 export declare type BatchGetDatabasesResponse = Message<"bytebase.v1.BatchGetDatabasesResponse"> & {
   /**
-   * The databases from the specified request.
+   * One database per requested name, in the same order as `names`.
    *
    * @generated from field: repeated bytebase.v1.Database databases = 1;
    */
@@ -85,7 +86,8 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
   /**
    * - projects/{project}: list databases in a project, require "bb.projects.get" permission.
    * - workspaces/{id}: list databases in the workspace, require "bb.databases.list" permission.
-   * - instances/{instances}: list databases in a instance, require "bb.instances.get" permission
+   * - instances/{instance}: list databases in an instance, require "bb.instances.get" permission.
+   * - projects/{project}/instances/{instance}: list databases in a project instance, require "bb.instances.get" permission.
    *
    * @generated from field: string parent = 1;
    */
@@ -120,7 +122,7 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * - environment: the environment full name in "environments/{id}" format, support "==" operator.
    * - name: the database name, support ".contains()" operator.
    * - project: the project full name in "projects/{id}" format, support "==" operator.
-   * - instance: the instance full name in "instances/{id}" format, support "==" operator.
+   * - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
    * - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
    * - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
    * - table: filter by the database table, support "==" and ".contains()" operator.
@@ -131,6 +133,7 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * environment == "" (find databases which environment is not set)
    * project == "projects/{project resource id}"
    * instance == "instances/{instance resource id}"
+   * instance == "projects/{project resource id}/instances/{instance resource id}"
    * name.contains("database name")
    * engine == "MYSQL"
    * engine in ["MYSQL", "POSTGRES"]
@@ -209,7 +212,7 @@ export declare type UpdateDatabaseRequest = Message<"bytebase.v1.UpdateDatabaseR
    * The database to update.
    *
    * The database's `name` field is used to identify the database to update.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: bytebase.v1.Database database = 1;
    */
@@ -221,14 +224,6 @@ export declare type UpdateDatabaseRequest = Message<"bytebase.v1.UpdateDatabaseR
    * @generated from field: google.protobuf.FieldMask update_mask = 2;
    */
   updateMask?: FieldMask | undefined;
-
-  /**
-   * If set to true, and the database is not found, a new database will be created.
-   * In this situation, `update_mask` is ignored.
-   *
-   * @generated from field: bool allow_missing = 3;
-   */
-  allowMissing: boolean;
 };
 
 /**
@@ -243,7 +238,7 @@ export declare const UpdateDatabaseRequestSchema: GenMessage<UpdateDatabaseReque
 export declare type BatchUpdateDatabasesRequest = Message<"bytebase.v1.BatchUpdateDatabasesRequest"> & {
   /**
    * The parent resource shared by all databases being updated.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    * If the operation spans parents, a dash (-) may be accepted as a wildcard.
    * We only support updating the project of databases for now.
    *
@@ -290,7 +285,7 @@ export declare const BatchUpdateDatabasesResponseSchema: GenMessage<BatchUpdateD
 export declare type BatchSyncDatabasesRequest = Message<"bytebase.v1.BatchSyncDatabasesRequest"> & {
   /**
    * The parent resource shared by all databases being updated.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    * If the operation spans parents, a dash (-) may be accepted as a wildcard.
    *
    * @generated from field: string parent = 1;
@@ -329,7 +324,7 @@ export declare const BatchSyncDatabasesResponseSchema: GenMessage<BatchSyncDatab
 export declare type SyncDatabaseRequest = Message<"bytebase.v1.SyncDatabaseRequest"> & {
   /**
    * The name of the database to sync.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string name = 1;
    */
@@ -360,7 +355,7 @@ export declare const SyncDatabaseResponseSchema: GenMessage<SyncDatabaseResponse
 export declare type GetDatabaseMetadataRequest = Message<"bytebase.v1.GetDatabaseMetadataRequest"> & {
   /**
    * The name of the database to retrieve metadata.
-   * Format: instances/{instance}/databases/{database}/metadata
+   * Format: instances/{instance}/databases/{database}/metadata or projects/{project}/instances/{instance}/databases/{database}/metadata
    *
    * @generated from field: string name = 1;
    */
@@ -409,7 +404,7 @@ export declare const GetDatabaseMetadataRequestSchema: GenMessage<GetDatabaseMet
 export declare type GetDatabaseSchemaRequest = Message<"bytebase.v1.GetDatabaseSchemaRequest"> & {
   /**
    * The name of the database to retrieve schema.
-   * Format: instances/{instance}/databases/{database}/schema
+   * Format: instances/{instance}/databases/{database}/schema or projects/{project}/instances/{instance}/databases/{database}/schema
    *
    * @generated from field: string name = 1;
    */
@@ -428,7 +423,7 @@ export declare const GetDatabaseSchemaRequestSchema: GenMessage<GetDatabaseSchem
 export declare type GetDatabaseSDLSchemaRequest = Message<"bytebase.v1.GetDatabaseSDLSchemaRequest"> & {
   /**
    * The name of the database to retrieve SDL schema.
-   * Format: instances/{instance}/databases/{database}/sdlSchema
+   * Format: instances/{instance}/databases/{database}/sdlSchema or projects/{project}/instances/{instance}/databases/{database}/sdlSchema
    *
    * @generated from field: string name = 1;
    */
@@ -489,8 +484,8 @@ export declare type DiffSchemaRequest = Message<"bytebase.v1.DiffSchemaRequest">
   /**
    * The name of the database or changelog.
    * Format:
-   * database: instances/{instance}/databases/{database}
-   * changelog: instances/{instance}/databases/{database}/changelogs/{changelog}
+   * database: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
+   * changelog: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
    *
    * @generated from field: string name = 1;
    */
@@ -511,7 +506,7 @@ export declare type DiffSchemaRequest = Message<"bytebase.v1.DiffSchemaRequest">
     /**
      * The resource name of the changelog
      * Format:
-     * instances/{instance}/databases/{database}/changelogs/{changelog}
+     * instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
      *
      * @generated from field: string changelog = 3;
      */
@@ -543,12 +538,60 @@ export declare type DiffSchemaResponse = Message<"bytebase.v1.DiffSchemaResponse
 export declare const DiffSchemaResponseSchema: GenMessage<DiffSchemaResponse>;
 
 /**
+ * @generated from message bytebase.v1.DiffMetadataRequest
+ */
+export declare type DiffMetadataRequest = Message<"bytebase.v1.DiffMetadataRequest"> & {
+  /**
+   * The database whose current schema is the diff source.
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The metadata of the target schema. The source metadata and the engine are
+   * read from the database, so only the target travels in the request.
+   * Must describe the COMPLETE target schema: the diff runs against the full
+   * stored source, so any object omitted from the target (for example by a
+   * truncated metadata fetch) is treated as dropped.
+   *
+   * @generated from field: bytebase.v1.DatabaseMetadata target_metadata = 2;
+   */
+  targetMetadata?: DatabaseMetadata | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.DiffMetadataRequest.
+ * Use `create(DiffMetadataRequestSchema)` to create a new message.
+ */
+export declare const DiffMetadataRequestSchema: GenMessage<DiffMetadataRequest>;
+
+/**
+ * @generated from message bytebase.v1.DiffMetadataResponse
+ */
+export declare type DiffMetadataResponse = Message<"bytebase.v1.DiffMetadataResponse"> & {
+  /**
+   * The generated migration statements.
+   *
+   * @generated from field: string diff = 1;
+   */
+  diff: string;
+};
+
+/**
+ * Describes the message bytebase.v1.DiffMetadataResponse.
+ * Use `create(DiffMetadataResponseSchema)` to create a new message.
+ */
+export declare const DiffMetadataResponseSchema: GenMessage<DiffMetadataResponse>;
+
+/**
  * @generated from message bytebase.v1.Database
  */
 export declare type Database = Message<"bytebase.v1.Database"> & {
   /**
    * The name of the database.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    * {database} is the database name in the instance.
    *
    * @generated from field: string name = 1;
@@ -654,7 +697,7 @@ export declare type DatabaseMetadata = Message<"bytebase.v1.DatabaseMetadata"> &
   /**
    * The database metadata name.
    *
-   * Format: instances/{instance}/databases/{database}/metadata
+   * Format: instances/{instance}/databases/{database}/metadata or projects/{project}/instances/{instance}/databases/{database}/metadata
    *
    * @generated from field: string name = 1;
    */
@@ -830,6 +873,15 @@ export declare type SchemaMetadata = Message<"bytebase.v1.SchemaMetadata"> & {
    * @generated from field: string comment = 16;
    */
   comment: string;
+
+  /**
+   * The composite_types is the list of user-defined composite types in a
+   * schema (PostgreSQL family, CREATE TYPE ... AS). Excludes table/view row
+   * types and derived types.
+   *
+   * @generated from field: repeated bytebase.v1.CompositeTypeMetadata composite_types = 17;
+   */
+  compositeTypes: CompositeTypeMetadata[];
 };
 
 /**
@@ -876,6 +928,79 @@ export declare type EnumTypeMetadata = Message<"bytebase.v1.EnumTypeMetadata"> &
  * Use `create(EnumTypeMetadataSchema)` to create a new message.
  */
 export declare const EnumTypeMetadataSchema: GenMessage<EnumTypeMetadata>;
+
+/**
+ * @generated from message bytebase.v1.CompositeTypeMetadata
+ */
+export declare type CompositeTypeMetadata = Message<"bytebase.v1.CompositeTypeMetadata"> & {
+  /**
+   * The name of the composite type.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The ordered attributes of the composite type.
+   *
+   * @generated from field: repeated bytebase.v1.CompositeTypeAttribute attributes = 2;
+   */
+  attributes: CompositeTypeAttribute[];
+
+  /**
+   * The comment describing the composite type.
+   *
+   * @generated from field: string comment = 3;
+   */
+  comment: string;
+};
+
+/**
+ * Describes the message bytebase.v1.CompositeTypeMetadata.
+ * Use `create(CompositeTypeMetadataSchema)` to create a new message.
+ */
+export declare const CompositeTypeMetadataSchema: GenMessage<CompositeTypeMetadata>;
+
+/**
+ * @generated from message bytebase.v1.CompositeTypeAttribute
+ */
+export declare type CompositeTypeAttribute = Message<"bytebase.v1.CompositeTypeAttribute"> & {
+  /**
+   * The name of the attribute.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The attribute type. User-defined types are always schema-qualified.
+   *
+   * @generated from field: string type = 2;
+   */
+  type: string;
+
+  /**
+   * The non-default collation of the attribute as an emit-ready SQL
+   * identifier reference (quoted as needed, schema-qualified when outside
+   * pg_catalog), empty otherwise. e.g. `"C"` or `locale.en_us`.
+   *
+   * @generated from field: string collation = 3;
+   */
+  collation: string;
+
+  /**
+   * The comment describing the attribute.
+   *
+   * @generated from field: string comment = 4;
+   */
+  comment: string;
+};
+
+/**
+ * Describes the message bytebase.v1.CompositeTypeAttribute.
+ * Use `create(CompositeTypeAttributeSchema)` to create a new message.
+ */
+export declare const CompositeTypeAttributeSchema: GenMessage<CompositeTypeAttribute>;
 
 /**
  * @generated from message bytebase.v1.EventMetadata
@@ -1631,6 +1756,23 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
    * @generated from field: string default_constraint_name = 17;
    */
   defaultConstraintName: string;
+
+  /**
+   * The spatial reference system identifier of a spatial column, MySQL 8.0 only.
+   * Unset means the column declares no SRID; presence carries the explicit SRID,
+   * including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed
+   * int32).
+   *
+   * @generated from field: optional uint32 srid = 18;
+   */
+  srid?: number | undefined;
+
+  /**
+   * Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23+ only.
+   *
+   * @generated from field: bool is_invisible = 19;
+   */
+  isInvisible: boolean;
 };
 
 /**
@@ -2916,206 +3058,12 @@ export declare type DatabaseSDLSchema = Message<"bytebase.v1.DatabaseSDLSchema">
 export declare const DatabaseSDLSchemaSchema: GenMessage<DatabaseSDLSchema>;
 
 /**
- * @generated from message bytebase.v1.ListChangelogsRequest
- */
-export declare type ListChangelogsRequest = Message<"bytebase.v1.ListChangelogsRequest"> & {
-  /**
-   * The parent of the changelogs.
-   * Format: instances/{instance}/databases/{database}
-   *
-   * @generated from field: string parent = 1;
-   */
-  parent: string;
-
-  /**
-   * The maximum number of changelogs to return. The service may return fewer
-   * than this value. If unspecified, at most 10 changelogs will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize: number;
-
-  /**
-   * A page token, received from the previous call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided must match
-   * the call that provided the page token.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken: string;
-
-  /**
-   * @generated from field: bytebase.v1.ChangelogView view = 4;
-   */
-  view: ChangelogView;
-
-  /**
-   * Filter is used to filter changelogs returned in the list.
-   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-   *
-   * Supported filter:
-   * - status: the changelog status, support "==" operation. check Changelog.Status for available values.
-   * - create_time: the changelog create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
-   *
-   * Example:
-   * status == "DONE"
-   * status == "FAILED" && type == "SDL"
-   * create_time >= "2024-01-01T00:00:00Z" && create_time <= "2024-01-02T00:00:00Z"
-   *
-   * @generated from field: string filter = 5;
-   */
-  filter: string;
-};
-
-/**
- * Describes the message bytebase.v1.ListChangelogsRequest.
- * Use `create(ListChangelogsRequestSchema)` to create a new message.
- */
-export declare const ListChangelogsRequestSchema: GenMessage<ListChangelogsRequest>;
-
-/**
- * @generated from message bytebase.v1.ListChangelogsResponse
- */
-export declare type ListChangelogsResponse = Message<"bytebase.v1.ListChangelogsResponse"> & {
-  /**
-   * The list of changelogs.
-   *
-   * @generated from field: repeated bytebase.v1.Changelog changelogs = 1;
-   */
-  changelogs: Changelog[];
-
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
-};
-
-/**
- * Describes the message bytebase.v1.ListChangelogsResponse.
- * Use `create(ListChangelogsResponseSchema)` to create a new message.
- */
-export declare const ListChangelogsResponseSchema: GenMessage<ListChangelogsResponse>;
-
-/**
- * @generated from message bytebase.v1.GetChangelogRequest
- */
-export declare type GetChangelogRequest = Message<"bytebase.v1.GetChangelogRequest"> & {
-  /**
-   * The name of the changelog to retrieve.
-   * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-   *
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * @generated from field: bytebase.v1.ChangelogView view = 2;
-   */
-  view: ChangelogView;
-};
-
-/**
- * Describes the message bytebase.v1.GetChangelogRequest.
- * Use `create(GetChangelogRequestSchema)` to create a new message.
- */
-export declare const GetChangelogRequestSchema: GenMessage<GetChangelogRequest>;
-
-/**
- * @generated from message bytebase.v1.Changelog
- */
-export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
-  /**
-   * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-   *
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp create_time = 2;
-   */
-  createTime?: Timestamp | undefined;
-
-  /**
-   * @generated from field: bytebase.v1.Changelog.Status status = 3;
-   */
-  status: Changelog_Status;
-
-  /**
-   * @generated from field: string schema = 7;
-   */
-  schema: string;
-
-  /**
-   * @generated from field: int64 schema_size = 8;
-   */
-  schemaSize: bigint;
-
-  /**
-   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-   *
-   * @generated from field: string task_run = 11;
-   */
-  taskRun: string;
-
-  /**
-   * The title of the plan associated with this changelog's task run.
-   * This field is populated by deriving the plan from task_run for display purposes.
-   *
-   * @generated from field: string plan_title = 15;
-   */
-  planTitle: string;
-};
-
-/**
- * Describes the message bytebase.v1.Changelog.
- * Use `create(ChangelogSchema)` to create a new message.
- */
-export declare const ChangelogSchema: GenMessage<Changelog>;
-
-/**
- * @generated from enum bytebase.v1.Changelog.Status
- */
-export enum Changelog_Status {
-  /**
-   * @generated from enum value: STATUS_UNSPECIFIED = 0;
-   */
-  STATUS_UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: PENDING = 1;
-   */
-  PENDING = 1,
-
-  /**
-   * @generated from enum value: DONE = 2;
-   */
-  DONE = 2,
-
-  /**
-   * @generated from enum value: FAILED = 3;
-   */
-  FAILED = 3,
-}
-
-/**
- * Describes the enum bytebase.v1.Changelog.Status.
- */
-export declare const Changelog_StatusSchema: GenEnum<Changelog_Status>;
-
-/**
  * @generated from message bytebase.v1.GetSchemaStringRequest
  */
 export declare type GetSchemaStringRequest = Message<"bytebase.v1.GetSchemaStringRequest"> & {
   /**
    * The name of the database.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string name = 1;
    */
@@ -3258,34 +3206,6 @@ export enum SyncStatus {
 export declare const SyncStatusSchema: GenEnum<SyncStatus>;
 
 /**
- * @generated from enum bytebase.v1.ChangelogView
- */
-export enum ChangelogView {
-  /**
-   * The default / unset value.
-   * The API will default to the BASIC view.
-   *
-   * @generated from enum value: CHANGELOG_VIEW_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: CHANGELOG_VIEW_BASIC = 1;
-   */
-  BASIC = 1,
-
-  /**
-   * @generated from enum value: CHANGELOG_VIEW_FULL = 2;
-   */
-  FULL = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.ChangelogView.
- */
-export declare const ChangelogViewSchema: GenEnum<ChangelogView>;
-
-/**
  * DatabaseService manages databases and their schemas.
  *
  * @generated from service bytebase.v1.DatabaseService
@@ -3304,7 +3224,9 @@ export declare const DatabaseService: GenService<{
   },
   /**
    * Retrieves multiple databases by their names.
-   * Permissions required: bb.databases.get
+   * One resource per requested name, in request order. The first name that
+   * does not resolve fails the whole call (AIP-231: no partial response).
+   * Permissions required: bb.databases.get (on each named database's project)
    *
    * @generated from rpc bytebase.v1.DatabaseService.BatchGetDatabases
    */
@@ -3413,26 +3335,16 @@ export declare const DatabaseService: GenService<{
     output: typeof DiffSchemaResponseSchema;
   },
   /**
-   * Lists migration history for a database.
-   * Permissions required: bb.changelogs.list
+   * Generates migration statements from the database's current schema to the
+   * given target metadata.
+   * Permissions required: bb.databases.diffMetadata
    *
-   * @generated from rpc bytebase.v1.DatabaseService.ListChangelogs
+   * @generated from rpc bytebase.v1.DatabaseService.DiffMetadata
    */
-  listChangelogs: {
+  diffMetadata: {
     methodKind: "unary";
-    input: typeof ListChangelogsRequestSchema;
-    output: typeof ListChangelogsResponseSchema;
-  },
-  /**
-   * Retrieves a specific changelog entry.
-   * Permissions required: bb.changelogs.get
-   *
-   * @generated from rpc bytebase.v1.DatabaseService.GetChangelog
-   */
-  getChangelog: {
-    methodKind: "unary";
-    input: typeof GetChangelogRequestSchema;
-    output: typeof ChangelogSchema;
+    input: typeof DiffMetadataRequestSchema;
+    output: typeof DiffMetadataResponseSchema;
   },
   /**
    * Generates schema DDL for a database object.

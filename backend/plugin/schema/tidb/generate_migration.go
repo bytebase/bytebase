@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
@@ -425,7 +427,7 @@ func writeDropColumn(buf *strings.Builder, table, column string) error {
 	return nil
 }
 
-func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, table *storepb.TableMetadata) error {
+func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, table *metadatapb.TableMetadata) error {
 	_, _ = buf.WriteString("CREATE TABLE IF NOT EXISTS `")
 	_, _ = buf.WriteString(tableName)
 	_, _ = buf.WriteString("` (\n")
@@ -583,7 +585,7 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 }
 
 // TiDB specific partition clause (similar to MySQL but with TiDB extensions)
-func writePartitionClause(buf *strings.Builder, partitions []*storepb.TablePartitionMetadata) error {
+func writePartitionClause(buf *strings.Builder, partitions []*metadatapb.TablePartitionMetadata) error {
 	if len(partitions) == 0 {
 		return nil
 	}
@@ -591,17 +593,17 @@ func writePartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 	_, _ = buf.WriteString("\n/*T![auto_rand] PARTITION BY ")
 
 	switch partitions[0].Type {
-	case storepb.TablePartitionMetadata_RANGE:
+	case metadatapb.TablePartitionMetadata_RANGE:
 		_, _ = fmt.Fprintf(buf, "RANGE (%s)", partitions[0].Expression)
-	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
+	case metadatapb.TablePartitionMetadata_RANGE_COLUMNS:
 		_, _ = fmt.Fprintf(buf, "RANGE COLUMNS (%s)", partitions[0].Expression)
-	case storepb.TablePartitionMetadata_LIST:
+	case metadatapb.TablePartitionMetadata_LIST:
 		_, _ = fmt.Fprintf(buf, "LIST (%s)", partitions[0].Expression)
-	case storepb.TablePartitionMetadata_LIST_COLUMNS:
+	case metadatapb.TablePartitionMetadata_LIST_COLUMNS:
 		_, _ = fmt.Fprintf(buf, "LIST COLUMNS (%s)", partitions[0].Expression)
-	case storepb.TablePartitionMetadata_HASH:
+	case metadatapb.TablePartitionMetadata_HASH:
 		_, _ = fmt.Fprintf(buf, "HASH (%s)", partitions[0].Expression)
-	case storepb.TablePartitionMetadata_KEY:
+	case metadatapb.TablePartitionMetadata_KEY:
 		_, _ = fmt.Fprintf(buf, "KEY (%s)", partitions[0].Expression)
 	default:
 		// Unsupported partition type
@@ -620,13 +622,13 @@ func writePartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 			_, _ = fmt.Fprintf(buf, "PARTITION %s", partition.Name)
 			if partition.Value != "" {
 				switch partitions[0].Type {
-				case storepb.TablePartitionMetadata_RANGE, storepb.TablePartitionMetadata_RANGE_COLUMNS:
+				case metadatapb.TablePartitionMetadata_RANGE, metadatapb.TablePartitionMetadata_RANGE_COLUMNS:
 					if partition.Value != "MAXVALUE" {
 						_, _ = fmt.Fprintf(buf, " VALUES LESS THAN (%s)", partition.Value)
 					} else {
 						_, _ = fmt.Fprintf(buf, " VALUES LESS THAN %s", partition.Value)
 					}
-				case storepb.TablePartitionMetadata_LIST, storepb.TablePartitionMetadata_LIST_COLUMNS:
+				case metadatapb.TablePartitionMetadata_LIST, metadatapb.TablePartitionMetadata_LIST_COLUMNS:
 					_, _ = fmt.Fprintf(buf, " VALUES IN (%s)", partition.Value)
 				default:
 					// No VALUES clause for other partition types like HASH/KEY
@@ -640,7 +642,7 @@ func writePartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 	return nil
 }
 
-func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMetadata) error {
+func writeAddColumn(buf *strings.Builder, table string, column *metadatapb.ColumnMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` ADD COLUMN `")
@@ -689,7 +691,7 @@ func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMe
 	return nil
 }
 
-func writeModifyColumn(buf *strings.Builder, table string, column *storepb.ColumnMetadata) error {
+func writeModifyColumn(buf *strings.Builder, table string, column *metadatapb.ColumnMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` MODIFY COLUMN `")
@@ -738,7 +740,7 @@ func writeModifyColumn(buf *strings.Builder, table string, column *storepb.Colum
 	return nil
 }
 
-func writeCreateIndex(buf *strings.Builder, table string, index *storepb.IndexMetadata) error {
+func writeCreateIndex(buf *strings.Builder, table string, index *metadatapb.IndexMetadata) error {
 	_, _ = buf.WriteString("CREATE ")
 	// Handle special index types
 	if strings.ToUpper(index.Type) == "FULLTEXT" {
@@ -787,7 +789,7 @@ func writeCreateIndex(buf *strings.Builder, table string, index *storepb.IndexMe
 	return nil
 }
 
-func writeAddPrimaryKey(buf *strings.Builder, table string, index *storepb.IndexMetadata) error {
+func writeAddPrimaryKey(buf *strings.Builder, table string, index *metadatapb.IndexMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` ADD PRIMARY KEY (")
@@ -805,7 +807,7 @@ func writeAddPrimaryKey(buf *strings.Builder, table string, index *storepb.Index
 	return nil
 }
 
-func writeAddUniqueKey(buf *strings.Builder, table string, index *storepb.IndexMetadata) error {
+func writeAddUniqueKey(buf *strings.Builder, table string, index *metadatapb.IndexMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` ADD UNIQUE KEY `")
@@ -825,7 +827,7 @@ func writeAddUniqueKey(buf *strings.Builder, table string, index *storepb.IndexM
 	return nil
 }
 
-func writeAddCheckConstraint(buf *strings.Builder, table string, check *storepb.CheckConstraintMetadata) error {
+func writeAddCheckConstraint(buf *strings.Builder, table string, check *metadatapb.CheckConstraintMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` ADD CONSTRAINT `")
@@ -836,7 +838,7 @@ func writeAddCheckConstraint(buf *strings.Builder, table string, check *storepb.
 	return nil
 }
 
-func writeAddForeignKey(buf *strings.Builder, table string, fk *storepb.ForeignKeyMetadata) error {
+func writeAddForeignKey(buf *strings.Builder, table string, fk *metadatapb.ForeignKeyMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` ADD CONSTRAINT `")
@@ -880,7 +882,7 @@ func writeAddForeignKey(buf *strings.Builder, table string, fk *storepb.ForeignK
 	return nil
 }
 
-func writeCreateView(buf *strings.Builder, viewName string, view *storepb.ViewMetadata) error {
+func writeCreateView(buf *strings.Builder, viewName string, view *metadatapb.ViewMetadata) error {
 	_, _ = buf.WriteString("CREATE VIEW `")
 	_, _ = buf.WriteString(viewName)
 	_, _ = buf.WriteString("` AS ")
@@ -893,7 +895,7 @@ func writeCreateView(buf *strings.Builder, viewName string, view *storepb.ViewMe
 	return nil
 }
 
-func writeCreateOrReplaceView(buf *strings.Builder, viewName string, view *storepb.ViewMetadata) error {
+func writeCreateOrReplaceView(buf *strings.Builder, viewName string, view *metadatapb.ViewMetadata) error {
 	_, _ = buf.WriteString("CREATE OR REPLACE VIEW `")
 	_, _ = buf.WriteString(viewName)
 	_, _ = buf.WriteString("` AS ")
@@ -975,7 +977,7 @@ func hasCreateOrAlterObjects(diff *schema.MetadataDiff) bool {
 	return false
 }
 
-func getDefaultExpression(column *storepb.ColumnMetadata) string {
+func getDefaultExpression(column *metadatapb.ColumnMetadata) string {
 	if column == nil {
 		return ""
 	}
@@ -987,7 +989,7 @@ func getDefaultExpression(column *storepb.ColumnMetadata) string {
 	return ""
 }
 
-func hasDefaultValue(column *storepb.ColumnMetadata) bool {
+func hasDefaultValue(column *metadatapb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
@@ -1000,7 +1002,7 @@ func hasDefaultValue(column *storepb.ColumnMetadata) bool {
 	return column.Default != ""
 }
 
-func hasAutoIncrement(column *storepb.ColumnMetadata) bool {
+func hasAutoIncrement(column *metadatapb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
@@ -1009,14 +1011,14 @@ func hasAutoIncrement(column *storepb.ColumnMetadata) bool {
 	return strings.EqualFold(column.GetDefault(), "AUTO_INCREMENT")
 }
 
-func hasAutoRandom(column *storepb.ColumnMetadata) bool {
+func hasAutoRandom(column *metadatapb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
 	return strings.HasPrefix(column.GetDefault(), "AUTO_RANDOM")
 }
 
-func writeTemporaryViewForDrop(buf *strings.Builder, viewName string, view *storepb.ViewMetadata) error {
+func writeTemporaryViewForDrop(buf *strings.Builder, viewName string, view *metadatapb.ViewMetadata) error {
 	// Create a temporary view with SELECT 1 AS column_name structure
 	// to satisfy other views that depend on this view
 	_, _ = buf.WriteString("CREATE OR REPLACE VIEW `")
@@ -1041,7 +1043,7 @@ func writeTemporaryViewForDrop(buf *strings.Builder, viewName string, view *stor
 	return nil
 }
 
-func writeCreateTrigger(buf *strings.Builder, tableName string, trigger *storepb.TriggerMetadata) error {
+func writeCreateTrigger(buf *strings.Builder, tableName string, trigger *metadatapb.TriggerMetadata) error {
 	// Construct the complete trigger statement
 	_, _ = buf.WriteString("CREATE TRIGGER `")
 	_, _ = buf.WriteString(trigger.Name)
@@ -1079,7 +1081,7 @@ func writeSequenceDiff(buf *strings.Builder, seqDiff *schema.SequenceDiff) error
 	return nil
 }
 
-func writeCreateSequence(buf *strings.Builder, sequence *storepb.SequenceMetadata) error {
+func writeCreateSequence(buf *strings.Builder, sequence *metadatapb.SequenceMetadata) error {
 	_, _ = buf.WriteString("CREATE SEQUENCE `")
 	_, _ = buf.WriteString(sequence.Name)
 	_, _ = buf.WriteString("`")
@@ -1125,7 +1127,7 @@ func writeCreateSequence(buf *strings.Builder, sequence *storepb.SequenceMetadat
 	return nil
 }
 
-func writeAlterSequence(buf *strings.Builder, sequenceName string, sequence *storepb.SequenceMetadata) error {
+func writeAlterSequence(buf *strings.Builder, sequenceName string, sequence *metadatapb.SequenceMetadata) error {
 	// TiDB does not support ALTER SEQUENCE, so we need to DROP and CREATE
 	if err := writeDropSequence(buf, sequenceName); err != nil {
 		return err

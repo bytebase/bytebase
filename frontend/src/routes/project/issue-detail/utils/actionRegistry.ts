@@ -1,0 +1,376 @@
+import type { TFunction } from "i18next";
+import { extractUserEmail } from "@/stores";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  State,
+} from "@/types/proto-es/v1/common_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
+import {
+  hasProjectPermissionV2,
+  isUserIncludedInList,
+  isValidIssueName,
+  isValidPlanName,
+} from "@/utils";
+import { getApprovalEligibility } from "../../approvalEligibility";
+import { isApprovalCompleted } from "./approval";
+import { candidatesOfApprovalStepV1 } from "./approvalCandidates";
+
+export type IssueReviewAction = "ISSUE_REVIEW";
+export type IssueStatusAction = "ISSUE_STATUS_CLOSE" | "ISSUE_STATUS_REOPEN";
+export type IssueAction =
+  | IssueReviewAction
+  | IssueStatusAction
+  | "ISSUE_CREATE";
+export type RolloutAction = "ROLLOUT_START" | "ROLLOUT_CANCEL";
+export type UnifiedAction = IssueAction | RolloutAction;
+export type ExecuteType =
+  | "immediate"
+  | "popover:labels"
+  | "popover:review"
+  | "panel:issue-status"
+  | "panel:rollout";
+export type ActionCategory = "primary" | "secondary";
+
+export interface ActionPermissions {
+  updatePlan: boolean;
+  createIssue: boolean;
+  updateIssue: boolean;
+  createRollout: boolean;
+  canApproveIssue: boolean;
+  isReviewCandidate: boolean;
+  runTasks: boolean;
+}
+
+export interface ActionValidation {
+  hasEmptySpec: boolean;
+  planChecksRunning: boolean;
+  planChecksFailed: boolean;
+}
+
+export interface ActionContext {
+  plan: Plan;
+  issue: Issue | undefined;
+  rollout: Rollout | undefined;
+  project: Project;
+  planState: State;
+  issueStatus: IssueStatus | undefined;
+  approvalStatus: ApprovalStatus | undefined;
+  isCreating: boolean;
+  isIssueOnly: boolean;
+  isReleasePlan: boolean;
+  hasDeferredRollout: boolean;
+  issueApproved: boolean;
+  allTasksFinished: boolean;
+  hasStartableTasks: boolean;
+  hasRunningTasks: boolean;
+  permissions: ActionPermissions;
+  validation: ActionValidation;
+}
+
+export interface ActionDefinition {
+  id: UnifiedAction;
+  label: (ctx: ActionContext) => string;
+  buttonType: "primary" | "success" | "default";
+  category: ActionCategory | ((ctx: ActionContext) => ActionCategory);
+  priority: number;
+  isVisible: (ctx: ActionContext) => boolean;
+  isDisabled: (ctx: ActionContext) => boolean;
+  disabledReason: (ctx: ActionContext) => string | undefined;
+  executeType: ExecuteType;
+}
+
+export interface ContextBuilderInput {
+  plan: Plan;
+  issue: Issue | undefined;
+  rollout: Rollout | undefined;
+  project: Project;
+  currentUser: User;
+  isCreating: boolean;
+  planCheckStatus: Advice_Level;
+  hasRunningPlanChecks: boolean;
+  isSpecEmpty: (spec: Plan["specs"][0]) => boolean;
+}
+
+const computeApprovalEligibility = (
+  issue: Issue | undefined,
+  currentUser: User,
+  plan: Plan,
+  project: Project
+) => {
+  if (!issue || isApprovalCompleted(issue)) {
+    return { canApprove: false, canReview: false };
+  }
+
+  const { approvers, approvalTemplate } = issue;
+  const hasRejection = approvers.some(
+    (app) => app.status === Issue_Approver_Status.REJECTED
+  );
+  if (hasRejection) return { canApprove: false, canReview: false };
+
+  const roles = approvalTemplate?.flow?.roles ?? [];
+  if (roles.length === 0) return { canApprove: false, canReview: false };
+
+  const rejectedIndex = approvers.findIndex(
+    (approver) => approver.status === Issue_Approver_Status.REJECTED
+  );
+  const currentRoleIndex =
+    rejectedIndex >= 0 ? rejectedIndex : approvers.length;
+  const currentRole = roles[currentRoleIndex];
+  if (!currentRole) return { canApprove: false, canReview: false };
+
+  const candidates = candidatesOfApprovalStepV1(issue, currentRole);
+  if (!isUserIncludedInList(currentUser.email, candidates)) {
+    return { canApprove: false, canReview: false };
+  }
+  return getApprovalEligibility({
+    actor: currentUser.name,
+    issueCreator: issue.creator,
+    lastPlanEditor: plan.lastPlanEditor,
+    project,
+  });
+};
+
+export const buildIssueDetailActionContext = (
+  input: ContextBuilderInput
+): ActionContext => {
+  const {
+    currentUser,
+    hasRunningPlanChecks,
+    isCreating,
+    isSpecEmpty,
+    issue,
+    plan,
+    planCheckStatus,
+    project,
+    rollout,
+  } = input;
+
+  const currentUserEmail = currentUser.email;
+  const isIssueOnly =
+    !isValidPlanName(plan.name) && Boolean(isValidIssueName(issue?.name));
+  const isReleasePlan = plan.specs.some(
+    (spec) =>
+      spec.config?.case === "changeDatabaseConfig" &&
+      Boolean(spec.config.value.release)
+  );
+  const hasDeferredRollout = plan.specs.some(
+    (spec) => spec.config?.case === "createDatabaseConfig"
+  );
+  const reviewEligibility = computeApprovalEligibility(
+    issue,
+    currentUser,
+    plan,
+    project
+  );
+  const permissions: ActionPermissions = {
+    updatePlan:
+      currentUserEmail === extractUserEmail(plan.creator || "") ||
+      hasProjectPermissionV2(project, "bb.plans.update"),
+    createIssue: hasProjectPermissionV2(project, "bb.issues.create"),
+    updateIssue: hasProjectPermissionV2(project, "bb.issues.update"),
+    createRollout: hasProjectPermissionV2(project, "bb.rollouts.create"),
+    runTasks: hasProjectPermissionV2(project, "bb.taskRuns.create"),
+    canApproveIssue: reviewEligibility.canApprove,
+    isReviewCandidate: reviewEligibility.canReview,
+  };
+
+  const validation: ActionValidation = {
+    hasEmptySpec: plan.specs.some((spec) => isSpecEmpty(spec)),
+    planChecksRunning: hasRunningPlanChecks,
+    planChecksFailed: planCheckStatus === Advice_Level.ERROR,
+  };
+
+  const allTasks = rollout?.stages.flatMap((stage) => stage.tasks) ?? [];
+  const allTasksFinished = allTasks.every((task) =>
+    [Task_Status.DONE, Task_Status.SKIPPED].includes(task.status)
+  );
+  const hasStartableTasks = allTasks.some((task) =>
+    [
+      Task_Status.NOT_STARTED,
+      Task_Status.FAILED,
+      Task_Status.CANCELED,
+    ].includes(task.status)
+  );
+  const hasRunningTasks = allTasks.some((task) =>
+    [Task_Status.PENDING, Task_Status.RUNNING].includes(task.status)
+  );
+
+  return {
+    plan,
+    issue,
+    rollout,
+    project,
+    planState: plan.state,
+    issueStatus: issue?.status,
+    approvalStatus: issue?.approvalStatus,
+    isCreating,
+    isIssueOnly,
+    isReleasePlan,
+    hasDeferredRollout,
+    issueApproved: isApprovalCompleted(issue),
+    allTasksFinished,
+    hasStartableTasks,
+    hasRunningTasks,
+    permissions,
+    validation,
+  };
+};
+
+export const createIssueDetailActions = (t: TFunction): ActionDefinition[] => {
+  const issueActions: ActionDefinition[] = [
+    {
+      id: "ISSUE_CREATE",
+      label: () => t("plan.ready-for-review"),
+      buttonType: "primary",
+      category: "primary",
+      priority: 5,
+      isVisible: (ctx) =>
+        !ctx.isIssueOnly &&
+        !ctx.isReleasePlan &&
+        ctx.plan.issue === "" &&
+        !ctx.plan.hasRollout &&
+        ctx.planState === State.ACTIVE,
+      isDisabled: (ctx) =>
+        !ctx.permissions.createIssue ||
+        ctx.validation.hasEmptySpec ||
+        ctx.validation.planChecksRunning ||
+        (ctx.validation.planChecksFailed && ctx.project.enforceSqlReview),
+      disabledReason: (ctx) => {
+        if (!ctx.permissions.createIssue) {
+          return t("common.missing-required-permission", {
+            permissions: "bb.issues.create",
+          });
+        }
+        if (ctx.validation.hasEmptySpec) {
+          return t("plan.navigator.statement-empty");
+        }
+        if (ctx.validation.planChecksRunning) {
+          return t(
+            "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
+          );
+        }
+        if (ctx.validation.planChecksFailed && ctx.project.enforceSqlReview) {
+          return t(
+            "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+          );
+        }
+        return undefined;
+      },
+      executeType: "popover:labels",
+    },
+    {
+      id: "ISSUE_REVIEW",
+      label: () => t("issue.review.self"),
+      buttonType: "primary",
+      category: "primary",
+      priority: 30,
+      isVisible: (ctx) =>
+        ctx.issueStatus === IssueStatus.OPEN &&
+        ctx.approvalStatus !== ApprovalStatus.APPROVED &&
+        ctx.approvalStatus !== ApprovalStatus.SKIPPED &&
+        ctx.permissions.isReviewCandidate,
+      isDisabled: () => false,
+      disabledReason: () => undefined,
+      executeType: "popover:review",
+    },
+    {
+      id: "ISSUE_STATUS_CLOSE",
+      label: () => t("issue.batch-transition.close"),
+      buttonType: "default",
+      category: "secondary",
+      priority: 90,
+      isVisible: (ctx) =>
+        ctx.issueStatus === IssueStatus.OPEN && !ctx.plan.hasRollout,
+      isDisabled: (ctx) => !ctx.permissions.updateIssue,
+      disabledReason: (ctx) => {
+        if (!ctx.permissions.updateIssue) {
+          return t("common.missing-required-permission", {
+            permissions: "bb.issues.update",
+          });
+        }
+        return undefined;
+      },
+      executeType: "panel:issue-status",
+    },
+    {
+      id: "ISSUE_STATUS_REOPEN",
+      label: () => t("issue.batch-transition.reopen"),
+      buttonType: "default",
+      category: "primary",
+      priority: 20,
+      isVisible: (ctx) => ctx.issueStatus === IssueStatus.CANCELED,
+      isDisabled: (ctx) => !ctx.permissions.updateIssue,
+      disabledReason: (ctx) => {
+        if (!ctx.permissions.updateIssue) {
+          return t("common.missing-required-permission", {
+            permissions: "bb.issues.update",
+          });
+        }
+        return undefined;
+      },
+      executeType: "panel:issue-status",
+    },
+  ];
+
+  const rolloutActions: ActionDefinition[] = [
+    {
+      id: "ROLLOUT_START",
+      label: () => t("common.rollout"),
+      buttonType: "primary",
+      category: "primary",
+      priority: 60,
+      isVisible: (ctx) => {
+        if (!ctx.hasDeferredRollout) return false;
+        if (!ctx.issue || !ctx.issueApproved) return false;
+        if (!ctx.rollout) return true;
+        return ctx.hasStartableTasks;
+      },
+      isDisabled: (ctx) => !ctx.permissions.runTasks,
+      disabledReason: (ctx) => {
+        if (!ctx.permissions.runTasks) {
+          return t("common.missing-required-permission", {
+            permissions: "bb.taskRuns.create",
+          });
+        }
+        return undefined;
+      },
+      executeType: "panel:rollout",
+    },
+    {
+      id: "ROLLOUT_CANCEL",
+      label: () => t("common.cancel"),
+      buttonType: "default",
+      category: "secondary",
+      priority: 80,
+      isVisible: (ctx) => {
+        if (!ctx.hasDeferredRollout) return false;
+        if (!ctx.rollout) return false;
+        if (!ctx.issueApproved) return false;
+        if (!ctx.hasRunningTasks) return false;
+        return true;
+      },
+      isDisabled: (ctx) => !ctx.permissions.runTasks,
+      disabledReason: (ctx) => {
+        if (!ctx.permissions.runTasks) {
+          return t("common.missing-required-permission", {
+            permissions: "bb.taskRuns.create",
+          });
+        }
+        return undefined;
+      },
+      executeType: "panel:rollout",
+    },
+  ];
+
+  return [...issueActions, ...rolloutActions].sort(
+    (left, right) => left.priority - right.priority
+  );
+};

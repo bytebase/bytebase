@@ -13,7 +13,6 @@ import (
 
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_CLICKHOUSE, ValidateSQLForEditor)
-	base.RegisterQueryValidator(storepb.Engine_SQLITE, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_SPANNER, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_HIVE, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_BIGQUERY, ValidateSQLForEditor)
@@ -38,6 +37,13 @@ func ValidateSQLForEditor(statement string) (bool, bool, error) {
 
 func CheckStatementWithoutQuotedTextAndComment(statement string) bool {
 	formattedStr := strings.ToUpper(strings.TrimSpace(statement))
+	// Leading-keyword classification speaks for one statement only, and the
+	// ClickHouse and Hive splitters break on newlines rather than terminators,
+	// so a one-line batch arrives whole: "SELECT 1; DROP TABLE t" would pass
+	// on its SELECT.
+	if strings.Contains(strings.TrimSuffix(formattedStr, ";"), ";") {
+		return false
+	}
 	if isSelect, _ := regexp.MatchString(`^SELECT\s+?`, formattedStr); isSelect {
 		return true
 	}

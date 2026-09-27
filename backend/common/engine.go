@@ -2,9 +2,6 @@
 package common
 
 import (
-	"connectrpc.com/connect"
-	"github.com/pkg/errors"
-
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -25,7 +22,6 @@ func EngineSupportSQLReview(engine storepb.Engine) bool {
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -34,6 +30,48 @@ func EngineSupportSQLReview(engine storepb.Engine) bool {
 		storepb.Engine_STARROCKS,
 		storepb.Engine_HIVE,
 		storepb.Engine_COCKROACHDB,
+		storepb.Engine_DORIS,
+		storepb.Engine_DYNAMODB,
+		storepb.Engine_ELASTICSEARCH,
+		storepb.Engine_DATABRICKS,
+		storepb.Engine_COSMOSDB,
+		storepb.Engine_TRINO:
+		return false
+	default:
+		return false
+	}
+}
+
+// EngineSupportSDLExport reports whether GetDatabaseSDLSchema can produce an SDL dump
+// for the engine. Only engines with an SDL-format definition writer AND the multi-file
+// exporter registered qualify. OceanBase shares MySQL's GetDatabaseDefinition (and thus
+// its single-file SDL branch) but is deliberately excluded from the SDL paths until it is
+// validated, so it must be rejected here too rather than emitting an untested SDL dump.
+func EngineSupportSDLExport(engine storepb.Engine) bool {
+	//exhaustive:enforce
+	switch engine {
+	case
+		storepb.Engine_POSTGRES,
+		storepb.Engine_COCKROACHDB,
+		storepb.Engine_MYSQL:
+		return true
+	case
+		storepb.Engine_ENGINE_UNSPECIFIED,
+		storepb.Engine_CASSANDRA,
+		storepb.Engine_MONGODB,
+		storepb.Engine_REDIS,
+		storepb.Engine_CLICKHOUSE,
+		storepb.Engine_SNOWFLAKE,
+		storepb.Engine_SPANNER,
+		storepb.Engine_BIGQUERY,
+		storepb.Engine_STARROCKS,
+		storepb.Engine_HIVE,
+		storepb.Engine_ORACLE,
+		storepb.Engine_MSSQL,
+		storepb.Engine_TIDB,
+		storepb.Engine_MARIADB,
+		storepb.Engine_OCEANBASE,
+		storepb.Engine_REDSHIFT,
 		storepb.Engine_DORIS,
 		storepb.Engine_DYNAMODB,
 		storepb.Engine_ELASTICSEARCH,
@@ -64,7 +102,6 @@ func EngineSupportQueryNewACL(engine storepb.Engine) bool {
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
 		storepb.Engine_OCEANBASE,
@@ -99,15 +136,14 @@ func EngineSupportMasking(e storepb.Engine) bool {
 		storepb.Engine_SPANNER,
 		storepb.Engine_REDSHIFT,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_TRINO:
+		storepb.Engine_TRINO,
+		storepb.Engine_SNOWFLAKE:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
-		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_HIVE,
 		storepb.Engine_COCKROACHDB,
@@ -146,7 +182,6 @@ func EngineSupportAutoComplete(e storepb.Engine) bool {
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_REDIS,
 		storepb.Engine_SPANNER,
 		storepb.Engine_BIGQUERY,
@@ -179,7 +214,6 @@ func EngineSupportStatementAdvise(e storepb.Engine) bool {
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -209,13 +243,13 @@ func EngineSupportStatementReport(e storepb.Engine) bool {
 		storepb.Engine_ORACLE,
 		storepb.Engine_MSSQL,
 		storepb.Engine_MARIADB,
-		storepb.Engine_REDSHIFT:
+		storepb.Engine_REDSHIFT,
+		storepb.Engine_COCKROACHDB:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -223,7 +257,6 @@ func EngineSupportStatementReport(e storepb.Engine) bool {
 		storepb.Engine_BIGQUERY,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_HIVE,
-		storepb.Engine_COCKROACHDB,
 		storepb.Engine_DORIS,
 		storepb.Engine_DYNAMODB,
 		storepb.Engine_ELASTICSEARCH,
@@ -251,7 +284,6 @@ func EngineSupportPriorBackup(e storepb.Engine) bool {
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -278,7 +310,6 @@ func EngineSupportCreateDatabase(e storepb.Engine) bool {
 	//exhaustive:enforce
 	switch e {
 	case
-		storepb.Engine_SQLITE,
 		storepb.Engine_MYSQL,
 		storepb.Engine_POSTGRES,
 		storepb.Engine_MSSQL,
@@ -332,7 +363,6 @@ func EngineSupportQuerySpanPlainField(e storepb.Engine) bool {
 		storepb.Engine_DATABRICKS,
 		storepb.Engine_COSMOSDB,
 		storepb.Engine_TRINO,
-		storepb.Engine_SQLITE,
 		storepb.Engine_POSTGRES,
 		storepb.Engine_MSSQL,
 		storepb.Engine_SNOWFLAKE,
@@ -369,7 +399,6 @@ func EngineSupportSyntaxCheck(e storepb.Engine) bool {
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -405,7 +434,6 @@ func BackupDatabaseNameOfEngine(e storepb.Engine) string {
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_SQLITE,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
@@ -427,66 +455,5 @@ func BackupDatabaseNameOfEngine(e storepb.Engine) string {
 	default:
 		// Fallback to the default name for other engines.
 		return "bbdataarchive"
-	}
-}
-
-// TransactionMode represents the transaction execution mode for a migration script.
-type TransactionMode string
-
-const (
-	// TransactionModeOn wraps the script in a single transaction.
-	TransactionModeOn TransactionMode = "on"
-	// TransactionModeOff executes the script's statements sequentially in auto-commit mode.
-	TransactionModeOff TransactionMode = "off"
-	// TransactionModeUnspecified means no explicit mode was specified.
-	TransactionModeUnspecified TransactionMode = ""
-)
-
-// IsolationLevel represents the transaction isolation level.
-type IsolationLevel string
-
-const (
-	// IsolationLevelDefault uses the database's default isolation level.
-	IsolationLevelDefault IsolationLevel = ""
-	// IsolationLevelReadUncommitted allows dirty reads.
-	IsolationLevelReadUncommitted IsolationLevel = "READ UNCOMMITTED"
-	// IsolationLevelReadCommitted prevents dirty reads.
-	IsolationLevelReadCommitted IsolationLevel = "READ COMMITTED"
-	// IsolationLevelRepeatableRead prevents dirty reads and non-repeatable reads.
-	IsolationLevelRepeatableRead IsolationLevel = "REPEATABLE READ"
-	// IsolationLevelSerializable provides the highest isolation level.
-	IsolationLevelSerializable IsolationLevel = "SERIALIZABLE"
-)
-
-// TransactionConfig represents the complete transaction configuration.
-type TransactionConfig struct {
-	Mode      TransactionMode
-	Isolation IsolationLevel
-}
-
-// GetDefaultTransactionMode returns the default transaction mode.
-// All engines default to "on" (transactional) for safety and backward compatibility.
-// Users can explicitly set "-- txn-mode = off" when needed for engines with limited transactional DDL support.
-func GetDefaultTransactionMode() TransactionMode {
-	// All engines default to "on" for safety and backward compatibility
-	return TransactionModeOn
-}
-
-func ConvertToParserEngine(e storepb.Engine) (storepb.Engine, error) {
-	switch e {
-	case storepb.Engine_POSTGRES:
-		return storepb.Engine_POSTGRES, nil
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-		return storepb.Engine_MYSQL, nil
-	case storepb.Engine_TIDB:
-		return storepb.Engine_TIDB, nil
-	case storepb.Engine_ORACLE:
-		return storepb.Engine_ORACLE, nil
-	case storepb.Engine_MSSQL:
-		return storepb.Engine_MSSQL, nil
-	case storepb.Engine_COCKROACHDB:
-		return storepb.Engine_COCKROACHDB, nil
-	default:
-		return storepb.Engine_ENGINE_UNSPECIFIED, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid engine type %v", e))
 	}
 }

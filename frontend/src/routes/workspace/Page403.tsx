@@ -1,0 +1,82 @@
+import { ChevronLeft, ShieldAlert } from "lucide-react";
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { router } from "@/app/router";
+import { WORKSPACE_ROUTE_LANDING } from "@/app/router/handles";
+import { RouterLink } from "@/components/RouterLink";
+import { Alert } from "@/components/ui/alert";
+import { buttonVariants } from "@/components/ui/button";
+import type { Permission } from "@/types";
+
+export function Page403() {
+  const { t } = useTranslation();
+
+  const query = useMemo(() => {
+    const route = router.currentRoute.value;
+    return route.query as Record<string, string | undefined>;
+  }, []);
+
+  const permissions = useMemo<Permission[]>(() => {
+    const raw = query.permissions;
+    if (raw) return raw.split(",").filter(Boolean) as Permission[];
+    return [];
+  }, [query]);
+
+  const resources = useMemo(() => {
+    const raw = query.resources;
+    if (raw) return raw.split(",").filter(Boolean);
+    return [];
+  }, [query]);
+
+  const fromPath = query.from;
+  const requestAPI = query.api;
+
+  return (
+    <div className="mx-6 my-2">
+      <Alert variant="error" showIcon={false} className="rounded-sm p-4">
+        <div className="flex items-start gap-3">
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-error" />
+          <div className="flex min-w-0 flex-1 flex-col gap-2 wrap-anywhere">
+            <div className="font-medium">
+              {t("common.missing-required-permission", { permissions: "" })}
+            </div>
+            {fromPath && <div>Path: {fromPath}</div>}
+            {requestAPI && <div>API: {requestAPI}</div>}
+            {resources.length > 0 && (
+              <div>
+                {t("common.resources")}
+                <ul className="list-disc pl-4">
+                  {resources.map((r) => (
+                    <li key={r}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {permissions.length > 0 && (
+              <div>
+                {t("common.required-permission")}
+                <ul className="list-disc pl-4">
+                  {permissions.map((p) => (
+                    <li key={p}>{p}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="mt-2">
+              <RouterLink
+                to={{ name: WORKSPACE_ROUTE_LANDING }}
+                className={buttonVariants({
+                  appearance: "outline",
+                  size: "sm",
+                })}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                {t("error-page.go-back-home")}
+              </RouterLink>
+            </div>
+          </div>
+        </div>
+      </Alert>
+    </div>
+  );
+}

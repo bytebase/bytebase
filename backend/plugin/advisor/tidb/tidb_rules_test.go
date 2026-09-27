@@ -122,7 +122,7 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 				"mixed DDL and DML",
 				"mixed DML statements",
 				"does not exist",
-				"exceeds the maximum limit",
+				"exceeds the maximum SQL size",
 			},
 		},
 		{
@@ -147,8 +147,8 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 			statement:       largeStatement,
 			backupDBPresent: true,
 			wantContentSubstr: []string{
-				"exceeds the maximum limit",
-				"for backup",
+				"The SQL size is",
+				"exceeds the maximum SQL size",
 			},
 		},
 		{
@@ -422,8 +422,9 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 				},
 			}
 			rule := &storepb.SQLReviewRule{
-				Type:  storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
-				Level: storepb.SQLReviewRule_WARNING,
+				Type:   storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
+				Level:  storepb.SQLReviewRule_WARNING,
+				Engine: storepb.Engine_TIDB,
 			}
 			adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, tc.statement, []*storepb.SQLReviewRule{rule}, ctx)
 			require.NoError(t, err)

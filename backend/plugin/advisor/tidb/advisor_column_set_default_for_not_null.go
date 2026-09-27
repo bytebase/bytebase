@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -123,7 +123,7 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advi
 				Code:          code.NotNullColumnWithNoDefault.Int32(),
 				Title:         title,
 				Content:       fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", r.tableName, r.columnName),
-				StartPosition: common.ConvertANTLRLineToPosition(r.line),
+				StartPosition: base.ConvertANTLRLineToPosition(r.line),
 			})
 		}
 	}

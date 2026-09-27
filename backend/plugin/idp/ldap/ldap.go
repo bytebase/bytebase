@@ -6,12 +6,20 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/go-ldap/ldap/v3"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
+
+// ErrInvalidCredentials marks an authentication failure caused by the submitted
+// username or password — the user filter matched no one, or the directory
+// rejected the bind — as opposed to connectivity or configuration failures.
+// Callers surface it as Unauthenticated rather than Internal.
+var ErrInvalidCredentials = errors.New("invalid credentials")
 
 // IdentityProvider represents an LDAP Identity Provider.
 type IdentityProvider struct {
@@ -128,6 +136,33 @@ func (p *IdentityProvider) Connect() (*ldap.Conn, error) {
 
 // Authenticate authenticates the user with the given username and password.
 func (p *IdentityProvider) Authenticate(username, password string) (*storepb.IdentityProviderUserInfo, error) {
+	entry, err := p.searchAndBind(username, password, p.mappedAttributes())
+	if err != nil {
+		return nil, err
+	}
+	return p.userInfoFromEntry(entry), nil
+}
+
+// TestAuthenticate runs the same flow as Authenticate but requests every user
+// attribute of the matched entry, returning them alongside the mapped user
+// info so admins can verify their field mapping against real directory data.
+func (p *IdentityProvider) TestAuthenticate(username, password string) (*storepb.IdentityProviderUserInfo, map[string]string, error) {
+	// "*" requests all user attributes for the discovery view, but operational
+	// attributes (e.g. OpenLDAP entryUUID) are only returned when named explicitly.
+	// Append the mapped attributes so a mapping onto an operational attribute is
+	// still returned here, matching what real Authenticate requests — otherwise the
+	// test could report a mapped value as missing when sign-in would actually work.
+	entry, err := p.searchAndBind(username, password, append([]string{"*"}, p.mappedAttributes()...))
+	if err != nil {
+		return nil, nil, err
+	}
+	return p.userInfoFromEntry(entry), entryAttributes(entry), nil
+}
+
+// searchAndBind searches for the user matching the configured filter, binds as
+// the matched entry to verify the password, and returns the entry carrying the
+// requested attributes.
+func (p *IdentityProvider) searchAndBind(username, password string, attributes []string) (*ldap.Entry, error) {
 	conn, err := p.Connect()
 	if err != nil {
 		return nil, errors.Errorf("connect: %v", err)
@@ -143,7 +178,7 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 			0,
 			false,
 			strings.ReplaceAll(p.config.UserFilter, "%s", ldap.EscapeFilter(username)),
-			[]string{"dn", p.config.FieldMapping.Identifier, p.config.FieldMapping.DisplayName},
+			attributes,
 			nil,
 		),
 	)
@@ -159,7 +194,7 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 			slog.String("hint", "filter may be too restrictive or user does not exist in the directory"),
 		)
 		// Return generic error to prevent information disclosure
-		return nil, errors.New("invalid credentials")
+		return nil, ErrInvalidCredentials
 	} else if len(sr.Entries) > 1 {
 		// Log detailed information for admin troubleshooting
 		slog.Error("LDAP authentication failed: user filter matched multiple users",
@@ -177,12 +212,73 @@ func (p *IdentityProvider) Authenticate(username, password string) (*storepb.Ide
 	// Bind as the user to verify their password
 	err = conn.Bind(entry.DN, password)
 	if err != nil {
-		return nil, errors.Errorf("bind user: %v", err)
+		return nil, bindError(err)
 	}
+	return entry, nil
+}
 
-	identifier := entry.GetAttributeValue(p.config.FieldMapping.Identifier)
-	return &storepb.IdentityProviderUserInfo{
-		Identifier:  identifier,
+// bindError classifies a failed bind: a credential the directory rejected
+// becomes ErrInvalidCredentials, anything else stays a generic server error.
+// The directory's own diagnostic is logged and kept in the message — AD's
+// result 49 sub-codes distinguish a wrong password (data 52e) from an
+// expired (532), disabled (533), or locked (775) account, which login hides
+// behind a generic 401 but the admin test-sign-in flow and operators need.
+func bindError(err error) error {
+	if ldap.IsErrorWithCode(err, ldap.LDAPResultInvalidCredentials) {
+		slog.Warn("LDAP authentication failed: bind rejected",
+			slog.String("hint", "wrong password, or an expired/disabled/locked directory account — see the result data code"),
+			slog.String("error", err.Error()),
+		)
+		return errors.Wrapf(ErrInvalidCredentials, "bind user: %v", err)
+	}
+	return errors.Errorf("bind user: %v", err)
+}
+
+// mappedAttributes returns the attributes to request for the configured field
+// mapping, skipping unset mappings: LDAP servers only return explicitly
+// requested attributes.
+func (p *IdentityProvider) mappedAttributes() []string {
+	attributes := []string{"dn", p.config.FieldMapping.Identifier}
+	for _, attribute := range []string{p.config.FieldMapping.DisplayName, p.config.FieldMapping.Phone} {
+		if attribute != "" {
+			attributes = append(attributes, attribute)
+		}
+	}
+	return attributes
+}
+
+func (p *IdentityProvider) userInfoFromEntry(entry *ldap.Entry) *storepb.IdentityProviderUserInfo {
+	userInfo := &storepb.IdentityProviderUserInfo{
+		Identifier:  entry.GetAttributeValue(p.config.FieldMapping.Identifier),
 		DisplayName: entry.GetAttributeValue(p.config.FieldMapping.DisplayName),
-	}, nil
+	}
+	// Only set phone if it's valid, matching the OAuth2/OIDC providers. This value
+	// is persisted as principal.phone on first sign-in, and the user APIs reject
+	// non-E.164 phones, so a raw directory value (local number, extension) must not
+	// leak through.
+	if phone := entry.GetAttributeValue(p.config.FieldMapping.Phone); phone != "" {
+		if err := common.ValidatePhone(phone); err == nil {
+			userInfo.Phone = phone
+		}
+	}
+	return userInfo
+}
+
+// entryAttributes flattens an LDAP entry into a display map: multi-valued
+// attributes are comma-joined and non-UTF-8 values are replaced with a
+// placeholder.
+func entryAttributes(entry *ldap.Entry) map[string]string {
+	attributes := map[string]string{"dn": entry.DN}
+	for _, attribute := range entry.Attributes {
+		values := make([]string, 0, len(attribute.Values))
+		for _, value := range attribute.Values {
+			if utf8.ValidString(value) {
+				values = append(values, value)
+			} else {
+				values = append(values, "<binary>")
+			}
+		}
+		attributes[attribute.Name] = strings.Join(values, ", ")
+	}
+	return attributes
 }

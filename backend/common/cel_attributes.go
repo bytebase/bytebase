@@ -58,3 +58,9 @@ const (
 	// CELAttributeRiskLevel is the risk level of the issue (LOW, MODERATE, HIGH).
 	CELAttributeRiskLevel = "risk.level"
 )
+
+// CEL attribute names for issue scope.
+const (
+	// CELAttributeIssueLabels is the canonical labels attached to the issue.
+	CELAttributeIssueLabels = "issue.labels"
+)

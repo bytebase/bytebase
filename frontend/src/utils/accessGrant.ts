@@ -1,14 +1,13 @@
 import dayjs from "dayjs";
-import i18n from "@/react/i18n";
+import i18n from "@/lib/i18n";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type AccessGrant,
   AccessGrant_Status,
 } from "@/types/proto-es/v1/access_grant_service_pb";
-import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import { formatAbsoluteDateTime } from "@/utils/datetime";
+import { passedReading, type TimeReading } from "@/utils/datetime";
 
 export type AccessGrantFilterStatus =
   | "ACTIVE"
@@ -22,25 +21,25 @@ export type AccessGrantDisplayStatus =
   | "CANCELED"
   | "UNKNOWN";
 
+/**
+ * The fixed deadline of a grant, if it has one. A pending grant holds a ttl
+ * instead: a duration that starts at approval, which names no instant yet.
+ */
 export const getAccessGrantExpireTimeMs = (
   grant: AccessGrant
-): number | undefined => {
-  if (grant.expiration.case === "expireTime") {
-    return getTimeForPbTimestampProtoEs(grant.expiration.value);
-  }
-  if (grant.expiration.case === "ttl") {
-    return Date.now() + Number(grant.expiration.value.seconds) * 1000;
-  }
-  return undefined;
-};
+): number | undefined =>
+  grant.expiration.case === "expireTime"
+    ? getTimeForPbTimestampProtoEs(grant.expiration.value)
+    : undefined;
 
 export const getAccessGrantExpirationText = (
   grant: AccessGrant
 ):
-  | { type: "datetime"; value: string }
+  | { type: "datetime"; expireTimeMs: number }
   | { type: "duration"; value: string }
   | { type: "never" } => {
-  if (grant.expiration.case === "expireTime") {
+  const expireTimeMs = getAccessGrantExpireTimeMs(grant);
+  if (expireTimeMs !== undefined) {
     // Active grants only carry `expireTime` — the originally-requested
     // TTL is `Input only` on the proto and is gone after activation.
     // We deliberately do NOT derive a "duration" from
@@ -50,8 +49,7 @@ export const getAccessGrantExpirationText = (
     // later would render as "1d4h", which misleads reviewers about
     // the actual granted window. Show the absolute expire datetime
     // alone instead. Bot review #3370767734.
-    const ms = getTimeForPbTimestampProtoEs(grant.expiration.value);
-    return { type: "datetime", value: formatAbsoluteDateTime(ms) };
+    return { type: "datetime", expireTimeMs };
   }
   if (grant.expiration.case === "ttl") {
     // Pending grants still carry the requested TTL — safe to format.
@@ -69,16 +67,20 @@ export const getAccessGrantExpirationText = (
   return { type: "never" };
 };
 
-export const getAccessGrantDisplayStatus = (
+/** The deadline of an activated grant, the only kind that can expire. */
+export const getActiveAccessGrantDeadlineMs = (
+  grant: AccessGrant
+): number | undefined =>
+  grant.status === AccessGrant_Status.ACTIVE
+    ? getAccessGrantExpireTimeMs(grant)
+    : undefined;
+
+const getAccessGrantDisplayStatus = (
   grant: AccessGrant,
   issue?: Issue
 ): AccessGrantDisplayStatus => {
-  const expireMs = getAccessGrantExpireTimeMs(grant);
-  if (
-    grant.status === AccessGrant_Status.ACTIVE &&
-    expireMs !== undefined &&
-    expireMs < Date.now()
-  ) {
+  const deadlineMs = getActiveAccessGrantDeadlineMs(grant);
+  if (deadlineMs !== undefined && passedReading.read(deadlineMs)) {
     return "EXPIRED";
   }
   switch (grant.status) {
@@ -101,11 +103,26 @@ export const getAccessGrantDisplayStatus = (
   }
 };
 
+/**
+ * A grant's status as displayed. Only an activated grant's status changes with
+ * time, turning expired when its deadline passes.
+ */
+export const accessGrantStatusReading: TimeReading<
+  { grant: AccessGrant; issue?: Issue },
+  AccessGrantDisplayStatus
+> = {
+  read: ({ grant, issue }) => getAccessGrantDisplayStatus(grant, issue),
+  nextChangeAt: ({ grant }) => {
+    const deadlineMs = getActiveAccessGrantDeadlineMs(grant);
+    return deadlineMs === undefined
+      ? Number.POSITIVE_INFINITY
+      : passedReading.nextChangeAt(deadlineMs);
+  },
+};
+
 export const getAccessGrantDisplayStatusText = (
-  grant: AccessGrant,
-  issue?: Issue
+  displayStatus: AccessGrantDisplayStatus
 ) => {
-  const displayStatus = getAccessGrantDisplayStatus(grant, issue);
   switch (displayStatus) {
     case "ACTIVE":
       return i18n.t("common.active");

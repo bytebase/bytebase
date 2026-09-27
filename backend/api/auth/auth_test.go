@@ -1,0 +1,100 @@
+package auth
+
+import (
+	"testing"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/stretchr/testify/require"
+
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+)
+
+// TestCheckTokenAudience pins the general-API audience policy for P1a PR 5:
+// the fixed audiences keep working, an MCP token (token_use=mcp) is refused
+// outright — since PR 4's private transport, /mcp tool traffic never presents
+// it here, so any appearance is a leaked or misused token, not tool traffic —
+// and everything else is refused as an audience mismatch.
+func TestCheckTokenAudience(t *testing.T) {
+	claimsWith := func(aud string, tokenUse string) *claimsMessage {
+		return &claimsMessage{
+			RegisteredClaims: jwt.RegisteredClaims{Audience: jwt.ClaimStrings{aud}},
+			TokenUse:         tokenUse,
+		}
+	}
+
+	t.Run("web session audience is accepted", func(t *testing.T) {
+		err := checkTokenAudience(claimsWith(AccessTokenAudience, ""))
+		require.NoError(t, err)
+	})
+
+	t.Run("legacy oauth2 audience is refused: it is MCP-minted too", func(t *testing.T) {
+		// bb.oauth2.access was only ever minted by the MCP authorization
+		// server (pre-PR-3, before tokens carried token_use), so it is an MCP
+		// token by provenance and gets the same refusal. Unlike at /mcp, no
+		// legitimate traffic drains through here: the pre-PR-4 loopback
+		// transport dialed its own replica, so even mid-rolling-upgrade no old
+		// replica ever lands a legacy bearer on this chain.
+		err := checkTokenAudience(claimsWith(OAuth2AccessTokenAudience, ""))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "only accepted at /mcp")
+	})
+
+	t.Run("mcp resource-bound token is refused", func(t *testing.T) {
+		err := checkTokenAudience(claimsWith(testResource, TokenUseMCP))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "only accepted at /mcp")
+	})
+
+	t.Run("token_use=mcp is refused even with the accepted fixed audience", func(t *testing.T) {
+		// Nothing mints this combination; if one ever appears, the MCP marker
+		// must win over the audience allowlist — the rejection keys on what the
+		// token IS, not on which audience it also happens to carry.
+		err := checkTokenAudience(claimsWith(AccessTokenAudience, TokenUseMCP))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "only accepted at /mcp")
+	})
+
+	t.Run("unknown audience without token_use is refused", func(t *testing.T) {
+		err := checkTokenAudience(claimsWith("wrong.audience", ""))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "audience mismatch")
+	})
+}
+
+// TestMCPMethodClassOfProcedure pins that the classification the gate enforces
+// is read from the annotation on the RPC, and that an unresolvable procedure
+// is an error rather than a quiet "unclassified".
+func TestMCPMethodClassOfProcedure(t *testing.T) {
+	for _, tc := range []struct {
+		procedure string
+		want      v1pb.MCPMethodClass
+	}{
+		{"/bytebase.v1.AuthService/Login", v1pb.MCPMethodClass_FORBIDDEN},
+		{"/bytebase.v1.UserService/UpdateUser", v1pb.MCPMethodClass_FORBIDDEN},
+		{"/bytebase.v1.WorkspaceService/LeaveWorkspace", v1pb.MCPMethodClass_FORBIDDEN},
+		// The serving classes resolve through the same path, and the gate acts
+		// on whatever this returns, so these pin resolution rather than the
+		// classification decision itself — mcp_gate_test.go owns that. Every v1
+		// RPC carries a class, which is why none of these is UNSPECIFIED.
+		{"/bytebase.v1.DatabaseService/GetDatabase", v1pb.MCPMethodClass_READ},
+		{"/bytebase.v1.IssueService/CreateIssue", v1pb.MCPMethodClass_WRITE},
+		{"/bytebase.v1.UserService/GetUser", v1pb.MCPMethodClass_EXCLUDED},
+		// ListProjects was EXCLUDED for returning webhook URLs verbatim. The
+		// URL is write-only now, so it is an ordinary read again, and an agent
+		// that cannot list projects cannot reach a database at all.
+		{"/bytebase.v1.ProjectService/ListProjects", v1pb.MCPMethodClass_READ},
+	} {
+		got, err := MCPMethodClassOfProcedure(tc.procedure)
+		require.NoError(t, err, tc.procedure)
+		require.Equal(t, tc.want, got, tc.procedure)
+	}
+
+	for _, procedure := range []string{
+		"not-a-procedure",
+		"/bytebase.v1.NoSuchService/Login",
+		"/bytebase.v1.AuthService/NoSuchMethod",
+	} {
+		_, err := MCPMethodClassOfProcedure(procedure)
+		require.Error(t, err, "%q must not resolve to a classification", procedure)
+	}
+}

@@ -3,6 +3,7 @@ package model
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -41,10 +42,10 @@ func TestResolvePGSearchPath(t *testing.T) {
 }
 
 func TestDatabaseMetadataSearchPathHelpers(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name:       "testdb",
 		SearchPath: `"$user", public, MissingSchema, "CamelCase"`,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "alice"},
 			{Name: "public"},
 			{Name: "CamelCase"},
@@ -64,10 +65,10 @@ func TestDatabaseMetadataSearchPathHelpers(t *testing.T) {
 }
 
 func TestDatabaseMetadataSearchPathHelpersSkipMissingCurrentUserSchema(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name:       "testdb",
 		SearchPath: `"$user", public, MissingSchema`,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "public"},
 		},
 	}

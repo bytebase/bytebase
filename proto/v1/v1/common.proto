@@ -15,6 +15,7 @@ enum State {
 
 // Database engine type.
 enum Engine {
+  reserved 5;
   // Unspecified database engine.
   ENGINE_UNSPECIFIED = 0;
   // ClickHouse columnar database.
@@ -25,8 +26,6 @@ enum Engine {
   POSTGRES = 3;
   // Snowflake cloud data warehouse.
   SNOWFLAKE = 4;
-  // SQLite embedded database.
-  SQLITE = 5;
   // TiDB distributed SQL database.
   TIDB = 6;
   // MongoDB document database.
@@ -101,7 +100,7 @@ enum ExportFormat {
 // Lives at the top level so both plan_service.proto and issue_service.proto
 // can reference it without a circular import.
 enum ApprovalStatus {
-  // Unspecified approval status.
+  // No approval workflow has started, including for a linked draft issue.
   APPROVAL_STATUS_UNSPECIFIED = 0;
   // Approval checks are being evaluated.
   CHECKING = 1;
@@ -113,6 +112,20 @@ enum ApprovalStatus {
   REJECTED = 4;
   // Approval was skipped.
   SKIPPED = 5;
+}
+
+// The status of an issue.
+// Lives at the top level so both plan_service.proto and issue_service.proto
+// can reference it without a circular import.
+enum IssueStatus {
+  // Unspecified status.
+  ISSUE_STATUS_UNSPECIFIED = 0;
+  // Issue is open and active.
+  OPEN = 1;
+  // Issue is completed.
+  DONE = 2;
+  // Issue is canceled.
+  CANCELED = 3;
 }
 
 // Position in a text expressed as one-based line and one-based column.
@@ -191,6 +204,7 @@ enum WebhookType {
 
 // StatementType represents the type of SQL statement.
 enum StatementType {
+  reserved 13 to 19, 32 to 39, 47 to 49, 56 to 59;
   STATEMENT_TYPE_UNSPECIFIED = 0;
 
   // DDL - CREATE statements
@@ -242,6 +256,7 @@ enum StatementType {
   INSERT = 60;
   UPDATE = 61;
   DELETE = 62;
+  MERGE = 63;
 }
 
 // PermissionDeniedDetail provides structured information about permission failures.

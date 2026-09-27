@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/field_mask.proto";
+import "google/type/color.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
@@ -24,6 +25,8 @@ service SettingService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.settings.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Retrieves a workspace setting by name.
@@ -33,6 +36,8 @@ service SettingService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.settings.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates a workspace setting.
@@ -45,6 +50,8 @@ service SettingService {
     option (bytebase.v1.permission) = "bb.settings.set";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = REWRITES_SESSION_BOUNDARY;
   }
 
   // Sends a test email using the provided config (without persisting).
@@ -56,6 +63,8 @@ service SettingService {
     };
     option (bytebase.v1.permission) = "bb.settings.set";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 }
 
@@ -111,6 +120,7 @@ message Setting {
     SEMANTIC_TYPES = 6;
     ENVIRONMENT = 7;
     EMAIL = 8;
+    MCP = 9;
   }
 
   // The resource name of the setting.
@@ -133,29 +143,45 @@ message SettingValue {
     AISetting ai = 6;
     EnvironmentSetting environment = 7;
     EmailSetting email = 8;
+    MCPSetting mcp = 9;
   }
 }
 
 message AppIMSetting {
   message Slack {
-    string token = 1 [(google.api.field_behavior) = INPUT_ONLY];
+    string token = 1 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message Feishu {
     string app_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
-    string app_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_secret = 2 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message Wecom {
     string corp_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
     string agent_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
-    string secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string secret = 3 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message Lark {
     string app_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
-    string app_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_secret = 2 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message DingTalk {
     string client_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
-    string client_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string client_secret = 2 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
     string robot_code = 3 [(google.api.field_behavior) = INPUT_ONLY];
   }
   message Teams {
@@ -164,7 +190,10 @@ message AppIMSetting {
     // Azure AD application (client) ID.
     string client_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
     // Azure AD client secret.
-    string client_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string client_secret = 3 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
 
   message IMSetting {
@@ -183,6 +212,10 @@ message AppIMSetting {
 }
 
 message WorkspaceProfileSetting {
+  reserved 15;
+  // 26 was mcp_capability.
+  reserved 26;
+  reserved "mcp_capability";
   // The external URL is used for sso authentication callback.
   string external_url = 1;
 
@@ -198,7 +231,7 @@ message WorkspaceProfileSetting {
   // The setting of custom announcement
   Announcement announcement = 5;
 
-  // The max expiration duration for role grants and data access requests.
+  // The max expiration duration for data access requests.
   google.protobuf.Duration maximum_request_expiration = 6;
 
   // The workspace domain, e.g., bytebase.com.
@@ -210,7 +243,7 @@ message WorkspaceProfileSetting {
   // The workspace database change mode.
   DatabaseChangeMode database_change_mode = 9;
 
-  // Whether to disallow password signin. (Except workspace admins)
+  // Whether password sign-in is disabled for all end users.
   bool disallow_password_signin = 10;
 
   // Whether to enable metric collection for the workspace.
@@ -226,9 +259,6 @@ message WorkspaceProfileSetting {
   // Whether to display watermark on pages.
   // Requires ENTERPRISE license.
   bool watermark = 14;
-
-  // The token for directory sync authentication.
-  string directory_sync_token = 15;
 
   reserved 16;
 
@@ -275,13 +305,54 @@ message WorkspaceProfileSetting {
   // The enforced CUSTOM theme's full definition — present ONLY when
   // sql_editor_theme_id is a custom uuid. tokens is always complete.
   SQLEditorThemeSetting sql_editor_custom_theme = 24;
+
+  // The max expiration duration for request role.
+  // Deprecated: use just-in-time access request flows instead.
+  google.protobuf.Duration maximum_role_expiration = 25;
+
+  // Whether a directory sync token has been generated for this workspace.
+  // The token itself is never returned; this only lets the UI decide between
+  // offering "generate" and "regenerate".
+  bool directory_sync_token_configured = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// MCPSetting is what an MCP (Model Context Protocol) session may do in this
+// workspace.
+message MCPSetting {
+  // Capability is the ceiling: a session runs at this level or lower.
+  // Writing CAPABILITY_UNSPECIFIED, explicitly or by leaving
+  // value.mcp.capability out of the update mask, is rejected.
+  enum Capability {
+    CAPABILITY_UNSPECIFIED = 0;
+    // MCP connections are rejected.
+    DISABLED = 1;
+    // Was MCP_METADATA_ONLY; the Metadata-only tier is deferred out of the design.
+    reserved 2;
+    // MCP may inspect metadata and run read-only queries. A session opens, and
+    // what it may do is decided per method by the capability gate and per
+    // statement by the SQL clamp: a request holding a statement that is not a
+    // read is refused whole, and where the engine's driver has one the
+    // database session is opened read-only as well.
+    READ_ONLY = 3;
+    // MCP may perform mutations, still bounded by the user's RBAC.
+    READ_WRITE = 4;
+  }
+
+  // The maximum capability available to MCP sessions in this workspace, acting
+  // as an admin-set ceiling. Enforced server-side at three points: the /mcp
+  // endpoint decides whether a connection is admitted at all, the ceiling gate
+  // on the internal MCP chain decides, per request, which method classes are
+  // served, and under READ_ONLY the SQL clamp decides, per statement, whether
+  // it only reads.
+  Capability capability = 1;
 }
 
 message SQLEditorThemeSetting {
   string id = 1;
   string name = 2;
   string monaco_base = 3;
-  map<string, string> tokens = 4;
+  // CSS token colors.
+  map<string, google.type.Color> tokens = 4;
 }
 
 message Announcement {
@@ -289,8 +360,8 @@ message Announcement {
   reserved "level";
 
   message AnnouncementTheme {
-    string background = 1; // "r g b"
-    string text = 2; // "r g b"
+    google.type.Color background = 1;
+    google.type.Color text = 2;
   }
 
   // The text of announcement
@@ -356,6 +427,7 @@ message DataClassificationSetting {
     string title = 2;
 
     message Level {
+      reserved 1, 3;
       string title = 2;
       // The numeric level for ordering. Higher = more sensitive.
       int32 level = 4;
@@ -365,6 +437,7 @@ message DataClassificationSetting {
     repeated Level levels = 3;
 
     message DataClassification {
+      reserved 3;
       // id is the classification id in [0-9]+-[0-9]+-[0-9]+ format.
       string id = 1;
       string title = 2;
@@ -382,6 +455,7 @@ message DataClassificationSetting {
 
 message SemanticTypeSetting {
   message SemanticType {
+    reserved 4 to 5;
     // id is the uuid for semantic type.
     string id = 1;
     // the title of the semantic type, it should not be empty.
@@ -470,7 +544,7 @@ message AISetting {
   }
   Provider provider = 2;
   string endpoint = 3;
-  string api_key = 4;
+  string api_key = 4 [(bytebase.v1.audit_behavior) = SENSITIVE];
   string model = 5;
   string version = 6;
 }
@@ -490,7 +564,7 @@ message EnvironmentSetting {
     // The display name of the environment.
     string title = 3;
     map<string, string> tags = 4;
-    string color = 5;
+    google.type.Color color = 5;
   }
 }
 
@@ -513,7 +587,10 @@ message EmailSetting {
     string host = 1;
     int32 port = 2;
     string username = 3;
-    string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
+    string password = 4 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
     Encryption encryption = 5;
     Authentication authentication = 6;
 

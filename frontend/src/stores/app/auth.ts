@@ -1,0 +1,303 @@
+import { create } from "@bufbuild/protobuf";
+import { Code, createContextValues } from "@connectrpc/connect";
+import { uniqueId } from "lodash-es";
+import { authServiceClientConnect, userServiceClientConnect } from "@/api";
+import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
+import {
+  AUTH_MFA_MODULE,
+  AUTH_PASSWORD_RESET_MODULE,
+  AUTH_SETUP_MODULE,
+  AUTH_SIGNIN_MODULE,
+  WORKSPACE_ROUTE_LANDING,
+} from "@/app/router/handles";
+import {
+  navigateByName,
+  navigateToPath,
+  resolvePath,
+} from "@/app/router/navigation";
+import { saveWorkspaceSetupFinished } from "@/modules/workspace-setup-guide/setup";
+import {
+  LoginRequestSchema,
+  SendEmailLoginCodeRequestSchema,
+  SignupRequestSchema,
+} from "@/types/proto-es/v1/auth_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
+import { UNKNOWN_USER_NAME } from "@/types/v1/user";
+import { storageKeyResetPassword } from "@/utils/storage-keys";
+import type { AppSliceCreator, AuthSlice } from "./types";
+
+// `users/{email}` → `{email}`.
+function emailOf(currentUserName: string | undefined): string {
+  if (!currentUserName) return "";
+  return currentUserName.startsWith("users/")
+    ? currentUserName.slice("users/".length)
+    : currentUserName;
+}
+
+function readResetPassword(email: string): boolean {
+  try {
+    return localStorage.getItem(storageKeyResetPassword(email)) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function isFirstLogin(user: User): boolean {
+  return !user.profile?.lastLoginTime;
+}
+
+export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
+  unauthenticatedOccurred: false,
+  authSessionKey: uniqueId(),
+  isSelfEmailUpdate: false,
+
+  loadAuthenticationInfo: async () => {
+    const existing = get().authenticationInfo;
+    if (existing) return existing;
+    const pending = get().authenticationInfoRequest;
+    if (pending) return pending;
+    const request = get()
+      .fetchAuthenticationInfo()
+      .finally(() => set({ authenticationInfoRequest: undefined }));
+    set({ authenticationInfoRequest: request });
+    return request;
+  },
+
+  fetchAuthenticationInfo: async (workspace) => {
+    try {
+      const info = await authServiceClientConnect.getAuthenticationInfo({
+        workspace: workspace ?? get().currentUser?.workspace ?? "",
+      });
+      set({ authenticationInfo: info });
+      return info;
+    } catch {
+      return undefined;
+    }
+  },
+
+  isLoggedIn: () => {
+    const name = get().currentUserName;
+    return Boolean(name) && name !== UNKNOWN_USER_NAME;
+  },
+
+  requireResetPassword: () => {
+    if (!get().isLoggedIn()) return false;
+    return readResetPassword(emailOf(get().currentUserName));
+  },
+
+  setRequireResetPassword: (value) => {
+    if (!get().isLoggedIn()) return;
+    try {
+      localStorage.setItem(
+        storageKeyResetPassword(emailOf(get().currentUserName)),
+        value ? "true" : "false"
+      );
+    } catch {
+      // localStorage unavailable (private mode / quota) — non-fatal.
+    }
+  },
+
+  setUnauthenticatedOccurred: (value) =>
+    set({ unauthenticatedOccurred: value }),
+
+  loadCurrentUser: async () => {
+    const existing = get().currentUser;
+    if (existing) return existing;
+    const pending = get().currentUserRequest;
+    if (pending) return pending;
+    const request = userServiceClientConnect
+      .getCurrentUser({})
+      .then((user) => {
+        set({
+          currentUser: user,
+          currentUserName: user.name,
+          currentUserRequest: undefined,
+        });
+        return user;
+      })
+      .catch(() => {
+        // Don't cache failures — the next call (e.g., after login) should
+        // retry. Without this, a pre-login failure permanently prevents
+        // the React store from loading the authenticated user.
+        set({
+          currentUser: undefined,
+          currentUserName: undefined,
+          currentUserRequest: undefined,
+        });
+        return undefined;
+      });
+    set({ currentUserRequest: request });
+    return request;
+  },
+
+  // Force re-fetch: always hits the server — login/signup need the fresh
+  // authenticated user.
+  fetchCurrentUser: async (silent = false) => {
+    try {
+      const user = await userServiceClientConnect.getCurrentUser(
+        {},
+        { contextValues: createContextValues().set(silentContextKey, silent) }
+      );
+      set({ currentUser: user, currentUserName: user.name });
+      return user;
+    } catch {
+      return undefined;
+    }
+  },
+
+  setCurrentUser: (user) =>
+    set({ currentUser: user, currentUserName: user.name }),
+
+  // sometimes we have to redirect users even if we don't want to redirect them.
+  // for example, the user is forced to reset their password,
+  // or the user is using the LDAP to signin.
+  login: async ({ request, redirect = true, redirectUrl, silent = false }) => {
+    const resp = await authServiceClientConnect.login(
+      create(LoginRequestSchema, { ...request, web: true }),
+      {
+        contextValues: createContextValues()
+          .set(ignoredCodesContextKey, [Code.NotFound])
+          .set(silentContextKey, silent),
+      }
+    );
+    const redirectQuery = new URLSearchParams(window.location.search).get(
+      "redirect"
+    );
+    const explicitRedirect = redirectUrl ?? redirectQuery;
+    const nextPage = explicitRedirect || "/";
+    if (resp.mfaTempToken) {
+      set({ unauthenticatedOccurred: false });
+      navigateByName(AUTH_MFA_MODULE, {
+        query: { mfaTempToken: resp.mfaTempToken, redirect: nextPage },
+      });
+      return;
+    }
+
+    const user = await get().fetchCurrentUser();
+    set({ unauthenticatedOccurred: !user });
+    if (get().unauthenticatedOccurred) {
+      return;
+    }
+
+    get().setRequireResetPassword(resp.requireResetPassword);
+    await get().fetchServerInfo();
+    // Re-fetch the current workspace now that we're authenticated.
+    await get().loadWorkspace();
+    // `rootGuard` decides where "/" goes, and it reads the workspace change
+    // mode from this store. The profile is only fetchable once authenticated,
+    // so a boot that started signed out left `appFeatures` at its PIPELINE
+    // default and an EDITOR workspace would fall through to the landing page.
+    // `force` because a previous user's profile must not survive a re-auth.
+    await get().loadWorkspaceProfile(true);
+
+    // After user login, reset the auth session key.
+    set({ authSessionKey: uniqueId() });
+
+    if (resp.requireResetPassword) {
+      navigateByName(AUTH_PASSWORD_RESET_MODULE, {
+        query: { redirect: nextPage },
+      });
+      return;
+    }
+    if (resp.user && isFirstLogin(resp.user)) {
+      set({ workspacePolicy: undefined });
+      await get()
+        .fetchWorkspaceIamPolicy(true)
+        .catch(() => undefined);
+      if (get().enableOnboarding()) {
+        if (get().isSaaSMode()) {
+          saveWorkspaceSetupFinished(user?.workspace ?? "", false);
+        }
+        navigateByName(AUTH_SETUP_MODULE, {
+          query: { redirect: nextPage },
+        });
+      } else {
+        navigateToPath(nextPage, { replace: true });
+      }
+      return;
+    }
+    if (redirect) {
+      navigateToPath(nextPage, { replace: true });
+    }
+  },
+
+  signup: async (request) => {
+    await authServiceClientConnect.signup(
+      create(SignupRequestSchema, {
+        email: request.email,
+        title: request.name,
+        password: request.password,
+      })
+    );
+
+    // Signup sets HTTP-only cookies automatically. Fetch the current user and
+    // proceed with the post-login flow.
+    const user = await get().fetchCurrentUser();
+    set({ unauthenticatedOccurred: !user });
+    if (get().unauthenticatedOccurred) {
+      return;
+    }
+
+    await get().fetchServerInfo();
+    set({ workspacePolicy: undefined });
+    await Promise.all([
+      get().loadWorkspaceProfile(true),
+      get()
+        .fetchWorkspaceIamPolicy(true)
+        .catch(() => undefined),
+    ]);
+    set({ authSessionKey: uniqueId() });
+
+    if (get().enableOnboarding()) {
+      if (get().isSaaSMode()) {
+        saveWorkspaceSetupFinished(user?.workspace ?? "", false);
+      }
+      navigateByName(AUTH_SETUP_MODULE, { replace: true });
+      return;
+    }
+
+    const redirectQuery = new URLSearchParams(window.location.search).get(
+      "redirect"
+    );
+    if (redirectQuery) {
+      navigateToPath(redirectQuery, { replace: true });
+      return;
+    }
+    navigateByName(WORKSPACE_ROUTE_LANDING, { replace: true });
+  },
+
+  logout: async () => {
+    try {
+      await authServiceClientConnect.logout({});
+    } catch {
+      // nothing
+    } finally {
+      set({ unauthenticatedOccurred: false });
+      const fullPath = `${location.pathname}${location.search}${location.hash}`;
+      const getRedirectQuery = () =>
+        new URLSearchParams(window.location.search).get("redirect");
+      // Replace and reload the page to clear frontend state directly.
+      location.href = resolvePath(AUTH_SIGNIN_MODULE, {
+        query: {
+          redirect:
+            getRedirectQuery() ||
+            (location.pathname.startsWith("/auth") ? undefined : fullPath),
+        },
+      });
+    }
+  },
+
+  sendEmailLoginCode: async (email, workspace) => {
+    await authServiceClientConnect.sendEmailLoginCode(
+      create(SendEmailLoginCodeRequestSchema, { email, workspace })
+    );
+  },
+
+  // Update currentUserName after a self email change. Sets the flag to
+  // suppress the "logged in as another user" notification.
+  updateCurrentUserNameForEmailChange: (newName) => {
+    set({ isSelfEmailUpdate: true, currentUserName: newName });
+  },
+
+  setIsSelfEmailUpdate: (value) => set({ isSelfEmailUpdate: value }),
+});

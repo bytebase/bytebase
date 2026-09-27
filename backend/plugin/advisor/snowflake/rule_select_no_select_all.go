@@ -7,10 +7,10 @@ import (
 
 	omniast "github.com/bytebase/omni/snowflake/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -92,7 +92,7 @@ func (c *selectNoSelectAllChecker) checkStmt(node omniast.Node, text string, bas
 			Code:          code.StatementSelectAll.Int32(),
 			Title:         c.title,
 			Content:       "Avoid using SELECT *.",
-			StartPosition: common.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, offset)),
+			StartPosition: base.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, offset)),
 		})
 	}
 }

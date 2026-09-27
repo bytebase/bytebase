@@ -3,7 +3,9 @@ syntax = "proto3";
 package bytebase.v1;
 
 import "google/api/annotations.proto";
+import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
 import "v1/auth_service.proto";
@@ -21,12 +23,14 @@ service WorkspaceService {
   rpc GetWorkspace(GetWorkspaceRequest) returns (Workspace) {
     option (google.api.http) = {get: "/v1/{name=workspaces/*}"};
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists all workspaces the current user is a member of.
   rpc ListWorkspaces(ListWorkspacesRequest) returns (ListWorkspacesResponse) {
     option (google.api.http) = {get: "/v1/workspaces"};
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Updates a workspace. Currently only title can be updated.
@@ -38,6 +42,8 @@ service WorkspaceService {
     option (bytebase.v1.permission) = "bb.workspaces.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Retrieves IAM policy for the workspace.
@@ -46,6 +52,8 @@ service WorkspaceService {
     option (google.api.http) = {get: "/v1/{resource=workspaces/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.workspaces.getIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Deletes a workspace. SaaS only. Cancels any active subscription and
@@ -56,6 +64,8 @@ service WorkspaceService {
     option (bytebase.v1.permission) = "bb.workspaces.delete";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = ENDS_MEMBERSHIP;
   }
 
   // Removes the calling user from a workspace and switches to the next
@@ -68,6 +78,8 @@ service WorkspaceService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = ENDS_MEMBERSHIP;
   }
 
   // Sets IAM policy for the workspace.
@@ -80,7 +92,44 @@ service WorkspaceService {
     option (bytebase.v1.permission) = "bb.workspaces.setIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
+
+  // Mints a new directory sync (SCIM) token, immediately invalidating the
+  // previous one. The plaintext token is returned exactly once and cannot be
+  // retrieved afterwards; only its hash is stored. Callers that lose it must
+  // rotate again and update their identity provider.
+  // Permissions required: bb.workspaces.rotateDirectorySyncToken
+  rpc RotateDirectorySyncToken(RotateDirectorySyncTokenRequest) returns (RotateDirectorySyncTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=workspaces/*}:rotateDirectorySyncToken"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.workspaces.rotateDirectorySyncToken";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
+  }
+}
+
+message RotateDirectorySyncTokenRequest {
+  // The workspace whose directory sync token is rotated.
+  // Format: workspaces/{workspace}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Workspace"}
+  ];
+}
+
+message RotateDirectorySyncTokenResponse {
+  // The new token, in plaintext. This is the only time it is ever returned.
+  string token = 1 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
 }
 
 message ListWorkspacesRequest {}

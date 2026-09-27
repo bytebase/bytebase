@@ -8,6 +8,32 @@ import (
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
+func (x *RotateDirectorySyncTokenRequest) Equal(y *RotateDirectorySyncTokenRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	return true
+}
+
+func (x *RotateDirectorySyncTokenResponse) Equal(y *RotateDirectorySyncTokenResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Token != y.Token {
+		return false
+	}
+	return true
+}
+
 func (x *ListWorkspacesRequest) Equal(y *ListWorkspacesRequest) bool {
 	if x == y {
 		return true

@@ -1,0 +1,185 @@
+import { Code, ConnectError } from "@connectrpc/connect";
+import { LoaderCircle } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { router } from "@/app/router";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { useServerState, useSubscriptionState } from "@/hooks/useAppState";
+import { useAppStore } from "@/stores/app";
+import { ENTERPRISE_INQUIRE_LINK, instanceLimitFeature } from "@/types";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto-es/v1/instance_service_pb";
+import {
+  PlanFeature,
+  PlanType,
+} from "@/types/proto-es/v1/subscription_service_pb";
+import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
+import { InstanceAssignmentSheet } from "./InstanceAssignmentSheet";
+
+export function FeatureAttention({
+  feature,
+  description: descriptionProp,
+  instance,
+}: {
+  feature: PlanFeature;
+  description?: string;
+  instance?: Instance | InstanceResource;
+}) {
+  const { t } = useTranslation();
+  const { canStartTrial, isTrialing, startTrial, trialingDays } =
+    useSubscriptionState();
+  const { totalInstanceCount, activatedInstanceCount } = useServerState();
+  const [showInstanceAssignment, setShowInstanceAssignment] = useState(false);
+  const [startingTrial, setStartingTrial] = useState(false);
+  const [trialRejected, setTrialRejected] = useState(false);
+
+  const hasFeature = useAppStore((state) => state.hasInstanceFeature(feature));
+  const instanceMissingLicense = useAppStore((state) =>
+    state.instanceMissingLicense(feature, instance)
+  );
+  const hasUnifiedInstanceLicense = useAppStore((state) =>
+    state.hasUnifiedInstanceLicense()
+  );
+  const requiredPlan = useAppStore((state) =>
+    state.getMinimumRequiredPlan(feature)
+  );
+  const featureIncludedInPlan = useAppStore((state) =>
+    state.hasFeature(feature)
+  );
+  const existInstanceWithoutLicense =
+    !hasUnifiedInstanceLicense &&
+    totalInstanceCount > activatedInstanceCount &&
+    instanceLimitFeature.has(feature);
+
+  const show =
+    !hasFeature ||
+    instanceMissingLicense ||
+    (!instance && existInstanceWithoutLicense);
+  if (!show) return null;
+
+  const isWarning = !hasFeature;
+  const featureKey = PlanFeature[feature].split(".").join("-");
+
+  const title = t(`dynamic.subscription.features.${featureKey}.title`);
+
+  const featureDesc =
+    descriptionProp || t(`dynamic.subscription.features.${featureKey}.desc`);
+
+  let descriptionText: string;
+  if (!hasFeature) {
+    const startTrial = isTrialing
+      ? ""
+      : t("subscription.trial-for-days", {
+          days: trialingDays,
+        });
+    if (requiredPlan === PlanType.FREE && featureIncludedInPlan) {
+      descriptionText = `${featureDesc}\n${startTrial}`;
+    } else {
+      const trialText = t("subscription.required-plan-with-trial", {
+        requiredPlan: t(
+          `subscription.plan.${PlanType[requiredPlan].toLowerCase()}.title`
+        ),
+        startTrial,
+      });
+      descriptionText = `${featureDesc}\n${trialText}`;
+    }
+  } else {
+    const attention = t(
+      "subscription.instance-assignment.missing-license-attention"
+    );
+    descriptionText = `${featureDesc}\n${attention}`;
+  }
+
+  const canManageSettings = hasWorkspacePermissionV2("bb.settings.set");
+  const canManageSubscription = hasWorkspacePermissionV2(
+    "bb.subscription.manage"
+  );
+  const canOfferTrial = canStartTrial && !trialRejected;
+  const hasPermission = canOfferTrial
+    ? canManageSubscription
+    : canManageSettings || (trialRejected && canManageSubscription);
+
+  let actionText = "";
+  if (hasPermission) {
+    if (!hasFeature) {
+      actionText = canOfferTrial
+        ? t("subscription.plan.try")
+        : trialRejected
+          ? t("common.learn-more")
+          : t("subscription.request-n-days-trial", {
+              days: trialingDays,
+            });
+    } else if (
+      !hasUnifiedInstanceLicense &&
+      hasWorkspacePermissionV2("bb.instances.update")
+    ) {
+      actionText = t("subscription.instance-assignment.assign-license");
+    }
+  }
+
+  const onAction = async () => {
+    if (!hasFeature) {
+      if (canOfferTrial) {
+        setStartingTrial(true);
+        try {
+          await startTrial();
+        } catch (error) {
+          if (ConnectError.from(error).code === Code.FailedPrecondition) {
+            setTrialRejected(true);
+          }
+        } finally {
+          setStartingTrial(false);
+        }
+        return;
+      }
+      if (trialRejected) {
+        void router.push(autoSubscriptionRoute());
+        return;
+      }
+      window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
+      return;
+    }
+    if (instanceMissingLicense || existInstanceWithoutLicense) {
+      setShowInstanceAssignment(true);
+      return;
+    }
+    router.push(autoSubscriptionRoute());
+  };
+
+  return (
+    <>
+      <Alert
+        variant={isWarning ? "warning" : "info"}
+        title={title}
+        description={
+          <span className="whitespace-pre-line">{descriptionText}</span>
+        }
+      >
+        {actionText && (
+          <div className="mt-3 flex justify-end">
+            <Button
+              appearance="solid"
+              size="sm"
+              className="shrink-0 whitespace-nowrap"
+              disabled={startingTrial}
+              onClick={() => void onAction()}
+            >
+              {startingTrial && <LoaderCircle className="animate-spin" />}
+              {actionText}
+            </Button>
+          </div>
+        )}
+      </Alert>
+      {!hasUnifiedInstanceLicense && (
+        <InstanceAssignmentSheet
+          open={showInstanceAssignment}
+          selectedInstanceList={instance ? [instance.name] : []}
+          onOpenChange={setShowInstanceAssignment}
+        />
+      )}
+    </>
+  );
+}

@@ -1,0 +1,7 @@
+/* Monaco's unlayered button:focus rule also matches React controls hosted in
+   an editor view zone. Tabs own their focus styling: a keyboard-only background
+   with the selected underline, without a second editor-colored outline. */
+.bb-markdown-editor [role="tab"]:focus,
+.monaco-editor.standalone .bb-markdown-editor [role="tab"]:focus {
+  outline: none;
+}

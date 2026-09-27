@@ -25,7 +25,7 @@ func parseRedshiftStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		omniStmts, err := ParseRedshiftOmni(stmt.Text)
+		omniStmts, err := ParseRedshift(stmt.Text)
 		if err != nil {
 			return nil, convertOmniError(err, stmt)
 		}

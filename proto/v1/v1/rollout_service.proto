@@ -22,6 +22,7 @@ service RolloutService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.rollouts.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists rollouts in a project.
@@ -31,10 +32,11 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.rollouts.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates a new rollout for a plan.
-  // Permissions required: bb.rollouts.create (or issue creator for data export issues)
+  // Permissions required: bb.rollouts.create
   rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/plans/*}/rollout"
@@ -43,6 +45,48 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    // WRITE, and it stays WRITE: executing an approved change is what a
+    // read-write session is for. Two ways a change reaches execution without a
+    // human approval ride this method, and they get OPPOSITE answers, because
+    // only one of them is fixable at the MCP layer. Both are stated here
+    // because the gate PR is the reader who needs them.
+    //
+    // 1. DELIVERED by the gate PR (1b-2), as rejectMCPOriginatedIssuelessRollout
+    //    in rollout_service.go, on CreateRollout and BatchRunTasks both.
+    //    Both approval checks on this path are
+    //    guarded on a LINKED ISSUE existing (rollout_service.go, and the
+    //    locked re-check in component/review/rollout.go), so a plan created
+    //    without one reaches task creation with no approval whatever
+    //    require_issue_approval says. The rule to implement: on the MCP path,
+    //    refuse CreateRollout and BatchRunTasks when the project sets
+    //    require_issue_approval and the plan has no linked approved issue.
+    //    It keys on the delegated grant, so the console and the GitOps agent
+    //    are unaffected, and it bites on CreateRollout first per the ordering
+    //    trap below. Not because the behavior is a defect — the shipped GitOps Service
+    //    Agent role holds no issue permission at all, so issueless deployment
+    //    is a supported product contract, and READ_WRITE preserves supported
+    //    contracts. Because without the rule the four FORBIDDEN approval
+    //    methods are decorative for the change lane: an agent that cannot
+    //    clear the gate can skip it instead, which is the same end state the
+    //    self-approval guard exists to prevent. Ordering trap: once an
+    //    issueless rollout exists, approval finding refuses outright ("rollout
+    //    already started"), so the rule has to bite before the rollout, not
+    //    after. BOT-71 tracks whether the product should close this for every
+    //    caller; if it does, this rule becomes redundant rather than wrong.
+    //
+    // 2. The gate PR owes NOTHING here, and must not pretend otherwise. An
+    //    approval binds the plan's specs and its approval_input_version, not
+    //    the set of databases a group target resolves to. This method
+    //    re-resolves the group live (rollout_service_task.go), and nothing in
+    //    UpdateDatabaseGroup, UpdateDatabase or background schema sync bumps
+    //    that version, so databases that join the group after approval execute
+    //    under it, and under plan checks that never ran against them. No MCP
+    //    rule closes this: approving an issue enqueues rollout creation on the
+    //    auto path with no CreateRollout call at all, and schema sync enlarges
+    //    the set with no API call. The only fix is binding approval to a
+    //    digest of the resolved set — a product decision, since live expansion
+    //    was introduced deliberately (#18589). BOT-72.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Lists task run executions for a task.
@@ -52,6 +96,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Retrieves a task run by name.
@@ -61,6 +106,7 @@ service RolloutService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Retrieves execution logs for a task run.
@@ -70,6 +116,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Retrieves database session information for a running task.
@@ -79,10 +126,12 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = OPENS_AN_ADMIN_CONNECTION;
   }
 
   // Executes multiple tasks in a rollout stage.
-  // Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+  // Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/plans/*/rollout/stages/*}/tasks:batchRun"
@@ -91,10 +140,17 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    // WRITE, and the same two cases as CreateRollout reach it — this is the
+    // method that actually starts execution. Its approval check carries the
+    // identical linked-issue guard, so 1b-2's rule covers this method too
+    // (rejectMCPOriginatedIssuelessRollout, rollout_service.go); and it runs
+    // whatever tasks the live group resolution produced, which no MCP rule can
+    // constrain. Both stated on CreateRollout.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Skips multiple tasks in a rollout stage.
-  // Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+  // Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
   rpc BatchSkipTasks(BatchSkipTasksRequest) returns (BatchSkipTasksResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/plans/*/rollout/stages/*}/tasks:batchSkip"
@@ -103,13 +159,14 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Cancels multiple task runs.
   // PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
   // a best-effort cancellation request and may continue running if the request is missed or the
   // executor does not stop. The response does not report which task runs were actually canceled.
-  // Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+  // Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
   rpc BatchCancelTaskRuns(BatchCancelTaskRunsRequest) returns (BatchCancelTaskRunsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*}/taskRuns:batchCancel"
@@ -118,6 +175,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Generates rollback SQL for a completed task run.
@@ -130,6 +188,7 @@ service RolloutService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 }
 
@@ -226,7 +285,7 @@ message ListRolloutsRequest {
   //
   // For example:
   // update_time >= "2025-01-02T15:04:05Z07:00"
-  // task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]
+  // task_type in ["DATABASE_MIGRATE", "DATABASE_CREATE"]
   string filter = 4;
 }
 
@@ -240,6 +299,7 @@ message ListRolloutsResponse {
 }
 
 message CreateRolloutRequest {
+  reserved 2;
   // The parent plan for which this rollout will be created.
   // Format: projects/{project}/plans/{plan}
   string parent = 1 [
@@ -262,11 +322,28 @@ message ListTaskRunsRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Task"}
   ];
+
+  // The maximum number of task runs to return. The service may return fewer
+  // than this value.
+  // If unspecified, at most 1000 task runs will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListTaskRuns` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListTaskRuns` must match
+  // the call that provided the page token.
+  string page_token = 3;
 }
 
 message ListTaskRunsResponse {
   // The taskRuns from the specified request.
   repeated TaskRun task_runs = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
 }
 
 message GetTaskRunRequest {
@@ -286,6 +363,7 @@ message GetTaskRunLogRequest {
 }
 
 message Rollout {
+  reserved 2, 5;
   option (google.api.resource) = {
     type: "bytebase.com/Rollout"
     pattern: "projects/{project}/plans/{plan}/rollout"
@@ -331,6 +409,7 @@ message Stage {
 }
 
 message Task {
+  reserved 9;
   option (google.api.resource) = {
     type: "bytebase.com/Task"
     pattern: "projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}"
@@ -376,20 +455,16 @@ message Task {
     // Database migration task that applies versioned schema changes.
     // Use payload DatabaseUpdate.
     DATABASE_MIGRATE = 3;
-    // Database export task that exports query results or table data.
-    // Use payload DatabaseDataExport.
-    DATABASE_EXPORT = 4;
   }
   Type type = 5;
 
-  // Format: instances/{instance} if the task is DatabaseCreate.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance} or projects/{project}/instances/{instance} if the task is DatabaseCreate.
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   string target = 6;
 
   oneof payload {
     DatabaseCreate database_create = 7;
     DatabaseUpdate database_update = 8;
-    DatabaseDataExport database_data_export = 9;
   }
 
   // The update_time is the update time of latest task run.
@@ -402,12 +477,14 @@ message Task {
 
   // Payload for creating a new database.
   message DatabaseCreate {
+    reserved 1 to 3;
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 4;
   }
 
   // Payload for updating a database schema.
   message DatabaseUpdate {
+    reserved 2 to 3;
     // The source can be either a sheet or a release.
     oneof source {
       // Format: projects/{project}/sheets/{sheet}
@@ -416,16 +493,10 @@ message Task {
       string release = 4;
     }
   }
-
-  // Payload for exporting database data.
-  message DatabaseDataExport {
-    // The resource name of the sheet.
-    // Format: projects/{project}/sheets/{sheet}
-    string sheet = 2;
-  }
 }
 
 message TaskRun {
+  reserved 7 to 8, 10, 13;
   option (google.api.resource) = {
     type: "bytebase.com/TaskRun"
     pattern: "projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}"
@@ -465,17 +536,6 @@ message TaskRun {
   // The time when the task run started execution.
   google.protobuf.Timestamp start_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  enum ExportArchiveStatus {
-    // Unspecified export archive status.
-    EXPORT_ARCHIVE_STATUS_UNSPECIFIED = 0;
-    // Export archive is ready for download.
-    READY = 1;
-    // Export archive has been downloaded by the user.
-    EXPORTED = 2;
-  }
-  // The export archive status for data export tasks.
-  ExportArchiveStatus export_archive_status = 10;
-
   // Indicates whether a prior backup was created for this task run.
   // When true, rollback SQL can be generated via PreviewTaskRunRollback.
   // Backup details are available in the task run logs.
@@ -488,6 +548,7 @@ message TaskRun {
 
     // Information about why a task run is waiting.
     message WaitingCause {
+      reserved 1 to 2;
       // The reason the task run is waiting.
       oneof cause {
         // Waiting due to parallel tasks limit.
@@ -519,8 +580,10 @@ message TaskRunLog {
 }
 
 message TaskRunLogEntry {
+  reserved 7;
   // The type of log entry.
   enum Type {
+    reserved 4;
     // Unspecified type.
     TYPE_UNSPECIFIED = 0;
     // Schema dump operation.
@@ -645,7 +708,7 @@ message TaskRunLogEntry {
         // Table information.
         message Table {
           // The database information.
-          // Format: instances/{instance}/databases/{database}
+          // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
           string database = 1;
           // The schema name.
           string schema = 2;

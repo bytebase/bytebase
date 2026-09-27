@@ -10,6 +10,7 @@ option go_package = "generated-go/store";
 message Activity {
   // Activity type enumeration.
   enum Type {
+    reserved 1 to 9;
     // Unspecified type.
     TYPE_UNSPECIFIED = 0;
     // ISSUE_CREATED represents a new issue creation event.

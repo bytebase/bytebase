@@ -927,6 +927,11 @@ export enum SQLReviewRule_Type {
    * @generated from enum value: STATEMENT_DISALLOW_TRUNCATE = 111;
    */
   STATEMENT_DISALLOW_TRUNCATE = 111,
+
+  /**
+   * @generated from enum value: BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE = 112;
+   */
+  BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE = 112,
 }
 
 /**

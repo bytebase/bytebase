@@ -4,6 +4,7 @@
 package v1
 
 import (
+	color "google.golang.org/genproto/googleapis/type/color"
 	proto "google.golang.org/protobuf/proto"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 )
@@ -248,7 +249,9 @@ func (x *Label) Equal(y *Label) bool {
 	if x.Value != y.Value {
 		return false
 	}
-	if x.Color != y.Color {
+	if equal, ok := interface{}(x.Color).(interface{ Equal(*color.Color) bool }); !ok || !equal.Equal(y.Color) {
+		return false
+	} else if !proto.Equal(x.Color, y.Color) {
 		return false
 	}
 	if x.Group != y.Group {
@@ -353,6 +356,9 @@ func (x *Project) Equal(y *Project) bool {
 	if x.AllowJustInTimeAccess != y.AllowJustInTimeAccess {
 		return false
 	}
+	if x.AllowLastPlanEditorApproval != y.AllowLastPlanEditorApproval {
+		return false
+	}
 	return true
 }
 
@@ -454,6 +460,9 @@ func (x *Webhook) Equal(y *Webhook) bool {
 		return false
 	}
 	if x.Url != y.Url {
+		return false
+	}
+	if x.UrlSupportsDirectMessage != y.UrlSupportsDirectMessage {
 		return false
 	}
 	if x.DirectMessage != y.DirectMessage {

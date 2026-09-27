@@ -1,0 +1,58 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Aggregate",
+      "Strategy": "Plain",
+      "Partial Mode": "Simple",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Startup Cost": 292.50,
+      "Total Cost": 292.51,
+      "Plan Rows": 1,
+      "Plan Width": 8,
+      "Plans": [
+        {
+          "Node Type": "ModifyTable",
+          "Operation": "Delete",
+          "Parent Relationship": "InitPlan",
+          "Subplan Name": "CTE d",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "big",
+          "Alias": "big",
+          "Startup Cost": 0.00,
+          "Total Cost": 180.00,
+          "Plan Rows": 5000,
+          "Plan Width": 6,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "big",
+              "Alias": "big",
+              "Startup Cost": 0.00,
+              "Total Cost": 180.00,
+              "Plan Rows": 5000,
+              "Plan Width": 6,
+              "Filter": "(s_id <= 50)"
+            }
+          ]
+        },
+        {
+          "Node Type": "CTE Scan",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "CTE Name": "d",
+          "Alias": "d",
+          "Startup Cost": 0.00,
+          "Total Cost": 100.00,
+          "Plan Rows": 5000,
+          "Plan Width": 0
+        }
+      ]
+    }
+  }
+]

@@ -1,14 +1,22 @@
 package v1
 
 import (
+	"context"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	colorpb "google.golang.org/genproto/googleapis/type/color"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func TestValidateDomains(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 
 	testCases := []struct {
@@ -55,19 +63,76 @@ func TestValidateDomains(t *testing.T) {
 	}
 }
 
+func TestValidateApprovalTemplate(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name     string
+		template *v1pb.ApprovalTemplate
+		wantErr  bool
+	}{
+		{
+			name:    "nil template rejected",
+			wantErr: true,
+		},
+		{
+			name:     "nil flow rejected",
+			template: &v1pb.ApprovalTemplate{},
+			wantErr:  true,
+		},
+		{
+			name: "empty roles allowed for skipped approval",
+			template: &v1pb.ApprovalTemplate{
+				Flow: &v1pb.ApprovalFlow{},
+			},
+		},
+		{
+			name: "valid role accepted",
+			template: &v1pb.ApprovalTemplate{
+				Flow: &v1pb.ApprovalFlow{Roles: []string{"roles/projectOwner"}},
+			},
+		},
+		{
+			name: "empty role rejected",
+			template: &v1pb.ApprovalTemplate{
+				Flow: &v1pb.ApprovalFlow{Roles: []string{""}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "blank role rejected",
+			template: &v1pb.ApprovalTemplate{
+				Flow: &v1pb.ApprovalFlow{Roles: []string{" "}},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateApprovalTemplate(tc.template)
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestValidateSQLEditorCustomTheme(t *testing.T) {
 	// The server validates shape, not the frontend token vocabulary: a non-empty
-	// map whose values are "r g b" triples. A representative subset is enough.
-	tokens := func() map[string]string {
-		return map[string]string{
-			"--color-background": "1 2 3",
-			"--color-accent":     "4 5 6",
+	// map whose values are google.type.Color messages. A representative subset is enough.
+	tokens := func() map[string]*colorpb.Color {
+		return map[string]*colorpb.Color{
+			"--color-background": colorValue(0.01, 0.02, 0.03),
+			"--color-accent":     colorValue(0.6, 0.7, 0.8),
 		}
 	}
-	with := func(m map[string]string) *storepb.SQLEditorThemeSetting {
+	with := func(m map[string]*colorpb.Color) *storepb.SQLEditorThemeSetting {
 		return &storepb.SQLEditorThemeSetting{Id: "u1", Name: "Brand", MonacoBase: "vs-dark", Tokens: m}
 	}
-	bad := func(k, v string) *storepb.SQLEditorThemeSetting {
+	bad := func(k string, v *colorpb.Color) *storepb.SQLEditorThemeSetting {
 		m := tokens()
 		m[k] = v
 		return with(m)
@@ -79,10 +144,13 @@ func TestValidateSQLEditorCustomTheme(t *testing.T) {
 	}{
 		{"nil ok", nil, false},
 		{"valid", with(tokens()), false},
-		// Backend is vocabulary-agnostic: any key with a valid triple is fine.
-		{"arbitrary keys ok", with(map[string]string{"--anything": "7 8 9"}), false},
-		{"empty tokens", with(map[string]string{}), true},
-		{"bad triple", bad("--color-accent", "300 0 0"), true},
+		// Backend is vocabulary-agnostic: any key with a valid Color is fine.
+		{"arbitrary keys ok", with(map[string]*colorpb.Color{"--anything": colorValue(0.7, 0.8, 0.9)}), false},
+		{"empty tokens", with(map[string]*colorpb.Color{}), true},
+		{"nil color rejected", bad("--color-accent", nil), true},
+		{"red below range rejected", bad("--color-accent", colorValue(-0.1, 0, 0)), true},
+		{"green above range rejected", bad("--color-accent", colorValue(0, 1.1, 0)), true},
+		{"alpha below one rejected", bad("--color-accent", colorWithAlpha(0, 0, 0, 0.5)), true},
 		{"empty id", &storepb.SQLEditorThemeSetting{Id: "", Name: "Brand", MonacoBase: "vs-dark", Tokens: tokens()}, true},
 		{"empty name", &storepb.SQLEditorThemeSetting{Id: "u1", Name: "", MonacoBase: "vs-dark", Tokens: tokens()}, true},
 		{"empty base", &storepb.SQLEditorThemeSetting{Id: "u1", Name: "Brand", MonacoBase: "", Tokens: tokens()}, true},
@@ -99,4 +167,184 @@ func TestValidateSQLEditorCustomTheme(t *testing.T) {
 			}
 		})
 	}
+}
+
+func colorValue(red, green, blue float32) *colorpb.Color {
+	return &colorpb.Color{Red: red, Green: green, Blue: blue}
+}
+
+func colorWithAlpha(red, green, blue, alpha float32) *colorpb.Color {
+	return &colorpb.Color{Red: red, Green: green, Blue: blue, Alpha: wrapperspb.Float(alpha)}
+}
+
+func TestValidateAnnouncementTheme(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		theme   *storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme
+		wantErr bool
+	}{
+		{"nil ok", nil, false},
+		{"valid", &storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme{Background: colorValue(0.2, 0.3, 0.4), Text: colorValue(1, 1, 1)}, false},
+		{"nil background", &storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme{Background: nil, Text: colorValue(1, 1, 1)}, true},
+		{"nil text", &storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme{Background: colorValue(0.2, 0.3, 0.4), Text: nil}, true},
+		{"background out of range", &storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme{Background: colorValue(1.1, 0.3, 0.4), Text: colorValue(1, 1, 1)}, true},
+		{"alpha below one", &storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme{Background: colorWithAlpha(0.2, 0.3, 0.4, 0.5), Text: colorValue(1, 1, 1)}, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateAnnouncementTheme(tc.theme)
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateMCPCapability(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name       string
+		capability storepb.MCPSetting_Capability
+		wantErr    bool
+	}{
+		{"unspecified rejected", storepb.MCPSetting_CAPABILITY_UNSPECIFIED, true},
+		{"disabled", storepb.MCPSetting_DISABLED, false},
+		{"read only", storepb.MCPSetting_READ_ONLY, false},
+		{"read write", storepb.MCPSetting_READ_WRITE, false},
+		{"reserved value rejected", storepb.MCPSetting_Capability(2), true},
+		{"unknown value rejected", storepb.MCPSetting_Capability(99), true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateMCPCapability(tc.capability)
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateEnvironmentsColor(t *testing.T) {
+	service := &SettingService{}
+	env := func(color *colorpb.Color) *v1pb.EnvironmentSetting_Environment {
+		return &v1pb.EnvironmentSetting_Environment{
+			Id:    "test",
+			Title: "Test",
+			Color: color,
+		}
+	}
+	cases := []struct {
+		name    string
+		color   *colorpb.Color
+		wantErr bool
+	}{
+		{"nil ok", nil, false},
+		{"valid", colorValue(0.31, 0.27, 0.9), false},
+		{"red below range rejected", colorValue(-0.1, 0.27, 0.9), true},
+		{"green above range rejected", colorValue(0.31, 1.1, 0.9), true},
+		{"alpha below one rejected", colorWithAlpha(0.31, 0.27, 0.9, 0.5), true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := service.validateEnvironments(context.Background(), "workspaces/default", []*v1pb.EnvironmentSetting_Environment{env(tc.color)})
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+// TestPreflightWorkspaceProfileSaaSRestrictedPaths pins that the update-mask
+// paths controlling process-global runtime behavior (debug/pprof, audit-log
+// stdout) are rejected in SaaS mode: on a shared replica they would let one
+// workspace admin change process-wide behavior affecting other workspaces.
+func TestPreflightWorkspaceProfileSaaSRestrictedPaths(t *testing.T) {
+	t.Parallel()
+	newRequest := func(path string) *connect.Request[v1pb.UpdateSettingRequest] {
+		return connect.NewRequest(&v1pb.UpdateSettingRequest{
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{path}},
+		})
+	}
+	saas := &SettingService{profile: &config.Profile{SaaS: true}}
+	selfHosted := &SettingService{profile: &config.Profile{}}
+
+	for _, path := range []string{
+		"value.workspace_profile.enable_debug",
+		"value.workspace_profile.enable_audit_log_stdout",
+	} {
+		err := saas.preflightWorkspaceProfilePaths(context.Background(), "ws", newRequest(path), &storepb.WorkspaceProfileSetting{})
+		require.Error(t, err, path)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), path)
+
+		// Self-hosted keeps accepting them (payload zero-values skip license checks).
+		err = selfHosted.preflightWorkspaceProfilePaths(context.Background(), "ws", newRequest(path), &storepb.WorkspaceProfileSetting{})
+		require.NoError(t, err, path)
+	}
+}
+
+// TestMergeAppIMSetting covers the second T15 site: saving one provider used to
+// assign the request wholesale over the stored setting, erasing every provider
+// it left out.
+func TestMergeAppIMSetting(t *testing.T) {
+	stored := func() *storepb.AppIMSetting {
+		return &storepb.AppIMSetting{Settings: []*storepb.AppIMSetting_IMSetting{
+			{
+				Type:    storepb.WebhookType_SLACK,
+				Payload: &storepb.AppIMSetting_IMSetting_Slack{Slack: &storepb.AppIMSetting_Slack{Token: "slack-token"}},
+			},
+			{
+				Type:    storepb.WebhookType_FEISHU,
+				Payload: &storepb.AppIMSetting_IMSetting_Feishu{Feishu: &storepb.AppIMSetting_Feishu{AppSecret: "feishu-secret"}},
+			},
+		}}
+	}
+	feishuSecret := func(s *storepb.AppIMSetting) string {
+		return findIMSetting(s.GetSettings(), storepb.WebhookType_FEISHU).GetFeishu().GetAppSecret()
+	}
+
+	t.Run("saving one provider leaves the others alone", func(t *testing.T) {
+		payload := &storepb.AppIMSetting{Settings: []*storepb.AppIMSetting_IMSetting{{
+			Type:    storepb.WebhookType_SLACK,
+			Payload: &storepb.AppIMSetting_IMSetting_Slack{Slack: &storepb.AppIMSetting_Slack{Token: "new-token"}},
+		}}}
+		merged, err := mergeAppIMSetting(stored(), payload, []string{"value.app_im.slack"})
+		require.NoError(t, err)
+		require.Equal(t, "new-token", findIMSetting(merged.GetSettings(), storepb.WebhookType_SLACK).GetSlack().GetToken())
+		require.Equal(t, "feishu-secret", feishuSecret(merged))
+	})
+
+	t.Run("a masked provider the payload omits is removed", func(t *testing.T) {
+		merged, err := mergeAppIMSetting(stored(), &storepb.AppIMSetting{}, []string{"value.app_im.slack"})
+		require.NoError(t, err)
+		require.Nil(t, findIMSetting(merged.GetSettings(), storepb.WebhookType_SLACK))
+		require.Equal(t, "feishu-secret", feishuSecret(merged))
+	})
+
+	t.Run("adding a provider that is not configured yet", func(t *testing.T) {
+		payload := &storepb.AppIMSetting{Settings: []*storepb.AppIMSetting_IMSetting{{
+			Type:    storepb.WebhookType_TEAMS,
+			Payload: &storepb.AppIMSetting_IMSetting_Teams{Teams: &storepb.AppIMSetting_Teams{TenantId: "tenant"}},
+		}}}
+		merged, err := mergeAppIMSetting(stored(), payload, []string{"value.app_im_setting_value.teams"})
+		require.NoError(t, err)
+		require.Equal(t, "tenant", findIMSetting(merged.GetSettings(), storepb.WebhookType_TEAMS).GetTeams().GetTenantId())
+		require.Len(t, merged.GetSettings(), 3)
+	})
+
+	t.Run("unknown path, and the stored value is never mutated", func(t *testing.T) {
+		before := stored()
+		_, err := mergeAppIMSetting(before, &storepb.AppIMSetting{}, []string{"value.app_im.mattermost"})
+		require.Error(t, err)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.Equal(t, "feishu-secret", feishuSecret(before))
+	})
 }

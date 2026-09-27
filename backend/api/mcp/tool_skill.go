@@ -34,7 +34,7 @@ const getSkillDescription = `Get step-by-step guides for Bytebase tasks.
 
 **Workflow:** get_skill("task") → search_api(operationId) → call_api(...)
 
-Skills: query, database-change, grant-permission`
+Skills: query, database-change`
 
 func (s *Server) registerSkillTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{

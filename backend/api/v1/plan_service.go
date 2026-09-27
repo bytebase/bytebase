@@ -8,17 +8,16 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -35,6 +34,7 @@ type PlanService struct {
 	iamManager     *iam.Manager
 	webhookManager *webhook.Manager
 	licenseService *enterprise.LicenseService
+	reviewWorkflow *review.Workflow
 }
 
 // NewPlanService returns a plan service instance.
@@ -45,6 +45,7 @@ func NewPlanService(store *store.Store, bus *bus.Bus, iamManager *iam.Manager, w
 		iamManager:     iamManager,
 		webhookManager: webhookManager,
 		licenseService: licenseService,
+		reviewWorkflow: review.NewWorkflow(store),
 	}
 }
 
@@ -92,10 +93,11 @@ func (s *PlanService) ListPlans(ctx context.Context, request *connect.Request[v1
 	limitPlusOne := offset.limit + 1
 
 	find := &store.FindPlanMessage{
-		Workspace: common.GetWorkspaceIDFromContext(ctx),
-		Limit:     &limitPlusOne,
-		Offset:    &offset.offset,
-		ProjectID: projectID,
+		Workspace:               common.GetWorkspaceIDFromContext(ctx),
+		Limit:                   &limitPlusOne,
+		Offset:                  &offset.offset,
+		ProjectID:               projectID,
+		ExcludeMalformedUIPlans: true,
 	}
 
 	if req.Filter != "" {
@@ -213,7 +215,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
 	}
 	if planCheckRun != nil {
-		if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
+		if _, err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
 		}
 	}
@@ -262,7 +264,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.PlansCreate))
+				return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q", permission.PlansCreate))
 			}
 			return s.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 				Parent: common.FormatProject(projectID),
@@ -291,18 +293,17 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied to update plan"))
+		return nil, permissionDeniedError(ctx, errors.Errorf("permission denied to update plan"))
 	}
 
-	planUpdate := &store.UpdatePlanMessage{
-		UID:       oldPlan.UID,
-		ProjectID: oldPlan.ProjectID,
-	}
+	var title *string
+	var description *string
+	var deleted *bool
+	var specs []*storepb.PlanConfig_Spec
+	var lastPlanEditor *string
 
 	var planCheckRunsTrigger bool
 	var databaseGroup *v1pb.DatabaseGroup
-	var issueCommentCreates []*store.IssueCommentMessage
-	var issueToReset *store.IssueMessage
 
 	for _, path := range req.UpdateMask.Paths {
 		switch path {
@@ -311,11 +312,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			if project.Setting.EnforceIssueTitle && trimmed == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q requires a manual plan title (enforce_issue_title is enabled)", common.FormatProject(project.ResourceID)))
 			}
-			planUpdate.Name = &trimmed
+			title = &trimmed
 		case "description":
-			planUpdate.Description = new(req.Plan.Description)
+			description = new(req.Plan.Description)
 		case "state":
-			planUpdate.Deleted = new(req.Plan.State == v1pb.State_DELETED)
+			deleted = new(req.Plan.State == v1pb.State_DELETED)
 		case "specs":
 			if oldPlan.Config != nil && oldPlan.Config.GetHasRollout() {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot update specs for plan that has a rollout"))
@@ -330,89 +331,60 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			// Convert and store new specs.
 			allSpecs := convertPlanSpecs(req.GetPlan().GetSpecs())
-			config := proto.CloneOf(oldPlan.Config)
-			config.Specs = allSpecs
-			planUpdate.Config = config
-			planUpdate.BumpApprovalInputVersion = true
+			specs = allSpecs
 
 			// Trigger plan check runs.
 			planCheckRunsTrigger = true
-
-			// Evict approvals if issue exists to request re-approval.
-			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectIDs: []string{projectID}, PlanUID: &oldPlan.UID})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
-			}
-			if issue != nil {
-				if !planSpecsEqualSet(oldPlan.Config.GetSpecs(), allSpecs) {
-					issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-						ProjectID: issue.ProjectID,
-						IssueUID:  issue.UID,
-						Payload: &storepb.IssueCommentPayload{
-							Event: &storepb.IssueCommentPayload_PlanUpdate_{
-								PlanUpdate: &storepb.IssueCommentPayload_PlanUpdate{
-									FromSpecs: oldPlan.Config.GetSpecs(),
-									ToSpecs:   allSpecs,
-								},
-							},
-						},
-					})
-				}
-				issueToReset = issue
-			}
+			editor := strings.ToLower(user.Email)
+			lastPlanEditor = &editor
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update_mask path %q", path))
 		}
 	}
 
-	updatedPlan, err := s.store.UpdatePlan(ctx, planUpdate)
+	var specsUpdate *[]*storepb.PlanConfig_Spec
+	if planCheckRunsTrigger {
+		specsUpdate = &specs
+	}
+	updateResult, err := s.reviewWorkflow.UpdatePlan(ctx, review.UpdatePlanInput{
+		Workspace:      common.GetWorkspaceIDFromContext(ctx),
+		PlanUID:        oldPlan.UID,
+		ProjectID:      oldPlan.ProjectID,
+		Title:          title,
+		Description:    description,
+		Deleted:        deleted,
+		Specs:          specsUpdate,
+		LastPlanEditor: lastPlanEditor,
+	})
 	if err != nil {
+		var workflowErr *review.Error
+		if errors.As(err, &workflowErr) && workflowErr.Code == review.ErrorFailedPrecondition {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, workflowErr)
+		}
+		if errors.As(err, &workflowErr) && workflowErr.Code == review.ErrorConflict {
+			return nil, connect.NewError(connect.CodeAborted, workflowErr)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
 	}
-
-	resetApprovalFinding := func() *store.IssueMessage {
-		if issueToReset == nil {
-			return nil
-		}
-		updatedIssue, err := s.store.UpdateIssue(ctx, issueToReset.ProjectID, issueToReset.UID, &store.UpdateIssueMessage{
-			PayloadUpsert: &storepb.Issue{
-				Approval: &storepb.IssuePayloadApproval{
-					ApprovalFindingDone: false,
-				},
-			},
-		})
-		if err != nil {
-			slog.Error("failed to reset approval finding status after plan update", log.BBError(err))
-			return nil
-		}
-		return updatedIssue
-	}
+	updatedPlan := updateResult.Plan
 
 	var planCheckRunCreated bool
 	if planCheckRunsTrigger {
 		planCheckRun, err := getPlanCheckRunFromPlan(ctx, s.store, project, updatedPlan, databaseGroup)
 		if err != nil {
-			resetApprovalFinding()
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
 		}
 		if planCheckRun != nil {
-			if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
-				resetApprovalFinding()
+			created, err := s.store.CreatePlanCheckRun(ctx, planCheckRun)
+			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
 			}
-			planCheckRunCreated = true
+			planCheckRunCreated = created
 		}
 	}
 
-	if updatedIssue := resetApprovalFinding(); updatedIssue != nil {
-		if updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
-			if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, updatedIssue); err != nil {
-				slog.Error("failed to find approval template after plan update",
-					slog.String("project", updatedIssue.ProjectID), slog.Int64("issue_uid", updatedIssue.UID),
-					slog.String("issue_title", updatedIssue.Title),
-					log.BBError(err))
-			}
-		} else if updatedIssue.Type == storepb.Issue_DATABASE_CHANGE && planCheckRunsTrigger && !planCheckRunCreated {
+	if updatedIssue := updateResult.Issue; updateResult.ApprovalReset && updatedIssue != nil {
+		if updatedIssue.Type == storepb.Issue_DATABASE_CHANGE && planCheckRunsTrigger && !planCheckRunCreated {
 			s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: updatedIssue.ProjectID, UID: updatedIssue.UID}
 		}
 	}
@@ -422,8 +394,23 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		s.bus.PlanCheckTickleChan <- 0
 	}
 
-	if len(issueCommentCreates) > 0 {
-		if _, err := s.store.CreateIssueComments(ctx, user.Email, issueCommentCreates...); err != nil {
+	for _, event := range updateResult.Events {
+		planUpdated, ok := event.(review.PlanUpdatedEvent)
+		if !ok || updateResult.Issue == nil {
+			continue
+		}
+		if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
+			ProjectID: updateResult.Issue.ProjectID,
+			IssueUID:  updateResult.Issue.UID,
+			Payload: &storepb.IssueCommentPayload{
+				Event: &storepb.IssueCommentPayload_PlanUpdate_{
+					PlanUpdate: &storepb.IssueCommentPayload_PlanUpdate{
+						FromSpecs: planUpdated.FromSpecs,
+						ToSpecs:   planUpdated.ToSpecs,
+					},
+				},
+			},
+		}); err != nil {
 			slog.Warn("failed to create plan spec audit issue comments", log.BBError(err))
 		}
 	}
@@ -514,10 +501,15 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
 	}
-	if planCheckRun != nil {
-		if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
-		}
+	if planCheckRun == nil {
+		return connect.NewResponse(&v1pb.RunPlanChecksResponse{}), nil
+	}
+	created, err := s.store.CreatePlanCheckRun(ctx, planCheckRun)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
+	}
+	if !created {
+		return connect.NewResponse(&v1pb.RunPlanChecksResponse{}), nil
 	}
 
 	// Tickle plan check scheduler.
@@ -557,19 +549,25 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan check run is not running or available"))
 	}
 
+	approvalInputVersion := planCheckRun.Result.GetApprovalInputVersion()
+
+	// Update the status to canceled.
+	canceled, err := s.store.CancelPlanCheckRunIfApprovalInputVersion(ctx, projectID, planCheckRun.UID, approvalInputVersion)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to cancel plan check run"))
+	}
+	if !canceled {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot cancel because plan check run is stale"))
+	}
+
 	// Cancel in-flight plan check run if running.
-	if cancelFunc, ok := s.bus.RunningPlanCheckRunsCancelFunc.Load(bus.PlanCheckRunRef{ProjectID: projectID, UID: planCheckRun.UID}); ok {
+	if cancelFunc, ok := s.bus.RunningPlanCheckRunsCancelFunc.Load(bus.PlanCheckRunRef{ProjectID: projectID, UID: planCheckRun.UID, ApprovalInputVersion: approvalInputVersion}); ok {
 		cancelFunc.(context.CancelFunc)()
 	}
 
 	// Broadcast cancel signal to all replicas for HA.
-	if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_PLAN_CHECK_RUN, projectID, planCheckRun.UID); err != nil {
+	if err := s.store.SendSignal(ctx, storepb.Signal_CANCEL_PLAN_CHECK_RUN, projectID, planCheckRun.UID, &approvalInputVersion); err != nil {
 		slog.Warn("failed to send cancel signal", log.BBError(err))
-	}
-
-	// Update the status to canceled.
-	if err := s.store.BatchCancelPlanCheckRuns(ctx, projectID, []int64{planCheckRun.UID}); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to cancel plan check run"))
 	}
 
 	return connect.NewResponse(&v1pb.CancelPlanCheckRunResponse{}), nil
@@ -585,7 +583,7 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	var releaseCount, sheetCount int
 	var sheetSha256s []string
 	var releaseString string
-	var instanceIDs []string
+	var instanceTargets []string
 	var databaseGroups []string
 	seenDatabaseGroups := map[string]bool{}
 	var databaseNames []string
@@ -605,17 +603,23 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 		case *v1pb.Plan_Spec_CreateDatabaseConfig:
 			configTypeCount["create_database"]++
 			if target := config.CreateDatabaseConfig.Target; target != "" {
-				instanceID, err := common.GetInstanceID(target)
+				targetProjectID, _, err := common.GetInstanceResourceName(target)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance name %q: %v", target, err))
 				}
-				instanceIDs = append(instanceIDs, instanceID)
+				if targetProjectID != nil && *targetProjectID != projectID {
+					return nil, errors.Errorf("instance %q (project %q) does not belong to plan project %q", target, *targetProjectID, projectID)
+				}
+				instanceTargets = append(instanceTargets, target)
 			}
 		case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 			configTypeCount["change_database"]++
 			var databaseTarget, databaseGroupTarget int
 			for _, target := range config.ChangeDatabaseConfig.Targets {
-				if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
+				if targetProjectID, _, _, err := common.GetDatabaseResourceName(target); err == nil {
+					if targetProjectID != nil && *targetProjectID != projectID {
+						return nil, errors.Errorf("database %q (project %q) does not belong to plan project %q", target, *targetProjectID, projectID)
+					}
 					databaseTarget++
 					databaseNames = append(databaseNames, target)
 				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
@@ -643,25 +647,6 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 					sheetSha256s = append(sheetSha256s, sha)
 				}
 			}
-		case *v1pb.Plan_Spec_ExportDataConfig:
-			configTypeCount["export_data"]++
-			for _, target := range config.ExportDataConfig.Targets {
-				if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
-					databaseNames = append(databaseNames, target)
-				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
-					if !seenDatabaseGroups[target] {
-						databaseGroups = append(databaseGroups, target)
-						seenDatabaseGroups[target] = true
-					}
-				} else {
-					return nil, errors.Errorf("invalid target %v", target)
-				}
-			}
-			if config.ExportDataConfig.Sheet != "" {
-				if _, sha, err := common.GetProjectResourceIDSheetSha256(config.ExportDataConfig.Sheet); err == nil {
-					sheetSha256s = append(sheetSha256s, sha)
-				}
-			}
 		default:
 			return nil, errors.Errorf("invalid spec type")
 		}
@@ -679,7 +664,7 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	}
 
 	// Allow at most one instance.
-	if len(instanceIDs) > 1 {
+	if len(instanceTargets) > 1 {
 		return nil, errors.Errorf("plan contains targets on multiple instances, but only one instance is allowed")
 	}
 
@@ -694,17 +679,13 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	}
 
 	// Validate resources existence.
-	if len(instanceIDs) == 1 {
-		instanceID := instanceIDs[0]
-		instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{
-			Workspace:  common.GetWorkspaceIDFromContext(ctx),
-			ResourceID: &instanceID,
-		})
+	if len(instanceTargets) == 1 {
+		instance, err := getInstanceMessage(ctx, s, instanceTargets[0])
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance %q: %v", instanceID, err))
+			return nil, err
 		}
-		if instance == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+		if instance.Deleted {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", instanceTargets[0]))
 		}
 	}
 
@@ -729,9 +710,12 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	}
 
 	for _, name := range databaseNames {
-		instanceID, dbName, err := common.GetInstanceDatabaseID(name)
+		targetProjectID, instanceID, dbName, err := common.GetDatabaseResourceName(name)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid database name %q", name))
+		}
+		if targetProjectID != nil && *targetProjectID != projectID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database %q (project %q) does not belong to plan project %q", name, *targetProjectID, projectID))
 		}
 		db, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
 			Workspace:    common.GetWorkspaceIDFromContext(ctx),
@@ -744,20 +728,20 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 		if db == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
 		}
+		instanceName := common.FormatInstance(instanceID)
+		if targetProjectID != nil {
+			instanceName = common.FormatProjectInstance(*targetProjectID, instanceID)
+		}
+		instance, err := getInstanceMessage(ctx, s, instanceName)
+		if err != nil {
+			return nil, err
+		}
+		if instance.Deleted {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", instanceName))
+		}
 
 		if db.ProjectID != projectID {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database %q (project %q) does not belong to plan project %q", name, db.ProjectID, projectID))
-		}
-	}
-
-	// Validate sheets existence.
-	if len(sheetSha256s) > 0 {
-		exist, err := s.HasSheets(ctx, sheetSha256s...)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check sheets: %v", err))
-		}
-		if !exist {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("some sheets are not found"))
 		}
 	}
 
@@ -779,6 +763,21 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 		}
 		if release == nil {
 			return nil, errors.Errorf("release %s not found", releaseID)
+		}
+		// The release's files were validated against this project when the
+		// release was created (releases are immutable — UpdateRelease is
+		// Unimplemented), and refs are deleted only by project purge, which
+		// deletes the release too. No per-use recheck of its files.
+	}
+
+	// Validate sheets existence.
+	if len(sheetSha256s) > 0 {
+		missing, err := s.MissingSheetsForProject(ctx, projectID, sheetSha256s...)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check sheets: %v", err))
+		}
+		if len(missing) > 0 {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", common.FormatSheet(projectID, missing[0])))
 		}
 	}
 	return databaseGroup, nil
@@ -820,18 +819,16 @@ func getPlanCheckRunFromPlan(ctx context.Context, s *store.Store, project *store
 	return &store.PlanCheckRunMessage{
 		ProjectID: plan.ProjectID,
 		PlanUID:   plan.UID,
-		Status:    store.PlanCheckRunStatusRunning,
+		Status:    store.PlanCheckRunStatusAvailable,
+		Result: &storepb.PlanCheckRunResult{
+			ApprovalInputVersion: plan.Config.GetApprovalInputVersion(),
+		},
 	}, nil
 }
 
 func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMessage) ([]*v1pb.Plan, error) {
 	if len(plans) == 0 {
 		return nil, nil
-	}
-
-	type planKey struct {
-		projectID string
-		planUID   int64
 	}
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
@@ -858,13 +855,6 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to batch list issues")
 	}
-	issueByPlanKey := make(map[planKey]*store.IssueMessage, len(issues))
-	for _, issue := range issues {
-		if issue.PlanUID != nil {
-			issueByPlanKey[planKey{projectID: issue.ProjectID, planUID: *issue.PlanUID}] = issue
-		}
-	}
-
 	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
 		ProjectIDs: &projectIDs,
 		PlanUIDs:   &planUIDs,
@@ -872,30 +862,46 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to batch list plan check runs")
 	}
-	planCheckRunByPlanKey := make(map[planKey]*store.PlanCheckRunMessage, len(planCheckRuns))
-	for _, run := range planCheckRuns {
-		planCheckRunByPlanKey[planKey{projectID: run.ProjectID, planUID: run.PlanUID}] = run
-	}
 
-	taskStatusCountByPlanKey := make(map[planKey][]*store.TaskStatusCount)
+	var taskStatusCounts []*store.TaskStatusCount
 	environmentOrderMap := map[string]int{}
 	if len(rolloutPlanUIDs) > 0 {
 		environmentSetting, err := s.GetEnvironment(ctx, workspaceID)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get environments")
 		}
-		for i, env := range environmentSetting.GetEnvironments() {
-			environmentOrderMap[env.Id] = i
-		}
+		environmentOrderMap = common.EnvironmentOrderMap(environmentSetting.GetEnvironments())
 
-		taskStatusCounts, err := s.ListTaskStatusCountByPlanIDs(ctx, projectIDs, rolloutPlanUIDs)
+		taskStatusCounts, err = s.ListTaskStatusCountByPlanIDs(ctx, projectIDs, rolloutPlanUIDs)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to batch list task status counts")
 		}
-		for _, count := range taskStatusCounts {
-			key := planKey{projectID: count.ProjectID, planUID: count.PlanID}
-			taskStatusCountByPlanKey[key] = append(taskStatusCountByPlanKey[key], count)
+	}
+	return buildV1Plans(plans, issues, planCheckRuns, taskStatusCounts, environmentOrderMap), nil
+}
+
+// buildV1Plans joins the batch reads onto their plans. Every relation is keyed
+// by (project, plan UID) rather than by UID alone: plan UIDs are allocated per
+// project, so the same number names a different plan in every project.
+func buildV1Plans(plans []*store.PlanMessage, issues []*store.IssueMessage, planCheckRuns []*store.PlanCheckRunMessage, taskStatusCounts []*store.TaskStatusCount, environmentOrderMap map[string]int) []*v1pb.Plan {
+	type planKey struct {
+		projectID string
+		planUID   int64
+	}
+	issueByPlanKey := make(map[planKey]*store.IssueMessage, len(issues))
+	for _, issue := range issues {
+		if issue.PlanUID != nil {
+			issueByPlanKey[planKey{projectID: issue.ProjectID, planUID: *issue.PlanUID}] = issue
 		}
+	}
+	planCheckRunByPlanKey := make(map[planKey]*store.PlanCheckRunMessage, len(planCheckRuns))
+	for _, run := range planCheckRuns {
+		planCheckRunByPlanKey[planKey{projectID: run.ProjectID, planUID: run.PlanUID}] = run
+	}
+	taskStatusCountByPlanKey := make(map[planKey][]*store.TaskStatusCount)
+	for _, count := range taskStatusCounts {
+		key := planKey{projectID: count.ProjectID, planUID: count.PlanID}
+		taskStatusCountByPlanKey[key] = append(taskStatusCountByPlanKey[key], count)
 	}
 
 	v1Plans := make([]*v1pb.Plan, len(plans))
@@ -905,7 +911,10 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 
 		if issue := issueByPlanKey[key]; issue != nil {
 			v1Plan.Issue = common.FormatIssue(issue.ProjectID, issue.UID)
-			v1Plan.ApprovalStatus = computeApprovalStatus(issue.Payload.GetApproval())
+			v1Plan.IssueStatus = convertToIssueStatus(issue.Status)
+			if !issue.Payload.GetDraft() {
+				v1Plan.ApprovalStatus = store.ComputeApprovalStatus(issue.Payload.GetApproval())
+			}
 		}
 
 		if planCheckRun := planCheckRunByPlanKey[key]; planCheckRun != nil {
@@ -921,7 +930,7 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 
 		v1Plans[i] = v1Plan
 	}
-	return v1Plans, nil
+	return v1Plans
 }
 
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
@@ -943,6 +952,7 @@ func buildV1PlanFields(plan *store.PlanMessage) *v1pb.Plan {
 		Title:                   plan.Name,
 		Description:             plan.Description,
 		Creator:                 common.FormatUserEmail(plan.Creator),
+		LastPlanEditor:          common.FormatUserEmail(effectivePlanEditor(plan)),
 		Specs:                   specs,
 		CreateTime:              timestamppb.New(plan.CreatedAt),
 		UpdateTime:              timestamppb.New(plan.UpdatedAt),
@@ -953,6 +963,13 @@ func buildV1PlanFields(plan *store.PlanMessage) *v1pb.Plan {
 		p.HasRollout = plan.Config.HasRollout
 	}
 	return p
+}
+
+func effectivePlanEditor(plan *store.PlanMessage) string {
+	if plan.LastPlanEditor != nil {
+		return *plan.LastPlanEditor
+	}
+	return plan.Creator
 }
 
 func buildRolloutStageSummaries(projectID string, planUID int64, counts []*store.TaskStatusCount, environmentOrderMap map[string]int) []*v1pb.Plan_RolloutStageSummary {
@@ -1068,8 +1085,6 @@ func convertToPlanSpec(projectID string, spec *storepb.PlanConfig_Spec) *v1pb.Pl
 		v1Spec.Config = convertToPlanSpecCreateDatabaseConfig(v)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		v1Spec.Config = convertToPlanSpecChangeDatabaseConfig(projectID, v)
-	case *storepb.PlanConfig_Spec_ExportDataConfig:
-		v1Spec.Config = convertToPlanSpecExportDataConfig(projectID, v)
 	default:
 	}
 
@@ -1111,38 +1126,6 @@ func convertToPlanSpecChangeDatabaseConfig(projectID string, config *storepb.Pla
 	}
 }
 
-func convertToPlanSpecExportDataConfig(projectID string, config *storepb.PlanConfig_Spec_ExportDataConfig) *v1pb.Plan_Spec_ExportDataConfig {
-	c := config.ExportDataConfig
-	return &v1pb.Plan_Spec_ExportDataConfig{
-		ExportDataConfig: &v1pb.Plan_ExportDataConfig{
-			Targets:  c.Targets,
-			Sheet:    common.FormatSheet(projectID, c.SheetSha256),
-			Format:   convertExportFormat(c.Format),
-			Password: c.Password,
-		},
-	}
-}
-
-// planSpecsEqualSet reports whether two spec slices have the same set of
-// specs keyed by id, with each pair byte-equal under proto.Equal. Order
-// is ignored — reorder-only diffs are not audited.
-func planSpecsEqualSet(a, b []*storepb.PlanConfig_Spec) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	byID := make(map[string]*storepb.PlanConfig_Spec, len(a))
-	for _, s := range a {
-		byID[s.GetId()] = s
-	}
-	for _, s := range b {
-		other, ok := byID[s.GetId()]
-		if !ok || !proto.Equal(s, other) {
-			return false
-		}
-	}
-	return true
-}
-
 func convertPlanSpecs(specs []*v1pb.Plan_Spec) []*storepb.PlanConfig_Spec {
 	storeSpecs := make([]*storepb.PlanConfig_Spec, len(specs))
 	for i := range specs {
@@ -1161,8 +1144,6 @@ func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 		storeSpec.Config = convertPlanSpecCreateDatabaseConfig(v)
 	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 		storeSpec.Config = convertPlanSpecChangeDatabaseConfig(v)
-	case *v1pb.Plan_Spec_ExportDataConfig:
-		storeSpec.Config = convertPlanSpecExportDataConfig(v)
 	default:
 	}
 	return storeSpec
@@ -1207,27 +1188,6 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 			SheetSha256:       sheetSha256,
 			Release:           c.Release,
 			EnablePriorBackup: c.EnablePriorBackup,
-		},
-	}
-}
-
-func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *storepb.PlanConfig_Spec_ExportDataConfig {
-	c := config.ExportDataConfig
-	// Sheet can be empty if not yet attached to the export data config.
-	var sheetSha256 string
-	if c.Sheet != "" {
-		_, sha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
-		if err != nil {
-			return nil
-		}
-		sheetSha256 = sha256
-	}
-	return &storepb.PlanConfig_Spec_ExportDataConfig{
-		ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
-			Targets:     c.Targets,
-			SheetSha256: sheetSha256,
-			Format:      convertToExportFormat(c.Format),
-			Password:    c.Password,
 		},
 	}
 }

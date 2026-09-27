@@ -38,4 +38,10 @@ message AccessGrantPayload {
 
   // Whether export the query result.
   bool export = 7;
+
+  // The default schema to execute the query.
+  string schema = 8;
+
+  // The container name to execute the query against, used for CosmosDB only.
+  string container = 9;
 }

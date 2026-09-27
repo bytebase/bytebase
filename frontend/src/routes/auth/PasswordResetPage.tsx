@@ -1,0 +1,304 @@
+import { create } from "@bufbuild/protobuf";
+import type { ConnectError } from "@connectrpc/connect";
+import { useEffect, useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { authServiceClientConnect, userServiceClientConnect } from "@/api";
+import { router } from "@/app/router";
+import { AUTH_SIGNIN_MODULE } from "@/app/router/handles";
+import logoFull from "@/assets/logo-full.svg";
+import { AuthDivider } from "@/components/auth/AuthDivider";
+import { UserPasswordFields } from "@/components/auth/UserPasswordFields";
+import { computePasswordValidation } from "@/components/auth/userPasswordValidation";
+import { credentialProofCallOptions } from "@/components/CredentialProofInput";
+import { RouterLink } from "@/components/RouterLink";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { OtpInput } from "@/components/ui/otp-input";
+import { useCurrentUser } from "@/hooks/useAppState";
+import { resolveWorkspaceName } from "@/lib/workspace";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
+import {
+  LoginRequestSchema,
+  ResetPasswordRequestSchema,
+} from "@/types/proto-es/v1/auth_service_pb";
+import {
+  ChangePasswordRequestSchema,
+  CredentialProofSchema,
+} from "@/types/proto-es/v1/user_service_pb";
+
+export function PasswordResetPage() {
+  const { t } = useTranslation();
+  const [email, setEmail] = useState("");
+  const [codeParts, setCodeParts] = useState<string[]>([]);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const currentPasswordId = useId();
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [resendCountdown, setResendCountdown] = useState(60);
+  const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const query = router.currentRoute.value.query;
+  const codeMode = !!query.email;
+
+  const authenticationInfo = useAppStore((state) => state.authenticationInfo);
+  const restriction = authenticationInfo?.restriction;
+  const passwordRestriction = restriction?.passwordRestriction;
+  const disallowPasswordSignin = restriction?.disallowPasswordSignin ?? false;
+  const requireResetPassword = useAppStore((s) => s.requireResetPassword());
+  const currentUser = useCurrentUser();
+
+  // Password policy comes from the authentication API in both public and
+  // forced-reset flows.
+  useEffect(() => {
+    void useAppStore.getState().loadAuthenticationInfo();
+  }, []);
+
+  const redirectQuery = () => {
+    const q = new URLSearchParams(window.location.search);
+    return q.get("redirect") || "/";
+  };
+
+  const startCountdown = () => {
+    setResendCountdown(60);
+    if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    countdownTimerRef.current = setInterval(() => {
+      setResendCountdown((prev) => {
+        if (prev <= 1) {
+          if (countdownTimerRef.current) {
+            clearInterval(countdownTimerRef.current);
+            countdownTimerRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => {
+    if (codeMode) {
+      if (disallowPasswordSignin) {
+        router.replace({ name: AUTH_SIGNIN_MODULE, query });
+        return;
+      }
+      setEmail(query.email as string);
+      startCountdown();
+      return () => {
+        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+      };
+    }
+    if (!requireResetPassword) {
+      router.replace(redirectQuery());
+    }
+    return () => {
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    };
+  }, []);
+
+  const validation = computePasswordValidation(
+    password,
+    passwordConfirm,
+    passwordRestriction
+  );
+
+  const allowConfirm = (() => {
+    if (!password) return false;
+    if (codeMode && (!email || codeParts.join("").length !== 6)) return false;
+    if (!codeMode && !currentPassword) return false;
+    return !validation.hint && !validation.mismatch;
+  })();
+
+  const resendCode = async () => {
+    if (resendCountdown > 0 || !email) return;
+    try {
+      await authServiceClientConnect.requestPasswordReset({
+        email,
+        workspace: resolveWorkspaceName(),
+      });
+      startCountdown();
+    } catch {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("auth.password-forget.failed-to-send-code"),
+      });
+    }
+  };
+
+  const onConfirm = async () => {
+    if (codeMode) {
+      try {
+        await authServiceClientConnect.resetPassword(
+          create(ResetPasswordRequestSchema, {
+            email,
+            code: codeParts.join(""),
+            newPassword: password,
+          })
+        );
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.updated"),
+        });
+        await useAppStore.getState().login({
+          request: create(LoginRequestSchema, {
+            email,
+            password,
+            workspace: resolveWorkspaceName(),
+          }),
+        });
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("auth.password-reset.invalid-or-expired-code"),
+        });
+      }
+      return;
+    }
+
+    // Forced-reset mode: the caller just signed in with their password, so
+    // the current password is the proof ChangePassword requires.
+    if (!currentUser) return;
+    try {
+      const updated = await userServiceClientConnect.changePassword(
+        create(ChangePasswordRequestSchema, {
+          name: currentUser.name,
+          newPassword: password,
+          credential: create(CredentialProofSchema, {
+            proof: { case: "currentPassword", value: currentPassword },
+          }),
+        }),
+        credentialProofCallOptions()
+      );
+      // Adopt what the mutation answered with rather than refetching: the
+      // guard that stranded this user on this page reads the shared store.
+      useAppStore.getState().setCurrentUser(updated);
+    } catch (error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: (error as ConnectError).message,
+      });
+      return;
+    }
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+    useAppStore.getState().setRequireResetPassword(false);
+    router.replace(redirectQuery());
+  };
+
+  return (
+    <div className="h-full flex flex-col justify-center mx-auto w-full max-w-sm">
+      <img src={logoFull} alt="Bytebase" className="h-12 w-auto" />
+      <h2 className="mt-6 text-3xl leading-9 font-extrabold text-main">
+        {t("auth.password-reset.title")}
+      </h2>
+      <p className="textinfo mt-2">{t("auth.password-reset.content")}</p>
+
+      <div className="mt-8 flex flex-col gap-y-6">
+        {codeMode && (
+          <>
+            <div>
+              <label className="block text-sm font-medium leading-5 text-control">
+                {t("common.email")}
+                <span className="text-error ml-0.5">*</span>
+              </label>
+              <Input
+                className="mt-1"
+                type="email"
+                autoComplete="email"
+                value={email}
+                disabled
+                required
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium leading-5 text-control">
+                {t("auth.password-reset.code-label")}
+                <span className="text-error ml-0.5">*</span>
+              </label>
+              <div className="mt-1">
+                <OtpInput
+                  value={codeParts}
+                  onChange={setCodeParts}
+                  length={6}
+                />
+              </div>
+              <div className="mt-2 flex items-center justify-end">
+                <Button
+                  appearance="secondary"
+                  size="md"
+                  type="button"
+                  className="h-auto p-0 text-sm text-accent disabled:text-control-light disabled:cursor-not-allowed"
+                  disabled={resendCountdown > 0}
+                  onClick={resendCode}
+                >
+                  {resendCountdown > 0
+                    ? t("auth.sign-in.resend-in", {
+                        seconds: resendCountdown,
+                      })
+                    : t("auth.sign-in.resend-code")}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {!codeMode && (
+          <div>
+            <label
+              htmlFor={currentPasswordId}
+              className="block text-sm font-medium leading-5 text-control"
+            >
+              {t("credential-proof.password-label")}
+              <span className="text-error ml-0.5">*</span>
+            </label>
+            <Input
+              id={currentPasswordId}
+              className="mt-1"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              required
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+          </div>
+        )}
+
+        <UserPasswordFields
+          password={password}
+          passwordConfirm={passwordConfirm}
+          onPasswordChange={setPassword}
+          onPasswordConfirmChange={setPasswordConfirm}
+          passwordRestriction={passwordRestriction}
+        />
+
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={!allowConfirm}
+          onClick={onConfirm}
+        >
+          {t("common.confirm")}
+        </Button>
+      </div>
+
+      {codeMode && (
+        <AuthDivider className="mt-6">
+          <RouterLink
+            to={{ name: AUTH_SIGNIN_MODULE }}
+            className="accent-link bg-background px-2"
+          >
+            {t("auth.password-forget.return-to-sign-in")}
+          </RouterLink>
+        </AuthDivider>
+      )}
+    </div>
+  );
+}

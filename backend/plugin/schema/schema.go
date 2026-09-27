@@ -1,9 +1,12 @@
 package schema
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"sync"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -32,23 +35,38 @@ var (
 	walkThroughsWithContext         = make(map[storepb.Engine]walkThroughWithContext)
 )
 
-type getDatabaseDefinition func(GetDefinitionContext, *storepb.DatabaseSchemaMetadata) (string, error)
-type getMultiFileDatabaseDefinition func(GetDefinitionContext, *storepb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error)
-type getSchemaDefinition func(*storepb.SchemaMetadata) (string, error)
-type getTableDefinition func(string, *storepb.TableMetadata, []*storepb.SequenceMetadata) (string, error)
-type getViewDefinition func(string, *storepb.ViewMetadata) (string, error)
-type getMaterializedViewDefinition func(string, *storepb.MaterializedViewMetadata) (string, error)
-type getFunctionDefinition func(string, *storepb.FunctionMetadata) (string, error)
-type getProcedureDefinition func(string, *storepb.ProcedureMetadata) (string, error)
-type getSequenceDefinition func(string, *storepb.SequenceMetadata) (string, error)
-type getDatabaseMetadata func(string) (*storepb.DatabaseSchemaMetadata, error)
+type getDatabaseDefinition func(GetDefinitionContext, *metadatapb.DatabaseSchemaMetadata) (string, error)
+type getMultiFileDatabaseDefinition func(GetDefinitionContext, *metadatapb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error)
+type getSchemaDefinition func(*metadatapb.SchemaMetadata) (string, error)
+type getTableDefinition func(string, *metadatapb.TableMetadata, []*metadatapb.SequenceMetadata) (string, error)
+type getViewDefinition func(string, *metadatapb.ViewMetadata) (string, error)
+type getMaterializedViewDefinition func(string, *metadatapb.MaterializedViewMetadata) (string, error)
+type getFunctionDefinition func(string, *metadatapb.FunctionMetadata) (string, error)
+type getProcedureDefinition func(string, *metadatapb.ProcedureMetadata) (string, error)
+type getSequenceDefinition func(string, *metadatapb.SequenceMetadata) (string, error)
+type getDatabaseMetadata func(string) (*metadatapb.DatabaseSchemaMetadata, error)
 type generateMigration func(*MetadataDiff) (string, error)
 type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*MetadataDiff, error)
-type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata) ([]*storepb.Advice, error)
-type diffSDLMigration func(sourceSDL, targetSDL string) (string, error)
+type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error)
+
+// diffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
+// target server's version string (e.g. "5.7.25"); engines that canonicalize
+// differently per version (MySQL: utf8mb4 default collation, integer display widths)
+// use it to select the correct normalizer, and engines that do not (PostgreSQL) take
+// `_ string`. An empty/unparseable version must fall back to the engine's default
+// stored form.
+//
+// sessionCtx is the per-object session context (sql_mode / charset / collation, and
+// time_zone for events) captured on the SOURCE (current) schema. The declarative SDL
+// text is bare (a clean export carries no `SET sql_mode` framing), so the context that a
+// routine/trigger/event must be re-created under enters out-of-band here. Only MySQL
+// consumes it (to wrap recreates in a save/restore of the OLD object's context); other
+// engines have no session context and take a nil-safe `_`. A nil map means "no context"
+// (bare recreates) — the metadata↔metadata and SDL↔SDL callers pass nil.
+type diffSDLMigration func(sourceSDL, targetSDL, engineVersion string, sessionCtx *SDLSessionContextMap) (string, error)
 type diffMetadataMigration func(oldSchema, newSchema *model.DatabaseMetadata) (string, error)
 type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
-type walkThroughWithContext func(WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
+type walkThroughWithContext func(context.Context, WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
 
 // WalkThroughContext carries optional session state into schema walk-through implementations.
 type WalkThroughContext struct {
@@ -87,7 +105,7 @@ func RegisterGetSequenceDefinition(engine storepb.Engine, f getSequenceDefinitio
 	getSequenceDefinitions[engine] = f
 }
 
-func GetSequenceDefinition(engine storepb.Engine, sequenceName string, sequence *storepb.SequenceMetadata) (string, error) {
+func GetSequenceDefinition(engine storepb.Engine, sequenceName string, sequence *metadatapb.SequenceMetadata) (string, error) {
 	f, ok := getSequenceDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -104,7 +122,7 @@ func RegisterGetFunctionDefinition(engine storepb.Engine, f getFunctionDefinitio
 	getFunctionDefinitions[engine] = f
 }
 
-func GetFunctionDefinition(engine storepb.Engine, functionName string, function *storepb.FunctionMetadata) (string, error) {
+func GetFunctionDefinition(engine storepb.Engine, functionName string, function *metadatapb.FunctionMetadata) (string, error) {
 	f, ok := getFunctionDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -121,7 +139,7 @@ func RegisterGetProcedureDefinition(engine storepb.Engine, f getProcedureDefinit
 	getProcedureDefinitions[engine] = f
 }
 
-func GetProcedureDefinition(engine storepb.Engine, procedureName string, procedure *storepb.ProcedureMetadata) (string, error) {
+func GetProcedureDefinition(engine storepb.Engine, procedureName string, procedure *metadatapb.ProcedureMetadata) (string, error) {
 	f, ok := getProcedureDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -138,7 +156,7 @@ func RegisterGetMaterializedViewDefinition(engine storepb.Engine, f getMateriali
 	getMaterializedViewDefinitions[engine] = f
 }
 
-func GetMaterializedViewDefinition(engine storepb.Engine, viewName string, view *storepb.MaterializedViewMetadata) (string, error) {
+func GetMaterializedViewDefinition(engine storepb.Engine, viewName string, view *metadatapb.MaterializedViewMetadata) (string, error) {
 	f, ok := getMaterializedViewDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -155,7 +173,7 @@ func RegisterGetViewDefinition(engine storepb.Engine, f getViewDefinition) {
 	getViewDefinitions[engine] = f
 }
 
-func GetViewDefinition(engine storepb.Engine, viewName string, view *storepb.ViewMetadata) (string, error) {
+func GetViewDefinition(engine storepb.Engine, viewName string, view *metadatapb.ViewMetadata) (string, error) {
 	f, ok := getViewDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -172,7 +190,7 @@ func RegisterGetTableDefinition(engine storepb.Engine, f getTableDefinition) {
 	getTableDefinitions[engine] = f
 }
 
-func GetTableDefinition(engine storepb.Engine, tableName string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) (string, error) {
+func GetTableDefinition(engine storepb.Engine, tableName string, table *metadatapb.TableMetadata, sequences []*metadatapb.SequenceMetadata) (string, error) {
 	f, ok := getTableDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -189,7 +207,7 @@ func RegisterGetSchemaDefinition(engine storepb.Engine, f getSchemaDefinition) {
 	getSchemaDefinitions[engine] = f
 }
 
-func GetSchemaDefinition(engine storepb.Engine, schema *storepb.SchemaMetadata) (string, error) {
+func GetSchemaDefinition(engine storepb.Engine, schema *metadatapb.SchemaMetadata) (string, error) {
 	f, ok := getSchemaDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -206,7 +224,7 @@ func RegisterGetDatabaseDefinition(engine storepb.Engine, f getDatabaseDefinitio
 	getDatabaseDefinitions[engine] = f
 }
 
-func GetDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
 	f, ok := getDatabaseDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -223,7 +241,7 @@ func RegisterGetDatabaseMetadata(engine storepb.Engine, f getDatabaseMetadata) {
 	getDatabaseMetadataMap[engine] = f
 }
 
-func GetDatabaseMetadata(engine storepb.Engine, schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
+func GetDatabaseMetadata(engine storepb.Engine, schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
 	f, ok := getDatabaseMetadataMap[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
@@ -265,15 +283,112 @@ func GetSDLDiff(engine storepb.Engine, currentSDLText, previousUserSDLText strin
 	return f(currentSDLText, previousUserSDLText, currentSchema)
 }
 
+// SDLSessionContext is the session state a routine/trigger/event was created under, as
+// stored in the synced metadata: sql_mode, character_set_client, collation_connection,
+// and — events only — the session time_zone. It is the engine-neutral mirror of omni's
+// catalog.SessionContext (the MySQL SDL implementation converts to it); other engines
+// never populate it. Empty strings are legal and preserved verbatim.
+type SDLSessionContext struct {
+	SQLMode             string
+	CharacterSetClient  string
+	CollationConnection string
+	TimeZone            string // events only
+}
+
+// SDLSessionContextMap carries per-object session context for a whole schema, keyed by
+// lower-cased object name within each object kind. It is the out-of-band structured input
+// bytebase hands to the MySQL SDL diff so a declarative recreate re-emits an object under
+// its ORIGINAL session context (the bare SDL text carries none). A nil map or a missing
+// entry simply leaves that object without context (a bare recreate). This lives in the
+// engine-neutral schema layer so SDLMigration can build it from synced metadata without
+// importing any engine's omni catalog; only the MySQL implementation consumes it.
+type SDLSessionContextMap struct {
+	Functions  map[string]SDLSessionContext
+	Procedures map[string]SDLSessionContext
+	Triggers   map[string]SDLSessionContext
+	Events     map[string]SDLSessionContext
+}
+
+// buildSDLSessionContextMap extracts per-object session context from the synced current
+// schema. MySQL stores functions/procedures/events on the schema and triggers on their
+// owning table; a routine/trigger carries sql_mode/charset/collation and an event also
+// carries time_zone. Keys are lower-cased object names (matching omni's identity folding).
+// Returns nil only when there is no metadata to read; otherwise it returns an allocated
+// map (with empty submaps when the schema has no such objects), which the consumer applies
+// as "no context for any object". Engines without session context (their metadata leaves
+// these fields empty) still produce a map, but only MySQL's diff consumes it.
+func buildSDLSessionContextMap(currentSchema *model.DatabaseMetadata) *SDLSessionContextMap {
+	if currentSchema == nil {
+		return nil
+	}
+	proto := currentSchema.GetProto()
+	if proto == nil {
+		return nil
+	}
+	m := &SDLSessionContextMap{
+		Functions:  map[string]SDLSessionContext{},
+		Procedures: map[string]SDLSessionContext{},
+		Triggers:   map[string]SDLSessionContext{},
+		Events:     map[string]SDLSessionContext{},
+	}
+	for _, sm := range proto.GetSchemas() {
+		for _, fn := range sm.GetFunctions() {
+			m.Functions[strings.ToLower(fn.GetName())] = SDLSessionContext{
+				SQLMode:             fn.GetSqlMode(),
+				CharacterSetClient:  fn.GetCharacterSetClient(),
+				CollationConnection: fn.GetCollationConnection(),
+			}
+		}
+		for _, proc := range sm.GetProcedures() {
+			m.Procedures[strings.ToLower(proc.GetName())] = SDLSessionContext{
+				SQLMode:             proc.GetSqlMode(),
+				CharacterSetClient:  proc.GetCharacterSetClient(),
+				CollationConnection: proc.GetCollationConnection(),
+			}
+		}
+		for _, event := range sm.GetEvents() {
+			m.Events[strings.ToLower(event.GetName())] = SDLSessionContext{
+				SQLMode:             event.GetSqlMode(),
+				CharacterSetClient:  event.GetCharacterSetClient(),
+				CollationConnection: event.GetCollationConnection(),
+				TimeZone:            event.GetTimeZone(),
+			}
+		}
+		for _, table := range sm.GetTables() {
+			for _, trigger := range table.GetTriggers() {
+				// Keyed by lower-cased name to match omni's trigger identity, which is
+				// itself lower-folded (catalog stores triggers as map[string]*Trigger by
+				// toLower(name)). Triggers whose names differ only by case therefore
+				// collapse to one entry — an inherited omni limitation, not introduced
+				// here; MySQL trigger names can be case-sensitive on lower_case_table_names=0.
+				m.Triggers[strings.ToLower(trigger.GetName())] = SDLSessionContext{
+					SQLMode:             trigger.GetSqlMode(),
+					CharacterSetClient:  trigger.GetCharacterSetClient(),
+					CollationConnection: trigger.GetCollationConnection(),
+				}
+			}
+		}
+	}
+	return m
+}
+
 // SDLMigration computes the migration SQL from a user-provided SDL text and the
 // current database schema. It converts the current metadata to SDL, then diffs
-// against the user SDL using DiffSDLMigration.
-func SDLMigration(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata) (string, error) {
+// against the user SDL. engineVersion is the target server's version string (e.g.
+// "5.7.25"); for engines that canonicalize per version (MySQL) it selects the
+// version-correct normalizer. An empty/unparseable version falls back to the
+// engine default, and engines without a version-aware path ignore it entirely.
+//
+// The per-object session context (sql_mode/charset/collation, and event time_zone) is
+// extracted from currentSchema and threaded to the diff so MySQL re-creates a routine/
+// trigger/event under its ORIGINAL session context — the bare SDL source carries none.
+// Other engines ignore it.
+func SDLMigration(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) (string, error) {
 	sourceSDL, err := MetadataToSDL(engine, currentSchema)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to convert current schema to SDL")
 	}
-	return DiffSDLMigration(engine, sourceSDL, userSDLText)
+	return diffSDLMigrationWithContext(engine, sourceSDL, userSDLText, engineVersion, buildSDLSessionContextMap(currentSchema))
 }
 
 func RegisterSDLDropAdvices(engine storepb.Engine, f sdlDropAdvices) {
@@ -286,18 +401,22 @@ func RegisterSDLDropAdvices(engine storepb.Engine, f sdlDropAdvices) {
 }
 
 // SDLDropAdvices analyzes the SDL migration for destructive operations and returns warnings.
-func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata) ([]*storepb.Advice, error) {
+// engineVersion is the target server's version string; engines that canonicalize per
+// version (MySQL) use it so the destructive-op detection runs against the version-correct
+// plan, while engines like PostgreSQL ignore it.
+func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error) {
 	f, ok := sdlDropAdvicesFns[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported for SDL drop advices", engine)
 	}
-	return f(userSDLText, currentSchema)
+	return f(userSDLText, currentSchema, engineVersion)
 }
 
 // DiffMigration computes the migration SQL between two database metadata states.
 // Engines may register a metadata migration to avoid round-tripping synced
 // metadata through SDL text. Otherwise, engines with DiffSDLMigration registered
-// convert both sides to SDL and diff. The legacy MetadataDiff + GenerateMigration
+// convert both sides to SDL and diff (no server version is available here, so the
+// engine's default stored form applies). The legacy MetadataDiff + GenerateMigration
 // path remains the fallback for engines that haven't migrated yet.
 func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
 	if f, ok := diffMetadataMigrations[engine]; ok {
@@ -312,7 +431,7 @@ func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMe
 		if err != nil {
 			return "", errors.Wrap(err, "failed to convert target schema to SDL")
 		}
-		return DiffSDLMigration(engine, sourceSDL, targetSDL)
+		return DiffSDLMigration(engine, sourceSDL, targetSDL, "")
 	}
 	// Fallback to legacy path for engines that haven't migrated yet.
 	diff, err := GetDatabaseSchemaDiff(engine, oldSchema, newSchema)
@@ -355,13 +474,28 @@ func RegisterDiffSDLMigration(engine storepb.Engine, f diffSDLMigration) {
 	diffSDLMigrations[engine] = f
 }
 
-// DiffSDLMigration computes migration SQL between two SDL texts.
-func DiffSDLMigration(engine storepb.Engine, sourceSDL, targetSDL string) (string, error) {
+// DiffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
+// target server's version string, threaded to engines that canonicalize per version
+// (MySQL) and ignored by the rest (PostgreSQL); pass "" when no version is known to get
+// the engine's default stored form.
+//
+// This SDL↔SDL entry point carries no per-object session context (there is no synced
+// metadata to source it from), so a MySQL recreate through this path is bare. The
+// live rollout uses SDLMigration, which builds the context from the current schema.
+func DiffSDLMigration(engine storepb.Engine, sourceSDL, targetSDL, engineVersion string) (string, error) {
+	return diffSDLMigrationWithContext(engine, sourceSDL, targetSDL, engineVersion, nil)
+}
+
+// diffSDLMigrationWithContext is DiffSDLMigration plus the optional per-object session
+// context threaded to the engine's registered diff. sessionCtx is nil for the callers
+// without synced metadata (SDL↔SDL DiffSchema, metadata↔metadata DiffMigration); only
+// SDLMigration supplies it.
+func diffSDLMigrationWithContext(engine storepb.Engine, sourceSDL, targetSDL, engineVersion string, sessionCtx *SDLSessionContextMap) (string, error) {
 	f, ok := diffSDLMigrations[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported for SDL diff migration", engine)
 	}
-	return f(sourceSDL, targetSDL)
+	return f(sourceSDL, targetSDL, engineVersion, sessionCtx)
 }
 
 func RegisterGetMultiFileDatabaseDefinition(engine storepb.Engine, f getMultiFileDatabaseDefinition) {
@@ -373,7 +507,7 @@ func RegisterGetMultiFileDatabaseDefinition(engine storepb.Engine, f getMultiFil
 	getMultiFileDatabaseDefinitions[engine] = f
 }
 
-func GetMultiFileDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error) {
+func GetMultiFileDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error) {
 	f, ok := getMultiFileDatabaseDefinitions[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported for multi-file database definition", engine)
@@ -400,12 +534,12 @@ func RegisterWalkThroughWithContext(engine storepb.Engine, f walkThroughWithCont
 }
 
 func WalkThrough(engine storepb.Engine, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
-	return WalkThroughWithContext(engine, WalkThroughContext{}, d, ast)
+	return WalkThroughWithContext(context.Background(), engine, WalkThroughContext{}, d, ast)
 }
 
-func WalkThroughWithContext(engine storepb.Engine, ctx WalkThroughContext, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
+func WalkThroughWithContext(ctx context.Context, engine storepb.Engine, wtCtx WalkThroughContext, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 	if f, ok := walkThroughsWithContext[engine]; ok {
-		return f(ctx, d, ast)
+		return f(ctx, wtCtx, d, ast)
 	}
 	f, ok := walkThroughs[engine]
 	if !ok {

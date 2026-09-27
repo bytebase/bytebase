@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	omnipg "github.com/bytebase/omni/pg"
 	"github.com/bytebase/omni/pg/ast"
 
@@ -49,7 +50,7 @@ func init() {
 	}
 }
 
-func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
 	metadata = filterBackupSchemaIfNecessary(ctx, metadata)
 
 	// Clone before mutating: the caller's *DatabaseSchemaMetadata is often a
@@ -117,12 +118,17 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 		}
 	}
 
+	// Construct composite types.
+	if err := writeCompositeTypesSection(&buf, collectCompositeTypes(metadata.Schemas)); err != nil {
+		return "", err
+	}
+
 	// Build the graph for topological sort.
 	graph := parserbase.NewGraph()
-	functionMap := make(map[string]*storepb.FunctionMetadata)
-	tableMap := make(map[string]*storepb.TableMetadata)
-	viewMap := make(map[string]*storepb.ViewMetadata)
-	materializedViewMap := make(map[string]*storepb.MaterializedViewMetadata)
+	functionMap := make(map[string]*metadatapb.FunctionMetadata)
+	tableMap := make(map[string]*metadatapb.TableMetadata)
+	viewMap := make(map[string]*metadatapb.ViewMetadata)
+	materializedViewMap := make(map[string]*metadatapb.MaterializedViewMetadata)
 
 	// Construct functions.
 	for _, schema := range metadata.Schemas {
@@ -145,7 +151,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 	// Build identity column map once for O(m*c) instead of O(s*m*c) when checking each sequence.
 	identityColumnMap := buildIdentityColumnMap(metadata)
 
-	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
+	sequenceOwnershipMap := make(map[string][]*metadatapb.SequenceMetadata)
 	for _, schema := range metadata.Schemas {
 		for _, sequence := range schema.Sequences {
 			if sequence.SkipDump {
@@ -317,16 +323,16 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 	return buf.String(), nil
 }
 
-func GetSchemaSDLDefinition(schema *storepb.SchemaMetadata) (string, error) {
+func GetSchemaSDLDefinition(schema *metadatapb.SchemaMetadata) (string, error) {
 	// Create a temporary database metadata containing just this schema
-	tempMetadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{schema},
+	tempMetadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{schema},
 	}
 
 	return getSDLFormat(tempMetadata)
 }
 
-func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
+func GetSchemaDefinition(schema *metadatapb.SchemaMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeSchema(&buf, schema); err != nil {
 		return "", err
@@ -351,12 +357,25 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 		}
 	}
 
+	// Construct composite types. The schema-level SkipDump filter does not
+	// apply here: the caller asked for this specific schema's definition.
+	var compositeTypes []qualifiedCompositeType
+	for _, composite := range schema.CompositeTypes {
+		if composite.SkipDump {
+			continue
+		}
+		compositeTypes = append(compositeTypes, qualifiedCompositeType{Schema: schema.Name, Composite: composite})
+	}
+	if err := writeCompositeTypesSection(&buf, compositeTypes); err != nil {
+		return "", err
+	}
+
 	// Build the graph for topological sort.
 	graph := parserbase.NewGraph()
-	functionMap := make(map[string]*storepb.FunctionMetadata)
-	tableMap := make(map[string]*storepb.TableMetadata)
-	viewMap := make(map[string]*storepb.ViewMetadata)
-	materializedViewMap := make(map[string]*storepb.MaterializedViewMetadata)
+	functionMap := make(map[string]*metadatapb.FunctionMetadata)
+	tableMap := make(map[string]*metadatapb.TableMetadata)
+	viewMap := make(map[string]*metadatapb.ViewMetadata)
+	materializedViewMap := make(map[string]*metadatapb.MaterializedViewMetadata)
 
 	// Construct functions.
 	for _, function := range schema.Functions {
@@ -377,7 +396,7 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 	// Build identity column map once for O(m*c) instead of O(s*m*c) when checking each sequence.
 	identityColumnMap := buildIdentityColumnMapForSchema(schema)
 
-	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
+	sequenceOwnershipMap := make(map[string][]*metadatapb.SequenceMetadata)
 	for _, sequence := range schema.Sequences {
 		if sequence.SkipDump {
 			continue
@@ -515,14 +534,14 @@ func GetSchemaDefinition(schema *storepb.SchemaMetadata) (string, error) {
 	}
 
 	// Construct foreign keys.
-	if err := writeSchemaForeignKeys(&buf, schema, collectTables([]*storepb.SchemaMetadata{schema}, tableMissingColumnMetadata)); err != nil {
+	if err := writeSchemaForeignKeys(&buf, schema, collectTables([]*metadatapb.SchemaMetadata{schema}, tableMissingColumnMetadata)); err != nil {
 		return "", err
 	}
 
 	return buf.String(), nil
 }
 
-func GetTableDefinition(schema string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) (string, error) {
+func GetTableDefinition(schema string, table *metadatapb.TableMetadata, sequences []*metadatapb.SequenceMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeTable(&buf, schema, table, sequences); err != nil {
 		return "", err
@@ -556,7 +575,7 @@ func GetTableDefinition(schema string, table *storepb.TableMetadata, sequences [
 	return buf.String(), nil
 }
 
-func GetViewDefinition(schema string, view *storepb.ViewMetadata) (string, error) {
+func GetViewDefinition(schema string, view *metadatapb.ViewMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeView(&buf, schema, view); err != nil {
 		return "", err
@@ -571,7 +590,7 @@ func GetViewDefinition(schema string, view *storepb.ViewMetadata) (string, error
 		}
 	}
 	// Construct rules (non-SELECT rules only, as SELECT rules are part of the view definition).
-	var nonSelectRules []*storepb.RuleMetadata
+	var nonSelectRules []*metadatapb.RuleMetadata
 	for _, rule := range view.Rules {
 		if rule.Event != "SELECT" {
 			nonSelectRules = append(nonSelectRules, rule)
@@ -585,7 +604,7 @@ func GetViewDefinition(schema string, view *storepb.ViewMetadata) (string, error
 	return buf.String(), nil
 }
 
-func GetMaterializedViewDefinition(schema string, view *storepb.MaterializedViewMetadata) (string, error) {
+func GetMaterializedViewDefinition(schema string, view *metadatapb.MaterializedViewMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeMaterializedView(&buf, schema, view); err != nil {
 		return "", err
@@ -602,7 +621,7 @@ func GetMaterializedViewDefinition(schema string, view *storepb.MaterializedView
 	return buf.String(), nil
 }
 
-func GetFunctionDefinition(schema string, function *storepb.FunctionMetadata) (string, error) {
+func GetFunctionDefinition(schema string, function *metadatapb.FunctionMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeFunction(&buf, schema, function); err != nil {
 		return "", err
@@ -610,7 +629,7 @@ func GetFunctionDefinition(schema string, function *storepb.FunctionMetadata) (s
 	return buf.String(), nil
 }
 
-func GetSequenceDefinition(schema string, sequence *storepb.SequenceMetadata) (string, error) {
+func GetSequenceDefinition(schema string, sequence *metadatapb.SequenceMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeCreateSequence(&buf, schema, sequence); err != nil {
 		return "", err
@@ -623,12 +642,12 @@ func GetSequenceDefinition(schema string, sequence *storepb.SequenceMetadata) (s
 	return buf.String(), nil
 }
 
-func filterBackupSchemaIfNecessary(ctx schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) *storepb.DatabaseSchemaMetadata {
+func filterBackupSchemaIfNecessary(ctx schema.GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) *metadatapb.DatabaseSchemaMetadata {
 	if !ctx.SkipBackupSchema {
 		return metadata
 	}
 
-	filtered := &storepb.DatabaseSchemaMetadata{
+	filtered := &metadatapb.DatabaseSchemaMetadata{
 		Extensions:    metadata.Extensions,
 		EventTriggers: metadata.EventTriggers,
 	}
@@ -641,7 +660,7 @@ func filterBackupSchemaIfNecessary(ctx schema.GetDefinitionContext, metadata *st
 	return filtered
 }
 
-func writeTrigger(out io.Writer, schema string, table string, trigger *storepb.TriggerMetadata) error {
+func writeTrigger(out io.Writer, schema string, table string, trigger *metadatapb.TriggerMetadata) error {
 	if _, err := io.WriteString(out, trigger.Body); err != nil {
 		return err
 	}
@@ -658,7 +677,7 @@ func writeTrigger(out io.Writer, schema string, table string, trigger *storepb.T
 	return nil
 }
 
-func writeTriggerComment(out io.Writer, schema string, table string, trigger *storepb.TriggerMetadata) error {
+func writeTriggerComment(out io.Writer, schema string, table string, trigger *metadatapb.TriggerMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON TRIGGER "`); err != nil {
 		return err
 	}
@@ -699,7 +718,7 @@ func writeTriggerComment(out io.Writer, schema string, table string, trigger *st
 	return err
 }
 
-func writeEventTrigger(out io.Writer, eventTrigger *storepb.EventTriggerMetadata) error {
+func writeEventTrigger(out io.Writer, eventTrigger *metadatapb.EventTriggerMetadata) error {
 	// Use the stored definition if available
 	if eventTrigger.Definition != "" {
 		if _, err := io.WriteString(out, eventTrigger.Definition); err != nil {
@@ -785,7 +804,7 @@ func writeEventTrigger(out io.Writer, eventTrigger *storepb.EventTriggerMetadata
 	return nil
 }
 
-func writeEventTriggerComment(out io.Writer, eventTrigger *storepb.EventTriggerMetadata) error {
+func writeEventTriggerComment(out io.Writer, eventTrigger *metadatapb.EventTriggerMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON EVENT TRIGGER "`); err != nil {
 		return err
 	}
@@ -810,7 +829,7 @@ func writeEventTriggerComment(out io.Writer, eventTrigger *storepb.EventTriggerM
 	return err
 }
 
-func writeEnum(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) error {
+func writeEnum(out io.Writer, schema string, enum *metadatapb.EnumTypeMetadata) error {
 	if _, err := io.WriteString(out, `CREATE TYPE "`); err != nil {
 		return err
 	}
@@ -852,6 +871,251 @@ func writeEnum(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) err
 
 func escapeSingleQuote(s string) string {
 	return strings.ReplaceAll(s, "'", "''")
+}
+
+func writeCompositeType(out io.Writer, schema string, composite *metadatapb.CompositeTypeMetadata) error {
+	if _, err := io.WriteString(out, `CREATE TYPE "`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, schema); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, `"."`); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, composite.Name); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "\" AS (\n"); err != nil {
+		return err
+	}
+	for i, attribute := range composite.Attributes {
+		if i > 0 {
+			if _, err := io.WriteString(out, ",\n"); err != nil {
+				return err
+			}
+		}
+		if _, err := io.WriteString(out, `    "`); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, attribute.Name); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, `" `); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(out, attribute.Type); err != nil {
+			return err
+		}
+		// The collation is stored as an emit-ready identifier reference
+		// (quoted as needed, schema-qualified outside pg_catalog).
+		if attribute.Collation != "" {
+			if _, err := io.WriteString(out, ` COLLATE `); err != nil {
+				return err
+			}
+			if _, err := io.WriteString(out, attribute.Collation); err != nil {
+				return err
+			}
+		}
+	}
+
+	if _, err := io.WriteString(out, "\n)"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func compositeTypeHasComments(composite *metadatapb.CompositeTypeMetadata) bool {
+	if composite.Comment != "" {
+		return true
+	}
+	for _, attribute := range composite.Attributes {
+		if attribute.Comment != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func writeCompositeTypeComments(out io.Writer, schema string, composite *metadatapb.CompositeTypeMetadata) error {
+	if composite.Comment != "" {
+		if _, err := fmt.Fprintf(out, "COMMENT ON TYPE \"%s\".\"%s\" IS '%s';\n\n", schema, composite.Name, escapeSingleQuote(composite.Comment)); err != nil {
+			return err
+		}
+	}
+	for _, attribute := range composite.Attributes {
+		if attribute.Comment == "" {
+			continue
+		}
+		if _, err := fmt.Fprintf(out, "COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';\n\n", schema, composite.Name, attribute.Name, escapeSingleQuote(attribute.Comment)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// qualifiedCompositeType pairs a composite type with its schema for
+// cross-schema ordering.
+type qualifiedCompositeType struct {
+	Schema    string
+	Composite *metadatapb.CompositeTypeMetadata
+}
+
+// collectCompositeTypes gathers the dumpable composite types of the given
+// schemas. Schemas with SkipDump never get a CREATE SCHEMA statement, so
+// their types must not be emitted either.
+func collectCompositeTypes(schemas []*metadatapb.SchemaMetadata) []qualifiedCompositeType {
+	var compositeTypes []qualifiedCompositeType
+	for _, schema := range schemas {
+		if schema.SkipDump {
+			continue
+		}
+		for _, composite := range schema.CompositeTypes {
+			if composite.SkipDump {
+				continue
+			}
+			compositeTypes = append(compositeTypes, qualifiedCompositeType{Schema: schema.Name, Composite: composite})
+		}
+	}
+	return compositeTypes
+}
+
+// writeCompositeTypesSection emits the composite types with their comments,
+// ordered so referenced composites come first.
+func writeCompositeTypesSection(buf *strings.Builder, compositeTypes []qualifiedCompositeType) error {
+	for _, t := range sortCompositeTypesTopologically(compositeTypes) {
+		if err := writeCompositeType(buf, t.Schema, t.Composite); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(";\n\n"); err != nil {
+			return err
+		}
+		if compositeTypeHasComments(t.Composite) {
+			if err := writeCompositeTypeComments(buf, t.Schema, t.Composite); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// parseQualifiedTypeIdent splits a type reference produced by the sync layer
+// (format_type output, schema-qualified for user-defined types) into
+// (schema, name), ignoring any typmod or array suffix. It returns ok=false
+// for unqualified references — built-in types are never schema-qualified.
+func parseQualifiedTypeIdent(s string) (string, string, bool) {
+	var parts []string
+	for i := 0; i < len(s); {
+		if s[i] == '"' {
+			var b strings.Builder
+			i++
+			for i < len(s) {
+				if s[i] == '"' {
+					if i+1 < len(s) && s[i+1] == '"' {
+						b.WriteByte('"')
+						i += 2
+						continue
+					}
+					i++
+					break
+				}
+				b.WriteByte(s[i])
+				i++
+			}
+			parts = append(parts, b.String())
+		} else {
+			start := i
+			for i < len(s) && s[i] != '.' && s[i] != '(' && s[i] != '[' {
+				i++
+			}
+			parts = append(parts, strings.TrimSpace(s[start:i]))
+		}
+		if i < len(s) && s[i] == '.' {
+			i++
+			continue
+		}
+		break
+	}
+	if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+		return parts[0], parts[1], true
+	}
+	return "", "", false
+}
+
+// sortCompositeTypesTopologically orders composite types so that a composite
+// referenced by another composite's attribute is emitted first. PostgreSQL
+// rejects self-containment, so the graph is acyclic; any leftover on an
+// unexpected cycle falls back to (schema, name) order. A composite attribute
+// typed with a table or view row type is not reordered here — that requires
+// catalog-grade dependency data (see pg_dump's pg_depend-driven sort).
+func sortCompositeTypesTopologically(types []qualifiedCompositeType) []qualifiedCompositeType {
+	key := func(schema, name string) string { return schema + "\x00" + name }
+	nodes := make(map[string]qualifiedCompositeType, len(types))
+	for _, t := range types {
+		nodes[key(t.Schema, t.Composite.Name)] = t
+	}
+	inDegree := make(map[string]int, len(nodes))
+	dependents := make(map[string][]string, len(nodes))
+	for k := range nodes {
+		inDegree[k] = 0
+	}
+	for k, t := range nodes {
+		for _, attribute := range t.Composite.Attributes {
+			depSchema, depName, ok := parseQualifiedTypeIdent(attribute.Type)
+			if !ok {
+				continue
+			}
+			depKey := key(depSchema, depName)
+			if depKey == k {
+				continue
+			}
+			if _, exists := nodes[depKey]; !exists {
+				continue
+			}
+			dependents[depKey] = append(dependents[depKey], k)
+			inDegree[k]++
+		}
+	}
+
+	var ready []string
+	for k, d := range inDegree {
+		if d == 0 {
+			ready = append(ready, k)
+		}
+	}
+	slices.Sort(ready)
+
+	ordered := make([]qualifiedCompositeType, 0, len(nodes))
+	for len(ready) > 0 {
+		k := ready[0]
+		ready = ready[1:]
+		ordered = append(ordered, nodes[k])
+		delete(inDegree, k)
+		for _, dependent := range dependents[k] {
+			if _, remaining := inDegree[dependent]; !remaining {
+				continue
+			}
+			inDegree[dependent]--
+			if inDegree[dependent] == 0 {
+				ready = append(ready, dependent)
+			}
+		}
+		slices.Sort(ready)
+	}
+
+	if len(ordered) < len(nodes) {
+		var rest []string
+		for k := range inDegree {
+			rest = append(rest, k)
+		}
+		slices.Sort(rest)
+		for _, k := range rest {
+			ordered = append(ordered, nodes[k])
+		}
+	}
+
+	return ordered
 }
 
 // signatureTypesOnly strips parameter names from a function/procedure signature,
@@ -927,7 +1191,7 @@ func signatureTypesOnly(signature string) string {
 	return funcName + "(" + strings.Join(typesOnly, ", ") + ")"
 }
 
-func writeEnumComment(out io.Writer, schema string, enum *storepb.EnumTypeMetadata) error {
+func writeEnumComment(out io.Writer, schema string, enum *metadatapb.EnumTypeMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON TYPE "`); err != nil {
 		return err
 	}
@@ -960,7 +1224,7 @@ func writeEnumComment(out io.Writer, schema string, enum *storepb.EnumTypeMetada
 	return err
 }
 
-func writeMaterializedView(out io.Writer, schema string, view *storepb.MaterializedViewMetadata) error {
+func writeMaterializedView(out io.Writer, schema string, view *metadatapb.MaterializedViewMetadata) error {
 	if _, err := io.WriteString(out, `CREATE MATERIALIZED VIEW "`); err != nil {
 		return err
 	}
@@ -998,7 +1262,7 @@ func writeMaterializedView(out io.Writer, schema string, view *storepb.Materiali
 	return nil
 }
 
-func writeMaterializedViewComment(out io.Writer, schema string, view *storepb.MaterializedViewMetadata) error {
+func writeMaterializedViewComment(out io.Writer, schema string, view *metadatapb.MaterializedViewMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON MATERIALIZED VIEW "`); err != nil {
 		return err
 	}
@@ -1031,7 +1295,7 @@ func writeMaterializedViewComment(out io.Writer, schema string, view *storepb.Ma
 	return err
 }
 
-func writeView(out io.Writer, schema string, view *storepb.ViewMetadata) error {
+func writeView(out io.Writer, schema string, view *metadatapb.ViewMetadata) error {
 	if _, err := io.WriteString(out, `CREATE VIEW "`); err != nil {
 		return err
 	}
@@ -1063,7 +1327,7 @@ func writeView(out io.Writer, schema string, view *storepb.ViewMetadata) error {
 	return nil
 }
 
-func writeViewComment(out io.Writer, schema string, view *storepb.ViewMetadata) error {
+func writeViewComment(out io.Writer, schema string, view *metadatapb.ViewMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON VIEW "`); err != nil {
 		return err
 	}
@@ -1096,7 +1360,7 @@ func writeViewComment(out io.Writer, schema string, view *storepb.ViewMetadata) 
 	return err
 }
 
-func writeRules(out io.Writer, _ string, _ string, rules []*storepb.RuleMetadata) error {
+func writeRules(out io.Writer, _ string, _ string, rules []*metadatapb.RuleMetadata) error {
 	for _, rule := range rules {
 		// Write the full rule definition
 		if _, err := io.WriteString(out, rule.Definition); err != nil {
@@ -1121,7 +1385,7 @@ func getSchemaNameFromID(id string) string {
 	return ""
 }
 
-func writeColumnIdentityGeneration(out io.Writer, schema string, generationTypes storepb.ColumnMetadata_IdentityGeneration, sequence *storepb.SequenceMetadata) error {
+func writeColumnIdentityGeneration(out io.Writer, schema string, generationTypes metadatapb.ColumnMetadata_IdentityGeneration, sequence *metadatapb.SequenceMetadata) error {
 	if _, err := io.WriteString(out, `ALTER TABLE "`); err != nil {
 		return err
 	}
@@ -1143,7 +1407,7 @@ func writeColumnIdentityGeneration(out io.Writer, schema string, generationTypes
 	if _, err := io.WriteString(out, `" ADD GENERATED `); err != nil {
 		return err
 	}
-	if generationTypes == storepb.ColumnMetadata_ALWAYS {
+	if generationTypes == metadatapb.ColumnMetadata_ALWAYS {
 		if _, err := io.WriteString(out, "ALWAYS "); err != nil {
 			return err
 		}
@@ -1204,7 +1468,7 @@ func writeColumnIdentityGeneration(out io.Writer, schema string, generationTypes
 	return err
 }
 
-func writeCreateSequence(out io.Writer, schema string, sequence *storepb.SequenceMetadata) error {
+func writeCreateSequence(out io.Writer, schema string, sequence *metadatapb.SequenceMetadata) error {
 	if _, err := io.WriteString(out, `CREATE SEQUENCE "`); err != nil {
 		return err
 	}
@@ -1272,7 +1536,7 @@ func writeCreateSequence(out io.Writer, schema string, sequence *storepb.Sequenc
 	return nil
 }
 
-func writeSequenceComment(out io.Writer, schema string, sequence *storepb.SequenceMetadata) error {
+func writeSequenceComment(out io.Writer, schema string, sequence *metadatapb.SequenceMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON SEQUENCE "`); err != nil {
 		return err
 	}
@@ -1305,7 +1569,7 @@ func writeSequenceComment(out io.Writer, schema string, sequence *storepb.Sequen
 	return err
 }
 
-func writeAlterSequenceOwnedBy(out io.Writer, schema string, sequence *storepb.SequenceMetadata) error {
+func writeAlterSequenceOwnedBy(out io.Writer, schema string, sequence *metadatapb.SequenceMetadata) error {
 	if _, err := io.WriteString(out, `ALTER SEQUENCE "`); err != nil {
 		return err
 	}
@@ -1342,7 +1606,7 @@ func writeAlterSequenceOwnedBy(out io.Writer, schema string, sequence *storepb.S
 
 // funcIdentity returns the unique identity for a function, preferring
 // the full signature (name + parameter types) to support overloaded functions.
-func funcIdentity(f *storepb.FunctionMetadata) string {
+func funcIdentity(f *metadatapb.FunctionMetadata) string {
 	if f.Signature != "" {
 		return f.Signature
 	}
@@ -1358,7 +1622,7 @@ func getObjectID(schema string, object string) string {
 }
 
 // writePrimaryKeyConstraintSDL writes a single primary key constraint SDL
-func writePrimaryKeyConstraintSDL(out io.Writer, index *storepb.IndexMetadata) error {
+func writePrimaryKeyConstraintSDL(out io.Writer, index *metadatapb.IndexMetadata) error {
 	if index == nil || !index.Primary {
 		return errors.New("invalid primary key constraint")
 	}
@@ -1389,7 +1653,7 @@ func writePrimaryKeyConstraintSDL(out io.Writer, index *storepb.IndexMetadata) e
 }
 
 // writeUniqueKeyConstraintSDL writes a single unique key constraint SDL
-func writeUniqueKeyConstraintSDL(out io.Writer, index *storepb.IndexMetadata) error {
+func writeUniqueKeyConstraintSDL(out io.Writer, index *metadatapb.IndexMetadata) error {
 	if index == nil || !index.Unique || index.Primary || !index.IsConstraint {
 		return errors.New("invalid unique key constraint")
 	}
@@ -1419,7 +1683,7 @@ func writeUniqueKeyConstraintSDL(out io.Writer, index *storepb.IndexMetadata) er
 	return nil
 }
 
-func writeCreateTable(out io.Writer, schema string, tableName string, columns []*storepb.ColumnMetadata, checks []*storepb.CheckConstraintMetadata, excludes []*storepb.ExcludeConstraintMetadata) error {
+func writeCreateTable(out io.Writer, schema string, tableName string, columns []*metadatapb.ColumnMetadata, checks []*metadatapb.CheckConstraintMetadata, excludes []*metadatapb.ExcludeConstraintMetadata) error {
 	if _, err := io.WriteString(out, `CREATE TABLE "`); err != nil {
 		return err
 	}
@@ -1517,15 +1781,15 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 }
 
 // isIdentityColumn checks if a column is an identity column.
-func isIdentityColumn(column *storepb.ColumnMetadata) bool {
-	return column.IdentityGeneration == storepb.ColumnMetadata_ALWAYS ||
-		column.IdentityGeneration == storepb.ColumnMetadata_BY_DEFAULT
+func isIdentityColumn(column *metadatapb.ColumnMetadata) bool {
+	return column.IdentityGeneration == metadatapb.ColumnMetadata_ALWAYS ||
+		column.IdentityGeneration == metadatapb.ColumnMetadata_BY_DEFAULT
 }
 
 // buildIdentityColumnMap builds a map of identity columns for the entire database.
 // Key format: "schemaName.tableName.columnName" -> true
 // This is O(m*c) which is done once, vs O(s*m*c) when checking each sequence individually.
-func buildIdentityColumnMap(metadata *storepb.DatabaseSchemaMetadata) map[string]bool {
+func buildIdentityColumnMap(metadata *metadatapb.DatabaseSchemaMetadata) map[string]bool {
 	identityMap := make(map[string]bool)
 	for _, schema := range metadata.Schemas {
 		for _, table := range schema.Tables {
@@ -1542,7 +1806,7 @@ func buildIdentityColumnMap(metadata *storepb.DatabaseSchemaMetadata) map[string
 
 // buildIdentityColumnMapForSchema builds a map of identity columns for a single schema.
 // Key format: "tableName.columnName" -> true
-func buildIdentityColumnMapForSchema(schema *storepb.SchemaMetadata) map[string]bool {
+func buildIdentityColumnMapForSchema(schema *metadatapb.SchemaMetadata) map[string]bool {
 	identityMap := make(map[string]bool)
 	for _, table := range schema.Tables {
 		for _, column := range table.Columns {
@@ -1555,14 +1819,14 @@ func buildIdentityColumnMapForSchema(schema *storepb.SchemaMetadata) map[string]
 	return identityMap
 }
 
-func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) ([]storepb.ColumnMetadata_IdentityGeneration, []*storepb.SequenceMetadata, []*storepb.SequenceMetadata) {
-	columnMap := make(map[string]*storepb.ColumnMetadata)
+func splitSequencesByIdentityOrNot(table *metadatapb.TableMetadata, sequences []*metadatapb.SequenceMetadata) ([]metadatapb.ColumnMetadata_IdentityGeneration, []*metadatapb.SequenceMetadata, []*metadatapb.SequenceMetadata) {
+	columnMap := make(map[string]*metadatapb.ColumnMetadata)
 	for _, column := range table.Columns {
 		columnMap[column.Name] = column
 	}
-	var generationType []storepb.ColumnMetadata_IdentityGeneration
-	var identitySequences []*storepb.SequenceMetadata
-	var nonIdentitySequences []*storepb.SequenceMetadata
+	var generationType []metadatapb.ColumnMetadata_IdentityGeneration
+	var identitySequences []*metadatapb.SequenceMetadata
+	var nonIdentitySequences []*metadatapb.SequenceMetadata
 	for _, sequence := range sequences {
 		if column, ok := columnMap[sequence.OwnerColumn]; ok {
 			if isIdentityColumn(column) {
@@ -1591,7 +1855,7 @@ func splitSequencesByIdentityOrNot(table *storepb.TableMetadata, sequences []*st
 // limited to constant-expression corner cases. Treat zero columns as missing
 // metadata only when such objects are present, so genuine zero-column tables
 // keep their objects.
-func tableMissingColumnMetadata(table *storepb.TableMetadata) bool {
+func tableMissingColumnMetadata(table *metadatapb.TableMetadata) bool {
 	return len(table.Columns) == 0 &&
 		(len(table.Indexes) > 0 || len(table.ForeignKeys) > 0 || len(table.Partitions) > 0)
 }
@@ -1599,13 +1863,13 @@ func tableMissingColumnMetadata(table *storepb.TableMetadata) bool {
 // tableHasNoColumns reports an empty synced column list, whether genuinely
 // zero-column or privilege-filtered. A sequence cannot be owned by a column
 // of such a table, so ALTER SEQUENCE ... OWNED BY is skipped either way.
-func tableHasNoColumns(table *storepb.TableMetadata) bool {
+func tableHasNoColumns(table *metadatapb.TableMetadata) bool {
 	return len(table.Columns) == 0
 }
 
 // collectTables returns the tables matching include, keyed by
 // getObjectID(schema, table).
-func collectTables(schemas []*storepb.SchemaMetadata, include func(*storepb.TableMetadata) bool) map[string]bool {
+func collectTables(schemas []*metadatapb.SchemaMetadata, include func(*metadatapb.TableMetadata) bool) map[string]bool {
 	set := make(map[string]bool)
 	for _, schema := range schemas {
 		for _, table := range schema.Tables {
@@ -1621,7 +1885,7 @@ func collectTables(schemas []*storepb.SchemaMetadata, include func(*storepb.Tabl
 // materialized view in the schema. Triggers on tables without column
 // metadata are skipped; their definitions (UPDATE OF, WHEN clauses) can
 // reference the missing columns.
-func writeSchemaTriggers(out io.Writer, schema *storepb.SchemaMetadata) error {
+func writeSchemaTriggers(out io.Writer, schema *metadatapb.SchemaMetadata) error {
 	for _, table := range schema.Tables {
 		if tableMissingColumnMetadata(table) {
 			continue
@@ -1664,7 +1928,7 @@ func writeSchemaTriggers(out io.Writer, schema *storepb.SchemaMetadata) error {
 // of every view in the schema (SELECT rules are part of the view
 // definition). Rules on tables without column metadata are skipped; their
 // definitions can reference the missing columns.
-func writeSchemaRules(out io.Writer, schema *storepb.SchemaMetadata) error {
+func writeSchemaRules(out io.Writer, schema *metadatapb.SchemaMetadata) error {
 	for _, table := range schema.Tables {
 		if len(table.Rules) > 0 && !tableMissingColumnMetadata(table) {
 			if err := writeRules(out, schema.Name, table.Name, table.Rules); err != nil {
@@ -1674,7 +1938,7 @@ func writeSchemaRules(out io.Writer, schema *storepb.SchemaMetadata) error {
 	}
 
 	for _, view := range schema.Views {
-		var nonSelectRules []*storepb.RuleMetadata
+		var nonSelectRules []*metadatapb.RuleMetadata
 		for _, rule := range view.Rules {
 			if rule.Event != "SELECT" {
 				nonSelectRules = append(nonSelectRules, rule)
@@ -1692,7 +1956,7 @@ func writeSchemaRules(out io.Writer, schema *storepb.SchemaMetadata) error {
 // writeSchemaForeignKeys writes the foreign keys of every table in the
 // schema, skipping foreign keys touching a table without column metadata on
 // either side; they would reference columns absent from the dump.
-func writeSchemaForeignKeys(out io.Writer, schema *storepb.SchemaMetadata, tablesMissingColumns map[string]bool) error {
+func writeSchemaForeignKeys(out io.Writer, schema *metadatapb.SchemaMetadata, tablesMissingColumns map[string]bool) error {
 	for _, table := range schema.Tables {
 		if table.SkipDump || tablesMissingColumns[getObjectID(schema.Name, table.Name)] {
 			continue
@@ -1709,7 +1973,7 @@ func writeSchemaForeignKeys(out io.Writer, schema *storepb.SchemaMetadata, table
 	return nil
 }
 
-func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) error {
+func writeTable(out io.Writer, schema string, table *metadatapb.TableMetadata, sequences []*metadatapb.SequenceMetadata) error {
 	if tableMissingColumnMetadata(table) {
 		// Emit a bare CREATE TABLE so the table still exists on replay, and
 		// skip constraints, indexes, partitions, and sequence ownership —
@@ -1844,7 +2108,7 @@ func writeTable(out io.Writer, schema string, table *storepb.TableMetadata, sequ
 	return nil
 }
 
-func writeForeignKey(out io.Writer, schema string, table string, fk *storepb.ForeignKeyMetadata) error {
+func writeForeignKey(out io.Writer, schema string, table string, fk *metadatapb.ForeignKeyMetadata) error {
 	if _, err := io.WriteString(out, `ALTER TABLE "`); err != nil {
 		return err
 	}
@@ -1941,7 +2205,7 @@ func writeForeignKey(out io.Writer, schema string, table string, fk *storepb.For
 	return err
 }
 
-func writeAttachPartitionIndex(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
+func writeAttachPartitionIndex(out io.Writer, schema string, partition *metadatapb.TablePartitionMetadata) error {
 	for _, index := range partition.Indexes {
 		if err := writeAttachIndex(out, schema, index); err != nil {
 			return err
@@ -1956,7 +2220,7 @@ func writeAttachPartitionIndex(out io.Writer, schema string, partition *storepb.
 	return nil
 }
 
-func writeAttachIndex(out io.Writer, schema string, index *storepb.IndexMetadata) error {
+func writeAttachIndex(out io.Writer, schema string, index *metadatapb.IndexMetadata) error {
 	if len(index.ParentIndexName) == 0 || len(index.ParentIndexSchema) == 0 {
 		return nil
 	}
@@ -1989,7 +2253,7 @@ func writeAttachIndex(out io.Writer, schema string, index *storepb.IndexMetadata
 	return err
 }
 
-func writePartitionIndex(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
+func writePartitionIndex(out io.Writer, schema string, partition *metadatapb.TablePartitionMetadata) error {
 	for _, index := range partition.Indexes {
 		if !index.IsConstraint && !index.Primary {
 			if err := writeIndex(out, schema, partition.Name, index, len(partition.Subpartitions) > 0); err != nil {
@@ -2006,11 +2270,11 @@ func writePartitionIndex(out io.Writer, schema string, partition *storepb.TableP
 	return nil
 }
 
-func writeIndex(out io.Writer, schema string, table string, index *storepb.IndexMetadata, useOnlyClause bool) error {
+func writeIndex(out io.Writer, schema string, table string, index *metadatapb.IndexMetadata, useOnlyClause bool) error {
 	return writeIndexInternal(out, schema, table, index, useOnlyClause, true)
 }
 
-func writeIndexKeyList(out io.Writer, index *storepb.IndexMetadata) error {
+func writeIndexKeyList(out io.Writer, index *metadatapb.IndexMetadata) error {
 	if _, err := io.WriteString(out, `(`); err != nil {
 		return err
 	}
@@ -2056,7 +2320,7 @@ func writeIndexKeyList(out io.Writer, index *storepb.IndexMetadata) error {
 	return err
 }
 
-func writeIndexComment(out io.Writer, schema string, index *storepb.IndexMetadata) error {
+func writeIndexComment(out io.Writer, schema string, index *metadatapb.IndexMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON INDEX "`); err != nil {
 		return err
 	}
@@ -2085,7 +2349,7 @@ func writeIndexComment(out io.Writer, schema string, index *storepb.IndexMetadat
 	return err
 }
 
-func writePartitionUniqueKey(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
+func writePartitionUniqueKey(out io.Writer, schema string, partition *metadatapb.TablePartitionMetadata) error {
 	for _, index := range partition.Indexes {
 		if index.Unique && !index.Primary && index.IsConstraint {
 			if err := writeUniqueKey(out, schema, partition.Name, index); err != nil {
@@ -2102,7 +2366,7 @@ func writePartitionUniqueKey(out io.Writer, schema string, partition *storepb.Ta
 	return nil
 }
 
-func writeUniqueKey(out io.Writer, schema string, table string, index *storepb.IndexMetadata) error {
+func writeUniqueKey(out io.Writer, schema string, table string, index *metadatapb.IndexMetadata) error {
 	if _, err := io.WriteString(out, `ALTER TABLE ONLY "`); err != nil {
 		return err
 	}
@@ -2147,7 +2411,7 @@ func writeUniqueKey(out io.Writer, schema string, table string, index *storepb.I
 	return nil
 }
 
-func writePartitionPrimaryKey(out io.Writer, schema string, partition *storepb.TablePartitionMetadata) error {
+func writePartitionPrimaryKey(out io.Writer, schema string, partition *metadatapb.TablePartitionMetadata) error {
 	for _, index := range partition.Indexes {
 		if index.Primary {
 			if err := writePrimaryKey(out, schema, partition.Name, index); err != nil {
@@ -2164,7 +2428,7 @@ func writePartitionPrimaryKey(out io.Writer, schema string, partition *storepb.T
 	return nil
 }
 
-func writePrimaryKey(out io.Writer, schema string, table string, index *storepb.IndexMetadata) error {
+func writePrimaryKey(out io.Writer, schema string, table string, index *metadatapb.IndexMetadata) error {
 	if _, err := io.WriteString(out, `ALTER TABLE ONLY "`); err != nil {
 		return err
 	}
@@ -2209,7 +2473,7 @@ func writePrimaryKey(out io.Writer, schema string, table string, index *storepb.
 	return nil
 }
 
-func writeConstraintComment(out io.Writer, schema string, table string, index *storepb.IndexMetadata) error {
+func writeConstraintComment(out io.Writer, schema string, table string, index *metadatapb.IndexMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON CONSTRAINT "`); err != nil {
 		return err
 	}
@@ -2250,7 +2514,7 @@ func writeConstraintComment(out io.Writer, schema string, table string, index *s
 	return err
 }
 
-func writeColumnComment(out io.Writer, schema string, table string, column *storepb.ColumnMetadata) error {
+func writeColumnComment(out io.Writer, schema string, table string, column *metadatapb.ColumnMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON COLUMN "`); err != nil {
 		return err
 	}
@@ -2279,7 +2543,7 @@ func writeColumnComment(out io.Writer, schema string, table string, column *stor
 	return err
 }
 
-func writeTableComment(out io.Writer, schema string, table *storepb.TableMetadata) error {
+func writeTableComment(out io.Writer, schema string, table *metadatapb.TableMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON TABLE "`); err != nil {
 		return err
 	}
@@ -2302,7 +2566,7 @@ func writeTableComment(out io.Writer, schema string, table *storepb.TableMetadat
 	return err
 }
 
-func writePartitionClause(out io.Writer, partition *storepb.TablePartitionMetadata) error {
+func writePartitionClause(out io.Writer, partition *metadatapb.TablePartitionMetadata) error {
 	if _, err := io.WriteString(out, " PARTITION BY "); err != nil {
 		return err
 	}
@@ -2310,7 +2574,7 @@ func writePartitionClause(out io.Writer, partition *storepb.TablePartitionMetada
 	return err
 }
 
-func writeAttachPartition(out io.Writer, schema string, tableName string, partition *storepb.TablePartitionMetadata) error {
+func writeAttachPartition(out io.Writer, schema string, tableName string, partition *metadatapb.TablePartitionMetadata) error {
 	if _, err := io.WriteString(out, `ALTER TABLE ONLY "`); err != nil {
 		return err
 	}
@@ -2345,7 +2609,7 @@ func writeAttachPartition(out io.Writer, schema string, tableName string, partit
 	return err
 }
 
-func writePartitionTable(out io.Writer, schema string, columns []*storepb.ColumnMetadata, partition *storepb.TablePartitionMetadata) error {
+func writePartitionTable(out io.Writer, schema string, columns []*metadatapb.ColumnMetadata, partition *metadatapb.TablePartitionMetadata) error {
 	if err := writeCreateTable(out, schema, partition.Name, columns, partition.CheckConstraints, partition.ExcludeConstraints); err != nil {
 		return err
 	}
@@ -2376,7 +2640,7 @@ func writePartitionTable(out io.Writer, schema string, columns []*storepb.Column
 	return nil
 }
 
-func writeFunction(out io.Writer, schema string, function *storepb.FunctionMetadata) error {
+func writeFunction(out io.Writer, schema string, function *metadatapb.FunctionMetadata) error {
 	if _, err := io.WriteString(out, function.Definition); err != nil {
 		return err
 	}
@@ -2416,7 +2680,7 @@ func isDefinitionProcedure(definition string) bool {
 	return false
 }
 
-func writeFunctionComment(out io.Writer, schema string, function *storepb.FunctionMetadata) error {
+func writeFunctionComment(out io.Writer, schema string, function *metadatapb.FunctionMetadata) error {
 	// Determine if this is a PROCEDURE or FUNCTION by checking the definition
 	objectType := "FUNCTION"
 	if isDefinitionProcedure(function.Definition) {
@@ -2451,7 +2715,7 @@ func writeFunctionComment(out io.Writer, schema string, function *storepb.Functi
 	return err
 }
 
-func writeExtension(out io.Writer, extension *storepb.ExtensionMetadata) error {
+func writeExtension(out io.Writer, extension *metadatapb.ExtensionMetadata) error {
 	if _, err := io.WriteString(out, `CREATE EXTENSION IF NOT EXISTS "`); err != nil {
 		return err
 	}
@@ -2516,7 +2780,7 @@ func writeExtension(out io.Writer, extension *storepb.ExtensionMetadata) error {
 	return nil
 }
 
-func writeExtensionComment(out io.Writer, extension *storepb.ExtensionMetadata) error {
+func writeExtensionComment(out io.Writer, extension *metadatapb.ExtensionMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON EXTENSION "`); err != nil {
 		return err
 	}
@@ -2541,7 +2805,7 @@ func writeExtensionComment(out io.Writer, extension *storepb.ExtensionMetadata) 
 	return err
 }
 
-func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
+func getSDLFormat(metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
 	var buf strings.Builder
 
 	tablesMissingColumns := collectTables(metadata.Schemas, tableMissingColumnMetadata)
@@ -2643,9 +2907,14 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 		}
 	}
 
+	// Write all composite types before sequences and tables.
+	if err := writeCompositeTypesSection(&buf, collectCompositeTypes(metadata.Schemas)); err != nil {
+		return "", err
+	}
+
 	// Write all sequences before tables to ensure they exist before any table references them.
 	// Skip sequences that belong to serial or identity columns as they will be implicitly created.
-	sequenceOwnershipMap := make(map[string][]*storepb.SequenceMetadata)
+	sequenceOwnershipMap := make(map[string][]*metadatapb.SequenceMetadata)
 
 	for _, schema := range metadata.Schemas {
 		if schema.SkipDump {
@@ -2684,7 +2953,7 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 	}
 
 	// Build a map of sequences by table for easy lookup during table creation
-	tableSequencesMap := make(map[string][]*storepb.SequenceMetadata)
+	tableSequencesMap := make(map[string][]*metadatapb.SequenceMetadata)
 	for _, schema := range metadata.Schemas {
 		if schema.SkipDump {
 			continue
@@ -3013,7 +3282,7 @@ func extractIdentifierFromQualifiedName(qualifiedName string) string {
 	return qualifiedName
 }
 
-func isSerialColumn(column *storepb.ColumnMetadata, tableName string, sequences []*storepb.SequenceMetadata) (isSerial bool, serialType string) {
+func isSerialColumn(column *metadatapb.ColumnMetadata, tableName string, sequences []*metadatapb.SequenceMetadata) (isSerial bool, serialType string) {
 	// Serial columns must be NOT NULL
 	if column.Nullable {
 		return false, ""
@@ -3059,7 +3328,7 @@ func isSerialColumn(column *storepb.ColumnMetadata, tableName string, sequences 
 // This function is extracted from writeCreateTableSDL to enable code reuse
 // sequences parameter is optional and used to find identity sequences for the column
 // tableName is used to verify sequence ownership for serial column detection
-func writeColumnSDL(out io.Writer, column *storepb.ColumnMetadata, tableName string, sequences []*storepb.SequenceMetadata) error {
+func writeColumnSDL(out io.Writer, column *metadatapb.ColumnMetadata, tableName string, sequences []*metadatapb.SequenceMetadata) error {
 	if _, err := io.WriteString(out, `"`); err != nil {
 		return err
 	}
@@ -3075,7 +3344,7 @@ func writeColumnSDL(out io.Writer, column *storepb.ColumnMetadata, tableName str
 	// Check if this is an identity column
 	if isIdentityColumn(column) {
 		// Find the sequence for this identity column
-		var identitySequence *storepb.SequenceMetadata
+		var identitySequence *metadatapb.SequenceMetadata
 		for _, seq := range sequences {
 			if seq.OwnerColumn == column.Name {
 				identitySequence = seq
@@ -3092,7 +3361,7 @@ func writeColumnSDL(out io.Writer, column *storepb.ColumnMetadata, tableName str
 		if _, err := io.WriteString(out, " GENERATED "); err != nil {
 			return err
 		}
-		if column.IdentityGeneration == storepb.ColumnMetadata_ALWAYS {
+		if column.IdentityGeneration == metadatapb.ColumnMetadata_ALWAYS {
 			if _, err := io.WriteString(out, "ALWAYS"); err != nil {
 				return err
 			}
@@ -3194,7 +3463,7 @@ func writeColumnSDL(out io.Writer, column *storepb.ColumnMetadata, tableName str
 	return nil
 }
 
-func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata, tablesMissingColumns map[string]bool) error {
+func writeCreateTableSDL(out io.Writer, schemaName string, table *metadatapb.TableMetadata, sequences []*metadatapb.SequenceMetadata, tablesMissingColumns map[string]bool) error {
 	if _, err := io.WriteString(out, `CREATE TABLE "`); err != nil {
 		return err
 	}
@@ -3247,7 +3516,7 @@ func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableM
 	return err
 }
 
-func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata, writeSep func() error, tablesMissingColumns map[string]bool) error {
+func writeTableConstraintsSDL(out io.Writer, table *metadatapb.TableMetadata, writeSep func() error, tablesMissingColumns map[string]bool) error {
 	if tableMissingColumnMetadata(table) {
 		// Constraints would reference columns absent from the dump.
 		return nil
@@ -3315,7 +3584,7 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata, write
 	return nil
 }
 
-func writeIndexesSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
+func writeIndexesSDL(out io.Writer, schemaName string, table *metadatapb.TableMetadata) error {
 	if tableMissingColumnMetadata(table) {
 		// Indexes would reference columns absent from the dump.
 		return nil
@@ -3338,12 +3607,12 @@ func writeIndexesSDL(out io.Writer, schemaName string, table *storepb.TableMetad
 	return nil
 }
 
-func writeIndexSDL(out io.Writer, schemaName string, tableName string, index *storepb.IndexMetadata, useOnlyClause bool) error {
+func writeIndexSDL(out io.Writer, schemaName string, tableName string, index *metadatapb.IndexMetadata, useOnlyClause bool) error {
 	return writeIndexInternal(out, schemaName, tableName, index, useOnlyClause, false)
 }
 
 // writeIndexInternal is the core index writing function with options for different modes
-func writeIndexInternal(out io.Writer, schema string, table string, index *storepb.IndexMetadata, useOnlyClause bool, includeTerminatorAndComment bool) error {
+func writeIndexInternal(out io.Writer, schema string, table string, index *metadatapb.IndexMetadata, useOnlyClause bool, includeTerminatorAndComment bool) error {
 	if index.Unique {
 		if _, err := io.WriteString(out, `CREATE UNIQUE INDEX "`); err != nil {
 			return err
@@ -3427,7 +3696,7 @@ func writeIndexInternal(out io.Writer, schema string, table string, index *store
 	return nil
 }
 
-func writeViewSDL(out io.Writer, schemaName string, view *storepb.ViewMetadata) error {
+func writeViewSDL(out io.Writer, schemaName string, view *metadatapb.ViewMetadata) error {
 	if _, err := io.WriteString(out, `CREATE VIEW "`); err != nil {
 		return err
 	}
@@ -3457,7 +3726,7 @@ func writeViewSDL(out io.Writer, schemaName string, view *storepb.ViewMetadata) 
 	return err
 }
 
-func writeMaterializedViewSDL(out io.Writer, schemaName string, view *storepb.MaterializedViewMetadata) error {
+func writeMaterializedViewSDL(out io.Writer, schemaName string, view *metadatapb.MaterializedViewMetadata) error {
 	if _, err := io.WriteString(out, `CREATE MATERIALIZED VIEW "`); err != nil {
 		return err
 	}
@@ -3487,7 +3756,7 @@ func writeMaterializedViewSDL(out io.Writer, schemaName string, view *storepb.Ma
 	return err
 }
 
-func writeFunctionSDL(out io.Writer, _ string, function *storepb.FunctionMetadata) error {
+func writeFunctionSDL(out io.Writer, _ string, function *metadatapb.FunctionMetadata) error {
 	// The function definition should already include the complete CREATE FUNCTION statement
 	definition := strings.TrimSpace(function.Definition)
 	// Remove trailing semicolon if present
@@ -3497,7 +3766,7 @@ func writeFunctionSDL(out io.Writer, _ string, function *storepb.FunctionMetadat
 	return err
 }
 
-func writeSequenceSDL(out io.Writer, schemaName string, sequence *storepb.SequenceMetadata) error {
+func writeSequenceSDL(out io.Writer, schemaName string, sequence *metadatapb.SequenceMetadata) error {
 	// Write CREATE SEQUENCE statement with schema and name
 	if _, err := fmt.Fprintf(out, "CREATE SEQUENCE \"%s\".\"%s\"", schemaName, sequence.Name); err != nil {
 		return err
@@ -3559,7 +3828,7 @@ func writeSequenceSDL(out io.Writer, schemaName string, sequence *storepb.Sequen
 	return nil
 }
 
-func writeSchema(out io.Writer, schema *storepb.SchemaMetadata) error {
+func writeSchema(out io.Writer, schema *metadatapb.SchemaMetadata) error {
 	if schema.Name == "public" {
 		return nil
 	}
@@ -3581,7 +3850,7 @@ func writeSchema(out io.Writer, schema *storepb.SchemaMetadata) error {
 }
 
 // writeCheckConstraintSDL writes a single check constraint SDL
-func writeCheckConstraintSDL(out io.Writer, check *storepb.CheckConstraintMetadata) error {
+func writeCheckConstraintSDL(out io.Writer, check *metadatapb.CheckConstraintMetadata) error {
 	if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
 		return err
 	}
@@ -3597,7 +3866,7 @@ func writeCheckConstraintSDL(out io.Writer, check *storepb.CheckConstraintMetada
 	return nil
 }
 
-func writeExcludeConstraintSDL(out io.Writer, exclude *storepb.ExcludeConstraintMetadata) error {
+func writeExcludeConstraintSDL(out io.Writer, exclude *metadatapb.ExcludeConstraintMetadata) error {
 	if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
 		return err
 	}
@@ -3615,7 +3884,7 @@ func writeExcludeConstraintSDL(out io.Writer, exclude *storepb.ExcludeConstraint
 }
 
 // writeForeignKeyConstraintSDL writes a single foreign key constraint SDL
-func writeForeignKeyConstraintSDL(out io.Writer, fk *storepb.ForeignKeyMetadata) error {
+func writeForeignKeyConstraintSDL(out io.Writer, fk *metadatapb.ForeignKeyMetadata) error {
 	if _, err := io.WriteString(out, `CONSTRAINT "`); err != nil {
 		return err
 	}
@@ -3710,7 +3979,7 @@ func writeForeignKeyConstraintSDL(out io.Writer, fk *storepb.ForeignKeyMetadata)
 }
 
 // GetMultiFileDatabaseDefinition generates multi-file SDL schema for PostgreSQL.
-func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (*schema.MultiFileSchemaResult, error) {
+func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (*schema.MultiFileSchemaResult, error) {
 	metadata = filterBackupSchemaIfNecessary(ctx, metadata)
 
 	// Clone before mutating: the caller's *DatabaseSchemaMetadata is often a
@@ -3738,6 +4007,49 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 
 	tablesMissingColumns := collectTables(metadata.Schemas, tableMissingColumnMetadata)
 
+	// Generate every schema.sql first: extensions may install into these
+	// schemas and all other files live inside them.
+	for _, schemaMetadata := range metadata.Schemas {
+		if schemaMetadata.SkipDump {
+			continue
+		}
+		schemaName := schemaMetadata.Name
+		if schemaName == "" {
+			schemaName = "public"
+		}
+		schemaContent, err := getMultiFileSchemaSDL(schemaName, schemaMetadata)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate schema SDL for %s", schemaName)
+		}
+		if schemaContent != "" {
+			files = append(files, schema.File{
+				Name:    fmt.Sprintf("schemas/%s/schema.sql", schemaName),
+				Content: schemaContent,
+			})
+		}
+	}
+
+	// Generate extensions.sql next: composite type attributes and table
+	// columns may use extension-provided types, and the extensions may
+	// install into the schemas created above.
+	if len(metadata.Extensions) > 0 {
+		var buf strings.Builder
+		for i, extension := range metadata.Extensions {
+			if i > 0 {
+				buf.WriteString("\n")
+			}
+
+			if err := writeExtension(&buf, extension); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate extension SDL for %s", extension.Name)
+			}
+		}
+
+		files = append(files, schema.File{
+			Name:    "extensions.sql",
+			Content: buf.String(),
+		})
+	}
+
 	// Generate files for each schema
 	for _, schemaMetadata := range metadata.Schemas {
 		if schemaMetadata.SkipDump {
@@ -3749,19 +4061,8 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			schemaName = "public"
 		}
 
-		schemaContent, err := getMultiFileSchemaSDL(schemaName, schemaMetadata)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate schema SDL for %s", schemaName)
-		}
-		if schemaContent != "" {
-			files = append(files, schema.File{
-				Name:    fmt.Sprintf("schemas/%s/schema.sql", schemaName),
-				Content: schemaContent,
-			})
-		}
-
 		// Collect independent sequences (no owner) for this schema
-		var independentSequences []*storepb.SequenceMetadata
+		var independentSequences []*metadatapb.SequenceMetadata
 		for _, sequence := range schemaMetadata.Sequences {
 			if sequence.SkipDump {
 				continue
@@ -3775,6 +4076,75 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			// Collect independent sequences (no owner)
 			if sequence.OwnerTable == "" || sequence.OwnerColumn == "" {
 				independentSequences = append(independentSequences, sequence)
+			}
+		}
+
+		// Generate a single file for all enum and composite types in this
+		// schema, listed before table files: table columns may use these types.
+		if len(schemaMetadata.EnumTypes) > 0 || len(schemaMetadata.CompositeTypes) > 0 {
+			var buf strings.Builder
+			hasTypes := false
+			for i, enumType := range schemaMetadata.EnumTypes {
+				if enumType.SkipDump {
+					continue
+				}
+
+				if hasTypes {
+					buf.WriteString("\n")
+				}
+				hasTypes = true
+
+				if i > 0 {
+					buf.WriteString("\n")
+				}
+
+				if err := writeEnum(&buf, schemaName, enumType); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate enum type SDL for %s.%s", schemaName, enumType.Name)
+				}
+				buf.WriteString(";\n")
+
+				// Add enum type comment if present
+				if len(enumType.Comment) > 0 {
+					buf.WriteString("\n")
+					if err := writeEnumComment(&buf, schemaName, enumType); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate enum type comment for %s.%s", schemaName, enumType.Name)
+					}
+				}
+			}
+
+			// Composite types follow enums, ordered so referenced composites
+			// come first.
+			var compositeTypes []qualifiedCompositeType
+			for _, composite := range schemaMetadata.CompositeTypes {
+				if composite.SkipDump {
+					continue
+				}
+				compositeTypes = append(compositeTypes, qualifiedCompositeType{Schema: schemaName, Composite: composite})
+			}
+			for _, t := range sortCompositeTypesTopologically(compositeTypes) {
+				if hasTypes {
+					buf.WriteString("\n")
+				}
+				hasTypes = true
+
+				if err := writeCompositeType(&buf, schemaName, t.Composite); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate composite type SDL for %s.%s", schemaName, t.Composite.Name)
+				}
+				buf.WriteString(";\n")
+
+				if compositeTypeHasComments(t.Composite) {
+					buf.WriteString("\n")
+					if err := writeCompositeTypeComments(&buf, schemaName, t.Composite); err != nil {
+						return nil, errors.Wrapf(err, "failed to generate composite type comment for %s.%s", schemaName, t.Composite.Name)
+					}
+				}
+			}
+
+			if hasTypes {
+				files = append(files, schema.File{
+					Name:    fmt.Sprintf("schemas/%s/types.sql", schemaName),
+					Content: buf.String(),
+				})
 			}
 		}
 
@@ -3997,46 +4367,6 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 			})
 		}
 
-		// Generate a single file for all enum types in this schema
-		if len(schemaMetadata.EnumTypes) > 0 {
-			var buf strings.Builder
-			hasEnumTypes := false
-			for i, enumType := range schemaMetadata.EnumTypes {
-				if enumType.SkipDump {
-					continue
-				}
-
-				if hasEnumTypes {
-					buf.WriteString("\n")
-				}
-				hasEnumTypes = true
-
-				if i > 0 {
-					buf.WriteString("\n")
-				}
-
-				if err := writeEnum(&buf, schemaName, enumType); err != nil {
-					return nil, errors.Wrapf(err, "failed to generate enum type SDL for %s.%s", schemaName, enumType.Name)
-				}
-				buf.WriteString(";\n")
-
-				// Add enum type comment if present
-				if len(enumType.Comment) > 0 {
-					buf.WriteString("\n")
-					if err := writeEnumComment(&buf, schemaName, enumType); err != nil {
-						return nil, errors.Wrapf(err, "failed to generate enum type comment for %s.%s", schemaName, enumType.Name)
-					}
-				}
-			}
-
-			if hasEnumTypes {
-				files = append(files, schema.File{
-					Name:    fmt.Sprintf("schemas/%s/types.sql", schemaName),
-					Content: buf.String(),
-				})
-			}
-		}
-
 		// Generate a single file for all independent sequences (no owner) in this schema
 		if len(independentSequences) > 0 {
 			var buf strings.Builder
@@ -4066,25 +4396,6 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 		}
 	}
 
-	// Generate extensions.sql file if there are any extensions
-	if len(metadata.Extensions) > 0 {
-		var buf strings.Builder
-		for i, extension := range metadata.Extensions {
-			if i > 0 {
-				buf.WriteString("\n")
-			}
-
-			if err := writeExtension(&buf, extension); err != nil {
-				return nil, errors.Wrapf(err, "failed to generate extension SDL for %s", extension.Name)
-			}
-		}
-
-		files = append(files, schema.File{
-			Name:    "extensions.sql",
-			Content: buf.String(),
-		})
-	}
-
 	// Generate event_triggers.sql file if there are any event triggers
 	if len(metadata.EventTriggers) > 0 {
 		var buf strings.Builder
@@ -4112,17 +4423,17 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 	return &schema.MultiFileSchemaResult{Files: files}, nil
 }
 
-func getMultiFileSchemaSDL(schemaName string, schemaMetadata *storepb.SchemaMetadata) (string, error) {
+func getMultiFileSchemaSDL(schemaName string, schemaMetadata *metadatapb.SchemaMetadata) (string, error) {
 	var buf strings.Builder
 
 	if schemaName != "public" {
-		if err := writeSchema(&buf, &storepb.SchemaMetadata{Name: schemaName}); err != nil {
+		if err := writeSchema(&buf, &metadatapb.SchemaMetadata{Name: schemaName}); err != nil {
 			return "", err
 		}
 	}
 
 	if schemaMetadata.GetComment() != "" {
-		if err := writeSchemaCommentSDL(&buf, &storepb.SchemaMetadata{
+		if err := writeSchemaCommentSDL(&buf, &metadatapb.SchemaMetadata{
 			Name:    schemaName,
 			Comment: schemaMetadata.GetComment(),
 		}); err != nil {
@@ -4134,7 +4445,7 @@ func getMultiFileSchemaSDL(schemaName string, schemaMetadata *storepb.SchemaMeta
 }
 
 // buildSkipSequencesMap builds a map of sequences that should be skipped (serial and identity sequences).
-func buildSkipSequencesMap(metadata *storepb.DatabaseSchemaMetadata) map[string]bool {
+func buildSkipSequencesMap(metadata *metadatapb.DatabaseSchemaMetadata) map[string]bool {
 	skipSequences := make(map[string]bool)
 	for _, schema := range metadata.Schemas {
 		if schema.SkipDump {
@@ -4180,8 +4491,8 @@ func buildSkipSequencesMap(metadata *storepb.DatabaseSchemaMetadata) map[string]
 }
 
 // buildTableSequencesMap builds a map of sequences by table for easy lookup during table creation.
-func buildTableSequencesMap(metadata *storepb.DatabaseSchemaMetadata) map[string][]*storepb.SequenceMetadata {
-	tableSequencesMap := make(map[string][]*storepb.SequenceMetadata)
+func buildTableSequencesMap(metadata *metadatapb.DatabaseSchemaMetadata) map[string][]*metadatapb.SequenceMetadata {
+	tableSequencesMap := make(map[string][]*metadatapb.SequenceMetadata)
 	for _, schema := range metadata.Schemas {
 		if schema.SkipDump {
 			continue
@@ -4199,7 +4510,7 @@ func buildTableSequencesMap(metadata *storepb.DatabaseSchemaMetadata) map[string
 	return tableSequencesMap
 }
 
-func writeMaterializedViewCommentSDL(out io.Writer, schemaName string, view *storepb.MaterializedViewMetadata) error {
+func writeMaterializedViewCommentSDL(out io.Writer, schemaName string, view *metadatapb.MaterializedViewMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON MATERIALIZED VIEW "`); err != nil {
 		return err
 	}
@@ -4227,7 +4538,7 @@ func writeMaterializedViewCommentSDL(out io.Writer, schemaName string, view *sto
 
 // SDL Comment Functions
 
-func writeSchemaCommentSDL(out io.Writer, schema *storepb.SchemaMetadata) error {
+func writeSchemaCommentSDL(out io.Writer, schema *metadatapb.SchemaMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON SCHEMA "`); err != nil {
 		return err
 	}
@@ -4247,7 +4558,7 @@ func writeSchemaCommentSDL(out io.Writer, schema *storepb.SchemaMetadata) error 
 	return err
 }
 
-func writeTableCommentSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
+func writeTableCommentSDL(out io.Writer, schemaName string, table *metadatapb.TableMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON TABLE "`); err != nil {
 		return err
 	}
@@ -4273,7 +4584,7 @@ func writeTableCommentSDL(out io.Writer, schemaName string, table *storepb.Table
 	return err
 }
 
-func writeColumnCommentSDL(out io.Writer, schemaName, tableName string, column *storepb.ColumnMetadata) error {
+func writeColumnCommentSDL(out io.Writer, schemaName, tableName string, column *metadatapb.ColumnMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON COLUMN "`); err != nil {
 		return err
 	}
@@ -4305,7 +4616,7 @@ func writeColumnCommentSDL(out io.Writer, schemaName, tableName string, column *
 	return err
 }
 
-func writeViewCommentSDL(out io.Writer, schemaName string, view *storepb.ViewMetadata) error {
+func writeViewCommentSDL(out io.Writer, schemaName string, view *metadatapb.ViewMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON VIEW "`); err != nil {
 		return err
 	}
@@ -4331,7 +4642,7 @@ func writeViewCommentSDL(out io.Writer, schemaName string, view *storepb.ViewMet
 	return err
 }
 
-func writeFunctionCommentSDL(out io.Writer, schemaName string, function *storepb.FunctionMetadata) error {
+func writeFunctionCommentSDL(out io.Writer, schemaName string, function *metadatapb.FunctionMetadata) error {
 	// Determine if this is a PROCEDURE or FUNCTION by checking the definition
 	objectType := "FUNCTION"
 	if isDefinitionProcedure(function.Definition) {
@@ -4363,7 +4674,7 @@ func writeFunctionCommentSDL(out io.Writer, schemaName string, function *storepb
 	return err
 }
 
-func writeSequenceCommentSDL(out io.Writer, schemaName string, sequence *storepb.SequenceMetadata) error {
+func writeSequenceCommentSDL(out io.Writer, schemaName string, sequence *metadatapb.SequenceMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON SEQUENCE "`); err != nil {
 		return err
 	}
@@ -4389,7 +4700,7 @@ func writeSequenceCommentSDL(out io.Writer, schemaName string, sequence *storepb
 	return err
 }
 
-func writeIndexCommentSDL(out io.Writer, schemaName string, index *storepb.IndexMetadata) error {
+func writeIndexCommentSDL(out io.Writer, schemaName string, index *metadatapb.IndexMetadata) error {
 	if _, err := io.WriteString(out, `COMMENT ON INDEX "`); err != nil {
 		return err
 	}
@@ -4415,7 +4726,7 @@ func writeIndexCommentSDL(out io.Writer, schemaName string, index *storepb.Index
 	return err
 }
 
-func writeTriggersSDL(out io.Writer, schemaName string, table *storepb.TableMetadata) error {
+func writeTriggersSDL(out io.Writer, schemaName string, table *metadatapb.TableMetadata) error {
 	if tableMissingColumnMetadata(table) {
 		// Trigger definitions (UPDATE OF, WHEN clauses) can reference
 		// columns absent from the dump.
@@ -4437,14 +4748,14 @@ func writeTriggersSDL(out io.Writer, schemaName string, table *storepb.TableMeta
 	return nil
 }
 
-func writeTriggerSDL(out io.Writer, _ /* schemaName */, _ /* tableName */ string, trigger *storepb.TriggerMetadata) error {
+func writeTriggerSDL(out io.Writer, _ /* schemaName */, _ /* tableName */ string, trigger *metadatapb.TriggerMetadata) error {
 	// For PostgreSQL, trigger.Body contains the complete CREATE TRIGGER statement
 	// built by buildTriggerDefinition in get_database_metadata.go
 	_, err := io.WriteString(out, trigger.Body)
 	return err
 }
 
-func writeTriggerCommentSDL(out io.Writer, schemaName, tableName string, trigger *storepb.TriggerMetadata) error {
+func writeTriggerCommentSDL(out io.Writer, schemaName, tableName string, trigger *metadatapb.TriggerMetadata) error {
 	if len(trigger.Comment) == 0 {
 		return nil
 	}

@@ -11,6 +11,9 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/component/masker"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // --- Change tool test infrastructure ---
@@ -182,7 +185,7 @@ func TestChange_HappyPath_StopAtIssue(t *testing.T) {
 	require.Equal(t, "projects/hr-system/issues/3003", output.Issue)
 	require.False(t, output.RolloutCreated)
 	require.Equal(t, "NOT_REQUESTED", output.RolloutDeferredReason)
-	require.Equal(t, "APPROVE_ISSUE", output.NextAction)
+	require.Equal(t, "AWAIT_HUMAN_APPROVAL", output.NextAction)
 	require.Contains(t, output.Links.Issue, "projects/hr-system/issues/3003")
 	require.Contains(t, output.Links.Plan, "projects/hr-system/plans/2002")
 	require.Empty(t, output.Links.Rollout)
@@ -355,7 +358,7 @@ func TestChange_Defaults_NextAction_ApprovalNeeded(t *testing.T) {
 
 	output, ok := structured.(*ChangeOutput)
 	require.True(t, ok)
-	require.Equal(t, "APPROVE_ISSUE", output.NextAction)
+	require.Equal(t, "AWAIT_HUMAN_APPROVAL", output.NextAction)
 }
 
 // --- Plan check variation tests ---
@@ -538,7 +541,7 @@ func TestChange_Rollout_ApprovalPending(t *testing.T) {
 	require.True(t, ok)
 	require.False(t, output.RolloutCreated)
 	require.Equal(t, "APPROVAL_PENDING", output.RolloutDeferredReason)
-	require.Equal(t, "APPROVE_ISSUE", output.NextAction)
+	require.Equal(t, "AWAIT_HUMAN_APPROVAL", output.NextAction)
 }
 
 func TestChange_Rollout_ApprovalSkipped(t *testing.T) {
@@ -579,8 +582,8 @@ func TestChange_Rollout_CreateFailed(t *testing.T) {
 	require.True(t, ok)
 	require.False(t, output.RolloutCreated)
 	require.Equal(t, "ROLLOUT_CREATE_FAILED", output.RolloutDeferredReason)
-	// Should NOT be APPROVE_ISSUE — don't assume approval pending.
-	require.NotEqual(t, "APPROVE_ISSUE", output.NextAction)
+	// Should NOT be AWAIT_HUMAN_APPROVAL — don't assume approval pending.
+	require.NotEqual(t, "AWAIT_HUMAN_APPROVAL", output.NextAction)
 	// Backend error should be forwarded in the text output.
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "rollout creation failed")
@@ -960,6 +963,33 @@ func TestChange_PermissionDenied_Sheet(t *testing.T) {
 	require.Contains(t, text, "bb.sheets.create")
 }
 
+// TestChange_PolicyDenialKeepsItsOwnRemedy is the other half of
+// checkAPIResponse. An MCP policy refusal already says what to do, and no grant
+// lifts a workspace setting, so appending the permission advice would send the
+// agent at a dead end.
+func TestChange_PolicyDenialKeepsItsOwnRemedy(t *testing.T) {
+	mock := newChangeMock(employeeDB())
+	mock.sheetStatus = http.StatusForbidden
+	mock.sheetResponse = map[string]any{"message": "/bytebase.v1.SheetService/CreateSheet " +
+		"is not available to MCP sessions for this request because its SQL contains \"******\". " +
+		"Perform this action signed in to the Bytebase console instead"}
+	s := newChangeTestServer(t, mock)
+
+	result, _, err := s.handleChange(testContext(), nil, ChangeInput{
+		Database: "employee_db",
+		SQL:      "UPDATE users SET name = '******'",
+		Title:    "Test",
+	})
+	require.NoError(t, err)
+	require.True(t, result.IsError)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "******", "the refusal's own wording has to reach the agent")
+	require.NotContains(t, text, "bb.sheets.create",
+		"the agent already holds it; the refusal is not about a permission")
+	require.NotContains(t, text, "suggestion", "no advice is better than advice at a dead end")
+}
+
 func TestChange_PermissionDenied_Plan(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.planStatus = http.StatusForbidden
@@ -1023,10 +1053,13 @@ func TestChange_Links_Constructed(t *testing.T) {
 	require.Equal(t, "https://bytebase.example.com/projects/hr-system/rollouts/4004", output.Links.Rollout)
 }
 
-func TestChange_Links_TrailingSlash(t *testing.T) {
+func TestChange_Links_UseWorkspaceExternalURL(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	s := newChangeTestServer(t, mock)
-	s.profile.ExternalURL = "https://bytebase.example.com/"
+	s.profile.ExternalURL = ""
+	s.store = &testServerStore{
+		workspaceProfile: &storepb.WorkspaceProfileSetting{ExternalUrl: "https://workspace.example.com"},
+	}
 
 	_, structured, err := s.handleChange(testContext(), nil, ChangeInput{
 		Database: "employee_db",
@@ -1037,8 +1070,7 @@ func TestChange_Links_TrailingSlash(t *testing.T) {
 
 	output, ok := structured.(*ChangeOutput)
 	require.True(t, ok)
-	// No double slash.
-	require.Equal(t, "https://bytebase.example.com/projects/hr-system/issues/3003", output.Links.Issue)
+	require.Equal(t, "https://workspace.example.com/projects/hr-system/issues/3003", output.Links.Issue)
 }
 
 func TestChange_Links_RolloutOmitted(t *testing.T) {
@@ -1055,4 +1087,14 @@ func TestChange_Links_RolloutOmitted(t *testing.T) {
 	output, ok := structured.(*ChangeOutput)
 	require.True(t, ok)
 	require.Empty(t, output.Links.Rollout)
+}
+
+// TestChangeDescriptionNamesTheMaskPlaceholder pins the one literal the tool
+// description shares with the masker. The description teaches the agent which
+// string is a placeholder rather than a value; if the masker's substitution
+// ever moved, prose spelling the old one out would teach the wrong rule.
+func TestChangeDescriptionNamesTheMaskPlaceholder(t *testing.T) {
+	require.Contains(t, proposeChangeDescription, masker.DefaultFullMaskSubstitution)
+	require.Contains(t, queryDatabaseDescription, masker.DefaultFullMaskSubstitution,
+		"the read tool refuses the same literal, so it has to teach the same rule")
 }

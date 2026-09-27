@@ -60,7 +60,7 @@ export declare const BatchGetGroupsRequestSchema: GenMessage<BatchGetGroupsReque
  */
 export declare type BatchGetGroupsResponse = Message<"bytebase.v1.BatchGetGroupsResponse"> & {
   /**
-   * The groups from the specified request.
+   * One group per requested name, in the same order as `names`.
    *
    * @generated from field: repeated bytebase.v1.Group groups = 1;
    */
@@ -383,6 +383,8 @@ export declare const GroupService: GenService<{
   /**
    * Gets multiple groups in a single request.
    * Group members or users with bb.groups.get permission can get the group.
+   * One resource per requested name, in request order. The first name that
+   * does not resolve fails the whole call (AIP-231: no partial response).
    * Permissions required: bb.groups.get OR caller is the group member
    *
    * @generated from rpc bytebase.v1.GroupService.BatchGetGroups

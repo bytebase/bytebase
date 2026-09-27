@@ -54,6 +54,12 @@ func (x *AccessGrant) Equal(y *AccessGrant) bool {
 	if x.Export != y.Export {
 		return false
 	}
+	if x.Schema != y.Schema {
+		return false
+	}
+	if x.Container != y.Container {
+		return false
+	}
 	return true
 }
 

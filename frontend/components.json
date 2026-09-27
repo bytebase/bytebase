@@ -12,10 +12,10 @@
     "prefix": ""
   },
   "aliases": {
-    "components": "@/react/components",
-    "ui": "@/react/components/ui",
-    "utils": "@/react/lib/utils",
-    "lib": "@/react/lib",
-    "hooks": "@/react/hooks"
+    "components": "@/components",
+    "ui": "@/components/ui",
+    "utils": "@/lib/utils",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
   }
 }

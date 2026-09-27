@@ -18,6 +18,9 @@ type statementTypeTest struct {
 	Want      []string
 }
 
+// TestGetStatementType runs the fixture under every engine this package
+// registers the classifier for, so MariaDB and OceanBase cannot silently
+// diverge from MySQL (BYT-10136).
 func TestGetStatementType(t *testing.T) {
 	tests := []statementTypeTest{}
 
@@ -38,25 +41,36 @@ func TestGetStatementType(t *testing.T) {
 	a.NoError(err)
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
-	for i, test := range tests {
-		stmts, err := base.ParseStatements(storepb.Engine_MYSQL, test.Statement)
-		a.NoError(err)
-		asts := base.ExtractASTs(stmts)
+	engines := []storepb.Engine{
+		storepb.Engine_MYSQL,
+		storepb.Engine_MARIADB,
+		storepb.Engine_OCEANBASE,
+	}
+	for _, engine := range engines {
+		t.Run(engine.String(), func(t *testing.T) {
+			a := require.New(t)
+			for i, test := range tests {
+				stmts, err := base.ParseStatements(engine, test.Statement)
+				a.NoError(err)
+				asts := base.ExtractASTs(stmts)
 
-		sqlType, err := GetStatementTypes(asts)
-		a.NoError(err)
+				sqlType, err := GetStatementTypes(asts)
+				a.NoError(err)
 
-		// Convert enum to string for comparison
-		sqlTypeStrings := make([]string, len(sqlType))
-		for j, t := range sqlType {
-			sqlTypeStrings[j] = t.String()
-		}
+				// Convert enum to string for comparison
+				sqlTypeStrings := make([]string, len(sqlType))
+				for j, t := range sqlType {
+					sqlTypeStrings[j] = t.String()
+				}
 
-		if record {
-			tests[i].Want = sqlTypeStrings
-		} else {
-			a.Equal(test.Want, sqlTypeStrings)
-		}
+				// Record from the MySQL run only; the other engines must match it.
+				if record && engine == storepb.Engine_MYSQL {
+					tests[i].Want = sqlTypeStrings
+				} else {
+					a.Equal(test.Want, sqlTypeStrings)
+				}
+			}
+		})
 	}
 
 	if record {

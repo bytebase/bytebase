@@ -1,0 +1,1178 @@
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { preCreateIssue } from "@/lib/plan/issue";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+const mocks = vi.hoisted(() => ({
+  visibleDatabases: [] as { name: string; project?: string; instanceResource?: { engine: number } }[],
+  databasesByName: {} as Record<string, { name: string }>,
+  instancesByName: {} as Record<string, { name: string; title: string }>,
+  routerCurrentName: "workspace.project.database",
+  routerCurrentQuery: {} as Record<string, unknown>,
+  routerPush: vi.fn(),
+  batchUpdateDatabases: vi.fn(),
+  useProductIntro: vi.fn(),
+  captureMetric: vi.fn(),
+  scenarioId: undefined as
+    | "query-data"
+    | "create-database-change"
+    | "mark-sensitive-data"
+    | undefined,
+  removeDatabaseMetadataCache: vi.fn(),
+  fetchInstance: vi.fn(),
+  fetchInstanceList: vi.fn(async (_params?: { parent?: string }) => ({
+    instances: [] as { name: string; title: string }[],
+  })),
+  workspacePermissions: new Set<string>([
+    "bb.instances.create",
+    "bb.instances.list",
+  ]),
+  projectPermissions: new Set<string>([
+    "bb.instances.create",
+    "bb.instances.get",
+    "bb.instances.list",
+  ]),
+}));
+
+let ProjectDatabasesPage: typeof import("./ProjectDatabasesPage").ProjectDatabasesPage;
+
+vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
+  Trans: ({
+    i18nKey,
+    components,
+  }: {
+    i18nKey: string;
+    components?: { instance?: React.ReactNode };
+  }) => (
+    <>
+      {i18nKey}
+      {components?.instance}
+    </>
+  ),
+  useTranslation: () => ({
+    t: (key: string, options?: { instance?: string }) =>
+      options?.instance ? `${key}:${options.instance}` : key,
+  }),
+}));
+
+vi.mock("@/app/router", () => ({
+  router: {
+    push: mocks.routerPush,
+    resolve: ({ name }: { name?: string }) => ({ href: `/${name ?? ""}` }),
+    currentRoute: {
+      get value() {
+        return {
+          name: mocks.routerCurrentName,
+          query: mocks.routerCurrentQuery,
+        };
+      },
+    },
+  },
+  useCurrentRoute: () => ({
+    name: mocks.routerCurrentName,
+    query: mocks.routerCurrentQuery,
+  }),
+  SQL_EDITOR_DATABASE_MODULE: "sql-editor.database",
+  SQL_EDITOR_HOME_MODULE: "sql-editor.home",
+  SQL_EDITOR_PROJECT_MODULE: "sql-editor.project",
+}));
+
+vi.mock("@/app/analytics/provider", () => ({
+  behaviorAnalytics: {
+    captureMetric: mocks.captureMetric,
+  },
+}));
+
+vi.mock("@/modules/workspace-setup-guide/selection", () => ({
+  readSelectedGuideScenarioId: () => mocks.scenarioId,
+}));
+
+vi.mock("@/components/AdvancedSearch", () => ({
+  AdvancedSearch: ({
+    scopeOptions,
+  }: {
+    scopeOptions: {
+      id: string;
+      onSearch?: (keyword: string) => Promise<unknown>;
+    }[];
+  }) => (
+    <div data-testid="advanced-search">
+      <span
+        data-testid="search-instances"
+        onClick={() => {
+          void scopeOptions
+            .find((option) => option.id === "instance")
+            ?.onSearch?.("");
+        }}
+      >
+        search instances
+      </span>
+    </div>
+  ),
+  getValueFromScopes: () => undefined,
+}));
+
+vi.mock("@/components/EditEnvironmentSheet", () => ({
+  EditEnvironmentSheet: () => null,
+}));
+
+vi.mock("@/components/PermissionGuard", () => ({
+  PermissionGuard: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+}));
+
+vi.mock("@/components/database", async () => {
+  const React = await import("react");
+  return {
+    CreateDatabaseSheet: ({ open }: { open: boolean }) =>
+      open
+        ? React.createElement("div", { "data-testid": "create-database-sheet" })
+        : null,
+    DatabaseBatchOperationsBar: ({
+      databases,
+      onTransferProject,
+      onToggleSelectAll,
+    }: {
+      databases: { name: string }[];
+      onTransferProject?: () => void;
+      onToggleSelectAll: () => void;
+    }) =>
+      React.createElement(
+        "div",
+        {
+          "data-testid": "batch-operations-bar",
+          "data-selected-count": String(databases.length),
+          "data-has-transfer": String(!!onTransferProject),
+        },
+        React.createElement(
+          "button",
+          {
+            "data-testid": "batch-select-all",
+            onClick: onToggleSelectAll,
+          },
+          "select all"
+        ),
+        databases.length > 0 && onTransferProject
+          ? React.createElement(
+              "button",
+              {
+                "data-testid": "batch-transfer-project",
+                onClick: onTransferProject,
+              },
+              "database.transfer-project"
+            )
+          : null
+      ),
+    DatabaseTable: ({
+      emptyPlaceholder,
+      onSelectedNamesChange,
+      onDatabasesChange,
+    }: {
+      emptyPlaceholder?: React.ReactNode;
+      onSelectedNamesChange: (selectedNames: Set<string>) => void;
+      onDatabasesChange: (databases: { name: string }[]) => void;
+    }) => {
+      React.useEffect(() => {
+        onDatabasesChange(mocks.visibleDatabases);
+        onSelectedNamesChange(
+          new Set(mocks.visibleDatabases.map((d) => d.name))
+        );
+      }, [onDatabasesChange, onSelectedNamesChange]);
+      return React.createElement(
+        "div",
+        { "data-testid": "database-table" },
+        emptyPlaceholder
+      );
+    },
+    LabelEditorSheet: () => null,
+    TransferProjectSheet: ({
+      open,
+      onTransfer,
+    }: {
+      open: boolean;
+      onTransfer: (projectName: string) => Promise<void>;
+    }) =>
+      open
+        ? React.createElement(
+            "button",
+            {
+              "data-testid": "transfer-project-sheet",
+              onClick: () => {
+                void onTransfer("projects/target");
+              },
+            },
+            "transfer"
+          )
+        : null,
+  };
+});
+
+vi.mock("@/hooks/useProjectByName", () => ({
+  useProjectByName: (name: string) => ({ name, title: "Demo Project" }),
+}));
+
+vi.mock("@/lib/plan/issue", () => ({
+  preCreateIssue: vi.fn(),
+}));
+
+vi.mock("@/lib/productIntro", () => ({
+  CONNECT_DATABASE_PRODUCT_INTRO: "connect-database",
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO: "mark-sensitive-data",
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO: "project-instance-synced",
+  PRODUCT_INTRO_QUERY_KEY: "intro",
+  useProductIntro: mocks.useProductIntro,
+}));
+
+vi.mock("@/types", async () => {
+  const actual = await vi.importActual<typeof import("@/types")>("@/types");
+  return {
+    ...actual,
+    isDefaultProject: (name: string) => name === "projects/default",
+  };
+});
+
+vi.mock("@/stores/app", () => {
+  const appState = {
+    removeDatabaseMetadataCache: mocks.removeDatabaseMetadataCache,
+    get databasesByName() {
+      return mocks.databasesByName;
+    },
+    get instancesByName() {
+      return mocks.instancesByName;
+    },
+    projectsByName: {
+      "projects/demo": { name: "projects/demo", title: "Demo Project" },
+    },
+    environmentList: [],
+  };
+  const useAppStore = (selector: (state: typeof appState) => unknown) =>
+    selector(appState);
+  useAppStore.getState = () => ({
+    fetchInstance: mocks.fetchInstance,
+    fetchInstanceList: mocks.fetchInstanceList,
+    batchSyncDatabases: vi.fn(),
+    batchUpdateDatabases: mocks.batchUpdateDatabases,
+    serverInfo: { defaultProject: "projects/default" },
+  });
+  return { useAppStore };
+});
+
+vi.mock("@/stores", () => ({
+  pushNotification: vi.fn(),
+}));
+
+vi.mock("@/utils", async () => {
+  const actual = await vi.importActual<typeof import("@/utils")>("@/utils");
+  return {
+    ...actual,
+    engineNameV1: () => "PostgreSQL",
+    extractInstanceResourceName: (name: string) =>
+      name.match(/(?:^|\/)instances\/([^/]+)/)?.[1] ?? name,
+    getDefaultPagination: () => 1000,
+    hasProjectPermissionV2: (_project: unknown, permission: string) =>
+      mocks.projectPermissions.has(permission),
+    hasWorkspacePermissionV2: (permission: string) =>
+      mocks.workspacePermissions.has(permission),
+    PERMISSIONS_FOR_DATABASE_CREATE_ISSUE: [],
+    supportedEngineV1List: () => [],
+  };
+});
+
+beforeEach(async () => {
+  vi.clearAllMocks();
+  mocks.fetchInstanceList.mockImplementation(async () => ({ instances: [] }));
+  mocks.visibleDatabases = [];
+  mocks.databasesByName = {};
+  mocks.instancesByName = {};
+  mocks.routerCurrentName = "workspace.project.database";
+  mocks.routerCurrentQuery = {};
+  mocks.scenarioId = undefined;
+  mocks.batchUpdateDatabases.mockResolvedValue(undefined);
+  mocks.workspacePermissions = new Set([
+    "bb.instances.create",
+    "bb.instances.get",
+    "bb.instances.list",
+  ]);
+  mocks.projectPermissions = new Set([
+    "bb.instances.create",
+    "bb.instances.get",
+    "bb.instances.list",
+  ]);
+  ({ ProjectDatabasesPage } = await import("./ProjectDatabasesPage"));
+});
+
+describe("ProjectDatabasesPage", () => {
+  test("shows a connect instance action when the project has no databases and no workspace instances", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    const toolbarButton = container.querySelector(
+      'button[data-product-intro-target="connect-database"]'
+    );
+    expect(toolbarButton?.textContent).toContain("project.connect-instance");
+    expect(
+      container.querySelector("[data-testid='database-table'] button")
+    ).toBe(null);
+    expect(container.textContent).toContain(
+      "project.connect-instance-empty-placeholder"
+    );
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("starts the connect database intro when requested after project creation", async () => {
+    mocks.routerCurrentQuery = { intro: "connect-database" };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+      await Promise.resolve();
+    });
+
+    expect(mocks.useProductIntro).toHaveBeenCalledWith({
+      id: "connect-database",
+      title: "project.connect-instance-intro-title",
+      description: "project.connect-instance-intro-description",
+      disabled: false,
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("routes the empty project connect action to instance creation with project context", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    const button = container.querySelector(
+      'button[data-product-intro-target="connect-database"]'
+    ) as HTMLButtonElement;
+    act(() => {
+      button.click();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project.instance.create",
+      params: { projectId: "demo" },
+    });
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "connect database clicked",
+      properties: {
+        route_id: "workspace.project.database",
+        resource: "projects/demo",
+      },
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("opens the create database sheet when the project is empty but the workspace has instances", async () => {
+    mocks.fetchInstanceList.mockResolvedValueOnce({
+      instances: [{ name: "instances/prod", title: "Prod" }],
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+      await Promise.resolve();
+    });
+
+    const button = container.querySelector(
+      "button:not([data-product-intro-target])"
+    ) as HTMLButtonElement;
+    expect(button.textContent?.trim()).toContain("database.create-database");
+    expect(container.textContent).toContain(
+      "project.add-database-empty-placeholder"
+    );
+    expect(container.textContent).not.toContain("project.connect-database");
+
+    await act(async () => {
+      button.click();
+    });
+
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(
+      container.querySelector("[data-testid='create-database-sheet']")
+    ).not.toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("only checks workspace instances for the default project", async () => {
+    mocks.fetchInstanceList.mockImplementation(async (params) => {
+      if (params?.parent) {
+        throw new Error("the default project cannot own instances");
+      }
+      return {
+        instances: [{ name: "instances/prod", title: "Prod" }],
+      };
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="default" />);
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchInstanceList).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchInstanceList).toHaveBeenCalledWith({ pageSize: 2 });
+    expect(container.textContent).toContain("database.create-database");
+    expect(container.textContent).not.toContain("project.connect-instance");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("only searches workspace instances for the default project", async () => {
+    mocks.fetchInstanceList.mockImplementation(async (params) => {
+      if (params?.parent) {
+        throw new Error("the default project cannot own instances");
+      }
+      return {
+        instances: [{ name: "instances/prod", title: "Prod" }],
+      };
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="default" />);
+      await Promise.resolve();
+    });
+    mocks.fetchInstanceList.mockClear();
+
+    const button = container.querySelector(
+      '[data-testid="search-instances"]'
+    ) as HTMLElement;
+    await act(async () => {
+      button.click();
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchInstanceList).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchInstanceList).toHaveBeenCalledWith({
+      pageSize: 1000,
+      filter: undefined,
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("opens the create database sheet when the project has a project instance", async () => {
+    mocks.fetchInstanceList.mockImplementation(async (params) => ({
+      instances:
+        params?.parent === "projects/demo"
+          ? [
+              {
+                name: "projects/demo/instances/prod",
+                title: "Project production",
+              },
+            ]
+          : [],
+    }));
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain("database.create-database");
+    expect(container.textContent).not.toContain("project.connect-database");
+    expect(mocks.fetchInstanceList).toHaveBeenCalledWith({
+      parent: "projects/demo",
+      pageSize: 2,
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("disables the empty project connect action without project instance creation permission", async () => {
+    mocks.projectPermissions.delete("bb.instances.create");
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    const button = container.querySelector(
+      'button[data-product-intro-target="connect-database"]'
+    ) as HTMLButtonElement;
+    expect(button.textContent?.trim()).toContain("project.connect-instance");
+    expect(button.disabled).toBe(true);
+    expect(
+      container.querySelector("[data-testid='database-table'] button")
+    ).toBe(null);
+
+    act(() => {
+      button.click();
+    });
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("shows syncing guidance when redirected from project-aware instance creation", async () => {
+    mocks.routerCurrentQuery = { syncingInstance: "prod" };
+    mocks.instancesByName = {
+      "projects/demo/instances/prod": {
+        name: "projects/demo/instances/prod",
+        title: "Prod Instance",
+      },
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).toContain(
+      "db.project-instance-syncing-titleProd Instance"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-syncing-titleprod"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-syncing-description"
+    );
+    expect(container.textContent).toContain("common.refresh");
+    expect(container.textContent).toContain(
+      "db.project-instance-syncing-empty"
+    );
+    expect(container.textContent).not.toContain("project.connect-database");
+
+    const refreshButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("common.refresh")
+    ) as HTMLButtonElement;
+    await act(async () => {
+      refreshButton.click();
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("updates syncing guidance when the syncing instance query changes", async () => {
+    mocks.instancesByName = {
+      "projects/demo/instances/prod": {
+        name: "projects/demo/instances/prod",
+        title: "Prod Instance",
+      },
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).not.toContain(
+      "db.project-instance-syncing-title"
+    );
+
+    mocks.routerCurrentQuery = { syncingInstance: "prod" };
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).toContain(
+      "db.project-instance-syncing-titleProd Instance"
+    );
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("falls back to create database after redirected instance sync finds no databases", async () => {
+    vi.useFakeTimers();
+    mocks.routerCurrentQuery = { syncingInstance: "prod" };
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/prod", title: "Prod" }],
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain(
+      "db.project-instance-syncing-title"
+    );
+
+    await act(async () => {
+      vi.advanceTimersByTime(60000);
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).not.toContain(
+      "db.project-instance-syncing-title"
+    );
+    const button = container.querySelector("button") as HTMLButtonElement;
+    expect(button.textContent?.trim()).toContain("database.create-database");
+
+    await act(async () => {
+      button.click();
+    });
+
+    expect(
+      container.querySelector("[data-testid='create-database-sheet']")
+    ).not.toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
+    vi.useRealTimers();
+  });
+
+  test("opens a synced project instance database in SQL Editor", async () => {
+    mocks.routerCurrentQuery = { syncingInstance: "prod" };
+    mocks.fetchInstanceList.mockResolvedValueOnce({
+      instances: [{ name: "instances/prod", title: "Prod" }],
+    });
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).toContain("db.project-instance-synced-title");
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-description"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-action"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-sql-editor-action"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-syncing-title"
+    );
+    expect(
+      container
+        .querySelector("[role='alert']")
+        ?.getAttribute("data-product-intro-target")
+    ).toBe("project-instance-synced");
+    expect(mocks.useProductIntro).toHaveBeenCalledWith({
+      id: "project-instance-synced",
+      title: "db.project-instance-synced-title",
+      description: "db.project-instance-synced-description",
+      disabled: false,
+    });
+
+    const nextActionButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) =>
+      button.textContent?.includes("db.project-instance-synced-action")
+    ) as HTMLButtonElement;
+    await act(async () => {
+      nextActionButton.click();
+    });
+
+    expect(preCreateIssue).toHaveBeenCalledWith("projects/demo", [
+      "projects/demo/instances/prod/databases/app",
+    ]);
+
+    const sqlEditorButton = Array.from(container.querySelectorAll("a")).find(
+      (link) =>
+        link.textContent?.includes(
+        "db.project-instance-synced-sql-editor-action"
+      )
+    ) as HTMLAnchorElement;
+    expect(sqlEditorButton.className).toContain("bg-accent");
+    expect(nextActionButton.className).toContain("border-control-border");
+    expect(
+      nextActionButton.compareDocumentPosition(sqlEditorButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    await act(async () => {
+      sqlEditorButton.click();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "sql-editor.database",
+      params: {
+        project: "demo",
+        instance: "prod",
+        database: "app",
+      },
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("only offers a database change for the change scenario", async () => {
+    mocks.scenarioId = "create-database-change";
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-create-change-title"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-create-change-description"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-action"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-sql-editor-action"
+    );
+    expect(mocks.useProductIntro).toHaveBeenCalledWith({
+      id: "project-instance-synced",
+      title: "db.project-instance-synced-create-change-title",
+      description: "db.project-instance-synced-create-change-description",
+      disabled: false,
+    });
+
+    const changeButton = Array.from(container.querySelectorAll("button")).find(
+      (button) =>
+        button.textContent?.includes("db.project-instance-synced-action")
+    ) as HTMLButtonElement;
+    expect(changeButton.className).toContain("bg-accent");
+
+    await act(async () => {
+      changeButton.click();
+    });
+    expect(preCreateIssue).toHaveBeenCalledWith("projects/demo", [
+      "projects/demo/instances/prod/databases/app",
+    ]);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("only offers SQL Editor for the query scenario", async () => {
+    mocks.scenarioId = "query-data";
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-query-data-title"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-query-data-description"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-sql-editor-action"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-action"
+    );
+    expect(mocks.useProductIntro).toHaveBeenCalledWith({
+      id: "project-instance-synced",
+      title: "db.project-instance-synced-query-data-title",
+      description: "db.project-instance-synced-query-data-description",
+      disabled: false,
+    });
+
+    const sqlEditorButton = Array.from(container.querySelectorAll("a")).find(
+      (link) =>
+        link.textContent?.includes(
+          "db.project-instance-synced-sql-editor-action"
+        )
+    ) as HTMLAnchorElement;
+    expect(sqlEditorButton.className).toContain("bg-accent");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("only offers marking sensitive data for its scenario", async () => {
+    mocks.scenarioId = "mark-sensitive-data";
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-mark-sensitive-data-title"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-mark-sensitive-data-description"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-mark-sensitive-data-action"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-sql-editor-action"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-action"
+    );
+
+    const markButton = Array.from(container.querySelectorAll("button")).find(
+      (button) =>
+        button.textContent?.includes(
+          "db.project-instance-synced-mark-sensitive-data-action"
+        )
+    ) as HTMLButtonElement;
+    await act(async () => {
+      markButton.click();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project.database.detail",
+      params: {
+        projectId: "demo",
+        instanceId: "prod",
+        databaseName: "app",
+      },
+      query: {
+        parent: "projects/demo/instances/prod",
+        intro: "mark-sensitive-data",
+      },
+      hash: "#catalog",
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test.each([false, true])("excludes Redis from the masking action (supported target: %s)", async (hasSupportedTarget) => {
+    mocks.scenarioId = "mark-sensitive-data";
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [{
+      name: "projects/demo/instances/redis/databases/0",
+      project: "projects/demo",
+      instanceResource: { engine: Engine.REDIS },
+    }];
+    if (hasSupportedTarget) mocks.visibleDatabases.push({
+      name: "projects/demo/instances/prod/databases/app",
+      project: "projects/demo",
+      instanceResource: { engine: Engine.POSTGRES },
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    await act(async () => root.render(<ProjectDatabasesPage projectId="demo" />));
+    const button = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("db.project-instance-synced-mark-sensitive-data-action")
+    );
+    expect(button).toBeDefined();
+    expect(button?.disabled).toBe(!hasSupportedTarget);
+    await act(async () => button?.click());
+    if (hasSupportedTarget) {
+      expect(mocks.routerPush).toHaveBeenCalledWith(expect.objectContaining({
+        params: { projectId: "demo", instanceId: "prod", databaseName: "app" },
+      }));
+    } else {
+      expect(mocks.routerPush).not.toHaveBeenCalled();
+    }
+    act(() => root.unmount());
+  });
+
+  test("shows database next actions when requested by the setup guide", async () => {
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(
+      container
+        .querySelector("[role='alert']")
+        ?.getAttribute("data-product-intro-target")
+    ).toBe("project-instance-synced");
+    expect(mocks.useProductIntro).toHaveBeenCalledWith({
+      id: "project-instance-synced",
+      title: "db.project-instance-synced-title",
+      description: "db.project-instance-synced-description",
+      disabled: false,
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("keeps database next actions after the product intro is dismissed", async () => {
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+    expect(container.querySelector("[role='alert']")).not.toBe(null);
+
+    mocks.routerCurrentQuery = {};
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.querySelector("[role='alert']")).not.toBe(null);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("hides post-sync guidance when the workspace has multiple instances", async () => {
+    mocks.routerCurrentQuery = { syncingInstance: "prod" };
+    mocks.fetchInstanceList.mockResolvedValueOnce({
+      instances: [
+        { name: "instances/prod", title: "Prod" },
+        { name: "instances/staging", title: "Staging" },
+      ],
+    });
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchInstanceList).toHaveBeenCalledWith({ pageSize: 2 });
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-title"
+    );
+    expect(mocks.useProductIntro).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "project-instance-synced",
+        disabled: true,
+      })
+    );
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("hides post-sync guidance without permission to list instances", async () => {
+    mocks.workspacePermissions.delete("bb.instances.list");
+    mocks.projectPermissions.delete("bb.instances.list");
+    mocks.routerCurrentQuery = { syncingInstance: "prod" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchInstanceList).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-title"
+    );
+    expect(mocks.useProductIntro).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "project-instance-synced",
+        disabled: true,
+      })
+    );
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("shows transfer project batch action for the default project", async () => {
+    mocks.visibleDatabases = [{ name: "instances/prod/databases/app" }];
+    mocks.databasesByName = {
+      "instances/prod/databases/app": { name: "instances/prod/databases/app" },
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="default" />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const selectAllButton = container.querySelector(
+      '[data-testid="batch-select-all"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      selectAllButton.click();
+    });
+
+    const batchBar = container.querySelector(
+      '[data-testid="batch-operations-bar"]'
+    ) as HTMLElement;
+    expect(batchBar.dataset.hasTransfer).toBe("true");
+    expect(batchBar.dataset.selectedCount).toBe("1");
+
+    const transferButton = container.querySelector(
+      '[data-testid="batch-transfer-project"]'
+    ) as HTMLButtonElement;
+    expect(transferButton?.textContent).toContain("database.transfer-project");
+
+    await act(async () => {
+      transferButton.click();
+    });
+
+    expect(
+      container.querySelector('[data-testid="transfer-project-sheet"]')
+    ).not.toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("redirects to target project databases page after batch transfer", async () => {
+    mocks.visibleDatabases = [{ name: "instances/prod/databases/app" }];
+    mocks.databasesByName = {
+      "instances/prod/databases/app": { name: "instances/prod/databases/app" },
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="default" />);
+      await Promise.resolve();
+    });
+
+    const selectAllButton = container.querySelector(
+      '[data-testid="batch-select-all"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      selectAllButton.click();
+    });
+
+    const transferButton = container.querySelector(
+      '[data-testid="batch-transfer-project"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      transferButton.click();
+    });
+
+    const transferSheet = container.querySelector(
+      '[data-testid="transfer-project-sheet"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      transferSheet.click();
+      await Promise.resolve();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project.database",
+      params: {
+        projectId: "target",
+      },
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+});

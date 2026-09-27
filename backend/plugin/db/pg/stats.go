@@ -2,59 +2,31 @@ package pg
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
-	"regexp"
-	"strconv"
 
-	"github.com/pkg/errors"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
-var rowsRegexp = regexp.MustCompile("rows=([0-9]+)")
-
+// CountAffectedRows returns the planner's estimate of the rows the statement modifies. A search
+// path that base.WithSearchPath put before the statement is set for the EXPLAIN in a transaction
+// that is rolled back.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	explainSQL := fmt.Sprintf("EXPLAIN %s", statement)
-	rows, err := d.db.QueryContext(ctx, explainSQL)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
-	// test-bb=# EXPLAIN INSERT INTO t SELECT * FROM t;
-	// QUERY PLAN
-	// -------------------------------------------------------------
-	//  Insert on t  (cost=0.00..1.03 rows=0 width=0)
-	//    ->  Seq Scan on t t_1  (cost=0.00..1.03 rows=3 width=520)
-	// (2 rows)
-	//
-	// d1=# explain select * from h1;
-	// QUERY PLAN
-	// ------------------------------------------------------
-	//  Seq Scan on h1  (cost=0.00..35.50 rows=2550 width=4)
-	// (1 row)
-	var rowCount int64
-	for rows.Next() {
-		var planRow sql.NullString
-		if err := rows.Scan(&planRow); err != nil {
+	setup, statement := base.SplitSearchPath(statement)
+	queryRow := d.db.QueryRowContext
+	if setup != "" {
+		tx, err := d.db.BeginTx(ctx, nil)
+		if err != nil {
 			return 0, err
 		}
-
-		if !planRow.Valid {
-			continue
+		defer tx.Rollback()
+		if _, err := tx.ExecContext(ctx, setup); err != nil {
+			return 0, err
 		}
-
-		matches := rowsRegexp.FindStringSubmatch(planRow.String)
-		if len(matches) != 2 {
-			continue
-		}
-		v, err := strconv.ParseInt(matches[1], 10, 64)
-		if err != nil {
-			return 0, errors.Errorf("failed to get integer from %q", matches[1])
-		}
-		rowCount = v
+		queryRow = tx.QueryRowContext
 	}
-	if err := rows.Err(); err != nil {
+	var plan string
+	if err := queryRow(ctx, "EXPLAIN (FORMAT JSON) "+statement).Scan(&plan); err != nil {
 		return 0, err
 	}
-	return rowCount, nil
+	return pgparser.GetEstimatedAffectedRowsFromExplainJSON(plan)
 }

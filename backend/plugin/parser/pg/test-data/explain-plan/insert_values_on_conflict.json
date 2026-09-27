@@ -1,0 +1,31 @@
+[
+  {
+    "Plan": {
+      "Node Type": "ModifyTable",
+      "Operation": "Insert",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Relation Name": "big_pk",
+      "Alias": "big_pk",
+      "Startup Cost": 0.00,
+      "Total Cost": 0.03,
+      "Plan Rows": 0,
+      "Plan Width": 0,
+      "Conflict Resolution": "UPDATE",
+      "Conflict Arbiter Indexes": ["big_pk_pkey"],
+      "Plans": [
+        {
+          "Node Type": "Values Scan",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Alias": "*VALUES*",
+          "Startup Cost": 0.00,
+          "Total Cost": 0.03,
+          "Plan Rows": 2,
+          "Plan Width": 12
+        }
+      ]
+    }
+  }
+]

@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -20,32 +19,28 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Provision an instance.
-	instanceRootDir := t.TempDir()
 	instanceName := "testInstance1"
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       instanceName,
-			Engine:      v1pb.Engine_SQLITE,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         instanceName,
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
 	// Create an issue that creates a database.
-	databaseName := "testSchemaUpdate"
+	databaseName := uniqueDB("test_schema_update")
 	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
 	a.NoError(err)
 
@@ -87,7 +82,7 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	err = ctl.changeDatabase(ctx, ctl.project, database, sheet, false)
 	a.NoError(err)
 
-	resp, err := ctl.databaseServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
+	resp, err := ctl.changelogServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{
 		Parent: database.Name,
 		View:   v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
 	}))
@@ -95,20 +90,30 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	changelogs := resp.Msg.Changelogs
 	// Expect 3 changelogs: 2 migrations + baseline (auto-created on first migration)
 	a.Equal(3, len(changelogs))
-	// First changelog should be the data update migration (most recent)
+	// First changelog should be the data update migration (most recent).
+	// DML-only migrations skip the schema dump, so it carries no schema.
 	a.Equal(v1pb.Changelog_DONE, changelogs[0].Status)
-	a.Equal(dumpedSchema, changelogs[0].Schema)
+	a.Empty(changelogs[0].Schema)
 	// Second changelog should be the schema migration
 	a.Equal(v1pb.Changelog_DONE, changelogs[1].Status)
 	a.Equal(dumpedSchema, changelogs[1].Schema)
 	// Third changelog should be the baseline
 	a.Equal(v1pb.Changelog_DONE, changelogs[2].Status)
+
+	getResp, err := ctl.changelogServiceClient.GetChangelog(ctx, connect.NewRequest(&v1pb.GetChangelogRequest{
+		Name: changelogs[0].Name,
+		View: v1pb.ChangelogView_CHANGELOG_VIEW_FULL,
+	}))
+	a.NoError(err)
+	a.Equal(changelogs[0].Name, getResp.Msg.Name)
+	a.Equal(v1pb.Changelog_DONE, getResp.Msg.Status)
 }
 
+//nolint:tparallel // Subtests share one server lifecycle.
 func TestGetLatestSchema(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                 string
-		dbType               storepb.Engine
 		instanceID           string
 		databaseName         string
 		ddl                  string
@@ -116,64 +121,7 @@ func TestGetLatestSchema(t *testing.T) {
 		wantDatabaseMetadata *v1pb.DatabaseMetadata
 	}{
 		{
-			name:         "MySQL",
-			dbType:       storepb.Engine_MYSQL,
-			instanceID:   "latest-schema-mysql",
-			databaseName: "latestSchema",
-			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
-			wantRawSchema: "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n" +
-				"SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n" +
-				"--\n" +
-				"-- Table structure for `book`\n" +
-				"--\n" +
-				"CREATE TABLE `book` (\n" +
-				"  `id` int DEFAULT NULL,\n" +
-				"  `name` text DEFAULT NULL\n" +
-				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\n" +
-				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
-				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n",
-			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
-				Name:         "instances/latest-schema-mysql/databases/latestSchema/metadata",
-				CharacterSet: "utf8mb4",
-				Collation:    "utf8mb4_general_ci",
-				Schemas: []*v1pb.SchemaMetadata{
-					{
-						Tables: []*v1pb.TableMetadata{
-							{
-								Name:      "book",
-								Engine:    "InnoDB",
-								Collation: "utf8mb4_general_ci",
-								Charset:   "utf8mb4",
-								DataSize:  16384,
-								Columns: []*v1pb.ColumnMetadata{
-									{
-										Name:       "id",
-										Position:   1,
-										Nullable:   true,
-										HasDefault: true,
-										Default:    "NULL",
-										Type:       "int",
-									},
-									{
-										Name:         "name",
-										Position:     2,
-										Nullable:     true,
-										Type:         "text",
-										HasDefault:   true,
-										Default:      "NULL",
-										CharacterSet: "utf8mb4",
-										Collation:    "utf8mb4_general_ci",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
 			name:         "PostgreSQL",
-			dbType:       storepb.Engine_POSTGRES,
 			instanceID:   "latest-schema-postgres",
 			databaseName: "latestSchema",
 			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
@@ -225,12 +173,7 @@ CREATE TABLE "public"."book" (
 	}
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer func() {
-		_ = ctl.Close(ctx)
-	}()
+	ctl, ctx := startWorkspace(ctx, t)
 	environmentName := strings.ToLower(t.Name())
 	environment, err := ctl.createEnvironment(ctx, environmentName, environmentName)
 	a.NoError(err)
@@ -238,48 +181,20 @@ CREATE TABLE "public"."book" (
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			a := require.New(t)
-			var instance *v1pb.Instance
-			switch test.dbType {
-			case storepb.Engine_POSTGRES:
-				pgContainer, err := getPgContainer(ctx)
-				defer func() {
-					pgContainer.Close(ctx)
-				}()
-				a.NoError(err)
-				instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-					InstanceId: test.instanceID,
-					Instance: &v1pb.Instance{
-						Title:       test.name,
-						Engine:      v1pb.Engine_POSTGRES,
-						Environment: new(environment.Name),
-						Activation:  true,
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
-					},
-				}))
-				a.NoError(err)
-				instance = instanceResp.Msg
-			case storepb.Engine_MYSQL:
-				mysqlContainer, err := getMySQLContainer(ctx)
-				defer func() {
-					mysqlContainer.Close(ctx)
-				}()
-				a.NoError(err)
-
-				instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-					InstanceId: test.instanceID,
-					Instance: &v1pb.Instance{
-						Title:       "mysqlInstance",
-						Engine:      v1pb.Engine_MYSQL,
-						Environment: new(environment.Name),
-						Activation:  true,
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
-					},
-				}))
-				a.NoError(err)
-				instance = instanceResp.Msg
-			default:
-				a.FailNow("unsupported db type")
-			}
+			pgContainer := sharedPgTarget(t)
+			instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+				InstanceId: test.instanceID,
+				Instance: &v1pb.Instance{
+					SyncDatabases: &v1pb.SyncDatabases{},
+					Title:         test.name,
+					Engine:        v1pb.Engine_POSTGRES,
+					Environment:   new(environment.Name),
+					Activation:    true,
+					DataSources:   []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.GetHost(), Port: pgContainer.GetPort(), Username: "postgres", Password: "root-password", Id: "admin"}},
+				},
+			}))
+			a.NoError(err)
+			instance := instanceResp.Msg
 
 			err = ctl.createDatabase(ctx, ctl.project, instance, nil, test.databaseName, "postgres")
 			a.NoError(err)
@@ -324,33 +239,29 @@ func TestMarkTaskAsDone(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Provision an instance.
-	instanceRootDir := t.TempDir()
 	instanceName := "testInstance1"
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, instanceName)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	// Add an instance.
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       instanceName,
-			Engine:      v1pb.Engine_SQLITE,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         instanceName,
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
 	// Create an issue that creates a database.
-	databaseName := "testSchemaUpdate"
+	databaseName := uniqueDB("test_schema_update")
 	err = ctl.createDatabase(ctx, ctl.project, instance, nil, databaseName, "")
 	a.NoError(err)
 
@@ -422,5 +333,6 @@ func TestMarkTaskAsDone(t *testing.T) {
 	dbMetadataResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)}))
 	a.NoError(err)
 	dbMetadata := dbMetadataResp.Msg
-	a.Equal("", dbMetadata.Schema)
+	// The only migration was skipped, so the schema must not contain the book table.
+	a.NotContains(dbMetadata.Schema, "book")
 }

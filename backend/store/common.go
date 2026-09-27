@@ -2,6 +2,7 @@ package store
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -33,6 +34,46 @@ func (s SortOrder) String() string {
 type OrderByKey struct {
 	Key       string
 	SortOrder SortOrder
+}
+
+// getOrderByKeys parses an AIP-132 order_by string against a whitelist
+// mapping API field names to SQL columns. Strict where parseOrderBy is not:
+// every comma-separated entry must be a whitelisted field with an optional
+// "asc"/"desc" suffix, and a repeated field is rejected — malformed input
+// errors instead of being silently reinterpreted.
+func getOrderByKeys(orderBy string, columns map[string]string) ([]*OrderByKey, error) {
+	if orderBy == "" {
+		return nil, nil
+	}
+
+	var result []*OrderByKey
+	seen := make(map[string]bool)
+	for entry := range strings.SplitSeq(orderBy, ",") {
+		parts := strings.Fields(entry)
+		if len(parts) == 0 || len(parts) > 2 {
+			return nil, errors.Errorf("invalid order_by entry %q", strings.TrimSpace(entry))
+		}
+		column, ok := columns[parts[0]]
+		if !ok {
+			return nil, errors.Errorf("unsupported order field %q", parts[0])
+		}
+		if seen[parts[0]] {
+			return nil, errors.Errorf("duplicate order field %q", parts[0])
+		}
+		seen[parts[0]] = true
+		sortOrder := ASC
+		if len(parts) == 2 {
+			switch parts[1] {
+			case "asc":
+			case "desc":
+				sortOrder = DESC
+			default:
+				return nil, errors.Errorf("invalid order direction %q, expect asc or desc", parts[1])
+			}
+		}
+		result = append(result, &OrderByKey{Key: column, SortOrder: sortOrder})
+	}
+	return result, nil
 }
 
 func parseOrderBy(orderBy string) ([]*OrderByKey, error) {

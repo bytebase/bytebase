@@ -45,7 +45,7 @@ type RolloutServiceClient interface {
 	// Permissions required: bb.rollouts.list
 	ListRollouts(ctx context.Context, in *ListRolloutsRequest, opts ...grpc.CallOption) (*ListRolloutsResponse, error)
 	// Creates a new rollout for a plan.
-	// Permissions required: bb.rollouts.create (or issue creator for data export issues)
+	// Permissions required: bb.rollouts.create
 	CreateRollout(ctx context.Context, in *CreateRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list
@@ -60,16 +60,16 @@ type RolloutServiceClient interface {
 	// Permissions required: bb.taskRuns.list
 	GetTaskRunSession(ctx context.Context, in *GetTaskRunSessionRequest, opts ...grpc.CallOption) (*TaskRunSession, error)
 	// Executes multiple tasks in a rollout stage.
-	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+	// Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
 	BatchRunTasks(ctx context.Context, in *BatchRunTasksRequest, opts ...grpc.CallOption) (*BatchRunTasksResponse, error)
 	// Skips multiple tasks in a rollout stage.
-	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+	// Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
 	BatchSkipTasks(ctx context.Context, in *BatchSkipTasksRequest, opts ...grpc.CallOption) (*BatchSkipTasksResponse, error)
 	// Cancels multiple task runs.
 	// PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
 	// a best-effort cancellation request and may continue running if the request is missed or the
 	// executor does not stop. The response does not report which task runs were actually canceled.
-	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+	// Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
 	BatchCancelTaskRuns(ctx context.Context, in *BatchCancelTaskRunsRequest, opts ...grpc.CallOption) (*BatchCancelTaskRunsResponse, error)
 	// Generates rollback SQL for a completed task run.
 	// Permissions required: bb.taskRuns.list
@@ -207,7 +207,7 @@ type RolloutServiceServer interface {
 	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *ListRolloutsRequest) (*ListRolloutsResponse, error)
 	// Creates a new rollout for a plan.
-	// Permissions required: bb.rollouts.create (or issue creator for data export issues)
+	// Permissions required: bb.rollouts.create
 	CreateRollout(context.Context, *CreateRolloutRequest) (*Rollout, error)
 	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list
@@ -222,16 +222,16 @@ type RolloutServiceServer interface {
 	// Permissions required: bb.taskRuns.list
 	GetTaskRunSession(context.Context, *GetTaskRunSessionRequest) (*TaskRunSession, error)
 	// Executes multiple tasks in a rollout stage.
-	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+	// Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
 	BatchRunTasks(context.Context, *BatchRunTasksRequest) (*BatchRunTasksResponse, error)
 	// Skips multiple tasks in a rollout stage.
-	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+	// Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
 	BatchSkipTasks(context.Context, *BatchSkipTasksRequest) (*BatchSkipTasksResponse, error)
 	// Cancels multiple task runs.
 	// PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
 	// a best-effort cancellation request and may continue running if the request is missed or the
 	// executor does not stop. The response does not report which task runs were actually canceled.
-	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+	// Permissions required: bb.taskRuns.create (or user with rollout policy role for the environment)
 	BatchCancelTaskRuns(context.Context, *BatchCancelTaskRunsRequest) (*BatchCancelTaskRunsResponse, error)
 	// Generates rollback SQL for a completed task run.
 	// Permissions required: bb.taskRuns.list

@@ -2,6 +2,9 @@ package model
 
 import (
 	"slices"
+	"strings"
+
+	metadatapb "github.com/bytebase/omni/metadata"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -47,15 +50,7 @@ func (r *ChangedResources) Build() *storepb.ChangedResources {
 		d.Name = name
 		for _, schema := range d.Schemas {
 			for _, table := range schema.Tables {
-				if r.dbMetadata == nil {
-					continue
-				}
-				schemaMetadata := r.dbMetadata.GetSchemaMetadata(schema.GetName())
-				if schemaMetadata == nil {
-					continue
-				}
-				tableMetadata := schemaMetadata.GetTable(table.GetName())
-				if tableMetadata != nil {
+				if tableMetadata := r.getTableMetadata(name, schema.GetName(), table.GetName()); tableMetadata != nil {
 					table.TableRows = tableMetadata.GetProto().GetRowCount()
 				}
 			}
@@ -63,6 +58,25 @@ func (r *ChangedResources) Build() *storepb.ChangedResources {
 		changedResources.Databases = append(changedResources.Databases, d)
 	}
 	return changedResources
+}
+
+// getTableMetadata returns the synced metadata of a changed table. The metadata only
+// describes the reviewed database, so a table qualified with another database has none,
+// even when the reviewed database has a table of the same name.
+func (r *ChangedResources) getTableMetadata(database, schema, table string) *TableMetadata {
+	if r.dbMetadata == nil {
+		return nil
+	}
+	if name := r.dbMetadata.DatabaseName(); name != "" {
+		if r.dbMetadata.GetIsObjectCaseSensitive() {
+			if database != name {
+				return nil
+			}
+		} else if !strings.EqualFold(database, name) {
+			return nil
+		}
+	}
+	return r.dbMetadata.GetSchemaMetadata(schema).GetTable(table)
 }
 
 func (d *ChangedDatabase) build() *storepb.ChangedResourceDatabase {
@@ -148,29 +162,22 @@ func (r *ChangedResources) GetDatabaseOnlyTargets() []string {
 	return result
 }
 
+// CountAffectedTableRows sums the synced row counts of the tables changed by DDL. Partitions
+// have no row count of their own and resolve to their table, which is counted once.
 func (r *ChangedResources) CountAffectedTableRows() int64 {
-	if r.dbMetadata == nil {
-		return 0
-	}
-
+	counted := make(map[*metadatapb.TableMetadata]bool)
 	var totalAffectedRows int64
-	for _, d := range r.databases {
+	for databaseName, d := range r.databases {
 		for schemaName, schema := range d.schemas {
 			for tableName, table := range schema.tables {
 				if !table.affectedTable {
 					continue
 				}
-				if r.dbMetadata == nil {
+				tableMeta := r.getTableMetadata(databaseName, schemaName, tableName)
+				if tableMeta == nil || counted[tableMeta.GetProto()] {
 					continue
 				}
-				schemaMeta := r.dbMetadata.GetSchemaMetadata(schemaName)
-				if schemaMeta == nil {
-					continue
-				}
-				tableMeta := schemaMeta.GetTable(tableName)
-				if tableMeta == nil {
-					continue
-				}
+				counted[tableMeta.GetProto()] = true
 				totalAffectedRows += tableMeta.GetProto().GetRowCount()
 			}
 		}

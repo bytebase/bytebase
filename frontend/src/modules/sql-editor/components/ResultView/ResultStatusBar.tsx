@@ -1,0 +1,139 @@
+import { useLayoutEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
+import { CopyButton } from "@/components/ui/copy-button";
+import { EllipsisText } from "@/components/ui/ellipsis-text";
+import { cn } from "@/lib/utils";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { QueryResult } from "@/types/proto-es/v1/sql_service_pb";
+
+export const formatQueryTime = (latency: QueryResult["latency"]): string => {
+  if (!latency) return "-";
+  const totalSeconds = Number(latency.seconds) + latency.nanos / 1e9;
+  if (totalSeconds < 1) {
+    return `${Math.round(totalSeconds * 1000)} ms`;
+  }
+  return `${totalSeconds.toFixed(2)} s`;
+};
+
+const columnGapWidth = (element: HTMLElement) =>
+  parseFloat(getComputedStyle(element).columnGap) || 0;
+
+// Width taken by whatever trails the statement text, today the copy control and
+// the gap before it. The text span is sized to its content and never stretches,
+// so the trailing controls sit directly after it at every row width.
+const trailingWidth = (row: HTMLElement, text: Element | null) => {
+  const last = row.lastElementChild;
+  if (!text || !last || last === text) return 0;
+  return (
+    last.getBoundingClientRect().right - text.getBoundingClientRect().right
+  );
+};
+
+type ResultStatusBarProps = Readonly<{
+  database: Database;
+  statement: string;
+  queryTime: string;
+}>;
+
+export function ResultStatusBar({
+  database,
+  statement,
+  queryTime,
+}: ResultStatusBarProps) {
+  const { t } = useTranslation();
+  const hasStatement = statement.trim() !== "";
+  const statusLeftRef = useRef<HTMLDivElement>(null);
+  const databaseRef = useRef<HTMLDivElement>(null);
+  const statementRef = useRef<HTMLDivElement>(null);
+  const databaseFootprintRef = useRef(0);
+  const [hideDatabase, setHideDatabase] = useState(false);
+
+  useLayoutEffect(() => {
+    const update = () => {
+      const statusLeft = statusLeftRef.current;
+      const databaseLabel = databaseRef.current;
+      const statementLabel = statementRef.current;
+      if (!statusLeft || !databaseLabel || !statementLabel) return;
+
+      const databaseWidth =
+        databaseLabel.getBoundingClientRect().width ||
+        databaseLabel.clientWidth;
+      if (databaseWidth > 0) {
+        // What showing the label costs the statement: its own width plus the
+        // gap it puts between itself and the statement.
+        databaseFootprintRef.current =
+          databaseWidth + columnGapWidth(statusLeft);
+      }
+
+      // Measure the truncating text span, not its row wrapper. The span is
+      // sized to its content, so its scrollWidth is the statement's full width
+      // whether or not the database label is in layout; the wrapper stretches
+      // to fill the row, so measuring it would keep a hidden label hidden at
+      // every width.
+      const statementText = statementLabel.querySelector("span");
+      const statementWidth =
+        (statementText?.scrollWidth ?? 0) +
+        trailingWidth(statementLabel, statementText);
+      setHideDatabase(
+        databaseFootprintRef.current > 0 &&
+          statementWidth + databaseFootprintRef.current > statusLeft.clientWidth
+      );
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    if (statusLeftRef.current) observer.observe(statusLeftRef.current);
+    if (databaseRef.current) observer.observe(databaseRef.current);
+    if (statementRef.current) observer.observe(statementRef.current);
+    return () => observer.disconnect();
+  }, [statement]);
+
+  return (
+    <div className="w-full min-w-0 flex items-center justify-between text-xs mt-1 gap-x-4 text-control-light">
+      <div
+        ref={statusLeftRef}
+        className="flex min-w-0 flex-1 items-center gap-x-2 overflow-hidden"
+        data-testid="result-status-left"
+      >
+        <div
+          ref={databaseRef}
+          className={cn(
+            "min-w-0 max-w-[45%] shrink overflow-hidden whitespace-nowrap",
+            hideDatabase && "hidden"
+          )}
+          data-testid="result-status-database"
+        >
+          <DatabaseTargetDisplay
+            database={database}
+            showEnvironment
+            className="max-w-full"
+          />
+        </div>
+        <div
+          ref={statementRef}
+          className="flex min-w-0 flex-1 items-center gap-x-1"
+          data-testid="result-status-statement"
+        >
+          <EllipsisText
+            text={statement}
+            className="min-w-0 max-w-full truncate"
+          />
+          {hasStatement && (
+            <CopyButton
+              content={statement}
+              size="xs"
+              appearance="secondary"
+              className="shrink-0 text-control-light hover:bg-transparent hover:text-control"
+            />
+          )}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-x-2">
+        <span>
+          {t("sql-editor.query-time")}: {queryTime}
+        </span>
+      </div>
+    </div>
+  );
+}

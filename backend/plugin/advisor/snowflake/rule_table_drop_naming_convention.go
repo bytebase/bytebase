@@ -10,10 +10,10 @@ import (
 	snowflakeast "github.com/bytebase/omni/snowflake/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -110,5 +110,5 @@ func (c *tableDropNamingConventionChecker) positionAtOffset(offset int) *storepb
 		}
 		line += strings.Count(c.text[:offset], "\n")
 	}
-	return common.ConvertANTLRLineToPosition(c.baseLine + line)
+	return base.ConvertANTLRLineToPosition(c.baseLine + line)
 }

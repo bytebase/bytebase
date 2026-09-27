@@ -23,15 +23,21 @@ service GroupService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.groups.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Gets multiple groups in a single request.
   // Group members or users with bb.groups.get permission can get the group.
+  // One resource per requested name, in request order. The first name that
+  // does not resolve fails the whole call (AIP-231: no partial response).
   // Permissions required: bb.groups.get OR caller is the group member
   rpc BatchGetGroups(BatchGetGroupsRequest) returns (BatchGetGroupsResponse) {
     option (google.api.http) = {get: "/v1/groups:batchGet"};
     option (bytebase.v1.permission) = "bb.groups.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Lists all groups in the workspace.
@@ -41,6 +47,8 @@ service GroupService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.groups.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Creates a new group.
@@ -54,6 +62,8 @@ service GroupService {
     option (bytebase.v1.permission) = "bb.groups.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates a group. Group owners or users with bb.groups.update permission can update.
@@ -68,6 +78,8 @@ service GroupService {
     option (bytebase.v1.permission) = "bb.groups.update";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Deletes a group. Group owners or users with bb.groups.delete permission can delete.
@@ -78,6 +90,8 @@ service GroupService {
     option (bytebase.v1.permission) = "bb.groups.delete";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 }
 
@@ -103,7 +117,7 @@ message BatchGetGroupsRequest {
 
 // Response message for batch getting groups.
 message BatchGetGroupsResponse {
-  // The groups from the specified request.
+  // One group per requested name, in the same order as `names`.
   repeated Group groups = 1;
 }
 

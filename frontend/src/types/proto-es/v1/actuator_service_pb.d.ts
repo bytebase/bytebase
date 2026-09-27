@@ -4,8 +4,8 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { WorkspaceProfileSetting_PasswordRestriction } from "./setting_service_pb";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import type { MCPSetting } from "./setting_service_pb";
 
 /**
  * Describes the file v1/actuator_service.proto.
@@ -13,34 +13,11 @@ import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
 export declare const file_v1_actuator_service: GenFile;
 
 /**
- * Request message for setting up sample data.
- *
- * @generated from message bytebase.v1.SetupSampleRequest
- */
-export declare type SetupSampleRequest = Message<"bytebase.v1.SetupSampleRequest"> & {
-};
-
-/**
- * Describes the message bytebase.v1.SetupSampleRequest.
- * Use `create(SetupSampleRequestSchema)` to create a new message.
- */
-export declare const SetupSampleRequestSchema: GenMessage<SetupSampleRequest>;
-
-/**
  * Request message for getting actuator information.
  *
  * @generated from message bytebase.v1.GetActuatorInfoRequest
  */
 export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInfoRequest"> & {
-  /**
-   * Optional. The workspace to scope the response to.
-   * Format: workspaces/{workspace}
-   * When unset, the workspace is resolved from the request context (self-hosted)
-   * or no workspace-scoped fields are returned (SaaS).
-   *
-   * @generated from field: string name = 1;
-   */
-  name: string;
 };
 
 /**
@@ -50,65 +27,59 @@ export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInf
 export declare const GetActuatorInfoRequestSchema: GenMessage<GetActuatorInfoRequest>;
 
 /**
- * Request message for deleting cache.
+ * SampleInfo describes sample setup availability and provisioned resources.
  *
- * @generated from message bytebase.v1.DeleteCacheRequest
+ * @generated from message bytebase.v1.SampleInfo
  */
-export declare type DeleteCacheRequest = Message<"bytebase.v1.DeleteCacheRequest"> & {
+export declare type SampleInfo = Message<"bytebase.v1.SampleInfo"> & {
+  /**
+   * Whether sample setup is currently available.
+   *
+   * @generated from field: bool available = 1;
+   */
+  available: boolean;
+
+  /**
+   * The provisioned sample instances.
+   *
+   * @generated from field: repeated bytebase.v1.SampleInfo.Instance instances = 2;
+   */
+  instances: SampleInfo_Instance[];
 };
 
 /**
- * Describes the message bytebase.v1.DeleteCacheRequest.
- * Use `create(DeleteCacheRequestSchema)` to create a new message.
+ * Describes the message bytebase.v1.SampleInfo.
+ * Use `create(SampleInfoSchema)` to create a new message.
  */
-export declare const DeleteCacheRequestSchema: GenMessage<DeleteCacheRequest>;
+export declare const SampleInfoSchema: GenMessage<SampleInfo>;
 
 /**
- * @generated from message bytebase.v1.Restriction
+ * Instance describes one provisioned sample instance.
+ *
+ * @generated from message bytebase.v1.SampleInfo.Instance
  */
-export declare type Restriction = Message<"bytebase.v1.Restriction"> & {
+export declare type SampleInfo_Instance = Message<"bytebase.v1.SampleInfo.Instance"> & {
   /**
-   * Whether self-service user signup is disabled.
+   * The provisioned sample instance.
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
-   * @generated from field: bool disallow_signup = 1;
+   * @generated from field: string instance = 1;
    */
-  disallowSignup: boolean;
+  instance: string;
 
   /**
-   * Whether password-based signin is disabled (except for workspace admins).
+   * The time when the provisioned sample instance expires.
    *
-   * @generated from field: bool disallow_password_signin = 2;
+   * @generated from field: google.protobuf.Timestamp expire_time = 2;
    */
-  disallowPasswordSignin: boolean;
-
-  /**
-   * Password complexity and restriction requirements.
-   *
-   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 3;
-   */
-  passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction | undefined;
-
-  /**
-   * Whether email + 6-digit code signin is enabled for this workspace.
-   *
-   * @generated from field: bool allow_email_code_signin = 4;
-   */
-  allowEmailCodeSignin: boolean;
-
-  /**
-   * Whether password reset via email is available for this workspace.
-   * True when the workspace (or deployment) has an email setting configured.
-   *
-   * @generated from field: bool password_reset_enabled = 5;
-   */
-  passwordResetEnabled: boolean;
+  expireTime?: Timestamp | undefined;
 };
 
 /**
- * Describes the message bytebase.v1.Restriction.
- * Use `create(RestrictionSchema)` to create a new message.
+ * Describes the message bytebase.v1.SampleInfo.Instance.
+ * Use `create(SampleInfo_InstanceSchema)` to create a new message.
  */
-export declare const RestrictionSchema: GenMessage<Restriction>;
+export declare const SampleInfo_InstanceSchema: GenMessage<SampleInfo_Instance>;
 
 /**
  * System information and configuration for the Bytebase instance.
@@ -132,32 +103,11 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   gitCommit: string;
 
   /**
-   * Whether the Bytebase instance is running in read-only mode.
-   *
-   * @generated from field: bool readonly = 3;
-   */
-  readonly: boolean;
-
-  /**
    * Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.
    *
    * @generated from field: bool saas = 4;
    */
   saas: boolean;
-
-  /**
-   * The host address of the Bytebase instance.
-   *
-   * @generated from field: string host = 6;
-   */
-  host: string;
-
-  /**
-   * The port number of the Bytebase instance.
-   *
-   * @generated from field: string port = 7;
-   */
-  port: string;
 
   /**
    * The external URL where users or webhook callbacks access Bytebase.
@@ -189,20 +139,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   unlicensedFeatures: string[];
 
   /**
-   * Whether the Bytebase instance is running in Docker.
-   *
-   * @generated from field: bool docker = 18;
-   */
-  docker: boolean;
-
-  /**
-   * The number of activated users.
-   *
-   * @generated from field: int32 activated_user_count = 19;
-   */
-  activatedUserCount: number;
-
-  /**
    * The number of activated database instances.
    *
    * @generated from field: int32 activated_instance_count = 20;
@@ -217,13 +153,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   totalInstanceCount: number;
 
   /**
-   * Whether sample data setup is enabled.
-   *
-   * @generated from field: bool enable_sample = 22;
-   */
-  enableSample: boolean;
-
-  /**
    * Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
    *
    * @generated from field: bool external_url_from_flag = 23;
@@ -236,11 +165,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: int32 replica_count = 24;
    */
   replicaCount: number;
-
-  /**
-   * @generated from field: bytebase.v1.Restriction restriction = 25;
-   */
-  restriction?: Restriction | undefined;
 
   /**
    * The default project for unassigned databases.
@@ -263,6 +187,20 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: int32 active_vcs_user_count = 28;
    */
   activeVcsUserCount: number;
+
+  /**
+   * Sample setup availability and provisioned resources.
+   *
+   * @generated from field: bytebase.v1.SampleInfo sample = 29;
+   */
+  sample?: SampleInfo | undefined;
+
+  /**
+   * The MCP (Model Context Protocol) setting in the current workspace.
+   *
+   * @generated from field: bytebase.v1.MCPSetting mcp_setting = 30;
+   */
+  mcpSetting?: MCPSetting | undefined;
 };
 
 /**
@@ -279,9 +217,8 @@ export declare const ActuatorInfoSchema: GenMessage<ActuatorInfo>;
 export declare const ActuatorService: GenService<{
   /**
    * Gets system information and health status of the Bytebase instance.
-   * When `name` is provided (or the workspace-scoped binding is used), the
-   * response includes workspace-scoped fields for that workspace.
-   * Permissions required: None
+   * The workspace is resolved from the authenticated session.
+   * Permissions required: None (authentication required)
    *
    * @generated from rpc bytebase.v1.ActuatorService.GetActuatorInfo
    */
@@ -289,28 +226,6 @@ export declare const ActuatorService: GenService<{
     methodKind: "unary";
     input: typeof GetActuatorInfoRequestSchema;
     output: typeof ActuatorInfoSchema;
-  },
-  /**
-   * Sets up sample data for demonstration and testing purposes.
-   * Permissions required: bb.projects.create
-   *
-   * @generated from rpc bytebase.v1.ActuatorService.SetupSample
-   */
-  setupSample: {
-    methodKind: "unary";
-    input: typeof SetupSampleRequestSchema;
-    output: typeof EmptySchema;
-  },
-  /**
-   * Clears the system cache to force data refresh.
-   * Permissions required: None
-   *
-   * @generated from rpc bytebase.v1.ActuatorService.DeleteCache
-   */
-  deleteCache: {
-    methodKind: "unary";
-    input: typeof DeleteCacheRequestSchema;
-    output: typeof EmptySchema;
   },
 }>;
 

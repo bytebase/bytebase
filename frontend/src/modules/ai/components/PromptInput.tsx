@@ -1,0 +1,164 @@
+import { CornerDownLeft } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { keyboardShortcutStr } from "@/utils";
+import { useAIContext } from "./context";
+
+type Props = {
+  readonly disabled?: boolean;
+  readonly onEnter: (value: string) => void;
+};
+
+const LINE_HEIGHT_PX = 20;
+const MIN_ROWS = 1;
+const MAX_ROWS = 10;
+const RESIZE_HANDLE_SIZE_PX = 16;
+
+/**
+ * Autosizing textarea (1-10 visible rows) bound to local state. Users can
+ * resize it vertically, after which their chosen height is preserved. Enter
+ * submits; Shift+Enter inserts a newline. The trailing button is a tooltipped
+ * ⏎ that submits when clicked.
+ *
+ * The autosize is hand-rolled: measure `scrollHeight` after each value
+ * change and clamp to `[MIN_ROWS, MAX_ROWS] * lineHeight`. Adding a
+ * runtime dep (`react-textarea-autosize`) just for this surface isn't
+ * worth it — the hand-rolled version is ~10 lines and behaves
+ * identically for plain text input.
+ *
+ * Reacts to two external triggers from `AIContext`:
+ *   - `pendingPreInput`: a one-shot seed value from an editor action. Cleared
+ *     after consumption.
+ *   - `new-conversation` event: re-focuses the textarea so the user can
+ *     immediately type into a freshly-created conversation.
+ */
+export function PromptInput({ disabled = false, onEnter }: Props) {
+  const { t } = useTranslation();
+  const { pendingPreInput, setPendingPreInput, events } = useAIContext();
+
+  const [value, setValue] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const manuallyResizedRef = useRef(false);
+
+  // Focus on mount + on `new-conversation` so the user can start typing
+  // immediately.
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+  useEffect(() => {
+    const off = events.on("new-conversation", () => {
+      textareaRef.current?.focus();
+    });
+    return () => {
+      off();
+    };
+  }, [events]);
+
+  // Consume `pendingPreInput`: when the provider sets it, copy into
+  // local state and clear the trigger. rAF defers to the next paint so any
+  // conversation creation that triggered the seed has landed first.
+  useEffect(() => {
+    if (!pendingPreInput) return;
+    const raf = requestAnimationFrame(() => {
+      setValue(pendingPreInput);
+      setPendingPreInput(undefined);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [pendingPreInput, setPendingPreInput]);
+
+  // Autosize: after every value change, set height to scrollHeight,
+  // clamped to [MIN_ROWS, MAX_ROWS] lines.
+  useLayoutEffect(() => {
+    const el = textareaRef.current;
+    if (!el || manuallyResizedRef.current) return;
+    el.style.height = "auto";
+    const minHeight = MIN_ROWS * LINE_HEIGHT_PX;
+    const maxHeight = MAX_ROWS * LINE_HEIGHT_PX;
+    const next = Math.min(maxHeight, Math.max(minHeight, el.scrollHeight));
+    el.style.height = `${next}px`;
+  }, [value]);
+
+  const handlePointerDown = (
+    event: React.PointerEvent<HTMLTextAreaElement>
+  ) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    if (
+      event.clientX >= bounds.right - RESIZE_HANDLE_SIZE_PX &&
+      event.clientY >= bounds.bottom - RESIZE_HANDLE_SIZE_PX
+    ) {
+      manuallyResizedRef.current = true;
+    }
+  };
+
+  const applyValue = (raw: string) => {
+    setValue("");
+    onEnter(raw);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== "Enter") return;
+    if (e.shiftKey) return; // Shift+Enter → newline
+    e.preventDefault();
+    if (!value.trim()) return;
+    applyValue(value);
+  };
+
+  const handleSubmitClick = () => {
+    if (!value.trim()) return;
+    applyValue(value);
+  };
+
+  const tooltipContent = useMemo(
+    () => (
+      <div className="text-xs flex flex-col gap-1">
+        <p className="flex items-center gap-1">
+          <span>{t("plugin.ai.send")}</span>
+          <span>({keyboardShortcutStr("⏎")})</span>
+        </p>
+        <p className="flex items-center gap-1">
+          <span>{t("plugin.ai.new-line")}</span>
+          <span>({keyboardShortcutStr("shift+⏎")})</span>
+        </p>
+      </div>
+    ),
+    [t]
+  );
+
+  return (
+    <div className="relative w-full">
+      <Textarea
+        size="xs"
+        ref={textareaRef}
+        value={value}
+        disabled={disabled}
+        placeholder={t("plugin.ai.text-to-sql-placeholder")}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onPointerDown={handlePointerDown}
+        rows={MIN_ROWS}
+        className={cn(
+          "w-full min-h-5 max-h-[50vh] resize-y overflow-y-auto rounded-xs border border-control-border bg-background pl-2 pr-14 py-1 text-sm",
+          "leading-5 text-main placeholder:text-control-placeholder",
+          "focus:outline-none focus:border-accent focus:ring-0",
+          "disabled:resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+        )}
+      />
+      <Tooltip content={tooltipContent} side="top">
+        <Button
+          appearance="secondary"
+          size="xs"
+          className="absolute right-5 bottom-1 text-accent"
+          disabled={!value || disabled}
+          onClick={handleSubmitClick}
+          aria-label={t("plugin.ai.send")}
+        >
+          <CornerDownLeft className="size-3.5" />
+        </Button>
+      </Tooltip>
+    </div>
+  );
+}

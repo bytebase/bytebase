@@ -3,121 +3,162 @@
 /* eslint-disable */
 
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import { file_buf_validate_validate } from "../buf/validate/validate_pb";
 import { file_google_api_annotations } from "../google/api/annotations_pb";
+import { file_google_api_client } from "../google/api/client_pb";
+import { file_google_api_field_behavior } from "../google/api/field_behavior_pb";
+import { file_google_api_resource } from "../google/api/resource_pb";
 import { file_google_protobuf_empty } from "@bufbuild/protobuf/wkt";
 import { file_v1_annotation } from "./annotation_pb";
+import { file_v1_idp_service } from "./idp_service_pb";
+import { file_v1_setting_service } from "./setting_service_pb";
 import { file_v1_user_service } from "./user_service_pb";
 
 /**
  * Describes the file v1/auth_service.proto.
  */
 export const file_v1_auth_service = /*@__PURE__*/
-  fileDesc("ChV2MS9hdXRoX3NlcnZpY2UucHJvdG8SC2J5dGViYXNlLnYxItkCCgxMb2dpblJlcXVlc3QSDQoFZW1haWwYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSCwoDd2ViGAMgASgIEhAKCGlkcF9uYW1lGAQgASgJEjkKC2lkcF9jb250ZXh0GAUgASgLMiQuYnl0ZWJhc2UudjEuSWRlbnRpdHlQcm92aWRlckNvbnRleHQSFQoIb3RwX2NvZGUYBiABKAlIAIgBARIaCg1yZWNvdmVyeV9jb2RlGAcgASgJSAGIAQESGwoObWZhX3RlbXBfdG9rZW4YCCABKAlIAogBARIXCgplbWFpbF9jb2RlGAkgASgJSAOIAQESFgoJd29ya3NwYWNlGAogASgJSASIAQFCCwoJX290cF9jb2RlQhAKDl9yZWNvdmVyeV9jb2RlQhEKD19tZmFfdGVtcF90b2tlbkINCgtfZW1haWxfY29kZUIMCgpfd29ya3NwYWNlIqwBChdJZGVudGl0eVByb3ZpZGVyQ29udGV4dBJECg5vYXV0aDJfY29udGV4dBgBIAEoCzIqLmJ5dGViYXNlLnYxLk9BdXRoMklkZW50aXR5UHJvdmlkZXJDb250ZXh0SAASQAoMb2lkY19jb250ZXh0GAIgASgLMiguYnl0ZWJhc2UudjEuT0lEQ0lkZW50aXR5UHJvdmlkZXJDb250ZXh0SABCCQoHY29udGV4dCItCh1PQXV0aDJJZGVudGl0eVByb3ZpZGVyQ29udGV4dBIMCgRjb2RlGAEgASgJIisKG09JRENJZGVudGl0eVByb3ZpZGVyQ29udGV4dBIMCgRjb2RlGAEgASgJIo8BCg1Mb2dpblJlc3BvbnNlEg0KBXRva2VuGAEgASgJEhsKDm1mYV90ZW1wX3Rva2VuGAIgASgJSACIAQESHgoWcmVxdWlyZV9yZXNldF9wYXNzd29yZBgDIAEoCBIfCgR1c2VyGAQgASgLMhEuYnl0ZWJhc2UudjEuVXNlckIRCg9fbWZhX3RlbXBfdG9rZW4iDwoNTG9nb3V0UmVxdWVzdCI0ChRFeGNoYW5nZVRva2VuUmVxdWVzdBINCgV0b2tlbhgBIAEoCRINCgVlbWFpbBgCIAEoCSItChVFeGNoYW5nZVRva2VuUmVzcG9uc2USFAoMYWNjZXNzX3Rva2VuGAEgASgJIj8KDVNpZ251cFJlcXVlc3QSDQoFZW1haWwYASABKAkSEAoIcGFzc3dvcmQYAiABKAkSDQoFdGl0bGUYAyABKAkiEAoOUmVmcmVzaFJlcXVlc3QiEQoPUmVmcmVzaFJlc3BvbnNlIlIKG1JlcXVlc3RQYXNzd29yZFJlc2V0UmVxdWVzdBINCgVlbWFpbBgBIAEoCRIWCgl3b3Jrc3BhY2UYAiABKAlIAIgBAUIMCgpfd29ya3NwYWNlIkkKFFJlc2V0UGFzc3dvcmRSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEgwKBGNvZGUYAiABKAkSFAoMbmV3X3Bhc3N3b3JkGAMgASgJIlAKGVNlbmRFbWFpbExvZ2luQ29kZVJlcXVlc3QSDQoFZW1haWwYASABKAkSFgoJd29ya3NwYWNlGAIgASgJSACIAQFCDAoKX3dvcmtzcGFjZSK6AQoWU3dpdGNoV29ya3NwYWNlUmVxdWVzdBIRCgl3b3Jrc3BhY2UYASABKAkSCwoDd2ViGAIgASgIEhUKCG90cF9jb2RlGAMgASgJSACIAQESGgoNcmVjb3ZlcnlfY29kZRgEIAEoCUgBiAEBEhsKDm1mYV90ZW1wX3Rva2VuGAUgASgJSAKIAQFCCwoJX290cF9jb2RlQhAKDl9yZWNvdmVyeV9jb2RlQhEKD19tZmFfdGVtcF90b2tlbjKjCAoLQXV0aFNlcnZpY2USYQoFTG9naW4SGS5ieXRlYmFzZS52MS5Mb2dpblJlcXVlc3QaGi5ieXRlYmFzZS52MS5Mb2dpblJlc3BvbnNlIiGA6jABmOowAYLT5JMCEzoBKiIOL3YxL2F1dGgvbG9naW4SYAoGTG9nb3V0EhouYnl0ZWJhc2UudjEuTG9nb3V0UmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIigOowAZjqMAGC0+STAhQ6ASoiDy92MS9hdXRoL2xvZ291dBKBAQoNRXhjaGFuZ2VUb2tlbhIhLmJ5dGViYXNlLnYxLkV4Y2hhbmdlVG9rZW5SZXF1ZXN0GiIuYnl0ZWJhc2UudjEuRXhjaGFuZ2VUb2tlblJlc3BvbnNlIimA6jABmOowAYLT5JMCGzoBKiIWL3YxL2F1dGg6ZXhjaGFuZ2VUb2tlbhJkCgZTaWdudXASGi5ieXRlYmFzZS52MS5TaWdudXBSZXF1ZXN0GhouYnl0ZWJhc2UudjEuTG9naW5SZXNwb25zZSIigOowAZjqMAGC0+STAhQ6ASoiDy92MS9hdXRoL3NpZ251cBJlCgdSZWZyZXNoEhsuYnl0ZWJhc2UudjEuUmVmcmVzaFJlcXVlc3QaHC5ieXRlYmFzZS52MS5SZWZyZXNoUmVzcG9uc2UiH4DqMAGC0+STAhU6ASoiEC92MS9hdXRoL3JlZnJlc2gSewoPU3dpdGNoV29ya3NwYWNlEiMuYnl0ZWJhc2UudjEuU3dpdGNoV29ya3NwYWNlUmVxdWVzdBoaLmJ5dGViYXNlLnYxLkxvZ2luUmVzcG9uc2UiJ5DqMAKC0+STAh06ASoiGC92MS9hdXRoOnN3aXRjaFdvcmtzcGFjZRKGAQoUUmVxdWVzdFBhc3N3b3JkUmVzZXQSKC5ieXRlYmFzZS52MS5SZXF1ZXN0UGFzc3dvcmRSZXNldFJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiLIDqMAGC0+STAiI6ASoiHS92MS9hdXRoOnJlcXVlc3RQYXNzd29yZFJlc2V0EnEKDVJlc2V0UGFzc3dvcmQSIS5ieXRlYmFzZS52MS5SZXNldFBhc3N3b3JkUmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIlgOowAYLT5JMCGzoBKiIWL3YxL2F1dGg6cmVzZXRQYXNzd29yZBKEAQoSU2VuZEVtYWlsTG9naW5Db2RlEiYuYnl0ZWJhc2UudjEuU2VuZEVtYWlsTG9naW5Db2RlUmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIugOowAZjqMAGC0+STAiA6ASoiGy92MS9hdXRoOnNlbmRFbWFpbExvZ2luQ29kZUKmAQoPY29tLmJ5dGViYXNlLnYxQhBBdXRoU2VydmljZVByb3RvUAFaNGdpdGh1Yi5jb20vYnl0ZWJhc2UvYnl0ZWJhc2UvYmFja2VuZC9nZW5lcmF0ZWQtZ28vdjGiAgNCWFiqAgtCeXRlYmFzZS5WMcoCC0J5dGViYXNlXFYx4gIXQnl0ZWJhc2VcVjFcR1BCTWV0YWRhdGHqAgxCeXRlYmFzZTo6VjFiBnByb3RvMw", [file_google_api_annotations, file_google_protobuf_empty, file_v1_annotation, file_v1_user_service]);
+  fileDesc("ChV2MS9hdXRoX3NlcnZpY2UucHJvdG8SC2J5dGViYXNlLnYxIk4KHEdldEF1dGhlbnRpY2F0aW9uSW5mb1JlcXVlc3QSLgoJd29ya3NwYWNlGAEgASgJQhv6QRgKFmJ5dGViYXNlLmNvbS9Xb3Jrc3BhY2UipQEKEkF1dGhlbnRpY2F0aW9uSW5mbxIWCgl3b3Jrc3BhY2UYASABKAlCA+BBAxIyCgtyZXN0cmljdGlvbhgCIAEoCzIYLmJ5dGViYXNlLnYxLlJlc3RyaWN0aW9uQgPgQQMSQwoSaWRlbnRpdHlfcHJvdmlkZXJzGAMgAygLMiIuYnl0ZWJhc2UudjEuTG9naW5JZGVudGl0eVByb3ZpZGVyQgPgQQMi+gEKC1Jlc3RyaWN0aW9uEhwKD2Rpc2FsbG93X3NpZ251cBgBIAEoCEID4EEDEiUKGGRpc2FsbG93X3Bhc3N3b3JkX3NpZ25pbhgCIAEoCEID4EEDElsKFHBhc3N3b3JkX3Jlc3RyaWN0aW9uGAMgASgLMjguYnl0ZWJhc2UudjEuV29ya3NwYWNlUHJvZmlsZVNldHRpbmcuUGFzc3dvcmRSZXN0cmljdGlvbkID4EEDEiQKF2FsbG93X2VtYWlsX2NvZGVfc2lnbmluGAQgASgIQgPgQQMSIwoWcGFzc3dvcmRfcmVzZXRfZW5hYmxlZBgFIAEoCEID4EEDIqcBChVMb2dpbklkZW50aXR5UHJvdmlkZXISDAoEbmFtZRgBIAEoCRIvCgR0eXBlGAIgASgOMiEuYnl0ZWJhc2UudjEuSWRlbnRpdHlQcm92aWRlclR5cGUSDQoFdGl0bGUYAyABKAkSQAoVYXV0aG9yaXphdGlvbl9yZXF1ZXN0GAQgASgLMiEuYnl0ZWJhc2UudjEuQXV0aG9yaXphdGlvblJlcXVlc3QiSwoUQXV0aG9yaXphdGlvblJlcXVlc3QSEAoIZW5kcG9pbnQYASABKAkSEQoJY2xpZW50X2lkGAIgASgJEg4KBnNjb3BlcxgDIAMoCSK6AwoMTG9naW5SZXF1ZXN0EhcKBWVtYWlsGAEgASgJQgi6SAVyAxj+ARIeCghwYXNzd29yZBgCIAEoCUIMukgFcgMogATQ6jABEgsKA3dlYhgDIAEoCBIaCghpZHBfbmFtZRgEIAEoCUIIukgFcgMYgAISOQoLaWRwX2NvbnRleHQYBSABKAsyJC5ieXRlYmFzZS52MS5JZGVudGl0eVByb3ZpZGVyQ29udGV4dBIiCghvdHBfY29kZRgGIAEoCUILukgEcgIYQNDqMAFIAIgBARInCg1yZWNvdmVyeV9jb2RlGAcgASgJQgu6SARyAhhA0OowAUgBiAEBEikKDm1mYV90ZW1wX3Rva2VuGAggASgJQgy6SAVyAxiAINDqMAFIAogBARIkCgplbWFpbF9jb2RlGAkgASgJQgu6SARyAhhA0OowAUgDiAEBEiAKCXdvcmtzcGFjZRgKIAEoCUIIukgFcgMYgAJIBIgBAUILCglfb3RwX2NvZGVCEAoOX3JlY292ZXJ5X2NvZGVCEQoPX21mYV90ZW1wX3Rva2VuQg0KC19lbWFpbF9jb2RlQgwKCl93b3Jrc3BhY2UirAEKF0lkZW50aXR5UHJvdmlkZXJDb250ZXh0EkQKDm9hdXRoMl9jb250ZXh0GAEgASgLMiouYnl0ZWJhc2UudjEuT0F1dGgySWRlbnRpdHlQcm92aWRlckNvbnRleHRIABJACgxvaWRjX2NvbnRleHQYAiABKAsyKC5ieXRlYmFzZS52MS5PSURDSWRlbnRpdHlQcm92aWRlckNvbnRleHRIAEIJCgdjb250ZXh0IjsKHU9BdXRoMklkZW50aXR5UHJvdmlkZXJDb250ZXh0EhoKBGNvZGUYASABKAlCDLpIBXIDGIAg0OowASI5ChtPSURDSWRlbnRpdHlQcm92aWRlckNvbnRleHQSGgoEY29kZRgBIAEoCUIMukgFcgMYgCDQ6jABIpsBCg1Mb2dpblJlc3BvbnNlEhMKBXRva2VuGAEgASgJQgTQ6jABEiEKDm1mYV90ZW1wX3Rva2VuGAIgASgJQgTQ6jABSACIAQESHgoWcmVxdWlyZV9yZXNldF9wYXNzd29yZBgDIAEoCBIfCgR1c2VyGAQgASgLMhEuYnl0ZWJhc2UudjEuVXNlckIRCg9fbWZhX3RlbXBfdG9rZW4iDwoNTG9nb3V0UmVxdWVzdCJNChRFeGNoYW5nZVRva2VuUmVxdWVzdBIcCgV0b2tlbhgBIAEoCUINukgGcgQYgIAE0OowARIXCgVlbWFpbBgCIAEoCUIIukgFcgMY/gEiMwoVRXhjaGFuZ2VUb2tlblJlc3BvbnNlEhoKDGFjY2Vzc190b2tlbhgBIAEoCUIE0OowASJgCg1TaWdudXBSZXF1ZXN0EhcKBWVtYWlsGAEgASgJQgi6SAVyAxj+ARIdCghwYXNzd29yZBgCIAEoCUILukgEcgIoSNDqMAESFwoFdGl0bGUYAyABKAlCCLpIBXIDGMgBIhAKDlJlZnJlc2hSZXF1ZXN0IhEKD1JlZnJlc2hSZXNwb25zZSJmChtSZXF1ZXN0UGFzc3dvcmRSZXNldFJlcXVlc3QSFwoFZW1haWwYASABKAlCCLpIBXIDGP4BEiAKCXdvcmtzcGFjZRgCIAEoCUIIukgFcgMYgAJIAIgBAUIMCgpfd29ya3NwYWNlIm0KFFJlc2V0UGFzc3dvcmRSZXF1ZXN0EhcKBWVtYWlsGAEgASgJQgi6SAVyAxj+ARIZCgRjb2RlGAIgASgJQgu6SARyAhhA0OowARIhCgxuZXdfcGFzc3dvcmQYAyABKAlCC7pIBHICKEjQ6jABImQKGVNlbmRFbWFpbExvZ2luQ29kZVJlcXVlc3QSFwoFZW1haWwYASABKAlCCLpIBXIDGP4BEiAKCXdvcmtzcGFjZRgCIAEoCUIIukgFcgMYgAJIAIgBAUIMCgpfd29ya3NwYWNlIuwBChZTd2l0Y2hXb3Jrc3BhY2VSZXF1ZXN0EhsKCXdvcmtzcGFjZRgBIAEoCUIIukgFcgMYgAISCwoDd2ViGAIgASgIEiIKCG90cF9jb2RlGAMgASgJQgu6SARyAhhA0OowAUgAiAEBEicKDXJlY292ZXJ5X2NvZGUYBCABKAlCC7pIBHICGEDQ6jABSAGIAQESKQoObWZhX3RlbXBfdG9rZW4YBSABKAlCDLpIBXIDGIAg0OowAUgCiAEBQgsKCV9vdHBfY29kZUIQCg5fcmVjb3ZlcnlfY29kZUIRCg9fbWZhX3RlbXBfdG9rZW4ypgoKC0F1dGhTZXJ2aWNlEq8BChVHZXRBdXRoZW50aWNhdGlvbkluZm8SKS5ieXRlYmFzZS52MS5HZXRBdXRoZW50aWNhdGlvbkluZm9SZXF1ZXN0Gh8uYnl0ZWJhc2UudjEuQXV0aGVudGljYXRpb25JbmZvIkraQQCA6jABoOowAYLT5JMCOVooEiYvdjEve3dvcmtzcGFjZT13b3Jrc3BhY2VzLyp9L2F1dGgvaW5mbxINL3YxL2F1dGgvaW5mbxJpCgVMb2dpbhIZLmJ5dGViYXNlLnYxLkxvZ2luUmVxdWVzdBoaLmJ5dGViYXNlLnYxLkxvZ2luUmVzcG9uc2UiKYDqMAGY6jABoOowA6jqMAGC0+STAhM6ASoiDi92MS9hdXRoL2xvZ2luEmgKBkxvZ291dBIaLmJ5dGViYXNlLnYxLkxvZ291dFJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiKoDqMAGY6jABoOowA6jqMASC0+STAhQ6ASoiDy92MS9hdXRoL2xvZ291dBKJAQoNRXhjaGFuZ2VUb2tlbhIhLmJ5dGViYXNlLnYxLkV4Y2hhbmdlVG9rZW5SZXF1ZXN0GiIuYnl0ZWJhc2UudjEuRXhjaGFuZ2VUb2tlblJlc3BvbnNlIjGA6jABmOowAaDqMAOo6jABgtPkkwIbOgEqIhYvdjEvYXV0aDpleGNoYW5nZVRva2VuEmwKBlNpZ251cBIaLmJ5dGViYXNlLnYxLlNpZ251cFJlcXVlc3QaGi5ieXRlYmFzZS52MS5Mb2dpblJlc3BvbnNlIiqA6jABmOowAaDqMAOo6jABgtPkkwIUOgEqIg8vdjEvYXV0aC9zaWdudXASbQoHUmVmcmVzaBIbLmJ5dGViYXNlLnYxLlJlZnJlc2hSZXF1ZXN0GhwuYnl0ZWJhc2UudjEuUmVmcmVzaFJlc3BvbnNlIieA6jABoOowA6jqMAGC0+STAhU6ASoiEC92MS9hdXRoL3JlZnJlc2gSgwEKD1N3aXRjaFdvcmtzcGFjZRIjLmJ5dGViYXNlLnYxLlN3aXRjaFdvcmtzcGFjZVJlcXVlc3QaGi5ieXRlYmFzZS52MS5Mb2dpblJlc3BvbnNlIi+Q6jACoOowA6jqMAGC0+STAh06ASoiGC92MS9hdXRoOnN3aXRjaFdvcmtzcGFjZRKSAQoUUmVxdWVzdFBhc3N3b3JkUmVzZXQSKC5ieXRlYmFzZS52MS5SZXF1ZXN0UGFzc3dvcmRSZXNldFJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiOIDqMAGY6jABoOowA6jqMAKC0+STAiI6ASoiHS92MS9hdXRoOnJlcXVlc3RQYXNzd29yZFJlc2V0En0KDVJlc2V0UGFzc3dvcmQSIS5ieXRlYmFzZS52MS5SZXNldFBhc3N3b3JkUmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIxgOowAZjqMAGg6jADqOowAoLT5JMCGzoBKiIWL3YxL2F1dGg6cmVzZXRQYXNzd29yZBKMAQoSU2VuZEVtYWlsTG9naW5Db2RlEiYuYnl0ZWJhc2UudjEuU2VuZEVtYWlsTG9naW5Db2RlUmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSI2gOowAZjqMAGg6jADqOowAoLT5JMCIDoBKiIbL3YxL2F1dGg6c2VuZEVtYWlsTG9naW5Db2RlQqYBCg9jb20uYnl0ZWJhc2UudjFCEEF1dGhTZXJ2aWNlUHJvdG9QAVo0Z2l0aHViLmNvbS9ieXRlYmFzZS9ieXRlYmFzZS9iYWNrZW5kL2dlbmVyYXRlZC1nby92MaICA0JYWKoCC0J5dGViYXNlLlYxygILQnl0ZWJhc2VcVjHiAhdCeXRlYmFzZVxWMVxHUEJNZXRhZGF0YeoCDEJ5dGViYXNlOjpWMWIGcHJvdG8z", [file_buf_validate_validate, file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_empty, file_v1_annotation, file_v1_idp_service, file_v1_setting_service, file_v1_user_service]);
+
+/**
+ * Describes the message bytebase.v1.GetAuthenticationInfoRequest.
+ * Use `create(GetAuthenticationInfoRequestSchema)` to create a new message.
+ */
+export const GetAuthenticationInfoRequestSchema = /*@__PURE__*/
+  messageDesc(file_v1_auth_service, 0);
+
+/**
+ * Describes the message bytebase.v1.AuthenticationInfo.
+ * Use `create(AuthenticationInfoSchema)` to create a new message.
+ */
+export const AuthenticationInfoSchema = /*@__PURE__*/
+  messageDesc(file_v1_auth_service, 1);
+
+/**
+ * Describes the message bytebase.v1.Restriction.
+ * Use `create(RestrictionSchema)` to create a new message.
+ */
+export const RestrictionSchema = /*@__PURE__*/
+  messageDesc(file_v1_auth_service, 2);
+
+/**
+ * Describes the message bytebase.v1.LoginIdentityProvider.
+ * Use `create(LoginIdentityProviderSchema)` to create a new message.
+ */
+export const LoginIdentityProviderSchema = /*@__PURE__*/
+  messageDesc(file_v1_auth_service, 3);
+
+/**
+ * Describes the message bytebase.v1.AuthorizationRequest.
+ * Use `create(AuthorizationRequestSchema)` to create a new message.
+ */
+export const AuthorizationRequestSchema = /*@__PURE__*/
+  messageDesc(file_v1_auth_service, 4);
 
 /**
  * Describes the message bytebase.v1.LoginRequest.
  * Use `create(LoginRequestSchema)` to create a new message.
  */
 export const LoginRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 0);
+  messageDesc(file_v1_auth_service, 5);
 
 /**
  * Describes the message bytebase.v1.IdentityProviderContext.
  * Use `create(IdentityProviderContextSchema)` to create a new message.
  */
 export const IdentityProviderContextSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 1);
+  messageDesc(file_v1_auth_service, 6);
 
 /**
  * Describes the message bytebase.v1.OAuth2IdentityProviderContext.
  * Use `create(OAuth2IdentityProviderContextSchema)` to create a new message.
  */
 export const OAuth2IdentityProviderContextSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 2);
+  messageDesc(file_v1_auth_service, 7);
 
 /**
  * Describes the message bytebase.v1.OIDCIdentityProviderContext.
  * Use `create(OIDCIdentityProviderContextSchema)` to create a new message.
  */
 export const OIDCIdentityProviderContextSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 3);
+  messageDesc(file_v1_auth_service, 8);
 
 /**
  * Describes the message bytebase.v1.LoginResponse.
  * Use `create(LoginResponseSchema)` to create a new message.
  */
 export const LoginResponseSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 4);
+  messageDesc(file_v1_auth_service, 9);
 
 /**
  * Describes the message bytebase.v1.LogoutRequest.
  * Use `create(LogoutRequestSchema)` to create a new message.
  */
 export const LogoutRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 5);
+  messageDesc(file_v1_auth_service, 10);
 
 /**
  * Describes the message bytebase.v1.ExchangeTokenRequest.
  * Use `create(ExchangeTokenRequestSchema)` to create a new message.
  */
 export const ExchangeTokenRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 6);
+  messageDesc(file_v1_auth_service, 11);
 
 /**
  * Describes the message bytebase.v1.ExchangeTokenResponse.
  * Use `create(ExchangeTokenResponseSchema)` to create a new message.
  */
 export const ExchangeTokenResponseSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 7);
+  messageDesc(file_v1_auth_service, 12);
 
 /**
  * Describes the message bytebase.v1.SignupRequest.
  * Use `create(SignupRequestSchema)` to create a new message.
  */
 export const SignupRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 8);
+  messageDesc(file_v1_auth_service, 13);
 
 /**
  * Describes the message bytebase.v1.RefreshRequest.
  * Use `create(RefreshRequestSchema)` to create a new message.
  */
 export const RefreshRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 9);
+  messageDesc(file_v1_auth_service, 14);
 
 /**
  * Describes the message bytebase.v1.RefreshResponse.
  * Use `create(RefreshResponseSchema)` to create a new message.
  */
 export const RefreshResponseSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 10);
+  messageDesc(file_v1_auth_service, 15);
 
 /**
  * Describes the message bytebase.v1.RequestPasswordResetRequest.
  * Use `create(RequestPasswordResetRequestSchema)` to create a new message.
  */
 export const RequestPasswordResetRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 11);
+  messageDesc(file_v1_auth_service, 16);
 
 /**
  * Describes the message bytebase.v1.ResetPasswordRequest.
  * Use `create(ResetPasswordRequestSchema)` to create a new message.
  */
 export const ResetPasswordRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 12);
+  messageDesc(file_v1_auth_service, 17);
 
 /**
  * Describes the message bytebase.v1.SendEmailLoginCodeRequest.
  * Use `create(SendEmailLoginCodeRequestSchema)` to create a new message.
  */
 export const SendEmailLoginCodeRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 13);
+  messageDesc(file_v1_auth_service, 18);
 
 /**
  * Describes the message bytebase.v1.SwitchWorkspaceRequest.
  * Use `create(SwitchWorkspaceRequestSchema)` to create a new message.
  */
 export const SwitchWorkspaceRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_auth_service, 14);
+  messageDesc(file_v1_auth_service, 19);
 
 /**
  * AuthService handles user authentication operations.

@@ -36,7 +36,7 @@ func parseMySQLStatement(statement string) *base.SyntaxError {
 		statement += ";"
 	}
 
-	_, err := ParseMySQLOmni(statement)
+	_, err := ParseMySQL(statement)
 	if err == nil {
 		return nil
 	}

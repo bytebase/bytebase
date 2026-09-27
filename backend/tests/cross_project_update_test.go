@@ -9,7 +9,9 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -28,10 +30,7 @@ func TestCollisionUpdateIssueNoCrossProjectEffect(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -68,6 +67,110 @@ func TestCollisionUpdateIssueNoCrossProjectEffect(t *testing.T) {
 		"project B's issue status leaked from project A update")
 }
 
+// TestCollisionCreateRolloutIsolation verifies that the review module's
+// transactional Plan/task writes stay scoped to the full project/ID keys.
+func TestCollisionCreateRolloutIsolation(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	ctl, ctx := startProject(ctx, t)
+
+	fixture := setupCollidingProjects(ctx, t, ctl)
+	a.Greater(len(fixture.BaselineA.PlanCheckRuns), 0, "project A should have plan_check_runs")
+	fixture.completeRolloutB(ctx, t, ctl)
+	planCheckRunB, err := ctl.planServiceClient.GetPlanCheckRun(ctx,
+		connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
+			Name: fixture.PlanB.Name + "/planCheckRun",
+		}))
+	a.NoError(err)
+	a.True(strings.HasPrefix(planCheckRunB.Msg.Name, fixture.ProjectB.Name+"/"),
+		"GetPlanCheckRun for plan B returned %s from another project", planCheckRunB.Msg.Name)
+	aAfter := snapshotProject(ctx, t, ctl, fixture.ProjectA)
+	assertProjectUnchanged(t, fixture.BaselineA, aAfter, "project A after project B rollout")
+}
+
+// TestCollisionBatchRunTasksNoCrossProjectEffect verifies that creating a
+// pending task run in project B cannot mutate project A's colliding task or
+// task_run rows.
+func TestCollisionBatchRunTasksNoCrossProjectEffect(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	ctl, ctx := startProject(ctx, t)
+
+	fixture := setupCollidingProjects(ctx, t, ctl)
+	a.Greater(len(fixture.BaselineA.TaskRuns), 0, "project A should have task_runs")
+
+	rolloutB, err := ctl.rolloutServiceClient.CreateRollout(ctx,
+		connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: fixture.PlanB.Name}))
+	a.NoError(err)
+	a.Greater(len(rolloutB.Msg.Stages), 0, "project B rollout should have stages")
+	a.Greater(len(rolloutB.Msg.Stages[0].Tasks), 0, "project B rollout should have tasks")
+	taskB := rolloutB.Msg.Stages[0].Tasks[0]
+
+	_, err = ctl.rolloutServiceClient.BatchRunTasks(ctx,
+		connect.NewRequest(&v1pb.BatchRunTasksRequest{
+			Parent:  rolloutB.Msg.Stages[0].Name,
+			Tasks:   []string{taskB.Name},
+			RunTime: timestamppb.New(time.Now().Add(time.Hour)),
+		}))
+	a.NoError(err)
+
+	assertTasksCollide(ctx, t, ctl, fixture)
+	assertTaskRunsCollide(ctx, t, ctl, fixture)
+	aAfter := snapshotProject(ctx, t, ctl, fixture.ProjectA)
+	assertProjectUnchanged(t, fixture.BaselineA, aAfter, "project A after project B task run creation")
+}
+
+// TestCollisionBatchSkipTasksNoCrossProjectEffect verifies that skipping a
+// task in project B cannot mark project A's same-id task as skipped.
+func TestCollisionBatchSkipTasksNoCrossProjectEffect(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	ctl, ctx := startProject(ctx, t)
+
+	fixture := setupCollidingProjects(ctx, t, ctl)
+	a.Greater(len(fixture.BaselineA.TaskRuns), 0, "project A should have task_runs")
+
+	rolloutA, err := ctl.rolloutServiceClient.GetRollout(ctx,
+		connect.NewRequest(&v1pb.GetRolloutRequest{Name: fixture.PlanA.Name + "/rollout"}))
+	a.NoError(err)
+	rolloutB, err := ctl.rolloutServiceClient.CreateRollout(ctx,
+		connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: fixture.PlanB.Name}))
+	a.NoError(err)
+	a.Greater(len(rolloutA.Msg.Stages), 0, "project A rollout should have stages")
+	a.Greater(len(rolloutA.Msg.Stages[0].Tasks), 0, "project A rollout should have tasks")
+	a.Greater(len(rolloutB.Msg.Stages), 0, "project B rollout should have stages")
+	a.Greater(len(rolloutB.Msg.Stages[0].Tasks), 0, "project B rollout should have tasks")
+	taskA := rolloutA.Msg.Stages[0].Tasks[0]
+	taskB := rolloutB.Msg.Stages[0].Tasks[0]
+	_, _, _, taskAID, err := common.GetProjectIDPlanIDStageIDTaskID(taskA.Name)
+	a.NoError(err)
+	_, _, _, taskBID, err := common.GetProjectIDPlanIDStageIDTaskID(taskB.Name)
+	a.NoError(err)
+	a.Equal(taskAID, taskBID, "project A and B task IDs should collide")
+
+	_, err = ctl.rolloutServiceClient.BatchSkipTasks(ctx,
+		connect.NewRequest(&v1pb.BatchSkipTasksRequest{
+			Parent: rolloutB.Msg.Stages[0].Name,
+			Tasks:  []string{taskB.Name},
+			Reason: "collision isolation",
+		}))
+	a.NoError(err)
+	rolloutBAfter, err := ctl.rolloutServiceClient.GetRollout(ctx,
+		connect.NewRequest(&v1pb.GetRolloutRequest{Name: rolloutB.Msg.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.Task_SKIPPED, rolloutBAfter.Msg.Stages[0].Tasks[0].Status,
+		"project B task should be skipped")
+
+	aAfter := snapshotProject(ctx, t, ctl, fixture.ProjectA)
+	assertProjectUnchanged(t, fixture.BaselineA, aAfter, "project A after project B task skip")
+}
+
 // TestCollisionListPlansIsolation verifies that ListPlans scoped to project A
 // does not leak project B's plans.
 func TestCollisionListPlansIsolation(t *testing.T) {
@@ -75,10 +178,7 @@ func TestCollisionListPlansIsolation(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -104,10 +204,7 @@ func TestCollisionListTaskRunsIsolation(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 	fixture.completeRolloutB(ctx, t, ctl)
@@ -137,10 +234,7 @@ func TestCollisionGetPlanCheckRunIsolation(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 	fixture.completeRolloutB(ctx, t, ctl)
@@ -161,10 +255,7 @@ func TestCollisionGetIssueIsolation(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -184,10 +275,7 @@ func TestCollisionListIssuesIsolation(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -206,4 +294,99 @@ func TestCollisionListIssuesIsolation(t *testing.T) {
 		a.True(strings.HasPrefix(issue.Name, fixture.ProjectA.Name+"/"),
 			"ListIssues for project A returned an issue from another project: %s", issue.Name)
 	}
+}
+
+// TestSearchIssuesConcreteProjectAuthorization is the regression lock for
+// audit finding T4: SearchIssues uses CUSTOM auth, so the ACL interceptor
+// performs no permission check and the handler must authorize both the
+// concrete-project and the AIP-159 wildcard branch itself. Before the fix,
+// any authenticated workspace member could read every non-draft issue in any
+// project by naming that project as the parent.
+func TestSearchIssuesConcreteProjectAuthorization(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	ctl, ctx := startProject(ctx, t)
+
+	fixture := setupCollidingProjects(ctx, t, ctl)
+	ownerToken := ctl.authInterceptor.token
+
+	// A member of project A only. Project B is off limits for this user.
+	memberToken := bot35CreateProjectUser(ctx, t, ctl, fixture.ProjectA.Name, "roles/projectDeveloper", "issue-search-member")
+
+	ctl.authInterceptor.token = memberToken
+	// Concrete parent the caller cannot read: denied, not silently served.
+	_, err := ctl.issueServiceClient.SearchIssues(ctx,
+		connect.NewRequest(&v1pb.SearchIssuesRequest{
+			Parent:   fixture.ProjectB.Name,
+			PageSize: 100,
+		}))
+	a.Error(err, "SearchIssues on an unauthorized project must fail")
+	a.Equal(connect.CodePermissionDenied, connect.CodeOf(err))
+
+	// Concrete parent the caller can read still works.
+	allowed, err := ctl.issueServiceClient.SearchIssues(ctx,
+		connect.NewRequest(&v1pb.SearchIssuesRequest{
+			Parent:   fixture.ProjectA.Name,
+			PageSize: 100,
+		}))
+	a.NoError(err, "SearchIssues on an authorized project must succeed")
+	a.Greater(len(allowed.Msg.Issues), 0, "project A should have issues (fixture creates them)")
+	for _, issue := range allowed.Msg.Issues {
+		a.True(strings.HasPrefix(issue.Name, fixture.ProjectA.Name+"/"),
+			"SearchIssues for project A returned an issue from another project: %s", issue.Name)
+	}
+
+	// An unknown parent is NotFound, not INTERNAL: CheckPermission's own
+	// project lookup would otherwise surface as a 500 for a typo'd project.
+	_, err = ctl.issueServiceClient.SearchIssues(ctx,
+		connect.NewRequest(&v1pb.SearchIssuesRequest{
+			Parent:   "projects/does-not-exist",
+			PageSize: 100,
+		}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err), "unknown project must be NotFound")
+
+	// The AIP-159 wildcard keeps searching across collections, restricted to
+	// the projects the caller can read.
+	wildcard, err := ctl.issueServiceClient.SearchIssues(ctx,
+		connect.NewRequest(&v1pb.SearchIssuesRequest{
+			Parent:   "projects/-",
+			PageSize: 100,
+		}))
+	a.NoError(err, "wildcard search must remain available")
+	a.Greater(len(wildcard.Msg.Issues), 0, "the caller can read project A's issues")
+	for _, issue := range wildcard.Msg.Issues {
+		a.False(strings.HasPrefix(issue.Name, fixture.ProjectB.Name+"/"),
+			"wildcard search leaked an issue from an unauthorized project: %s", issue.Name)
+	}
+
+	// A workspace admin still sees both projects through the wildcard, so the
+	// filter narrows by permission rather than always dropping other projects.
+	ctl.authInterceptor.token = ownerToken
+	adminWildcard, err := ctl.issueServiceClient.SearchIssues(ctx,
+		connect.NewRequest(&v1pb.SearchIssuesRequest{
+			Parent:   "projects/-",
+			PageSize: 100,
+		}))
+	a.NoError(err)
+	var sawB bool
+	for _, issue := range adminWildcard.Msg.Issues {
+		if strings.HasPrefix(issue.Name, fixture.ProjectB.Name+"/") {
+			sawB = true
+		}
+	}
+	a.True(sawB, "an admin wildcard search should include project B's issues")
+
+	// An admin holds the permission workspace-wide, so CheckPermission never
+	// reaches its project lookup: without the explicit resolve, an unknown
+	// project would silently return an empty page instead of NotFound.
+	_, err = ctl.issueServiceClient.SearchIssues(ctx,
+		connect.NewRequest(&v1pb.SearchIssuesRequest{
+			Parent:   "projects/does-not-exist",
+			PageSize: 100,
+		}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err), "unknown project must be NotFound for an admin too")
 }

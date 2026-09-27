@@ -22,18 +22,29 @@ service IdentityProviderService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.identityProviders.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
-  // Lists all configured identity providers (public endpoint for login page).
-  // Permissions required: None
+  // Lists the identity providers configured for the caller's workspace.
+  // The login page reads AuthService.GetAuthenticationInfo instead,
+  // which publishes only the fields a browser needs to start an SSO redirect.
+  //
+  // Returns the same representation as GetIdentityProvider — secrets redacted,
+  // the rest of the configuration included — so granting
+  // bb.identityProviders.list conveys configuration read over the whole
+  // collection, not merely the names in it.
+  // Permissions required: bb.identityProviders.list
   rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse) {
     option (google.api.http) = {
       get: "/v1/idps"
       additional_bindings: {get: "/v1/{parent=workspaces/*}/idps"}
     };
-    option (google.api.method_signature) = "";
-    option (bytebase.v1.allow_without_credential) = true;
-    // The method requires no authentication thus no authorization.
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.identityProviders.list";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Creates a new identity provider.
@@ -47,6 +58,8 @@ service IdentityProviderService {
     option (bytebase.v1.permission) = "bb.identityProviders.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 
   // Updates an identity provider.
@@ -61,6 +74,8 @@ service IdentityProviderService {
     option (bytebase.v1.permission) = "bb.identityProviders.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 
   // Deletes an identity provider.
@@ -71,6 +86,8 @@ service IdentityProviderService {
     option (bytebase.v1.permission) = "bb.identityProviders.delete";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Tests the connection and configuration of an identity provider.
@@ -82,6 +99,8 @@ service IdentityProviderService {
     };
     option (bytebase.v1.permission) = "bb.identityProviders.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 }
 
@@ -95,10 +114,15 @@ message GetIdentityProviderRequest {
 }
 
 message ListIdentityProvidersRequest {
-  // The parent workspace whose identity providers should be listed.
+  // The parent workspace whose identity providers should be listed. It must be
+  // the workspace the caller's credential belongs to.
   // Format: workspaces/{workspace}
-  // When unset, the workspace is resolved from the request context.
-  string parent = 1 [(google.api.resource_reference) = {type: "bytebase.com/Workspace"}];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Workspace"},
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^workspaces/[^/]+$"
+  ];
 }
 
 message ListIdentityProvidersResponse {
@@ -153,17 +177,26 @@ message TestIdentityProviderRequest {
     OAuth2IdentityProviderTestRequestContext oauth2_context = 2;
     // OIDC authentication context for test connection.
     OIDCIdentityProviderTestRequestContext oidc_context = 3;
+    // LDAP credentials context for test connection.
+    LDAPIdentityProviderTestRequestContext ldap_context = 4;
   }
 }
 
 message OAuth2IdentityProviderTestRequestContext {
   // Authorize code from website.
-  string code = 1;
+  string code = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }
 
 message OIDCIdentityProviderTestRequestContext {
   // Authorize code from OIDC provider.
-  string code = 1;
+  string code = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
+}
+
+message LDAPIdentityProviderTestRequestContext {
+  // The username of a directory user, substituted into the user filter.
+  string username = 1;
+  // The password of the directory user.
+  string password = 2 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }
 
 message TestIdentityProviderResponse {
@@ -206,7 +239,6 @@ enum IdentityProviderType {
   // LDAP directory service authentication.
   LDAP = 3;
 }
-
 message IdentityProviderConfig {
   oneof config {
     // OAuth2 protocol configuration.
@@ -233,7 +265,7 @@ message OAuth2IdentityProviderConfig {
   string client_id = 4;
 
   // The OAuth2 client secret for authentication.
-  string client_secret = 5;
+  string client_secret = 5 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // The list of OAuth2 scopes to request.
   repeated string scopes = 6;
@@ -257,7 +289,7 @@ message OIDCIdentityProviderConfig {
   string client_id = 2;
 
   // The OIDC client secret for authentication.
-  string client_secret = 3;
+  string client_secret = 3 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // The scopes that the OIDC provider supports.
   // Should be fetched from the well-known configuration file of the OIDC provider.
@@ -292,7 +324,7 @@ message LDAPIdentityProviderConfig {
   // search requests.
   string bind_dn = 4;
   // BindPassword is the password of the user to bind as a service account.
-  string bind_password = 5;
+  string bind_password = 5 [(bytebase.v1.audit_behavior) = SENSITIVE];
   // BaseDN is the base DN to search for users, e.g., "ou=users,dc=example,dc=com".
   string base_dn = 6;
   // UserFilter is the filter to search for users, e.g., "(uid=%s)".

@@ -54,6 +54,9 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, conf db.ConnectionC
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load AWS config")
 	}
+	if err := util.AssumeRoleIfNeeded(ctx, &cfg, conf.ConnectionContext, conf.DataSource.GetAwsCredential()); err != nil {
+		return nil, err
+	}
 	d.awsConfig = cfg
 
 	var optFns []func(*dynamodb.Options)

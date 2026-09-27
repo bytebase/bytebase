@@ -60,6 +60,16 @@ func (x *IssueCommentPayload_IssueUpdate) Equal(y *IssueCommentPayload_IssueUpda
 	return true
 }
 
+func (x *IssueCommentPayload_ReviewSubmission) Equal(y *IssueCommentPayload_ReviewSubmission) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
 func (x *IssueCommentPayload_PlanUpdate) Equal(y *IssueCommentPayload_PlanUpdate) bool {
 	if x == y {
 		return true
@@ -86,6 +96,55 @@ func (x *IssueCommentPayload_PlanUpdate) Equal(y *IssueCommentPayload_PlanUpdate
 	return true
 }
 
+func (x *IssueCommentPayload_ReviewMetadata) Equal(y *IssueCommentPayload_ReviewMetadata) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.RunType != y.RunType {
+		return false
+	}
+	if x.RuleType != y.RuleType {
+		return false
+	}
+	if x.Priority != y.Priority {
+		return false
+	}
+	if len(x.Targets) != len(y.Targets) {
+		return false
+	}
+	for i := 0; i < len(x.Targets); i++ {
+		if x.Targets[i] != y.Targets[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *IssueCommentPayload_StatementAnchor) Equal(y *IssueCommentPayload_StatementAnchor) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.SpecId != y.SpecId {
+		return false
+	}
+	if x.SheetSha256 != y.SheetSha256 {
+		return false
+	}
+	if !x.StartPosition.Equal(y.StartPosition) {
+		return false
+	}
+	if !x.EndPosition.Equal(y.EndPosition) {
+		return false
+	}
+	return true
+}
+
 func (x *IssueCommentPayload) Equal(y *IssueCommentPayload) bool {
 	if x == y {
 		return true
@@ -103,6 +162,15 @@ func (x *IssueCommentPayload) Equal(y *IssueCommentPayload) bool {
 		return false
 	}
 	if !x.GetPlanUpdate().Equal(y.GetPlanUpdate()) {
+		return false
+	}
+	if !x.GetReviewSubmission().Equal(y.GetReviewSubmission()) {
+		return false
+	}
+	if !x.StatementAnchor.Equal(y.StatementAnchor) {
+		return false
+	}
+	if !x.ReviewMetadata.Equal(y.ReviewMetadata) {
 		return false
 	}
 	return true

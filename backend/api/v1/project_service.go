@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/utils"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -35,9 +36,10 @@ import (
 // ProjectService implements the project service.
 type ProjectService struct {
 	v1connect.UnimplementedProjectServiceHandler
-	store      *store.Store
-	profile    *config.Profile
-	iamManager *iam.Manager
+	store         *store.Store
+	profile       *config.Profile
+	iamManager    *iam.Manager
+	sampleManager sample.Manager
 }
 
 // NewProjectService creates a new ProjectService.
@@ -45,11 +47,13 @@ func NewProjectService(
 	store *store.Store,
 	profile *config.Profile,
 	iamManager *iam.Manager,
+	sampleManager sample.Manager,
 ) *ProjectService {
 	return &ProjectService{
-		store:      store,
-		profile:    profile,
-		iamManager: iamManager,
+		store:         store,
+		profile:       profile,
+		iamManager:    iamManager,
+		sampleManager: sampleManager,
 	}
 }
 
@@ -69,9 +73,6 @@ func (s *ProjectService) BatchGetProjects(ctx context.Context, req *connect.Requ
 		project, err := s.getProjectMessage(ctx, name)
 		if err != nil {
 			return nil, err
-		}
-		if project.Deleted {
-			continue
 		}
 		projects = append(projects, convertToProject(project))
 	}
@@ -219,6 +220,11 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 	}
+	if req.Msg.Project != nil {
+		if err := validateIssueLabels(req.Msg.Project.IssueLabels); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+	}
 
 	projectMessage := convertToProjectMessage(req.Msg.ProjectId, req.Msg.Project)
 
@@ -310,6 +316,9 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 			projectSettings.DataClassificationConfigId = req.Msg.Project.DataClassificationConfigId
 			patch.Setting = projectSettings
 		case "issue_labels":
+			if err := validateIssueLabels(req.Msg.Project.IssueLabels); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
 			var issueLabels []*storepb.Label
 			for _, label := range req.Msg.Project.IssueLabels {
 				issueLabels = append(issueLabels, &storepb.Label{
@@ -356,6 +365,9 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		case "allow_just_in_time_access":
 			projectSettings.AllowJustInTimeAccess = req.Msg.Project.AllowJustInTimeAccess
 			patch.Setting = projectSettings
+		case "allow_last_plan_editor_approval":
+			projectSettings.AllowLastPlanEditorApproval = req.Msg.Project.AllowLastPlanEditorApproval
+			patch.Setting = projectSettings
 		case "labels":
 			if err := validateLabels(req.Msg.Project.Labels); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -389,20 +401,18 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		if common.IsDefaultProject(project.Workspace, project.ResourceID) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project cannot be purged"))
 		}
-
-		// If project is not already soft-deleted, soft-delete it first
 		if !project.Deleted {
-			if err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
-				ResourceID: project.ResourceID,
-				Workspace:  project.Workspace,
-				Delete:     &deletePatch,
-			}); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("project %q must be archived before it can be deleted", req.Msg.Name))
+		}
+
+		if s.sampleManager != nil {
+			if err := s.sampleManager.HandleProjectPurge(ctx, project.Workspace, project.ResourceID); err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to clean up sample project"))
 			}
 		}
 
 		// Permanently delete the project and all related resources (moves databases to default project)
-		if err := s.store.DeleteProject(ctx, project.Workspace, project.ResourceID); err != nil {
+		if err := s.store.DeleteProjects(ctx, project.Workspace, project.ResourceID); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge project"))
 		}
 
@@ -475,28 +485,31 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 			projectsToPurge = append(projectsToPurge, project)
 		}
 
-		// Soft-delete projects that aren't already deleted
-		var projectsToSoftDelete []*store.UpdateProjectMessage
 		for _, project := range projectsToPurge {
 			if !project.Deleted {
-				projectsToSoftDelete = append(projectsToSoftDelete, &store.UpdateProjectMessage{
-					ResourceID: project.ResourceID,
-					Workspace:  project.Workspace,
-					Delete:     &deletePatch,
-				})
-			}
-		}
-		if len(projectsToSoftDelete) > 0 {
-			if err := s.store.UpdateProjects(ctx, projectsToSoftDelete...); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("project %q must be archived before it can be deleted", project.GetName()))
 			}
 		}
 
-		// Permanently delete all projects (moves databases to default project)
+		// Sample cleanup runs first and outside the purge transaction because it
+		// releases resources outside the metadata database that no rollback can
+		// restore. It leaves the project rows untouched, so a failure here still
+		// purges nothing.
+		resourceIDs := make([]string, 0, len(projectsToPurge))
 		for _, project := range projectsToPurge {
-			if err := s.store.DeleteProject(ctx, project.Workspace, project.ResourceID); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to purge project %q", project.Title))
+			if s.sampleManager != nil {
+				if err := s.sampleManager.HandleProjectPurge(ctx, project.Workspace, project.ResourceID); err != nil {
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to clean up sample project %q", project.Title))
+				}
 			}
+			resourceIDs = append(resourceIDs, project.ResourceID)
+		}
+
+		// Permanently delete all projects in one transaction (moves databases to
+		// default project), so a failure partway leaves every project intact
+		// instead of irreversibly purging the ones already reached.
+		if err := s.store.DeleteProjects(ctx, common.GetWorkspaceIDFromContext(ctx), resourceIDs...); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge projects"))
 		}
 		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
@@ -594,8 +607,13 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project iam policy with error"))
 	}
-	if req.Msg.Etag != "" && req.Msg.Etag != oldIamPolicyMsg.Etag {
-		return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
+
+	// The etag is compared only in the write below, against the locked row.
+	// Comparing it here too would add a second answer to the same question from
+	// a read the write does not hold, and only the locked one decides.
+	expectedEtag, err := requestedIamPolicyEtag(req.Msg)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, req.Msg, oldIamPolicyMsg); err != nil {
@@ -607,30 +625,22 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, err
 	}
 
-	policyPayload, err := protojson.Marshal(policy)
+	replaced, iamPolicyMessage, err := s.store.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
+		Workspace:    workspaceID,
+		ResourceType: storepb.Policy_PROJECT,
+		Resource:     common.FormatProject(project.ResourceID),
+		Policy:       policy,
+		ExpectedEtag: expectedEtag,
+	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if _, err = s.store.CreatePolicy(ctx, &store.PolicyMessage{
-		Workspace:         workspaceID,
-		Resource:          common.FormatProject(project.ResourceID),
-		ResourceType:      storepb.Policy_PROJECT,
-		Payload:           string(policyPayload),
-		Type:              storepb.Policy_IAM,
-		InheritFromParent: false,
-		// Enforce cannot be false while creating a policy.
-		Enforce: true,
-	}); err != nil {
+		if errors.Is(err, store.ErrIamPolicyEtagMismatch) {
+			return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, workspaceID, project.ResourceID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
-		deltas := findIamPolicyDeltas(oldIamPolicyMsg.Policy, iamPolicyMessage.Policy)
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok {
+		deltas := findIamPolicyDeltas(replaced.Policy, iamPolicyMessage.Policy)
 		p, err := convertToProtoAny(deltas)
 		if err != nil {
 			slog.Warn("audit: failed to convert to anypb.Any")
@@ -834,7 +844,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 				Webhook: req.Msg.Webhook,
 			}))
 		}
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", req.Msg.Webhook.Url))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", webhookID))
 	}
 
 	// Start with existing webhook payload
@@ -917,7 +927,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	if webhook == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", req.Msg.Webhook.Url))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", webhookID))
 	}
 
 	if err := s.store.DeleteProjectWebhook(ctx, project.ResourceID, webhook.ResourceID); err != nil {
@@ -932,6 +942,36 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(convertToProject(project)), nil
+}
+
+// storedWebhookURL reads back the URL of a saved webhook, for the one caller
+// that needs it: TestWebhook, when the client has no URL to send because the
+// read path does not return one. The URL is used to post the test notification
+// and is never returned, and the caller already holds bb.projects.update on the
+// project, which is what it takes to set that URL in the first place.
+//
+// The webhook has to belong to the project the request named. The ACL runs
+// against that project, so without this check a caller holding the permission
+// on one project could make the server post through another project's webhook.
+func (s *ProjectService) storedWebhookURL(ctx context.Context, projectID, webhookName string) (string, error) {
+	nameProjectID, webhookID, err := common.GetProjectIDWebhookID(webhookName)
+	if err != nil {
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid webhook name"))
+	}
+	if nameProjectID != projectID {
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("webhook %q does not belong to project %q", webhookName, projectID))
+	}
+	webhook, err := s.store.GetProjectWebhook(ctx, &store.FindProjectWebhookMessage{
+		ProjectID:  &projectID,
+		ResourceID: &webhookID,
+	})
+	if err != nil {
+		return "", connect.NewError(connect.CodeInternal, err)
+	}
+	if webhook == nil {
+		return "", connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", webhookID))
+	}
+	return webhook.Payload.GetUrl(), nil
 }
 
 // TestWebhook tests a webhook.
@@ -964,8 +1004,33 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	// Reads leave a saved webhook's URL empty, so a client testing one cannot
+	// send the real URL: it never had it. An empty URL on a request that names
+	// a webhook means "the one already stored", and that is what gets posted
+	// to. Testing a URL the caller typed still works unchanged, which is what
+	// the create form does.
+	urlFromStore := false
+	if webhook.Payload.GetUrl() == "" && req.Msg.Webhook.GetName() != "" {
+		storedURL, err := s.storedWebhookURL(ctx, project.ResourceID, req.Msg.Webhook.GetName())
+		if err != nil {
+			return nil, err
+		}
+		webhook.Payload.Url = storedURL
+		urlFromStore = true
+	}
+
 	// Validate webhook URL against allowed domains
 	if err := webhookplugin.ValidateWebhookURL(webhook.Payload.GetType(), webhook.Payload.GetUrl()); err != nil {
+		if urlFromStore {
+			// The validator withholds the URL but names its hostname, and the
+			// caller chose the type it was validated against, so echoing that
+			// message would let anyone read a stored webhook's host back by
+			// testing it as the wrong type. For a Teams webhook that host is
+			// per-customer. The type is the actionable half and the only half
+			// they supplied.
+			return nil, connect.NewError(connect.CodeInvalidArgument,
+				errors.Errorf("the stored webhook URL is not a valid %s webhook URL", webhook.Payload.GetType()))
+		}
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid webhook URL"))
 	}
 
@@ -1016,7 +1081,15 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 		},
 	)
 	if err != nil {
-		resp.Error = err.Error()
+		// Most posters wrap their failure with the URL they posted to, and this
+		// response is the one place that error reaches a caller. A caller who
+		// typed the URL gets the message in full; one testing a stored URL gets
+		// the status code and nothing else.
+		if urlFromStore {
+			resp.Error = storedWebhookDeliveryFailure(err)
+		} else {
+			resp.Error = err.Error()
+		}
 	}
 
 	return connect.NewResponse(resp), nil
@@ -1059,6 +1132,22 @@ func getBindingIdentifier(role string, condition *expr.Expr) string {
 	return strings.Join(ids, ";")
 }
 
+// requestedIamPolicyEtag reads the etag the caller presented. GetIamPolicy
+// returns the etag inside the policy, so a read-modify-write round-trips it
+// there; the request field carries the same value for a caller that sets it
+// explicitly. Either alone is honored, and an empty etag asks for no check at
+// all. Two that disagree name two different reads, which no caller can mean.
+func requestedIamPolicyEtag(msg *v1pb.SetIamPolicyRequest) (string, error) {
+	policyEtag := msg.GetPolicy().GetEtag()
+	if msg.Etag != "" && policyEtag != "" && msg.Etag != policyEtag {
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("request etag %q and policy etag %q disagree", msg.Etag, policyEtag))
+	}
+	if msg.Etag != "" {
+		return msg.Etag, nil
+	}
+	return policyEtag, nil
+}
+
 func validateIAMPolicy(
 	ctx context.Context,
 	stores *store.Store,
@@ -1077,9 +1166,9 @@ func validateIAMPolicy(
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.New("failed to get workspace profile setting"))
 	}
-	var maximumRequestExpiration *durationpb.Duration
+	var maximumRoleExpiration *durationpb.Duration
 	if workspaceProfileSetting != nil {
-		maximumRequestExpiration = workspaceProfileSetting.MaximumRequestExpiration
+		maximumRoleExpiration = workspaceProfileSetting.MaximumRoleExpiration
 	}
 
 	roleMessages, err := stores.ListRoles(ctx, &store.FindRoleMessage{Workspace: common.GetWorkspaceIDFromContext(ctx)})
@@ -1117,14 +1206,14 @@ func validateIAMPolicy(
 		}
 	}
 
-	return validateBindings(msg.Resource, bindings, roleMessages, maximumRequestExpiration)
+	return validateBindings(msg.Resource, bindings, roleMessages, maximumRoleExpiration)
 }
 
 func validateBindings(
 	parent string,
 	bindings []*v1pb.Binding,
 	roles []*store.RoleMessage,
-	maximumRequestExpiration *durationpb.Duration,
+	maximumRoleExpiration *durationpb.Duration,
 ) error {
 	existingRoles := make(map[string]bool)
 	for _, role := range roles {
@@ -1147,9 +1236,9 @@ func validateBindings(
 			return err
 		}
 
-		if binding.Role != fmt.Sprintf("roles/%s", store.ProjectOwnerRole) && maximumRequestExpiration != nil {
-			// Only validate when maximumRequestExpiration is set and the role is not project owner.
-			if err := validateExpirationInExpression(binding.GetCondition().GetExpression(), maximumRequestExpiration); err != nil {
+		if binding.Role != fmt.Sprintf("roles/%s", store.ProjectOwnerRole) && maximumRoleExpiration != nil {
+			// Only validate when maximumRoleExpiration is set and the role is not project owner.
+			if err := validateExpirationInExpression(binding.GetCondition().GetExpression(), maximumRoleExpiration); err != nil {
 				return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate expiration for binding %v", binding.Role))
 			}
 		}
@@ -1162,8 +1251,8 @@ func validateBindings(
 // * request.time < timestamp("2021-01-01T00:00:00Z")
 //
 // Other expressions will be ignored.
-func validateExpirationInExpression(expr string, maximumRequestExpiration *durationpb.Duration) error {
-	if maximumRequestExpiration == nil {
+func validateExpirationInExpression(expr string, maximumExpiration *durationpb.Duration) error {
+	if maximumExpiration == nil {
 		return nil
 	}
 	if !strings.Contains(expr, "request.time") {
@@ -1237,9 +1326,9 @@ func validateExpirationInExpression(expr string, maximumRequestExpiration *durat
 				if err != nil {
 					return errors.Errorf("failed to parse time %v, error: %v", value, err)
 				}
-				maxExpirationTime := time.Now().Add(maximumRequestExpiration.AsDuration())
+				maxExpirationTime := time.Now().Add(maximumExpiration.AsDuration())
 				if t.After(maxExpirationTime) {
-					return errors.Errorf("time %s exceeds maximum request expiration %s", t.Format(time.DateTime), maxExpirationTime.Format(time.DateTime))
+					return errors.Errorf("time %s exceeds maximum role expiration %s", t.Format(time.DateTime), maxExpirationTime.Format(time.DateTime))
 				}
 				return nil
 			default:
@@ -1272,4 +1361,13 @@ func validateMember(member string) error {
 		}
 	}
 	return errors.Errorf("invalid member %s", member)
+}
+
+func validateIssueLabels(labels []*v1pb.Label) error {
+	for _, label := range labels {
+		if label.Color != nil && !isOpaqueColor(label.Color) {
+			return errors.Errorf("issue label %q color invalid", label.Value)
+		}
+	}
+	return nil
 }

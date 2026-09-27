@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { v4 as uuidv4 } from "uuid";
-import type { ConditionGroupExpr } from "@/plugins/cel";
-import { resolveCELExpr, wrapAsGroup } from "@/plugins/cel";
+import type { ConditionGroupExpr } from "@/modules/cel";
+import { resolveCELExpr, wrapAsGroup } from "@/modules/cel";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type { ApprovalFlow } from "@/types/proto-es/v1/issue_service_pb";

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"slices"
 	"strings"
@@ -12,8 +13,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 var getSegmenter func() *gse.Segmenter
@@ -101,12 +102,50 @@ type FindIssueMessage struct {
 	Limit  *int
 	Offset *int
 
-	Query *string
+	Query        *string
+	ExcludeDraft bool
 
 	LabelList     []string
 	RiskLevelList []storepb.RiskLevel
 	OrderByKeys   []*OrderByKey
+
+	// ApprovalStatus is a v1 ApprovalStatus enum name, matched by approvalStatusExpr.
+	ApprovalStatus *string
+	// NextApproverRoles restricts the list to issues whose approval flow is
+	// waiting on one of these (project, role) pairs. Non-nil and empty matches
+	// no issue.
+	NextApproverRoles *[]ProjectRole
 }
+
+// ProjectRole is a role held in one project.
+type ProjectRole struct {
+	ProjectID string
+	Role      string
+}
+
+// approvalStatusExpr mirrors ComputeApprovalStatus branch for branch — keep
+// the two in step. Payloads are marshalled with a bare protojson.Marshal, so an
+// absent key is a zero value.
+const approvalStatusExpr = `
+	CASE
+		WHEN NOT COALESCE((issue.payload->'approval'->>'approvalFindingDone')::BOOLEAN, FALSE) THEN 'CHECKING'
+		WHEN issue.payload->'approval'->'approvalTemplate' IS NULL THEN 'SKIPPED'
+		WHEN COALESCE(jsonb_array_length(issue.payload->'approval'->'approvers'), 0) = 0 THEN 'PENDING'
+		WHEN issue.payload->'approval'->'approvers' @> '[{"status": "REJECTED"}]'::JSONB THEN 'REJECTED'
+		WHEN COALESCE(jsonb_array_length(issue.payload->'approval'->'approvers'), 0)
+				>= COALESCE(jsonb_array_length(issue.payload->'approval'->'approvalTemplate'->'flow'->'roles'), 0)
+			AND NOT EXISTS (
+				SELECT 1
+				FROM jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver
+				WHERE COALESCE(approver->>'status', '') <> 'APPROVED'
+			) THEN 'APPROVED'
+		ELSE 'PENDING'
+	END`
+
+// nextApprovalRoleExpr is the flow role at the first step nobody has acted on.
+// `->>` past the end of the array yields NULL, so a finished flow drops out.
+const nextApprovalRoleExpr = `issue.payload->'approval'->'approvalTemplate'->'flow'->'roles'
+		->> COALESCE(jsonb_array_length(issue.payload->'approval'->'approvers'), 0)`
 
 // GetIssueOrders parses the order_by string and returns the corresponding OrderByKeys.
 func GetIssueOrders(orderBy string) ([]*OrderByKey, error) {
@@ -168,6 +207,26 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 	}
 	defer tx.Rollback()
 
+	if create.PlanUID != nil {
+		if err := AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, create.ProjectID, *create.PlanUID); err != nil {
+			return nil, errors.Wrap(err, "failed to acquire plan issue-rollout lock")
+		}
+
+		var hasRollout bool
+		if err := tx.QueryRowContext(ctx, `
+			SELECT COALESCE((config->>'hasRollout')::boolean, false)
+			FROM plan
+			WHERE project = $1
+			  AND id = $2
+			FOR UPDATE`,
+			create.ProjectID, *create.PlanUID).Scan(&hasRollout); err != nil {
+			return nil, errors.Wrapf(err, "failed to get plan %d", *create.PlanUID)
+		}
+		if create.Payload.GetDraft() && hasRollout {
+			return nil, ErrPlanHasRollout
+		}
+	}
+
 	nextID, err := nextProjectID(ctx, tx, "issue", create.ProjectID)
 	if err != nil {
 		return nil, err
@@ -222,9 +281,27 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 	if err != nil {
 		return nil, err
 	}
+	if _, err := updateIssue(ctx, s.GetDB(), projectID, uid, oldIssue, patch); err != nil {
+		return nil, err
+	}
+
+	return s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
+}
+
+// UpdateIssueTx updates an already locked Issue inside a caller-owned transaction.
+func UpdateIssueTx(ctx context.Context, tx *sql.Tx, issue *IssueMessage, patch *UpdateIssueMessage) (time.Time, error) {
+	return updateIssue(ctx, tx, issue.ProjectID, issue.UID, issue, patch)
+}
+
+type issueUpdateExecutor interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+}
+
+func updateIssue(ctx context.Context, executor issueUpdateExecutor, projectID string, uid int64, oldIssue *IssueMessage, patch *UpdateIssueMessage) (time.Time, error) {
+	updatedAt := time.Now()
 
 	set := qb.Q()
-	set.Comma("updated_at = ?", time.Now())
+	set.Comma("updated_at = ?", updatedAt)
 
 	if v := patch.Title; v != nil {
 		set.Comma("name = ?", *v)
@@ -235,15 +312,20 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 	if v := patch.Description; v != nil {
 		set.Comma("description = ?", *v)
 	}
+	payloadSet := qb.Q().Space("payload")
 	if v := patch.PayloadUpsert; v != nil {
 		v.Labels = CanonicalizeIssueLabels(v.Labels)
 		p, err := protojson.Marshal(v)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal patch.PayloadUpsert")
+			return time.Time{}, errors.Wrapf(err, "failed to marshal patch.PayloadUpsert")
 		}
-		set.Comma("payload = payload || ?", p)
-	} else if patch.RemoveLabels {
-		set.Comma("payload = payload || jsonb_build_object('labels', ?::JSONB)", nil)
+		payloadSet.Space("|| ?::jsonb", string(p))
+	}
+	if patch.RemoveLabels {
+		payloadSet.Space("|| jsonb_build_object('labels', ?::JSONB)", nil)
+	}
+	if payloadSet.Len() > 1 {
+		set.Comma("payload = ?", payloadSet)
 	}
 
 	if patch.Title != nil || patch.Description != nil {
@@ -264,19 +346,21 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
+		return time.Time{}, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
-		return nil, err
+	if _, err := executor.ExecContext(ctx, query, args...); err != nil {
+		return time.Time{}, err
 	}
-
-	return s.GetIssue(ctx, &FindIssueMessage{ProjectIDs: []string{projectID}, UID: &uid})
+	return updatedAt, nil
 }
 
 // ListIssues returns the list of issues by find query.
 func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
-	orderByClause := "ORDER BY issue.id DESC"
+	// Relevance ranking is derived from the query text rather than requested by
+	// the caller, so it is tracked apart from find.OrderByKeys. Set when the
+	// caller supplied query text that produced a tsquery.
+	var rankOrder string
 	from := qb.Q().Space("issue")
 	where := qb.Q()
 
@@ -309,11 +393,12 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	if v := find.CreatorID; v != nil {
 		where.And("issue.creator = ?", *v)
 	}
+	// The filter grammar documents ">=" and "<=" for create_time.
 	if v := find.CreatedAtBefore; v != nil {
-		where.And("issue.created_at < ?", *v)
+		where.And("issue.created_at <= ?", *v)
 	}
 	if v := find.CreatedAtAfter; v != nil {
-		where.And("issue.created_at > ?", *v)
+		where.And("issue.created_at >= ?", *v)
 	}
 	if v := find.Types; v != nil {
 		typeStrings := make([]string, 0, len(*v))
@@ -327,9 +412,9 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		if tsQuery := getTSQuery(*v); tsQuery != "" {
 			from.Space("LEFT JOIN CAST(? AS tsquery) AS query ON TRUE", tsQuery)
 			searchCondition.Or("issue.ts_vector @@ query")
-			orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
+			rankOrder = "ts_rank(issue.ts_vector, query) DESC"
 		}
-		searchCondition.Or("issue.name ILIKE ?", "%"+*v+"%")
+		searchCondition.Or("issue.name ILIKE ? ESCAPE '\\'", containsPattern(*v))
 		where.And("(?)", searchCondition)
 	}
 	if len(find.StatusList) != 0 {
@@ -349,15 +434,48 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		}
 		where.And("payload->>'riskLevel' = ANY(?)", riskLevelStrings)
 	}
-
-	if len(find.OrderByKeys) > 0 && orderByClause == "ORDER BY issue.id DESC" {
-		parts := make([]string, 0, len(find.OrderByKeys)+1)
-		for _, v := range find.OrderByKeys {
-			parts = append(parts, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		parts = append(parts, "issue.id DESC")
-		orderByClause = fmt.Sprintf("ORDER BY %s", strings.Join(parts, ", "))
+	if find.ExcludeDraft {
+		where.And("COALESCE(issue.payload->>'draft', 'false') = 'false'")
 	}
+	// Matched in SQL, not over the returned page: filtering after LIMIT mints a
+	// page token for rows that are then dropped, so the list answers with an
+	// empty page and a live next page token.
+	if v := find.ApprovalStatus; v != nil {
+		where.And("("+approvalStatusExpr+") = ?", *v)
+	}
+	if v := find.NextApproverRoles; v != nil {
+		projects := make([]string, 0, len(*v))
+		roles := make([]string, 0, len(*v))
+		for _, projectRole := range *v {
+			projects = append(projects, projectRole.ProjectID)
+			roles = append(roles, projectRole.Role)
+		}
+		where.And(`EXISTS (
+			SELECT 1
+			FROM unnest(?::TEXT[], ?::TEXT[]) AS approver_role(project, role)
+			WHERE approver_role.project = issue.project
+				AND approver_role.role = `+nextApprovalRoleExpr+`
+		)`, projects, roles)
+	}
+
+	// issue.id alone is not unique across projects — nextProjectID floors every
+	// project's first issue at 101 — so issue.project completes the
+	// (project, id) primary key and makes the ordering total.
+	//
+	// Which key leads is unchanged: relevance ranking still replaces the
+	// caller's order_by outright, and issue.id is still a per-project counter
+	// rather than a recency ordering across projects. Both are real problems,
+	// and both are separate ones.
+	orderBy := []string{}
+	if rankOrder != "" {
+		orderBy = append(orderBy, rankOrder)
+	} else {
+		for _, v := range find.OrderByKeys {
+			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
+		}
+	}
+	orderBy = append(orderBy, "issue.id DESC", "issue.project DESC")
+	orderByClause := "ORDER BY " + strings.Join(orderBy, ", ")
 
 	q := qb.Q().Space(`
 		SELECT
@@ -451,8 +569,13 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 	}
 	defer tx.Rollback()
 
-	// Fetch current issues to validate project membership and get old statuses.
-	fetchQuery := qb.Q().Space("SELECT id, status FROM issue WHERE id = ANY(?) AND project = ?", issueUIDs, projectID)
+	// Lock current issues to serialize status changes with draft submission.
+	fetchQuery := qb.Q().Space(`
+		SELECT id, status, COALESCE((payload->>'draft')::boolean, false)
+		FROM issue
+		WHERE id = ANY(?) AND project = ?
+		ORDER BY id
+		FOR UPDATE`, issueUIDs, projectID)
 	fetchSQL, fetchArgs, err := fetchQuery.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build fetch sql")
@@ -468,7 +591,8 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 	for rows.Next() {
 		var issueID int64
 		var statusString string
-		if err := rows.Scan(&issueID, &statusString); err != nil {
+		var draft bool
+		if err := rows.Scan(&issueID, &statusString, &draft); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan issue")
 		}
 		statusValue, ok := storepb.Issue_Status_value[statusString]
@@ -476,6 +600,9 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 			return nil, errors.Errorf("invalid status string: %s", statusString)
 		}
 		issueStatus := storepb.Issue_Status(statusValue)
+		if draft {
+			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("cannot change status for draft issue %d; submit the issue first", issueID)}
+		}
 
 		// Prevent changing status from DONE to other statuses.
 		if issueStatus == storepb.Issue_DONE && newStatus != storepb.Issue_DONE {
@@ -523,6 +650,11 @@ func getTSVector(text string) string {
 	return tsVector.String()
 }
 
+// IssueSearchVector builds the stored search vector for issue metadata.
+func IssueSearchVector(title, description string) string {
+	return getTSVector(fmt.Sprintf("%s %s", title, description))
+}
+
 func getTSQuery(text string) string {
 	seg := getSegmenter()
 	parts := seg.Trim(seg.CutSearch(text))
@@ -530,8 +662,12 @@ func getTSQuery(text string) string {
 	if len(parts) == 0 {
 		parts = seg.CutTrim(text)
 	}
+	// Text the segmenter reduces to nothing is punctuation only. It has no
+	// lexeme to search for, and interpolating it raw builds an invalid tsquery
+	// that fails the whole query at cast time — `(`, `:` and `'` are tsquery
+	// syntax. Callers fall back to ILIKE when this is empty.
 	if len(parts) == 0 {
-		return fmt.Sprintf("%s:*", text)
+		return ""
 	}
 	var tsQuery strings.Builder
 	for i, part := range parts {

@@ -1,0 +1,170 @@
+package store_test
+
+import (
+	"context"
+	"slices"
+	"testing"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
+	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store"
+
+	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
+)
+
+func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	_, stores, _ := testcontainer.NewMetadataDB(t)
+
+	const workspaceID = "workspace-defaults"
+	_, err := stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
+		ResourceID: workspaceID,
+		AdditionalSettings: []store.AdditionalSetting{{
+			Name:    storepb.SettingName_AI,
+			Payload: &storepb.AISetting{},
+		}},
+	}, "admin@example.com")
+	require.NoError(t, err)
+
+	settings, err := stores.ListSettings(ctx, &store.FindSettingMessage{Workspace: workspaceID})
+	require.NoError(t, err)
+	var names []storepb.SettingName
+	for _, setting := range settings {
+		names = append(names, setting.Name)
+	}
+	for _, name := range []storepb.SettingName{
+		storepb.SettingName_SYSTEM,
+		storepb.SettingName_APP_IM,
+		storepb.SettingName_DATA_CLASSIFICATION,
+		storepb.SettingName_WORKSPACE_APPROVAL,
+		storepb.SettingName_WORKSPACE_PROFILE,
+		storepb.SettingName_ENVIRONMENT,
+		storepb.SettingName_MCP,
+		storepb.SettingName_AI,
+	} {
+		require.Truef(t, slices.Contains(names, name), "missing setting %s", name)
+	}
+
+	mcpSetting, err := stores.GetSetting(ctx, workspaceID, storepb.SettingName_MCP)
+	require.NoError(t, err)
+	mcp, ok := mcpSetting.Value.(*storepb.MCPSetting)
+	require.True(t, ok)
+	require.Equal(t, storepb.MCPSetting_READ_ONLY, mcp.Capability)
+
+	environmentSetting, err := stores.GetSetting(ctx, workspaceID, storepb.SettingName_ENVIRONMENT)
+	require.NoError(t, err)
+	environments, ok := environmentSetting.Value.(*storepb.EnvironmentSetting)
+	require.True(t, ok)
+	require.Equal(t, []string{common.DefaultTestEnvironmentID, common.DefaultProdEnvironmentID}, []string{
+		environments.Environments[0].Id,
+		environments.Environments[1].Id,
+	})
+
+	defaultProjectID := common.DefaultProjectID(workspaceID)
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &defaultProjectID})
+	require.NoError(t, err)
+	require.NotNil(t, project)
+}
+
+func TestListWorkspacesByEmailEvaluatesBindingConditions(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+
+	const email = "member@example.com"
+	activeCondition := `request.time < timestamp("2099-01-01T00:00:00Z")`
+	expiredCondition := `request.time < timestamp("2000-01-01T00:00:00Z")`
+	tests := []struct {
+		workspace  string
+		memberType string
+		condition  string
+		want       bool
+	}{
+		{workspace: "active-direct", memberType: "direct", condition: activeCondition, want: true},
+		{workspace: "expired-direct", memberType: "direct", condition: expiredCondition},
+		{workspace: "active-group", memberType: "group", condition: activeCondition, want: true},
+		{workspace: "expired-group", memberType: "group", condition: expiredCondition},
+		{workspace: "active-all-users", memberType: "allUsers", condition: activeCondition, want: true},
+		{workspace: "expired-all-users", memberType: "allUsers", condition: expiredCondition},
+	}
+
+	var want []string
+	for _, test := range tests {
+		_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ($1)`, test.workspace)
+		require.NoError(t, err)
+
+		member := common.FormatUserEmail(email)
+		switch test.memberType {
+		case "group":
+			group, err := stores.CreateGroup(ctx, &store.GroupMessage{
+				Workspace: test.workspace,
+				Email:     test.workspace + "@example.com",
+				Title:     test.workspace,
+				Payload: &storepb.GroupPayload{Members: []*storepb.GroupMember{{
+					Member: common.FormatUserEmail(email),
+					Role:   storepb.GroupMember_MEMBER,
+				}}},
+			})
+			require.NoError(t, err)
+			member = common.FormatGroupEmail(group.Email)
+		case "allUsers":
+			member = common.AllUsers
+		default:
+			require.Equal(t, "direct", test.memberType)
+		}
+
+		payload, err := protojson.Marshal(&storepb.IamPolicy{Bindings: []*storepb.Binding{{
+			Role:      "roles/workspaceMember",
+			Members:   []string{member},
+			Condition: &expr.Expr{Expression: test.condition},
+		}}})
+		require.NoError(t, err)
+		_, err = stores.CreatePolicy(ctx, &store.PolicyMessage{
+			Workspace:         test.workspace,
+			Resource:          common.FormatWorkspace(test.workspace),
+			ResourceType:      storepb.Policy_WORKSPACE,
+			Payload:           string(payload),
+			Type:              storepb.Policy_IAM,
+			InheritFromParent: false,
+			Enforce:           true,
+		})
+		require.NoError(t, err)
+		if test.want {
+			want = append(want, test.workspace)
+		}
+	}
+
+	workspaces, err := stores.ListWorkspacesByEmail(ctx, &store.FindWorkspaceMessage{
+		Email:          email,
+		IncludeAllUser: true,
+	})
+	require.NoError(t, err)
+	got := make([]string, 0, len(workspaces))
+	for _, workspace := range workspaces {
+		got = append(got, workspace.ResourceID)
+	}
+	slices.Sort(got)
+	slices.Sort(want)
+	require.Equal(t, want, got)
+
+	for _, test := range tests {
+		workspace, err := stores.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+			WorkspaceID:    &test.workspace,
+			Email:          email,
+			IncludeAllUser: true,
+		})
+		require.NoError(t, err)
+		if test.want {
+			require.NotNil(t, workspace)
+		} else {
+			require.Nil(t, workspace)
+		}
+	}
+}

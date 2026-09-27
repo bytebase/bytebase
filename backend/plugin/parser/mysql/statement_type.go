@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"strings"
+
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
@@ -23,6 +25,61 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 		sqlTypes = append(sqlTypes, sqlType)
 	}
 	return sqlTypes, nil
+}
+
+// StatementTypeWithPosition contains a statement type and its position information.
+// It mirrors the PostgreSQL equivalent so the SDL statement-type gating in the release
+// service can report disallowed statements with line numbers.
+type StatementTypeWithPosition struct {
+	Type storepb.StatementType
+	// Line is the one-based line number where the statement ends.
+	Line int
+	Text string
+}
+
+// GetStatementTypesWithPositions returns statement types with position information,
+// preserving statement order. Line numbers are one-based. It mirrors
+// pg.GetStatementTypes so the declarative-release gating can surface disallowed SDL
+// statements with positions for MySQL.
+func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPosition, error) {
+	if len(asts) == 0 {
+		return []StatementTypeWithPosition{}, nil
+	}
+
+	var results []StatementTypeWithPosition
+	for _, a := range asts {
+		omniAST, ok := a.(*OmniAST)
+		if !ok {
+			return nil, errors.New("expected OmniAST for MySQL")
+		}
+		if omniAST.Node == nil {
+			continue
+		}
+
+		// STATEMENT_TYPE_UNSPECIFIED entries (statements omni parses but the classifier
+		// does not know — GRANT, SET, CALL, …) are INCLUDED, with their positions and
+		// text, so the SDL statement-type gate fails closed: dropping them here would
+		// let an unclassified statement bypass the release-check allowlist entirely.
+		stmtType := classifyStatementType(omniAST.Node)
+
+		line := 0
+		if omniAST.StartPosition != nil {
+			line = int(omniAST.StartPosition.Line)
+		}
+		// End line = start line + embedded newlines in the statement text.
+		endLine := line
+		if omniAST.Text != "" {
+			endLine += strings.Count(omniAST.Text, "\n")
+		}
+
+		results = append(results, StatementTypeWithPosition{
+			Type: stmtType,
+			Line: endLine,
+			Text: omniAST.Text,
+		})
+	}
+
+	return results, nil
 }
 
 func classifyStatementType(node ast.Node) storepb.StatementType {

@@ -54,6 +54,9 @@ const (
 	// WorkspaceServiceSetIamPolicyProcedure is the fully-qualified name of the WorkspaceService's
 	// SetIamPolicy RPC.
 	WorkspaceServiceSetIamPolicyProcedure = "/bytebase.v1.WorkspaceService/SetIamPolicy"
+	// WorkspaceServiceRotateDirectorySyncTokenProcedure is the fully-qualified name of the
+	// WorkspaceService's RotateDirectorySyncToken RPC.
+	WorkspaceServiceRotateDirectorySyncTokenProcedure = "/bytebase.v1.WorkspaceService/RotateDirectorySyncToken"
 )
 
 // WorkspaceServiceClient is a client for the bytebase.v1.WorkspaceService service.
@@ -82,6 +85,12 @@ type WorkspaceServiceClient interface {
 	// Sets IAM policy for the workspace.
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	// Mints a new directory sync (SCIM) token, immediately invalidating the
+	// previous one. The plaintext token is returned exactly once and cannot be
+	// retrieved afterwards; only its hash is stored. Callers that lose it must
+	// rotate again and update their identity provider.
+	// Permissions required: bb.workspaces.rotateDirectorySyncToken
+	RotateDirectorySyncToken(context.Context, *connect.Request[v1.RotateDirectorySyncTokenRequest]) (*connect.Response[v1.RotateDirectorySyncTokenResponse], error)
 }
 
 // NewWorkspaceServiceClient constructs a client for the bytebase.v1.WorkspaceService service. By
@@ -137,18 +146,25 @@ func NewWorkspaceServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(workspaceServiceMethods.ByName("SetIamPolicy")),
 			connect.WithClientOptions(opts...),
 		),
+		rotateDirectorySyncToken: connect.NewClient[v1.RotateDirectorySyncTokenRequest, v1.RotateDirectorySyncTokenResponse](
+			httpClient,
+			baseURL+WorkspaceServiceRotateDirectorySyncTokenProcedure,
+			connect.WithSchema(workspaceServiceMethods.ByName("RotateDirectorySyncToken")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // workspaceServiceClient implements WorkspaceServiceClient.
 type workspaceServiceClient struct {
-	getWorkspace    *connect.Client[v1.GetWorkspaceRequest, v1.Workspace]
-	listWorkspaces  *connect.Client[v1.ListWorkspacesRequest, v1.ListWorkspacesResponse]
-	updateWorkspace *connect.Client[v1.UpdateWorkspaceRequest, v1.Workspace]
-	getIamPolicy    *connect.Client[v1.GetIamPolicyRequest, v1.IamPolicy]
-	deleteWorkspace *connect.Client[v1.DeleteWorkspaceRequest, v1.LoginResponse]
-	leaveWorkspace  *connect.Client[v1.LeaveWorkspaceRequest, v1.LoginResponse]
-	setIamPolicy    *connect.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
+	getWorkspace             *connect.Client[v1.GetWorkspaceRequest, v1.Workspace]
+	listWorkspaces           *connect.Client[v1.ListWorkspacesRequest, v1.ListWorkspacesResponse]
+	updateWorkspace          *connect.Client[v1.UpdateWorkspaceRequest, v1.Workspace]
+	getIamPolicy             *connect.Client[v1.GetIamPolicyRequest, v1.IamPolicy]
+	deleteWorkspace          *connect.Client[v1.DeleteWorkspaceRequest, v1.LoginResponse]
+	leaveWorkspace           *connect.Client[v1.LeaveWorkspaceRequest, v1.LoginResponse]
+	setIamPolicy             *connect.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
+	rotateDirectorySyncToken *connect.Client[v1.RotateDirectorySyncTokenRequest, v1.RotateDirectorySyncTokenResponse]
 }
 
 // GetWorkspace calls bytebase.v1.WorkspaceService.GetWorkspace.
@@ -186,6 +202,11 @@ func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, req *connect.
 	return c.setIamPolicy.CallUnary(ctx, req)
 }
 
+// RotateDirectorySyncToken calls bytebase.v1.WorkspaceService.RotateDirectorySyncToken.
+func (c *workspaceServiceClient) RotateDirectorySyncToken(ctx context.Context, req *connect.Request[v1.RotateDirectorySyncTokenRequest]) (*connect.Response[v1.RotateDirectorySyncTokenResponse], error) {
+	return c.rotateDirectorySyncToken.CallUnary(ctx, req)
+}
+
 // WorkspaceServiceHandler is an implementation of the bytebase.v1.WorkspaceService service.
 type WorkspaceServiceHandler interface {
 	// Gets a workspace by name.
@@ -212,6 +233,12 @@ type WorkspaceServiceHandler interface {
 	// Sets IAM policy for the workspace.
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	// Mints a new directory sync (SCIM) token, immediately invalidating the
+	// previous one. The plaintext token is returned exactly once and cannot be
+	// retrieved afterwards; only its hash is stored. Callers that lose it must
+	// rotate again and update their identity provider.
+	// Permissions required: bb.workspaces.rotateDirectorySyncToken
+	RotateDirectorySyncToken(context.Context, *connect.Request[v1.RotateDirectorySyncTokenRequest]) (*connect.Response[v1.RotateDirectorySyncTokenResponse], error)
 }
 
 // NewWorkspaceServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -263,6 +290,12 @@ func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect.Han
 		connect.WithSchema(workspaceServiceMethods.ByName("SetIamPolicy")),
 		connect.WithHandlerOptions(opts...),
 	)
+	workspaceServiceRotateDirectorySyncTokenHandler := connect.NewUnaryHandler(
+		WorkspaceServiceRotateDirectorySyncTokenProcedure,
+		svc.RotateDirectorySyncToken,
+		connect.WithSchema(workspaceServiceMethods.ByName("RotateDirectorySyncToken")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/bytebase.v1.WorkspaceService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case WorkspaceServiceGetWorkspaceProcedure:
@@ -279,6 +312,8 @@ func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect.Han
 			workspaceServiceLeaveWorkspaceHandler.ServeHTTP(w, r)
 		case WorkspaceServiceSetIamPolicyProcedure:
 			workspaceServiceSetIamPolicyHandler.ServeHTTP(w, r)
+		case WorkspaceServiceRotateDirectorySyncTokenProcedure:
+			workspaceServiceRotateDirectorySyncTokenHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -314,4 +349,8 @@ func (UnimplementedWorkspaceServiceHandler) LeaveWorkspace(context.Context, *con
 
 func (UnimplementedWorkspaceServiceHandler) SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.SetIamPolicy is not implemented"))
+}
+
+func (UnimplementedWorkspaceServiceHandler) RotateDirectorySyncToken(context.Context, *connect.Request[v1.RotateDirectorySyncTokenRequest]) (*connect.Response[v1.RotateDirectorySyncTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.RotateDirectorySyncToken is not implemented"))
 }

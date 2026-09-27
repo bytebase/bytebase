@@ -10,9 +10,13 @@ import (
 	"encoding/pem"
 	"log/slog"
 	"path/filepath"
+	"slices"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -21,8 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-
-	"github.com/bytebase/bytebase/backend/component/sampleinstance"
+	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -35,23 +38,165 @@ import (
 // InstanceService implements the instance service.
 type InstanceService struct {
 	v1connect.UnimplementedInstanceServiceHandler
-	store                 *store.Store
-	profile               *config.Profile
-	licenseService        *enterprise.LicenseService
-	dbFactory             *dbfactory.DBFactory
-	schemaSyncer          *schemasync.Syncer
-	sampleInstanceManager *sampleinstance.Manager
+	store          *store.Store
+	profile        *config.Profile
+	licenseService *enterprise.LicenseService
+	dbFactory      *dbfactory.DBFactory
+	schemaSyncer   *schemasync.Syncer
+	sampleManager  sample.Manager
+}
+
+const (
+	connectionCategoryHeader             = "bytebase-connection-failure-category"
+	connectionCategoryNetworkUnreachable = "network_unreachable"
+	connectionCategoryAuthFailed         = "auth_failed"
+	connectionCategoryPermissionDenied   = "permission_denied"
+	connectionCategorySSLTLSFailed       = "ssl_tls_failed"
+	connectionCategoryTimeout            = "timeout"
+	connectionCategoryUnsupportedEngine  = "unsupported_engine"
+	connectionCategoryUnknown            = "unknown"
+	connectionCategorySuccess            = "success"
+)
+
+func classifyConnectionFailure(err error) string {
+	if err == nil {
+		return connectionCategorySuccess
+	}
+	var connectErr *connect.Error
+	if errors.As(err, &connectErr) {
+		if connectErr == nil {
+			return connectionCategorySuccess
+		}
+		if category := connectErr.Meta().Get(connectionCategoryHeader); category != "" {
+			return category
+		}
+	}
+	text := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(text, "timeout"),
+		strings.Contains(text, "timed out"),
+		strings.Contains(text, "deadline exceeded"):
+		return connectionCategoryTimeout
+	case strings.Contains(text, "ssl"),
+		strings.Contains(text, "tls"),
+		strings.Contains(text, "certificate"),
+		strings.Contains(text, "x509"):
+		return connectionCategorySSLTLSFailed
+	case strings.Contains(text, "permission denied"),
+		strings.Contains(text, "insufficient permission"),
+		strings.Contains(text, "insufficient privilege"),
+		strings.Contains(text, "not authorized"):
+		return connectionCategoryPermissionDenied
+	case strings.Contains(text, "password"),
+		strings.Contains(text, "authentication"),
+		strings.Contains(text, "auth failed"),
+		strings.Contains(text, "login failed"),
+		strings.Contains(text, "invalid credential"),
+		strings.Contains(text, "invalid password"),
+		strings.Contains(text, "access denied"):
+		return connectionCategoryAuthFailed
+	case strings.Contains(text, "unsupported"):
+		return connectionCategoryUnsupportedEngine
+	case strings.Contains(text, "network"),
+		strings.Contains(text, "unreachable"),
+		strings.Contains(text, "no route"),
+		strings.Contains(text, "no such host"),
+		strings.Contains(text, "unknown host"),
+		strings.Contains(text, "enotfound"),
+		strings.Contains(text, "econnrefused"),
+		strings.Contains(text, "connection refused"),
+		strings.Contains(text, "connection reset"),
+		strings.Contains(text, "could not translate host"):
+		return connectionCategoryNetworkUnreachable
+	default:
+		return connectionCategoryUnknown
+	}
+}
+
+func newConnectionTestErrorWithCategory(code connect.Code, err error, format string, args ...any) *connect.Error {
+	category := classifyConnectionFailure(err)
+	connectErr := connect.NewError(code, errors.Wrapf(err, format, args...))
+	connectErr.Meta().Set(connectionCategoryHeader, category)
+	return connectErr
+}
+
+func buildInstanceConnectionLogAttrs(method string, category string, instance *store.InstanceMessage, dataSource *storepb.DataSource, elapsed time.Duration) []any {
+	attrs := []any{
+		slog.String("method", method),
+		slog.String("category", category),
+		slog.Int64("elapsed_ms", elapsed.Milliseconds()),
+		slog.Bool("has_ssl", hasDataSourceSSL(dataSource)),
+		slog.Bool("has_ssh", hasDataSourceSSH(dataSource)),
+		slog.Bool("has_external_secret", dataSource.GetExternalSecret() != nil),
+	}
+	if instance != nil {
+		attrs = append(attrs, slog.String("engine", instance.Metadata.GetEngine().String()))
+	}
+	if dataSource != nil {
+		attrs = append(attrs, slog.String("data_source_type", dataSource.GetType().String()))
+	}
+	return attrs
+}
+
+func hasDataSourceSSL(dataSource *storepb.DataSource) bool {
+	return dataSource.GetUseSsl() ||
+		dataSource.GetSslCa() != "" ||
+		dataSource.GetObfuscatedSslCa() != "" ||
+		dataSource.GetSslCert() != "" ||
+		dataSource.GetObfuscatedSslCert() != "" ||
+		dataSource.GetSslKey() != "" ||
+		dataSource.GetObfuscatedSslKey() != "" ||
+		dataSource.GetSslCaPath() != "" ||
+		dataSource.GetObfuscatedSslCaPath() != "" ||
+		dataSource.GetSslCertPath() != "" ||
+		dataSource.GetObfuscatedSslCertPath() != "" ||
+		dataSource.GetSslKeyPath() != "" ||
+		dataSource.GetObfuscatedSslKeyPath() != ""
+}
+
+func hasDataSourceSSH(dataSource *storepb.DataSource) bool {
+	return dataSource.GetSshHost() != "" ||
+		dataSource.GetSshPort() != "" ||
+		dataSource.GetSshUser() != "" ||
+		dataSource.GetSshPassword() != "" ||
+		dataSource.GetObfuscatedSshPassword() != "" ||
+		dataSource.GetSshPrivateKey() != "" ||
+		dataSource.GetObfuscatedSshPrivateKey() != ""
+}
+
+func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, method string, instance *store.InstanceMessage, dataSource *storepb.DataSource) *connect.Error {
+	start := time.Now()
+
+	err := func() *connect.Error {
+		driver, err := s.dbFactory.GetDataSourceDriver(
+			ctx, instance, dataSource,
+			db.ConnectionContext{
+				ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
+			},
+		)
+		if err != nil {
+			return newConnectionTestErrorWithCategory(connect.CodeInternal, err, "failed to get database driver")
+		}
+		defer driver.Close(ctx)
+		if err := driver.Ping(ctx); err != nil {
+			return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, "failed to connect to database")
+		}
+		return nil
+	}()
+	category := classifyConnectionFailure(err)
+	slog.Info("instance connection check completed", buildInstanceConnectionLogAttrs(method, category, instance, dataSource, time.Since(start))...)
+	return err
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleInstanceManager *sampleinstance.Manager) *InstanceService {
+func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleManager sample.Manager) *InstanceService {
 	return &InstanceService{
-		store:                 store,
-		profile:               profile,
-		licenseService:        licenseService,
-		dbFactory:             dbFactory,
-		schemaSyncer:          schemaSyncer,
-		sampleInstanceManager: sampleInstanceManager,
+		store:          store,
+		profile:        profile,
+		licenseService: licenseService,
+		dbFactory:      dbFactory,
+		schemaSyncer:   schemaSyncer,
+		sampleManager:  sampleManager,
 	}
 }
 
@@ -77,14 +222,24 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 	}
 	limitPlusOne := offset.limit + 1
 
+	parentProjectID, err := s.getProjectInstanceParent(ctx, req.Msg.Parent)
+	if err != nil {
+		return nil, err
+	}
+
 	find := &store.FindInstanceMessage{
-		Workspace:   common.GetWorkspaceIDFromContext(ctx),
-		ShowDeleted: req.Msg.ShowDeleted,
-		Limit:       &limitPlusOne,
-		Offset:      &offset.offset,
+		Workspace:     common.GetWorkspaceIDFromContext(ctx),
+		ProjectID:     parentProjectID,
+		WorkspaceOnly: parentProjectID == nil,
+		ShowDeleted:   req.Msg.ShowDeleted,
+		Limit:         &limitPlusOne,
+		Offset:        &offset.offset,
 	}
 	filterQ, err := store.GetListInstanceFilter(req.Msg.Filter)
 	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := validateProjectInstanceListFilter(parentProjectID, req.Msg.Filter); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	find.FilterQ = filterQ
@@ -119,19 +274,78 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 	return connect.NewResponse(response), nil
 }
 
+func validateProjectInstanceListFilter(parentProjectID *string, filter string) error {
+	if parentProjectID == nil || filter == "" {
+		return nil
+	}
+	ast, err := common.ParseCELFilter(filter)
+	if err != nil {
+		return err
+	}
+
+	var validate func(celast.Expr) error
+	validate = func(expr celast.Expr) error {
+		if expr.Kind() != celast.CallKind {
+			return nil
+		}
+		call := expr.AsCall()
+		switch call.FunctionName() {
+		case celoperators.LogicalAnd, celoperators.LogicalOr:
+			for _, arg := range call.Args() {
+				if err := validate(arg); err != nil {
+					return err
+				}
+			}
+		case celoperators.Equals:
+			variable, value := getVariableAndValueFromExpr(expr)
+			if variable != "project" {
+				break
+			}
+			projectName, ok := value.(string)
+			if !ok {
+				return nil
+			}
+			projectID, err := common.GetProjectID(projectName)
+			if err != nil {
+				return errors.Errorf("invalid project filter %q", projectName)
+			}
+			if projectID != *parentProjectID {
+				return errors.Errorf("project filter %q does not match parent %q", projectName, common.FormatProject(*parentProjectID))
+			}
+		default:
+			for _, arg := range call.Args() {
+				if err := validate(arg); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+	return validate(ast.NativeRep().Expr())
+}
+
 // ListInstanceDatabase list all databases in the instance.
 func (s *InstanceService) ListInstanceDatabase(ctx context.Context, req *connect.Request[v1pb.ListInstanceDatabaseRequest]) (*connect.Response[v1pb.ListInstanceDatabaseResponse], error) {
 	var instanceMessage *store.InstanceMessage
 
 	if req.Msg.Instance != nil {
-		instanceID, err := common.GetInstanceID(req.Msg.Name)
+		projectID, instanceID, err := common.GetInstanceResourceName(req.Msg.Name)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		if projectID != nil {
+			parent := common.FormatProject(*projectID)
+			projectID, err = s.getProjectInstanceParent(ctx, &parent)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if instanceMessage, err = convertToStoreInstance(instanceID, req.Msg.Instance); err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
+		instanceMessage.Workspace = common.GetWorkspaceIDFromContext(ctx)
+		instanceMessage.ProjectID = projectID
 	} else {
 		instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
 		if err != nil {
@@ -161,7 +375,8 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance ID %v", req.Msg.InstanceId))
 	}
 
-	if err := s.instanceCountGuard(ctx); err != nil {
+	projectID, err := s.getProjectInstanceParent(ctx, req.Msg.Parent)
+	if err != nil {
 		return nil, err
 	}
 
@@ -178,6 +393,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	// connection below, before the instance is persisted.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	instanceMessage.Workspace = workspaceID
+	instanceMessage.ProjectID = projectID
 	for _, ds := range instanceMessage.Metadata.GetDataSources() {
 		if err := validateAndSanitizeDataSourceTLS(ds); err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -190,29 +406,16 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	// Test connection.
 	if req.Msg.ValidateOnly {
 		for _, ds := range instanceMessage.Metadata.GetDataSources() {
-			err := func() error {
-				driver, err := s.dbFactory.GetDataSourceDriver(
-					ctx, instanceMessage, ds,
-					db.ConnectionContext{
-						ReadOnly: ds.GetType() == storepb.DataSourceType_READ_ONLY,
-					},
-				)
-				if err != nil {
-					return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
-				}
-				defer driver.Close(ctx)
-				if err := driver.Ping(ctx); err != nil {
-					return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid datasource %s", ds.GetType()))
-				}
-				return nil
-			}()
-			if err != nil {
+			if err := s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceCreateInstanceProcedure, instanceMessage, ds); err != nil {
 				return nil, err
 			}
 		}
 
 		result := s.convertToV1Instance(ctx, instanceMessage)
 		return connect.NewResponse(result), nil
+	}
+	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
 	}
 
 	if err := s.checkActivationLimit(ctx, workspaceID, instanceMessage.Metadata.GetActivation()); err != nil {
@@ -230,7 +433,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err == nil {
 		defer driver.Close(ctx)
-		updatedInstance, _, _, err := s.schemaSyncer.SyncInstance(ctx, instance)
+		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
 		if err != nil {
 			slog.Warn("Failed to sync instance",
 				slog.String("instance", instance.ResourceID),
@@ -238,12 +441,104 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		} else {
 			instance = updatedInstance
 		}
-		// Sync all databases in the instance asynchronously.
-		s.schemaSyncer.SyncAllDatabases(ctx, instance)
+		if instance.Metadata.SyncDatabases == nil {
+			// Sync all databases in the instance asynchronously.
+			s.schemaSyncer.SyncAllDatabases(ctx, instance)
+		} else {
+			s.schemaSyncer.SyncDatabasesAsync(newDatabases)
+		}
 	}
 
 	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
+}
+
+// PrepareSampleProjectInstance provisions a Sample Project Instance for the
+// requested project. The lifetime entitlement itself is enforced by the
+// lifecycle manager under a workspace row lock.
+func (s *InstanceService) PrepareSampleProjectInstance(ctx context.Context, req *connect.Request[v1pb.PrepareSampleProjectInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
+	projectID, err := s.getSampleProjectInstanceParent(ctx, &req.Msg.Parent)
+	if err != nil {
+		return nil, err
+	}
+	if projectID == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("Sample Project Instance parent is required"))
+	}
+	if s.sampleManager == nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("Sample Project Instance is not configured"))
+	}
+	if err := s.sampleManager.CheckAvailable(ctx); err != nil {
+		return nil, sampleProjectInstanceConnectError(err)
+	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
+	}
+	instance, err := s.sampleManager.PrepareSampleProjectInstance(ctx, sample.PrepareRequest{
+		WorkspaceID: workspaceID,
+		ProjectID:   *projectID,
+	})
+	if err != nil {
+		return nil, sampleProjectInstanceConnectError(err)
+	}
+	return connect.NewResponse(s.convertToV1Instance(ctx, instance)), nil
+}
+
+func sampleProjectInstanceConnectError(err error) error {
+	switch sample.FailureKindOf(err) {
+	case sample.FailureFailedPrecondition:
+		return connect.NewError(connect.CodeFailedPrecondition, err)
+	case sample.FailureUnavailable:
+		return connect.NewError(connect.CodeUnavailable, err)
+	case sample.FailureDeadlineExceeded:
+		return connect.NewError(connect.CodeDeadlineExceeded, err)
+	default:
+		return connect.NewError(connect.CodeInternal, err)
+	}
+}
+
+func (s *InstanceService) getSampleProjectInstanceParent(ctx context.Context, parent *string) (*string, error) {
+	projectID, err := s.getProjectInstanceParent(ctx, parent)
+	if err == nil || connect.CodeOf(err) != connect.CodeNotFound || parent == nil {
+		return projectID, err
+	}
+	_, parseErr := common.GetProjectID(*parent)
+	if parseErr != nil {
+		return nil, err
+	}
+	reservation, storeErr := s.store.GetSampleInstanceSetup(ctx, common.GetWorkspaceIDFromContext(ctx))
+	if storeErr != nil {
+		return nil, connect.NewError(connect.CodeInternal, storeErr)
+	}
+	if reservation != nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("Sample Project Instance entitlement is already consumed"))
+	}
+	return nil, err
+}
+
+func (s *InstanceService) getProjectInstanceParent(ctx context.Context, parent *string) (*string, error) {
+	if parent == nil {
+		return nil, nil
+	}
+	projectID, err := common.GetProjectID(*parent)
+	if err != nil || projectID == "-" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance parent %q", *parent))
+	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if common.IsDefaultProject(workspaceID, projectID) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("default project %q cannot own instances", *parent))
+	}
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+		Workspace:  workspaceID,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if project == nil || project.Deleted {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", *parent))
+	}
+	return &projectID, nil
 }
 
 func instanceWithMetadata(instance *store.InstanceMessage, metadata *storepb.Instance) *store.InstanceMessage {
@@ -466,6 +761,39 @@ func (s *InstanceService) validateIAMCredentialForSaaS(dataSource *storepb.DataS
 		)
 	}
 
+	// An IAM extension whose fields are all empty behaves exactly like the
+	// default credential chain at connect time (the host's own cloud
+	// identity), so reject it for the same reason.
+	return validateIAMCredentialNotEmpty(dataSource)
+}
+
+func validateIAMCredentialNotEmpty(dataSource *storepb.DataSource) error {
+	switch {
+	case dataSource.GetAwsCredential() != nil:
+		awsCredential := dataSource.GetAwsCredential()
+		if awsCredential.GetAccessKeyId() == "" && awsCredential.GetRoleArn() == "" {
+			return connect.NewError(
+				connect.CodeInvalidArgument,
+				errors.New("AWS credential requires an access key ID or a role ARN in SaaS mode"),
+			)
+		}
+	case dataSource.GetGcpCredential() != nil:
+		if dataSource.GetGcpCredential().GetContent() == "" {
+			return connect.NewError(
+				connect.CodeInvalidArgument,
+				errors.New("GCP credential content is required in SaaS mode"),
+			)
+		}
+	case dataSource.GetAzureCredential() != nil:
+		azureCredential := dataSource.GetAzureCredential()
+		if azureCredential.GetTenantId() == "" || azureCredential.GetClientId() == "" || azureCredential.GetClientSecret() == "" {
+			return connect.NewError(
+				connect.CodeInvalidArgument,
+				errors.New("Azure credential requires tenant ID, client ID, and client secret in SaaS mode"),
+			)
+		}
+	default:
+	}
 	return nil
 }
 
@@ -518,7 +846,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") && req.Msg.AllowMissing {
 			// When allow_missing is true and instance doesn't exist, create a new one
-			instanceID, ierr := common.GetInstanceID(req.Msg.Instance.Name)
+			projectID, instanceID, ierr := common.GetInstanceResourceName(req.Msg.Instance.Name)
 			if ierr != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, ierr)
 			}
@@ -526,6 +854,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			return s.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 				InstanceId: instanceID,
 				Instance:   req.Msg.Instance,
+				Parent:     instanceCollectionParent(projectID),
 			}))
 		}
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -571,6 +900,10 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
+			if err := retainStoredKeytabs(dataSources, instance.Metadata.GetDataSources()); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
+			normalizeGCPDataSources(instance.Metadata.GetEngine(), dataSources)
 			for _, ds := range dataSources {
 				if err := validateAndSanitizeDataSourceTLS(ds); err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -589,7 +922,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			updateSyncInterval = true
 			patch.Metadata.SyncInterval = req.Msg.Instance.SyncInterval
 		case "sync_databases":
-			patch.Metadata.SyncDatabases = req.Msg.Instance.SyncDatabases
+			patch.Metadata.SyncDatabases = convertToStoreSyncDatabases(req.Msg.Instance.SyncDatabases)
 		case "labels":
 			if err := validateLabels(req.Msg.Instance.Labels); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -625,9 +958,12 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 
 // DeleteInstance deletes an instance.
 func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Request[v1pb.DeleteInstanceRequest]) (*connect.Response[emptypb.Empty], error) {
-	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
+	instance, err := getInstanceMessageForLifecycle(ctx, s.store, req.Msg.Name)
 	if err != nil {
 		return nil, err
+	}
+	if req.Msg.Force && instance.ProjectID != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("force deletion is only supported for workspace instances"))
 	}
 
 	// Handle purge (hard delete) of soft-deleted instance
@@ -645,52 +981,55 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
 
-	// Regular soft delete flow
-	// Idempotent: if already deleted, return success
-	if instance.Deleted {
-		return connect.NewResponse(&emptypb.Empty{}), nil
-	}
-
-	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID})
-	if err != nil {
-		return nil, err
-	}
-	if req.Msg.Force {
-		if len(databases) > 0 {
+	// Regular soft delete flow. Already archived instances still pass through
+	// the lifecycle guard so legacy active task runs are reported consistently.
+	alreadyDeleted := instance.Deleted
+	var moveDatabasesToProjectID *string
+	if !alreadyDeleted && instance.ProjectID == nil {
+		if req.Msg.Force {
 			defaultProjectID, err := s.store.GetDefaultProjectID(ctx, common.GetWorkspaceIDFromContext(ctx))
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get default project ID"))
 			}
-			if err := s.store.BatchUpdateDatabases(ctx, databases, &store.BatchUpdateDatabases{Workspace: common.GetWorkspaceIDFromContext(ctx), ProjectID: &defaultProjectID}); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
+			moveDatabasesToProjectID = &defaultProjectID
+		} else {
+			databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID})
+			if err != nil {
+				return nil, err
 			}
-		}
-	} else {
-		var databaseNames []string
-		for _, database := range databases {
-			if !common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), database.ProjectID) {
-				databaseNames = append(databaseNames, database.DatabaseName)
+			var databaseNames []string
+			for _, database := range databases {
+				if !common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), database.ProjectID) {
+					databaseNames = append(databaseNames, database.DatabaseName)
+				}
 			}
-		}
-		if len(databaseNames) > 0 {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("all databases should be transferred to the unassigned project before deleting the instance"))
+			if len(databaseNames) > 0 {
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("all databases should be transferred to the unassigned project before deleting the instance"))
+			}
 		}
 	}
 
-	metadata := proto.CloneOf(instance.Metadata)
-	metadata.Activation = false
-	if _, err := s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
-		ResourceID: &instance.ResourceID,
-		Workspace:  instance.Workspace,
-		Deleted:    &deletePatch,
-		Metadata:   metadata,
-	}); err != nil {
+	patch := &store.UpdateInstanceMessage{
+		ResourceID:               &instance.ResourceID,
+		Workspace:                instance.Workspace,
+		Deleted:                  &deletePatch,
+		MoveDatabasesToProjectID: moveDatabasesToProjectID,
+	}
+	if instance.ProjectID == nil {
+		metadata := proto.CloneOf(instance.Metadata)
+		metadata.Activation = false
+		patch.Metadata = metadata
+	}
+	if _, err := s.store.UpdateInstance(ctx, patch); err != nil {
+		if common.ErrorCode(err) == common.Conflict {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	// Handle sample instance deletion if applicable
-	if s.sampleInstanceManager != nil {
-		if err := s.sampleInstanceManager.HandleInstanceDeletion(ctx, common.GetWorkspaceIDFromContext(ctx), instance.ResourceID); err != nil {
+	if !alreadyDeleted && s.sampleManager != nil {
+		if err := s.sampleManager.HandleInstanceLifecycle(ctx, common.GetWorkspaceIDFromContext(ctx), instance.ResourceID, true); err != nil {
 			slog.Warn("failed to handle sample instance deletion", log.BBError(err), slog.String("instance", instance.ResourceID))
 		}
 	}
@@ -700,7 +1039,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 
 // UndeleteInstance undeletes an instance.
 func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Request[v1pb.UndeleteInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
-	instance, err := getInstanceMessage(ctx, s.store, req.Msg.Name)
+	instance, err := getInstanceMessageForLifecycle(ctx, s.store, req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -709,7 +1048,22 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		result := s.convertToV1Instance(ctx, instance)
 		return connect.NewResponse(result), nil
 	}
+	if s.sampleManager != nil {
+		if err := s.sampleManager.ValidateInstanceRestore(ctx, instance.Workspace, instance.ResourceID); err != nil {
+			return nil, sampleProjectInstanceConnectError(err)
+		}
+	}
+	activeTaskRunCount, err := s.store.GetActiveTaskRunCountForInstance(ctx, instance.ResourceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	if activeTaskRunCount > 0 {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("instance %s has %d active task run(s); cancel them or wait for them to finish before restoring", instance.ResourceID, activeTaskRunCount))
+	}
 	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
+	}
+	if err := s.checkActivationLimit(ctx, instance.Workspace, instance.Metadata.GetActivation()); err != nil {
 		return nil, err
 	}
 
@@ -719,12 +1073,15 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		Deleted:    &undeletePatch,
 	})
 	if err != nil {
+		if common.ErrorCode(err) == common.Conflict {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	// Handle sample instance undelete (restart) if applicable
-	if s.sampleInstanceManager != nil {
-		if err := s.sampleInstanceManager.HandleInstanceCreation(ctx, ins.ResourceID); err != nil {
+	if s.sampleManager != nil {
+		if err := s.sampleManager.HandleInstanceLifecycle(ctx, ins.Workspace, ins.ResourceID, false); err != nil {
 			slog.Warn("failed to handle sample instance undelete", log.BBError(err), slog.String("instance", ins.ResourceID))
 		}
 	}
@@ -763,14 +1120,16 @@ func (s *InstanceService) SyncInstance(ctx context.Context, req *connect.Request
 
 // BatchSyncInstances syncs multiple instances.
 func (s *InstanceService) BatchSyncInstances(ctx context.Context, req *connect.Request[v1pb.BatchSyncInstancesRequest]) (*connect.Response[v1pb.BatchSyncInstancesResponse], error) {
-	for _, r := range req.Msg.Requests {
-		instance, err := getInstanceMessage(ctx, s.store, r.Name)
-		if err != nil {
-			return nil, err
-		}
-		if instance.Deleted {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", r.Name))
-		}
+	names := make([]string, 0, len(req.Msg.Requests))
+	for _, request := range req.Msg.Requests {
+		names = append(names, request.Name)
+	}
+	instances, err := s.getInstanceCollection(ctx, req.Msg.Parent, names)
+	if err != nil {
+		return nil, err
+	}
+	for i, instance := range instances {
+		r := req.Msg.Requests[i]
 
 		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
 		if err != nil {
@@ -789,6 +1148,33 @@ func (s *InstanceService) BatchSyncInstances(ctx context.Context, req *connect.R
 
 // BatchUpdateInstances update multiple instances.
 func (s *InstanceService) BatchUpdateInstances(ctx context.Context, req *connect.Request[v1pb.BatchUpdateInstancesRequest]) (*connect.Response[v1pb.BatchUpdateInstancesResponse], error) {
+	projectID, err := s.getProjectInstanceParent(ctx, req.Msg.Parent)
+	if err != nil {
+		return nil, err
+	}
+	for _, updateReq := range req.Msg.GetRequests() {
+		name := updateReq.GetInstance().GetName()
+		instanceProjectID, _, err := common.GetInstanceResourceName(name)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		if (projectID == nil) != (instanceProjectID == nil) || projectID != nil && *projectID != *instanceProjectID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("instance %q is not in its requested collection", name))
+		}
+	}
+	for _, updateReq := range req.Msg.GetRequests() {
+		name := updateReq.GetInstance().GetName()
+		instance, err := getInstanceMessage(ctx, s.store, name)
+		if err != nil {
+			if connect.CodeOf(err) == connect.CodeNotFound && updateReq.AllowMissing {
+				continue
+			}
+			return nil, err
+		}
+		if instance.Deleted {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", name))
+		}
+	}
 	response := &v1pb.BatchUpdateInstancesResponse{}
 	for _, updateReq := range req.Msg.GetRequests() {
 		updated, err := s.UpdateInstance(ctx, connect.NewRequest(updateReq))
@@ -822,6 +1208,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	if instance.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", req.Msg.Name))
 	}
+	normalizeGCPDataSources(instance.Metadata.GetEngine(), []*storepb.DataSource{dataSource})
 	for _, ds := range instance.Metadata.GetDataSources() {
 		if ds.GetId() == req.Msg.DataSource.Id {
 			return nil, connect.NewError(connect.CodeNotFound, errors.New("data source already exists with the same name"))
@@ -845,23 +1232,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 
 	// Test connection.
 	if req.Msg.ValidateOnly {
-		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(
-				ctx, instance, dataSource,
-				db.ConnectionContext{
-					ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
-				},
-			)
-			if err != nil {
-				return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
-			}
-			defer driver.Close(ctx)
-			if err := driver.Ping(ctx); err != nil {
-				return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid datasource %s", dataSource.GetType()))
-			}
-			return nil
-		}()
-		if err != nil {
+		if err := s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceAddDataSourceProcedure, instance, dataSource); err != nil {
 			return nil, err
 		}
 		result := s.convertToV1Instance(ctx, instanceWithMetadata(instance, metadata))
@@ -926,137 +1297,42 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		}
 	}
 
-	for _, path := range req.Msg.UpdateMask.Paths {
-		switch path {
-		case "username":
-			dataSource.Username = req.Msg.DataSource.Username
-		case "password":
-			dataSource.Password = req.Msg.DataSource.Password
-		case "ssl_ca":
-			dataSource.SslCa = req.Msg.DataSource.SslCa
-		case "ssl_ca_path":
-			dataSource.SslCaPath = req.Msg.DataSource.SslCaPath
-		case "ssl_cert":
-			dataSource.SslCert = req.Msg.DataSource.SslCert
-		case "ssl_cert_path":
-			dataSource.SslCertPath = req.Msg.DataSource.SslCertPath
-		case "ssl_key":
-			dataSource.SslKey = req.Msg.DataSource.SslKey
-		case "ssl_key_path":
-			dataSource.SslKeyPath = req.Msg.DataSource.SslKeyPath
-		case "host":
-			dataSource.Host = req.Msg.DataSource.Host
-		case "port":
-			dataSource.Port = req.Msg.DataSource.Port
-		case "database":
-			dataSource.Database = req.Msg.DataSource.Database
-		case "srv":
-			dataSource.Srv = req.Msg.DataSource.Srv
-		case "authentication_database":
-			dataSource.AuthenticationDatabase = req.Msg.DataSource.AuthenticationDatabase
-		case "sid":
-			dataSource.Sid = req.Msg.DataSource.Sid
-		case "service_name":
-			dataSource.ServiceName = req.Msg.DataSource.ServiceName
-		case "ssh_host":
-			dataSource.SshHost = req.Msg.DataSource.SshHost
-		case "ssh_port":
-			dataSource.SshPort = req.Msg.DataSource.SshPort
-		case "ssh_user":
-			dataSource.SshUser = req.Msg.DataSource.SshUser
-		case "ssh_password":
-			dataSource.SshPassword = req.Msg.DataSource.SshPassword
-		case "ssh_private_key":
-			dataSource.SshPrivateKey = req.Msg.DataSource.SshPrivateKey
-		case "authentication_private_key":
-			dataSource.AuthenticationPrivateKey = req.Msg.DataSource.AuthenticationPrivateKey
-		case "authentication_private_key_passphrase":
-			dataSource.AuthenticationPrivateKeyPassphrase = req.Msg.DataSource.AuthenticationPrivateKeyPassphrase
-		case "external_secret":
-			externalSecret, err := convertV1DataSourceExternalSecret(req.Msg.DataSource.ExternalSecret)
-			if err != nil {
-				return nil, err
-			}
-			dataSource.ExternalSecret = externalSecret
-		case "sasl_config":
-			dataSource.SaslConfig = convertV1DataSourceSaslConfig(req.Msg.DataSource.SaslConfig)
-		case "authentication_type":
-			dataSource.AuthenticationType = convertV1AuthenticationType(req.Msg.DataSource.AuthenticationType)
-		case "additional_addresses":
-			dataSource.AdditionalAddresses = convertAdditionalAddresses(req.Msg.DataSource.AdditionalAddresses)
-		case "replica_set":
-			dataSource.ReplicaSet = req.Msg.DataSource.ReplicaSet
-		case "direct_connection":
-			dataSource.DirectConnection = req.Msg.DataSource.DirectConnection
-		case "region":
-			dataSource.Region = req.Msg.DataSource.Region
-		case "warehouse_id":
-			dataSource.WarehouseId = req.Msg.DataSource.WarehouseId
-		case "use_ssl":
-			dataSource.UseSsl = req.Msg.DataSource.UseSsl
-		case "verify_tls_certificate":
-			dataSource.VerifyTlsCertificate = req.Msg.DataSource.VerifyTlsCertificate
-		case "redis_type":
-			dataSource.RedisType = convertV1RedisType(req.Msg.DataSource.RedisType)
-		case "master_name":
-			dataSource.MasterName = req.Msg.DataSource.MasterName
-		case "master_username":
-			dataSource.MasterUsername = req.Msg.DataSource.MasterUsername
-		case "master_password":
-			dataSource.MasterPassword = req.Msg.DataSource.MasterPassword
-		case "extra_connection_parameters":
-			dataSource.ExtraConnectionParameters = req.Msg.DataSource.ExtraConnectionParameters
-		case "azure_credential", "aws_credential", "gcp_credential":
-			switch req.Msg.DataSource.AuthenticationType {
-			case v1pb.DataSource_AZURE_IAM:
-				if azureCredential := req.Msg.DataSource.GetAzureCredential(); azureCredential != nil {
-					dataSource.IamExtension = &storepb.DataSource_AzureCredential_{
-						AzureCredential: &storepb.DataSource_AzureCredential{
-							TenantId:     azureCredential.TenantId,
-							ClientId:     azureCredential.ClientId,
-							ClientSecret: azureCredential.ClientSecret,
-						},
-					}
-					dataSource.AuthenticationType = storepb.DataSource_AZURE_IAM
-				} else {
-					dataSource.IamExtension = nil
-				}
-			case v1pb.DataSource_AWS_RDS_IAM:
-				if awsCredential := req.Msg.DataSource.GetAwsCredential(); awsCredential != nil {
-					dataSource.IamExtension = &storepb.DataSource_AwsCredential{
-						AwsCredential: &storepb.DataSource_AWSCredential{
-							AccessKeyId:     awsCredential.AccessKeyId,
-							SecretAccessKey: awsCredential.SecretAccessKey,
-							SessionToken:    awsCredential.SessionToken,
-							RoleArn:         awsCredential.RoleArn,
-							ExternalId:      awsCredential.ExternalId,
-						},
-					}
-					dataSource.AuthenticationType = storepb.DataSource_AWS_RDS_IAM
-				} else {
-					dataSource.IamExtension = nil
-				}
-			case v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM:
-				if gcpCredential := req.Msg.DataSource.GetGcpCredential(); gcpCredential != nil {
-					dataSource.IamExtension = &storepb.DataSource_GcpCredential{
-						GcpCredential: &storepb.DataSource_GCPCredential{
-							Content: gcpCredential.Content,
-						},
-					}
-					dataSource.AuthenticationType = storepb.DataSource_GOOGLE_CLOUD_SQL_IAM
-				} else {
-					dataSource.IamExtension = nil
-				}
-			default:
-			}
-		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
-		}
+	// dataSource points into the cloned metadata and is patched in place below,
+	// so keep the pre-image: keytab retention compares the whole merged result
+	// against it, which the mask loop cannot do while it is still running.
+	storedDataSource := proto.CloneOf(dataSource)
+
+	// Then drop the stored keytab off the value being patched. Only the
+	// sasl_config path writes one, so after the loop a keytab is present iff
+	// THIS request supplied it — which is what retention has to decide on.
+	// Left in place, a mask that never names sasl_config would carry the
+	// stored keytab through untouched and retention would read it as supplied,
+	// letting update_mask=["host"] alone move it to the caller's address.
+	if krb := dataSource.GetSaslConfig().GetKrbConfig(); krb != nil {
+		krb.Keytab = nil
+	}
+
+	if err := applyDataSourceUpdateMask(dataSource, req.Msg.DataSource, req.Msg.UpdateMask.Paths); err != nil {
+		return nil, err
+	}
+
+	// Run on the merged result, not inside the mask loop: whether the keytab
+	// may be inherited depends on the destination the request ends at, and the
+	// paths that move it can be applied after sasl_config.
+	if err := retainStoredKeytabOnEmptyUpdate(dataSource, storedDataSource); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	clearDataSourceAuthentication(dataSource)
+	normalizeGCPDataSources(instance.Metadata.GetEngine(), []*storepb.DataSource{dataSource})
 	if err := validateAndSanitizeDataSourceTLS(dataSource); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	// Validate the merged result so untouched stored credentials keep passing:
+	// the create-path SaaS checks never run for updates, which would otherwise
+	// let an update strip an IAM credential down to the default chain.
+	if err := s.validateIAMCredentialForSaaS(dataSource); err != nil {
+		return nil, err
 	}
 
 	if err := s.checkInstanceDataSources(ctx, instance, metadata.GetDataSources()); err != nil {
@@ -1065,21 +1341,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 
 	// Test connection.
 	if req.Msg.ValidateOnly {
-		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(
-				ctx, instance, dataSource,
-				db.ConnectionContext{ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY},
-			)
-			if err != nil {
-				return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
-			}
-			defer driver.Close(ctx)
-			if err := driver.Ping(ctx); err != nil {
-				return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid datasource %s", dataSource.GetType()))
-			}
-			return nil
-		}()
-		if err != nil {
+		if err := s.checkAndLogInstanceConnection(ctx, v1connect.InstanceServiceUpdateDataSourceProcedure, instance, dataSource); err != nil {
 			return nil, err
 		}
 		result := s.convertToV1Instance(ctx, instanceWithMetadata(instance, metadata))
@@ -1096,6 +1358,180 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	}
 	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
+}
+
+// applyDataSourceUpdateMask patches dataSource in place with the fields the
+// mask names. It is the whole of what update_mask means for a data source, and
+// it is pure so it can be exercised without a store.
+func applyDataSourceUpdateMask(dataSource *storepb.DataSource, src *v1pb.DataSource, paths []string) error {
+	// The authentication type the merged result will end at: the stored one
+	// unless this request masks it. Resolved before the loop so a credential
+	// path validates the same way whichever order the paths arrive in.
+	effectiveAuthType := dataSource.GetAuthenticationType()
+	if slices.Contains(paths, "authentication_type") {
+		effectiveAuthType = convertV1AuthenticationType(src.AuthenticationType)
+	}
+
+	for _, path := range paths {
+		switch path {
+		case "username":
+			dataSource.Username = src.Username
+		case "password":
+			dataSource.Password = src.Password
+		case "ssl_ca":
+			dataSource.SslCa = src.SslCa
+		case "ssl_ca_path":
+			dataSource.SslCaPath = src.SslCaPath
+		case "ssl_cert":
+			dataSource.SslCert = src.SslCert
+		case "ssl_cert_path":
+			dataSource.SslCertPath = src.SslCertPath
+		case "ssl_key":
+			dataSource.SslKey = src.SslKey
+		case "ssl_key_path":
+			dataSource.SslKeyPath = src.SslKeyPath
+		case "host":
+			dataSource.Host = src.Host
+		case "port":
+			dataSource.Port = src.Port
+		case "database":
+			dataSource.Database = src.Database
+		case "srv":
+			dataSource.Srv = src.Srv
+		case "authentication_database":
+			dataSource.AuthenticationDatabase = src.AuthenticationDatabase
+		case "sid":
+			dataSource.Sid = src.Sid
+		case "service_name":
+			dataSource.ServiceName = src.ServiceName
+		case "ssh_host":
+			dataSource.SshHost = src.SshHost
+		case "ssh_port":
+			dataSource.SshPort = src.SshPort
+		case "ssh_user":
+			dataSource.SshUser = src.SshUser
+		case "ssh_password":
+			dataSource.SshPassword = src.SshPassword
+		case "ssh_private_key":
+			dataSource.SshPrivateKey = src.SshPrivateKey
+		case "authentication_private_key":
+			dataSource.AuthenticationPrivateKey = src.AuthenticationPrivateKey
+		case "authentication_private_key_passphrase":
+			dataSource.AuthenticationPrivateKeyPassphrase = src.AuthenticationPrivateKeyPassphrase
+		case "external_secret":
+			externalSecret, err := convertV1DataSourceExternalSecret(src.ExternalSecret)
+			if err != nil {
+				return err
+			}
+			dataSource.ExternalSecret = externalSecret
+		case "sasl_config":
+			dataSource.SaslConfig = convertV1DataSourceSaslConfig(src.SaslConfig)
+		case "authentication_type":
+			dataSource.AuthenticationType = convertV1AuthenticationType(src.AuthenticationType)
+		case "additional_addresses":
+			dataSource.AdditionalAddresses = convertAdditionalAddresses(src.AdditionalAddresses)
+		case "replica_set":
+			dataSource.ReplicaSet = src.ReplicaSet
+		case "direct_connection":
+			dataSource.DirectConnection = src.DirectConnection
+		case "region":
+			dataSource.Region = src.Region
+		case "warehouse_id":
+			dataSource.WarehouseId = src.WarehouseId
+		case "use_ssl":
+			dataSource.UseSsl = src.UseSsl
+		case "verify_tls_certificate":
+			dataSource.VerifyTlsCertificate = src.VerifyTlsCertificate
+		case "redis_type":
+			dataSource.RedisType = convertV1RedisType(src.RedisType)
+		case "cloud_sql_ip_type":
+			dataSource.CloudSqlIpType = convertV1CloudSQLIPType(src.CloudSqlIpType)
+		case "master_name":
+			dataSource.MasterName = src.MasterName
+		case "master_username":
+			dataSource.MasterUsername = src.MasterUsername
+		case "master_password":
+			dataSource.MasterPassword = src.MasterPassword
+		case "extra_connection_parameters":
+			dataSource.ExtraConnectionParameters = src.ExtraConnectionParameters
+		case "project_id":
+			dataSource.ProjectId = src.ProjectId
+		case "instance_id":
+			dataSource.InstanceId = src.InstanceId
+		case "azure_credential", "aws_credential", "gcp_credential":
+			// Dispatch on the mask path, never on the request's
+			// authentication_type: an unset one used to fall through an empty
+			// branch, so rotating a leaked credential returned 200 and wrote
+			// nothing, and a mismatched one wrote a different credential than
+			// the mask named while moving authentication_type itself.
+			if want := credentialPathAuthType[path]; want != effectiveAuthType {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(
+					`update_mask %q requires authentication_type %q, but the data source resolves to %q`,
+					path, want, effectiveAuthType))
+			}
+			applyIAMCredential(dataSource, path, src)
+		default:
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
+		}
+	}
+
+	return nil
+}
+
+// credentialPathAuthType maps each IAM credential mask path to the single
+// authentication type that owns it.
+var credentialPathAuthType = map[string]storepb.DataSource_AuthenticationType{
+	"azure_credential": storepb.DataSource_AZURE_IAM,
+	"aws_credential":   storepb.DataSource_AWS_RDS_IAM,
+	"gcp_credential":   storepb.DataSource_GOOGLE_CLOUD_SQL_IAM,
+}
+
+// applyIAMCredential writes the one credential named by path. A path naming an
+// absent credential clears the extension, which is what a mask that names the
+// field with no value means.
+func applyIAMCredential(dataSource *storepb.DataSource, path string, src *v1pb.DataSource) {
+	switch path {
+	case "azure_credential":
+		azureCredential := src.GetAzureCredential()
+		if azureCredential == nil {
+			dataSource.IamExtension = nil
+			return
+		}
+		dataSource.IamExtension = &storepb.DataSource_AzureCredential_{
+			AzureCredential: &storepb.DataSource_AzureCredential{
+				TenantId:     azureCredential.TenantId,
+				ClientId:     azureCredential.ClientId,
+				ClientSecret: azureCredential.ClientSecret,
+			},
+		}
+	case "aws_credential":
+		awsCredential := src.GetAwsCredential()
+		if awsCredential == nil {
+			dataSource.IamExtension = nil
+			return
+		}
+		dataSource.IamExtension = &storepb.DataSource_AwsCredential{
+			AwsCredential: &storepb.DataSource_AWSCredential{
+				AccessKeyId:     awsCredential.AccessKeyId,
+				SecretAccessKey: awsCredential.SecretAccessKey,
+				SessionToken:    awsCredential.SessionToken,
+				RoleArn:         awsCredential.RoleArn,
+				ExternalId:      awsCredential.ExternalId,
+			},
+		}
+	case "gcp_credential":
+		gcpCredential := src.GetGcpCredential()
+		if gcpCredential == nil {
+			dataSource.IamExtension = nil
+			return
+		}
+		dataSource.IamExtension = &storepb.DataSource_GcpCredential{
+			GcpCredential: &storepb.DataSource_GCPCredential{
+				Content: gcpCredential.Content,
+			},
+		}
+	default:
+	}
 }
 
 // RemoveDataSource removes a data source to an instance.
@@ -1146,14 +1582,24 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 }
 
 func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {
-	instanceID, err := common.GetInstanceID(name)
+	return getInstanceMessageWithArchivedProject(ctx, stores, name, false)
+}
+
+func getInstanceMessageForLifecycle(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {
+	return getInstanceMessageWithArchivedProject(ctx, stores, name, true)
+}
+
+func getInstanceMessageWithArchivedProject(ctx context.Context, stores *store.Store, name string, allowArchivedProject bool) (*store.InstanceMessage, error) {
+	projectID, instanceID, err := common.GetInstanceResourceName(name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	find := &store.FindInstanceMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
-		ResourceID: &instanceID,
+		Workspace:     common.GetWorkspaceIDFromContext(ctx),
+		ResourceID:    &instanceID,
+		ProjectID:     projectID,
+		WorkspaceOnly: projectID == nil,
 	}
 	instance, err := stores.GetInstance(ctx, find)
 	if err != nil {
@@ -1162,12 +1608,66 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 	if instance == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", name))
 	}
+	if !allowArchivedProject {
+		if err := ensureProjectInstanceIsActive(ctx, stores, instance); err != nil {
+			return nil, err
+		}
+	}
 
 	return instance, nil
 }
 
-// buildInstanceName builds the instance name with the given instance ID.
-func buildInstanceName(instanceID string) string {
+func ensureProjectInstanceIsActive(ctx context.Context, stores *store.Store, instance *store.InstanceMessage) error {
+	if instance.ProjectID == nil {
+		return nil
+	}
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: instance.ProjectID,
+	})
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get instance project"))
+	}
+	if project == nil || project.Deleted {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", *instance.ProjectID))
+	}
+	return nil
+}
+
+func instanceCollectionParent(projectID *string) *string {
+	if projectID == nil {
+		return nil
+	}
+	return new(common.FormatProject(*projectID))
+}
+
+func (s *InstanceService) getInstanceCollection(ctx context.Context, parent *string, names []string) ([]*store.InstanceMessage, error) {
+	projectID, err := s.getProjectInstanceParent(ctx, parent)
+	if err != nil {
+		return nil, err
+	}
+	instances := make([]*store.InstanceMessage, 0, len(names))
+	for _, name := range names {
+		instance, err := getInstanceMessage(ctx, s.store, name)
+		if err != nil {
+			return nil, err
+		}
+		if instance.Deleted {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q has been deleted", name))
+		}
+		if (projectID == nil) != (instance.ProjectID == nil) || projectID != nil && *projectID != *instance.ProjectID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("instance %q is not in its requested collection", name))
+		}
+		instances = append(instances, instance)
+	}
+	return instances, nil
+}
+
+// buildInstanceName builds an instance name in its owner collection.
+func buildInstanceName(instanceID string, projectID *string) string {
+	if projectID != nil {
+		return common.FormatProjectInstance(*projectID, instanceID)
+	}
 	var b strings.Builder
 	b.Grow(len(common.InstanceNamePrefix) + len(instanceID))
 	_, _ = b.WriteString(common.InstanceNamePrefix)

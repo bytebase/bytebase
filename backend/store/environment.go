@@ -5,8 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 func (s *Store) GetEnvironmentByID(ctx context.Context, workspaceID string, id string) (*storepb.EnvironmentSetting_Environment, error) {

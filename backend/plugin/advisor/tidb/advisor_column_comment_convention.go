@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -117,7 +117,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 					Code:          code.CommentEmpty.Int32(),
 					Title:         title,
 					Content:       fmt.Sprintf("Column `%s`.`%s` requires comments", r.table, r.column),
-					StartPosition: common.ConvertANTLRLineToPosition(r.line),
+					StartPosition: base.ConvertANTLRLineToPosition(r.line),
 				})
 			}
 			if payload.MaxLength >= 0 && int32(len(r.comment)) > payload.MaxLength {
@@ -126,7 +126,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 					Code:          code.CommentTooLong.Int32(),
 					Title:         title,
 					Content:       fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", r.table, r.column, payload.MaxLength),
-					StartPosition: common.ConvertANTLRLineToPosition(r.line),
+					StartPosition: base.ConvertANTLRLineToPosition(r.line),
 				})
 			}
 		}

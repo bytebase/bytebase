@@ -258,3 +258,43 @@ select 3;`,
 		})
 	}
 }
+
+func TestConvertTiDBParserErrorPositionToPosition(t *testing.T) {
+	testCases := []struct {
+		name         string
+		line         int32
+		column       int32
+		expectedLine int32
+		expectedCol  int32
+	}{
+		{
+			name:         "normal position",
+			line:         2,
+			column:       10,
+			expectedLine: 2,
+			expectedCol:  10,
+		},
+		{
+			name:         "line less than 1",
+			line:         0,
+			column:       5,
+			expectedLine: 1,
+			expectedCol:  5,
+		},
+		{
+			name:         "column less than 1",
+			line:         3,
+			column:       0,
+			expectedLine: 3,
+			expectedCol:  1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pos := convertParserErrorPositionToPosition(tc.line, tc.column)
+			require.Equal(t, tc.expectedLine, pos.Line, "line mismatch")
+			require.Equal(t, tc.expectedCol, pos.Column, "column mismatch")
+		})
+	}
+}

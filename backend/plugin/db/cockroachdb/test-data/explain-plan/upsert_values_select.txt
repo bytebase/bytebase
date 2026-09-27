@@ -1,0 +1,9 @@
+distribution: local
+vectorized: true
+
+• upsert
+│ into: t2(id, c, d, grp, v)
+│ auto commit
+│
+└── • values
+      size: 5 columns, 1 row

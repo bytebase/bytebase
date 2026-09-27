@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
@@ -15,8 +14,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // AccessGrantMessage is the message for access_grant.
@@ -48,6 +47,21 @@ type FindAccessGrantMessage struct {
 
 	FilterQ     *qb.Query
 	OrderByKeys []*OrderByKey
+}
+
+// FindActiveAccessGrantMessage scopes a statement-bound JIT grant lookup.
+// It deliberately uses structured fields rather than a CEL filter so a large
+// statement can be passed directly to PostgreSQL as a parameter.
+type FindActiveAccessGrantMessage struct {
+	Workspace     string
+	ProjectID     string
+	Creator       string
+	Target        string
+	Statement     string
+	Schema        string
+	Container     string
+	ExpireTime    time.Time
+	RequireExport bool
 }
 
 // UpdateAccessGrantMessage is the message for updating an access grant.
@@ -137,15 +151,17 @@ func (s *Store) ListAccessGrants(ctx context.Context, find *FindAccessGrantMessa
 		q.And("creator = ?", *v)
 	}
 
-	if len(find.OrderByKeys) > 0 {
-		orderBy := []string{}
-		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
-	} else {
-		q.Space("ORDER BY created_at DESC")
+	// created_at defaults to now() and is not unique; id is the primary key and
+	// makes the ordering total, so offset pages cannot skip or repeat.
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
+	if len(orderBy) == 0 {
+		orderBy = append(orderBy, "access_grant.created_at DESC")
+	}
+	orderBy = append(orderBy, "access_grant.id DESC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -198,6 +214,33 @@ func (s *Store) ListAccessGrants(ctx context.Context, find *FindAccessGrantMessa
 	}
 
 	return grants, nil
+}
+
+func getActiveAccessGrantFilter(find *FindActiveAccessGrantMessage) *qb.Query {
+	q := qb.Q().
+		And("access_grant.status = ?", storepb.AccessGrant_ACTIVE.String()).
+		And("access_grant.expire_time > ?", find.ExpireTime).
+		And("access_grant.payload->'targets' @> jsonb_build_array(to_jsonb(?::text))", find.Target).
+		And("btrim(access_grant.payload->>'query', E' \\t\\n\\r\\v\\f') = ?", find.Statement).
+		And("COALESCE(access_grant.payload->>'schema', '') = ?", find.Schema).
+		And("COALESCE(access_grant.payload->>'container', '') = ?", find.Container)
+	if find.RequireExport {
+		q.And("COALESCE((access_grant.payload->>'export')::boolean, false) = true")
+	}
+	return q
+}
+
+// ListActiveAccessGrants returns active, unexpired grants matching one caller,
+// target, statement, and execution context.
+func (s *Store) ListActiveAccessGrants(ctx context.Context, find *FindActiveAccessGrantMessage) ([]*AccessGrantMessage, error) {
+	filterQ := getActiveAccessGrantFilter(find)
+
+	return s.ListAccessGrants(ctx, &FindAccessGrantMessage{
+		Workspace: find.Workspace,
+		ProjectID: &find.ProjectID,
+		Creator:   &find.Creator,
+		FilterQ:   filterQ,
+	})
 }
 
 // UpdateAccessGrant updates an existing access grant.
@@ -297,13 +340,9 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 		return nil, nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return nil, errors.Errorf("failed to create cel env")
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, err
 	}
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
@@ -360,7 +399,7 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 					if !ok {
 						return nil, errors.Errorf("status value must be a string")
 					}
-					return qb.Q().Space("access_grant.status = ?", statusStr), nil
+					return getAccessGrantStatusFilter(statusStr)
 				case "query":
 					queryStr, ok := value.(string)
 					if !ok {
@@ -437,7 +476,7 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 				}
 				// Normalize whitespace on both sides so "SELECT *" matches "SELECT\n  *".
 				normalizedValue := strings.Join(strings.Fields(value), " ")
-				return qb.Q().Space("regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE ?", "%"+normalizedValue+"%"), nil
+				return qb.Q().Space("regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE ? ESCAPE '\\'", containsPattern(normalizedValue)), nil
 			case celoperators.In:
 				variable, value := getVariableAndValueFromExpr(expr)
 				if variable != "status" {
@@ -450,15 +489,19 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 				if len(rawList) == 0 {
 					return nil, errors.Errorf("empty list value for filter %v", variable)
 				}
-				var statuses []string
+				q := qb.Q()
 				for _, raw := range rawList {
 					s, ok := raw.(string)
 					if !ok {
 						return nil, errors.Errorf("status value must be a string")
 					}
-					statuses = append(statuses, s)
+					qq, err := getAccessGrantStatusFilter(s)
+					if err != nil {
+						return nil, err
+					}
+					q.Or("?", qq)
 				}
-				return qb.Q().Space("access_grant.status = ANY(?)", statuses), nil
+				return qb.Q().Space("(?)", q), nil
 			case celoperators.GreaterEquals, celoperators.LessEquals, celoperators.Greater, celoperators.Less:
 				variable, rawValue := getVariableAndValueFromExpr(expr)
 				value, ok := rawValue.(string)
@@ -501,4 +544,26 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 		return nil, err
 	}
 	return qb.Q().Space("(?)", q), nil
+}
+
+func getAccessGrantStatusFilter(status string) (*qb.Query, error) {
+	rejectedIssueQ := qb.Q().Space("EXISTS (SELECT 1 FROM issue, jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND COALESCE((issue.payload->'approval'->>'approvalFindingDone')::boolean, false) AND issue.payload->'approval'->'approvalTemplate' IS NOT NULL AND approver->>'status' = ?)", storepb.IssuePayloadApproval_Approver_REJECTED.String())
+	canceledIssueQ := qb.Q().Space("EXISTS (SELECT 1 FROM issue WHERE issue.project = access_grant.project AND issue.id = (access_grant.payload->>'issueId')::bigint AND issue.status = ?)", storepb.Issue_CANCELED.String())
+
+	switch status {
+	case "ACTIVE":
+		return qb.Q().Space("(access_grant.status = ? AND access_grant.expire_time > now())", storepb.AccessGrant_ACTIVE.String()), nil
+	case "EXPIRED":
+		return qb.Q().Space("(access_grant.status = ? AND access_grant.expire_time <= now())", storepb.AccessGrant_ACTIVE.String()), nil
+	case "REVOKED":
+		return qb.Q().Space("access_grant.status = ?", storepb.AccessGrant_REVOKED.String()), nil
+	case "PENDING":
+		return qb.Q().Space("(access_grant.status = ? AND NOT ? AND NOT ?)", storepb.AccessGrant_PENDING.String(), canceledIssueQ, rejectedIssueQ), nil
+	case "CANCELED":
+		return qb.Q().Space("(access_grant.status = ? AND ? AND NOT ?)", storepb.AccessGrant_PENDING.String(), canceledIssueQ, rejectedIssueQ), nil
+	case "REJECTED":
+		return qb.Q().Space("(access_grant.status = ? AND ?)", storepb.AccessGrant_PENDING.String(), rejectedIssueQ), nil
+	default:
+		return nil, errors.Errorf("unsupported status %q", status)
+	}
 }

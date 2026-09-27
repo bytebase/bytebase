@@ -1,70 +1,54 @@
-<h1 align="center">
-  <a href="https://www.bytebase.com?source=github" target="_blank">
-    <img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/banner.webp" />
-  </a>
-</h1>
-
-<p align="center">
-  <b>Database CI/CD for DevOps teams</b><br>
-  Manage database schema changes with confidence
-</p>
-
 <p align="center">
   <a href="https://docs.bytebase.com/get-started/self-host-vs-cloud" target="_blank">⚙️ Install</a> •
   <a href="https://docs.bytebase.com">📚 Docs</a> •
-  <a href="https://discord.gg/huyw7gRsyA">💬 Discord</a> •
-  <a href="https://www.bytebase.com/request-demo/">🙋‍♀️ Book Demo</a>
+  <a href="https://www.bytebase.com/contact-us/">🙋‍♀️ Book Demo</a>
 </p>
 
-<p align="center">
-  <a href="https://goreportcard.com/report/github.com/bytebase/bytebase">
-    <img alt="go report" src="https://goreportcard.com/badge/github.com/bytebase/bytebase" />
-  </a>
-  <a href="https://artifacthub.io/packages/search?repo=bytebase">
-    <img alt="Artifact Hub" src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/bytebase" />
-  </a>
-  <a href="https://github.com/bytebase/bytebase">
-    <img alt="Github Stars" src="https://img.shields.io/github/stars/bytebase/bytebase?logo=github">
-  </a>
-</p>
-
----
+![banner](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/banner.jpg)
 
 ## What is Bytebase?
 
-Bytebase is an open-source database DevOps tool, it's the **only database CI/CD project** included by the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase&item=app-definition-and-development--continuous-integration-delivery--bytebase) and [Platform Engineering](https://platformengineering.org/tools/bytebase).
+Bytebase is the open-source database governance platform. It acts as a single control plane between your users — humans and AI agents — and your databases, governing change management, access control, and compliance so every change and query is reviewed, controlled, and recorded.
 
-It offers a web-based collaboration workspace to help DBAs and Developers manage the lifecycle of application database schemas.
+![middleware](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/middleware.svg)
 
-<h1 align="center">
-  <img alt="Bytebase" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/fish.webp" />
-</h1>
+It replaces the disparate tools stitched across migration scripts, SQL clients, and ticketing systems, unifying database operations in a single platform.
+
+<p align="center">
+  <img alt="venn" src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/venn.svg" width="480" />
+</p>
+
+## Supported Databases and Integrations
+
+Bytebase supports PostgreSQL, MySQL, SQL Server, Oracle, MongoDB, Redis, MariaDB, TiDB, Snowflake, ClickHouse, Spanner, OceanBase, and [more](https://docs.bytebase.com/introduction/supported-databases) — plus [integrations](https://www.bytebase.com/integrations/) spanning IaC, AI, identity providers, collaboration, ITSM, log streaming, and secret managers.
+
+![integrations](https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/integrations.webp)
 
 ## Key Features
 
-### 🔄 **Database CI/CD**
+### Change Management
 
+- **GUI-Based Workflow**: Request, review, deploy, and rollback changes through a web console
 - **GitOps Integration**: Native GitHub/GitLab integration for database-as-code workflows
-- **Migration Management**: Automated schema migration with rollback support
 - **SQL Review**: 200+ lint rules to enforce SQL standards and best practices
 
-### 🔒 **Security & Compliance**
+### Access Control
 
-- **Data Masking**: Advanced column-level masking for sensitive data protection
-- **Access Control**: Fine-grained RBAC with project and workspace-level permissions
+- **Fine-Grained RBAC**: Project and workspace-level roles and permissions
+- **Just-in-Time Access**: Time-boxed database access grants with automatic revocation
+- **Dynamic Data Masking**: Column-level masking applied based on user role at query time
+
+### Compliance
+
 - **Audit Logging**: Complete audit trail of all database activities
+- **Codified Policy**: Manage policies as code via Terraform Provider and API
+- **Data Classification**: Identify and tag sensitive data across your databases
 
-### 🎯 **Developer Experience**
+### AI
 
-- **Web SQL Editor**: Feature-rich IDE for database development
-- **Batch Changes**: Apply changes across multiple databases and tenants
-- **API & Terraform**: Full API access and Terraform provider for automation
-
-### 📊 **Operations**
-
-- **Multi-Database Support**: PostgreSQL, MySQL, MongoDB, Redis, Snowflake, and more
-- **Drift Detection**: Automatic detection of schema drift across environments
-- **Admin Mode**: CLI-like experience without bastion setup
+- **MCP Server**: Connect AI agents and IDEs to Bytebase through the Model Context Protocol
+- **Text-to-SQL**: Generate and refine queries in the SQL Editor with AI assistance
+- **Page Agent**: Built-in AI assistant that guides or executes workflows from plain language requests
 
 ## Quick Start
 
@@ -90,14 +74,8 @@ Visit [http://localhost:8080](http://localhost:8080) and follow the setup wizard
 
 - [Installation Guide](https://docs.bytebase.com/get-started/self-host-vs-cloud)
 - [Tutorials](https://docs.bytebase.com/tutorials)
-- [API Reference](https://docs.bytebase.com/api/overview)
-- [FAQ](https://docs.bytebase.com/faq)
-
-## The Bytebase Family
-
-- **[Bytebase Console](https://www.bytebase.com)**: Web-based GUI for database lifecycle management
-- **[SQL Review Action](https://github.com/bytebase/sql-review-action)**: GitHub Action for PR-time SQL review
-- **[Terraform Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs)**: Infrastructure as code for Bytebase resources
+- [Terraform Provider](https://registry.terraform.io/providers/bytebase/bytebase)
+- [API Reference](https://api.bytebase.com)
 
 ## Use Cases
 
@@ -119,16 +97,11 @@ Visit [http://localhost:8080](http://localhost:8080) and follow the setup wizard
 - Implement data masking for sensitive information
 - Maintain compliance with audit trails
 
-## Supported Databases
-
-PostgreSQL, MySQL, MariaDB, TiDB, Snowflake, ClickHouse, MongoDB, Redis, Oracle, SQL Server, Spanner, and [more](https://docs.bytebase.com/introduction/supported-databases).
-
 ## Community & Support
 
-- 💬 [Discord Community](https://discord.gg/huyw7gRsyA)
-- 🐦 [Twitter](https://twitter.com/Bytebase)
-- 📧 [Email Support](mailto:support@bytebase.com)
-- 🐛 [Issue Tracker](https://github.com/bytebase/bytebase/issues)
+- [Twitter](https://twitter.com/Bytebase)
+- [Issue Tracker](https://github.com/bytebase/bytebase/issues)
+- [FAQ](https://docs.bytebase.com/faq)
 
 ## Contributing
 

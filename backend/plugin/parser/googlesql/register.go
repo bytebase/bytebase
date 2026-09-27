@@ -16,8 +16,9 @@ type Handlers struct {
 	GetQuerySpan base.GetQuerySpanFunc
 }
 
-// Register registers the splitter, diagnose, and query-span handlers for one
-// GoogleSQL engine with the given dialect configuration.
+// Register registers the splitter, diagnose, query-span, statement-parser, and
+// statement-type handlers for one GoogleSQL engine with the given dialect
+// configuration.
 func Register(engine storepb.Engine, cfg Config) Handlers {
 	h := Handlers{
 		SplitSQL: func(statement string) ([]base.Statement, error) {
@@ -32,5 +33,9 @@ func Register(engine storepb.Engine, cfg Config) Handlers {
 		return Diagnose(statement), nil
 	})
 	base.RegisterGetQuerySpan(engine, h.GetQuerySpan)
+	base.RegisterParseStatementsFunc(engine, func(statement string) ([]base.ParsedStatement, error) {
+		return ParseStatements(statement, cfg)
+	})
+	base.RegisterGetStatementTypes(engine, GetStatementTypes)
 	return h
 }

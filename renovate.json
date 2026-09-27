@@ -1,25 +1,45 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "schedule": ["* * 31 2 *"],
+  "extends": ["config:recommended", "schedule:monthly"],
   "postUpdateOptions": ["gomodTidy", "pnpmDedupe"],
-  "allowedPostUpgradeCommands": ["^pnpm install --no-frozen-lockfile$"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track the pnpm version pinned in scripts/Dockerfile",
+      "managerFilePatterns": ["/^scripts/Dockerfile$/"],
+      "matchStrings": ["pnpm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "pnpm",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "Bump the $schema URL in frontend/biome.json together with @biomejs/biome so the schema version always matches the CLI version",
+      "managerFilePatterns": ["/^frontend/biome\\.json$/"],
+      "matchStrings": [
+        "https://biomejs\\.dev/schemas/(?<currentValue>\\d+\\.\\d+\\.\\d+)/schema\\.json"
+      ],
+      "depNameTemplate": "@biomejs/biome",
+      "datasourceTemplate": "npm"
+    }
+  ],
   "packageRules": [
     {
-      "matchManagers": ["npm"],
-      "postUpgradeTasks": {
-        "commands": ["pnpm install --no-frozen-lockfile"],
-        "fileFilters": ["frontend/pnpm-lock.yaml"],
-        "executionMode": "update"
-      }
+      "matchDatasources": ["npm"],
+      "description": "Wait out pnpm 11's 24h minimumReleaseAge supply-chain policy so PRs don't arrive with failing installs",
+      "minimumReleaseAge": "1 day"
+    },
+    {
+      "groupName": "pnpm",
+      "description": "Bump pnpm together across package.json, workflows, and the Dockerfile",
+      "matchPackageNames": ["pnpm"]
     },
     {
       "groupName": "codingame",
-      "matchPackagePatterns": ["^@codingame/", "^monaco-editor$", "^vscode$"]
+      "matchPackageNames": ["/^@codingame//", "/^monaco-editor$/", "/^vscode$/"]
     },
     {
       "groupName": "google.golang.org/genproto",
-      "matchPackagePatterns": ["^google.golang.org/genproto"]
+      "matchPackageNames": ["/^google.golang.org/genproto/"]
     },
     {
       "groupName": "go-toolchain",
@@ -27,13 +47,43 @@
       "matchPackageNames": ["go", "golangci/golangci-lint"]
     },
     {
+      "groupName": "connectrpc",
+      "description": "Group @connectrpc packages since connect-web pins an exact peer version of connect",
+      "matchPackageNames": ["/^@connectrpc//"]
+    },
+    {
       "groupName": "i18next",
       "description": "Group i18next, react-i18next, and i18next plugins so peer-dep major bumps land together",
-      "matchPackagePatterns": ["^i18next$", "^react-i18next$", "^i18next-"]
+      "matchPackageNames": ["/^i18next$/", "/^react-i18next$/", "/^i18next-/"]
+    },
+    {
+      "groupName": "react",
+      "description": "React 19's renderer enforces an exact version match between react and react-dom at startup, so bump them together",
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"]
+    },
+    {
+      "matchPackageNames": ["@vitejs/plugin-legacy"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false,
+      "description": "v8's modern-browser detection imports a data: URI module, which our CSP script-src blocks — every browser then falls back to the broken legacy (SystemJS) bundle. Re-enable once the detection is CSP-compatible or we drop legacy chunks (renderLegacyChunks: false)."
+    },
+    {
+      "matchPackageNames": ["vscode-languageclient"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false,
+      "description": "v10 dropped the browser-field mapping on the root export, so `import \"vscode-languageclient\"` loads the common build and the browser RAL is never installed — the LSP client dies with 'No runtime abstraction layer installed'. Re-enable after migrating imports to vscode-languageclient/browser and verifying LSP in a real browser."
+    },
+    {
+      "matchPackageNames": ["google.golang.org/genproto"],
+      "enabled": false,
+      "description": "Revisions after 0afa2a65878a delete the bigtable, datastore, firestore, pubsub and spanner package trees, which moved into the per-product client libraries with no split-out genproto module replacing them. cloud.google.com/go/spanner still requires an older genproto and test-imports genproto/googleapis/spanner/admin/database/v1, so `go mod tidy` cannot resolve the graph and fails outright. Re-enable once cloud.google.com/go/spanner drops the deleted packages. This pins only the root module — googleapis/api and googleapis/rpc are separate modules, lost nothing, and keep updating."
     }
   ],
   "ignoreDeps": [
+    "github.com/pingcap/tidb",
     "github.com/pingcap/tidb/pkg/parser",
-    "github.com/elastic/go-elasticsearch/v7"
+    "github.com/form3tech-oss/jwt-go",
+    "github.com/elastic/go-elasticsearch/v7",
+    "typescript-6"
   ]
 }

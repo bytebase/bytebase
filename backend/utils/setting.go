@@ -7,14 +7,23 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 const setupExternalURLError = "external URL isn't setup yet, see https://docs.bytebase.com/get-started/self-host/external-url"
 
+type externalURLStore interface {
+	GetWorkspaceProfileSetting(context.Context, string) (*storepb.WorkspaceProfileSetting, error)
+}
+
+type discoveryExternalURLStore interface {
+	externalURLStore
+	GetWorkspaceID(context.Context) (string, error)
+}
+
 // GetEffectiveExternalURL returns the external URL to use, preferring the command-line flag over the database setting.
 // This ensures that when the --external-url flag is set, it takes precedence over any value stored in the database.
-func GetEffectiveExternalURL(ctx context.Context, stores *store.Store, profile *config.Profile, workspaceID string) (string, error) {
+func GetEffectiveExternalURL(ctx context.Context, stores externalURLStore, profile *config.Profile, workspaceID string) (string, error) {
 	// Use command-line flag value if set, otherwise use database value
 	externalURL := profile.ExternalURL
 	if externalURL == "" {
@@ -29,4 +38,27 @@ func GetEffectiveExternalURL(ctx context.Context, stores *store.Store, profile *
 		return "", connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(setupExternalURLError))
 	}
 	return externalURL, nil
+}
+
+// GetDiscoveryExternalURL resolves the configured external URL for
+// workspace-agnostic discovery endpoints.
+func GetDiscoveryExternalURL(ctx context.Context, stores discoveryExternalURLStore, profile *config.Profile) (string, error) {
+	if profile.ExternalURL != "" {
+		return profile.ExternalURL, nil
+	}
+
+	// A self-hosted deployment has one workspace, so its DB-backed external URL
+	// can be resolved without authentication. SaaS cannot choose a workspace
+	// safely here because discovery requests are unauthenticated.
+	if profile.SaaS {
+		return "", connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(setupExternalURLError))
+	}
+	workspaceID, err := stores.GetWorkspaceID(ctx)
+	if err != nil {
+		return "", connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace"))
+	}
+	if workspaceID == "" {
+		return "", connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(setupExternalURLError))
+	}
+	return GetEffectiveExternalURL(ctx, stores, profile, workspaceID)
 }

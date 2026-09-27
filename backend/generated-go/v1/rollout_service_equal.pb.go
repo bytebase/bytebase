@@ -187,6 +187,12 @@ func (x *ListTaskRunsRequest) Equal(y *ListTaskRunsRequest) bool {
 	if x.Parent != y.Parent {
 		return false
 	}
+	if x.PageSize != y.PageSize {
+		return false
+	}
+	if x.PageToken != y.PageToken {
+		return false
+	}
 	return true
 }
 
@@ -204,6 +210,9 @@ func (x *ListTaskRunsResponse) Equal(y *ListTaskRunsResponse) bool {
 		if !x.TaskRuns[i].Equal(y.TaskRuns[i]) {
 			return false
 		}
+	}
+	if x.NextPageToken != y.NextPageToken {
+		return false
 	}
 	return true
 }
@@ -320,19 +329,6 @@ func (x *Task_DatabaseUpdate) Equal(y *Task_DatabaseUpdate) bool {
 	return true
 }
 
-func (x *Task_DatabaseDataExport) Equal(y *Task_DatabaseDataExport) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Sheet != y.Sheet {
-		return false
-	}
-	return true
-}
-
 func (x *Task) Equal(y *Task) bool {
 	if x == y {
 		return true
@@ -362,9 +358,6 @@ func (x *Task) Equal(y *Task) bool {
 		return false
 	}
 	if !x.GetDatabaseUpdate().Equal(y.GetDatabaseUpdate()) {
-		return false
-	}
-	if !x.GetDatabaseDataExport().Equal(y.GetDatabaseDataExport()) {
 		return false
 	}
 	if p, q := x.UpdateTime, y.UpdateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
@@ -431,9 +424,6 @@ func (x *TaskRun) Equal(y *TaskRun) bool {
 		return false
 	}
 	if p, q := x.StartTime, y.StartTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
-	}
-	if x.ExportArchiveStatus != y.ExportArchiveStatus {
 		return false
 	}
 	if x.HasPriorBackup != y.HasPriorBackup {

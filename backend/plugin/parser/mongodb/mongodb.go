@@ -39,10 +39,9 @@ func GetOmniNode(a base.AST) (ast.Node, bool) {
 // ParseMongoShell parses a MongoDB shell script and returns parsed statements
 // with their ASTs. Conforms to the standard ParseStatementsFunc interface.
 //
-// The omni parser recovers from syntax errors by skipping to the next statement
-// boundary. When at least one statement parses successfully, this function
-// returns the partial results with a nil error. A non-nil error is returned
-// only when no statements could be parsed at all.
+// Parsing is strict: a parse error in any statement fails the whole input so
+// callers never silently lose statements (BYT-9950). Use
+// ParseMongoShellBestEffort for partial results.
 func ParseMongoShell(statement string) ([]base.ParsedStatement, error) {
 	stmts, err := mongo.Parse(statement)
 	if err != nil {

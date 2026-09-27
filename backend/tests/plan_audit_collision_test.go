@@ -21,10 +21,7 @@ func TestCollision_PlanSpecAuditEmission(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -48,7 +45,7 @@ func TestCollision_PlanSpecAuditEmission(t *testing.T) {
 	cdc := originalSpec.GetChangeDatabaseConfig()
 	a.NotNil(cdc, "fresh plan A spec is expected to be a ChangeDatabaseConfig")
 
-	_, err = ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+	_, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
 		Plan: &v1pb.Plan{
 			Name: planA2.Name,
 			Specs: []*v1pb.Plan_Spec{{
@@ -83,4 +80,28 @@ func TestCollision_PlanSpecAuditEmission(t *testing.T) {
 	// task_runs, plan_check_runs, and (importantly) issue_comments.
 	afterB := snapshotProject(ctx, t, ctl, fixture.ProjectB)
 	assertProjectUnchanged(t, beforeB, afterB, "project B after plan A spec audit emission")
+}
+
+// TestCollision_PlanMetadataUpdate verifies the ordinary Store.UpdatePlan path
+// remains scoped by the full (project, id) key.
+func TestCollision_PlanMetadataUpdate(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	ctl, ctx := startProject(ctx, t)
+
+	fixture := setupCollidingProjects(ctx, t, ctl)
+	beforeB := snapshotProject(ctx, t, ctl, fixture.ProjectB)
+	updated, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+		Plan: &v1pb.Plan{
+			Name:  fixture.PlanA.Name,
+			Title: "updated only in project A",
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title"}},
+	}))
+	a.NoError(err)
+	a.Equal("updated only in project A", updated.Msg.Title)
+	afterB := snapshotProject(ctx, t, ctl, fixture.ProjectB)
+	assertProjectUnchanged(t, beforeB, afterB, "project B after plan A metadata update")
 }

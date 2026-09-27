@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	oracleast "github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -28,7 +29,7 @@ func TestGetQuerySpan(t *testing.T) {
 		Description     string `yaml:"description,omitempty"`
 		Statement       string `yaml:"statement,omitempty"`
 		DefaultDatabase string `yaml:"defaultDatabase,omitempty"`
-		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
+		// Metadata is the protojson encoded metadatapb.DatabaseSchemaMetadata,
 		// if it's empty, we will use the defaultDatabaseMetadata.
 		Metadata              string              `yaml:"metadata,omitempty"`
 		CrossDatabaseMetadata string              `yaml:"crossDatabaseMetadata,omitempty"`
@@ -51,10 +52,10 @@ func TestGetQuerySpan(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &testCases))
 
 	for i, tc := range testCases {
-		metadata := &storepb.DatabaseSchemaMetadata{}
+		metadata := &metadatapb.DatabaseSchemaMetadata{}
 		a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata))
-		list := []*storepb.DatabaseSchemaMetadata{metadata}
-		crossDatabase := &storepb.DatabaseSchemaMetadata{}
+		list := []*metadatapb.DatabaseSchemaMetadata{metadata}
+		crossDatabase := &metadatapb.DatabaseSchemaMetadata{}
 		if tc.CrossDatabaseMetadata != "" {
 			a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.CrossDatabaseMetadata), crossDatabase))
 			list = append(list, crossDatabase)
@@ -81,7 +82,7 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 }
 
-func buildMockDatabaseMetadataGetter(defaultMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc, base.GetLinkedDatabaseMetadataFunc) {
+func buildMockDatabaseMetadataGetter(defaultMetadata []*metadatapb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc, base.GetLinkedDatabaseMetadataFunc) {
 	return func(_ context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
 			databaseMetadata := defaultMetadata
 			if instanceID == instanceIDB {
@@ -107,9 +108,9 @@ func buildMockDatabaseMetadataGetter(defaultMetadata []*storepb.DatabaseSchemaMe
 				names = append(names, metadata.Name)
 			}
 			return names, nil
-		}, func(_ context.Context, _, linkedDatabaseName, _ string) (string, string, *model.DatabaseMetadata, error) {
+		}, func(_ context.Context, _, linkedDatabaseName, schemaName string) (string, string, *model.DatabaseMetadata, error) {
 			databaseMetadata := defaultMetadata
-			var linkedDBInfo *storepb.LinkedDatabaseMetadata
+			var linkedDBInfo *metadatapb.LinkedDatabaseMetadata
 			for _, metadata := range databaseMetadata {
 				for _, linkedDatabase := range metadata.GetLinkedDatabases() {
 					if linkedDatabase.Name == linkedDatabaseName {
@@ -122,16 +123,28 @@ func buildMockDatabaseMetadataGetter(defaultMetadata []*storepb.DatabaseSchemaMe
 				}
 			}
 			if linkedDBInfo == nil {
-				return "", "", nil, errors.Errorf("linked database %q not found", linkedDatabaseName)
+				// Production resolves an unknown link to nothing, not to an error.
+				return "", "", nil, nil
 			}
 
-			for _, metadata := range getLinkedDatabaseMetadata() {
-				if metadata.Name == linkedDBInfo.Username {
-					return instanceIDB, metadata.Name, model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */), nil
+			// As in production, the written schema wins over the link user, and a link resolves to
+			// nothing when no database of that name exists. LOOPBACK points back at the connected
+			// instance; every other link reaches instance B.
+			databaseName := linkedDBInfo.Username
+			if schemaName != "" {
+				databaseName = schemaName
+			}
+			candidates, instanceID := getLinkedDatabaseMetadata(), instanceIDB
+			if linkedDBInfo.Name == "LOOPBACK" {
+				candidates, instanceID = defaultMetadata, instanceIDA
+			}
+			for _, metadata := range candidates {
+				if metadata.Name == databaseName {
+					return instanceID, metadata.Name, model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */), nil
 				}
 			}
 
-			return "", "", nil, errors.Errorf("database %q not found", linkedDBInfo.Username)
+			return "", "", nil, nil
 		}
 }
 
@@ -139,17 +152,17 @@ func listLinkedDatabaseNames() ([]string, error) {
 	return []string{"SCHEMA1", "SCHEMA2"}, nil
 }
 
-func getLinkedDatabaseMetadata() []*storepb.DatabaseSchemaMetadata {
-	return []*storepb.DatabaseSchemaMetadata{
+func getLinkedDatabaseMetadata() []*metadatapb.DatabaseSchemaMetadata {
+	return []*metadatapb.DatabaseSchemaMetadata{
 		{
 			Name: "SCHEMA1",
-			Schemas: []*storepb.SchemaMetadata{
+			Schemas: []*metadatapb.SchemaMetadata{
 				{
 					Name: "",
-					Tables: []*storepb.TableMetadata{
+					Tables: []*metadatapb.TableMetadata{
 						{
 							Name: "LT1",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{
 									Name: "LC1",
 									Type: "int",
@@ -158,7 +171,7 @@ func getLinkedDatabaseMetadata() []*storepb.DatabaseSchemaMetadata {
 						},
 						{
 							Name: "LT2",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{
 									Name: "LC1",
 									Type: "int",
@@ -170,7 +183,7 @@ func getLinkedDatabaseMetadata() []*storepb.DatabaseSchemaMetadata {
 							},
 						},
 					},
-					Views: []*storepb.ViewMetadata{
+					Views: []*metadatapb.ViewMetadata{
 						{
 							Name: "LV1",
 							Definition: `SELECT LC1, LC2
@@ -184,10 +197,33 @@ func getLinkedDatabaseMetadata() []*storepb.DatabaseSchemaMetadata {
 	}
 }
 
+func TestGetQuerySpanRefusesSystemTableWithLink(t *testing.T) {
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Name:            "PUBLIC",
+		Schemas:         []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{{Name: "T", Columns: []*metadatapb.ColumnMetadata{{Name: "A"}}}}}},
+		LinkedDatabases: []*metadatapb.LinkedDatabaseMetadata{{Name: "REMOTE", Username: "SCHEMA1"}},
+	}
+	databaseMetadataGetter, databaseNamesLister, linkedDatabaseMetadataGetter := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
+	gCtx := base.GetQuerySpanContext{
+		InstanceID:                    instanceIDA,
+		GetDatabaseMetadataFunc:       databaseMetadataGetter,
+		ListDatabaseNamesFunc:         databaseNamesLister,
+		GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataGetter,
+	}
+	// A linked table is a user table: next to a local system table the statement is mixed,
+	// and on its own it is never an info-schema read.
+	_, err := GetQuerySpan(context.TODO(), gCtx, base.Statement{Text: "SELECT * FROM SYS.DBA_USERS, T@REMOTE;"}, "PUBLIC", "", false)
+	require.ErrorIs(t, err, base.MixUserSystemTablesError)
+	span, err := GetQuerySpan(context.TODO(), gCtx, base.Statement{Text: "SELECT * FROM SYS.DBA_USERS@REMOTE;"}, "PUBLIC", "", false)
+	require.NoError(t, err)
+	require.Equal(t, base.Select, span.Type)
+}
+
 func TestGetAccessTables(t *testing.T) {
 	tests := []struct {
 		statement string
 		expected  []base.SchemaResource
+		linked    []base.SchemaResource
 	}{
 		{
 			statement: "SELECT * FROM t1 WHERE c1 = 1",
@@ -224,16 +260,149 @@ func TestGetAccessTables(t *testing.T) {
 				},
 			},
 		},
+		{
+			statement: "SELECT * FROM schema1.t1@remote;",
+			linked: []base.SchemaResource{
+				{
+					Database:     "SCHEMA1",
+					Table:        "T1",
+					LinkedServer: "REMOTE",
+				},
+			},
+		},
+		{
+			statement: "SELECT * FROM t1@remote;",
+			linked: []base.SchemaResource{
+				{
+					Table:        "T1",
+					LinkedServer: "REMOTE",
+				},
+			},
+		},
+		{
+			statement: "SELECT * FROM t1, schema1.t2@remote WHERE EXISTS (SELECT 1 FROM t3@remote);",
+			expected: []base.SchemaResource{
+				{
+					Database: "DB",
+					Table:    "T1",
+				},
+			},
+			linked: []base.SchemaResource{
+				{
+					Database:     "SCHEMA1",
+					Table:        "T2",
+					LinkedServer: "REMOTE",
+				},
+				{
+					Table:        "T3",
+					LinkedServer: "REMOTE",
+				},
+			},
+		},
+		{
+			statement: "SELECT * FROM sys.dba_users@remote;",
+			linked: []base.SchemaResource{
+				{
+					Database:     "SYS",
+					Table:        "DBA_USERS",
+					LinkedServer: "REMOTE",
+				},
+			},
+		},
+		{
+			statement: "SELECT sysdate FROM dual;",
+		},
+		// Through a link an unqualified DUAL resolves in the link user's schema first.
+		{
+			statement: "SELECT sysdate FROM dual@remote;",
+			linked: []base.SchemaResource{
+				{
+					Table:        "DUAL",
+					LinkedServer: "REMOTE",
+				},
+			},
+		},
+		{
+			statement: "SELECT * FROM t1, sys.dual;",
+			expected: []base.SchemaResource{
+				{
+					Database: "DB",
+					Table:    "T1",
+				},
+			},
+		},
+		{
+			statement: "SELECT sysdate FROM sys.dual@remote;",
+		},
+		// Oracle accepts the public synonym's owner only quoted (ORA-00903 unquoted).
+		{
+			statement: `SELECT sysdate FROM "PUBLIC".dual;`,
+		},
+		// A schema-qualified DUAL is a table in that schema, local or remote.
+		{
+			statement: "SELECT * FROM s.dual@remote;",
+			linked: []base.SchemaResource{
+				{
+					Database:     "S",
+					Table:        "DUAL",
+					LinkedServer: "REMOTE",
+				},
+			},
+		},
+		{
+			statement: "SELECT * FROM app.dual;",
+			expected: []base.SchemaResource{
+				{
+					Database: "APP",
+					Table:    "DUAL",
+				},
+			},
+		},
+		// Oracle rejects a link after a partition clause (ORA-03048), so it names none.
+		{
+			statement: "SELECT * FROM t1 PARTITION (p1)@remote;",
+			expected: []base.SchemaResource{
+				{
+					Database: "DB",
+					Table:    "T1",
+				},
+			},
+		},
+		// `t@remote@q` names the link REMOTE@Q.
+		{
+			statement: "SELECT * FROM s.t@remote@q;",
+			linked: []base.SchemaResource{
+				{
+					Database:     "S",
+					Table:        "T",
+					LinkedServer: "REMOTE@Q",
+				},
+			},
+		},
+		{
+			statement: "SELECT * FROM t1@remote@q, t1@remote;",
+			linked: []base.SchemaResource{
+				{
+					Table:        "T1",
+					LinkedServer: "REMOTE@Q",
+				},
+				{
+					Table:        "T1",
+					LinkedServer: "REMOTE",
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
-		results, err := ParsePLSQLOmni(test.statement)
+		results, err := ParsePLSQL(test.statement)
 		require.NoError(t, err)
 		require.NotEmpty(t, results)
 		require.NotEmpty(t, results.Items)
 		raw, ok := results.Items[0].(*oracleast.RawStmt)
 		require.True(t, ok)
-		resources := collectOmniAccessTables("DB", raw.Stmt)
-		require.Equal(t, test.expected, resources, test.statement)
+		local, linked := collectOmniAccessTables("DB", raw.Stmt)
+		require.Equal(t, test.expected, local, test.statement)
+		require.Equal(t, test.linked, linked, test.statement)
 	}
 }

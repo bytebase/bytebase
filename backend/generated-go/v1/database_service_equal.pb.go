@@ -127,9 +127,6 @@ func (x *UpdateDatabaseRequest) Equal(y *UpdateDatabaseRequest) bool {
 	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
 		return false
 	}
-	if x.AllowMissing != y.AllowMissing {
-		return false
-	}
 	return true
 }
 
@@ -294,6 +291,35 @@ func (x *DiffSchemaRequest) Equal(y *DiffSchemaRequest) bool {
 }
 
 func (x *DiffSchemaResponse) Equal(y *DiffSchemaResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Diff != y.Diff {
+		return false
+	}
+	return true
+}
+
+func (x *DiffMetadataRequest) Equal(y *DiffMetadataRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if !x.TargetMetadata.Equal(y.TargetMetadata) {
+		return false
+	}
+	return true
+}
+
+func (x *DiffMetadataResponse) Equal(y *DiffMetadataResponse) bool {
 	if x == y {
 		return true
 	}
@@ -517,6 +543,14 @@ func (x *SchemaMetadata) Equal(y *SchemaMetadata) bool {
 	if x.Comment != y.Comment {
 		return false
 	}
+	if len(x.CompositeTypes) != len(y.CompositeTypes) {
+		return false
+	}
+	for i := 0; i < len(x.CompositeTypes); i++ {
+		if !x.CompositeTypes[i].Equal(y.CompositeTypes[i]) {
+			return false
+		}
+	}
 	return true
 }
 
@@ -542,6 +576,52 @@ func (x *EnumTypeMetadata) Equal(y *EnumTypeMetadata) bool {
 		return false
 	}
 	if x.SkipDump != y.SkipDump {
+		return false
+	}
+	return true
+}
+
+func (x *CompositeTypeMetadata) Equal(y *CompositeTypeMetadata) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if len(x.Attributes) != len(y.Attributes) {
+		return false
+	}
+	for i := 0; i < len(x.Attributes); i++ {
+		if !x.Attributes[i].Equal(y.Attributes[i]) {
+			return false
+		}
+	}
+	if x.Comment != y.Comment {
+		return false
+	}
+	return true
+}
+
+func (x *CompositeTypeAttribute) Equal(y *CompositeTypeAttribute) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Type != y.Type {
+		return false
+	}
+	if x.Collation != y.Collation {
+		return false
+	}
+	if x.Comment != y.Comment {
 		return false
 	}
 	return true
@@ -920,6 +1000,12 @@ func (x *ColumnMetadata) Equal(y *ColumnMetadata) bool {
 		return false
 	}
 	if x.DefaultConstraintName != y.DefaultConstraintName {
+		return false
+	}
+	if p, q := x.Srid, y.Srid; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if x.IsInvisible != y.IsInvisible {
 		return false
 	}
 	return true
@@ -1609,99 +1695,6 @@ func (x *DatabaseSDLSchema) Equal(y *DatabaseSDLSchema) bool {
 		return false
 	}
 	if x.ContentType != y.ContentType {
-		return false
-	}
-	return true
-}
-
-func (x *ListChangelogsRequest) Equal(y *ListChangelogsRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Parent != y.Parent {
-		return false
-	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
-	if x.View != y.View {
-		return false
-	}
-	if x.Filter != y.Filter {
-		return false
-	}
-	return true
-}
-
-func (x *ListChangelogsResponse) Equal(y *ListChangelogsResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Changelogs) != len(y.Changelogs) {
-		return false
-	}
-	for i := 0; i < len(x.Changelogs); i++ {
-		if !x.Changelogs[i].Equal(y.Changelogs[i]) {
-			return false
-		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
-	}
-	return true
-}
-
-func (x *GetChangelogRequest) Equal(y *GetChangelogRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Name != y.Name {
-		return false
-	}
-	if x.View != y.View {
-		return false
-	}
-	return true
-}
-
-func (x *Changelog) Equal(y *Changelog) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Name != y.Name {
-		return false
-	}
-	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
-	}
-	if x.Status != y.Status {
-		return false
-	}
-	if x.Schema != y.Schema {
-		return false
-	}
-	if x.SchemaSize != y.SchemaSize {
-		return false
-	}
-	if x.TaskRun != y.TaskRun {
-		return false
-	}
-	if x.PlanTitle != y.PlanTitle {
 		return false
 	}
 	return true

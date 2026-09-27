@@ -9,6 +9,7 @@ import (
 )
 
 func TestValidateSQLReviewRules(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		rules   []*v1pb.SQLReviewRule
@@ -44,6 +45,37 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "valid maximum SQL size rule",
+			rules: []*v1pb.SQLReviewRule{
+				{
+					Type:   v1pb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+					Level:  v1pb.SQLReviewRule_ERROR,
+					Engine: v1pb.Engine_ORACLE,
+					Payload: &v1pb.SQLReviewRule_NumberPayload{
+						NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+							Number: 2097152,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "maximum SQL size rule requires positive number",
+			rules: []*v1pb.SQLReviewRule{
+				{
+					Type:   v1pb.SQLReviewRule_BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE,
+					Level:  v1pb.SQLReviewRule_ERROR,
+					Engine: v1pb.Engine_ORACLE,
+					Payload: &v1pb.SQLReviewRule_NumberPayload{
+						NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{},
+					},
+				},
+			},
+			wantErr: true,
+			errMsg:  "number payload must be positive for rule BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE",
+		},
+		{
 			name: "invalid LEVEL_UNSPECIFIED",
 			rules: []*v1pb.SQLReviewRule{
 				{
@@ -68,6 +100,18 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			errMsg:  "invalid rule type: TYPE_UNSPECIFIED is not allowed",
 		},
 		{
+			name: "invalid ENGINE_UNSPECIFIED",
+			rules: []*v1pb.SQLReviewRule{
+				{
+					Type:   v1pb.SQLReviewRule_TABLE_REQUIRE_PK,
+					Level:  v1pb.SQLReviewRule_ERROR,
+					Engine: v1pb.Engine_ENGINE_UNSPECIFIED,
+				},
+			},
+			wantErr: true,
+			errMsg:  "invalid rule engine: ENGINE_UNSPECIFIED is not allowed for rule \"TABLE_REQUIRE_PK\"",
+		},
+		{
 			name: "multiple rules with one invalid",
 			rules: []*v1pb.SQLReviewRule{
 				{
@@ -88,6 +132,7 @@ func TestValidateSQLReviewRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateSQLReviewRules(tt.rules)
 			if tt.wantErr {
 				require.Error(t, err)

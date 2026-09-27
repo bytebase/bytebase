@@ -1,0 +1,599 @@
+// Package selfhost manages embedded PostgreSQL sample instances used by
+// self-hosted Bytebase.
+package selfhost
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
+	"io"
+	"path/filepath"
+	"strconv"
+	"sync"
+	"time"
+
+	pkgerrors "github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/sample"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/resources/postgres"
+	"github.com/bytebase/bytebase/backend/runner/schemasync"
+	"github.com/bytebase/bytebase/backend/store"
+)
+
+const (
+	prepareDeadline           = 3 * time.Minute
+	staleReservationAge       = time.Hour
+	replicaHeartbeatStaleness = time.Minute
+	pollInitialDelay          = 10 * time.Millisecond
+	pollMaxDelay              = time.Second
+	sampleUser                = "bbsample"
+	sampleDatabaseTest        = "hr_test"
+	sampleDatabaseProd        = "hr_prod"
+)
+
+type sampleInstanceInfo struct {
+	instance string
+}
+
+// Manager is the self-host sample implementation.
+type Manager struct {
+	store     *store.Store
+	profile   *config.Profile
+	syncer    *schemasync.Syncer
+	clock     func() time.Time
+	random    io.Reader
+	replicaID string
+	legacy    *legacyAdapter
+
+	mu       sync.Mutex
+	stoppers map[string]func()
+}
+
+// NewManager creates the self-host sample manager.
+func NewManager(stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, options sample.ManagerOptions) *Manager {
+	if options.Clock == nil {
+		options.Clock = time.Now
+	}
+	if options.Random == nil {
+		options.Random = rand.Reader
+	}
+	return &Manager{
+		store:     stores,
+		profile:   profile,
+		syncer:    syncer,
+		clock:     options.Clock,
+		random:    options.Random,
+		replicaID: options.ReplicaID,
+		legacy:    newLegacyAdapter(stores, profile),
+		stoppers:  map[string]func(){},
+	}
+}
+
+func managedEntry(instanceID, title string, portOffset int32, database string) *storepb.SelfHostSampleInstanceSetupPayload_Instance {
+	return &storepb.SelfHostSampleInstanceSetupPayload_Instance{
+		InstanceId:   instanceID,
+		Title:        title,
+		PortOffset:   portOffset,
+		DatabaseName: database,
+		RoleName:     sampleUser,
+	}
+}
+
+func newPayload(reader io.Reader, projectID string, environmentID *string) (*storepb.SelfHostSampleInstanceSetupPayload, error) {
+	instanceID, err := randomInstanceID(reader)
+	if err != nil {
+		return nil, err
+	}
+	entry := managedEntry(instanceID, "Sample Project Instance", 0, sampleDatabaseTest)
+	entry.EnvironmentId = environmentID
+	entry.ProjectId = &projectID
+	return &storepb.SelfHostSampleInstanceSetupPayload{
+		Instances: []*storepb.SelfHostSampleInstanceSetupPayload_Instance{entry},
+	}, nil
+}
+
+func randomInstanceID(reader io.Reader) (string, error) {
+	value := make([]byte, 8)
+	if _, err := io.ReadFull(reader, value); err != nil {
+		return "", err
+	}
+	return "sample-" + hex.EncodeToString(value), nil
+}
+
+func sampleConfig(profile *config.Profile, entry *storepb.SelfHostSampleInstanceSetupPayload_Instance) postgres.EmbeddedInstanceConfig {
+	return postgres.EmbeddedInstanceConfig{
+		DataDir:      filepath.Join(profile.DataDir, "pgdata-sample-managed", entry.InstanceId),
+		Port:         profile.Port + 3 + int(entry.PortOffset),
+		User:         entry.RoleName,
+		DatabaseName: entry.DatabaseName,
+	}
+}
+
+func decode(setup *store.SampleInstanceSetupMessage) (*storepb.SelfHostSampleInstanceSetupPayload, error) {
+	if setup == nil {
+		return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("sample setup is missing"))
+	}
+	payload := &storepb.SelfHostSampleInstanceSetupPayload{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(setup.Payload, payload); err != nil {
+		return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("invalid self-host sample setup payload"))
+	}
+	for _, entry := range payload.Instances {
+		if entry.InstanceId == "" || entry.Title == "" || entry.DatabaseName == "" || entry.RoleName == "" {
+			return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("incomplete self-host sample instance payload"))
+		}
+	}
+	if len(payload.Instances) != 1 || payload.Instances[0].ProjectId == nil || payload.Instances[0].GetProjectId() == "" {
+		return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("unsupported self-host sample setup payload"))
+	}
+	return payload, nil
+}
+
+// CheckAvailable reports whether embedded PostgreSQL is available for a
+// self-host sample instance.
+func (m *Manager) CheckAvailable(context.Context) error {
+	if m == nil || m.profile == nil || !m.profile.UseEmbedDB() {
+		return sample.NewFailure(sample.FailureFailedPrecondition, errors.New("self-host sample requires embedded PostgreSQL"))
+	}
+	return nil
+}
+
+// PrepareSampleProjectInstance creates one permanent project-level embedded sample instance.
+func (m *Manager) PrepareSampleProjectInstance(ctx context.Context, request sample.PrepareRequest) (*store.InstanceMessage, error) {
+	if m == nil || m.store == nil || m.profile == nil || m.syncer == nil || m.replicaID == "" {
+		return nil, errors.New("self-host sample manager is not configured")
+	}
+	if request.WorkspaceID == "" || request.ProjectID == "" {
+		return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("self-host sample requires workspace and project"))
+	}
+	legacy, err := m.legacy.exists(ctx, request.WorkspaceID)
+	if err != nil {
+		return nil, err
+	}
+	if legacy {
+		return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("legacy self-host sample instances already exist"))
+	}
+	lifecycleCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), prepareDeadline)
+	defer cancel()
+	setup, created, err := m.reserve(lifecycleCtx, request)
+	if err != nil {
+		return nil, err
+	}
+	delay := pollInitialDelay
+	for {
+		payload, err := decode(setup)
+		if err != nil {
+			return nil, err
+		}
+		if len(payload.Instances) != 1 || payload.Instances[0].GetProjectId() != request.ProjectID || setup.DeletedAt != nil {
+			return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("sample setup entitlement is already consumed"))
+		}
+		if created {
+			return m.prepareOwned(lifecycleCtx, setup, payload, false)
+		}
+		if setup.ActivatedAt != nil {
+			return m.activeSetup(lifecycleCtx, setup, payload)
+		}
+		claimed, ok, err := m.store.ClaimSampleInstanceSetup(lifecycleCtx, setup.WorkspaceID, setup.UpdatedAt, m.replicaID, prepareDeadline, replicaHeartbeatStaleness)
+		if err != nil {
+			return nil, pkgerrors.Wrap(err, "failed to claim abandoned self-host sample setup")
+		}
+		if ok {
+			claimedPayload, err := decode(claimed)
+			if err != nil {
+				return nil, err
+			}
+			return m.prepareOwned(lifecycleCtx, claimed, claimedPayload, true)
+		}
+		if err := sample.SleepContext(lifecycleCtx, delay); err != nil {
+			return nil, sample.NewFailure(sample.FailureDeadlineExceeded, err)
+		}
+		if delay < pollMaxDelay {
+			delay *= 2
+			if delay > pollMaxDelay {
+				delay = pollMaxDelay
+			}
+		}
+		setup, err = m.store.GetSampleInstanceSetup(lifecycleCtx, request.WorkspaceID)
+		if err != nil {
+			return nil, err
+		}
+		created = false
+		if setup == nil {
+			setup, created, err = m.reserve(lifecycleCtx, request)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+}
+
+func (m *Manager) reserve(ctx context.Context, request sample.PrepareRequest) (*store.SampleInstanceSetupMessage, bool, error) {
+	environments, err := m.store.GetEnvironment(ctx, request.WorkspaceID)
+	if err != nil {
+		return nil, false, err
+	}
+	var environmentID *string
+	if len(environments.GetEnvironments()) > 0 {
+		value := environments.GetEnvironments()[0].Id
+		environmentID = &value
+	}
+	payload, err := newPayload(m.random, request.ProjectID, environmentID)
+	if err != nil {
+		return nil, false, pkgerrors.Wrap(err, "failed to generate self-host sample payload")
+	}
+	encoded, err := protojson.Marshal(payload)
+	if err != nil {
+		return nil, false, pkgerrors.Wrap(err, "failed to encode self-host sample payload")
+	}
+	return m.store.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
+		WorkspaceID: request.WorkspaceID,
+		ReplicaID:   m.replicaID,
+		Payload:     encoded,
+	})
+}
+
+func (m *Manager) prepareOwned(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SelfHostSampleInstanceSetupPayload, takeover bool) (*store.InstanceMessage, error) {
+	if len(payload.Instances) != 1 || payload.Instances[0].ProjectId == nil {
+		return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("sample setup entitlement is already consumed"))
+	}
+	if takeover {
+		if err := m.reconcile(ctx, setup.WorkspaceID, payload); err != nil {
+			return nil, sample.NewFailure(sample.FailureUnavailable, err)
+		}
+	}
+	entry := payload.Instances[0]
+	if err := m.startEntry(ctx, entry); err != nil {
+		return nil, m.compensate(ctx, setup, payload, err)
+	}
+	registered, err := sample.CreateMetadata(ctx, m.store, sample.Registration{
+		WorkspaceID:       setup.WorkspaceID,
+		InstanceProjectID: entry.ProjectId,
+		EnvironmentID:     entry.EnvironmentId,
+		InstanceID:        entry.InstanceId,
+		Title:             entry.Title,
+		AdminDataSource:   dataSource(m.profile, entry),
+		SyncDatabaseNames: []string{entry.DatabaseName},
+	})
+	if err != nil {
+		return nil, m.compensate(ctx, setup, payload, err)
+	}
+	synced, _, databases, err := m.syncer.SyncInstance(ctx, registered)
+	if err != nil || len(databases) != 1 || databases[0].DatabaseName != entry.DatabaseName || databases[0].Deleted {
+		return nil, m.compensate(ctx, setup, payload, errors.Join(err, errors.New("self-host sample database discovery invariant failed")))
+	}
+	if err := sample.TransferDatabase(ctx, m.store, entry.GetProjectId(), entry.InstanceId, entry.DatabaseName); err != nil {
+		return nil, m.compensate(ctx, setup, payload, err)
+	}
+	if err := m.createBaseline(ctx, databases[0]); err != nil {
+		return nil, m.compensate(ctx, setup, payload, err)
+	}
+	m.syncer.SyncDatabasesAsync(databases)
+	activated, err := m.store.ActivateSampleInstanceSetup(ctx, setup.WorkspaceID, m.replicaID, []string{entry.GetProjectId()}, m.clock(), nil)
+	if err != nil || !activated {
+		return nil, m.compensate(ctx, setup, payload, errors.Join(errors.New("failed to activate self-host sample setup"), err))
+	}
+	return synced, nil
+}
+
+func dataSource(profile *config.Profile, entry *storepb.SelfHostSampleInstanceSetupPayload_Instance) *storepb.DataSource {
+	return &storepb.DataSource{
+		Id:       "admin",
+		Type:     storepb.DataSourceType_ADMIN,
+		Username: entry.RoleName,
+		Host:     postgres.GetPostgresSocketDir(),
+		Port:     strconv.Itoa(profile.Port + 3 + int(entry.PortOffset)),
+		Database: entry.DatabaseName,
+	}
+}
+
+func (m *Manager) createBaseline(ctx context.Context, database *store.DatabaseMessage) error {
+	syncHistory, err := m.syncer.SyncDatabaseSchemaToHistory(ctx, database)
+	if err != nil {
+		return pkgerrors.Wrap(err, "failed to sync self-host sample baseline")
+	}
+	_, err = m.store.CreateChangelog(ctx, &store.ChangelogMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		Status:       store.ChangelogStatusDone,
+		SyncHistory:  &syncHistory,
+		Payload:      &storepb.ChangelogPayload{GitCommit: m.profile.GitCommit},
+	})
+	return err
+}
+
+func (m *Manager) activeSetup(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SelfHostSampleInstanceSetupPayload) (*store.InstanceMessage, error) {
+	if len(payload.Instances) != 1 || payload.Instances[0].ProjectId == nil {
+		return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("sample setup entitlement is already consumed"))
+	}
+	entry := payload.Instances[0]
+	state, err := sample.LookupMetadata(ctx, m.store, sample.MetadataLookup{
+		WorkspaceID:       setup.WorkspaceID,
+		InstanceProjectID: entry.ProjectId,
+		DatabaseProjectID: entry.GetProjectId(),
+		InstanceID:        entry.InstanceId,
+		DatabaseName:      entry.DatabaseName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !state.Active() {
+		return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("self-host sample metadata is not active"))
+	}
+	return state.Instance, nil
+}
+
+func (m *Manager) compensate(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SelfHostSampleInstanceSetupPayload, original error) error {
+	if err := m.reconcile(ctx, setup.WorkspaceID, payload); err != nil {
+		return sample.NewFailure(sample.FailureUnavailable, errors.Join(original, err))
+	}
+	deleted, err := m.store.DeletePendingSampleInstanceSetup(ctx, setup.WorkspaceID, m.replicaID)
+	if err != nil || !deleted {
+		return sample.NewFailure(sample.FailureUnavailable, errors.Join(original, err))
+	}
+	return original
+}
+
+func (m *Manager) reconcile(ctx context.Context, workspaceID string, payload *storepb.SelfHostSampleInstanceSetupPayload) error {
+	var result error
+	for _, entry := range payload.Instances {
+		result = errors.Join(result, sample.PurgePartialMetadata(ctx, m.store, workspaceID, entry.ProjectId, entry.InstanceId))
+		m.stopEntry(entry.InstanceId)
+		result = errors.Join(result, postgres.RemoveEmbeddedInstance(sampleConfig(m.profile, entry).DataDir))
+	}
+	return result
+}
+
+func (m *Manager) startEntry(ctx context.Context, entry *storepb.SelfHostSampleInstanceSetupPayload_Instance) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.stoppers[entry.InstanceId]; ok {
+		return nil
+	}
+	seedData, err := sample.LoadSeedData()
+	if err != nil {
+		return err
+	}
+	config := sampleConfig(m.profile, entry)
+	config.SeedData = seedData
+	stop, err := postgres.StartEmbeddedInstance(ctx, config)
+	if err != nil {
+		return err
+	}
+	m.stoppers[entry.InstanceId] = stop
+	return nil
+}
+
+func (m *Manager) stopEntry(instanceID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if stop := m.stoppers[instanceID]; stop != nil {
+		stop()
+		delete(m.stoppers, instanceID)
+	}
+}
+
+// ListInstances reports managed payload instances or historical static instances.
+func (m *Manager) ListInstances(ctx context.Context, workspaceID string) ([]*sample.Instance, error) {
+	setup, err := m.store.GetSampleInstanceSetup(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	if setup != nil {
+		payload, err := decode(setup)
+		if err != nil {
+			return nil, err
+		}
+		instances := make([]*sample.Instance, 0, len(payload.Instances))
+		for _, entry := range payload.Instances {
+			instance := &sample.Instance{Name: common.FormatProjectInstance(entry.GetProjectId(), entry.InstanceId)}
+			if setup.DeletedAt == nil {
+				instance.ExpireTime = setup.ExpiresAt
+			}
+			instances = append(instances, instance)
+		}
+		return instances, nil
+	}
+	legacy, err := m.legacy.info(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	instances := make([]*sample.Instance, 0, len(legacy))
+	for _, entry := range legacy {
+		instances = append(instances, &sample.Instance{Name: entry.instance})
+	}
+	return instances, nil
+}
+
+// Start restores active embedded sample processes after server restart.
+func (m *Manager) Start(ctx context.Context, workspaceID string) error {
+	setup, err := m.store.GetSampleInstanceSetup(ctx, workspaceID)
+	if err != nil {
+		return err
+	}
+	if setup != nil && setup.ActivatedAt != nil && setup.DeletedAt == nil && (setup.ExpiresAt == nil || setup.ExpiresAt.After(m.clock())) {
+		payload, err := decode(setup)
+		if err != nil {
+			return err
+		}
+		active := false
+		for _, entry := range payload.Instances {
+			instance, err := m.store.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &entry.InstanceId, ShowDeleted: true})
+			if err != nil {
+				return err
+			}
+			if instance != nil && !instance.Deleted {
+				active = true
+			}
+		}
+		if active {
+			for _, entry := range payload.Instances {
+				if err := m.startEntry(ctx, entry); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+	legacy, err := m.legacy.instances(ctx, workspaceID)
+	if err != nil {
+		return err
+	}
+	for _, instance := range legacy {
+		if !instance.Deleted {
+			m.legacy.start(ctx)
+			break
+		}
+	}
+	return nil
+}
+
+// Cleanup reconciles stale pending self-host setups. Permanent active setups
+// are not selected by the store cleanup query.
+func (m *Manager) Cleanup(ctx context.Context) error {
+	now := m.clock()
+	staleBefore := now.Add(-staleReservationAge)
+	for afterWorkspace := ""; ; {
+		result, err := m.store.WithLockedSampleInstanceSetupForCleanup(ctx, now, staleBefore, afterWorkspace, func(callbackCtx context.Context, tx *store.SampleInstanceSetupTx, setup *store.SampleInstanceSetupMessage) error {
+			payload, err := decode(setup)
+			if err != nil {
+				return err
+			}
+			if setup.ActivatedAt != nil {
+				for _, entry := range payload.Instances {
+					m.stopEntry(entry.InstanceId)
+					if err := postgres.RemoveEmbeddedInstance(sampleConfig(m.profile, entry).DataDir); err != nil {
+						return err
+					}
+					if _, err := sample.ArchiveMetadata(callbackCtx, m.store, setup.WorkspaceID, entry.ProjectId, entry.InstanceId); err != nil {
+						return err
+					}
+				}
+				return tx.MarkDeleted(callbackCtx, now)
+			}
+			if err := m.reconcile(callbackCtx, setup.WorkspaceID, payload); err != nil {
+				return err
+			}
+			return tx.DeleteReservation(callbackCtx)
+		})
+		if err != nil {
+			return err
+		}
+		if !result.Found {
+			return nil
+		}
+		afterWorkspace = result.WorkspaceID
+		if result.CallbackErr != nil {
+			return result.CallbackErr
+		}
+	}
+}
+
+// ValidateInstanceRestore rejects restoring a physically removed self-host
+// sample while allowing permanent and historical samples.
+func (m *Manager) ValidateInstanceRestore(ctx context.Context, workspaceID, instanceID string) error {
+	setup, err := m.store.GetSampleInstanceSetup(ctx, workspaceID)
+	if err != nil || setup == nil || setup.DeletedAt == nil {
+		return err
+	}
+	payload, err := decode(setup)
+	if err != nil {
+		return err
+	}
+	for _, entry := range payload.Instances {
+		if entry.InstanceId == instanceID {
+			return sample.NewFailure(sample.FailureFailedPrecondition, errors.New("expired sample instance cannot be restored"))
+		}
+	}
+	return nil
+}
+
+// HandleInstanceLifecycle starts or stops the exact managed sample process.
+func (m *Manager) HandleInstanceLifecycle(ctx context.Context, workspaceID, instanceID string, deleted bool) error {
+	if isLegacyInstanceID(instanceID) {
+		return m.legacy.handleLifecycle(ctx, workspaceID, instanceID, deleted)
+	}
+	setup, err := m.store.GetSampleInstanceSetup(ctx, workspaceID)
+	if err != nil || setup == nil || setup.DeletedAt != nil {
+		return err
+	}
+	payload, err := decode(setup)
+	if err != nil {
+		return err
+	}
+	managed := false
+	for _, entry := range payload.Instances {
+		managed = managed || entry.InstanceId == instanceID
+	}
+	if !managed {
+		return nil
+	}
+	if !deleted {
+		for _, entry := range payload.Instances {
+			if err := m.startEntry(ctx, entry); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	for _, entry := range payload.Instances {
+		instance, err := m.store.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &entry.InstanceId, ShowDeleted: true})
+		if err != nil {
+			return err
+		}
+		if instance != nil && !instance.Deleted {
+			return nil
+		}
+	}
+	for _, entry := range payload.Instances {
+		m.stopEntry(entry.InstanceId)
+	}
+	return nil
+}
+
+// HandleProjectPurge removes sample resources owned by a project before purge.
+func (m *Manager) HandleProjectPurge(ctx context.Context, workspaceID, projectID string) error {
+	if m == nil || m.store == nil || m.profile == nil {
+		return errors.New("self-host sample manager is not configured")
+	}
+	return m.store.WithLockedSampleInstanceSetup(ctx, workspaceID, func(callbackCtx context.Context, tx *store.SampleInstanceSetupTx, setup *store.SampleInstanceSetupMessage) error {
+		payload, err := decode(setup)
+		if err != nil {
+			return err
+		}
+		if len(payload.Instances) != 1 || payload.Instances[0].GetProjectId() != projectID {
+			return nil
+		}
+		if setup.ActivatedAt == nil {
+			if err := m.reconcile(callbackCtx, workspaceID, payload); err != nil {
+				return err
+			}
+			return tx.DeleteReservation(callbackCtx)
+		}
+		for _, entry := range payload.Instances {
+			m.stopEntry(entry.InstanceId)
+			if err := postgres.RemoveEmbeddedInstance(sampleConfig(m.profile, entry).DataDir); err != nil {
+				return err
+			}
+			if _, err := sample.ArchiveMetadata(callbackCtx, m.store, workspaceID, entry.ProjectId, entry.InstanceId); err != nil {
+				return err
+			}
+		}
+		return tx.MarkDeleted(callbackCtx, m.clock())
+	})
+}
+
+// Stop stops managed and legacy embedded sample processes.
+func (m *Manager) Stop() {
+	m.mu.Lock()
+	for id, stop := range m.stoppers {
+		stop()
+		delete(m.stoppers, id)
+	}
+	m.mu.Unlock()
+	m.legacy.stop()
+}

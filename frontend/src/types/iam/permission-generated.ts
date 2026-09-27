@@ -1,5 +1,5 @@
 // This file is auto-generated from permission.yaml. DO NOT EDIT manually.
-// Run 'pnpm run generate:permissions' or 'sh scripts/copy_config_files.sh' to regenerate.
+// Run 'sh scripts/copy-config-files.sh' to regenerate.
 
 export type Permission =
   | "bb.accessGrants.activate"
@@ -19,6 +19,7 @@ export type Permission =
   | "bb.databaseGroups.list"
   | "bb.databaseGroups.update"
   | "bb.databases.check"
+  | "bb.databases.diffMetadata"
   | "bb.databases.get"
   | "bb.databases.getSchema"
   | "bb.databases.list"
@@ -32,6 +33,7 @@ export type Permission =
   | "bb.identityProviders.create"
   | "bb.identityProviders.delete"
   | "bb.identityProviders.get"
+  | "bb.identityProviders.list"
   | "bb.identityProviders.update"
   | "bb.instances.create"
   | "bb.instances.delete"
@@ -76,6 +78,7 @@ export type Permission =
   | "bb.projects.setIamPolicy"
   | "bb.projects.undelete"
   | "bb.projects.update"
+  | "bb.queryHistories.list"
   | "bb.releases.check"
   | "bb.releases.create"
   | "bb.releases.delete"
@@ -88,6 +91,7 @@ export type Permission =
   | "bb.reviewConfigs.get"
   | "bb.reviewConfigs.list"
   | "bb.reviewConfigs.update"
+  | "bb.reviewRuns.run"
   | "bb.revisions.create"
   | "bb.revisions.delete"
   | "bb.revisions.get"
@@ -100,6 +104,14 @@ export type Permission =
   | "bb.rollouts.create"
   | "bb.rollouts.get"
   | "bb.rollouts.list"
+  | "bb.savedQueries.create"
+  | "bb.savedQueries.delete"
+  | "bb.savedQueries.get"
+  | "bb.savedQueries.getIamPolicy"
+  | "bb.savedQueries.list"
+  | "bb.savedQueries.search"
+  | "bb.savedQueries.setIamPolicy"
+  | "bb.savedQueries.update"
   | "bb.serviceAccounts.create"
   | "bb.serviceAccounts.delete"
   | "bb.serviceAccounts.get"
@@ -115,7 +127,6 @@ export type Permission =
   | "bb.settings.setWorkspaceProfile"
   | "bb.sheets.create"
   | "bb.sheets.get"
-  | "bb.sheets.update"
   | "bb.subscription.manage"
   | "bb.sql.select"
   | "bb.sql.ddl"
@@ -132,8 +143,6 @@ export type Permission =
   | "bb.users.undelete"
   | "bb.users.update"
   | "bb.users.updateEmail"
-  | "bb.worksheets.get"
-  | "bb.worksheets.manage"
   | "bb.workloadIdentities.create"
   | "bb.workloadIdentities.delete"
   | "bb.workloadIdentities.get"
@@ -143,4 +152,5 @@ export type Permission =
   | "bb.workspaces.delete"
   | "bb.workspaces.getIamPolicy"
   | "bb.workspaces.update"
-  | "bb.workspaces.setIamPolicy";
+  | "bb.workspaces.setIamPolicy"
+  | "bb.workspaces.rotateDirectorySyncToken";

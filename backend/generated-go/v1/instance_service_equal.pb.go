@@ -28,6 +28,9 @@ func (x *ListInstancesRequest) Equal(y *ListInstancesRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if p, q := x.Parent, y.Parent; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	if x.PageSize != y.PageSize {
 		return false
 	}
@@ -74,6 +77,9 @@ func (x *CreateInstanceRequest) Equal(y *CreateInstanceRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if p, q := x.Parent, y.Parent; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	if !x.Instance.Equal(y.Instance) {
 		return false
 	}
@@ -81,6 +87,19 @@ func (x *CreateInstanceRequest) Equal(y *CreateInstanceRequest) bool {
 		return false
 	}
 	if x.ValidateOnly != y.ValidateOnly {
+		return false
+	}
+	return true
+}
+
+func (x *PrepareSampleProjectInstanceRequest) Equal(y *PrepareSampleProjectInstanceRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Parent != y.Parent {
 		return false
 	}
 	return true
@@ -216,6 +235,9 @@ func (x *BatchSyncInstancesRequest) Equal(y *BatchSyncInstancesRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if p, q := x.Parent, y.Parent; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	if len(x.Requests) != len(y.Requests) {
 		return false
 	}
@@ -243,6 +265,9 @@ func (x *BatchUpdateInstancesRequest) Equal(y *BatchUpdateInstancesRequest) bool
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
+	}
+	if p, q := x.Parent, y.Parent; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
 	}
 	if len(x.Requests) != len(y.Requests) {
 		return false
@@ -337,6 +362,24 @@ func (x *UpdateDataSourceRequest) Equal(y *UpdateDataSourceRequest) bool {
 	return true
 }
 
+func (x *SyncDatabases) Equal(y *SyncDatabases) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Databases) != len(y.Databases) {
+		return false
+	}
+	for i := 0; i < len(x.Databases); i++ {
+		if x.Databases[i] != y.Databases[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func (x *Instance) Equal(y *Instance) bool {
 	if x == y {
 		return true
@@ -387,13 +430,8 @@ func (x *Instance) Equal(y *Instance) bool {
 	if p, q := x.SyncInterval, y.SyncInterval; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if len(x.SyncDatabases) != len(y.SyncDatabases) {
+	if !x.SyncDatabases.Equal(y.SyncDatabases) {
 		return false
-	}
-	for i := 0; i < len(x.SyncDatabases); i++ {
-		if x.SyncDatabases[i] != y.SyncDatabases[i] {
-			return false
-		}
 	}
 	if p, q := x.LastSyncTime, y.LastSyncTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
@@ -669,6 +707,9 @@ func (x *DataSource) Equal(y *DataSource) bool {
 	if x.AuthenticationType != y.AuthenticationType {
 		return false
 	}
+	if x.CloudSqlIpType != y.CloudSqlIpType {
+		return false
+	}
 	if !x.GetAzureCredential().Equal(y.GetAzureCredential()) {
 		return false
 	}
@@ -710,9 +751,6 @@ func (x *DataSource) Equal(y *DataSource) bool {
 	if x.RedisType != y.RedisType {
 		return false
 	}
-	if x.Cluster != y.Cluster {
-		return false
-	}
 	if len(x.ExtraConnectionParameters) != len(y.ExtraConnectionParameters) {
 		return false
 	}
@@ -724,6 +762,12 @@ func (x *DataSource) Equal(y *DataSource) bool {
 		if x.ExtraConnectionParameters[k] != y.ExtraConnectionParameters[k] {
 			return false
 		}
+	}
+	if x.ProjectId != y.ProjectId {
+		return false
+	}
+	if x.InstanceId != y.InstanceId {
+		return false
 	}
 	return true
 }

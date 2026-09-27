@@ -1,10 +1,10 @@
 import { create } from "@bufbuild/protobuf";
-import i18n from "@/react/i18n";
+import i18n from "@/lib/i18n";
 import {
   extractUserEmail,
   serviceAccountNamePrefix,
   workloadIdentityNamePrefix,
-} from "@/store/modules/v1/common";
+} from "@/stores/modules/v1/common";
 import { UNKNOWN_ID } from "../const";
 import { State } from "../proto-es/v1/common_pb";
 import type { User } from "../proto-es/v1/user_service_pb";

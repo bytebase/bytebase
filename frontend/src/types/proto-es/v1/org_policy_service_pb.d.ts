@@ -5,6 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
+import type { ReviewRuleType } from "./review_rule_pb";
 import type { Expr } from "../google/type/expr_pb";
 
 /**
@@ -20,8 +21,6 @@ export declare type CreatePolicyRequest = Message<"bytebase.v1.CreatePolicyReque
    * The parent resource where this instance will be created.
    * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
-   * Instance resource name: instances/instance-id.
-   * Database resource name: instances/instance-id/databases/database-name.
    *
    * @generated from field: string parent = 1;
    */
@@ -59,8 +58,6 @@ export declare type UpdatePolicyRequest = Message<"bytebase.v1.UpdatePolicyReque
    * Format: {resource name}/policies/{policy type}
    * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
-   * Instance resource name: instances/instance-id.
-   * Database resource name: instances/instance-id/databases/database-name.
    *
    * @generated from field: bytebase.v1.Policy policy = 1;
    */
@@ -97,8 +94,6 @@ export declare type DeletePolicyRequest = Message<"bytebase.v1.DeletePolicyReque
    * Format: {resource name}/policies/{policy type}
    * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
-   * Instance resource name: instances/instance-id.
-   * Database resource name: instances/instance-id/databases/database-name.
    *
    * @generated from field: string name = 1;
    */
@@ -190,8 +185,6 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
    * Format: {resource name}/policies/{policy type}
    * Workspace resource name: workspaces/{workspace-id}.
    * Environment resource name: environments/environment-id.
-   * Instance resource name: instances/instance-id.
-   * Database resource name: instances/instance-id/databases/database-name.
    *
    * @generated from field: string name = 1;
    */
@@ -246,6 +239,18 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
      */
     value: QueryDataPolicy;
     case: "queryDataPolicy";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.ReviewRulePolicy review_rule_policy = 12;
+     */
+    value: ReviewRulePolicy;
+    case: "reviewRulePolicy";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.ReviewAIPolicy review_ai_policy = 13;
+     */
+    value: ReviewAIPolicy;
+    case: "reviewAiPolicy";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -268,6 +273,54 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
  * Use `create(PolicySchema)` to create a new message.
  */
 export declare const PolicySchema: GenMessage<Policy>;
+
+/**
+ * Standard review rule policy: the rules switched on. The nearest policy
+ * wins: a project's own policy applies as is; a project without one uses
+ * the workspace policy; with neither, every rule is on.
+ *
+ * A saved list is explicit, so a rule added to the standard set in a later
+ * release is appended to every saved policy by a data migration in that
+ * release.
+ *
+ * @generated from message bytebase.v1.ReviewRulePolicy
+ */
+export declare type ReviewRulePolicy = Message<"bytebase.v1.ReviewRulePolicy"> & {
+  /**
+   * The rules switched on. Unknown or unspecified values are rejected.
+   *
+   * @generated from field: repeated bytebase.v1.ReviewRuleType rules = 1;
+   */
+  rules: ReviewRuleType[];
+};
+
+/**
+ * Describes the message bytebase.v1.ReviewRulePolicy.
+ * Use `create(ReviewRulePolicySchema)` to create a new message.
+ */
+export declare const ReviewRulePolicySchema: GenMessage<ReviewRulePolicy>;
+
+/**
+ * Natural-language policy for the AI review. Unlike the review rule policy,
+ * both levels apply: the workspace policy and the project policy both reach
+ * the reviewer, and the project policy wins where they conflict.
+ *
+ * @generated from message bytebase.v1.ReviewAIPolicy
+ */
+export declare type ReviewAIPolicy = Message<"bytebase.v1.ReviewAIPolicy"> & {
+  /**
+   * The policy text. Must not be blank, at most 64 KiB.
+   *
+   * @generated from field: string content = 1;
+   */
+  content: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ReviewAIPolicy.
+ * Use `create(ReviewAIPolicySchema)` to create a new message.
+ */
+export declare const ReviewAIPolicySchema: GenMessage<ReviewAIPolicy>;
 
 /**
  * Rollout policy configuration.
@@ -553,6 +606,20 @@ export enum PolicyType {
    * @generated from enum value: DATA_QUERY = 6;
    */
   DATA_QUERY = 6,
+
+  /**
+   * Standard review rule switch. Allowed on WORKSPACE and PROJECT.
+   *
+   * @generated from enum value: REVIEW_RULE = 7;
+   */
+  REVIEW_RULE = 7,
+
+  /**
+   * Natural-language policy for the AI review. Allowed on WORKSPACE and PROJECT.
+   *
+   * @generated from enum value: REVIEW_AI = 8;
+   */
+  REVIEW_AI = 8,
 }
 
 /**

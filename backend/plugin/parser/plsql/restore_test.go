@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -44,33 +45,35 @@ func TestRestore(t *testing.T) {
 	a.NoError(err)
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
-	for i, t := range tests {
-		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
-		}, t.Input, &store.PriorBackupDetail_Item{
-			SourceTable: &store.PriorBackupDetail_Item_Table{
-				Database: "instances/i1/databases/" + t.OriginalDatabase,
-				Table:    t.OriginalTable,
-			},
-			TargetTable: &store.PriorBackupDetail_Item_Table{
-				Database: "instances/i1/databases/" + t.BackupDatabase,
-				Table:    t.BackupTable,
-			},
-			StartPosition: &store.Position{
-				Line:   0,
-				Column: 0,
-			},
-			EndPosition: &store.Position{
-				Line:   math.MaxInt32,
-				Column: 0,
-			},
-		})
-		a.NoError(err)
+	for _, databasePrefix := range []string{"instances/i1/databases/", "projects/project-a/instances/i1/databases/"} {
+		for i, t := range tests {
+			result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+				GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
+			}, t.Input, &store.PriorBackupDetail_Item{
+				SourceTable: &store.PriorBackupDetail_Item_Table{
+					Database: databasePrefix + t.OriginalDatabase,
+					Table:    t.OriginalTable,
+				},
+				TargetTable: &store.PriorBackupDetail_Item_Table{
+					Database: databasePrefix + t.BackupDatabase,
+					Table:    t.BackupTable,
+				},
+				StartPosition: &store.Position{
+					Line:   0,
+					Column: 0,
+				},
+				EndPosition: &store.Position{
+					Line:   math.MaxInt32,
+					Column: 0,
+				},
+			})
+			a.NoError(err)
 
-		if record {
-			tests[i].Result = result
-		} else {
-			a.Equal(t.Result, result, t.Input)
+			if record {
+				tests[i].Result = result
+			} else {
+				a.Equal(t.Result, result, t.Input)
+			}
 		}
 	}
 	if record {
@@ -197,15 +200,15 @@ func restoreBackupItem(startLine, endLine int32) *store.PriorBackupDetail_Item {
 }
 
 func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database string) (string, *model.DatabaseMetadata, error) {
-	return database, model.NewDatabaseMetadata(&store.DatabaseSchemaMetadata{
+	return database, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: database,
-		Schemas: []*store.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*store.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "T_GENERATED",
-						Columns: []*store.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "A",
 							},
@@ -213,7 +216,7 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 								Name: "B",
 							},
 						},
-						Indexes: []*store.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name:        "T_GENERATED_PK",
 								Expressions: []string{"B"},
@@ -229,7 +232,7 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 					},
 					{
 						Name: "T1",
-						Columns: []*store.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "A",
 							},
@@ -243,7 +246,7 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 					},
 					{
 						Name: "T2",
-						Columns: []*store.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "A",
 							},
@@ -257,7 +260,7 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 					},
 					{
 						Name: "TEST",
-						Columns: []*store.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "A",
 							},
@@ -268,7 +271,7 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 								Name: "C",
 							},
 						},
-						Indexes: []*store.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name:        "TEST_PK",
 								Expressions: []string{"A"},
@@ -279,7 +282,7 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 					},
 					{
 						Name: "TEST2",
-						Columns: []*store.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "A",
 							},

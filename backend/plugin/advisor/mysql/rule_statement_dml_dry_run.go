@@ -11,6 +11,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -74,7 +75,7 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 					Code:          code.StatementDMLDryRunFailed.Int32(),
 					Title:         title,
 					Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-					StartPosition: common.ConvertANTLRLineToPosition(line),
+					StartPosition: base.ConvertANTLRLineToPosition(line),
 				})
 			}
 

@@ -30,16 +30,22 @@ export declare type SearchAuditLogsRequest = Message<"bytebase.v1.SearchAuditLog
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
    * Supported filter:
-   * - method: the API name, can be found in the docs, should start with "/bytebase.v1." prefix. For example "/bytebase.v1.UserService/CreateUser". Support "==" operator.
+   * - method: the API name, can be found in the docs. Usually "/bytebase.v1.…", for example "/bytebase.v1.UserService/CreateUser"; entries written outside the v1 API carry their own prefix, such as "/bytebase.mcp.Session/Authorize" or "/bytebase.cli.Recovery/ResetUserPassword". Support "==" operator.
+   * - resource: the resource the entry is about, support "==" operator.
    * - severity: support "==" operator, check Severity enum in AuditLog message for values.
-   * - user: the actor, should in "users/{email}" format, support "==" operator.
+   * - actor: the actor, in users/{email}, serviceAccounts/{email}, or
+   *   workloadIdentities/{email} format. Support "==" operator.
    * - create_time: support ">=" and "<=" operator.
+   * - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support "==" operator.
+   * - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry's mcp_delegation.correlation_id. Support "==" operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
    *
    * For example:
    *  - filter = "method == '/bytebase.v1.SQLService/Query'"
    *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
-   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && actor == 'users/bb@bytebase.com'"
    *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
+   *  - filter = "mcp == true"
+   *  - filter = "mcp_correlation_id == '0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60'"
    *
    * @generated from field: string filter = 1;
    */
@@ -223,12 +229,12 @@ export declare type AuditLog = Message<"bytebase.v1.AuditLog"> & {
   createTime?: Timestamp | undefined;
 
   /**
-   * The user who performed the action.
-   * Format: users/{email}
+   * The principal who performed the action.
+   * Formats: users/{email}, serviceAccounts/{email}, or workloadIdentities/{email}
    *
-   * @generated from field: string user = 3;
+   * @generated from field: string actor = 3;
    */
-  user: string;
+  actor: string;
 
   /**
    * The method or action being audited.
@@ -294,6 +300,15 @@ export declare type AuditLog = Message<"bytebase.v1.AuditLog"> & {
    * @generated from field: bytebase.v1.RequestMetadata request_metadata = 12;
    */
   requestMetadata?: RequestMetadata | undefined;
+
+  /**
+   * MCP delegation provenance. Present exactly when the audited call arrived
+   * through the MCP server's delegated credential; never set for public API
+   * calls. Presence of this message is the MCP-origin marker.
+   *
+   * @generated from field: bytebase.v1.MCPDelegation mcp_delegation = 13;
+   */
+  mcpDelegation?: MCPDelegation | undefined;
 };
 
 /**
@@ -424,6 +439,56 @@ export declare type RequestMetadata = Message<"bytebase.v1.RequestMetadata"> & {
  * Use `create(RequestMetadataSchema)` to create a new message.
  */
 export declare const RequestMetadataSchema: GenMessage<RequestMetadata>;
+
+/**
+ * Provenance of a call that reached the API through the MCP (Model Context
+ * Protocol) server's delegated credential. The values are copied verbatim from
+ * the verified credential's grant state; empty fields record that the grant
+ * stored nothing (legacy sessions), never a resolved or synthesized value.
+ *
+ * @generated from message bytebase.v1.MCPDelegation
+ */
+export declare type MCPDelegation = Message<"bytebase.v1.MCPDelegation"> & {
+  /**
+   * The OAuth2 grant's consented scope, e.g. "mcp:read-only".
+   * Empty when the grant recorded no scope.
+   *
+   * @generated from field: string scope = 1;
+   */
+  scope: string;
+
+  /**
+   * The grant's stored MCP resource URI.
+   * Empty for pre-grant legacy sessions.
+   *
+   * @generated from field: string resource = 2;
+   */
+  resource: string;
+
+  /**
+   * The OAuth2 client the grant was consented to.
+   * Empty for legacy web-session tokens at /mcp.
+   *
+   * @generated from field: string client_id = 3;
+   */
+  clientId: string;
+
+  /**
+   * Correlates the audit rows an MCP session produces. Minted at the /mcp
+   * boundary and session-scoped: the MCP SDK hands tool handlers the
+   * initialize-time context, so one MCP session carries one correlation ID
+   * across all of its tool calls.
+   *
+   * @generated from field: string correlation_id = 4;
+   */
+  correlationId: string;
+};
+
+/**
+ * Describes the message bytebase.v1.MCPDelegation.
+ * Use `create(MCPDelegationSchema)` to create a new message.
+ */
+export declare const MCPDelegationSchema: GenMessage<MCPDelegation>;
 
 /**
  * AuditLogService manages audit logs for system activities and API calls.

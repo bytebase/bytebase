@@ -43,6 +43,19 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 				},
 			},
 		}, nil
+	case storepb.SettingName_MCP:
+		storeValue, ok := setting.Value.(*storepb.MCPSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_Mcp{
+					Mcp: convertToMCPSetting(storeValue),
+				},
+			},
+		}, nil
 	case storepb.SettingName_WORKSPACE_APPROVAL:
 		storeValue, ok := setting.Value.(*storepb.WorkspaceApprovalSetting)
 		if !ok {
@@ -175,6 +188,8 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_ENVIRONMENT
 	case storepb.SettingName_EMAIL:
 		return v1pb.Setting_EMAIL
+	case storepb.SettingName_MCP:
+		return v1pb.Setting_MCP
 	case storepb.SettingName_SYSTEM:
 		// Backend-only setting, not exposed in v1 API
 	default:
@@ -204,6 +219,8 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 		return storepb.SettingName_ENVIRONMENT
 	case v1pb.Setting_EMAIL:
 		return storepb.SettingName_EMAIL
+	case v1pb.Setting_MCP:
+		return storepb.SettingName_MCP
 	default:
 		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
 	}
@@ -260,6 +277,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		RefreshTokenDuration:     v1Setting.RefreshTokenDuration,
 		AccessTokenDuration:      v1Setting.AccessTokenDuration,
 		InactiveSessionTimeout:   v1Setting.InactiveSessionTimeout,
+		MaximumRoleExpiration:    v1Setting.MaximumRoleExpiration,
 		MaximumRequestExpiration: v1Setting.MaximumRequestExpiration,
 		Domains:                  v1Setting.Domains,
 		EnforceIdentityDomain:    v1Setting.EnforceIdentityDomain,
@@ -269,13 +287,16 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		EnableMetricCollection:   v1Setting.EnableMetricCollection,
 		EnableAuditLogStdout:     v1Setting.EnableAuditLogStdout,
 		Watermark:                v1Setting.Watermark,
-		DirectorySyncToken:       v1Setting.DirectorySyncToken,
-		PasswordRestriction:      convertToStorePasswordRestriction(v1Setting.PasswordRestriction),
-		EnableDebug:              v1Setting.EnableDebug,
-		SqlResultSize:            v1Setting.SqlResultSize,
-		QueryTimeout:             v1Setting.QueryTimeout,
-		SqlEditorThemeId:         v1Setting.SqlEditorThemeId,
-		SqlEditorCustomTheme:     convertToStoreSQLEditorThemeSetting(v1Setting.SqlEditorCustomTheme),
+		// The directory sync token is not settable through this blob; it is minted
+		// by WorkspaceService.RotateDirectorySyncToken. Callers of UpdateSetting
+		// must not be able to choose it, so nothing is carried over here — the
+		// update path preserves the stored hash instead.
+		PasswordRestriction:  convertToStorePasswordRestriction(v1Setting.PasswordRestriction),
+		EnableDebug:          v1Setting.EnableDebug,
+		SqlResultSize:        v1Setting.SqlResultSize,
+		QueryTimeout:         v1Setting.QueryTimeout,
+		SqlEditorThemeId:     v1Setting.SqlEditorThemeId,
+		SqlEditorCustomTheme: convertToStoreSQLEditorThemeSetting(v1Setting.SqlEditorCustomTheme),
 	}
 
 	// Convert announcement if present. The store only holds the theme colors.
@@ -333,6 +354,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		RefreshTokenDuration:     storeSetting.RefreshTokenDuration,
 		AccessTokenDuration:      storeSetting.AccessTokenDuration,
 		InactiveSessionTimeout:   storeSetting.InactiveSessionTimeout,
+		MaximumRoleExpiration:    storeSetting.MaximumRoleExpiration,
 		MaximumRequestExpiration: storeSetting.MaximumRequestExpiration,
 		Domains:                  storeSetting.Domains,
 		EnforceIdentityDomain:    storeSetting.EnforceIdentityDomain,
@@ -342,14 +364,38 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		EnableMetricCollection:   storeSetting.EnableMetricCollection,
 		EnableAuditLogStdout:     storeSetting.EnableAuditLogStdout,
 		Watermark:                storeSetting.Watermark,
-		DirectorySyncToken:       storeSetting.DirectorySyncToken,
-		PasswordRestriction:      convertToPasswordRestrictionSetting(storeSetting.PasswordRestriction),
-		Announcement:             convertToV1Announcement(storeSetting.Announcement),
-		EnableDebug:              storeSetting.EnableDebug,
-		SqlResultSize:            storeSetting.SqlResultSize,
-		QueryTimeout:             storeSetting.QueryTimeout,
-		SqlEditorThemeId:         storeSetting.SqlEditorThemeId,
-		SqlEditorCustomTheme:     convertToV1SQLEditorThemeSetting(storeSetting.SqlEditorCustomTheme),
+		// The token itself is never returned: this blob is readable by every
+		// workspace member. Only whether one exists, so the UI can offer
+		// "generate" vs "regenerate".
+		DirectorySyncTokenConfigured: storeSetting.GetDirectorySyncTokenHash() != "",
+		PasswordRestriction:          convertToPasswordRestrictionSetting(storeSetting.PasswordRestriction),
+		Announcement:                 convertToV1Announcement(storeSetting.Announcement),
+		EnableDebug:                  storeSetting.EnableDebug,
+		SqlResultSize:                storeSetting.SqlResultSize,
+		QueryTimeout:                 storeSetting.QueryTimeout,
+		SqlEditorThemeId:             storeSetting.SqlEditorThemeId,
+		SqlEditorCustomTheme:         convertToV1SQLEditorThemeSetting(storeSetting.SqlEditorCustomTheme),
+	}
+}
+
+// convertToStoreMCPCapability crosses the two Capability enums by number.
+// TestMCPCapabilityEnumsAgree pins that they stay aligned.
+func convertToStoreMCPCapability(c v1pb.MCPSetting_Capability) storepb.MCPSetting_Capability {
+	return storepb.MCPSetting_Capability(c)
+}
+
+// convertToV1MCPCapability crosses the two Capability enums the other way, by
+// number. Same pin.
+func convertToV1MCPCapability(c storepb.MCPSetting_Capability) v1pb.MCPSetting_Capability {
+	return v1pb.MCPSetting_Capability(c)
+}
+
+func convertToMCPSetting(s *storepb.MCPSetting) *v1pb.MCPSetting {
+	if s == nil {
+		return nil
+	}
+	return &v1pb.MCPSetting{
+		Capability: convertToV1MCPCapability(s.Capability),
 	}
 }
 

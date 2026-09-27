@@ -7,6 +7,7 @@ import (
 )
 
 func TestCanonicalizeIssueLabels(t *testing.T) {
+	t.Parallel()
 	got := CanonicalizeIssueLabels([]string{
 		" release ",
 		"bug",
@@ -21,6 +22,7 @@ func TestCanonicalizeIssueLabels(t *testing.T) {
 }
 
 func TestCanonicalizeIssueLabelsEmpty(t *testing.T) {
+	t.Parallel()
 	require.Empty(t, CanonicalizeIssueLabels(nil))
 	require.Empty(t, CanonicalizeIssueLabels([]string{"", " ", "\t"}))
 }

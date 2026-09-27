@@ -7,7 +7,9 @@ import "store/common.proto";
 option go_package = "generated-go/store";
 
 message TaskRunLog {
+  reserved 8;
   enum Type {
+    reserved 7;
     TYPE_UNSPECIFIED = 0;
     SCHEMA_DUMP_START = 1;
     SCHEMA_DUMP_END = 2;
@@ -57,6 +59,7 @@ message TaskRunLog {
     string statement = 2;
   }
   message CommandResponse {
+    reserved 1;
     string error = 2;
     int64 affected_rows = 3;
     // `all_affected_rows` is the affected rows of each command.

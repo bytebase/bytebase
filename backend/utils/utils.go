@@ -13,7 +13,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -69,6 +68,14 @@ func CheckApprovalApproved(approval *storepb.IssuePayloadApproval) (bool, error)
 	if approval.ApprovalTemplate == nil {
 		return true, nil
 	}
+	if approval.ApprovalTemplate.Flow == nil {
+		return false, errors.Errorf("approval template flow cannot be nil")
+	}
+	for i, role := range approval.ApprovalTemplate.Flow.Roles {
+		if strings.TrimSpace(role) == "" {
+			return false, errors.Errorf("approval template role at position %d cannot be empty", i+1)
+		}
+	}
 	return FindRejectedRole(approval) == "" && FindNextPendingRole(approval) == "", nil
 }
 
@@ -77,18 +84,29 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 	return CheckApprovalApproved(issue.Payload.Approval)
 }
 
-// UpdateProjectPolicyFromRoleGrantIssue updates the project policy from a role grant issue.
-func UpdateProjectPolicyFromRoleGrantIssue(ctx context.Context, stores *store.Store, workspaceID string, issue *store.IssueMessage, roleGrant *storepb.RoleGrant) error {
-	policyMessage, err := stores.GetProjectIamPolicy(ctx, workspaceID, issue.ProjectID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get project policy for project %s", issue.ProjectID)
+// CheckIssueApprovedForPlan checks if the issue is approved for the current plan approval input version.
+func CheckIssueApprovedForPlan(issue *store.IssueMessage, plan *store.PlanMessage) (bool, error) {
+	if issue.Type == storepb.Issue_DATABASE_CHANGE && plan != nil {
+		var approvalInputVersion int64
+		if plan.Config != nil {
+			approvalInputVersion = plan.Config.GetApprovalInputVersion()
+		}
+		if issue.Payload.GetApproval().GetApprovalInputVersion() != approvalInputVersion {
+			return false, nil
+		}
 	}
+	return CheckIssueApproved(issue)
+}
 
+// UpdateProjectPolicyFromRoleGrantIssue updates the project policy from a role grant issue.
+// The grant is merged into the policy as stored, under lock, so approving a
+// grant while an admin edits the same project's permissions cannot drop either
+// change -- including a revoke.
+func UpdateProjectPolicyFromRoleGrantIssue(ctx context.Context, stores *store.Store, workspaceID string, issue *store.IssueMessage, roleGrant *storepb.RoleGrant) error {
 	var newConditionExpr string
 	if roleGrant.Condition != nil {
 		newConditionExpr = roleGrant.Condition.Expression
 	}
-	updated := false
 
 	email, err := extractEmailFromUserIdentifier(roleGrant.User)
 	if err != nil {
@@ -102,50 +120,37 @@ func UpdateProjectPolicyFromRoleGrantIssue(ctx context.Context, stores *store.St
 		return connect.NewError(connect.CodeInternal, errors.Errorf("user %s not found", email))
 	}
 	memberName := formatMemberNameByType(newUser)
-	for _, binding := range policyMessage.Policy.Bindings {
-		if binding.Role != roleGrant.Role {
-			continue
-		}
-		var oldConditionExpr string
-		if binding.Condition != nil {
-			oldConditionExpr = binding.Condition.Expression
-		}
-		if oldConditionExpr != newConditionExpr {
-			continue
-		}
-		// Append
-		binding.Members = append(binding.Members, memberName)
-		updated = true
-		break
-	}
-	if !updated {
-		condition := roleGrant.Condition
-		if condition == nil {
-			condition = &expr.Expr{}
-		}
-		condition.Description = fmt.Sprintf("#%d", issue.UID)
-		policyMessage.Policy.Bindings = append(policyMessage.Policy.Bindings, &storepb.Binding{
-			Role:      roleGrant.Role,
-			Members:   []string{memberName},
-			Condition: condition,
-		})
-	}
 
-	policyPayload, err := protojson.Marshal(policyMessage.Policy)
-	if err != nil {
-		return err
-	}
-	if _, err := stores.CreatePolicy(ctx, &store.PolicyMessage{
-		Workspace:         workspaceID,
-		Resource:          common.FormatProject(issue.ProjectID),
-		ResourceType:      storepb.Policy_PROJECT,
-		Payload:           string(policyPayload),
-		Type:              storepb.Policy_IAM,
-		InheritFromParent: false,
-		// Enforce cannot be false while creating a policy.
-		Enforce: true,
-	}); err != nil {
-		return err
+	if _, err := stores.PatchIamPolicy(ctx, workspaceID, storepb.Policy_PROJECT, common.FormatProject(issue.ProjectID),
+		func(policy *storepb.IamPolicy) error {
+			for _, binding := range policy.Bindings {
+				if binding.Role != roleGrant.Role {
+					continue
+				}
+				var oldConditionExpr string
+				if binding.Condition != nil {
+					oldConditionExpr = binding.Condition.Expression
+				}
+				if oldConditionExpr != newConditionExpr {
+					continue
+				}
+				// Append
+				binding.Members = append(binding.Members, memberName)
+				return nil
+			}
+			condition := roleGrant.Condition
+			if condition == nil {
+				condition = &expr.Expr{}
+			}
+			condition.Description = fmt.Sprintf("#%d", issue.UID)
+			policy.Bindings = append(policy.Bindings, &storepb.Binding{
+				Role:      roleGrant.Role,
+				Members:   []string{memberName},
+				Condition: condition,
+			})
+			return nil
+		}); err != nil {
+		return errors.Wrapf(err, "failed to grant role in project %s", issue.ProjectID)
 	}
 
 	return nil
@@ -239,12 +244,5 @@ func extractEmailFromUserIdentifier(identifier string) (string, error) {
 // For service accounts: serviceAccounts/{email}
 // For workload identities: workloadIdentities/{email}
 func formatMemberNameByType(user *store.UserMessage) string {
-	switch user.Type {
-	case storepb.PrincipalType_SERVICE_ACCOUNT:
-		return common.FormatServiceAccountEmail(user.Email)
-	case storepb.PrincipalType_WORKLOAD_IDENTITY:
-		return common.FormatWorkloadIdentityEmail(user.Email)
-	default:
-		return common.FormatUserEmail(user.Email)
-	}
+	return common.FormatPrincipalMember(user.Email, user.Type)
 }

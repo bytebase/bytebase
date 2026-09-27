@@ -13,12 +13,16 @@ import (
 const SignalChannel = "bytebase_signal"
 
 // SendSignal sends a notification to the bytebase_signal channel.
-func (s *Store) SendSignal(ctx context.Context, signalType storepb.Signal_Type, projectID string, uid int64) error {
-	payload, err := protojson.Marshal(&storepb.Signal{
+func (s *Store) SendSignal(ctx context.Context, signalType storepb.Signal_Type, projectID string, uid int64, approvalInputVersion *int64) error {
+	signal := &storepb.Signal{
 		Type:    signalType,
 		Uid:     uid,
 		Project: projectID,
-	})
+	}
+	if approvalInputVersion != nil {
+		signal.ApprovalInputVersion = *approvalInputVersion
+	}
+	payload, err := protojson.Marshal(signal)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal signal payload")
 	}

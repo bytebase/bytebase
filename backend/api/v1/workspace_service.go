@@ -8,8 +8,9 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
@@ -191,6 +192,54 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, req *connect.Req
 	}), nil
 }
 
+// RotateDirectorySyncToken mints a new SCIM token and returns it once. Only the
+// hash is persisted, so the plaintext cannot be recovered afterwards.
+func (s *WorkspaceService) RotateDirectorySyncToken(ctx context.Context, req *connect.Request[v1pb.RotateDirectorySyncTokenRequest]) (*connect.Response[v1pb.RotateDirectorySyncTokenResponse], error) {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+
+	// Validate the name here rather than leaning on the ACL. The interceptor
+	// rejects a well-formed name for another workspace, but an empty or
+	// unparseable one resolves to the workspace fallback (acl.go resolveRawResource),
+	// which matches the caller's own workspace and passes. Rotation is
+	// destructive — it invalidates a live SCIM credential — so a malformed
+	// request must fail rather than quietly break the caller's integration.
+	requested, err := common.GetWorkspaceID(req.Msg.GetName())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid workspace name %q", req.Msg.GetName()))
+	}
+	if requested != workspaceID {
+		return nil, permissionDeniedError(ctx, errors.Errorf("workspace mismatch"))
+	}
+
+	// The update path this replaces gated on the same feature. Without it an
+	// unlicensed workspace can mint a token that reads as configured in the UI
+	// while the SCIM middleware rejects every request that uses it.
+	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DIRECTORY_SYNC); err != nil {
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
+	}
+
+	token := uuid.New().String()
+
+	// Row-locking read-modify-write: a plain read-then-upsert would let a
+	// concurrent UpdateSetting on WORKSPACE_PROFILE clobber the new hash — the
+	// admin would be handed a token that never became the stored one, and SCIM
+	// would keep accepting the token they think they just replaced. apply stays
+	// free of database reads; it runs holding the row lock and the connection.
+	if _, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE,
+		func(current proto.Message) (proto.Message, error) {
+			profile, ok := current.(*storepb.WorkspaceProfileSetting)
+			if !ok {
+				return nil, errors.Errorf("unexpected setting value type %T", current)
+			}
+			profile.DirectorySyncTokenHash = common.HashDirectorySyncToken(token)
+			return profile, nil
+		}, nil); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to store directory sync token"))
+	}
+
+	return connect.NewResponse(&v1pb.RotateDirectorySyncTokenResponse{Token: token}), nil
+}
+
 func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *connect.Request[v1pb.GetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
 	policy, err := s.store.GetWorkspaceIamPolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
@@ -209,6 +258,10 @@ func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *connect.Request[
 // Cancels any active Stripe subscription before deleting, then switches
 // to the next available workspace and returns new auth tokens.
 func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, req *connect.Request[v1pb.DeleteWorkspaceRequest]) (*connect.Response[v1pb.LoginResponse], error) {
+	if err := s.authService.rejectMCPOriginatedTokenMint(ctx, req.Header(), "delete workspaces"); err != nil {
+		return nil, err
+	}
+
 	if !s.profile.SaaS {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace deletion is only supported in SaaS mode"))
 	}
@@ -223,7 +276,7 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if contextWorkspaceID := common.GetWorkspaceIDFromContext(ctx); workspaceID != contextWorkspaceID {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot delete workspace %q from workspace %q", workspaceID, contextWorkspaceID))
+		return nil, permissionDeniedError(ctx, errors.Errorf("cannot delete workspace %q from workspace %q", workspaceID, contextWorkspaceID))
 	}
 
 	// Cancel active Stripe subscription if any.
@@ -266,6 +319,10 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, req *connect.Req
 // LeaveWorkspace removes the calling user from a workspace's IAM bindings,
 // then switches to the next available workspace.
 func (s *WorkspaceService) LeaveWorkspace(ctx context.Context, req *connect.Request[v1pb.LeaveWorkspaceRequest]) (*connect.Response[v1pb.LoginResponse], error) {
+	if err := s.authService.rejectMCPOriginatedTokenMint(ctx, req.Header(), "leave workspaces"); err != nil {
+		return nil, err
+	}
+
 	user, ok := GetUserFromContext(ctx)
 	if !ok || user == nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
@@ -368,6 +425,16 @@ func (s *WorkspaceService) LeaveWorkspace(ctx context.Context, req *connect.Requ
 	return s.authService.switchWorkspaceInternal(ctx, user, nextWS.ResourceID, isWeb, req.Header())
 }
 
+// workspaceResourceMatches reports whether the resource a caller named is the
+// workspace their token authenticates them to. GetIamPolicy ignores the field
+// entirely, and the console sends a placeholder before it has resolved the
+// name, so both an empty value and the wildcard mean "the current workspace".
+func workspaceResourceMatches(resource, workspaceID string) bool {
+	return resource == "" ||
+		resource == common.FormatWorkspace(workspaceID) ||
+		resource == common.FormatWorkspace("-")
+}
+
 func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Request[v1pb.SetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
 	request := req.Msg
 
@@ -376,8 +443,21 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace iam policy"))
 	}
-	if request.Etag != "" && request.Etag != policyMessage.Etag {
-		return nil, connect.NewError(connect.CodeAborted, errors.New("there is concurrent update to the workspace iam policy, please refresh and try again"))
+	// The write targets the workspace the caller is authenticated to, so a
+	// request naming a different one is refused rather than silently applied to
+	// this one: getRequestResource audits the name the caller sent, and writing
+	// one workspace while recording another attributes a real permission change
+	// to the wrong place.
+	if !workspaceResourceMatches(request.Resource, workspaceID) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("resource %q is not the workspace this request is authenticated to", request.Resource))
+	}
+
+	// The etag is compared only in the write below, against the locked row.
+	// Comparing it here too would add a second answer to the same question from
+	// a read the write does not hold, and only the locked one decides.
+	expectedEtag, err := requestedIamPolicyEtag(request)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, request, policyMessage); err != nil {
@@ -411,29 +491,42 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count users in IAM policy"))
 	}
-	if newCount > userLimit {
-		oldCount, err := countUsersInIamPolicy(ctx, s.store, workspaceID, policyMessage.Policy, s.profile.SaaS)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count users in current IAM policy"))
-		}
-		if newCount > oldCount {
-			return nil, connect.NewError(connect.CodeResourceExhausted, errors.Errorf("workspace has %d users, exceeding the limit of %d", newCount, userLimit))
-		}
-	}
 
-	payloadBytes, err := protojson.Marshal(iamPolicy)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal iam policy"))
-	}
-	patch := &store.UpdatePolicyMessage{
-		ResourceType: storepb.Policy_WORKSPACE,
-		Resource:     request.Resource,
-		Type:         storepb.Policy_IAM,
+	replaced, policy, err := s.store.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
 		Workspace:    workspaceID,
-		Payload:      new(string(payloadBytes)),
-	}
-
-	if _, err := s.store.UpdatePolicy(ctx, patch); err != nil {
+		ResourceType: storepb.Policy_WORKSPACE,
+		Resource:     common.FormatWorkspace(workspaceID),
+		Policy:       iamPolicy,
+		ExpectedEtag: expectedEtag,
+		// The seat count this change is measured against is the one it replaces,
+		// so it is taken under the same lock. Counting from the read above left
+		// two concurrent writes both passing the guard, and the later one growing
+		// an over-limit workspace -- for an etag-less caller, which the
+		// compare-and-swap does not cover.
+		ValidateReplaced: func(previous *storepb.IamPolicy) error {
+			if newCount <= userLimit {
+				return nil
+			}
+			oldCount, err := countUsersInIamPolicy(ctx, s.store, workspaceID, previous, s.profile.SaaS)
+			if err != nil {
+				return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count users in current IAM policy"))
+			}
+			if newCount > oldCount {
+				return connect.NewError(connect.CodeResourceExhausted, errors.Errorf("workspace has %d users, exceeding the limit of %d", newCount, userLimit))
+			}
+			return nil
+		},
+	})
+	if err != nil {
+		if errors.Is(err, store.ErrIamPolicyEtagMismatch) {
+			return nil, connect.NewError(connect.CodeAborted, errors.New("there is concurrent update to the workspace iam policy, please refresh and try again"))
+		}
+		// ValidateReplaced reports its own status; only an unclassified failure
+		// is this handler's to label.
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, connectErr
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -441,14 +534,9 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, err
 	}
 
-	policy, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find iam policy"))
-	}
+	deltas := findIamPolicyDeltas(replaced.Policy, policy.Policy)
 
-	deltas := findIamPolicyDeltas(policyMessage.Policy, policy.Policy)
-
-	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok {
 		p, err := convertToProtoAny(deltas)
 		if err != nil {
 			slog.Warn("audit: failed to convert to anypb.Any")
@@ -457,7 +545,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	}
 
 	// send invite emails to newly added members.
-	go s.sendInviteEmails(context.WithoutCancel(ctx), workspaceID, policyMessage.Policy, deltas)
+	go s.sendInviteEmails(context.WithoutCancel(ctx), workspaceID, replaced.Policy, deltas)
 
 	v1Policy, err := convertToV1IamPolicy(policy)
 	if err != nil {

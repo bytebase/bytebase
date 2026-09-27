@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { ApprovalStatus, ExportFormat, Position, State, StatementType } from "./common_pb";
+import type { ApprovalStatus, IssueStatus, Position, State, StatementType } from "./common_pb";
 import type { Task_Status } from "./rollout_service_pb";
 import type { Advice_Level } from "./sql_service_pb";
 
@@ -75,14 +75,12 @@ export declare type ListPlansRequest = Message<"bytebase.v1.ListPlansRequest"> &
    * - creator: the plan creator full name in "users/{email or id}" format, support "==" operator.
    * - create_time: the plan create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
    * - has_rollout: whether the plan has rollout, support "==" operator, the value should be "true" or "false".
-   * - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
    * - title: the plan title, support "==" operator for exact match and ".contains()" operator for case-insensitive substring match.
-   * - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
+   * - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config" or "change_database_config".
    * - state: the plan state, support "==" operator, the value should be "ACTIVE" or "DELETED".
    *
    * For example:
    * creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
-   * has_rollout == false && has_issue == true
    * title == "My Plan"
    * title.contains("database migration")
    * spec_type == "change_database_config"
@@ -275,7 +273,7 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
 
   /**
    * The approval status of the linked issue.
-   * Unspecified when no linked issue exists.
+   * Unspecified when no linked issue exists or the linked issue is a draft.
    *
    * @generated from field: bytebase.v1.ApprovalStatus approval_status = 13;
    */
@@ -288,6 +286,23 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
    * @generated from field: repeated bytebase.v1.Plan.RolloutStageSummary rollout_stage_summaries = 14;
    */
   rolloutStageSummaries: Plan_RolloutStageSummary[];
+
+  /**
+   * The lifecycle status of the linked issue.
+   * Unspecified when no linked issue exists.
+   *
+   * @generated from field: bytebase.v1.IssueStatus issue_status = 15;
+   */
+  issueStatus: IssueStatus;
+
+  /**
+   * The user who last created or updated the Plan specs.
+   * Format: users/hello@world.com. For legacy Plans without stored attribution,
+   * this falls back to the Plan creator.
+   *
+   * @generated from field: string last_plan_editor = 16;
+   */
+  lastPlanEditor: string;
 };
 
 /**
@@ -322,12 +337,6 @@ export declare type Plan_Spec = Message<"bytebase.v1.Plan.Spec"> & {
      */
     value: Plan_ChangeDatabaseConfig;
     case: "changeDatabaseConfig";
-  } | {
-    /**
-     * @generated from field: bytebase.v1.Plan.ExportDataConfig export_data_config = 4;
-     */
-    value: Plan_ExportDataConfig;
-    case: "exportDataConfig";
   } | { case: undefined; value?: undefined };
 };
 
@@ -343,7 +352,7 @@ export declare const Plan_SpecSchema: GenMessage<Plan_Spec>;
 export declare type Plan_CreateDatabaseConfig = Message<"bytebase.v1.Plan.CreateDatabaseConfig"> & {
   /**
    * The resource name of the instance on which the database is created.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string target = 1;
    */
@@ -449,49 +458,6 @@ export declare type Plan_ChangeDatabaseConfig = Message<"bytebase.v1.Plan.Change
  * Use `create(Plan_ChangeDatabaseConfigSchema)` to create a new message.
  */
 export declare const Plan_ChangeDatabaseConfigSchema: GenMessage<Plan_ChangeDatabaseConfig>;
-
-/**
- * @generated from message bytebase.v1.Plan.ExportDataConfig
- */
-export declare type Plan_ExportDataConfig = Message<"bytebase.v1.Plan.ExportDataConfig"> & {
-  /**
-   * The list of targets.
-   * Multi-database format: [instances/{instance-id}/databases/{database-name}].
-   * Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
-   *
-   * @generated from field: repeated string targets = 1;
-   */
-  targets: string[];
-
-  /**
-   * The resource name of the sheet.
-   * Format: projects/{project}/sheets/{sheet}
-   *
-   * @generated from field: string sheet = 2;
-   */
-  sheet: string;
-
-  /**
-   * The format of the exported file.
-   *
-   * @generated from field: bytebase.v1.ExportFormat format = 3;
-   */
-  format: ExportFormat;
-
-  /**
-   * The zip password provide by users.
-   * Leave it empty if no needs to encrypt the zip file.
-   *
-   * @generated from field: optional string password = 4;
-   */
-  password?: string | undefined;
-};
-
-/**
- * Describes the message bytebase.v1.Plan.ExportDataConfig.
- * Use `create(Plan_ExportDataConfigSchema)` to create a new message.
- */
-export declare const Plan_ExportDataConfigSchema: GenMessage<Plan_ExportDataConfig>;
 
 /**
  * @generated from message bytebase.v1.Plan.RolloutStageSummary
@@ -700,7 +666,7 @@ export declare type PlanCheckRun_Result = Message<"bytebase.v1.PlanCheckRun.Resu
 
   /**
    * Target identification for consolidated results.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string target = 7;
    */

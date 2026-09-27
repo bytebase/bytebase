@@ -2,15 +2,290 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
+func TestResourceResolutionConnectError(t *testing.T) {
+	t.Run("preserves connect error", func(t *testing.T) {
+		want := connect.NewError(connect.CodeNotFound, errors.New("missing resource"))
+		require.Same(t, want, resourceResolutionConnectError(want))
+	})
+
+	t.Run("converts unknown error", func(t *testing.T) {
+		err := resourceResolutionConnectError(errors.New("store unavailable"))
+		require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+		require.ErrorContains(t, err, "failed to populate raw resources: store unavailable")
+	})
+}
+
+func TestACLCheckAuthenticatesBeforeResolvingResources(t *testing.T) {
+	t.Parallel()
+	ctx := unauthenticatedACLContext(context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default"))
+	interceptor := NewACLInterceptor(nil, "", nil, nil)
+
+	err := interceptor.doACLCheck(
+		ctx,
+		&v1pb.GetDatabaseRequest{Name: common.FormatDatabase("missing", "app")},
+		v1connect.DatabaseServiceGetDatabaseProcedure,
+	)
+	require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
+}
+
+func TestACLCheckPanicPreventsRequestAdmission(t *testing.T) {
+	t.Parallel()
+	ctx := authenticatedACLContext(context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default"))
+	interceptor := NewACLInterceptor(nil, "", nil, nil)
+	aclCheckReturnedNil := false
+
+	panicked := false
+	func() {
+		defer func() {
+			panicked = recover() != nil
+		}()
+		if err := interceptor.doACLCheck(
+			ctx,
+			&v1pb.GetDatabaseRequest{Name: common.FormatDatabase("instance", "app")},
+			v1connect.DatabaseServiceGetDatabaseProcedure,
+		); err == nil {
+			aclCheckReturnedNil = true
+		}
+	}()
+
+	require.True(t, panicked, "the outer Connect recovery adapter must receive ACL panics")
+	require.False(t, aclCheckReturnedNil, "a recovered ACL panic must not admit the request")
+}
+
+func authenticatedACLContext(ctx context.Context) context.Context {
+	ctx = context.WithValue(ctx, common.AuthContextKey, &common.AuthContext{AuthMethod: common.AuthMethodCustom})
+	return context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "user@example.com"})
+}
+
+func unauthenticatedACLContext(ctx context.Context) context.Context {
+	ctx = context.WithValue(ctx, common.AuthContextKey, &common.AuthContext{AuthMethod: common.AuthMethodCustom})
+	return context.WithValue(ctx, common.UserContextKey, (*store.UserMessage)(nil))
+}
+
+func TestGetResourceRoute(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name  string
+		parts []string
+		want  resourceRoute
+	}{
+		{
+			name:  "workspace",
+			parts: []string{"workspaces", "default"},
+			want:  resourceRoute{"workspaces"},
+		},
+		{
+			name:  "project",
+			parts: []string{"projects", "project-a"},
+			want:  resourceRoute{"projects"},
+		},
+		{
+			name:  "project instance",
+			parts: []string{"projects", "project-a", "instances", "instance-a"},
+			want:  resourceRoute{"projects", "instances"},
+		},
+		{
+			name:  "project database",
+			parts: []string{"projects", "project-a", "instances", "instance-a", "databases", "app"},
+			want:  resourceRoute{"projects", "instances", "databases"},
+		},
+		{
+			name:  "workspace instance",
+			parts: []string{"instances", "instance-a"},
+			want:  resourceRoute{"instances"},
+		},
+		{
+			name:  "workspace database",
+			parts: []string{"instances", "instance-a", "databases", "app"},
+			want:  resourceRoute{"instances", "databases"},
+		},
+		{
+			name:  "project instance role",
+			parts: []string{"projects", "project-a", "instances", "instance-a", "roles", "role-a"},
+			want:  resourceRoute{"projects", "instances", "roles"},
+		},
+		{
+			name:  "project database revision",
+			parts: []string{"projects", "project-a", "instances", "instance-a", "databases", "app", "revisions", "1"},
+			want:  resourceRoute{"projects", "instances", "databases"},
+		},
+		{
+			name:  "project database changelog",
+			parts: []string{"projects", "project-a", "instances", "instance-a", "databases", "app", "changelogs", "1"},
+			want:  resourceRoute{"projects", "instances", "databases"},
+		},
+		{
+			name:  "project database schema",
+			parts: []string{"projects", "project-a", "instances", "instance-a", "databases", "app", "schema"},
+			want:  resourceRoute{"projects", "instances", "databases"},
+		},
+		{
+			name:  "workspace instance role",
+			parts: []string{"instances", "instance-a", "roles", "role-a"},
+			want:  resourceRoute{"instances", "roles"},
+		},
+		{
+			name:  "workspace database revision",
+			parts: []string{"instances", "instance-a", "databases", "app", "revisions", "1"},
+			want:  resourceRoute{"instances", "databases", "revisions"},
+		},
+		{
+			name:  "workspace database schema",
+			parts: []string{"instances", "instance-a", "databases", "app", "schema"},
+			want:  resourceRoute{"instances", "databases", "schema"},
+		},
+		{
+			name:  "project database catalog",
+			parts: []string{"projects", "project-a", "instances", "instance-a", "databases", "app", "catalog"},
+			want:  resourceRoute{"projects", "instances", "databases"},
+		},
+		{
+			name:  "workspace database catalog",
+			parts: []string{"instances", "instance-a", "databases", "app", "catalog"},
+			want:  resourceRoute{"instances", "databases", "catalog"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, getResourceRoute(tt.parts))
+		})
+	}
+}
+
+func TestFindResourceResolver(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		route      resourceRoute
+		wantRoute  resourceRoute
+		wantExists bool
+	}{
+		{name: "workspace", route: resourceRoute{"workspaces"}, wantRoute: resourceRoute{"workspaces"}, wantExists: true},
+		{name: "project", route: resourceRoute{"projects"}, wantRoute: resourceRoute{"projects"}, wantExists: true},
+		{name: "project instance", route: resourceRoute{"projects", "instances"}, wantRoute: resourceRoute{"projects", "instances"}, wantExists: true},
+		{name: "project database", route: resourceRoute{"projects", "instances", "databases"}, wantRoute: resourceRoute{"projects", "instances", "databases"}, wantExists: true},
+		{name: "workspace instance", route: resourceRoute{"instances"}, wantRoute: resourceRoute{"instances"}, wantExists: true},
+		{name: "workspace database", route: resourceRoute{"instances", "databases"}, wantRoute: resourceRoute{"instances", "databases"}, wantExists: true},
+		{name: "project instance role", route: resourceRoute{"projects", "instances", "roles"}, wantRoute: resourceRoute{"projects", "instances"}, wantExists: true},
+		{name: "project database revision", route: resourceRoute{"projects", "instances", "databases"}, wantRoute: resourceRoute{"projects", "instances", "databases"}, wantExists: true},
+		{name: "project database changelog", route: resourceRoute{"projects", "instances", "databases"}, wantRoute: resourceRoute{"projects", "instances", "databases"}, wantExists: true},
+		{name: "project database schema", route: resourceRoute{"projects", "instances", "databases"}, wantRoute: resourceRoute{"projects", "instances", "databases"}, wantExists: true},
+		{name: "workspace instance role", route: resourceRoute{"instances", "roles"}, wantRoute: resourceRoute{"instances"}, wantExists: true},
+		{name: "workspace database revision", route: resourceRoute{"instances", "databases", "revisions"}, wantRoute: resourceRoute{"instances", "databases"}, wantExists: true},
+		{name: "workspace database schema", route: resourceRoute{"instances", "databases", "schema"}, wantRoute: resourceRoute{"instances", "databases"}, wantExists: true},
+		{name: "workspace database catalog", route: resourceRoute{"instances", "databases", "catalog"}, wantRoute: resourceRoute{"instances", "databases"}, wantExists: true},
+		{name: "ordinary project descendant", route: resourceRoute{"projects", "issues"}, wantRoute: resourceRoute{"projects"}, wantExists: true},
+		{name: "unknown root", route: resourceRoute{"unknowns"}, wantExists: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			gotRoute, resolver, gotExists := findResourceResolver(tt.route)
+			require.Equal(t, tt.wantExists, gotExists)
+			if !tt.wantExists {
+				require.Nil(t, resolver)
+				return
+			}
+			require.NotNil(t, resolver)
+			require.Equal(t, tt.wantRoute, gotRoute)
+		})
+	}
+}
+
+func TestResolveRawResourceRequiresIdentifiers(t *testing.T) {
+	t.Parallel()
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	for _, name := range []string{
+		"workspaces/",
+		"projects/",
+		"projects/project-a/instances/",
+		"projects/project-a/instances/instance-a/databases/",
+		"instances/",
+		"instances/instance-a/databases/",
+	} {
+		resource, err := resolveRawResource(ctx, nil, name)
+		require.Error(t, err, name)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), name)
+		require.Nil(t, resource, name)
+	}
+}
+
+func TestPopulateRawResourcesUsesWorkspaceFallback(t *testing.T) {
+	t.Parallel()
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	for _, request := range []any{
+		&v1pb.GetInstanceRequest{Name: "projects/-"},
+		&v1pb.GetDatabaseRequest{Name: "instances/-/databases/app"},
+	} {
+		resources, err := populateRawResources(ctx, nil, request, "/bytebase.v1.TestService/Get")
+		require.NoError(t, err)
+		require.Equal(t, []*common.Resource{{Type: common.ResourceTypeWorkspace, ID: "default"}}, resources)
+	}
+
+	resources, err := populateRawResources(context.Background(), nil, &v1pb.ListProjectsRequest{}, "/bytebase.v1.ProjectService/ListProjects")
+	require.NoError(t, err)
+	require.Empty(t, resources)
+}
+
+func TestPopulateRawResourcesResolvesLifecycleProject(t *testing.T) {
+	t.Parallel()
+	for _, method := range []string{
+		v1connect.InstanceServiceDeleteInstanceProcedure,
+		v1connect.InstanceServiceUndeleteInstanceProcedure,
+	} {
+		require.True(t, allowsArchivedProjectResourceResolution(method), method)
+	}
+	require.False(t, allowsArchivedProjectResourceResolution(v1connect.InstanceServiceGetInstanceProcedure))
+
+	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
+	// A deleted project still resolves, so a sample request against one reaches
+	// the handler's "entitlement consumed" answer.
+	_, err := stores.GetDB().ExecContext(ctx, `
+		UPDATE project
+		SET deleted = TRUE
+		WHERE workspace = $1 AND resource_id = $2
+	`, common.GetWorkspaceIDFromContext(ctx), projectID)
+	require.NoError(t, err)
+
+	resources, err := populateRawResources(ctx, stores,
+		&v1pb.PrepareSampleProjectInstanceRequest{Parent: common.FormatProject(projectID)},
+		v1connect.InstanceServicePrepareSampleProjectInstanceProcedure)
+	require.NoError(t, err)
+	require.Equal(t, []*common.Resource{{Type: common.ResourceTypeProject, ID: projectID}}, resources)
+
+	unknown := common.FormatProject("no-such-project")
+	for method, request := range map[string]any{
+		v1connect.InstanceServicePrepareSampleProjectInstanceProcedure: &v1pb.PrepareSampleProjectInstanceRequest{Parent: unknown},
+		// Not a valid instance name, but ACL resolves it before the handler
+		// rejects it.
+		v1connect.InstanceServiceDeleteInstanceProcedure:   &v1pb.DeleteInstanceRequest{Name: unknown},
+		v1connect.InstanceServiceUndeleteInstanceProcedure: &v1pb.UndeleteInstanceRequest{Name: unknown},
+	} {
+		resources, err := populateRawResources(ctx, stores, request, method)
+		require.Equal(t, connect.CodeNotFound, connect.CodeOf(err), method)
+		require.Nil(t, resources, method)
+	}
+}
+
 func TestGetResourceFromRequest(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		request any
 		method  string
@@ -63,6 +338,51 @@ func TestGetResourceFromRequest(t *testing.T) {
 			want:   []string{"instances/hello"},
 		},
 		{
+			request: &v1pb.CreateInstanceRequest{
+				Parent: new("projects/default"),
+			},
+			method: "/bytebase.v1.InstanceService/CreateInstance",
+			want:   []string{""},
+		},
+		{
+			request: &v1pb.CreateInstanceRequest{
+				Parent: new("projects/hello"),
+			},
+			method: "/bytebase.v1.InstanceService/CreateInstance",
+			want:   []string{"projects/hello"},
+		},
+		{
+			request: &v1pb.PrepareSampleProjectInstanceRequest{
+				Parent: "projects/hello",
+			},
+			method: "/bytebase.v1.InstanceService/PrepareSampleProjectInstance",
+			want:   []string{"projects/hello"},
+		},
+		{
+			// The missing required parent is rejected by InstanceService, after
+			// workspace-scope authorization, just like other invalid parents.
+			request: &v1pb.PrepareSampleProjectInstanceRequest{},
+			method:  "/bytebase.v1.InstanceService/PrepareSampleProjectInstance",
+			want:    []string{""},
+		},
+		{
+			// Default projects cannot own instances. The handler owns the
+			// canonical validation error, so ACL resolves this at workspace scope.
+			request: &v1pb.PrepareSampleProjectInstanceRequest{
+				Parent: "projects/default",
+			},
+			method: "/bytebase.v1.InstanceService/PrepareSampleProjectInstance",
+			want:   []string{""},
+		},
+		{
+			request: &v1pb.UpdateInstanceRequest{
+				Instance:     &v1pb.Instance{Name: "projects/hello/instances/new-instance"},
+				AllowMissing: true,
+			},
+			method: "/bytebase.v1.InstanceService/UpdateInstance",
+			want:   []string{"projects/hello"},
+		},
+		{
 			request: &v1pb.UploadLicenseRequest{
 				License: "123",
 			},
@@ -112,6 +432,61 @@ func TestGetResourceFromRequest(t *testing.T) {
 			want:   []string{"instances/hello/databases/hello", "instances/world/databases/world"},
 		},
 		{
+			request: &v1pb.BatchSyncDatabasesRequest{
+				Parent: "-",
+				Names: []string{
+					"instances/hello/databases/hello",
+					"projects/project-a/instances/world/databases/world",
+				},
+			},
+			method: "/bytebase.v1.DatabaseService/BatchSyncDatabases",
+			want: []string{
+				"instances/hello/databases/hello",
+				"projects/project-a/instances/world/databases/world",
+			},
+		},
+		{
+			// Each named project, as DeleteProject does for the one it names. No
+			// parent and no requests, so this resolved nothing before.
+			request: &v1pb.BatchDeleteProjectsRequest{
+				Names: []string{"projects/hello", "projects/world"},
+			},
+			method: "/bytebase.v1.ProjectService/BatchDeleteProjects",
+			want:   []string{"projects/hello", "projects/world"},
+		},
+		{
+			// Empty batch: the workspace fallback lets the handler answer.
+			request: &v1pb.BatchDeleteProjectsRequest{},
+			method:  "/bytebase.v1.ProjectService/BatchDeleteProjects",
+			want:    []string{""},
+		},
+		{
+			// The rule widened to every Batch* verb; it did not move off BatchGet.
+			request: &v1pb.BatchGetProjectsRequest{
+				Names: []string{"projects/hello", "projects/world"},
+			},
+			method: "/bytebase.v1.ProjectService/BatchGetProjects",
+			want:   []string{"projects/hello", "projects/world"},
+		},
+		{
+			// Parent and every name, in that order.
+			request: &v1pb.BatchGetDatabasesRequest{
+				Parent: "projects/hello",
+				Names:  []string{"instances/i/databases/a", "instances/i/databases/b"},
+			},
+			method: "/bytebase.v1.DatabaseService/BatchGetDatabases",
+			want:   []string{"projects/hello", "instances/i/databases/a", "instances/i/databases/b"},
+		},
+		{
+			// Untouched: BatchUpdateIssuesStatus names its issues in `issues`.
+			request: &v1pb.BatchUpdateIssuesStatusRequest{
+				Parent: "projects/hello",
+				Issues: []string{"projects/hello/issues/1"},
+			},
+			method: "/bytebase.v1.IssueService/BatchUpdateIssuesStatus",
+			want:   []string{"projects/hello/issues/1"},
+		},
+		{
 			request: &v1pb.BatchUpdateDatabasesRequest{
 				Requests: []*v1pb.UpdateDatabaseRequest{
 					{Database: &v1pb.Database{Name: "instances/hello/databases/hello", Project: "projects/a"}, UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"project"}}},
@@ -129,6 +504,29 @@ func TestGetResourceFromRequest(t *testing.T) {
 			want:   []string{"instances/hello"},
 		},
 		{
+			request: &v1pb.ListInstanceDatabaseRequest{
+				Name: "instances/hello",
+			},
+			method: "/bytebase.v1.InstanceService/ListInstanceDatabase",
+			want:   []string{"instances/hello"},
+		},
+		{
+			request: &v1pb.ListInstanceDatabaseRequest{
+				Name:     "instances/hello",
+				Instance: &v1pb.Instance{},
+			},
+			method: "/bytebase.v1.InstanceService/ListInstanceDatabase",
+			want:   []string{""},
+		},
+		{
+			request: &v1pb.ListInstanceDatabaseRequest{
+				Name:     "projects/project-a/instances/hello",
+				Instance: &v1pb.Instance{},
+			},
+			method: "/bytebase.v1.InstanceService/ListInstanceDatabase",
+			want:   []string{"projects/project-a"},
+		},
+		{
 			request: &v1pb.BatchSyncInstancesRequest{
 				Requests: []*v1pb.SyncInstanceRequest{
 					{Name: "instances/hello"},
@@ -139,11 +537,101 @@ func TestGetResourceFromRequest(t *testing.T) {
 			want:   []string{"instances/hello", "instances/world"},
 		},
 		{
+			request: &v1pb.BatchSyncInstancesRequest{
+				Parent: new("projects/project-a"),
+				Requests: []*v1pb.SyncInstanceRequest{
+					{Name: "projects/project-a/instances/hello"},
+				},
+			},
+			method: "/bytebase.v1.InstanceService/BatchSyncInstances",
+			want:   []string{"projects/project-a", "projects/project-a/instances/hello"},
+		},
+		{
+			request: &v1pb.BatchUpdateInstancesRequest{
+				Parent: new("projects/project-a"),
+				Requests: []*v1pb.UpdateInstanceRequest{
+					{Instance: &v1pb.Instance{Name: "projects/project-a/instances/new-instance"}, AllowMissing: true},
+					{Instance: &v1pb.Instance{Name: "projects/project-a/instances/existing-instance"}},
+				},
+			},
+			method: "/bytebase.v1.InstanceService/BatchUpdateInstances",
+			want:   []string{"projects/project-a", "projects/project-a/instances/existing-instance"},
+		},
+		{
+			request: &v1pb.BatchUpdateInstancesRequest{
+				Requests: []*v1pb.UpdateInstanceRequest{
+					{Instance: &v1pb.Instance{Name: "instances/new-instance"}, AllowMissing: true},
+					{Instance: &v1pb.Instance{Name: "instances/existing-instance"}},
+				},
+			},
+			method: "/bytebase.v1.InstanceService/BatchUpdateInstances",
+			want:   []string{"", "instances/existing-instance"},
+		},
+		{
 			request: &v1pb.CancelPlanCheckRunRequest{
 				Name: "projects/hello/plans/world/planCheckRun",
 			},
 			method: "/bytebase.v1.PlanService/CancelPlanCheckRun",
 			want:   []string{"projects/hello/plans/world/planCheckRun"},
+		},
+		{
+			// The search parents resolve, so a project that does not exist is
+			// answered here rather than by the permission check, which reports
+			// a missing project as a plain error.
+			request: &v1pb.SearchSavedQueriesRequest{Parent: "projects/hello"},
+			method:  "/bytebase.v1.SavedQueryService/SearchSavedQueries",
+			want:    []string{"projects/hello"},
+		},
+		{
+			request: &v1pb.SearchSavedQueryFoldersRequest{Parent: "projects/hello"},
+			method:  "/bytebase.v1.SavedQueryService/SearchSavedQueryFolders",
+			want:    []string{"projects/hello"},
+		},
+		{
+			// The wildcard stays a handler-level InvalidArgument: resolution
+			// falls back to the workspace instead of hunting for a project
+			// named "-".
+			request: &v1pb.SearchSavedQueriesRequest{Parent: "projects/-"},
+			method:  "/bytebase.v1.SavedQueryService/SearchSavedQueries",
+			want:    []string{"projects/-"},
+		},
+		{
+			// Every audited saved-query write must resolve to a
+			// project-scoped resource, or the audit row files under the
+			// workspace and a project audit-log search cannot find it.
+			request: &v1pb.UpdateSavedQueryRequest{SavedQuery: &v1pb.SavedQuery{Name: "projects/hello/savedQueries/sq1"}},
+			method:  "/bytebase.v1.SavedQueryService/UpdateSavedQuery",
+			want:    []string{"projects/hello/savedQueries/sq1"},
+		},
+		{
+			// Not a Batch* method, so `parent` resolves through the
+			// single-request path -- which still needs its resource_reference,
+			// or the audit row would file under the workspace.
+			request: &v1pb.MoveMySavedQueriesRequest{Parent: "projects/hello"},
+			method:  "/bytebase.v1.SavedQueryService/MoveMySavedQueries",
+			want:    []string{"projects/hello"},
+		},
+		{
+			// The field is `catalog`, not the `database_catalog` the Update
+			// convention derives -- so this must not fall back to "", which
+			// would check the permission against the workspace instead of the
+			// named database's project.
+			request: &v1pb.UpdateDatabaseCatalogRequest{
+				Catalog: &v1pb.DatabaseCatalog{
+					Name: "instances/hello/databases/world/catalog",
+				},
+			},
+			method: "/bytebase.v1.DatabaseCatalogService/UpdateDatabaseCatalog",
+			want:   []string{"instances/hello/databases/world/catalog"},
+		},
+		{
+			request: &v1pb.UpdateDatabaseCatalogRequest{
+				Catalog: &v1pb.DatabaseCatalog{
+					Name: "projects/hello/instances/world/databases/db/catalog",
+				},
+			},
+			method: "/bytebase.v1.DatabaseCatalogService/UpdateDatabaseCatalog",
+			want:   []string{"projects/hello/instances/world/databases/db/catalog"},
 		},
 	}
 
@@ -154,6 +642,7 @@ func TestGetResourceFromRequest(t *testing.T) {
 }
 
 func TestToSnakeCase(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input string
 		want  string
@@ -182,7 +671,50 @@ func TestToSnakeCase(t *testing.T) {
 	}
 }
 
+func TestGetPermissionForRequest(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name              string
+		request           any
+		defaultPermission permission.Permission
+		want              permission.Permission
+	}{
+		{
+			name: "keeps default permission for existing instance database listing",
+			request: &v1pb.ListInstanceDatabaseRequest{
+				Name: "instances/hello",
+			},
+			defaultPermission: permission.InstancesGet,
+			want:              permission.InstancesGet,
+		},
+		{
+			name: "requires create permission for inline instance database preview",
+			request: &v1pb.ListInstanceDatabaseRequest{
+				Name:     "instances/hello",
+				Instance: &v1pb.Instance{},
+			},
+			defaultPermission: permission.InstancesGet,
+			want:              permission.InstancesCreate,
+		},
+		{
+			name:              "keeps default permission for other requests",
+			request:           &v1pb.SyncInstanceRequest{Name: "instances/hello"},
+			defaultPermission: permission.InstancesSync,
+			want:              permission.InstancesSync,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := getPermissionForRequest(tt.request, tt.defaultPermission)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestHasAllowMissingEnabled(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		request any
@@ -235,10 +767,28 @@ func TestHasAllowMissingEnabled(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			name: "BatchUpdateInstancesRequest with nested AllowMissing true",
+			request: &v1pb.BatchUpdateInstancesRequest{
+				Requests: []*v1pb.UpdateInstanceRequest{
+					{AllowMissing: false},
+					{AllowMissing: true},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "BatchUpdateInstancesRequest with nested AllowMissing false",
+			request: &v1pb.BatchUpdateInstancesRequest{
+				Requests: []*v1pb.UpdateInstanceRequest{{AllowMissing: false}},
+			},
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := hasAllowMissingEnabled(tt.request)
 			require.Equal(t, tt.want, got)
 		})

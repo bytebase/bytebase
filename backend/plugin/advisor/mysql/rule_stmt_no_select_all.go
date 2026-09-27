@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -41,7 +41,7 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type noSelectAllOmniRule struct {
@@ -70,7 +70,7 @@ func (r *noSelectAllOmniRule) OnStatement(node ast.Node) {
 					Code:          code.StatementSelectAll.Int32(),
 					Title:         r.Title,
 					Content:       fmt.Sprintf("\"%s\" uses SELECT all", text),
-					StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.findStarLine(target))),
+					StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.findStarLine(target))),
 				})
 			}
 		}

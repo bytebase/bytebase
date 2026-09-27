@@ -52,7 +52,7 @@ func (*StatementWhereDisallowFunctionsAndCalculationsAdvisor) Check(_ context.Co
 		// references when sync hasn't populated search_path.
 		rule.searchPath = []string{"public"}
 	}
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type whereDisallowFuncPgRule struct {

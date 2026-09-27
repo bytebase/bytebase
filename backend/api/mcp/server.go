@@ -2,18 +2,27 @@
 package mcp
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
+	mcpauth "github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/audit"
 	"github.com/bytebase/bytebase/backend/component/config"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -21,19 +30,52 @@ import (
 // Server is the MCP server for Bytebase.
 type Server struct {
 	mcpServer    *mcp.Server
-	httpHandler  *mcp.StreamableHTTPHandler
-	store        *store.Store
+	httpHandler  http.Handler
+	store        serverStore
 	profile      *config.Profile
 	secret       string
 	openAPIIndex *OpenAPIIndex
+
+	// internalClient carries tool API calls to the internal handler chain over
+	// the private in-memory transport, authenticated by the delegated
+	// credential minted in authMiddleware.
+	internalClient *http.Client
+
+	revokedAccessTokens sync.Map // map[string]struct{}
 
 	// planCheckPollBudgetOverride lets tests shorten the plan-check poll budget.
 	// Zero means use the default (planCheckPollBudget).
 	planCheckPollBudgetOverride time.Duration
 }
 
-// NewServer creates a new MCP server.
-func NewServer(store *store.Store, profile *config.Profile, secret string) (*Server, error) {
+type serverStore interface {
+	GetWorkspaceID(context.Context) (string, error)
+	GetWorkspaceProfileSetting(context.Context, string) (*storepb.WorkspaceProfileSetting, error)
+	GetMCPSettingsUncached(context.Context, string) (*storepb.MCPSetting, error)
+	DeleteOAuth2RefreshTokensByUserAndClient(context.Context, string, string) error
+	// CreateAuditLog records the connection denials this package emits itself.
+	// They happen in echo middleware, outside both connect chains, so the audit
+	// interceptor never sees them.
+	CreateAuditLog(context.Context, string, *storepb.AuditLog) error
+}
+
+// NewServer creates a new MCP server. internalAPI is the internal API handler
+// chain tool calls dispatch to in memory; it is never bound to a listener.
+// It takes the concrete store; tests reach newServerWithStore with a fake.
+//
+// The nil check is not redundant with the typed parameter. A nil *store.Store
+// assigned to the serverStore interface field produces a NON-nil interface
+// holding a nil pointer, which no later nil test catches, so without this the
+// failure moves from a returned error here to a nil-receiver panic on the first
+// ceiling read inside authMiddleware.
+func NewServer(stores *store.Store, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
+	if stores == nil {
+		return nil, errors.New("store is required")
+	}
+	return newServerWithStore(stores, profile, secret, internalAPI)
+}
+
+func newServerWithStore(stores serverStore, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
 	mcpServer := mcp.NewServer(&mcp.Implementation{
 		Name:    "bytebase",
 		Version: profile.Version,
@@ -46,11 +88,12 @@ func NewServer(store *store.Store, profile *config.Profile, secret string) (*Ser
 	}
 
 	s := &Server{
-		mcpServer:    mcpServer,
-		store:        store,
-		profile:      profile,
-		secret:       secret,
-		openAPIIndex: openAPIIndex,
+		mcpServer:      mcpServer,
+		store:          stores,
+		profile:        profile,
+		secret:         secret,
+		openAPIIndex:   openAPIIndex,
+		internalClient: newInternalAPIClient(internalAPI),
 	}
 	s.registerTools()
 
@@ -67,14 +110,124 @@ func NewServer(store *store.Store, profile *config.Profile, secret string) (*Ser
 	// the token — not network position — is the security boundary, and the
 	// rebinding threat targets unauthenticated, browser-reached localhost
 	// servers, which Bytebase is not.
-	s.httpHandler = mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
+	//
+	// maxMCPRequestBodyBytes bounds the JSON-RPC envelope, which makes it the
+	// ceiling on a migration statement. It is written out rather than aliased to
+	// the SDK's default so it survives a change to that default: past
+	// common.MaxSheetCheckSize (2 MiB) SQL review and plan checks skip and prior
+	// backup refuses, and base64 inflates that by 4/3, so 4 MiB clears the
+	// largest statement worth admitting.
+	//
+	// Tripping it costs the session, not just the call: the transport answers a
+	// bare 413, which the SDK client does not count as transient, so it fails the
+	// connection and every later call on it.
+	//
+	// DEFER: no tool-level statement cap, so an oversized body is refused by the
+	// transport with no code, size or remedy; upgrade when a caller reports it,
+	// or when a multi-file CreateRelease needs more than the cap.
+	streamable := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return s.mcpServer
-	}, &mcp.StreamableHTTPOptions{DisableLocalhostProtection: true})
+	}, &mcp.StreamableHTTPOptions{
+		DisableLocalhostProtection: true,
+		MaxRequestBodyBytes:        maxMCPRequestBodyBytes,
+	})
+
+	// Refresh per-request metadata that would otherwise be frozen at session
+	// start. The SDK runs tool handlers on the initialize request's context, but
+	// hands each JSON-RPC request's own HTTP headers to receiving middleware, so
+	// this is where a long-lived session picks up where its current request came
+	// from. Identity stays pinned to the session (see below), which is what
+	// makes trusting the live address safe: it cannot belong to another
+	// principal.
+	mcpServer.AddReceivingMiddleware(negotiateLegacyProtocol)
+	mcpServer.AddReceivingMiddleware(liveRequestMetadata)
+
+	// Pin each session to the identity it was opened with. The SDK captures
+	// TokenInfo.UserID when a session is created and rejects later requests
+	// carrying a different one, but only when a TokenInfo reaches it — and the
+	// context key is settable solely through this middleware. Without it the
+	// check is inert, and since tool handlers run on the initialize request's
+	// context, a substituted-but-valid bearer would be admitted while the tool
+	// executed under the session's original identity.
+	s.httpHandler = mcpauth.RequireBearerToken(s.verifySessionBinding, nil)(refuseSessionlessProtocol(streamable))
 
 	return s, nil
 }
 
+// sessionlessProtocolVersion is the first MCP revision the SDK serves only on a
+// stateless transport. This one is stateful and cannot become stateless: a
+// stateless transport gives every request its own session carrying no client
+// capabilities, which breaks elicitation for every older client.
+const (
+	sessionlessProtocolVersion = "2026-07-28"
+
+	// legacyProtocolCeiling is what the SDK answers an initialize handshake
+	// with, whatever the client asks for: negotiatedVersion caps there because
+	// the newer revision is negotiated through server/discover instead.
+	legacyProtocolCeiling = "2025-11-25"
+
+	// maxMCPRequestBodyBytes is documented at the handler that applies it.
+	maxMCPRequestBodyBytes = 4 << 20
+)
+
+// negotiateLegacyProtocol keeps a session's recorded revision equal to the one
+// its handshake answered.
+//
+// The SDK records the revision the client ASKED for and answers with the one it
+// negotiated, and for a client asking beyond legacyProtocolCeiling those differ.
+// Everything downstream reads the record, so the SDK would treat such a client
+// as multi round-trip capable and hand it an input-required result in place of
+// the elicitation it agreed to, which it has no obligation to know how to
+// retry. Rewriting the request to what was negotiated makes the two agree. The
+// client sees the same initialize response either way.
+//
+// With refuseSessionlessProtocol covering the header, no session on this route
+// records a revision this transport cannot serve.
+func negotiateLegacyProtocol(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		if params, ok := req.GetParams().(*mcp.InitializeParams); ok &&
+			params.ProtocolVersion >= sessionlessProtocolVersion {
+			params.ProtocolVersion = legacyProtocolCeiling
+		}
+		return next(ctx, method, req)
+	}
+}
+
+// refuseSessionlessProtocol rejects requests announcing that revision or newer.
+//
+// The SDK refuses it for every method but server/discover, and answers discover
+// by opening a session: discover fills in InitializeParams, the field the
+// cleanup checks before closing a session nobody adopted, while a session ID is
+// returned only on an initialize response. The client never learns that ID and
+// never deletes it, and no SessionTimeout is set, so each connect would strand
+// one session for the process's life. Clients fall back to the initialize
+// handshake on any discover error, which is the path they take here anyway.
+//
+// DEFER: refuses the revision whole; upgrade when the transport can serve it.
+func refuseSessionlessProtocol(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if version := r.Header.Get("MCP-Protocol-Version"); version >= sessionlessProtocolVersion {
+			// Debug, not info: every go-sdk v1.7.0 client takes this branch once
+			// per connect.
+			slog.Debug("refused an MCP protocol revision this transport cannot serve",
+				slog.String("version", version))
+			http.Error(w, "Bad Request: unsupported protocol version", http.StatusBadRequest)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // registerTools registers all MCP tools.
+//
+// The list is not filtered by the workspace's ceiling (BOT-89). It could be:
+// the SDK re-reads its server-global tool registry on every tools/list, and
+// receiving middleware can trim that result using the live request's headers,
+// the way liveRequestMetadata already reads them. It is not, because a trimmed
+// list enforces nothing the per-request ceiling check does not already enforce,
+// and it would go stale in the client's hands the moment an admin changed the
+// ceiling: the SDK can invalidate a tool list only server-wide, never for one
+// session. Revisit if it grows per-session invalidation.
 func (s *Server) registerTools() {
 	s.registerSearchTool()
 	s.registerCallTool()
@@ -82,6 +235,7 @@ func (s *Server) registerTools() {
 	s.registerQueryTool()
 	s.registerSchemaTool()
 	s.registerChangeTool()
+	s.registerReauthorizeTool()
 }
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
@@ -104,6 +258,9 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return s.unauthorized(c, "authorization header format must be Bearer {token}")
 		}
 		tokenStr := parts[1]
+		if _, revoked := s.revokedAccessTokens.Load(tokenStr); revoked {
+			return s.unauthorized(c, "token revoked")
+		}
 
 		// Parse and validate JWT
 		claims := jwt.MapClaims{}
@@ -127,55 +284,343 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return s.unauthorized(c, "invalid token")
 		}
 
-		// Validate audience - accept both user access tokens and OAuth2 access tokens
-		aud, ok := claims["aud"]
-		if !ok {
-			return s.unauthorized(c, "invalid token: missing audience")
+		identity, errMsg := extractTokenIdentity(claims)
+		if errMsg != "" {
+			return s.unauthorized(c, errMsg)
 		}
-
-		validAudience := false
-		switch v := aud.(type) {
-		case string:
-			validAudience = v == auth.OAuth2AccessTokenAudience || v == auth.AccessTokenAudience
-		case []any:
-			for _, a := range v {
-				if str, ok := a.(string); ok && (str == auth.OAuth2AccessTokenAudience || str == auth.AccessTokenAudience) {
-					validAudience = true
-					break
-				}
-			}
-		default:
+		sub, clientID, workspaceID, aud := identity.sub, identity.clientID, identity.workspaceID, identity.aud
+		allowed, err := s.audienceAllowed(c.Request().Context(), aud, workspaceID)
+		if err != nil {
+			// Infra failure reading the trusted config, not a verdict on the
+			// token: a 401 here would tell a compliant client to discard a
+			// perfectly good token mid-outage. 503 says retry instead.
+			slog.Error("failed to resolve the MCP resource audience; cannot verify the token", log.BBError(err))
+			return echo.NewHTTPError(http.StatusServiceUnavailable, "cannot verify token audience; retry shortly")
 		}
-		if !validAudience {
+		if !allowed {
 			return s.unauthorized(c, "invalid token: audience mismatch")
 		}
 
-		// Extract user email from subject
-		sub, ok := claims["sub"].(string)
-		if !ok || sub == "" {
-			return s.unauthorized(c, "invalid token: missing subject")
+		// Establish the delegated identity that carries this request's principal
+		// and grant state onto the private in-memory transport. The inbound
+		// bearer stops at this boundary: internal API requests mint their own
+		// credential from this identity and never see the bearer. Grant state is
+		// copied verbatim from the inbound token — empty for legacy sessions
+		// (common.DelegatedGrant documents the empty-state semantics; P1b
+		// resolves them). Identity only, no roles: downstream authorization
+		// re-resolves live exactly as for a public request.
+		//
+		// Built before the ceiling is read so a refused request carries the same
+		// provenance an admitted one does.
+		delegated := auth.DelegatedMCPCredential{
+			Principal:     sub,
+			WorkspaceID:   workspaceID,
+			ClientID:      clientID,
+			CorrelationID: uuid.NewString(),
+			Scope:         grantScope(claims),
+			Resource:      grantResource(claims, aud),
 		}
 
-		// Extract workspace ID from token claims.
-		workspaceID, ok := claims["workspace_id"].(string)
-		if !ok {
-			workspaceID = ""
+		// Enforce the workspace MCP capability ceiling before dispatching to any
+		// tool. DISABLED rejects the connection outright; READ_ONLY admits it,
+		// and what a read-only session may then do is decided per method by the
+		// gate on the internal chain and per statement by the SQL clamp in
+		// SQLService/Query. Read live so an admin change takes effect on the
+		// next request without re-issuing tokens.
+		if refusal := s.refuseByCeiling(c, delegated); refusal != nil {
+			return refusal
 		}
 
 		// Store access token and workspace ID in request context for MCP tools.
 		ctx := c.Request().Context()
 		ctx = withAccessToken(ctx, tokenStr)
+		ctx = withUserEmail(ctx, sub)
+		ctx = withOAuth2ClientID(ctx, clientID)
 		ctx = withWorkspaceID(ctx, workspaceID)
+		ctx = withDelegatedIdentity(ctx, delegated)
+		// Normalize the resolved address onto the request so the per-request
+		// path sees it too: receiving middleware gets each request's headers,
+		// but never its peer address.
+		resolvedIP := audit.CallerIP(c.Request())
+		c.Request().Header.Set(audit.HeaderRealIP, resolvedIP)
+		ctx = withCallerIP(ctx, resolvedIP)
+		ctx = withSessionBinding(ctx, sessionBinding{
+			fingerprint: sessionFingerprint(delegated),
+			expiry:      bearerExpiry(claims),
+		})
 		c.SetRequest(c.Request().WithContext(ctx))
 
 		return next(c)
 	}
 }
 
+// mcpResourcePath is the path of the MCP endpoint. Appended to the trusted
+// external URL it forms the canonical MCP resource URI — the audience every
+// OAuth2 access token is minted with since P1a PR 3 (mirrors the constant of
+// the same name in the oauth2 package, which stores that URI on the grant).
+const mcpResourcePath = "/mcp"
+
 // RegisterRoutes registers the MCP server routes with Echo.
 func (s *Server) RegisterRoutes(e *echo.Echo) {
 	// MCP Streamable HTTP endpoint with authentication
-	e.Any("/mcp", echo.WrapHandler(s.httpHandler), s.authMiddleware)
+	e.Any(mcpResourcePath, echo.WrapHandler(s.httpHandler), s.authMiddleware)
+}
+
+// audienceAllowed reports whether a bearer token's audience admits it to /mcp.
+//
+// The durable rule is a single audience: the canonical MCP resource URI derived
+// from the trusted live config (never from request headers). Tokens are minted
+// from the grant's stored resource, so rotating the external URL makes them
+// mismatch here — a clean 401 at use time that drives the client to
+// re-authorize, by design (grants must not silently rebind to a URL the user
+// never consented to).
+//
+// Legacy bb.oauth2.access tokens are admitted while their own exp claim keeps
+// them alive — deliberately with no clock gate. This release never mints that
+// audience, but replicas running the previous release keep minting it until
+// they leave service (the grant gates only constrain new-code replicas), so
+// any process-local window races a rolling deploy: it can close before the
+// last old-replica mint expires, 401-ing valid tokens depending on which
+// replica serves the request. Keying on token expiry instead gives the exact
+// bound: legacy acceptance drains no later than one access-token lifetime
+// after the last legacy-capable replica leaves service. Remove the acceptance
+// entirely in a later release, once no supported mixed-version deployment can
+// still mint the audience.
+//
+// Plain bb.user.access session tokens pasted into MCP clients manually are
+// admitted for now — see the acceptance branch in decideAudience for the
+// retirement gating.
+//
+// If no trusted external URL is configured, there is no expected audience and
+// resource-bound tokens fail closed; after the window such a deployment
+// rejects everything at /mcp until the external URL is set, matching the PR 2
+// rule that MCP OAuth requires a configured external URL. A transient failure
+// reading the config is different: it returns an error rather than a false
+// verdict, so the caller reports a server problem instead of blaming the token.
+func (s *Server) audienceAllowed(ctx context.Context, aud any, workspaceID string) (bool, error) {
+	expected, resolveErr := s.expectedMCPAudience(ctx, workspaceID)
+	return decideAudience(aud, expected, resolveErr)
+}
+
+// decideAudience is the pure decision behind audienceAllowed, split out so the
+// resolver-failure branches are unit-testable without a failing store.
+func decideAudience(aud any, expected string, resolveErr error) (bool, error) {
+	switch {
+	case resolveErr == nil:
+		if audienceMatches(aud, expected) {
+			return true, nil
+		}
+	case connect.CodeOf(resolveErr) == connect.CodeFailedPrecondition:
+		// Deliberately unconfigured (GetEffectiveExternalURL's "isn't setup
+		// yet"): no expected audience exists, so fall through to the legacy
+		// audiences rather than erroring.
+		slog.Warn("no external URL is configured; only legacy-audience tokens can authenticate at /mcp",
+			log.BBError(resolveErr))
+	default:
+		// Infra failure reading the trusted config: not a verdict on the token.
+		return false, resolveErr
+	}
+	// Plain web-session tokens stay accepted at /mcp for now: bb.user.access is
+	// minted by every web login, so no migration window can retire it, and the
+	// spec gates the hard cut on a scoped service-account / workload-identity
+	// flow existing first (spec §"Deferred product decisions"; proposal §6.5
+	// names the service-account token proxy as the dependent). PR 5/6 replaces
+	// this acceptance with a rejection once that credential ships, bringing its
+	// own tests.
+	if audienceMatches(aud, auth.AccessTokenAudience) {
+		return true, nil
+	}
+	// Unexpired legacy tokens only: the JWT exp check upstream has already
+	// rejected the rest, and this release mints none, so this branch drains on
+	// its own (see audienceAllowed).
+	return audienceMatches(aud, auth.OAuth2AccessTokenAudience), nil
+}
+
+// expectedMCPAudience resolves the audience /mcp accepts: the trusted external
+// URL (flag or workspace setting, per utils.GetEffectiveExternalURL) plus the
+// /mcp path. Request-derived values must never feed this — a Host header is
+// attacker-controlled and would let anyone mint a matching binding.
+func (s *Server) expectedMCPAudience(ctx context.Context, workspaceID string) (string, error) {
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
+	if err != nil {
+		return "", err
+	}
+	return externalURL + mcpResourcePath, nil
+}
+
+// sessionFingerprint is the identity a /mcp session is pinned to for its whole
+// life. Two bearers may drive the same session only if they agree on every
+// field: principal, workspace, OAuth client, and the grant's stored resource
+// and scope.
+//
+// Substituting any of them is a different session: another user's token would
+// otherwise execute as the session's principal, a token for another workspace
+// would sidestep the kill switch on the session's own workspace, and a
+// re-consented grant would keep riding the state consented earlier. The
+// correlation ID is deliberately excluded — it is per request, not per session.
+//
+// The separator cannot appear in any component, so distinct identities cannot
+// collide by concatenation.
+func sessionFingerprint(identity auth.DelegatedMCPCredential) string {
+	return strings.Join([]string{
+		identity.Principal,
+		identity.WorkspaceID,
+		identity.ClientID,
+		identity.Resource,
+		identity.Scope,
+	}, "\x00")
+}
+
+// liveRequestMetadata overlays the current request's caller IP and bearer onto
+// the context the tool handler runs with. Tool handlers otherwise see only what
+// the session was opened with, which goes stale in two ways that matter:
+//
+//   - the caller IP, so a client that changed network mid-session would have
+//     every later action audited against its first address; and
+//   - the bearer, so reauthorize would revoke the token the caller already
+//     replaced by refreshing, leaving the one in its hand working until expiry.
+//
+// The headers come from the live JSON-RPC request. authMiddleware has already
+// normalized the peer address into X-Real-IP, so a direct connection resolves
+// here too, and it has already validated the bearer, so this only carries a
+// value that was accepted moments ago. If a request arrives without them, the
+// session's values stand.
+func liveRequestMetadata(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		if extra := req.GetExtra(); extra != nil && extra.Header != nil {
+			if ip := audit.CallerIPFromHeaders(extra.Header); ip != "" {
+				ctx = withCallerIP(ctx, ip)
+			}
+			if token, err := auth.GetTokenFromHeaders(extra.Header); err == nil && token != "" {
+				ctx = withAccessToken(ctx, token)
+			}
+		}
+		return next(ctx, method, req)
+	}
+}
+
+// bearerExpiry reads the inbound token's expiry. The JWT parse upstream has
+// already rejected expired and malformed tokens, so this only re-surfaces the
+// value for the SDK, which requires a non-zero future expiration.
+func bearerExpiry(claims jwt.MapClaims) time.Time {
+	exp, err := claims.GetExpirationTime()
+	if err != nil || exp == nil {
+		return time.Time{}
+	}
+	return exp.Time
+}
+
+// verifySessionBinding hands the SDK the identity behind the current request so
+// it can enforce session ownership. The bearer itself was already validated by
+// authMiddleware, which runs first and puts the resolved identity on the
+// request context; this only translates that into the SDK's shape.
+func (*Server) verifySessionBinding(_ context.Context, _ string, req *http.Request) (*mcpauth.TokenInfo, error) {
+	binding, ok := getSessionBinding(req.Context())
+	if !ok {
+		// Unreachable through the registered route: authMiddleware establishes
+		// the binding before this runs. Fail closed rather than leave a session
+		// unpinned if that ever stops being true.
+		return nil, mcpauth.ErrInvalidToken
+	}
+	return &mcpauth.TokenInfo{
+		UserID:     binding.fingerprint,
+		Expiration: binding.expiry,
+	}, nil
+}
+
+// tokenIdentity is the identity material authMiddleware works with after a
+// token verifies: subject, workspace, audience, and an optional client.
+// The workspace is extracted before the audience check because resolving the
+// expected audience needs it to look up the trusted external URL.
+type tokenIdentity struct {
+	sub         string
+	clientID    string
+	workspaceID string
+	aud         any
+}
+
+// extractTokenIdentity pulls the identity claims out of a verified token. A
+// missing subject or audience is a token defect (non-empty error message);
+// client_id is optional; workspace_id is required for every access token.
+func extractTokenIdentity(claims jwt.MapClaims) (*tokenIdentity, string) {
+	sub, ok := claims["sub"].(string)
+	if !ok || sub == "" {
+		return nil, "invalid token: missing subject"
+	}
+	aud, ok := claims["aud"]
+	if !ok {
+		return nil, "invalid token: missing audience"
+	}
+	identity := &tokenIdentity{sub: sub, aud: aud}
+	if clientID, ok := claims["client_id"].(string); ok {
+		identity.clientID = clientID
+	}
+	workspaceID, ok := claims["workspace_id"].(string)
+	if !ok || workspaceID == "" {
+		return nil, "invalid token: missing workspace"
+	}
+	identity.workspaceID = workspaceID
+	return identity, ""
+}
+
+// grantScope extracts the grant's stored scope from the inbound token's claims.
+// The scope claim is minted onto OAuth2 access tokens verbatim from the grant;
+// legacy tokens (plain sessions, pre-scope OAuth2) have none — empty grant
+// state, by design.
+func grantScope(claims jwt.MapClaims) string {
+	if scope, ok := claims["scope"].(string); ok {
+		return scope
+	}
+	return ""
+}
+
+// grantResource extracts the grant's stored resource from the inbound token.
+// For MCP OAuth2 tokens the resource-bound audience IS the stored resource
+// (PR 3 mints it from the grant verbatim). The legacy fixed audiences are not
+// resources, so legacy tokens yield empty grant state.
+//
+// Resource is therefore what distinguishes a grant-backed session with an
+// empty scope (a scope-less consent, or a PR-3-era token predating the scope
+// claim) from a genuinely pre-grant one, which carries neither.
+// common.DelegatedGrant — where PR 5 carries both values verbatim — documents
+// why the two must never collapse.
+func grantResource(claims jwt.MapClaims, aud any) string {
+	tokenUse, ok := claims["token_use"].(string)
+	if !ok || tokenUse != auth.TokenUseMCP {
+		return ""
+	}
+	if audienceMatches(aud, auth.OAuth2AccessTokenAudience) || audienceMatches(aud, auth.AccessTokenAudience) {
+		return ""
+	}
+	switch v := aud.(type) {
+	case string:
+		return v
+	case []any:
+		for _, a := range v {
+			if str, ok := a.(string); ok {
+				return str
+			}
+		}
+	default:
+	}
+	return ""
+}
+
+// audienceMatches reports whether a JWT aud claim (string or array form)
+// contains exactly want.
+func audienceMatches(aud any, want string) bool {
+	switch v := aud.(type) {
+	case string:
+		return v == want
+	case []any:
+		for _, a := range v {
+			if str, ok := a.(string); ok && str == want {
+				return true
+			}
+		}
+	default:
+	}
+	return false
 }
 
 // unauthorized writes a 401 with an RFC 9728 / MCP-authorization-spec
@@ -183,7 +628,11 @@ func (s *Server) RegisterRoutes(e *echo.Echo) {
 // authorization server. The header references the host-global protected
 // resource metadata endpoint (served by the oauth2 package).
 func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
-	resourceMetadataURL := s.buildResourceMetadataURL(c)
+	resourceMetadataURL, err := s.buildResourceMetadataURL(c)
+	if err != nil {
+		slog.Error("failed to resolve external URL for MCP discovery", log.BBError(err))
+		return echo.NewHTTPError(http.StatusServiceUnavailable, "OAuth2 discovery is unavailable").Wrap(err)
+	}
 	c.Response().Header().Set(
 		"WWW-Authenticate",
 		fmt.Sprintf(
@@ -199,40 +648,11 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 // RFC 9728 §3.3 requires the document's `resource` field to match the resource
 // the client is accessing, and the path-suffixed well-known URL is how the
 // metadata handler in the oauth2 package knows to publish `resource=<host>/mcp`.
-//
-// The configured effective external URL is preferred over request-derived
-// host/proto so that proxied deployments (where the inbound Host can differ
-// from the public endpoint) emit the correct public URL to MCP clients.
-// Request-derived values are the last-resort fallback only.
-//
-// The --external-url CLI flag (profile.ExternalURL) short-circuits the lookup;
-// otherwise on self-hosted we resolve the singleton workspace ID first so the
-// DB-backed workspace_profile.external_url setting in GetEffectiveExternalURL
-// can be found. On SaaS there is no singleton — the CLI flag is required.
-func (s *Server) buildResourceMetadataURL(c *echo.Context) string {
+func (s *Server) buildResourceMetadataURL(c *echo.Context) (string, error) {
 	const resourceMetadataPath = "/.well-known/oauth-protected-resource/mcp"
-
-	ctx := c.Request().Context()
-	if s.profile.ExternalURL != "" {
-		return strings.TrimSuffix(s.profile.ExternalURL, "/") + resourceMetadataPath
+	externalURL, err := utils.GetDiscoveryExternalURL(c.Request().Context(), s.store, s.profile)
+	if err != nil {
+		return "", err
 	}
-	workspaceID := ""
-	if !s.profile.SaaS {
-		if ws, err := s.store.GetWorkspaceID(ctx); err == nil {
-			workspaceID = ws
-		}
-	}
-	if externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID); err == nil && externalURL != "" {
-		return strings.TrimSuffix(externalURL, "/") + resourceMetadataPath
-	}
-
-	req := c.Request()
-	scheme := "https"
-	if req.TLS == nil {
-		scheme = "http"
-	}
-	if proto := req.Header.Get("X-Forwarded-Proto"); proto != "" {
-		scheme = proto
-	}
-	return fmt.Sprintf("%s://%s%s", scheme, req.Host, resourceMetadataPath)
+	return externalURL + resourceMetadataPath, nil
 }

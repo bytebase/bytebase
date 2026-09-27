@@ -1,0 +1,249 @@
+import { ChevronLeft, Save, Share2 } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Tooltip } from "@/components/ui/tooltip";
+import { useSavedQueryAndTab } from "@/hooks/useSavedQueryAndTab";
+import { RUN_QUERY_PRODUCT_INTRO, useProductIntro } from "@/lib/productIntro";
+import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
+import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
+import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
+import {
+  getSQLEditorTabsState,
+  useCurrentSQLEditorTab,
+  useIsDisconnected,
+  useSQLEditorTabState,
+} from "@/modules/sql-editor/store/tab";
+import { useAppStore } from "@/stores/app";
+import type { SQLEditorQueryParams } from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  canCreateSavedQueryInProject,
+  isSavedQueryWritableV1,
+  keyboardShortcutStr,
+} from "@/utils";
+import { AdminModeButton } from "./AdminModeButton";
+import { ChooserGroup } from "./ChooserGroup";
+import { ContainerChooser } from "./ContainerChooser";
+import { OpenAIButton } from "./OpenAIButton";
+import { QueryContextSettingPopover } from "./QueryContextSettingPopover";
+import { RunQueryButton } from "./RunQueryButton";
+import { SharePopoverBody } from "./SharePopoverBody";
+
+type Props = {
+  readonly onExecute?: (params: SQLEditorQueryParams) => void;
+};
+
+/**
+ * Top toolbar in the SQL editor: Run / QueryContextSettingPopover /
+ * AdminModeButton / Save / Share / ChooserGroup / OpenAIButton.
+ *
+ * `onExecute` is optional because `TerminalPanel` mounts the toolbar in
+ * ADMIN mode where the Run button is not rendered.
+ */
+export function EditorAction({ onExecute }: Props) {
+  const { t } = useTranslation();
+  const { currentSheet: currentSavedQuery } = useSavedQueryAndTab();
+  const { instance } = useConnectionOfCurrentSQLEditorTab();
+
+  const [shareOpen, setShareOpen] = useState(false);
+
+  // Zustand selectors read fields directly off the active tab, so
+  // in-place mutations (statement / status / connection.* via immer
+  // produce) emit fresh slices and propagate through React without a
+  // per-field workaround.
+  const currentTab = useCurrentSQLEditorTab();
+  const tabStatement = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.statement ?? ""
+  );
+  const tabStatus = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.status
+  );
+  const tabMode = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.mode
+  );
+  const tabSavedQuery = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.savedQuery ?? ""
+  );
+  const tabConnectionTable = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.table ?? ""
+  );
+  const isDisconnected = useIsDisconnected();
+  const project = useSQLEditorEditorState((s) => s.project);
+
+  const isAdminMode = tabMode === "ADMIN";
+  const showSheetsFeature = tabMode === "SAVED_QUERY";
+  const isEmptyStatement = !currentTab || tabStatement === "";
+  const isCosmosDBWithoutContainer =
+    instance.engine === Engine.COSMOSDB && !tabConnectionTable;
+
+  const allowQuery = (() => {
+    if (isDisconnected) return false;
+    if (isEmptyStatement) return false;
+    if (isCosmosDBWithoutContainer) return false;
+    return true;
+  })();
+
+  useProductIntro({
+    id: RUN_QUERY_PRODUCT_INTRO,
+    title: t("workspace-setup-guide.steps.query-data"),
+    description: t("workspace-setup-guide.descriptions.query-data"),
+    disabled: isAdminMode || !allowQuery,
+  });
+
+  const canWriteSheet = (() => {
+    if (!tabSavedQuery) return false;
+    const sheet = useAppStore.getState().getSavedQueryByName(tabSavedQuery);
+    return sheet ? isSavedQueryWritableV1(sheet) : false;
+  })();
+
+  const allowSave = (() => {
+    if (!showSheetsFeature || !currentTab) return false;
+    if (tabSavedQuery) {
+      if (!canWriteSheet) return false;
+      const sheet = useAppStore.getState().getSavedQueryByName(tabSavedQuery);
+      if (sheet && sheet.database !== currentTab.connection.database) {
+        return true;
+      }
+    } else if (!canCreateSavedQueryInProject(project)) {
+      // Saving a tab that has no saved query behind it creates one.
+      return false;
+    }
+    // Only disable when status is CLEAN (nothing to save).
+    // SAVING is allowed — manual save will abort auto-save and proceed.
+    return tabStatus !== "CLEAN";
+  })();
+
+  const allowShare = (() => {
+    if (!currentTab) return false;
+    if (tabStatus !== "CLEAN") return false;
+    if (isEmptyStatement || isDisconnected) return false;
+    if (tabSavedQuery && !canWriteSheet) return false;
+    return true;
+  })();
+
+  const showQueryContextSettingPopover =
+    !!currentTab && !!instance && !isAdminMode;
+
+  const handleRunQuery = () => {
+    if (!currentTab || !onExecute) return;
+    const statement = currentTab.selectedStatement || currentTab.statement;
+    onExecute({
+      statement,
+      connection: { ...currentTab.connection },
+      engine: instance.engine,
+      explain: false,
+      selection: currentTab.editorState.selection,
+    });
+  };
+
+  const exitAdminMode = () => {
+    // Inlined to avoid pulling `@/types` (monaco-editor transitive) into the
+    // React bundle. Matches `DEFAULT_SQL_EDITOR_TAB_MODE` in `@/types/sqlEditor/tab`.
+    getSQLEditorTabsState().updateCurrentTab({ mode: "SAVED_QUERY" });
+  };
+
+  const handleClickSave = () => {
+    if (!currentTab) return;
+    void sqlEditorEvents.emit("save-sheet", { tab: currentTab });
+  };
+
+  return (
+    <div className="w-full flex flex-wrap gap-y-2 justify-between sm:items-center p-2 border-b bg-background">
+      <div className="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center">
+        {isAdminMode && (
+          <Button
+            appearance="outline"
+            size="md"
+            className="gap-1 border-dashed"
+            onClick={(e) => {
+              e.stopPropagation();
+              exitAdminMode();
+            }}
+          >
+            <ChevronLeft className="size-4" />
+            <span>{t("sql-editor.admin-mode.exit")}</span>
+          </Button>
+        )}
+
+        {!isAdminMode &&
+          (isCosmosDBWithoutContainer ? (
+            <div className="inline-flex">
+              <ContainerChooser variant="run" />
+              <QueryContextSettingPopover
+                disabled={!showQueryContextSettingPopover}
+              />
+            </div>
+          ) : (
+            <RunQueryButton
+              disabled={!allowQuery}
+              productIntroTarget={RUN_QUERY_PRODUCT_INTRO}
+              settingsDisabled={!showQueryContextSettingPopover}
+              onClick={handleRunQuery}
+            />
+          ))}
+
+        <AdminModeButton size="sm" hideText />
+
+        {showSheetsFeature && (
+          <>
+            <Tooltip
+              content={
+                <span className="inline-flex items-center gap-1">
+                  <span>{t("common.save")}</span>
+                  <span>({keyboardShortcutStr("cmd_or_ctrl+S")})</span>
+                </span>
+              }
+              side="bottom"
+            >
+              <Button
+                appearance="outline"
+                size="sm"
+                disabled={!allowSave}
+                onClick={handleClickSave}
+                aria-label={t("common.save")}
+              >
+                <Save className="size-4" />
+              </Button>
+            </Tooltip>
+
+            <Popover
+              open={shareOpen}
+              onOpenChange={(next) => {
+                if (!allowShare && next) return;
+                setShareOpen(next);
+              }}
+            >
+              <Tooltip content={t("common.share")} side="bottom">
+                <PopoverTrigger
+                  render={
+                    <Button
+                      appearance="outline"
+                      size="sm"
+                      disabled={!allowShare}
+                      aria-label={t("common.share")}
+                    >
+                      <Share2 className="size-4" />
+                    </Button>
+                  }
+                />
+              </Tooltip>
+              <PopoverContent align="end" sideOffset={4}>
+                <SharePopoverBody savedQuery={currentSavedQuery} />
+              </PopoverContent>
+            </Popover>
+          </>
+        )}
+      </div>
+      <div className="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center">
+        <ChooserGroup />
+        <OpenAIButton size="sm" />
+      </div>
+    </div>
+  );
+}

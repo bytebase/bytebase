@@ -2,9 +2,11 @@ package tests
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
@@ -50,7 +52,7 @@ type collisionFixture struct {
 // setupCollidingProjects creates two projects with naturally colliding ids.
 //
 // Both projects get a plan → issue → rollout with a DML task targeting
-// separate databases on the same SQLite instance. Because nextProjectID
+// separate databases on the same Postgres instance. Because nextProjectID
 // allocates per-project, the first plan/task/task_run/plan_check_run in
 // each project receives the same numeric id.
 //
@@ -76,28 +78,27 @@ func setupCollidingProjects(
 	}))
 	a.NoError(err)
 
-	instanceRootDir := t.TempDir()
-	instanceDir, err := ctl.provisionSQLiteInstance(instanceRootDir, "collision-instance")
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("col-inst"),
 		Instance: &v1pb.Instance{
-			Title:       "collision-instance",
-			Engine:      v1pb.Engine_SQLITE,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "collision-instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
-	dbNameA := "collision_db_a"
+	dbNameA := uniqueDB("collision_db_a")
 	err = ctl.createDatabase(ctx, projectA.Msg, instance, nil, dbNameA, "")
 	a.NoError(err)
 
-	dbNameB := "collision_db_b"
+	dbNameB := uniqueDB("collision_db_b")
 	err = ctl.createDatabase(ctx, projectB.Msg, instance, nil, dbNameB, "")
 	a.NoError(err)
 
@@ -189,6 +190,8 @@ func setupCollidingProjects(
 	}))
 	a.NoError(err)
 
+	waitPlanCheckRunSettled(ctx, t, ctl, planB.Msg.Name)
+
 	f := &collisionFixture{
 		ProjectA:  projectA.Msg,
 		ProjectB:  projectB.Msg,
@@ -208,7 +211,7 @@ func setupCollidingProjects(
 }
 
 // setupCollidingProjectsSeparateInstances is a variant of setupCollidingProjects
-// that places each project on its own SQLite instance. Useful for tests that
+// that places each project on its own Postgres instance. Useful for tests that
 // need to distinguish correct per-instance cascade from a buggy cross-project
 // DELETE USING predicate. Project A's rollout is driven to DONE; project B's
 // rollout is left for the caller to trigger.
@@ -232,17 +235,17 @@ func setupCollidingProjectsSeparateInstances(
 	}))
 	a.NoError(err)
 
-	instA := createSQLiteInstance(ctx, t, ctl, "col-inst-a")
-	instB := createSQLiteInstance(ctx, t, ctl, "col-inst-b")
+	instA := createPgInstance(ctx, t, ctl, "col-inst-a")
+	instB := createPgInstance(ctx, t, ctl, "col-inst-b")
 
-	const dbNameA = "collision_db_a"
+	dbNameA := uniqueDB("collision_db_a")
 	a.NoError(ctl.createDatabase(ctx, projectA.Msg, instA, nil, dbNameA, ""))
 	dbA, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instA.Name, dbNameA),
 	}))
 	a.NoError(err)
 
-	const dbNameB = "collision_db_b"
+	dbNameB := uniqueDB("collision_db_b")
 	a.NoError(ctl.createDatabase(ctx, projectB.Msg, instB, nil, dbNameB, ""))
 	dbB, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instB.Name, dbNameB),
@@ -256,6 +259,8 @@ func setupCollidingProjectsSeparateInstances(
 	baselineA := snapshotProject(ctx, t, ctl, projectA.Msg)
 
 	planB, issueB := createPlanAndIssue(ctx, t, ctl, projectB.Msg, dbB.Msg, "Collision test B")
+
+	waitPlanCheckRunSettled(ctx, t, ctl, planB.Name)
 
 	f := &collisionFixture{
 		ProjectA:  projectA.Msg,
@@ -454,20 +459,21 @@ func listTaskRunAndTaskUIDs(ctx context.Context, t *testing.T, ctl *controller, 
 	return taskRunUIDs, taskUIDs
 }
 
-// createSQLiteInstance provisions and registers a SQLite instance for test use.
-func createSQLiteInstance(ctx context.Context, t *testing.T, ctl *controller, titlePrefix string) *v1pb.Instance {
+// createPgInstance provisions a dedicated Postgres container and registers it
+// as an instance for test use.
+func createPgInstance(ctx context.Context, t *testing.T, ctl *controller, titlePrefix string) *v1pb.Instance {
 	t.Helper()
 	a := require.New(t)
-	instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), titlePrefix)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	resp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString(titlePrefix),
 		Instance: &v1pb.Instance{
-			Title:       titlePrefix,
-			Engine:      v1pb.Engine_SQLITE,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         titlePrefix,
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -527,22 +533,140 @@ func createPlanIssueRollout(ctx context.Context, t *testing.T, ctl *controller, 
 	return plan, issue, rollout.Msg
 }
 
+// waitPlanCheckRunSettled blocks until the plan's check run leaves the
+// scheduler's hands, so a snapshot of the project is a stable oracle.
+//
+// CreatePlan writes the check run synchronously but the plancheck runner
+// executes it in the background, walking AVAILABLE -> RUNNING -> DONE.
+// Project A settles on its own because the fixture waits out its rollout;
+// project B, whose rollout the caller drives, would otherwise still be
+// mid-flight when a test takes its "before" snapshot. The status then
+// advances during the test and assertProjectUnchanged reads project B's own
+// scheduler as a cross-project write.
+//
+// A plan with no check run is a steady state, not something to wait for.
+func waitPlanCheckRunSettled(ctx context.Context, t *testing.T, ctl *controller, planName string) {
+	t.Helper()
+	a := require.New(t)
+	var last v1pb.PlanCheckRun_Status
+	a.Eventually(func() bool {
+		resp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
+			Name: planName + "/planCheckRun",
+		}))
+		if err != nil {
+			return connect.CodeOf(err) == connect.CodeNotFound
+		}
+		last = resp.Msg.Status
+		return last == v1pb.PlanCheckRun_DONE ||
+			last == v1pb.PlanCheckRun_FAILED ||
+			last == v1pb.PlanCheckRun_CANCELED
+	}, 120*time.Second, 200*time.Millisecond,
+		"plan check run for %s never settled (last status %v)", planName, last)
+}
+
 // projectSnapshot captures the state of a project's composite-PK rows as
 // observed through the public gRPC API. Each slice's rows are keyed by the
 // UID parsed from their resource name.
 type projectSnapshot struct {
-	Plans         []*v1pb.Plan
-	Issues        []*v1pb.Issue
-	TaskRuns      []*v1pb.TaskRun
-	PlanCheckRuns []*v1pb.PlanCheckRun
-	IssueComments []*v1pb.IssueComment
+	Plans          []*v1pb.Plan
+	Issues         []*v1pb.Issue
+	TaskRuns       []*v1pb.TaskRun
+	TaskRunLogs    []*v1pb.TaskRunLog
+	PlanCheckRuns  []*v1pb.PlanCheckRun
+	IssueComments  []*v1pb.IssueComment
+	Releases       []*v1pb.Release
+	DatabaseGroups []*v1pb.DatabaseGroup
+	// PlanWebhookDeliveries is read directly from the metadata DB —
+	// plan_webhook_delivery has no public gRPC read API.
+	// It is NOT compared in assertProjectUnchanged: delivery rows are
+	// claimed asynchronously after rollout completion, so only the dedicated
+	// webhook collision test compares them, after explicitly waiting for the
+	// row set to stabilize.
+	PlanWebhookDeliveries []*planWebhookDelivery
+	// SheetBlobRefs is also read directly from the metadata DB —
+	// sheet_blob_ref has no public gRPC read API (sheets are content-
+	// addressed; nothing enumerates them). Unlike webhook deliveries, refs
+	// are written synchronously on the create paths, so
+	// assertProjectUnchanged compares them directly. Each entry is a hex
+	// hash the project may read.
+	SheetBlobRefs []string
 }
 
-// snapshotProject captures every plan/issue/task_run/plan_check_run row
-// visible to the public gRPC API for the given project. Every read goes
-// through the service layer (auth + audit), not the raw store — so a
-// read-path regression that leaks cross-project data would also surface in
-// these calls.
+// planWebhookDelivery is one row of the plan_webhook_delivery table, which
+// has no public gRPC read API. The collision suite snapshots it with the
+// table-specific direct DB read below (see backend/store/AGENTS.md's
+// allowance for tables without public read APIs).
+type planWebhookDelivery struct {
+	PlanID      int64
+	EventType   string
+	DeliveredAt time.Time
+}
+
+// listPlanWebhookDeliveries reads every plan_webhook_delivery row for the
+// project directly from the test metadata database. This mirrors the raw
+// metadata-DB access pattern used elsewhere in backend/tests (e.g.
+// project_instance_archive_task_run_test.go).
+func listPlanWebhookDeliveries(ctx context.Context, t *testing.T, ctl *controller, projectID string) []*planWebhookDelivery {
+	t.Helper()
+	a := require.New(t)
+	db, err := sql.Open("pgx", ctl.profile.PgURL)
+	a.NoError(err, "open metadata DB")
+	defer db.Close()
+
+	rows, err := db.QueryContext(ctx, `
+		SELECT plan_id, event_type, delivered_at
+		FROM plan_webhook_delivery
+		WHERE project = $1
+		ORDER BY plan_id
+	`, projectID)
+	a.NoError(err, "query plan_webhook_delivery for project %s", projectID)
+	defer rows.Close()
+
+	var out []*planWebhookDelivery
+	for rows.Next() {
+		var d planWebhookDelivery
+		a.NoError(rows.Scan(&d.PlanID, &d.EventType, &d.DeliveredAt))
+		out = append(out, &d)
+	}
+	a.NoError(rows.Err())
+	return out
+}
+
+// listSheetBlobRefs reads every sheet_blob_ref hash for the project directly
+// from the test metadata database, following the same raw-read allowance as
+// listPlanWebhookDeliveries.
+func listSheetBlobRefs(ctx context.Context, t *testing.T, ctl *controller, projectID string) []string {
+	t.Helper()
+	a := require.New(t)
+	db, err := sql.Open("pgx", ctl.profile.PgURL)
+	a.NoError(err, "open metadata DB")
+	defer db.Close()
+
+	rows, err := db.QueryContext(ctx, `
+		SELECT encode(sha256, 'hex')
+		FROM sheet_blob_ref
+		WHERE project = $1
+		ORDER BY sha256
+	`, projectID)
+	a.NoError(err, "query sheet_blob_ref for project %s", projectID)
+	defer rows.Close()
+
+	var out []string
+	for rows.Next() {
+		var sha256Hex string
+		a.NoError(rows.Scan(&sha256Hex))
+		out = append(out, sha256Hex)
+	}
+	a.NoError(rows.Err())
+	return out
+}
+
+// snapshotProject captures every plan/issue/task_run/task_run_log/
+// plan_check_run/issue_comment/release/database_group row visible to the
+// public gRPC API for the given project, plus the project's raw
+// plan_webhook_delivery rows. Every read goes through the service layer
+// (auth + audit) where an API exists — so a read-path regression that
+// leaks cross-project data would also surface in these calls.
 //
 // PlanCheckRuns are fetched via GetPlanCheckRun(planName+"/planCheckRun"),
 // which is the single-consolidated-PCR endpoint the UI itself uses. One
@@ -609,6 +733,19 @@ func snapshotProject(
 		}
 	}
 
+	// task_run_log rows are exposed through GetTaskRunLog, one message per
+	// task run.
+	var taskRunLogs []*v1pb.TaskRunLog
+	for _, tr := range taskRuns {
+		logResp, err := ctl.rolloutServiceClient.GetTaskRunLog(ctx, connect.NewRequest(&v1pb.GetTaskRunLogRequest{
+			Parent: tr.Name,
+		}))
+		a.NoError(err, "GetTaskRunLog for task run %s", tr.Name)
+		a.True(strings.HasPrefix(logResp.Msg.Name, project.Name+"/"),
+			"GetTaskRunLog for task run %s returned %q — read-path leak", tr.Name, logResp.Msg.Name)
+		taskRunLogs = append(taskRunLogs, logResp.Msg)
+	}
+
 	var issueComments []*v1pb.IssueComment
 	for _, i := range issues {
 		icResp, err := ctl.issueServiceClient.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{
@@ -623,12 +760,39 @@ func snapshotProject(
 		issueComments = append(issueComments, icResp.Msg.IssueComments...)
 	}
 
+	releasesResp, err := ctl.releaseServiceClient.ListReleases(ctx, connect.NewRequest(&v1pb.ListReleasesRequest{
+		Parent:   project.Name,
+		PageSize: 1000,
+	}))
+	a.NoError(err, "ListReleases(%s)", project.Name)
+	for _, r := range releasesResp.Msg.Releases {
+		a.True(strings.HasPrefix(r.Name, project.Name+"/"),
+			"ListReleases(%s) returned %q — read-path leak", project.Name, r.Name)
+	}
+
+	groupsResp, err := ctl.databaseGroupServiceClient.ListDatabaseGroups(ctx, connect.NewRequest(&v1pb.ListDatabaseGroupsRequest{
+		Parent: project.Name,
+	}))
+	a.NoError(err, "ListDatabaseGroups(%s)", project.Name)
+	for _, g := range groupsResp.Msg.DatabaseGroups {
+		a.True(strings.HasPrefix(g.Name, project.Name+"/"),
+			"ListDatabaseGroups(%s) returned %q — read-path leak", project.Name, g.Name)
+	}
+
+	projectID, err := common.GetProjectID(project.Name)
+	a.NoError(err, "GetProjectID(%s)", project.Name)
+
 	return &projectSnapshot{
-		Plans:         plans,
-		Issues:        issues,
-		TaskRuns:      taskRuns,
-		PlanCheckRuns: planCheckRuns,
-		IssueComments: issueComments,
+		Plans:                 plans,
+		Issues:                issues,
+		TaskRuns:              taskRuns,
+		TaskRunLogs:           taskRunLogs,
+		PlanCheckRuns:         planCheckRuns,
+		IssueComments:         issueComments,
+		Releases:              releasesResp.Msg.Releases,
+		DatabaseGroups:        groupsResp.Msg.DatabaseGroups,
+		PlanWebhookDeliveries: listPlanWebhookDeliveries(ctx, t, ctl, projectID),
+		SheetBlobRefs:         listSheetBlobRefs(ctx, t, ctl, projectID),
 	}
 }
 
@@ -647,7 +811,6 @@ func assertProjectUnchanged(
 ) {
 	t.Helper()
 	a := require.New(t)
-
 	assertNoChange(t, before.Plans, after.Plans,
 		func(p *v1pb.Plan) string { return p.Name },
 		func(b, af *v1pb.Plan) {
@@ -671,6 +834,16 @@ func assertProjectUnchanged(
 		},
 		label, "task_run")
 
+	// task_run_log is keyed by composite (project, task_run_id); log rows
+	// are append-only once a task run is terminal, so any delta here means
+	// a cross-project write leaked into project B.
+	assertNoChange(t, before.TaskRunLogs, after.TaskRunLogs,
+		func(l *v1pb.TaskRunLog) string { return l.Name },
+		func(b, af *v1pb.TaskRunLog) {
+			a.True(proto.Equal(b, af), "%s: task_run_log %s content changed", label, b.Name)
+		},
+		label, "task_run_log")
+
 	assertNoChange(t, before.PlanCheckRuns, after.PlanCheckRuns,
 		func(p *v1pb.PlanCheckRun) string { return p.Name },
 		func(b, af *v1pb.PlanCheckRun) {
@@ -687,6 +860,29 @@ func assertProjectUnchanged(
 			a.Equal(b.Comment, af.Comment, "%s: issue_comment %s comment changed", label, b.Name)
 		},
 		label, "issue_comment")
+
+	assertNoChange(t, before.Releases, after.Releases,
+		func(r *v1pb.Release) string { return r.Name },
+		func(b, af *v1pb.Release) {
+			a.True(proto.Equal(b, af), "%s: release %s content changed", label, b.Name)
+		},
+		label, "release")
+
+	assertNoChange(t, before.DatabaseGroups, after.DatabaseGroups,
+		func(g *v1pb.DatabaseGroup) string { return g.Name },
+		func(b, af *v1pb.DatabaseGroup) {
+			a.Equal(b.Title, af.Title, "%s: database group %s title changed", label, b.Name)
+			a.True(proto.Equal(b.DatabaseExpr, af.DatabaseExpr), "%s: database group %s expression changed", label, b.Name)
+		},
+		label, "db_group")
+
+	// sheet_blob_ref is keyed by composite (project, sha256) and written
+	// synchronously by the create paths; a delta here means a sheet write in
+	// one project leaked a ref into (or removed one from) another.
+	assertNoChange(t, before.SheetBlobRefs, after.SheetBlobRefs,
+		func(sha256Hex string) string { return sha256Hex },
+		func(_, _ string) {},
+		label, "sheet_blob_ref")
 }
 
 // assertNoChange compares two row slices keyed by name, fails if any

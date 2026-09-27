@@ -1,0 +1,193 @@
+import { create } from "@bufbuild/protobuf";
+import { isUndefined } from "lodash-es";
+import { extractSavedQueryConnection } from "@/lib/sqlEditorConnection";
+import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
+import { openSavedQueryByName } from "@/modules/sql-editor/model/Sheet";
+import { useAppStore } from "@/stores/app";
+import { isValidProjectName } from "@/types";
+import { SavedQuerySchema } from "@/types/proto-es/v1/saved_query_service_pb";
+import { getSQLEditorEditorState } from "./editor";
+import { getSQLEditorTabsState } from "./tab";
+import type { SavedQuerySaveSlice, SQLEditorSliceCreator } from "./types";
+
+export const createSavedQuerySaveSlice: SQLEditorSliceCreator<
+  SavedQuerySaveSlice
+> = (set, get) => ({
+  autoSaveController: null,
+
+  setAutoSaveController: (controller) =>
+    set({ autoSaveController: controller }),
+
+  abortAutoSave: () => {
+    const controller = get().autoSaveController;
+    if (controller) {
+      controller.abort();
+      set({ autoSaveController: null });
+    }
+  },
+
+  maybeSwitchProject: async (projectName) => {
+    const editorStore = getSQLEditorEditorState();
+
+    editorStore.setProjectContextReady(false);
+    try {
+      if (!isValidProjectName(projectName)) {
+        return;
+      }
+      const project = await useAppStore.getState().fetchProject(projectName);
+      if (!project) {
+        return;
+      }
+      // Fetch IAM policy so `hasProjectPermissionV2` sees the bindings.
+      await useAppStore
+        .getState()
+        .loadProjectIamPolicy(project.name)
+        .catch(() => undefined);
+      editorStore.setProject(project.name);
+      await sqlEditorEvents.emit("project-context-ready", {
+        project: project.name,
+      });
+      return project.name;
+    } catch {
+      // ignore
+    } finally {
+      getSQLEditorEditorState().setProjectContextReady(true);
+    }
+  },
+
+  maybeUpdateSavedQuery: async ({
+    tabId,
+    savedQuery,
+    title,
+    database,
+    statement,
+    folders,
+    signal,
+  }) => {
+    const tabStore = getSQLEditorTabsState();
+    const savedQueryStore = useAppStore.getState();
+
+    const connection = await extractSavedQueryConnection({ database });
+    const currentTab = tabStore.tabsById.get(tabId);
+    const nextConnection =
+      currentTab?.connection.instance === connection.instance &&
+      currentTab.connection.database === connection.database
+        ? { ...currentTab.connection, ...connection }
+        : connection;
+
+    // `title === undefined` means "don't change the title" — preserves
+    // the current title on auto-save calls that never pass one.
+    // `title === ""` is a real, explicit empty title that should be
+    // persisted (renders as the Untitled placeholder elsewhere).
+    const currentSheet = savedQuery
+      ? savedQueryStore.getSavedQueryByName(savedQuery)
+      : undefined;
+    if (savedQuery && !currentSheet) {
+      return;
+    }
+    const savedQueryTitle = title ?? currentSheet?.title ?? "";
+
+    if (savedQuery && currentSheet) {
+      const updateMask = ["title", "database", "content"];
+      const patched = {
+        ...currentSheet,
+        title: savedQueryTitle,
+        database,
+        content: new TextEncoder().encode(statement),
+      };
+      if (!isUndefined(folders)) {
+        patched.folder = folders.join("/");
+        updateMask.push("folder");
+      }
+      const updated = await savedQueryStore.patchSavedQuery(
+        patched,
+        updateMask,
+        signal
+      );
+      if (!updated) {
+        return;
+      }
+    }
+
+    return tabStore.updateTab(tabId, {
+      status: "CLEAN",
+      connection: nextConnection,
+      title: savedQueryTitle,
+      savedQuery,
+    });
+  },
+
+  createSavedQuery: async ({
+    tabId,
+    title,
+    statement = "",
+    folders = [],
+    database = "",
+    signal,
+  }) => {
+    const editorStore = getSQLEditorEditorState();
+    const tabStore = getSQLEditorTabsState();
+    const savedQueryStore = useAppStore.getState();
+
+    const savedQueryTitle = title ?? "";
+    const connection = await extractSavedQueryConnection({ database });
+
+    const newSavedQuery = await savedQueryStore.createSavedQuery(
+      create(SavedQuerySchema, {
+        title: savedQueryTitle,
+        database,
+        content: new TextEncoder().encode(statement),
+        project: editorStore.project,
+        folder: folders.join("/"),
+      }),
+      signal
+    );
+
+    if (signal?.aborted) {
+      throw new DOMException("Aborted", "AbortError");
+    }
+
+    if (tabId) {
+      const currentTab = tabStore.tabsById.get(tabId);
+      const statementChanged = currentTab?.statement !== statement;
+      const databaseChanged =
+        !currentTab ||
+        currentTab.connection.instance !== connection.instance ||
+        currentTab.connection.database !== connection.database;
+      const nextConnection =
+        currentTab?.connection.instance === connection.instance &&
+        currentTab.connection.database === connection.database
+          ? { ...currentTab.connection, ...connection }
+          : connection;
+      return tabStore.updateTab(tabId, {
+        status: statementChanged || databaseChanged ? "DIRTY" : "CLEAN",
+        title: savedQueryTitle,
+        statement: statementChanged
+          ? (currentTab?.statement ?? statement)
+          : statement,
+        connection: databaseChanged
+          ? (currentTab?.connection ?? connection)
+          : nextConnection,
+        savedQuery: newSavedQuery.name,
+      });
+    }
+
+    const tab = await openSavedQueryByName({
+      savedQuery: newSavedQuery.name,
+      forceNewTab: true,
+    });
+    queueMicrotask(() => {
+      if (tab && !tab.connection?.database) {
+        // The zustand store itself owns the UI-state slice, so we can
+        // call the action directly through `get()` (avoids the
+        // dynamic-import dance we use for cross-store calls).
+        get().setShowConnectionPanel(true);
+      }
+    });
+    return tab;
+  },
+});
+
+// Re-export the SavedQuery proto type so callers don't have to plumb the
+// proto path themselves.
+export type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";

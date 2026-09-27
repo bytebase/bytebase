@@ -1,0 +1,146 @@
+import { ChevronDown, X } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import type { Color } from "@/types/proto-es/google/type/color_pb";
+import { colorToHex } from "@/utils";
+
+export interface IssueLabel {
+  value: string;
+  color?: Color;
+}
+
+interface IssueLabelSelectProps {
+  labels: IssueLabel[];
+  selected: string[];
+  required: boolean;
+  onChange: (labels: string[]) => void;
+}
+
+/**
+ * IssueLabelSelect — label multi-select for issue creation.
+ *
+ * Rendered as a dropdown with chip-style selected labels. Shared between
+ * drawers that need to attach labels to a new issue (e.g. Data Export,
+ * Request Role). The menu renders through the shared Popover portal so it
+ * cannot be clipped by a scrollable sheet body — selection must stay
+ * reachable when the project makes labels required.
+ */
+export function IssueLabelSelect({
+  labels,
+  selected,
+  required,
+  onChange,
+}: IssueLabelSelectProps) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  const toggleLabel = (value: string) => {
+    onChange(
+      selected.includes(value)
+        ? selected.filter((l) => l !== value)
+        : [...selected, value]
+    );
+  };
+  const getColor = (color?: Color) => (color ? colorToHex(color) : undefined);
+
+  return (
+    <div className="flex flex-col gap-y-2">
+      <label className="text-sm font-medium text-control">
+        {t("issue.labels")}
+        {required && <span className="text-error"> *</span>}
+      </label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          className={cn(
+            "w-full flex items-center justify-between gap-2 border border-control-border rounded-sm h-9 px-3 text-sm bg-background text-left transition-colors",
+            "hover:border-control-border",
+            open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]"
+          )}
+        >
+          {selected.length > 0 ? (
+            <div className="flex items-center gap-1.5 truncate">
+              {selected.map((val) => {
+                const label = labels.find((l) => l.value === val);
+                return (
+                  <span
+                    key={val}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-control-bg text-xs"
+                  >
+                    <span
+                      className="size-2.5 rounded-sm shrink-0"
+                      style={{ backgroundColor: getColor(label?.color) }}
+                    />
+                    {val}
+                    <X
+                      className="size-3 text-control-placeholder hover:text-control-light"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleLabel(val);
+                      }}
+                    />
+                  </span>
+                );
+              })}
+            </div>
+          ) : (
+            <span className="text-control-placeholder">
+              {t("common.select")}
+            </span>
+          )}
+          <ChevronDown
+            className={cn(
+              "size-4 text-control-placeholder shrink-0 transition-transform",
+              open && "rotate-180"
+            )}
+          />
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="w-(--anchor-width) p-0 overflow-hidden"
+        >
+          <div className="max-h-60 overflow-y-auto">
+            {labels.length === 0 ? (
+              <div className="px-3 py-6 text-sm text-control-placeholder text-center">
+                {t("common.no-data")}
+              </div>
+            ) : (
+              labels.map((label) => {
+                const isSelected = selected.includes(label.value);
+                return (
+                  <Button
+                    key={label.value}
+                    type="button"
+                    appearance="secondary"
+                    size="md"
+                    className="h-auto w-full min-w-0 justify-start gap-2 px-3 py-2 text-left text-sm hover:bg-control-bg"
+                    onClick={() => toggleLabel(label.value)}
+                  >
+                    <Checkbox checked={isSelected} />
+                    <span
+                      className="size-4 rounded-sm shrink-0"
+                      style={{ backgroundColor: getColor(label.color) }}
+                    />
+                    <span
+                      className="min-w-0 flex-1 truncate"
+                      title={label.value}
+                    >
+                      {label.value}
+                    </span>
+                  </Button>
+                );
+              })
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}

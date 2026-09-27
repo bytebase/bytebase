@@ -5,7 +5,6 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import type { HttpBodySchema } from "../google/api/httpbody_pb";
 
 /**
  * Describes the file v1/subscription_service.proto.
@@ -35,6 +34,22 @@ export declare type ExportVCSProviderUsersRequest = Message<"bytebase.v1.ExportV
  * Use `create(ExportVCSProviderUsersRequestSchema)` to create a new message.
  */
 export declare const ExportVCSProviderUsersRequestSchema: GenMessage<ExportVCSProviderUsersRequest>;
+
+/**
+ * @generated from message bytebase.v1.ExportVCSProviderUsersResponse
+ */
+export declare type ExportVCSProviderUsersResponse = Message<"bytebase.v1.ExportVCSProviderUsersResponse"> & {
+  /**
+   * @generated from field: bytes content = 1;
+   */
+  content: Uint8Array;
+};
+
+/**
+ * Describes the message bytebase.v1.ExportVCSProviderUsersResponse.
+ * Use `create(ExportVCSProviderUsersResponseSchema)` to create a new message.
+ */
+export declare const ExportVCSProviderUsersResponseSchema: GenMessage<ExportVCSProviderUsersResponse>;
 
 /**
  * @generated from message bytebase.v1.UploadLicenseRequest
@@ -109,6 +124,12 @@ export declare const PurchaseResponseSchema: GenMessage<PurchaseResponse>;
  */
 export declare type VerifyCheckoutSessionRequest = Message<"bytebase.v1.VerifyCheckoutSessionRequest"> & {
   /**
+   * The same Stripe Checkout Session ID PurchaseResponse mints, arriving back
+   * the other way, so it carries the same classification. VerifyCheckoutSession
+   * is EXCLUDED, and a refusal of it streams its request to the stdout audit
+   * log, so leaving this unannotated would write the id into that line while
+   * the response that produced it was redacted.
+   *
    * @generated from field: string session_id = 1;
    */
   sessionId: string;
@@ -570,6 +591,18 @@ export declare type PlanLimitConfig = Message<"bytebase.v1.PlanLimitConfig"> & {
  * Use `create(PlanLimitConfigSchema)` to create a new message.
  */
 export declare const PlanLimitConfigSchema: GenMessage<PlanLimitConfig>;
+
+/**
+ * @generated from message bytebase.v1.StartTrialRequest
+ */
+export declare type StartTrialRequest = Message<"bytebase.v1.StartTrialRequest"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.StartTrialRequest.
+ * Use `create(StartTrialRequestSchema)` to create a new message.
+ */
+export declare const StartTrialRequestSchema: GenMessage<StartTrialRequest>;
 
 /**
  * @generated from enum bytebase.v1.BillingInterval
@@ -1041,7 +1074,7 @@ export declare const SubscriptionService: GenService<{
   exportVCSProviderUsers: {
     methodKind: "unary";
     input: typeof ExportVCSProviderUsersRequestSchema;
-    output: typeof HttpBodySchema;
+    output: typeof ExportVCSProviderUsersResponseSchema;
   },
   /**
    * Uploads an enterprise license (self-hosted only).
@@ -1051,6 +1084,16 @@ export declare const SubscriptionService: GenService<{
   uploadLicense: {
     methodKind: "unary";
     input: typeof UploadLicenseRequestSchema;
+    output: typeof SubscriptionSchema;
+  },
+  /**
+   * StartTrial starts a free trial for an eligible SaaS workspace.
+   *
+   * @generated from rpc bytebase.v1.SubscriptionService.StartTrial
+   */
+  startTrial: {
+    methodKind: "unary";
+    input: typeof StartTrialRequestSchema;
     output: typeof SubscriptionSchema;
   },
   /**

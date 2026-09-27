@@ -11,6 +11,8 @@ import (
 	"github.com/pb33f/libopenapi"
 	v3base "github.com/pb33f/libopenapi/datamodel/high/base"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
+
+	"github.com/bytebase/bytebase/backend/api/auth"
 )
 
 //go:embed gen/openapi.yaml
@@ -66,12 +68,20 @@ type PropertyInfo struct {
 
 // OpenAPIIndex is an indexed representation of the OpenAPI spec for fast lookup.
 type OpenAPIIndex struct {
-	doc         *libopenapi.DocumentModel[v3high.Document]
-	endpoints   []EndpointInfo
-	byOperation map[string]*EndpointInfo
-	byService   map[string][]*EndpointInfo
-	services    []string
-	keywords    map[string][]*EndpointInfo
+	doc *libopenapi.DocumentModel[v3high.Document]
+	// endpoints holds every endpoint an MCP session may be offered. Discovery
+	// walks this slice, so anything in it is advertisable by construction.
+	endpoints []EndpointInfo
+	// hiddenEndpoints holds every endpoint no MCP capability ceiling serves —
+	// FORBIDDEN and EXCLUDED alike — resolvable through byOperation so a
+	// direct call still gets the gate's actionable denial, but reachable by no
+	// discovery path. That is 114 of the 211 classified RPCs, and 13 services
+	// whose every method is refused leave Services() entirely.
+	hiddenEndpoints []EndpointInfo
+	byOperation     map[string]*EndpointInfo
+	byService       map[string][]*EndpointInfo
+	services        []string
+	keywords        map[string][]*EndpointInfo
 }
 
 // NewOpenAPIIndex creates a new OpenAPI index from the embedded spec.
@@ -158,9 +168,25 @@ func (idx *OpenAPIIndex) parseSpec() {
 			}
 		}
 
+		// An endpoint an MCP session can never call is not advertised: it stays
+		// out of search results, service listings and the keyword index, so the
+		// agent is not offered work that will only ever come back refused. It
+		// lands in hiddenEndpoints rather than endpoints — every discovery path
+		// walks the latter, so keeping it out of that slice is what makes this
+		// hold for search paths added later, not just today's.
+		//
+		// It stays resolvable by operation ID on purpose: an agent that calls it
+		// anyway (from memory, or from a skill written before the
+		// classification) should meet the gate's actionable denial rather than
+		// "unknown operation".
+		if refusedToMCP(path) {
+			idx.hiddenEndpoints = append(idx.hiddenEndpoints, endpoint)
+			idx.byOperation[endpoint.OperationID] = &idx.hiddenEndpoints[len(idx.hiddenEndpoints)-1]
+			continue
+		}
+
 		idx.endpoints = append(idx.endpoints, endpoint)
 		ptr := &idx.endpoints[len(idx.endpoints)-1]
-
 		idx.byOperation[endpoint.OperationID] = ptr
 		idx.byService[service] = append(idx.byService[service], ptr)
 		serviceSet[service] = true
@@ -174,6 +200,24 @@ func (idx *OpenAPIIndex) parseSpec() {
 		idx.services = append(idx.services, s)
 	}
 	slices.Sort(idx.services)
+}
+
+// refusedToMCP reports whether the RPC behind a connect path is served by no
+// MCP capability ceiling — FORBIDDEN and EXCLUDED alike, since the ceiling gate
+// refuses both whatever the workspace is set to. It keys on that predicate
+// rather than on one class, so a class the ceiling stops serving stops being
+// advertised in the same change.
+//
+// A path whose descriptor cannot be resolved is treated as not refused: this
+// decides only what to advertise, and hiding a legitimate endpoint because a
+// lookup failed would be the worse failure — enforcement is the interceptor's
+// job and reads the annotation itself.
+func refusedToMCP(path string) bool {
+	class, err := auth.MCPMethodClassOfProcedure(path)
+	if err != nil {
+		return false
+	}
+	return auth.MCPClassIsRefused(class)
 }
 
 func extractPermissions(description string) []string {

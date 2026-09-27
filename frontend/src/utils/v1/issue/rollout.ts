@@ -1,6 +1,11 @@
-import i18n from "@/react/i18n";
-import { getDatabaseByName } from "@/react/stores/app/databaseAccess";
-import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
+import i18n from "@/lib/i18n";
+import { getDatabaseByName } from "@/stores/app/databaseAccess";
+import {
+  getTimeForPbTimestampProtoEs,
+  isValidDatabaseName,
+  UNKNOWN_ID,
+  unknownDatabase,
+} from "@/types";
 import type {
   Plan,
   Plan_TaskStatusCount,
@@ -18,7 +23,20 @@ import {
   extractCoreDatabaseInfoFromDatabaseCreateTask,
   mockDatabase,
 } from "./issue";
-import { TASK_STATUS_FILTERS } from "./task";
+
+// Canonical task status priority for aggregation and display. Failure outranks
+// active work (a failed task needs attention even while siblings run — see
+// BYT-9822); a cancel is deliberate rather than an error, so it stays below
+// active statuses but above NOT_STARTED, surfacing once nothing is in motion.
+export const TASK_STATUS_PRIORITY: readonly Task_Status[] = [
+  Task_Status.FAILED,
+  Task_Status.RUNNING,
+  Task_Status.PENDING,
+  Task_Status.CANCELED,
+  Task_Status.NOT_STARTED,
+  Task_Status.DONE,
+  Task_Status.SKIPPED,
+];
 
 export const extractPlanUIDFromRolloutName = (name: string) => {
   const pattern = /(?:^|\/)plans\/([^/]+)\/rollout(?:$|\/)/;
@@ -106,9 +124,6 @@ export const sheetNameOfTaskV1 = (task: Task): string => {
     }
     return "";
   }
-  if (task.payload?.case === "databaseDataExport") {
-    return task.payload.value.sheet ?? "";
-  }
   return "";
 };
 
@@ -122,8 +137,42 @@ export const releaseNameOfTaskV1 = (task: Task): string => {
   return "";
 };
 
+// A task is "actively transitioning" — worth fast-polling — when it is RUNNING,
+// or PENDING and expected to start imminently. A PENDING task scheduled for a
+// future run_time (a maintenance window, possibly hours out) is NOT imminent, so
+// it's excluded: the deploy view backs off instead of hammering the rollout RPCs
+// while it waits. `nowMs` is injected for testability.
+export const isTaskActivelyTransitioning = (
+  task: Task,
+  nowMs: number = Date.now()
+): boolean => {
+  if (task.status === Task_Status.RUNNING) {
+    return true;
+  }
+  if (task.status !== Task_Status.PENDING) {
+    return false;
+  }
+  return !task.runTime || getTimeForPbTimestampProtoEs(task.runTime) <= nowMs;
+};
+
+/**
+ * When a task is due to run, or nothing at all: a schedule belongs to a task
+ * still waiting for it, and a task that has started or finished is described
+ * by its run, not by the time it was once meant to begin. A task with no
+ * runTime is due now rather than scheduled, which is the same reading
+ * `isTaskActivelyTransitioning` above takes of the field.
+ */
+export const scheduledRunTimeMs = (task: Task): number | undefined =>
+  task.status === Task_Status.PENDING
+    ? getTimeForPbTimestampProtoEs(task.runTime)
+    : undefined;
+
+// Task_Status ONLY. Task_Status and TaskRun_Status share names but their
+// numeric values are offset by one (Task_Status.PENDING === 2 ===
+// TaskRun_Status.RUNNING), so one switch cannot serve both enums — a task
+// run's status must go through stringifyTaskRunStatus below.
 export const stringifyTaskStatus = (
-  status: Task_Status | TaskRun_Status,
+  status: Task_Status,
   translate: (
     key: string,
     named?: Record<string, unknown>
@@ -144,21 +193,44 @@ export const stringifyTaskStatus = (
       return translate("task.status.canceled");
     case Task_Status.SKIPPED:
       return translate("task.status.skipped");
-    case TaskRun_Status.AVAILABLE:
-      return translate("task.status.available");
     default:
       return Task_Status[status] || String(status);
   }
 };
 
-// Return the highest-priority Task_Status (per TASK_STATUS_FILTERS) for which
-// `has` reports a member, or `fallback` when none match. Shared by the stage
-// and rollout status reducers below.
+export const stringifyTaskRunStatus = (
+  status: TaskRun_Status,
+  translate: (
+    key: string,
+    named?: Record<string, unknown>
+  ) => string = i18n.t.bind(i18n)
+): string => {
+  switch (status) {
+    case TaskRun_Status.PENDING:
+      return translate("task.status.pending");
+    case TaskRun_Status.RUNNING:
+      return translate("task.status.running");
+    case TaskRun_Status.DONE:
+      return translate("task.status.done");
+    case TaskRun_Status.FAILED:
+      return translate("task.status.failed");
+    case TaskRun_Status.CANCELED:
+      return translate("task.status.canceled");
+    case TaskRun_Status.AVAILABLE:
+      return translate("task.status.available");
+    default:
+      return TaskRun_Status[status] || String(status);
+  }
+};
+
+// Return the highest-priority Task_Status (per TASK_STATUS_PRIORITY)
+// for which `has` reports a member, or `fallback` when none match. Shared by the
+// stage and rollout status reducers below.
 const foldByStatusPriority = (
   has: (status: Task_Status) => boolean,
   fallback: Task_Status
 ): Task_Status => {
-  for (const status of TASK_STATUS_FILTERS) {
+  for (const status of TASK_STATUS_PRIORITY) {
     if (has(status)) return status;
   }
   return fallback;
@@ -198,7 +270,6 @@ export const databaseForTask = (project: Project, task: Task, plan?: Plan) => {
       // extract database info from the task's and payload's properties.
       return extractCoreDatabaseInfoFromDatabaseCreateTask(project, task, plan);
     case Task_Type.DATABASE_MIGRATE:
-    case Task_Type.DATABASE_EXPORT:
       const db = getDatabaseByName(task.target);
       if (!isValidDatabaseName(db.name)) {
         return mockDatabase(project, task.target);

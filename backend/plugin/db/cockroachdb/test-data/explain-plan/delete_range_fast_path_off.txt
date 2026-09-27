@@ -1,0 +1,11 @@
+distribution: local
+vectorized: true
+
+• delete
+│ from: big2
+│
+└── • scan
+      estimated row count: 100 (1.0% of the table; stats collected 40 seconds ago)
+      table: big2@big2_pkey
+      spans: [ - /100]
+      locking strength: for update

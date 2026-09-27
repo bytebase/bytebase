@@ -52,7 +52,7 @@ call_api(operationId="PlanService/CreatePlan", body={
     "specs": [{
       "id": "spec-1",
       "changeDatabaseConfig": {
-        "targets": ["instances/{instance-id}/databases/{database-name}"],
+        "targets": ["projects/{project-id}/instances/{instance-id}/databases/{database-name}"],
         "sheet": "projects/{project-id}/sheets/{sheet-id}"
       }
     }]
@@ -90,6 +90,9 @@ call_api(operationId="PlanService/CreatePlan", body={
 - `specs` is a flat array directly on the plan (no "steps" wrapper)
 - Each `spec` has a unique `id` (any string, used for identification)
 - `targets` is an **array** (even for single database)
+- Preserve the exact canonical database name returned by ListDatabases. A project instance
+  uses `projects/{project-id}/instances/{instance-id}/databases/{database-name}`;
+  do not shorten it to `instances/{instance-id}/databases/{database-name}`.
 - Specs are executed based on rollout policy (can be sequential or parallel)
 
 **Using database groups:**
@@ -135,7 +138,7 @@ The backend auto-detects whether a change is imperative (DDL/DML) or SDL (declar
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| database not found | Wrong database reference | Verify `instances/{id}/databases/{name}` format |
+| database not found | Wrong database reference | List databases and preserve its exact canonical `name` |
 | sheet not found | Sheet doesn't exist | Create sheet first (Step 1) |
 | missing engine | Sheet without engine field | Add `engine` field to sheet |
 | plan not found | Plan doesn't exist | Create plan before issue |

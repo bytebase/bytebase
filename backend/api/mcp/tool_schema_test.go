@@ -503,7 +503,7 @@ func TestGetSchema_SchemaFilter_PassedThroughOnMultiSchemaEngines(t *testing.T) 
 
 func TestGetSchema_SchemaFilter_DroppedOnSingleSchemaEngines(t *testing.T) {
 	// Spot-check a few known single-schema engines.
-	for _, engine := range []string{"MYSQL", "TIDB", "MARIADB", "CLICKHOUSE", "SQLITE"} {
+	for _, engine := range []string{"MYSQL", "TIDB", "MARIADB", "CLICKHOUSE", "STARROCKS"} {
 		t.Run(engine, func(t *testing.T) {
 			databases := []map[string]any{
 				makeDatabase("instances/prod/databases/employee_db", "instances/prod", "projects/hr-system", engine, "ds-1"),

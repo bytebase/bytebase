@@ -1,0 +1,1045 @@
+import { create, toJsonString } from "@bufbuild/protobuf";
+import { AnySchema } from "@bufbuild/protobuf/wkt";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import { Download, ExternalLink, Maximize2, X } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { auditLogServiceClientConnect } from "@/api";
+import { ALL_METHODS_WITH_AUDIT } from "@/api/methods";
+import {
+  AdvancedSearch,
+  type ScopeOption,
+  type SearchParams,
+  type ValueOption,
+} from "@/components/AdvancedSearch";
+import { HumanizeTs } from "@/components/HumanizeTs";
+import { RouterLink } from "@/components/RouterLink";
+import { TimeRangePicker } from "@/components/TimeRangePicker";
+import {
+  TIMESTAMP_COLUMN_MIN_WIDTH,
+  TIMESTAMP_COLUMN_WIDTH,
+} from "@/components/timestampColumn";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { BlockTooltip, Tooltip } from "@/components/ui/tooltip";
+import { usePlanFeature, useWorkspaceResourceName } from "@/hooks/useAppState";
+import { useColumnWidths } from "@/hooks/useColumnWidths";
+import { PagedTableFooter } from "@/hooks/usePagedData";
+import {
+  getPageSizeOptions,
+  useSessionPageSize,
+} from "@/hooks/useSessionPageSize";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
+import {
+  getProjectIdPlanUidStageUidFromRolloutName,
+  planNamePrefix,
+  projectNamePrefix,
+  serviceAccountNamePrefix,
+  userNamePrefix,
+  workloadIdentityNamePrefix,
+} from "@/stores/modules/v1/common";
+import { getTimeForPbTimestampProtoEs } from "@/types";
+import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
+import type {
+  AuditLog,
+  MCPDelegation,
+} from "@/types/proto-es/v1/audit_log_service_pb";
+import {
+  AuditLog_Severity,
+  ExportAuditLogsRequestSchema,
+  SearchAuditLogsRequestSchema,
+} from "@/types/proto-es/v1/audit_log_service_pb";
+import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { IssueService } from "@/types/proto-es/v1/issue_service_pb";
+import { PlanService } from "@/types/proto-es/v1/plan_service_pb";
+import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
+import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { protobufJsonRegistry } from "@/types/protobufJsonRegistry";
+import { getDefaultPagination, humanizeDurationV1 } from "@/utils";
+import { celString } from "@/utils/v1/celLiteral";
+
+dayjs.extend(utc);
+
+// ============================================================
+// Filter helpers
+// ============================================================
+
+interface AuditLogFilter {
+  method?: string;
+  level?: AuditLog_Severity;
+  actor?: string;
+  createdTsAfter?: number;
+  createdTsBefore?: number;
+}
+
+function uniqueValueOptions(options: ValueOption[]): ValueOption[] {
+  return [...new Map(options.map((option) => [option.value, option])).values()];
+}
+
+function buildFilterString(filter: AuditLogFilter): string {
+  const parts: string[] = [];
+  if (filter.method) parts.push(`method == ${celString(filter.method)}`);
+  if (filter.level !== undefined)
+    parts.push(`severity == ${celString(AuditLog_Severity[filter.level])}`);
+  if (filter.actor) {
+    const legacyUser = `${userNamePrefix}${filter.actor.slice(
+      filter.actor.indexOf("/") + 1
+    )}`;
+    const matchesLegacyUser =
+      filter.actor.startsWith(serviceAccountNamePrefix) ||
+      filter.actor.startsWith(workloadIdentityNamePrefix);
+    parts.push(
+      matchesLegacyUser
+        ? `(actor == ${celString(filter.actor)} || actor == ${celString(legacyUser)})`
+        : `actor == ${celString(
+            filter.actor.startsWith(userNamePrefix)
+              ? filter.actor
+              : `${userNamePrefix}${filter.actor}`
+          )}`
+    );
+  }
+  if (filter.createdTsAfter)
+    parts.push(
+      `create_time >= ${celString(dayjs(filter.createdTsAfter).utc().format())}`
+    );
+  if (filter.createdTsBefore)
+    parts.push(
+      `create_time <= ${celString(dayjs(filter.createdTsBefore).utc().format())}`
+    );
+  return parts.join(" && ");
+}
+
+function buildAuditLogFilter(params: SearchParams): AuditLogFilter {
+  const filter: AuditLogFilter = {};
+  const method = params.scopes.find((s) => s.id === "method")?.value;
+  if (method) filter.method = method;
+  const actor = params.scopes.find((s) => s.id === "actor")?.value;
+  if (actor) filter.actor = actor;
+  const level = params.scopes.find((s) => s.id === "level")?.value;
+  if (level)
+    filter.level = AuditLog_Severity[level as keyof typeof AuditLog_Severity];
+  const created = params.scopes.find((s) => s.id === "created")?.value;
+  if (created) {
+    const parts = created.split(",");
+    if (parts.length === 2) {
+      filter.createdTsAfter = parseInt(parts[0], 10);
+      filter.createdTsBefore = parseInt(parts[1], 10);
+    }
+  }
+  return filter;
+}
+
+// ============================================================
+// View link helper
+// ============================================================
+
+// AuditLogViewCell renders the "View" external-link icon for an audit log row.
+// Falls back to the JIT access grant's associated issue when the row has no
+// static link (e.g. ad-hoc Query/Export not driven by a rollout) but the
+// response was authorized by an access grant — gives users a trail to the
+// grant's approval issue.
+function AuditLogViewCell({ log }: { log: AuditLog }) {
+  const staticLink = getViewLink(log);
+
+  // Only attempt the grant fallback when no static link is available.
+  const grantName = useMemo(() => {
+    if (staticLink) return null;
+    try {
+      const response = JSON.parse(log.response || "{}") as Record<
+        string,
+        unknown
+      >;
+      const value = response["appliedAccessGrant"];
+      return typeof value === "string" && value ? value : null;
+    } catch {
+      return null;
+    }
+  }, [staticLink, log.response]);
+
+  const fetchAccessGrant = useAppStore((s) => s.fetchAccessGrant);
+  const grantIssue = useAppStore((s) =>
+    grantName ? (s.accessGrantsByName[grantName]?.issue ?? "") : ""
+  );
+
+  useEffect(() => {
+    if (grantName && !grantIssue) {
+      void fetchAccessGrant(grantName);
+    }
+  }, [grantName, grantIssue, fetchAccessGrant]);
+
+  const target = staticLink || grantIssue || null;
+  if (!target) return null;
+  const href = target.startsWith("/") ? target : `/${target}`;
+  return (
+    <RouterLink to={href} target="_blank" rel="noreferrer">
+      <ExternalLink className="size-4 text-accent" />
+    </RouterLink>
+  );
+}
+
+function getViewLink(auditLog: AuditLog): string | null {
+  let parsedRequest: Record<string, unknown>;
+  let parsedResponse: Record<string, unknown>;
+  try {
+    parsedRequest = JSON.parse(auditLog.request || "{}") as Record<
+      string,
+      unknown
+    >;
+    parsedResponse = JSON.parse(auditLog.response || "{}") as Record<
+      string,
+      unknown
+    >;
+  } catch {
+    return null;
+  }
+  if (Boolean(parsedRequest["validateOnly"])) return null;
+  const sections = auditLog.method.split("/").filter((i) => i);
+  switch (sections[0]) {
+    case RolloutService.typeName:
+    case PlanService.typeName:
+    case IssueService.typeName:
+      return (parsedResponse["name"] as string) || null;
+    case SQLService.typeName: {
+      if (sections[1] !== "Export") return null;
+      const name = parsedRequest["name"] as string | undefined;
+      if (!name) return null;
+      const [projectId, planId] =
+        getProjectIdPlanUidStageUidFromRolloutName(name);
+      if (!projectId || !planId) return null;
+      return `${projectNamePrefix}${projectId}/${planNamePrefix}${planId}/rollout`;
+    }
+  }
+  return null;
+}
+
+// ============================================================
+// MCP provenance
+// ============================================================
+
+// McpProvenanceField renders one label/value pair of the delegation grant.
+// Empty values are omitted rather than shown as a placeholder: these are the
+// grant's stored values copied verbatim, so empty means the grant recorded
+// nothing — a pre-grant legacy session, or a client that omitted `scope` at
+// consent. Inventing a stand-in would misreport stored state as unknown state.
+// See DelegatedGrant in backend/common/context.go for the empty-state map.
+function McpProvenanceField({
+  label,
+  value,
+}: Readonly<{ label: string; value: string }>) {
+  if (!value) return null;
+  return (
+    <div className="flex flex-col">
+      <span className="opacity-70">{label}</span>
+      <span className="font-mono break-all">{value}</span>
+    </div>
+  );
+}
+
+function McpProvenanceDetail({
+  delegation,
+}: Readonly<{ delegation: MCPDelegation }>) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col gap-y-1.5 text-xs">
+      <span className="font-medium">{t("audit-log.mcp.origin")}</span>
+      <McpProvenanceField
+        label={t("audit-log.mcp.correlation-id")}
+        value={delegation.correlationId}
+      />
+      <McpProvenanceField label={t("common.scope")} value={delegation.scope} />
+      <McpProvenanceField
+        label={t("common.resource")}
+        value={delegation.resource}
+      />
+      <McpProvenanceField
+        label={t("audit-log.mcp.client-id")}
+        value={delegation.clientId}
+      />
+    </div>
+  );
+}
+
+// AuditLogActorCell renders the acting user, badged when the entry belongs to
+// MCP: a call that reached the API through the MCP server's delegated
+// credential, or one of the two MCP doors outside the API — the /mcp gate and
+// the OAuth2 consent. Presence of `mcpDelegation` is the marker — never read
+// its values to decide MCP-ness. Every field of it can be empty: `scope`,
+// `resource`, and `clientId` are grant state a legacy or scope-omitting session
+// leaves unset, and `correlationId` is minted at /mcp, so a consent entry has
+// none.
+function AuditLogActorCell({ log }: Readonly<{ log: AuditLog }>) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center gap-x-1.5">
+      {log.actor ? (
+        <BlockTooltip
+          content={log.actor}
+          popupClassName="break-all"
+          render={<span className="min-w-0" />}
+        >
+          <span className="block truncate">{log.actor}</span>
+        </BlockTooltip>
+      ) : (
+        <span>-</span>
+      )}
+      {log.mcpDelegation && (
+        <Tooltip
+          content={<McpProvenanceDetail delegation={log.mcpDelegation} />}
+          popupClassName="max-w-96"
+        >
+          <Badge variant="secondary" className="text-xs px-1.5 py-0 shrink-0">
+            {t("audit-log.mcp.badge")}
+          </Badge>
+        </Tooltip>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// JSONStringView
+// ============================================================
+
+function JSONStringView({ jsonString }: { jsonString: string }) {
+  const { t } = useTranslation();
+  const [showModal, setShowModal] = useState(false);
+
+  const formatted = useMemo(() => {
+    try {
+      return JSON.stringify(JSON.parse(jsonString), null, 2);
+    } catch {
+      return "-";
+    }
+  }, [jsonString]);
+
+  return (
+    <>
+      <div className="group grow-0 w-full flex flex-row justify-start items-center gap-2">
+        <p className="line-clamp-2">
+          <code className="text-sm break-all">{jsonString}</code>
+        </p>
+        <div className="hidden h-6 shrink-0 group-hover:block">
+          <Button
+            type="button"
+            appearance="outline"
+            size="xs"
+            aria-label={t("common.view-details")}
+            onClick={() => setShowModal(true)}
+          >
+            <Maximize2 className="size-3" />
+          </Button>
+        </div>
+      </div>
+      {showModal && (
+        <Dialog
+          open
+          onOpenChange={(nextOpen) => !nextOpen && setShowModal(false)}
+        >
+          <DialogContent className="flex h-[calc(100vh-12rem)] w-[calc(100vw-12rem)] max-w-none flex-col p-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <DialogTitle className="text-base font-medium">
+                {t("common.view-details")}
+              </DialogTitle>
+              <Button
+                appearance="secondary"
+                size="sm"
+                aria-label={t("common.close")}
+                onClick={() => setShowModal(false)}
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              <pre className="text-sm font-mono whitespace-pre-wrap break-all">
+                {formatted}
+              </pre>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+}
+
+// ============================================================
+// ExportDropdown
+// ============================================================
+
+function ExportDropdown({
+  disabled,
+  tooltip,
+  onExport,
+}: {
+  disabled: boolean;
+  tooltip: string;
+  onExport: (format: ExportFormat) => void;
+}) {
+  const { t } = useTranslation();
+  const formats = [
+    { format: ExportFormat.CSV, label: "CSV" },
+    { format: ExportFormat.JSON, label: "JSON" },
+    { format: ExportFormat.XLSX, label: "XLSX" },
+  ];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button disabled={disabled} title={tooltip}>
+            <Download className="size-4 mr-1" />
+            {t("common.export")}
+          </Button>
+        }
+      />
+      <DropdownMenuContent className="min-w-[100px]">
+        {formats.map(({ format, label }) => (
+          <DropdownMenuItem key={label} onClick={() => onExport(format)}>
+            {label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+// ============================================================
+// Column definitions
+// ============================================================
+
+interface ColumnDef {
+  key: string;
+  title: string;
+  defaultWidth: number;
+  minWidth?: number;
+  resizable?: boolean;
+  sortable?: boolean;
+  render: (auditLog: AuditLog) => React.ReactNode;
+}
+
+function useColumnDefs(): ColumnDef[] {
+  const { t } = useTranslation();
+  return useMemo(
+    () => [
+      {
+        key: "create_time",
+        title: t("audit-log.table.created-ts"),
+        defaultWidth: TIMESTAMP_COLUMN_WIDTH.datetime,
+        minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
+        resizable: true,
+        sortable: true,
+        render: (log: AuditLog) =>
+          log.createTime ? (
+            <HumanizeTs
+              mode="datetime"
+              truncate
+              tsMs={getTimeForPbTimestampProtoEs(log.createTime)}
+            />
+          ) : (
+            "-"
+          ),
+      },
+      {
+        key: "severity",
+        title: t("audit-log.table.level"),
+        defaultWidth: 60,
+        minWidth: 50,
+        resizable: true,
+        render: (log: AuditLog) => AuditLog_Severity[log.severity],
+      },
+      {
+        key: "method",
+        title: t("audit-log.table.method"),
+        defaultWidth: 280,
+        minWidth: 150,
+        resizable: true,
+        render: (log: AuditLog) => log.method,
+      },
+      {
+        key: "actor",
+        title: t("audit-log.table.actor"),
+        defaultWidth: 200,
+        minWidth: 120,
+        resizable: true,
+        render: (log: AuditLog) => <AuditLogActorCell log={log} />,
+      },
+      {
+        key: "request",
+        title: t("audit-log.table.request"),
+        defaultWidth: 300,
+        minWidth: 180,
+        resizable: true,
+        render: (log: AuditLog) =>
+          log.request.length > 0 ? (
+            <JSONStringView jsonString={log.request} />
+          ) : (
+            "-"
+          ),
+      },
+      {
+        key: "response",
+        title: t("audit-log.table.response"),
+        defaultWidth: 300,
+        minWidth: 180,
+        resizable: true,
+        render: (log: AuditLog) =>
+          log.response.length > 0 ? (
+            <JSONStringView jsonString={log.response} />
+          ) : (
+            "-"
+          ),
+      },
+      {
+        key: "status",
+        title: t("audit-log.table.status"),
+        defaultWidth: 80,
+        minWidth: 60,
+        resizable: true,
+        render: (log: AuditLog) =>
+          log.status ? (
+            <JSONStringView
+              jsonString={toJsonString(StatusSchema, log.status, {
+                registry: protobufJsonRegistry,
+              })}
+            />
+          ) : (
+            "-"
+          ),
+      },
+      {
+        key: "latency",
+        title: t("audit-log.table.latency"),
+        defaultWidth: 90,
+        minWidth: 60,
+        resizable: true,
+        render: (log: AuditLog) => (
+          <span className="whitespace-nowrap">
+            {humanizeDurationV1(log.latency)}
+          </span>
+        ),
+      },
+      {
+        key: "service-data",
+        title: t("audit-log.table.service-data"),
+        defaultWidth: 240,
+        minWidth: 120,
+        resizable: true,
+        render: (log: AuditLog) =>
+          log.serviceData ? (
+            <JSONStringView
+              jsonString={toJsonString(AnySchema, log.serviceData, {
+                registry: protobufJsonRegistry,
+              })}
+            />
+          ) : (
+            "-"
+          ),
+      },
+      {
+        key: "view",
+        title: t("common.view"),
+        defaultWidth: 50,
+        render: (log: AuditLog) => <AuditLogViewCell log={log} />,
+      },
+    ],
+    [t]
+  );
+}
+
+interface AuditLogRowProps {
+  log: AuditLog;
+  columns: ColumnDef[];
+}
+
+const AuditLogRowView = memo(function AuditLogRowView({
+  log,
+  columns,
+}: AuditLogRowProps) {
+  return (
+    <TableRow>
+      {columns.map((col) => (
+        <TableCell key={col.key} className="align-top overflow-hidden">
+          {col.render(log)}
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+});
+
+// ============================================================
+// AuditLogTable — shared component
+// ============================================================
+
+export interface AuditLogTableProps {
+  /** Resource parent for the API call (e.g. "projects/-" or "projects/my-project"). */
+  parent: string;
+  /** Whether the caller can export audit logs. */
+  canExport: boolean;
+  /** Additional readonly scopes injected into the search params (e.g. project scope). */
+  readonlyScopes?: Array<{ id: string; value: string }>;
+}
+
+export function AuditLogTable({
+  parent,
+  canExport,
+  readonlyScopes,
+}: AuditLogTableProps) {
+  const { t } = useTranslation();
+  const hasAuditLogFeature = usePlanFeature(PlanFeature.FEATURE_AUDIT_LOG);
+  const workspaceResourceName = useWorkspaceResourceName();
+  const projectAccountParent =
+    parent !== `${projectNamePrefix}-` && parent.startsWith(projectNamePrefix)
+      ? parent
+      : "";
+  const project = useAppStore((state) =>
+    projectAccountParent
+      ? state.projectsByName[projectAccountParent]
+      : undefined
+  );
+  const canListWorkspaceServiceAccounts = useAppStore((state) =>
+    workspaceResourceName
+      ? state.hasWorkspacePermission("bb.serviceAccounts.list")
+      : false
+  );
+  const canListWorkspaceWorkloadIdentities = useAppStore((state) =>
+    workspaceResourceName
+      ? state.hasWorkspacePermission("bb.workloadIdentities.list")
+      : false
+  );
+  const canListProjectServiceAccounts = useAppStore((state) =>
+    project
+      ? state.hasProjectPermission(project, "bb.serviceAccounts.list")
+      : false
+  );
+  const canListProjectWorkloadIdentities = useAppStore((state) =>
+    project
+      ? state.hasProjectPermission(project, "bb.workloadIdentities.list")
+      : false
+  );
+  const columns = useColumnDefs();
+  const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
+
+  const buildDefaultParams = useCallback((): SearchParams => {
+    const to = dayjs().endOf("day");
+    const from = to.add(-30, "day");
+    return {
+      query: "",
+      scopes: [
+        ...(readonlyScopes?.map((s) => ({ ...s, readonly: true })) ?? []),
+        {
+          id: "created",
+          value: `${from.valueOf()},${to.valueOf()}`,
+          readonly: true,
+        },
+      ],
+    };
+  }, [readonlyScopes]);
+
+  const [searchParams, setSearchParams] =
+    useState<SearchParams>(buildDefaultParams);
+
+  // Reset search params when readonlyScopes change (e.g. navigating between projects).
+  const prevReadonlyScopesRef = useRef(readonlyScopes);
+  useEffect(() => {
+    if (prevReadonlyScopesRef.current !== readonlyScopes) {
+      prevReadonlyScopesRef.current = readonlyScopes;
+      setSearchParams(buildDefaultParams());
+    }
+  }, [readonlyScopes, buildDefaultParams]);
+
+  const filter = useMemo(
+    () => buildAuditLogFilter(searchParams),
+    [searchParams]
+  );
+
+  // Data fetching
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const nextPageTokenRef = useRef("");
+  const [hasMore, setHasMore] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [pageSize, setPageSize] = useSessionPageSize("bb.audit-log-table");
+  const fetchIdRef = useRef(0);
+
+  // Sort state
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const orderBy = sortKey ? `${sortKey} ${sortOrder}` : "";
+
+  const toggleSort = useCallback(
+    (key: string) => {
+      if (sortKey === key) {
+        if (sortOrder === "asc") setSortOrder("desc");
+        else {
+          setSortKey(null);
+          setSortOrder("asc");
+        }
+      } else {
+        setSortKey(key);
+        setSortOrder("asc");
+      }
+    },
+    [sortKey, sortOrder]
+  );
+
+  const fetchAuditLogs = useCallback(
+    async (isRefresh: boolean) => {
+      if (!hasAuditLogFeature) return;
+      const currentFetchId = ++fetchIdRef.current;
+      if (isRefresh) setLoading(true);
+      else setIsFetchingMore(true);
+      try {
+        const token = isRefresh ? "" : nextPageTokenRef.current;
+        const request = create(SearchAuditLogsRequestSchema, {
+          parent,
+          filter: buildFilterString(filter),
+          orderBy,
+          pageSize,
+          pageToken: token,
+        });
+        const resp =
+          await auditLogServiceClientConnect.searchAuditLogs(request);
+        if (currentFetchId !== fetchIdRef.current) return;
+        if (isRefresh) setAuditLogs(resp.auditLogs);
+        else setAuditLogs((prev) => [...prev, ...resp.auditLogs]);
+        nextPageTokenRef.current = resp.nextPageToken ?? "";
+        setHasMore(Boolean(resp.nextPageToken));
+      } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") return;
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+          description: (e as { message?: string }).message,
+        });
+      } finally {
+        if (currentFetchId === fetchIdRef.current) {
+          setLoading(false);
+          setIsFetchingMore(false);
+        }
+      }
+    },
+    [hasAuditLogFeature, parent, filter, orderBy, pageSize]
+  );
+
+  useEffect(() => {
+    fetchAuditLogs(true);
+  }, [fetchAuditLogs]);
+
+  const loadMore = useCallback(() => {
+    if (nextPageTokenRef.current && !isFetchingMore && !loading)
+      fetchAuditLogs(false);
+  }, [isFetchingMore, loading, fetchAuditLogs]);
+
+  // Export
+  const [exporting, setExporting] = useState(false);
+  const handleExport = useCallback(
+    async (format: ExportFormat) => {
+      setExporting(true);
+      try {
+        let pageToken = "";
+        const blobs: Uint8Array[] = [];
+        do {
+          const request = create(ExportAuditLogsRequestSchema, {
+            parent,
+            filter: buildFilterString(filter),
+            orderBy,
+            format,
+            pageSize: 5000,
+            pageToken,
+          });
+          const resp =
+            await auditLogServiceClientConnect.exportAuditLogs(request);
+          blobs.push(resp.content);
+          pageToken = resp.nextPageToken;
+        } while (pageToken);
+
+        for (let j = 0; j < blobs.length; j++) {
+          const blob = new Blob([new Uint8Array(blobs[j]).buffer]);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `audit-log.file${j + 1}.${dayjs().format("YYYY-MM-DDTHH-mm-ss")}.${ExportFormat[format].toLowerCase()}`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      } catch (e) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+          description: (e as { message?: string }).message,
+        });
+      } finally {
+        setExporting(false);
+      }
+    },
+    [parent, filter, orderBy, t]
+  );
+
+  const disableExportTip = useMemo(() => {
+    if (!filter.createdTsAfter || !filter.createdTsBefore)
+      return t("audit-log.export-tooltip");
+    if (
+      filter.createdTsBefore - filter.createdTsAfter >
+      30 * 24 * 60 * 60 * 1000
+    )
+      return t("audit-log.export-tooltip");
+    return "";
+  }, [filter, t]);
+  const listUsers = useAppStore((state) => state.listUsers);
+  const listServiceAccounts = useAppStore((state) => state.listServiceAccounts);
+  const listWorkloadIdentities = useAppStore(
+    (state) => state.listWorkloadIdentities
+  );
+  const searchActors = useCallback(
+    async (keyword: string): Promise<ValueOption[]> => {
+      const query = keyword.trim();
+      const pageSize = getDefaultPagination();
+      const accountParams = (parent: string, filter: string) => ({
+        parent,
+        pageSize,
+        showDeleted: false,
+        filter: { query: filter },
+        skipCache: true,
+      });
+
+      if (query.startsWith(serviceAccountNamePrefix)) {
+        const accountQuery = query.slice(serviceAccountNamePrefix.length);
+        const serviceAccounts = await Promise.all([
+          ...(workspaceResourceName && canListWorkspaceServiceAccounts
+            ? [
+                listServiceAccounts(
+                  accountParams(workspaceResourceName, accountQuery)
+                ),
+              ]
+            : []),
+          ...(projectAccountParent && canListProjectServiceAccounts
+            ? [
+                listServiceAccounts(
+                  accountParams(projectAccountParent, accountQuery)
+                ),
+              ]
+            : []),
+        ]);
+        return uniqueValueOptions(
+          serviceAccounts.flatMap((result) =>
+            result.serviceAccounts.map((account) => ({
+              value: account.name,
+              keywords: [account.email, account.title],
+            }))
+          )
+        );
+      }
+
+      if (query.startsWith(workloadIdentityNamePrefix)) {
+        const identityQuery = query.slice(workloadIdentityNamePrefix.length);
+        const workloadIdentities = await Promise.all([
+          ...(workspaceResourceName && canListWorkspaceWorkloadIdentities
+            ? [
+                listWorkloadIdentities(
+                  accountParams(workspaceResourceName, identityQuery)
+                ),
+              ]
+            : []),
+          ...(projectAccountParent && canListProjectWorkloadIdentities
+            ? [
+                listWorkloadIdentities(
+                  accountParams(projectAccountParent, identityQuery)
+                ),
+              ]
+            : []),
+        ]);
+        return uniqueValueOptions(
+          workloadIdentities.flatMap((result) =>
+            result.workloadIdentities.map((identity) => ({
+              value: identity.name,
+              keywords: [identity.email, identity.title],
+            }))
+          )
+        );
+      }
+
+      const { users } = await listUsers({
+        pageSize,
+        filter: query ? { query } : undefined,
+      });
+      return users.map((user) => ({
+        value: user.name,
+        keywords: [user.email, user.title],
+      }));
+    },
+    [
+      listUsers,
+      listServiceAccounts,
+      listWorkloadIdentities,
+      workspaceResourceName,
+      projectAccountParent,
+      canListWorkspaceServiceAccounts,
+      canListWorkspaceWorkloadIdentities,
+      canListProjectServiceAccounts,
+      canListProjectWorkloadIdentities,
+    ]
+  );
+
+  const scopeOptions = useMemo((): ScopeOption[] => {
+    return [
+      {
+        id: "actor",
+        title: t("audit-log.advanced-search.scope.actor.title"),
+        description: t("audit-log.advanced-search.scope.actor.description"),
+        onSearch: searchActors,
+      },
+      {
+        id: "method",
+        title: t("audit-log.advanced-search.scope.method.title"),
+        description: t("audit-log.advanced-search.scope.method.description"),
+        options: ALL_METHODS_WITH_AUDIT.map((method) => ({
+          value: method,
+          keywords: [method],
+        })),
+      },
+      {
+        id: "level",
+        title: t("audit-log.advanced-search.scope.level.title"),
+        description: t("audit-log.advanced-search.scope.level.description"),
+        options: Object.keys(AuditLog_Severity)
+          .filter((v) => Number.isNaN(Number(v)))
+          .map((severity) => ({
+            value: severity,
+            keywords: [severity],
+          })),
+      },
+    ];
+  }, [t, searchActors]);
+
+  const pageSizeOptions = getPageSizeOptions();
+
+  return (
+    <div className="flex flex-col gap-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-x-2">
+        <AdvancedSearch
+          params={searchParams}
+          scopeOptions={scopeOptions}
+          onParamsChange={setSearchParams}
+        />
+        <TimeRangePicker
+          params={searchParams}
+          onParamsChange={setSearchParams}
+        />
+        {canExport && (
+          <ExportDropdown
+            disabled={!hasAuditLogFeature || !!disableExportTip || exporting}
+            tooltip={disableExportTip}
+            onExport={handleExport}
+          />
+        )}
+      </div>
+
+      {/* Table */}
+      {hasAuditLogFeature ? (
+        <div>
+          <div className="overflow-x-auto rounded-sm border border-block-border">
+            <Table
+              className="table-fixed"
+              style={{ minWidth: `${totalWidth}px` }}
+            >
+              <colgroup>
+                {widths.map((w, i) => (
+                  <col key={columns[i].key} style={{ width: `${w}px` }} />
+                ))}
+              </colgroup>
+              <TableHeader>
+                <TableRow className="bg-control-bg">
+                  {columns.map((col, colIdx) => (
+                    <TableHead
+                      key={col.key}
+                      className="text-sm text-main whitespace-nowrap"
+                      sortable={col.sortable}
+                      sortActive={col.sortable && sortKey === col.key}
+                      sortDir={sortOrder}
+                      onSort={
+                        col.sortable ? () => toggleSort(col.key) : undefined
+                      }
+                      resizable={col.resizable}
+                      onResizeStart={
+                        col.resizable
+                          ? (e) => onResizeStart(colIdx, e)
+                          : undefined
+                      }
+                    >
+                      {col.title}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading && auditLogs.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="text-center py-8 text-control-placeholder"
+                    >
+                      {t("common.loading")}
+                    </TableCell>
+                  </TableRow>
+                ) : auditLogs.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="text-center py-8 text-control-placeholder"
+                    >
+                      {t("common.no-data")}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  auditLogs.map((log, idx) => (
+                    <AuditLogRowView
+                      key={log.name || idx}
+                      log={log}
+                      columns={columns}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination footer */}
+          <div className="mt-4">
+            <PagedTableFooter
+              pageSize={pageSize}
+              pageSizeOptions={pageSizeOptions}
+              onPageSizeChange={setPageSize}
+              hasMore={hasMore}
+              isFetchingMore={isFetchingMore || loading}
+              onLoadMore={loadMore}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="py-12 border rounded-sm flex items-center justify-center text-control-placeholder">
+          {t("common.no-data")}
+        </div>
+      )}
+    </div>
+  );
+}

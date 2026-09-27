@@ -1,6 +1,7 @@
 import { fileURLToPath, URL } from "node:url";
 import { transform as esbuildTransform } from "esbuild";
 import yaml from "@rollup/plugin-yaml";
+import stylex from "@stylexjs/unplugin";
 import tailwindcss from "@tailwindcss/vite";
 import legacy from "@vitejs/plugin-legacy";
 import { CodeInspectorPlugin } from "code-inspector-plugin";
@@ -18,18 +19,45 @@ const extractHostPort = (url: string) => {
 
 export default defineConfig({
   plugins: [
-    legacy({
-      targets: ["> 0.08%, not dead"],
-      additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
-    }),
+    // The legacy bundle is browser-compat output, not a correctness signal: it
+    // builds the whole app a second time and babel-down-levels every chunk,
+    // which is ~190s of a ~200s release build. The PR-time build check only
+    // needs to prove the app bundles, so the bundle stage of `pnpm test` opts
+    // out by setting BB_SKIP_LEGACY=1.
+    // Release builds (scripts/Dockerfile) leave BB_SKIP_LEGACY unset.
+    ...(process.env.BB_SKIP_LEGACY
+      ? []
+      : [
+          legacy({
+            // Explicit version floors, matching what "> 0.08%, not dead" resolved
+            // to as of caniuse-lite 1.0.30001792. Usage-based queries re-resolve
+            // against every caniuse-lite/browserslist update; a 2026-07 data
+            // update pulled Chrome 39-60 above the threshold, which made the
+            // babel pass in plugin-legacy's renderChunk down-level every chunk
+            // to ES5 and took the release build from ~2.5min to ~32min (13x).
+            // (and_qq/and_uc from the old resolution are omitted: babel's
+            // browserNameMap has no entry for them, so they never influenced
+            // the transforms. ios 11 dominates the transform/polyfill union.)
+            targets: [
+              "chrome >= 103",
+              "edge >= 100",
+              "firefox >= 115",
+              "safari >= 15",
+              "ios >= 11",
+              "android >= 103",
+              "samsung >= 29",
+              "opera >= 99",
+              "op_mob >= 80",
+            ],
+            additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
+          }),
+        ]),
     {
       name: "react-tsx-transform",
       enforce: "pre",
       async transform(code, id) {
-        // Both the main React tree (`src/react/...`) and the AI plugin's
-        // co-located React subtree (`src/plugins/ai/react/...`) compile
-        // with React's automatic JSX runtime.
-        if (!/\/(src\/react|src\/plugins\/ai\/react)\/.+\.tsx$/.test(id)) {
+        // All TSX under src uses React's automatic JSX runtime.
+        if (!/\/src\/.+\.tsx$/.test(id)) {
           return undefined;
         }
         const result = await esbuildTransform(code, {
@@ -44,13 +72,21 @@ export default defineConfig({
       },
     },
     tailwindcss(),
+    stylex.vite({
+      // Keep StyleX after Tailwind so production extraction can append into the
+      // linked Vite CSS asset loaded by the main app.
+      cssInjectionTarget: (fileName) => /(^|\/)main-[^/]+\.css$/.test(fileName),
+      devMode: "css-only",
+      runtimeInjection: false,
+      useCSSLayers: true,
+    }),
     yaml(),
     ...(process.env.VITEST
       ? []
       : [
           CodeInspectorPlugin({
             bundler: "vite",
-            exclude: [/src\/react\//],
+            exclude: [/src\//],
           }),
         ]),
     // Export CSP hashes from @vitejs/plugin-legacy for backend to use
@@ -65,14 +101,6 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-          const normalizedId = id.replaceAll("\\", "/");
-          if (
-            normalizedId.includes("/node_modules/vue/") ||
-            normalizedId.includes("/node_modules/@vue/") ||
-            normalizedId.includes("/node_modules/pev2/")
-          ) {
-            return "explain-visualizer-vue";
-          }
           // Monaco Editor - separate chunk
           if (id.includes("monaco-editor") || id.includes("monaco-vscode")) {
             return "monaco-editor";

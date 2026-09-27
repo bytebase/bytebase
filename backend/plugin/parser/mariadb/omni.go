@@ -9,8 +9,8 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// ParseMariaDBOmni parses SQL using omni's MariaDB parser and returns an ast.List.
-func ParseMariaDBOmni(sql string) (*ast.List, error) {
+// ParseMariaDB parses SQL using omni's MariaDB parser and returns an ast.List.
+func ParseMariaDB(sql string) (*ast.List, error) {
 	return mariadbparser.Parse(sql)
 }
 

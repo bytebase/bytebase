@@ -1,0 +1,329 @@
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { advanceSeconds } from "@/test-utils/clock";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+
+// The real datetime module is loaded below for its domain check, and importing
+// it reaches this one. Stubbed so a test does not boot i18next and pull every
+// locale bundle, and backed by the same state as the stub above so the file has
+// one active language rather than two that happen not to meet.
+vi.mock("@/lib/i18n", () => ({
+  default: {
+    get language() {
+      return language.current;
+    },
+  },
+}));
+
+// Enough of react-i18next to carry the one thing a timestamp depends on: a
+// component that calls useTranslation re-renders when the language changes.
+const language = vi.hoisted(() => {
+  const listeners = new Set<() => void>();
+  const state = {
+    current: "en",
+    listeners,
+    switchTo(next: string) {
+      state.current = next;
+      for (const listener of listeners) {
+        listener();
+      }
+    },
+  };
+  return state;
+});
+
+vi.mock("react-i18next", async () => {
+  const { useEffect, useReducer } = await import("react");
+  return {
+    useTranslation: () => {
+      const [, rerender] = useReducer((count: number) => count + 1, 0);
+      useEffect(() => {
+        language.listeners.add(rerender);
+        return () => {
+          language.listeners.delete(rerender);
+        };
+      }, []);
+      return { t: (k: string) => k, i18n: { language: language.current } };
+    },
+  };
+});
+
+const formatters = vi.hoisted(() => {
+  // A reading whose label is its age, so a display that was not re-rendered
+  // shows a stale age, and whose boundary is a fixed offset after the timestamp.
+  // The two offsets differ, so a label scheduled on the other reading's
+  // boundary re-renders at the wrong second and shows it.
+  const ageReading = (prefix: string, boundaryOffsetMs: number) => ({
+    read: (ms: number) => `${prefix}:${Date.now() - ms}`,
+    nextChangeAt: (ms: number) =>
+      Date.now() < ms + boundaryOffsetMs
+        ? ms + boundaryOffsetMs
+        : Number.POSITIVE_INFINITY,
+  });
+  // A rendering that never changes on its own.
+  const fixedReading = (prefix: string) => ({
+    read: (ms: number) => `${prefix}:${ms}:${language.current}`,
+    nextChangeAt: () => Number.POSITIVE_INFINITY,
+  });
+  return {
+    queueTimeReading: ageReading("queue", 60_000),
+    relativeTimeReading: ageReading("relative", 45_000),
+    formatAbsoluteDateTime: vi.fn((ms: number) => `absolute:${ms}`),
+    compactTimeReading: fixedReading("compact"),
+    operationalTimeReading: fixedReading("operational"),
+    absoluteTimeReading: fixedReading("absolute"),
+    dateTimeSegments: vi.fn(),
+  };
+});
+
+// Only the renderings are faked; what an instant is comes from the module
+// itself, so a test cannot disagree with it about the domain.
+vi.mock("@/utils/datetime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/datetime")>()),
+  ...formatters,
+}));
+
+import { HumanizeTs } from "./HumanizeTs";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
+const roots: ReturnType<typeof createRoot>[] = [];
+
+const mount = () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  roots.push(root);
+  return { container, root };
+};
+
+const openTooltip = async (el: Element | null) => {
+  await act(async () => {
+    el?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    vi.advanceTimersByTime(100);
+  });
+};
+
+const overlayText = () =>
+  document.getElementById("bb-react-layer-overlay")?.textContent ?? "";
+
+
+const secondsAgo = (seconds: number) => Date.now() - seconds * 1000;
+
+describe("HumanizeTs", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
+    language.current = "en";
+    formatters.formatAbsoluteDateTime.mockClear();
+    formatters.dateTimeSegments.mockReset();
+  });
+
+  afterEach(() => {
+    for (const root of roots.splice(0)) {
+      act(() => root.unmount());
+    }
+    vi.useRealTimers();
+    document.body.innerHTML = "";
+  });
+
+  test.each([
+    [undefined, "queue:"],
+    ["compact", "compact:"],
+    ["operational", "operational:"],
+  ] as const)(
+    "renders the %s reading and restores the full time on hover",
+    async (mode, prefix) => {
+      const { container, root } = mount();
+      act(() => root.render(<HumanizeTs mode={mode} tsMs={1_000_000} />));
+      expect(container.textContent).toContain(prefix);
+
+      await openTooltip(container.firstElementChild);
+      expect(overlayText()).toContain("absolute:1000000");
+    }
+  );
+
+  test("builds the full time only once the tooltip opens", async () => {
+    const { container, root } = mount();
+    act(() => root.render(<HumanizeTs tsMs={1_000_000} />));
+    expect(formatters.formatAbsoluteDateTime).not.toHaveBeenCalled();
+
+    await openTooltip(container.firstElementChild);
+    expect(formatters.formatAbsoluteDateTime).toHaveBeenCalledWith(1000000);
+  });
+
+  test("renders one element, so layout classes reach the box that lays out", () => {
+    const { container, root } = mount();
+    act(() =>
+      root.render(<HumanizeTs className="block text-xs" tsMs={1_000_000} />)
+    );
+    expect(container.childElementCount).toBe(1);
+    expect(container.firstElementChild?.className).toContain("block text-xs");
+    expect(container.firstElementChild?.childElementCount).toBe(0);
+  });
+
+  // Each piece of a fitted label, and whether it keeps its width or gives way.
+  // A piece with a space at its edge must also render it: a flex item drops
+  // that space unless it is preformatted, and the cut time runs into the date.
+  const pieces = (box: Element | null) =>
+    Array.from(box?.children ?? []).map((piece) => {
+      const text = piece.textContent ?? "";
+      const fit = piece.classList.contains("truncate")
+        ? "cut"
+        : piece.classList.contains("shrink-0")
+          ? "kept"
+          : "loose";
+      const edgeSpace = /^\s|\s$/.test(text)
+        ? piece.closest(".whitespace-pre")
+          ? " pre"
+          : " dropped"
+        : "";
+      return `${text}:${fit}${edgeSpace}`;
+    });
+
+  test.each([
+    [
+      "after the date",
+      { date: "Sep 21, 2026", rest: ", 11:28 PM GMT+8", dateFirst: true },
+      ["Sep 21, 2026:kept", ", 11:28 PM GMT+8:cut"],
+    ],
+    [
+      "after the date and a space",
+      { date: "2026年9月21日", rest: " 23:28", dateFirst: true },
+      ["2026年9月21日:kept", " :kept pre", "23:28:cut"],
+    ],
+    [
+      "before the date",
+      { date: "21 thg 9, 2026", rest: "23:28 GMT+8 ", dateFirst: false },
+      ["23:28 GMT+8:cut", " :kept pre", "21 thg 9, 2026:kept"],
+    ],
+  ])(
+    "keeps a narrowed date whole and cuts the time written %s",
+    async (_, segments, expected) => {
+      formatters.dateTimeSegments.mockReturnValue(segments);
+      const { container, root } = mount();
+      act(() =>
+        root.render(
+          <HumanizeTs
+            className="text-xs"
+            mode="operational"
+            truncate
+            tsMs={1_000_000}
+          />
+        )
+      );
+
+      const box = container.firstElementChild;
+      expect(formatters.dateTimeSegments).toHaveBeenCalledWith(
+        "operational:1000000:en",
+        1_000_000
+      );
+      expect(box?.className).toContain("text-xs");
+      expect(pieces(box)).toEqual(expected);
+
+      await openTooltip(box);
+      expect(overlayText()).toContain("absolute:1000000");
+    }
+  );
+
+  test("cuts a narrowed label from its end when it will not split", () => {
+    formatters.dateTimeSegments.mockReturnValue(undefined);
+    const { container, root } = mount();
+    act(() =>
+      root.render(<HumanizeTs mode="compact" truncate tsMs={1_000_000} />)
+    );
+    const box = container.firstElementChild;
+    expect(box?.className).toContain("block truncate");
+    expect(box?.textContent).toBe("compact:1000000:en");
+    expect(box?.childElementCount).toBe(0);
+  });
+
+  test("never splits a label that carries no time", () => {
+    const { container, root } = mount();
+    act(() => root.render(<HumanizeTs truncate tsMs={1_000_000} />));
+    expect(formatters.dateTimeSegments).not.toHaveBeenCalled();
+    expect(container.firstElementChild?.className).toContain("block truncate");
+  });
+
+  test("offers the age on a full cell, and keeps it counting while open", async () => {
+    const { container, root } = mount();
+    act(() => root.render(<HumanizeTs mode="datetime" tsMs={secondsAgo(30)} />));
+    expect(container.textContent).toContain("absolute:");
+
+    await openTooltip(container.firstElementChild);
+    // The tooltip opens 100ms after focus, which the age already reflects.
+    expect(overlayText()).toContain("relative:30100");
+
+    // The relative reading's boundary is 45s after the timestamp: the age holds
+    // until then and moves on at it.
+    advanceSeconds(14);
+    expect(overlayText()).toContain("relative:30100");
+    advanceSeconds(1);
+    expect(overlayText()).toContain("relative:45100");
+  });
+
+  test("shows nothing for a time that is not a time", () => {
+    // An unvalidated string reaching `new Date(...)` gives NaN, and Intl throws
+    // on it; the row should lose its timestamp, not the page its subtree.
+    const { container, root } = mount();
+    act(() => root.render(<HumanizeTs tsMs={Number.NaN} />));
+    // Nothing at all, not an empty box: a box still occupies the row, and its
+    // tooltip would ask the formatters for a time nobody gave them -- which
+    // renders the current time, the plausible-looking lie this all exists to
+    // avoid.
+    expect(container.innerHTML).toBe("");
+
+    // Finite, and one millisecond past the last instant there is.
+    act(() => root.render(<HumanizeTs tsMs={8.64e15 + 1} />));
+    expect(container.innerHTML).toBe("");
+  });
+
+  test.each(["compact", "operational", "datetime"] as const)(
+    "re-reads a %s label when the language changes",
+    (mode) => {
+      // The only thing that re-renders a timestamp on a language switch is its
+      // own useTranslation subscription: a reading holds no locale, and a fixed
+      // one holds no subscription to the clock either.
+      const { container, root } = mount();
+      act(() => root.render(<HumanizeTs tsMs={1_000_000} mode={mode} />));
+      expect(container.textContent).toContain(":1000000:en");
+
+      act(() => language.switchTo("zh-CN"));
+      expect(container.textContent).toContain(":1000000:zh-CN");
+    }
+  );
+
+  test("omits the tooltip when tooltip is false", async () => {
+    const { container, root } = mount();
+    act(() => root.render(<HumanizeTs tsMs={1_000_000} tooltip={false} />));
+    expect(container.textContent).toContain("queue:");
+
+    await openTooltip(container.firstElementChild);
+    expect(overlayText()).not.toContain("absolute:");
+  });
+
+  test("keeps a mounted work-queue label up with the clock", () => {
+    const { container, root } = mount();
+    act(() => root.render(<HumanizeTs tsMs={secondsAgo(30)} tooltip={false} />));
+    expect(container.textContent).toBe("queue:30000");
+
+    // The work-queue reading's boundary is 60s after the timestamp.
+    advanceSeconds(29);
+    expect(container.textContent).toBe("queue:30000");
+    advanceSeconds(1);
+    expect(container.textContent).toBe("queue:60000");
+  });
+
+  test.each(["compact", "datetime", "operational"] as const)(
+    "puts no %s display on the shared clock",
+    (mode) => {
+      const { root } = mount();
+      act(() =>
+        root.render(<HumanizeTs mode={mode} tsMs={secondsAgo(30)} tooltip={false} />)
+      );
+      expect(vi.getTimerCount()).toBe(0);
+    }
+  );
+});
