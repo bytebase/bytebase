@@ -30,11 +30,12 @@ export function StandardRuleSwitches({
 
   // SYNTAX gates the rest, and the backend reads a list without it as empty,
   // so switching it off saves an empty list. Switching it back on restores
-  // the rules from before it went off in this session, else every rule.
+  // the rules from before it went off in this session, else every rule. The
+  // read-only view shows rules set elsewhere, so it does not count.
   const rulesWithSyntax = useRef<readonly ReviewRuleType[] | undefined>(
     undefined
   );
-  if (reviewOn) {
+  if (reviewOn && !readOnly) {
     rulesWithSyntax.current = rules;
   }
   const toggle = (rule: ReviewRuleType, on: boolean) => {
