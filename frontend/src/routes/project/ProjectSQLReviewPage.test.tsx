@@ -501,6 +501,23 @@ describe("ProjectSQLReviewPage", () => {
     ).toBeInTheDocument();
   });
 
+  test("following the workspace in between keeps the project's own rules to restore", async () => {
+    seedCustomized();
+    const customize = await renderLoaded();
+
+    fireEvent.click(ruleSwitch("syntax"));
+    fireEvent.click(customize);
+    expect(screen.getAllByText("sql-review.standard-rules.on")).toHaveLength(2);
+    fireEvent.click(customize);
+    fireEvent.click(ruleSwitch("syntax"));
+
+    expect(ruleSwitch("syntax")).toHaveAttribute("aria-checked", "true");
+    expect(ruleSwitch("require-where")).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
+  });
+
   test("undoing an unsaved switch needs no permission", async () => {
     mocks.permissions = { "bb.policies.delete": false };
     const customize = await renderLoaded();

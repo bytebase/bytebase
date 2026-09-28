@@ -120,6 +120,23 @@ describe("StandardRuleSwitches", () => {
     );
   });
 
+  test("the read-only view does not replace the rules to restore", () => {
+    const own = [ReviewRuleType.SYNTAX, ReviewRuleType.DISALLOW_RENAME];
+    const inherited = [ReviewRuleType.SYNTAX, ReviewRuleType.REQUIRE_WHERE];
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <StandardRuleSwitches rules={own} onChange={onChange} />
+    );
+    rerender(<StandardRuleSwitches rules={[]} onChange={onChange} />);
+    rerender(
+      <StandardRuleSwitches rules={inherited} onChange={onChange} readOnly />
+    );
+    rerender(<StandardRuleSwitches rules={[]} onChange={onChange} />);
+
+    fireEvent.click(ruleSwitch("syntax"));
+    expect(onChange).toHaveBeenLastCalledWith(own);
+  });
+
   test("disabled locks every switch", () => {
     render(
       <StandardRuleSwitches
