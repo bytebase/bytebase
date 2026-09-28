@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { ColumnResizeHandle } from "./column-resize-handle";
+import { LAYER_SURFACE_CLASS } from "./layer";
 import { TableBody, TableEmptyView, TableRow } from "./table";
 
 describe("table primitives", () => {
@@ -57,8 +58,17 @@ describe("table primitives", () => {
     expect(element.props.className).toContain("right-0");
     expect(element.props.className).not.toContain("right-[-6px]");
     expect(element.props.className).toContain("w-3");
-    expect(element.props.className).toContain("z-10");
     expect(element.props.children.props.className).toContain("right-0");
     expect(element.props.children.props.className).toContain("w-0.5");
+  });
+
+  test("ColumnResizeHandle stacks below popup surfaces", () => {
+    const zIndexOf = (className: string) =>
+      Number(/\bz-(\d+)\b/.exec(className)?.[1]);
+    const element = ColumnResizeHandle({ onMouseDown: () => {} });
+
+    expect(zIndexOf(element.props.className)).toBeLessThan(
+      zIndexOf(LAYER_SURFACE_CLASS)
+    );
   });
 });

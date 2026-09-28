@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Search users by email. Prefix with serviceAccounts/ or workloadIdentities/ to search those actors.",
+          "description": "Search users, service accounts, and workload identities by name or email",
           "title": "Actor"
         },
         "level": {
