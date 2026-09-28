@@ -788,6 +788,9 @@ export class BytebaseApiClient {
       // already defined in the DATA_CLASSIFICATION setting (UpdateProject
       // validates it exists).
       dataClassificationConfigId?: string;
+      // How many times the driver re-runs the sheet's execution after a
+      // lock-timeout failure, inside the same task run (0 disables retries).
+      executionRetryPolicy?: { maximumRetries?: number };
     },
   ): Promise<void> {
     const fields: string[] = [];
@@ -827,6 +830,10 @@ export class BytebaseApiClient {
     if (settings.dataClassificationConfigId !== undefined) {
       fields.push("data_classification_config_id");
       body.dataClassificationConfigId = settings.dataClassificationConfigId;
+    }
+    if (settings.executionRetryPolicy !== undefined) {
+      fields.push("execution_retry_policy");
+      body.executionRetryPolicy = settings.executionRetryPolicy;
     }
     if (fields.length === 0) {
       throw new Error("updateProjectSettings: no fields specified");
