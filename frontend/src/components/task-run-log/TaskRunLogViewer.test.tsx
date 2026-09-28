@@ -1,15 +1,22 @@
 import { create } from "@bufbuild/protobuf";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
+import { within } from "@testing-library/react";
 import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import i18n from "@/lib/i18n";
+import { retry, runningCommand } from "./taskRunLogEntries";
 import {
   TaskRun_Status,
   type TaskRunLogEntry,
   TaskRunLogEntry_Type,
   TaskRunLogEntrySchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { TaskRunLogViewer } from "./TaskRunLogViewer";
+import {
+  TaskRunLogViewer,
+  type TaskRunLogViewerProps,
+} from "./TaskRunLogViewer";
+import type { AttemptGroup, Section } from "./types";
 import type {
   UseTaskRunLogSectionsOptions,
   useTaskRunLogSections,
@@ -25,48 +32,6 @@ const mocks = vi.hoisted(() => ({
   actualUseTaskRunLogSections: undefined as
     | typeof useTaskRunLogSections
     | undefined,
-}));
-
-vi.mock("react-i18next", () => ({
-  initReactI18next: { type: "3rdParty", init: () => {} },
-  useTranslation: () => ({
-    t: (key: string, options?: Record<string, unknown> | number | string) => {
-      if (key === "task-run.log-viewer.summary" && options) {
-        const summary =
-          typeof options === "object"
-            ? options
-            : { sections: options, entries: "" };
-        return `${summary.sections} sections · ${summary.entries} entries`;
-      }
-      if (key === "task-run.log-detail.completed") {
-        return "Completed";
-      }
-      if (key === "task-run.log-detail.dumping") {
-        return "Dumping...";
-      }
-      if (key === "task-run.log-detail.syncing") {
-        return "Syncing...";
-      }
-      if (key === "task-run.log-detail.backup-completed" && options) {
-        const { count } = options as { count?: number };
-        return `Completed (${count} tables)`;
-      }
-      if (key === "task-run.log-detail.backing-up") {
-        return "Backing up...";
-      }
-      if (key === "task-run.log-detail.retry-attempt" && options) {
-        const { current, max } = options as {
-          current?: number;
-          max?: number;
-        };
-        return `Attempt ${current}/${max}`;
-      }
-      if (key === "task-run.log-detail.computing") {
-        return "Computing...";
-      }
-      return key;
-    },
-  }),
 }));
 
 vi.mock("./useTaskRunLogData", () => ({
@@ -95,8 +60,9 @@ const createDefaultData = () => ({
 });
 
 const createDefaultSections = () => ({
-  sections: [
+  rows: [
     {
+      kind: "section",
       id: "section-0",
       type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
       label: "Command Execute",
@@ -124,10 +90,10 @@ const createDefaultSections = () => ({
   hasReleaseFiles: false,
   releaseFileGroups: [],
   replicaGroups: [],
-  toggleSection: vi.fn(),
+  toggleRow: vi.fn(),
   toggleReplica: vi.fn(),
   toggleReleaseFile: vi.fn(),
-  isSectionExpanded: () => true,
+  isRowExpanded: () => true,
   isReplicaExpanded: () => true,
   isReleaseFileExpanded: () => true,
   expandAll: vi.fn(),
@@ -137,23 +103,103 @@ const createDefaultSections = () => ({
   totalEntries: 1,
 });
 
-const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
+const section = (
+  id: string,
+  label: string,
+  status: "success" | "error" = "success"
+): Section => ({
+  kind: "section",
+  id,
+  type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+  label,
+  status,
+  statusIcon: status === "error" ? XCircle : CheckCircle2,
+  statusClass: status === "error" ? "text-error" : "text-success",
+  duration: "1.0s",
+  entryCount: 1,
+  items: [
+    {
+      key: `${id}-item`,
+      time: "12:00:00.000",
+      timeMs: undefined,
+      relativeTime: "",
+      levelIndicator: status === "error" ? "✗" : "✓",
+      levelClass: status === "error" ? "text-error" : "text-success",
+      detail: `${label} entry`,
+      detailClass: status === "error" ? "text-error" : "text-control",
+    },
+  ],
+});
+
+const largeSection = (id: string, label: string): Section => ({
+  ...section(id, label),
+  entryCount: 60,
+  items: Array.from({ length: 60 }, (_, index) => ({
+    key: `item-${index}`,
+    time: `12:00:${String(index).padStart(2, "0")}.000`,
+    timeMs: undefined,
+    relativeTime: "",
+    levelIndicator: "✓",
+    levelClass: "text-success",
+    detail: `ROW ${index}`,
+    detailClass: "text-control",
+  })),
+});
+
+const attemptGroup = (attemptCount: number, retrying = false): AttemptGroup => ({
+  kind: "attempts",
+  id: "attempts-0",
+  duration: `${attemptCount}.0s`,
+  retrying,
+  attempts: Array.from({ length: attemptCount }, (_, index) => ({
+    id: `attempts-0-attempt-${index + 1}`,
+    number: index + 1,
+    reason: `lock timeout ${index + 1}`,
+    duration: "1.0s",
+    sections: [
+      section(`attempts-0-attempt-${index + 1}-section-0`, `Old Command ${index + 1}`, "error"),
+    ],
+  })),
+});
+
+// The hook result for a run with superseded attempts, with expansion driven by
+// the set the test hands in.
+const sectionsWithAttempts = (
+  group: AttemptGroup,
+  expandedRows: Set<string> = new Set()
+) => ({
+  ...createDefaultSections(),
+  rows: [group, section("section-1", "Final Command")],
+  isRowExpanded: (id: string) => expandedRows.has(id),
+});
+
+const button = (container: HTMLElement, name: RegExp) =>
+  within(container).getByRole("button", { name });
+
+const renderViewer = (props: Partial<TaskRunLogViewerProps> = {}) => {
   const container = document.createElement("div");
   const root = createRoot(container);
-
-  act(() => {
-    root.render(element);
-  });
+  const rerender = (next: Partial<TaskRunLogViewerProps>) =>
+    act(() => {
+      root.render(
+        createElement(TaskRunLogViewer, { taskRunName: "runs/1", ...next })
+      );
+    });
+  rerender(props);
 
   return {
     container,
-    root,
+    rerender,
     unmount: () =>
       act(() => {
         root.unmount();
       }),
   };
 };
+
+beforeAll(async () => {
+  await i18n.changeLanguage("en-US");
+});
 
 beforeEach(() => {
   mocks.useTaskRunLogData.mockReturnValue(createDefaultData());
@@ -162,9 +208,7 @@ beforeEach(() => {
 
 describe("TaskRunLogViewer", () => {
   test("drops the summary scaffolding for a lone section", () => {
-    const { container, unmount } = renderIntoContainer(
-      createElement(TaskRunLogViewer, { taskRunName: "runs/1" })
-    );
+    const { container, unmount } = renderViewer();
 
     // A single section has no structure worth disclosing: no summary bar, but
     // its label and entries render directly.
@@ -185,9 +229,7 @@ describe("TaskRunLogViewer", () => {
       }
     );
 
-    const { unmount } = renderIntoContainer(
-      createElement(TaskRunLogViewer, { taskRunName: "runs/1" })
-    );
+    const { unmount } = renderViewer();
 
     expect(capturedOptions?.detailText?.completed).toBe("Completed");
     expect(capturedOptions?.detailText?.backingUp).toBe("Backing up...");
@@ -197,10 +239,7 @@ describe("TaskRunLogViewer", () => {
       ]
     ).toBe("Dumping...");
     expect(capturedOptions?.detailText?.backupCompleted?.(3)).toBe(
-      "Completed (3 tables)"
-    );
-    expect(capturedOptions?.detailText?.retryAttempt?.(2, 5)).toBe(
-      "Attempt 2/5"
+      "completed (3 tables)"
     );
 
     unmount();
@@ -208,7 +247,7 @@ describe("TaskRunLogViewer", () => {
 
   test("renders orphan release-file sections before labeled file headers", () => {
     mocks.useTaskRunLogSections.mockReturnValue({
-      sections: [],
+      rows: [],
       hasMultipleReplicas: false,
       hasReleaseFiles: true,
       releaseFileGroups: [
@@ -217,8 +256,9 @@ describe("TaskRunLogViewer", () => {
           version: "",
           filePath: "",
           isOrphan: true,
-          sections: [
+          rows: [
             {
+              kind: "section",
               id: "orphan-section",
               type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
               label: "Orphan Command",
@@ -245,8 +285,9 @@ describe("TaskRunLogViewer", () => {
           id: "file-0",
           version: "v1",
           filePath: "001.sql",
-          sections: [
+          rows: [
             {
+              kind: "section",
               id: "file-section",
               type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
               label: "Release Command",
@@ -271,10 +312,10 @@ describe("TaskRunLogViewer", () => {
         },
       ],
       replicaGroups: [],
-      toggleSection: vi.fn(),
+      toggleRow: vi.fn(),
       toggleReplica: vi.fn(),
       toggleReleaseFile: vi.fn(),
-      isSectionExpanded: () => true,
+      isRowExpanded: () => true,
       isReplicaExpanded: () => true,
       isReleaseFileExpanded: () => true,
       expandAll: vi.fn(),
@@ -284,9 +325,7 @@ describe("TaskRunLogViewer", () => {
       totalEntries: 2,
     });
 
-    const { container, unmount } = renderIntoContainer(
-      createElement(TaskRunLogViewer, { taskRunName: "runs/1" })
-    );
+    const { container, unmount } = renderViewer();
 
     // More than one section keeps the summary bar and the disclosure chrome.
     expect(container.textContent).toContain("2 sections · 2 entries");
@@ -303,11 +342,236 @@ describe("TaskRunLogViewer", () => {
 
     unmount();
   });
+
+  test("folds superseded attempts into one collapsed Previous attempts row", () => {
+    const sections = sectionsWithAttempts(attemptGroup(2));
+    mocks.useTaskRunLogSections.mockReturnValue(sections);
+
+    const { container, unmount } = renderViewer();
+
+    const umbrella = button(container, /Previous attempts/);
+    expect(umbrella).toHaveTextContent("2 attempts");
+    expect(umbrella).toHaveTextContent("2.0s");
+    expect(umbrella).toHaveAttribute("aria-expanded", "false");
+    expect(container.textContent).not.toContain("Attempt 1");
+    expect(container.textContent).not.toContain("Old Command");
+    expect(container.textContent).toContain("Final Command");
+    expect(container.textContent?.indexOf("Previous attempts")).toBeLessThan(
+      container.textContent?.indexOf("Final Command") ?? -1
+    );
+
+    act(() => {
+      umbrella.click();
+    });
+    expect(sections.toggleRow).toHaveBeenCalledWith("attempts-0");
+
+    unmount();
+  });
+
+  test("an expanded umbrella lists one nested row per attempt, each opening onto its sections", () => {
+    const group = attemptGroup(2);
+    const sections = sectionsWithAttempts(
+      group,
+      new Set(["attempts-0", "attempts-0-attempt-2"])
+    );
+    mocks.useTaskRunLogSections.mockReturnValue(sections);
+
+    const { container, unmount } = renderViewer();
+
+    const umbrella = button(container, /Previous attempts/);
+    expect(umbrella).toHaveAttribute("aria-expanded", "true");
+    const panelId = umbrella.getAttribute("aria-controls");
+    expect(panelId).toBeTruthy();
+    const panel = container.querySelector(`#${panelId}`);
+    expect(panel?.querySelector("[role='list']")).not.toBeNull();
+
+    const first = button(container, /Attempt 1/);
+    const second = button(container, /Attempt 2/);
+    expect(first).toHaveTextContent("failed: lock timeout 1");
+    expect(first).toHaveTextContent("1.0s");
+    expect(second).toHaveTextContent("failed: lock timeout 2");
+    expect(first).toHaveAttribute("aria-expanded", "false");
+    expect(second).toHaveAttribute("aria-expanded", "true");
+    expect(container.textContent).not.toContain("Old Command 1");
+    expect(container.textContent).toContain("Old Command 2");
+
+    act(() => {
+      first.click();
+    });
+    expect(sections.toggleRow).toHaveBeenCalledWith("attempts-0-attempt-1");
+
+    unmount();
+  });
+
+  test("a single previous attempt expands straight to its sections", () => {
+    mocks.useTaskRunLogSections.mockReturnValue(
+      sectionsWithAttempts(attemptGroup(1), new Set(["attempts-0"]))
+    );
+
+    const { container, unmount } = renderViewer();
+
+    expect(button(container, /Previous attempts/)).toHaveTextContent("1 attempt");
+    expect(container.textContent).not.toContain("Attempt 1");
+    expect(container.textContent).toContain("Old Command 1");
+
+    unmount();
+  });
+
+  test("an opened superseded section shows its red error entry untouched", () => {
+    mocks.useTaskRunLogSections.mockReturnValue(
+      sectionsWithAttempts(
+        attemptGroup(1),
+        new Set(["attempts-0", "attempts-0-attempt-1-section-0"])
+      )
+    );
+
+    const { container, unmount } = renderViewer();
+
+    const entry = within(container).getByTestId("task-run-log-row");
+    expect(entry).toHaveTextContent("Old Command 1 entry");
+    expect(entry).toHaveTextContent("✗");
+    expect(entry.querySelector(".text-error")).not.toBeNull();
+
+    unmount();
+  });
+
+  test("a scope still retrying says so on its umbrella while the run runs", () => {
+    mocks.useTaskRunLogSections.mockReturnValue(
+      sectionsWithAttempts(attemptGroup(2, true))
+    );
+
+    const { container, unmount } = renderViewer({ taskRunStatus: TaskRun_Status.RUNNING });
+
+    expect(button(container, /Previous attempts/)).toHaveTextContent(
+      "2 attempts · retrying"
+    );
+
+    unmount();
+  });
+
+  test("a running run whose final attempt finished is not called retrying", () => {
+    // The run can go on after the retried call, for example to its schema sync.
+    mocks.useTaskRunLogSections.mockReturnValue(
+      sectionsWithAttempts(attemptGroup(2, false))
+    );
+
+    const { container, unmount } = renderViewer({
+      taskRunStatus: TaskRun_Status.RUNNING,
+    });
+
+    const umbrella = button(container, /Previous attempts/);
+    expect(umbrella).toHaveTextContent("2 attempts");
+    expect(umbrella).not.toHaveTextContent("retrying");
+
+    unmount();
+  });
+
+  // A run whose replica stopped mid-attempt is failed with its last command
+  // still unanswered in the log; pages without a status show finished runs.
+  for (const taskRunStatus of [TaskRun_Status.FAILED, undefined]) {
+    test(`an unfinished attempt is not called retrying when the run is ${taskRunStatus === undefined ? "of unknown status" : TaskRun_Status[taskRunStatus]}`, () => {
+      mocks.useTaskRunLogSections.mockReturnValue(
+        sectionsWithAttempts(attemptGroup(2, true))
+      );
+
+      const { container, unmount } = renderViewer({ taskRunStatus });
+
+      const umbrella = button(container, /Previous attempts/);
+      expect(umbrella).toHaveTextContent("2 attempts");
+      expect(umbrella).not.toHaveTextContent("retrying");
+
+      unmount();
+    });
+  }
+
+  test("an umbrella with nothing after it keeps the summary chrome", () => {
+    const group = attemptGroup(1);
+    mocks.useTaskRunLogSections.mockReturnValue({
+      ...sectionsWithAttempts(group),
+      rows: [group],
+    });
+
+    const { container, unmount } = renderViewer();
+
+    expect(container.textContent).toContain("1 sections · 1 entries");
+    button(container, /Previous attempts/);
+
+    unmount();
+  });
+
+  test("derives the dataset key from the run name and its marker count", () => {
+    const seenKeys: string[] = [];
+    mocks.useTaskRunLogSections.mockImplementation(
+      (options: UseTaskRunLogSectionsOptions) => {
+        seenKeys.push(options.datasetKey);
+        return createDefaultSections();
+      }
+    );
+
+    mocks.useTaskRunLogData.mockReturnValue({
+      ...createDefaultData(),
+      entries: [
+        runningCommand(1),
+        retry(2, 1),
+        runningCommand(3),
+        retry(4, 1),
+        runningCommand(5),
+      ],
+    });
+    const { unmount } = renderViewer();
+    expect(seenKeys.at(-1)).toBe("runs/1:2");
+    unmount();
+
+    mocks.useTaskRunLogData.mockReturnValue({
+      ...createDefaultData(),
+      entries: [runningCommand(1), runningCommand(3)],
+    });
+    const plain = renderViewer();
+    expect(seenKeys.at(-1)).toBe("runs/1:0");
+    plain.unmount();
+  });
+
+  test("a marker resets a section's load-more state; an ordinary append keeps it", () => {
+    const large = largeSection("section-0", "Big Command");
+    mocks.useTaskRunLogSections.mockReturnValue({
+      ...createDefaultSections(),
+      rows: [large, section("section-1", "Other")],
+      totalSections: 2,
+      totalEntries: 61,
+    });
+    mocks.useTaskRunLogData.mockReturnValue({
+      ...createDefaultData(),
+      entries: [runningCommand(1)],
+    });
+
+    const { container, rerender, unmount } = renderViewer();
+    act(() => {
+      button(container, /Load more/).click();
+    });
+    expect(container.textContent).toContain("ROW 59");
+
+    // `active` only reaches the mocked data hook; changing it is what makes
+    // the memoized viewer render again with the new entries.
+    const renderWith = (entries: TaskRunLogEntry[], active: boolean) => {
+      mocks.useTaskRunLogData.mockReturnValue({ ...createDefaultData(), entries });
+      rerender({ active });
+    };
+
+    renderWith([runningCommand(1), runningCommand(2)], false);
+    expect(container.textContent).toContain("ROW 59");
+
+    // The marker regroups the list, so the section instance at this position
+    // no longer shows the same section; its load-more state must go with it.
+    renderWith([runningCommand(1), runningCommand(2), retry(3, 1)], true);
+    expect(container.textContent).not.toContain("ROW 59");
+
+    unmount();
+  });
 });
 
 describe("TaskRunLogViewer row folds", () => {
-  const SHOW = "task-run.log-detail.show-full-statement";
-  const HIDE = "task-run.log-detail.hide-full-statement";
+  const SHOW = "Show full statement";
+  const HIDE = "Hide full statement";
   const STATEMENT = "ALTER TABLE t\n  ADD COLUMN c int;";
   const ROW_HEIGHT = 28;
 
@@ -346,20 +610,14 @@ describe("TaskRunLogViewer row folds", () => {
     props: { taskRunStatus?: TaskRun_Status } = {}
   ) => {
     log.entries = entries;
-    const view = renderIntoContainer(
-      createElement(TaskRunLogViewer, { taskRunName: "runs/1", ...props })
-    );
+    const view = renderViewer(props);
     const poll = (next: TaskRunLogEntry[]) =>
       act(() => {
         log.entries = next;
         for (const listener of log.listeners) listener();
       });
     const switchTo = (taskRunName: string) =>
-      act(() => {
-        view.root.render(
-          createElement(TaskRunLogViewer, { ...props, taskRunName })
-        );
-      });
+      view.rerender({ ...props, taskRunName });
     const foldControl = () =>
       view.container.querySelector<HTMLButtonElement>(
         `button[aria-label="${SHOW}"], button[aria-label="${HIDE}"]`
@@ -493,9 +751,29 @@ describe("TaskRunLogViewer row folds", () => {
     ]);
 
     expect(view.container.textContent).toContain(
-      "task-run.log-viewer.multiple-replicas-notice"
+      "Logs are grouped by replica"
     );
     expect(view.block()?.textContent).toContain("ADD COLUMN c int;");
+
+    view.unmount();
+  });
+
+  test("a row the reader unfolded stays unfolded when a retry marker folds it into Previous attempts", () => {
+    const attempt = [
+      transaction(1),
+      command(2, "ERROR: lock timeout"),
+      transaction(4),
+    ];
+    const view = mountViewer(attempt);
+    click(view.foldControl());
+    expect(view.block()).not.toBeNull();
+
+    view.poll([...attempt, retry(5, 1), transaction(6)]);
+    expect(view.block()).toBeNull();
+
+    click(view.sectionHeader("Previous attempts"));
+    expect(view.foldControl()?.getAttribute("aria-expanded")).toBe("true");
+    expect(view.block()).not.toBeNull();
 
     view.unmount();
   });

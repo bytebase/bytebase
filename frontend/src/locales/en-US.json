@@ -3726,7 +3726,6 @@
       "computing": "Computing...",
       "dumping": "Dumping...",
       "hide-full-statement": "Hide full statement",
-      "retry-attempt": "attempt {{current}}/{{max}}",
       "show-full-statement": "Show full statement",
       "syncing": "Syncing..."
     },
@@ -3737,15 +3736,20 @@
       "ghost-migration": "gh-ost Migration",
       "prior-backup": "Prior Backup",
       "release-file-execute": "Release File",
-      "retry": "Retry",
       "schema-dump": "Schema Dump",
       "transaction": "Transaction"
     },
     "log-viewer": {
+      "attempt-count_one": "{{count}} attempt",
+      "attempt-count_other": "{{count}} attempts",
+      "attempt-n": "Attempt {{n}}",
+      "attempt-reason": "failed: {{reason}}",
       "collapse-all": "Collapse all",
       "expand-all": "Expand all",
       "multiple-replicas-notice": "Server restart detected during execution. Logs are grouped by replica.",
+      "previous-attempts": "Previous attempts",
       "replica-n": "Replica #{{n}}",
+      "retrying": "retrying",
       "summary": "{{sections}} sections · {{entries}} entries"
     },
     "no-blocking-sessions": "No blocking sessions",
