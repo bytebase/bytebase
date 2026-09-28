@@ -462,9 +462,10 @@ func (s *Store) getQueryDataPolicy(ctx context.Context, workspaceID string, reso
 	return p, nil
 }
 
-// GetDefaultReviewRulePolicy returns the review rule policy in force when
-// neither the project nor the workspace has one: every standard rule on. A
-// rule added to ReviewRuleType is added here in the same release.
+// GetDefaultReviewRulePolicy returns the review rule policy a new workspace
+// starts with, and the one in force when neither the project nor the
+// workspace has one: every standard rule on. A rule added to ReviewRuleType
+// is added here in the same release.
 func GetDefaultReviewRulePolicy() *storepb.ReviewRulePolicy {
 	return &storepb.ReviewRulePolicy{Rules: []storepb.ReviewRuleType{
 		storepb.ReviewRuleType_SYNTAX,

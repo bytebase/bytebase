@@ -370,9 +370,10 @@ func (*OrgPolicyService) getDefaultRolloutPolicy(parent string) (*store.PolicyMe
 }
 
 // getDefaultReviewRulePolicy returns the review rule policy that stands in for
-// a missing workspace row: every rule on, the default the store applies when
-// neither the project nor the workspace has a policy. A project without its
-// own policy follows the workspace's, so it has no stand-in and gets nil.
+// a missing workspace row, which workspaces created before the default row
+// lack: every rule on, the default the store applies when neither the project
+// nor the workspace has a policy. A project without its own policy follows the
+// workspace's, so it has no stand-in and gets nil.
 func getDefaultReviewRulePolicy(parent string) (*store.PolicyMessage, error) {
 	resourceType, resource, err := common.GetPolicyResourceTypeAndResource(parent)
 	if err != nil {
