@@ -377,6 +377,10 @@ describe("AuditLogTable", () => {
     [ACTORS.serviceAccount.name, serviceAccountFilter],
     ["serviceaccounts/deploy@service.bytebase.com", serviceAccountFilter],
     [ACTORS.serviceAccount.email, serviceAccountFilter],
+    [
+      ACTORS.workloadIdentity.email,
+      '(actor == "workloadIdentities/ci@workload.bytebase.com" || actor == "users/ci@workload.bytebase.com")',
+    ],
     [ACTORS.user.email, 'actor == "users/alice@example.com"'],
   ])("filters the actor value %s", async (value, filter) => {
     mocks.searchAuditLogs.mockResolvedValue({ auditLogs: [], nextPageToken: "" });
