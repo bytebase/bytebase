@@ -3,7 +3,6 @@ import {
   type CSSProperties,
   type MouseEvent,
   useCallback,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -40,7 +39,6 @@ const RELATIVE_TIME_COLUMN_MIN_CHARS = 7;
 export interface SectionContentProps {
   section: Section;
   indent?: boolean;
-  datasetKey?: string;
   // The reader's explicit folds, by row key. Held by the viewer because this
   // component unmounts whenever its enclosing section collapses.
   foldOverrides: ReadonlyMap<string, boolean>;
@@ -100,10 +98,10 @@ const sameKeys = (a: ReadonlySet<string>, b: ReadonlySet<string>): boolean => {
   return true;
 };
 
+// Local state resets only by remount, which the viewer keys on the dataset key.
 export function SectionContent({
   section,
   indent = false,
-  datasetKey,
   foldOverrides,
   onFoldChange,
 }: SectionContentProps) {
@@ -125,10 +123,6 @@ export function SectionContent({
       register(lineElements.current, key, element),
     []
   );
-
-  useEffect(() => {
-    setShowAllItems(false);
-  }, [datasetKey, section.id]);
 
   // The first MAX_RENDERED_ITEMS rows, plus the marked row when it falls
   // outside them: a failure at statement 300 must not wait behind "Load more".
@@ -233,7 +227,7 @@ export function SectionContent({
   const renderRow = ({ item, index }: Row) => {
     const open = isOpen(item, foldOverrides);
     return (
-      <LogRow
+      <EntryRow
         key={item.key}
         item={item}
         index={index}
@@ -277,7 +271,7 @@ export function SectionContent({
   );
 }
 
-interface LogRowProps {
+interface EntryRowProps {
   item: DisplayItem;
   index: number;
   indent: boolean;
@@ -290,7 +284,7 @@ interface LogRowProps {
 
 const TEXT_CELL = "shrink-0 py-1 tabular-nums";
 
-function LogRow({
+function EntryRow({
   item,
   index,
   indent,
@@ -299,7 +293,7 @@ function LogRow({
   onToggle,
   registerRow,
   registerLine,
-}: LogRowProps) {
+}: EntryRowProps) {
   const { t } = useTranslation();
   const { statement, error } = item;
   const showBlock = open && statement !== undefined;

@@ -154,6 +154,7 @@ const status = (key: string, detail: string): DisplayItem => ({
 });
 
 const sectionOf = (items: DisplayItem[]): Section => ({
+  kind: "section",
   id: "section-0",
   type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
   label: "Command Execute",
@@ -172,8 +173,8 @@ interface HarnessProps {
   initialOverrides?: ReadonlyMap<string, boolean>;
 }
 
-// The fold overrides live above SectionContent in the product, so the harness
-// owns them the same way.
+// In the product the fold overrides live above SectionContent and the viewer
+// keys it on the dataset key; the harness does both the same way.
 const Harness = ({
   items,
   datasetKey = "runs/1",
@@ -183,8 +184,8 @@ const Harness = ({
     () => initialOverrides ?? new Map()
   );
   return createElement(SectionContent, {
+    key: datasetKey,
     section: sectionOf(items),
-    datasetKey,
     foldOverrides: overrides,
     onFoldChange: (key: string, open: boolean) =>
       setOverrides((previous) => new Map(previous).set(key, open)),

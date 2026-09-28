@@ -3726,7 +3726,6 @@
       "computing": "tính toán...",
       "dumping": "đang xuất...",
       "hide-full-statement": "Ẩn toàn bộ câu lệnh",
-      "retry-attempt": "nỗ lực {{current}}/{{max}}",
       "show-full-statement": "Hiển thị toàn bộ câu lệnh",
       "syncing": "đang đồng bộ hóa..."
     },
@@ -3737,15 +3736,20 @@
       "ghost-migration": "Di chuyển gh-ost",
       "prior-backup": "Sao lưu trước",
       "release-file-execute": "Tệp phát hành",
-      "retry": "Thử lại",
       "schema-dump": "Xuất schema",
       "transaction": "Giao dịch"
     },
     "log-viewer": {
+      "attempt-count_one": "{{count}} lần thử",
+      "attempt-count_other": "{{count}} lần thử",
+      "attempt-n": "Lần thử {{n}}",
+      "attempt-reason": "thất bại: {{reason}}",
       "collapse-all": "Thu gọn tất cả",
       "expand-all": "Mở rộng tất cả",
       "multiple-replicas-notice": "Phát hiện khởi động lại máy chủ trong quá trình thực thi. Nhật ký được nhóm theo bản sao.",
+      "previous-attempts": "Các lần thử trước",
       "replica-n": "Bản sao #{{n}}",
+      "retrying": "đang thử lại",
       "summary": "{{sections}} phần · {{entries}} mục"
     },
     "no-blocking-sessions": "Không có phiên chặn nào",

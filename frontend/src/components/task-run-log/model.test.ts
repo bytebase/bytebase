@@ -1,6 +1,4 @@
 import { create } from "@bufbuild/protobuf";
-import { act, createElement } from "react";
-import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
 import {
   TaskRun_Status,
@@ -14,20 +12,29 @@ import {
   assignEntryKeys,
   type BuildSectionsOptions,
   buildReleaseFileGroups,
-  buildSectionsFromEntries,
+  buildRowsFromEntries,
+  collectLeafSections,
   groupEntriesByReleaseFile,
   hasReleaseFileMarkers,
   type TaskRunLogDetailText,
 } from "./model";
 import {
+  begin,
+  commit,
+  databaseSync,
+  failedAttempt,
+  LOCK_TIMEOUT,
+  passedAttempt,
+  priorBackup,
+  retry,
+  rollback,
+} from "./taskRunLogEntries";
+import type { AttemptGroup, LogRow, Section } from "./types";
+import {
   buildReleaseSheetFetchResult,
   buildSheetFetchStateForMissingTask,
   getUnresolvedTaskMetadataStateKey,
 } from "./useTaskRunLogData";
-import {
-  type UseTaskRunLogSectionsResult,
-  useTaskRunLogSections,
-} from "./useTaskRunLogSections";
 
 vi.mock("@/api", () => ({
   rolloutServiceClientConnect: {},
@@ -51,15 +58,21 @@ const ts = (seconds: number, nanos = 0) => ({
   nanos,
 });
 
-const buildSections = (
+const buildRows = (
   entries: TaskRunLogEntry[],
   options?: Partial<BuildSectionsOptions>
 ) =>
-  buildSectionsFromEntries(entries, {
+  buildRowsFromEntries(entries, {
     getSectionLabel: (type) => String(type),
     entryKeys: assignEntryKeys(entries),
     ...options,
   });
+
+// Leaf sections in render order, superseded attempts included.
+const buildSections = (
+  entries: TaskRunLogEntry[],
+  options?: Partial<BuildSectionsOptions>
+) => collectLeafSections(buildRows(entries, options));
 
 interface CommandOptions {
   statement?: string;
@@ -128,55 +141,6 @@ const markedDetails = (
   sections.flatMap((section) =>
     section.items.filter((item) => item.marked).map((item) => item.detail)
   );
-(
-  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
-).IS_REACT_ACT_ENVIRONMENT = true;
-
-interface HookHarnessProps {
-  entries: TaskRunLogEntry[];
-  datasetKey?: string;
-  taskRunStatus?: TaskRun_Status;
-}
-
-const createHookHarness = (initialProps: HookHarnessProps) => {
-  const container = document.createElement("div");
-  const root = createRoot(container);
-  let current: UseTaskRunLogSectionsResult | undefined;
-
-  const Harness = (props: HookHarnessProps) => {
-    current = useTaskRunLogSections({
-      entries: props.entries,
-      datasetKey: props.datasetKey,
-      taskRunStatus: props.taskRunStatus,
-      getSectionLabel: (type) => String(type),
-    });
-    return null;
-  };
-
-  const render = (props: HookHarnessProps) => {
-    act(() => {
-      root.render(createElement(Harness, props));
-    });
-  };
-
-  const getCurrent = () => {
-    if (!current) {
-      throw new Error("hook result is unavailable");
-    }
-    return current;
-  };
-
-  render(initialProps);
-
-  return {
-    render,
-    getCurrent,
-    unmount: () =>
-      act(() => {
-        root.unmount();
-      }),
-  };
-};
 
 describe("task-run-log model", () => {
   test("keeps unresolved task sheet state non-error while metadata is pending", () => {
@@ -295,13 +259,13 @@ describe("task-run-log model", () => {
       id: "file-0",
       version: "v1",
       filePath: "001.sql",
-      sections: [{ entryCount: 2 }],
+      rows: [{ entryCount: 2 }],
     });
     expect(groups[1]).toMatchObject({
       id: "file-1",
       version: "v2",
       filePath: "002.sql",
-      sections: [{ entryCount: 1 }],
+      rows: [{ entryCount: 1 }],
     });
   });
 
@@ -389,7 +353,7 @@ describe("task-run-log model", () => {
     expect(sections[1]?.items[0]?.detail).toBe("copy failed");
   });
 
-  test("uses localized detail text for completed timed entries, prior backup completion, and retries", () => {
+  test("uses localized detail text for completed timed entries and prior backup completion", () => {
     const detailText = {
       completed: "Completed",
       backingUp: "Backing up...",
@@ -397,8 +361,6 @@ describe("task-run-log model", () => {
         [TaskRunLogEntry_Type.SCHEMA_DUMP]: "Dumping...",
       },
       backupCompleted: (count: number) => `Completed (${count} tables)`,
-      retryAttempt: (current: number, max: number) =>
-        `Attempt ${current}/${max}`,
     } satisfies TaskRunLogDetailText;
 
     const entries = [
@@ -432,22 +394,12 @@ describe("task-run-log model", () => {
           error: "",
         },
       }),
-      create(TaskRunLogEntrySchema, {
-        type: TaskRunLogEntry_Type.RETRY_INFO,
-        logTime: ts(5),
-        retryInfo: {
-          error: "",
-          retryCount: 2,
-          maximumRetries: 5,
-        },
-      }),
     ];
 
     const sections = buildSections(entries, { detailText });
 
     expect(sections[0]?.items[0]?.detail).toBe("Completed");
     expect(sections[1]?.items[0]?.detail).toBe("Completed (2 tables)");
-    expect(sections[2]?.items[0]?.detail).toBe("Attempt 2/5");
   });
 
   test("drops empty release-file groups created by consecutive and trailing markers", () => {
@@ -513,89 +465,253 @@ describe("task-run-log model", () => {
       isOrphan: true,
       version: "",
       filePath: "",
-      sections: [{ entryCount: 1 }],
+      rows: [{ entryCount: 1 }],
     });
     expect(groups[1]).toMatchObject({
       id: "file-0",
       version: "v2",
       filePath: "002.sql",
-      sections: [{ entryCount: 1 }],
+      rows: [{ entryCount: 1 }],
     });
   });
+});
 
-  test("handles expand/collapse state for filtered release-file groups", () => {
-    const entries = [
-      create(TaskRunLogEntrySchema, {
-        type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
-        logTime: ts(1),
-        releaseFileExecute: { version: "v1", filePath: "001.sql" },
-      }),
-      create(TaskRunLogEntrySchema, {
-        type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
-        logTime: ts(2),
-        releaseFileExecute: { version: "v2", filePath: "002.sql" },
-      }),
-      create(TaskRunLogEntrySchema, {
-        type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
-        logTime: ts(3),
-        commandExecute: {
-          statement: "SELECT 1;",
-          response: { logTime: ts(4) },
-        },
-      }),
-    ];
+const DEADLOCK = "ERROR: deadlock detected";
 
-    const hook = createHookHarness({ entries, datasetKey: "marker-only" });
+describe("task-run-log attempt rows", () => {
+  test("an empty log has no rows", () => {
+    expect(buildRows([])).toEqual([]);
+  });
 
-    expect(hook.getCurrent().releaseFileGroups).toHaveLength(1);
+  test("without a retry marker every row is a section with positional ids", () => {
+    const rows = buildRows([
+      begin(1),
+      command(2, { error: "" }),
+      commit(4),
+      databaseSync(5, 7),
+    ]);
+
+    expect(rows.map((row) => row.kind)).toEqual([
+      "section",
+      "section",
+      "section",
+      "section",
+    ]);
+    expect(rows.map((row) => row.id)).toEqual([
+      "section-0",
+      "section-1",
+      "section-2",
+      "section-3",
+    ]);
+  });
+
+  test("one retry marker folds the attempt before it into a Previous attempts row", () => {
+    const rows = buildRows([
+      begin(1),
+      command(1, { error: LOCK_TIMEOUT }),
+      rollback(2),
+      retry(3, 1),
+      begin(4),
+      command(4, { error: "" }),
+      commit(6),
+      databaseSync(6, 8),
+    ]);
+
+    expect(rows.map((row) => row.kind)).toEqual([
+      "attempts",
+      "section",
+      "section",
+      "section",
+      "section",
+    ]);
+    const umbrella = rows[0] as AttemptGroup;
+    expect(umbrella).toMatchObject({
+      id: "attempts-0",
+      duration: "1.0s",
+      retrying: false,
+    });
+    expect(umbrella.attempts).toHaveLength(1);
+    expect(umbrella.attempts[0]).toMatchObject({
+      id: "attempts-0-attempt-1",
+      number: 1,
+      reason: LOCK_TIMEOUT,
+      duration: "1.0s",
+    });
     expect(
-      hook.getCurrent().releaseFileGroups.map((group) => group.id)
-    ).toEqual(["file-0"]);
-    expect(hook.getCurrent().totalSections).toBe(1);
+      umbrella.attempts[0]?.sections.map((section) => [
+        section.id,
+        section.type,
+        section.status,
+      ])
+    ).toEqual([
+      [
+        "attempts-0-attempt-1-section-0",
+        TaskRunLogEntry_Type.TRANSACTION_CONTROL,
+        "success",
+      ],
+      [
+        "attempts-0-attempt-1-section-1",
+        TaskRunLogEntry_Type.COMMAND_EXECUTE,
+        "error",
+      ],
+      [
+        "attempts-0-attempt-1-section-2",
+        TaskRunLogEntry_Type.TRANSACTION_CONTROL,
+        "success",
+      ],
+    ]);
 
-    act(() => {
-      hook.getCurrent().collapseAll();
-    });
-    expect(hook.getCurrent().areAllExpanded).toBe(false);
+    // The final attempt stays flat and green, ids continuing past the umbrella.
+    expect(
+      rows.slice(1).map((row) => [row.id, (row as Section).status])
+    ).toEqual([
+      ["section-1", "success"],
+      ["section-2", "success"],
+      ["section-3", "success"],
+      ["section-4", "success"],
+    ]);
 
-    act(() => {
-      hook.getCurrent().expandAll();
-    });
-    expect(hook.getCurrent().areAllExpanded).toBe(true);
-
-    act(() => {
-      hook.getCurrent().toggleReleaseFile("file-0");
-    });
-    expect(hook.getCurrent().areAllExpanded).toBe(false);
-
-    hook.unmount();
+    const leaves = collectLeafSections(rows);
+    expect(leaves.some((s) => s.type === TaskRunLogEntry_Type.RETRY_INFO)).toBe(
+      false
+    );
+    expect(leaves.reduce((sum, s) => sum + s.entryCount, 0)).toBe(7);
   });
 
-  test("resets expansion state when dataset key changes", () => {
+  test("an auto-commit attempt, with no transaction entries, folds like any other", () => {
+    const rows = buildRows([
+      command(1, { error: "" }),
+      command(2, { error: LOCK_TIMEOUT }),
+      retry(4, 1),
+      command(5, { error: "" }),
+      command(6, { error: "" }),
+    ]);
+
+    expect(rows.map((row) => [row.id, row.kind])).toEqual([
+      ["attempts-0", "attempts"],
+      ["section-1", "section"],
+    ]);
+    expect(
+      (rows[0] as AttemptGroup).attempts[0]?.sections.map((section) => [
+        section.entryCount,
+        section.status,
+      ])
+    ).toEqual([[2, "error"]]);
+    expect((rows[1] as Section).status).toBe("success");
+  });
+
+  test("several markers number the attempts and label each with the marker that closes it", () => {
+    const rows = buildRows([
+      ...failedAttempt(1, 1),
+      // Numbered by position, not by the marker's retryCount.
+      ...failedAttempt(4, 9, { error: DEADLOCK }),
+      ...passedAttempt(7),
+    ]);
+
+    expect(rows.map((row) => row.kind)).toEqual([
+      "attempts",
+      "section",
+      "section",
+      "section",
+    ]);
+    const umbrella = rows[0] as AttemptGroup;
+    expect(umbrella.duration).toBe("2.0s");
+    expect(
+      umbrella.attempts.map((attempt) => [
+        attempt.number,
+        attempt.reason,
+        attempt.duration,
+        attempt.sections.length,
+      ])
+    ).toEqual([
+      [1, LOCK_TIMEOUT, "1.0s", 3],
+      [2, DEADLOCK, "1.0s", 3],
+    ]);
+  });
+
+  test("prior backup and database sync stay outside the attempts, in place", () => {
+    const rows = buildRows([
+      priorBackup(1, 3),
+      ...failedAttempt(4, 1),
+      ...passedAttempt(7),
+      databaseSync(10, 14),
+    ]);
+
+    expect(
+      rows.map((row) => [
+        row.kind,
+        row.kind === "section" ? row.type : row.attempts.length,
+        row.duration,
+      ])
+    ).toEqual([
+      ["section", TaskRunLogEntry_Type.PRIOR_BACKUP, "2.0s"],
+      ["attempts", 1, "1.0s"],
+      ["section", TaskRunLogEntry_Type.TRANSACTION_CONTROL, "<1ms"],
+      ["section", TaskRunLogEntry_Type.COMMAND_EXECUTE, "1.0s"],
+      ["section", TaskRunLogEntry_Type.TRANSACTION_CONTROL, "<1ms"],
+      ["section", TaskRunLogEntry_Type.DATABASE_SYNC, "4.0s"],
+    ]);
+  });
+
+  test("a marker with nothing after it renders the umbrella alone, not retrying", () => {
+    const rows = buildRows([priorBackup(1, 3), ...failedAttempt(4, 1)]);
+
+    expect(rows.map((row) => row.kind)).toEqual(["section", "attempts"]);
+    expect(rows[1]).toMatchObject({ retrying: false });
+    expect((rows[1] as AttemptGroup).attempts).toHaveLength(1);
+  });
+
+  test("a final segment still running marks the umbrella as retrying", () => {
+    const rows = buildRows([
+      ...failedAttempt(1, 1),
+      ...failedAttempt(4, 2),
+      begin(7),
+      command(7),
+    ]);
+
+    expect(rows.map((row) => row.kind)).toEqual([
+      "attempts",
+      "section",
+      "section",
+    ]);
+    expect(rows[0]).toMatchObject({ retrying: true });
+    expect((rows[0] as AttemptGroup).attempts).toHaveLength(2);
+    expect((rows[2] as Section).status).toBe("running");
+  });
+
+  test("each release file that retried gets its own umbrella with its own count", () => {
     const entries = [
-      create(TaskRunLogEntrySchema, {
-        type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
-        logTime: ts(1),
-        commandExecute: {
-          statement: "SELECT 1;",
-          response: { logTime: ts(2) },
-        },
-      }),
+      releaseFile(1, "v1"),
+      ...failedAttempt(2, 1),
+      ...passedAttempt(5),
+      releaseFile(8, "v2"),
+      ...passedAttempt(9),
+      releaseFile(12, "v3"),
+      ...failedAttempt(13, 1),
+      ...failedAttempt(16, 2),
+      ...passedAttempt(19),
     ];
-
-    const hook = createHookHarness({ entries, datasetKey: "dataset-a" });
-    const sectionId = hook.getCurrent().sections[0]?.id;
-    expect(sectionId).toBe("section-0");
-
-    act(() => {
-      hook.getCurrent().toggleSection(sectionId!);
+    const groups = buildReleaseFileGroups(entries, {
+      getSectionLabel: (type) => String(type),
+      entryKeys: assignEntryKeys(entries),
     });
-    expect(hook.getCurrent().isSectionExpanded(sectionId!)).toBe(true);
 
-    hook.render({ entries, datasetKey: "dataset-b" });
-    expect(hook.getCurrent().isSectionExpanded(sectionId!)).toBe(false);
-
-    hook.unmount();
+    const shape = (row: LogRow) =>
+      row.kind === "attempts" ? `attempts:${row.attempts.length}` : "section";
+    expect(
+      groups.map((group) => [group.version, group.rows.map(shape)])
+    ).toEqual([
+      ["v1", ["attempts:1", "section", "section", "section"]],
+      ["v2", ["section", "section", "section"]],
+      ["v3", ["attempts:2", "section", "section", "section"]],
+    ]);
+    // Ids nest under the file so two files' umbrellas never collide.
+    expect(groups[0]?.rows[0]?.id).toBe("file-0-attempts-0");
+    const thirdFileUmbrella = groups[2]?.rows[0] as AttemptGroup | undefined;
+    expect(thirdFileUmbrella?.id).toBe("file-2-attempts-0");
+    expect(thirdFileUmbrella?.attempts[1]?.id).toBe(
+      "file-2-attempts-0-attempt-2"
+    );
   });
 });
 
@@ -669,7 +785,7 @@ describe("command row payloads", () => {
   });
 
   test("entries that carry status words return the detail alone", () => {
-    const sections = buildSections([transaction(1), retryMarker(2)]);
+    const sections = buildSections([transaction(1), databaseSync(2, 3)]);
 
     for (const section of sections) {
       expect(section.items[0]?.statement).toBeUndefined();
@@ -763,54 +879,6 @@ describe("the row that opens by default", () => {
 
     expect(markedDetails(sections)).toEqual([]);
   });
-
-  test("one replica's success does not silence another replica's failure", () => {
-    const hook = createHookHarness({
-      entries: [
-        command(1, { statement: "SELECT 1;", error: "boom", replicaId: "a" }),
-        command(3, { statement: "SELECT 1;", error: "", replicaId: "b" }),
-      ],
-      datasetKey: "replicas",
-    });
-
-    const [first, second] = hook.getCurrent().replicaGroups;
-    expect(markedDetails(first?.sections ?? [])).toEqual(["boom"]);
-    expect(markedDetails(second?.sections ?? [])).toEqual([]);
-
-    hook.unmount();
-  });
-
-  test("the hook forwards a DONE status into every builder it calls", () => {
-    const failing = (replicaId: string) => [
-      command(1, { statement: "SELECT 0;", error: "orphan", replicaId }),
-      releaseFile(3, "v1", { replicaId }),
-      command(4, { statement: "SELECT 1;", error: "in file", replicaId }),
-    ];
-    const entries = [...failing("a"), ...failing("b")];
-    const allSections = (result: UseTaskRunLogSectionsResult) => [
-      ...result.sections,
-      ...result.releaseFileGroups.flatMap((group) => group.sections),
-      ...result.replicaGroups.flatMap((group) => [
-        ...group.sections,
-        ...group.releaseFileGroups.flatMap((fileGroup) => fileGroup.sections),
-      ]),
-    ];
-
-    const hook = createHookHarness({ entries, datasetKey: "done-guard" });
-    // Flat, release-file, orphan, per-replica orphan and per-replica file.
-    expect(
-      markedDetails(allSections(hook.getCurrent())).length
-    ).toBeGreaterThan(4);
-
-    hook.render({
-      entries,
-      datasetKey: "done-guard",
-      taskRunStatus: TaskRun_Status.DONE,
-    });
-    expect(markedDetails(allSections(hook.getCurrent()))).toEqual([]);
-
-    hook.unmount();
-  });
 });
 
 describe("row identity", () => {
@@ -841,7 +909,7 @@ describe("row identity", () => {
 
     expect(groups).toHaveLength(2);
     const [first, second] = groups.map(
-      (group) => group.sections[0]?.items[0]?.key
+      (group) => collectLeafSections(group.rows)[0]?.items[0]?.key
     );
     expect(first).toBeDefined();
     expect(first).not.toBe(second);
@@ -862,34 +930,11 @@ describe("row identity", () => {
     const stranger = command(1, { statement: "SELECT 1;", error: "" });
 
     expect(() =>
-      buildSectionsFromEntries([stranger], {
+      buildRowsFromEntries([stranger], {
         getSectionLabel: (type) => String(type),
         entryKeys: assignEntryKeys([]),
       })
     ).toThrow();
-  });
-
-  test("a row's key survives a second replica appearing", () => {
-    const first = () =>
-      command(1, { statement: "SELECT 1;", error: "", replicaId: "a" });
-    const hook = createHookHarness({ entries: [first()], datasetKey: "run" });
-    const before = hook.getCurrent().sections[0]?.items[0]?.key;
-
-    hook.render({
-      entries: [
-        first(),
-        command(3, { statement: "SELECT 1;", error: "", replicaId: "b" }),
-      ],
-      datasetKey: "run",
-    });
-
-    expect(hook.getCurrent().hasMultipleReplicas).toBe(true);
-    const after =
-      hook.getCurrent().replicaGroups[0]?.sections[0]?.items[0]?.key;
-    expect(before).toBeDefined();
-    expect(after).toBe(before);
-
-    hook.unmount();
   });
 
   test("a row's key survives a retry marker splitting its section", () => {
@@ -901,8 +946,8 @@ describe("row identity", () => {
     expect(before).toHaveLength(1);
 
     const after = buildSections([...commands(), retryMarker(3)]);
-    expect(after).toHaveLength(3);
-    expect(after[2]?.items[0]?.key).toBe(before[0]?.items[1]?.key);
+    expect(after).toHaveLength(2);
+    expect(after[1]?.items[0]?.key).toBe(before[0]?.items[1]?.key);
     expect(after[0]?.items[0]?.key).toBe(before[0]?.items[0]?.key);
   });
 });

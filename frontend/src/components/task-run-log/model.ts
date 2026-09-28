@@ -9,8 +9,11 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type {
+  Attempt,
+  AttemptGroup,
   DisplayItem,
   EntryGroup,
+  LogRow,
   ReleaseFileEntriesGroup,
   ReleaseFileGroup,
   Section,
@@ -61,9 +64,11 @@ export interface TaskRunLogDetailText {
   backingUp?: string;
   runningByType?: Partial<Record<TaskRunLogEntry_Type, string>>;
   transactionError?: (typeLabel: string, error: string) => string;
-  retryAttempt?: (current: number, max: number) => string;
   backupCompleted?: (count: number) => string;
 }
+
+const prefixId = (idPrefix: string | undefined, id: string): string =>
+  idPrefix ? `${idPrefix}-${id}` : id;
 
 export const getTimestampMs = (timestamp?: Timestamp): number => {
   if (!timestamp) return 0;
@@ -171,9 +176,6 @@ export const isComplete = (entry: TaskRunLogEntry): boolean => {
       return Boolean(
         entry.ghostMigration?.startTime && entry.ghostMigration?.endTime
       );
-    case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
-    case TaskRunLogEntry_Type.RETRY_INFO:
-      return true;
     default:
       return true;
   }
@@ -219,9 +221,7 @@ export const groupEntriesByReleaseFile = (
 ): ReleaseFileEntriesGroup[] => {
   if (entries.length === 0) return [];
 
-  const sorted = [...entries].sort(
-    (a, b) => getTimestampMs(a.logTime) - getTimestampMs(b.logTime)
-  );
+  const sorted = sortEntriesByTime(entries);
   const groups: ReleaseFileEntriesGroup[] = [];
   let current: ReleaseFileEntriesGroup = { file: null, entries: [] };
 
@@ -254,9 +254,7 @@ export const groupEntriesByReleaseFile = (
 
 export const getUniqueReplicaIds = (entries: TaskRunLogEntry[]): string[] => {
   if (entries.length === 0) return [];
-  const sorted = [...entries].sort(
-    (a, b) => getTimestampMs(a.logTime) - getTimestampMs(b.logTime)
-  );
+  const sorted = sortEntriesByTime(entries);
   const replicaIds: string[] = [];
   const seen = new Set<string>();
 
@@ -442,18 +440,6 @@ const getPriorBackupDetail = (
   return detailText?.backingUp ?? "";
 };
 
-const getRetryInfoDetail = (
-  entry: TaskRunLogEntry,
-  detailText: TaskRunLogDetailText | undefined
-): string => {
-  const retryInfo = entry.retryInfo;
-  if (!retryInfo) return "";
-  const attempt = detailText?.retryAttempt
-    ? detailText.retryAttempt(retryInfo.retryCount, retryInfo.maximumRetries)
-    : `${retryInfo.retryCount}/${retryInfo.maximumRetries}`;
-  return retryInfo.error ? `${attempt}: ${retryInfo.error}` : attempt;
-};
-
 const getReleaseFileExecuteDetail = (entry: TaskRunLogEntry): string => {
   const releaseFile = entry.releaseFileExecute;
   if (!releaseFile) return "";
@@ -487,8 +473,6 @@ const getStatusDetail = (
       );
     case TaskRunLogEntry_Type.PRIOR_BACKUP:
       return getPriorBackupDetail(entry, detailText);
-    case TaskRunLogEntry_Type.RETRY_INFO:
-      return getRetryInfoDetail(entry, detailText);
     case TaskRunLogEntry_Type.COMPUTE_DIFF:
       return getTimedEntryDetail(
         entry.computeDiff,
@@ -601,56 +585,208 @@ const pickMarkedEntry = (
   return superseded ? undefined : sorted[lastFailedIndex];
 };
 
+// The span covered by a run of entries. `durationMs` is undefined when no entry
+// has a start or none has an end; an unanswered command's end is its start.
+const getEntriesTimeSpan = (
+  entries: TaskRunLogEntry[]
+): { startTime: number; durationMs: number | undefined } => {
+  const timeRanges = entries.map(getEntryTimeRange);
+  const startTimes = timeRanges
+    .map((range) => range.start)
+    .filter((time) => time > 0);
+  const endTimes = timeRanges
+    .map((range) => range.end)
+    .filter((time) => time > 0);
+  const startTime = startTimes.length > 0 ? Math.min(...startTimes) : 0;
+  const endTime = endTimes.length > 0 ? Math.max(...endTimes) : 0;
+  return {
+    startTime,
+    durationMs:
+      startTime > 0 && endTime > 0
+        ? Math.max(endTime - startTime, 0)
+        : undefined,
+  };
+};
+
+const formatOptionalDuration = (durationMs: number | undefined): string =>
+  durationMs === undefined ? "" : formatDuration(durationMs);
+
 const calculateSectionStatus = (entries: TaskRunLogEntry[]): SectionStatus => {
   if (entries.some(hasError)) return "error";
   if (entries.every(isComplete)) return "success";
   return "running";
 };
 
-export const buildSectionsFromEntries = (
+// Sections for one run of a context. `markedEntry` is the context's pick, which
+// a run cannot make on its own; `indexOffset` positions the run's first section
+// among its siblings.
+const buildSections = (
   entries: TaskRunLogEntry[],
-  options: BuildSectionsOptions
-): Section[] => {
-  if (entries.length === 0) return [];
-
-  const sorted = sortEntriesByTime(entries);
-  const markedEntry = pickMarkedEntry(sorted, options.taskRunStatus);
-
-  return groupEntriesByType(sorted).map((group, groupIndex) => {
+  options: BuildSectionsOptions,
+  markedEntry: TaskRunLogEntry | undefined,
+  indexOffset = 0
+): Section[] =>
+  groupEntriesByType(entries).map((group, index) => {
+    const groupIndex = indexOffset + index;
     let status = calculateSectionStatus(group.entries);
     if (options.forceError && status === "running") {
       status = "error";
     }
     const statusConfig = STATUS_CONFIG[status];
-
-    const timeRanges = group.entries.map(getEntryTimeRange);
-    const startTimes = timeRanges
-      .map((range) => range.start)
-      .filter((time) => time > 0);
-    const endTimes = timeRanges
-      .map((range) => range.end)
-      .filter((time) => time > 0);
-    const startTime = startTimes.length > 0 ? Math.min(...startTimes) : 0;
-    const endTime = endTimes.length > 0 ? Math.max(...endTimes) : 0;
-    const durationMs = endTime - startTime;
+    const { startTime, durationMs } = getEntriesTimeSpan(group.entries);
 
     return {
-      id: options.idPrefix
-        ? `${options.idPrefix}-section-${groupIndex}`
-        : `section-${groupIndex}`,
+      kind: "section",
+      id: prefixId(options.idPrefix, `section-${groupIndex}`),
       type: group.type,
       label: options.getSectionLabel(group.type),
       status,
       statusIcon: statusConfig.icon,
       statusClass: statusConfig.className,
-      duration:
-        startTime > 0 && endTime > 0
-          ? formatDuration(Math.max(durationMs, 0))
-          : "",
+      duration: formatOptionalDuration(durationMs),
       entryCount: group.entries.length,
       items: buildDisplayItems(group.entries, startTime, markedEntry, options),
     };
   });
+
+// Only entries the driver writes inside `driver.Execute` are retried; the
+// executor emits every other type once, around that call.
+const ATTEMPT_MATERIAL_TYPES: ReadonlySet<TaskRunLogEntry_Type> = new Set([
+  TaskRunLogEntry_Type.TRANSACTION_CONTROL,
+  TaskRunLogEntry_Type.COMMAND_EXECUTE,
+  TaskRunLogEntry_Type.RETRY_INFO,
+]);
+
+const isAttemptMaterial = (entry: TaskRunLogEntry): boolean =>
+  ATTEMPT_MATERIAL_TYPES.has(entry.type);
+
+const isRetryMarker = (entry: TaskRunLogEntry): boolean =>
+  entry.type === TaskRunLogEntry_Type.RETRY_INFO;
+
+export const countRetryMarkers = (entries: TaskRunLogEntry[]): number =>
+  entries.filter(isRetryMarker).length;
+
+interface AttemptEntries {
+  entries: TaskRunLogEntry[];
+  marker: TaskRunLogEntry;
+}
+
+// Marker i closes attempt i; the entries after the last marker are the final
+// attempt, which may be empty while the retry has not logged anything yet.
+const cutAttempts = (
+  scope: TaskRunLogEntry[]
+): { attempts: AttemptEntries[]; final: TaskRunLogEntry[] } => {
+  const attempts: AttemptEntries[] = [];
+  let segment: TaskRunLogEntry[] = [];
+  for (const entry of scope) {
+    if (isRetryMarker(entry)) {
+      attempts.push({ entries: segment, marker: entry });
+      segment = [];
+      continue;
+    }
+    segment.push(entry);
+  }
+  return { attempts, final: segment };
+};
+
+// Maximal contiguous runs of attempt material and of one-time entries. Sections
+// group by type, and the two kinds are disjoint, so cutting at every run
+// boundary changes nothing for a run that never retried.
+const splitByAttemptMaterial = (
+  sorted: TaskRunLogEntry[]
+): TaskRunLogEntry[][] => {
+  const runs: TaskRunLogEntry[][] = [];
+  for (const entry of sorted) {
+    const run = runs.at(-1);
+    if (run && isAttemptMaterial(run[0]) === isAttemptMaterial(entry)) {
+      run.push(entry);
+    } else {
+      runs.push([entry]);
+    }
+  }
+  return runs;
+};
+
+// Leaf sections in render order: top-level sections and every attempt's
+// sections, superseded attempts included. Umbrella and attempt rows are
+// containers, not sections.
+export const collectLeafSections = (rows: LogRow[]): Section[] =>
+  rows.flatMap((row) =>
+    row.kind === "section"
+      ? [row]
+      : row.attempts.flatMap((attempt) => attempt.sections)
+  );
+
+// With one previous attempt the umbrella opens straight onto its sections, so
+// that attempt has no row of its own.
+export const soleAttemptOf = (group: AttemptGroup): Attempt | undefined =>
+  group.attempts.length === 1 ? group.attempts[0] : undefined;
+
+// Ids of the umbrella and attempt rows a reader can open.
+export const collectAttemptRowIds = (rows: LogRow[]): string[] =>
+  rows.flatMap((row) => {
+    if (row.kind !== "attempts") return [];
+    if (soleAttemptOf(row)) return [row.id];
+    return [row.id, ...row.attempts.map((attempt) => attempt.id)];
+  });
+
+export const buildRowsFromEntries = (
+  entries: TaskRunLogEntry[],
+  options: BuildSectionsOptions
+): LogRow[] => {
+  const sorted = sortEntriesByTime(entries);
+  // Picked before the cut: an attempt on its own has lost the marker that
+  // supersedes its failure.
+  const markedEntry = pickMarkedEntry(sorted, options.taskRunStatus);
+  const rows: LogRow[] = [];
+
+  for (const run of splitByAttemptMaterial(sorted)) {
+    // A retried execution scope is a run of attempt material holding a marker.
+    if (!run.some(isRetryMarker)) {
+      rows.push(...buildSections(run, options, markedEntry, rows.length));
+      continue;
+    }
+
+    const scope = cutAttempts(run);
+    const groupId = prefixId(options.idPrefix, `attempts-${rows.length}`);
+    let groupDurationMs: number | undefined;
+    const attempts: Attempt[] = scope.attempts.map(
+      ({ entries: attemptEntries, marker }, index) => {
+        const id = `${groupId}-attempt-${index + 1}`;
+        const { durationMs } = getEntriesTimeSpan(attemptEntries);
+        if (durationMs !== undefined) {
+          groupDurationMs = (groupDurationMs ?? 0) + durationMs;
+        }
+        return {
+          id,
+          number: index + 1,
+          reason: marker.retryInfo?.error ?? "",
+          duration: formatOptionalDuration(durationMs),
+          sections: buildSections(
+            attemptEntries,
+            { ...options, idPrefix: id },
+            markedEntry
+          ),
+        };
+      }
+    );
+    const finalSections = buildSections(
+      scope.final,
+      options,
+      markedEntry,
+      rows.length + 1
+    );
+    rows.push({
+      kind: "attempts",
+      id: groupId,
+      attempts,
+      duration: formatOptionalDuration(groupDurationMs),
+      retrying: finalSections.some((section) => section.status === "running"),
+    });
+    rows.push(...finalSections);
+  }
+
+  return rows;
 };
 
 export const buildReleaseFileGroups = (
@@ -670,15 +806,13 @@ export const buildReleaseFileGroups = (
       if (!buildOptions.includeOrphanGroup || group.entries.length === 0) {
         continue;
       }
-      const orphanPrefix = buildOptions.idPrefix
-        ? `${buildOptions.idPrefix}-orphan`
-        : "orphan";
+      const orphanPrefix = prefixId(buildOptions.idPrefix, "orphan");
       results.push({
         id: orphanPrefix,
         version: "",
         filePath: "",
         isOrphan: true,
-        sections: buildSectionsFromEntries(group.entries, {
+        rows: buildRowsFromEntries(group.entries, {
           ...buildOptions,
           idPrefix: orphanPrefix,
         }),
@@ -690,15 +824,13 @@ export const buildReleaseFileGroups = (
       continue;
     }
 
-    const filePrefix = buildOptions.idPrefix
-      ? `${buildOptions.idPrefix}-file-${fileIndex}`
-      : `file-${fileIndex}`;
+    const filePrefix = prefixId(buildOptions.idPrefix, `file-${fileIndex}`);
     fileIndex++;
     results.push({
       id: filePrefix,
       version: group.file.version,
       filePath: group.file.filePath,
-      sections: buildSectionsFromEntries(group.entries, {
+      rows: buildRowsFromEntries(group.entries, {
         ...buildOptions,
         idPrefix: filePrefix,
         fileVersion: group.file.version,

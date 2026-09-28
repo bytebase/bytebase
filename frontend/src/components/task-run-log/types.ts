@@ -37,6 +37,7 @@ export interface DisplayItem {
 }
 
 export interface Section {
+  kind: "section";
   id: string;
   type: TaskRunLogEntry_Type;
   label: string;
@@ -47,6 +48,29 @@ export interface Section {
   entryCount: number;
   items: DisplayItem[];
 }
+
+// A superseded attempt: the entries between two retry markers (or before the
+// first one). The marker that closed it supplies the reason.
+export interface Attempt {
+  id: string;
+  number: number;
+  reason: string;
+  duration: string;
+  sections: Section[];
+}
+
+// The "Previous attempts" umbrella: every superseded attempt of one retried
+// execution scope. It is history, so it has no status of its own.
+export interface AttemptGroup {
+  kind: "attempts";
+  id: string;
+  attempts: Attempt[];
+  duration: string;
+  // A section of the final attempt is still running.
+  retrying: boolean;
+}
+
+export type LogRow = Section | AttemptGroup;
 
 export interface EntryGroup {
   type: TaskRunLogEntry_Type;
@@ -68,11 +92,11 @@ export interface ReleaseFileGroup {
   version: string;
   filePath: string;
   isOrphan?: boolean;
-  sections: Section[];
+  rows: LogRow[];
 }
 
 export interface ReplicaGroup {
   replicaId: string;
   releaseFileGroups: ReleaseFileGroup[];
-  sections: Section[];
+  rows: LogRow[];
 }
