@@ -21,6 +21,7 @@ import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
 interface ListActorParams {
   parent?: string;
   filter?: { query?: string };
+  silent?: boolean;
 }
 
 const mocks = vi.hoisted(() => ({
@@ -76,9 +77,6 @@ vi.mock("@/stores/app", () => ({
       listUsers: mocks.listUsers,
       listServiceAccounts: mocks.listServiceAccounts,
       listWorkloadIdentities: mocks.listWorkloadIdentities,
-      projectsByName: { "projects/project-a": {} },
-      hasWorkspacePermission: () => true,
-      hasProjectPermission: () => true,
     }),
 }));
 
@@ -189,6 +187,11 @@ const ACTORS = {
     email: "ci@workload.bytebase.com",
     title: "CI",
   },
+  projectServiceAccount: {
+    name: "serviceAccounts/deployer@project-a.service.bytebase.com",
+    email: "deployer@project-a.service.bytebase.com",
+    title: "Deployer",
+  },
 };
 
 // Mirrors the server's filter: a case-insensitive contains match on the
@@ -202,15 +205,23 @@ const matchesQuery =
     );
   };
 
+// Like the server, a project parent lists only that project's accounts and a
+// workspace parent only workspace-level ones.
 const seedActors = () => {
   mocks.listUsers.mockImplementation(async (params) => ({
     users: [ACTORS.user].filter(matchesQuery(params)),
   }));
   mocks.listServiceAccounts.mockImplementation(async (params) => ({
-    serviceAccounts: [ACTORS.serviceAccount].filter(matchesQuery(params)),
+    serviceAccounts: (params?.parent === "projects/project-a"
+      ? [ACTORS.projectServiceAccount]
+      : [ACTORS.serviceAccount]
+    ).filter(matchesQuery(params)),
   }));
   mocks.listWorkloadIdentities.mockImplementation(async (params) => ({
-    workloadIdentities: [ACTORS.workloadIdentity].filter(matchesQuery(params)),
+    workloadIdentities: (params?.parent === "projects/project-a"
+      ? []
+      : [ACTORS.workloadIdentity]
+    ).filter(matchesQuery(params)),
   }));
 };
 
@@ -236,6 +247,7 @@ describe("AuditLogTable", () => {
     ACTORS.user,
     ACTORS.serviceAccount,
     ACTORS.workloadIdentity,
+    ACTORS.projectServiceAccount,
   ])("finds $name typed into the actor search box", async (actor) => {
     vi.useFakeTimers();
     seedActors();
@@ -276,7 +288,7 @@ describe("AuditLogTable", () => {
     table.unmount();
   });
 
-  test("lists every actor kind for an empty keyword", async () => {
+  test("lists every actor kind from the workspace and the project", async () => {
     seedActors();
     mocks.searchAuditLogs.mockResolvedValue({ auditLogs: [], nextPageToken: "" });
 
@@ -286,14 +298,37 @@ describe("AuditLogTable", () => {
     await render();
     const options = await getActorScope()?.onSearch?.("");
 
-    // The fake lists the same accounts under the workspace and the project.
     expect(options?.map((option) => option.value)).toEqual([
       ACTORS.user.name,
       ACTORS.serviceAccount.name,
+      ACTORS.projectServiceAccount.name,
       ACTORS.workloadIdentity.name,
     ]);
-    expect(mocks.listServiceAccounts).toHaveBeenCalledTimes(2);
-    expect(mocks.listWorkloadIdentities).toHaveBeenCalledTimes(2);
+
+    unmount();
+  });
+
+  test("leaves the account list permissions to the server", async () => {
+    seedActors();
+    mocks.searchAuditLogs.mockResolvedValue({ auditLogs: [], nextPageToken: "" });
+
+    const { render, unmount } = renderIntoContainer(
+      <AuditLogTable parent="projects/project-a" canExport={false} />
+    );
+    await render();
+    await getActorScope()?.onSearch?.("");
+
+    for (const list of [
+      mocks.listServiceAccounts,
+      mocks.listWorkloadIdentities,
+    ]) {
+      expect(
+        list.mock.calls.map(([params]) => [params?.parent, params?.silent])
+      ).toEqual([
+        ["workspaces/default", true],
+        ["projects/project-a", true],
+      ]);
+    }
 
     unmount();
   });
@@ -319,7 +354,7 @@ describe("AuditLogTable", () => {
 
   test("keeps the other actor kinds when one list fails", async () => {
     seedActors();
-    mocks.listWorkloadIdentities.mockRejectedValueOnce(new Error("denied"));
+    mocks.listWorkloadIdentities.mockRejectedValueOnce(new Error("unavailable"));
     mocks.searchAuditLogs.mockResolvedValue({ auditLogs: [], nextPageToken: "" });
 
     const { render, unmount } = renderIntoContainer(
@@ -336,7 +371,14 @@ describe("AuditLogTable", () => {
     unmount();
   });
 
-  test("filters a service account actor by its name and its legacy user name", async () => {
+  const serviceAccountFilter =
+    '(actor == "serviceAccounts/deploy@service.bytebase.com" || actor == "users/deploy@service.bytebase.com")';
+  test.each([
+    [ACTORS.serviceAccount.name, serviceAccountFilter],
+    ["serviceaccounts/deploy@service.bytebase.com", serviceAccountFilter],
+    [ACTORS.serviceAccount.email, serviceAccountFilter],
+    [ACTORS.user.email, 'actor == "users/alice@example.com"'],
+  ])("filters the actor value %s", async (value, filter) => {
     mocks.searchAuditLogs.mockResolvedValue({ auditLogs: [], nextPageToken: "" });
 
     const { render, unmount } = renderIntoContainer(
@@ -351,18 +393,12 @@ describe("AuditLogTable", () => {
               scopes: Array<{ id: string; value: string }>;
             }) => void)
           | undefined
-      )?.({
-        query: "",
-        scopes: [{ id: "actor", value: ACTORS.serviceAccount.name }],
-      });
+      )?.({ query: "", scopes: [{ id: "actor", value }] });
       await Promise.resolve();
     });
 
     expect(mocks.searchAuditLogs).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        filter:
-          '(actor == "serviceAccounts/deploy@service.bytebase.com" || actor == "users/deploy@service.bytebase.com")',
-      })
+      expect.objectContaining({ filter })
     );
 
     unmount();
