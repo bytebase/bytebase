@@ -220,9 +220,8 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
   const customizeLocked = standardRules.customized
     ? standardRules.storedCustomized && !can("bb.policies.delete")
     : !standardRules.storedCustomized && !canSave;
-  const canViewWorkspaceRules =
-    hasWorkspacePermissionV2("bb.reviewConfigs.list") &&
-    hasWorkspacePermissionV2("bb.policies.get");
+  // The V2 workspace route needs only the policy read.
+  const canViewWorkspaceRules = hasWorkspacePermissionV2("bb.policies.get");
 
   return (
     <ProjectPageLayout>
