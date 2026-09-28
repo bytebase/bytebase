@@ -93,6 +93,22 @@ function uniqueValueOptions(options: ValueOption[]): ValueOption[] {
   return [...new Map(options.map((option) => [option.value, option])).values()];
 }
 
+// Strips an actor name's resource prefix, since the account lists match on
+// email. Ignores case because AdvancedSearch lowercases the keyword.
+const ACTOR_NAME_PREFIX = new RegExp(
+  `^(?:${userNamePrefix}|${serviceAccountNamePrefix}|${workloadIdentityNamePrefix})`,
+  "i"
+);
+
+function toActorOptions(
+  accounts: Array<{ name: string; email: string; title: string }>
+): ValueOption[] {
+  return accounts.map((account) => ({
+    value: account.name,
+    keywords: [account.email, account.title],
+  }));
+}
+
 function buildFilterString(filter: AuditLogFilter): string {
   const parts: string[] = [];
   if (filter.method) parts.push(`method == ${celString(filter.method)}`);
@@ -804,80 +820,54 @@ export function AuditLogTable({
   );
   const searchActors = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const query = keyword.trim();
+      const query = keyword.trim().replace(ACTOR_NAME_PREFIX, "");
       const pageSize = getDefaultPagination();
-      const accountParams = (parent: string, filter: string) => ({
+      const accountParams = (parent: string) => ({
         parent,
         pageSize,
         showDeleted: false,
-        filter: { query: filter },
+        filter: { query },
         skipCache: true,
       });
+      const accountParents = (
+        canListInWorkspace: boolean,
+        canListInProject: boolean
+      ) => [
+        ...(workspaceResourceName && canListInWorkspace
+          ? [workspaceResourceName]
+          : []),
+        ...(projectAccountParent && canListInProject
+          ? [projectAccountParent]
+          : []),
+      ];
 
-      if (query.startsWith(serviceAccountNamePrefix)) {
-        const accountQuery = query.slice(serviceAccountNamePrefix.length);
-        const serviceAccounts = await Promise.all([
-          ...(workspaceResourceName && canListWorkspaceServiceAccounts
-            ? [
-                listServiceAccounts(
-                  accountParams(workspaceResourceName, accountQuery)
-                ),
-              ]
-            : []),
-          ...(projectAccountParent && canListProjectServiceAccounts
-            ? [
-                listServiceAccounts(
-                  accountParams(projectAccountParent, accountQuery)
-                ),
-              ]
-            : []),
-        ]);
-        return uniqueValueOptions(
-          serviceAccounts.flatMap((result) =>
-            result.serviceAccounts.map((account) => ({
-              value: account.name,
-              keywords: [account.email, account.title],
-            }))
+      const results = await Promise.allSettled([
+        listUsers({
+          pageSize,
+          filter: query ? { query } : undefined,
+        }).then(({ users }) => toActorOptions(users)),
+        ...accountParents(
+          canListWorkspaceServiceAccounts,
+          canListProjectServiceAccounts
+        ).map((parent) =>
+          listServiceAccounts(accountParams(parent)).then(
+            ({ serviceAccounts }) => toActorOptions(serviceAccounts)
           )
-        );
-      }
-
-      if (query.startsWith(workloadIdentityNamePrefix)) {
-        const identityQuery = query.slice(workloadIdentityNamePrefix.length);
-        const workloadIdentities = await Promise.all([
-          ...(workspaceResourceName && canListWorkspaceWorkloadIdentities
-            ? [
-                listWorkloadIdentities(
-                  accountParams(workspaceResourceName, identityQuery)
-                ),
-              ]
-            : []),
-          ...(projectAccountParent && canListProjectWorkloadIdentities
-            ? [
-                listWorkloadIdentities(
-                  accountParams(projectAccountParent, identityQuery)
-                ),
-              ]
-            : []),
-        ]);
-        return uniqueValueOptions(
-          workloadIdentities.flatMap((result) =>
-            result.workloadIdentities.map((identity) => ({
-              value: identity.name,
-              keywords: [identity.email, identity.title],
-            }))
+        ),
+        ...accountParents(
+          canListWorkspaceWorkloadIdentities,
+          canListProjectWorkloadIdentities
+        ).map((parent) =>
+          listWorkloadIdentities(accountParams(parent)).then(
+            ({ workloadIdentities }) => toActorOptions(workloadIdentities)
           )
-        );
-      }
-
-      const { users } = await listUsers({
-        pageSize,
-        filter: query ? { query } : undefined,
-      });
-      return users.map((user) => ({
-        value: user.name,
-        keywords: [user.email, user.title],
-      }));
+        ),
+      ]);
+      return uniqueValueOptions(
+        results.flatMap((result) =>
+          result.status === "fulfilled" ? result.value : []
+        )
+      );
     },
     [
       listUsers,
