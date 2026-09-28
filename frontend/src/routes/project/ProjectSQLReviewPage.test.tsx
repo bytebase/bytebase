@@ -475,6 +475,11 @@ describe("ProjectSQLReviewPage", () => {
     expect(
       screen.queryByText("sql-review.standard-rules.on")
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "sql-review.standard-rules.customize.view-workspace-rules"
+      )
+    ).not.toBeInTheDocument();
 
     // Customizing starts from every rule, as nothing else is known.
     fireEvent.click(customize);
@@ -483,6 +488,17 @@ describe("ProjectSQLReviewPage", () => {
       "aria-checked",
       "true"
     );
+  });
+
+  test("the workspace rules link needs only the workspace policy read", async () => {
+    mocks.workspacePermissions = { "bb.reviewConfigs.list": false };
+    await renderLoaded();
+
+    expect(
+      screen.getByText(
+        "sql-review.standard-rules.customize.view-workspace-rules"
+      )
+    ).toBeInTheDocument();
   });
 
   test("undoing an unsaved switch needs no permission", async () => {
