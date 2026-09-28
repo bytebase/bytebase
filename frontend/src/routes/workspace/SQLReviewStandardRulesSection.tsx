@@ -12,7 +12,6 @@ import { useWorkspaceResourceName } from "@/hooks/useAppState";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
-  type Policy,
   PolicyResourceType,
   PolicyType,
   ReviewRulePolicySchema,
@@ -25,8 +24,8 @@ export interface WorkspaceStandardRules {
   rules: ReviewRuleType[] | undefined;
   readFailed: boolean;
   reload: () => void;
-  // Whether this user may save. The first save creates the workspace's
-  // policy row and later saves update it.
+  // Whether this user may save. Every workspace gets a review rule policy
+  // row by default, so a save is an update.
   canEdit: boolean;
   setRules: (rules: ReviewRuleType[]) => void;
   isDirty: boolean;
@@ -42,9 +41,6 @@ export function useWorkspaceStandardRules(
 ): WorkspaceStandardRules {
   const { t } = useTranslation();
   const workspace = useWorkspaceResourceName();
-  const canCreate = hasWorkspacePermissionV2("bb.policies.create");
-  const canUpdate = hasWorkspacePermissionV2("bb.policies.update");
-  const canList = hasWorkspacePermissionV2("bb.policies.list");
   const policy = useAppStore((state) =>
     state.getPolicyByParentAndType({
       parentPath: workspace,
@@ -53,46 +49,26 @@ export function useWorkspaceStandardRules(
   );
   const [attempt, setAttempt] = useState(0);
   const [readFailed, setReadFailed] = useState(false);
-  // The workspace's own row, whatever its enforce flag: null when it has
-  // none, undefined while unknown. GetPolicy stands in for a missing row, so
-  // only the list tells them apart.
-  const [row, setRow] = useState<Policy | null | undefined>(undefined);
   const [draft, setDraft] = useState<ReviewRuleType[]>();
   useEffect(() => {
     if (!enabled || !workspace) return;
     let active = true;
     setDraft(undefined);
-    setRow(undefined);
     setReadFailed(false);
-    const store = useAppStore.getState();
-    const find = {
-      parentPath: workspace,
-      policyType: PolicyType.REVIEW_RULE,
-    };
-    void store
-      .fetchPolicyByParentAndType({ ...find, refresh: attempt > 0 })
+    void useAppStore
+      .getState()
+      .fetchPolicyByParentAndType({
+        parentPath: workspace,
+        policyType: PolicyType.REVIEW_RULE,
+        refresh: attempt > 0,
+      })
       .then((policy) => {
         if (active && policy === undefined) setReadFailed(true);
       });
-    if (canList) {
-      void store
-        .listPolicies({ ...find, showDeleted: true })
-        .then((policies) => {
-          // A save that landed first already knows the row.
-          if (active) {
-            setRow((known) =>
-              known === undefined ? (policies[0] ?? null) : known
-            );
-          }
-        })
-        .catch(() => {
-          // Unknown keeps the conservative gate below.
-        });
-    }
     return () => {
       active = false;
     };
-  }, [enabled, workspace, canList, attempt]);
+  }, [enabled, workspace, attempt]);
 
   const stored = effectiveWorkspaceRules(policy);
   const [saving, setSaving] = useState(false);
@@ -105,7 +81,7 @@ export function useWorkspaceStandardRules(
     if (!draft) return;
     setSaving(true);
     try {
-      const saved = await useAppStore.getState().upsertPolicy({
+      await useAppStore.getState().upsertPolicy({
         parentPath: workspace,
         policy: {
           type: PolicyType.REVIEW_RULE,
@@ -117,7 +93,6 @@ export function useWorkspaceStandardRules(
           },
         },
       });
-      setRow(saved);
       setDraft(undefined);
       pushNotification({
         module: "bytebase",
@@ -132,19 +107,11 @@ export function useWorkspaceStandardRules(
     }
   };
 
-  // Without the row known, the save may be either a create or an update.
-  const canEdit =
-    row === undefined
-      ? canCreate && canUpdate
-      : row === null
-        ? canCreate
-        : canUpdate;
-
   return {
     rules: draft ?? stored,
     readFailed,
     reload: () => setAttempt((n) => n + 1),
-    canEdit,
+    canEdit: hasWorkspacePermissionV2("bb.policies.update"),
     setRules: setDraft,
     isDirty,
     saving,
