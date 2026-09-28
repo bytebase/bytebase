@@ -14,44 +14,33 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func TestRunReviewRefusesRuleReviewWithoutSyntax(t *testing.T) {
+// TestRunReviewCreatesRuleRunWithReviewOff pins that switching every rule off
+// does not refuse a rule run: the run completes with no findings, which
+// resolves the findings of earlier runs.
+func TestRunReviewCreatesRuleRunWithReviewOff(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 	service := newIssueServiceForTest(t, stores)
 
-	setProjectRules := func(rules ...storepb.ReviewRuleType) {
-		t.Helper()
-		payload, err := protojson.Marshal(&storepb.ReviewRulePolicy{Rules: rules})
-		require.NoError(t, err)
-		_, err = stores.CreatePolicy(ctx, &store.PolicyMessage{
-			Workspace:    "default",
-			ResourceType: storepb.Policy_PROJECT,
-			Resource:     common.FormatProject("project-a"),
-			Type:         storepb.Policy_REVIEW_RULE,
-			Payload:      string(payload),
-			Enforce:      true,
-		})
-		require.NoError(t, err)
-	}
-	runRuleReview := func() (*v1pb.ReviewRun, error) {
-		resp, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
-			Name: fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/rule", issue.UID),
-		}))
-		if err != nil {
-			return nil, err
-		}
-		return resp.Msg, nil
-	}
-
-	setProjectRules(storepb.ReviewRuleType_REQUIRE_WHERE)
-	_, err := runRuleReview()
-	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-
-	setProjectRules(storepb.ReviewRuleType_SYNTAX, storepb.ReviewRuleType_REQUIRE_WHERE)
-	run, err := runRuleReview()
+	// REQUIRE_WHERE without SYNTAX is review switched off.
+	payload, err := protojson.Marshal(&storepb.ReviewRulePolicy{Rules: []storepb.ReviewRuleType{storepb.ReviewRuleType_REQUIRE_WHERE}})
 	require.NoError(t, err)
-	require.Equal(t, v1pb.ReviewRun_RULE, run.Type)
-	require.Equal(t, v1pb.ReviewRun_AVAILABLE, run.Status)
+	_, err = stores.CreatePolicy(ctx, &store.PolicyMessage{
+		Workspace:    "default",
+		ResourceType: storepb.Policy_PROJECT,
+		Resource:     common.FormatProject("project-a"),
+		Type:         storepb.Policy_REVIEW_RULE,
+		Payload:      string(payload),
+		Enforce:      true,
+	})
+	require.NoError(t, err)
+
+	resp, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
+		Name: fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/rule", issue.UID),
+	}))
+	require.NoError(t, err)
+	require.Equal(t, v1pb.ReviewRun_RULE, resp.Msg.Type)
+	require.Equal(t, v1pb.ReviewRun_AVAILABLE, resp.Msg.Status)
 }
