@@ -141,6 +141,25 @@ export function anchorLineRange(
   return { startLine: start.line, endLine: Math.max(endLine, start.line) };
 }
 
+// A truncated preview may end in the middle of a line, including the empty
+// line after a trailing newline. Only preceding lines have complete content.
+export const completePreviewLineCount = (
+  statement: string,
+  isTruncated: boolean
+): number => {
+  let completeLines = 0;
+  for (let i = 0; i < statement.length; i++) {
+    const code = statement.charCodeAt(i);
+    if (code === 13) {
+      if (statement.charCodeAt(i + 1) === 10) i++;
+      completeLines++;
+    } else if (code === 10) {
+      completeLines++;
+    }
+  }
+  return completeLines + (isTruncated ? 0 : 1);
+};
+
 export function buildWholeLineAnchor(input: {
   spec: string;
   sheetSha256: string;

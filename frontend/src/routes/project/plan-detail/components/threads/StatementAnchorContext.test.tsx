@@ -104,17 +104,19 @@ describe("StatementAnchorContext", () => {
   });
 
   test.each([
-    { sheet: "complete", text: original, extra: 0, state: "CURRENT", action: true },
-    { sheet: "truncated", text: original, extra: 1, state: "UNAVAILABLE", action: false },
-    { sheet: "empty", text: "", extra: 0, state: "UNAVAILABLE", action: false },
-  ])("a hash-matched anchor on a $sheet sheet is $state", ({ text, extra, state, action }) => {
+    { sheet: "complete", text: original, extra: 0, start: 1, end: 1, state: "CURRENT", action: true },
+    { sheet: "visible preview line", text: "SELECT 1;\nSELECT", extra: 1, start: 1, end: 1, state: "CURRENT", action: true },
+    { sheet: "partial preview line", text: "SELECT 1;\nSELECT", extra: 1, start: 2, end: 2, state: "UNAVAILABLE", action: false },
+    { sheet: "range crossing the preview end", text: "SELECT 1;\nSELECT", extra: 1, start: 1, end: 2, state: "UNAVAILABLE", action: false },
+    { sheet: "empty", text: "", extra: 0, start: 1, end: 1, state: "UNAVAILABLE", action: false },
+  ])("a hash-matched anchor on a $sheet sheet is $state", ({ text, extra, start, end, state, action }) => {
     const content = new TextEncoder().encode(text);
     mocks.sheets[currentName] = create(SheetSchema, {
       name: currentName,
       content,
       contentSize: BigInt(content.byteLength + extra),
     });
-    const onCurrent = buildWholeLineAnchor({ spec: "spec", sheetSha256: currentHash, startLine: 1, endLine: 1 });
+    const onCurrent = buildWholeLineAnchor({ spec: "spec", sheetSha256: currentHash, startLine: start, endLine: end });
     const { container, queryByText } = render(<StatementAnchorContext {...props} anchor={onCurrent} placement={undefined} />);
     expect(container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state")).toBe(state);
     expect(queryByText("plan.review.thread.anchor.view-in-statement") !== null).toBe(action);

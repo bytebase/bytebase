@@ -59,7 +59,10 @@ import {
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
 import { StatementThreadsLayer } from "./threads/StatementThreadsLayer";
-import { sheetSha256OfName } from "./threads/threadModel";
+import {
+  completePreviewLineCount,
+  sheetSha256OfName,
+} from "./threads/threadModel";
 
 // Both modes reserve the same gutter so line numbers and SQL stay aligned
 // when entering or leaving edit mode. Keep these options stable: MonacoEditor
@@ -483,16 +486,17 @@ export function PlanDetailStatementSection({
 
   const editorContent = page.isCreating ? statement : draftStatement;
 
-  // Inline threads anchor to the saved sheet of a persisted spec, so they
-  // need an issue, a content-addressed sheet, and the complete statement.
+  // Inline threads anchor to the saved sheet of a persisted spec. A truncated
+  // preview can still show threads on its complete lines.
   const sheetSha256 = sheetSha256OfName(sheetName);
   const issue = page.issue;
+  const previewEndLine = useMemo(
+    () =>
+      isSheetOversize ? completePreviewLineCount(statement, true) : undefined,
+    [isSheetOversize, statement]
+  );
   const threadsEnabled = Boolean(
-    issue &&
-      !page.isCreating &&
-      !isPendingDraft &&
-      sheetSha256 &&
-      !isSheetOversize
+    issue && !page.isCreating && !isPendingDraft && sheetSha256
   );
 
   return (
@@ -641,6 +645,7 @@ export function PlanDetailStatementSection({
                   issue={issue}
                   key={sheetSha256}
                   monaco={readonlyEditor.monaco}
+                  previewEndLine={previewEndLine}
                   sheetSha256={sheetSha256}
                   spec={spec}
                 />

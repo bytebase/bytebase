@@ -37,7 +37,6 @@ import {
   lineRangeLabel,
   selectEditorThreads,
   selectionLineRange,
-  selectUnresolvedEditorThreads,
 } from "./threadModel";
 import { canReplyToThread, useThreadActions } from "./useThreadActions";
 
@@ -74,12 +73,14 @@ export function StatementThreadsLayer({
   editor,
   issue,
   monaco: monacoModule,
+  previewEndLine,
   sheetSha256,
   spec,
 }: {
   editor: IStandaloneCodeEditor;
   issue: Issue;
   monaco: MonacoModule;
+  previewEndLine?: number;
   sheetSha256: string;
   spec: Plan_Spec;
 }) {
@@ -94,7 +95,8 @@ export function StatementThreadsLayer({
     placementsForSheet(s, spec.id, sheetSha256)
   );
   const actions = useThreadActions(issue.name);
-  const canCreate = canReplyToThread(project, issue);
+  const canCreate =
+    previewEndLine === undefined && canReplyToThread(project, issue);
 
   const threads = useMemo(() => groupThreads(comments), [comments]);
   const editorThreads = useMemo(
@@ -103,19 +105,17 @@ export function StatementThreadsLayer({
         threads,
         { specId: spec.id, sheetSha256 },
         placements
+      ).filter(
+        ({ range }) =>
+          previewEndLine === undefined || range.endLine <= previewEndLine
       ),
-    [placements, sheetSha256, spec.id, threads]
+    [placements, previewEndLine, sheetSha256, spec.id, threads]
   );
   // What the walker can visit, in editor order, and how many unresolved
   // threads of this change it cannot because they are not placed here.
   const visitableThreads = useMemo(
-    () =>
-      selectUnresolvedEditorThreads(
-        threads,
-        { specId: spec.id, sheetSha256 },
-        placements
-      ),
-    [placements, sheetSha256, spec.id, threads]
+    () => editorThreads.filter(({ thread }) => !thread.resolved),
+    [editorThreads]
   );
   const unplacedUnresolved = useMemo(
     () =>

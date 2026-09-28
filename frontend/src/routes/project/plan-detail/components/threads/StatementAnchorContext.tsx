@@ -16,6 +16,7 @@ import type { Placement } from "./placement/place";
 import {
   type AnchorState,
   anchorLineRange,
+  completePreviewLineCount,
   excerptLines,
   type LineRange,
   lineRangeLabel,
@@ -60,18 +61,20 @@ export function StatementAnchorContext({
     sheetName,
   });
   const loaded = enabled && !isLoading;
-  // The editor mounts its thread layer only for a complete, non-empty
-  // statement. An anchor on the spec's current sheet is CURRENT by hash
-  // alone, so that sheet must be loaded and pass those checks before the
-  // card offers to show it; until then it is pending, and a truncated or
-  // empty sheet makes it unavailable rather than a dead "view" action. A
-  // diff-mapped CURRENT anchor needs none of this: its target is complete.
+  // A hash-matched anchor is current only when its complete lines are visible
+  // in the editor preview. A mapped anchor already has a verified placement.
   const resolved = resolveAnchorState(anchor, plan, placement);
   const onCurrentSheet = anchor.sheetSha256 === targetSha256OfSpec(spec);
+  const previewEndLine = useMemo(
+    () => completePreviewLineCount(statement, isTruncated),
+    [isTruncated, statement]
+  );
   const state = ((): AnchorState => {
     if (resolved !== "CURRENT" || !onCurrentSheet) return resolved;
     if (!loaded) return "PENDING";
-    return isTruncated || statement === "" ? "UNAVAILABLE" : "CURRENT";
+    return statement && range && range.endLine <= previewEndLine
+      ? "CURRENT"
+      : "UNAVAILABLE";
   })();
 
   return (

@@ -16,6 +16,7 @@ import { current, OUTDATED, UNAVAILABLE } from "./placement/place";
 import {
   anchorLineRange,
   buildWholeLineAnchor,
+  completePreviewLineCount,
   countPlacedUnresolvedBySpec,
   countUnresolvedThreads,
   defaultExpandedThread,
@@ -91,6 +92,17 @@ describe("sheetSha256OfName", () => {
     );
     expect(sheetSha256OfName("projects/p/sheets/-1")).toBeUndefined();
     expect(sheetSha256OfName("")).toBeUndefined();
+  });
+});
+
+describe("completePreviewLineCount", () => {
+  test("excludes the final line of a truncated preview, even after a newline", () => {
+    expect(completePreviewLineCount("first\nsecond", true)).toBe(1);
+    expect(completePreviewLineCount("first\nsecond\n", true)).toBe(2);
+    expect(completePreviewLineCount("first\r\nsecond\r\n", true)).toBe(2);
+    expect(completePreviewLineCount("first\rsecond", true)).toBe(1);
+    expect(completePreviewLineCount("first", true)).toBe(0);
+    expect(completePreviewLineCount("first\nsecond", false)).toBe(2);
   });
 });
 
