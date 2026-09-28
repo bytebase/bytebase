@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Tìm người dùng theo email. Thêm tiền tố serviceAccounts/ hoặc workloadIdentities/ để tìm các tác nhân đó.",
+          "description": "Tìm kiếm người dùng, tài khoản dịch vụ và danh tính workload theo tên hoặc email",
           "title": "Người thực hiện"
         },
         "level": {

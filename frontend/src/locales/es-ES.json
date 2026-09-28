@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Busca usuarios por correo electrónico. Usa el prefijo serviceAccounts/ o workloadIdentities/ para buscar esos actores.",
+          "description": "Buscar usuarios, cuentas de servicio e identidades de carga de trabajo por nombre o correo electrónico",
           "title": "Actor"
         },
         "level": {

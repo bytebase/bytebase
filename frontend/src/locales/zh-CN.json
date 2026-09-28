@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "按邮箱搜索用户。使用 serviceAccounts/ 或 workloadIdentities/ 前缀搜索这些操作者。",
+          "description": "按名称或邮箱搜索用户、服务账号和工作负载身份",
           "title": "操作者"
         },
         "level": {
