@@ -169,3 +169,51 @@ export async function waitForPlanChecksDone(
     `plan checks for ${planName} did not reach DONE within ${timeoutMs}ms (last status: ${lastStatus})`,
   );
 }
+
+// Poll until the plan's rollout exists; auto-creation follows issue creation
+// (or the last approval) asynchronously.
+export async function waitForRollout(
+  api: BytebaseApiClient,
+  planName: string,
+  timeoutMs = 30_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  let lastError: unknown;
+  while (Date.now() < deadline) {
+    try {
+      if ((await withTimeout(api.getPlan(planName), 10_000, "getPlan")).hasRollout) {
+        return;
+      }
+    } catch (err) {
+      lastError = err;
+    }
+    await sleep(1000);
+  }
+  throw new Error(
+    `rollout was not auto-created for ${planName} in ${timeoutMs}ms` +
+      (lastError ? ` (last error: ${String(lastError)})` : ""),
+  );
+}
+
+// Gates off so a plan's rollout auto-creates and Run is offered at once.
+// A leftover approval rule from another spec would still force a pending
+// review even with requireIssueApproval=false, so the rules are cleared too.
+export async function setPermissiveGates(
+  api: BytebaseApiClient,
+  project: string,
+  extra: Parameters<BytebaseApiClient["updateProjectSettings"]>[1] = {},
+): Promise<void> {
+  await api.deletePolicy(project, "tag").catch(() => {});
+  await api.updateProjectSettings(project, {
+    requireIssueApproval: false,
+    requirePlanCheckNoError: false,
+    enforceSqlReview: false,
+    forceIssueLabels: false,
+    ...extra,
+  });
+  await api.upsertSetting(
+    "WORKSPACE_APPROVAL",
+    { workspaceApproval: { rules: [] } },
+    "value.workspace_approval",
+  );
+}
