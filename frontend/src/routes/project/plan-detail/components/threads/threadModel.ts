@@ -93,7 +93,8 @@ export function countPlacedUnresolvedBySpec(
   placementsFor: (
     specId: string,
     sheetSha256: string
-  ) => ReadonlyMap<string, Placement> | undefined
+  ) => ReadonlyMap<string, Placement> | undefined,
+  previewEndLineFor?: (specId: string) => number | undefined
 ): ReadonlyMap<string, number> {
   const counts = new Map<string, number>();
   for (const spec of specs) {
@@ -103,6 +104,8 @@ export function countPlacedUnresolvedBySpec(
       threads,
       { specId: spec.id, sheetSha256 },
       placementsFor(spec.id, sheetSha256)
+    ).filter((entry) =>
+      isEditorThreadVisible(entry, previewEndLineFor?.(spec.id))
     ).length;
     if (placed > 0) counts.set(spec.id, placed);
   }
@@ -233,6 +236,12 @@ export function selectEditorThreads(
   }
   return placed.sort(compareEditorThreads);
 }
+
+export const isEditorThreadVisible = (
+  entry: EditorThread,
+  previewEndLine: number | undefined
+): boolean =>
+  previewEndLine === undefined || entry.range.endLine <= previewEndLine;
 
 // The placed threads still open: what the editor walker visits and what the
 // change tab counts.

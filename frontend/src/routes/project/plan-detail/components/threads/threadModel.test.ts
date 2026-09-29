@@ -135,6 +135,14 @@ describe("countUnresolvedThreads", () => {
     expect([
       ...countPlacedUnresolvedBySpec(threads, specs, () => placed),
     ]).toEqual([["spec-1", 2]]);
+    expect([
+      ...countPlacedUnresolvedBySpec(
+        threads,
+        specs,
+        () => placed,
+        () => 1
+      ),
+    ]).toEqual([["spec-1", 1]]);
     expect(countPlacedUnresolvedBySpec(threads, [], () => undefined).size).toBe(
       0
     );

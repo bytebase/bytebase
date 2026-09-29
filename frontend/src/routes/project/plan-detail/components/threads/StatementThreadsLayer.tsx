@@ -33,6 +33,7 @@ import {
   type EditorThread,
   groupMarkersByLine,
   groupThreads,
+  isEditorThreadVisible,
   type LineRange,
   lineRangeLabel,
   selectEditorThreads,
@@ -105,10 +106,7 @@ export function StatementThreadsLayer({
         threads,
         { specId: spec.id, sheetSha256 },
         placements
-      ).filter(
-        ({ range }) =>
-          previewEndLine === undefined || range.endLine <= previewEndLine
-      ),
+      ).filter((entry) => isEditorThreadVisible(entry, previewEndLine)),
     [placements, previewEndLine, sheetSha256, spec.id, threads]
   );
   // What the walker can visit, in editor order, and how many unresolved
