@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, MessagesSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 
 // Touch has no hover and keeps focus on the tapped arrow, so coarse pointers
 // get no ring: the flash on the target card is the feedback there.
@@ -14,12 +15,14 @@ const ARROW_CLASS =
 export function StatementThreadWalker({
   announcement,
   count,
+  position,
   onNext,
   onPrevious,
   remainder,
 }: {
   announcement: string;
   count: number;
+  position: number;
   onNext: () => void;
   onPrevious: () => void;
   remainder: number;
@@ -37,12 +40,20 @@ export function StatementThreadWalker({
     <div
       className="flex items-stretch overflow-hidden rounded-sm border border-control-border bg-background text-xs shadow-sm pointer-coarse:shadow-none"
       data-testid="thread-walker"
-      title={title}
     >
-      <span className="inline-flex items-center gap-1 px-2 font-medium text-accent tabular-nums">
+      <Tooltip
+        content={title}
+        render={
+          <span
+            aria-label={title}
+            className="inline-flex items-center gap-1 px-2 font-medium text-accent tabular-nums"
+            tabIndex={0}
+          />
+        }
+      >
         <MessagesSquare className="size-3.5" />
-        {count}
-      </span>
+        {position}/{count}
+      </Tooltip>
       <Button
         appearance="secondary"
         aria-label={t("plan.review.thread.walker.previous")}

@@ -2,8 +2,9 @@ import { create } from "@bufbuild/protobuf";
 import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { shownTimestampModes } from "@/test-utils/humanizeTs";
+import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
   IssueComment_ReviewSubmissionSchema,
   IssueComment_ThreadState,
@@ -11,7 +12,18 @@ import {
   IssueSchema,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  Plan_ChangeDatabaseConfigSchema,
+  Plan_SpecSchema,
+  PlanSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
+
+const mocks = vi.hoisted(() => ({
+  requestThreadFocus: vi.fn(),
+  expandPhase: vi.fn(),
+  placements: new Map<string, unknown>(),
+  placementTargets: new Map<string, string>(),
+}));
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
@@ -104,12 +116,12 @@ vi.mock("@/app/router", () => ({
 vi.mock("../../shared/stores/usePlanDetailStore", () => ({
   usePlanDetailStore: (selector: (state: unknown) => unknown) =>
     selector({
-      selectedSpecId: undefined,
-      placements: new Map(),
-      placementTargets: new Map(),
+      selectedSpecId: "spec-1",
+      placements: mocks.placements,
+      placementTargets: mocks.placementTargets,
     }),
   usePlanDetailStoreApi: () => ({
-    getState: () => ({ requestThreadFocus: vi.fn() }),
+    getState: () => ({ requestThreadFocus: mocks.requestThreadFocus }),
   }),
 }));
 
@@ -132,7 +144,11 @@ vi.mock("../threads/CommentThreadCard", () => ({
 }));
 
 vi.mock("../threads/StatementAnchorContext", () => ({
-  StatementAnchorContext: () => <div data-testid="anchor-context" />,
+  StatementAnchorContext: ({ onViewInStatement }: { onViewInStatement: () => void }) => (
+    <button data-testid="anchor-context" onClick={onViewInStatement}>
+      View in Statement
+    </button>
+  ),
 }));
 
 vi.mock("@/stores", () => ({
@@ -161,7 +177,11 @@ vi.mock("../../hooks/usePlanChangeReferenceData", () => ({
 }));
 
 vi.mock("../../shell/PlanDetailContext", () => ({
-  usePlanDetailContext: () => ({ projectId: "p1" }),
+  usePlanDetailContext: () => ({
+    projectId: "p1",
+    planId: "1",
+    expandPhase: mocks.expandPhase,
+  }),
 }));
 
 vi.mock("../PlanChangeReference", () => ({
@@ -189,6 +209,74 @@ const reviewSubmission = (name: string) =>
   });
 
 describe("ReviewActivityTimeline", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+    mocks.placements.clear();
+    mocks.placementTargets.clear();
+  });
+
+  test.each([
+    { mapped: false, expectedLine: 12 },
+    { mapped: true, expectedLine: 20 },
+  ])("passes the $expectedLine saved statement line to the editor", ({ mapped, expectedLine }) => {
+    const currentSha = "c".repeat(64);
+    const commentName = "projects/p1/issues/1/issueComments/root";
+    const plan = create(PlanSchema, {
+      name: "projects/p1/plans/1",
+      specs: [
+        create(Plan_SpecSchema, {
+          id: "spec-1",
+          config: {
+            case: "changeDatabaseConfig",
+            value: create(Plan_ChangeDatabaseConfigSchema, {
+              sheet: `projects/p1/sheets/${currentSha}`,
+            }),
+          },
+        }),
+      ],
+    });
+    if (mapped) {
+      mocks.placementTargets.set("spec-1", currentSha);
+      mocks.placements.set(commentName, {
+        state: "CURRENT",
+        range: { startLine: 20, endLine: 21 },
+      });
+    }
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={[
+            create(IssueCommentSchema, {
+              name: commentName,
+              comment: "Review this line",
+              threadState: IssueComment_ThreadState.OPEN,
+              statementAnchor: create(StatementAnchorSchema, {
+                spec: "spec-1",
+                sheetSha256: mapped ? "d".repeat(64) : currentSha,
+                startPosition: create(PositionSchema, { line: 12, column: 0 }),
+                endPosition: create(PositionSchema, { line: 12, column: 0 }),
+              }),
+            }),
+          ]}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={plan}
+        />
+      );
+    });
+    act(() => {
+      container.querySelector<HTMLButtonElement>("[data-testid='anchor-context']")?.click();
+    });
+    expect(mocks.requestThreadFocus).toHaveBeenCalledWith({
+      commentName,
+      specId: "spec-1",
+      lineNumber: expectedLine,
+    });
+    expect(mocks.expandPhase).toHaveBeenCalledWith("changes");
+    act(() => root.unmount());
+  });
+
   test("times an activity entry in the work-queue form", () => {
     // A feed is read for what just happened, so its entries age with the
     // clock rather than naming a date.
