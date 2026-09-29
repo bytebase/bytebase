@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import "./CommentThreadCard.css";
 import { ThreadComment } from "./ThreadComment";
 import type { CommentThread } from "./threadModel";
 import {
@@ -260,7 +261,10 @@ export function CommentThreadCard({
         }
       />
       {(hiddenCount > 0 || visibleReplies.length > 0) && (
-        <div className="bg-control-bg/50" data-testid="thread-replies">
+        <div
+          className="bb-thread-replies bg-control-bg/50"
+          data-testid="thread-replies"
+        >
           {hiddenCount > 0 && (
             <div className="flex justify-center py-1">
               <Button
