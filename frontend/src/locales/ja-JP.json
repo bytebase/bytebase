@@ -1544,6 +1544,7 @@
       "sort": "並べ替え",
       "updated": "更新日時"
     },
+    "statement-exceeds-preview-limit": "このステートメントはプレビューの上限を超えています。再読み込み後はプレビューのみ表示されます。",
     "statement-from-sheet-warning": "このステートメントは大きなシートから読み込まれています。プレビューは切り詰められる場合があります。",
     "status-transition": {
       "modal": {
@@ -1826,6 +1827,7 @@
         "add-comment-on-line": "{{line}} 行目にコメントを追加",
         "add-comment-on-lines": "{{startLine}}～{{endLine}} 行目にコメントを追加",
         "anchor": {
+          "comparison-size-limit": "元のステートメントまたは現在のステートメントが比較の上限を超えています。",
           "line_one": "{{range}} 行目",
           "line_other": "{{range}} 行",
           "outdated": "最新ではありません",

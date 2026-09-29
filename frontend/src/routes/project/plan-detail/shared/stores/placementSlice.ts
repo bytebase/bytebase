@@ -1,6 +1,10 @@
 import { useAppStore } from "@/stores/app";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
-import { getSheetStatement, isSheetContentComplete } from "@/utils/v1/sheet";
+import {
+  getSheetStatement,
+  isCappedSheetPreview,
+  isSheetContentComplete,
+} from "@/utils/v1/sheet";
 import {
   PLACEMENT_BUDGETS,
   type PlacementBudgets,
@@ -42,12 +46,19 @@ export const defaultPlacementDeps = (): PlacementDeps => ({
   now: () => performance.now(),
 });
 
-const samePlacement = (a: Placement, b: Placement): boolean =>
-  a.state === b.state &&
-  (a.state !== "CURRENT" ||
-    b.state !== "CURRENT" ||
-    (a.range.startLine === b.range.startLine &&
-      a.range.endLine === b.range.endLine));
+const samePlacement = (a: Placement, b: Placement): boolean => {
+  if (a.state !== b.state) return false;
+  if (a.state === "CURRENT" && b.state === "CURRENT") {
+    return (
+      a.range.startLine === b.range.startLine &&
+      a.range.endLine === b.range.endLine
+    );
+  }
+  if (a.state === "UNAVAILABLE" && b.state === "UNAVAILABLE") {
+    return a.reason === b.reason;
+  }
+  return true;
+};
 
 // The placements of the latest run apply to a spec only while it still
 // points at the sheet that run was computed against; a consumer showing
@@ -154,6 +165,10 @@ export const createPlacementSlice =
           projectName,
           sizeOf: (name: string) => deps.getSheet(name)?.contentSize,
           isComplete: (name: string) => completeSheet(name) !== undefined,
+          isCappedPreview: (name: string) => {
+            const sheet = deps.getSheet(name);
+            return sheet !== undefined && isCappedSheetPreview(sheet);
+          },
           budgets,
         };
         const targets = new Map<string, string>();
@@ -201,17 +216,22 @@ export const createPlacementSlice =
         settle(false);
         publish(placements, targets);
 
-        // A sheet the cache has never seen has no known size. A preview fetch
-        // is capped by the server at the per-sheet budget, so it doubles as
-        // the bounded download. Each probe reserves that cap before it starts
-        // and settles to the real size when it lands, so concurrent probes
-        // cannot overshoot the total budget between them.
+        // A sheet the cache has never seen has no known size. Each preview
+        // probe reserves the maximum UTF-8 bytes permitted by the character
+        // limit and settles to its actual size when it lands.
         if (plan.unknownSizes.length > 0) {
           const byteCap = BigInt(budgets.maxTotalBytes);
           const perSheet = BigInt(budgets.maxBytesPerSheet);
+          const probeConcurrency = Math.min(
+            FETCH_CONCURRENCY,
+            Math.max(
+              1,
+              Math.floor(budgets.maxTotalBytes / budgets.maxBytesPerSheet)
+            )
+          );
           await runWithConcurrency(
             plan.unknownSizes.slice(0, budgets.maxSheets),
-            FETCH_CONCURRENCY,
+            probeConcurrency,
             async (name) => {
               if (spentBytes + perSheet > byteCap) return undefined;
               spentBytes += perSheet;
@@ -225,7 +245,7 @@ export const createPlacementSlice =
           publish(placements);
         }
 
-        // Sheets the probe left incomplete are re-fetched raw and verified.
+        // Eligible sheets the probe left incomplete are re-fetched raw.
         const needed = new Set(
           pending.flatMap((pair) => [pair.sourceName, pair.targetName])
         );

@@ -5,6 +5,7 @@ import type { PlanChangeReferenceRenderer } from "@/components/issue-activity/Is
 import { colorizeStatement } from "@/components/monaco/core";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useInViewOnce } from "@/hooks/useInViewOnce";
 import { useSheetStatement } from "@/hooks/useSheetStatement";
 import { cn } from "@/lib/utils";
@@ -61,21 +62,39 @@ export function StatementAnchorContext({
     sheetName,
   });
   const loaded = enabled && !isLoading;
-  // A hash-matched anchor is current only when its complete lines are visible
-  // in the editor preview. A mapped anchor already has a verified placement.
   const resolved = resolveAnchorState(anchor, plan, placement);
-  const onCurrentSheet = anchor.sheetSha256 === targetSha256OfSpec(spec);
+  const targetSha256 = targetSha256OfSpec(spec);
+  const onCurrentSheet = anchor.sheetSha256 === targetSha256;
   const previewEndLine = useMemo(
     () => completePreviewLineCount(statement, isTruncated),
     [isTruncated, statement]
   );
-  const state = ((): AnchorState => {
-    if (resolved !== "CURRENT" || !onCurrentSheet) return resolved;
-    if (!loaded) return "PENDING";
-    return statement && range && range.endLine <= previewEndLine
-      ? "CURRENT"
-      : "UNAVAILABLE";
-  })();
+  const recordedLinesVisible = Boolean(
+    statement && range && range.endLine <= previewEndLine
+  );
+  let state: AnchorState = resolved;
+  // A hash match is current only when its complete lines are in the preview.
+  if (resolved === "CURRENT" && onCurrentSheet) {
+    if (!loaded) state = "PENDING";
+    else if (!recordedLinesVisible) state = "UNAVAILABLE";
+  }
+  // A prior revision with visible original lines remains discoverable as
+  // Outdated when a comparison cannot establish a current position.
+  if (
+    resolved === "UNAVAILABLE" &&
+    project &&
+    targetSha256 &&
+    !onCurrentSheet
+  ) {
+    if (!loaded) state = "PENDING";
+    else if (recordedLinesVisible) state = "OUTDATED";
+  }
+  const statusTooltip =
+    state === "OUTDATED" &&
+    placement?.state === "UNAVAILABLE" &&
+    placement.reason === "SIZE_LIMIT"
+      ? t("plan.review.thread.anchor.comparison-size-limit")
+      : undefined;
 
   return (
     <div
@@ -103,6 +122,7 @@ export function StatementAnchorContext({
           <AnchorStatePill
             onViewInStatement={onViewInStatement}
             state={state}
+            statusTooltip={statusTooltip}
           />
         </div>
       </div>
@@ -121,9 +141,11 @@ export function StatementAnchorContext({
 function AnchorStatePill({
   onViewInStatement,
   state,
+  statusTooltip,
 }: {
   onViewInStatement?: () => void;
   state: AnchorState;
+  statusTooltip?: string;
 }) {
   const { t } = useTranslation();
   if (state === "CURRENT") {
@@ -140,22 +162,27 @@ function AnchorStatePill({
       </Button>
     );
   }
-  if (state === "OUTDATED") {
-    return (
+  if (state === "PENDING") return null;
+  const badge =
+    state === "OUTDATED" ? (
       <Badge className="gap-x-1 px-2 text-xs" variant="warning">
         <History className="size-3" />
         {t("plan.review.thread.anchor.outdated")}
       </Badge>
+    ) : (
+      <Badge className="gap-x-1 px-2 text-xs" variant="default">
+        <Ban className="size-3" />
+        {t("plan.review.thread.anchor.statement-unavailable")}
+      </Badge>
     );
-  }
-  // The diff has not settled the comment yet; show nothing rather than a
-  // state that may flip in a moment.
-  if (state === "PENDING") return null;
+  if (!statusTooltip) return badge;
   return (
-    <Badge className="gap-x-1 px-2 text-xs" variant="default">
-      <Ban className="size-3" />
-      {t("plan.review.thread.anchor.statement-unavailable")}
-    </Badge>
+    <Tooltip
+      content={statusTooltip}
+      render={<span className="inline-flex" tabIndex={0} />}
+    >
+      {badge}
+    </Tooltip>
   );
 }
 

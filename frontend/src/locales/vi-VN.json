@@ -1544,6 +1544,7 @@
       "sort": "Sắp xếp",
       "updated": "Thời gian cập nhật"
     },
+    "statement-exceeds-preview-limit": "Câu lệnh này vượt quá giới hạn xem trước. Sau khi tải lại, chỉ phần xem trước được hiển thị.",
     "statement-from-sheet-warning": "Câu lệnh này được tải từ một sheet lớn. Bản xem trước có thể bị cắt ngắn.",
     "status-transition": {
       "modal": {
@@ -1826,6 +1827,7 @@
         "add-comment-on-line": "Thêm bình luận vào dòng {{line}}",
         "add-comment-on-lines": "Thêm bình luận vào các dòng từ {{startLine}} đến {{endLine}}",
         "anchor": {
+          "comparison-size-limit": "Câu lệnh gốc hoặc hiện tại vượt quá giới hạn so sánh.",
           "line_one": "Dòng {{range}}",
           "line_other": "Dòng {{range}}",
           "outdated": "Đã lỗi thời",

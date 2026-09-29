@@ -1544,6 +1544,7 @@
       "sort": "Ordenar",
       "updated": "Fecha de actualización"
     },
+    "statement-exceeds-preview-limit": "Esta sentencia supera el límite de vista previa. Después de recargar, solo se mostrará una vista previa.",
     "statement-from-sheet-warning": "Esta sentencia se carga desde una hoja de gran tamaño. La previsualización puede estar truncada.",
     "status-transition": {
       "modal": {
@@ -1826,6 +1827,7 @@
         "add-comment-on-line": "Añadir un comentario en la línea {{line}}",
         "add-comment-on-lines": "Añadir un comentario en las líneas {{startLine}} a {{endLine}}",
         "anchor": {
+          "comparison-size-limit": "La sentencia original o actual supera el límite de comparación.",
           "line_one": "Línea {{range}}",
           "line_other": "Líneas {{range}}",
           "outdated": "Obsoleto",
