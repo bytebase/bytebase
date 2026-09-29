@@ -10,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // geminiRequest is the part of the Gemini wire format the tests assert on.
@@ -67,8 +66,7 @@ func TestSettingModelRoundTripsThroughGemini(t *testing.T) {
 	defer server.Close()
 
 	model := NewModel(&storepb.AISetting{Provider: storepb.AISetting_GEMINI, Endpoint: server.URL, Model: "gemini-3.5-flash", ApiKey: "test-key"})
-	tools := &catalogTools{}
-	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DROP TABLE orders;"}, tools)
+	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DROP TABLE orders;"}, ordersCatalog())
 	require.NoError(t, err)
 	require.Empty(t, result.Findings)
 	require.Equal(t, 2, result.Calls)
@@ -89,8 +87,8 @@ func TestSettingModelRoundTripsThroughGemini(t *testing.T) {
 	require.Equal(t, "search", second.Contents[1].Parts[0].FunctionCall.Name)
 	require.Equal(t, "signature-1", second.Contents[1].Parts[0].ThoughtSignature, "Gemini rejects a history that returns without the signature")
 	require.Equal(t, "search", second.Contents[2].Parts[0].FunctionResponse.Name)
-	// search returns a JSON array, which Gemini accepts only inside an object.
-	require.Contains(t, second.Contents[2].Parts[0].FunctionResponse.Response, "result")
+	// A tool result is a JSON object, which Gemini takes as it is.
+	require.Equal(t, float64(2), second.Contents[2].Parts[0].FunctionResponse.Response["total"], "the table and the view that reads it")
 }
 
 func TestSettingModelFailsOnASafetyBlockedGeminiReply(t *testing.T) {
@@ -107,7 +105,7 @@ func TestSettingModelFailsOnASafetyBlockedGeminiReply(t *testing.T) {
 	defer server.Close()
 
 	model := NewModel(&storepb.AISetting{Provider: storepb.AISetting_GEMINI, Endpoint: server.URL, Model: "gemini-3.5-flash", ApiKey: "test-key"})
-	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DELETE FROM banned_phrases;"}, &catalogTools{})
+	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DELETE FROM banned_phrases;"}, ordersCatalog())
 	require.ErrorIs(t, err, ErrEmptyReply)
 	require.Nil(t, result)
 	require.Equal(t, 1, requests, "a blocked turn gets no correction round")
@@ -149,7 +147,7 @@ func TestReviewLiveGemini(t *testing.T) {
 		Model:    modelName,
 		ApiKey:   apiKey,
 	})
-	tools := &catalogTools{}
+	tools := &recordingTools{Tools: ordersCatalog()}
 
 	result, err := NewReviewer(model).Review(context.Background(), request, tools)
 	require.NoError(t, err)
@@ -164,80 +162,43 @@ func TestReviewLiveGemini(t *testing.T) {
 	require.NotEmpty(t, result.Findings)
 }
 
-// catalogTools is a canned two-object catalog: a large table and a view that reads it.
-type catalogTools struct {
+// ordersCatalog is the tools over a two-object database: a large table and a
+// view that reads it.
+func ordersCatalog() Tools {
+	return NewCatalogTools(storepb.Engine_POSTGRES, &metadatapb.DatabaseSchemaMetadata{
+		Name: "shop",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*metadatapb.TableMetadata{{
+				Name: "orders",
+				Columns: []*metadatapb.ColumnMetadata{
+					{Name: "id", Type: "bigint"},
+					{Name: "created_at", Type: "timestamp with time zone"},
+					{Name: "legacy_status", Type: "text", Nullable: true},
+					{Name: "total", Type: "numeric", Nullable: true},
+				},
+				Indexes: []*metadatapb.IndexMetadata{
+					{Name: "orders_pkey", Expressions: []string{"id"}, Type: "btree", Unique: true, Primary: true, IsConstraint: true},
+				},
+				RowCount:  52000000,
+				DataSize:  9 << 30,
+				IndexSize: 1 << 30,
+			}},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "orders_summary",
+				Definition: "SELECT legacy_status, count(*) AS order_count FROM public.orders GROUP BY legacy_status",
+			}},
+		}},
+	})
+}
+
+// recordingTools records the calls the model makes.
+type recordingTools struct {
+	Tools
 	calls []string
 }
 
-func (*catalogTools) Definitions() []*v1pb.AIChatToolDefinition {
-	return []*v1pb.AIChatToolDefinition{
-		{
-			Name:             "search",
-			Description:      "Find the objects whose name or definition contains the text, as a case insensitive substring. Use it to find the views, routines, and triggers that depend on a table.",
-			ParametersSchema: `{"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}`,
-		},
-		{
-			Name:             "read",
-			Description:      "Return the definition and statistics of up to 20 objects by name. A table comes with its columns, indexes, constraints, triggers, row count, and size.",
-			ParametersSchema: `{"type": "object", "properties": {"objects": {"type": "array", "items": {"type": "object", "properties": {"schema": {"type": "string"}, "name": {"type": "string"}}, "required": ["name"]}}}, "required": ["objects"]}`,
-		},
-	}
-}
-
-func (c *catalogTools) Call(_ context.Context, name string, arguments string) (string, error) {
-	c.calls = append(c.calls, fmt.Sprintf("%s(%s)", name, arguments))
-	definitions := map[string]string{
-		"orders":         "CREATE TABLE public.orders (id bigint PRIMARY KEY, created_at timestamptz NOT NULL, legacy_status text, total numeric);\n-- rows: 52000000, size: 9 GB\n-- indexes: orders_pkey (id), 1.1 GB",
-		"orders_summary": "CREATE VIEW public.orders_summary AS SELECT legacy_status, count(*) AS order_count FROM public.orders GROUP BY legacy_status;",
-	}
-	switch name {
-	case "search":
-		var args struct {
-			Text string `json:"text"`
-		}
-		if message := decodeArguments(arguments, &args); message != "" {
-			return message, nil
-		}
-		matches := []map[string]string{}
-		for _, object := range []string{"orders", "orders_summary"} {
-			if strings.Contains(strings.ToLower(object+" "+definitions[object]), strings.ToLower(args.Text)) {
-				kind := "table"
-				if object == "orders_summary" {
-					kind = "view"
-				}
-				matches = append(matches, map[string]string{"kind": kind, "schema": "public", "name": object})
-			}
-		}
-		out, err := json.Marshal(matches)
-		return string(out), err
-	case "read":
-		var args struct {
-			Objects []struct {
-				Name string `json:"name"`
-			} `json:"objects"`
-		}
-		if message := decodeArguments(arguments, &args); message != "" {
-			return message, nil
-		}
-		var out []string
-		for _, object := range args.Objects {
-			definition, ok := definitions[object.Name]
-			if !ok {
-				definition = fmt.Sprintf("object %q not found", object.Name)
-			}
-			out = append(out, definition)
-		}
-		return strings.Join(out, "\n\n"), nil
-	default:
-		return "", errors.Errorf("unexpected tool %q", name)
-	}
-}
-
-// decodeArguments returns the text that tells the model its arguments are
-// invalid, or "" when they decode.
-func decodeArguments(arguments string, target any) string {
-	if err := json.Unmarshal([]byte(arguments), target); err != nil {
-		return "invalid arguments: " + err.Error()
-	}
-	return ""
+func (r *recordingTools) Call(ctx context.Context, name string, arguments string) (string, error) {
+	r.calls = append(r.calls, fmt.Sprintf("%s(%s)", name, arguments))
+	return r.Tools.Call(ctx, name, arguments)
 }

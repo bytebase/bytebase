@@ -26,10 +26,13 @@ const (
 )
 
 // aiReviewUnit is one AI review: a spec's sheet against one database, with
-// the facts the prompt states about that database.
+// the facts the prompt states about that database and the synced schema the
+// tools read.
 type aiReviewUnit struct {
 	Check     *plancheck.CheckTarget
 	Target    aireview.Target
+	Engine    storepb.Engine
+	Schema    *metadatapb.DatabaseSchemaMetadata
 	Statement string
 }
 
