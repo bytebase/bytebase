@@ -15,6 +15,7 @@ import {
 } from "./threadModel";
 
 const NO_COMMENTS: IssueComment[] = [];
+const previewEndLinesByContent = new WeakMap<Uint8Array, number>();
 
 const useIssueThreads = (issueName: string | undefined) => {
   const comments = useAppStore((state) =>
@@ -47,10 +48,12 @@ export function usePlacedUnresolvedThreadCounts(
       if (!sha) continue;
       const sheet = sheetsByName[sheetNameOfSha256(projectName, sha)];
       if (sheet && !isSheetContentComplete(sheet)) {
-        lines.set(
-          spec.id,
-          completePreviewLineCount(getSheetStatement(sheet), true)
-        );
+        let endLine = previewEndLinesByContent.get(sheet.content);
+        if (endLine === undefined) {
+          endLine = completePreviewLineCount(getSheetStatement(sheet), true);
+          previewEndLinesByContent.set(sheet.content, endLine);
+        }
+        lines.set(spec.id, endLine);
       }
     }
     return lines;
