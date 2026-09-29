@@ -13,8 +13,9 @@ import (
 
 // AIReviewExecutor is the AI review: a model judges each spec's sheet against
 // the workspace and project AI review policy, once per database, with that
-// database's facts in the prompt. The reviews of one run share the model and
-// run concurrently under aiReviewConcurrency.
+// database's facts in the prompt and its synced schema behind the tools. The
+// reviews of one run share the model and run concurrently under
+// aiReviewConcurrency.
 type AIReviewExecutor struct {
 	store *store.Store
 }
@@ -68,12 +69,12 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 			unitErrs = append(unitErrs, errors.Wrapf(err, "%s", checkTarget.Target))
 			continue
 		}
-		target, err := e.resolveAIReviewTarget(ctx, checkTarget)
+		unit, err := e.resolveAIReviewUnit(ctx, checkTarget, statement)
 		if err != nil {
 			unitErrs = append(unitErrs, errors.Wrapf(err, "%s", checkTarget.Target))
 			continue
 		}
-		units = append(units, &aiReviewUnit{Check: checkTarget, Target: target, Statement: statement})
+		units = append(units, unit)
 	}
 
 	reviewer := aireview.NewReviewer(aireview.NewModel(aiSetting))
@@ -83,7 +84,7 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 			ProjectPolicy:   policy.Project,
 			Target:          unit.Target,
 			Statement:       unit.Statement,
-		}, aireview.NoTools{})
+		}, aireview.NewCatalogTools(unit.Engine, unit.Schema))
 		if err != nil {
 			return nil, err
 		}
@@ -136,12 +137,13 @@ func (e *AIReviewExecutor) sheetStatement(ctx context.Context, sheets map[string
 	return sheet.Statement, nil
 }
 
-// resolveAIReviewTarget gathers the facts the prompt states about a database.
-// A database whose schema is not synced cannot be reviewed.
-func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarget *plancheck.CheckTarget) (aireview.Target, error) {
+// resolveAIReviewUnit gathers what one review needs of a database: the facts
+// the prompt states and the synced schema the tools read. A database whose
+// schema is not synced cannot be reviewed.
+func (e *AIReviewExecutor) resolveAIReviewUnit(ctx context.Context, checkTarget *plancheck.CheckTarget, statement string) (*aiReviewUnit, error) {
 	instance, database, err := plancheck.ResolveDatabaseTarget(ctx, e.store, checkTarget.Target)
 	if err != nil {
-		return aireview.Target{}, err
+		return nil, err
 	}
 	dbSchema, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		Workspace:    instance.Workspace,
@@ -149,10 +151,16 @@ func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarge
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
-		return aireview.Target{}, errors.Wrapf(err, "failed to get database schema")
+		return nil, errors.Wrapf(err, "failed to get database schema")
 	}
 	if dbSchema == nil || dbSchema.GetProto() == nil {
-		return aireview.Target{}, errors.New("metadata not synced")
+		return nil, errors.New("metadata not synced")
 	}
-	return aiReviewTarget(instance, database, dbSchema.GetProto()), nil
+	return &aiReviewUnit{
+		Check:     checkTarget,
+		Target:    aiReviewTarget(instance, database, dbSchema.GetProto()),
+		Engine:    instance.Metadata.GetEngine(),
+		Schema:    dbSchema.GetProto(),
+		Statement: statement,
+	}, nil
 }
