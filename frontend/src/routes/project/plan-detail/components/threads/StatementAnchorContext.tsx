@@ -1,4 +1,4 @@
-import { Ban, ExternalLink, History } from "lucide-react";
+import { Ban, ChevronUp, ExternalLink, History } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { PlanChangeReferenceRenderer } from "@/components/issue-activity/IssueCommentActivity";
@@ -31,6 +31,7 @@ import {
 // highlight at the comment's current placement.
 export function StatementAnchorContext({
   anchor,
+  onCollapse,
   onViewInStatement,
   placement,
   plan,
@@ -38,6 +39,7 @@ export function StatementAnchorContext({
   renderPlanChangeReference,
 }: {
   anchor: StatementAnchor;
+  onCollapse?: () => void;
   onViewInStatement?: () => void;
   placement: Placement | undefined;
   plan: Plan;
@@ -101,6 +103,16 @@ export function StatementAnchorContext({
             onViewInStatement={onViewInStatement}
             state={state}
           />
+          {onCollapse && (
+            <Button
+              aria-label={t("common.collapse")}
+              onClick={onCollapse}
+              size="xs"
+              appearance="secondary"
+            >
+              <ChevronUp className="size-3.5" />
+            </Button>
+          )}
         </div>
       </div>
       {!isLoading && statement && range && (

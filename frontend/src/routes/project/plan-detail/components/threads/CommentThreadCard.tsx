@@ -50,7 +50,7 @@ const FOLD_REPLIES_ABOVE = 4;
 export function CommentThreadCard({
   className,
   collapsible = true,
-  context,
+  renderContext,
   issue,
   label,
   onClose,
@@ -64,7 +64,7 @@ export function CommentThreadCard({
   // Whether a resolved thread may collapse to its summary row.
   collapsible?: boolean;
   // Full-width statement context above the root author and discussion.
-  context?: ReactNode;
+  renderContext?: (onCollapse?: () => void) => ReactNode;
   issue: Issue;
   // Extra header text after the timestamp (the anchored line range).
   label?: ReactNode;
@@ -210,15 +210,19 @@ export function CommentThreadCard({
       data-thread-state={thread.resolved ? "resolved" : "open"}
       id={thread.root.name}
     >
-      {context && (
+      {renderContext && (
         <div className="min-w-0 overflow-hidden rounded-t-sm border-b border-block-border">
-          {context}
+          {renderContext(
+            thread.resolved && collapsible
+              ? () => setCollapsed(true)
+              : undefined
+          )}
         </div>
       )}
       <ThreadComment
         actions={
           <>
-            {thread.resolved && collapsible && (
+            {thread.resolved && collapsible && !renderContext && (
               <Button
                 aria-label={t("common.collapse")}
                 onClick={() => setCollapsed(true)}
@@ -255,29 +259,34 @@ export function CommentThreadCard({
           </>
         }
       />
-      {hiddenCount > 0 && (
-        <div className="flex justify-center border-t border-block-border bg-control-bg/50 py-1">
-          <Button
-            onClick={() => setShowAllReplies(true)}
-            size="xs"
-            appearance="link"
-          >
-            <ChevronDown className="size-3.5" />
-            {t("plan.review.thread.n-replies-hidden", { count: hiddenCount })}
-            <span className="text-control-placeholder">·</span>
-            {t("plan.review.activity.show-all")}
-          </Button>
+      {(hiddenCount > 0 || visibleReplies.length > 0) && (
+        <div className="bg-control-bg/50" data-testid="thread-replies">
+          {hiddenCount > 0 && (
+            <div className="flex justify-center py-1">
+              <Button
+                onClick={() => setShowAllReplies(true)}
+                size="xs"
+                appearance="link"
+              >
+                <ChevronDown className="size-3.5" />
+                {t("plan.review.thread.n-replies-hidden", {
+                  count: hiddenCount,
+                })}
+                <span className="text-control-placeholder">·</span>
+                {t("plan.review.activity.show-all")}
+              </Button>
+            </div>
+          )}
+          {visibleReplies.map((reply) => (
+            <ThreadComment
+              comment={reply}
+              key={reply.name}
+              onEdit={actions.edit}
+              project={project}
+            />
+          ))}
         </div>
       )}
-      {visibleReplies.map((reply) => (
-        <ThreadComment
-          className="border-t border-block-border"
-          comment={reply}
-          key={reply.name}
-          onEdit={actions.edit}
-          project={project}
-        />
-      ))}
       {(allowReply || allowSettle) && (
         <div
           className="flex flex-wrap items-center gap-2 border-t border-block-border bg-control-bg/50 px-2 py-2 sm:px-3"

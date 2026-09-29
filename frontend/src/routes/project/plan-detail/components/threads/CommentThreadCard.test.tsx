@@ -219,7 +219,7 @@ describe("CommentThreadCard", () => {
         issue={issue}
         project={project}
         thread={thread}
-        context={<div data-testid="anchor-context">SELECT 1;</div>}
+        renderContext={() => <div data-testid="anchor-context">SELECT 1;</div>}
       />
     );
     const card = container.querySelector("[data-testid='comment-thread']");
@@ -264,6 +264,11 @@ describe("CommentThreadCard", () => {
       container.querySelectorAll("[data-testid='preview']")
     ).map((node) => node.textContent);
     expect(bodies).toEqual(["Root question", "First reply", "Second reply"]);
+    const comments = container.querySelectorAll("[data-testid='thread-comment']");
+    const replies = container.querySelector("[data-testid='thread-replies']");
+    expect(replies?.contains(comments[0])).toBe(false);
+    expect(replies?.contains(comments[1])).toBe(true);
+    expect(replies?.contains(comments[2])).toBe(true);
     expect(container.querySelector("[data-thread-state]")?.getAttribute("data-thread-state")).toBe("open");
     expect(buttonByText("plan.review.thread.resolve")).toBeDefined();
     expect(buttonByText("plan.review.thread.reply-placeholder")).toBeDefined();
@@ -286,6 +291,28 @@ describe("CommentThreadCard", () => {
     ).toHaveLength(2);
     expect(buttonByText("common.reopen")).toBeDefined();
     expect(buttonByText("plan.review.thread.resolve")).toBeUndefined();
+  });
+
+  test("a resolved anchored thread collapses from its context header", () => {
+    const [thread] = groupThreads([comment("root", "Root", { resolved: true })]);
+    render(
+      <CommentThreadCard
+        issue={issue}
+        project={project}
+        renderContext={(onCollapse) => (
+          <button data-testid="context-collapse" onClick={onCollapse} type="button">
+            Collapse context
+          </button>
+        )}
+        thread={thread}
+      />
+    );
+    click(buttonByText("plan.review.thread.resolved"));
+    expect(container.querySelector("[data-testid='context-collapse']")).not.toBeNull();
+    expect(container.querySelectorAll('button[aria-label="common.collapse"]')).toHaveLength(0);
+    click(container.querySelector("[data-testid='context-collapse']"));
+    expect(container.querySelector("[data-testid='context-collapse']")).toBeNull();
+    expect(container.querySelector("[data-testid='preview']")).toBeNull();
   });
 
   test("roots and replies share header avatars and a full-width body", () => {
