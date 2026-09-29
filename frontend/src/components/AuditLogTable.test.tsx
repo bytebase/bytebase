@@ -135,12 +135,13 @@ vi.mock("@/api/methods", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  formatAbsoluteDateTime: () => "2026-04-27 00:00:00",
   getDefaultPagination: () => 1000,
   humanizeDurationV1: () => "0ms",
 }));
 
 vi.mock("@/types", () => ({
-  getTimeForPbTimestampProtoEs: () => new Date("2026-04-27T00:00:00Z").getTime(),
+  getDateForPbTimestampProtoEs: () => new Date("2026-04-27T00:00:00Z"),
 }));
 
 globalThis.ResizeObserver = class ResizeObserver {
