@@ -1,10 +1,11 @@
 import { create } from "@bufbuild/protobuf";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { Plan_ChangeDatabaseConfigSchema, Plan_SpecSchema, PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { type Sheet, SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
-import { current, OUTDATED } from "./placement/place";
+import { current, OUTDATED, UNAVAILABLE, UNAVAILABLE_SIZE_LIMIT } from "./placement/place";
 import { StatementAnchorContext } from "./StatementAnchorContext";
 import { buildWholeLineAnchor } from "./threadModel";
 
@@ -19,6 +20,11 @@ vi.mock("react-i18next", () => ({
     options ? `${(options.count ?? 1) > 1 ? "Lines" : "Line"} ${options.range}` : key}),
 }));
 vi.mock("@/components/monaco/core", () => ({ colorizeStatement: (text: string) => mocks.colorize(text) }));
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children, content }: { children: ReactNode; content: string }) => (
+    <span data-tooltip={content}>{children}</span>
+  ),
+}));
 vi.mock("@/stores/app", () => ({
   useAppStore: Object.assign(
     (selector: (state: unknown) => unknown) => selector({ sheetsByName: mocks.sheets }),
@@ -115,22 +121,53 @@ describe("StatementAnchorContext", () => {
   test("mapped placements still render context from the recorded revision", () => {
     const { container, getByText } = render(<StatementAnchorContext {...props} anchor={anchor(4, 5)} placement={current(10, 11)} />);
     expect(getByText("Lines 4–5")).toBeTruthy();
+    expect(getByText("plan.review.thread.anchor.view-in-statement")).toBeTruthy();
     expect(container.textContent).toContain("comment line");
     expect(container.textContent).not.toContain("CURRENT REVISION");
   });
 
+  test("shows Outdated with a reason when the comparison exceeds the limit", () => {
+    const { container, rerender } = render(
+      <StatementAnchorContext {...props} anchor={anchor(4, 5)} placement={UNAVAILABLE_SIZE_LIMIT} />
+    );
+    expect(container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state")).toBe("OUTDATED");
+    expect(container.textContent).toContain("plan.review.thread.anchor.outdated");
+    expect(container.textContent).not.toContain("plan.review.thread.anchor.view-in-statement");
+    expect(container.querySelector("[data-tooltip]")?.getAttribute("data-tooltip")).toBe(
+      "plan.review.thread.anchor.comparison-size-limit"
+    );
+    rerender(<StatementAnchorContext {...props} anchor={anchor(4, 5)} placement={UNAVAILABLE} />);
+    expect(container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state")).toBe("OUTDATED");
+    expect(container.querySelector("[data-tooltip]")).toBeNull();
+  });
+
+  test("keeps the anchor unavailable when its original lines are outside the preview", () => {
+    mocks.sheets[savedName] = create(SheetSchema, {
+      name: savedName,
+      content: new TextEncoder().encode("SELECT 1;"),
+    });
+    const { container } = render(
+      <StatementAnchorContext {...props} anchor={anchor(4, 5)} placement={UNAVAILABLE_SIZE_LIMIT} />
+    );
+    expect(container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state")).toBe("UNAVAILABLE");
+    expect(container.textContent).toContain("plan.review.thread.anchor.statement-unavailable");
+    expect(container.querySelector("[data-tooltip]")).toBeNull();
+  });
+
   test.each([
-    { sheet: "complete", text: original, extra: 0, state: "CURRENT", action: true },
-    { sheet: "truncated", text: original, extra: 1, state: "UNAVAILABLE", action: false },
-    { sheet: "empty", text: "", extra: 0, state: "UNAVAILABLE", action: false },
-  ])("a hash-matched anchor on a $sheet sheet is $state", ({ text, extra, state, action }) => {
+    { sheet: "complete", text: original, extra: 0, start: 1, end: 1, state: "CURRENT", action: true },
+    { sheet: "visible preview line", text: "SELECT 1;\nSELECT", extra: 1, start: 1, end: 1, state: "CURRENT", action: true },
+    { sheet: "partial preview line", text: "SELECT 1;\nSELECT", extra: 1, start: 2, end: 2, state: "UNAVAILABLE", action: false },
+    { sheet: "range crossing the preview end", text: "SELECT 1;\nSELECT", extra: 1, start: 1, end: 2, state: "UNAVAILABLE", action: false },
+    { sheet: "empty", text: "", extra: 0, start: 1, end: 1, state: "UNAVAILABLE", action: false },
+  ])("a hash-matched anchor on a $sheet sheet is $state", ({ text, extra, start, end, state, action }) => {
     const content = new TextEncoder().encode(text);
     mocks.sheets[currentName] = create(SheetSchema, {
       name: currentName,
       content,
       contentSize: BigInt(content.byteLength + extra),
     });
-    const onCurrent = buildWholeLineAnchor({ spec: "spec", sheetSha256: currentHash, startLine: 1, endLine: 1 });
+    const onCurrent = buildWholeLineAnchor({ spec: "spec", sheetSha256: currentHash, startLine: start, endLine: end });
     const { container, queryByText } = render(<StatementAnchorContext {...props} anchor={onCurrent} placement={undefined} />);
     expect(container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state")).toBe(state);
     expect(queryByText("plan.review.thread.anchor.view-in-statement") !== null).toBe(action);

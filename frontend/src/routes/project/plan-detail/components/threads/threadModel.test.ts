@@ -16,6 +16,7 @@ import { current, OUTDATED, UNAVAILABLE } from "./placement/place";
 import {
   anchorLineRange,
   buildWholeLineAnchor,
+  completePreviewLineCount,
   countPlacedUnresolvedBySpec,
   countUnresolvedThreads,
   defaultExpandedThread,
@@ -94,6 +95,17 @@ describe("sheetSha256OfName", () => {
   });
 });
 
+describe("completePreviewLineCount", () => {
+  test("excludes the final line of a truncated preview, even after a newline", () => {
+    expect(completePreviewLineCount("first\nsecond", true)).toBe(1);
+    expect(completePreviewLineCount("first\nsecond\n", true)).toBe(2);
+    expect(completePreviewLineCount("first\r\nsecond\r\n", true)).toBe(2);
+    expect(completePreviewLineCount("first\rsecond", true)).toBe(1);
+    expect(completePreviewLineCount("first", true)).toBe(0);
+    expect(completePreviewLineCount("first\nsecond", false)).toBe(2);
+  });
+});
+
 describe("countUnresolvedThreads", () => {
   test("counts open roots, anchored or not, and never replies", () => {
     const threads = groupThreads([
@@ -123,6 +135,14 @@ describe("countUnresolvedThreads", () => {
     expect([
       ...countPlacedUnresolvedBySpec(threads, specs, () => placed),
     ]).toEqual([["spec-1", 2]]);
+    expect([
+      ...countPlacedUnresolvedBySpec(
+        threads,
+        specs,
+        () => placed,
+        () => 1
+      ),
+    ]).toEqual([["spec-1", 1]]);
     expect(countPlacedUnresolvedBySpec(threads, [], () => undefined).size).toBe(
       0
     );

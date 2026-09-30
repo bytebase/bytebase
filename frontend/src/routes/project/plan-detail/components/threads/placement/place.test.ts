@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SHEET_PREVIEW_CHARACTER_LIMIT } from "@/utils/v1/sheet";
 import {
   current,
   diffPair,
@@ -7,9 +8,13 @@ import {
   placeWithHunks,
   tokenizeSheet,
   UNAVAILABLE,
+  UNAVAILABLE_SIZE_LIMIT,
 } from "./place";
 
-const limits = { maxLinesPerSheet: 10_000, maxWork: 1_000_000 };
+const limits = {
+  maxLinesPerSheet: 10_000,
+  maxWork: 1_000_000,
+};
 const at = (saved: string, currentText: string, first: number, last = first) =>
   placeOnPair(
     diffPair(tokenizeSheet(saved), tokenizeSheet(currentText), limits),
@@ -195,7 +200,7 @@ describe("place: invalid input and limits", () => {
     });
     expect(pair.hunks).toBeUndefined();
     expect(placeOnPair(pair, { startLine: 1, endLine: 1 })).toEqual(
-      UNAVAILABLE
+      UNAVAILABLE_SIZE_LIMIT
     );
     // The cap is inclusive.
     expect(
@@ -204,5 +209,20 @@ describe("place: invalid input and limits", () => {
         maxWork: 1,
       }).hunks
     ).toEqual([]);
+  });
+
+  it("uses the API's character limit even when UTF-8 content is larger in bytes", () => {
+    const within = tokenizeSheet("表".repeat(SHEET_PREVIEW_CHARACTER_LIMIT));
+    expect(
+      placeOnPair(diffPair(within, within, limits), {
+        startLine: 1,
+        endLine: 1,
+      })
+    ).toEqual(current(1, 1));
+
+    const over = tokenizeSheet(`${within.text}表`);
+    expect(
+      placeOnPair(diffPair(over, over, limits), { startLine: 1, endLine: 1 })
+    ).toEqual(UNAVAILABLE_SIZE_LIMIT);
   });
 });

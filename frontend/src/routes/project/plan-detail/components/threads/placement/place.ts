@@ -1,4 +1,5 @@
 import type { StatementAnchor } from "@/types/proto-es/v1/issue_service_pb";
+import { exceedsSheetPreviewLimit } from "@/utils/v1/sheet";
 import { tokenizeLines } from "./lineTokens";
 import { diffLines, type Hunk } from "./myersDiff";
 
@@ -16,10 +17,14 @@ export interface LineRange {
 export type Placement =
   | { readonly state: "CURRENT"; readonly range: LineRange }
   | { readonly state: "OUTDATED" }
-  | { readonly state: "UNAVAILABLE" };
+  | { readonly state: "UNAVAILABLE"; readonly reason?: "SIZE_LIMIT" };
 
 export const OUTDATED: Placement = Object.freeze({ state: "OUTDATED" });
 export const UNAVAILABLE: Placement = Object.freeze({ state: "UNAVAILABLE" });
+export const UNAVAILABLE_SIZE_LIMIT: Placement = Object.freeze({
+  state: "UNAVAILABLE",
+  reason: "SIZE_LIMIT",
+});
 
 export const current = (startLine: number, endLine: number): Placement => ({
   state: "CURRENT",
@@ -125,9 +130,9 @@ export interface DiffedPair {
   readonly saved: readonly string[];
   readonly current: readonly string[];
   // Undefined when the diff did not run to completion; `reason` says why.
-  // A "budget" miss is retriable with more budget, a "lines" miss is not.
+  // A work-budget miss is retriable; a size limit is not.
   readonly hunks?: readonly Hunk[];
-  readonly reason?: "budget" | "lines";
+  readonly reason?: "budget" | "size";
   readonly work: number;
 }
 
@@ -137,8 +142,7 @@ export interface DiffPairLimits {
 }
 
 // Diffs one pair once. Identical contents skip the diff. A sheet over the
-// line cap or a diff over the work budget yields no hunks, and every anchor
-// on the pair then resolves UNAVAILABLE.
+// character or line cap, or a diff over the work budget, yields no hunks.
 export function diffPair(
   saved: SheetText,
   current: SheetText,
@@ -146,10 +150,12 @@ export function diffPair(
 ): DiffedPair {
   const base = { saved: saved.lines, current: current.lines };
   if (
+    exceedsSheetPreviewLimit(saved.text) ||
+    exceedsSheetPreviewLimit(current.text) ||
     saved.lines.length > limits.maxLinesPerSheet ||
     current.lines.length > limits.maxLinesPerSheet
   ) {
-    return { ...base, reason: "lines", work: 0 };
+    return { ...base, reason: "size", work: 0 };
   }
   if (saved.text === current.text) {
     return { ...base, hunks: [], work: 0 };
@@ -161,6 +167,8 @@ export function diffPair(
 }
 
 export function placeOnPair(pair: DiffedPair, range: LineRange): Placement {
-  if (!pair.hunks) return UNAVAILABLE;
+  if (!pair.hunks) {
+    return pair.reason === "size" ? UNAVAILABLE_SIZE_LIMIT : UNAVAILABLE;
+  }
   return placeWithHunks(pair.saved, pair.current, pair.hunks, range);
 }

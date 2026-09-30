@@ -45,6 +45,7 @@ import { getStatementSize, MAX_UPLOAD_FILE_SIZE_MB } from "@/utils/sheet";
 import { getInstanceResource } from "@/utils/v1/database";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import {
+  exceedsSheetPreviewLimit,
   extractSheetUID,
   getSheetStatement,
   setSheetStatement,
@@ -59,7 +60,10 @@ import {
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
 import { StatementThreadsLayer } from "./threads/StatementThreadsLayer";
-import { sheetSha256OfName } from "./threads/threadModel";
+import {
+  completePreviewLineCount,
+  sheetSha256OfName,
+} from "./threads/threadModel";
 
 // Both modes reserve the same gutter so line numbers and SQL stay aligned
 // when entering or leaving edit mode. Keep these options stable: MonacoEditor
@@ -483,16 +487,34 @@ export function PlanDetailStatementSection({
 
   const editorContent = page.isCreating ? statement : draftStatement;
 
-  // Inline threads anchor to the saved sheet of a persisted spec, so they
-  // need an issue, a content-addressed sheet, and the complete statement.
+  // Inline threads anchor to the saved sheet of a persisted spec. A truncated
+  // preview can still show threads on its complete lines.
   const sheetSha256 = sheetSha256OfName(sheetName);
   const issue = page.issue;
+  const showLargeSheetWarning = useMemo(
+    () =>
+      isEditing
+        ? exceedsSheetPreviewLimit(draftStatement)
+        : isSheetOversize ||
+          (!isLoading &&
+            Boolean(sheetSha256) &&
+            exceedsSheetPreviewLimit(statement)),
+    [
+      draftStatement,
+      isEditing,
+      isLoading,
+      isSheetOversize,
+      sheetSha256,
+      statement,
+    ]
+  );
+  const previewEndLine = useMemo(
+    () =>
+      isSheetOversize ? completePreviewLineCount(statement, true) : undefined,
+    [isSheetOversize, statement]
+  );
   const threadsEnabled = Boolean(
-    issue &&
-      !page.isCreating &&
-      !isPendingDraft &&
-      sheetSha256 &&
-      !isSheetOversize
+    issue && !page.isCreating && !isPendingDraft && sheetSha256
   );
 
   return (
@@ -574,13 +596,17 @@ export function PlanDetailStatementSection({
           </div>
         )}
       </div>
-      {isSheetOversize && (
+      {showLargeSheetWarning && (
         <Alert
           variant="warning"
           description={
             <div className="flex items-center justify-between gap-x-4">
-              <span>{t("issue.statement-from-sheet-warning")}</span>
-              {sheetName && (
+              <span>
+                {isEditing
+                  ? t("issue.statement-exceeds-preview-limit")
+                  : t("issue.statement-from-sheet-warning")}
+              </span>
+              {!isEditing && sheetName && (
                 <Button
                   disabled={isDownloading}
                   onClick={() => void downloadSheet()}
@@ -641,6 +667,7 @@ export function PlanDetailStatementSection({
                   issue={issue}
                   key={sheetSha256}
                   monaco={readonlyEditor.monaco}
+                  previewEndLine={previewEndLine}
                   sheetSha256={sheetSha256}
                   spec={spec}
                 />
