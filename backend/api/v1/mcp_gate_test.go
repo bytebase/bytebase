@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -17,9 +18,11 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // mcpClassification is one v1 RPC's MCP annotations, as the compiled
@@ -780,7 +783,145 @@ func renderMCPInventory(rows []mcpClassification) string {
 		fmt.Fprintf(&b, "| %s | %v | %s | %s |\n",
 			strings.TrimPrefix(row.procedure, "/bytebase.v1."), row.class, reason, permission)
 	}
+	renderMCPDenials(&b, rows)
 	return b.String()
+}
+
+// renderMCPDenials prints what each refused method tells the agent, rendered by
+// the gate's own classDenial and grouped where the text is the same, so a
+// reviewer reads each sentence beside every method it has to be true of.
+func renderMCPDenials(b *strings.Builder, rows []mcpClassification) {
+	type denialGroup struct {
+		class   v1pb.MCPMethodClass
+		reason  v1pb.MCPDenialReason
+		message string
+		methods []string
+	}
+	var groups []*denialGroup
+	byMessage := map[string]*denialGroup{}
+	for _, row := range rows {
+		if row.class != v1pb.MCPMethodClass_FORBIDDEN && row.class != v1pb.MCPMethodClass_EXCLUDED {
+			continue
+		}
+		message := strings.Replace(classDenial(row.procedure, row.class, row.reason), row.procedure, "`<method>`", 1)
+		group, ok := byMessage[message]
+		if !ok {
+			group = &denialGroup{class: row.class, reason: row.reason, message: message}
+			byMessage[message] = group
+			groups = append(groups, group)
+		}
+		group.methods = append(group.methods, strings.TrimPrefix(row.procedure, "/bytebase.v1."))
+	}
+	slices.SortStableFunc(groups, func(x, y *denialGroup) int {
+		if x.reason != y.reason {
+			return int(x.reason) - int(y.reason)
+		}
+		return strings.Compare(x.message, y.message)
+	})
+
+	b.WriteString("\n## What a refused method tells the agent\n\n")
+	b.WriteString("Rendered by the gate's own code. Each denial must be true of every method listed\n")
+	b.WriteString("under it: the whole method, for every caller, argument and resource owner.\n")
+	for _, group := range groups {
+		fmt.Fprintf(b, "\n### %v · %v\n\n%s\n\n> %s\n", group.class, group.reason, strings.Join(group.methods, ", "), group.message)
+	}
+}
+
+// TestMCPDenialWording holds every refusal an MCP session can meet to the
+// wording rules on mcpDenialReasons, as far as a check can: a reason continues
+// "because", a next step is a sentence of its own, and a rendered denial is
+// complete sentences in the Access policy page's words. Whether a reason is
+// true of every method it covers is the reviewer's, against the inventory.
+func TestMCPDenialWording(t *testing.T) {
+	t.Parallel()
+	const procedure = "/bytebase.v1.ExampleService/Example"
+
+	rows := map[string]mcpDenialWording{
+		"the FORBIDDEN fallback": reasonForbiddenClass,
+		"the EXCLUDED fallback":  reasonExcludedClass,
+	}
+	for reason, wording := range mcpDenialReasons {
+		rows[reason.String()] = wording
+	}
+	for name, wording := range rows {
+		t.Run("row "+name, func(t *testing.T) {
+			t.Parallel()
+			require.NotEmpty(t, wording.sentence)
+			require.Equal(t, strings.ToLower(wording.sentence[:1]), wording.sentence[:1], "a reason continues \"because\"")
+			require.False(t, strings.HasSuffix(wording.sentence, "."), "the template ends the reason")
+			requireSentence(t, wording.nextStep)
+		})
+	}
+	for method, nextStep := range mcpDenialNextSteps {
+		t.Run("next step for "+method, func(t *testing.T) {
+			t.Parallel()
+			requireSentence(t, nextStep)
+		})
+	}
+
+	mcpCtx := contextWithAuth(&common.AuthContext{DelegatedGrant: &common.DelegatedGrant{}})
+	approvalProject := &store.ProjectMessage{ResourceID: "p", Setting: &storepb.Project{RequireIssueApproval: true}}
+	denials := map[string]string{
+		"a FORBIDDEN method with an unknown reason": classDenial(procedure, v1pb.MCPMethodClass_FORBIDDEN, v1pb.MCPDenialReason(9999)),
+		"an EXCLUDED method with an unknown reason": classDenial(procedure, v1pb.MCPMethodClass_EXCLUDED, v1pb.MCPDenialReason(9999)),
+		"a WRITE method under Read-only":            servingDenial(procedure, v1pb.MCPMethodClass_WRITE, storepb.MCPSetting_READ_ONLY),
+		"any method under Disabled":                 servingDenial(procedure, v1pb.MCPMethodClass_READ, storepb.MCPSetting_DISABLED),
+		"a serving table that leaves a class out":   servingDenial(procedure, v1pb.MCPMethodClass_READ, storepb.MCPSetting_Capability(2)),
+		"a policy that could not be read": messageOf(invokeMCPGate(t, mcpGateStore{err: errors.New("down")},
+			classContext(v1pb.MCPMethodClass_READ), procedure, connect.NewRequest(&v1pb.GetUserRequest{})).err),
+		"a policy this build does not support": messageOf(invokeMCPGate(t, mcpGateStore{ceiling: storepb.MCPSetting_Capability(2)},
+			classContext(v1pb.MCPMethodClass_READ), procedure, connect.NewRequest(&v1pb.GetUserRequest{})).err),
+		"an unclassified method": messageOf(invokeMCPGate(t, readWriteCeiling(),
+			classContext(v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED), procedure, connect.NewRequest(&v1pb.GetUserRequest{})).err),
+		"a masked write": messageOf(refuseByRequestShape(mcpCtx, v1connect.SQLServiceQueryProcedure,
+			&v1pb.QueryRequest{Statement: "UPDATE t SET c = '" + masker.DefaultFullMaskSubstitution + "'"})),
+		"a grant issue at the gate": messageOf(refuseByRequestShape(mcpCtx, v1connect.IssueServiceCreateIssueProcedure,
+			&v1pb.CreateIssueRequest{Issue: &v1pb.Issue{Type: v1pb.Issue_ROLE_GRANT}})),
+		"a grant issue in the handler":     messageOf(rejectMCPOriginatedGrantIssue(mcpCtx, v1pb.Issue_ACCESS_GRANT)),
+		"an issueless rollout":             messageOf(rejectMCPOriginatedIssuelessRollout(mcpCtx, approvalProject, nil, "create a rollout")),
+		"a write under the clamp":          messageOf(refuseNonReadOnlyStatement(storepb.Engine_POSTGRES, "UPDATE t SET c = 1")),
+		"a statement that returns none":    messageOf(refuseNonReadOnlyStatement(storepb.Engine_POSTGRES, "SET search_path = x")),
+		"a statement that will not parse":  messageOf(refuseNonReadOnlyStatement(storepb.Engine_POSTGRES, "SELECT FROM WHERE (((")),
+		"an engine the clamp cannot check": messageOf(refuseNonReadOnlyStatement(storepb.Engine_MONGODB, "db.t.find()")),
+		"the Disabled verdict":             auth.MCPCeilingDisabled.Refusal(),
+		"the unsupported-policy verdict":   auth.MCPCeilingUnserved.Refusal(),
+		"the unreadable-policy verdict":    auth.MCPCeilingUnavailable.Refusal(),
+	}
+	for reason, wording := range mcpDenialReasons {
+		denials["the "+reason.String()+" denial"] = classDenial(procedure, wording.class, reason)
+	}
+	banned := regexp.MustCompile(`(?i)\b(ceiling|principal|serves)\b|READ_ONLY|READ_WRITE|DISABLED|ROLE_GRANT|ACCESS_GRANT|this release ships|own change|Perform this action`)
+	for name, message := range denials {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			requireSentence(t, message)
+			require.Contains(t, message, ". ", "a denial says what to do next in a sentence of its own")
+			require.Empty(t, banned.FindString(message), "%q uses a word the Access policy page does not", message)
+		})
+	}
+}
+
+// requireSentence checks a string starts and ends as a sentence. A leading
+// procedure name counts as a start.
+func requireSentence(t *testing.T, s string) {
+	t.Helper()
+	require.NotEmpty(t, s)
+	first := s[:1]
+	require.True(t, first == "/" || strings.ToUpper(first) == first, "%q must start a sentence", s)
+	require.True(t, strings.HasSuffix(s, "."), "%q must end a sentence", s)
+}
+
+// messageOf is what the agent reads: a connect error's message without the
+// code the client already has.
+func messageOf(err error) string {
+	var connectErr *connect.Error
+	if errors.As(err, &connectErr) {
+		return connectErr.Message()
+	}
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
 // TestMCPClassificationInventory keeps the committed rendering in step with the
@@ -871,6 +1012,7 @@ func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
 			continue
 		}
 		wantReason := mcpDenialReasons[row.reason].sentence
+		wantNextStep := denialWording(row.procedure, row.class, row.reason, mcpDenialReasons[row.reason]).nextStep
 		t.Run(row.procedure, func(t *testing.T) {
 			got := invokeMCPGate(t, readWriteCeiling(), &common.AuthContext{
 				MCPMethodClass:  row.class,
@@ -881,8 +1023,12 @@ func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
 			require.False(t, got.dispatched, "the denial must land before dispatch, so no handler side effect can")
 			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
 			require.Contains(t, got.err.Error(), row.procedure, "the message must name the method the agent called")
+			require.Contains(t, got.err.Error(), "not available to MCP sessions",
+				"every gate refusal keeps the phrase a reader recognizes it by, whatever its class")
 			require.NotEmpty(t, wantReason, "every refused method's reason must have wording")
 			require.Contains(t, got.err.Error(), wantReason, "the message must name why, so the agent can act on it")
+			require.NotEmpty(t, wantNextStep, "every refused method must be offered a next step")
+			require.True(t, strings.HasSuffix(got.err.Error(), wantNextStep), "the message must end with the method's next step")
 			require.True(t, got.auditMarked, "every denial is an audited outcome")
 		})
 	}
@@ -916,7 +1062,7 @@ func TestMCPGateUnderAReadOnlyCeiling(t *testing.T) {
 		require.True(t, got.dispatched)
 	})
 
-	t.Run("a WRITE method is refused, naming the ceiling and the way out", func(t *testing.T) {
+	t.Run("a WRITE method is refused, naming the policy and the way out", func(t *testing.T) {
 		// A WRITE method with no request-shape rule of its own, so the refusal
 		// can only be the ceiling's.
 		got := invokeMCPGate(t, readOnlyCeiling(), classContext(v1pb.MCPMethodClass_WRITE),
@@ -924,8 +1070,9 @@ func TestMCPGateUnderAReadOnlyCeiling(t *testing.T) {
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
 		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
-		require.Contains(t, got.err.Error(), "READ_ONLY", "the denial must name the ceiling in force")
-		require.Contains(t, got.err.Error(), "raise the MCP ceiling", "the denial must name the way out")
+		require.Contains(t, got.err.Error(), "MCP access policy is Read-only", "the denial must name the policy in force")
+		require.Contains(t, got.err.Error(), "switch the policy to Read-write under "+auth.MCPAccessPolicyLocation,
+			"the denial must name the way out, where an admin finds it")
 		require.True(t, got.auditMarked)
 	})
 }
@@ -970,9 +1117,9 @@ func TestMCPGateFailsClosedOnTheCeiling(t *testing.T) {
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
 		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
-		require.Contains(t, got.err.Error(), "serves no method",
+		require.Contains(t, got.err.Error(), auth.MCPCeilingDisabled.Refusal(),
 			"an empty serving list is a mode that serves nothing, not a mode nobody decided about")
-		require.NotContains(t, got.err.Error(), "not one this build serves")
+		require.NotContains(t, got.err.Error(), auth.MCPCeilingUnserved.Refusal())
 		require.True(t, got.auditMarked)
 	})
 
@@ -1020,7 +1167,7 @@ func TestMCPGateFailsClosedOnAnUnclassifiedMethod(t *testing.T) {
 	require.Error(t, got.err)
 	require.False(t, got.dispatched)
 	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
-	require.Contains(t, got.err.Error(), "carries no MCP classification")
+	require.Contains(t, got.err.Error(), "has not classified it for MCP access")
 	require.True(t, got.auditMarked)
 }
 
@@ -1036,7 +1183,7 @@ func TestMCPGateFallsBackToGenericWording(t *testing.T) {
 		}, v1connect.AuthServiceLoginProcedure, connect.NewRequest(&v1pb.LoginRequest{}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
-		require.Contains(t, got.err.Error(), reasonForbiddenClass)
+		require.Contains(t, got.err.Error(), reasonForbiddenClass.sentence)
 	})
 
 	t.Run("excluded", func(t *testing.T) {
@@ -1046,7 +1193,7 @@ func TestMCPGateFallsBackToGenericWording(t *testing.T) {
 		}, v1connect.UserServiceListUsersProcedure, connect.NewRequest(&v1pb.ListUsersRequest{}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
-		require.Contains(t, got.err.Error(), reasonExcludedClass)
+		require.Contains(t, got.err.Error(), reasonExcludedClass.sentence)
 	})
 }
 
@@ -1091,7 +1238,8 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 			require.Error(t, got.err)
 			require.False(t, got.dispatched)
 			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
-			require.Contains(t, got.err.Error(), issueType.String())
+			require.Contains(t, got.err.Error(), grantIssueRefusal, "the denial states the allow-list it enforces")
+			require.NotContains(t, got.err.Error(), issueType.String(), "an enum name is not a reason")
 			require.True(t, got.auditMarked)
 		})
 	}

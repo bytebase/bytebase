@@ -28,8 +28,9 @@ func (s *Server) handleReauthorize(ctx context.Context, _ *mcp.CallToolRequest, 
 	clientID := getOAuth2ClientID(ctx)
 	if accessToken == "" || userEmail == "" || clientID == "" {
 		return formatToolError(&toolError{
-			Code:    "NOT_OAUTH_SESSION",
-			Message: "reauthorize requires an MCP OAuth access token",
+			Code:       "NOT_OAUTH_SESSION",
+			Message:    "this connection did not sign in through Bytebase's MCP OAuth flow, so there is no OAuth session to log out",
+			Suggestion: "to change the account or workspace, update the credentials in your MCP client's configuration",
 		}), nil, nil
 	}
 	if err := s.store.DeleteOAuth2RefreshTokensByUserAndClient(ctx, userEmail, clientID); err != nil {

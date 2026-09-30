@@ -1651,8 +1651,8 @@
           },
           "policy-label": "Chính sách không gian làm việc",
           "undisclosable": {
-            "description": "Chính sách MCP của không gian làm việc này là một giá trị mà trang này không có cách diễn đạt. Nó hoặc mới hơn trang bạn đang mở, hoặc không phải là chính sách mà phiên bản Bytebase này phục vụ, trong trường hợp đó mọi kết nối MCP đều bị từ chối.",
-            "line": "Hãy tải lại để lấy phiên bản hiện tại. Nếu trang này xuất hiện lại, hãy nhờ quản trị viên không gian làm việc đặt một chính sách được hỗ trợ",
+            "description": "Chính sách truy cập MCP của không gian làm việc này có một giá trị mà trang này không nhận ra. Chính sách đó hoặc mới hơn trang bạn đang mở, hoặc không được phiên bản Bytebase này hỗ trợ, trong trường hợp đó mọi kết nối MCP đều bị từ chối.",
+            "line": "Hãy tải lại để lấy phiên bản hiện tại, và nếu trang này xuất hiện lại, hãy nhờ quản trị viên không gian làm việc chọn một chính sách được hỗ trợ",
             "title": "Trang này không thể hiển thị những gì chính sách MCP của không gian làm việc này cho phép"
           },
           "unknown": {
@@ -1662,7 +1662,7 @@
             "title": "Không kiểm tra được chính sách MCP"
           }
         },
-        "write-caution": "Phiên AI có quyền ghi sẽ tạo ra thay đổi thật. Chỉ phê duyệt trên máy bạn kiểm soát."
+        "write-caution": "Phiên AI có quyền ghi sẽ tạo ra thay đổi thật. Chỉ phê duyệt nếu chính bạn đã bắt đầu kết nối này từ một ứng dụng AI mà bạn tin tưởng."
       },
       "title": "Yêu cầu ủy quyền",
       "workspace-label": "Cấp quyền truy cập vào workspace"
@@ -2712,7 +2712,7 @@
             "title": "Quản lý vận hành cơ sở dữ liệu"
           },
           "propose": {
-            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo, xóa và khôi phục bản phát hành · Tạo và xóa bản sửa đổi · Tạo khác biệt lược đồ. Một tác nhân không bao giờ tự phê duyệt thay đổi của mình; chính sách phê duyệt của dự án quyết định liệu có cần người phê duyệt hay không",
+            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo, xóa và khôi phục bản phát hành · Tạo và xóa bản sửa đổi · Tạo khác biệt lược đồ. Một tác nhân không bao giờ phê duyệt hay từ chối một Issue, dù là của mình hay của người khác; việc một thay đổi có cần người phê duyệt trước khi chạy hay không phụ thuộc vào quy tắc phê duyệt của không gian làm việc và thiết lập của dự án",
             "title": "Đề xuất thay đổi"
           },
           "read-data": {

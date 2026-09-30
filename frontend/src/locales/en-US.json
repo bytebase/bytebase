@@ -1651,8 +1651,8 @@
           },
           "policy-label": "Workspace policy",
           "undisclosable": {
-            "description": "This workspace's MCP policy is a value this page has no wording for. Either it is newer than the page you have open, or it is not a policy this Bytebase version serves, in which case every MCP connection is being refused.",
-            "line": "Reload to pick up the current version. If this page comes back, ask a workspace admin to set a supported policy",
+            "description": "This workspace's MCP access policy has a value this page doesn't recognize. Either the policy is newer than the page you have open, or this version of Bytebase doesn't support it, in which case every MCP connection is being refused.",
+            "line": "Reload to pick up the current version, and if this page comes back, ask a workspace admin to choose a supported policy",
             "title": "This page cannot show what this workspace's MCP policy allows"
           },
           "unknown": {
@@ -1662,7 +1662,7 @@
             "title": "The MCP policy could not be checked"
           }
         },
-        "write-caution": "An AI session with write access makes real changes. Approve only on a machine you control."
+        "write-caution": "An AI session with write access makes real changes. Approve only if you started this connection from an AI client you trust."
       },
       "title": "Authorization Request",
       "workspace-label": "Granting access to workspace"
@@ -2712,7 +2712,7 @@
             "title": "Manage database housekeeping"
           },
           "propose": {
-            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must approve it.",
+            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves or rejects an issue, its own or anyone else's; whether a human must approve a change before it runs depends on the workspace's approval rules and the project's settings.",
             "title": "Propose changes"
           },
           "read-data": {

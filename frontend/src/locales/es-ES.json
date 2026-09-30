@@ -1651,8 +1651,8 @@
           },
           "policy-label": "Política del espacio de trabajo",
           "undisclosable": {
-            "description": "La política MCP de este espacio de trabajo es un valor que esta página no sabe describir. O es más reciente que la página que tiene abierta, o no es una política que sirva esta versión de Bytebase, en cuyo caso se rechazan todas las conexiones MCP.",
-            "line": "Vuelva a cargar para obtener la versión actual. Si esta página reaparece, pida a un administrador del espacio de trabajo que establezca una política compatible",
+            "description": "La política de acceso MCP de este espacio de trabajo tiene un valor que esta página no reconoce. O la política es más reciente que la página que tiene abierta, o esta versión de Bytebase no la admite, en cuyo caso se rechazan todas las conexiones MCP.",
+            "line": "Vuelva a cargar para obtener la versión actual y, si esta página reaparece, pida a un administrador del espacio de trabajo que elija una política compatible",
             "title": "Esta página no puede mostrar lo que permite la política MCP de este espacio de trabajo"
           },
           "unknown": {
@@ -1662,7 +1662,7 @@
             "title": "No se pudo comprobar la política MCP"
           }
         },
-        "write-caution": "Una sesión de IA con acceso de escritura hace cambios reales. Apruébela solo en una máquina que usted controle."
+        "write-caution": "Una sesión de IA con acceso de escritura hace cambios reales. Apruébela solo si usted inició esta conexión desde un cliente de IA en el que confía."
       },
       "title": "Solicitud de autorización",
       "workspace-label": "Concediendo acceso al workspace"
@@ -2712,7 +2712,7 @@
             "title": "Gestionar el mantenimiento de bases de datos"
           },
           "propose": {
-            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. Un agente nunca aprueba su propio cambio; la política de aprobación del proyecto decide si una persona debe hacerlo",
+            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. Un agente nunca aprueba ni rechaza un issue, sea suyo o de otra persona; que una persona deba aprobar un cambio antes de que se ejecute depende de las reglas de aprobación del espacio de trabajo y de la configuración del proyecto",
             "title": "Proponer cambios"
           },
           "read-data": {
