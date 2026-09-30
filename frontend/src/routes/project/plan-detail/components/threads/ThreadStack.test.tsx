@@ -19,15 +19,15 @@ vi.mock("@/stores/app", () => ({
     selector({ getUserByIdentifier: () => ({ email: "a@example.com", title: "Aurora" }) }),
 }));
 vi.mock("./CommentThreadCard", () => ({
-  CommentThreadCard: ({ thread, onThreadStateChanged, replyDraft, onReplyDraftChange }: {
+  CommentThreadCard: ({ thread, onClose, replyDraft, onReplyDraftChange }: {
     thread: EditorThread["thread"];
-    onThreadStateChanged: (resolved: boolean) => void;
+    onClose: () => void;
     replyDraft: string;
     onReplyDraftChange: (draft: string) => void;
   }) => (
     <div data-thread-name={thread.root.name} data-resolved={String(thread.resolved)}>
       <input aria-label="Reply draft" value={replyDraft} onChange={(e) => onReplyDraftChange(e.target.value)} />
-      <button onClick={() => onThreadStateChanged(!thread.resolved)}>Change state</button>
+      <button onClick={onClose}>Close</button>
     </div>
   ),
 }));
@@ -82,47 +82,43 @@ describe("ThreadStack", () => {
     expect(order(container)).toEqual(["a", "b"]);
   });
 
-  test.each([
-    { current: "a", states: [false, true, false], next: "c" },
-    { current: "c", states: [false, true, false], next: "a" },
-    { current: "a", states: [false, true, true], next: undefined },
-  ])("advances after resolving $current, skipping resolved and wrapping within the stack", ({ current, states, next }) => {
-    const threads = states.map((resolved, index) => entry(["a", "b", "c"][index], resolved, index));
-    const { getByText } = render(<ThreadStack {...props} expandedRoots={new Set([current])} threads={threads} />);
-    fireEvent.click(getByText("Change state"));
-    if (next) expect(props.onExpand).toHaveBeenCalledWith(next);
-    else {
-      expect(props.onCollapse).toHaveBeenCalledWith(current);
-      expect(props.onExpand).not.toHaveBeenCalled();
-    }
+  test("keeps multiple threads expanded and closes only the chosen one", () => {
+    const threads = [entry("a", false, 1), entry("b", false, 2)];
+    const { container } = render(
+      <ThreadStack {...props} expandedRoots={new Set(["a", "b"])} threads={threads} />
+    );
+    expect(container.querySelectorAll("input")).toHaveLength(2);
+    fireEvent.click(container.querySelector('[data-thread-name="a"] button')!);
+    expect(props.onCollapse).toHaveBeenCalledWith("a");
+    expect(props.onExpand).not.toHaveBeenCalled();
   });
 
-  test("reopens the current thread in place", () => {
-    const { getByText } = render(<ThreadStack {...props} expandedRoots={new Set(["a"])} threads={[entry("a", true, 1), entry("b", false, 2)]} />);
-    fireEvent.click(getByText("Change state"));
-    expect(props.onExpand).toHaveBeenCalledWith("a");
-    expect(props.onCollapse).not.toHaveBeenCalled();
-  });
-
-  test("preserves a reply draft when advancing and returning to a collapsed thread", () => {
+  test("preserves a reply draft when another thread opens", () => {
     function Harness() {
       const [expanded, setExpanded] = useState(new Set(["a"]));
       const [drafts, setDrafts] = useState<Record<string, string>>({});
       return <ThreadStack {...props}
         threads={[entry("a", false, 1), entry("b", false, 2)]}
         expandedRoots={expanded}
-        onExpand={(name) => setExpanded(new Set([name]))}
-        onCollapse={() => setExpanded(new Set())}
+        onExpand={(name) => setExpanded((previous) => new Set(previous).add(name))}
+        onCollapse={(name) => setExpanded((previous) => {
+          const next = new Set(previous);
+          next.delete(name);
+          return next;
+        })}
         replyDrafts={drafts}
         onReplyDraftChange={(name, draft) => setDrafts((previous) => ({...previous, [name]: typeof draft === "function" ? draft(previous[name] ?? "") : draft}))}
       />;
     }
-    const { container, getByLabelText, getByText } = render(<Harness />);
-    fireEvent.change(getByLabelText("Reply draft"), { target: { value: "unfinished reply" } });
-    fireEvent.click(getByText("Change state"));
+    const { container } = render(<Harness />);
+    fireEvent.change(container.querySelector('[data-thread-name="a"] input')!, { target: { value: "unfinished reply" } });
+    fireEvent.click(container.querySelector('[data-thread-name="b"]')!);
+    expect(container.querySelectorAll("input")).toHaveLength(2);
+    expect((container.querySelector('[data-thread-name="a"] input') as HTMLInputElement).value).toBe("unfinished reply");
+    fireEvent.click(container.querySelector('[data-thread-name="a"] button')!);
     expect(container.querySelector('[data-thread-name="b"] input')).not.toBeNull();
     fireEvent.click(container.querySelector('[data-thread-name="a"]')!);
-    expect((getByLabelText("Reply draft") as HTMLInputElement).value).toBe("unfinished reply");
+    expect((container.querySelector('[data-thread-name="a"] input') as HTMLInputElement).value).toBe("unfinished reply");
   });
 
   test("shows new threads and removes missing ones without remounting retained rows", () => {
@@ -139,8 +135,8 @@ describe("ThreadStack", () => {
 test("exposes the expanded card for editor reveal", () => {
   const ref = createRef<HTMLDivElement>();
   const threads = [entry("a", false, 1), entry("b", false, 2)];
-  const {rerender} = render(<ThreadStack {...props} threads={threads} expandedRoots={new Set(["a"])} expandedThreadRef={ref} />);
+  const {rerender} = render(<ThreadStack {...props} threads={threads} expandedRoots={new Set(["a"])} expandedThreadRef={ref} revealRoot="a" />);
   expect(ref.current?.querySelector('[data-thread-name="a"]')).not.toBeNull();
-  rerender(<ThreadStack {...props} threads={threads} expandedRoots={new Set(["b"])} expandedThreadRef={ref} />);
+  rerender(<ThreadStack {...props} threads={threads} expandedRoots={new Set(["a", "b"])} expandedThreadRef={ref} revealRoot="b" />);
   expect(ref.current?.querySelector('[data-thread-name="b"]')).not.toBeNull();
 });

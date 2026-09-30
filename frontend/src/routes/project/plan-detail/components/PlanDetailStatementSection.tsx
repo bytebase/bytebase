@@ -50,6 +50,7 @@ import {
   getSheetStatement,
   setSheetStatement,
 } from "@/utils/v1/sheet";
+import { usePlanDetailStore } from "../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
   createEmptyLocalSheet,
@@ -134,9 +135,36 @@ export function PlanDetailStatementSection({
     editor: IStandaloneCodeEditor;
     monaco: MonacoModule;
   }>();
+  const [editingEditor, setEditingEditor] = useState<IStandaloneCodeEditor>();
+  const threadFocus = usePlanDetailStore((state) => state.threadFocus);
+  const clearThreadFocus = usePlanDetailStore(
+    (state) => state.clearThreadFocus
+  );
   useEffect(() => {
     if (!showsReadonlyEditor) setReadonlyEditor(undefined);
   }, [showsReadonlyEditor]);
+  useEffect(() => {
+    if (!isEditing) setEditingEditor(undefined);
+  }, [isEditing]);
+  useEffect(() => {
+    if (
+      !isEditing ||
+      !editingEditor ||
+      !threadFocus ||
+      threadFocus.specId !== spec.id ||
+      !threadFocus.lineNumber
+    )
+      return;
+    const line = Math.min(
+      threadFocus.lineNumber,
+      editingEditor.getModel()?.getLineCount() ?? threadFocus.lineNumber
+    );
+    editingEditor.setPosition({ lineNumber: line, column: 1 });
+    editingEditor.revealLineInCenter(line);
+    editingEditor.focus();
+    editingEditor.getDomNode()?.scrollIntoView({ block: "nearest" });
+    clearThreadFocus(threadFocus.nonce);
+  }, [clearThreadFocus, editingEditor, isEditing, spec.id, threadFocus]);
 
   const editingScope = useMemo(() => `statement:${spec.id}`, [spec.id]);
   const targetDatabaseName = useMemo(() => {
@@ -637,6 +665,7 @@ export function PlanDetailStatementSection({
               content={editorContent}
               language={language}
               options={STATEMENT_EDITOR_OPTIONS}
+              onReady={(_monaco, editor) => setEditingEditor(editor)}
               onChange={(nextStatement) => {
                 if (page.isCreating) {
                   updateLocalStatement(nextStatement);

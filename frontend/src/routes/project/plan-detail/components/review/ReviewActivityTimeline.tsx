@@ -518,9 +518,14 @@ function ThreadActivityRow({
   const viewInStatement = () => {
     const specId = anchor?.spec;
     if (!specId) return;
+    const lineNumber =
+      placement?.state === "CURRENT"
+        ? placement.range.startLine
+        : anchor?.startPosition?.line;
     storeApi.getState().requestThreadFocus({
       commentName: thread.root.name,
       specId,
+      lineNumber,
     });
     focusPlanPhase("changes", page.expandPhase);
     if (selectedSpecId !== specId) {

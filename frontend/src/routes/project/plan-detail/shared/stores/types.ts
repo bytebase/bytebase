@@ -68,10 +68,12 @@ export type PollingSlice = {
 };
 
 export interface ThreadFocusRequest {
-  // Root comment name of the thread to expand.
+  // Root comment name of the thread to locate.
   commentName: string;
-  // Spec the thread anchors to; the editor of this spec consumes the request.
+  // Spec whose statement editor consumes the request.
   specId: string;
+  // Current saved statement line to reveal when the spec is being edited.
+  lineNumber?: number;
   nonce: number;
 }
 

@@ -60,6 +60,7 @@ export function ThreadStack({
   replyDrafts,
   onReplyDraftChange,
   project,
+  revealRoot,
   threads,
 }: {
   expandedRoots: ReadonlySet<string>;
@@ -73,6 +74,7 @@ export function ThreadStack({
   replyDrafts: Readonly<Record<string, string>>;
   onReplyDraftChange: (rootName: string, draft: SetStateAction<string>) => void;
   project: Project | undefined;
+  revealRoot?: string;
   threads: EditorThread[];
 }) {
   const { t } = useTranslation();
@@ -92,19 +94,6 @@ export function ThreadStack({
   const open = currentEntries(nextGroups.open);
   const resolved = currentEntries(nextGroups.resolved);
   const ordered = [...open, ...resolved];
-  const handleStateChanged = (name: string, resolved: boolean) => {
-    if (!expandedRoots.has(name)) return;
-    if (!resolved) {
-      onExpand(name);
-      return;
-    }
-    const index = ordered.findIndex((entry) => entry.thread.root.name === name);
-    const next = [...ordered.slice(index + 1), ...ordered.slice(0, index)].find(
-      (entry) => entry.thread.root.name !== name && !entry.thread.resolved
-    );
-    if (next) onExpand(next.thread.root.name);
-    else onCollapse(name);
-  };
   // Threads ending on the same line may cover different ranges; label each
   // with its range only when they differ.
   const showRanges =
@@ -130,6 +119,7 @@ export function ThreadStack({
             flashRoot === entry.thread.root.name ? onFlashEnd : undefined
           }
           ref={
+            revealRoot === entry.thread.root.name &&
             expandedRoots.has(entry.thread.root.name)
               ? expandedThreadRef
               : undefined
@@ -142,9 +132,6 @@ export function ThreadStack({
               issue={issue}
               label={rangeLabel(entry)}
               onClose={() => onCollapse(entry.thread.root.name)}
-              onThreadStateChanged={(resolved) =>
-                handleStateChanged(entry.thread.root.name, resolved)
-              }
               replyDraft={replyDrafts[entry.thread.root.name] ?? ""}
               onReplyDraftChange={(draft) =>
                 onReplyDraftChange(entry.thread.root.name, draft)
