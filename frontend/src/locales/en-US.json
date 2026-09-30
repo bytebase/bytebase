@@ -1544,6 +1544,7 @@
       "sort": "Sort",
       "updated": "Update time"
     },
+    "statement-exceeds-preview-limit": "This statement exceeds the preview limit. After reloading, only a preview will be shown.",
     "statement-from-sheet-warning": "This statement is loaded from a large sheet. Preview may be truncated.",
     "status-transition": {
       "modal": {
@@ -1826,6 +1827,7 @@
         "add-comment-on-line": "Add a comment on line {{line}}",
         "add-comment-on-lines": "Add a comment on lines {{startLine}} to {{endLine}}",
         "anchor": {
+          "comparison-size-limit": "The original or current statement exceeds the comparison limit.",
           "line_one": "Line {{range}}",
           "line_other": "Lines {{range}}",
           "outdated": "Outdated",

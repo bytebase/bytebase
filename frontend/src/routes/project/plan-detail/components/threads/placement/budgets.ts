@@ -1,10 +1,13 @@
+import { SHEET_PREVIEW_CHARACTER_LIMIT } from "@/utils/v1/sheet";
+
+const MAX_SHEET_BYTES = 4 * SHEET_PREVIEW_CHARACTER_LIMIT;
+
 // Fixed limits for computing placements in the browser. Fetching is bounded
 // before it starts and the diff is bounded while it runs; anything past a limit
 // is UNAVAILABLE, never a partial answer.
 //
-// The values are provisional placeholders until page-load measurements on
-// representative plans set them (design open question 3). Keep them fixed in
-// code rather than configurable so results are reproducible.
+// The resource budgets are provisional until page-load measurements on
+// representative plans set them. Keep them fixed so results are reproducible.
 export interface PlacementBudgets {
   // Distinct sheets one run may download, and again the distinct sheets one
   // run may hand to the worker, cached or not.
@@ -26,9 +29,10 @@ export interface PlacementBudgets {
 
 export const PLACEMENT_BUDGETS: PlacementBudgets = Object.freeze({
   maxSheets: 16,
-  // Matches the backend preview cutoff (common.MaxSheetSize).
-  maxBytesPerSheet: 2 * 1024 * 1024,
-  maxTotalBytes: 8 * 1024 * 1024,
+  // UTF-8 uses at most four bytes per character. These separate byte caps
+  // bound downloads and worker payloads without rejecting valid previews.
+  maxBytesPerSheet: MAX_SHEET_BYTES,
+  maxTotalBytes: 2 * MAX_SHEET_BYTES,
   maxLinesPerSheet: 50_000,
   maxWorkPerPair: 5_000_000,
   maxWorkPerRun: 20_000_000,

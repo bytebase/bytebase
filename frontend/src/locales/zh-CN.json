@@ -1544,6 +1544,7 @@
       "sort": "排序",
       "updated": "更新时间"
     },
+    "statement-exceeds-preview-limit": "该语句超出预览限制。重新加载后将只显示预览内容。",
     "statement-from-sheet-warning": "该 SQL 来自较大的 Sheet，预览内容可能已截断。",
     "status-transition": {
       "modal": {
@@ -1826,6 +1827,7 @@
         "add-comment-on-line": "在第 {{line}} 行添加评论",
         "add-comment-on-lines": "在第 {{startLine}} 至 {{endLine}} 行添加评论",
         "anchor": {
+          "comparison-size-limit": "原始语句或当前语句超出比较限制。",
           "line_one": "第 {{range}} 行",
           "line_other": "第 {{range}} 行",
           "outdated": "已过期",

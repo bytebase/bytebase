@@ -424,13 +424,18 @@ const giveElementsHeight = () =>
     .spyOn(HTMLElement.prototype, "getBoundingClientRect")
     .mockReturnValue(new DOMRect(0, 0, 700, 100));
 
-const mount = (editor: IStandaloneCodeEditor, currentIssue = issue) =>
+const mount = (
+  editor: IStandaloneCodeEditor,
+  currentIssue = issue,
+  previewEndLine?: number
+) =>
   act(() =>
     root.render(
       <StatementThreadsLayer
         editor={editor}
         issue={currentIssue}
         monaco={fakeMonaco}
+        previewEndLine={previewEndLine}
         sheetSha256={SHA}
         spec={spec}
       />
@@ -489,6 +494,29 @@ const pressWalker = (widgets: Set<{ getDomNode: () => HTMLElement }>, label: str
   });
 
 describe("StatementThreadsLayer", () => {
+  test("shows only fully visible preview threads and disables new anchors", () => {
+    mocks.comments = [
+      threadRoot("visible", 2, 3),
+      threadRoot("crossing", 3, 4, { createdAt: 2 }),
+      threadRoot("beyond", 6, 6, { createdAt: 3 }),
+    ];
+    const fake = createFakeEditor();
+    mount(fake.editor, issue, 3);
+
+    expect(classesOf(fake.decorations.current, 3)).toContain(
+      "bb-thread-glyph bb-thread-glyph--active"
+    );
+    expect(classesOf(fake.decorations.current, 4)).toEqual([]);
+    expect(classesOf(fake.decorations.current, 6)).toEqual([]);
+    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/visible`);
+    expect(hosted(fake.widgets, "[data-testid='thread-walker'] [aria-label]")?.getAttribute("aria-label")).toBe(
+      "plan.review.thread.walker.count:1 · plan.review.thread.walker.remainder:2"
+    );
+    fake.fire("move", 2, MouseTargetType.GUTTER_LINE_NUMBERS);
+    expect(classesOf(fake.decorations.current, 2)).not.toContain("bb-thread-add-glyph");
+    expect(fake.editor.addAction).not.toHaveBeenCalled();
+  });
+
   test("decorates current anchors and expands the earliest unresolved thread", () => {
     mocks.comments = [
       threadRoot("later", 6, 9, { createdAt: 5 }),

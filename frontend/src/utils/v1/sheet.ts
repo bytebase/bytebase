@@ -32,3 +32,35 @@ export const getSheetStatement = (sheet: Sheet | SavedQuery) => {
 // already the encoded bytes, so this is an O(1) size check.
 export const isSheetContentComplete = (sheet: Sheet | SavedQuery): boolean =>
   BigInt(sheet.content.byteLength) >= sheet.contentSize;
+
+// GetSheet(raw=false) returns at most this many characters, not UTF-8 bytes.
+export const SHEET_PREVIEW_CHARACTER_LIMIT = 2 * 1024 * 1024;
+
+export const exceedsSheetPreviewLimit = (
+  statement: string,
+  limit = SHEET_PREVIEW_CHARACTER_LIMIT
+): boolean => {
+  if (statement.length <= limit) return false;
+  // Without surrogate pairs, UTF-16 length already counts characters.
+  if (!/[\uD800-\uDBFF]/.test(statement)) return true;
+  let characters = 0;
+  for (const _ of statement) {
+    if (++characters > limit) return true;
+  }
+  return false;
+};
+
+// Sheet content is immutable; share the character count across review threads.
+const cappedPreviews = new WeakMap<Uint8Array, boolean>();
+export const isCappedSheetPreview = (sheet: Sheet): boolean => {
+  if (isSheetContentComplete(sheet)) return false;
+  let capped = cappedPreviews.get(sheet.content);
+  if (capped === undefined) {
+    capped = exceedsSheetPreviewLimit(
+      getSheetStatement(sheet),
+      SHEET_PREVIEW_CHARACTER_LIMIT - 1
+    );
+    cappedPreviews.set(sheet.content, capped);
+  }
+  return capped;
+};
