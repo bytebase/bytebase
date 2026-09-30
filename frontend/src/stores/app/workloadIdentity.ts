@@ -55,7 +55,13 @@ export const createWorkloadIdentitySlice: AppSliceCreator<
           pageToken: params.pageToken,
           showDeleted: params.showDeleted,
           filter: buildAccountListFilter(params.filter ?? {}),
-        })
+        }),
+        {
+          contextValues: createContextValues().set(
+            silentContextKey,
+            params.silent ?? false
+          ),
+        }
       );
     if (!params.skipCache) {
       set((state) => ({

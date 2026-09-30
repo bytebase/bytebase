@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Search users by email. Prefix with serviceAccounts/ or workloadIdentities/ to search those actors.",
+          "description": "Search users, service accounts, and workload identities by name or email",
           "title": "Actor"
         },
         "level": {
@@ -3727,7 +3727,8 @@
       "completed": "Completed",
       "computing": "Computing...",
       "dumping": "Dumping...",
-      "retry-attempt": "attempt {{current}}/{{max}}",
+      "hide-full-statement": "Hide full statement",
+      "show-full-statement": "Show full statement",
       "syncing": "Syncing..."
     },
     "log-type": {
@@ -3737,15 +3738,20 @@
       "ghost-migration": "gh-ost Migration",
       "prior-backup": "Prior Backup",
       "release-file-execute": "Release File",
-      "retry": "Retry",
       "schema-dump": "Schema Dump",
       "transaction": "Transaction"
     },
     "log-viewer": {
+      "attempt-count_one": "{{count}} attempt",
+      "attempt-count_other": "{{count}} attempts",
+      "attempt-n": "Attempt {{n}}",
+      "attempt-reason": "failed: {{reason}}",
       "collapse-all": "Collapse all",
       "expand-all": "Expand all",
       "multiple-replicas-notice": "Server restart detected during execution. Logs are grouped by replica.",
+      "previous-attempts": "Previous attempts",
       "replica-n": "Replica #{{n}}",
+      "retrying": "retrying",
       "summary": "{{sections}} sections · {{entries}} entries"
     },
     "no-blocking-sessions": "No blocking sessions",

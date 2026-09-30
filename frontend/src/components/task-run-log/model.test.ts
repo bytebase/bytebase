@@ -1,30 +1,40 @@
 import { create } from "@bufbuild/protobuf";
-import { act, createElement } from "react";
-import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
 import {
+  TaskRun_Status,
   type TaskRunLogEntry,
   TaskRunLogEntry_PriorBackup_PriorBackupDetail_ItemSchema,
   TaskRunLogEntry_Type,
   TaskRunLogEntrySchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import { type Sheet, SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import {
+  assignEntryKeys,
+  type BuildSectionsOptions,
   buildReleaseFileGroups,
-  buildSectionsFromEntries,
+  buildRowsFromEntries,
+  collectLeafSections,
   groupEntriesByReleaseFile,
   hasReleaseFileMarkers,
   type TaskRunLogDetailText,
 } from "./model";
 import {
+  begin,
+  commit,
+  databaseSync,
+  failedAttempt,
+  LOCK_TIMEOUT,
+  passedAttempt,
+  priorBackup,
+  retry,
+  rollback,
+} from "./taskRunLogEntries";
+import type { AttemptGroup, LogRow, Section } from "./types";
+import {
   buildReleaseSheetFetchResult,
   buildSheetFetchStateForMissingTask,
   getUnresolvedTaskMetadataStateKey,
 } from "./useTaskRunLogData";
-import {
-  type UseTaskRunLogSectionsResult,
-  useTaskRunLogSections,
-} from "./useTaskRunLogSections";
 
 vi.mock("@/api", () => ({
   rolloutServiceClientConnect: {},
@@ -43,54 +53,94 @@ vi.mock("@/utils", () => ({
   sheetNameOfTaskV1: () => "",
 }));
 
-const ts = (seconds: number) => ({ seconds: BigInt(seconds), nanos: 0 });
-(
-  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
-).IS_REACT_ACT_ENVIRONMENT = true;
+const ts = (seconds: number, nanos = 0) => ({
+  seconds: BigInt(seconds),
+  nanos,
+});
 
-interface HookHarnessProps {
-  entries: TaskRunLogEntry[];
-  datasetKey?: string;
+const buildRows = (
+  entries: TaskRunLogEntry[],
+  options?: Partial<BuildSectionsOptions>
+) =>
+  buildRowsFromEntries(entries, {
+    getSectionLabel: (type) => String(type),
+    entryKeys: assignEntryKeys(entries),
+    ...options,
+  });
+
+// Leaf sections in render order, superseded attempts included.
+const buildSections = (
+  entries: TaskRunLogEntry[],
+  options?: Partial<BuildSectionsOptions>
+) => collectLeafSections(buildRows(entries, options));
+
+interface CommandOptions {
+  statement?: string;
+  range?: { start: number; end: number };
+  // Omit for a command still running; "" for one that succeeded.
+  error?: string;
+  replicaId?: string;
+  nanos?: number;
 }
 
-const createHookHarness = (initialProps: HookHarnessProps) => {
-  const container = document.createElement("div");
-  const root = createRoot(container);
-  let current: UseTaskRunLogSectionsResult | undefined;
+const command = (seconds: number, options: CommandOptions = {}) =>
+  create(TaskRunLogEntrySchema, {
+    type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+    logTime: ts(seconds, options.nanos),
+    replicaId: options.replicaId ?? "",
+    commandExecute: {
+      logTime: ts(seconds, options.nanos),
+      statement: options.statement ?? "",
+      range: options.range,
+      response:
+        options.error === undefined
+          ? undefined
+          : { logTime: ts(seconds + 1), error: options.error },
+    },
+  });
 
-  const Harness = (props: HookHarnessProps) => {
-    current = useTaskRunLogSections({
-      entries: props.entries,
-      datasetKey: props.datasetKey,
-      getSectionLabel: (type) => String(type),
-    });
-    return null;
-  };
+const transaction = (seconds: number, replicaId = "") =>
+  create(TaskRunLogEntrySchema, {
+    type: TaskRunLogEntry_Type.TRANSACTION_CONTROL,
+    logTime: ts(seconds),
+    replicaId,
+    transactionControl: {},
+  });
 
-  const render = (props: HookHarnessProps) => {
-    act(() => {
-      root.render(createElement(Harness, props));
-    });
-  };
+const retryMarker = (seconds: number, replicaId = "") =>
+  create(TaskRunLogEntrySchema, {
+    type: TaskRunLogEntry_Type.RETRY_INFO,
+    logTime: ts(seconds),
+    replicaId,
+    retryInfo: { error: "lock timeout", retryCount: 1, maximumRetries: 3 },
+  });
 
-  const getCurrent = () => {
-    if (!current) {
-      throw new Error("hook result is unavailable");
-    }
-    return current;
-  };
+const releaseFile = (
+  seconds: number,
+  version: string,
+  options: { replicaId?: string; nanos?: number } = {}
+) =>
+  create(TaskRunLogEntrySchema, {
+    type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
+    logTime: ts(seconds, options.nanos),
+    replicaId: options.replicaId ?? "",
+    releaseFileExecute: { version, filePath: `${version}.sql` },
+  });
 
-  render(initialProps);
-
-  return {
-    render,
-    getCurrent,
-    unmount: () =>
-      act(() => {
-        root.unmount();
-      }),
-  };
+const sheetOf = (content: string, contentSize?: number): Sheet => {
+  const bytes = new TextEncoder().encode(content);
+  return create(SheetSchema, {
+    content: bytes,
+    contentSize: BigInt(contentSize ?? bytes.byteLength),
+  });
 };
+
+const markedDetails = (
+  sections: { items: { marked?: boolean; detail: string }[] }[]
+) =>
+  sections.flatMap((section) =>
+    section.items.filter((item) => item.marked).map((item) => item.detail)
+  );
 
 describe("task-run-log model", () => {
   test("keeps unresolved task sheet state non-error while metadata is pending", () => {
@@ -200,19 +250,22 @@ describe("task-run-log model", () => {
     ];
 
     expect(hasReleaseFileMarkers(entries)).toBe(true);
-    const groups = buildReleaseFileGroups(entries);
+    const groups = buildReleaseFileGroups(entries, {
+      getSectionLabel: (type) => String(type),
+      entryKeys: assignEntryKeys(entries),
+    });
     expect(groups).toHaveLength(2);
     expect(groups[0]).toMatchObject({
       id: "file-0",
       version: "v1",
       filePath: "001.sql",
-      sections: [{ entryCount: 2 }],
+      rows: [{ entryCount: 2 }],
     });
     expect(groups[1]).toMatchObject({
       id: "file-1",
       version: "v2",
       filePath: "002.sql",
-      sections: [{ entryCount: 1 }],
+      rows: [{ entryCount: 1 }],
     });
   });
 
@@ -230,9 +283,7 @@ describe("task-run-log model", () => {
       }),
     ];
 
-    const sections = buildSectionsFromEntries(entries, {
-      getSectionLabel: (type) => String(type),
-    });
+    const sections = buildSections(entries);
 
     expect(sections[0]?.status).toBe("running");
     expect(sections[1]?.status).toBe("error");
@@ -241,20 +292,17 @@ describe("task-run-log model", () => {
   test("gives a line with no log time no instant to show", () => {
     // The line still reads as a row -- its time column says so -- but there is
     // no instant behind it, and a zero would have been an instant.
-    const sections = buildSectionsFromEntries(
-      [
-        create(TaskRunLogEntrySchema, {
-          type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
-          logTime: ts(10),
-          commandExecute: {},
-        }),
-        create(TaskRunLogEntrySchema, {
-          type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
-          commandExecute: {},
-        }),
-      ],
-      { getSectionLabel: (type) => String(type) }
-    );
+    const sections = buildSections([
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+        logTime: ts(10),
+        commandExecute: {},
+      }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+        commandExecute: {},
+      }),
+    ]);
 
     // Which line got which instant, not how many of each: one undefined and
     // one number is also what swapping them produces.
@@ -296,10 +344,7 @@ describe("task-run-log model", () => {
       }),
     ];
 
-    const sections = buildSectionsFromEntries(entries, {
-      getSectionLabel: (type) => String(type),
-      detailText,
-    });
+    const sections = buildSections(entries, { detailText });
 
     expect(sections[0]?.status).toBe("success");
     expect(sections[0]?.duration).toBe("3.0s");
@@ -308,7 +353,7 @@ describe("task-run-log model", () => {
     expect(sections[1]?.items[0]?.detail).toBe("copy failed");
   });
 
-  test("uses localized detail text for completed timed entries, prior backup completion, and retries", () => {
+  test("uses localized detail text for completed timed entries and prior backup completion", () => {
     const detailText = {
       completed: "Completed",
       backingUp: "Backing up...",
@@ -316,8 +361,6 @@ describe("task-run-log model", () => {
         [TaskRunLogEntry_Type.SCHEMA_DUMP]: "Dumping...",
       },
       backupCompleted: (count: number) => `Completed (${count} tables)`,
-      retryAttempt: (current: number, max: number) =>
-        `Attempt ${current}/${max}`,
     } satisfies TaskRunLogDetailText;
 
     const entries = [
@@ -351,25 +394,12 @@ describe("task-run-log model", () => {
           error: "",
         },
       }),
-      create(TaskRunLogEntrySchema, {
-        type: TaskRunLogEntry_Type.RETRY_INFO,
-        logTime: ts(5),
-        retryInfo: {
-          error: "",
-          retryCount: 2,
-          maximumRetries: 5,
-        },
-      }),
     ];
 
-    const sections = buildSectionsFromEntries(entries, {
-      getSectionLabel: (type) => String(type),
-      detailText,
-    });
+    const sections = buildSections(entries, { detailText });
 
     expect(sections[0]?.items[0]?.detail).toBe("Completed");
     expect(sections[1]?.items[0]?.detail).toBe("Completed (2 tables)");
-    expect(sections[2]?.items[0]?.detail).toBe("Attempt 2/5");
   });
 
   test("drops empty release-file groups created by consecutive and trailing markers", () => {
@@ -426,6 +456,7 @@ describe("task-run-log model", () => {
 
     const groups = buildReleaseFileGroups(entries, {
       getSectionLabel: (type) => String(type),
+      entryKeys: assignEntryKeys(entries),
       includeOrphanGroup: true,
     });
     expect(groups).toHaveLength(2);
@@ -434,88 +465,489 @@ describe("task-run-log model", () => {
       isOrphan: true,
       version: "",
       filePath: "",
-      sections: [{ entryCount: 1 }],
+      rows: [{ entryCount: 1 }],
     });
     expect(groups[1]).toMatchObject({
       id: "file-0",
       version: "v2",
       filePath: "002.sql",
-      sections: [{ entryCount: 1 }],
+      rows: [{ entryCount: 1 }],
     });
   });
+});
 
-  test("handles expand/collapse state for filtered release-file groups", () => {
-    const entries = [
-      create(TaskRunLogEntrySchema, {
-        type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
-        logTime: ts(1),
-        releaseFileExecute: { version: "v1", filePath: "001.sql" },
-      }),
-      create(TaskRunLogEntrySchema, {
-        type: TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE,
-        logTime: ts(2),
-        releaseFileExecute: { version: "v2", filePath: "002.sql" },
-      }),
-      create(TaskRunLogEntrySchema, {
-        type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
-        logTime: ts(3),
-        commandExecute: {
-          statement: "SELECT 1;",
-          response: { logTime: ts(4) },
-        },
-      }),
-    ];
+const DEADLOCK = "ERROR: deadlock detected";
 
-    const hook = createHookHarness({ entries, datasetKey: "marker-only" });
+describe("task-run-log attempt rows", () => {
+  test("an empty log has no rows", () => {
+    expect(buildRows([])).toEqual([]);
+  });
 
-    expect(hook.getCurrent().releaseFileGroups).toHaveLength(1);
+  test("without a retry marker every row is a section with positional ids", () => {
+    const rows = buildRows([
+      begin(1),
+      command(2, { error: "" }),
+      commit(4),
+      databaseSync(5, 7),
+    ]);
+
+    expect(rows.map((row) => row.kind)).toEqual([
+      "section",
+      "section",
+      "section",
+      "section",
+    ]);
+    expect(rows.map((row) => row.id)).toEqual([
+      "section-0",
+      "section-1",
+      "section-2",
+      "section-3",
+    ]);
+  });
+
+  test("one retry marker folds the attempt before it into a Previous attempts row", () => {
+    const rows = buildRows([
+      begin(1),
+      command(1, { error: LOCK_TIMEOUT }),
+      rollback(2),
+      retry(3, 1),
+      begin(4),
+      command(4, { error: "" }),
+      commit(6),
+      databaseSync(6, 8),
+    ]);
+
+    expect(rows.map((row) => row.kind)).toEqual([
+      "attempts",
+      "section",
+      "section",
+      "section",
+      "section",
+    ]);
+    const umbrella = rows[0] as AttemptGroup;
+    expect(umbrella).toMatchObject({
+      id: "attempts-0",
+      duration: "1.0s",
+      retrying: false,
+    });
+    expect(umbrella.attempts).toHaveLength(1);
+    expect(umbrella.attempts[0]).toMatchObject({
+      id: "attempts-0-attempt-1",
+      number: 1,
+      reason: LOCK_TIMEOUT,
+      duration: "1.0s",
+    });
     expect(
-      hook.getCurrent().releaseFileGroups.map((group) => group.id)
-    ).toEqual(["file-0"]);
-    expect(hook.getCurrent().totalSections).toBe(1);
+      umbrella.attempts[0]?.sections.map((section) => [
+        section.id,
+        section.type,
+        section.status,
+      ])
+    ).toEqual([
+      [
+        "attempts-0-attempt-1-section-0",
+        TaskRunLogEntry_Type.TRANSACTION_CONTROL,
+        "success",
+      ],
+      [
+        "attempts-0-attempt-1-section-1",
+        TaskRunLogEntry_Type.COMMAND_EXECUTE,
+        "error",
+      ],
+      [
+        "attempts-0-attempt-1-section-2",
+        TaskRunLogEntry_Type.TRANSACTION_CONTROL,
+        "success",
+      ],
+    ]);
 
-    act(() => {
-      hook.getCurrent().collapseAll();
-    });
-    expect(hook.getCurrent().areAllExpanded).toBe(false);
+    // The final attempt stays flat and green, ids continuing past the umbrella.
+    expect(
+      rows.slice(1).map((row) => [row.id, (row as Section).status])
+    ).toEqual([
+      ["section-1", "success"],
+      ["section-2", "success"],
+      ["section-3", "success"],
+      ["section-4", "success"],
+    ]);
 
-    act(() => {
-      hook.getCurrent().expandAll();
-    });
-    expect(hook.getCurrent().areAllExpanded).toBe(true);
-
-    act(() => {
-      hook.getCurrent().toggleReleaseFile("file-0");
-    });
-    expect(hook.getCurrent().areAllExpanded).toBe(false);
-
-    hook.unmount();
+    const leaves = collectLeafSections(rows);
+    expect(leaves.some((s) => s.type === TaskRunLogEntry_Type.RETRY_INFO)).toBe(
+      false
+    );
+    expect(leaves.reduce((sum, s) => sum + s.entryCount, 0)).toBe(7);
   });
 
-  test("resets expansion state when dataset key changes", () => {
+  test("an auto-commit attempt, with no transaction entries, folds like any other", () => {
+    const rows = buildRows([
+      command(1, { error: "" }),
+      command(2, { error: LOCK_TIMEOUT }),
+      retry(4, 1),
+      command(5, { error: "" }),
+      command(6, { error: "" }),
+    ]);
+
+    expect(rows.map((row) => [row.id, row.kind])).toEqual([
+      ["attempts-0", "attempts"],
+      ["section-1", "section"],
+    ]);
+    expect(
+      (rows[0] as AttemptGroup).attempts[0]?.sections.map((section) => [
+        section.entryCount,
+        section.status,
+      ])
+    ).toEqual([[2, "error"]]);
+    expect((rows[1] as Section).status).toBe("success");
+  });
+
+  test("several markers number the attempts and label each with the marker that closes it", () => {
+    const rows = buildRows([
+      ...failedAttempt(1, 1),
+      // Numbered by position, not by the marker's retryCount.
+      ...failedAttempt(4, 9, { error: DEADLOCK }),
+      ...passedAttempt(7),
+    ]);
+
+    expect(rows.map((row) => row.kind)).toEqual([
+      "attempts",
+      "section",
+      "section",
+      "section",
+    ]);
+    const umbrella = rows[0] as AttemptGroup;
+    expect(umbrella.duration).toBe("2.0s");
+    expect(
+      umbrella.attempts.map((attempt) => [
+        attempt.number,
+        attempt.reason,
+        attempt.duration,
+        attempt.sections.length,
+      ])
+    ).toEqual([
+      [1, LOCK_TIMEOUT, "1.0s", 3],
+      [2, DEADLOCK, "1.0s", 3],
+    ]);
+  });
+
+  test("prior backup and database sync stay outside the attempts, in place", () => {
+    const rows = buildRows([
+      priorBackup(1, 3),
+      ...failedAttempt(4, 1),
+      ...passedAttempt(7),
+      databaseSync(10, 14),
+    ]);
+
+    expect(
+      rows.map((row) => [
+        row.kind,
+        row.kind === "section" ? row.type : row.attempts.length,
+        row.duration,
+      ])
+    ).toEqual([
+      ["section", TaskRunLogEntry_Type.PRIOR_BACKUP, "2.0s"],
+      ["attempts", 1, "1.0s"],
+      ["section", TaskRunLogEntry_Type.TRANSACTION_CONTROL, "<1ms"],
+      ["section", TaskRunLogEntry_Type.COMMAND_EXECUTE, "1.0s"],
+      ["section", TaskRunLogEntry_Type.TRANSACTION_CONTROL, "<1ms"],
+      ["section", TaskRunLogEntry_Type.DATABASE_SYNC, "4.0s"],
+    ]);
+  });
+
+  test("a marker with nothing after it renders the umbrella alone, not retrying", () => {
+    const rows = buildRows([priorBackup(1, 3), ...failedAttempt(4, 1)]);
+
+    expect(rows.map((row) => row.kind)).toEqual(["section", "attempts"]);
+    expect(rows[1]).toMatchObject({ retrying: false });
+    expect((rows[1] as AttemptGroup).attempts).toHaveLength(1);
+  });
+
+  test("a final segment still running marks the umbrella as retrying", () => {
+    const rows = buildRows([
+      ...failedAttempt(1, 1),
+      ...failedAttempt(4, 2),
+      begin(7),
+      command(7),
+    ]);
+
+    expect(rows.map((row) => row.kind)).toEqual([
+      "attempts",
+      "section",
+      "section",
+    ]);
+    expect(rows[0]).toMatchObject({ retrying: true });
+    expect((rows[0] as AttemptGroup).attempts).toHaveLength(2);
+    expect((rows[2] as Section).status).toBe("running");
+  });
+
+  test("each release file that retried gets its own umbrella with its own count", () => {
     const entries = [
-      create(TaskRunLogEntrySchema, {
-        type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
-        logTime: ts(1),
-        commandExecute: {
-          statement: "SELECT 1;",
-          response: { logTime: ts(2) },
-        },
-      }),
+      releaseFile(1, "v1"),
+      ...failedAttempt(2, 1),
+      ...passedAttempt(5),
+      releaseFile(8, "v2"),
+      ...passedAttempt(9),
+      releaseFile(12, "v3"),
+      ...failedAttempt(13, 1),
+      ...failedAttempt(16, 2),
+      ...passedAttempt(19),
     ];
-
-    const hook = createHookHarness({ entries, datasetKey: "dataset-a" });
-    const sectionId = hook.getCurrent().sections[0]?.id;
-    expect(sectionId).toBe("section-0");
-
-    act(() => {
-      hook.getCurrent().toggleSection(sectionId!);
+    const groups = buildReleaseFileGroups(entries, {
+      getSectionLabel: (type) => String(type),
+      entryKeys: assignEntryKeys(entries),
     });
-    expect(hook.getCurrent().isSectionExpanded(sectionId!)).toBe(true);
 
-    hook.render({ entries, datasetKey: "dataset-b" });
-    expect(hook.getCurrent().isSectionExpanded(sectionId!)).toBe(false);
+    const shape = (row: LogRow) =>
+      row.kind === "attempts" ? `attempts:${row.attempts.length}` : "section";
+    expect(
+      groups.map((group) => [group.version, group.rows.map(shape)])
+    ).toEqual([
+      ["v1", ["attempts:1", "section", "section", "section"]],
+      ["v2", ["section", "section", "section"]],
+      ["v3", ["attempts:2", "section", "section", "section"]],
+    ]);
+    // Ids nest under the file so two files' umbrellas never collide.
+    expect(groups[0]?.rows[0]?.id).toBe("file-0-attempts-0");
+    const thirdFileUmbrella = groups[2]?.rows[0] as AttemptGroup | undefined;
+    expect(thirdFileUmbrella?.id).toBe("file-2-attempts-0");
+    expect(thirdFileUmbrella?.attempts[1]?.id).toBe(
+      "file-2-attempts-0-attempt-2"
+    );
+  });
+});
 
-    hook.unmount();
+describe("command row payloads", () => {
+  const formatted =
+    "\nCREATE TABLE public.loan_application (\n  id bigint PRIMARY KEY,\n  application_no text NOT NULL\n);\n";
+
+  test("a multi-line statement yields a one-line detail and a verbatim statement", () => {
+    const item = buildSections([
+      command(1, { statement: formatted, error: "" }),
+    ])[0]?.items[0];
+
+    expect(item?.detail).toBe(
+      "CREATE TABLE public.loan_application ( id bigint PRIMARY KEY, application_no text NOT NULL );"
+    );
+    expect(item?.statement).toBe(formatted);
+    expect(item?.error).toBeUndefined();
+  });
+
+  test("a statement past 80 characters is not cut", () => {
+    const long = `SELECT ${"column_name, ".repeat(20)}1;`;
+    const item = buildSections([command(1, { statement: long, error: "" })])[0]
+      ?.items[0];
+
+    expect(long.length).toBeGreaterThan(80);
+    expect(item?.detail).toBe(long);
+  });
+
+  test("a failed command keeps the error as its line and still carries the statement", () => {
+    const item = buildSections([
+      command(1, { statement: formatted, error: "ERROR: relation exists" }),
+    ])[0]?.items[0];
+
+    expect(item?.detail).toBe("ERROR: relation exists");
+    expect(item?.error).toBe("ERROR: relation exists");
+    expect(item?.statement).toBe(formatted);
+  });
+
+  test("a failed command recovers its statement from the sheet range", () => {
+    const content = "SELECT 1;\nALTER TABLE t\n  ADD COLUMN c int;";
+    const item = buildSections(
+      [
+        command(1, {
+          range: { start: 9, end: content.length },
+          error: "ERROR: column exists",
+        }),
+      ],
+      { sheet: sheetOf(content) }
+    )[0]?.items[0];
+
+    expect(item?.detail).toBe("ERROR: column exists");
+    expect(item?.statement).toBe("\nALTER TABLE t\n  ADD COLUMN c int;");
+  });
+
+  test("an entry with no statement yields a dash and no payload", () => {
+    const item = buildSections([command(1, { error: "" })])[0]?.items[0];
+
+    expect(item?.detail).toBe("-");
+    expect(item?.statement).toBeUndefined();
+    expect(item?.error).toBeUndefined();
+  });
+
+  test("a range reaching past a partial sheet recovers nothing", () => {
+    const item = buildSections(
+      [command(1, { range: { start: 0, end: 40 }, error: "" })],
+      { sheet: sheetOf("SELECT 1;", 40) }
+    )[0]?.items[0];
+
+    expect(item?.detail).toBe("-");
+    expect(item?.statement).toBeUndefined();
+  });
+
+  test("entries that carry status words return the detail alone", () => {
+    const sections = buildSections([transaction(1), databaseSync(2, 3)]);
+
+    for (const section of sections) {
+      expect(section.items[0]?.statement).toBeUndefined();
+      expect(section.items[0]?.error).toBeUndefined();
+    }
+  });
+});
+
+describe("the row that opens by default", () => {
+  const attempt = (start: number, error: string) => [
+    transaction(start),
+    command(start + 1, { statement: "ALTER TABLE t ADD COLUMN c int;", error }),
+    transaction(start + 3),
+  ];
+
+  test("a failure the driver retried successfully marks nothing", () => {
+    const sections = buildSections([
+      ...attempt(1, "lock timeout"),
+      retryMarker(5),
+      ...attempt(6, ""),
+    ]);
+
+    // The failure is the last entry of its own section, which is why the pick
+    // cannot be section-local.
+    expect(sections[1]?.items.at(-1)?.error).toBe("lock timeout");
+    expect(markedDetails(sections)).toEqual([]);
+  });
+
+  test("a retry that fails again marks only the last failure", () => {
+    const sections = buildSections([
+      ...attempt(1, "lock timeout"),
+      retryMarker(5),
+      ...attempt(6, "lock timeout again"),
+    ]);
+
+    expect(markedDetails(sections)).toEqual(["lock timeout again"]);
+  });
+
+  test("a live failure already followed by the retry marker is not terminal", () => {
+    const sections = buildSections([
+      ...attempt(1, "lock timeout"),
+      retryMarker(5),
+    ]);
+
+    expect(markedDetails(sections)).toEqual([]);
+  });
+
+  test("a failure followed by a command that succeeded marks nothing", () => {
+    // No retry marker here: the later success alone says the run moved on.
+    const sections = buildSections([
+      command(1, { statement: "SELECT 1;", error: "boom" }),
+      command(3, { statement: "SELECT 2;", error: "" }),
+    ]);
+
+    expect(markedDetails(sections)).toEqual([]);
+  });
+
+  test("a command still running after a failure does not supersede it", () => {
+    const sections = buildSections([
+      command(1, { statement: "SELECT 1;", error: "boom" }),
+      command(3, { statement: "SELECT 2;" }),
+    ]);
+
+    expect(markedDetails(sections)).toEqual(["boom"]);
+  });
+
+  test("a failure with nothing after it is marked", () => {
+    const sections = buildSections([
+      command(1, { statement: "SELECT 1;", error: "" }),
+      command(3, { statement: "SELECT 2;", error: "boom" }),
+    ]);
+
+    expect(markedDetails(sections)).toEqual(["boom"]);
+  });
+
+  test("a failure with no recoverable statement is still marked", () => {
+    const sections = buildSections([command(1, { error: "boom" })]);
+
+    expect(sections[0]?.items[0]).toMatchObject({
+      detail: "boom",
+      marked: true,
+    });
+    expect(sections[0]?.items[0]?.statement).toBeUndefined();
+  });
+
+  test("a DONE run marks nothing, whatever the entries say", () => {
+    const sections = buildSections(
+      [command(1, { statement: "SELECT 1;", error: "serialization failure" })],
+      { taskRunStatus: TaskRun_Status.DONE }
+    );
+
+    expect(markedDetails(sections)).toEqual([]);
+  });
+});
+
+describe("row identity", () => {
+  // The SDL shape: the statement is logged instead of a range, so tied entries
+  // have no byte offset to tell them apart.
+  const tied = (statement: string) =>
+    command(5, { statement, error: "", nanos: 123456789, replicaId: "a" });
+
+  test("entries sharing a replica, a timestamp and a type get distinct keys", () => {
+    const items = buildSections([tied("SELECT 1;"), tied("SELECT 2;")])[0]
+      ?.items;
+
+    expect(items).toHaveLength(2);
+    expect(items?.[0]?.key).not.toBe(items?.[1]?.key);
+  });
+
+  test("tied entries in different release files get distinct keys", () => {
+    const entries = [
+      releaseFile(1, "v1"),
+      tied("SELECT 1;"),
+      releaseFile(5, "v2", { nanos: 123456789 }),
+      tied("SELECT 2;"),
+    ];
+    const groups = buildReleaseFileGroups(entries, {
+      getSectionLabel: (type) => String(type),
+      entryKeys: assignEntryKeys(entries),
+    });
+
+    expect(groups).toHaveLength(2);
+    const [first, second] = groups.map(
+      (group) => collectLeafSections(group.rows)[0]?.items[0]?.key
+    );
+    expect(first).toBeDefined();
+    expect(first).not.toBe(second);
+  });
+
+  test("sub-millisecond log times are told apart", () => {
+    const items = buildSections([
+      command(5, { statement: "SELECT 1;", error: "", nanos: 100 }),
+      command(5, { statement: "SELECT 2;", error: "", nanos: 200 }),
+    ])[0]?.items;
+
+    expect(items?.[0]?.key).not.toBe(items?.[1]?.key);
+    expect(items?.[0]?.key.endsWith(":0")).toBe(true);
+    expect(items?.[1]?.key.endsWith(":0")).toBe(true);
+  });
+
+  test("a builder refuses entries that were never given a key", () => {
+    const stranger = command(1, { statement: "SELECT 1;", error: "" });
+
+    expect(() =>
+      buildRowsFromEntries([stranger], {
+        getSectionLabel: (type) => String(type),
+        entryKeys: assignEntryKeys([]),
+      })
+    ).toThrow();
+  });
+
+  test("a row's key survives a retry marker splitting its section", () => {
+    const commands = () => [
+      command(1, { statement: "SELECT 1;", error: "" }),
+      command(5, { statement: "SELECT 2;", error: "" }),
+    ];
+    const before = buildSections(commands());
+    expect(before).toHaveLength(1);
+
+    const after = buildSections([...commands(), retryMarker(3)]);
+    expect(after).toHaveLength(2);
+    expect(after[1]?.items[0]?.key).toBe(before[0]?.items[1]?.key);
+    expect(after[0]?.items[0]?.key).toBe(before[0]?.items[0]?.key);
   });
 });

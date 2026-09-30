@@ -1,37 +1,49 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useOnKeyChange } from "@/hooks/useOnKeyChange";
 import type {
+  TaskRun_Status,
   TaskRunLogEntry,
   TaskRunLogEntry_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type { TaskRunLogDetailText } from "./model";
 import {
+  assignEntryKeys,
   buildReleaseFileGroups,
-  buildSectionsFromEntries,
+  buildRowsFromEntries,
+  collectAttemptRowIds,
+  collectLeafSections,
   getUniqueReplicaIds,
   groupEntriesByReleaseFile,
   groupEntriesByReplica,
   hasReleaseFileMarkers,
 } from "./model";
-import type { ReleaseFileGroup, ReplicaGroup, Section } from "./types";
+import type { LogRow, ReleaseFileGroup, ReplicaGroup } from "./types";
 
-const addToSet = (set: Set<string>, value: string): Set<string> => {
-  if (set.has(value)) return set;
-  const next = new Set(set);
-  next.add(value);
-  return next;
+// One expansion lane: every id is open by its default until the reader, or
+// Expand all / Collapse all, overrides it. `ids` are exactly the rows a reader
+// can toggle, so the toolbar's all-expanded state matches the screen.
+const useExpansionLane = (
+  ids: string[],
+  defaultOpen: (id: string) => boolean
+) => {
+  const [overrides, setOverrides] = useState<ReadonlyMap<string, boolean>>(
+    () => new Map()
+  );
+  const isExpanded = (id: string): boolean =>
+    overrides.get(id) ?? defaultOpen(id);
+  return {
+    isExpanded,
+    toggle: (id: string) =>
+      setOverrides((previous) =>
+        new Map(previous).set(id, !(previous.get(id) ?? defaultOpen(id)))
+      ),
+    setAll: (open: boolean) =>
+      setOverrides(new Map(ids.map((id) => [id, open]))),
+    reset: () => setOverrides(new Map()),
+    allExpanded: ids.every(isExpanded),
+  };
 };
-
-const deleteFromSet = (set: Set<string>, value: string): Set<string> => {
-  if (!set.has(value)) return set;
-  const next = new Set(set);
-  next.delete(value);
-  return next;
-};
-
-const countSections = (sections: Section[]): number => sections.length;
-const countEntries = (sections: Section[]): number =>
-  sections.reduce((sum, section) => sum + section.entryCount, 0);
 
 export interface UseTaskRunLogSectionsOptions {
   entries: TaskRunLogEntry[];
@@ -39,22 +51,24 @@ export interface UseTaskRunLogSectionsOptions {
   sheetsMap?: Map<string, Sheet>;
   getSectionLabel: (type: TaskRunLogEntry_Type) => string;
   detailText?: TaskRunLogDetailText;
-  datasetKey?: string;
+  // Changing it clears every override: row ids are positional, so they only
+  // mean something within one grouping of one run.
+  datasetKey: string;
+  // Forwarded into every builder call below; see pickMarkedEntry.
+  taskRunStatus?: TaskRun_Status;
 }
 
 export interface UseTaskRunLogSectionsResult {
-  sections: Section[];
+  rows: LogRow[];
   hasMultipleReplicas: boolean;
   hasReleaseFiles: boolean;
   releaseFileGroups: ReleaseFileGroup[];
   replicaGroups: ReplicaGroup[];
-  expandedSections: Set<string>;
-  expandedReplicas: Set<string>;
-  expandedReleaseFiles: Set<string>;
-  toggleSection: (sectionId: string) => void;
+  // Rows are sections, umbrellas and attempt rows, by id.
+  toggleRow: (rowId: string) => void;
   toggleReplica: (replicaId: string) => void;
   toggleReleaseFile: (releaseFileId: string) => void;
-  isSectionExpanded: (sectionId: string) => boolean;
+  isRowExpanded: (rowId: string) => boolean;
   isReplicaExpanded: (replicaId: string) => boolean;
   isReleaseFileExpanded: (releaseFileId: string) => boolean;
   expandAll: () => void;
@@ -71,47 +85,53 @@ export const useTaskRunLogSections = ({
   getSectionLabel,
   detailText,
   datasetKey,
+  taskRunStatus,
 }: UseTaskRunLogSectionsOptions): UseTaskRunLogSectionsResult => {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    () => new Set()
-  );
-  const [userCollapsedSections, setUserCollapsedSections] = useState<
-    Set<string>
-  >(() => new Set());
-  const [expandedReplicas, setExpandedReplicas] = useState<Set<string>>(
-    () => new Set()
-  );
-  const [userCollapsedReplicas, setUserCollapsedReplicas] = useState<
-    Set<string>
-  >(() => new Set());
-  const [expandedReleaseFiles, setExpandedReleaseFiles] = useState<Set<string>>(
-    () => new Set()
-  );
-  const [userCollapsedReleaseFiles, setUserCollapsedReleaseFiles] = useState<
-    Set<string>
-  >(() => new Set());
+  // Every builder below sees a filtered slice of the run, so the keys are
+  // assigned here, over all of it.
+  const entryKeys = useMemo(() => assignEntryKeys(entries), [entries]);
 
-  const sections = useMemo(() => {
-    return buildSectionsFromEntries(entries, {
+  const rows = useMemo(() => {
+    return buildRowsFromEntries(entries, {
       getSectionLabel,
+      entryKeys,
       sheet,
       sheetsMap,
       detailText,
+      taskRunStatus,
     });
-  }, [detailText, entries, getSectionLabel, sheet, sheetsMap]);
+  }, [
+    detailText,
+    entries,
+    entryKeys,
+    getSectionLabel,
+    sheet,
+    sheetsMap,
+    taskRunStatus,
+  ]);
 
   const releaseFileGroups = useMemo(() => {
     if (!hasReleaseFileMarkers(entries)) return [];
     return buildReleaseFileGroups(entries, {
       getSectionLabel,
+      entryKeys,
       sheet,
       sheetsMap,
       detailText,
       includeOrphanGroup: true,
+      taskRunStatus,
     });
-  }, [detailText, entries, getSectionLabel, sheet, sheetsMap]);
+  }, [
+    detailText,
+    entries,
+    entryKeys,
+    getSectionLabel,
+    sheet,
+    sheetsMap,
+    taskRunStatus,
+  ]);
 
-  const replicaGroups = useMemo(() => {
+  const replicaGroups = useMemo<ReplicaGroup[]>(() => {
     const replicaIds = getUniqueReplicaIds(entries);
     if (replicaIds.length <= 1) return [];
 
@@ -124,13 +144,15 @@ export const useTaskRunLogSections = ({
         return {
           replicaId,
           releaseFileGroups: [],
-          sections: buildSectionsFromEntries(replicaEntries, {
+          rows: buildRowsFromEntries(replicaEntries, {
             getSectionLabel,
+            entryKeys,
             sheet,
             sheetsMap,
             idPrefix: replicaId,
             forceError,
             detailText,
+            taskRunStatus,
           }),
         };
       }
@@ -143,26 +165,38 @@ export const useTaskRunLogSections = ({
         replicaId,
         releaseFileGroups: buildReleaseFileGroups(replicaEntries, {
           getSectionLabel,
+          entryKeys,
           sheet,
           sheetsMap,
           idPrefix: replicaId,
           forceError,
           detailText,
+          taskRunStatus,
         }),
-        sections:
+        rows:
           orphanGroup && orphanGroup.entries.length > 0
-            ? buildSectionsFromEntries(orphanGroup.entries, {
+            ? buildRowsFromEntries(orphanGroup.entries, {
                 getSectionLabel,
+                entryKeys,
                 sheet,
                 sheetsMap,
                 idPrefix: `${replicaId}-orphan`,
                 forceError,
                 detailText,
+                taskRunStatus,
               })
             : [],
       };
     });
-  }, [detailText, entries, getSectionLabel, sheet, sheetsMap]);
+  }, [
+    detailText,
+    entries,
+    entryKeys,
+    getSectionLabel,
+    sheet,
+    sheetsMap,
+    taskRunStatus,
+  ]);
 
   const hasReleaseFiles = useMemo(
     () => hasReleaseFileMarkers(entries),
@@ -170,324 +204,101 @@ export const useTaskRunLogSections = ({
   );
   const hasMultipleReplicas = replicaGroups.length > 1;
 
-  const allSectionIds = useMemo(() => {
+  // Every row the viewer will render, in order, whichever grouping applies.
+  const allRows = useMemo<LogRow[]>(() => {
     if (hasMultipleReplicas) {
       return replicaGroups.flatMap((group) => [
-        ...group.sections.map((section) => section.id),
-        ...group.releaseFileGroups.flatMap((fileGroup) =>
-          fileGroup.sections.map((section) => section.id)
-        ),
+        ...group.rows,
+        ...group.releaseFileGroups.flatMap((fileGroup) => fileGroup.rows),
       ]);
     }
     if (hasReleaseFiles) {
-      return releaseFileGroups.flatMap((fileGroup) =>
-        fileGroup.sections.map((section) => section.id)
-      );
+      return releaseFileGroups.flatMap((fileGroup) => fileGroup.rows);
     }
-    return sections.map((section) => section.id);
+    return rows;
   }, [
     hasMultipleReplicas,
     hasReleaseFiles,
     releaseFileGroups,
     replicaGroups,
-    sections,
+    rows,
   ]);
 
-  const allReplicaIds = useMemo(() => {
-    return replicaGroups.map((group) => group.replicaId);
-  }, [replicaGroups]);
-
+  const allLeafSections = useMemo(
+    () => collectLeafSections(allRows),
+    [allRows]
+  );
+  const allRowIds = [
+    ...allLeafSections.map((section) => section.id),
+    ...collectAttemptRowIds(allRows),
+  ];
+  const allReplicaIds = useMemo(
+    () => replicaGroups.map((group) => group.replicaId),
+    [replicaGroups]
+  );
   const allReleaseFileIds = useMemo(() => {
     if (hasMultipleReplicas) {
       return replicaGroups.flatMap((group) =>
         group.releaseFileGroups.map((fileGroup) => fileGroup.id)
       );
     }
-    return releaseFileGroups.map((fileGroup) => fileGroup.id);
+    // The orphan group renders without a header of its own.
+    return releaseFileGroups
+      .filter((fileGroup) => !fileGroup.isOrphan)
+      .map((fileGroup) => fileGroup.id);
   }, [hasMultipleReplicas, releaseFileGroups, replicaGroups]);
 
-  const resolvedDatasetKey = useMemo(() => {
-    if (datasetKey) return datasetKey;
-    return entries
-      .map((entry) => {
-        return [
-          entry.type,
-          entry.replicaId,
-          entry.logTime?.seconds.toString() ?? "",
-          entry.logTime?.nanos ?? 0,
-          entry.releaseFileExecute?.version ?? "",
-          entry.releaseFileExecute?.filePath ?? "",
-        ].join(":");
-      })
-      .join("|");
-  }, [datasetKey, entries]);
+  const errorSectionIds = useMemo(
+    () =>
+      new Set(
+        allLeafSections
+          .filter((section) => section.status === "error")
+          .map((section) => section.id)
+      ),
+    [allLeafSections]
+  );
 
-  useEffect(() => {
-    setExpandedSections(new Set());
-    setUserCollapsedSections(new Set());
-    setExpandedReplicas(new Set());
-    setUserCollapsedReplicas(new Set());
-    setExpandedReleaseFiles(new Set());
-    setUserCollapsedReleaseFiles(new Set());
-  }, [resolvedDatasetKey]);
+  // Failed sections are open by default wherever they sit; umbrella and
+  // attempt rows are not.
+  const rowLane = useExpansionLane(allRowIds, (id) => errorSectionIds.has(id));
+  const replicaLane = useExpansionLane(allReplicaIds, () => true);
+  const fileLane = useExpansionLane(allReleaseFileIds, () => true);
 
-  useEffect(() => {
-    setExpandedSections((previous) => {
-      let next = previous;
-      for (const section of sections) {
-        if (
-          section.status === "error" &&
-          !userCollapsedSections.has(section.id)
-        ) {
-          next = addToSet(next, section.id);
-        }
-      }
-      return next;
-    });
-  }, [sections, userCollapsedSections]);
+  useOnKeyChange(datasetKey, () => {
+    rowLane.reset();
+    replicaLane.reset();
+    fileLane.reset();
+  });
 
-  useEffect(() => {
-    setExpandedReplicas((previousReplicas) => {
-      let next = previousReplicas;
-      for (const group of replicaGroups) {
-        if (!userCollapsedReplicas.has(group.replicaId)) {
-          next = addToSet(next, group.replicaId);
-        }
-      }
-      return next;
-    });
-
-    setExpandedReleaseFiles((previousFiles) => {
-      let next = previousFiles;
-      for (const group of replicaGroups) {
-        group.releaseFileGroups.forEach((fileGroup) => {
-          const fileId = fileGroup.id;
-          if (!userCollapsedReleaseFiles.has(fileId)) {
-            next = addToSet(next, fileId);
-          }
-        });
-      }
-      return next;
-    });
-
-    setExpandedSections((previousSections) => {
-      let next = previousSections;
-      for (const group of replicaGroups) {
-        for (const section of group.sections) {
-          if (
-            section.status === "error" &&
-            !userCollapsedSections.has(section.id)
-          ) {
-            next = addToSet(next, section.id);
-          }
-        }
-        for (const fileGroup of group.releaseFileGroups) {
-          for (const section of fileGroup.sections) {
-            if (
-              section.status === "error" &&
-              !userCollapsedSections.has(section.id)
-            ) {
-              next = addToSet(next, section.id);
-            }
-          }
-        }
-      }
-      return next;
-    });
-  }, [
-    replicaGroups,
-    userCollapsedReplicas,
-    userCollapsedReleaseFiles,
-    userCollapsedSections,
-  ]);
-
-  useEffect(() => {
-    setExpandedReleaseFiles((previousFiles) => {
-      let next = previousFiles;
-      releaseFileGroups.forEach((fileGroup) => {
-        const fileId = fileGroup.id;
-        if (!userCollapsedReleaseFiles.has(fileId)) {
-          next = addToSet(next, fileId);
-        }
-      });
-      return next;
-    });
-
-    setExpandedSections((previousSections) => {
-      let next = previousSections;
-      for (const fileGroup of releaseFileGroups) {
-        for (const section of fileGroup.sections) {
-          if (
-            section.status === "error" &&
-            !userCollapsedSections.has(section.id)
-          ) {
-            next = addToSet(next, section.id);
-          }
-        }
-      }
-      return next;
-    });
-  }, [releaseFileGroups, userCollapsedReleaseFiles, userCollapsedSections]);
-
-  const toggleSection = (sectionId: string) => {
-    setExpandedSections((previousExpanded) => {
-      const isExpanded = previousExpanded.has(sectionId);
-      setUserCollapsedSections((previousCollapsed) =>
-        isExpanded
-          ? addToSet(previousCollapsed, sectionId)
-          : deleteFromSet(previousCollapsed, sectionId)
-      );
-      return isExpanded
-        ? deleteFromSet(previousExpanded, sectionId)
-        : addToSet(previousExpanded, sectionId);
-    });
+  const setAll = (open: boolean) => {
+    rowLane.setAll(open);
+    replicaLane.setAll(open);
+    fileLane.setAll(open);
   };
-
-  const toggleReplica = (replicaId: string) => {
-    setExpandedReplicas((previousExpanded) => {
-      const isExpanded = previousExpanded.has(replicaId);
-      setUserCollapsedReplicas((previousCollapsed) =>
-        isExpanded
-          ? addToSet(previousCollapsed, replicaId)
-          : deleteFromSet(previousCollapsed, replicaId)
-      );
-      return isExpanded
-        ? deleteFromSet(previousExpanded, replicaId)
-        : addToSet(previousExpanded, replicaId);
-    });
-  };
-
-  const toggleReleaseFile = (releaseFileId: string) => {
-    setExpandedReleaseFiles((previousExpanded) => {
-      const isExpanded = previousExpanded.has(releaseFileId);
-      setUserCollapsedReleaseFiles((previousCollapsed) =>
-        isExpanded
-          ? addToSet(previousCollapsed, releaseFileId)
-          : deleteFromSet(previousCollapsed, releaseFileId)
-      );
-      return isExpanded
-        ? deleteFromSet(previousExpanded, releaseFileId)
-        : addToSet(previousExpanded, releaseFileId);
-    });
-  };
-
-  const isSectionExpanded = (sectionId: string): boolean => {
-    return expandedSections.has(sectionId);
-  };
-
-  const isReplicaExpanded = (replicaId: string): boolean => {
-    return expandedReplicas.has(replicaId);
-  };
-
-  const isReleaseFileExpanded = (releaseFileId: string): boolean => {
-    return expandedReleaseFiles.has(releaseFileId);
-  };
-
-  const expandAll = () => {
-    setExpandedSections(new Set(allSectionIds));
-    setExpandedReplicas(new Set(allReplicaIds));
-    setExpandedReleaseFiles(new Set(allReleaseFileIds));
-    setUserCollapsedSections(new Set());
-    setUserCollapsedReplicas(new Set());
-    setUserCollapsedReleaseFiles(new Set());
-  };
-
-  const collapseAll = () => {
-    setExpandedSections(new Set());
-    setExpandedReplicas(new Set());
-    setExpandedReleaseFiles(new Set());
-    setUserCollapsedSections(new Set(allSectionIds));
-    setUserCollapsedReplicas(new Set(allReplicaIds));
-    setUserCollapsedReleaseFiles(new Set(allReleaseFileIds));
-  };
-
-  const areAllExpanded =
-    (allSectionIds.length > 0 ||
-      allReleaseFileIds.length > 0 ||
-      allReplicaIds.length > 0) &&
-    (allSectionIds.length === 0 ||
-      allSectionIds.every((id) => expandedSections.has(id))) &&
-    (allReleaseFileIds.length === 0 ||
-      allReleaseFileIds.every((id) => expandedReleaseFiles.has(id))) &&
-    (!hasMultipleReplicas ||
-      allReplicaIds.length === 0 ||
-      allReplicaIds.every((id) => expandedReplicas.has(id)));
-
-  const totalSections = useMemo(() => {
-    if (hasMultipleReplicas) {
-      return replicaGroups.reduce(
-        (sum, group) =>
-          sum +
-          countSections(group.sections) +
-          group.releaseFileGroups.reduce(
-            (fileSum, fileGroup) => fileSum + countSections(fileGroup.sections),
-            0
-          ),
-        0
-      );
-    }
-    if (hasReleaseFiles) {
-      return releaseFileGroups.reduce(
-        (sum, fileGroup) => sum + countSections(fileGroup.sections),
-        0
-      );
-    }
-    return sections.length;
-  }, [
-    hasMultipleReplicas,
-    hasReleaseFiles,
-    releaseFileGroups,
-    replicaGroups,
-    sections.length,
-  ]);
-
-  const totalEntries = useMemo(() => {
-    if (hasMultipleReplicas) {
-      return replicaGroups.reduce(
-        (sum, group) =>
-          sum +
-          countEntries(group.sections) +
-          group.releaseFileGroups.reduce(
-            (fileSum, fileGroup) => fileSum + countEntries(fileGroup.sections),
-            0
-          ),
-        0
-      );
-    }
-    if (hasReleaseFiles) {
-      return releaseFileGroups.reduce(
-        (sum, fileGroup) => sum + countEntries(fileGroup.sections),
-        0
-      );
-    }
-    return countEntries(sections);
-  }, [
-    hasMultipleReplicas,
-    hasReleaseFiles,
-    releaseFileGroups,
-    replicaGroups,
-    sections,
-  ]);
 
   return {
-    sections,
+    rows,
     hasMultipleReplicas,
     hasReleaseFiles,
     releaseFileGroups,
     replicaGroups,
-    expandedSections,
-    expandedReplicas,
-    expandedReleaseFiles,
-    toggleSection,
-    toggleReplica,
-    toggleReleaseFile,
-    isSectionExpanded,
-    isReplicaExpanded,
-    isReleaseFileExpanded,
-    expandAll,
-    collapseAll,
-    areAllExpanded,
-    totalSections,
-    totalEntries,
+    toggleRow: rowLane.toggle,
+    toggleReplica: replicaLane.toggle,
+    toggleReleaseFile: fileLane.toggle,
+    isRowExpanded: rowLane.isExpanded,
+    isReplicaExpanded: replicaLane.isExpanded,
+    isReleaseFileExpanded: fileLane.isExpanded,
+    expandAll: () => setAll(true),
+    collapseAll: () => setAll(false),
+    areAllExpanded:
+      allRowIds.length + allReleaseFileIds.length + allReplicaIds.length > 0 &&
+      rowLane.allExpanded &&
+      fileLane.allExpanded &&
+      replicaLane.allExpanded,
+    totalSections: allLeafSections.length,
+    totalEntries: allLeafSections.reduce(
+      (sum, section) => sum + section.entryCount,
+      0
+    ),
   };
 };

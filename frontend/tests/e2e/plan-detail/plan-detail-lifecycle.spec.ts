@@ -58,7 +58,9 @@ import { PlanDetailPage } from "./plan-detail.page";
 import {
   seedDraftPlan,
   seedReviewPlan,
+  setPermissiveGates,
   waitForApprovalStatus,
+  waitForRollout,
 } from "./plan-helpers";
 import {
   createDatabaseChangePlanViaUI,
@@ -151,37 +153,6 @@ async function setApproval(allowSelfApproval: boolean): Promise<void> {
     { workspaceApproval: { rules: [ADMIN_RULE] } },
     "value.workspace_approval",
   );
-}
-
-async function setPermissive(): Promise<void> {
-  await env.api.deletePolicy(env.project, "tag").catch(() => {});
-  await env.api.updateProjectSettings(env.project, {
-    requireIssueApproval: false,
-    requirePlanCheckNoError: false,
-    enforceSqlReview: false,
-    forceIssueLabels: false,
-  });
-  // Clear any approval rule a prior describe left in WORKSPACE_APPROVAL —
-  // otherwise a leftover rule still forces a pending review (blocking the
-  // auto-rollout) even with requireIssueApproval=false. (Each describe must
-  // reset its arrival state; the page is shared.)
-  await env.api.upsertSetting(
-    "WORKSPACE_APPROVAL",
-    { workspaceApproval: { rules: [] } },
-    "value.workspace_approval",
-  );
-}
-
-// Wait (via API) for the backend to auto-create the rollout, so the deploy
-// tests navigate to a page that already shows the frontier Run advance rather
-// than racing the async rollout creation.
-async function waitForRollout(planName: string, timeoutMs = 30_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if ((await env.api.getPlan(planName)).hasRollout) return;
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-  throw new Error(`rollout was not auto-created for ${planName} in ${timeoutMs}ms`);
 }
 
 // Attach a single ERROR-level COLUMN_NO_NULL rule so a nullable column trips it.
@@ -733,7 +704,7 @@ test.describe("Running the frontier stage from the header reaches the Deployed s
   let planId = "";
 
   test.beforeAll(async () => {
-    await setPermissive();
+    await setPermissiveGates(env.api, env.project);
     const ts = Date.now();
     const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Hdr D1",
@@ -741,7 +712,7 @@ test.describe("Running the frontier stage from the header reaches the Deployed s
       runChecks: true,
     });
     planId = seeded.planId;
-    await waitForRollout(seeded.planName);
+    await waitForRollout(env.api, seeded.planName);
   });
 
   test("header Run·<stage> runs the frontier, then the slot becomes the Deployed stamp", async () => {
@@ -765,7 +736,7 @@ test.describe("A failed task surfaces Rerun in the header slot (D2)", () => {
   let planId = "";
 
   test.beforeAll(async () => {
-    await setPermissive();
+    await setPermissiveGates(env.api, env.project);
     const ts = Date.now();
     // A nonexistent target makes the task fail at execution.
     const seeded = await seedReviewPlan(env, page, {
@@ -774,7 +745,7 @@ test.describe("A failed task surfaces Rerun in the header slot (D2)", () => {
       runChecks: false,
     });
     planId = seeded.planId;
-    await waitForRollout(seeded.planName);
+    await waitForRollout(env.api, seeded.planName);
   });
 
   test("after the task fails, the header advance reads Rerun·<stage>", async () => {
@@ -795,7 +766,7 @@ test.describe("A multi-stage rollout advances the header stage by stage to Deplo
   let planId = "";
 
   test.beforeAll(async () => {
-    await setPermissive();
+    await setPermissiveGates(env.api, env.project);
     const ts = Date.now();
     const testDb = await env.api.findDatabaseByShortName("hr_test", env.project);
     const prodDb = await env.api.findDatabaseByShortName("hr_prod", env.project);
@@ -812,7 +783,7 @@ test.describe("A multi-stage rollout advances the header stage by stage to Deplo
       title: `E2E Hdr D3 ${ts}`,
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_d3_${ts} TEXT;`,
     }));
-    await waitForRollout(`${env.project}/plans/${planId}`);
+    await waitForRollout(env.api, `${env.project}/plans/${planId}`);
   });
 
   test("the header Run advance walks each stage until the plan is Deployed", async () => {

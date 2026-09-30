@@ -142,6 +142,7 @@ export type ListServiceAccountsParams = {
   showDeleted: boolean;
   filter?: AccountFilter;
   skipCache?: boolean;
+  silent?: boolean;
 };
 
 export type ListWorkloadIdentitiesParams = {
@@ -151,6 +152,7 @@ export type ListWorkloadIdentitiesParams = {
   showDeleted: boolean;
   filter?: AccountFilter;
   skipCache?: boolean;
+  silent?: boolean;
 };
 
 export type AccessGrantFilter = {

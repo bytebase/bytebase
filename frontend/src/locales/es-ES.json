@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Busca usuarios por correo electrónico. Usa el prefijo serviceAccounts/ o workloadIdentities/ para buscar esos actores.",
+          "description": "Buscar usuarios, cuentas de servicio e identidades de carga de trabajo por nombre o correo electrónico",
           "title": "Actor"
         },
         "level": {
@@ -3727,7 +3727,8 @@
       "completed": "Completado",
       "computing": "computación...",
       "dumping": "dumping...",
-      "retry-attempt": "intento {{current}}/{{max}}",
+      "hide-full-statement": "Ocultar la declaración completa",
+      "show-full-statement": "Mostrar la declaración completa",
       "syncing": "sincronizando..."
     },
     "log-type": {
@@ -3737,15 +3738,20 @@
       "ghost-migration": "Migración gh-ost",
       "prior-backup": "Copia de seguridad previa",
       "release-file-execute": "Archivo de lanzamiento",
-      "retry": "Reintentar",
       "schema-dump": "Volcado de esquema",
       "transaction": "Transacción"
     },
     "log-viewer": {
+      "attempt-count_one": "{{count}} intento",
+      "attempt-count_other": "{{count}} intentos",
+      "attempt-n": "Intento {{n}}",
+      "attempt-reason": "falló: {{reason}}",
       "collapse-all": "Contraer todo",
       "expand-all": "Expandir todo",
       "multiple-replicas-notice": "Se detectó un reinicio del servidor durante la ejecución. Los registros están agrupados por réplica.",
+      "previous-attempts": "Intentos anteriores",
       "replica-n": "Réplica #{{n}}",
+      "retrying": "reintentando",
       "summary": "{{sections}} secciones · {{entries}} entradas"
     },
     "no-blocking-sessions": "Sin sesiones bloqueantes",

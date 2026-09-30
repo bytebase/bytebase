@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "メールアドレスでユーザーを検索します。サービスアカウントまたはワークロード ID を検索するには、serviceAccounts/ または workloadIdentities/ を付けます。",
+          "description": "名前またはメールアドレスでユーザー、サービスアカウント、ワークロードIDを検索",
           "title": "操作者"
         },
         "level": {
@@ -3727,7 +3727,8 @@
       "completed": "完了しました",
       "computing": "コンピューティング...",
       "dumping": "ダンピング...",
-      "retry-attempt": "試行 {{current}}/{{max}}",
+      "hide-full-statement": "ステートメント全体を非表示",
+      "show-full-statement": "ステートメント全体を表示",
       "syncing": "同期中..."
     },
     "log-type": {
@@ -3737,15 +3738,20 @@
       "ghost-migration": "gh-ost マイグレーション",
       "prior-backup": "事前のバックアップ",
       "release-file-execute": "リリースファイル",
-      "retry": "リトライ",
       "schema-dump": "スキーマダンプ",
       "transaction": "取引"
     },
     "log-viewer": {
+      "attempt-count_one": "{{count}} 回の試行",
+      "attempt-count_other": "{{count}} 回の試行",
+      "attempt-n": "試行 {{n}}",
+      "attempt-reason": "失敗: {{reason}}",
       "collapse-all": "すべて折りたたむ",
       "expand-all": "すべて展開",
       "multiple-replicas-notice": "実行中にサーバーの再起動が検出されました。ログはレプリカごとにグループ化されています。",
+      "previous-attempts": "以前の試行",
       "replica-n": "レプリカ #{{n}}",
+      "retrying": "再試行中",
       "summary": "{{sections}} セクション · {{entries}} エントリ"
     },
     "no-blocking-sessions": "ブロッキングセッションはありません",

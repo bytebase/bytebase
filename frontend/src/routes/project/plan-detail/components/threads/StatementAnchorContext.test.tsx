@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { cleanup, render, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { Plan_ChangeDatabaseConfigSchema, Plan_SpecSchema, PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
@@ -67,6 +67,22 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("StatementAnchorContext", () => {
+  test("places the collapse action in the statement context header", () => {
+    const onCollapse = vi.fn();
+    const { container, getByRole } = render(
+      <StatementAnchorContext
+        {...props}
+        anchor={anchor(2, 2)}
+        onCollapse={onCollapse}
+        placement={OUTDATED}
+      />
+    );
+    const button = getByRole("button", { name: "common.collapse" });
+    expect(container.querySelector("[data-testid='statement-anchor']")?.firstElementChild?.contains(button)).toBe(true);
+    fireEvent.click(button);
+    expect(onCollapse).toHaveBeenCalledOnce();
+  });
+
   test.each([
     { start: 1, end: 1, displayed: [1], selected: [1], label: "Line 1" },
     { start: 2, end: 2, displayed: [1, 2], selected: [2], label: "Line 2" },

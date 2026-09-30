@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "按邮箱搜索用户。使用 serviceAccounts/ 或 workloadIdentities/ 前缀搜索这些操作者。",
+          "description": "按名称或邮箱搜索用户、服务账号和工作负载身份",
           "title": "操作者"
         },
         "level": {
@@ -3727,7 +3727,8 @@
       "completed": "已完成",
       "computing": "计算中...",
       "dumping": "导出中...",
-      "retry-attempt": "第 {{current}}/{{max}} 次尝试",
+      "hide-full-statement": "隐藏完整语句",
+      "show-full-statement": "显示完整语句",
       "syncing": "同步中..."
     },
     "log-type": {
@@ -3737,15 +3738,20 @@
       "ghost-migration": "gh-ost 迁移",
       "prior-backup": "预备份",
       "release-file-execute": "发布包文件",
-      "retry": "重试",
       "schema-dump": "结构导出",
       "transaction": "事务"
     },
     "log-viewer": {
+      "attempt-count_one": "{{count}} 次尝试",
+      "attempt-count_other": "{{count}} 次尝试",
+      "attempt-n": "第 {{n}} 次尝试",
+      "attempt-reason": "失败：{{reason}}",
       "collapse-all": "全部收起",
       "expand-all": "全部展开",
       "multiple-replicas-notice": "检测到执行期间服务重启，日志按副本分组显示。",
+      "previous-attempts": "之前的尝试",
       "replica-n": "副本 #{{n}}",
+      "retrying": "重试中",
       "summary": "{{sections}} 个分组 · {{entries}} 条记录"
     },
     "no-blocking-sessions": "无阻塞会话",
