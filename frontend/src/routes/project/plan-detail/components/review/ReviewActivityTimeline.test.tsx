@@ -127,10 +127,10 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => ({
 
 vi.mock("../threads/CommentThreadCard", () => ({
   CommentThreadCard: ({
-    context,
+    renderContext,
     thread,
   }: {
-    context: ReactNode;
+    renderContext?: (onCollapse?: () => void) => ReactNode;
     thread: { root: { name: string }; replies: { name: string }[] };
   }) => (
     <div
@@ -138,7 +138,7 @@ vi.mock("../threads/CommentThreadCard", () => ({
       data-root={thread.root.name}
       data-testid="thread-card"
     >
-      {context}
+      {renderContext?.()}
     </div>
   ),
 }));

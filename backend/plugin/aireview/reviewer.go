@@ -91,7 +91,7 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 	}
 
 	numberedStatement, lineCount := numberLines(request.Statement)
-	messages := buildMessages(request, numberedStatement, rand.Text())
+	messages := buildMessages(request, numberedStatement, rand.Text(), len(definitions) > 0)
 	result := &Result{}
 	invalidReplies := 0
 

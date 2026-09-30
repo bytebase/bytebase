@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "メールアドレスでユーザーを検索します。サービスアカウントまたはワークロード ID を検索するには、serviceAccounts/ または workloadIdentities/ を付けます。",
+          "description": "名前またはメールアドレスでユーザー、サービスアカウント、ワークロードIDを検索",
           "title": "操作者"
         },
         "level": {

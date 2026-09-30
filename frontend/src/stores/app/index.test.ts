@@ -2082,6 +2082,27 @@ describe("useAppStore", () => {
     );
   });
 
+  test("lists service accounts silently when requested", async () => {
+    mocks.listServiceAccounts.mockResolvedValue({
+      serviceAccounts: [],
+      nextPageToken: "",
+    });
+    const store = createAppStore();
+
+    await store.getState().listServiceAccounts({
+      parent: "workspaces/default",
+      pageSize: 20,
+      showDeleted: false,
+      silent: true,
+    });
+
+    expect(
+      mocks.listServiceAccounts.mock.calls[0][1]?.contextValues.get(
+        silentContextKey
+      )
+    ).toBe(true);
+  });
+
   test("marks cached service account deleted after delete", async () => {
     mocks.deleteServiceAccount.mockResolvedValue({});
     const store = createAppStore();
@@ -2133,6 +2154,27 @@ describe("useAppStore", () => {
     expect(store.getState().workloadIdentitiesByName).not.toHaveProperty(
       workloadIdentityA.name
     );
+  });
+
+  test("lists workload identities silently when requested", async () => {
+    mocks.listWorkloadIdentities.mockResolvedValue({
+      workloadIdentities: [],
+      nextPageToken: "",
+    });
+    const store = createAppStore();
+
+    await store.getState().listWorkloadIdentities({
+      parent: "workspaces/default",
+      pageSize: 20,
+      showDeleted: false,
+      silent: true,
+    });
+
+    expect(
+      mocks.listWorkloadIdentities.mock.calls[0][1]?.contextValues.get(
+        silentContextKey
+      )
+    ).toBe(true);
   });
 
   test("lists identity providers and replaces the identity provider cache", async () => {
