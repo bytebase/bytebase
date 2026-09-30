@@ -16,17 +16,21 @@ const mocks = vi.hoisted(() => ({
     | { commentName: string; specId: string; lineNumber: number; nonce: number }
     | undefined,
   clearThreadFocus: vi.fn(),
-  setPosition: vi.fn(),
   revealLineInCenter: vi.fn(),
   focus: vi.fn(),
   scrollIntoView: vi.fn(),
+  setSelection: vi.fn(),
+  setScrollTop: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
 }));
-vi.mock("@/components/monaco", () => ({
+vi.mock("@/components/monaco", async () => ({
+  ...(await vi.importActual<typeof import("@/components/monaco/viewAnchor")>(
+    "@/components/monaco/viewAnchor"
+  )),
   MonacoEditor: ({
     onChange,
     onReady,
@@ -39,10 +43,12 @@ vi.mock("@/components/monaco", () => ({
         onClick={() =>
           onReady({}, {
             getModel: () => ({ getLineCount: () => 3 }),
-            setPosition: mocks.setPosition,
             revealLineInCenter: mocks.revealLineInCenter,
             focus: mocks.focus,
             getDomNode: () => ({ scrollIntoView: mocks.scrollIntoView }),
+            setSelection: mocks.setSelection,
+            setScrollTop: mocks.setScrollTop,
+            getTopForLineNumber: (lineNumber: number) => lineNumber * 20,
           })
         }
       >
@@ -54,8 +60,32 @@ vi.mock("@/components/monaco", () => ({
       <button onClick={() => onChange("SELECT 2;")}>Make small draft</button>
     </>
   ),
-  ReadonlyMonaco: ({ content }: { content: string }) => (
-    <div data-testid="statement">{content.slice(0, 24)}</div>
+  ReadonlyMonaco: ({
+    content,
+    onReady,
+  }: {
+    content: string;
+    onReady?: (monaco: unknown, editor: unknown) => void;
+  }) => (
+    <>
+      <div data-testid="statement">{content.slice(0, 24)}</div>
+      <button
+        onClick={() =>
+          onReady?.({}, {
+            getModel: () => ({}),
+            getVisibleRanges: () => [{ startLineNumber: 2, endLineNumber: 3 }],
+            getSelection: () => ({
+              selectionStartLineNumber: 3,
+              selectionStartColumn: 2,
+              positionLineNumber: 3,
+              positionColumn: 5,
+            }),
+          })
+        }
+      >
+        Readonly editor ready
+      </button>
+    </>
   ),
 }));
 vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
@@ -141,7 +171,7 @@ test("shows the large-sheet warning as soon as the saved sheet changes", async (
   expect(getByTestId("statement").textContent).toContain("SELECT 2;");
 });
 
-test("shows a draft-specific warning before saving and removes it below the limit", () => {
+const renderEditableSpec = (statement: string) => {
   const sheetName = `projects/p/sheets/${"c".repeat(64)}`;
   const spec = create(Plan_SpecSchema, {
     id: "spec",
@@ -150,7 +180,7 @@ test("shows a draft-specific warning before saving and removes it below the limi
       value: create(Plan_ChangeDatabaseConfigSchema, { sheet: sheetName }),
     },
   });
-  const content = new TextEncoder().encode("SELECT 1;");
+  const content = new TextEncoder().encode(statement);
   mocks.sheets.set(
     sheetName,
     create(SheetSchema, { name: sheetName, content, contentSize: BigInt(content.length) })
@@ -163,10 +193,17 @@ test("shows a draft-specific warning before saving and removes it below the limi
     readonly: false,
     setEditing: vi.fn(),
   };
+  const view = render(<PlanDetailStatementSection spec={spec} />);
+  return {
+    ...view,
+    rerender: () => view.rerender(<PlanDetailStatementSection spec={spec} />),
+  };
+};
 
-  const { getByText, queryByText } = render(
-    <PlanDetailStatementSection spec={spec} />
-  );
+const THREE_LINES = "SELECT 1;\nSELECT 2;\nSELECT 3;";
+
+test("shows a draft-specific warning before saving and removes it below the limit", () => {
+  const { getByText, queryByText } = renderEditableSpec("SELECT 1;");
   fireEvent.click(getByText("common.edit"));
   fireEvent.click(getByText("Make large draft"));
   expect(getByText("issue.statement-exceeds-preview-limit")).toBeTruthy();
@@ -177,31 +214,7 @@ test("shows a draft-specific warning before saving and removes it below the limi
 });
 
 test("reveals an Activity anchor after the edit editor is ready", () => {
-  const sheetName = `projects/p/sheets/${"c".repeat(64)}`;
-  const spec = create(Plan_SpecSchema, {
-    id: "spec",
-    config: {
-      case: "changeDatabaseConfig",
-      value: create(Plan_ChangeDatabaseConfigSchema, { sheet: sheetName }),
-    },
-  });
-  const content = new TextEncoder().encode("SELECT 1;\nSELECT 2;\nSELECT 3;");
-  mocks.sheets.set(
-    sheetName,
-    create(SheetSchema, { name: sheetName, content, contentSize: BigInt(content.length) })
-  );
-  mocks.page = {
-    currentUser: { name: "users/test" },
-    isCreating: false,
-    plan: create(PlanSchema, { creator: "users/test", specs: [spec] }),
-    project: { name: "projects/p" },
-    readonly: false,
-    setEditing: vi.fn(),
-  };
-
-  const { getByText, rerender } = render(
-    <PlanDetailStatementSection spec={spec} />
-  );
+  const { getByText, rerender } = renderEditableSpec(THREE_LINES);
   fireEvent.click(getByText("common.edit"));
   mocks.threadFocus = {
     commentName: "comments/1",
@@ -209,11 +222,16 @@ test("reveals an Activity anchor after the edit editor is ready", () => {
     lineNumber: 3,
     nonce: 7,
   };
-  rerender(<PlanDetailStatementSection spec={spec} />);
+  rerender();
   expect(mocks.revealLineInCenter).not.toHaveBeenCalled();
 
   fireEvent.click(getByText("Editor ready"));
-  expect(mocks.setPosition).toHaveBeenCalledWith({ lineNumber: 3, column: 1 });
+  expect(mocks.setSelection).toHaveBeenCalledWith({
+    selectionStartLineNumber: 3,
+    selectionStartColumn: 1,
+    positionLineNumber: 3,
+    positionColumn: 1,
+  });
   expect(mocks.revealLineInCenter).toHaveBeenCalledWith(3);
   expect(mocks.focus).toHaveBeenCalled();
   expect(mocks.scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
@@ -225,7 +243,44 @@ test("reveals an Activity anchor after the edit editor is ready", () => {
     lineNumber: 99,
     nonce: 8,
   };
-  rerender(<PlanDetailStatementSection spec={spec} />);
+  rerender();
   expect(mocks.revealLineInCenter).toHaveBeenLastCalledWith(3);
   expect(mocks.clearThreadFocus).toHaveBeenCalledWith(8);
+});
+
+test("keeps the reading position and cursor when entering edit mode", () => {
+  const { getByText } = renderEditableSpec(THREE_LINES);
+  fireEvent.click(getByText("Readonly editor ready"));
+  fireEvent.click(getByText("common.edit"));
+  fireEvent.click(getByText("Editor ready"));
+
+  expect(mocks.setSelection).toHaveBeenCalledWith({
+    selectionStartLineNumber: 3,
+    selectionStartColumn: 2,
+    positionLineNumber: 3,
+    positionColumn: 5,
+  });
+  expect(mocks.setScrollTop).toHaveBeenCalledWith(40);
+  expect(mocks.revealLineInCenter).not.toHaveBeenCalled();
+  expect(mocks.focus).toHaveBeenCalled();
+  expect(mocks.scrollIntoView).not.toHaveBeenCalled();
+});
+
+test("an Activity anchor wins over the reading position captured by Edit", () => {
+  const { getByText, rerender } = renderEditableSpec(THREE_LINES);
+  fireEvent.click(getByText("Readonly editor ready"));
+  fireEvent.click(getByText("common.edit"));
+  mocks.threadFocus = {
+    commentName: "comments/1",
+    specId: "spec",
+    lineNumber: 1,
+    nonce: 3,
+  };
+  rerender();
+  fireEvent.click(getByText("Editor ready"));
+
+  expect(mocks.setSelection).toHaveBeenCalledTimes(1);
+  expect(mocks.revealLineInCenter).toHaveBeenCalledWith(1);
+  expect(mocks.setScrollTop).not.toHaveBeenCalled();
+  expect(mocks.clearThreadFocus).toHaveBeenCalledWith(3);
 });

@@ -8,7 +8,11 @@ import {
   sheetServiceClientConnect,
 } from "@/api";
 import {
+  captureEditorViewAnchor,
+  type EditorViewAnchor,
+  focusEditorAtAnchor,
   type IStandaloneCodeEditor,
+  lineViewAnchor,
   MonacoEditor,
   type MonacoModule,
   ReadonlyMonaco,
@@ -136,6 +140,7 @@ export function PlanDetailStatementSection({
     monaco: MonacoModule;
   }>();
   const [editingEditor, setEditingEditor] = useState<IStandaloneCodeEditor>();
+  const editAnchorRef = useRef<EditorViewAnchor | undefined>(undefined);
   const threadFocus = usePlanDetailStore((state) => state.threadFocus);
   const clearThreadFocus = usePlanDetailStore(
     (state) => state.clearThreadFocus
@@ -144,26 +149,28 @@ export function PlanDetailStatementSection({
     if (!showsReadonlyEditor) setReadonlyEditor(undefined);
   }, [showsReadonlyEditor]);
   useEffect(() => {
-    if (!isEditing) setEditingEditor(undefined);
+    if (isEditing) return;
+    setEditingEditor(undefined);
+    editAnchorRef.current = undefined;
   }, [isEditing]);
+  // The edit editor lands on a pending Activity anchor, which may arrive
+  // before or after it mounts, or else on the place captured by Edit.
   useEffect(() => {
-    if (
-      !isEditing ||
-      !editingEditor ||
-      !threadFocus ||
-      threadFocus.specId !== spec.id ||
-      !threadFocus.lineNumber
-    )
-      return;
-    const line = Math.min(
-      threadFocus.lineNumber,
-      editingEditor.getModel()?.getLineCount() ?? threadFocus.lineNumber
-    );
-    editingEditor.setPosition({ lineNumber: line, column: 1 });
-    editingEditor.revealLineInCenter(line);
-    editingEditor.focus();
-    editingEditor.getDomNode()?.scrollIntoView({ block: "nearest" });
-    clearThreadFocus(threadFocus.nonce);
+    if (!isEditing || !editingEditor) return;
+    const activityLine =
+      threadFocus?.specId === spec.id ? threadFocus.lineNumber : undefined;
+    const anchor = activityLine
+      ? lineViewAnchor(activityLine)
+      : editAnchorRef.current;
+    editAnchorRef.current = undefined;
+    if (!anchor) return;
+    focusEditorAtAnchor(editingEditor, anchor);
+    if (activityLine && threadFocus) {
+      // Activity lives in another phase section, so the editor may be off
+      // screen.
+      editingEditor.getDomNode()?.scrollIntoView({ block: "nearest" });
+      clearThreadFocus(threadFocus.nonce);
+    }
   }, [clearThreadFocus, editingEditor, isEditing, spec.id, threadFocus]);
 
   const editingScope = useMemo(() => `statement:${spec.id}`, [spec.id]);
@@ -384,6 +391,12 @@ export function PlanDetailStatementSection({
     setIsEditing(true);
   };
 
+  const handleBeginEdit = () => {
+    editAnchorRef.current =
+      readonlyEditor && captureEditorViewAnchor(readonlyEditor.editor);
+    setIsEditing(true);
+  };
+
   const handleSchemaEditorInsert = (nextStatement: string) => {
     if (page.isCreating) {
       updateLocalStatement(nextStatement);
@@ -589,11 +602,7 @@ export function PlanDetailStatementSection({
               </>
             )}
             {!isEditing && canEdit && (
-              <Button
-                onClick={() => setIsEditing(true)}
-                size="xs"
-                appearance="outline"
-              >
+              <Button onClick={handleBeginEdit} size="xs" appearance="outline">
                 <Pencil className="h-3.5 w-3.5" />
                 {t("common.edit")}
               </Button>
