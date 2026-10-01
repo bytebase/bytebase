@@ -52,3 +52,31 @@ export const isValidEnvironmentName = (name: unknown): name is string => {
 export const formatEnvironmentName = (envId: string): string => {
   return `${environmentNamePrefix}${envId}`;
 };
+
+// The environment a resource name refers to. A valid name the list no longer
+// has (renamed or deleted since the reference was written) resolves to a
+// placeholder titled by its id, so the reference still reads; the null and
+// malformed names resolve to their sentinels.
+export const resolveEnvironment = (
+  name: string,
+  environmentList: Environment[]
+): Environment => {
+  if (!name || name === NULL_ENVIRONMENT_NAME) {
+    return nullEnvironment();
+  }
+  const environment = environmentList.find((env) => env.name === name);
+  if (environment) {
+    return environment;
+  }
+  if (!isValidEnvironmentName(name)) {
+    return unknownEnvironment();
+  }
+  const id = name.replace(/^environments\//, "");
+  return { ...unknownEnvironment(), id, name, title: id };
+};
+
+// The protected tag only means something on plans with environment tiers.
+export const isProtectedEnvironment = (
+  environment: Environment,
+  hasEnvTierFeature: boolean
+): boolean => hasEnvTierFeature && environment.tags?.protected === "protected";

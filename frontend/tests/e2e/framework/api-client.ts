@@ -645,6 +645,26 @@ export class BytebaseApiClient {
     });
   }
 
+  // A role-grant request on `user`'s behalf; the caller is its creator.
+  async createRoleGrantIssue(
+    project: string,
+    roleGrant: { role: string; user: string; expression?: string },
+    title: string,
+  ): Promise<{ name: string }> {
+    return this.request("POST", `/v1/${project}/issues`, {
+      title,
+      type: "ROLE_GRANT",
+      roleGrant: {
+        role: roleGrant.role,
+        user: roleGrant.user,
+        condition:
+          roleGrant.expression === undefined
+            ? undefined
+            : { expression: roleGrant.expression },
+      },
+    });
+  }
+
   // Draft review Issues are the UI-authored Plan lifecycle boundary. They stay
   // hidden from active review until the Plan Detail "Ready for Review" action
   // flips only the draft field.

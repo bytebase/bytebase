@@ -9,6 +9,7 @@ import type { Environment } from "@/types";
 import {
   DEFAULT_ENVIRONMENT_COLOR,
   formatEnvironmentName,
+  isProtectedEnvironment,
   NULL_ENVIRONMENT_NAME,
   UNKNOWN_ENVIRONMENT_NAME,
 } from "@/types";
@@ -49,8 +50,7 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
   const isUnset =
     environment.name === UNKNOWN_ENVIRONMENT_NAME ||
     environment.name === NULL_ENVIRONMENT_NAME;
-  const isProtected =
-    hasEnvTierFeature && environment.tags?.protected === "protected";
+  const isProtected = isProtectedEnvironment(environment, hasEnvTierFeature);
   const color = environment.color || DEFAULT_ENVIRONMENT_COLOR;
   const baseRgb = !isUnset ? hexToRgb(color) : [];
   const displayRgb =
