@@ -1,9 +1,11 @@
 package mcp
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -11,6 +13,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -593,4 +596,47 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 	tokenStr, err := token.SignedString([]byte(secret))
 	require.NoError(t, err)
 	return tokenStr
+}
+
+func listToolsOverRoute(t *testing.T) (*mcp.ClientSession, []*mcp.Tool) {
+	t.Helper()
+	endpoint, _, _ := newProbeServer(t)
+	token := mintMCPToken(t, "test@example.com", "client-A", "ws-test", "mcp:read-only", time.Hour)
+	session := connectLegacy(t, endpoint, token, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	listed, err := session.ListTools(ctx, nil)
+	require.NoError(t, err)
+	return session, listed.Tools
+}
+
+func TestInitializeServesInstructions(t *testing.T) {
+	session, tools := listToolsOverRoute(t)
+
+	require.Equal(t, serverInstructions, session.InitializeResult().Instructions)
+	for _, name := range []string{"query_database", "get_schema", "propose_database_change", "search_api", "call_api"} {
+		require.Contains(t, serverInstructions, name)
+	}
+	for _, tool := range tools {
+		require.NotEqual(t, "get_skill", tool.Name)
+	}
+}
+
+func TestToolGuidanceNamesOnlyRegisteredTools(t *testing.T) {
+	_, tools := listToolsOverRoute(t)
+
+	registered := make(map[string]bool, len(tools))
+	guidance := map[string]string{"server instructions": serverInstructions}
+	for _, tool := range tools {
+		registered[tool.Name] = true
+		guidance[tool.Name+" description"] = tool.Description
+	}
+	// Quoted strings are example values, such as a database named "employee_db".
+	quoted := regexp.MustCompile(`"[^"]*"`)
+	snakeCase := regexp.MustCompile(`\b[a-z]+(?:_[a-z]+)+\b`)
+	for source, text := range guidance {
+		for _, name := range snakeCase.FindAllString(quoted.ReplaceAllString(text, ""), -1) {
+			require.True(t, registered[name], "%s names %q, which is not a registered tool", source, name)
+		}
+	}
 }
