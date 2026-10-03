@@ -867,7 +867,7 @@ is worse than a bare refusal, because it is the thing the next reader trusts
 
 One enum covers both refused classes, and every value belongs to exactly one
 of them: values 1-8 name a mechanism that breaks the MCP boundary, which is
-what FORBIDDEN means, and values 9-13 name a scope decision this phase took,
+what FORBIDDEN means, and values 9-14 name a scope decision this phase took,
 which is what EXCLUDED means. The distinction is real and lives on the class
 annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope
 decision is what a future admin-capable ceiling would argue with, one
@@ -895,6 +895,7 @@ already keeps for the wording.
 | RETURNS_A_STORED_SECRET | 13 | Returns a stored secret in its response body today. These are ordinary reads that belong in a serving class on their merits, and each is here because of a leak that a redaction on the read path would close — the product already redacts the same values elsewhere. This reason is therefore the one that is meant to go away: fixing the leak moves the method to READ, as a reviewed widening, rather than leaving a quiet exposure the moment the ceiling starts serving.
 
 No method carries it. The three leaks it was written for — project webhook URLs, the MySQL-family grant text, and the MFA enrollment secrets — are redacted on the read path, and their eight methods are READ. The value stays because the category is real and the next read found leaking should carry it rather than an invented one, and because retiring an enum value costs a reserved number for nothing. |
+| REDRAWS_GOVERNANCE_BOUNDARY | 14 | Changes which rules govern a database, or which databases a change to a database group reaches. Approval, SQL review, masking and access rules key on a database&#39;s project and environment. A database group selects databases by an expression that can read their environment and labels, and a change to a group runs on whichever databases the group selects when its rollout tasks are created. An agent that could redraw these would choose the checks on its own changes. |
 
 
 
@@ -920,7 +921,7 @@ product promises as well as what it serves.
 | READ | 1 | Served to a read-only MCP session and above. |
 | WRITE | 2 | Served to a read-write MCP session only. This is a serving mode, not a verb: a method that only reads still belongs here when a read-only session has no business calling it — taking a copy of data out of the product, or generating migration DDL from a schema the caller supplied. |
 | FORBIDDEN | 3 | Never reachable by an MCP session, whatever the caller&#39;s own permissions are. These methods escape the MCP boundary rather than merely exercising a permission: a human with the permission uses the console; an agent acting for them does not get to. |
-| EXCLUDED | 4 | Served by no MCP capability ceiling this phase ships, and not a durable never. These are workspace administration, plus the handful of methods that do something materially worse than the plain read permission they share suggests.
+| EXCLUDED | 4 | Served by no MCP capability ceiling this phase ships, and not a durable never. These are workspace administration, the writes that change which rules govern a database, and the handful of methods that do something materially worse than the plain read permission they share suggests.
 
 The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is ever built, could legitimately serve an EXCLUDED method — that is a product decision nobody has made. It could never serve a FORBIDDEN one, because FORBIDDEN names a mechanism that breaks the MCP boundary itself. Keeping them apart is what stops a future widening from having to re-litigate the credential-minting set alongside the ordinary admin API. |
 

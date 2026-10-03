@@ -74,9 +74,9 @@ the product.
 | write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
 | write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
 | write | Export query results | Download results as a file. Data leaves Bytebase | 1 WRITE method: `SQLService/Export` |
-| write | Manage database housekeeping | Sync instances and databases · Database settings and labels · Move databases between projects · Database groups · Saved queries | 14 WRITE methods: sync, `UpdateDatabase`, database groups, saved-query writes |
-| — | *Read-write stops here* | | 97 methods |
-| floor | Never, in any mode: approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history. | | 121 methods: 35 FORBIDDEN, 86 EXCLUDED |
+| write | Manage database housekeeping | Sync instances and databases · Saved queries | 9 WRITE methods: sync, saved-query writes |
+| — | *Read-write stops here* | | 92 methods |
+| floor | Never, in any mode: approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history. | | 126 methods: 35 FORBIDDEN, 91 EXCLUDED |
 
 Every row is displayed under every mode — served, or muted with a `—` — and against every engine a
 workspace happens to hold, so **every line on this card must be true on both axes: mode and engine.**
@@ -173,10 +173,13 @@ it as its own switch.
 Every sub-item names only what the served methods can do. Sheets are created, never edited: there
 is no update RPC. Releases and revisions are created and deleted: `ReleaseService/UpdateRelease`
 is classified WRITE but answers Unimplemented, and Revision has no update RPC, so "edit" would
-advertise an operation that does not exist. Moving a database between projects is named under
-housekeeping because `DatabaseService/UpdateDatabase` accepts the `project` mask path and
-`BatchUpdateDatabases` exists for it; it changes a governance boundary and should not hide behind
-"settings and labels". Row 2 states the depth of the read-only check because only PostgreSQL,
+advertise an operation that does not exist. Housekeeping once also named database settings and
+labels, moving a database between projects, and database groups. Those five methods
+(`UpdateDatabase`, `BatchUpdateDatabases` and the three database-group writes) are EXCLUDED now,
+for `REDRAWS_GOVERNANCE_BOUNDARY`: a database's project and environment decide which approval, SQL
+review, masking and access rules apply to a change, and its labels and the group expressions decide
+which databases a change to a group runs on, so an agent that could edit them would choose the
+checks on its own changes. Row 2 states the depth of the read-only check because only PostgreSQL,
 CockroachDB and Redshift open the database session read-only; elsewhere the clamp is statement
 classification alone, and a statement that classifies as a read can still call a function that
 writes. The proto calls the ceiling "classifier-enforced, not proven", and the row says so in the
@@ -241,7 +244,7 @@ its tier tag, nothing else. "Show details" reveals the sub-item line for every r
 there is one second-level control rather than eight; per-row expanders were rejected as fiddly. No
 method names, no permission names, no counts, no link to a method list. The floor is kept as one
 short line because it is what a security-minded admin reads first, and it is what keeps the list
-honest about the 121 methods no mode reaches. There is no constants line under the list; the facts
+honest about the 126 methods no mode reaches. There is no constants line under the list; the facts
 it would carry (capped by the user's own permissions, refusals audited) move into the section
 description.
 

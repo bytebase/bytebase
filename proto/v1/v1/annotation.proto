@@ -96,9 +96,9 @@ enum MCPMethodClass {
   // console; an agent acting for them does not get to.
   FORBIDDEN = 3;
   // Served by no MCP capability ceiling this phase ships, and not a durable
-  // never. These are workspace administration, plus the handful of methods
-  // that do something materially worse than the plain read permission they
-  // share suggests.
+  // never. These are workspace administration, the writes that change which
+  // rules govern a database, and the handful of methods that do something
+  // materially worse than the plain read permission they share suggests.
   //
   // The line against FORBIDDEN is reversibility. An admin-capable ceiling, if
   // one is ever built, could legitimately serve an EXCLUDED method — that is a
@@ -117,7 +117,7 @@ enum MCPMethodClass {
 //
 // One enum covers both refused classes, and every value belongs to exactly one
 // of them: values 1-8 name a mechanism that breaks the MCP boundary, which is
-// what FORBIDDEN means, and values 9-13 name a scope decision this phase took,
+// what FORBIDDEN means, and values 9-14 name a scope decision this phase took,
 // which is what EXCLUDED means. The distinction is real and lives on the class
 // annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope
 // decision is what a future admin-capable ceiling would argue with, one
@@ -165,7 +165,7 @@ enum MCPDenialReason {
   // through the gate.
   DRIVES_THE_APPROVAL_DECISION = 8;
 
-  // 9-13: EXCLUDED. The method is out because this phase ships two modes and
+  // 9-14: EXCLUDED. The method is out because this phase ships two modes and
   // neither is the right home for it, which is a decision rather than a
   // mechanism.
 
@@ -203,4 +203,12 @@ enum MCPDenialReason {
   // found leaking should carry it rather than an invented one, and because
   // retiring an enum value costs a reserved number for nothing.
   RETURNS_A_STORED_SECRET = 13;
+  // Changes which rules govern a database, or which databases a change to a
+  // database group reaches. Approval, SQL review, masking and access rules
+  // key on a database's project and environment. A database group selects
+  // databases by an expression that can read their environment and labels,
+  // and a change to a group runs on whichever databases the group selects
+  // when its rollout tasks are created. An agent that could redraw these
+  // would choose the checks on its own changes.
+  REDRAWS_GOVERNANCE_BOUNDARY = 14;
 }
