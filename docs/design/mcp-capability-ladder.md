@@ -171,19 +171,19 @@ a real difference between the modes that no method name shows, and a future cust
 it as its own switch.
 
 Every sub-item names only what the served methods can do. Sheets are created, never edited: there
-is no update RPC. Releases and revisions are created and deleted: `ReleaseService/UpdateRelease`
-is classified WRITE but answers Unimplemented, and Revision has no update RPC, so "edit" would
+is no update RPC. Releases and revisions are created and deleted: `ReleaseService/UpdateRelease` is
+classified WRITE but answers Unimplemented, and Revision has no update RPC, so "edit" would
 advertise an operation that does not exist. Housekeeping once also named database settings and
 labels, moving a database between projects, and database groups. Those five methods
 (`UpdateDatabase`, `BatchUpdateDatabases` and the three database-group writes) are EXCLUDED now,
 for `REDRAWS_GOVERNANCE_BOUNDARY`: a database's project and environment decide which approval, SQL
-review, masking and access rules apply to a change, and its labels and the group expressions decide
-which databases a change to a group runs on, so an agent that could edit them would choose the
-checks on its own changes. Row 2 states the depth of the read-only check because only PostgreSQL,
-CockroachDB and Redshift open the database session read-only; elsewhere the clamp is statement
-classification alone, and a statement that classifies as a read can still call a function that
-writes. The proto calls the ceiling "classifier-enforced, not proven", and the row says so in the
-admin's words.
+review and access rules apply to a change, and which masking rules decide what a query returns; its
+environment, its labels and the group expressions decide which databases a change that targets a
+group runs on. An agent that could edit them would choose the checks on its own changes. Row 2
+states the depth of the read-only check because only PostgreSQL, CockroachDB and Redshift open the
+database session read-only; elsewhere the clamp is statement classification alone, and a statement
+that classifies as a read can still call a function that writes. The proto calls the ceiling
+"classifier-enforced, not proven", and the row says so in the admin's words.
 
 Approval is stated as the project's policy, never as a promise. The backend requires an approved
 issue before a rollout only when the project has `require_issue_approval` on and an issue is linked
@@ -399,7 +399,8 @@ under
 - Row titles and sub-items: the table above, verbatim.
 - Dividers: "Read-only stops here", "Read-write stops here".
 - Floor: "Never, in any mode: approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."
-  The verbs cover every denial reason, and claim only what is refused **whatever the caller's
+  The verbs cover every denial reason except two, `SENDS_DATA_TO_A_THIRD_PARTY` for the reason below
+  and `REDRAWS_GOVERNANCE_BOUNDARY`, and claim only what is refused **whatever the caller's
   permissions** and by **whatever effect** a served method has. That second rule cost three drafts. MCP's ceiling removes methods by class; it
   never adds per-row privacy, so an ownership claim — "never read other people's SQL", then
   "never browse everyone's saved SQL" — is false at whatever permission level makes it true in the

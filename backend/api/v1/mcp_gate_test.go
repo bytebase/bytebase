@@ -862,9 +862,7 @@ func classContext(class v1pb.MCPMethodClass) *common.AuthContext {
 
 // TestMCPGateRefusesTheDeniedClasses walks every method the annotations refuse
 // outright and proves the gate refuses it under the most permissive ceiling
-// there is. FORBIDDEN was already enforced; EXCLUDED is what this PR turns from
-// a recorded classification into a denial, and it is the larger population by
-// far.
+// there is.
 func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		if row.class != v1pb.MCPMethodClass_FORBIDDEN && row.class != v1pb.MCPMethodClass_EXCLUDED {
@@ -888,46 +886,25 @@ func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
 	}
 }
 
-// TestMCPGateRefusesGovernanceBoundaryWrites pins the writes refused for
-// REDRAWS_GOVERNANCE_BOUNDARY, under the most permissive ceiling. The class is
-// read off the annotations, so these were served to a Read-write session while
-// they were WRITE.
-func TestMCPGateRefusesGovernanceBoundaryWrites(t *testing.T) {
-	want := []string{
+// TestExcludedForRedrawingAGovernanceBoundary pins which methods carry
+// REDRAWS_GOVERNANCE_BOUNDARY: membership is a decision, recorded here as well as
+// on the annotation. TestMCPGateRefusesTheDeniedClasses proves the gate refuses
+// each of them.
+func TestExcludedForRedrawingAGovernanceBoundary(t *testing.T) {
+	t.Parallel()
+	var got []string
+	for _, row := range mcpClassificationsFromDescriptors(t) {
+		if row.reason == v1pb.MCPDenialReason_REDRAWS_GOVERNANCE_BOUNDARY {
+			got = append(got, row.procedure)
+		}
+	}
+	require.ElementsMatch(t, []string{
 		v1connect.DatabaseServiceUpdateDatabaseProcedure,
 		v1connect.DatabaseServiceBatchUpdateDatabasesProcedure,
 		v1connect.DatabaseGroupServiceCreateDatabaseGroupProcedure,
 		v1connect.DatabaseGroupServiceUpdateDatabaseGroupProcedure,
 		v1connect.DatabaseGroupServiceDeleteDatabaseGroupProcedure,
-	}
-	rows := map[string]mcpClassification{}
-	var carrying []string
-	for _, row := range mcpClassificationsFromDescriptors(t) {
-		rows[row.procedure] = row
-		if row.reason == v1pb.MCPDenialReason_REDRAWS_GOVERNANCE_BOUNDARY {
-			carrying = append(carrying, row.procedure)
-		}
-	}
-
-	wantReason := mcpDenialReasons[v1pb.MCPDenialReason_REDRAWS_GOVERNANCE_BOUNDARY].sentence
-	for _, procedure := range want {
-		t.Run(procedure, func(t *testing.T) {
-			row, ok := rows[procedure]
-			require.True(t, ok, "%s is not a v1 RPC", procedure)
-			got := invokeMCPGate(t, readWriteCeiling(), &common.AuthContext{
-				MCPMethodClass:  row.class,
-				MCPDenialReason: row.reason,
-			}, procedure, connect.NewRequest(&v1pb.GetUserRequest{}))
-
-			require.Error(t, got.err, "%s is annotated %v and reached its handler", procedure, row.class)
-			require.False(t, got.dispatched)
-			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
-			require.Contains(t, got.err.Error(), wantReason)
-			require.True(t, got.auditMarked)
-		})
-	}
-	require.ElementsMatch(t, want, carrying,
-		"the methods refused for redrawing a governance boundary must be exactly these; membership is an explicit decision")
+	}, got, "the methods refused for redrawing a governance boundary must be exactly these")
 }
 
 // TestMCPGateServesTheAdmittedClasses is the other half: under a read-write

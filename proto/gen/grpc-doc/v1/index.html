@@ -3502,13 +3502,14 @@ retiring an enum value costs a reserved number for nothing.</p></td>
               <tr>
                 <td>REDRAWS_GOVERNANCE_BOUNDARY</td>
                 <td>14</td>
-                <td><p>Changes which rules govern a database, or which databases a change to a
-database group reaches. Approval, SQL review, masking and access rules
-key on a database&#39;s project and environment. A database group selects
-databases by an expression that can read their environment and labels,
-and a change to a group runs on whichever databases the group selects
-when its rollout tasks are created. An agent that could redraw these
-would choose the checks on its own changes.</p></td>
+                <td><p>Changes which rules govern a database, or which databases a change that
+targets a database group runs on. Approval, SQL review and access rules
+key on a database&#39;s project and environment, and so do the masking rules
+that decide what a query returns. A database group selects databases by
+an expression that can read their environment and labels, and a change
+that targets a group runs on whichever databases the group selects when
+its rollout tasks are created. An agent that could redraw these would
+choose the checks on its own changes.</p></td>
               </tr>
             
           </tbody>

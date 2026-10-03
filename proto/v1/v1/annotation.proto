@@ -203,12 +203,13 @@ enum MCPDenialReason {
   // found leaking should carry it rather than an invented one, and because
   // retiring an enum value costs a reserved number for nothing.
   RETURNS_A_STORED_SECRET = 13;
-  // Changes which rules govern a database, or which databases a change to a
-  // database group reaches. Approval, SQL review, masking and access rules
-  // key on a database's project and environment. A database group selects
-  // databases by an expression that can read their environment and labels,
-  // and a change to a group runs on whichever databases the group selects
-  // when its rollout tasks are created. An agent that could redraw these
-  // would choose the checks on its own changes.
+  // Changes which rules govern a database, or which databases a change that
+  // targets a database group runs on. Approval, SQL review and access rules
+  // key on a database's project and environment, and so do the masking rules
+  // that decide what a query returns. A database group selects databases by
+  // an expression that can read their environment and labels, and a change
+  // that targets a group runs on whichever databases the group selects when
+  // its rollout tasks are created. An agent that could redraw these would
+  // choose the checks on its own changes.
   REDRAWS_GOVERNANCE_BOUNDARY = 14;
 }
