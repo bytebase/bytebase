@@ -95,9 +95,9 @@ func TestResolve_ProjectInstanceDatabaseAndFilter(t *testing.T) {
 }
 
 // TestResolve_PolicyDenialGetsNoRoleAdvice covers the resolve door. It answers
-// 403 when the stored ceiling is unserved, which is exactly the case where
-// telling the agent to ask for bb.databases.list would send the person it acts
-// for after a grant that cannot fix a broken setting.
+// 403 when the stored ceiling is unserved, which is exactly the case where role
+// advice would send the person the agent acts for after a grant that cannot
+// fix a broken setting.
 func TestResolve_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "DatabaseService/ListDatabases") {
@@ -227,8 +227,62 @@ func TestResolve_ProjectRoleListsThroughReadableProjects(t *testing.T) {
 	var te *toolError
 	require.ErrorAs(t, err, &te)
 	require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
-	require.NotContains(t, api.requested(), "ListDatabases projects/finance",
-		"only the projects SearchProjects returned may be listed")
+}
+
+func TestResolve_ProjectRoleSkipsAProjectRefusedAfterTheSearch(t *testing.T) {
+	// The search returned finance, then the caller lost its role there.
+	api := &projectRoleAPI{
+		databases:   hrAndFinanceDatabases(),
+		readable:    []string{"projects/hr"},
+		searchPages: [][]string{{"projects/finance", "projects/hr"}},
+	}
+	s := newTestServerWithMock(t, api)
+
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", "", "")
+	require.NoError(t, err)
+	require.Equal(t, "projects/hr", resolved.project)
+	require.Contains(t, api.requested(), "ListDatabases projects/finance")
+
+	_, err = s.resolveDatabase(testContext(), "payroll_db", "", "")
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
+}
+
+func TestResolve_ProjectRoleCombinesProjectsAndKeepsTheFilter(t *testing.T) {
+	api := &projectRoleAPI{
+		databases: []map[string]any{
+			makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr", "POSTGRES", "ds-1"),
+			makeDatabase("instances/staging-pg/databases/employee_db", "instances/staging-pg", "projects/ops", "POSTGRES", "ds-2"),
+			makeDatabase("projects/ops/instances/ops-pg/databases/employee_db", "projects/ops/instances/ops-pg", "projects/ops", "POSTGRES", "ds-3"),
+			makeDatabase("instances/prod-pg/databases/payroll_db", "instances/prod-pg", "projects/finance", "POSTGRES", "ds-4"),
+		},
+		readable:    []string{"projects/hr", "projects/ops"},
+		searchPages: [][]string{{"projects/hr"}, {"projects/ops"}},
+	}
+	s := newTestServerWithMock(t, api)
+
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", "", "")
+	require.NoError(t, err)
+	require.True(t, resolved.ambiguous)
+	require.ElementsMatch(t, []string{"hr", "ops", "ops"}, []string{
+		resolved.candidates[0].Project, resolved.candidates[1].Project, resolved.candidates[2].Project,
+	})
+
+	for instance, want := range map[string]string{
+		"staging-pg":                    "instances/staging-pg/databases/employee_db",
+		"projects/ops/instances/ops-pg": "projects/ops/instances/ops-pg/databases/employee_db",
+	} {
+		resolved, err := s.resolveDatabase(testContext(), "employee_db", instance, "")
+		require.NoError(t, err)
+		require.False(t, resolved.ambiguous, instance)
+		require.Equal(t, want, resolved.resourceName)
+	}
+
+	_, err = s.resolveDatabase(testContext(), "payroll_db", "", "")
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
 }
 
 func TestResolve_ProjectRoleWithNamedProject(t *testing.T) {
@@ -241,17 +295,15 @@ func TestResolve_ProjectRoleWithNamedProject(t *testing.T) {
 	}{
 		{name: "readable", project: "hr", database: "employee_db"},
 		{name: "refused", project: "finance", database: "payroll_db", wantCode: "PERMISSION_DENIED", wantText: "projects/finance"},
-		{name: "missing", project: "gone", database: "employee_db", wantCode: "DATABASE_NOT_FOUND"},
+		{name: "missing", project: "gone", database: "employee_db", wantCode: "DATABASE_NOT_FOUND", wantText: `"employee_db"`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			api := &projectRoleAPI{databases: hrAndFinanceDatabases(), readable: []string{"projects/hr"}}
 			s := newTestServerWithMock(t, api)
 
 			resolved, err := s.resolveDatabase(testContext(), tc.database, "", tc.project)
-			require.Equal(t, []string{
-				"ListDatabases workspaces/wk-test",
-				"ListDatabases projects/" + tc.project,
-			}, api.requested(), "a named project is listed alone, without a project search")
+			require.Equal(t, []string{"ListDatabases projects/" + tc.project}, api.requested(),
+				"a named project is listed directly")
 			if tc.wantCode == "" {
 				require.NoError(t, err)
 				require.Equal(t, "projects/hr", resolved.project)

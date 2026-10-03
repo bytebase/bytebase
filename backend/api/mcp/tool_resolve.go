@@ -101,10 +101,10 @@ var errListRefused = errors.New("listing refused by the caller's permissions")
 
 // listDatabases lists the databases matching filter that the caller can list.
 //
-// The workspace parent needs bb.databases.list there, which project roles
-// don't grant. A caller refused there is listed through the projects it can
-// read instead: the one it named, or each one SearchProjects returns. A
-// project parent checks bb.projects.get in that project.
+// A named project is listed under that project, which checks bb.projects.get
+// there. Otherwise the workspace parent is tried first. It needs
+// bb.databases.list at the workspace, which project roles don't grant, so a
+// caller refused there is listed through each project SearchProjects returns.
 func (s *Server) listDatabases(ctx context.Context, filter, project string) ([]databaseEntry, error) {
 	workspaceID := getWorkspaceID(ctx)
 	if workspaceID == "" {
@@ -115,19 +115,26 @@ func (s *Server) listDatabases(ctx context.Context, filter, project string) ([]d
 		}
 	}
 
-	databases, err := s.listDatabasesUnder(ctx, fmt.Sprintf("workspaces/%s", workspaceID), filter)
-	if !errors.Is(err, errListRefused) {
+	if project != "" {
+		parent := formatProjectFilter(project)
+		databases, err := s.listDatabasesUnder(ctx, parent, filter)
+		if errors.Is(err, errListRefused) {
+			return nil, &toolError{
+				Code:       "PERMISSION_DENIED",
+				Message:    fmt.Sprintf("you don't have permission to list databases in %s", parent),
+				Suggestion: "ask for a role in that project, or leave out project to search the projects you can read",
+			}
+		}
 		return databases, err
 	}
 
-	var parents []string
-	if project != "" {
-		parents = []string{formatProjectFilter(project)}
-	} else {
-		parents, err = s.searchProjects(ctx)
-		if err != nil {
-			return nil, err
-		}
+	databases, err := s.listDatabasesUnder(ctx, common.FormatWorkspace(workspaceID), filter)
+	if !errors.Is(err, errListRefused) {
+		return databases, err
+	}
+	parents, err := s.searchProjects(ctx)
+	if err != nil {
+		return nil, err
 	}
 	if len(parents) == 0 {
 		return nil, &toolError{
@@ -138,14 +145,8 @@ func (s *Server) listDatabases(ctx context.Context, filter, project string) ([]d
 	}
 	for _, parent := range parents {
 		found, err := s.listDatabasesUnder(ctx, parent, filter)
-		if errors.Is(err, errListRefused) {
-			return nil, &toolError{
-				Code:       "PERMISSION_DENIED",
-				Message:    fmt.Sprintf("you don't have permission to list databases in %s", parent),
-				Suggestion: "ask for a role in that project, or leave out project to search the projects you can read",
-			}
-		}
-		if err != nil {
+		// A project refused after the search holds nothing the caller can list.
+		if err != nil && !errors.Is(err, errListRefused) {
 			return nil, err
 		}
 		databases = append(databases, found...)

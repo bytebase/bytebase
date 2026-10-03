@@ -44,16 +44,45 @@ func TestMCPResolvesDatabasesThroughProjectRoles(t *testing.T) {
 	a.Contains(other.text, "DATABASE_NOT_FOUND",
 		"the answer must not reveal that a database exists in a project the user cannot read: %s", other.text)
 
+	// A named project is listed directly, so the server's own answer for that
+	// project parent comes through: 403 for an existing one, 404 for a missing one.
+	for _, tc := range []struct {
+		project  string
+		database string
+		want     string
+	}{
+		{project: ctl.project.Name, database: f.name, want: "Bytebase"},
+		{project: otherProject.Msg.Name, database: otherDatabase, want: "PERMISSION_DENIED"},
+		{project: "projects/" + generateRandomString("missing"), database: f.name, want: "DATABASE_NOT_FOUND"},
+	} {
+		text, _ := callToolOnSession(ctx, t, editorSession, "query_database", map[string]any{
+			"database":  tc.database,
+			"project":   tc.project,
+			"statement": "SELECT name FROM employee",
+		})
+		a.Contains(text, tc.want, tc.project)
+	}
+
 	developerSession := openProjectRoleSession(ctx, t, ctl, "roles/projectDeveloper")
-	schema, failed := getSchemaOnSession(ctx, t, developerSession, f.name)
+	schema, failed := callToolOnSession(ctx, t, developerSession, "get_schema", map[string]any{"database": f.name})
 	a.False(failed, "a project developer, who holds no bb.sql.select, reads the schema: %s", schema)
 	a.Contains(schema, "employee")
-	otherSchema, failed := getSchemaOnSession(ctx, t, developerSession, otherDatabase)
+	otherSchema, failed := callToolOnSession(ctx, t, developerSession, "get_schema", map[string]any{"database": otherDatabase})
 	a.True(failed)
 	a.Contains(otherSchema, "DATABASE_NOT_FOUND")
 
 	control := queryDatabaseOnSession(ctx, t, f.session, otherDatabase, "SELECT 1")
 	a.False(control.isError, "the workspace admin resolves every database: %s", control.text)
+
+	// Proposing a change writes a sheet, a plan and an issue, which the fixture's
+	// Read-only ceiling refuses.
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+	proposed := proposeChangeOnSession(ctx, t, developerSession, f.name, "CREATE TABLE note (id INT)", "Add note table")
+	a.False(proposed.isError, "a project developer proposes a change to its own database: %s", proposed.text)
+	a.Contains(proposed.text, "Issue: "+ctl.project.Name+"/issues/")
+	proposedOther := proposeChangeOnSession(ctx, t, developerSession, otherDatabase, "CREATE TABLE note (id INT)", "Add note table")
+	a.True(proposedOther.isError)
+	a.Contains(proposedOther.text, "DATABASE_NOT_FOUND")
 }
 
 // openProjectRoleSession opens an MCP session for a new workspace member whose
@@ -67,14 +96,11 @@ func openProjectRoleSession(ctx context.Context, t *testing.T, ctl *controller, 
 	return session
 }
 
-// getSchemaOnSession runs the get_schema tool and returns the text an agent
-// would read and whether the tool reported a failure.
-func getSchemaOnSession(ctx context.Context, t *testing.T, session *mcp.ClientSession, database string) (string, bool) {
+// callToolOnSession runs a tool and returns the text an agent would read and
+// whether the tool reported a failure.
+func callToolOnSession(ctx context.Context, t *testing.T, session *mcp.ClientSession, name string, arguments map[string]any) (string, bool) {
 	t.Helper()
-	result, err := session.CallTool(ctx, &mcp.CallToolParams{
-		Name:      "get_schema",
-		Arguments: map[string]any{"database": database},
-	})
+	result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: arguments})
 	require.NoError(t, err)
 	var sb strings.Builder
 	for _, content := range result.Content {
