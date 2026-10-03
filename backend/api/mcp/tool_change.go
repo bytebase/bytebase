@@ -147,7 +147,7 @@ propose_database_change(database="app", sql="ALTER TABLE users ADD COLUMN status
 propose_database_change(database="app", sql="UPDATE orders SET status='shipped' WHERE id=42", title="Ship order 42", createRollout=true)
 
 **Notes:**
-- v1 supports single database targets only. For batch changes across multiple databases, use get_skill("database-change").
+- Changes one database per call. For a change to several databases in one plan, ask the user to make it in the Bytebase console or through GitOps.
 - Plan checks run automatically; results included in response when available.
 - Requires bb.sheets.create, bb.plans.create, bb.issues.create permissions.
 - If createRollout=true but policy gates aren't satisfied, returns success with rolloutCreated=false and a reason.
