@@ -166,9 +166,9 @@ const (
 	// console; an agent acting for them does not get to.
 	MCPMethodClass_FORBIDDEN MCPMethodClass = 3
 	// Served by no MCP capability ceiling this phase ships, and not a durable
-	// never. These are workspace administration, plus the handful of methods
-	// that do something materially worse than the plain read permission they
-	// share suggests.
+	// never. These are workspace administration, the writes that change which
+	// rules govern a database, and the handful of methods that do something
+	// materially worse than the plain read permission they share suggests.
 	//
 	// The line against FORBIDDEN is reversibility. An admin-capable ceiling, if
 	// one is ever built, could legitimately serve an EXCLUDED method — that is a
@@ -232,7 +232,7 @@ func (MCPMethodClass) EnumDescriptor() ([]byte, []int) {
 //
 // One enum covers both refused classes, and every value belongs to exactly one
 // of them: values 1-8 name a mechanism that breaks the MCP boundary, which is
-// what FORBIDDEN means, and values 9-13 name a scope decision this phase took,
+// what FORBIDDEN means, and values 9-14 name a scope decision this phase took,
 // which is what EXCLUDED means. The distinction is real and lives on the class
 // annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope
 // decision is what a future admin-capable ceiling would argue with, one
@@ -311,6 +311,15 @@ const (
 	// found leaking should carry it rather than an invented one, and because
 	// retiring an enum value costs a reserved number for nothing.
 	MCPDenialReason_RETURNS_A_STORED_SECRET MCPDenialReason = 13
+	// Changes which rules govern a database, or which databases a change that
+	// targets a database group runs on. Approval, SQL review and access rules
+	// key on a database's project and environment, and so do the masking rules
+	// that decide what a query returns. A database group selects databases by
+	// an expression that can read their environment and labels, and a change
+	// that targets a group runs on whichever databases the group selects when
+	// its rollout tasks are created. An agent that could redraw these would
+	// choose the checks on its own changes.
+	MCPDenialReason_REDRAWS_GOVERNANCE_BOUNDARY MCPDenialReason = 14
 )
 
 // Enum value maps for MCPDenialReason.
@@ -330,6 +339,7 @@ var (
 		11: "OPENS_AN_ADMIN_CONNECTION",
 		12: "SENDS_DATA_TO_A_THIRD_PARTY",
 		13: "RETURNS_A_STORED_SECRET",
+		14: "REDRAWS_GOVERNANCE_BOUNDARY",
 	}
 	MCPDenialReason_value = map[string]int32{
 		"MCP_DENIAL_REASON_UNSPECIFIED": 0,
@@ -346,6 +356,7 @@ var (
 		"OPENS_AN_ADMIN_CONNECTION":     11,
 		"SENDS_DATA_TO_A_THIRD_PARTY":   12,
 		"RETURNS_A_STORED_SECRET":       13,
+		"REDRAWS_GOVERNANCE_BOUNDARY":   14,
 	}
 )
 
@@ -495,7 +506,7 @@ const file_v1_annotation_proto_rawDesc = "" +
 	"\x04READ\x10\x01\x12\t\n" +
 	"\x05WRITE\x10\x02\x12\r\n" +
 	"\tFORBIDDEN\x10\x03\x12\f\n" +
-	"\bEXCLUDED\x10\x04*\x99\x03\n" +
+	"\bEXCLUDED\x10\x04*\xba\x03\n" +
 	"\x0fMCPDenialReason\x12!\n" +
 	"\x1dMCP_DENIAL_REASON_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10MINTS_CREDENTIAL\x10\x01\x12\x15\n" +
@@ -511,7 +522,8 @@ const file_v1_annotation_proto_rawDesc = "" +
 	"\x12\x1d\n" +
 	"\x19OPENS_AN_ADMIN_CONNECTION\x10\v\x12\x1f\n" +
 	"\x1bSENDS_DATA_TO_A_THIRD_PARTY\x10\f\x12\x1b\n" +
-	"\x17RETURNS_A_STORED_SECRET\x10\r:Z\n" +
+	"\x17RETURNS_A_STORED_SECRET\x10\r\x12\x1f\n" +
+	"\x1bREDRAWS_GOVERNANCE_BOUNDARY\x10\x0e:Z\n" +
 	"\x18allow_without_credential\x12\x1e.google.protobuf.MethodOptions\x18\xa0\x8d\x06 \x01(\bR\x16allowWithoutCredential:@\n" +
 	"\n" +
 	"permission\x12\x1e.google.protobuf.MethodOptions\x18\xa1\x8d\x06 \x01(\tR\n" +

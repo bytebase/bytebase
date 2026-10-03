@@ -47,7 +47,8 @@ service DatabaseGroupService {
     option (bytebase.v1.permission) = "bb.databaseGroups.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = WRITE;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = REDRAWS_GOVERNANCE_BOUNDARY;
   }
 
   // Updates a database group.
@@ -62,7 +63,8 @@ service DatabaseGroupService {
     option (bytebase.v1.permission) = "bb.databaseGroups.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = WRITE;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = REDRAWS_GOVERNANCE_BOUNDARY;
   }
 
   // Deletes a database group.
@@ -73,7 +75,8 @@ service DatabaseGroupService {
     option (bytebase.v1.permission) = "bb.databaseGroups.delete";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = WRITE;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = REDRAWS_GOVERNANCE_BOUNDARY;
   }
 }
 

@@ -522,10 +522,10 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 				v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE, v1pb.MCPMethodClass_EXCLUDED,
 			},
 		}
-		// The real rows are passed deliberately: 85 of them carry EXCLUDED, and
-		// the diagnosis worth reading is the one about the table, not eighty-five
-		// about methods whose annotation is fine. Two modes, so the mode list in
-		// the message is only stable because servedBy is sorted.
+		// The real rows are passed deliberately: dozens of them carry EXCLUDED,
+		// and the diagnosis worth reading is the one about the table, not one per
+		// method whose annotation is fine. Two modes, so the mode list in the
+		// message is only stable because servedBy is sorted.
 		require.Equal(t, []string{"EXCLUDED is denied and served by [READ_ONLY READ_WRITE]"},
 			checkEveryClassHasAServingDecision(mcpClassificationsFromDescriptors(t), widened, mcpDeniedClasses, classes, modes))
 	})
@@ -862,9 +862,7 @@ func classContext(class v1pb.MCPMethodClass) *common.AuthContext {
 
 // TestMCPGateRefusesTheDeniedClasses walks every method the annotations refuse
 // outright and proves the gate refuses it under the most permissive ceiling
-// there is. FORBIDDEN was already enforced; EXCLUDED is what this PR turns from
-// a recorded classification into a denial, and it is the larger population by
-// far — 85 methods the console and the public API serve today.
+// there is.
 func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		if row.class != v1pb.MCPMethodClass_FORBIDDEN && row.class != v1pb.MCPMethodClass_EXCLUDED {
@@ -886,6 +884,27 @@ func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
 			require.True(t, got.auditMarked, "every denial is an audited outcome")
 		})
 	}
+}
+
+// TestExcludedForRedrawingAGovernanceBoundary pins which methods carry
+// REDRAWS_GOVERNANCE_BOUNDARY: membership is a decision, recorded here as well as
+// on the annotation. TestMCPGateRefusesTheDeniedClasses proves the gate refuses
+// each of them.
+func TestExcludedForRedrawingAGovernanceBoundary(t *testing.T) {
+	t.Parallel()
+	var got []string
+	for _, row := range mcpClassificationsFromDescriptors(t) {
+		if row.reason == v1pb.MCPDenialReason_REDRAWS_GOVERNANCE_BOUNDARY {
+			got = append(got, row.procedure)
+		}
+	}
+	require.ElementsMatch(t, []string{
+		v1connect.DatabaseServiceUpdateDatabaseProcedure,
+		v1connect.DatabaseServiceBatchUpdateDatabasesProcedure,
+		v1connect.DatabaseGroupServiceCreateDatabaseGroupProcedure,
+		v1connect.DatabaseGroupServiceUpdateDatabaseGroupProcedure,
+		v1connect.DatabaseGroupServiceDeleteDatabaseGroupProcedure,
+	}, got, "the methods refused for redrawing a governance boundary must be exactly these")
 }
 
 // TestMCPGateServesTheAdmittedClasses is the other half: under a read-write

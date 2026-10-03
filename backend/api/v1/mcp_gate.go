@@ -210,6 +210,7 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	v1pb.MCPDenialReason_READS_OTHER_USERS_SQL:       {v1pb.MCPMethodClass_EXCLUDED, "it returns SQL that other people wrote, across the workspace or past the sharing that keeps a saved query private"},
 	v1pb.MCPDenialReason_OPENS_AN_ADMIN_CONNECTION:   {v1pb.MCPMethodClass_EXCLUDED, "it opens an admin-credentialed connection to the database and returns other sessions' live, unmasked SQL"},
 	v1pb.MCPDenialReason_SENDS_DATA_TO_A_THIRD_PARTY: {v1pb.MCPMethodClass_EXCLUDED, "it spends a stored workspace credential to send whatever the caller passes to a third party"},
+	v1pb.MCPDenialReason_REDRAWS_GOVERNANCE_BOUNDARY: {v1pb.MCPMethodClass_EXCLUDED, "it changes which rules govern a database or which databases a change that targets a database group runs on, and an agent does not choose the checks on its own changes"},
 	// No method carries this one: the three leaks it was written for are
 	// redacted on the read path and their eight methods are READ. The row
 	// stays so the next read found leaking is one annotation away from a
