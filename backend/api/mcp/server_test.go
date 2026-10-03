@@ -598,8 +598,6 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 	return tokenStr
 }
 
-// listToolsOverRoute opens a session on the real /mcp route, the way a client
-// does, and returns it with the tools it lists.
 func listToolsOverRoute(t *testing.T) (*mcp.ClientSession, []*mcp.Tool) {
 	t.Helper()
 	endpoint, _, _ := newProbeServer(t)

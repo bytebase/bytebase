@@ -247,10 +247,10 @@ const serverInstructions = `Bytebase governs access to databases and changes to 
 Choose the tool by task:
 - Read data: query_database. Before you write SQL for a database, read its schema with get_schema.
 - Inspect a schema: get_schema.
-- Change a database: propose_database_change, the easiest way into the governed workflow. It creates the plan and the issue and runs the plan checks; approval and rollout follow the project's policy. It changes one database per call. For a change to several databases in one plan, ask the user to make it in the Bytebase console or through GitOps.
+- Change a database: propose_database_change, the easiest way into the governed workflow. It creates the plan and the issue and runs the plan checks; approval and rollout follow the project's policy. ` + singleDatabaseLimit + `
 - Anything else: search_api to find the operation and its request schema, then call_api.
 
-When the workspace's MCP access policy is Read-write, query_database also runs DML and DDL directly, as far as the engine and the user's permissions allow, without an issue or approval. Use propose_database_change for a change that should be reviewed.
+When the workspace's MCP access policy is Read-write, query_database can also run DML and DDL. They take effect at once, without an issue or approval, as far as the engine and the user's permissions allow. On an instance with a read-only data source, query_database runs every statement through that data source, so make changes there with propose_database_change. Use propose_database_change for any change that should be reviewed.
 
 When Bytebase refuses a call, the error states the reason. Pass it on to the user: a person acts on it in the Bytebase console.`
 
