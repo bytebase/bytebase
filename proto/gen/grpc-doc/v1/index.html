@@ -2478,6 +2478,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ReviewAIPolicy"><span class="badge">M</span>ReviewAIPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ReviewRulePolicy"><span class="badge">M</span>ReviewRulePolicy</a>
                 </li>
               
@@ -10347,7 +10351,8 @@ Permissions required: bb.planCheckRuns.run</p></td>
               <tr>
                 <td>SYNTAX</td>
                 <td>1</td>
-                <td><p>P0: the statements do not parse for the target engine.</p></td>
+                <td><p>P0: the statements do not parse for the target engine. It gates the
+other rules (see ReviewRulePolicy).</p></td>
               </tr>
             
               <tr>
@@ -12069,8 +12074,8 @@ review passed: whether problems remain is judged from open comments.</p></td>
               <tr>
                 <td>AI</td>
                 <td>2</td>
-                <td><p>Review against the AI review policy&#39;s natural-language instructions,
-performed by a model.</p></td>
+                <td><p>Review against the natural-language AI review policy, performed by a
+model.</p></td>
               </tr>
             
           </tbody>
@@ -13493,22 +13498,6 @@ served, and under READ_ONLY the SQL clamp decides, per statement, whether
 it only reads. </p></td>
                 </tr>
               
-                <tr>
-                  <td>ignore_masking_exemptions</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether a request that arrived over MCP stops applying the caller&#39;s own
-unmasking provisioning. Two mechanisms let a user see a real value and this
-suppresses both: the masking exemptions granted to them, and the unmask
-carried by an access grant. The same user in the console is untouched.
-
-It cannot force masking where there is none. Masking substitutes values in
-query results, so this does not reach data copied into a column carrying no
-masking policy, and it does nothing on the engines Bytebase does not mask.
-It narrows what an agent reads through the paths Bytebase masks; it is not
-a confidentiality boundary. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -14446,7 +14435,7 @@ Default to this mode.</p></td>
         </table>
       
         <h3 id="bytebase.v1.MCPSetting.Capability">MCPSetting.Capability</h3>
-        <p>Capability is the ceiling: a session runs at this level or lower.</p><p>Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask</p><p>path to leave the current ceiling unchanged.</p>
+        <p>Capability is the ceiling: a session runs at this level or lower.</p><p>Writing CAPABILITY_UNSPECIFIED, explicitly or by leaving</p><p>value.mcp.capability out of the update mask, is rejected.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -28430,6 +28419,13 @@ Environment resource name: environments/environment-id. </p></td>
                 </tr>
               
                 <tr>
+                  <td>review_ai_policy</td>
+                  <td><a href="#bytebase.v1.ReviewAIPolicy">ReviewAIPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>enforce</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -28504,8 +28500,32 @@ If false,
 
         
       
+        <h3 id="bytebase.v1.ReviewAIPolicy">ReviewAIPolicy</h3>
+        <p>Natural-language policy for the AI review. Unlike the review rule policy,</p><p>both levels apply: the workspace policy and the project policy both reach</p><p>the reviewer, and the project policy wins where they conflict.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The policy text. Must not be blank, at most 64 KiB. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ReviewRulePolicy">ReviewRulePolicy</h3>
-        <p>Standard review rule policy: the rules switched on. The nearest policy</p><p>wins: a project's own policy applies as is; a project without one uses</p><p>the workspace policy; with neither, every rule is on.</p><p>A saved list is explicit, so a rule added to the standard set in a later</p><p>release is appended to every saved policy by a data migration in that</p><p>release.</p>
+        <p>Standard review rule policy: the rules switched on. The nearest policy</p><p>wins: a project's own policy applies as is; a project without one uses</p><p>the workspace policy; with neither, every rule is on. Getting the policy</p><p>of a project without its own is NOT_FOUND; getting the workspace's when it</p><p>has none returns every rule on.</p><p>SYNTAX gates the rest: the other rules judge only SQL that parses, so a</p><p>list without SYNTAX switches every rule off.</p><p>A saved list is explicit, so a rule added to the standard set in a later</p><p>release is appended to every saved policy by a data migration in that</p><p>release.</p>
 
         
           <table class="field-table">
@@ -28744,6 +28764,12 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>REVIEW_RULE</td>
                 <td>7</td>
                 <td><p>Standard review rule switch. Allowed on WORKSPACE and PROJECT.</p></td>
+              </tr>
+            
+              <tr>
+                <td>REVIEW_AI</td>
+                <td>8</td>
+                <td><p>Natural-language policy for the AI review. Allowed on WORKSPACE and PROJECT.</p></td>
               </tr>
             
           </tbody>

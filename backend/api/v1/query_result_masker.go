@@ -444,14 +444,9 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 // exemptionsForPrincipal is the one seam the caller's own masking provisioning
 // enters through: getMaskerForColumnResource and the MSSQL
 // getSensitiveColumnsForPredicate both reach evaluateSemanticTypeOfColumn with
-// exactly this slice. An MCP session that ignores exemptions gets an empty one,
-// which is what a user granted nothing already looks like. Filtering only the
-// output path would mask the value and still answer whether a WHERE on it
-// matched.
+// exactly this slice. Filtering only the output path would mask the value and
+// still answer whether a WHERE on it matched.
 func (s *QueryResultMasker) exemptionsForPrincipal(ctx context.Context, data *maskingDataProvider, projectID string, currentPrincipal *store.UserMessage) []*storepb.MaskingExemptionPolicy_Exemption {
-	if mcpIgnoresMaskingExemptions(ctx) {
-		return nil
-	}
 	policy := data.getMaskingExemptionPolicy(projectID)
 	if policy == nil {
 		return nil

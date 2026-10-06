@@ -1,8 +1,10 @@
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
+import { TIMESTAMP_COLUMN_WIDTH } from "@/components/timestampColumn";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
 import {
   Table,
@@ -20,14 +22,9 @@ import {
 } from "@/lib/taskRun";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { getDateForPbTimestampProtoEs } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  databaseForTask,
-  extractTaskUID,
-  formatAbsoluteDateTime,
-  humanizeDurationV1,
-} from "@/utils";
+import { databaseForTask, extractTaskUID, humanizeDurationV1 } from "@/utils";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 
 export function IssueDetailTaskRunTable({
@@ -111,10 +108,18 @@ export function IssueDetailTaskRunTable({
               <TableHead className="sticky top-0 z-10 bg-control-bg/50">
                 {t("common.detail")}
               </TableHead>
-              <TableHead className="sticky top-0 z-10 w-36 bg-control-bg/50">
+              {/* Sized to the form; the detail column is the one left to
+                  take the rest. */}
+              <TableHead
+                className="sticky top-0 z-10 bg-control-bg/50"
+                style={{ width: TIMESTAMP_COLUMN_WIDTH.compact }}
+              >
                 {t("task.created")}
               </TableHead>
-              <TableHead className="sticky top-0 z-10 w-36 bg-control-bg/50">
+              <TableHead
+                className="sticky top-0 z-10 bg-control-bg/50"
+                style={{ width: TIMESTAMP_COLUMN_WIDTH.compact }}
+              >
                 {t("task.started")}
               </TableHead>
               <TableHead className="sticky top-0 z-10 w-28 bg-control-bg/50 pr-6 whitespace-nowrap text-sm">
@@ -180,33 +185,16 @@ function IssueDetailTaskRunComment({ taskRun }: { taskRun: TaskRun }) {
   );
 }
 
-function IssueDetailTaskRunDateCell({
-  date,
-  format = "humanized",
-}: {
-  date?: Parameters<typeof getDateForPbTimestampProtoEs>[0];
-  format?: "absolute" | "humanized";
-}) {
+function IssueDetailTaskRunDateCell({ date }: { date?: Timestamp }) {
   if (!date) {
     return <span className="text-control-light">-</span>;
   }
-
-  const parsedDate = getDateForPbTimestampProtoEs(date);
-  if (!parsedDate) {
-    return <span className="text-control-light">-</span>;
-  }
-  if (format === "absolute") {
-    return (
-      <span className="text-sm text-control">
-        {formatAbsoluteDateTime(parsedDate.getTime())}
-      </span>
-    );
-  }
-
   return (
     <HumanizeTs
-      ts={parsedDate.getTime() / 1000}
       className="text-sm text-control"
+      mode="compact"
+      truncate
+      tsMs={getTimeForPbTimestampProtoEs(date)}
     />
   );
 }

@@ -169,6 +169,7 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-store-Policy)
     - [QueryDataPolicy](#bytebase-store-QueryDataPolicy)
+    - [ReviewAIPolicy](#bytebase-store-ReviewAIPolicy)
     - [ReviewRulePolicy](#bytebase-store-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [TagPolicy](#bytebase-store-TagPolicy)
@@ -2195,7 +2196,7 @@ new reviewer is a new value, not a migration.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | RULE | 1 | Review against the standard rules. |
-| AI | 2 | Review against the AI review policy&#39;s natural-language instructions, performed by a model. |
+| AI | 2 | Review against the natural-language AI review policy, performed by a model. |
 
 
  
@@ -2743,6 +2744,24 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 
 
+<a name="bytebase-store-ReviewAIPolicy"></a>
+
+### ReviewAIPolicy
+ReviewAIPolicy holds the natural-language policy the AI review judges a
+change against. Both levels apply: the workspace policy and the project
+policy both reach the reviewer, and the project policy wins where they
+conflict.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-ReviewRulePolicy"></a>
 
 ### ReviewRulePolicy
@@ -2837,6 +2856,7 @@ wins: the project&#39;s if it has one, else the workspace&#39;s, else every rule
 | IAM | 5 |  |
 | TAG | 6 |  |
 | REVIEW_RULE | 7 |  |
+| REVIEW_AI | 8 |  |
 
 
  
@@ -4054,9 +4074,6 @@ sign-in configuration.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | capability | [MCPSetting.Capability](#bytebase-store-MCPSetting-Capability) |  | The maximum capability available to MCP sessions in this workspace, acting as an admin-set ceiling. Enforced server-side at three points: the /mcp endpoint decides whether a connection is admitted at all, the ceiling gate on the internal MCP chain decides, per request, which method classes are served, and under READ_ONLY the SQL clamp decides, per statement, whether it only reads. |
-| ignore_masking_exemptions | [bool](#bool) |  | Whether a request that arrived over MCP stops applying the caller&#39;s own unmasking provisioning. Two mechanisms let a user see a real value and this suppresses both: the masking exemptions granted to them, and the unmask carried by an access grant. The same user in the console is untouched.
-
-It cannot force masking where there is none. Masking substitutes values in query results, so this does not reach data copied into a column carrying no masking policy, and it does nothing on the engines Bytebase does not mask. It narrows what an agent reads through the paths Bytebase masks; it is not a confidentiality boundary. |
 
 
 

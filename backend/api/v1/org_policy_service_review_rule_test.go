@@ -146,31 +146,36 @@ func TestValidateReviewRulePolicyPayload(t *testing.T) {
 	}
 }
 
-// TestDefaultReviewRulePolicy pins that the stand-in for a missing row is
-// every rule, and that it survives the store-to-v1 conversion.
+// TestDefaultReviewRulePolicy pins that the stand-in for a missing workspace
+// row is every rule and survives the store-to-v1 conversion, and that a
+// project has no stand-in.
 func TestDefaultReviewRulePolicy(t *testing.T) {
 	t.Parallel()
-	message, err := getDefaultReviewRulePolicy("projects/p1")
+	message, err := getDefaultReviewRulePolicy("workspaces/w1")
 	require.NoError(t, err)
-	require.Equal(t, storepb.Policy_PROJECT, message.ResourceType)
-	require.Equal(t, "projects/p1", message.Resource)
+	require.Equal(t, storepb.Policy_WORKSPACE, message.ResourceType)
+	require.Equal(t, "workspaces/w1", message.Resource)
 	require.Equal(t, storepb.Policy_REVIEW_RULE, message.Type)
 	require.True(t, message.Enforce)
 
 	policy, err := convertToPolicy(message)
 	require.NoError(t, err)
-	require.Equal(t, "projects/p1/policies/review_rule", policy.Name)
+	require.Equal(t, "workspaces/w1/policies/review_rule", policy.Name)
 	require.Equal(t, v1pb.PolicyType_REVIEW_RULE, policy.Type)
 	got := policy.GetReviewRulePolicy().Rules
 	require.Len(t, got, len(v1pb.ReviewRuleType_name)-1)
 	require.NotContains(t, got, v1pb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED)
 	require.Equal(t, len(store.GetDefaultReviewRulePolicy().Rules), len(got))
+
+	message, err = getDefaultReviewRulePolicy("projects/p1")
+	require.NoError(t, err)
+	require.Nil(t, message)
 }
 
 // TestReviewRulePolicyService walks the REVIEW_RULE policy through
-// OrgPolicyService at both levels against PostgreSQL: the all-rules default
-// on a missing row, create, get, list, update, validation, delete, and the
-// nearest-wins resolution the store exposes to the executor.
+// OrgPolicyService at both levels against PostgreSQL: a missing row, create,
+// get, list, update, validation, delete, and the nearest-wins resolution the
+// store exposes to the executor.
 func TestReviewRulePolicyService(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
@@ -202,6 +207,10 @@ func TestReviewRulePolicyService(t *testing.T) {
 		require.NoError(t, err)
 		return resp.Msg
 	}
+	getCode := func(name string) connect.Code {
+		_, err := service.GetPolicy(ctx, connect.NewRequest(&v1pb.GetPolicyRequest{Name: name}))
+		return connect.CodeOf(err)
+	}
 	create := func(parent string, policy *v1pb.Policy) (*v1pb.Policy, error) {
 		resp, err := service.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{Parent: parent, Policy: policy}))
 		if err != nil {
@@ -231,13 +240,12 @@ func TestReviewRulePolicyService(t *testing.T) {
 		return names
 	}
 
-	// No row at either level: every rule, not NotFound.
-	got := get(projectPolicyName)
-	require.Equal(t, projectPolicyName, got.Name)
+	// No row at either level: the project has no policy of its own, and the
+	// workspace stands in with every rule.
+	require.Equal(t, connect.CodeNotFound, getCode(projectPolicyName))
+	got := get(workspacePolicyName)
+	require.Equal(t, workspacePolicyName, got.Name)
 	require.Equal(t, v1pb.PolicyType_REVIEW_RULE, got.Type)
-	require.Equal(t, v1pb.PolicyResourceType_PROJECT, got.ResourceType)
-	require.Len(t, rules(got), everyRule)
-	got = get(workspacePolicyName)
 	require.Equal(t, v1pb.PolicyResourceType_WORKSPACE, got.ResourceType)
 	require.Len(t, rules(got), everyRule)
 	require.Len(t, effective(), everyRule)
@@ -260,10 +268,10 @@ func TestReviewRulePolicyService(t *testing.T) {
 	require.Equal(t, projectPolicyName, listed.Msg.Policies[0].Name)
 
 	// Update through the review_rule_policy mask path.
-	updated, err := update(projectPolicyName, reviewRule(v1pb.ReviewRuleType_REQUIRE_WHERE))
+	updated, err := update(projectPolicyName, reviewRule(v1pb.ReviewRuleType_SYNTAX, v1pb.ReviewRuleType_REQUIRE_WHERE))
 	require.NoError(t, err)
-	require.Equal(t, []v1pb.ReviewRuleType{v1pb.ReviewRuleType_REQUIRE_WHERE}, rules(updated))
-	require.Equal(t, []string{"REQUIRE_WHERE"}, effective())
+	require.Equal(t, []v1pb.ReviewRuleType{v1pb.ReviewRuleType_SYNTAX, v1pb.ReviewRuleType_REQUIRE_WHERE}, rules(updated))
+	require.Equal(t, []string{"SYNTAX", "REQUIRE_WHERE"}, effective())
 
 	// Unspecified and repeated rules are refused.
 	for _, bad := range [][]v1pb.ReviewRuleType{
@@ -280,13 +288,14 @@ func TestReviewRulePolicyService(t *testing.T) {
 
 	// Workspace level, and nearest wins: the project's policy while it has
 	// one, the workspace's after the project's is deleted.
-	created, err = create(common.FormatWorkspace(workspaceID), reviewRule(v1pb.ReviewRuleType_DISALLOW_TRUNCATE))
+	created, err = create(common.FormatWorkspace(workspaceID), reviewRule(v1pb.ReviewRuleType_SYNTAX, v1pb.ReviewRuleType_DISALLOW_TRUNCATE))
 	require.NoError(t, err)
 	require.Equal(t, workspacePolicyName, created.Name)
-	require.Equal(t, []string{"REQUIRE_WHERE"}, effective())
+	require.Equal(t, []string{"SYNTAX", "REQUIRE_WHERE"}, effective())
 
 	_, err = service.DeletePolicy(ctx, connect.NewRequest(&v1pb.DeletePolicyRequest{Name: projectPolicyName}))
 	require.NoError(t, err)
-	require.Equal(t, []string{"DISALLOW_TRUNCATE"}, effective())
-	require.Len(t, rules(get(projectPolicyName)), everyRule)
+	require.Equal(t, []string{"SYNTAX", "DISALLOW_TRUNCATE"}, effective())
+	require.Equal(t, connect.CodeNotFound, getCode(projectPolicyName))
+	require.Equal(t, rules(created), rules(get(workspacePolicyName)))
 }

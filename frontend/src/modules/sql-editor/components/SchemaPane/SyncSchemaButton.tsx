@@ -7,7 +7,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useAppStore } from "@/stores/app";
-import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
+import { getTimeForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
 
 /**
  * RefreshCcw button with a hover tooltip showing the last sync time +
@@ -42,12 +42,7 @@ export function SyncSchemaButton({ className }: { className?: string }) {
     }
   };
 
-  const lastSyncDate = getDateForPbTimestampProtoEs(
-    database.successfulSyncTime
-  );
-  const lastSyncTs = lastSyncDate
-    ? Math.floor(lastSyncDate.getTime() / 1000)
-    : 0;
+  const lastSyncMs = getTimeForPbTimestampProtoEs(database.successfulSyncTime);
 
   const button = (
     <Button
@@ -78,11 +73,11 @@ export function SyncSchemaButton({ className }: { className?: string }) {
       side="bottom"
       content={
         <div className="flex flex-col gap-1">
-          {lastSyncTs > 0 ? (
+          {lastSyncMs !== undefined ? (
             <Trans
               t={t}
               i18nKey="sql-editor.last-synced"
-              components={{ time: <HumanizeTs ts={lastSyncTs} /> }}
+              components={{ time: <HumanizeTs tsMs={lastSyncMs} /> }}
             />
           ) : null}
           <div>

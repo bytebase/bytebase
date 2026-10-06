@@ -317,12 +317,10 @@ function SyntheticHeader({
       ) : (
         <ReviewSubmissionSentence />
       )}
-      {source.time && (
-        <HumanizeTs
-          className="text-xs text-control-light"
-          ts={getTimeForPbTimestampProtoEs(source.time, 0) / 1000}
-        />
-      )}
+      <HumanizeTs
+        className="text-xs text-control-light"
+        tsMs={getTimeForPbTimestampProtoEs(source.time)}
+      />
     </>
   );
 }
@@ -520,9 +518,14 @@ function ThreadActivityRow({
   const viewInStatement = () => {
     const specId = anchor?.spec;
     if (!specId) return;
+    const lineNumber =
+      placement?.state === "CURRENT"
+        ? placement.range.startLine
+        : anchor?.startPosition?.line;
     storeApi.getState().requestThreadFocus({
       commentName: thread.root.name,
       specId,
+      lineNumber,
     });
     focusPlanPhase("changes", page.expandPhase);
     if (selectedSpecId !== specId) {
@@ -549,17 +552,20 @@ function ThreadActivityRow({
     >
       <CommentThreadCard
         className="ml-3"
-        context={
-          anchor && (
-            <StatementAnchorContext
-              anchor={anchor}
-              onViewInStatement={viewInStatement}
-              placement={placement}
-              plan={plan}
-              renderPlanChangeReference={renderPlanChangeReference}
-              project={project}
-            />
-          )
+        renderContext={
+          anchor
+            ? (onCollapse) => (
+                <StatementAnchorContext
+                  anchor={anchor}
+                  onCollapse={onCollapse}
+                  onViewInStatement={viewInStatement}
+                  placement={placement}
+                  plan={plan}
+                  renderPlanChangeReference={renderPlanChangeReference}
+                  project={project}
+                />
+              )
+            : undefined
         }
         issue={issue}
         project={project}

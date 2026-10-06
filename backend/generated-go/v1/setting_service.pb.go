@@ -149,8 +149,8 @@ func (Setting_SettingName) EnumDescriptor() ([]byte, []int) {
 }
 
 // Capability is the ceiling: a session runs at this level or lower.
-// Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
-// path to leave the current ceiling unchanged.
+// Writing CAPABILITY_UNSPECIFIED, explicitly or by leaving
+// value.mcp.capability out of the update mask, is rejected.
 type MCPSetting_Capability int32
 
 const (
@@ -1333,20 +1333,9 @@ type MCPSetting struct {
 	// on the internal MCP chain decides, per request, which method classes are
 	// served, and under READ_ONLY the SQL clamp decides, per statement, whether
 	// it only reads.
-	Capability MCPSetting_Capability `protobuf:"varint,1,opt,name=capability,proto3,enum=bytebase.v1.MCPSetting_Capability" json:"capability,omitempty"`
-	// Whether a request that arrived over MCP stops applying the caller's own
-	// unmasking provisioning. Two mechanisms let a user see a real value and this
-	// suppresses both: the masking exemptions granted to them, and the unmask
-	// carried by an access grant. The same user in the console is untouched.
-	//
-	// It cannot force masking where there is none. Masking substitutes values in
-	// query results, so this does not reach data copied into a column carrying no
-	// masking policy, and it does nothing on the engines Bytebase does not mask.
-	// It narrows what an agent reads through the paths Bytebase masks; it is not
-	// a confidentiality boundary.
-	IgnoreMaskingExemptions bool `protobuf:"varint,2,opt,name=ignore_masking_exemptions,json=ignoreMaskingExemptions,proto3" json:"ignore_masking_exemptions,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	Capability    MCPSetting_Capability `protobuf:"varint,1,opt,name=capability,proto3,enum=bytebase.v1.MCPSetting_Capability" json:"capability,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *MCPSetting) Reset() {
@@ -1384,13 +1373,6 @@ func (x *MCPSetting) GetCapability() MCPSetting_Capability {
 		return x.Capability
 	}
 	return MCPSetting_CAPABILITY_UNSPECIFIED
-}
-
-func (x *MCPSetting) GetIgnoreMaskingExemptions() bool {
-	if x != nil {
-		return x.IgnoreMaskingExemptions
-	}
-	return false
 }
 
 type SQLEditorThemeSetting struct {
@@ -3645,13 +3627,12 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18require_uppercase_letter\x18\x04 \x01(\bR\x16requireUppercaseLetter\x12:\n" +
 	"\x19require_special_character\x18\x05 \x01(\bR\x17requireSpecialCharacter\x12Q\n" +
 	"&require_reset_password_for_first_login\x18\x06 \x01(\bR!requireResetPasswordForFirstLogin\x12F\n" +
-	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotationJ\x04\b\x0f\x10\x10J\x04\b\x1a\x10\x1bJ\x04\b\x10\x10\x11R\x0emcp_capability\"\xe9\x01\n" +
+	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotationJ\x04\b\x0f\x10\x10J\x04\b\x1a\x10\x1bJ\x04\b\x10\x10\x11R\x0emcp_capability\"\xad\x01\n" +
 	"\n" +
 	"MCPSetting\x12B\n" +
 	"\n" +
 	"capability\x18\x01 \x01(\x0e2\".bytebase.v1.MCPSetting.CapabilityR\n" +
-	"capability\x12:\n" +
-	"\x19ignore_masking_exemptions\x18\x02 \x01(\bR\x17ignoreMaskingExemptions\"[\n" +
+	"capability\"[\n" +
 	"\n" +
 	"Capability\x12\x1a\n" +
 	"\x16CAPABILITY_UNSPECIFIED\x10\x00\x12\f\n" +

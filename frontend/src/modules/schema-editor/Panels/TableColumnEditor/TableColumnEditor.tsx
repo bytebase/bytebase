@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import {
   distributeColumnWidths,
+  fillableWidth,
   useColumnWidths,
 } from "@/hooks/useColumnWidths";
 import { cn } from "@/lib/utils";
@@ -292,7 +293,9 @@ export function TableColumnEditor({
   const didFitRef = useRef(false);
   useLayoutEffect(() => {
     if (didFitRef.current) return;
-    const width = containerRef.current?.clientWidth ?? 0;
+    const width = containerRef.current
+      ? fillableWidth(containerRef.current)
+      : 0;
     if (width <= 0) return;
     didFitRef.current = true;
     setWidths(distributeColumnWidths(columnDefs, width));

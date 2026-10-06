@@ -35,7 +35,7 @@ export function DeployTaskHeader({
   onRollback,
   onToggleExpand,
   onToggleSelect,
-  scheduledTimeTs,
+  scheduledTimeMs,
   showRollback,
   task,
   timingDisplay,
@@ -51,7 +51,7 @@ export function DeployTaskHeader({
   onRollback: () => void;
   onToggleExpand: () => void;
   onToggleSelect: () => void;
-  scheduledTimeTs: number;
+  scheduledTimeMs: number | undefined;
   showRollback: boolean;
   task: Task;
   timingDisplay: string;
@@ -84,10 +84,10 @@ export function DeployTaskHeader({
           <TaskStatusIcon size="small" status={task.status} />
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <PlanTargetDisplay size="md" target={task.target} />
-            {isExpanded && scheduledTimeTs > 0 && (
+            {isExpanded && scheduledTimeMs !== undefined && (
               <span className="flex shrink-0 items-center gap-x-1 rounded-xs border border-transparent bg-info/10 px-1.5 py-0.5 text-xs text-info">
                 <LoaderCircle className="size-3 animate-spin motion-reduce:animate-none" />
-                <HumanizeTs ts={scheduledTimeTs} />
+                <HumanizeTs mode="operational" tsMs={scheduledTimeMs} />
               </span>
             )}
           </div>
@@ -99,12 +99,12 @@ export function DeployTaskHeader({
         <div className="ml-auto flex shrink-0 items-center gap-x-2">
           {!isExpanded && (
             <span className="text-xs tabular-nums text-control-light">
-              {scheduledTimeTs > 0 ||
+              {scheduledTimeMs !== undefined ||
               (task.status === Task_Status.RUNNING && timingDisplay) ? (
                 <span className="flex items-center gap-x-1 text-info">
                   <LoaderCircle className="size-3 animate-spin motion-reduce:animate-none" />
-                  {scheduledTimeTs > 0 ? (
-                    <HumanizeTs ts={scheduledTimeTs} />
+                  {scheduledTimeMs !== undefined ? (
+                    <HumanizeTs mode="operational" tsMs={scheduledTimeMs} />
                   ) : (
                     timingDisplay
                   )}
@@ -162,10 +162,7 @@ export function DeployTaskHeader({
           {latestTaskRun?.createTime && (
             <span className="rounded-xs border bg-control-bg px-1.5 py-0.5 text-control-light">
               <HumanizeTs
-                ts={
-                  getTimeForPbTimestampProtoEs(latestTaskRun.createTime, 0) /
-                  1000
-                }
+                tsMs={getTimeForPbTimestampProtoEs(latestTaskRun.createTime)}
               />
             </span>
           )}

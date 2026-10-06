@@ -13,7 +13,6 @@ interface Props {
   /** Omitted by the panel for a ceiling this build has no name for. */
   readonly mode?: MCPMode;
   readonly headerAction?: ReactNode;
-  readonly modeAddon?: ReactNode;
   readonly lines?: readonly MCPConsentLine[];
   readonly children?: ReactNode;
 }
@@ -27,7 +26,6 @@ export function MCPConsentPolicyCard({
   label,
   mode,
   headerAction,
-  modeAddon,
   lines,
   children,
 }: Props) {
@@ -43,7 +41,6 @@ export function MCPConsentPolicyCard({
         {mode !== undefined && (
           <div className="flex max-w-full flex-wrap items-center gap-2">
             <MCPModeBadge mode={mode} />
-            {modeAddon}
           </div>
         )}
       </div>

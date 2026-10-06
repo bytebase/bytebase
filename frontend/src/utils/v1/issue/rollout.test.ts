@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { describe, expect, test } from "vitest";
 import { Plan_TaskStatusCountSchema } from "@/types/proto-es/v1/plan_service_pb";
 import {
@@ -13,6 +14,7 @@ import {
   getStageStatus,
   getStageStatusFromCounts,
   isTaskActivelyTransitioning,
+  scheduledRunTimeMs,
 } from "./rollout";
 
 const stage = (...statuses: Task_Status[]) =>
@@ -121,35 +123,42 @@ describe("getStageStatusFromCounts", () => {
   });
 });
 
-describe("isTaskActivelyTransitioning", () => {
-  const NOW = 1_700_000_000_000; // fixed "now" in ms
-  const at = (offsetSec: number) => ({
-    seconds: BigInt(NOW / 1000 + offsetSec),
+const NOW_MS = 1_700_000_000_000;
+const RUN_AT_MS = 1_772_452_800_000;
+
+const taskAt = (status: Task_Status, runTimeMs?: number) =>
+  create(TaskSchema, {
+    status,
+    runTime: runTimeMs === undefined ? undefined : timestampFromMs(runTimeMs),
   });
-  const task = (status: Task_Status, runTime?: { seconds: bigint }) =>
-    create(TaskSchema, runTime ? { status, runTime } : { status });
+
+describe("isTaskActivelyTransitioning", () => {
+  const at = (offsetSec: number) => NOW_MS + offsetSec * 1_000;
 
   test("RUNNING is always active, regardless of run_time", () => {
-    expect(isTaskActivelyTransitioning(task(Task_Status.RUNNING), NOW)).toBe(
-      true
-    );
     expect(
-      isTaskActivelyTransitioning(task(Task_Status.RUNNING, at(3600)), NOW)
+      isTaskActivelyTransitioning(taskAt(Task_Status.RUNNING), NOW_MS)
+    ).toBe(true);
+    expect(
+      isTaskActivelyTransitioning(taskAt(Task_Status.RUNNING, at(3600)), NOW_MS)
     ).toBe(true);
   });
 
   test("PENDING is active when unscheduled or already due", () => {
-    expect(isTaskActivelyTransitioning(task(Task_Status.PENDING), NOW)).toBe(
-      true
-    );
     expect(
-      isTaskActivelyTransitioning(task(Task_Status.PENDING, at(-3600)), NOW)
+      isTaskActivelyTransitioning(taskAt(Task_Status.PENDING), NOW_MS)
+    ).toBe(true);
+    expect(
+      isTaskActivelyTransitioning(
+        taskAt(Task_Status.PENDING, at(-3600)),
+        NOW_MS
+      )
     ).toBe(true);
   });
 
   test("PENDING scheduled for a future run_time is not active", () => {
     expect(
-      isTaskActivelyTransitioning(task(Task_Status.PENDING, at(3600)), NOW)
+      isTaskActivelyTransitioning(taskAt(Task_Status.PENDING, at(3600)), NOW_MS)
     ).toBe(false);
   });
 
@@ -161,7 +170,31 @@ describe("isTaskActivelyTransitioning", () => {
       Task_Status.CANCELED,
       Task_Status.SKIPPED,
     ]) {
-      expect(isTaskActivelyTransitioning(task(status), NOW)).toBe(false);
+      expect(isTaskActivelyTransitioning(taskAt(status), NOW_MS)).toBe(false);
     }
+  });
+});
+
+describe("scheduledRunTimeMs", () => {
+  test("gives the instant a waiting task is due to run", () => {
+    expect(scheduledRunTimeMs(taskAt(Task_Status.PENDING, RUN_AT_MS))).toBe(
+      RUN_AT_MS
+    );
+  });
+
+  test("gives nothing for a waiting task with no time set", () => {
+    // Such a task is due now, not scheduled -- the reading rollout.ts already
+    // takes of an absent runTime.
+    expect(scheduledRunTimeMs(taskAt(Task_Status.PENDING))).toBeUndefined();
+  });
+
+  test.each([
+    ["running", Task_Status.RUNNING],
+    ["done", Task_Status.DONE],
+    ["failed", Task_Status.FAILED],
+    ["skipped", Task_Status.SKIPPED],
+    ["canceled", Task_Status.CANCELED],
+  ])("gives nothing for a %s task that carries one", (_name, status) => {
+    expect(scheduledRunTimeMs(taskAt(status, RUN_AT_MS))).toBeUndefined();
   });
 });

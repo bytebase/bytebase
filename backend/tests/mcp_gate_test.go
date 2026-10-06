@@ -169,6 +169,17 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.Equal(http.StatusBadRequest, change.Status,
 		"a database-change issue must reach the handler, which then asks for its plan: %s", change.Error)
 	a.NotContains(change.Error, "not available to MCP sessions")
+
+	// An unset type reaches the handler too, and is the handler's own
+	// complaint: an invalid argument, not a policy verdict, so its row stays
+	// INFO.
+	untyped := callAPIOnSession(ctx, t, session, "IssueService/CreateIssue", map[string]any{
+		"parent": projectName,
+		"issue":  map[string]any{"title": "no type at all"},
+	})
+	a.Equal(http.StatusBadRequest, untyped.Status,
+		"an unset type is the handler's invalid argument: %s", untyped.Error)
+	a.NotContains(untyped.Error, "MCP session")
 }
 
 // TestMCPCannotRunAnIssuelessRollout is the rule rollout_service.proto says the

@@ -13,8 +13,13 @@ import {
   type SearchParams,
   type ValueOption,
 } from "@/components/AdvancedSearch";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
+import {
+  TIMESTAMP_COLUMN_MIN_WIDTH,
+  TIMESTAMP_COLUMN_WIDTH,
+} from "@/components/timestampColumn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -50,7 +55,7 @@ import {
   userNamePrefix,
   workloadIdentityNamePrefix,
 } from "@/stores/modules/v1/common";
-import { getDateForPbTimestampProtoEs } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import type {
   AuditLog,
@@ -68,11 +73,9 @@ import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
 import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { protobufJsonRegistry } from "@/types/protobufJsonRegistry";
-import {
-  formatAbsoluteDateTime,
-  getDefaultPagination,
-  humanizeDurationV1,
-} from "@/utils";
+import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
+import { getDefaultPagination, humanizeDurationV1 } from "@/utils";
+import { isValidEmail } from "@/utils/util";
 import { celString } from "@/utils/v1/celLiteral";
 
 dayjs.extend(utc);
@@ -93,26 +96,54 @@ function uniqueValueOptions(options: ValueOption[]): ValueOption[] {
   return [...new Map(options.map((option) => [option.value, option])).values()];
 }
 
+const ACTOR_NAME_PREFIXES = [
+  userNamePrefix,
+  serviceAccountNamePrefix,
+  workloadIdentityNamePrefix,
+];
+
+// Returns the resource name an actor value stands for, lowercased with the
+// canonical prefix: account emails are stored lowercase, and AdvancedSearch
+// lowercases the keyword. A bare email takes the account kind its domain names.
+function toActorName(value: string): string {
+  const lowered = value.toLowerCase();
+  const prefix = ACTOR_NAME_PREFIXES.find((candidate) =>
+    lowered.startsWith(candidate.toLowerCase())
+  );
+  if (prefix) {
+    return `${prefix}${lowered.slice(prefix.length)}`;
+  }
+  switch (getAccountTypeByEmail(lowered)) {
+    case AccountType.SERVICE_ACCOUNT:
+      return `${serviceAccountNamePrefix}${lowered}`;
+    case AccountType.WORKLOAD_IDENTITY:
+      return `${workloadIdentityNamePrefix}${lowered}`;
+    default:
+      return `${userNamePrefix}${lowered}`;
+  }
+}
+
+function toActorOptions(
+  accounts: Array<{ name: string; email: string; title: string }>
+): ValueOption[] {
+  return accounts.map((account) => ({
+    value: account.name,
+    keywords: [account.email, account.title],
+  }));
+}
+
 function buildFilterString(filter: AuditLogFilter): string {
   const parts: string[] = [];
   if (filter.method) parts.push(`method == ${celString(filter.method)}`);
   if (filter.level !== undefined)
     parts.push(`severity == ${celString(AuditLog_Severity[filter.level])}`);
   if (filter.actor) {
-    const legacyUser = `${userNamePrefix}${filter.actor.slice(
-      filter.actor.indexOf("/") + 1
-    )}`;
-    const matchesLegacyUser =
-      filter.actor.startsWith(serviceAccountNamePrefix) ||
-      filter.actor.startsWith(workloadIdentityNamePrefix);
+    const actor = toActorName(filter.actor);
+    const legacyUser = `${userNamePrefix}${actor.slice(actor.indexOf("/") + 1)}`;
     parts.push(
-      matchesLegacyUser
-        ? `(actor == ${celString(filter.actor)} || actor == ${celString(legacyUser)})`
-        : `actor == ${celString(
-            filter.actor.startsWith(userNamePrefix)
-              ? filter.actor
-              : `${userNamePrefix}${filter.actor}`
-          )}`
+      actor === legacyUser
+        ? `actor == ${celString(actor)}`
+        : `(actor == ${celString(actor)} || actor == ${celString(legacyUser)})`
     );
   }
   if (filter.createdTsAfter)
@@ -440,13 +471,19 @@ function useColumnDefs(): ColumnDef[] {
       {
         key: "create_time",
         title: t("audit-log.table.created-ts"),
-        defaultWidth: 220,
-        minWidth: 160,
+        defaultWidth: TIMESTAMP_COLUMN_WIDTH.datetime,
+        minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
         resizable: true,
         sortable: true,
         render: (log: AuditLog) =>
-          formatAbsoluteDateTime(
-            getDateForPbTimestampProtoEs(log.createTime)?.getTime() ?? 0
+          log.createTime ? (
+            <HumanizeTs
+              mode="datetime"
+              truncate
+              tsMs={getTimeForPbTimestampProtoEs(log.createTime)}
+            />
+          ) : (
+            "-"
           ),
       },
       {
@@ -601,31 +638,6 @@ export function AuditLogTable({
     parent !== `${projectNamePrefix}-` && parent.startsWith(projectNamePrefix)
       ? parent
       : "";
-  const project = useAppStore((state) =>
-    projectAccountParent
-      ? state.projectsByName[projectAccountParent]
-      : undefined
-  );
-  const canListWorkspaceServiceAccounts = useAppStore((state) =>
-    workspaceResourceName
-      ? state.hasWorkspacePermission("bb.serviceAccounts.list")
-      : false
-  );
-  const canListWorkspaceWorkloadIdentities = useAppStore((state) =>
-    workspaceResourceName
-      ? state.hasWorkspacePermission("bb.workloadIdentities.list")
-      : false
-  );
-  const canListProjectServiceAccounts = useAppStore((state) =>
-    project
-      ? state.hasProjectPermission(project, "bb.serviceAccounts.list")
-      : false
-  );
-  const canListProjectWorkloadIdentities = useAppStore((state) =>
-    project
-      ? state.hasProjectPermission(project, "bb.workloadIdentities.list")
-      : false
-  );
   const columns = useColumnDefs();
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
@@ -804,80 +816,52 @@ export function AuditLogTable({
   );
   const searchActors = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const query = keyword.trim();
+      const actor = toActorName(keyword.trim());
+      // The account lists match display names and emails, not resource names.
+      const query = actor.slice(actor.indexOf("/") + 1);
       const pageSize = getDefaultPagination();
-      const accountParams = (parent: string, filter: string) => ({
+      // The server checks the list permissions; silent keeps a denied list
+      // from redirecting to /403, and allSettled then drops it.
+      const accountParams = (parent: string) => ({
         parent,
         pageSize,
         showDeleted: false,
-        filter: { query: filter },
+        filter: { query },
         skipCache: true,
+        silent: true,
       });
+      const accountParents = [
+        workspaceResourceName,
+        projectAccountParent,
+      ].filter(Boolean);
 
-      if (query.startsWith(serviceAccountNamePrefix)) {
-        const accountQuery = query.slice(serviceAccountNamePrefix.length);
-        const serviceAccounts = await Promise.all([
-          ...(workspaceResourceName && canListWorkspaceServiceAccounts
-            ? [
-                listServiceAccounts(
-                  accountParams(workspaceResourceName, accountQuery)
-                ),
-              ]
-            : []),
-          ...(projectAccountParent && canListProjectServiceAccounts
-            ? [
-                listServiceAccounts(
-                  accountParams(projectAccountParent, accountQuery)
-                ),
-              ]
-            : []),
-        ]);
-        return uniqueValueOptions(
-          serviceAccounts.flatMap((result) =>
-            result.serviceAccounts.map((account) => ({
-              value: account.name,
-              keywords: [account.email, account.title],
-            }))
+      const results = await Promise.allSettled([
+        listUsers({ pageSize, filter: { query } }).then(({ users }) =>
+          toActorOptions(users)
+        ),
+        ...accountParents.map((parent) =>
+          listServiceAccounts(accountParams(parent)).then(
+            ({ serviceAccounts }) => toActorOptions(serviceAccounts)
           )
-        );
-      }
-
-      if (query.startsWith(workloadIdentityNamePrefix)) {
-        const identityQuery = query.slice(workloadIdentityNamePrefix.length);
-        const workloadIdentities = await Promise.all([
-          ...(workspaceResourceName && canListWorkspaceWorkloadIdentities
-            ? [
-                listWorkloadIdentities(
-                  accountParams(workspaceResourceName, identityQuery)
-                ),
-              ]
-            : []),
-          ...(projectAccountParent && canListProjectWorkloadIdentities
-            ? [
-                listWorkloadIdentities(
-                  accountParams(projectAccountParent, identityQuery)
-                ),
-              ]
-            : []),
-        ]);
-        return uniqueValueOptions(
-          workloadIdentities.flatMap((result) =>
-            result.workloadIdentities.map((identity) => ({
-              value: identity.name,
-              keywords: [identity.email, identity.title],
-            }))
+        ),
+        ...accountParents.map((parent) =>
+          listWorkloadIdentities(accountParams(parent)).then(
+            ({ workloadIdentities }) => toActorOptions(workloadIdentities)
           )
-        );
-      }
-
-      const { users } = await listUsers({
-        pageSize,
-        filter: query ? { query } : undefined,
-      });
-      return users.map((user) => ({
-        value: user.name,
-        keywords: [user.email, user.title],
-      }));
+        ),
+      ]);
+      // The lists reach only this page's parents and skip deleted accounts, so
+      // a full service account or workload identity email is offered as typed.
+      const typedAccount =
+        isValidEmail(query) && !actor.startsWith(userNamePrefix)
+          ? [{ value: actor, keywords: [query] }]
+          : [];
+      return uniqueValueOptions([
+        ...typedAccount,
+        ...results.flatMap((result) =>
+          result.status === "fulfilled" ? result.value : []
+        ),
+      ]);
     },
     [
       listUsers,
@@ -885,10 +869,6 @@ export function AuditLogTable({
       listWorkloadIdentities,
       workspaceResourceName,
       projectAccountParent,
-      canListWorkspaceServiceAccounts,
-      canListWorkspaceWorkloadIdentities,
-      canListProjectServiceAccounts,
-      canListProjectWorkloadIdentities,
     ]
   );
 

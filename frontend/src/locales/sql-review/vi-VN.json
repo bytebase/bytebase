@@ -729,6 +729,69 @@
   },
   "select-all": "Chọn tất cả",
   "select-review-rules": "Chọn quy tắc đánh giá SQL",
+  "standard-rules": {
+    "customize": {
+      "description": "Khi tắt, dự án này tuân theo các quy tắc tiêu chuẩn của không gian làm việc.",
+      "self": "Tùy chỉnh cho dự án này",
+      "view-workspace-rules": "Xem quy tắc của không gian làm việc"
+    },
+    "description": "Các quy tắc tích hợp sẵn dùng để đánh giá SQL của mọi issue. Các dự án không tùy chỉnh quy tắc sẽ tuân theo các quy tắc này.",
+    "load-failed": "Không thể tải các quy tắc tiêu chuẩn.",
+    "off": "Tắt",
+    "on": "Bật",
+    "project-description": "Các quy tắc tích hợp sẵn dùng để đánh giá SQL của mọi issue trong dự án này.",
+    "retry": "Thử lại",
+    "rule": {
+      "disallow-drop-constraint": {
+        "description": "Đánh dấu việc xóa ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE hoặc CHECK.",
+        "title": "Xóa ràng buộc"
+      },
+      "disallow-drop-object": {
+        "description": "Đánh dấu DROP TABLE, COLUMN, SCHEMA hoặc DATABASE.",
+        "title": "Xóa đối tượng"
+      },
+      "disallow-rename": {
+        "description": "Đánh dấu việc đổi tên bảng hoặc cột.",
+        "title": "Đổi tên"
+      },
+      "disallow-truncate": {
+        "description": "Đánh dấu TRUNCATE.",
+        "title": "Làm trống bảng"
+      },
+      "online-migration": {
+        "description": "Đánh dấu thay đổi yêu cầu di chuyển trực tuyến nhưng không đủ điều kiện.",
+        "title": "Điều kiện di chuyển trực tuyến"
+      },
+      "prior-backup": {
+        "description": "Đánh dấu thay đổi bật sao lưu trước khi không thể thực hiện sao lưu.",
+        "title": "Khả năng sao lưu trước"
+      },
+      "require-is-null": {
+        "description": "Đánh dấu = NULL hoặc <> NULL trong vị từ, vốn không bao giờ đúng. Hãy dùng IS NULL hoặc IS NOT NULL.",
+        "title": "So sánh NULL"
+      },
+      "require-primary-key": {
+        "description": "Đánh dấu bảng được thay đổi tạo ra mà không có khóa chính, hoặc khóa chính bị xóa mà không được thêm lại.",
+        "title": "Khóa chính"
+      },
+      "require-where": {
+        "description": "Đánh dấu UPDATE hoặc DELETE không có mệnh đề WHERE.",
+        "title": "Mệnh đề WHERE"
+      },
+      "syntax": {
+        "description": "Đánh dấu các câu lệnh mà công cụ cơ sở dữ liệu không phân tích được. Các quy tắc khác chỉ kiểm tra SQL phân tích được, vì vậy tắt quy tắc này sẽ tắt mọi quy tắc tiêu chuẩn.",
+        "title": "Cú pháp"
+      },
+      "walk-through": {
+        "description": "Đánh dấu các câu lệnh thất bại trên schema đã đồng bộ, chẳng hạn bảng hoặc cột không tồn tại, đối tượng trùng lặp hoặc tham chiếu không hợp lệ.",
+        "title": "Mô phỏng schema"
+      }
+    },
+    "running": "{{on}} trên {{total}} quy tắc đang chạy",
+    "self": "Quy tắc tiêu chuẩn",
+    "syntax-off": "Cú pháp đang tắt nên không quy tắc tiêu chuẩn nào được chạy. Hãy bật Cú pháp để đánh giá các thay đổi.",
+    "workspace-rules-hidden": "Bạn không có quyền xem các quy tắc của không gian làm việc mà dự án này tuân theo."
+  },
   "template": {
     "bb-sql-review-dev": "Mẫu Cơ bản",
     "bb-sql-review-dev-desc": "Bảo vệ cơ bản để bảo vệ cơ sở dữ liệu khỏi những sai sót thường gặp.",

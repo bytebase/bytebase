@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "按邮箱搜索用户。使用 serviceAccounts/ 或 workloadIdentities/ 前缀搜索这些操作者。",
+          "description": "按名称或邮箱搜索用户、服务账号和工作负载身份",
           "title": "操作者"
         },
         "level": {
@@ -1544,6 +1544,7 @@
       "sort": "排序",
       "updated": "更新时间"
     },
+    "statement-exceeds-preview-limit": "该语句超出预览限制。重新加载后将只显示预览内容。",
     "statement-from-sheet-warning": "该 SQL 来自较大的 Sheet，预览内容可能已截断。",
     "status-transition": {
       "modal": {
@@ -1826,6 +1827,7 @@
         "add-comment-on-line": "在第 {{line}} 行添加评论",
         "add-comment-on-lines": "在第 {{startLine}} 至 {{endLine}} 行添加评论",
         "anchor": {
+          "comparison-size-limit": "原始语句或当前语句超出比较限制。",
           "line_one": "第 {{range}} 行",
           "line_other": "第 {{range}} 行",
           "outdated": "已过期",
@@ -2757,18 +2759,6 @@
         "description": "{{bound}}{{audit}}",
         "edit": "编辑策略",
         "loading": "正在读取访问策略…",
-        "masking": {
-          "badge": "已忽略脱敏豁免",
-          "badge-disabled": "已忽略脱敏豁免 — MCP 已关闭",
-          "badge-unlicensed": "已忽略脱敏豁免 — 未授权脱敏功能",
-          "description": "启用后，即使用户拥有豁免或解除脱敏的授权，在 MCP 会话中被脱敏的数据仍保持脱敏。覆盖范围取决于引擎：Bytebase 本来就不脱敏的地方，这不会有任何改变。控制台不受影响。",
-          "title": "忽略脱敏豁免",
-          "unavailable": "本工作空间未授权数据脱敏功能，因此无论此项如何设置都不会脱敏。"
-        },
-        "masking-pending": {
-          "applied": "此策略将在保留脱敏豁免的状态下保存。",
-          "ignored": "此策略将在忽略脱敏豁免的状态下保存。"
-        },
         "mode": {
           "disabled": {
             "best-for": "适用于：在准备好开启之前先关闭 MCP。",
@@ -3737,7 +3727,8 @@
       "completed": "已完成",
       "computing": "计算中...",
       "dumping": "导出中...",
-      "retry-attempt": "第 {{current}}/{{max}} 次尝试",
+      "hide-full-statement": "隐藏完整语句",
+      "show-full-statement": "显示完整语句",
       "syncing": "同步中..."
     },
     "log-type": {
@@ -3747,15 +3738,20 @@
       "ghost-migration": "gh-ost 迁移",
       "prior-backup": "预备份",
       "release-file-execute": "发布包文件",
-      "retry": "重试",
       "schema-dump": "结构导出",
       "transaction": "事务"
     },
     "log-viewer": {
+      "attempt-count_one": "{{count}} 次尝试",
+      "attempt-count_other": "{{count}} 次尝试",
+      "attempt-n": "第 {{n}} 次尝试",
+      "attempt-reason": "失败：{{reason}}",
       "collapse-all": "全部收起",
       "expand-all": "全部展开",
       "multiple-replicas-notice": "检测到执行期间服务重启，日志按副本分组显示。",
+      "previous-attempts": "之前的尝试",
       "replica-n": "副本 #{{n}}",
+      "retrying": "重试中",
       "summary": "{{sections}} 个分组 · {{entries}} 条记录"
     },
     "no-blocking-sessions": "无阻塞会话",

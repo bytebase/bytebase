@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Search users by email. Prefix with serviceAccounts/ or workloadIdentities/ to search those actors.",
+          "description": "Search users, service accounts, and workload identities by name or email",
           "title": "Actor"
         },
         "level": {
@@ -1544,6 +1544,7 @@
       "sort": "Sort",
       "updated": "Update time"
     },
+    "statement-exceeds-preview-limit": "This statement exceeds the preview limit. After reloading, only a preview will be shown.",
     "statement-from-sheet-warning": "This statement is loaded from a large sheet. Preview may be truncated.",
     "status-transition": {
       "modal": {
@@ -1826,6 +1827,7 @@
         "add-comment-on-line": "Add a comment on line {{line}}",
         "add-comment-on-lines": "Add a comment on lines {{startLine}} to {{endLine}}",
         "anchor": {
+          "comparison-size-limit": "The original or current statement exceeds the comparison limit.",
           "line_one": "Line {{range}}",
           "line_other": "Lines {{range}}",
           "outdated": "Outdated",
@@ -2757,18 +2759,6 @@
         "description": "{{bound}} {{audit}}",
         "edit": "Edit policy",
         "loading": "Reading the access policy…",
-        "masking": {
-          "badge": "Masking exemptions ignored",
-          "badge-disabled": "Masking exemptions ignored — MCP is off",
-          "badge-unlicensed": "Masking exemptions ignored — masking not licensed",
-          "description": "If enabled, masked data stays masked in MCP sessions even for users with exemptions or unmask grants. Coverage depends on the engine: where Bytebase does not mask, this changes nothing. The console is unaffected.",
-          "title": "Ignore masking exemptions",
-          "unavailable": "Data masking is not licensed for this workspace, so nothing is masked whatever this is set to."
-        },
-        "masking-pending": {
-          "applied": "This policy will be saved with masking exemptions applied.",
-          "ignored": "This policy will be saved with masking exemptions ignored."
-        },
         "mode": {
           "disabled": {
             "best-for": "Best for: keeping MCP off until you are ready to turn it on.",
@@ -3737,7 +3727,8 @@
       "completed": "Completed",
       "computing": "Computing...",
       "dumping": "Dumping...",
-      "retry-attempt": "attempt {{current}}/{{max}}",
+      "hide-full-statement": "Hide full statement",
+      "show-full-statement": "Show full statement",
       "syncing": "Syncing..."
     },
     "log-type": {
@@ -3747,15 +3738,20 @@
       "ghost-migration": "gh-ost Migration",
       "prior-backup": "Prior Backup",
       "release-file-execute": "Release File",
-      "retry": "Retry",
       "schema-dump": "Schema Dump",
       "transaction": "Transaction"
     },
     "log-viewer": {
+      "attempt-count_one": "{{count}} attempt",
+      "attempt-count_other": "{{count}} attempts",
+      "attempt-n": "Attempt {{n}}",
+      "attempt-reason": "failed: {{reason}}",
       "collapse-all": "Collapse all",
       "expand-all": "Expand all",
       "multiple-replicas-notice": "Server restart detected during execution. Logs are grouped by replica.",
+      "previous-attempts": "Previous attempts",
       "replica-n": "Replica #{{n}}",
+      "retrying": "retrying",
       "summary": "{{sections}} sections · {{entries}} entries"
     },
     "no-blocking-sessions": "No blocking sessions",

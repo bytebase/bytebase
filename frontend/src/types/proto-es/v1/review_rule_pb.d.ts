@@ -28,7 +28,8 @@ export enum ReviewRuleType {
   REVIEW_RULE_TYPE_UNSPECIFIED = 0,
 
   /**
-   * P0: the statements do not parse for the target engine.
+   * P0: the statements do not parse for the target engine. It gates the
+   * other rules (see ReviewRulePolicy).
    *
    * @generated from enum value: SYNTAX = 1;
    */

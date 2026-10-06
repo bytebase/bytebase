@@ -404,6 +404,8 @@ beforeEach(() => {
   mocks.findController = null;
   vi.clearAllMocks();
   mocks.threadFocus = undefined;
+  mocks.placements = new Map();
+  mocks.placementTargets = new Map();
   mocks.hasPermission.mockReturnValue(true);
   container = document.createElement("div");
   root = createRoot(container);
@@ -422,13 +424,18 @@ const giveElementsHeight = () =>
     .spyOn(HTMLElement.prototype, "getBoundingClientRect")
     .mockReturnValue(new DOMRect(0, 0, 700, 100));
 
-const mount = (editor: IStandaloneCodeEditor, currentIssue = issue) =>
+const mount = (
+  editor: IStandaloneCodeEditor,
+  currentIssue = issue,
+  previewEndLine?: number
+) =>
   act(() =>
     root.render(
       <StatementThreadsLayer
         editor={editor}
         issue={currentIssue}
         monaco={fakeMonaco}
+        previewEndLine={previewEndLine}
         sheetSha256={SHA}
         spec={spec}
       />
@@ -448,6 +455,13 @@ const hosted = (
 
 const cardRoot = (widgets: Set<{ getDomNode: () => HTMLElement }>) =>
   hosted(widgets, "[data-testid='thread-card']")?.getAttribute("data-root");
+
+const cardRoots = (widgets: Set<{ getDomNode: () => HTMLElement }>) =>
+  Array.from(widgets)
+    .flatMap((widget) =>
+      Array.from(widget.getDomNode().querySelectorAll("[data-testid='thread-card']"))
+    )
+    .map((card) => card.getAttribute("data-root"));
 
 const classesOf = (
   decorations: monaco.editor.IModelDeltaDecoration[],
@@ -480,6 +494,29 @@ const pressWalker = (widgets: Set<{ getDomNode: () => HTMLElement }>, label: str
   });
 
 describe("StatementThreadsLayer", () => {
+  test("shows only fully visible preview threads and disables new anchors", () => {
+    mocks.comments = [
+      threadRoot("visible", 2, 3),
+      threadRoot("crossing", 3, 4, { createdAt: 2 }),
+      threadRoot("beyond", 6, 6, { createdAt: 3 }),
+    ];
+    const fake = createFakeEditor();
+    mount(fake.editor, issue, 3);
+
+    expect(classesOf(fake.decorations.current, 3)).toContain(
+      "bb-thread-glyph bb-thread-glyph--active"
+    );
+    expect(classesOf(fake.decorations.current, 4)).toEqual([]);
+    expect(classesOf(fake.decorations.current, 6)).toEqual([]);
+    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/visible`);
+    expect(hosted(fake.widgets, "[data-testid='thread-walker'] [aria-label]")?.getAttribute("aria-label")).toBe(
+      "plan.review.thread.walker.count:1 · plan.review.thread.walker.remainder:2"
+    );
+    fake.fire("move", 2, MouseTargetType.GUTTER_LINE_NUMBERS);
+    expect(classesOf(fake.decorations.current, 2)).not.toContain("bb-thread-add-glyph");
+    expect(fake.editor.addAction).not.toHaveBeenCalled();
+  });
+
   test("decorates current anchors and expands the earliest unresolved thread", () => {
     mocks.comments = [
       threadRoot("later", 6, 9, { createdAt: 5 }),
@@ -516,7 +553,9 @@ describe("StatementThreadsLayer", () => {
     const picker = hosted(fake.widgets, "[data-testid='thread-picker']");
     act(() => picker?.querySelectorAll("[data-testid='pick-thread']")[1].dispatchEvent(new MouseEvent("click", { bubbles: true })));
     expect(highlighted()).toEqual([1, 2]);
-    act(() => hosted(fake.widgets, "[data-testid='close-thread']")?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    act(() => picker?.querySelectorAll("[data-testid='close-thread']")[1].dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    expect(highlighted()).toEqual([2]);
+    act(() => picker?.querySelector("[data-testid='close-thread']")?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
     expect(highlighted()).toEqual([]);
     expect(fake.decorations.current.filter((d) => d.options.className === "bb-thread-line--passive").map((d) => d.range.startLineNumber)).toEqual([1, 2]);
     expect(fake.decorations.current.filter((d) => d.options.glyphMarginClassName?.includes("bb-thread-glyph--count-2"))).toHaveLength(1);
@@ -620,7 +659,7 @@ describe("StatementThreadsLayer", () => {
     expect(composer()?.getAttribute("data-draft")).toBe("Draft 3-4");
   });
 
-  test("a marker opens its thread, a combined marker offers a picker, and closing returns to markers", () => {
+  test("markers open independent lines and combined threads", () => {
     mocks.comments = [
       threadRoot("first", 3, 4, { createdAt: 2 }),
       threadRoot("a", 6, 9, { createdAt: 5 }),
@@ -635,7 +674,8 @@ describe("StatementThreadsLayer", () => {
     expect(classesOf(fake.decorations.current, 9)).toContain("bb-thread-add-glyph");
     fake.fire("down", 9, MouseTargetType.GUTTER_GLYPH_MARGIN);
     expect(hosted(fake.widgets, "[data-testid='composer']")).toBeNull();
-    expect(zoneAfter(fake.zones)).toEqual([9]);
+    expect(zoneAfter(fake.zones)).toEqual([4, 9]);
+    expect(hosted(fake.widgets, "[data-testid='thread-walker']")?.textContent).toContain("2/3");
     const picker = hosted(fake.widgets, "[data-testid='thread-picker']");
     const pick = picker?.querySelectorAll("[data-testid='pick-thread']");
     expect(Array.from(pick ?? []).map((node) => node.textContent)).toEqual([
@@ -645,13 +685,20 @@ describe("StatementThreadsLayer", () => {
     act(() => {
       pick?.[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(zoneAfter(fake.zones)).toEqual([9]);
+    expect(zoneAfter(fake.zones)).toEqual([4, 9]);
+    expect(pick?.[1].getAttribute("data-expanded")).toBe("true");
+    expect(pick?.[0].getAttribute("data-expanded")).toBe("true");
+    expect(hosted(fake.widgets, "[data-testid='thread-walker']")?.textContent).toContain("3/3");
+    act(() => {
+      picker?.querySelectorAll("[data-testid='close-thread']")[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(pick?.[0].getAttribute("data-expanded")).toBe("false");
     expect(pick?.[1].getAttribute("data-expanded")).toBe("true");
 
-    // The marker of the expanded thread toggles it closed.
+    // Each marker closes only its own stack.
     fake.fire("down", 4, MouseTargetType.GUTTER_GLYPH_MARGIN);
-    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/first`);
-    fake.fire("down", 4, MouseTargetType.GUTTER_GLYPH_MARGIN);
+    expect(zoneAfter(fake.zones)).toEqual([9]);
+    fake.fire("down", 9, MouseTargetType.GUTTER_GLYPH_MARGIN);
     expect(fake.zones.size).toBe(0);
   });
 
@@ -853,6 +900,28 @@ describe("StatementThreadsLayer", () => {
     expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/first`);
   });
 
+  test("moves an expanded thread when its placement changes lines", () => {
+    const name = `${ISSUE}/issueComments/shifted`;
+    mocks.comments = [
+      threadRoot("shifted", 1, 1, { sheetSha256: "d".repeat(64) }),
+    ];
+    mocks.placementTargets.set("spec-1", SHA);
+    mocks.placements.set(name, {
+      state: "CURRENT",
+      range: { startLine: 2, endLine: 2 },
+    });
+    const fake = createFakeEditor();
+    mount(fake.editor);
+    expect(zoneAfter(fake.zones)).toEqual([2]);
+
+    mocks.placements = new Map([
+      [name, { state: "CURRENT", range: { startLine: 5, endLine: 5 } }],
+    ]);
+    mount(fake.editor);
+    expect(zoneAfter(fake.zones)).toEqual([5]);
+    expect(cardRoot(fake.widgets)).toBe(name);
+  });
+
   test("keeps reply drafts when the entire gutter group closes and reopens", () => {
     mocks.comments = [threadRoot("first", 3, 4)];
     const fake = createFakeEditor();
@@ -880,8 +949,11 @@ describe("StatementThreadsLayer", () => {
     const fake = createFakeEditor();
     fake.scroll.top = 600;
     mount(fake.editor);
-    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/target`);
-    expect(fake.setScrollTop).toHaveBeenCalledExactlyOnceWith(lineTop(10) - 8);
+    expect(cardRoots(fake.widgets)).toEqual([
+      `${ISSUE}/issueComments/first`,
+      `${ISSUE}/issueComments/target`,
+    ]);
+    expect(fake.setScrollTop).toHaveBeenCalledExactlyOnceWith(lineTop(10) + 1 - 8);
     expect(mocks.clearThreadFocus).toHaveBeenCalledWith(7);
   });
   test("the walker steps through unresolved threads in editor order and wraps", () => {
@@ -895,9 +967,9 @@ describe("StatementThreadsLayer", () => {
     mount(fake.editor);
     expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/a`);
     const control = walkerNode(fake.widgets);
-    expect(control?.textContent).toContain("2");
+    expect(control?.textContent).toContain("1/2");
     expect([control?.style.top, control?.style.right]).toEqual(["8px", "22px"]);
-    expect(hosted(fake.widgets, "[data-testid='thread-walker']")?.getAttribute("title")).toBe(
+    expect(hosted(fake.widgets, "[data-testid='thread-walker'] [aria-label]")?.getAttribute("aria-label")).toBe(
       "plan.review.thread.walker.count:2"
     );
 
@@ -906,25 +978,35 @@ describe("StatementThreadsLayer", () => {
     fake.scroll.top = 600;
     fake.setScrollTop.mockClear();
     pressWalker(fake.widgets, "next");
-    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/c`);
-    expect(zoneAfter(fake.zones)).toEqual([8]);
-    expect(fake.setScrollTop).toHaveBeenCalledExactlyOnceWith(lineTop(7) - 8);
+    expect(cardRoots(fake.widgets)).toEqual([
+      `${ISSUE}/issueComments/a`,
+      `${ISSUE}/issueComments/c`,
+    ]);
+    expect(zoneAfter(fake.zones)).toEqual([2, 8]);
+    expect(hosted(fake.widgets, "[data-testid='thread-walker']")?.textContent).toContain("2/2");
+    expect(fake.setScrollTop).toHaveBeenCalledExactlyOnceWith(lineTop(7) + 1 - 8);
     expect(fake.editor.getDomNode()?.scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+    fake.scroll.top = 500;
+    expect(hosted(fake.widgets, "[data-testid='thread-walker']")?.textContent).toContain("2/2");
     fake.setScrollTop.mockClear();
     pressWalker(fake.widgets, "next");
-    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/a`);
+    expect(hosted(fake.widgets, "[data-testid='thread-walker']")?.textContent).toContain("1/2");
     expect(fake.setScrollTop).toHaveBeenCalledExactlyOnceWith(lineTop(2) - 8);
     // Stepping onto a thread already in view leaves the scroll alone.
     fake.setScrollTop.mockClear();
     pressWalker(fake.widgets, "previous");
-    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/c`);
+    expect(hosted(fake.widgets, "[data-testid='thread-walker']")?.textContent).toContain("2/2");
     expect(fake.setScrollTop).not.toHaveBeenCalled();
 
-    // Closing the open line leaves no current thread: down starts over, up ends.
+    // Closing the selected line leaves the other open, and up still wraps.
     fake.fire("down", 8, MouseTargetType.GUTTER_GLYPH_MARGIN);
-    expect(fake.zones.size).toBe(0);
+    expect(zoneAfter(fake.zones)).toEqual([2]);
+    expect(hosted(fake.widgets, "[data-testid='thread-walker']")?.textContent).toContain("0/2");
     pressWalker(fake.widgets, "previous");
-    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/c`);
+    expect(cardRoots(fake.widgets)).toEqual([
+      `${ISSUE}/issueComments/a`,
+      `${ISSUE}/issueComments/c`,
+    ]);
   });
 
   test("the walker is absent without unresolved placed threads and reports unplaced ones", () => {
@@ -938,7 +1020,7 @@ describe("StatementThreadsLayer", () => {
       threadRoot("elsewhere", 4, 4, { sheetSha256: "d".repeat(64) }),
     ];
     mount(fake.editor);
-    expect(hosted(fake.widgets, "[data-testid='thread-walker']")?.getAttribute("title")).toBe(
+    expect(hosted(fake.widgets, "[data-testid='thread-walker'] [aria-label]")?.getAttribute("aria-label")).toBe(
       "plan.review.thread.walker.count:1 · plan.review.thread.walker.remainder:1"
     );
     pressWalker(fake.widgets, "next");
@@ -952,9 +1034,13 @@ describe("StatementThreadsLayer", () => {
     expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/a`);
     mocks.comments = [threadRoot("a", 2, 2, { createdAt: 1, resolved: true }), threadRoot("b", 5, 5, { createdAt: 2 })];
     mount(fake.editor);
-    expect(hosted(fake.widgets, "[data-testid='thread-walker']")?.textContent).toContain("1");
+    expect(hosted(fake.widgets, "[data-testid='thread-walker']")?.textContent).toContain("0/1");
     pressWalker(fake.widgets, "next");
-    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/b`);
+    expect(hosted(fake.widgets, "[data-testid='thread-walker']")?.textContent).toContain("1/1");
+    expect(cardRoots(fake.widgets)).toEqual([
+      `${ISSUE}/issueComments/a`,
+      `${ISSUE}/issueComments/b`,
+    ]);
     mocks.comments = [threadRoot("a", 2, 2, { createdAt: 1, resolved: true }), threadRoot("b", 5, 5, { createdAt: 2, resolved: true })];
     mount(fake.editor);
     expect(hosted(fake.widgets, "[data-testid='thread-walker']")).toBeNull();

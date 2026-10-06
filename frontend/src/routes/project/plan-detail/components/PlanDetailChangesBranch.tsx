@@ -207,7 +207,8 @@ export function PlanDetailChangesBranch({
   const currentUser = useCurrentUser();
   const unresolvedThreadsBySpec = usePlacedUnresolvedThreadCounts(
     page.issue?.name,
-    page.plan.specs
+    page.plan.specs,
+    `projects/${page.projectId}`
   );
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);

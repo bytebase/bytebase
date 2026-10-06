@@ -26,6 +26,7 @@ import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
 import { ExprEditor, type OptionConfig } from "@/components/ExprEditor";
 import { FeatureBadge } from "@/components/FeatureBadge";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import {
@@ -864,17 +865,6 @@ function computeExpirationTimestamp(days?: number): number | undefined {
   return Date.now() + days * 86400000;
 }
 
-function formatExpirationDate(timestampMs?: number): string {
-  if (!timestampMs) return "";
-  return new Date(timestampMs).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 // Validates the form's expiration against the workspace cap. "Never" (no
 // timestamp) is only allowed when no cap is configured; a chosen timestamp
 // must be in the future and within the cap.
@@ -1329,7 +1319,9 @@ function ProjectRoleBindingForm({
         {!form.expirationCustom && form.expirationTimestampInMS && (
           <p className="text-xs leading-4 text-control-light">
             {t("project.members.expires-at", {
-              date: formatExpirationDate(form.expirationTimestampInMS),
+              // An interpolated sentence cannot host a tooltip, so it carries
+              // the full precision itself.
+              date: formatAbsoluteDateTime(form.expirationTimestampInMS),
             })}
           </p>
         )}
@@ -1892,11 +1884,14 @@ function EditMemberRoleDrawer({
                                   {row.databaseResource?.table ?? "*"}
                                 </TableCell>
                                 <TableCell>
-                                  {row.expiration
-                                    ? formatAbsoluteDateTime(
-                                        row.expiration.getTime()
-                                      )
-                                    : t("project.members.never-expires")}
+                                  {row.expiration ? (
+                                    <HumanizeTs
+                                      mode="operational"
+                                      tsMs={row.expiration.getTime()}
+                                    />
+                                  ) : (
+                                    t("project.members.never-expires")
+                                  )}
                                 </TableCell>
                               </TableRow>
                             ))}

@@ -12,9 +12,9 @@ export type MCPMode =
 
 /**
  * A mode that admits MCP sessions. Anything describing what a session may do —
- * the capability ladder, the consent disclosure, the masking toggle — takes
- * this rather than MCPMode, so "there is a session to describe" is checked by
- * the compiler instead of by a comparison at each call site.
+ * the capability ladder, the consent disclosure — takes this rather than
+ * MCPMode, so "there is a session to describe" is checked by the compiler
+ * instead of by a comparison at each call site.
  */
 export type MCPServingMode =
   | MCPSetting_Capability.READ_ONLY
@@ -97,11 +97,10 @@ export const mcpModeKey = (
 export type ConsentCeiling =
   /**
    * The disclosable policy: the mode already narrowed to one this bundle can
-   * name, plus the only other field the disclosure reads. The response itself
-   * does not travel, so no consumer can re-derive the mode from it and reach a
-   * different answer.
+   * name. The response itself does not travel, so no consumer can re-derive the
+   * mode from it and reach a different answer.
    */
-  | { kind: "mode"; mode: MCPMode; ignoreMaskingExemptions: boolean }
+  | { kind: "mode"; mode: MCPMode }
   /** Actuator info did not provide a policy. The policy is not known to be anything. */
   | { kind: "unknown" }
   /** A stored ceiling this build has no wording for, whatever wrote it. */
@@ -124,9 +123,5 @@ export const readConsentCeiling = (
   if (!isMCPMode(setting.capability)) {
     return { kind: "undisclosable" };
   }
-  return {
-    kind: "mode",
-    mode: setting.capability,
-    ignoreMaskingExemptions: setting.ignoreMaskingExemptions,
-  };
+  return { kind: "mode", mode: setting.capability };
 };

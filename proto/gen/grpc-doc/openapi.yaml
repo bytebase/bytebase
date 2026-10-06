@@ -24503,20 +24503,6 @@ components:
              on the internal MCP chain decides, per request, which method classes are
              served, and under READ_ONLY the SQL clamp decides, per statement, whether
              it only reads.
-        ignoreMaskingExemptions:
-          type: boolean
-          title: ignore_masking_exemptions
-          description: |-
-            Whether a request that arrived over MCP stops applying the caller's own
-             unmasking provisioning. Two mechanisms let a user see a real value and this
-             suppresses both: the masking exemptions granted to them, and the unmask
-             carried by an access grant. The same user in the console is untouched.
-
-             It cannot force masking where there is none. Masking substitutes values in
-             query results, so this does not reach data copied into a column carrying no
-             masking policy, and it does nothing on the engines Bytebase does not mask.
-             It narrows what an agent reads through the paths Bytebase masks; it is not
-             a confidentiality boundary.
       title: MCPSetting
       additionalProperties: false
       description: |-
@@ -24532,8 +24518,8 @@ components:
         - READ_WRITE
       description: |-
         Capability is the ceiling: a session runs at this level or lower.
-         Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
-         path to leave the current ceiling unchanged.
+         Writing CAPABILITY_UNSPECIFIED, explicitly or by leaving
+         value.mcp.capability out of the update mask, is rejected.
     bytebase.v1.MaskingExemptionPolicy:
       type: object
       properties:
@@ -25572,6 +25558,13 @@ components:
           title: query_data_policy
         - type: object
           properties:
+            reviewAiPolicy:
+              allOf:
+                - $ref: '#/components/schemas/bytebase.v1.ReviewAIPolicy'
+              title: review_ai_policy
+          title: review_ai_policy
+        - type: object
+          properties:
             reviewRulePolicy:
               allOf:
                 - $ref: '#/components/schemas/bytebase.v1.ReviewRulePolicy'
@@ -25602,6 +25595,8 @@ components:
               - required:
                   - queryDataPolicy
               - required:
+                  - reviewAiPolicy
+              - required:
                   - reviewRulePolicy
               - required:
                   - rolloutPolicy
@@ -25615,6 +25610,8 @@ components:
                     - maskingRulePolicy
                 - required:
                     - queryDataPolicy
+                - required:
+                    - reviewAiPolicy
                 - required:
                     - reviewRulePolicy
                 - required:
@@ -25682,6 +25679,7 @@ components:
         - TAG
         - DATA_QUERY
         - REVIEW_RULE
+        - REVIEW_AI
       description: The type of organizational policy.
     bytebase.v1.Position:
       type: object
@@ -26816,6 +26814,19 @@ components:
       required:
         - name
       additionalProperties: false
+    bytebase.v1.ReviewAIPolicy:
+      type: object
+      properties:
+        content:
+          type: string
+          title: content
+          description: The policy text. Must not be blank, at most 64 KiB.
+      title: ReviewAIPolicy
+      additionalProperties: false
+      description: |-
+        Natural-language policy for the AI review. Unlike the review rule policy,
+         both levels apply: the workspace policy and the project policy both reach
+         the reviewer, and the project policy wins where they conflict.
     bytebase.v1.ReviewConfig:
       type: object
       properties:
@@ -26865,7 +26876,12 @@ components:
       description: |-
         Standard review rule policy: the rules switched on. The nearest policy
          wins: a project's own policy applies as is; a project without one uses
-         the workspace policy; with neither, every rule is on.
+         the workspace policy; with neither, every rule is on. Getting the policy
+         of a project without its own is NOT_FOUND; getting the workspace's when it
+         has none returns every rule on.
+
+         SYNTAX gates the rest: the other rules judge only SQL that parses, so a
+         list without SYNTAX switches every rule off.
 
          A saved list is explicit, so a rule added to the standard set in a later
          release is appended to every saved policy by a data migration in that

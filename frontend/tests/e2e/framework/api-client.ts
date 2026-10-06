@@ -137,6 +137,19 @@ export class BytebaseApiClient {
     }
   }
 
+  // OAuth2 dynamic client registration (RFC 7591), the call an MCP client makes
+  // before sending its user to the consent page. The backend accepts only
+  // localhost, known hosted-client, and allowlisted app-scheme redirect URIs.
+  async registerOAuth2Client(
+    clientName: string,
+    redirectURIs: string[],
+  ): Promise<{ client_id: string }> {
+    return this.request<{ client_id: string }>("POST", "/api/oauth2/register", {
+      client_name: clientName,
+      redirect_uris: redirectURIs,
+    });
+  }
+
   // Creates a new project with the given resourceId and title. Used by the
   // seed-test-data fixture to ensure tests have ≥ 2 projects (the
   // project-switcher CUJ in connection.spec.ts needs an alternative to the
@@ -775,6 +788,9 @@ export class BytebaseApiClient {
       // already defined in the DATA_CLASSIFICATION setting (UpdateProject
       // validates it exists).
       dataClassificationConfigId?: string;
+      // How many times the driver re-runs the sheet's execution after a
+      // lock-timeout failure, inside the same task run (0 disables retries).
+      executionRetryPolicy?: { maximumRetries?: number };
     },
   ): Promise<void> {
     const fields: string[] = [];
@@ -814,6 +830,10 @@ export class BytebaseApiClient {
     if (settings.dataClassificationConfigId !== undefined) {
       fields.push("data_classification_config_id");
       body.dataClassificationConfigId = settings.dataClassificationConfigId;
+    }
+    if (settings.executionRetryPolicy !== undefined) {
+      fields.push("execution_retry_policy");
+      body.executionRetryPolicy = settings.executionRetryPolicy;
     }
     if (fields.length === 0) {
       throw new Error("updateProjectSettings: no fields specified");

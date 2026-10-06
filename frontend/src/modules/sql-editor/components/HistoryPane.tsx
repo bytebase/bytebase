@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { Copy, Link2, Loader2, X } from "lucide-react";
 import {
   useCallback,
@@ -12,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { SQL_EDITOR_QUERY_HISTORY_MODULE } from "@/app/router/handles";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { Button } from "@/components/ui/button";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
@@ -27,9 +27,10 @@ import {
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
-import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY, getTimeForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/query_history_service_pb";
 import { extractProjectResourceName, extractQueryHistoryUID } from "@/utils";
+import { queryHistoryTabTitle } from "@/utils/v1/queryHistory";
 import { HistorySearchInput } from "./HistorySearchInput";
 
 /**
@@ -117,11 +118,6 @@ export function HistoryPane() {
     [resetPageToken, historyQuery]
   );
 
-  const titleOfQueryHistory = (h: QueryHistory) =>
-    dayjs(getDateForPbTimestampProtoEs(h.createTime)).format(
-      "YYYY-MM-DD HH:mm:ss"
-    );
-
   const handleHistoryClick = async (history: QueryHistory) => {
     const { statement } = history;
     const tabsState = getSQLEditorTabsState();
@@ -133,7 +129,7 @@ export function HistoryPane() {
     } else {
       tabsState.addTab(
         {
-          title: `Query history at ${titleOfQueryHistory(history)}`,
+          title: queryHistoryTabTitle(history),
           statement,
         },
         /* beside */ true
@@ -201,9 +197,11 @@ export function HistoryPane() {
     >
       <div className="w-full flex flex-row justify-between items-center">
         <div className="flex items-start gap-x-1">
-          <span className="text-xs text-control-placeholder">
-            {titleOfQueryHistory(history)}
-          </span>
+          <HumanizeTs
+            className="text-xs text-control-placeholder"
+            mode="compact"
+            tsMs={getTimeForPbTimestampProtoEs(history.createTime)}
+          />
         </div>
         <div className="flex items-center gap-x-1">
           <Button

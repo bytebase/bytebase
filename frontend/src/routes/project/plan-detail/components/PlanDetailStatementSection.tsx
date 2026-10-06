@@ -8,7 +8,11 @@ import {
   sheetServiceClientConnect,
 } from "@/api";
 import {
+  captureEditorViewAnchor,
+  type EditorViewAnchor,
+  focusEditorAtAnchor,
   type IStandaloneCodeEditor,
+  lineViewAnchor,
   MonacoEditor,
   type MonacoModule,
   ReadonlyMonaco,
@@ -45,10 +49,12 @@ import { getStatementSize, MAX_UPLOAD_FILE_SIZE_MB } from "@/utils/sheet";
 import { getInstanceResource } from "@/utils/v1/database";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import {
+  exceedsSheetPreviewLimit,
   extractSheetUID,
   getSheetStatement,
   setSheetStatement,
 } from "@/utils/v1/sheet";
+import { usePlanDetailStore } from "../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
   createEmptyLocalSheet,
@@ -59,7 +65,10 @@ import {
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
 import { StatementThreadsLayer } from "./threads/StatementThreadsLayer";
-import { sheetSha256OfName } from "./threads/threadModel";
+import {
+  completePreviewLineCount,
+  sheetSha256OfName,
+} from "./threads/threadModel";
 
 // Both modes reserve the same gutter so line numbers and SQL stay aligned
 // when entering or leaving edit mode. Keep these options stable: MonacoEditor
@@ -130,9 +139,39 @@ export function PlanDetailStatementSection({
     editor: IStandaloneCodeEditor;
     monaco: MonacoModule;
   }>();
+  const [editingEditor, setEditingEditor] = useState<IStandaloneCodeEditor>();
+  const editAnchorRef = useRef<EditorViewAnchor | undefined>(undefined);
+  const threadFocus = usePlanDetailStore((state) => state.threadFocus);
+  const clearThreadFocus = usePlanDetailStore(
+    (state) => state.clearThreadFocus
+  );
   useEffect(() => {
     if (!showsReadonlyEditor) setReadonlyEditor(undefined);
   }, [showsReadonlyEditor]);
+  useEffect(() => {
+    if (isEditing) return;
+    setEditingEditor(undefined);
+    editAnchorRef.current = undefined;
+  }, [isEditing]);
+  // The edit editor lands on a pending Activity anchor, which may arrive
+  // before or after it mounts, or else on the place captured by Edit.
+  useEffect(() => {
+    if (!isEditing || !editingEditor) return;
+    const activityLine =
+      threadFocus?.specId === spec.id ? threadFocus.lineNumber : undefined;
+    const anchor = activityLine
+      ? lineViewAnchor(activityLine)
+      : editAnchorRef.current;
+    editAnchorRef.current = undefined;
+    if (!anchor) return;
+    focusEditorAtAnchor(editingEditor, anchor);
+    if (activityLine && threadFocus) {
+      // Activity lives in another phase section, so the editor may be off
+      // screen.
+      editingEditor.getDomNode()?.scrollIntoView({ block: "nearest" });
+      clearThreadFocus(threadFocus.nonce);
+    }
+  }, [clearThreadFocus, editingEditor, isEditing, spec.id, threadFocus]);
 
   const editingScope = useMemo(() => `statement:${spec.id}`, [spec.id]);
   const targetDatabaseName = useMemo(() => {
@@ -352,6 +391,12 @@ export function PlanDetailStatementSection({
     setIsEditing(true);
   };
 
+  const handleBeginEdit = () => {
+    editAnchorRef.current =
+      readonlyEditor && captureEditorViewAnchor(readonlyEditor.editor);
+    setIsEditing(true);
+  };
+
   const handleSchemaEditorInsert = (nextStatement: string) => {
     if (page.isCreating) {
       updateLocalStatement(nextStatement);
@@ -483,16 +528,34 @@ export function PlanDetailStatementSection({
 
   const editorContent = page.isCreating ? statement : draftStatement;
 
-  // Inline threads anchor to the saved sheet of a persisted spec, so they
-  // need an issue, a content-addressed sheet, and the complete statement.
+  // Inline threads anchor to the saved sheet of a persisted spec. A truncated
+  // preview can still show threads on its complete lines.
   const sheetSha256 = sheetSha256OfName(sheetName);
   const issue = page.issue;
+  const showLargeSheetWarning = useMemo(
+    () =>
+      isEditing
+        ? exceedsSheetPreviewLimit(draftStatement)
+        : isSheetOversize ||
+          (!isLoading &&
+            Boolean(sheetSha256) &&
+            exceedsSheetPreviewLimit(statement)),
+    [
+      draftStatement,
+      isEditing,
+      isLoading,
+      isSheetOversize,
+      sheetSha256,
+      statement,
+    ]
+  );
+  const previewEndLine = useMemo(
+    () =>
+      isSheetOversize ? completePreviewLineCount(statement, true) : undefined,
+    [isSheetOversize, statement]
+  );
   const threadsEnabled = Boolean(
-    issue &&
-      !page.isCreating &&
-      !isPendingDraft &&
-      sheetSha256 &&
-      !isSheetOversize
+    issue && !page.isCreating && !isPendingDraft && sheetSha256
   );
 
   return (
@@ -539,11 +602,7 @@ export function PlanDetailStatementSection({
               </>
             )}
             {!isEditing && canEdit && (
-              <Button
-                onClick={() => setIsEditing(true)}
-                size="xs"
-                appearance="outline"
-              >
+              <Button onClick={handleBeginEdit} size="xs" appearance="outline">
                 <Pencil className="h-3.5 w-3.5" />
                 {t("common.edit")}
               </Button>
@@ -574,13 +633,17 @@ export function PlanDetailStatementSection({
           </div>
         )}
       </div>
-      {isSheetOversize && (
+      {showLargeSheetWarning && (
         <Alert
           variant="warning"
           description={
             <div className="flex items-center justify-between gap-x-4">
-              <span>{t("issue.statement-from-sheet-warning")}</span>
-              {sheetName && (
+              <span>
+                {isEditing
+                  ? t("issue.statement-exceeds-preview-limit")
+                  : t("issue.statement-from-sheet-warning")}
+              </span>
+              {!isEditing && sheetName && (
                 <Button
                   disabled={isDownloading}
                   onClick={() => void downloadSheet()}
@@ -611,6 +674,7 @@ export function PlanDetailStatementSection({
               content={editorContent}
               language={language}
               options={STATEMENT_EDITOR_OPTIONS}
+              onReady={(_monaco, editor) => setEditingEditor(editor)}
               onChange={(nextStatement) => {
                 if (page.isCreating) {
                   updateLocalStatement(nextStatement);
@@ -641,6 +705,7 @@ export function PlanDetailStatementSection({
                   issue={issue}
                   key={sheetSha256}
                   monaco={readonlyEditor.monaco}
+                  previewEndLine={previewEndLine}
                   sheetSha256={sheetSha256}
                   spec={spec}
                 />

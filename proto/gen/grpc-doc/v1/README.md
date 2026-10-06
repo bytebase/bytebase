@@ -600,6 +600,7 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
+    - [ReviewAIPolicy](#bytebase-v1-ReviewAIPolicy)
     - [ReviewRulePolicy](#bytebase-v1-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [TagPolicy](#bytebase-v1-TagPolicy)
@@ -3375,7 +3376,7 @@ needs a person&#39;s acceptance, not that it is forbidden.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | REVIEW_RULE_TYPE_UNSPECIFIED | 0 |  |
-| SYNTAX | 1 | P0: the statements do not parse for the target engine. |
+| SYNTAX | 1 | P0: the statements do not parse for the target engine. It gates the other rules (see ReviewRulePolicy). |
 | WALK_THROUGH | 2 | P0: applying the statements to the synced schema fails: a missing table or column, a duplicate object, or an invalid reference. |
 | ONLINE_MIGRATION | 3 | P0: the change requests online migration but is not eligible. |
 | PRIOR_BACKUP | 4 | P0: the change enables prior backup but the backup cannot be taken. |
@@ -4055,7 +4056,7 @@ completion transaction, so re-running supersedes instead of canceling).
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | RULE | 1 | Review against the standard rules. |
-| AI | 2 | Review against the AI review policy&#39;s natural-language instructions, performed by a model. |
+| AI | 2 | Review against the natural-language AI review policy, performed by a model. |
 
 
  
@@ -4616,9 +4617,6 @@ workspace.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The maximum capability available to MCP sessions in this workspace, acting as an admin-set ceiling. Enforced server-side at three points: the /mcp endpoint decides whether a connection is admitted at all, the ceiling gate on the internal MCP chain decides, per request, which method classes are served, and under READ_ONLY the SQL clamp decides, per statement, whether it only reads. |
-| ignore_masking_exemptions | [bool](#bool) |  | Whether a request that arrived over MCP stops applying the caller&#39;s own unmasking provisioning. Two mechanisms let a user see a real value and this suppresses both: the masking exemptions granted to them, and the unmask carried by an access grant. The same user in the console is untouched.
-
-It cannot force masking where there is none. Masking substitutes values in query results, so this does not reach data copied into a column carrying no masking policy, and it does nothing on the engines Bytebase does not mask. It narrows what an agent reads through the paths Bytebase masks; it is not a confidentiality boundary. |
 
 
 
@@ -4970,8 +4968,8 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 
 ### MCPSetting.Capability
 Capability is the ceiling: a session runs at this level or lower.
-Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
-path to leave the current ceiling unchanged.
+Writing CAPABILITY_UNSPECIFIED, explicitly or by leaving
+value.mcp.capability out of the update mask, is rejected.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -9978,6 +9976,7 @@ For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.proje
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | query_data_policy | [QueryDataPolicy](#bytebase-v1-QueryDataPolicy) |  |  |
 | review_rule_policy | [ReviewRulePolicy](#bytebase-v1-ReviewRulePolicy) |  |  |
+| review_ai_policy | [ReviewAIPolicy](#bytebase-v1-ReviewAIPolicy) |  |  |
 | enforce | [bool](#bool) |  | Whether the policy is enforced. |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 
@@ -10004,12 +10003,34 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 
 
+<a name="bytebase-v1-ReviewAIPolicy"></a>
+
+### ReviewAIPolicy
+Natural-language policy for the AI review. Unlike the review rule policy,
+both levels apply: the workspace policy and the project policy both reach
+the reviewer, and the project policy wins where they conflict.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [string](#string) |  | The policy text. Must not be blank, at most 64 KiB. |
+
+
+
+
+
+
 <a name="bytebase-v1-ReviewRulePolicy"></a>
 
 ### ReviewRulePolicy
 Standard review rule policy: the rules switched on. The nearest policy
 wins: a project&#39;s own policy applies as is; a project without one uses
-the workspace policy; with neither, every rule is on.
+the workspace policy; with neither, every rule is on. Getting the policy
+of a project without its own is NOT_FOUND; getting the workspace&#39;s when it
+has none returns every rule on.
+
+SYNTAX gates the rest: the other rules judge only SQL that parses, so a
+list without SYNTAX switches every rule off.
 
 A saved list is explicit, so a rule added to the standard set in a later
 release is appended to every saved policy by a data migration in that
@@ -10121,6 +10142,7 @@ The type of organizational policy.
 | TAG | 4 | Resource tag policy. |
 | DATA_QUERY | 6 | Query data access policy. |
 | REVIEW_RULE | 7 | Standard review rule switch. Allowed on WORKSPACE and PROJECT. |
+| REVIEW_AI | 8 | Natural-language policy for the AI review. Allowed on WORKSPACE and PROJECT. |
 
 
  

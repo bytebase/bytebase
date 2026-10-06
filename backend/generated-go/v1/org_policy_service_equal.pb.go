@@ -148,6 +148,9 @@ func (x *Policy) Equal(y *Policy) bool {
 	if !x.GetReviewRulePolicy().Equal(y.GetReviewRulePolicy()) {
 		return false
 	}
+	if !x.GetReviewAiPolicy().Equal(y.GetReviewAiPolicy()) {
+		return false
+	}
 	if x.Enforce != y.Enforce {
 		return false
 	}
@@ -171,6 +174,19 @@ func (x *ReviewRulePolicy) Equal(y *ReviewRulePolicy) bool {
 		if x.Rules[i] != y.Rules[i] {
 			return false
 		}
+	}
+	return true
+}
+
+func (x *ReviewAIPolicy) Equal(y *ReviewAIPolicy) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Content != y.Content {
+		return false
 	}
 	return true
 }

@@ -462,9 +462,10 @@ func (s *Store) getQueryDataPolicy(ctx context.Context, workspaceID string, reso
 	return p, nil
 }
 
-// GetDefaultReviewRulePolicy returns the review rule policy in force when
-// neither the project nor the workspace has one: every standard rule on. A
-// rule added to ReviewRuleType is added here in the same release.
+// GetDefaultReviewRulePolicy returns the review rule policy a new workspace
+// starts with, and the one in force when neither the project nor the
+// workspace has one: every standard rule on. A rule added to ReviewRuleType
+// is added here in the same release.
 func GetDefaultReviewRulePolicy() *storepb.ReviewRulePolicy {
 	return &storepb.ReviewRulePolicy{Rules: []storepb.ReviewRuleType{
 		storepb.ReviewRuleType_SYNTAX,
@@ -484,7 +485,8 @@ func GetDefaultReviewRulePolicy() *storepb.ReviewRulePolicy {
 // GetEffectiveReviewRulePolicy returns the standard review rules on for a
 // project. The nearest policy wins: the project's own policy applies as is, a
 // project without one uses the workspace policy, and with neither every rule
-// is on. A policy that is not enforced counts as absent.
+// is on. A policy that is not enforced counts as absent. SYNTAX gates the
+// rest, so a policy without it leaves no rule on.
 func (s *Store) GetEffectiveReviewRulePolicy(ctx context.Context, workspaceID string, projectID string) (*storepb.ReviewRulePolicy, error) {
 	for _, level := range []struct {
 		resourceType storepb.Policy_Resource
@@ -498,6 +500,9 @@ func (s *Store) GetEffectiveReviewRulePolicy(ctx context.Context, workspaceID st
 			return nil, err
 		}
 		if policy != nil {
+			if !slices.Contains(policy.Rules, storepb.ReviewRuleType_SYNTAX) {
+				return &storepb.ReviewRulePolicy{}, nil
+			}
 			return policy, nil
 		}
 	}
@@ -524,6 +529,50 @@ func (s *Store) getReviewRulePolicy(ctx context.Context, workspaceID string, res
 		return nil, errors.Wrapf(err, "failed to unmarshal review rule policy for %s", resource)
 	}
 	return p, nil
+}
+
+// EffectiveReviewAIPolicy is the AI review policy text in force for a project.
+// Both levels apply: the reviewer reads the workspace policy and the project
+// policy, and the project policy wins where they conflict. A level without an
+// enforced policy is the empty string.
+type EffectiveReviewAIPolicy struct {
+	Workspace string
+	Project   string
+}
+
+// GetEffectiveReviewAIPolicy returns the policy text of both levels.
+func (s *Store) GetEffectiveReviewAIPolicy(ctx context.Context, workspaceID string, projectID string) (*EffectiveReviewAIPolicy, error) {
+	workspace, err := s.getReviewAIPolicyContent(ctx, workspaceID, storepb.Policy_WORKSPACE, common.FormatWorkspace(workspaceID))
+	if err != nil {
+		return nil, err
+	}
+	project, err := s.getReviewAIPolicyContent(ctx, workspaceID, storepb.Policy_PROJECT, common.FormatProject(projectID))
+	if err != nil {
+		return nil, err
+	}
+	return &EffectiveReviewAIPolicy{Workspace: workspace, Project: project}, nil
+}
+
+// getReviewAIPolicyContent returns "" when the resource has no enforced AI
+// review policy.
+func (s *Store) getReviewAIPolicyContent(ctx context.Context, workspaceID string, resourceType storepb.Policy_Resource, resource string) (string, error) {
+	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
+		Workspace:    workspaceID,
+		ResourceType: &resourceType,
+		Resource:     &resource,
+		Type:         new(storepb.Policy_REVIEW_AI),
+	})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get AI review policy for %s", resource)
+	}
+	if policy == nil || !policy.Enforce {
+		return "", nil
+	}
+	p := &storepb.ReviewAIPolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
+		return "", errors.Wrapf(err, "failed to unmarshal AI review policy for %s", resource)
+	}
+	return p.Content, nil
 }
 
 type reviewConfigResource struct {

@@ -211,6 +211,20 @@ func convertToStorePBReviewRulePolicy(policy *v1pb.ReviewRulePolicy) *storepb.Re
 	return &storepb.ReviewRulePolicy{Rules: rules}
 }
 
+func convertToV1PBReviewAIPolicy(payloadStr string) (*v1pb.Policy_ReviewAiPolicy, error) {
+	payload := &storepb.ReviewAIPolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal AI review policy payload")
+	}
+	return &v1pb.Policy_ReviewAiPolicy{
+		ReviewAiPolicy: &v1pb.ReviewAIPolicy{Content: payload.Content},
+	}, nil
+}
+
+func convertToStorePBReviewAIPolicy(policy *v1pb.ReviewAIPolicy) *storepb.ReviewAIPolicy {
+	return &storepb.ReviewAIPolicy{Content: policy.GetContent()}
+}
+
 func convertToStorePBMskingRulePolicy(policy *v1pb.MaskingRulePolicy) *storepb.MaskingRulePolicy {
 	var rules []*storepb.MaskingRulePolicy_MaskingRule
 	for _, rule := range policy.Rules {
@@ -324,6 +338,8 @@ func convertV1PBToStorePBPolicyType(pType v1pb.PolicyType) (storepb.Policy_Type,
 		return storepb.Policy_QUERY_DATA, nil
 	case v1pb.PolicyType_REVIEW_RULE:
 		return storepb.Policy_REVIEW_RULE, nil
+	case v1pb.PolicyType_REVIEW_AI:
+		return storepb.Policy_REVIEW_AI, nil
 	default:
 	}
 	return storepb.Policy_TYPE_UNSPECIFIED, errors.Errorf("invalid policy type %v", pType)
@@ -343,6 +359,8 @@ func convertStorePBToV1PBPolicyType(pType storepb.Policy_Type) v1pb.PolicyType {
 		return v1pb.PolicyType_DATA_QUERY
 	case storepb.Policy_REVIEW_RULE:
 		return v1pb.PolicyType_REVIEW_RULE
+	case storepb.Policy_REVIEW_AI:
+		return v1pb.PolicyType_REVIEW_AI
 	default:
 	}
 	return v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED

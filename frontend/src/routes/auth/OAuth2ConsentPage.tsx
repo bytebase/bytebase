@@ -17,7 +17,6 @@ import {
 import { useWorkspace } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import type { MCPSetting } from "@/types/proto-es/v1/setting_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { MCPConsentCeiling } from "./MCPConsentCeiling";
 import { MCPConsentDisabled } from "./MCPConsentDisabled";
 import type { UndisclosedReason } from "./MCPConsentUndisclosed";
@@ -40,15 +39,12 @@ export function OAuth2ConsentPage() {
   const [mcpSetting, setMcpSetting] = useState<MCPSetting | undefined>(
     undefined
   );
-  const [dataMaskingAvailable, setDataMaskingAvailable] = useState(false);
   const [retrying, setRetrying] = useState(false);
 
   const loadWorkspace = useAppStore((state) => state.loadWorkspace);
   const loadWorkspaceList = useAppStore((state) => state.loadWorkspaceList);
-  const refreshSubscription = useAppStore((state) => state.refreshSubscription);
   const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
   const switchWorkspace = useAppStore((state) => state.switchWorkspace);
-  const hasFeature = useAppStore((state) => state.hasFeature);
 
   const isLoggedIn = useAppStore((s) => s.isLoggedIn());
   // Workspace context shown on the consent card. On SaaS, every Bytebase
@@ -88,24 +84,9 @@ export function OAuth2ConsentPage() {
     }
   }, [refreshServerInfo]);
 
-  const readConsentDisclosure = useCallback(async () => {
-    const [mcpSetting, subscription] = await Promise.all([
-      readCeiling(),
-      refreshSubscription(),
-    ]);
-    return {
-      mcpSetting,
-      dataMaskingAvailable:
-        subscription !== undefined &&
-        hasFeature(PlanFeature.FEATURE_DATA_MASKING),
-    };
-  }, [hasFeature, readCeiling, refreshSubscription]);
-
   const retryCeiling = async () => {
     setRetrying(true);
-    const disclosure = await readConsentDisclosure();
-    setMcpSetting(disclosure.mcpSetting);
-    setDataMaskingAvailable(disclosure.dataMaskingAvailable);
+    setMcpSetting(await readCeiling());
     setRetrying(false);
   };
 
@@ -152,12 +133,10 @@ export function OAuth2ConsentPage() {
         setLoading(false);
         return;
       }
-      const disclosure = await readConsentDisclosure();
-      setMcpSetting(disclosure.mcpSetting);
-      setDataMaskingAvailable(disclosure.dataMaskingAvailable);
+      setMcpSetting(await readCeiling());
       setLoading(false);
     })();
-  }, [readConsentDisclosure]);
+  }, [readCeiling]);
 
   // Prefetch workspace list on SaaS so the picker can render. This runs in
   // its own effect keyed on `isSaaSMode` because actuator's serverInfo may
@@ -333,7 +312,7 @@ export function OAuth2ConsentPage() {
     }
     return (
       <div className="flex flex-col gap-6">
-        <div className="text-center">
+        <div className="text-center text-balance">
           <h1 className="text-xl font-semibold text-main mb-2">
             {t("oauth2.consent.title")}
           </h1>
@@ -342,11 +321,7 @@ export function OAuth2ConsentPage() {
           </p>
         </div>
         {workspaceCard}
-        <MCPConsentCeiling
-          mode={ceiling.mode}
-          ignoreMaskingExemptions={ceiling.ignoreMaskingExemptions}
-          dataMaskingAvailable={dataMaskingAvailable}
-        />
+        <MCPConsentCeiling mode={ceiling.mode} />
         <form method="POST" action={AUTHORIZE_URL}>
           <Input type="hidden" name="client_id" value={clientId} />
           <Input type="hidden" name="redirect_uri" value={redirectUri} />
@@ -387,13 +362,15 @@ export function OAuth2ConsentPage() {
   };
 
   return (
-    // SplashLayout's root is overflow-hidden, so this column carries its own
-    // scroll: the ceiling panel and its caution make the card taller than a
-    // short viewport, and the part that clips is Allow and Deny. The auto
-    // margins keep it centred while it still fits.
-    <div className="h-full overflow-y-auto flex flex-col mx-auto w-full max-w-5xl px-4 py-8 md:w-3/5 lg:w-1/2 lg:px-0">
-      <BytebaseLogo className="mx-auto mb-8 mt-auto shrink-0" />
-      <div className="rounded-sm border border-control-border bg-background p-6 mb-auto shrink-0">
+    // An interstitial centered on the whole viewport: the card keeps one width
+    // wherever it fits and narrows only on narrower screens. SplashLayout's
+    // half-width column would narrow it on screens 1024px to 1727px wide.
+    <div className="min-h-screen flex flex-col items-center justify-center gap-8 px-4 py-8">
+      <BytebaseLogo />
+      <div
+        data-testid="oauth2-consent-card"
+        className="w-full max-w-2xl rounded-sm border border-control-border bg-background p-6"
+      >
         {consentBody()}
       </div>
     </div>

@@ -198,21 +198,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("mcp setting is required"))
 		}
 
-		mcpSetting := &storepb.MCPSetting{Capability: storepb.MCPSetting_READ_WRITE}
-		if existedSetting != nil {
-			existing, ok := existedSetting.Value.(*storepb.MCPSetting)
-			if !ok {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP))
-			}
-			mcpSetting = proto.CloneOf(existing)
-		}
-
+		// Built from the request alone because capability is the only field. A
+		// second field needs a merge onto the stored row, or saving one erases
+		// the other.
+		mcpSetting := &storepb.MCPSetting{}
 		for _, path := range request.Msg.UpdateMask.Paths {
 			switch path {
 			case "value.mcp.capability":
 				mcpSetting.Capability = convertToStoreMCPCapability(payload.Capability)
-			case "value.mcp.ignore_masking_exemptions":
-				mcpSetting.IgnoreMaskingExemptions = payload.IgnoreMaskingExemptions
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
 			}

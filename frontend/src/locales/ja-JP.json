@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "メールアドレスでユーザーを検索します。サービスアカウントまたはワークロード ID を検索するには、serviceAccounts/ または workloadIdentities/ を付けます。",
+          "description": "名前またはメールアドレスでユーザー、サービスアカウント、ワークロードIDを検索",
           "title": "操作者"
         },
         "level": {
@@ -1544,6 +1544,7 @@
       "sort": "並べ替え",
       "updated": "更新日時"
     },
+    "statement-exceeds-preview-limit": "このステートメントはプレビューの上限を超えています。再読み込み後はプレビューのみ表示されます。",
     "statement-from-sheet-warning": "このステートメントは大きなシートから読み込まれています。プレビューは切り詰められる場合があります。",
     "status-transition": {
       "modal": {
@@ -1826,6 +1827,7 @@
         "add-comment-on-line": "{{line}} 行目にコメントを追加",
         "add-comment-on-lines": "{{startLine}}～{{endLine}} 行目にコメントを追加",
         "anchor": {
+          "comparison-size-limit": "元のステートメントまたは現在のステートメントが比較の上限を超えています。",
           "line_one": "{{range}} 行目",
           "line_other": "{{range}} 行",
           "outdated": "最新ではありません",
@@ -2757,18 +2759,6 @@
         "description": "{{bound}}{{audit}}",
         "edit": "ポリシーを編集",
         "loading": "アクセスポリシーを読み込んでいます…",
-        "masking": {
-          "badge": "適用除外を無視中",
-          "badge-disabled": "マスキング適用除外を無視 — MCP は無効",
-          "badge-unlicensed": "マスキング適用除外を無視 — マスキングは未ライセンス",
-          "description": "有効にすると、適用除外やマスク解除の権限を持つユーザーであっても、MCP セッションではマスクされたデータがマスクされたままになります。範囲はエンジンによって異なり、Bytebase がマスクしないところでは何も変わりません。コンソールには影響しません。",
-          "title": "マスキングの適用除外を無視する",
-          "unavailable": "このワークスペースではデータマスキングのライセンスがないため、この設定にかかわらず何もマスクされません。"
-        },
-        "masking-pending": {
-          "applied": "このポリシーは、マスキング適用除外を有効にしたまま保存されます。",
-          "ignored": "このポリシーは、マスキング適用除外を無視した状態で保存されます。"
-        },
         "mode": {
           "disabled": {
             "best-for": "適する場面：有効にする準備が整うまで MCP をオフにしておきたいとき。",
@@ -3737,7 +3727,8 @@
       "completed": "完了しました",
       "computing": "コンピューティング...",
       "dumping": "ダンピング...",
-      "retry-attempt": "試行 {{current}}/{{max}}",
+      "hide-full-statement": "ステートメント全体を非表示",
+      "show-full-statement": "ステートメント全体を表示",
       "syncing": "同期中..."
     },
     "log-type": {
@@ -3747,15 +3738,20 @@
       "ghost-migration": "gh-ost マイグレーション",
       "prior-backup": "事前のバックアップ",
       "release-file-execute": "リリースファイル",
-      "retry": "リトライ",
       "schema-dump": "スキーマダンプ",
       "transaction": "取引"
     },
     "log-viewer": {
+      "attempt-count_one": "{{count}} 回の試行",
+      "attempt-count_other": "{{count}} 回の試行",
+      "attempt-n": "試行 {{n}}",
+      "attempt-reason": "失敗: {{reason}}",
       "collapse-all": "すべて折りたたむ",
       "expand-all": "すべて展開",
       "multiple-replicas-notice": "実行中にサーバーの再起動が検出されました。ログはレプリカごとにグループ化されています。",
+      "previous-attempts": "以前の試行",
       "replica-n": "レプリカ #{{n}}",
+      "retrying": "再試行中",
       "summary": "{{sections}} セクション · {{entries}} エントリ"
     },
     "no-blocking-sessions": "ブロッキングセッションはありません",

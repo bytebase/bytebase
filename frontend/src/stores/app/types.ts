@@ -142,6 +142,7 @@ export type ListServiceAccountsParams = {
   showDeleted: boolean;
   filter?: AccountFilter;
   skipCache?: boolean;
+  silent?: boolean;
 };
 
 export type ListWorkloadIdentitiesParams = {
@@ -151,6 +152,7 @@ export type ListWorkloadIdentitiesParams = {
   showDeleted: boolean;
   filter?: AccountFilter;
   skipCache?: boolean;
+  silent?: boolean;
 };
 
 export type AccessGrantFilter = {
@@ -968,7 +970,7 @@ export type PreferencesSlice = {
 // fallback when the policy isn't cached.
 export type PolicySlice = {
   policyMapByName: Record<string, Policy>;
-  policyRequests: Record<string, Promise<Policy | undefined>>;
+  policyRequests: Record<string, Promise<Policy | null | undefined>>;
   getPolicyByName: (name: string) => Policy | undefined;
   getOrFetchPolicyByName: (
     name: string,
@@ -983,6 +985,13 @@ export type PolicySlice = {
     policyType: PolicyType;
     refresh?: boolean;
   }) => Promise<Policy | undefined>;
+  // Resolves to null when the resource has no policy and to undefined when
+  // the read failed, which leaves any earlier policy in the cache.
+  fetchPolicyByParentAndType: (params: {
+    parentPath: string;
+    policyType: PolicyType;
+    refresh?: boolean;
+  }) => Promise<Policy | null | undefined>;
   getQueryDataPolicyByParent: (parent: string) => QueryDataPolicy;
   upsertPolicy: (params: {
     parentPath: string;

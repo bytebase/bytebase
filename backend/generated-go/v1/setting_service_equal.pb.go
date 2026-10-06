@@ -422,9 +422,6 @@ func (x *MCPSetting) Equal(y *MCPSetting) bool {
 	if x.Capability != y.Capability {
 		return false
 	}
-	if x.IgnoreMaskingExemptions != y.IgnoreMaskingExemptions {
-		return false
-	}
 	return true
 }
 

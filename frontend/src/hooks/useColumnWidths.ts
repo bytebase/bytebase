@@ -8,35 +8,157 @@ import {
 
 export interface ColumnWithWidth {
   defaultWidth: number;
+  /** The narrowest a drag or `distributeColumnWidths` may make the column. */
   minWidth?: number;
+  /**
+   * False for a column whose content has a width of its own, such as a date,
+   * so it takes none of the spare width. Tables that leave spare width to the
+   * browser do not read it.
+   */
+  grow?: boolean;
+  /** When this column gives way in a table too narrow for its defaults. */
+  yieldOrder?: number;
 }
+
+const DEFAULT_MIN_WIDTH = 40;
+const floorOf = (c: ColumnWithWidth) => c.minWidth ?? DEFAULT_MIN_WIDTH;
 
 /**
  * Distributes `containerWidth` across columns so the table fills its container
- * on first render instead of overflowing at the sum of `defaultWidth`s.
- * Columns with `resizable === false` keep their `defaultWidth`; the rest share
- * the remaining space proportionally to their `defaultWidth` (each clamped to
- * `minWidth`). Falls back to the raw default widths when the container is too
- * narrow to honor the minimums (the table then scrolls).
+ * on first render instead of overflowing at the sum of `defaultWidth`s: the
+ * widths add up to exactly the container unless it cannot hold every column
+ * at the narrowest the rules below allow, and then the table scrolls. A
+ * column that is not resizable always keeps its `defaultWidth`.
+ *
+ * - Narrower than the defaults together, with any column declaring a
+ *   `yieldOrder`: columns give way in ascending order, each down to its
+ *   `minWidth` before the next gives any, and those without an order last.
+ * - Otherwise: columns that do not grow keep their `defaultWidth`, and the
+ *   rest share the remaining space in proportion to theirs, none below its
+ *   `minWidth`.
  */
 export function distributeColumnWidths<
   T extends ColumnWithWidth & { resizable?: boolean },
 >(columns: T[], containerWidth: number): number[] {
+  const preferredTotal = columns.reduce((sum, c) => sum + c.defaultWidth, 0);
+  if (
+    containerWidth < preferredTotal &&
+    columns.some((c) => c.yieldOrder !== undefined)
+  ) {
+    return yieldInOrder(columns, containerWidth);
+  }
+  const keepsWidth = (c: T) => c.resizable === false || c.grow === false;
   const fixedTotal = columns
-    .filter((c) => c.resizable === false)
-    .reduce((sum, c) => sum + c.defaultWidth, 0);
-  const flexBaseTotal = columns
-    .filter((c) => c.resizable !== false)
+    .filter(keepsWidth)
     .reduce((sum, c) => sum + c.defaultWidth, 0);
   const available = Math.max(0, containerWidth - fixedTotal);
-  return columns.map((c) => {
-    if (c.resizable === false) return c.defaultWidth;
-    const proportional =
-      flexBaseTotal > 0
-        ? Math.round(available * (c.defaultWidth / flexBaseTotal))
-        : c.defaultWidth;
-    return Math.max(c.minWidth ?? 40, proportional);
+
+  // Raising a column to its floor has to take that width from the others, so
+  // floored columns are set aside and the remainder re-shared until every
+  // share clears its floor. Each pass sets aside at least one column.
+  const floored = new Set<T>();
+  let shares = new Map<T, number>();
+  for (;;) {
+    const open = columns.filter((c) => !keepsWidth(c) && !floored.has(c));
+    const base = open.reduce((sum, c) => sum + c.defaultWidth, 0);
+    const rest =
+      available - [...floored].reduce((sum, c) => sum + floorOf(c), 0);
+    shares = new Map(
+      open.map((c) => [c, base > 0 ? (rest * c.defaultWidth) / base : 0])
+    );
+    const under = open.filter((c) => (shares.get(c) ?? 0) < floorOf(c));
+    if (under.length === 0) {
+      break;
+    }
+    for (const c of under) {
+      floored.add(c);
+    }
+  }
+
+  const widths = columns.map((c) => {
+    if (keepsWidth(c)) return c.defaultWidth;
+    if (floored.has(c)) return floorOf(c);
+    return Math.floor(shares.get(c) ?? 0);
   });
+  // Flooring each share leaves a few pixels unassigned; the widest column
+  // still sharing takes them, so the total lands on the container.
+  const sharing = columns
+    .map((_, i) => i)
+    .filter((i) => shares.has(columns[i]));
+  if (sharing.length > 0) {
+    const widest = sharing.reduce((a, b) => (widths[b] > widths[a] ? b : a));
+    widths[widest] += containerWidth - widths.reduce((sum, w) => sum + w, 0);
+  }
+  return widths;
+}
+
+/**
+ * The width a table can take inside `scroller` without scrolling it, which
+ * even half a pixel too many does. Borders and padding come from the computed
+ * style, exact even where the browser snaps a 1px border to 0.8px at 125%;
+ * `offsetWidth` and `clientWidth` each round to a pixel, so a scrollbar is
+ * known only to within one and is given that pixel.
+ */
+export function fillableWidth(scroller: HTMLElement): number {
+  const style = getComputedStyle(scroller);
+  const px = (value: string) => Number.parseFloat(value) || 0;
+  const borders = px(style.borderLeftWidth) + px(style.borderRightWidth);
+  const padding = px(style.paddingLeft) + px(style.paddingRight);
+  const scrollbar = scroller.offsetWidth - scroller.clientWidth - borders;
+  const scrollbarAllowance = scrollbar > 1 ? scrollbar + 1 : 0;
+  return Math.floor(
+    scroller.getBoundingClientRect().width -
+      borders -
+      padding -
+      scrollbarAllowance
+  );
+}
+
+// Starts every column at its default, or its floor if that is wider, and
+// takes back what overruns the container a yield group at a time: within a
+// group in proportion to how far each column can shrink.
+function yieldInOrder<T extends ColumnWithWidth & { resizable?: boolean }>(
+  columns: T[],
+  containerWidth: number
+): number[] {
+  const orderOf = (c: T) => c.yieldOrder ?? Number.POSITIVE_INFINITY;
+  const widths = columns.map((c) =>
+    c.resizable === false
+      ? c.defaultWidth
+      : Math.max(c.defaultWidth, floorOf(c))
+  );
+  let remaining = widths.reduce((sum, w) => sum + w, 0) - containerWidth;
+  const orders = [
+    ...new Set(columns.filter((c) => c.resizable !== false).map(orderOf)),
+  ].sort((a, b) => a - b);
+  for (const order of orders) {
+    if (remaining <= 0) {
+      break;
+    }
+    const group = columns
+      .map((_, i) => i)
+      .filter(
+        (i) => columns[i].resizable !== false && orderOf(columns[i]) === order
+      );
+    const room = group.map((i) => widths[i] - floorOf(columns[i]));
+    const groupRoom = room.reduce((sum, r) => sum + r, 0);
+    const take = Math.min(remaining, groupRoom);
+    let taken = 0;
+    group.forEach((i, j) => {
+      const cut = groupRoom > 0 ? Math.floor((take * room[j]) / groupRoom) : 0;
+      widths[i] -= cut;
+      taken += cut;
+    });
+    // Flooring each cut leaves a few pixels; the widest in the group gives
+    // them, within its floor.
+    for (const i of [...group].sort((a, b) => widths[b] - widths[a])) {
+      const cut = Math.min(take - taken, widths[i] - floorOf(columns[i]));
+      widths[i] -= cut;
+      taken += cut;
+    }
+    remaining -= take;
+  }
+  return widths;
 }
 
 /**
@@ -111,7 +233,7 @@ export function useColumnWidths<T extends ColumnWithWidth>(columns: T[]) {
       // and never auto-extends). Without this, startWidth would be
       // undefined and the drag's newWidth math would produce NaN.
       startWidth: widthsRef.current[colIndex] ?? col.defaultWidth,
-      minWidth: col.minWidth ?? 40,
+      minWidth: floorOf(col),
     };
 
     const onMouseMove = (ev: MouseEvent) => {

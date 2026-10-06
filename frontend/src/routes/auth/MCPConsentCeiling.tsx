@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { MCPCapabilityList } from "@/components/mcp/MCPCapabilityList";
 import type { MCPServingMode } from "@/components/mcp/mcpPolicy";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 import type { MCPConsentLine } from "./MCPConsentPolicyCard";
@@ -13,8 +12,6 @@ import { MCPConsentPolicyCard } from "./MCPConsentPolicyCard";
 interface Props {
   /** The ceiling this session runs at, narrowed by the caller. */
   readonly mode: MCPServingMode;
-  readonly ignoreMaskingExemptions: boolean;
-  readonly dataMaskingAvailable: boolean;
 }
 
 /**
@@ -27,11 +24,7 @@ interface Props {
  * richer render of a decision the backend makes either way — never the
  * decision itself.
  */
-export function MCPConsentCeiling({
-  mode,
-  ignoreMaskingExemptions,
-  dataMaskingAvailable,
-}: Props) {
+export function MCPConsentCeiling({ mode }: Props) {
   const { t } = useTranslation();
   const [details, setDetails] = useState(false);
 
@@ -56,13 +49,6 @@ export function MCPConsentCeiling({
       <MCPConsentPolicyCard
         label={t("oauth2.consent.mcp.title")}
         mode={mode}
-        modeAddon={
-          ignoreMaskingExemptions && dataMaskingAvailable ? (
-            <Badge variant="secondary" className="whitespace-nowrap">
-              {t("settings.mcp.policy.masking.badge")}
-            </Badge>
-          ) : undefined
-        }
         headerAction={
           <Button
             appearance="link"

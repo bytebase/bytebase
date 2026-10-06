@@ -1,8 +1,13 @@
 import { create } from "@bufbuild/protobuf";
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  shownTimestampModes,
+  shownTimestampTruncates,
+} from "@/test-utils/humanizeTs";
 import { ChangelogSchema } from "@/types/proto-es/v1/changelog_service_pb";
 
 (
@@ -27,13 +32,14 @@ vi.mock("@/utils/v1/changelog", () => ({
 }));
 
 vi.mock("@/types", () => ({
-  getDateForPbTimestampProtoEs: () => new Date("2026-04-15T00:00:00Z"),
+  getTimeForPbTimestampProtoEs: () => new Date("2026-04-15T00:00:00Z").getTime(),
 }));
 
-vi.mock("@/components/HumanizeTs", () => ({
-  HumanizeTs: () => null,
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
+import { TIMESTAMP_COLUMN_WIDTH } from "@/components/timestampColumn";
 import { DatabaseChangelogTable } from "./DatabaseChangelogTable";
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -65,6 +71,53 @@ beforeEach(() => {
 });
 
 describe("DatabaseChangelogTable", () => {
+  test("sizes the date to its form and lets the title fill", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <DatabaseChangelogTable
+        loading={false}
+        changelogs={[makeChangelog("changelogs/1")]}
+      />
+    );
+
+    render();
+
+    const [, created, rollout] = Array.from(container.querySelectorAll("col"));
+    expect(created.style.width).toBe(`${TIMESTAMP_COLUMN_WIDTH.compact}px`);
+    expect(rollout.style.width).toBe("");
+    const [, createdHeader, rolloutHeader] = Array.from(
+      container.querySelectorAll("th")
+    );
+    expect(createdHeader.querySelector("[class*=cursor-col-resize]")).not.toBeNull();
+    expect(rolloutHeader.querySelector("[class*=cursor-col-resize]")).toBeNull();
+    // A widened date pushes the table past its box, and the title -- and the
+    // handle that would undo it -- have to stay reachable.
+    expect(container.firstElementChild?.className).toContain("overflow-x-auto");
+
+    unmount();
+  });
+
+  test("dates each row in the embedded history form, fitted to its column", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <DatabaseChangelogTable
+        loading={false}
+        changelogs={[
+          create(ChangelogSchema, {
+            name: "changelogs/1",
+            createTime: timestampFromMs(Date.UTC(2026, 2, 2, 12)),
+          }),
+        ]}
+      />
+    );
+
+    render();
+
+    // A row in a list orients the reader; the changelog's own page testifies.
+    expect(shownTimestampModes(container)).toEqual(["compact"]);
+    expect(shownTimestampTruncates(container)).toEqual([true]);
+
+    unmount();
+  });
+
   test("inherits default zebra striping from shared table primitives", () => {
     const { container, render, unmount } = renderIntoContainer(
       <DatabaseChangelogTable

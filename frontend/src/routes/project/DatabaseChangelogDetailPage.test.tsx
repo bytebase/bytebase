@@ -211,6 +211,16 @@ vi.mock("@/utils/v1/project", () => ({
   extractProjectResourceName: (name: string) => name.split("/").at(-1) ?? "",
 }));
 
+vi.mock("@/utils/datetime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/datetime")>()),
+  formatAbsoluteDateTime: () => "formatted time",
+  // A label comes from its reading, not from the formatter the reading holds.
+  absoluteTimeReading: {
+    read: () => "formatted time",
+    nextChangeAt: () => Number.POSITIVE_INFINITY,
+  },
+}));
+
 vi.mock("@/utils", () => ({
   autoDatabaseRoute: (database: { name: string; project: string }) => {
     const parent = database.name.split("/databases/")[0];
@@ -225,7 +235,6 @@ vi.mock("@/utils", () => ({
     };
   },
   bytesToString: (size: number) => `${size} B`,
-  formatAbsoluteDateTime: () => "formatted time",
   extractDatabaseResourceName: (name: string) => ({
     instance: "instances/inst1",
     instanceName: "inst1",

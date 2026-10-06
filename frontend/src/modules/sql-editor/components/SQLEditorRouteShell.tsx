@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { debounce, omit } from "lodash-es";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -38,7 +37,6 @@ import {
 import { useAppStore } from "@/stores/app";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
-  getDateForPbTimestampProtoEs,
   isValidDatabaseName,
   isValidInstanceName,
   isValidProjectName,
@@ -56,6 +54,7 @@ import {
   isSavedQueryReadableV1,
   storageKeySqlEditorSidebarTab,
 } from "@/utils";
+import { queryHistoryTabTitle } from "@/utils/v1/queryHistory";
 import { SQLEditorHomePage } from "./SQLEditorHomePage";
 
 // Route-name set for the unsaved-changes leave guard. `router.beforeEach`
@@ -411,12 +410,9 @@ export function SQLEditorRouteShell() {
       }
     }
 
-    const title = `Query history at ${dayjs(
-      getDateForPbTimestampProtoEs(history.createTime)
-    ).format("YYYY-MM-DD HH:mm:ss")}`;
     const tab = getSQLEditorTabsState().addTab(
       {
-        title,
+        title: queryHistoryTabTitle(history),
         statement: history.statement,
         ...(connection ? { connection } : {}),
       },

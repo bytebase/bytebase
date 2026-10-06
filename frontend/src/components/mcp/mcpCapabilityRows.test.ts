@@ -34,10 +34,10 @@ describe("mcpCapabilityRows", () => {
     );
   });
 
-  // isServingMode gates the ladder, the masking toggle and the consent routing,
-  // and is the one mode predicate the compiler does not force: a fourth serving
-  // mode breaks SERVES and MCP_MODE_PRESENTATION, but leaves this answering
-  // "false" and sending the session to the Disabled consent screen.
+  // isServingMode gates the ladder and the consent routing, and is the one mode
+  // predicate the compiler does not force: a fourth serving mode breaks SERVES
+  // and MCP_MODE_PRESENTATION, but leaves this answering "false" and sending the
+  // session to the Disabled consent screen.
   test("a mode serves a session exactly when it serves a row", () => {
     for (const mode of MCP_CAPABILITY_CHOICES) {
       expect(isServingMode(mode), String(mode)).toBe(

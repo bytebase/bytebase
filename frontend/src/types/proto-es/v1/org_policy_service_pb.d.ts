@@ -245,6 +245,12 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
      */
     value: ReviewRulePolicy;
     case: "reviewRulePolicy";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.ReviewAIPolicy review_ai_policy = 13;
+     */
+    value: ReviewAIPolicy;
+    case: "reviewAiPolicy";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -271,7 +277,12 @@ export declare const PolicySchema: GenMessage<Policy>;
 /**
  * Standard review rule policy: the rules switched on. The nearest policy
  * wins: a project's own policy applies as is; a project without one uses
- * the workspace policy; with neither, every rule is on.
+ * the workspace policy; with neither, every rule is on. Getting the policy
+ * of a project without its own is NOT_FOUND; getting the workspace's when it
+ * has none returns every rule on.
+ *
+ * SYNTAX gates the rest: the other rules judge only SQL that parses, so a
+ * list without SYNTAX switches every rule off.
  *
  * A saved list is explicit, so a rule added to the standard set in a later
  * release is appended to every saved policy by a data migration in that
@@ -293,6 +304,28 @@ export declare type ReviewRulePolicy = Message<"bytebase.v1.ReviewRulePolicy"> &
  * Use `create(ReviewRulePolicySchema)` to create a new message.
  */
 export declare const ReviewRulePolicySchema: GenMessage<ReviewRulePolicy>;
+
+/**
+ * Natural-language policy for the AI review. Unlike the review rule policy,
+ * both levels apply: the workspace policy and the project policy both reach
+ * the reviewer, and the project policy wins where they conflict.
+ *
+ * @generated from message bytebase.v1.ReviewAIPolicy
+ */
+export declare type ReviewAIPolicy = Message<"bytebase.v1.ReviewAIPolicy"> & {
+  /**
+   * The policy text. Must not be blank, at most 64 KiB.
+   *
+   * @generated from field: string content = 1;
+   */
+  content: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ReviewAIPolicy.
+ * Use `create(ReviewAIPolicySchema)` to create a new message.
+ */
+export declare const ReviewAIPolicySchema: GenMessage<ReviewAIPolicy>;
 
 /**
  * Rollout policy configuration.
@@ -585,6 +618,13 @@ export enum PolicyType {
    * @generated from enum value: REVIEW_RULE = 7;
    */
   REVIEW_RULE = 7,
+
+  /**
+   * Natural-language policy for the AI review. Allowed on WORKSPACE and PROJECT.
+   *
+   * @generated from enum value: REVIEW_AI = 8;
+   */
+  REVIEW_AI = 8,
 }
 
 /**

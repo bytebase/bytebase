@@ -1454,7 +1454,7 @@ func rejectMCPOriginatedIssuelessRollout(ctx context.Context, project *store.Pro
 		// and it refuses an unapproved one.
 		return nil
 	}
-	return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+	return permissionDeniedError(ctx, errors.Errorf(
 		"an MCP session may not %s for a plan with no issue: this project requires issue approval, and a "+
 			"rollout created without an issue never meets that gate. Create an issue for the plan and have it "+
 			"approved, or perform this action signed in to the Bytebase console instead", action))

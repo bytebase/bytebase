@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   AdvancedSearch,
@@ -10,6 +17,7 @@ import {
 import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard";
 import { EngineIcon } from "@/components/EngineIcon";
 import { FeatureAttention } from "@/components/FeatureAttention";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import {
   ProjectPageContent,
   ProjectPageFooter,
@@ -18,6 +26,10 @@ import {
 } from "@/components/ProjectPageLayout";
 import { RouterLink } from "@/components/RouterLink";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
+import {
+  TIMESTAMP_COLUMN_MIN_WIDTH,
+  TIMESTAMP_COLUMN_WIDTH,
+} from "@/components/timestampColumn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -33,11 +45,14 @@ import {
 import { BlockTooltip, Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
 import {
+  type ColumnWithWidth,
   distributeColumnWidths,
+  fillableWidth,
   useColumnWidths,
 } from "@/hooks/useColumnWidths";
 import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
 import { useProjectByName } from "@/hooks/useProjectByName";
+import { useTimeReading } from "@/hooks/useTimeReading";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type { AccessGrantFilter as AccessFilter } from "@/stores/app/types";
@@ -53,10 +68,9 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   type AccessGrantDisplayStatus,
-  formatAbsoluteDateTime,
-  getAccessGrantDisplayStatus,
+  accessGrantStatusReading,
   getAccessGrantDisplayStatusText,
-  getAccessGrantExpirationText,
+  getAccessGrantExpireTimeMs,
   getAccessGrantStatusTagType,
   getDefaultPagination,
   hasProjectPermissionV2,
@@ -66,28 +80,85 @@ import { extractDatabaseResourceName } from "@/utils/v1/database";
 type SortKey = "creator" | "create_time" | "expire_time";
 type SortDir = "asc" | "desc";
 
-// Column descriptor for the access-grants table. The column array is
-// built inside the component (so titles resolve via `t()` and react
-// to language switches); only the shape lives at module scope.
+type GrantColumnKey =
+  | "status"
+  | "creator"
+  | "databases"
+  | "statement"
+  | "expiration"
+  | "created"
+  | "actions";
+
+// Column descriptor for the access-grants table. The width fields are
+// `ColumnWithWidth`'s.
 //
-// Position in the array is the `<colgroup>` order — keep this in sync
-// with the cell order inside `<AccessGrantRow>` (`useColumnWidths`
-// indexes positionally).
-//
-// - `title`        — header label; omit for a blank header (actions col).
-// - `defaultWidth` — initial render width; user-resizable from there.
-// - `minWidth`     — drag floor so a column can't collapse to a sliver.
-// - `sortKey`      — present iff the column participates in server sort.
-// - `resizable`    — defaults true; set false for purely action columns
-//                    where a too-narrow width clips the button row.
-type GrantColumn = {
-  key: string;
+// - `title`     — header label; omit for a blank header (actions col).
+// - `sortKey`   — present iff the column participates in server sort.
+// - `resizable` — defaults true; set false for purely action columns where a
+//                 too-narrow width clips the button row.
+type GrantColumn = ColumnWithWidth & {
+  key: GrantColumnKey;
   title?: string;
-  defaultWidth: number;
   minWidth: number;
   sortKey?: SortKey;
   resizable?: boolean;
 };
+
+/**
+ * The table's columns, left to right: the header, `<colgroup>` and every row
+ * follow this order. Titles follow the language.
+ */
+export const grantColumns = (t: (key: string) => string): GrantColumn[] => [
+  {
+    key: "status",
+    title: t("common.status"),
+    defaultWidth: 160,
+    minWidth: 128,
+  },
+  {
+    key: "creator",
+    title: t("common.creator"),
+    defaultWidth: 200,
+    minWidth: 128,
+    sortKey: "creator",
+    yieldOrder: 3,
+  },
+  {
+    key: "databases",
+    title: t("common.databases"),
+    defaultWidth: 240,
+    minWidth: 128,
+    yieldOrder: 4,
+  },
+  {
+    key: "statement",
+    title: t("common.statement"),
+    defaultWidth: 400,
+    minWidth: 180,
+    yieldOrder: 2,
+  },
+  {
+    key: "expiration",
+    title: t("common.expiration"),
+    defaultWidth: TIMESTAMP_COLUMN_WIDTH.operational,
+    minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
+    grow: false,
+    sortKey: "expire_time",
+    yieldOrder: 1,
+  },
+  {
+    key: "created",
+    title: t("common.created-at"),
+    defaultWidth: TIMESTAMP_COLUMN_WIDTH.operational,
+    minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
+    grow: false,
+    sortKey: "create_time",
+    yieldOrder: 1,
+  },
+  // Trailing actions column — no title (blank header), fixed
+  // width sized for two ghost buttons + "View issue".
+  { key: "actions", defaultWidth: 140, minWidth: 96, resizable: false },
+];
 
 function hashCode(str: string): number {
   let hash = 0;
@@ -476,59 +547,9 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     })();
   }, [fetchIssueByName, issueByGrantName, paged.dataList]);
 
-  // Translated column descriptors. Built inside the component (not at
-  // module scope) so `title` strings resolve via `t()` and update
-  // automatically on language switches. Memoized on `t` so the
-  // descriptor array identity is stable between renders within the
-  // same language — which matters because `useColumnWidths` reads the
-  // initial widths from this array on first render.
-  const columns = useMemo<GrantColumn[]>(
-    () => [
-      {
-        key: "status",
-        title: t("common.status"),
-        defaultWidth: 160,
-        minWidth: 128,
-      },
-      {
-        key: "creator",
-        title: t("common.creator"),
-        defaultWidth: 200,
-        minWidth: 128,
-        sortKey: "creator",
-      },
-      {
-        key: "created",
-        title: t("common.created-at"),
-        defaultWidth: 200,
-        minWidth: 132,
-        sortKey: "create_time",
-      },
-      {
-        key: "expiration",
-        title: t("common.expiration"),
-        defaultWidth: 200,
-        minWidth: 132,
-        sortKey: "expire_time",
-      },
-      {
-        key: "statement",
-        title: t("common.statement"),
-        defaultWidth: 400,
-        minWidth: 180,
-      },
-      {
-        key: "databases",
-        title: t("common.databases"),
-        defaultWidth: 240,
-        minWidth: 128,
-      },
-      // Trailing actions column — no title (blank header), fixed
-      // width sized for two ghost buttons + "View issue".
-      { key: "actions", defaultWidth: 140, minWidth: 96, resizable: false },
-    ],
-    [t]
-  );
+  // Memoized on `t` so the array identity is stable within a language:
+  // `useColumnWidths` reads the initial widths from it on first render.
+  const columns = useMemo(() => grantColumns(t), [t]);
 
   // User-controlled column widths so long statements / databases /
   // expiration values aren't permanently truncated by the table's
@@ -541,7 +562,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const fitTableContainer = useCallback(
     (node: HTMLDivElement | null) => {
       if (!node || didFitColumnsRef.current) return;
-      const width = node.clientWidth;
+      const width = fillableWidth(node);
       if (width <= 0) return;
       didFitColumnsRef.current = true;
       setWidths(distributeColumnWidths(columns, width));
@@ -606,17 +627,16 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
               {t("common.no-data")}
             </div>
           ) : (
-            <ProjectPageContent ref={fitTableContainer}>
-              <div className="border rounded-sm overflow-x-auto">
+            <ProjectPageContent>
+              {/* Fitted to the scroller, inside its border, not the page. */}
+              <div
+                ref={fitTableContainer}
+                className="border rounded-sm overflow-x-auto"
+              >
                 <Table
                   className="w-auto table-fixed"
                   style={{ width: `${totalWidth}px` }}
                 >
-                  {/*
-                    `<colgroup>` order mirrors `columns`, which in turn
-                    mirrors the cell order inside `<AccessGrantRow>` —
-                    `useColumnWidths` indexes positionally, not by key.
-                  */}
                   <colgroup>
                     {widths.map((w, i) => (
                       <col key={columns[i].key} style={{ width: `${w}px` }} />
@@ -655,6 +675,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
                     {paged.dataList.map((grant) => (
                       <AccessGrantRow
                         key={grant.name}
+                        columns={columns}
                         grant={grant}
                         issue={issueByGrantName.get(grant.name)}
                         canActivate={canActivate}
@@ -729,7 +750,8 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
 // AccessGrantRow
 // ---------------------------------------------------------------------------
 
-function AccessGrantRow({
+export function AccessGrantRow({
+  columns,
   grant,
   issue,
   canActivate,
@@ -737,6 +759,7 @@ function AccessGrantRow({
   onActivate,
   onRevoke,
 }: {
+  columns: readonly { key: GrantColumnKey }[];
   grant: AccessGrant;
   issue?: Issue;
   canActivate: boolean;
@@ -745,81 +768,83 @@ function AccessGrantRow({
   onRevoke: () => void;
 }) {
   const { t } = useTranslation();
-  const status = getAccessGrantDisplayStatus(grant, issue);
+  const status = useTimeReading(accessGrantStatusReading, { grant, issue });
+  const createdTimeMs = getTimeForPbTimestampProtoEs(grant.createTime);
+  const expireTimeMs = getAccessGrantExpireTimeMs(grant);
 
-  const createdAt = grant.createTime
-    ? formatAbsoluteDateTime(getTimeForPbTimestampProtoEs(grant.createTime))
-    : "-";
-
-  const expirationInfo = getAccessGrantExpirationText(grant);
-  const expiration =
-    expirationInfo.type === "datetime" ? expirationInfo.value : "-";
+  const cells: Record<GrantColumnKey, ReactNode> = {
+    status: (
+      <Badge variant={statusTagVariant(status)}>
+        {getAccessGrantDisplayStatusText(status)}
+      </Badge>
+    ),
+    creator: <EllipsisText text={extractUserEmail(grant.creator)} />,
+    databases: <DatabaseTargets targets={grant.targets} />,
+    statement: (
+      <div className="flex items-center gap-x-1 overflow-hidden">
+        <TruncatedQuery query={grant.query} />
+        {grant.unmask && (
+          <Badge variant="warning" className="shrink-0">
+            {t("sql-editor.grant-type-unmask")}
+          </Badge>
+        )}
+        {grant.export && (
+          <Badge variant="default" className="shrink-0">
+            {t("sql-editor.grant-type-export")}
+          </Badge>
+        )}
+      </div>
+    ),
+    expiration:
+      expireTimeMs !== undefined ? (
+        <HumanizeTs mode="operational" truncate tsMs={expireTimeMs} />
+      ) : (
+        "-"
+      ),
+    created:
+      createdTimeMs !== undefined ? (
+        <HumanizeTs mode="operational" truncate tsMs={createdTimeMs} />
+      ) : (
+        "-"
+      ),
+    actions: (
+      <div className="flex items-center justify-end gap-x-1">
+        {status === "REVOKED" && canActivate && (
+          <Button appearance="secondary" size="sm" onClick={onActivate}>
+            {t("sql-editor.activate-access")}
+          </Button>
+        )}
+        {status === "ACTIVE" && canRevoke && (
+          <Button
+            appearance="secondary"
+            size="sm"
+            className="text-error"
+            onClick={onRevoke}
+          >
+            {t("sql-editor.revoke-access")}
+          </Button>
+        )}
+        {grant.issue && (
+          <RouterLink
+            to={grant.issue.startsWith("/") ? grant.issue : `/${grant.issue}`}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button appearance="secondary" size="sm">
+              {t("sql-editor.view-issue")}
+            </Button>
+          </RouterLink>
+        )}
+      </div>
+    ),
+  };
 
   return (
     <TableRow>
-      <TableCell>
-        <Badge variant={statusTagVariant(status)}>
-          {getAccessGrantDisplayStatusText(grant, issue)}
-        </Badge>
-      </TableCell>
-      <TableCell>
-        <EllipsisText text={extractUserEmail(grant.creator)} />
-      </TableCell>
-      <TableCell>
-        <EllipsisText text={createdAt} />
-      </TableCell>
-      <TableCell>
-        <EllipsisText text={expiration} />
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-x-1 overflow-hidden">
-          <TruncatedQuery query={grant.query} />
-          {grant.unmask && (
-            <Badge variant="warning" className="shrink-0">
-              {t("sql-editor.grant-type-unmask")}
-            </Badge>
-          )}
-          {grant.export && (
-            <Badge variant="default" className="shrink-0">
-              {t("sql-editor.grant-type-export")}
-            </Badge>
-          )}
-        </div>
-      </TableCell>
-      <TableCell>
-        <DatabaseTargets targets={grant.targets} />
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center justify-end gap-x-1">
-          {status === "REVOKED" && canActivate && (
-            <Button appearance="secondary" size="sm" onClick={onActivate}>
-              {t("sql-editor.activate-access")}
-            </Button>
-          )}
-          {status === "ACTIVE" && canRevoke && (
-            <Button
-              appearance="secondary"
-              size="sm"
-              className="text-error"
-              onClick={onRevoke}
-            >
-              {t("sql-editor.revoke-access")}
-            </Button>
-          )}
-          {grant.issue && (
-            <RouterLink
-              to={grant.issue.startsWith("/") ? grant.issue : `/${grant.issue}`}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Button appearance="secondary" size="sm">
-                {t("sql-editor.view-issue")}
-              </Button>
-            </RouterLink>
-          )}
-        </div>
-      </TableCell>
+      {columns.map((column) => (
+        <TableCell key={column.key}>{cells[column.key]}</TableCell>
+      ))}
     </TableRow>
   );
 }

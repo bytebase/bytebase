@@ -53,18 +53,12 @@ describe("readConsentCeiling", () => {
     expect(readConsentCeiling(undefined)).toEqual({ kind: "unknown" });
   });
 
-  test("a served ceiling carries the mode and the flag the disclosure reads", () => {
+  test("a served ceiling carries the mode", () => {
     expect(
-      readConsentCeiling(
-        create(MCPSettingSchema, {
-          capability: MCPSetting_Capability.READ_WRITE,
-          ignoreMaskingExemptions: true,
-        })
-      )
+      readConsentCeiling(settingWith(MCPSetting_Capability.READ_WRITE))
     ).toEqual({
       kind: "mode",
       mode: MCPSetting_Capability.READ_WRITE,
-      ignoreMaskingExemptions: true,
     });
   });
 
@@ -76,7 +70,6 @@ describe("readConsentCeiling", () => {
     ).toEqual({
       kind: "mode",
       mode: MCPSetting_Capability.DISABLED,
-      ignoreMaskingExemptions: false,
     });
   });
 

@@ -120,18 +120,20 @@ export function canEditIssueComment(
 // and the left icon gutter around an arbitrary body.
 export function ActivityRowFrame({
   children,
+  compact = false,
   icon,
   id,
   isLast,
 }: {
   children: ReactNode;
+  compact?: boolean;
   icon: ReactNode;
   id?: string;
   isLast: boolean;
 }) {
   return (
     <li>
-      <div className="relative pb-3" id={id}>
+      <div className="relative pb-4" id={id}>
         {!isLast && (
           <span
             aria-hidden="true"
@@ -139,7 +141,7 @@ export function ActivityRowFrame({
           />
         )}
         <div className="relative flex items-start">
-          <div className="pt-1.5">{icon}</div>
+          <div className={cn(!compact && "pt-1.5")}>{icon}</div>
           <div className="min-w-0 flex-1">{children}</div>
         </div>
       </div>
@@ -167,7 +169,7 @@ export function ActivityRowShell({
   subjectSuffix?: ReactNode;
 }) {
   return (
-    <ActivityRowFrame icon={icon} id={id} isLast={isLast}>
+    <ActivityRowFrame compact={!body} icon={icon} id={id} isLast={isLast}>
       <div
         className={cn(
           "overflow-hidden rounded-sm border",
@@ -176,7 +178,12 @@ export function ActivityRowShell({
             : "ml-1 border-transparent"
         )}
       >
-        <div className={cn("px-3 py-2", body && "flex flex-col gap-y-2")}>
+        <div
+          className={cn(
+            "px-3",
+            body ? "flex flex-col gap-y-2 py-2" : "flex min-h-7 items-center"
+          )}
+        >
           <div
             className={cn(
               "flex items-center justify-between gap-x-2",
@@ -218,8 +225,8 @@ function IssueCommentHeader({
   const { t } = useTranslation();
   const creator =
     useUserByIdentifier(comment.creator) ?? unknownUser(comment.creator);
-  const createdTs = getTimeForPbTimestampProtoEs(comment.createTime, 0);
-  const updatedTs = getTimeForPbTimestampProtoEs(comment.updateTime, 0);
+  const createdTs = getTimeForPbTimestampProtoEs(comment.createTime);
+  const updatedTs = getTimeForPbTimestampProtoEs(comment.updateTime);
   const isEdited =
     createdTs !== updatedTs &&
     getIssueCommentType(comment) === IssueCommentType.USER_COMMENT;
@@ -239,12 +246,7 @@ function IssueCommentHeader({
           {t("activity.n-similar-activities", { count: similarCount })}
         </Badge>
       )}
-      {comment.createTime && (
-        <HumanizeTs
-          className="text-xs text-control-light"
-          ts={createdTs / 1000}
-        />
-      )}
+      <HumanizeTs className="text-xs text-control-light" tsMs={createdTs} />
       {isEdited && (
         <span className="text-control-light text-xs">
           ({t("common.edited")})

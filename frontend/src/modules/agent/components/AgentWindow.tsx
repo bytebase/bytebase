@@ -1099,7 +1099,7 @@ export function AgentWindow() {
                                 content={formatAbsoluteDateTime(chat.updatedTs)}
                               >
                                 <HumanizeTs
-                                  ts={Math.floor(chat.updatedTs / 1000)}
+                                  tsMs={chat.updatedTs}
                                   tooltip={false}
                                 />
                               </AgentTooltip>

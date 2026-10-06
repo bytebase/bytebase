@@ -1430,8 +1430,8 @@ export enum ReviewRun_Type {
   RULE = 1,
 
   /**
-   * Review against the AI review policy's natural-language instructions,
-   * performed by a model.
+   * Review against the natural-language AI review policy, performed by a
+   * model.
    *
    * @generated from enum value: AI = 2;
    */

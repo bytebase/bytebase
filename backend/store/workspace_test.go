@@ -73,6 +73,40 @@ func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
 	require.NotNil(t, project)
 }
 
+// TestCreateWorkspaceSwitchesEveryReviewRuleOn pins that a new workspace has
+// its own review rule policy row, which the workspace SQL Review page updates
+// rather than creates, and that each workspace gets exactly one.
+func TestCreateWorkspaceSwitchesEveryReviewRuleOn(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	_, stores, _ := testcontainer.NewMetadataDB(t)
+
+	workspaceIDs := []string{"review-rules-a", "review-rules-b"}
+	for _, workspaceID := range workspaceIDs {
+		_, err := stores.CreateWorkspace(ctx, &store.WorkspaceMessage{ResourceID: workspaceID}, "admin@example.com")
+		require.NoError(t, err)
+	}
+
+	for _, workspaceID := range workspaceIDs {
+		resourceType := storepb.Policy_WORKSPACE
+		policyType := storepb.Policy_REVIEW_RULE
+		policies, err := stores.ListPolicies(ctx, &store.FindPolicyMessage{
+			Workspace:    workspaceID,
+			ResourceType: &resourceType,
+			Resource:     new(common.FormatWorkspace(workspaceID)),
+			Type:         &policyType,
+			ShowAll:      true,
+		})
+		require.NoError(t, err)
+		require.Len(t, policies, 1)
+		require.True(t, policies[0].Enforce)
+		require.False(t, policies[0].InheritFromParent)
+		rules := &storepb.ReviewRulePolicy{}
+		require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(policies[0].Payload), rules))
+		require.Equal(t, store.GetDefaultReviewRulePolicy().Rules, rules.Rules)
+	}
+}
+
 func TestListWorkspacesByEmailEvaluatesBindingConditions(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

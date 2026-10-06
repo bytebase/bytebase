@@ -14,8 +14,8 @@ message ReviewRun {
     TYPE_UNSPECIFIED = 0;
     // Review against the standard rules.
     RULE = 1;
-    // Review against the AI review policy's natural-language instructions,
-    // performed by a model.
+    // Review against the natural-language AI review policy, performed by a
+    // model.
     AI = 2;
   }
 

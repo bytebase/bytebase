@@ -804,16 +804,15 @@ func TestMCPClassificationInventory(t *testing.T) {
 // exercised without a database. The end-to-end path exists too, in
 // backend/tests, now that a READ_ONLY ceiling admits a connection.
 type mcpGateStore struct {
-	ceiling                 storepb.MCPSetting_Capability
-	ignoreMaskingExemptions bool
-	err                     error
+	ceiling storepb.MCPSetting_Capability
+	err     error
 }
 
 func (s mcpGateStore) GetMCPSettingsUncached(context.Context, string) (*storepb.MCPSetting, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
-	return &storepb.MCPSetting{Capability: s.ceiling, IgnoreMaskingExemptions: s.ignoreMaskingExemptions}, nil
+	return &storepb.MCPSetting{Capability: s.ceiling}, nil
 }
 
 func readWriteCeiling() mcpGateStore {
@@ -1604,6 +1603,7 @@ func TestRejectMCPOriginatedGrantIssue(t *testing.T) {
 		"an MCP session may not create an access grant": {mcpSession, v1pb.Issue_ACCESS_GRANT, true},
 		"an MCP session may not create an unknown type": {mcpSession, v1pb.Issue_Type(9999), true},
 		"an MCP session composes database changes":      {mcpSession, v1pb.Issue_DATABASE_CHANGE, false},
+		"an unset type is left to buildIssueMessage":    {mcpSession, v1pb.Issue_TYPE_UNSPECIFIED, false},
 		"the console creates a role grant":              {console, v1pb.Issue_ROLE_GRANT, false},
 		"a request with no auth context at all":         {context.Background(), v1pb.Issue_ROLE_GRANT, false},
 	} {

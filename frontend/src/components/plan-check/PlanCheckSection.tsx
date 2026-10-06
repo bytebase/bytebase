@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -27,8 +28,8 @@ import {
 } from "@/lib/plan/check";
 import { cn } from "@/lib/utils";
 import {
-  getDateForPbTimestampProtoEs,
   getRuleLocalization,
+  getTimeForPbTimestampProtoEs,
   ruleTemplateMapV2,
   ruleTypeToString,
 } from "@/types";
@@ -358,13 +359,12 @@ export function PlanCheckResultsDrawer({
                                 <CircleQuestionMark className="h-4 w-4 text-control-light" />
                               </Tooltip>
                             )}
-                            {group.createTime && (
-                              <span className="text-xs text-control-light">
-                                {getDateForPbTimestampProtoEs(
-                                  group.createTime
-                                )?.toLocaleString() ?? ""}
-                              </span>
-                            )}
+                            <HumanizeTs
+                              className="text-xs text-control-light"
+                              tsMs={getTimeForPbTimestampProtoEs(
+                                group.createTime
+                              )}
+                            />
                           </div>
                         </div>
                         {group.target && (

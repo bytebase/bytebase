@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Busca usuarios por correo electrónico. Usa el prefijo serviceAccounts/ o workloadIdentities/ para buscar esos actores.",
+          "description": "Buscar usuarios, cuentas de servicio e identidades de carga de trabajo por nombre o correo electrónico",
           "title": "Actor"
         },
         "level": {
@@ -1544,6 +1544,7 @@
       "sort": "Ordenar",
       "updated": "Fecha de actualización"
     },
+    "statement-exceeds-preview-limit": "Esta sentencia supera el límite de vista previa. Después de recargar, solo se mostrará una vista previa.",
     "statement-from-sheet-warning": "Esta sentencia se carga desde una hoja de gran tamaño. La previsualización puede estar truncada.",
     "status-transition": {
       "modal": {
@@ -1826,6 +1827,7 @@
         "add-comment-on-line": "Añadir un comentario en la línea {{line}}",
         "add-comment-on-lines": "Añadir un comentario en las líneas {{startLine}} a {{endLine}}",
         "anchor": {
+          "comparison-size-limit": "La sentencia original o actual supera el límite de comparación.",
           "line_one": "Línea {{range}}",
           "line_other": "Líneas {{range}}",
           "outdated": "Obsoleto",
@@ -2757,18 +2759,6 @@
         "description": "{{bound}} {{audit}}",
         "edit": "Editar política",
         "loading": "Leyendo la política de acceso…",
-        "masking": {
-          "badge": "Exenciones de enmascaramiento ignoradas",
-          "badge-disabled": "Exenciones de enmascaramiento ignoradas — MCP está desactivado",
-          "badge-unlicensed": "Exenciones de enmascaramiento ignoradas — enmascaramiento sin licencia",
-          "description": "Si se activa, los datos enmascarados siguen enmascarados en las sesiones MCP incluso para usuarios con exenciones o permisos de desenmascarado. La cobertura depende del motor: donde Bytebase no enmascara, esto no cambia nada. La consola no se ve afectada.",
-          "title": "Ignorar las exenciones de enmascaramiento",
-          "unavailable": "El enmascaramiento de datos no está licenciado para este espacio de trabajo, así que no se enmascara nada sea cual sea este ajuste."
-        },
-        "masking-pending": {
-          "applied": "Esta política se guardará con las exenciones de enmascaramiento aplicadas.",
-          "ignored": "Esta política se guardará con las exenciones de enmascaramiento ignoradas."
-        },
         "mode": {
           "disabled": {
             "best-for": "Ideal para: mantener MCP apagado hasta que esté listo para activarlo.",
@@ -3737,7 +3727,8 @@
       "completed": "Completado",
       "computing": "computación...",
       "dumping": "dumping...",
-      "retry-attempt": "intento {{current}}/{{max}}",
+      "hide-full-statement": "Ocultar la declaración completa",
+      "show-full-statement": "Mostrar la declaración completa",
       "syncing": "sincronizando..."
     },
     "log-type": {
@@ -3747,15 +3738,20 @@
       "ghost-migration": "Migración gh-ost",
       "prior-backup": "Copia de seguridad previa",
       "release-file-execute": "Archivo de lanzamiento",
-      "retry": "Reintentar",
       "schema-dump": "Volcado de esquema",
       "transaction": "Transacción"
     },
     "log-viewer": {
+      "attempt-count_one": "{{count}} intento",
+      "attempt-count_other": "{{count}} intentos",
+      "attempt-n": "Intento {{n}}",
+      "attempt-reason": "falló: {{reason}}",
       "collapse-all": "Contraer todo",
       "expand-all": "Expandir todo",
       "multiple-replicas-notice": "Se detectó un reinicio del servidor durante la ejecución. Los registros están agrupados por réplica.",
+      "previous-attempts": "Intentos anteriores",
       "replica-n": "Réplica #{{n}}",
+      "retrying": "reintentando",
       "summary": "{{sections}} secciones · {{entries}} entradas"
     },
     "no-blocking-sessions": "Sin sesiones bloqueantes",

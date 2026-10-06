@@ -38,33 +38,19 @@ func NewRuleExecutor(s *store.Store) *RuleExecutor {
 // attempted, failures aggregate into one message, and the findings are
 // returned only when every unit was evaluated.
 func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID int64) ([]*store.IssueCommentMessage, error) {
-	issue, err := e.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectID}, UID: &issueUID})
+	plan, project, err := loadReviewPlan(ctx, e.store, projectID, issueUID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get issue")
-	}
-	if issue == nil {
-		return nil, errors.Errorf("issue %d not found in project %s", issueUID, projectID)
-	}
-	if issue.PlanUID == nil {
-		return nil, errors.Errorf("issue %d has no plan", issueUID)
-	}
-	plan, err := e.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: issue.PlanUID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get plan")
-	}
-	if plan == nil {
-		return nil, errors.Errorf("plan %d not found in project %s", *issue.PlanUID, projectID)
-	}
-	project, err := e.store.GetProjectByResourceID(ctx, projectID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project")
-	}
-	if project == nil {
-		return nil, errors.Errorf("project %s not found", projectID)
+		return nil, err
 	}
 	policy, err := e.store.GetEffectiveReviewRulePolicy(ctx, project.Workspace, projectID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get review rule policy")
+	}
+	// An empty policy is review switched off: the run completes with no
+	// findings, which resolves those of earlier runs. omni evaluates SYNTAX
+	// whether or not it is listed, so it is not asked at all.
+	if len(policy.GetRules()) == 0 {
+		return nil, nil
 	}
 
 	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, e.store, plan, nil)

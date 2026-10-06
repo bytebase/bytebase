@@ -152,10 +152,8 @@ vi.mock("@/components/MarkdownEditor", () => ({
   ),
 }));
 
-vi.mock("@/components/HumanizeTs", () => ({
-  HumanizeTs: ({ ts }: { ts: number }) => (
-    <span data-testid="humanize-ts">{ts}</span>
-  ),
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
 vi.mock("@/components/UserAvatar", () => ({

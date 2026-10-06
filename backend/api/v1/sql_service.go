@@ -405,10 +405,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		Option:               request.QueryOption,
 		Container:            request.GetContainer(),
 		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
-		// SkipMasking turns the whole masking pass off (queryRetry's
-		// maskingEnabled), so exemptionsForPrincipal never runs when it is set.
-		// The toggle has to suppress it here as well as there.
-		SkipMasking: accessGrant != nil && accessGrant.Payload.Unmask && !mcpIgnoresMaskingExemptions(ctx),
+		SkipMasking:          accessGrant != nil && accessGrant.Payload.Unmask,
 	}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
@@ -1207,11 +1204,9 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	// its target databases, so span-level ACL still runs and only the
 	// granted targets are exempted from IAM. See PR #20487 review.
 	optionalAccessCheck := s.accessCheckWithGrant(accessGrant)
-	// Export is a WRITE method, so a read-write MCP session reaches it with the
-	// same access-grant unmask Query carries.
 	skipMasking := false
 	if accessGrant != nil {
-		skipMasking = accessGrant.Payload.Unmask && !mcpIgnoresMaskingExemptions(ctx)
+		skipMasking = accessGrant.Payload.Unmask
 	}
 	bytes, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, optionalAccessCheck, s.schemaSyncer, dataSource, skipMasking)
 

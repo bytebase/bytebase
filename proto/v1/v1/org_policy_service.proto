@@ -216,6 +216,7 @@ message Policy {
     TagPolicy tag_policy = 7;
     QueryDataPolicy query_data_policy = 9;
     ReviewRulePolicy review_rule_policy = 12;
+    ReviewAIPolicy review_ai_policy = 13;
   }
 
   // Whether the policy is enforced.
@@ -242,6 +243,8 @@ enum PolicyType {
   DATA_QUERY = 6;
   // Standard review rule switch. Allowed on WORKSPACE and PROJECT.
   REVIEW_RULE = 7;
+  // Natural-language policy for the AI review. Allowed on WORKSPACE and PROJECT.
+  REVIEW_AI = 8;
 }
 
 // The resource type that a policy can be attached to.
@@ -258,7 +261,12 @@ enum PolicyResourceType {
 
 // Standard review rule policy: the rules switched on. The nearest policy
 // wins: a project's own policy applies as is; a project without one uses
-// the workspace policy; with neither, every rule is on.
+// the workspace policy; with neither, every rule is on. Getting the policy
+// of a project without its own is NOT_FOUND; getting the workspace's when it
+// has none returns every rule on.
+//
+// SYNTAX gates the rest: the other rules judge only SQL that parses, so a
+// list without SYNTAX switches every rule off.
 //
 // A saved list is explicit, so a rule added to the standard set in a later
 // release is appended to every saved policy by a data migration in that
@@ -266,6 +274,14 @@ enum PolicyResourceType {
 message ReviewRulePolicy {
   // The rules switched on. Unknown or unspecified values are rejected.
   repeated ReviewRuleType rules = 1;
+}
+
+// Natural-language policy for the AI review. Unlike the review rule policy,
+// both levels apply: the workspace policy and the project policy both reach
+// the reviewer, and the project policy wins where they conflict.
+message ReviewAIPolicy {
+  // The policy text. Must not be blank, at most 64 KiB.
+  string content = 1;
 }
 
 // Rollout policy configuration.

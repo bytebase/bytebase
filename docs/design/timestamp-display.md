@@ -99,7 +99,7 @@ GitHub behavior).
 The history views — database changelog, revision table, task-run history — flip to **absolute
 date-time always**, consistent with the audit log. They are records of execution, not queues.
 
-**D5 (proposed) — Operational times: absolute with explicit timezone, minute precision.**
+**D5 — Operational times: absolute with explicit timezone, minute precision.**
 Wall-clock renderings of scheduled rollouts and expirations show the absolute date-time with the
 short timezone name in the visible string: "Sep 15, 2026, 9:00 AM GMT+8". Two refinements from
 review: (a) preset-written expirations (`now() + N days`) carry real sub-minute tails, so a
@@ -107,17 +107,23 @@ minute display floors the enforced cutoff by ≤59s — in the safe direction, e
 tooltip; alternatives are keeping seconds for expirations or normalizing preset writes (a
 write-path change, out of scope). (b) The rule targets wall-clock strings only — a pure countdown
 ("expires in 3h20m") cannot be misread across timezones and stays permitted with the D6 tooltip.
-Driven by BYT-10023 — see Operational times below. Proposed, pending confirmation; the pickers
-that write these values are deferred.
+Driven by BYT-10023 — see Operational times below. The pickers that write these values are
+deferred.
 
 **D6 — Full date-time tooltip on every reduced display.**
 Any timestamp that does not show the full form — relative, date-only after the switch, or the
 compact history tier — carries the full absolute date-time with seconds and timezone in its
-tooltip. This is the universal escape hatch that keeps every reduced cell recoverable. Corollary:
-a context that cannot host a tooltip — i18n-interpolated strings, exports, titles — carries the
-full-precision string itself.
+tooltip. This is the escape hatch that keeps a reduced cell recoverable — for a pointer. The
+shared tooltip's trigger is a plain span that takes no focus, so a hidden reading is not reachable
+by keyboard or touch, and a reduced label is all those readers get. Operational times are
+unaffected, since they carry their zone in the visible string, which is what D5's safety rests on;
+what a keyboard reader cannot recover is the seconds and zone behind a queue or compact label.
+Closing that would make every tooltip in the app a tab stop, which is a larger decision than this
+design. The rule cuts both ways: a tooltip carries only what its label hides, so a label already
+showing the full instant gets none of it repeated. Corollary: a context that cannot host a tooltip
+— i18n-interpolated strings, exports, titles — carries the full-precision string itself.
 
-**D7 (proposed) — History views carry two precision tiers.**
+**D7 — History views carry two precision tiers.**
 *A history row orients; a history record testifies.* Full precision (seconds + timezone,
 `formatAbsoluteDateTime`) where the time itself is the evidence: the audit log — exportable, and
 the export must preserve the same instant at no less precision than the screen (the export writes
@@ -127,6 +133,29 @@ hh:mm, no seconds, no timezone) where rows are scanned to locate a record inside
 history: the embedded lists, where width is contended and D6 keeps full precision one hover away.
 Objective divider: **exportable-as-evidence or a detail view → full; scannable embedded list →
 compact.**
+
+**Column width follows the form.** Every form has a width it needs on one line
+(`TIMESTAMP_COLUMN_WIDTH`), measured over every time zone and shipped locale: 192, 270 and 292 for
+the compact, operational and full date-time forms. Moving a surface off relative wording lengthens
+its value, so a column sized for the old wording breaks the new one across two lines or cuts it off.
+A column this design sizes opens at its form's width, so nothing is cut unless the reader chooses it
+or the table has ruled which columns give way first when it is narrower than the defaults together —
+the access grants have, and their dates give way first. The work-queue form has no sized column
+here; a column holding its widest reading, Spanish in the future tense, needs 183px, so a queue-form
+column elsewhere may be sized for the past tense alone. How the width is kept depends on the table.
+Where the browser spreads spare width across every sized column, the open-ended column — a title, a
+run's detail — is left unsized to take it, so the date neither wraps nor swells; the audit log does
+not do this yet, and its date grows with the rest. Where a table fits its columns to the container
+itself, a date column takes none of the spare width, and a column raised to its floor takes that
+width from the others rather than overrunning the container. A cell narrower than its form keeps the
+day: the date, written as the locale writes a date alone, never shrinks, and the time and zone
+ellipsize on whichever side of it the locale puts them — after it in most locales, before it in
+Vietnamese — with the space between kept, so a cut time never runs into the date. Cutting the label
+from its end would keep what the locale writes first, which in Vietnamese is the time. A cell asks
+for this with `HumanizeTs`'s `truncate`; a locale whose label does not begin or end with its date
+falls back to cutting the end. The minimum is one value for every form, 154px: the date where it is
+written widest, in Japanese and Chinese, the space, and a whole ellipsis, so a narrowed cell still
+shows there is a time. The hover, or one drag, gives the rest back.
 
 ## Surface classification
 
@@ -145,7 +174,7 @@ Every current `HumanizeTs` call site, classified under the principle:
 | Schema sync status | `modules/sql-editor/components/SchemaPane/SyncSchemaButton.tsx`, `routes/project/ProjectSyncSchemaPage.tsx`, `components/database/DatabaseOverviewInfo.tsx` | Freshness | 30d switch |
 | Agent chat | `modules/agent/components/AgentWindow.tsx` | Feed | 30d switch |
 | Plan-check run time | `components/plan-check/PlanCheckSection.tsx` (bare `toLocaleString()` today — adopts `HumanizeTs`) | Freshness | 30d switch |
-| Access-grant creation time | `routes/project/ProjectAccessGrantsPage.tsx` (`AccessGrantRow`; full absolute today — adopts `HumanizeTs`). Creation meta on a management roster; the grant's operational fact is its *expiration*, which stays operational mode | Work queue / meta | 30d switch |
+| Access-grant creation time | `routes/project/ProjectAccessGrantsPage.tsx` (`AccessGrantRow`; full absolute today — adopts `HumanizeTs`). Shares the operational form with the expiration beside it: two dates in one row read in one format, and consistency outranks the freshness a relative age would add. The row's status, statement, creator and databases carry what a reader acts on — the status turns Expired by itself — so the dates take none of the spare width, and when the table is narrower than the defaults together they give way first, down to the timestamp minimum, then the statement, the creator and the databases, with the status last. A narrow screen cuts each date's time and zone and keeps its day; the full date-time stays on the hover | Operational | Operational (D6 tooltip) |
 | **Database changelog** | `routes/project/database-detail/changelog/DatabaseChangelogTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
 | **Database revisions** | `routes/project/database-detail/revision/DatabaseRevisionTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
 | **Task-run history** | `routes/project/plan-detail/components/deploy/DeployTaskRunHistorySheet.tsx`, `routes/project/issue-detail/components/IssueDetailTaskRunTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
@@ -226,7 +255,7 @@ their list views render relative. D4 makes each list agree with its own detail v
 - All strings locale-aware via `Intl` with the active i18n locale — no hardcoded formats, no new
   locale keys needed.
 
-**History views**: absolute always; precision comes in two tiers under D7 (assignment proposed):
+**History views**: absolute always; precision comes in two tiers under D7:
 
 | History-view occurrence | Space | Tier |
 |---|---|---|
@@ -265,11 +294,76 @@ no seconds per D5. Relative age may accompany it in the tooltip.
   both JSX and string contexts stays a full-precision string builder — its JSX consumers render
   the component instead.
 - Staleness: no time-varying display (relative buckets, countdowns, `isExpired` derivations) may
-  go stale while mounted; displays that never change with time pay nothing. The mechanism —
-  shared clock, cadence, subscribers, consolidating today's ad-hoc per-component timers — is the
-  implementation PR's design space, guarded by a render-time `Date.now()` sweep and fake-timer
-  tests. GitHub's `relative-time` element, which schedules updates at the next boundary, is the
-  reference behavior.
+  go stale while mounted; displays that never change with time pay nothing. GitHub's
+  `relative-time` element, which schedules updates at the next boundary, is the reference
+  behavior. The contract that makes this hold:
+  - **Every time-varying reading comes as a pair** — the function that renders it and the
+    function returning the first instant its output will differ (`Infinity` if never), defined
+    together as one reading object and tested together: sampled across ages, the reading is
+    constant up to that instant and differs at it, followed across several successive boundaries
+    so a reading that leaves a value and later returns to it cannot hide a skipped span. The
+    samples include sub-millisecond timestamps, starts off the whole minute, and a turn of the
+    year, where a boundary a fraction early, one computed from a rounded clock, or a seasonal
+    change otherwise hides.
+  - **A display gets a reading only through `useTimeReading`**, which takes the reading object,
+    evaluates its boundary before its value, and subscribes to the shared clock. Pairing,
+    subscription and evaluation order come with it: a boundary borrowed from a different reading
+    or re-derived beside one, a display that forgot to subscribe, and a boundary evaluated after
+    its value — which can see a change the value just missed and schedule the one after — are
+    none of them reachable through the hook. What the hook cannot prevent is a display reaching
+    past it: a reading's `read` is public so readings can compose, and the hook's parameter is
+    structurally typed. A Biome plugin narrows that line rather than closing it: outside the
+    modules that define the readings, it rejects `read` and `nextChangeAt` reached as a member —
+    under an alias, through a local, through a table, through `.call`, passed as a callback,
+    optionally chained, or keyed by a literal — destructured one member at a time, and defined
+    on an object, which is what keeps a display from assembling a reading of its own. What gets
+    past it, measured: a key that is not a plain identifier or quoted string, and a destructure of
+    two or more properties. Neither is what anyone writes by accident. Test files are excluded,
+    since a test builds a reading and reads it directly, and matching the member reserves both
+    names across the app: a permission object spelled `{ read: true }`, a stream reader's
+    `.read()`, and — because the object-literal case descends the whole subtree — any literal with
+    an identifier `read` anywhere beneath it. Type annotations and interfaces are not reported. The rule
+    is the convention; the plugin is what makes drifting off it loud.
+  - **The shared clock accepts any instant.** Deadlines are wall-clock instants but timers skip time
+    the machine sleeps, so the clock re-checks at least once a minute: a display is at most a
+    minute behind after sleep or a clock adjustment. A boundary is only valid on a clock at least
+    as late as the one it was computed on, so a clock stepped backward wakes every subscribed
+    display at the next check. The evidence of a step is the highest clock reading the clock has
+    seen, not the last one taken: arming happens on any commit, so a display mounting between the
+    step and the next check would otherwise erase it. The detector's blind spot is a step smaller
+    than the time since the clock last armed, which is safe because it self-tunes: a display that
+    changes by the second arms often, shrinking exactly the window it needs, and a step too small
+    for that window is also too small to change a reading that counts in minutes or days. A
+    reading that has settled for good holds no subscription, so a clock stepped back past its last
+    change leaves it as it was until something else renders it — the price of settled displays
+    costing nothing. A step wakes a display without consuming what it declared: the instant is
+    absolute, so it survives the step and still gets its own wake, and only a display the clock
+    finds due retires its deadline. A woken display that names the same instant again is
+    re-checked after a resync interval rather than on every other display's wake, and a short gap
+    after each wake keeps a boundary that keeps naming a past instant from spinning it. The
+    clock's state is the page's — built on first import, never reset — so anything that rewinds
+    the wall clock underneath it hands it the backward step it exists to detect, and it detects
+    it. That is why the tests move time forward only, each starting after the last one ended.
+  - **An absent timestamp has no reading**, and neither has a value that is not an instant: a
+    number that is not finite, or one beyond the range a time value can occupy, which `Date` holds
+    no time for and the date formatters throw on. The conversion yields nothing rather than a
+    substitute — the current time and the epoch are both plausible-looking lies — and the
+    container picks the empty form: "-" in a table cell, or the label dropped along with its
+    separator in an inline line. The domain lives with the formatters, since they are what rejects
+    a value; a display asks them rather than guessing at the test. Absence is `undefined`
+    throughout: the epoch is an ordinary instant, so a surface that used to hide a zero now shows
+    1970, which is what the server sending one would mean. No server does — every timestamp these
+    surfaces read is set from a real time or left unset. The container's empty form is a caller's
+    decision, and only absence reaches it: a value the domain rejects leaves the display rendering
+    nothing while its separator stays, which no proto-sourced timestamp can produce, since a
+    `Timestamp` is range-checked to years 1–9999. A caller guards a timestamp only to gate
+    something besides the display — a separator, a label, a pill, a "-" of its own. The display
+    renders nothing without an instant, so a guard that only repeats that is a second place for
+    the rule to live, and the second place is where it drifts: three rounds of this review each
+    found another spelling of it.
+  - Guarded by fake-timer tests and a sweep of render-time `Date.now()` over the touched surfaces
+    at implementation time — a review pass, not a lint: telling render scope from handlers and
+    effects statically would flag most legitimate uses.
 - Tests: threshold boundary (29d/31d), year handling, zh locale, the three modes, the operational
   label/tooltip contract on a sub-minute-tail expiration, the <24h countdown carve-out, and
   fake-timer staleness; update the existing `*.test.tsx` files that assert relative strings.
@@ -278,7 +372,9 @@ no seconds per D5. Relative age may accompany it in the tooltip.
 
 - The audit log (already correct).
 - Duration display (`humanizeDurationV1`, "4.2s"): durations are elapsed quantities with no
-  calendar or timezone question.
+  calendar or timezone question. A running task's elapsed time is the one that keeps moving; it
+  advances when its row re-renders rather than on the shared clock, since counting it live would
+  wake every running row once a second for a number nobody reads to that precision.
 - Relative wording under 30 days.
 - No user or workspace preference (GitLab's model is the known shape if a customer ever asks).
 - No backend or proto change.
@@ -299,30 +395,43 @@ no seconds per D5. Relative age may accompany it in the tooltip.
   evidence surfaces — the audit log and the changelog/revision detail views — so the
   year-month-day-hour-minute-second ask is met to the minute on record lists and fully on record
   details. If the customer pushes back specifically on visible seconds, the escalation is flipping
-  those lists to the full tier — a one-line D7 assignment change, no model change.
+  those lists to the full tier — a mode change at each embedded list, no model change.
 - Queue rows 1–29 days old: still "x days ago" (D1/D3 trade-off, accepted because these are queue
   readings). **Risk**: if the reported "ticket history" reading includes *recent* issue-list rows,
   part of the complaint survives. Mitigation: tooltip; escalation path if it recurs is lowering the
   threshold (D3) or a GitLab-style preference (D1 rejected-for-now).
 
-## Open items awaiting ruling
+## Resolutions
 
-Confirmed since the first draft: release list = work queue; comment/activity timelines = feed;
-D6 (full date-time tooltip on every reduced display). Still open:
+Every item above is decided and implemented. D5 and D7 landed as recommended: operational times at
+minute precision, compact tier on the embedded history lists. The scheduled rollout pill shows the
+operational format inline, and the bare-format expirations — masking exemption, role-grant detail —
+adopt it too, while the i18n-interpolated member preview carries the full-precision string. Three
+points where the implementation had to choose:
 
-1. **D7 tier assignment/format** — compact (date + hh:mm) vs full for the embedded history lists.
-   Mockups of both options exist for the changelog table and the 704px task-run sheet;
-   recommendation is compact per the orient/testify principle.
-2. **D5 precision refinement** — operational times at minute precision (no seconds). Pickers
-   write minutes, but day/second-count presets write `now() + offset` with sub-minute tails, so
-   minute display floors the enforced cutoff by ≤59s (safe direction; full value in the tooltip).
-   Alternatives: full seconds for expiration values, or normalizing preset writes to the minute
-   (write-path change, out of scope here).
-3. Scheduled rollout pill shows the operational format inline ("Sep 15, 2026, 9:00 AM GMT+8");
-   relative age moves to the tooltip.
-4. The bare-format expiration displays are fixed in this effort rather than filed as follow-up
-   cleanup: masking exemption and role-grant details adopt the operational mode; the member
-   preview — an i18n-interpolated string — gets the full-precision string per the corollary
-   (or the `Trans`-slot refactor if minute display is preferred there).
-5. Tooltip on *full* cells may show the relative age (inverse tooltip). Alternative: repeat the
-   full string (GitHub parity).
+1. **The relative age on a full cell** (previously open item 5) is rendered as a component the
+   tooltip mounts only when it opens, not as a string computed with the row. A string would freeze
+   at whatever the row last rendered, which the staleness rule forbids; this way a closed tooltip
+   holds no place on the shared clock and an open one keeps counting. The full-tier surfaces — the
+   audit log and the changelog and revision detail views — render through the component to get it.
+2. **The operational tooltip carries the full date-time, not the relative age.** D6 owns that slot,
+   and the pill's reduced minute precision is what needs recovering.
+3. **The zh renderings put the timezone before the time** — "2026年9月15日 GMT+8 09:00", where the
+   examples above show it trailing. That is ICU's pattern for the locale; the strings come from
+   `Intl` rather than being assembled, so the locale's own order wins.
+
+The staleness rule holds through `useTimeReading` and the reading objects described under
+Implementation shape. The clock replaced the ad-hoc interval behind the plan-detail created time,
+and the readings cover the displays that had no clock at all: the SQL-editor grant countdown, the
+masking-exemption expiry label, the sample-instance expiry alert, and the access-grant expired
+badge.
+
+The rule governs displays of time. Two kinds of clock read stay outside it: **query membership** —
+the masking-exemption status filter, the role-expiry reminder's "within two days" list — which
+reflects when the list was last computed, not the passing second; and the **input side**, the
+validation of an expiration being entered, deferred with the pickers. Where that list is computed
+server-side, that is when the query ran. Where it is computed in the browser, as the
+masking-exemption filter is, it is whenever the page last re-rendered for some other reason — so a
+grant already showing its own expiry label, which is on the clock, can still sit under the Active
+filter. Moving the bucket with the label would mean rows leaving a list while someone reads it,
+which is a product call this design does not make.

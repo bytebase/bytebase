@@ -1,9 +1,10 @@
 import { create } from "@bufbuild/protobuf";
-import { TimestampSchema } from "@bufbuild/protobuf/wkt";
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { shownTimestampInstants } from "@/test-utils/humanizeTs";
 import {
   IssueComment_ThreadState,
   IssueCommentSchema,
@@ -26,7 +27,9 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("@/components/HumanizeTs", () => ({ HumanizeTs: () => null }));
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
+}));
 
 // The activity module drags Monaco into the test; only the edit rule matters.
 vi.mock("@/components/issue-activity/IssueCommentActivity", () => ({
@@ -116,14 +119,20 @@ const project = { name: "projects/p" } as Project;
 const comment = (
   id: string,
   text: string,
-  extra: { root?: string; resolved?: boolean; creator?: string } = {}
+  extra: {
+    root?: string;
+    resolved?: boolean;
+    creator?: string;
+    writtenMs?: number;
+    editedMs?: number;
+  } = {}
 ) =>
   create(IssueCommentSchema, {
     name: `${ISSUE}/issueComments/${id}`,
     comment: text,
     creator: extra.creator ?? "users/alice@example.com",
-    createTime: create(TimestampSchema, { seconds: BigInt(1) }),
-    updateTime: create(TimestampSchema, { seconds: BigInt(1) }),
+    createTime: timestampFromMs(extra.writtenMs ?? 1_000),
+    updateTime: timestampFromMs(extra.editedMs ?? extra.writtenMs ?? 1_000),
     root: extra.root,
     threadState:
       extra.root !== undefined
@@ -210,7 +219,7 @@ describe("CommentThreadCard", () => {
         issue={issue}
         project={project}
         thread={thread}
-        context={<div data-testid="anchor-context">SELECT 1;</div>}
+        renderContext={() => <div data-testid="anchor-context">SELECT 1;</div>}
       />
     );
     const card = container.querySelector("[data-testid='comment-thread']");
@@ -221,6 +230,25 @@ describe("CommentThreadCard", () => {
     expect(anchor?.compareDocumentPosition(rootComment!)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
+  });
+
+  test("times a reply by when it was written, not when it was edited", () => {
+    // The two instants sit beside each other in ThreadComment and feed the
+    // same "edited" marker, so the row has to say which one it shows.
+    const writtenMs = Date.UTC(2026, 2, 2, 12);
+    const reply = comment("edited", "Reply", {
+      root: `${ISSUE}/issueComments/root`,
+      writtenMs,
+      editedMs: writtenMs + 60_000,
+    });
+    const [thread] = groupThreads([comment("root", "Root question"), reply]);
+    render(
+      <CommentThreadCard issue={issue} project={project} thread={thread} />
+    );
+
+    const shown = shownTimestampInstants(container);
+    expect(shown).toContain(String(writtenMs));
+    expect(shown).not.toContain(String(writtenMs + 60_000));
   });
 
   test("renders the root and replies oldest first with the thread footer", () => {
@@ -236,6 +264,11 @@ describe("CommentThreadCard", () => {
       container.querySelectorAll("[data-testid='preview']")
     ).map((node) => node.textContent);
     expect(bodies).toEqual(["Root question", "First reply", "Second reply"]);
+    const comments = container.querySelectorAll("[data-testid='thread-comment']");
+    const replies = container.querySelector("[data-testid='thread-replies']");
+    expect(replies?.contains(comments[0])).toBe(false);
+    expect(replies?.contains(comments[1])).toBe(true);
+    expect(replies?.contains(comments[2])).toBe(true);
     expect(container.querySelector("[data-thread-state]")?.getAttribute("data-thread-state")).toBe("open");
     expect(buttonByText("plan.review.thread.resolve")).toBeDefined();
     expect(buttonByText("plan.review.thread.reply-placeholder")).toBeDefined();
@@ -258,6 +291,28 @@ describe("CommentThreadCard", () => {
     ).toHaveLength(2);
     expect(buttonByText("common.reopen")).toBeDefined();
     expect(buttonByText("plan.review.thread.resolve")).toBeUndefined();
+  });
+
+  test("a resolved anchored thread collapses from its context header", () => {
+    const [thread] = groupThreads([comment("root", "Root", { resolved: true })]);
+    render(
+      <CommentThreadCard
+        issue={issue}
+        project={project}
+        renderContext={(onCollapse) => (
+          <button data-testid="context-collapse" onClick={onCollapse} type="button">
+            Collapse context
+          </button>
+        )}
+        thread={thread}
+      />
+    );
+    click(buttonByText("plan.review.thread.resolved"));
+    expect(container.querySelector("[data-testid='context-collapse']")).not.toBeNull();
+    expect(container.querySelectorAll('button[aria-label="common.collapse"]')).toHaveLength(0);
+    click(container.querySelector("[data-testid='context-collapse']"));
+    expect(container.querySelector("[data-testid='context-collapse']")).toBeNull();
+    expect(container.querySelector("[data-testid='preview']")).toBeNull();
   });
 
   test("roots and replies share header avatars and a full-width body", () => {

@@ -637,9 +637,7 @@ export const IssueListItem = memo(function IssueListItem({
 
   const issueProject = useMemo(() => projectOfIssue(issue), [issue]);
 
-  const createTimeTs = Math.floor(
-    getTimeForPbTimestampProtoEs(issue.createTime, 0) / 1000
-  );
+  const createTimeMs = getTimeForPbTimestampProtoEs(issue.createTime);
 
   const issueUrl = useMemo(() => {
     const issueRoute = getIssueRoute(issue);
@@ -769,9 +767,13 @@ export const IssueListItem = memo(function IssueListItem({
           </div>
           <div className="flex items-center flex-wrap gap-x-1 text-xs text-control-light mt-1">
             <span className="opacity-80">#{extractIssueUID(issue.name)}</span>
-            <span>&middot;</span>
-            {t("common.created")}
-            <HumanizeTs ts={createTimeTs} />
+            {createTimeMs !== undefined && (
+              <>
+                <span>&middot;</span>
+                {t("common.created")}
+                <HumanizeTs tsMs={createTimeMs} />
+              </>
+            )}
             <span>&middot;</span>
             {getAccountTypeByEmail(creator.email) === AccountType.USER ? (
               <UserHoverCard

@@ -9,13 +9,16 @@ import {
 import { memo, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { useSeededState } from "@/hooks/useSeededState";
 import {
-  type TaskRun_Status,
+  TaskRun_Status,
   TaskRunLogEntry_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import type { TaskRunLogDetailText } from "./model";
+import { LogRows, ROW_DIVIDER } from "./LogRows";
+import { countRetryMarkers, type TaskRunLogDetailText } from "./model";
 import { SectionContent } from "./SectionContent";
-import { SectionHeader, SectionStatusIcon } from "./SectionHeader";
+import { SectionStatusIcon } from "./SectionHeader";
+import type { LogRow } from "./types";
 import { useTaskRunLogData } from "./useTaskRunLogData";
 import { useTaskRunLogSections } from "./useTaskRunLogSections";
 
@@ -46,6 +49,19 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
     active
   );
 
+  // The reader's explicit row folds. They live here, above every conditional
+  // SectionContent mount, so collapsing a section or the sole-section layout
+  // giving way to the section tree does not discard them. A new run starts
+  // clean, as does a new phase: both deploy surfaces key this viewer on status.
+  const [foldOverrides, setFoldOverrides] = useSeededState<
+    ReadonlyMap<string, boolean>
+  >(taskRunName, () => new Map());
+  const handleFoldChange = useCallback(
+    (key: string, open: boolean) =>
+      setFoldOverrides((previous) => new Map(previous).set(key, open)),
+    [setFoldOverrides]
+  );
+
   const getSectionLabel = useCallback(
     (type: TaskRunLogEntry_Type) => {
       const labelMap: Partial<Record<TaskRunLogEntry_Type, string>> = {
@@ -62,7 +78,6 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
         [TaskRunLogEntry_Type.PRIOR_BACKUP]: t(
           "task-run.log-type.prior-backup"
         ),
-        [TaskRunLogEntry_Type.RETRY_INFO]: t("task-run.log-type.retry"),
         [TaskRunLogEntry_Type.COMPUTE_DIFF]: t(
           "task-run.log-type.compute-diff"
         ),
@@ -89,22 +104,23 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
       },
       backupCompleted: (count: number) =>
         t("task-run.log-detail.backup-completed", { count }),
-      retryAttempt: (current: number, max: number) =>
-        t("task-run.log-detail.retry-attempt", { current, max }),
     }),
     [t]
   );
 
+  // A retry marker regroups the positional rows, so it resets expansion the
+  // way switching runs does; an ordinary append leaves the key alone.
+  const datasetKey = `${taskRunName}:${countRetryMarkers(entries)}`;
   const {
-    sections,
+    rows,
     hasMultipleReplicas,
     hasReleaseFiles,
     releaseFileGroups,
     replicaGroups,
-    toggleSection,
+    toggleRow,
     toggleReplica,
     toggleReleaseFile,
-    isSectionExpanded,
+    isRowExpanded,
     isReplicaExpanded,
     isReleaseFileExpanded,
     expandAll,
@@ -118,13 +134,14 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
     sheetsMap,
     getSectionLabel,
     detailText,
-    datasetKey: taskRunName,
+    datasetKey,
+    taskRunStatus,
   });
 
   const hasRenderableReleaseFiles =
     hasReleaseFiles && releaseFileGroups.length > 0;
   const hasContent =
-    sections.length > 0 || hasMultipleReplicas || hasRenderableReleaseFiles;
+    rows.length > 0 || hasMultipleReplicas || hasRenderableReleaseFiles;
 
   if (!taskRunName) {
     return null;
@@ -147,13 +164,20 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
   // A single section with no replicas or release files carries no structure
   // worth disclosing — skip the summary bar and the collapsible section header
   // and show the entries directly under a lightweight, non-collapsible label.
+  const firstRow = rows[0];
   const soleSection =
-    !hasMultipleReplicas && !hasRenderableReleaseFiles && sections.length === 1
-      ? sections[0]
+    !hasMultipleReplicas &&
+    !hasRenderableReleaseFiles &&
+    rows.length === 1 &&
+    firstRow?.kind === "section"
+      ? firstRow
       : undefined;
   if (soleSection) {
     return (
-      <div className="w-full font-mono text-xs">
+      <div
+        className="w-full font-mono text-xs"
+        data-testid="task-run-log-viewer"
+      >
         <div className="w-full overflow-hidden rounded-sm border border-block-border bg-control-bg/50">
           <div className="flex items-center gap-x-2 px-3 py-1.5 text-control">
             <SectionStatusIcon section={soleSection} />
@@ -164,7 +188,12 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
               </span>
             ) : null}
           </div>
-          <SectionContent section={soleSection} datasetKey={taskRunName} />
+          <SectionContent
+            key={datasetKey}
+            section={soleSection}
+            foldOverrides={foldOverrides}
+            onFoldChange={handleFoldChange}
+          />
         </div>
       </div>
     );
@@ -178,28 +207,18 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
     expandAll();
   };
 
-  const renderSection = (
-    section: (typeof sections)[number],
-    indent = false
-  ) => (
-    <div
-      key={section.id}
-      className="border-block-border border-b last:border-b-0"
-    >
-      <SectionHeader
-        section={section}
-        indent={indent}
-        isExpanded={isSectionExpanded(section.id)}
-        onToggle={() => toggleSection(section.id)}
-      />
-      {isSectionExpanded(section.id) ? (
-        <SectionContent
-          section={section}
-          indent={indent}
-          datasetKey={taskRunName}
-        />
-      ) : null}
-    </div>
+  // Keyed so every row's local state (load more) resets with the regrouping.
+  const logRows = (groupRows: LogRow[], indent = false) => (
+    <LogRows
+      key={datasetKey}
+      rows={groupRows}
+      indent={indent}
+      running={taskRunStatus === TaskRun_Status.RUNNING}
+      isRowExpanded={isRowExpanded}
+      onToggleRow={toggleRow}
+      foldOverrides={foldOverrides}
+      onFoldChange={handleFoldChange}
+    />
   );
 
   const renderReleaseFileGroup = (
@@ -207,18 +226,11 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
     indent = false
   ) => {
     if (fileGroup.isOrphan) {
-      return (
-        <div key={fileGroup.id}>
-          {fileGroup.sections.map((section) => renderSection(section, indent))}
-        </div>
-      );
+      return <div key={fileGroup.id}>{logRows(fileGroup.rows, indent)}</div>;
     }
 
     return (
-      <div
-        key={fileGroup.id}
-        className="border-block-border border-b last:border-b-0"
-      >
+      <div key={fileGroup.id} className={ROW_DIVIDER}>
         <div className={indent ? "pl-4" : ""}>
           <Button
             type="button"
@@ -241,9 +253,7 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
           </Button>
           {isReleaseFileExpanded(fileGroup.id) ? (
             <div className={indent ? "pl-4" : ""}>
-              {fileGroup.sections.map((section) =>
-                renderSection(section, true)
-              )}
+              {logRows(fileGroup.rows, true)}
             </div>
           ) : null}
         </div>
@@ -285,9 +295,7 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
 
           {isReplicaExpanded(replicaGroup.replicaId) ? (
             <div>
-              {replicaGroup.sections.map((section) =>
-                renderSection(section, true)
-              )}
+              {logRows(replicaGroup.rows, true)}
               {replicaGroup.releaseFileGroups.map((fileGroup) =>
                 renderReleaseFileGroup(fileGroup, true)
               )}
@@ -301,11 +309,11 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
       {releaseFileGroups.map((fileGroup) => renderReleaseFileGroup(fileGroup))}
     </>
   ) : (
-    <>{sections.map((section) => renderSection(section))}</>
+    logRows(rows)
   );
 
   return (
-    <div className="w-full font-mono text-xs">
+    <div className="w-full font-mono text-xs" data-testid="task-run-log-viewer">
       <div className="w-full overflow-hidden rounded-sm border border-block-border bg-control-bg/50">
         <div className="flex items-center justify-between border-block-border border-b bg-control-bg px-2 py-1">
           <div className="flex items-center gap-x-2 text-control-light">

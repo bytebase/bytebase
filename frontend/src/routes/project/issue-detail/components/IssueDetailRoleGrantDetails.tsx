@@ -1,6 +1,6 @@
-import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { DDLWarningCallout } from "@/components/role-grant/DDLWarningCallout";
 import {
   Table,
@@ -159,9 +159,14 @@ export function IssueDetailRoleGrantDetails() {
             {t("issue.role-grant.expired-at")}
           </span>
           <div className="text-base">
-            {condition?.expiredTime
-              ? dayjs(new Date(condition.expiredTime)).format("LLL")
-              : t("project.members.never-expires")}
+            {condition?.expiredTime ? (
+              <HumanizeTs
+                mode="operational"
+                tsMs={new Date(condition.expiredTime).getTime()}
+              />
+            ) : (
+              t("project.members.never-expires")
+            )}
           </div>
         </div>
       </div>

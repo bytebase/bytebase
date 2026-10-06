@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -119,6 +120,37 @@ func TestAuditSinksOnBothChains(t *testing.T) {
 	memberToken, _ := mintMCPOAuthToken(t, ctl, login.Msg.Token)
 	memberSession := openMCPSession(ctx, t, ctl, memberToken)
 	defer memberSession.Close()
+
+	// The issueless-rollout guard needs a plan with no issue. A refused
+	// CreateRollout creates nothing, so one plan serves both stdout runs.
+	guardSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: project,
+		Sheet:  &v1pb.Sheet{Content: []byte("CREATE TABLE audit_sinks_guard(id INT);")},
+	}))
+	a.NoError(err)
+	guardPlan, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: project,
+		Plan: &v1pb.Plan{Specs: []*v1pb.Plan_Spec{{
+			Id: uuid.NewString(),
+			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+					Targets: []string{clamp.database},
+					Sheet:   guardSheet.Msg.Name,
+				},
+			},
+		}}},
+	}))
+	a.NoError(err)
+	setRequireIssueApproval := func(t *testing.T, on bool) {
+		t.Helper()
+		ctl.project.RequireIssueApproval = on
+		updated, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+			Project:    ctl.project,
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"require_issue_approval"}},
+		}))
+		require.NoError(t, err)
+		require.Equal(t, on, updated.Msg.RequireIssueApproval)
+	}
 
 	requireCode := func(t *testing.T, want connect.Code, err error) {
 		t.Helper()
@@ -247,6 +279,40 @@ func TestAuditSinksOnBothChains(t *testing.T) {
 				write := queryDatabaseOnSession(ctx, t, clamp.session, clamp.name, "INSERT INTO employee VALUES (2, 'agent')")
 				require.True(t, write.isError, write.text)
 				require.Contains(t, write.text, "READ_ONLY")
+			},
+		},
+		{
+			name: "mcp/audited refused by the grant-issue guard in the handler", method: v1connect.IssueServiceUpdateIssueProcedure, mcp: true, parent: project,
+			wantRow: true, wantWarning: true,
+			call: func(t *testing.T) {
+				out := callAPIOnSession(ctx, t, adminSession, "IssueService/UpdateIssue", map[string]any{
+					"issue": map[string]any{
+						"name":  project + "/issues/999999",
+						"title": "grant me project owner",
+						"type":  "ROLE_GRANT",
+						"roleGrant": map[string]any{
+							"role": "roles/projectOwner",
+							"user": "users/demo@example.com",
+						},
+					},
+					"updateMask":   "title",
+					"allowMissing": true,
+				})
+				require.Equal(t, http.StatusForbidden, out.Status, out.Error)
+				require.Contains(t, out.Error, "ROLE_GRANT")
+			},
+		},
+		{
+			name: "mcp/audited refused by the issueless-rollout guard in the handler", method: v1connect.RolloutServiceCreateRolloutProcedure, mcp: true, parent: project,
+			wantRow: true, wantWarning: true,
+			call: func(t *testing.T) {
+				setRequireIssueApproval(t, true)
+				defer setRequireIssueApproval(t, false)
+				out := callAPIOnSession(ctx, t, adminSession, "RolloutService/CreateRollout", map[string]any{
+					"parent": guardPlan.Msg.Name,
+				})
+				require.Equal(t, http.StatusForbidden, out.Status, out.Error)
+				require.Contains(t, out.Error, "plan with no issue")
 			},
 		},
 		{

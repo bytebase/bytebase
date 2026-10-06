@@ -108,9 +108,9 @@ function TaskRunHistoryItem({
   taskRun: TaskRun;
 }) {
   const { t } = useTranslation();
-  const startTs =
-    getTimeForPbTimestampProtoEs(taskRun.startTime, 0) ||
-    getTimeForPbTimestampProtoEs(taskRun.createTime, 0);
+  const startMs =
+    getTimeForPbTimestampProtoEs(taskRun.startTime) ??
+    getTimeForPbTimestampProtoEs(taskRun.createTime);
   const duration = formatTaskRunDuration(taskRun);
   const executorEmail = executorEmailOfTaskRun(taskRun);
   const comment = getTaskRunComment(taskRun, t);
@@ -142,7 +142,7 @@ function TaskRunHistoryItem({
           )}
         </span>
         <span className="flex shrink-0 items-center gap-x-3 text-xs text-control-light">
-          {startTs > 0 && <HumanizeTs ts={startTs / 1000} />}
+          <HumanizeTs mode="compact" tsMs={startMs} />
           {duration && (
             <span className="flex items-center gap-x-1">
               <Clock3 className="size-3" />

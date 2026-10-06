@@ -1,5 +1,4 @@
 import { create } from "@bufbuild/protobuf";
-import dayjs from "dayjs";
 import { ChevronRight, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,6 +14,7 @@ import {
 import { classificationLevelBackgroundClasses } from "@/components/classification-level";
 import { FeatureAttention } from "@/components/FeatureAttention";
 import { FeatureBadge } from "@/components/FeatureBadge";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { UserHoverCard } from "@/components/UserHoverCard";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
+import { useTimeReading } from "@/hooks/useTimeReading";
 import {
   buildMemberSummary,
   generateGrantTitle,
@@ -64,6 +65,7 @@ import {
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { getDefaultPagination, hasProjectPermissionV2 } from "@/utils";
+import { daysLeftReading } from "@/utils/datetime";
 import {
   batchConvertFromCELString,
   type ConditionExpression,
@@ -1085,21 +1087,10 @@ function ExemptionGrantSection({
 
   const title = useMemo(() => generateGrantTitle(grant), [grant]);
 
-  const isExpired =
-    !!grant.expirationTimestamp && grant.expirationTimestamp <= Date.now();
-
-  const expiryLabel = (() => {
-    if (!grant.expirationTimestamp) return "";
-    const msRemaining = grant.expirationTimestamp - Date.now();
-    const hoursRemaining = msRemaining / (1000 * 60 * 60);
-    if (hoursRemaining < 24)
-      return t("project.masking-exemption.expires-today");
-    const days = Math.ceil(hoursRemaining / 24);
-    return t("project.masking-exemption.expires-in-days", {
-      days,
-      count: days,
-    });
-  })();
+  const daysLeft = useTimeReading(
+    daysLeftReading,
+    grant.expirationTimestamp || undefined
+  );
 
   return (
     <div>
@@ -1117,28 +1108,41 @@ function ExemptionGrantSection({
             )}
           />
           <span className="font-medium text-sm">{title}</span>
-          {grant.expirationTimestamp && isExpired ? (
+          {/* No reading means no expiry: zero is this API's "never". */}
+          {!daysLeft ? (
+            <span className="text-xs font-medium text-warning">
+              {t("settings.sensitive-data.never-expires")}
+            </span>
+          ) : daysLeft.kind === "passed" ? (
             <>
-              <span className="text-xs text-control-light line-through">
-                {dayjs(grant.expirationTimestamp).format("YYYY-MM-DD HH:mm")}
-              </span>
+              <HumanizeTs
+                className="text-xs text-control-light line-through"
+                mode="operational"
+                tsMs={grant.expirationTimestamp}
+              />
               <span className="text-xs text-control-light">
                 ({t("sql-editor.expired")})
               </span>
             </>
-          ) : grant.expirationTimestamp ? (
+          ) : (
             <>
               <span className="text-xs font-medium text-info">
-                {expiryLabel}
+                {daysLeft.kind === "days"
+                  ? t("project.masking-exemption.expires-in-days", {
+                      days: daysLeft.days,
+                      count: daysLeft.days,
+                    })
+                  : t("project.masking-exemption.expires-today")}
               </span>
               <span className="text-xs text-control-light">
-                ({dayjs(grant.expirationTimestamp).format("YYYY-MM-DD HH:mm")})
+                (
+                <HumanizeTs
+                  mode="operational"
+                  tsMs={grant.expirationTimestamp}
+                />
+                )
               </span>
             </>
-          ) : (
-            <span className="text-xs font-medium text-warning">
-              {t("settings.sensitive-data.never-expires")}
-            </span>
           )}
         </div>
         <Button

@@ -2,7 +2,6 @@ import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatTaskRunDuration } from "@/lib/taskRun";
 import { cn } from "@/lib/utils";
-import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -15,7 +14,10 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { databaseForTask } from "@/utils";
-import { isReleaseBasedTask } from "@/utils/v1/issue/rollout";
+import {
+  isReleaseBasedTask,
+  scheduledRunTimeMs,
+} from "@/utils/v1/issue/rollout";
 import { isRerunnableTaskStatus } from "../lifecycle/frontierStage";
 import { PlanDetailRollbackSheet } from "../PlanDetailRollbackSheet";
 import {
@@ -133,10 +135,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
     latestTaskRun.hasPriorBackup
       ? latestTaskRun
       : undefined;
-  const scheduledTimeTs =
-    task.runTime && task.status === Task_Status.PENDING
-      ? getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000
-      : 0;
+  const scheduledTimeMs = scheduledRunTimeMs(task);
   // Same duration source as the history sheet and the expanded body, so all
   // three render identical strings for the same run.
   const timingDisplay = latestTaskRun
@@ -207,7 +206,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
             onRollback={() => setRollbackOpen(true)}
             onToggleExpand={() => onToggleExpand(task)}
             onToggleSelect={() => onToggleSelect(task)}
-            scheduledTimeTs={scheduledTimeTs}
+            scheduledTimeMs={scheduledTimeMs}
             showRollback={Boolean(rollbackableTaskRun)}
             task={task}
             timingDisplay={timingDisplay}
