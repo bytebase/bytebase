@@ -20,7 +20,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getLayerRoot } from "@/components/ui/layer";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/app";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { formatAbsoluteDateTime } from "@/utils";
+import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
 import type { AgentChat as AgentChatRecord } from "../logic/types";
 import {
   selectCurrentChat,
@@ -86,6 +89,7 @@ export function AgentWindow() {
   const currentChat = useAgentStore(selectCurrentChat);
   const currentChatId = useAgentStore((s) => s.currentChatId);
   const hasRunningChat = useAgentStore(selectHasRunningChat);
+  const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
 
   const windowRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -824,6 +828,26 @@ export function AgentWindow() {
   useEffect(() => {
     useAgentStore.getState().loadWindowState();
   }, []);
+
+  useEffect(() => {
+    if (!visible || !currentChatId) return;
+
+    let cancelled = false;
+    void getOrFetchSettingByName(Setting_SettingName.AI, true).then(
+      (setting) => {
+        if (cancelled || getAgentAIConfigurationEnabled(setting) !== false) {
+          return;
+        }
+        useAgentStore.getState().setChatStatus(currentChatId, "error", {
+          requiresAIConfiguration: true,
+        });
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentChatId, getOrFetchSettingByName, visible]);
 
   // --- Render ---
 

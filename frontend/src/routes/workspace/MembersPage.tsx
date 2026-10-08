@@ -157,6 +157,33 @@ import { getSetIamPolicyPermissionGuardConfig } from "./membersPageActions";
 
 const EMPTY_ROLE_SET = new Set<string>();
 
+function RolePermissionPreview({
+  permissions,
+}: {
+  permissions: readonly string[];
+}) {
+  const { t } = useTranslation();
+
+  if (permissions.length === 0) return null;
+
+  return (
+    <FormField title={<>{t("common.permissions")}</>}>
+      <div className="max-h-32 overflow-auto rounded-sm border border-control-border bg-control-bg p-2">
+        <div className="flex flex-wrap gap-1">
+          {permissions.map((permission) => (
+            <Badge
+              key={permission}
+              className="bg-control-bg-hover text-control-light"
+            >
+              {permission}
+            </Badge>
+          ))}
+        </div>
+      </div>
+    </FormField>
+  );
+}
+
 // ============================================================
 // MemberTable (view by members)
 // ============================================================
@@ -1156,23 +1183,7 @@ function ProjectRoleBindingForm({
         <RoleDescription role={form.role} roleList={roleList} />
       </FormField>
 
-      {/* Permissions display */}
-      {permissions.length > 0 && (
-        <FormField title={<>{t("common.permissions")}</>}>
-          <div className="max-h-32 overflow-auto border rounded-sm bg-control-bg p-2">
-            <div className="flex flex-wrap gap-1">
-              {permissions.map((perm) => (
-                <span
-                  key={perm}
-                  className="inline-block rounded-xs bg-control-bg-hover px-1.5 py-0.5 text-xs text-control-light"
-                >
-                  {perm}
-                </span>
-              ))}
-            </div>
-          </div>
-        </FormField>
-      )}
+      <RolePermissionPreview permissions={permissions} />
 
       {/* Reason */}
       <FormField
@@ -1398,6 +1409,17 @@ function EditMemberRoleDrawer({
     if (projectName) return member.projectRoleBindings.map((b) => b.role);
     return [...member.workspaceLevelRoles];
   });
+  const selectedRolePermissions = useMemo(
+    () => [
+      ...new Set(
+        selectedRoles.flatMap(
+          (role) =>
+            roleList.find(({ name }) => name === role)?.permissions ?? []
+        )
+      ),
+    ],
+    [roleList, selectedRoles]
+  );
   const [isRequesting, setIsRequesting] = useState(false);
   const [showNestedGrant, setShowNestedGrant] = useState(false);
 
@@ -1964,24 +1986,31 @@ function EditMemberRoleDrawer({
                 />
               </div>
             ) : (
-              <FormField
-                title={<>{t("settings.members.select-role", { count: 2 })}</>}
-              >
-                <RoleSelect
-                  value={selectedRoles}
-                  onChange={setSelectedRoles}
-                  scope={projectName ? "project" : undefined}
-                />
-                {unscopedDirectExecutionKind && (
-                  <DirectExecutionCallout
-                    kind={unscopedDirectExecutionKind}
-                    lead="binding"
-                    scope={{ type: "all" }}
-                    environmentList={environmentList}
-                    hasEnvTierFeature={hasEnvTierFeature}
+              <>
+                <FormField
+                  title={<>{t("settings.members.select-role", { count: 2 })}</>}
+                >
+                  <RoleSelect
+                    value={selectedRoles}
+                    onChange={setSelectedRoles}
+                    scope={projectName ? "project" : undefined}
+                  />
+                  {unscopedDirectExecutionKind && (
+                    <DirectExecutionCallout
+                      kind={unscopedDirectExecutionKind}
+                      lead="binding"
+                      scope={{ type: "all" }}
+                      environmentList={environmentList}
+                      hasEnvTierFeature={hasEnvTierFeature}
+                    />
+                  )}
+                </FormField>
+                {!projectName && (
+                  <RolePermissionPreview
+                    permissions={selectedRolePermissions}
                   />
                 )}
-              </FormField>
+              </>
             )}
           </div>
         </SheetBody>
