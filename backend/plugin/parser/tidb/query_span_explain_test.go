@@ -131,6 +131,12 @@ func TestExplainAnalyzeAccessTables(t *testing.T) {
 			wantMixed: true,
 		},
 		{
+			name:      "locking aliases are not physical tables",
+			statement: "EXPLAIN ANALYZE SELECT * FROM t AS a JOIN other.t AS b ON a.id = b.id FOR UPDATE OF a, b",
+			queryType: base.Select,
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true, {Database: "other", Table: "t"}: true},
+		},
+		{
 			name:      "plain explain",
 			statement: "EXPLAIN SELECT * FROM t",
 			queryType: base.Explain,
