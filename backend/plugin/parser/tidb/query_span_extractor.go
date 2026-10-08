@@ -63,7 +63,11 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 
 	node := nodeList[0]
 
-	accessTables := q.getAccessTables(node)
+	accessNode := node
+	if explain, ok := node.(*tidbast.ExplainStmt); ok && explain.Analyze {
+		accessNode = explain.Stmt
+	}
+	accessTables := q.getAccessTables(accessNode)
 	allSystems, mixed := isMixedQuery(accessTables)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
