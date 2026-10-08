@@ -343,12 +343,6 @@ export function SQLReviewPage() {
           ) : (
             <div className="py-12 border rounded-sm flex flex-col items-center justify-center gap-y-3 text-control-light">
               <span>{t("common.no-data")}</span>
-              {hasCreatePermission && (
-                <Button size="sm" onClick={navigateToCreate}>
-                  <Plus className="w-4 h-4 mr-1" />
-                  {t("common.create")}
-                </Button>
-              )}
             </div>
           )}
         </>
