@@ -9,9 +9,9 @@ type Props = {
 };
 
 /**
- * Replaces `TreeNode/ProcedureNode.vue`. Reads procedure metadata to
- * prefer the resolved `signature` over the bare `name` (engines like
- * Oracle expose overloads where signature is the disambiguator).
+ * Reads procedure metadata to prefer the resolved `signature` over the
+ * bare `name` (engines like Oracle expose overloads where signature is the
+ * disambiguator).
  */
 export function ProcedureNode({ node, keyword }: Props) {
   const target = (node as TreeNode<"procedure">).meta.target;

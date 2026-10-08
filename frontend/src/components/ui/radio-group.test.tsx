@@ -95,22 +95,53 @@ describe("RadioGroupItem", () => {
     unmount();
   });
 
-  test("uses a not-allowed cursor for a disabled option", () => {
+  // The cursor follows the radio's resolved disabled state rather than this
+  // component's own prop, because Base UI resolves that state from the group
+  // too. Asserted on the attribute the CSS selects: `[data-disabled]` on the
+  // radio, as a direct child of the label.
+  test.each([
+    ["the option's own prop", { group: false }],
+    ["the group's disabled state", { group: true }],
+  ])("a not-allowed cursor follows %s", (_label, { group }) => {
     const { container, unmount } = renderIntoContainer(
       createElement(
         RadioGroup,
-        { value: "workspace", onValueChange: () => undefined },
+        {
+          value: "workspace",
+          onValueChange: () => undefined,
+          ...(group ? { disabled: true } : {}),
+        },
         createElement(
           RadioGroupItem,
-          { value: "workspace", disabled: true },
+          { value: "workspace", ...(group ? {} : { disabled: true }) },
           "Workspace"
         )
       )
     );
 
-    const label = container.querySelector("label");
-    expect(label?.className).toContain("cursor-not-allowed");
-    expect(label?.className).not.toContain("cursor-pointer");
+    expect(container.querySelector("label > [data-disabled]")).not.toBeNull();
+
+    unmount();
+  });
+
+  // The selector is scoped to the direct child because an item may wrap a
+  // disabled control of its own — InstanceFormBody's "Custom" option holds a
+  // number input that is disabled until that option is picked.
+  test("a disabled control inside an option does not disable the option", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        RadioGroup,
+        { value: "default", onValueChange: () => undefined },
+        createElement(
+          RadioGroupItem,
+          { value: "custom" },
+          createElement("input", { type: "number", disabled: true })
+        )
+      )
+    );
+
+    expect(container.querySelector("input:disabled")).not.toBeNull();
+    expect(container.querySelector("label > [data-disabled]")).toBeNull();
 
     unmount();
   });

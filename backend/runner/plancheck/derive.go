@@ -83,6 +83,7 @@ func deriveTargets(ctx context.Context, s *store.Store, project *store.ProjectMe
 				}
 
 				targets = append(targets, &CheckTarget{
+					SpecID:            spec.Id,
 					Target:            target,
 					SheetSha256:       config.ChangeDatabaseConfig.SheetSha256,
 					EnablePriorBackup: config.ChangeDatabaseConfig.EnablePriorBackup,

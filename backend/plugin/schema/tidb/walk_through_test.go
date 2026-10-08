@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -28,7 +29,7 @@ type testData struct {
 }
 
 func TestWalkThrough(t *testing.T) {
-	originDatabase := &storepb.DatabaseSchemaMetadata{
+	originDatabase := &metadatapb.DatabaseSchemaMetadata{
 		Name: "test",
 	}
 
@@ -46,7 +47,7 @@ func TestWalkThrough(t *testing.T) {
 
 	for _, test := range tests {
 		// Make a deep copy to avoid mutation across tests
-		protoData, ok := proto.Clone(originDatabase).(*storepb.DatabaseSchemaMetadata)
+		protoData, ok := proto.Clone(originDatabase).(*metadatapb.DatabaseSchemaMetadata)
 		require.True(t, ok)
 
 		// Create DatabaseMetadata for walk-through
@@ -67,14 +68,14 @@ func TestWalkThrough(t *testing.T) {
 			continue
 		}
 
-		want := &storepb.DatabaseSchemaMetadata{}
+		want := &metadatapb.DatabaseSchemaMetadata{}
 		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
 		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform(),
-			protocmp.SortRepeatedFields(&storepb.DatabaseSchemaMetadata{}, "schemas"),
-			protocmp.SortRepeatedFields(&storepb.SchemaMetadata{}, "tables", "views"),
-			protocmp.SortRepeatedFields(&storepb.TableMetadata{}, "indexes", "columns"),
+			protocmp.SortRepeatedFields(&metadatapb.DatabaseSchemaMetadata{}, "schemas"),
+			protocmp.SortRepeatedFields(&metadatapb.SchemaMetadata{}, "tables", "views"),
+			protocmp.SortRepeatedFields(&metadatapb.TableMetadata{}, "indexes", "columns"),
 		)
 		require.Empty(t, diff)
 	}

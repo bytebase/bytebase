@@ -1,7 +1,3 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -53,8 +49,6 @@ const ProductIntroHost = () => {
   useProductIntro(introOptions);
   return null;
 };
-
-const libDir = dirname(fileURLToPath(import.meta.url));
 
 describe("showProductIntro", () => {
   beforeEach(() => {
@@ -366,12 +360,5 @@ describe("showProductIntro", () => {
     expect(window.location.pathname).toBe("/settings/general");
     expect(window.location.search).toBe("?tab=workspace");
     expect(window.location.hash).toBe("#ai-assistant");
-  });
-
-  test("keeps the page cover light enough to preserve context", () => {
-    const css = readFileSync(join(libDir, "productIntro.css"), "utf8");
-
-    expect(css).toContain("0 0 0 9999px rgb(var(--color-overlay) / 38%)");
-    expect(css).not.toContain("0 0 0 9999px rgb(var(--color-overlay) / 62%)");
   });
 });

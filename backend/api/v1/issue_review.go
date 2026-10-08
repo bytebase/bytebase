@@ -50,7 +50,7 @@ func (s *IssueService) reviewIssue(ctx context.Context, name, comment string, ac
 		Comment:   comment,
 	})
 	if err != nil {
-		return nil, mapReviewError(err, action)
+		return nil, mapReviewError(ctx, err, action)
 	}
 
 	createRollout := false
@@ -113,7 +113,7 @@ func (s *IssueService) reviewIssue(ctx context.Context, name, comment string, ac
 	return connect.NewResponse(converted), nil
 }
 
-func mapReviewError(err error, action review.Action) error {
+func mapReviewError(ctx context.Context, err error, action review.Action) error {
 	var workflowErr *review.Error
 	if !errors.As(err, &workflowErr) {
 		return connect.NewError(connect.CodeInternal, err)
@@ -126,6 +126,13 @@ func mapReviewError(err error, action review.Action) error {
 	case review.ErrorFailedPrecondition:
 		return connect.NewError(connect.CodeFailedPrecondition, workflowErr)
 	case review.ErrorPermissionDenied:
+		// ApproveIssue and RejectIssue carry no permission option, so the
+		// approver-role check is the method's only permission check. The other
+		// two refusals with this code are a project self-approval setting and
+		// an issue-ownership rule, which the design leaves unmarked.
+		if workflowErr.Reason == review.ReasonApproverRoleRequired {
+			return permissionDeniedError(ctx, workflowErr)
+		}
 		return connect.NewError(connect.CodePermissionDenied, workflowErr)
 	case review.ErrorConflict:
 		message := "cannot request issue because approval finding is stale"

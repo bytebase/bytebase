@@ -3,10 +3,9 @@ import { buildTree, loadCoreDeps, type ReactComponent } from "@/app/runtime";
 // Vite resolves the glob at build time and produces a lazy chunk.
 const appRootLoaders = import.meta.glob("./AppRoot.tsx");
 
-// Mounts the single React-Router application root (replaces the Vue
-// `createApp(App)` mount + the separate `#react-app` overlay mount). The
-// global overlays (Toaster, AgentWindow, SessionExpiredSurface, Watermark)
-// live in RootLayout, so this one root hosts everything.
+// Mounts the single React-Router application root. The global overlays
+// (Toaster, AgentWindow, SessionExpiredSurface, Watermark) live in RootLayout,
+// so this one root hosts everything.
 export async function mountReactRouterApp(selector: string) {
   const container = document.querySelector(selector);
   if (!container) {

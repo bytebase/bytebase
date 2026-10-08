@@ -74,3 +74,125 @@
         line: 3
         column: 0
       endposition: null
+- statement: ALTER TABLE no_index_table ADD COLUMN note TEXT
+  changeType: 1
+- statement: ALTER TABLE no_index_table DROP COLUMN col_b
+  changeType: 1
+- statement: ALTER TABLE no_index_table ALTER COLUMN col_a TYPE bigint
+  changeType: 1
+- statement: |-
+    CREATE TABLE audit_log(id INT, payload TEXT);
+    ALTER TABLE audit_log ADD COLUMN note TEXT;
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."audit_log" requires PRIMARY KEY, related statement: "ALTER TABLE audit_log ADD COLUMN note TEXT"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: ALTER TABLE public.no_index_table ADD COLUMN x INT
+  changeType: 1
+- statement: ALTER TABLE tech_book ADD COLUMN x INT
+  changeType: 1
+- statement: ALTER TABLE public.tech_book DROP CONSTRAINT old_pk
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE public.tech_book DROP CONSTRAINT old_pk"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    DROP TABLE tech_book;
+    CREATE TABLE tech_book(id INT, name TEXT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "CREATE TABLE tech_book(id INT, name TEXT)"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: ALTER TABLE ghost_table ADD COLUMN x INT
+  changeType: 1
+- statement: |-
+    ALTER TABLE no_index_table ADD PRIMARY KEY (col_a);
+    ALTER TABLE no_index_table DROP CONSTRAINT no_index_table_pkey;
+  changeType: 1
+- statement: |-
+    ALTER TABLE tech_book DROP CONSTRAINT old_pk;
+    ALTER TABLE tech_book ADD PRIMARY KEY (id);
+  changeType: 1
+- statement: |-
+    DROP TABLE no_index_table;
+    CREATE TABLE no_index_table(id INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."no_index_table" requires PRIMARY KEY, related statement: "CREATE TABLE no_index_table(id INT)"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE IF NOT EXISTS no_index_table(id INT)
+  changeType: 1
+- statement: |-
+    CREATE TABLE t(id INT);
+    ALTER TABLE t RENAME TO u;
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."u" requires PRIMARY KEY, related statement: "ALTER TABLE t RENAME TO u"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(id INT);
+    ALTER TABLE t RENAME TO u;
+    ALTER TABLE u ADD PRIMARY KEY (id);
+  changeType: 1
+- statement: ALTER TABLE no_index_table RENAME TO legacy_renamed
+  changeType: 1
+- statement: |-
+    CREATE TABLE t(id INT);
+    ALTER TABLE public.t ADD COLUMN note TEXT;
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."t" requires PRIMARY KEY, related statement: "ALTER TABLE public.t ADD COLUMN note TEXT"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE public.tech_book RENAME TO tb;
+    ALTER TABLE public.tb DROP CONSTRAINT old_pk;
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."tb" requires PRIMARY KEY, related statement: "ALTER TABLE public.tb DROP CONSTRAINT old_pk"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book RENAME TO tb;
+    ALTER TABLE tb ADD COLUMN note TEXT;
+  changeType: 1

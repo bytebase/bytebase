@@ -1,12 +1,12 @@
 package pg
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -14,7 +14,6 @@ import (
 
 func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_POSTGRES, extractChangedResources)
-	base.RegisterExtractChangedResourcesFunc(storepb.Engine_COCKROACHDB, extractChangedResources)
 }
 
 func extractChangedResources(database string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
@@ -31,13 +30,42 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		return &base.ChangeSummary{
 			ChangedResources: changedResources,
 			DMLCount:         0,
-			SampleDMLS:       []string{},
+			DMLStatements:    []string{},
 			InsertCount:      0,
 		}, nil
 	}
 
 	var dmlCount, insertCount int
-	var sampleDMLs []string
+	var dmlStatements []string
+	initialSearchPath := searchPath
+	// sessionSearchPath leaves out SET LOCAL, which lasts until the transaction ends, and
+	// transactionSearchPath is the session search path that ROLLBACK restores.
+	sessionSearchPath, transactionSearchPath := searchPath, searchPath
+	inTransaction := false
+	sampleDML := func(text string) {
+		dmlCount++
+		text = strings.TrimSpace(text)
+		if !strings.HasSuffix(text, ";") {
+			text += ";"
+		}
+		// The EXPLAIN connection starts with the initial search path, so a changed one is replayed.
+		if !slices.Equal(searchPath, initialSearchPath) {
+			text = base.WithSearchPath(text, searchPath)
+		}
+		dmlStatements = append(dmlStatements, text)
+	}
+	addTarget := func(rv *ast.RangeVar, affectedTable bool) {
+		db, schema, table := extractExistingRangeVarNames(rv, database, searchPath, dbMetadata)
+		changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, affectedTable)
+	}
+	// addDataModifyingCTETargets reports whether the WITH clause modifies data.
+	addDataModifyingCTETargets := func(with *ast.WithClause) bool {
+		targets := getDataModifyingCTETargets(with)
+		for _, rv := range targets {
+			addTarget(rv, false)
+		}
+		return len(targets) > 0
+	}
 
 	for _, unifiedAST := range asts {
 		omniAST, ok := unifiedAST.(*OmniAST)
@@ -47,11 +75,39 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		if omniAST.Node == nil {
 			continue
 		}
+		node, text := UnwrapExplainAnalyze(omniAST.Node, omniAST.Text)
 
-		switch n := omniAST.Node.(type) {
+		switch n := node.(type) {
+		case *ast.TransactionStmt:
+			switch n.Kind {
+			case ast.TRANS_STMT_BEGIN, ast.TRANS_STMT_START:
+				// A BEGIN inside a transaction only warns.
+				if !inTransaction {
+					transactionSearchPath, inTransaction = sessionSearchPath, true
+				}
+			case ast.TRANS_STMT_COMMIT, ast.TRANS_STMT_ROLLBACK:
+				// A ROLLBACK outside a transaction only warns.
+				if n.Kind == ast.TRANS_STMT_ROLLBACK && inTransaction {
+					sessionSearchPath = transactionSearchPath
+				}
+				// COMMIT AND CHAIN and ROLLBACK AND CHAIN start the next transaction from here.
+				searchPath, transactionSearchPath, inTransaction = sessionSearchPath, sessionSearchPath, n.Chain
+			default:
+			}
+
+		case *ast.DiscardStmt:
+			if n.Target == ast.DISCARD_ALL {
+				searchPath, sessionSearchPath = initialSearchPath, initialSearchPath
+			}
+
 		case *ast.VariableSetStmt:
-			if strings.EqualFold(n.Name, "search_path") && n.Args != nil {
-				var newSearchPath []string
+			var newSearchPath []string
+			if n.Kind == ast.VAR_RESET_ALL || (strings.EqualFold(n.Name, "search_path") && (n.Kind == ast.VAR_RESET || n.Kind == ast.VAR_SET_DEFAULT)) {
+				newSearchPath = initialSearchPath
+			} else if strings.EqualFold(n.Name, "search_path") && n.Kind == ast.VAR_SET_CURRENT {
+				// SET ... FROM CURRENT makes the current search path, which a SET LOCAL may have set, the session's.
+				newSearchPath = searchPath
+			} else if strings.EqualFold(n.Name, "search_path") && n.Args != nil {
 				for _, arg := range n.Args.Items {
 					if ac, ok := arg.(*ast.A_Const); ok {
 						if s, ok := ac.Val.(*ast.String); ok {
@@ -59,8 +115,11 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 						}
 					}
 				}
-				if len(newSearchPath) > 0 {
-					searchPath = newSearchPath
+			}
+			if len(newSearchPath) > 0 {
+				searchPath = newSearchPath
+				if !n.IsLocal {
+					sessionSearchPath = newSearchPath
 				}
 			}
 
@@ -90,12 +149,24 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			}
 
 		case *ast.RenameStmt:
-			if n.Relation != nil {
+			if n.Relation == nil {
+				continue
+			}
+			// Newname names a table only when the table itself is renamed.
+			switch n.RenameType {
+			case ast.OBJECT_TABLE, ast.OBJECT_MATVIEW:
 				db, schema, oldTableName := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: oldTableName}, true)
 				if n.Newname != "" {
 					changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: n.Newname}, false)
 				}
+			case ast.OBJECT_COLUMN, ast.OBJECT_TABCONSTRAINT:
+				if n.RelationType == ast.OBJECT_TABLE || n.RelationType == ast.OBJECT_MATVIEW {
+					addTarget(n.Relation, true)
+				}
+			case ast.OBJECT_TRIGGER, ast.OBJECT_RULE, ast.OBJECT_POLICY:
+				addTarget(n.Relation, true)
+			default:
 			}
 
 		case *ast.IndexStmt:
@@ -105,34 +176,32 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			}
 
 		case *ast.InsertStmt:
+			hasDataModifyingCTE := addDataModifyingCTETargets(n.WithClause)
 			if n.Relation != nil {
-				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
-				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
+				addTarget(n.Relation, false)
 			}
-			// Count insert rows from VALUES
-			if sel, ok := n.SelectStmt.(*ast.SelectStmt); ok && sel.ValuesLists != nil {
-				insertCount += len(sel.ValuesLists.Items)
+			// A data-modifying CTE makes the whole statement a sample, whose estimate already
+			// includes the VALUES rows.
+			if rows, ok := getInsertValuesRowCount(n); ok && !hasDataModifyingCTE {
+				insertCount += rows
+			} else {
+				sampleDML(text)
 			}
 
 		case *ast.UpdateStmt:
+			addDataModifyingCTETargets(n.WithClause)
 			if n.Relation != nil {
-				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
-				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
+				addTarget(n.Relation, false)
 			}
-			dmlCount++
-			if len(sampleDMLs) < common.MaximumLintExplainSize {
-				sampleDMLs = append(sampleDMLs, getOmniStatementText(omniAST))
-			}
+			sampleDML(text)
 
 		case *ast.DeleteStmt:
+			addDataModifyingCTETargets(n.WithClause)
 			if n.Relation != nil {
-				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
-				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
+				addTarget(n.Relation, false)
 			}
-			dmlCount++
-			if len(sampleDMLs) < common.MaximumLintExplainSize {
-				sampleDMLs = append(sampleDMLs, getOmniStatementText(omniAST))
-			}
+			sampleDML(text)
+
 		case *ast.TruncateStmt:
 			if n.Relations != nil {
 				for _, item := range n.Relations.Items {
@@ -146,15 +215,19 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			}
 
 		case *ast.MergeStmt:
+			addDataModifyingCTETargets(n.WithClause)
 			if n.Relation != nil {
-				db, schema, table := extractExistingRangeVarNames(n.Relation, database, searchPath, dbMetadata)
-				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
+				addTarget(n.Relation, false)
 			}
+			sampleDML(text)
 
 		case *ast.CreateTableAsStmt:
 			if n.Into != nil && n.Into.Rel != nil {
 				db, schema, table := extractNewRangeVarNames(n.Into.Rel, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
+			}
+			if query, ok := n.Query.(*ast.SelectStmt); ok && addDataModifyingCTETargets(query.WithClause) {
+				sampleDML(text)
 			}
 
 		case *ast.SelectStmt:
@@ -164,6 +237,9 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 				db, schema, table := extractNewRangeVarNames(into.Rel, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
+			if addDataModifyingCTETargets(n.WithClause) {
+				sampleDML(text)
+			}
 
 		default:
 		}
@@ -172,9 +248,74 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,
 		DMLCount:         dmlCount,
-		SampleDMLS:       sampleDMLs,
+		DMLStatements:    dmlStatements,
 		InsertCount:      insertCount,
 	}, nil
+}
+
+// getInsertValuesRowCount returns the rows inserted by INSERT ... VALUES or INSERT ... DEFAULT
+// VALUES; ok is false when a query supplies the rows.
+func getInsertValuesRowCount(n *ast.InsertStmt) (rows int, ok bool) {
+	if n.SelectStmt == nil {
+		return 1, true
+	}
+	if sel, isSelect := n.SelectStmt.(*ast.SelectStmt); isSelect && sel.ValuesLists != nil {
+		return len(sel.ValuesLists.Items), true
+	}
+	return 0, false
+}
+
+// getWithClause returns the WITH clause of a statement, the only one where PostgreSQL allows
+// data-modifying statements.
+func getWithClause(node ast.Node) *ast.WithClause {
+	switch n := node.(type) {
+	case *ast.SelectStmt:
+		return n.WithClause
+	case *ast.InsertStmt:
+		return n.WithClause
+	case *ast.UpdateStmt:
+		return n.WithClause
+	case *ast.DeleteStmt:
+		return n.WithClause
+	case *ast.MergeStmt:
+		return n.WithClause
+	case *ast.CreateTableAsStmt:
+		return getWithClause(n.Query)
+	default:
+		return nil
+	}
+}
+
+// getDataModifyingCTETargets returns the tables that INSERT, UPDATE, DELETE, and MERGE statements in
+// a WITH clause modify. PostgreSQL only allows data-modifying statements in a top-level WITH.
+func getDataModifyingCTETargets(with *ast.WithClause) []*ast.RangeVar {
+	if with == nil || with.Ctes == nil {
+		return nil
+	}
+	var targets []*ast.RangeVar
+	for _, item := range with.Ctes.Items {
+		cte, ok := item.(*ast.CommonTableExpr)
+		if !ok {
+			continue
+		}
+		var target *ast.RangeVar
+		switch query := cte.Ctequery.(type) {
+		case *ast.InsertStmt:
+			target = query.Relation
+		case *ast.UpdateStmt:
+			target = query.Relation
+		case *ast.DeleteStmt:
+			target = query.Relation
+		case *ast.MergeStmt:
+			target = query.Relation
+		default:
+			continue
+		}
+		if target != nil {
+			targets = append(targets, target)
+		}
+	}
+	return targets
 }
 
 // extractRangeVarNames extracts database, schema, table from a RangeVar with defaults.
@@ -299,13 +440,4 @@ func extractNameListParts(nameList *ast.List, defaultDB string) (string, string,
 	default:
 		return defaultDB, "", ""
 	}
-}
-
-// getOmniStatementText returns the text of a statement from OmniAST, including semicolon.
-func getOmniStatementText(omniAST *OmniAST) string {
-	text := strings.TrimSpace(omniAST.Text)
-	if !strings.HasSuffix(text, ";") {
-		text += ";"
-	}
-	return text
 }

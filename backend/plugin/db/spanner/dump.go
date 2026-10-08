@@ -6,12 +6,11 @@ import (
 	"io"
 
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	metadatapb "github.com/bytebase/omni/metadata"
 )
 
 // Dump dumps database.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
 	resp, err := d.dbClient.GetDatabaseDdl(ctx, &databasepb.GetDatabaseDdlRequest{
 		Database: getDSN(d.instancePath(), d.databaseName),
 	})

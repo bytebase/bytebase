@@ -3,6 +3,7 @@ package trino
 import (
 	"context"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -22,9 +23,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, errors.Wrap(err, "failed to get catalog list")
 	}
 
-	var catalogMetadata []*storepb.DatabaseSchemaMetadata
+	var catalogMetadata []*metadatapb.DatabaseSchemaMetadata
 	for _, catalog := range catalogList {
-		catalogMetadata = append(catalogMetadata, &storepb.DatabaseSchemaMetadata{
+		catalogMetadata = append(catalogMetadata, &metadatapb.DatabaseSchemaMetadata{
 			Name: catalog,
 		})
 	}
@@ -37,9 +38,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
 	catalog := d.databaseName
-	dbMeta := &storepb.DatabaseSchemaMetadata{
+	dbMeta := &metadatapb.DatabaseSchemaMetadata{
 		Name: catalog,
 	}
 
@@ -61,7 +62,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	// Organize the data into schemas
-	var schemas []*storepb.SchemaMetadata
+	var schemas []*metadatapb.SchemaMetadata
 	for _, schemaName := range schemaNames {
 		tables := allTables[schemaName]
 
@@ -73,7 +74,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			}
 		}
 
-		schemas = append(schemas, &storepb.SchemaMetadata{
+		schemas = append(schemas, &metadatapb.SchemaMetadata{
 			Name:   schemaName,
 			Tables: tables,
 		})
@@ -126,7 +127,7 @@ func (d *Driver) getSchemaList(ctx context.Context) ([]string, error) {
 	return d.queryStringValues(ctx, query, d.databaseName)
 }
 
-func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, schemas []string) (map[string][]*storepb.TableMetadata, error) {
+func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, schemas []string) (map[string][]*metadatapb.TableMetadata, error) {
 	query := "SELECT table_schem, table_name FROM system.jdbc.tables WHERE table_cat = ? AND table_type = 'TABLE' ORDER BY table_schem, table_name"
 
 	rows, err := d.db.QueryContext(ctx, query, d.databaseName)
@@ -135,9 +136,9 @@ func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, schemas []string)
 	}
 	defer rows.Close()
 
-	allTables := make(map[string][]*storepb.TableMetadata)
+	allTables := make(map[string][]*metadatapb.TableMetadata)
 	for _, schema := range schemas {
-		allTables[schema] = []*storepb.TableMetadata{}
+		allTables[schema] = []*metadatapb.TableMetadata{}
 	}
 
 	for rows.Next() {
@@ -145,7 +146,7 @@ func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, schemas []string)
 		if err := rows.Scan(&schemaName, &tableName); err != nil {
 			return nil, errors.Wrap(err, "failed to scan table row")
 		}
-		table := &storepb.TableMetadata{Name: tableName}
+		table := &metadatapb.TableMetadata{Name: tableName}
 		allTables[schemaName] = append(allTables[schemaName], table)
 	}
 
@@ -156,7 +157,7 @@ func (d *Driver) fetchAllTablesForCatalog(ctx context.Context, schemas []string)
 	return allTables, nil
 }
 
-func (d *Driver) fetchAllColumnsForCatalog(ctx context.Context) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
+func (d *Driver) fetchAllColumnsForCatalog(ctx context.Context) (map[db.TableKey][]*metadatapb.ColumnMetadata, error) {
 	query := "SELECT table_schem, table_name, column_name, type_name, is_nullable FROM system.jdbc.columns WHERE table_cat = ? ORDER BY table_schem, table_name, ordinal_position"
 
 	rows, err := d.db.QueryContext(ctx, query, d.databaseName)
@@ -165,7 +166,7 @@ func (d *Driver) fetchAllColumnsForCatalog(ctx context.Context) (map[db.TableKey
 	}
 	defer rows.Close()
 
-	allColumns := make(map[db.TableKey][]*storepb.ColumnMetadata)
+	allColumns := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
 
 	for rows.Next() {
 		var schemaName, tableName, columnName, dataType, isNullable string
@@ -177,7 +178,7 @@ func (d *Driver) fetchAllColumnsForCatalog(ctx context.Context) (map[db.TableKey
 		if err != nil {
 			return nil, err
 		}
-		column := &storepb.ColumnMetadata{
+		column := &metadatapb.ColumnMetadata{
 			Name:     columnName,
 			Type:     dataType,
 			Nullable: isNullBool,

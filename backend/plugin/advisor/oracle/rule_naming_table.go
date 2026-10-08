@@ -9,10 +9,10 @@ import (
 	"github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -50,7 +50,7 @@ func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 
 	rule := NewNamingTableRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, format, maxLength)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // NamingTableRule is the rule implementation for table naming convention.
@@ -101,7 +101,7 @@ func (r *NamingTableRule) checkTableName(tableName string, loc ast.Loc) {
 			r.level,
 			code.NamingTableConventionMismatch.Int32(),
 			fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, r.format),
-			common.ConvertANTLRLineToPosition(r.locLine(loc)),
+			base.ConvertANTLRLineToPosition(r.locLine(loc)),
 		)
 	}
 	if r.maxLength > 0 && len(tableName) > r.maxLength {
@@ -109,7 +109,7 @@ func (r *NamingTableRule) checkTableName(tableName string, loc ast.Loc) {
 			r.level,
 			code.NamingTableConventionMismatch.Int32(),
 			fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
-			common.ConvertANTLRLineToPosition(r.locLine(loc)),
+			base.ConvertANTLRLineToPosition(r.locLine(loc)),
 		)
 	}
 }

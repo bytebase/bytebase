@@ -168,7 +168,7 @@ export function PartitionsEditor({
                       <Button
                         appearance="secondary"
                         size="sm"
-                        className="size-7 p-0"
+                        className="w-7 p-0"
                         onClick={() => handleRestorePartition(partition)}
                       >
                         <RotateCcw className="size-3.5" />
@@ -177,7 +177,7 @@ export function PartitionsEditor({
                       <Button
                         appearance="secondary"
                         size="sm"
-                        className="size-7 p-0 text-error hover:text-error"
+                        className="w-7 p-0 text-error hover:text-error"
                         onClick={() => handleDropPartition(partition)}
                       >
                         <Trash2 className="size-3.5" />

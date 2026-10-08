@@ -11,7 +11,7 @@ export type CloseTabAction =
  * right-click context menu (mounted once per database tab) to broadcast
  * close-tab actions back to the parent. Lives outside any component so
  * the menu's child trigger and the parent's listener can communicate
- * without a Vue/React provide chain.
+ * without a context provider.
  *
  * The emitter is *only* used by `BatchQuerySelect` for its database
  * tabs. The inner per-query-context tabs in `ResultPanel.tsx` use a

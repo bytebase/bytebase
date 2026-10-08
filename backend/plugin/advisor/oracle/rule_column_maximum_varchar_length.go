@@ -8,10 +8,10 @@ import (
 	"github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -43,7 +43,7 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 
 	rule := NewColumnMaximumVarcharLengthRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // ColumnMaximumVarcharLengthRule is the rule implementation for maximum varchar length.
@@ -85,7 +85,7 @@ func (r *ColumnMaximumVarcharLengthRule) OnStatement(node ast.Node) {
 			r.level,
 			code.VarcharLengthExceedsLimit.Int32(),
 			fmt.Sprintf("The maximum varchar length is %d.", r.maximum),
-			common.ConvertANTLRLineToPosition(r.locLine(col.TypeName.Loc)),
+			base.ConvertANTLRLineToPosition(r.locLine(col.TypeName.Loc)),
 		)
 	})
 }

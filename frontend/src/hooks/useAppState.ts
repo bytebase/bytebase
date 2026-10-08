@@ -10,12 +10,7 @@ import type { AppFeatures } from "@/types/appProfile";
 import type { Permission } from "@/types/iam/permission";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  isValidEnvironmentName,
-  NULL_ENVIRONMENT_NAME,
-  nullEnvironment,
-  unknownEnvironment,
-} from "@/types/v1/environment";
+import { resolveEnvironment } from "@/types/v1/environment";
 import { isValidProjectName } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
 import {
@@ -82,6 +77,8 @@ export function useSubscriptionState() {
   const currentPlan = useAppStore((state) => state.currentPlan());
   const isFreePlan = useAppStore((state) => state.isFreePlan());
   const isTrialing = useAppStore((state) => state.isTrialing());
+  const canStartTrial = useAppStore((state) => state.canStartTrial());
+  const startTrial = useAppStore((state) => state.startTrial);
   const isExpired = useAppStore((state) => state.isExpired());
   const daysBeforeExpire = useAppStore((state) => state.daysBeforeExpire());
   const trialingDays = useAppStore((state) => state.trialingDays());
@@ -104,6 +101,8 @@ export function useSubscriptionState() {
     currentPlan,
     isFreePlan,
     isTrialing,
+    canStartTrial,
+    startTrial,
     isExpired,
     daysBeforeExpire,
     trialingDays,
@@ -203,25 +202,10 @@ export function useEnvironmentList() {
 
 export function useEnvironment(name: string | undefined) {
   const environmentList = useEnvironmentList();
-  return useMemo(() => {
-    if (!name || name === NULL_ENVIRONMENT_NAME) {
-      return nullEnvironment();
-    }
-    const environment = environmentList.find((env) => env.name === name);
-    if (environment) {
-      return environment;
-    }
-    if (!isValidEnvironmentName(name)) {
-      return unknownEnvironment();
-    }
-    const id = name.replace(/^environments\//, "");
-    return {
-      ...unknownEnvironment(),
-      id,
-      name,
-      title: id,
-    };
-  }, [environmentList, name]);
+  return useMemo(
+    () => resolveEnvironment(name ?? "", environmentList),
+    [environmentList, name]
+  );
 }
 
 export function usePlanFeature(feature: PlanFeature) {
@@ -484,8 +468,8 @@ export function useNotify() {
   return useAppStore((state) => state.notify);
 }
 
-export function useWorkspaceSetupGuideReset() {
-  return useAppStore((state) => state.resetWorkspaceSetupGuide);
+export function useWorkspaceSetupGuideResume() {
+  return useAppStore((state) => state.resumeWorkspaceSetupGuide);
 }
 
 export function useIntroStateByKey(key: string) {

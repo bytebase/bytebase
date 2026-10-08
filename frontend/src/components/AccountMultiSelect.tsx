@@ -2,6 +2,7 @@ import { Check, ChevronDown, KeyRound, Shield, Users, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
+import { Button } from "@/components/ui/button";
 import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { SearchInput } from "@/components/ui/search-input";
 import { useCurrentUser } from "@/hooks/useAppState";
@@ -9,109 +10,95 @@ import { useClickOutside } from "@/hooks/useClickOutside";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import {
+  extractServiceAccountId,
   extractUserEmail,
+  extractWorkloadIdentityId,
   groupNamePrefix,
+  projectNamePrefix,
   serviceAccountNamePrefix,
   workloadIdentityNamePrefix,
+  workspaceNamePrefix,
 } from "@/stores/modules/v1/common";
 import {
   AccountType,
   ALL_USERS_USER_EMAIL,
   getAccountTypeByEmail,
-  serviceAccountBindingPrefix,
-  userBindingPrefix,
-  workloadIdentityBindingPrefix,
+  getAccountTypeByFullname,
 } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { getDefaultPagination, isValidEmail } from "@/utils";
+import {
+  convertFullnameToMember,
+  convertMemberToFullname,
+} from "@/utils/v1/iam";
 
 import { getAvatarColor, getInitials } from "./UserAvatar";
 
 // ---- Account type detection ----
 //
-// Routes typed input to the right account type. Uses the canonical helpers
-// from @/types/v1/user so project-scoped emails like
-// "foo@<project>.workload.bytebase.com" are recognized — a hardcoded
-// "@workload.bytebase.com" suffix would miss them and fall through to a
-// `user:` binding.
+// Routes typed input to the right account type.
 
-type SpecialAccountType = "serviceAccount" | "workloadIdentity";
-
-function detectSpecialAccount(input: string): {
-  type: SpecialAccountType;
+function getSpecialAccountByFullname(fullname: string): {
+  type: AccountType;
   email: string;
 } | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-
-  // Canonical resource-name prefix (case-sensitive, matches backend AIP names).
-  if (trimmed.startsWith(serviceAccountNamePrefix)) {
-    return {
-      type: "serviceAccount",
-      email: trimmed.slice(serviceAccountNamePrefix.length),
-    };
-  }
-  if (trimmed.startsWith(workloadIdentityNamePrefix)) {
-    return {
-      type: "workloadIdentity",
-      email: trimmed.slice(workloadIdentityNamePrefix.length),
-    };
-  }
-  // IAM binding prefix (`serviceAccount:` / `workloadIdentity:`).
-  if (trimmed.startsWith(serviceAccountBindingPrefix)) {
-    return {
-      type: "serviceAccount",
-      email: trimmed.slice(serviceAccountBindingPrefix.length),
-    };
-  }
-  if (trimmed.startsWith(workloadIdentityBindingPrefix)) {
-    return {
-      type: "workloadIdentity",
-      email: trimmed.slice(workloadIdentityBindingPrefix.length),
-    };
-  }
-  // Fallback: classify by email suffix using the canonical detector, which
-  // matches both the root and project-scoped variants.
-  switch (getAccountTypeByEmail(trimmed)) {
-    case AccountType.SERVICE_ACCOUNT:
-      return { type: "serviceAccount", email: trimmed };
-    case AccountType.WORKLOAD_IDENTITY:
-      return { type: "workloadIdentity", email: trimmed };
+  switch (getAccountTypeByFullname(fullname)) {
+    case AccountType.SERVICE_ACCOUNT: {
+      const email = extractServiceAccountId(fullname);
+      return isValidEmail(email)
+        ? { type: AccountType.SERVICE_ACCOUNT, email }
+        : null;
+    }
+    case AccountType.WORKLOAD_IDENTITY: {
+      const email = extractWorkloadIdentityId(fullname);
+      return isValidEmail(email)
+        ? { type: AccountType.WORKLOAD_IDENTITY, email }
+        : null;
+    }
     default:
       return null;
   }
 }
 
-// ---- Conversion helpers ----
+function getSpecialAccountByEmail(email: string): {
+  type: AccountType;
+  email: string;
+} | null {
+  if (!isValidEmail(email)) return null;
 
-// binding  →  fullname
-function bindingToFullname(binding: string): string {
-  if (binding === ALL_USERS_USER_EMAIL) return ALL_USERS_USER_EMAIL;
-  if (binding.startsWith("user:"))
-    return `users/${binding.slice("user:".length)}`;
-  if (binding.startsWith("group:"))
-    return `${groupNamePrefix}${binding.slice("group:".length)}`;
-  if (binding.startsWith("serviceAccount:"))
-    return `serviceAccounts/${binding.slice("serviceAccount:".length)}`;
-  if (binding.startsWith("workloadIdentity:"))
-    return `workloadIdentities/${binding.slice("workloadIdentity:".length)}`;
-  return binding;
+  switch (getAccountTypeByEmail(email)) {
+    case AccountType.SERVICE_ACCOUNT:
+      return { type: AccountType.SERVICE_ACCOUNT, email };
+    case AccountType.WORKLOAD_IDENTITY:
+      return { type: AccountType.WORKLOAD_IDENTITY, email };
+    default:
+      return null;
+  }
 }
 
-// fullname  →  binding
-function fullnameToBinding(fullname: string): string {
-  if (fullname === ALL_USERS_USER_EMAIL) return ALL_USERS_USER_EMAIL;
-  if (fullname.startsWith("users/"))
-    return `${userBindingPrefix}${fullname.slice("users/".length)}`;
-  if (fullname.startsWith(groupNamePrefix))
-    return `group:${fullname.slice(groupNamePrefix.length)}`;
-  if (fullname.startsWith("serviceAccounts/"))
-    return `serviceAccount:${fullname.slice("serviceAccounts/".length)}`;
-  if (fullname.startsWith("workloadIdentities/"))
-    return `workloadIdentity:${fullname.slice("workloadIdentities/".length)}`;
-  return fullname;
+function detectSpecialAccount(input: string): {
+  type: AccountType;
+  email: string;
+} | null {
+  const email = input.trim();
+  if (!email) return null;
+
+  return getSpecialAccountByFullname(email) ?? getSpecialAccountByEmail(email);
 }
+
+type SpecialAccount = {
+  type: AccountType;
+  fullname: string;
+  email: string;
+  title?: string;
+};
+
+type AccountParent = {
+  name: string;
+  canListServiceAccounts: boolean;
+  canListWorkloadIdentities: boolean;
+};
 
 // ---- Sub-components ----
 
@@ -137,12 +124,12 @@ function SpecialAccountOption({
   onToggle,
 }: {
   keyword: string;
-  match: { type: SpecialAccountType; email: string };
+  match: SpecialAccount;
   selected: boolean;
   onToggle: () => void;
 }) {
   const { t } = useTranslation();
-  const isServiceAccount = match.type === "serviceAccount";
+  const isServiceAccount = match.type === AccountType.SERVICE_ACCOUNT;
   const Icon = isServiceAccount ? KeyRound : Shield;
   const label = isServiceAccount
     ? t("settings.members.service-account")
@@ -166,7 +153,7 @@ function SpecialAccountOption({
       <div className="flex flex-col min-w-0">
         <div className="flex items-center gap-x-1">
           <HighlightLabelText
-            text={match.email.split("@")[0]}
+            text={match.title || match.email.split("@")[0]}
             keyword={keyword}
             className="text-sm font-medium truncate"
           />
@@ -192,6 +179,8 @@ export function AccountMultiSelect({
   disabled,
   includeAllUsers,
   excludeAccounts,
+  accountParents,
+  includeSpecialAccounts = true,
   placeholder,
 }: {
   value: string[];
@@ -207,16 +196,102 @@ export function AccountMultiSelect({
    * chips already in `value` keep rendering and stay removable.
    */
   excludeAccounts?: string[];
+  /** Resource parents whose special accounts may be discovered. */
+  accountParents: string[];
+  /** Whether this resource can grant service accounts and workload identities. */
+  includeSpecialAccounts?: boolean;
 }) {
   const { t } = useTranslation();
   const listUsers = useAppStore((state) => state.listUsers);
   const listGroups = useAppStore((state) => state.listGroups);
+  const listServiceAccounts = useAppStore((state) => state.listServiceAccounts);
+  const listWorkloadIdentities = useAppStore(
+    (state) => state.listWorkloadIdentities
+  );
   const currentUser = useCurrentUser();
 
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<User[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [specialAccounts, setSpecialAccounts] = useState<SpecialAccount[]>([]);
+
+  const uniqueAccountParents = useMemo(
+    () => [...new Set(accountParents.filter(Boolean))],
+    [accountParents]
+  );
+  const workspaceAccountParent = useMemo(
+    () =>
+      uniqueAccountParents.find((parent) =>
+        parent.startsWith(workspaceNamePrefix)
+      ),
+    [uniqueAccountParents]
+  );
+  const projectAccountParent = useMemo(
+    () =>
+      uniqueAccountParents.find((parent) =>
+        parent.startsWith(projectNamePrefix)
+      ),
+    [uniqueAccountParents]
+  );
+  const project = useAppStore((state) =>
+    projectAccountParent
+      ? state.projectsByName[projectAccountParent]
+      : undefined
+  );
+  const canListWorkspaceServiceAccounts = useAppStore((state) =>
+    workspaceAccountParent
+      ? state.hasWorkspacePermission("bb.serviceAccounts.list")
+      : false
+  );
+  const canListWorkspaceWorkloadIdentities = useAppStore((state) =>
+    workspaceAccountParent
+      ? state.hasWorkspacePermission("bb.workloadIdentities.list")
+      : false
+  );
+  const canListProjectServiceAccounts = useAppStore((state) =>
+    project
+      ? state.hasProjectPermission(project, "bb.serviceAccounts.list")
+      : false
+  );
+  const canListProjectWorkloadIdentities = useAppStore((state) =>
+    project
+      ? state.hasProjectPermission(project, "bb.workloadIdentities.list")
+      : false
+  );
+  const permittedAccountParents = useMemo((): AccountParent[] => {
+    const parents: AccountParent[] = [];
+    if (
+      workspaceAccountParent &&
+      (canListWorkspaceServiceAccounts || canListWorkspaceWorkloadIdentities)
+    ) {
+      parents.push({
+        name: workspaceAccountParent,
+        canListServiceAccounts: canListWorkspaceServiceAccounts,
+        canListWorkloadIdentities: canListWorkspaceWorkloadIdentities,
+      });
+    }
+    if (
+      projectAccountParent &&
+      project &&
+      (canListProjectServiceAccounts || canListProjectWorkloadIdentities)
+    ) {
+      parents.push({
+        name: projectAccountParent,
+        canListServiceAccounts: canListProjectServiceAccounts,
+        canListWorkloadIdentities: canListProjectWorkloadIdentities,
+      });
+    }
+    return parents;
+  }, [
+    workspaceAccountParent,
+    canListWorkspaceServiceAccounts,
+    canListWorkspaceWorkloadIdentities,
+    projectAccountParent,
+    project,
+    canListProjectServiceAccounts,
+    canListProjectWorkloadIdentities,
+  ]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -237,6 +312,72 @@ export function AccountMultiSelect({
     );
   }, [search, listUsers, listGroups, excludeAccounts]);
 
+  useEffect(() => {
+    if (!includeSpecialAccounts || permittedAccountParents.length === 0) {
+      setSpecialAccounts([]);
+      return;
+    }
+
+    let cancelled = false;
+    const query = search.trim();
+    const pageSize = getDefaultPagination() + (excludeAccounts?.length ?? 0);
+    const params = (parent: string) => ({
+      parent,
+      pageSize,
+      showDeleted: false,
+      filter: { query },
+      skipCache: true,
+    });
+
+    void Promise.allSettled(
+      permittedAccountParents.flatMap((parent) => [
+        ...(parent.canListServiceAccounts
+          ? [listServiceAccounts(params(parent.name))]
+          : []),
+        ...(parent.canListWorkloadIdentities
+          ? [listWorkloadIdentities(params(parent.name))]
+          : []),
+      ])
+    ).then((results) => {
+      if (cancelled) return;
+      const discovered = new Map<string, SpecialAccount>();
+      for (const result of results) {
+        if (result.status !== "fulfilled") continue;
+        if ("serviceAccounts" in result.value) {
+          for (const account of result.value.serviceAccounts) {
+            discovered.set(account.name, {
+              type: AccountType.SERVICE_ACCOUNT,
+              fullname: account.name,
+              email: account.email,
+              title: account.title,
+            });
+          }
+        } else {
+          for (const account of result.value.workloadIdentities) {
+            discovered.set(account.name, {
+              type: AccountType.WORKLOAD_IDENTITY,
+              fullname: account.name,
+              email: account.email,
+              title: account.title,
+            });
+          }
+        }
+      }
+      setSpecialAccounts([...discovered.values()]);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    search,
+    includeSpecialAccounts,
+    permittedAccountParents,
+    listServiceAccounts,
+    listWorkloadIdentities,
+    excludeAccounts,
+  ]);
+
   const handleClickOutside = useCallback(() => {
     setOpen(false);
     setSearch("");
@@ -245,12 +386,12 @@ export function AccountMultiSelect({
 
   // Selected fullnames set for quick lookup
   const selectedFullnames = useMemo(
-    () => new Set(value.map(bindingToFullname)),
+    () => new Set(value.map(convertMemberToFullname)),
     [value]
   );
 
   const excludedFullnames = useMemo(
-    () => new Set((excludeAccounts ?? []).map(bindingToFullname)),
+    () => new Set((excludeAccounts ?? []).map(convertMemberToFullname)),
     [excludeAccounts]
   );
   // Filter the rendered lists only — `users`/`groups` stay complete so
@@ -263,10 +404,31 @@ export function AccountMultiSelect({
     () => groups.filter((group) => !excludedFullnames.has(group.name)),
     [groups, excludedFullnames]
   );
+  const visibleSpecialAccounts = useMemo(
+    () =>
+      specialAccounts.filter(
+        (account) => !excludedFullnames.has(account.fullname)
+      ),
+    [specialAccounts, excludedFullnames]
+  );
+  const visibleServiceAccounts = useMemo(
+    () =>
+      visibleSpecialAccounts.filter(
+        (account) => account.type === AccountType.SERVICE_ACCOUNT
+      ),
+    [visibleSpecialAccounts]
+  );
+  const visibleWorkloadIdentities = useMemo(
+    () =>
+      visibleSpecialAccounts.filter(
+        (account) => account.type === AccountType.WORKLOAD_IDENTITY
+      ),
+    [visibleSpecialAccounts]
+  );
 
   const toggle = (fullname: string) => {
     if (disabled) return;
-    const binding = fullnameToBinding(fullname);
+    const binding = convertFullnameToMember(fullname);
     if (selectedFullnames.has(fullname)) {
       labelCacheRef.current.delete(binding);
       onChange(value.filter((v) => v !== binding));
@@ -295,23 +457,26 @@ export function AccountMultiSelect({
       const group = groups.find((g) => g.name === fullname);
       return group?.title || fullname;
     }
+    const specialAccount = specialAccounts.find(
+      (account) => account.fullname === fullname
+    );
+    if (specialAccount) {
+      return specialAccount.title || specialAccount.email;
+    }
     return undefined;
   };
 
   // Detect service account / workload identity typed in search
-  const specialAccountMatch = useMemo((): {
-    type: SpecialAccountType;
-    email: string;
-    fullname: string;
-  } | null => {
+  const specialAccountMatch = useMemo((): SpecialAccount | null => {
+    if (!includeSpecialAccounts) return null;
     const match = detectSpecialAccount(search);
     if (!match || !match.email) return null;
     const prefix =
-      match.type === "serviceAccount"
+      match.type === AccountType.SERVICE_ACCOUNT
         ? serviceAccountNamePrefix
         : workloadIdentityNamePrefix;
     return { ...match, fullname: `${prefix}${match.email}` };
-  }, [search]);
+  }, [search, includeSpecialAccounts]);
 
   // Allow selecting arbitrary user emails typed in the search box
   // (for SaaS where admins grant access to emails before signup, or when
@@ -319,15 +484,20 @@ export function AccountMultiSelect({
   const arbitraryEmailMatch = useMemo((): string | null => {
     const trimmed = search.trim();
     if (!trimmed || !isValidEmail(trimmed)) return null;
-    // Don't show if it's a service account or workload identity
-    if (specialAccountMatch) return null;
+    // Service accounts and workload identities must keep their IAM member
+    // kind; they cannot fall back to an inert user binding.
+    if (getSpecialAccountByEmail(trimmed)) return null;
     // Don't show if it already matches a fetched user
     if (users.some((u) => u.email === trimmed)) return null;
     return trimmed;
-  }, [search, specialAccountMatch, users]);
+  }, [search, users]);
 
   const visibleSpecialAccountMatch =
-    specialAccountMatch && !excludedFullnames.has(specialAccountMatch.fullname)
+    specialAccountMatch &&
+    !excludedFullnames.has(specialAccountMatch.fullname) &&
+    !visibleSpecialAccounts.some(
+      (account) => account.fullname === specialAccountMatch.fullname
+    )
       ? specialAccountMatch
       : null;
   const visibleArbitraryEmailMatch =
@@ -335,6 +505,7 @@ export function AccountMultiSelect({
     !excludedFullnames.has(`users/${arbitraryEmailMatch}`)
       ? arbitraryEmailMatch
       : null;
+  const showAllUsers = includeAllUsers && !search.trim();
 
   // Label for a selected binding chip — uses cache to survive search changes
   const chipLabel = (binding: string): string => {
@@ -343,11 +514,13 @@ export function AccountMultiSelect({
     }
     const cached = labelCacheRef.current.get(binding);
     if (cached) return cached;
-    const fullname = bindingToFullname(binding);
-    if (fullname.startsWith("serviceAccounts/"))
-      return fullname.slice("serviceAccounts/".length);
-    if (fullname.startsWith("workloadIdentities/"))
-      return fullname.slice("workloadIdentities/".length);
+    const fullname = convertMemberToFullname(binding);
+    const specialAccount = detectSpecialAccount(fullname);
+    switch (specialAccount?.type) {
+      case AccountType.SERVICE_ACCOUNT:
+      case AccountType.WORKLOAD_IDENTITY:
+        return specialAccount.email;
+    }
     return resolveLabel(fullname) || binding;
   };
 
@@ -386,16 +559,19 @@ export function AccountMultiSelect({
           >
             {chipLabel(binding)}
             {!disabled && (
-              <button
+              <Button
                 type="button"
-                className="hover:text-error"
+                appearance="secondary"
+                size="xs"
+                aria-label={t("common.remove")}
+                className="text-control-light hover:text-error"
                 onClick={(e) => {
                   e.stopPropagation();
                   remove(binding);
                 }}
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             )}
           </span>
         ))}
@@ -426,7 +602,7 @@ export function AccountMultiSelect({
 
           <div className="overflow-auto" role="listbox" aria-multiselectable>
             {/* allUsers option */}
-            {includeAllUsers && (
+            {showAllUsers && (
               <div
                 className={cn(
                   "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-control-bg",
@@ -437,11 +613,7 @@ export function AccountMultiSelect({
                 <SelectionCheckbox
                   selected={selectedFullnames.has(ALL_USERS_USER_EMAIL)}
                 />
-                {/* Blue avatar circle */}
-                <div
-                  className="size-7 rounded-full flex items-center justify-center text-accent-text text-xs font-medium shrink-0"
-                  style={{ backgroundColor: "#3B82F6" }}
-                >
+                <div className="size-7 rounded-full flex items-center justify-center bg-info text-accent-text text-xs font-medium shrink-0">
                   <Users className="h-4 w-4" />
                 </div>
                 <HighlightLabelText
@@ -566,8 +738,16 @@ export function AccountMultiSelect({
               </div>
             )}
 
-            {/* Service account / workload identity match */}
-            {visibleSpecialAccountMatch && (
+            {/* Service accounts */}
+            {(visibleSpecialAccountMatch?.type ===
+              AccountType.SERVICE_ACCOUNT ||
+              visibleServiceAccounts.length > 0) && (
+              <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-control-bg border-b">
+                {t("settings.members.service-accounts")}
+              </div>
+            )}
+            {visibleSpecialAccountMatch?.type ===
+              AccountType.SERVICE_ACCOUNT && (
               <SpecialAccountOption
                 keyword={search}
                 match={visibleSpecialAccountMatch}
@@ -577,6 +757,44 @@ export function AccountMultiSelect({
                 onToggle={() => toggle(visibleSpecialAccountMatch.fullname)}
               />
             )}
+            {visibleServiceAccounts.map((account) => (
+              <SpecialAccountOption
+                key={account.fullname}
+                keyword={search}
+                match={account}
+                selected={selectedFullnames.has(account.fullname)}
+                onToggle={() => toggle(account.fullname)}
+              />
+            ))}
+
+            {/* Workload identities */}
+            {(visibleSpecialAccountMatch?.type ===
+              AccountType.WORKLOAD_IDENTITY ||
+              visibleWorkloadIdentities.length > 0) && (
+              <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-control-bg border-b">
+                {t("settings.members.workload-identities")}
+              </div>
+            )}
+            {visibleSpecialAccountMatch?.type ===
+              AccountType.WORKLOAD_IDENTITY && (
+              <SpecialAccountOption
+                keyword={search}
+                match={visibleSpecialAccountMatch}
+                selected={selectedFullnames.has(
+                  visibleSpecialAccountMatch.fullname
+                )}
+                onToggle={() => toggle(visibleSpecialAccountMatch.fullname)}
+              />
+            )}
+            {visibleWorkloadIdentities.map((account) => (
+              <SpecialAccountOption
+                key={account.fullname}
+                keyword={search}
+                match={account}
+                selected={selectedFullnames.has(account.fullname)}
+                onToggle={() => toggle(account.fullname)}
+              />
+            ))}
 
             {/* Arbitrary email fallback */}
             {visibleArbitraryEmailMatch && (
@@ -613,9 +831,10 @@ export function AccountMultiSelect({
             )}
 
             {/* Empty state */}
-            {!includeAllUsers &&
+            {!showAllUsers &&
               visibleUsers.length === 0 &&
               visibleGroups.length === 0 &&
+              visibleSpecialAccounts.length === 0 &&
               !visibleSpecialAccountMatch &&
               !visibleArbitraryEmailMatch && (
                 <div className="px-3 py-4 text-sm text-center text-control-light">

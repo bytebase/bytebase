@@ -9,8 +9,7 @@ export function SessionExpiredSurfaceGate() {
   const isLoggedIn = useAppStore((s) => s.isLoggedIn());
   const unauthenticatedOccurred = useAppStore((s) => s.unauthenticatedOccurred);
   const currentPath = route.fullPath;
-  // Match the guards that previously lived in AuthContext.vue: the
-  // surface is only shown for an already-signed-in user on a non-auth
+  // The surface is only shown for an already-signed-in user on a non-auth
   // route who just lost their session — otherwise the modal would block
   // signin/signup flows.
   if (isAuthRoute || !isLoggedIn || !unauthenticatedOccurred) return null;

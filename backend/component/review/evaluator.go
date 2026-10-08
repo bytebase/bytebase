@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"maps"
 	"math"
+	"strings"
 	"sync"
 
 	"github.com/google/cel-go/cel"
@@ -148,7 +149,11 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 			return
 		}
 		if approved {
-			r.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: issue.ProjectID, PlanID: *issue.PlanUID}
+			// Give up on shutdown rather than blocking on a stopped consumer.
+			select {
+			case r.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: issue.ProjectID, PlanID: *issue.PlanUID}:
+			case <-ctx.Done():
+			}
 		}
 	}
 }
@@ -177,7 +182,7 @@ func calculateRiskLevelFromCELVars(celVarsList []map[string]any) storepb.RiskLev
 		return storepb.RiskLevel_LOW
 	}
 	statementTypes := collectStatementTypes(celVarsList)
-	return common.GetRiskLevelFromStatementTypes(statementTypes)
+	return GetRiskLevelFromStatementTypes(statementTypes)
 }
 
 // injectRiskLevelIntoCELVars adds the risk level to all CEL variable maps.
@@ -792,7 +797,7 @@ func buildCELVariablesForRoleGrant(ctx context.Context, stores *store.Store, iss
 		return nil, false, errors.New("role grant payload not found")
 	}
 
-	factors, err := common.GetQueryExportFactors(payload.GetRoleGrant().GetCondition().GetExpression())
+	factors, err := getQueryExportFactors(payload.GetRoleGrant().GetCondition().GetExpression())
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to get query export factors")
 	}
@@ -1288,6 +1293,22 @@ func NotifyApprovalRequested(ctx context.Context, stores *store.Store, webhookMa
 	if err != nil {
 		slog.Warn("failed to get approvers", log.BBError(err))
 		approvers = []webhook.User{} // Continue with empty list
+	}
+	if !project.Setting.GetAllowLastPlanEditorApproval() && issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
+		plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
+		if err != nil {
+			slog.Warn("failed to get plan for approval notification", log.BBError(err))
+		} else if plan == nil {
+			slog.Warn("plan not found for approval notification", slog.Int64("plan_uid", *issue.PlanUID))
+		} else {
+			eligibleApprovers := approvers[:0]
+			for _, approver := range approvers {
+				if !strings.EqualFold(approver.Email, effectiveLastPlanEditor(plan)) {
+					eligibleApprovers = append(eligibleApprovers, approver)
+				}
+			}
+			approvers = eligibleApprovers
+		}
 	}
 
 	// Trigger ISSUE_APPROVAL_REQUESTED webhook

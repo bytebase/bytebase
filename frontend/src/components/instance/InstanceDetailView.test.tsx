@@ -121,6 +121,7 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  engineNameV1: () => "PostgreSQL",
   extractDatabaseResourceName: (name: string) => {
     const [, instanceName, , databaseName] = name.split("/");
     return { instanceName, databaseName };

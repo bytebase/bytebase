@@ -27,11 +27,7 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
 		Name: "workspaces/-",
@@ -77,10 +73,11 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 	a.Equal(http.StatusForbidden, forbidden.Status)
 	a.Contains(forbidden.Error, "ends the human's own login session")
 
-	// The EXCLUDED denial is audited, and ListUsers carries no audit
-	// annotation: the record comes from the gate, not from the method.
-	a.Len(deniedMCPRows(ctx, t, ctl, workspaceName, "/bytebase.v1.UserService/ListUsers"), 1,
-		"a policy denial is recorded even where the method asks for no audit row")
+	// A gate refusal is streamed, never stored; the served CreateSheet is stored.
+	a.Empty(mcpAuditRows(ctx, t, ctl, workspaceName, "/bytebase.v1.UserService/ListUsers"),
+		"a gate refusal is never stored")
+	a.Len(mcpAuditRows(ctx, t, ctl, projectName, "/bytebase.v1.SheetService/CreateSheet"), 1,
+		"a served, audited MCP call is stored")
 }
 
 // TestMCPGateRefusesGrantIssues is the one refusal a per-method class cannot
@@ -92,11 +89,7 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	project, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		ProjectId: "mcp-grant-issue",
@@ -176,6 +169,17 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.Equal(http.StatusBadRequest, change.Status,
 		"a database-change issue must reach the handler, which then asks for its plan: %s", change.Error)
 	a.NotContains(change.Error, "not available to MCP sessions")
+
+	// An unset type reaches the handler too, and is the handler's own
+	// complaint: an invalid argument, not a policy verdict, so its row stays
+	// INFO.
+	untyped := callAPIOnSession(ctx, t, session, "IssueService/CreateIssue", map[string]any{
+		"parent": projectName,
+		"issue":  map[string]any{"title": "no type at all"},
+	})
+	a.Equal(http.StatusBadRequest, untyped.Status,
+		"an unset type is the handler's invalid argument: %s", untyped.Error)
+	a.NotContains(untyped.Error, "MCP session")
 }
 
 // TestMCPCannotRunAnIssuelessRollout is the rule rollout_service.proto says the
@@ -199,27 +203,23 @@ func TestMCPCannotRunAnIssuelessRollout(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// CreateRollout is WRITE and the refusal under test is the
 	// issueless-rollout guard. Pinned so this test does not depend on the
 	// resolved default.
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
-			Title:       "MCP rollout instance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "MCP rollout instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -290,11 +290,7 @@ func TestMCPDefaultRowIsReadOnly(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	project, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		ProjectId: "mcp-unset",

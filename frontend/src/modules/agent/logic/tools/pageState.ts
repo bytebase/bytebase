@@ -17,7 +17,7 @@ export function createPageStateTool(router: AppRouterInstance) {
       title: document.title,
     };
 
-    // Enrich with Pinia store data
+    // Enrich with app store data
     const ctx = await extractRouteContext(route);
     if (Object.keys(ctx).length > 0) {
       base.context = ctx;

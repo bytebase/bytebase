@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -179,7 +180,7 @@ func addUnchangedDependentMaterializedViews(diff *schema.MetadataDiff, oldSchema
 	}
 }
 
-func dependencyColumnsReferenceAffectedTable(dependencies []*storepb.DependencyColumn, affectedTables map[string]affectedTableColumns) bool {
+func dependencyColumnsReferenceAffectedTable(dependencies []*metadatapb.DependencyColumn, affectedTables map[string]affectedTableColumns) bool {
 	for _, dep := range dependencies {
 		affected, ok := affectedTables[getMigrationObjectID(dep.GetSchema(), dep.GetTable())]
 		if !ok {
@@ -277,7 +278,7 @@ func postViewCompositeAlters(diff *schema.MetadataDiff) map[*schema.CompositeTyp
 		if compositeDiff.Action != schema.MetadataDiffActionAlter {
 			continue
 		}
-		oldAttributes := make(map[string]*storepb.CompositeTypeAttribute)
+		oldAttributes := make(map[string]*metadatapb.CompositeTypeAttribute)
 		for _, attribute := range compositeDiff.OldCompositeType.GetAttributes() {
 			oldAttributes[attribute.Name] = attribute
 		}
@@ -316,7 +317,7 @@ func computeDeferredDrops(diff *schema.MetadataDiff) *deferredDropSet {
 	}
 	var topLevelDrops []*schema.CompositeTypeDiff
 	deferredComposites := make(map[*schema.CompositeTypeDiff]bool)
-	var pool []*storepb.CompositeTypeMetadata
+	var pool []*metadatapb.CompositeTypeMetadata
 	for _, compositeDiff := range diff.CompositeTypeChanges {
 		if compositeDiff.Action != schema.MetadataDiffActionDrop {
 			continue
@@ -460,7 +461,7 @@ func writeDeferredDropPhase(out *strings.Builder, diff *schema.MetadataDiff) err
 
 // compositePoolReferencesSchema reports whether any composite in the pool has
 // an attribute whose (always schema-qualified) type lives in the schema.
-func compositePoolReferencesSchema(pool []*storepb.CompositeTypeMetadata, schemaName string) bool {
+func compositePoolReferencesSchema(pool []*metadatapb.CompositeTypeMetadata, schemaName string) bool {
 	for _, compositeType := range pool {
 		for _, attribute := range compositeType.GetAttributes() {
 			if depSchema, _, ok := parseQualifiedTypeIdent(attribute.Type); ok && depSchema == schemaName {
@@ -493,7 +494,7 @@ func schemaOwnsRetypeReleasedComposite(diff *schema.MetadataDiff, schemaDiff *sc
 // references the given type. Attribute types are stored schema-qualified for
 // user-defined types; the bare fallback matches by name alone, which may
 // defer a drop unnecessarily — a safe direction.
-func compositeReferencesType(composite *storepb.CompositeTypeMetadata, typeSchema, typeName string) bool {
+func compositeReferencesType(composite *metadatapb.CompositeTypeMetadata, typeSchema, typeName string) bool {
 	for _, attribute := range composite.GetAttributes() {
 		if typeStringReferencesComposite(attribute.Type, typeSchema, typeName) {
 			return true
@@ -530,7 +531,7 @@ func immediateCompositeDrops(diff *schema.MetadataDiff, deferred *deferredDropSe
 // the same graph.
 func dropGraphComposites(diff *schema.MetadataDiff) (map[string]*schema.CompositeTypeDiff, []*schema.CompositeTypeDiff) {
 	immediate := immediateCompositeDrops(diff, computeDeferredDrops(diff))
-	var pool []*storepb.CompositeTypeMetadata
+	var pool []*metadatapb.CompositeTypeMetadata
 	for _, schemaDiff := range diff.SchemaChanges {
 		if schemaDiff.Action != schema.MetadataDiffActionDrop || skipPostgresSchemaDDL(schemaDiff.SchemaName) {
 			continue
@@ -1059,7 +1060,7 @@ func writeDropTableForeignKeysForTableDrops(out *strings.Builder, diff *schema.M
 	return nil
 }
 
-func isSequenceOwnedByDroppedTable(diff *schema.MetadataDiff, schemaName string, sequence *storepb.SequenceMetadata) bool {
+func isSequenceOwnedByDroppedTable(diff *schema.MetadataDiff, schemaName string, sequence *metadatapb.SequenceMetadata) bool {
 	if sequence.GetOwnerTable() == "" || sequence.GetOwnerColumn() == "" {
 		return false
 	}
@@ -1426,7 +1427,7 @@ func writeSequenceOwnershipAfterTables(out *strings.Builder, diff *schema.Metada
 	return nil
 }
 
-func sequenceOwnershipChanged(oldSequence, newSequence *storepb.SequenceMetadata) bool {
+func sequenceOwnershipChanged(oldSequence, newSequence *metadatapb.SequenceMetadata) bool {
 	return oldSequence.GetOwnerTable() != newSequence.GetOwnerTable() || oldSequence.GetOwnerColumn() != newSequence.GetOwnerColumn()
 }
 
@@ -1609,7 +1610,7 @@ func writeTableDiff(out *strings.Builder, tableDiff *schema.TableDiff) error {
 	}
 }
 
-func writeTableForMetadataMigration(out *strings.Builder, schemaName string, table *storepb.TableMetadata) error {
+func writeTableForMetadataMigration(out *strings.Builder, schemaName string, table *metadatapb.TableMetadata) error {
 	if err := writeCreateTableForMetadataMigration(out, schemaName, table); err != nil {
 		return err
 	}
@@ -1687,7 +1688,7 @@ func writeTableForMetadataMigration(out *strings.Builder, schemaName string, tab
 	return nil
 }
 
-func writeCreateTableForMetadataMigration(out *strings.Builder, schemaName string, table *storepb.TableMetadata) error {
+func writeCreateTableForMetadataMigration(out *strings.Builder, schemaName string, table *metadatapb.TableMetadata) error {
 	if _, err := fmt.Fprintf(out, "CREATE TABLE \"%s\".\"%s\" (", schemaName, table.GetName()); err != nil {
 		return err
 	}
@@ -1724,7 +1725,7 @@ func writeCreateTableForMetadataMigration(out *strings.Builder, schemaName strin
 	return err
 }
 
-func writeDropPartition(out *strings.Builder, schemaName string, partition *storepb.TablePartitionMetadata) error {
+func writeDropPartition(out *strings.Builder, schemaName string, partition *metadatapb.TablePartitionMetadata) error {
 	if partition == nil {
 		return nil
 	}
@@ -1737,7 +1738,7 @@ func writeDropPartition(out *strings.Builder, schemaName string, partition *stor
 	return err
 }
 
-func writeCreatePartitionDiff(out *strings.Builder, schemaName, tableName string, columns []*storepb.ColumnMetadata, partition *storepb.TablePartitionMetadata) error {
+func writeCreatePartitionDiff(out *strings.Builder, schemaName, tableName string, columns []*metadatapb.ColumnMetadata, partition *metadatapb.TablePartitionMetadata) error {
 	if partition == nil {
 		return nil
 	}
@@ -1759,7 +1760,7 @@ func writeCreatePartitionDiff(out *strings.Builder, schemaName, tableName string
 	return writeAttachPartitionIndex(out, schemaName, partition)
 }
 
-func writePartitionIndexForMetadataMigration(out *strings.Builder, schemaName string, partition *storepb.TablePartitionMetadata) error {
+func writePartitionIndexForMetadataMigration(out *strings.Builder, schemaName string, partition *metadatapb.TablePartitionMetadata) error {
 	for _, index := range partition.GetIndexes() {
 		if !index.GetIsConstraint() && !index.GetPrimary() {
 			if err := writeCreateRegularIndex(out, schemaName, partition.GetName(), index, len(partition.GetSubpartitions()) > 0); err != nil {
@@ -1959,7 +1960,7 @@ func extractLength(typeName string) int {
 	return length
 }
 
-func writeColumnDefinition(out *strings.Builder, column *storepb.ColumnMetadata) error {
+func writeColumnDefinition(out *strings.Builder, column *metadatapb.ColumnMetadata) error {
 	if _, err := fmt.Fprintf(out, "\"%s\" %s", column.Name, column.Type); err != nil {
 		return err
 	}
@@ -1969,11 +1970,11 @@ func writeColumnDefinition(out *strings.Builder, column *storepb.ColumnMetadata)
 		}
 	}
 	switch column.GetIdentityGeneration() {
-	case storepb.ColumnMetadata_ALWAYS:
+	case metadatapb.ColumnMetadata_ALWAYS:
 		if _, err := out.WriteString(" GENERATED ALWAYS AS IDENTITY"); err != nil {
 			return err
 		}
-	case storepb.ColumnMetadata_BY_DEFAULT:
+	case metadatapb.ColumnMetadata_BY_DEFAULT:
 		if _, err := out.WriteString(" GENERATED BY DEFAULT AS IDENTITY"); err != nil {
 			return err
 		}
@@ -1981,7 +1982,7 @@ func writeColumnDefinition(out *strings.Builder, column *storepb.ColumnMetadata)
 	}
 	if generation := column.GetGeneration(); generation != nil && generation.GetExpression() != "" {
 		generationType := "STORED"
-		if generation.GetType() == storepb.GenerationMetadata_TYPE_VIRTUAL {
+		if generation.GetType() == metadatapb.GenerationMetadata_TYPE_VIRTUAL {
 			generationType = "VIRTUAL"
 		}
 		if _, err := fmt.Fprintf(out, " GENERATED ALWAYS AS (%s) %s", generation.GetExpression(), generationType); err != nil {
@@ -2013,7 +2014,7 @@ func writeDropTableConstraint(out *strings.Builder, schemaName, tableName, const
 	return err
 }
 
-func writeDropIndexDiff(out *strings.Builder, schemaName, tableName string, index *storepb.IndexMetadata) error {
+func writeDropIndexDiff(out *strings.Builder, schemaName, tableName string, index *metadatapb.IndexMetadata) error {
 	if index.GetIsConstraint() {
 		return writeDropTableConstraint(out, schemaName, tableName, index.GetName())
 	}
@@ -2024,7 +2025,7 @@ func writeDropIndexDiff(out *strings.Builder, schemaName, tableName string, inde
 	return err
 }
 
-func writeAddCheckConstraint(out *strings.Builder, schemaName, tableName string, check *storepb.CheckConstraintMetadata) error {
+func writeAddCheckConstraint(out *strings.Builder, schemaName, tableName string, check *metadatapb.CheckConstraintMetadata) error {
 	if check == nil {
 		return nil
 	}
@@ -2034,7 +2035,7 @@ func writeAddCheckConstraint(out *strings.Builder, schemaName, tableName string,
 	return nil
 }
 
-func writeAddExcludeConstraint(out *strings.Builder, schemaName, tableName string, exclude *storepb.ExcludeConstraintMetadata) error {
+func writeAddExcludeConstraint(out *strings.Builder, schemaName, tableName string, exclude *metadatapb.ExcludeConstraintMetadata) error {
 	if exclude == nil {
 		return nil
 	}
@@ -2044,7 +2045,7 @@ func writeAddExcludeConstraint(out *strings.Builder, schemaName, tableName strin
 	return nil
 }
 
-func writeCreateIndexDiff(out *strings.Builder, schemaName, tableName string, index *storepb.IndexMetadata) error {
+func writeCreateIndexDiff(out *strings.Builder, schemaName, tableName string, index *metadatapb.IndexMetadata) error {
 	if index == nil {
 		return nil
 	}
@@ -2058,7 +2059,7 @@ func writeCreateIndexDiff(out *strings.Builder, schemaName, tableName string, in
 	}
 }
 
-func writeCreateRegularIndex(out *strings.Builder, schemaName, tableName string, index *storepb.IndexMetadata, useOnlyClause bool) error {
+func writeCreateRegularIndex(out *strings.Builder, schemaName, tableName string, index *metadatapb.IndexMetadata, useOnlyClause bool) error {
 	if index.GetDefinition() != "" {
 		if err := writeDefinitionStatement(out, index.GetDefinition()); err != nil {
 			return err
@@ -2151,14 +2152,14 @@ func skipPostgresSchemaDDL(schemaName string) bool {
 	return schemaName == "pg_catalog" || schemaName == "public"
 }
 
-func writeDropSchemaObjects(out *strings.Builder, schemaName string, schemaMeta *storepb.SchemaMetadata) error {
+func writeDropSchemaObjects(out *strings.Builder, schemaName string, schemaMeta *metadatapb.SchemaMetadata) error {
 	if err := writeDropSchemaNonTypeObjects(out, schemaName, schemaMeta); err != nil {
 		return err
 	}
 	return writeDropSchemaTypes(out, schemaName, schemaMeta)
 }
 
-func writeDropSchemaNonTypeObjects(out *strings.Builder, schemaName string, schemaMeta *storepb.SchemaMetadata) error {
+func writeDropSchemaNonTypeObjects(out *strings.Builder, schemaName string, schemaMeta *metadatapb.SchemaMetadata) error {
 	if schemaMeta == nil {
 		return nil
 	}
@@ -2188,7 +2189,7 @@ func writeDropSchemaNonTypeObjects(out *strings.Builder, schemaName string, sche
 	return nil
 }
 
-func writeDropSchemaTypes(out *strings.Builder, schemaName string, schemaMeta *storepb.SchemaMetadata) error {
+func writeDropSchemaTypes(out *strings.Builder, schemaName string, schemaMeta *metadatapb.SchemaMetadata) error {
 	if schemaMeta == nil {
 		return nil
 	}
@@ -2205,7 +2206,7 @@ func writeDropSchemaTypes(out *strings.Builder, schemaName string, schemaMeta *s
 	return nil
 }
 
-func buildDropSchemaObjectsDiff(schemaName string, schemaMeta *storepb.SchemaMetadata) *schema.MetadataDiff {
+func buildDropSchemaObjectsDiff(schemaName string, schemaMeta *metadatapb.SchemaMetadata) *schema.MetadataDiff {
 	diff := &schema.MetadataDiff{}
 	for _, table := range schemaMeta.GetTables() {
 		if table.GetSkipDump() {
@@ -2344,7 +2345,7 @@ func writeSequenceDiff(out *strings.Builder, sequenceDiff *schema.SequenceDiff) 
 	}
 }
 
-func writeAlterSequence(out *strings.Builder, schemaName string, oldSequence *storepb.SequenceMetadata, sequence *storepb.SequenceMetadata) error {
+func writeAlterSequence(out *strings.Builder, schemaName string, oldSequence *metadatapb.SequenceMetadata, sequence *metadatapb.SequenceMetadata) error {
 	if _, err := fmt.Fprintf(out, "ALTER SEQUENCE \"%s\".\"%s\"", schemaName, sequence.Name); err != nil {
 		return err
 	}
@@ -2416,7 +2417,7 @@ func writeFunctionDiff(out *strings.Builder, functionDiff *schema.FunctionDiff) 
 	}
 }
 
-func writeFunctionStatement(out *strings.Builder, schemaName string, function *storepb.FunctionMetadata, replace bool) error {
+func writeFunctionStatement(out *strings.Builder, schemaName string, function *metadatapb.FunctionMetadata, replace bool) error {
 	definition := function.GetDefinition()
 	if replace {
 		definition = convertCreateFunctionToCreateOrReplace(definition)
@@ -2467,7 +2468,7 @@ func writeProcedureDiff(out *strings.Builder, procedureDiff *schema.ProcedureDif
 	}
 }
 
-func writeProcedure(out *strings.Builder, schemaName string, procedure *storepb.ProcedureMetadata) error {
+func writeProcedure(out *strings.Builder, schemaName string, procedure *metadatapb.ProcedureMetadata) error {
 	if err := writeDefinitionStatement(out, procedure.Definition); err != nil {
 		return err
 	}
@@ -2543,7 +2544,7 @@ func writeEnumTypeDiff(out *strings.Builder, enumDiff *schema.EnumTypeDiff) erro
 	}
 }
 
-func writeAlterEnumTypeAddValues(out *strings.Builder, schemaName string, oldEnum *storepb.EnumTypeMetadata, newEnum *storepb.EnumTypeMetadata) error {
+func writeAlterEnumTypeAddValues(out *strings.Builder, schemaName string, oldEnum *metadatapb.EnumTypeMetadata, newEnum *metadatapb.EnumTypeMetadata) error {
 	oldValueSet := make(map[string]bool)
 	for _, value := range oldEnum.GetValues() {
 		oldValueSet[value] = true
@@ -2669,7 +2670,7 @@ func releasingCompositeAttributes(diff *schema.MetadataDiff) map[string]int {
 		if compositeDiff.Action != schema.MetadataDiffActionAlter {
 			continue
 		}
-		newAttributes := make(map[string]*storepb.CompositeTypeAttribute)
+		newAttributes := make(map[string]*metadatapb.CompositeTypeAttribute)
 		for _, attribute := range compositeDiff.NewCompositeType.GetAttributes() {
 			newAttributes[attribute.Name] = attribute
 		}
@@ -2708,7 +2709,7 @@ func writeReleasingCompositeAlters(out *strings.Builder, diff *schema.MetadataDi
 		if compositeDiff.Action != schema.MetadataDiffActionAlter {
 			continue
 		}
-		newAttributes := make(map[string]*storepb.CompositeTypeAttribute)
+		newAttributes := make(map[string]*metadatapb.CompositeTypeAttribute)
 		for _, attribute := range compositeDiff.NewCompositeType.GetAttributes() {
 			newAttributes[attribute.Name] = attribute
 		}
@@ -2773,12 +2774,12 @@ const alterAttributeAction = "ALTER ATTRIBUTE"
 // type — PostgreSQL has no online path for that change; the reviewer sees the
 // statement and the executor surfaces the error. Attribute reordering has no
 // DDL at all and only produces a warning comment.
-func writeAlterCompositeType(out *strings.Builder, schemaName string, oldComposite, newComposite *storepb.CompositeTypeMetadata, released map[string]int) error {
-	oldAttributeMap := make(map[string]*storepb.CompositeTypeAttribute)
+func writeAlterCompositeType(out *strings.Builder, schemaName string, oldComposite, newComposite *metadatapb.CompositeTypeMetadata, released map[string]int) error {
+	oldAttributeMap := make(map[string]*metadatapb.CompositeTypeAttribute)
 	for _, attribute := range oldComposite.GetAttributes() {
 		oldAttributeMap[attribute.Name] = attribute
 	}
-	newAttributeMap := make(map[string]*storepb.CompositeTypeAttribute)
+	newAttributeMap := make(map[string]*metadatapb.CompositeTypeAttribute)
 	for _, attribute := range newComposite.GetAttributes() {
 		newAttributeMap[attribute.Name] = attribute
 	}
@@ -2858,7 +2859,7 @@ func writeAlterCompositeType(out *strings.Builder, schemaName string, oldComposi
 	return nil
 }
 
-func writeAlterCompositeAttribute(out *strings.Builder, schemaName, typeName, action string, attribute *storepb.CompositeTypeAttribute) error {
+func writeAlterCompositeAttribute(out *strings.Builder, schemaName, typeName, action string, attribute *metadatapb.CompositeTypeAttribute) error {
 	typeClause := attribute.Type
 	if action == alterAttributeAction {
 		typeClause = "TYPE " + attribute.Type
@@ -2882,7 +2883,7 @@ func writeAlterCompositeAttribute(out *strings.Builder, schemaName, typeName, ac
 // old relative positions and ADD ATTRIBUTE always appends at the end, so any
 // target that deviates from that achievable order — including an attribute
 // inserted in the middle — is unreachable and warrants the warning.
-func compositeAttributesReordered(oldComposite, newComposite *storepb.CompositeTypeMetadata) bool {
+func compositeAttributesReordered(oldComposite, newComposite *metadatapb.CompositeTypeMetadata) bool {
 	oldNames := make(map[string]bool)
 	for _, attribute := range oldComposite.GetAttributes() {
 		oldNames[attribute.Name] = true

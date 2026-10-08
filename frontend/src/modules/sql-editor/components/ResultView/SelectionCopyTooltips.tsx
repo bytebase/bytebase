@@ -12,10 +12,9 @@ import { formatAsCSV, formatAsSQL, formatAsText } from "./copy-formats";
 
 // react-i18next's `Trans` wipes children when placeholder tags are empty
 // (`<action></action>` calls `React.cloneElement(component, {}, ...[])`,
-// which replaces the original children with nothing). The Vue `i18n-t`
-// preserved slot content; react-i18next doesn't. We split the localized
-// template manually at the placeholder positions so the React Buttons
-// keep their own children.
+// which replaces the original children with nothing). We split the localized
+// template manually at the placeholder positions so the Buttons keep their
+// own children.
 function splitTemplate(template: string) {
   const tokens: Array<string | "action" | "button"> = [];
   const regex = /<action><\/action>|<button><\/button>/g;
@@ -61,9 +60,9 @@ export function SelectionCopyTooltips() {
             return (
               <Button
                 key={i}
-                size="sm"
+                size="xs"
                 appearance="outline"
-                className="h-6 px-2 gap-x-1 bg-control-bg text-control border-control-border"
+                className="bg-control-bg text-control border-control-border"
                 disabled
               >
                 {isMac ? (
@@ -83,9 +82,9 @@ export function SelectionCopyTooltips() {
             return (
               <span key={i} className="inline-flex items-center">
                 <Button
-                  size="sm"
+                  size="xs"
                   variant="default"
-                  className="h-6 px-2 gap-x-1 rounded-r-none"
+                  className="rounded-r-none"
                   onClick={() => copy("selected", formatAsText)}
                 >
                   <CopyIcon className="size-3" />
@@ -97,10 +96,10 @@ export function SelectionCopyTooltips() {
                     delay={100}
                     render={
                       <Button
-                        size="sm"
+                        size="xs"
                         variant="default"
                         aria-label={t("common.copy")}
-                        className="h-6 w-5 px-0 rounded-l-none border-l border-white/30"
+                        className="rounded-l-none border-l border-accent-text/30"
                       >
                         <ChevronDownIcon className="size-3" />
                       </Button>

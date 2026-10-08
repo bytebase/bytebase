@@ -210,7 +210,7 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 		if stmt.Empty {
 			continue
 		}
-		list, err := ParsePLSQLOmni(stmt.Text)
+		list, err := ParsePLSQL(stmt.Text)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse PLSQL")
 		}

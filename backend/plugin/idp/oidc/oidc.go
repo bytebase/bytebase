@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -206,19 +208,64 @@ type OpenIDConfigurationResponse struct {
 // openidConfigResponseCache is a concurrent-safe LRU cache with TTL for OpenID Configuration responses.
 var openidConfigResponseCache = expirable.NewLRU[string, *OpenIDConfigurationResponse](128, nil, 5*time.Minute)
 
+// openidConfigFailureCache remembers issuers that just failed. GetAuthenticationInfo
+// is on the login page and the dashboard's pre-mount path, so without it an
+// unreachable issuer would spend the client timeout on every single request.
+var openidConfigFailureCache = expirable.NewLRU[string, error](128, nil, time.Minute)
+
+// openidConfigGroup collapses concurrent misses for one issuer into a single
+// fetch, so a burst of page loads against an unreachable issuer waits once
+// rather than once per request.
+var openidConfigGroup singleflight.Group
+
+// openidConfigCacheKey keys both caches. The TLS mode belongs in the key: the
+// same issuer reached with and without certificate verification is two
+// different requests, and one's failure must not answer for the other.
+func openidConfigCacheKey(issuer string, insecureSkipVerify bool) string {
+	return fmt.Sprintf("%t\x00%s", insecureSkipVerify, issuer)
+}
+
 // GetOpenIDConfiguration fetches the OpenID Configuration from the given issuer.
 func GetOpenIDConfiguration(issuer string, insecureSkipVerify bool) (*OpenIDConfigurationResponse, error) {
+	key := openidConfigCacheKey(issuer, insecureSkipVerify)
 	// Return from cache if available.
-	if config, found := openidConfigResponseCache.Get(issuer); found {
+	if config, found := openidConfigResponseCache.Get(key); found {
 		return config, nil
 	}
+	if err, found := openidConfigFailureCache.Get(key); found {
+		return nil, err
+	}
 
+	config, err, _ := openidConfigGroup.Do(key, func() (any, error) {
+		config, err := fetchOpenIDConfiguration(issuer, insecureSkipVerify)
+		if err != nil {
+			openidConfigFailureCache.Add(key, err)
+			return nil, err
+		}
+		openidConfigResponseCache.Add(key, config)
+		return config, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	response, ok := config.(*OpenIDConfigurationResponse)
+	if !ok {
+		return nil, errors.Errorf("unexpected openid configuration type %T", config)
+	}
+	return response, nil
+}
+
+func fetchOpenIDConfiguration(issuer string, insecureSkipVerify bool) (*OpenIDConfigurationResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, strings.TrimSuffix(issuer, "/")+"/.well-known/openid-configuration", nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "construct GET request")
 	}
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
+		// Reached before authentication through GetAuthenticationInfo, which the
+		// dashboard awaits before it mounts, so a blackholing issuer must not
+		// hold a page load open for long.
+		Timeout: 3 * time.Second,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: insecureSkipVerify,
@@ -244,7 +291,5 @@ func GetOpenIDConfiguration(issuer string, insecureSkipVerify bool) (*OpenIDConf
 	if err := json.Unmarshal(b, &config); err != nil {
 		return nil, errors.Wrapf(err, "unmarshal openid configuration, body: %s", string(b))
 	}
-
-	openidConfigResponseCache.Add(issuer, &config)
 	return &config, nil
 }

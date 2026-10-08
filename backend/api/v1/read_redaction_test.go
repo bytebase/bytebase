@@ -114,6 +114,7 @@ func TestRedactRoleAttributeMasksTheCredential(t *testing.T) {
 // alone: the response is a copy, and a converter that masked in place would
 // corrupt the cached instance for everything else reading it.
 func TestConvertInstanceRolesRedactsOnTheReadPath(t *testing.T) {
+	t.Parallel()
 	leaking := "GRANT ALL PRIVILEGES ON *.* TO `root`@`%` IDENTIFIED BY PASSWORD '*3D3B92F242033365AE5BC6A8E6FC3E1679F4140A' WITH GRANT OPTION"
 	stored := []*storepb.InstanceRole{
 		{Name: "root", Attribute: &leaking},
@@ -141,6 +142,7 @@ func TestConvertInstanceRolesRedactsOnTheReadPath(t *testing.T) {
 // are configuration, not a credential, and a client still has to be able to
 // list what is configured and edit it.
 func TestConvertToProjectWithholdsTheWebhookURL(t *testing.T) {
+	t.Parallel()
 	const storedURL = "https://hooks.slack.com/services/fixture-not-a-real-token"
 	project := convertToProject(&store.ProjectMessage{
 		ResourceID: "chat",

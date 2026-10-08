@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   serverInfo: { externalUrl: "https://example.com" } as
     | { externalUrl: string }
     | undefined,
-  pushNotification: vi.fn(),
+  notify: vi.fn(),
   extractProjectResourceName: vi.fn(
     (name: string) => name.split("/")[1] ?? name
   ),
@@ -30,12 +30,9 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/stores/app", () => {
-  // `notify` reuses the `pushNotification` vi.fn so the existing test
-  // assertions on `mocks.pushNotification` keep working after the migration
-  // from the Pinia helper to the app-store notification slice.
   const state = () => ({
     serverInfo: mocks.serverInfo,
-    notify: mocks.pushNotification,
+    notify: mocks.notify,
     currentUser: { email: "test@example.com" },
     getProjectByName: mocks.getProjectByName,
   });
@@ -184,7 +181,7 @@ describe("SharePopoverBody", () => {
     });
 
     expect(navigator.clipboard.writeText).toHaveBeenCalled();
-    expect(mocks.pushNotification).toHaveBeenCalledTimes(1);
+    expect(mocks.notify).toHaveBeenCalledTimes(1);
     unmount();
   });
 

@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -128,7 +128,7 @@ func (c *columRequireDefaultChecker) checkStmt(ostmt OmniStmt) {
 			Code:          code.NoDefault.Int32(),
 			Title:         c.title,
 			Content:       fmt.Sprintf("Column `%s`.`%s` doesn't have DEFAULT.", col.table, col.column),
-			StartPosition: common.ConvertANTLRLineToPosition(col.line),
+			StartPosition: base.ConvertANTLRLineToPosition(col.line),
 		})
 	}
 }

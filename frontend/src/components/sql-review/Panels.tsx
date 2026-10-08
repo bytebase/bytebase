@@ -245,7 +245,7 @@ function RuleSelectList({
   const visibleRuleList = useProgressiveRuleList(ruleList);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-y-4">
       {visibleRuleList.map((category) => (
         <div key={category.value}>
           <div className="flex my-3 items-center">
@@ -264,17 +264,19 @@ function RuleSelectList({
                 rule.engine
               );
               return (
-                <button
+                <Button
                   key={key}
                   type="button"
-                  className="w-full flex items-center gap-x-3 px-4 py-3 text-left hover:bg-control-bg/60"
+                  appearance="secondary"
+                  size="md"
+                  className="h-auto w-full justify-start gap-x-3 px-4 py-3 text-left whitespace-normal hover:bg-control-bg/60"
                   onClick={() => onToggleRule(rule)}
                 >
                   <Checkbox
                     checked={selectedRuleKeys.has(key)}
                     onCheckedChange={() => onToggleRule(rule)}
                   />
-                  <span className="flex-1 text-sm text-control">
+                  <span className="min-w-0 flex-1 break-words text-sm text-control">
                     {loc.title}
                   </span>
                   <a
@@ -286,7 +288,7 @@ function RuleSelectList({
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>
-                </button>
+                </Button>
               );
             })}
           </div>

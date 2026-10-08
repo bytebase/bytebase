@@ -33,9 +33,7 @@ const cacheKey = (metadataName: string, filter: string, limit: number) =>
 // Module-level singleton placeholders for not-found lookups. Reusing the
 // same reference keeps `useAppStore((s) => s.getXxxMetadata(...))`
 // selectors stable across renders so React's `Object.is` check doesn't
-// fire on every unrelated store update. The legacy Pinia store created a
-// fresh proto each call, but its Vue-reactivity bridge papered over the
-// resulting instability.
+// fire on every unrelated store update.
 const EMPTY_TABLE_METADATA: TableMetadata = createProto(
   TableMetadataSchema,
   {}

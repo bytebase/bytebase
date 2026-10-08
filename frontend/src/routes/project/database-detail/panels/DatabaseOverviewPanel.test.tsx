@@ -100,7 +100,7 @@ vi.mock("@/app/router", async (importOriginal) => ({
   }),
 }));
 
-// The component (and its children `DatabaseObjectExplorer`, `TableDetailDialog`,
+// The component (and its children `DatabaseObjectExplorer`, `TableDetailSheet`,
 // `TableMetadataTable`) now read dbSchema getters plus the former
 // setting/subscription store methods via the app store. Merge the
 // setting/subscription mocks into the `mocks.dbSchemaStore` shape so the
@@ -143,13 +143,28 @@ vi.mock("@/stores/app/databaseCatalog", () => ({
   getTableCatalog: mocks.getTableCatalog,
 }));
 
+// A rendering that never changes on its own, which is every reading this
+// panel shows.
+const fixedReading = (read: (ms: number) => string) => ({
+  read,
+  nextChangeAt: () => Number.POSITIVE_INFINITY,
+});
+
+vi.mock("@/utils/datetime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/datetime")>()),
+  queueTimeReading: fixedReading(mocks.formatRelativeTime),
+  relativeTimeReading: fixedReading(mocks.formatRelativeTime),
+  compactTimeReading: fixedReading(mocks.formatAbsoluteDateTime),
+  operationalTimeReading: fixedReading(mocks.formatAbsoluteDateTime),
+  absoluteTimeReading: fixedReading(mocks.formatAbsoluteDateTime),
+  formatAbsoluteDateTime: mocks.formatAbsoluteDateTime,
+}));
+
 vi.mock("@/utils", () => ({
   bytesToString: mocks.bytesToString,
   getDatabaseEngine: mocks.getDatabaseEngine,
   getInstanceResource: mocks.getInstanceResource,
   getDatabaseProject: mocks.getDatabaseProject,
-  formatRelativeTime: mocks.formatRelativeTime,
-  formatAbsoluteDateTime: mocks.formatAbsoluteDateTime,
   hasIndexSizeProperty: mocks.hasIndexSizeProperty,
   isDev: mocks.isDev,
   hasProjectPermissionV2: mocks.hasProjectPermissionV2,
@@ -227,6 +242,38 @@ vi.mock("@/components/ui/dialog", () => ({
     <div>{children}</div>
   ),
   DialogTitle: ({ children }: { children: React.ReactNode }) => (
+    <h1>{children}</h1>
+  ),
+}));
+
+vi.mock("@/components/ui/sheet", () => ({
+  Sheet: ({
+    open,
+    onOpenChange,
+    children,
+  }: {
+    open: boolean;
+    onOpenChange?: (open: boolean) => void;
+    children: React.ReactNode;
+  }) =>
+    open ? (
+      <div data-testid="sheet-root">
+        <button type="button" onClick={() => onOpenChange?.(false)}>
+          close-sheet
+        </button>
+        {children}
+      </div>
+    ) : null,
+  SheetBody: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  SheetContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  SheetHeader: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  SheetTitle: ({ children }: { children: React.ReactNode }) => (
     <h1>{children}</h1>
   ),
 }));
@@ -612,11 +659,11 @@ describe("DatabaseOverviewPanel", () => {
 
     expect(container.textContent).toContain("orders");
     expect(
-      container.querySelector('[data-testid="dialog-root"]')
+      container.querySelector('[data-testid="sheet-root"]')
     ).not.toBeNull();
 
     const closeButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "close-dialog"
+      (button) => button.textContent === "close-sheet"
     );
     expect(closeButton).toBeTruthy();
     clickElement(closeButton as HTMLButtonElement);

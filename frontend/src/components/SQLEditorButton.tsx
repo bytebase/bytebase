@@ -25,6 +25,7 @@ export type SQLEditorButtonProps = Omit<
     label?: ReactNode;
     openInNewTab?: boolean;
     disabled?: boolean;
+    query?: Record<string, string>;
   };
 
 export function SQLEditorButton({
@@ -33,6 +34,7 @@ export function SQLEditorButton({
   label,
   openInNewTab = false,
   disabled = false,
+  query,
   appearance,
   size,
   variant,
@@ -47,47 +49,48 @@ export function SQLEditorButton({
   const accessibleLabel =
     ariaLabel ?? (typeof label === "string" ? label : defaultLabel);
   const to = useMemo(() => {
+    let target;
     if (database) {
-      return autoSQLEditorDatabaseRoute(database);
-    }
-    if (project) {
-      return {
+      target = autoSQLEditorDatabaseRoute(database);
+    } else if (project) {
+      target = {
         name: SQL_EDITOR_PROJECT_MODULE,
         params: {
           project: extractProjectResourceName(project.name),
         },
       };
+    } else {
+      const projectId = getRouteParam(
+        route.params.projectId ?? route.params.project
+      );
+      const instanceId = getRouteParam(
+        route.params.instanceId ?? route.params.instance
+      );
+      const databaseName = getRouteParam(
+        route.params.databaseName ?? route.params.database
+      );
+      if (projectId && instanceId && databaseName) {
+        target = {
+          name: SQL_EDITOR_DATABASE_MODULE,
+          params: {
+            project: projectId,
+            instance: instanceId,
+            database: databaseName,
+          },
+        };
+      } else if (projectId) {
+        target = {
+          name: SQL_EDITOR_PROJECT_MODULE,
+          params: {
+            project: projectId,
+          },
+        };
+      } else {
+        target = { name: SQL_EDITOR_HOME_MODULE };
+      }
     }
-
-    const projectId = getRouteParam(
-      route.params.projectId ?? route.params.project
-    );
-    const instanceId = getRouteParam(
-      route.params.instanceId ?? route.params.instance
-    );
-    const databaseName = getRouteParam(
-      route.params.databaseName ?? route.params.database
-    );
-    if (projectId && instanceId && databaseName) {
-      return {
-        name: SQL_EDITOR_DATABASE_MODULE,
-        params: {
-          project: projectId,
-          instance: instanceId,
-          database: databaseName,
-        },
-      };
-    }
-    if (projectId) {
-      return {
-        name: SQL_EDITOR_PROJECT_MODULE,
-        params: {
-          project: projectId,
-        },
-      };
-    }
-    return { name: SQL_EDITOR_HOME_MODULE };
-  }, [database, project, route.params]);
+    return query ? { ...target, query } : target;
+  }, [database, project, query, route.params]);
 
   return (
     <RouterLink

@@ -112,7 +112,7 @@ func (s *AuthService) ResetPassword(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
 	}
-	common.SetAuditWorkspaceID(ctx, workspaceID)
+	setAuditWorkspaceID(ctx, workspaceID)
 	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
 	if err != nil {
 		return nil, err
@@ -329,7 +329,7 @@ func (s *AuthService) parseAndSetAuditWorkspace(ctx context.Context, email strin
 		})
 		if accountErr == nil && account != nil && account.Type == storepb.PrincipalType_END_USER && !account.MemberDeleted &&
 			workspaceErr == nil && workspace != nil {
-			common.SetAuditWorkspaceID(ctx, workspace.ResourceID)
+			setAuditWorkspaceID(ctx, workspace.ResourceID)
 		}
 	}
 	return workspaceID, nil
@@ -394,6 +394,14 @@ type emailCodeTemplate struct {
 	BodyFmt string
 }
 
+// eligibleForPasswordReset reports whether a reset code may be mailed for an
+// account: only a live end user has a password to reset. A missing, deleted
+// or non-human account is skipped silently, so the reset flow never confirms
+// which addresses exist.
+func eligibleForPasswordReset(account *store.AccountMessage) bool {
+	return account != nil && account.Type == storepb.PrincipalType_END_USER && !account.MemberDeleted
+}
+
 // sendEmailVerificationCode is package-level because both AuthService (login
 // and password-reset codes) and UserService (the re-authentication code) send
 // them; the deps it needs are passed rather than reached through a receiver.
@@ -405,7 +413,7 @@ func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret,
 		if err != nil {
 			return errors.Wrap(err, "failed to look up account for password reset")
 		}
-		if account == nil || account.Type != storepb.PrincipalType_END_USER || account.MemberDeleted {
+		if !eligibleForPasswordReset(account) {
 			return nil // silent: account doesn't exist
 		}
 	}

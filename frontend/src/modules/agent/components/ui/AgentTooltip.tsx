@@ -20,27 +20,28 @@ export function AgentTooltip({
   }
 
   return (
-    <BaseTooltip.Provider delay={delayDuration}>
-      <BaseTooltip.Root>
-        <BaseTooltip.Trigger render={<span className="inline-flex" />}>
-          {children}
-        </BaseTooltip.Trigger>
-        <BaseTooltip.Portal container={getLayerRoot("agent")}>
-          <BaseTooltip.Positioner
-            side={side}
-            sideOffset={4}
-            className={LAYER_SURFACE_CLASS}
+    <BaseTooltip.Root>
+      <BaseTooltip.Trigger
+        delay={delayDuration}
+        render={<span className="inline-flex" />}
+      >
+        {children}
+      </BaseTooltip.Trigger>
+      <BaseTooltip.Portal container={getLayerRoot("agent")}>
+        <BaseTooltip.Positioner
+          side={side}
+          sideOffset={4}
+          className={LAYER_SURFACE_CLASS}
+        >
+          <BaseTooltip.Popup
+            data-agent-tooltip-content
+            className="max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md"
           >
-            <BaseTooltip.Popup
-              data-agent-tooltip-content
-              className="max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md"
-            >
-              {content}
-              <BaseTooltip.Arrow className="fill-main" />
-            </BaseTooltip.Popup>
-          </BaseTooltip.Positioner>
-        </BaseTooltip.Portal>
-      </BaseTooltip.Root>
-    </BaseTooltip.Provider>
+            {content}
+            <BaseTooltip.Arrow className="fill-main" />
+          </BaseTooltip.Popup>
+        </BaseTooltip.Positioner>
+      </BaseTooltip.Portal>
+    </BaseTooltip.Root>
   );
 }

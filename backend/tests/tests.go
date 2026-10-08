@@ -10,10 +10,12 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"testing"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
 	"golang.org/x/net/http2"
 	"google.golang.org/grpc/codes"
@@ -114,6 +116,8 @@ type controller struct {
 	serviceAccountServiceClient   v1connect.ServiceAccountServiceClient
 	workloadIdentityServiceClient v1connect.WorkloadIdentityServiceClient
 	accessGrantServiceClient      v1connect.AccessGrantServiceClient
+	identityProviderServiceClient v1connect.IdentityProviderServiceClient
+	instanceRoleServiceClient     v1connect.InstanceRoleServiceClient
 
 	project *v1pb.Project
 
@@ -148,6 +152,73 @@ func getTestDatabaseString() string {
 	p := nextDatabaseNumber
 	nextDatabaseNumber++
 	return fmt.Sprintf("bbtest%d", p)
+}
+
+var (
+	sharedServerOnce sync.Once
+	sharedServerCtl  *controller
+	sharedServerErr  error
+)
+
+// sharedServer boots the package's one server, on the first test that asks for
+// it; startMain shuts it down.
+func sharedServer(t *testing.T) *controller {
+	t.Helper()
+	sharedServerOnce.Do(func() {
+		ctl := &controller{}
+		if _, err := ctl.StartServerWithExternalPg(context.Background()); err != nil {
+			sharedServerErr = err
+			return
+		}
+		sharedServerCtl = ctl
+	})
+	require.NoError(t, sharedServerErr)
+	return sharedServerCtl
+}
+
+// startWorkspace gives the test a server, and so a workspace, of its own. Use it
+// when the test writes what the workspace shares — a setting, a workspace or
+// environment policy, the license, the IAM policy, a workspace-scoped ID, the
+// demo principal's credentials — or asserts on a workspace-wide list.
+func startWorkspace(ctx context.Context, t *testing.T) (*controller, context.Context) {
+	t.Helper()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = ctl.Close(ctx) })
+	return ctl, ctx
+}
+
+// startProject gives the test a project of its own on that server. Project is
+// Bytebase's tenancy boundary, so it is the test boundary here too: the server,
+// workspace, license and environments are built once, not once per test.
+func startProject(ctx context.Context, t *testing.T) (*controller, context.Context) {
+	t.Helper()
+	base := sharedServer(t)
+
+	ctl := &controller{
+		server:   base.server,
+		profile:  base.profile,
+		client:   base.client,
+		rootURL:  base.rootURL,
+		apiURL:   base.apiURL,
+		v1APIURL: base.v1APIURL,
+	}
+	ctl.newClients()
+	ctl.authInterceptor.token = base.authInterceptor.token
+	ctl.principalName = base.principalName
+
+	projectID := generateRandomString("project")
+	resp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		Project: &v1pb.Project{
+			Title:             projectID,
+			AllowSelfApproval: true,
+		},
+		ProjectId: projectID,
+	}))
+	require.NoError(t, err)
+	ctl.project = resp.Msg
+	return ctl, ctx
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
@@ -275,10 +346,28 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 		},
 	}
 
+	ctl.newClients()
+
+	if err := ctl.waitForHealthz(ctx); err != nil {
+		return nil, errors.Wrap(err, "failed to wait for healthz")
+	}
+	authToken, err := ctl.signupAndLogin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ctl.authInterceptor.token = authToken
+
+	return ctx, nil
+}
+
+// newClients builds the controller's service clients over an auth interceptor
+// of its own. A test that logs in as another principal moves only its own
+// token, which is what lets several controllers share one server.
+func (ctl *controller) newClients() {
 	ctl.authInterceptor = &authInterceptor{}
 	interceptors := connect.WithInterceptors(ctl.authInterceptor)
 
-	baseURL := "http://localhost:" + fmt.Sprintf("%d", port)
+	baseURL := ctl.rootURL
 	ctl.issueServiceClient = v1connect.NewIssueServiceClient(ctl.client, baseURL, interceptors)
 	ctl.rolloutServiceClient = v1connect.NewRolloutServiceClient(ctl.client, baseURL, interceptors)
 	ctl.planServiceClient = v1connect.NewPlanServiceClient(ctl.client, baseURL, interceptors)
@@ -288,6 +377,8 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.projectServiceClient = v1connect.NewProjectServiceClient(ctl.client, baseURL, interceptors)
 	ctl.databaseGroupServiceClient = v1connect.NewDatabaseGroupServiceClient(ctl.client, baseURL, interceptors)
 	ctl.authServiceClient = v1connect.NewAuthServiceClient(ctl.client, baseURL, interceptors)
+	ctl.identityProviderServiceClient = v1connect.NewIdentityProviderServiceClient(ctl.client, baseURL, interceptors)
+	ctl.instanceRoleServiceClient = v1connect.NewInstanceRoleServiceClient(ctl.client, baseURL, interceptors)
 	ctl.userServiceClient = v1connect.NewUserServiceClient(ctl.client, baseURL, interceptors)
 	ctl.settingServiceClient = v1connect.NewSettingServiceClient(ctl.client, baseURL, interceptors)
 	ctl.instanceServiceClient = v1connect.NewInstanceServiceClient(ctl.client, baseURL, interceptors)
@@ -308,17 +399,6 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.serviceAccountServiceClient = v1connect.NewServiceAccountServiceClient(ctl.client, baseURL, interceptors)
 	ctl.workloadIdentityServiceClient = v1connect.NewWorkloadIdentityServiceClient(ctl.client, baseURL, interceptors)
 	ctl.accessGrantServiceClient = v1connect.NewAccessGrantServiceClient(ctl.client, baseURL, interceptors)
-
-	if err := ctl.waitForHealthz(ctx); err != nil {
-		return nil, errors.Wrap(err, "failed to wait for healthz")
-	}
-	authToken, err := ctl.signupAndLogin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ctl.authInterceptor.token = authToken
-
-	return ctx, nil
 }
 
 func (ctl *controller) waitForHealthz(ctx context.Context) error {
@@ -330,7 +410,7 @@ func (ctl *controller) waitForHealthz(ctx context.Context) error {
 	for {
 		select {
 		case <-ticker.C:
-			_, err := ctl.authServiceClient.GetAuthenticationRestriction(ctx, &connect.Request[v1pb.GetAuthenticationRestrictionRequest]{})
+			_, err := ctl.authServiceClient.GetAuthenticationInfo(ctx, &connect.Request[v1pb.GetAuthenticationInfoRequest]{})
 			if err != nil && status.Code(err) == codes.Unavailable {
 				continue
 			}
@@ -347,6 +427,11 @@ func (ctl *controller) waitForHealthz(ctx context.Context) error {
 // Close closes long running resources.
 func (ctl *controller) Close(ctx context.Context) error {
 	var e error
+	// Drop the client's idle HTTP/2 connection before shutting the server down.
+	// Otherwise httpServer.Shutdown waits out the idle connection, ~1s per test.
+	if ctl.client != nil {
+		ctl.client.CloseIdleConnections()
+	}
 	if ctl.server != nil {
 		if err := ctl.server.Shutdown(ctx); err != nil {
 			e = multierr.Append(e, err)
@@ -356,40 +441,52 @@ func (ctl *controller) Close(ctx context.Context) error {
 }
 
 // signupAndLogin will signup and login as user demo@example.com.
-// addMemberToWorkspaceIAM adds a member as workspace role to the current workspace.
+// addMemberToWorkspaceIAM adds a member as workspace role to the current
+// workspace. The policy is a single row behind an etag, so two tests granting
+// at once make one of them lose; re-read and re-apply, rather than making every
+// test that grants take a workspace of its own.
 func (ctl *controller) addMemberToWorkspaceIAM(ctx context.Context, workspace, member, role string) (*v1pb.IamPolicy, error) {
-	policyResp, err := ctl.workspaceServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
-		Resource: workspace,
-	}))
-	if err != nil {
-		return nil, err
-	}
-
-	policy := policyResp.Msg
-	found := false
-	for _, binding := range policy.Bindings {
-		if binding.Role == role {
-			binding.Members = append(binding.Members, member)
-			found = true
-			break
+	var conflict error
+	for range 20 {
+		policyResp, err := ctl.workspaceServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+			Resource: workspace,
+		}))
+		if err != nil {
+			return nil, err
 		}
-	}
-	if !found {
-		policy.Bindings = append(policy.Bindings, &v1pb.Binding{
-			Role:    role,
-			Members: []string{member},
-		})
-	}
 
-	updated, err := ctl.workspaceServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
-		Etag:     policy.Etag,
-		Policy:   policy,
-		Resource: workspace,
-	}))
-	if err != nil {
-		return nil, err
+		policy := policyResp.Msg
+		found := false
+		for _, binding := range policy.Bindings {
+			if binding.Role == role {
+				binding.Members = append(binding.Members, member)
+				found = true
+				break
+			}
+		}
+		if !found {
+			policy.Bindings = append(policy.Bindings, &v1pb.Binding{
+				Role:    role,
+				Members: []string{member},
+			})
+		}
+
+		updated, err := ctl.workspaceServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+			Etag:     policy.Etag,
+			Policy:   policy,
+			Resource: workspace,
+		}))
+		if err != nil {
+			if connect.CodeOf(err) != connect.CodeAborted {
+				return nil, err
+			}
+			conflict = err
+			time.Sleep(50 * time.Millisecond)
+			continue
+		}
+		return updated.Msg, nil
 	}
-	return updated.Msg, nil
+	return nil, conflict
 }
 
 func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {

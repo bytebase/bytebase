@@ -12,31 +12,39 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const {
+  mockUseProductIntro,
   mockPushNotification,
   mockUpdateProjectIamPolicy,
   maximumRoleExpirationSeconds,
   maximumRequestExpirationSeconds,
+  accountSelectProps,
 } = vi.hoisted(() => ({
+  mockUseProductIntro: vi.fn(),
   mockPushNotification: vi.fn(),
   mockUpdateProjectIamPolicy: vi.fn(),
   maximumRoleExpirationSeconds: { value: undefined as number | undefined },
   maximumRequestExpirationSeconds: { value: undefined as number | undefined },
+  accountSelectProps: { value: undefined as { accountParents: string[] } | undefined },
 }));
 
 vi.mock("@/components/AccountMultiSelect", () => ({
   AccountMultiSelect: ({
     onChange,
+    accountParents,
   }: {
     onChange: (members: string[]) => void;
-  }) =>
-    createElement(
+    accountParents: string[];
+  }) => {
+    accountSelectProps.value = { accountParents };
+    return createElement(
       "button",
       {
         "data-testid": "account-select",
         onClick: () => onChange(["user:dev1@example.com"]),
       },
       "select account"
-    ),
+    );
+  },
 }));
 
 vi.mock("@/components/DatabaseResourceSelector", () => ({
@@ -44,10 +52,9 @@ vi.mock("@/components/DatabaseResourceSelector", () => ({
     createElement("div", { "data-testid": "database-resource-selector" }),
 }));
 
-vi.mock("@/components/EnvironmentSelect", () => ({
-  EnvironmentSelect: () =>
-    createElement("div", { "data-testid": "environment-multi-select" }),
-}));
+vi.mock("@/components/EnvironmentSelect", async () =>
+  (await import("@/test-utils/environmentSelectStub")).environmentSelectStub()
+);
 
 vi.mock("@/components/ExprEditor", () => ({
   ExprEditor: () => createElement("div", { "data-testid": "expr-editor" }),
@@ -85,8 +92,25 @@ vi.mock("@/components/RoleSelect", () => ({
     }),
 }));
 
-vi.mock("@/components/role-grant/DDLWarningCallout", () => ({
-  DDLWarningCallout: () => null,
+vi.mock("@/components/role-grant/DirectExecutionCallout", () => ({
+  DirectExecutionCallout: ({
+    lead,
+    scope,
+  }: {
+    lead: string;
+    scope: { type: string; environments?: string[] };
+  }) =>
+    createElement("div", {
+      "data-testid": "direct-execution-callout",
+      "data-lead": lead,
+      "data-scope": scope.type,
+      "data-envs": scope.environments?.join(",") ?? "",
+    }),
+}));
+
+vi.mock("@/lib/role", () => ({
+  displayRoleTitleFromList: (role: string) => role,
+  displayRoleDescriptionFromList: (role: string) => `DESC(${role})`,
 }));
 
 vi.mock("@/components/UserCell", () => ({
@@ -117,10 +141,16 @@ vi.mock("@/components/ui/button", () => ({
     onClick,
     variant: _variant,
     size: _size,
+    ...props
   }: ButtonHTMLAttributes<HTMLButtonElement> & {
     size?: string;
     variant?: string;
-  }) => createElement("button", { disabled, onClick }, children),
+  }) => createElement("button", { ...props, disabled, onClick }, children),
+}));
+
+vi.mock("@/lib/productIntro", () => ({
+  GRANT_ACCESS_PRODUCT_INTRO: "grant-access",
+  useProductIntro: mockUseProductIntro,
 }));
 
 vi.mock("@/components/ui/checkbox", () => ({
@@ -189,6 +219,7 @@ vi.mock("@/hooks/useEscapeKey", () => ({
 
 vi.mock("@/lib/project-member/utils", () => ({
   getRoleEnvironmentLimitationKind: vi.fn(() => undefined),
+  getRolesEnvironmentLimitationKind: vi.fn(() => undefined),
   roleHasDatabaseLimitation: vi.fn((role: string) =>
     role.includes("sqlEditor")
   ),
@@ -258,6 +289,7 @@ vi.mock("@/utils/cel-attributes", () => ({
 vi.mock("@/utils/issue/cel", () => ({
   buildConditionExpr: (args: Record<string, unknown>) => ({ ...args }),
   convertFromExpr: () => ({}),
+  readableCondition: () => ({}),
   stringifyConditionExpression: () => "",
 }));
 
@@ -286,6 +318,8 @@ vi.mock("@/hooks/useAppState", () => ({
     email: "me@example.com",
     name: "users/me@example.com",
   }),
+  useEnvironmentList: () => [],
+  usePlanFeature: () => true,
 }));
 
 vi.mock("@/stores/app", () => {
@@ -303,7 +337,6 @@ vi.mock("@/stores/app", () => {
     getProjectIamPolicy: () => projectIamPolicy,
     updateProjectIamPolicy: mockUpdateProjectIamPolicy,
     loadProjectIamPolicy: vi.fn(async () => undefined),
-    // Project store methods, migrated off the Pinia useProjectV1Store mock.
     projectsByName: {},
     getProjectByName: (name: string) => ({
       allowRequestRole: true,
@@ -311,8 +344,8 @@ vi.mock("@/stores/app", () => {
       permissions: ["bb.projects.setIamPolicy"],
       state: 1,
     }),
-    // Migrated off the Pinia actuator/setting/subscription store mocks.
     isSaaSMode: () => false,
+    workspaceResourceName: () => "workspaces/default",
     userCountInIam: () => 1,
     userCountLimit: () => 10,
     hasFeature: () => true,
@@ -336,10 +369,6 @@ vi.mock("@/stores/app", () => {
   return { useAppStore };
 });
 
-vi.mock("./MemberBindingEnvironmentBanner", () => ({
-  MemberBindingEnvironmentBanner: () => null,
-}));
-
 vi.mock("./MemberDatabaseResourceName", () => ({
   MemberDatabaseResourceName: () => null,
 }));
@@ -349,6 +378,11 @@ vi.mock("@/modules/access-control/RequestRoleSheet", () => ({
 }));
 
 import { buildCELExpr } from "@/modules/cel";
+import {
+  getRoleEnvironmentLimitationKind,
+  getRolesEnvironmentLimitationKind,
+} from "@/lib/project-member/utils";
+import { directExecutionDriver } from "@/test-utils/directExecutionDriver";
 import { nativeChange } from "@/test-utils/nativeChange";
 import { MembersPage } from "./MembersPage";
 
@@ -359,6 +393,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   maximumRoleExpirationSeconds.value = undefined;
   maximumRequestExpirationSeconds.value = undefined;
+  accountSelectProps.value = undefined;
   projectIamPolicy.bindings = [];
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -379,6 +414,13 @@ async function renderPage(): Promise<void> {
   });
 }
 
+async function renderWorkspacePage(): Promise<void> {
+  await act(async () => {
+    root.render(createElement(MembersPage));
+    await Promise.resolve();
+  });
+}
+
 async function flush(): Promise<void> {
   await act(async () => {
     await Promise.resolve();
@@ -387,6 +429,23 @@ async function flush(): Promise<void> {
 }
 
 describe("MembersPage project role grant drawer", () => {
+  it("provides workspace and project parents to the account selector", async () => {
+    await renderPage();
+
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      grantButton.click();
+    });
+    await flush();
+
+    expect(accountSelectProps.value?.accountParents).toEqual([
+      "workspaces/default",
+      "projects/sample-project",
+    ]);
+  });
+
   it("uses maximum role expiration instead of request expiration for direct role grants", async () => {
     maximumRequestExpirationSeconds.value = 30 * 24 * 60 * 60;
 
@@ -536,5 +595,164 @@ describe("MembersPage project role grant drawer", () => {
       title: "project.members.request-role.failed-to-build-expression",
     });
     expect(mockUpdateProjectIamPolicy).not.toHaveBeenCalled();
+  });
+});
+
+describe("MembersPage direct DDL/DML execution", () => {
+  const isDdlRole = (role: string) =>
+    role === "roles/sqlEditorUser" ? "DDL/DML" : undefined;
+  beforeEach(() => {
+    vi.mocked(getRoleEnvironmentLimitationKind).mockImplementation(isDdlRole);
+    vi.mocked(getRolesEnvironmentLimitationKind).mockImplementation(
+      (roles: string[]) =>
+        roles.map(isDdlRole).find((kind) => kind !== undefined)
+    );
+  });
+  afterEach(() => {
+    // Back to the module mock's `() => undefined`.
+    vi.mocked(getRoleEnvironmentLimitationKind).mockReset();
+    vi.mocked(getRolesEnvironmentLimitationKind).mockReset();
+  });
+  async function clickGrantAccess(): Promise<void> {
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      grantButton.click();
+    });
+    await flush();
+  }
+  async function openGrantDrawerWithRole(role: string): Promise<void> {
+    await renderPage();
+    await clickGrantAccess();
+    await act(async () => {
+      (
+        container.querySelector(
+          "[data-testid='account-select']"
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await selectRole(role);
+  }
+  const field = directExecutionDriver(flush);
+  async function selectRole(role: string): Promise<void> {
+    await act(async () => {
+      nativeChange(
+        container.querySelector(
+          "[data-testid='role-select']"
+        ) as HTMLInputElement,
+        role
+      );
+    });
+    await flush();
+  }
+  function getCreateButton(): HTMLButtonElement {
+    return [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.create"
+    ) as HTMLButtonElement;
+  }
+  async function clickCreate(): Promise<void> {
+    await act(async () => {
+      getCreateButton().click();
+    });
+    await flush();
+  }
+  function savedEnvironments(): string[] | undefined {
+    expect(mockUpdateProjectIamPolicy).toHaveBeenCalledTimes(1);
+    const policy = mockUpdateProjectIamPolicy.mock.calls[0][1] as {
+      bindings: { condition: { environments?: string[] } }[];
+    };
+    return policy.bindings.at(-1)?.condition.environments;
+  }
+
+  it("shows the role's description under the select", async () => {
+    await openGrantDrawerWithRole("roles/sqlEditorUser");
+    expect(container.textContent).toContain("DESC(roles/sqlEditorUser)");
+  });
+
+  it("off by default hands the condition builder the empty list, as the old empty picker did", async () => {
+    await openGrantDrawerWithRole("roles/sqlEditorUser");
+    expect(field.getSwitch().getAttribute("aria-checked")).toBe("false");
+    expect(container.textContent).toContain(
+      "project.members.direct-execution.none"
+    );
+    expect(container.querySelector("[data-testid='env-multi-select']")).toBeNull();
+    await clickCreate();
+    expect(savedEnvironments()).toEqual([]);
+  });
+
+  it("on with nothing picked cannot be created", async () => {
+    await openGrantDrawerWithRole("roles/sqlEditorUser");
+    await field.toggle();
+    expect(container.textContent).toContain(
+      "project.members.direct-execution.environment-required"
+    );
+    expect(getCreateButton().disabled).toBe(true);
+  });
+
+  it("on with a pick writes the picked list and shows the grant lead", async () => {
+    await openGrantDrawerWithRole("roles/sqlEditorUser");
+    await field.toggle();
+    await field.pickStaging();
+    const callout = container.querySelector(
+      "[data-testid='direct-execution-callout']"
+    ) as HTMLElement;
+    expect(callout.getAttribute("data-lead")).toBe("grant");
+    expect(callout.getAttribute("data-envs")).toBe("environments/staging");
+    expect(getCreateButton().disabled).toBe(false);
+    await clickCreate();
+    expect(savedEnvironments()).toEqual(["environments/staging"]);
+  });
+
+  it("a role change turns the switch off", async () => {
+    await openGrantDrawerWithRole("roles/sqlEditorUser");
+    await field.toggle();
+    expect(field.getSwitch().getAttribute("aria-checked")).toBe("true");
+    await selectRole("roles/projectOwner");
+    expect(field.getSwitch()).toBeNull();
+    await selectRole("roles/sqlEditorUser");
+    expect(field.getSwitch().getAttribute("aria-checked")).toBe("false");
+    expect(container.textContent).not.toContain(
+      "project.members.direct-execution.environment-required"
+    );
+  });
+
+  it("the workspace sheet says an unscoped grant runs everywhere, for a role that carries the permission", async () => {
+    await renderWorkspacePage();
+    await clickGrantAccess();
+    const callout = () =>
+      container.querySelector("[data-testid='direct-execution-callout']");
+    expect(callout()).toBeNull();
+    await selectRole("roles/projectViewer");
+    expect(callout()).toBeNull();
+    await selectRole("roles/sqlEditorUser");
+    expect(callout()?.getAttribute("data-lead")).toBe("binding");
+    expect(callout()?.getAttribute("data-scope")).toBe("all");
+  });
+});
+
+describe("MembersPage onboarding intro", () => {
+  it("binds Grant Access only on the editable workspace page", async () => {
+    await renderWorkspacePage();
+
+    expect(mockUseProductIntro).toHaveBeenCalledWith({
+      id: "grant-access",
+      title: "workspace-setup-guide.intro.grant-access-title",
+      description: "workspace-setup-guide.intro.grant-access-description",
+      disabled: false,
+    });
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    );
+    expect(grantButton).toHaveAttribute(
+      "data-product-intro-target",
+      "grant-access"
+    );
+
+    mockUseProductIntro.mockClear();
+    await renderPage();
+    expect(mockUseProductIntro).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "grant-access", disabled: true })
+    );
   });
 });

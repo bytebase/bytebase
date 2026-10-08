@@ -32,7 +32,7 @@ func parsePLSQLStatement(statement string) *base.SyntaxError {
 		statement += ";"
 	}
 
-	if _, err := ParsePLSQLOmni(statement); err != nil {
+	if _, err := ParsePLSQL(statement); err != nil {
 		var syntaxErr *base.SyntaxError
 		if errors.As(convertOmniError(err, base.Statement{Text: statement}), &syntaxErr) {
 			return syntaxErr

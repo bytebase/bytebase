@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -23,11 +23,9 @@ import (
 // the read into another workspace, another resource type, or — worst — another
 // policy type, whose payload would then be unmarshalled as an IamPolicy.
 func TestListProjectIamPoliciesIsScoped(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-a'), ('ws-b');
 		INSERT INTO project (resource_id, workspace, name) VALUES
@@ -37,14 +35,6 @@ func TestListProjectIamPoliciesIsScoped(t *testing.T) {
 			('other-workspace', 'ws-b', 'Other workspace');
 	`)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 
 	iamPayload := func(role string) string {
 		return fmt.Sprintf(`{"bindings":[{"role":%q,"members":["users/c@example.com"]}]}`, role)

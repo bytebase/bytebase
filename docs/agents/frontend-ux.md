@@ -161,6 +161,10 @@ Use semantic utilities backed by CSS custom properties:
 Do not choose a dialog merely because the implementation is smaller. Choose the
 surface from task complexity, user context, and expected navigation.
 
+### Dialog Defaults
+
+- **Dialog sizing contract** — `DialogContent` and `AlertDialogContent` are padded (`p-6`) by default; don't add inner padding wrappers, and override with `p-*` on the content element when needed. `DialogContent` defaults to a wide content size (`max-w-[max(48rem,55vw)]`); pass `max-w-*` (and `w-*` if needed) for smaller dialogs. Keep component defaults free of responsive variants like `2xl:max-w-*` — tailwind-merge can't replace them with a caller's unprefixed utility, so they silently win on wide screens.
+
 ## Form Workflows
 
 ### Shared Form Anatomy
@@ -189,6 +193,76 @@ behavior:
   toast or a disabled button to explain invalid input.
 - Required fields, disabled state, pending state, and server errors MUST remain
   understandable without color alone.
+
+### Choice Controls
+
+- Choose the control from the decision, not merely the number of options.
+  First ask whether users need to see the alternatives together to understand
+  or compare the choice. If they do, use a visible `RadioGroup`; if they do
+  not, use `Select` to keep the form compact. A small option count alone does
+  not make either control correct.
+- Use the shared `Switch` for one stateful binary setting, regardless of
+  whether the surrounding form saves it immediately or later. Its label names
+  the enabled behavior or state, such as "Use SSH tunnel", "Production
+  environment", or "Sync all databases". The off state MUST have a clear,
+  meaningful result.
+- Use `Checkbox` for selection or acknowledgement: selecting one or more
+  items, including an optional item in a submission, accepting terms, or
+  confirming a destructive action. A grouped set of independent requirements,
+  such as password-character requirements, MAY also use checkboxes. Do not use
+  a single checkbox for a standalone enabled or disabled setting.
+- Use `RadioGroup` for a small set of peer values where users need to compare
+  the alternatives, their descriptions, consequences, or availability. Use
+  choice-card styling when that supporting context matters, such as onboarding
+  goals, cancellation reasons, access scope, and security modes.
+- Do not replace a consequential first-step choice with a dropdown solely
+  because it has a small number of options. For example, identity-provider
+  types need visible descriptions and feature availability so users can choose
+  the integration model before they enter a configuration flow.
+- Use the shared `Select` dropdown for many, familiar, or low-context mutually
+  exclusive options where compactness is more useful than comparison, such as
+  themes, export formats, environments, and webhook destinations. It MAY also
+  be used for two peer values when space is constrained and comparison is
+  unnecessary.
+- Do not use `SegmentedControl` for ordinary form values. Reserve it for
+  compact view or mode controls outside forms.
+
+### Dense Horizontal Forms
+
+Multi-option connection forms MAY use horizontal fields through shared form
+primitives. Keep section headings above their fields rather than adding a
+third column for section titles.
+
+- Use a consistent label column and a flexible control column. Keep ordinary
+  controls at `md`; recover space through layout and progressive disclosure.
+- Stack labels based on available form width, independently of the navigation
+  sidebar breakpoint. Compound controls MAY wrap within the control column
+  before the field itself stacks.
+- Keep concise descriptions and validation beside the control they explain.
+  Long secondary guidance that would make a dense form harder to scan MAY use
+  a focusable info tooltip beside the field title; validation and essential
+  status remain visible beside the control. Associate labels and choice controls
+  with accessible names in both layouts.
+- Put choices that determine subsequent fields first. Use one `Select` dropdown
+  combining authentication methods and password sources. Do not add a separate
+  password-source selector. Use a `Switch` for binary choices such as syncing
+  all databases; reveal the selected-database controls only when it is off.
+- Reveal the selected authentication method's fields below the selector.
+  External sources reveal their configuration there. Preserve separate drafts
+  while switching sources, and submit only the active source. Reveal dependent
+  TLS, SSH, IAM, and external-source configuration below its controlling
+  choice, using nested flow rather than a framed surface inside another frame.
+- Keep security modes visible; reveal their dependent fields when selected.
+  Switches, select triggers, and radio groups align to the start of their
+  control column. Keep ordinary connection rows on the 16px rhythm using
+  `FormFieldGroup density="compact"`, including across engine-specific field
+  groups. Empty conditional groups MUST NOT reserve space. Larger gaps need a
+  meaningful section boundary. Use explicit choices for modes such as syncing
+  all or selected databases.
+- Empty optional collections MAY start as an add action. Existing entries and
+  validation errors MUST remain discoverable.
+- A connection-creation footer MAY place Test Connection beside Create, with
+  Cancel on the left. Test feedback MUST remain visible and reachable.
 
 ### Page Forms
 
@@ -250,9 +324,49 @@ The required structure is:
 - Create is enabled when required fields are valid. Update additionally
   requires dirty state.
 - An always-mounted edit sheet MUST use the stable-entity ref, keyed inner form,
-  and full-entity loading pattern in `frontend/AGENTS.md`.
+  and full-entity loading pattern below.
 - Nested selects, menus, and popovers MUST use their portal option or another
   shared overlay primitive; do not raise them with an ad hoc z-index.
+
+#### Edit Sheet Lifecycle
+
+- **Edit sheets must populate from props reliably** — when a Sheet is always-mounted via `<Sheet open={open}>` (the standard pattern), `useState` initializers only run on first mount, which means switching the entity being edited (e.g. clicking Edit on a different row) won't repopulate fields. Use the **outer wrapper + inner form + stable-entity ref + key** pattern. The ref freezes the last-open entity so the inner form stays visually stable through the Sheet's close animation (which is ~200ms), while the `key` forces a fresh mount when a new entity is opened. Example from `CreateUserSheet`:
+  ```tsx
+  function CreateUserSheet(props: Props) {
+    const { open, user, onClose } = props;
+    // Freeze the entity while open=false so the inner form stays visually
+    // stable during the Sheet's close animation. Base UI's Dialog.Portal
+    // unmounts after the animation, at which point the form unmounts with it.
+    const openEntityRef = useRef(user);
+    if (open) {
+      openEntityRef.current = user;
+    }
+    const stableUser = openEntityRef.current;
+    return (
+      <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+        <SheetContent width="standard">
+          <UserForm
+            key={stableUser?.name ?? "new"}
+            user={stableUser}
+            onClose={props.onClose}
+            onCreated={props.onCreated}
+            onUpdated={props.onUpdated}
+          />
+        </SheetContent>
+      </Sheet>
+    );
+  }
+  function UserForm({ user, ... }: InnerProps) {
+    // useState initializers read directly from `user` — always fresh
+    // because the inner component mounts fresh on every open.
+    const [title, setTitle] = useState(user?.title ?? "");
+    // ...
+  }
+  ```
+  Do **not** guard the inner form with `{open && ...}` — that would unmount it at the start of the close animation, leaving a blank sheet sliding off-screen for ~200ms. Base UI's Dialog.Portal already handles the mount/unmount lifecycle around the animation.
+- **Edit sheets must disable Update until dirty** — capture initial values at mount (inside the inner form component, so they reflect the just-mounted entity prop) and compute `isDirty` via `useMemo` comparing current state to captured initials. Gate the Update button on `isFormValid && isDirty`. Create mode is always "dirty" so Create is enabled as soon as required fields are valid.
+- **Fetch the full entity before opening an edit sheet** — list APIs often return partial objects. Synchronous cache lookups like `store.getX(id)` can return a stub with only name/email/title fields, leaving nested fields (e.g. `workloadIdentityConfig.subjectPattern`) undefined. Use the async `getOrFetchX` form in row-click handlers so the Sheet receives a fully-hydrated entity — otherwise parsed/derived fields will be empty on first edit.
+
 
 #### Sheet Widths
 
@@ -326,6 +440,9 @@ A resource table is composed in this order:
 
 - Header rows are 40px high.
 - Default cells use 16px horizontal and 12px vertical padding.
+- Instance and database body cells use `TableCellContent` for a vertically
+  centered, 24px minimum content area: 48px with cell padding, plus row borders.
+  Expanded or multi-line content can increase the row height.
 - Interactive menu/list rows have a 32px compact or 36px default minimum
   height, 14/20px primary text, and an 8px internal gap.
 - Numeric values align right. Selection and icon-only columns remain narrow.
@@ -415,7 +532,7 @@ Before considering a UI workflow complete, verify:
 Run the full frontend check after UI changes:
 
 ```bash
-pnpm --dir frontend check
+pnpm --dir frontend test
 ```
 
 The UX ratchet can be run directly:

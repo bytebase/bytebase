@@ -1,9 +1,10 @@
 import { create } from "@bufbuild/protobuf";
 import { Plus, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { HumanizeTs } from "@/components/HumanizeTs";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Popover,
@@ -27,25 +28,11 @@ export function PlanDetailMeta() {
   const page = usePlanDetailContext();
   const { patchState } = page;
   const project = page.project;
-  const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    if (page.isCreating) return;
-    // Only consumer is the plan-creation timestamp, which never advances
-    // faster than once a minute — no need for a 1s tick.
-    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
-    return () => window.clearInterval(timer);
-  }, [page.isCreating]);
-
   const creatorEmail = useMemo(
     () => extractUserEmail(page.plan.creator),
     [page.plan.creator]
   );
-  const createdTimeTs = useMemo(() => {
-    // Reference `now` so the relative label re-renders on each tick.
-    void now;
-    return getTimeForPbTimestampProtoEs(page.plan.createTime, 0);
-  }, [now, page.plan.createTime]);
+  const createdTimeMs = getTimeForPbTimestampProtoEs(page.plan.createTime);
   const allowChangeLabels = useMemo(() => {
     if (!project || !page.issue || page.issue.status !== IssueStatus.OPEN) {
       return false;
@@ -97,10 +84,10 @@ export function PlanDetailMeta() {
   return (
     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-control-placeholder">
       <span>{t("plan.meta.created-by", { user: creatorEmail })}</span>
-      {createdTimeTs > 0 && (
+      {createdTimeMs !== undefined && (
         <>
           <span aria-hidden="true">·</span>
-          <HumanizeTs ts={createdTimeTs / 1000} />
+          <HumanizeTs tsMs={createdTimeMs} />
         </>
       )}
 
@@ -167,7 +154,9 @@ function InlineLabels({
         />
         <span className="truncate">{value}</span>
         {allowChange && (
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             aria-label={t("common.remove")}
             className={cn(
               "inline-flex shrink-0 items-center justify-center text-control-placeholder transition-colors",
@@ -180,7 +169,7 @@ function InlineLabels({
             type="button"
           >
             <X className="size-3" />
-          </button>
+          </Button>
         )}
       </span>
     );
@@ -194,7 +183,9 @@ function InlineLabels({
       <Popover open={open} onOpenChange={allowChange ? setOpen : undefined}>
         <PopoverTrigger
           render={
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               className={cn(
                 "inline-flex items-center gap-1 rounded-xs border border-dashed border-control-border px-1.5 py-0.5 text-xs text-control-placeholder transition-colors",
                 allowChange &&
@@ -220,7 +211,7 @@ function InlineLabels({
           align="start"
           initialFocus={false}
           finalFocus={false}
-          className="w-56 overflow-hidden bg-white p-0"
+          className="w-56 overflow-hidden bg-background p-0"
         >
           <div className="max-h-60 overflow-y-auto">
             {issueLabels.length === 0 ? (
@@ -231,9 +222,11 @@ function InlineLabels({
               issueLabels.map((option) => {
                 const isSelected = labels.includes(option.value);
                 return (
-                  <button
+                  <Button
+                    appearance="secondary"
+                    size="md"
                     key={option.value}
-                    className="flex w-full items-center gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
+                    className="flex w-full min-w-0 justify-start gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
                     disabled={isUpdating}
                     onClick={() => void toggleLabel(option.value)}
                     type="button"
@@ -247,8 +240,13 @@ function InlineLabels({
                           : undefined,
                       }}
                     />
-                    <span>{option.value}</span>
-                  </button>
+                    <span
+                      className="min-w-0 flex-1 truncate"
+                      title={option.value}
+                    >
+                      {option.value}
+                    </span>
+                  </Button>
                 );
               })
             )}

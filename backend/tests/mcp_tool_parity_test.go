@@ -36,11 +36,7 @@ func TestMCPToolCallParity(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Parity baseline: the principal's direct v1 API view. The probe is
 	// ListWorkspaces, and any READ method whose result is scoped to the caller
@@ -113,11 +109,7 @@ func TestMCPCannotMintPlainUserToken(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
 		Name: "workspaces/-",

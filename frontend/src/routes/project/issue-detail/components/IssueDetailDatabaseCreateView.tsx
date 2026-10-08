@@ -119,9 +119,9 @@ export function IssueDetailDatabaseCreateView() {
     <div className="flex w-full flex-col gap-y-4">
       <div className="flex flex-col gap-y-2">
         <h3 className="text-base font-medium">{t("common.overview")}</h3>
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-medium text-control">
               {t("common.environment")}:
             </span>
             <IssueDetailDatabaseCreateEnvironment
@@ -132,7 +132,7 @@ export function IssueDetailDatabaseCreateView() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-medium text-control">
               {t("common.instance")}:
             </span>
             {isValidInstanceName(instance.name) ? (
@@ -140,12 +140,12 @@ export function IssueDetailDatabaseCreateView() {
                 {instanceV1Name(instance)}
               </IssueDetailDatabaseCreateInstance>
             ) : (
-              <span className="text-gray-900">{displayInstanceName}</span>
+              <span className="text-main">{displayInstanceName}</span>
             )}
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-medium text-control">
               {t("common.database")}:
             </span>
             {isTaskDone && createdDatabase ? (
@@ -159,12 +159,12 @@ export function IssueDetailDatabaseCreateView() {
                       .databaseName
                   }
                 </RouterLink>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-control-light">
                   ({t("common.created")})
                 </span>
               </>
             ) : (
-              <span className="text-gray-900">
+              <span className="text-main">
                 {createDatabaseConfig?.database ?? ""}
               </span>
             )}
@@ -172,7 +172,7 @@ export function IssueDetailDatabaseCreateView() {
 
           {createDatabaseTask && (
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-600">
+              <span className="text-sm font-medium text-control">
                 {t("common.status")}:
               </span>
               <TaskStatusIcon status={createDatabaseTask.status} size="small" />
@@ -239,7 +239,7 @@ function IssueDetailDatabaseCreateInstance({
   );
 
   if (!instanceHref) {
-    return <span className="text-gray-900">{children}</span>;
+    return <span className="text-main">{children}</span>;
   }
 
   return (

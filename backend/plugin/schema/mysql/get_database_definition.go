@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -66,7 +67,7 @@ func init() {
 	schema.RegisterGetProcedureDefinition(storepb.Engine_OCEANBASE, GetProcedureDefinition)
 }
 
-func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
 	if len(metadata.Schemas) == 0 {
 		return "", nil
 	}
@@ -160,7 +161,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 	return buf.String(), nil
 }
 
-func GetTableDefinition(_ string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
+func GetTableDefinition(_ string, table *metadatapb.TableMetadata, _ []*metadatapb.SequenceMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeTable(&buf, table); err != nil {
 		return "", err
@@ -168,7 +169,7 @@ func GetTableDefinition(_ string, table *storepb.TableMetadata, _ []*storepb.Seq
 	return buf.String(), nil
 }
 
-func GetViewDefinition(_ string, view *storepb.ViewMetadata) (string, error) {
+func GetViewDefinition(_ string, view *metadatapb.ViewMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeView(&buf, view); err != nil {
 		return "", err
@@ -176,7 +177,7 @@ func GetViewDefinition(_ string, view *storepb.ViewMetadata) (string, error) {
 	return buf.String(), nil
 }
 
-func GetFunctionDefinition(_ string, function *storepb.FunctionMetadata) (string, error) {
+func GetFunctionDefinition(_ string, function *metadatapb.FunctionMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeFunction(&buf, function); err != nil {
 		return "", err
@@ -184,7 +185,7 @@ func GetFunctionDefinition(_ string, function *storepb.FunctionMetadata) (string
 	return buf.String(), nil
 }
 
-func GetProcedureDefinition(_ string, procedure *storepb.ProcedureMetadata) (string, error) {
+func GetProcedureDefinition(_ string, procedure *metadatapb.ProcedureMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeProcedure(&buf, procedure); err != nil {
 		return "", err
@@ -192,7 +193,7 @@ func GetProcedureDefinition(_ string, procedure *storepb.ProcedureMetadata) (str
 	return buf.String(), nil
 }
 
-func writeEvent(out io.Writer, event *storepb.EventMetadata) error {
+func writeEvent(out io.Writer, event *metadatapb.EventMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -285,7 +286,7 @@ func writeEvent(out io.Writer, event *storepb.EventMetadata) error {
 	return err
 }
 
-func writeTrigger(out io.Writer, tableName string, trigger *storepb.TriggerMetadata) error {
+func writeTrigger(out io.Writer, tableName string, trigger *metadatapb.TriggerMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -393,7 +394,7 @@ func writeTrigger(out io.Writer, tableName string, trigger *storepb.TriggerMetad
 	return err
 }
 
-func writeProcedure(out io.Writer, procedure *storepb.ProcedureMetadata) error {
+func writeProcedure(out io.Writer, procedure *metadatapb.ProcedureMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -439,7 +440,7 @@ func writeProcedure(out io.Writer, procedure *storepb.ProcedureMetadata) error {
 	return err
 }
 
-func writeFunction(out io.Writer, function *storepb.FunctionMetadata) error {
+func writeFunction(out io.Writer, function *metadatapb.FunctionMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -481,7 +482,7 @@ func writeFunction(out io.Writer, function *storepb.FunctionMetadata) error {
 	return err
 }
 
-func writeView(out io.Writer, view *storepb.ViewMetadata) error {
+func writeView(out io.Writer, view *metadatapb.ViewMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -519,7 +520,7 @@ func writeView(out io.Writer, view *storepb.ViewMetadata) error {
 	return err
 }
 
-func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
+func writeTable(out *strings.Builder, table *metadatapb.TableMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -619,7 +620,7 @@ func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
 }
 
 // Copy the logic from backend/plugin/schema/mysql/state.go.
-func printPartitionClause(buf *strings.Builder, partitions []*storepb.TablePartitionMetadata, engine string) error {
+func printPartitionClause(buf *strings.Builder, partitions []*metadatapb.TablePartitionMetadata, engine string) error {
 	if len(partitions) == 0 {
 		return nil
 	}
@@ -629,35 +630,35 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 		return err
 	}
 	switch partitions[0].Type {
-	case storepb.TablePartitionMetadata_RANGE:
+	case metadatapb.TablePartitionMetadata_RANGE:
 		if _, err := fmt.Fprintf(buf, "RANGE (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
+	case metadatapb.TablePartitionMetadata_RANGE_COLUMNS:
 		if _, err := fmt.Fprintf(buf, "RANGE COLUMNS (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_LIST:
+	case metadatapb.TablePartitionMetadata_LIST:
 		if _, err := fmt.Fprintf(buf, "LIST (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_LIST_COLUMNS:
+	case metadatapb.TablePartitionMetadata_LIST_COLUMNS:
 		if _, err := fmt.Fprintf(buf, "LIST COLUMNS (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_HASH:
+	case metadatapb.TablePartitionMetadata_HASH:
 		if _, err := fmt.Fprintf(buf, "HASH (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_KEY:
+	case metadatapb.TablePartitionMetadata_KEY:
 		if _, err := fmt.Fprintf(buf, "KEY (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_LINEAR_HASH:
+	case metadatapb.TablePartitionMetadata_LINEAR_HASH:
 		if _, err := fmt.Fprintf(buf, "LINEAR HASH (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_LINEAR_KEY:
+	case metadatapb.TablePartitionMetadata_LINEAR_KEY:
 		if _, err := fmt.Fprintf(buf, "LINEAR KEY (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
@@ -684,19 +685,19 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 			return err
 		}
 		switch partitions[0].Subpartitions[0].Type {
-		case storepb.TablePartitionMetadata_HASH:
+		case metadatapb.TablePartitionMetadata_HASH:
 			if _, err := fmt.Fprintf(buf, "HASH (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
 				return err
 			}
-		case storepb.TablePartitionMetadata_LINEAR_HASH:
+		case metadatapb.TablePartitionMetadata_LINEAR_HASH:
 			if _, err := fmt.Fprintf(buf, "LINEAR HASH (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
 				return err
 			}
-		case storepb.TablePartitionMetadata_KEY:
+		case metadatapb.TablePartitionMetadata_KEY:
 			if _, err := fmt.Fprintf(buf, "KEY (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
 				return err
 			}
-		case storepb.TablePartitionMetadata_LINEAR_KEY:
+		case metadatapb.TablePartitionMetadata_LINEAR_KEY:
 			if _, err := fmt.Fprintf(buf, "LINEAR KEY (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
 				return err
 			}
@@ -791,17 +792,17 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 	return nil
 }
 
-func getPrepositionByType(tp storepb.TablePartitionMetadata_Type) (string, error) {
+func getPrepositionByType(tp metadatapb.TablePartitionMetadata_Type) (string, error) {
 	switch tp {
-	case storepb.TablePartitionMetadata_RANGE:
+	case metadatapb.TablePartitionMetadata_RANGE:
 		return "LESS THAN", nil
-	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
+	case metadatapb.TablePartitionMetadata_RANGE_COLUMNS:
 		return "LESS THAN", nil
-	case storepb.TablePartitionMetadata_LIST:
+	case metadatapb.TablePartitionMetadata_LIST:
 		return "IN", nil
-	case storepb.TablePartitionMetadata_LIST_COLUMNS:
+	case metadatapb.TablePartitionMetadata_LIST_COLUMNS:
 		return "IN", nil
-	case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_HASH, storepb.TablePartitionMetadata_LINEAR_KEY:
+	case metadatapb.TablePartitionMetadata_HASH, metadatapb.TablePartitionMetadata_KEY, metadatapb.TablePartitionMetadata_LINEAR_HASH, metadatapb.TablePartitionMetadata_LINEAR_KEY:
 		return "", nil
 	default:
 		return "", errors.Errorf("unsupported partition type: %v", tp)
@@ -848,26 +849,26 @@ func writePartitionOptions(buf io.StringWriter, engine string) error {
 	return nil
 }
 
-func getVersionSpecificComment(partitions []*storepb.TablePartitionMetadata) string {
+func getVersionSpecificComment(partitions []*metadatapb.TablePartitionMetadata) string {
 	if len(partitions) == 0 {
 		return ""
 	}
 	partition := partitions[0]
-	if partition.Type == storepb.TablePartitionMetadata_RANGE_COLUMNS || partition.Type == storepb.TablePartitionMetadata_LIST_COLUMNS {
+	if partition.Type == metadatapb.TablePartitionMetadata_RANGE_COLUMNS || partition.Type == metadatapb.TablePartitionMetadata_LIST_COLUMNS {
 		// MySQL introduce columns partitioning in 5.5+
 		return "\n/*!50500"
 	}
 	return "\n/*!50100"
 }
 
-func printCheckClause(buf *strings.Builder, check *storepb.CheckConstraintMetadata) error {
+func printCheckClause(buf *strings.Builder, check *metadatapb.CheckConstraintMetadata) error {
 	if _, err := fmt.Fprintf(buf, ",\n  CONSTRAINT `%s` CHECK %s", check.Name, check.Expression); err != nil {
 		return err
 	}
 	return nil
 }
 
-func printForeignKeyClause(buf *strings.Builder, fk *storepb.ForeignKeyMetadata) error {
+func printForeignKeyClause(buf *strings.Builder, fk *metadatapb.ForeignKeyMetadata) error {
 	if _, err := fmt.Fprintf(buf, ",\n  CONSTRAINT `%s` FOREIGN KEY (", fk.Name); err != nil {
 		return err
 	}
@@ -917,7 +918,7 @@ func printForeignKeyClause(buf *strings.Builder, fk *storepb.ForeignKeyMetadata)
 	return nil
 }
 
-func printIndexClause(buf *strings.Builder, index *storepb.IndexMetadata) error {
+func printIndexClause(buf *strings.Builder, index *metadatapb.IndexMetadata) error {
 	if index.Primary {
 		return nil
 	}
@@ -1157,7 +1158,7 @@ func isCharsetNameByte(c byte) bool {
 	return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9'
 }
 
-func printPrimaryKeyClause(buf *strings.Builder, indexes []*storepb.IndexMetadata) error {
+func printPrimaryKeyClause(buf *strings.Builder, indexes []*metadatapb.IndexMetadata) error {
 	for _, index := range indexes {
 		if index.Primary {
 			if _, err := fmt.Fprint(buf, ",\n  PRIMARY KEY ("); err != nil {
@@ -1192,11 +1193,11 @@ func printPrimaryKeyClause(buf *strings.Builder, indexes []*storepb.IndexMetadat
 	return nil
 }
 
-func isAutoIncrement(column *storepb.ColumnMetadata) bool {
+func isAutoIncrement(column *metadatapb.ColumnMetadata) bool {
 	return strings.EqualFold(column.GetDefault(), autoIncrementSymbol)
 }
 
-func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, table *storepb.TableMetadata) error {
+func printColumnClause(buf *strings.Builder, column *metadatapb.ColumnMetadata, table *metadatapb.TableMetadata) error {
 	if _, err := fmt.Fprintf(buf, "  `%s` %s", column.Name, normalizeColumnType(column.Type)); err != nil {
 		return err
 	}
@@ -1218,11 +1219,11 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 			return err
 		}
 		switch column.Generation.Type {
-		case storepb.GenerationMetadata_TYPE_STORED:
+		case metadatapb.GenerationMetadata_TYPE_STORED:
 			if _, err := fmt.Fprint(buf, "STORED"); err != nil {
 				return err
 			}
-		case storepb.GenerationMetadata_TYPE_VIRTUAL:
+		case metadatapb.GenerationMetadata_TYPE_VIRTUAL:
 			if _, err := fmt.Fprint(buf, "VIRTUAL"); err != nil {
 				return err
 			}
@@ -1279,7 +1280,7 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 // zero sentinel) distinguishes from "no SRID". Shared by the SDL dumper
 // (printColumnClause) and the legacy migration generator (writeAddColumn /
 // writeModifyColumn) so both render the same canonical form.
-func writeColumnSRIDAttribute(buf *strings.Builder, column *storepb.ColumnMetadata) {
+func writeColumnSRIDAttribute(buf *strings.Builder, column *metadatapb.ColumnMetadata) {
 	if column.Srid != nil {
 		_, _ = fmt.Fprintf(buf, " /*!80003 SRID %d */", column.GetSrid())
 	}
@@ -1289,7 +1290,7 @@ func writeColumnSRIDAttribute(buf *strings.Builder, column *storepb.ColumnMetada
 // invisible columns (MySQL 8.0.23+). MySQL's canonical SHOW CREATE order places INVISIBLE
 // before COMMENT for both regular and generated columns (verified against 8.0.32), so callers
 // emit it before COMMENT. Shared by the SDL dumper and the legacy migration generator.
-func writeColumnInvisibleAttribute(buf *strings.Builder, column *storepb.ColumnMetadata) {
+func writeColumnInvisibleAttribute(buf *strings.Builder, column *metadatapb.ColumnMetadata) {
 	if column.IsInvisible {
 		_, _ = buf.WriteString(" /*!80023 INVISIBLE */")
 	}
@@ -1308,7 +1309,7 @@ func normalizeColumnType(columnType string) string {
 	return columnType
 }
 
-func printDefaultClause(buf *strings.Builder, column *storepb.ColumnMetadata) error {
+func printDefaultClause(buf *strings.Builder, column *metadatapb.ColumnMetadata) error {
 	// Check if column has any default value
 	hasDefault := column.Default != ""
 	if !hasDefault {
@@ -1355,7 +1356,7 @@ func printDefaultClause(buf *strings.Builder, column *storepb.ColumnMetadata) er
 // (DEFAULT b'0'); match it by recovering the inner literal and emitting it without the
 // surrounding quotes when the column is BIT and the recovered text is a bit/hex literal
 // (b'…'/0x…/x'…'). Any other default (including a genuine string) is emitted verbatim.
-func renderColumnDefault(column *storepb.ColumnMetadata) string {
+func renderColumnDefault(column *metadatapb.ColumnMetadata) string {
 	if isBitColumnType(column.Type) {
 		if lit, ok := bitLiteralFromQuotedDefault(column.Default); ok {
 			return lit
@@ -1449,7 +1450,7 @@ func typeSupportsDefaultValue(tp string) bool {
 	}
 }
 
-func writeInvalidTemporaryView(out io.Writer, view *storepb.ViewMetadata) error {
+func writeInvalidTemporaryView(out io.Writer, view *metadatapb.ViewMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -1479,7 +1480,7 @@ func writeInvalidTemporaryView(out io.Writer, view *storepb.ViewMetadata) error 
 	return err
 }
 
-func writeTemporaryView(out io.Writer, view *storepb.ViewMetadata) error {
+func writeTemporaryView(out io.Writer, view *metadatapb.ViewMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -1597,19 +1598,19 @@ func writeAdditionalEventsIfSet(out io.Writer, characterSetClient, characterSetR
 // here: the omni Diff path resolves both the dumped source and the user target
 // through the same Normalizer (CanonicalColumn), so faithful emission is sufficient
 // for the no-op idempotence property — the canonical comparison happens in omni.
-func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
+func getSDLFormat(metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
 	var buf strings.Builder
 
 	schema := metadata.Schemas[0]
 
-	tables := make([]*storepb.TableMetadata, 0, len(schema.Tables))
+	tables := make([]*metadatapb.TableMetadata, 0, len(schema.Tables))
 	for _, table := range schema.Tables {
 		if table.SkipDump {
 			continue
 		}
 		tables = append(tables, table)
 	}
-	slices.SortFunc(tables, func(a, b *storepb.TableMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(tables, func(a, b *metadatapb.TableMetadata) int { return cmp.Compare(a.Name, b.Name) })
 
 	for _, table := range tables {
 		if err := writeTableSDL(&buf, table); err != nil {
@@ -1617,42 +1618,42 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 		}
 	}
 
-	functions := make([]*storepb.FunctionMetadata, 0, len(schema.Functions))
+	functions := make([]*metadatapb.FunctionMetadata, 0, len(schema.Functions))
 	for _, function := range schema.Functions {
 		if function.SkipDump {
 			continue
 		}
 		functions = append(functions, function)
 	}
-	slices.SortFunc(functions, func(a, b *storepb.FunctionMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(functions, func(a, b *metadatapb.FunctionMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, function := range functions {
 		if err := writeRoutineSDL(&buf, function.Definition); err != nil {
 			return "", err
 		}
 	}
 
-	procedures := make([]*storepb.ProcedureMetadata, 0, len(schema.Procedures))
+	procedures := make([]*metadatapb.ProcedureMetadata, 0, len(schema.Procedures))
 	for _, procedure := range schema.Procedures {
 		if procedure.SkipDump {
 			continue
 		}
 		procedures = append(procedures, procedure)
 	}
-	slices.SortFunc(procedures, func(a, b *storepb.ProcedureMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(procedures, func(a, b *metadatapb.ProcedureMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, procedure := range procedures {
 		if err := writeRoutineSDL(&buf, procedure.Definition); err != nil {
 			return "", err
 		}
 	}
 
-	views := make([]*storepb.ViewMetadata, 0, len(schema.Views))
+	views := make([]*metadatapb.ViewMetadata, 0, len(schema.Views))
 	for _, view := range schema.Views {
 		if view.SkipDump {
 			continue
 		}
 		views = append(views, view)
 	}
-	slices.SortFunc(views, func(a, b *storepb.ViewMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(views, func(a, b *metadatapb.ViewMetadata) int { return cmp.Compare(a.Name, b.Name) })
 
 	for _, view := range views {
 		if err := writeViewSDL(&buf, metadata.Name, view); err != nil {
@@ -1663,14 +1664,14 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 	// Triggers hang off tables (TableMetadata.Triggers); emit them after every table
 	// in deterministic (table, trigger) order.
 	for _, table := range tables {
-		triggers := make([]*storepb.TriggerMetadata, 0, len(table.Triggers))
+		triggers := make([]*metadatapb.TriggerMetadata, 0, len(table.Triggers))
 		for _, trigger := range table.Triggers {
 			if trigger.SkipDump {
 				continue
 			}
 			triggers = append(triggers, trigger)
 		}
-		slices.SortFunc(triggers, func(a, b *storepb.TriggerMetadata) int { return cmp.Compare(a.Name, b.Name) })
+		slices.SortFunc(triggers, func(a, b *metadatapb.TriggerMetadata) int { return cmp.Compare(a.Name, b.Name) })
 		for _, trigger := range triggers {
 			if err := writeTriggerSDL(&buf, table.Name, trigger); err != nil {
 				return "", err
@@ -1678,9 +1679,9 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 		}
 	}
 
-	events := make([]*storepb.EventMetadata, 0, len(schema.Events))
+	events := make([]*metadatapb.EventMetadata, 0, len(schema.Events))
 	events = append(events, schema.Events...)
-	slices.SortFunc(events, func(a, b *storepb.EventMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(events, func(a, b *metadatapb.EventMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, event := range events {
 		if err := writeEventSDL(&buf, event); err != nil {
 			return "", err
@@ -1694,7 +1695,7 @@ func getSDLFormat(metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 // deterministic clause ordering. It reuses the same column/index/foreign-key/check
 // clause writers as the mysqldump path; only the statement framing and the sorting
 // of sub-objects differ.
-func writeTableSDL(buf *strings.Builder, table *storepb.TableMetadata) error {
+func writeTableSDL(buf *strings.Builder, table *metadatapb.TableMetadata) error {
 	if _, err := fmt.Fprintf(buf, "CREATE TABLE `%s` (\n", table.Name); err != nil {
 		return err
 	}
@@ -1714,32 +1715,32 @@ func writeTableSDL(buf *strings.Builder, table *storepb.TableMetadata) error {
 		return err
 	}
 
-	secondaryIndexes := make([]*storepb.IndexMetadata, 0, len(table.Indexes))
+	secondaryIndexes := make([]*metadatapb.IndexMetadata, 0, len(table.Indexes))
 	for _, index := range table.Indexes {
 		if index.Primary {
 			continue
 		}
 		secondaryIndexes = append(secondaryIndexes, index)
 	}
-	slices.SortFunc(secondaryIndexes, func(a, b *storepb.IndexMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(secondaryIndexes, func(a, b *metadatapb.IndexMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, index := range secondaryIndexes {
 		if err := printIndexClause(buf, index); err != nil {
 			return err
 		}
 	}
 
-	foreignKeys := make([]*storepb.ForeignKeyMetadata, len(table.ForeignKeys))
+	foreignKeys := make([]*metadatapb.ForeignKeyMetadata, len(table.ForeignKeys))
 	copy(foreignKeys, table.ForeignKeys)
-	slices.SortFunc(foreignKeys, func(a, b *storepb.ForeignKeyMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(foreignKeys, func(a, b *metadatapb.ForeignKeyMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, fk := range foreignKeys {
 		if err := printForeignKeyClause(buf, fk); err != nil {
 			return err
 		}
 	}
 
-	checks := make([]*storepb.CheckConstraintMetadata, len(table.CheckConstraints))
+	checks := make([]*metadatapb.CheckConstraintMetadata, len(table.CheckConstraints))
 	copy(checks, table.CheckConstraints)
-	slices.SortFunc(checks, func(a, b *storepb.CheckConstraintMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(checks, func(a, b *metadatapb.CheckConstraintMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, check := range checks {
 		if err := printCheckClause(buf, check); err != nil {
 			return err
@@ -1828,7 +1829,7 @@ func filterCreateOptions(createOptions string) string {
 // entry TestSDLStressViewDerivedTable57). The stored one-line body is then
 // pretty-printed by formatViewBodySDL — a whitespace-only, deterministic rewrite, so
 // the omni no-op invariant and the dump-cycle byte stability both hold.
-func writeViewSDL(buf *strings.Builder, dbName string, view *storepb.ViewMetadata) error {
+func writeViewSDL(buf *strings.Builder, dbName string, view *metadatapb.ViewMetadata) error {
 	body := formatViewBodySDL(stripViewBodyDatabaseQualifier(view.Definition, dbName))
 	if body == "" {
 		// Defensive: an empty definition keeps the historical inline framing.
@@ -1933,7 +1934,7 @@ func writeRoutineSDL(buf *strings.Builder, definition string) error {
 // loader expects: `CREATE TRIGGER <name> <timing> <event> ON <table> FOR EACH ROW
 // <body>`. DEFINER is omitted (omni's trigger differ ignores it) and the body is
 // emitted verbatim (compared byte for byte after trimming).
-func writeTriggerSDL(buf *strings.Builder, tableName string, trigger *storepb.TriggerMetadata) error {
+func writeTriggerSDL(buf *strings.Builder, tableName string, trigger *metadatapb.TriggerMetadata) error {
 	if _, err := fmt.Fprintf(buf, "CREATE TRIGGER `%s` %s %s ON `%s` FOR EACH ROW\n%s;\n\n",
 		trigger.Name, trigger.Timing, trigger.Event, tableName, strings.TrimSpace(trigger.Body)); err != nil {
 		return err
@@ -1947,7 +1948,7 @@ func writeTriggerSDL(buf *strings.Builder, tableName string, trigger *storepb.Tr
 // identity. The schedule's auto-injected STARTS '<create-time>' is left intact: omni's
 // event differ normalizes STARTS out of the canonical schedule key, so it does not
 // perturb the no-op.
-func writeEventSDL(buf *strings.Builder, event *storepb.EventMetadata) error {
+func writeEventSDL(buf *strings.Builder, event *metadatapb.EventMetadata) error {
 	def := strings.TrimSpace(stripLeadingDefiner(event.Definition))
 	if def == "" {
 		return nil

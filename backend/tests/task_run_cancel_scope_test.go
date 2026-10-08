@@ -23,27 +23,25 @@ import (
 // rights in one environment reach a task run in another environment of the same
 // project — test-environment rights killing a production migration.
 func TestBatchCancelTaskRuns_RejectsTaskRunFromAnotherStage(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	testEnvironment, err := ctl.getEnvironment(ctx, "test")
 	a.NoError(err)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "testInstanceCancelScope",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "testInstanceCancelScope",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -107,6 +105,29 @@ func TestBatchCancelTaskRuns_RejectsTaskRunFromAnotherStage(t *testing.T) {
 		}))
 		a.NoError(err)
 	}
+
+	// ListTaskRuns pages (T18c-ii): with page_size 1 the rollout's two runs
+	// arrive on two pages, and the token walk ends after the second.
+	var paged []string
+	pageToken := ""
+	for {
+		resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{
+			Parent:    rolloutResp.Msg.Name + "/stages/-/tasks/-",
+			PageSize:  1,
+			PageToken: pageToken,
+		}))
+		a.NoError(err)
+		a.Len(resp.Msg.TaskRuns, 1)
+		paged = append(paged, resp.Msg.TaskRuns[0].Name)
+		if resp.Msg.NextPageToken == "" {
+			break
+		}
+		pageToken = resp.Msg.NextPageToken
+	}
+	a.ElementsMatch([]string{
+		onlyTaskRunInStage(ctx, a, ctl, testStage).Name,
+		onlyTaskRunInStage(ctx, a, ctl, prodStage).Name,
+	}, paged)
 
 	prodTaskRun := onlyTaskRunInStage(ctx, a, ctl, prodStage)
 	a.Equal(v1pb.TaskRun_PENDING, prodTaskRun.Status)

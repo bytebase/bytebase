@@ -32,26 +32,6 @@
   
     - [AccessGrantService](#bytebase-v1-AccessGrantService)
   
-- [v1/actuator_service.proto](#v1_actuator_service-proto)
-    - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
-    - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
-    - [SampleInfo](#bytebase-v1-SampleInfo)
-    - [SampleInfo.Instance](#bytebase-v1-SampleInfo-Instance)
-  
-    - [ActuatorService](#bytebase-v1-ActuatorService)
-  
-- [v1/ai_service.proto](#v1_ai_service-proto)
-    - [AIChatMessage](#bytebase-v1-AIChatMessage)
-    - [AIChatRequest](#bytebase-v1-AIChatRequest)
-    - [AIChatResponse](#bytebase-v1-AIChatResponse)
-    - [AIChatToolCall](#bytebase-v1-AIChatToolCall)
-    - [AIChatToolDefinition](#bytebase-v1-AIChatToolDefinition)
-    - [AIChatUsage](#bytebase-v1-AIChatUsage)
-  
-    - [AIChatMessageRole](#bytebase-v1-AIChatMessageRole)
-  
-    - [AIService](#bytebase-v1-AIService)
-  
 - [v1/common.proto](#v1_common-proto)
     - [PermissionDeniedDetail](#bytebase-v1-PermissionDeniedDetail)
     - [Position](#bytebase-v1-Position)
@@ -66,30 +46,6 @@
     - [StatementType](#bytebase-v1-StatementType)
     - [VCSType](#bytebase-v1-VCSType)
     - [WebhookType](#bytebase-v1-WebhookType)
-  
-- [v1/iam_policy.proto](#v1_iam_policy-proto)
-    - [Binding](#bytebase-v1-Binding)
-    - [BindingDelta](#bytebase-v1-BindingDelta)
-    - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
-    - [IamPolicy](#bytebase-v1-IamPolicy)
-    - [PolicyDelta](#bytebase-v1-PolicyDelta)
-    - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
-  
-    - [BindingDelta.Action](#bytebase-v1-BindingDelta-Action)
-  
-- [v1/audit_log_service.proto](#v1_audit_log_service-proto)
-    - [AuditData](#bytebase-v1-AuditData)
-    - [AuditLog](#bytebase-v1-AuditLog)
-    - [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest)
-    - [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse)
-    - [MCPDelegation](#bytebase-v1-MCPDelegation)
-    - [RequestMetadata](#bytebase-v1-RequestMetadata)
-    - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
-    - [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse)
-  
-    - [AuditLog.Severity](#bytebase-v1-AuditLog-Severity)
-  
-    - [AuditLogService](#bytebase-v1-AuditLogService)
   
 - [v1/rollout_service.proto](#v1_rollout_service-proto)
     - [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest)
@@ -170,6 +126,7 @@
     - [QueryResult.CommandError](#bytebase-v1-QueryResult-CommandError)
     - [QueryResult.Message](#bytebase-v1-QueryResult-Message)
     - [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError)
+    - [QueryResult.QueryPlan](#bytebase-v1-QueryResult-QueryPlan)
     - [QueryResult.SyntaxError](#bytebase-v1-QueryResult-SyntaxError)
     - [QueryRow](#bytebase-v1-QueryRow)
     - [RowValue](#bytebase-v1-RowValue)
@@ -178,7 +135,7 @@
   
     - [Advice.Level](#bytebase-v1-Advice-Level)
     - [Advice.RuleType](#bytebase-v1-Advice-RuleType)
-    - [QueryOption.MSSQLExplainFormat](#bytebase-v1-QueryOption-MSSQLExplainFormat)
+    - [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.CommandError.Type](#bytebase-v1-QueryResult-CommandError-Type)
     - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
@@ -213,6 +170,9 @@
   
     - [PlanService](#bytebase-v1-PlanService)
   
+- [v1/review_rule.proto](#v1_review_rule-proto)
+    - [ReviewRuleType](#bytebase-v1-ReviewRuleType)
+  
 - [v1/issue_service.proto](#v1_issue_service-proto)
     - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
     - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
@@ -228,6 +188,7 @@
     - [IssueComment.Approval](#bytebase-v1-IssueComment-Approval)
     - [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate)
     - [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate)
+    - [IssueComment.ReviewMetadata](#bytebase-v1-IssueComment-ReviewMetadata)
     - [IssueComment.ReviewSubmission](#bytebase-v1-IssueComment-ReviewSubmission)
     - [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest)
     - [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse)
@@ -241,12 +202,15 @@
     - [RunReviewRequest](#bytebase-v1-RunReviewRequest)
     - [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest)
     - [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse)
+    - [StatementAnchor](#bytebase-v1-StatementAnchor)
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
     - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
   
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
+    - [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority)
+    - [IssueComment.ThreadState](#bytebase-v1-IssueComment-ThreadState)
     - [ReviewRun.Status](#bytebase-v1-ReviewRun-Status)
     - [ReviewRun.Type](#bytebase-v1-ReviewRun-Type)
   
@@ -311,6 +275,77 @@
   
     - [SettingService](#bytebase-v1-SettingService)
   
+- [v1/actuator_service.proto](#v1_actuator_service-proto)
+    - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
+    - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
+    - [SampleInfo](#bytebase-v1-SampleInfo)
+    - [SampleInfo.Instance](#bytebase-v1-SampleInfo-Instance)
+  
+    - [ActuatorService](#bytebase-v1-ActuatorService)
+  
+- [v1/ai_service.proto](#v1_ai_service-proto)
+    - [AIChatMessage](#bytebase-v1-AIChatMessage)
+    - [AIChatRequest](#bytebase-v1-AIChatRequest)
+    - [AIChatResponse](#bytebase-v1-AIChatResponse)
+    - [AIChatToolCall](#bytebase-v1-AIChatToolCall)
+    - [AIChatToolDefinition](#bytebase-v1-AIChatToolDefinition)
+    - [AIChatUsage](#bytebase-v1-AIChatUsage)
+  
+    - [AIChatMessageRole](#bytebase-v1-AIChatMessageRole)
+  
+    - [AIService](#bytebase-v1-AIService)
+  
+- [v1/iam_policy.proto](#v1_iam_policy-proto)
+    - [Binding](#bytebase-v1-Binding)
+    - [BindingDelta](#bytebase-v1-BindingDelta)
+    - [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest)
+    - [IamPolicy](#bytebase-v1-IamPolicy)
+    - [PolicyDelta](#bytebase-v1-PolicyDelta)
+    - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
+  
+    - [BindingDelta.Action](#bytebase-v1-BindingDelta-Action)
+  
+- [v1/audit_log_service.proto](#v1_audit_log_service-proto)
+    - [AuditData](#bytebase-v1-AuditData)
+    - [AuditLog](#bytebase-v1-AuditLog)
+    - [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest)
+    - [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse)
+    - [MCPDelegation](#bytebase-v1-MCPDelegation)
+    - [RequestMetadata](#bytebase-v1-RequestMetadata)
+    - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
+    - [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse)
+  
+    - [AuditLog.Severity](#bytebase-v1-AuditLog-Severity)
+  
+    - [AuditLogService](#bytebase-v1-AuditLogService)
+  
+- [v1/idp_service.proto](#v1_idp_service-proto)
+    - [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest)
+    - [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest)
+    - [FieldMapping](#bytebase-v1-FieldMapping)
+    - [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest)
+    - [IdentityProvider](#bytebase-v1-IdentityProvider)
+    - [IdentityProviderConfig](#bytebase-v1-IdentityProviderConfig)
+    - [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig)
+    - [LDAPIdentityProviderTestRequestContext](#bytebase-v1-LDAPIdentityProviderTestRequestContext)
+    - [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest)
+    - [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse)
+    - [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig)
+    - [OAuth2IdentityProviderTestRequestContext](#bytebase-v1-OAuth2IdentityProviderTestRequestContext)
+    - [OIDCIdentityProviderConfig](#bytebase-v1-OIDCIdentityProviderConfig)
+    - [OIDCIdentityProviderTestRequestContext](#bytebase-v1-OIDCIdentityProviderTestRequestContext)
+    - [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest)
+    - [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse)
+    - [TestIdentityProviderResponse.ClaimsEntry](#bytebase-v1-TestIdentityProviderResponse-ClaimsEntry)
+    - [TestIdentityProviderResponse.UserInfoEntry](#bytebase-v1-TestIdentityProviderResponse-UserInfoEntry)
+    - [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest)
+  
+    - [IdentityProviderType](#bytebase-v1-IdentityProviderType)
+    - [LDAPIdentityProviderConfig.SecurityProtocol](#bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol)
+    - [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle)
+  
+    - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
+  
 - [v1/user_service.proto](#v1_user_service-proto)
     - [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest)
     - [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse)
@@ -339,10 +374,12 @@
   
 - [v1/auth_service.proto](#v1_auth_service-proto)
     - [AuthenticationInfo](#bytebase-v1-AuthenticationInfo)
+    - [AuthorizationRequest](#bytebase-v1-AuthorizationRequest)
     - [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest)
     - [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse)
-    - [GetAuthenticationRestrictionRequest](#bytebase-v1-GetAuthenticationRestrictionRequest)
+    - [GetAuthenticationInfoRequest](#bytebase-v1-GetAuthenticationInfoRequest)
     - [IdentityProviderContext](#bytebase-v1-IdentityProviderContext)
+    - [LoginIdentityProvider](#bytebase-v1-LoginIdentityProvider)
     - [LoginRequest](#bytebase-v1-LoginRequest)
     - [LoginResponse](#bytebase-v1-LoginResponse)
     - [LogoutRequest](#bytebase-v1-LogoutRequest)
@@ -551,33 +588,6 @@
   
     - [GroupService](#bytebase-v1-GroupService)
   
-- [v1/idp_service.proto](#v1_idp_service-proto)
-    - [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest)
-    - [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest)
-    - [FieldMapping](#bytebase-v1-FieldMapping)
-    - [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest)
-    - [IdentityProvider](#bytebase-v1-IdentityProvider)
-    - [IdentityProviderConfig](#bytebase-v1-IdentityProviderConfig)
-    - [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig)
-    - [LDAPIdentityProviderTestRequestContext](#bytebase-v1-LDAPIdentityProviderTestRequestContext)
-    - [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest)
-    - [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse)
-    - [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig)
-    - [OAuth2IdentityProviderTestRequestContext](#bytebase-v1-OAuth2IdentityProviderTestRequestContext)
-    - [OIDCIdentityProviderConfig](#bytebase-v1-OIDCIdentityProviderConfig)
-    - [OIDCIdentityProviderTestRequestContext](#bytebase-v1-OIDCIdentityProviderTestRequestContext)
-    - [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest)
-    - [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse)
-    - [TestIdentityProviderResponse.ClaimsEntry](#bytebase-v1-TestIdentityProviderResponse-ClaimsEntry)
-    - [TestIdentityProviderResponse.UserInfoEntry](#bytebase-v1-TestIdentityProviderResponse-UserInfoEntry)
-    - [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest)
-  
-    - [IdentityProviderType](#bytebase-v1-IdentityProviderType)
-    - [LDAPIdentityProviderConfig.SecurityProtocol](#bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol)
-    - [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle)
-  
-    - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
-  
 - [v1/org_policy_service.proto](#v1_org_policy_service-proto)
     - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
@@ -590,6 +600,8 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
+    - [ReviewAIPolicy](#bytebase-v1-ReviewAIPolicy)
+    - [ReviewRulePolicy](#bytebase-v1-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [TagPolicy](#bytebase-v1-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
@@ -761,6 +773,7 @@
     - [PurchasePlan](#bytebase-v1-PurchasePlan)
     - [PurchasePlanAdditional](#bytebase-v1-PurchasePlanAdditional)
     - [PurchaseResponse](#bytebase-v1-PurchaseResponse)
+    - [StartTrialRequest](#bytebase-v1-StartTrialRequest)
     - [Subscription](#bytebase-v1-Subscription)
     - [UpdatePurchaseRequest](#bytebase-v1-UpdatePurchaseRequest)
     - [UploadLicenseRequest](#bytebase-v1-UploadLicenseRequest)
@@ -792,22 +805,14 @@
   
 - [v1/workspace_service.proto](#v1_workspace_service-proto)
     - [DeleteWorkspaceRequest](#bytebase-v1-DeleteWorkspaceRequest)
-    - [GetMCPInfoRequest](#bytebase-v1-GetMCPInfoRequest)
     - [GetWorkspaceRequest](#bytebase-v1-GetWorkspaceRequest)
     - [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest)
     - [ListWorkspacesRequest](#bytebase-v1-ListWorkspacesRequest)
     - [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse)
-    - [MCPCapabilityMode](#bytebase-v1-MCPCapabilityMode)
-    - [MCPEngineEnforcement](#bytebase-v1-MCPEngineEnforcement)
-    - [MCPInfo](#bytebase-v1-MCPInfo)
-    - [MCPMethod](#bytebase-v1-MCPMethod)
     - [RotateDirectorySyncTokenRequest](#bytebase-v1-RotateDirectorySyncTokenRequest)
     - [RotateDirectorySyncTokenResponse](#bytebase-v1-RotateDirectorySyncTokenResponse)
     - [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest)
     - [Workspace](#bytebase-v1-Workspace)
-  
-    - [MCPEngineEnforcement.Masking](#bytebase-v1-MCPEngineEnforcement-Masking)
-    - [MCPEngineEnforcement.ReadOnlyDepth](#bytebase-v1-MCPEngineEnforcement-ReadOnlyDepth)
   
     - [WorkspaceService](#bytebase-v1-WorkspaceService)
   
@@ -905,6 +910,9 @@ WRITE are the serving classes the workspace&#39;s MCP capability ceiling selects
 between, EXCLUDED and FORBIDDEN are served by no ceiling, and an unclassified
 method is refused rather than served. Annotating a method is therefore a
 change to what an MCP session can reach, taking effect on the next request.
+READ and WRITE methods are also disclosed to workspace admins, as capability
+rows on the Access policy page, so annotating a method changes what the
+product promises as well as what it serves.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -1143,246 +1151,6 @@ AccessGrantService manages temporary access grants within projects.
 | ActivateAccessGrant | [ActivateAccessGrantRequest](#bytebase-v1-ActivateAccessGrantRequest) | [AccessGrant](#bytebase-v1-AccessGrant) | Activates a pending access grant. |
 | RevokeAccessGrant | [RevokeAccessGrantRequest](#bytebase-v1-RevokeAccessGrantRequest) | [AccessGrant](#bytebase-v1-AccessGrant) | Revokes an active access grant. |
 | SearchMyAccessGrants | [SearchMyAccessGrantsRequest](#bytebase-v1-SearchMyAccessGrantsRequest) | [SearchMyAccessGrantsResponse](#bytebase-v1-SearchMyAccessGrantsResponse) | Searches access grants created by the caller. |
-
- 
-
-
-
-<a name="v1_actuator_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/actuator_service.proto
-
-
-
-<a name="bytebase-v1-ActuatorInfo"></a>
-
-### ActuatorInfo
-System information and configuration for the Bytebase instance.
-Actuator concept is similar to the Spring Boot Actuator.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| version | [string](#string) |  | The Bytebase server version. |
-| git_commit | [string](#string) |  | The git commit hash of the build. |
-| saas | [bool](#bool) |  | Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users. |
-| external_url | [string](#string) |  | The external URL where users or webhook callbacks access Bytebase. |
-| last_active_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time any API call was made, refreshed on each request. |
-| workspace | [string](#string) |  | The unique identifier for the workspace. Format: workspaces/{id} |
-| unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |
-| activated_instance_count | [int32](#int32) |  | The number of activated database instances. |
-| total_instance_count | [int32](#int32) |  | The total number of database instances. |
-| external_url_from_flag | [bool](#bool) |  | Whether the external URL is set via command-line flag (and thus cannot be changed via UI). |
-| replica_count | [int32](#int32) |  | The number of active replicas (servers sharing the same database). |
-| default_project | [string](#string) |  | The default project for unassigned databases. Format: projects/{id} |
-| user_count_in_iam | [int32](#int32) |  | The number of users in the workspace IAM (for seat limit display). |
-| active_vcs_user_count | [int32](#int32) |  | The number of active VCS users seen in the active window. |
-| sample | [SampleInfo](#bytebase-v1-SampleInfo) |  | Sample setup availability and provisioned resources. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetActuatorInfoRequest"></a>
-
-### GetActuatorInfoRequest
-Request message for getting actuator information.
-
-
-
-
-
-
-<a name="bytebase-v1-SampleInfo"></a>
-
-### SampleInfo
-SampleInfo describes sample setup availability and provisioned resources.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| available | [bool](#bool) |  | Whether sample setup is currently available. |
-| instances | [SampleInfo.Instance](#bytebase-v1-SampleInfo-Instance) | repeated | The provisioned sample instances. |
-
-
-
-
-
-
-<a name="bytebase-v1-SampleInfo-Instance"></a>
-
-### SampleInfo.Instance
-Instance describes one provisioned sample instance.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instance | [string](#string) |  | The provisioned sample instance. Format: instances/{instance} or projects/{project}/instances/{instance} |
-| expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the provisioned sample instance expires. |
-
-
-
-
-
- 
-
- 
-
- 
-
-
-<a name="bytebase-v1-ActuatorService"></a>
-
-### ActuatorService
-ActuatorService manages system health and operational information.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. The workspace is resolved from the authenticated session. Permissions required: None (authentication required) |
-
- 
-
-
-
-<a name="v1_ai_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/ai_service.proto
-
-
-
-<a name="bytebase-v1-AIChatMessage"></a>
-
-### AIChatMessage
-A single message in the conversation.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [AIChatMessageRole](#bytebase-v1-AIChatMessageRole) |  | The role of the message sender. |
-| content | [string](#string) | optional | The text content of the message. Optional for assistant messages that only contain tool calls. |
-| tool_calls | [AIChatToolCall](#bytebase-v1-AIChatToolCall) | repeated | Tool calls made by the assistant. Only present in assistant messages. |
-| tool_call_id | [string](#string) | optional | The ID of the tool call this message is responding to. Only present in tool messages. |
-
-
-
-
-
-
-<a name="bytebase-v1-AIChatRequest"></a>
-
-### AIChatRequest
-Request message for AIService.Chat.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| messages | [AIChatMessage](#bytebase-v1-AIChatMessage) | repeated | The conversation messages. |
-| tool_definitions | [AIChatToolDefinition](#bytebase-v1-AIChatToolDefinition) | repeated | The tool definitions available to the AI. |
-
-
-
-
-
-
-<a name="bytebase-v1-AIChatResponse"></a>
-
-### AIChatResponse
-Response message for AIService.Chat.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| content | [string](#string) | optional | The text content of the AI response. Optional when the response only contains tool calls. |
-| tool_calls | [AIChatToolCall](#bytebase-v1-AIChatToolCall) | repeated | Tool calls the AI wants to make. |
-| usage | [AIChatUsage](#bytebase-v1-AIChatUsage) | optional | Token usage for this provider call, when available. |
-
-
-
-
-
-
-<a name="bytebase-v1-AIChatToolCall"></a>
-
-### AIChatToolCall
-A tool call made by the AI.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The unique ID of this tool call. |
-| name | [string](#string) |  | The name of the tool to call. |
-| arguments | [string](#string) |  | The JSON-encoded arguments to pass to the tool. |
-| metadata | [string](#string) | optional | Opaque provider-specific metadata (e.g., Gemini thought_signature). Frontend must echo this back unchanged when sending tool results. |
-
-
-
-
-
-
-<a name="bytebase-v1-AIChatToolDefinition"></a>
-
-### AIChatToolDefinition
-A tool definition that the AI can invoke.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the tool. |
-| description | [string](#string) |  | A description of what the tool does. |
-| parameters_schema | [string](#string) |  | The JSON Schema describing the tool&#39;s parameters. |
-
-
-
-
-
-
-<a name="bytebase-v1-AIChatUsage"></a>
-
-### AIChatUsage
-Token usage for a single AI provider call.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| total_tokens | [int32](#int32) |  | Total tokens used by the provider call. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-AIChatMessageRole"></a>
-
-### AIChatMessageRole
-Role of a chat message.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| AI_CHAT_MESSAGE_ROLE_UNSPECIFIED | 0 | Unspecified role. |
-| AI_CHAT_MESSAGE_ROLE_SYSTEM | 1 | System message providing instructions. |
-| AI_CHAT_MESSAGE_ROLE_USER | 2 | User message. |
-| AI_CHAT_MESSAGE_ROLE_ASSISTANT | 3 | Assistant (AI) message. |
-| AI_CHAT_MESSAGE_ROLE_TOOL | 4 | Tool result message. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-AIService"></a>
-
-### AIService
-AIService provides AI chat capabilities for the page agent.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| Chat | [AIChatRequest](#bytebase-v1-AIChatRequest) | [AIChatResponse](#bytebase-v1-AIChatResponse) | Chat sends a conversation with tool definitions to the configured AI provider and returns the AI response. |
 
  
 
@@ -1667,340 +1435,6 @@ Webhook integration type.
 
 
 
-<a name="v1_iam_policy-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/iam_policy.proto
-
-
-
-<a name="bytebase-v1-Binding"></a>
-
-### Binding
-Binding associates members with a role and optional conditions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
-| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} For service accounts, the member should be: serviceAccount:{email} For workload identities, the member should be: workloadIdentity:{email} |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding, only used in the project IAM policy. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Support variables: resource.database: the canonical database full name in &#34;instances/{instance}/databases/{database}&#34; or &#34;projects/{project}/instances/{instance}/databases/{database}&#34; format, used by any role with SQL Editor read (e.g. &#34;roles/sqlEditorUser&#34;, &#34;roles/sqlEditorReadUser&#34;) or write (bb.sql.ddl / bb.sql.dml) access, support &#34;==&#34; operator. resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support &#34;in&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
-
-Known limitations of table/schema-scoped DDL/DML grants: - The scope only gates the write target, not the read sources of a write: e.g. `INSERT INTO granted_table SELECT * FROM other_table` may read `other_table` without a grant on it, so a table-scoped write grant is not an exfiltration boundary. - It must be paired with a database/project-level read grant: a table-scoped grant alone does not satisfy the SQL Editor query method permission (bb.databases.get). - A resource.schema_name-scoped grant only authorizes a write whose schema is unambiguous — qualify the table (schema.table) or select the schema for the SQL Editor session. An unqualified write whose effective schema cannot be determined ahead of execution is denied (qualify it, or use a table-only grant). - Multi-statement batches are authorized at the database level: an earlier statement can rebind the session&#39;s default schema or database mid-batch, so per-table/schema scoping is dropped and a table/schema-scoped grant requires a database-level grant. The database-level check is still per target database — a qualified cross-database write is gated by a grant on its own database, not the request database — but an unqualified write whose session default is rebound mid-batch is evaluated against the database it literally names, so qualify cross-database writes or run them as single statements. - A write target in a different project than the SQL-Editor session&#39;s database is denied: the per-target check evaluates the session project&#39;s IAM policy, so a cross-project write is failed closed (to write it, open the SQL Editor on a database in the target project). - Enforcement is on the statement&#39;s literal write target; writes routed elsewhere by a view/synonym, or into a temporary schema (e.g. pg_temp), are evaluated against what the statement names, not the ultimate base object. - Write-target gating uses an ALLOWLIST of statement types the resolver models. It does NOT cover every syntactically-identifiable cross-database write; statement types off the allowlist are authorized against the request database. The allowlist is: - Modeled table/data writes (per-table/schema-scopable): INSERT/UPDATE/DELETE/TRUNCATE/MERGE, LOAD DATA, IMPORT INTO, CREATE TABLE AS / SELECT INTO, and table-level CREATE/DROP/ALTER/RENAME/index. - Modeled non-table object DDL (gated at the DATABASE level by the object&#39;s own explicit database/schema qualifier; an unqualified name keeps the request-database check): CREATE/ALTER/DROP of view, procedure/function/routine, trigger, sequence, synonym, type, and (Oracle) package and cluster; plus Oracle ALTER/DROP MATERIALIZED VIEW (Oracle CREATE MATERIALIZED VIEW is not modeled — see below). NOT modeled (these fall back to the request-database check, so a qualified cross-database one is authorized against the request database): MySQL CREATE TRIGGER and CREATE/ALTER/DROP EVENT (bare-string AST names); MSSQL ALTER of view/procedure/function/trigger (no ALTER node in the grammar); Oracle CREATE MATERIALIZED VIEW and the niche object DDL — dimension, attribute dimension, hierarchy, analytic view, JSON duality view, materialized zonemap, operator, in-memory join group, property graph, vector index, index type, domain; COPY ... FROM; and engine-specific bulk-load / deprecated text writes. A structural &#34;write-target object database&#34; extraction layer to remove this allowlist dependence is tracked as a follow-up. - Out of scope (read sources / indirect effects): the tables a write READS (INSERT … SELECT, MERGE … USING, CREATE TABLE AS … SELECT) and objects reached indirectly via views/synonyms/function bodies/triggers are NOT gated. Invariant: for a statement ON the modeled allowlist that explicitly names a different database as its write target, the ACL uses that target database, not the request database. Statement types OFF the allowlist are authorized against the request database.
-
-For example: resource.database == &#34;instances/local-pg/databases/postgres&#34; &amp;&amp; resource.schema_name in [&#34;public&#34;,&#34;another_schema&#34;] resource.database == &#34;instances/local-pg/databases/bytebase&#34; &amp;&amp; resource.schema_name == &#34;public&#34; &amp;&amp; resource.table_name in [&#34;audit_log&#34;] resource.database == &#34;instances/local-pg/databases/postgres&#34; &amp;&amp; resource.environment_id in [&#34;test&#34;] request.time &lt; timestamp(&#34;2025-04-26T11:24:48.655Z&#34;) |
-| parsed_expr | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) |  | The parsed expression of the condition. |
-
-
-
-
-
-
-<a name="bytebase-v1-BindingDelta"></a>
-
-### BindingDelta
-A single change to a binding.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| action | [BindingDelta.Action](#bytebase-v1-BindingDelta-Action) |  | The action that was performed on a Binding. |
-| role | [string](#string) |  | Role that is assigned to `members`. For example, `roles/projectOwner`. |
-| member | [string](#string) |  | Follows the same format of Binding.members. |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetIamPolicyRequest"></a>
-
-### GetIamPolicyRequest
-Request message for getting an IAM policy.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | The name of the resource to get the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
-
-
-
-
-
-
-<a name="bytebase-v1-IamPolicy"></a>
-
-### IamPolicy
-IAM policy that binds members to roles.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
-| etag | [string](#string) |  | The current etag of the policy, returned by GetIamPolicy and SetIamPolicy. Sending it back on SetIamPolicy makes the write conditional: if the policy changed since the read, the call returns ABORTED. Omitting it applies the write unconditionally, overwriting any concurrent change (AIP-154). |
-
-
-
-
-
-
-<a name="bytebase-v1-PolicyDelta"></a>
-
-### PolicyDelta
-Describes changes between two IAM policies.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| binding_deltas | [BindingDelta](#bytebase-v1-BindingDelta) | repeated | The delta for Bindings between two policies. |
-
-
-
-
-
-
-<a name="bytebase-v1-SetIamPolicyRequest"></a>
-
-### SetIamPolicyRequest
-Request message for setting an IAM policy.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| resource | [string](#string) |  | The name of the resource to set the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
-| policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
-| etag | [string](#string) |  | The current etag of the policy. Equivalent to setting `policy.etag`; supplying both with different values returns INVALID_ARGUMENT. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-BindingDelta-Action"></a>
-
-### BindingDelta.Action
-Type of action performed on a binding.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 | Unspecified action. |
-| ADD | 1 | Add a binding. |
-| REMOVE | 2 | Remove a binding. |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="v1_audit_log_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/audit_log_service.proto
-
-
-
-<a name="bytebase-v1-AuditData"></a>
-
-### AuditData
-Additional audit data specific to certain operations.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| policy_delta | [PolicyDelta](#bytebase-v1-PolicyDelta) |  | Changes to IAM policies. |
-
-
-
-
-
-
-<a name="bytebase-v1-AuditLog"></a>
-
-### AuditLog
-Audit log entry recording system activity or API call.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the log. Formats: - projects/{project}/auditLogs/{uid} - workspaces/{workspace}/auditLogs/{uid} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the audit log was created. |
-| user | [string](#string) |  | The user who performed the action. Format: users/{email} |
-| method | [string](#string) |  | The method or action being audited. For example: /bytebase.v1.SQLService/Query or bb.project.repository.push |
-| severity | [AuditLog.Severity](#bytebase-v1-AuditLog-Severity) |  | The severity level of this audit log entry. |
-| resource | [string](#string) |  | The resource associated with this audit log. |
-| request | [string](#string) |  | The request payload in JSON format. |
-| response | [string](#string) |  | The response payload in JSON format. Some fields may be omitted if they are too large or contain sensitive information. |
-| status | [google.rpc.Status](#google-rpc-Status) |  | The status of the operation. |
-| latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration of the operation. |
-| service_data | [google.protobuf.Any](#google-protobuf-Any) |  | Service-specific metadata about the request, response, and activities. |
-| request_metadata | [RequestMetadata](#bytebase-v1-RequestMetadata) |  | Metadata about the request context. |
-| mcp_delegation | [MCPDelegation](#bytebase-v1-MCPDelegation) |  | MCP delegation provenance. Present exactly when the audited call arrived through the MCP server&#39;s delegated credential; never set for public API calls. Presence of this message is the MCP-origin marker. |
-
-
-
-
-
-
-<a name="bytebase-v1-ExportAuditLogsRequest"></a>
-
-### ExportAuditLogsRequest
-Request message for exporting audit logs.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  |  |
-| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. Check the filter field in the SearchAuditLogsRequest message. |
-| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. The default sorting order is ascending. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
-| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
-| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 10 log entries will be returned. The maximum value is 5000; values above 5000 will be coerced to 5000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ExportAuditLogs` call. Provide this to retrieve the subsequent page. |
-
-
-
-
-
-
-<a name="bytebase-v1-ExportAuditLogsResponse"></a>
-
-### ExportAuditLogsResponse
-Response message for exporting audit logs.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| content | [bytes](#bytes) |  | The exported audit log content in the requested format. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
-
-
-
-
-
-
-<a name="bytebase-v1-MCPDelegation"></a>
-
-### MCPDelegation
-Provenance of a call that reached the API through the MCP (Model Context
-Protocol) server&#39;s delegated credential. The values are copied verbatim from
-the verified credential&#39;s grant state; empty fields record that the grant
-stored nothing (legacy sessions), never a resolved or synthesized value.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| scope | [string](#string) |  | The OAuth2 grant&#39;s consented scope, e.g. &#34;mcp:read-only&#34;. Empty when the grant recorded no scope. |
-| resource | [string](#string) |  | The grant&#39;s stored MCP resource URI. Empty for pre-grant legacy sessions. |
-| client_id | [string](#string) |  | The OAuth2 client the grant was consented to. Empty for legacy web-session tokens at /mcp. |
-| correlation_id | [string](#string) |  | Correlates the audit rows an MCP session produces. Minted at the /mcp boundary and session-scoped: the MCP SDK hands tool handlers the initialize-time context, so one MCP session carries one correlation ID across all of its tool calls. |
-
-
-
-
-
-
-<a name="bytebase-v1-RequestMetadata"></a>
-
-### RequestMetadata
-Metadata about the incoming request.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| caller_ip | [string](#string) |  | The IP address of the request originator. |
-| caller_supplied_user_agent | [string](#string) |  | The user agent string provided by the caller. This is supplied by the client and is not authenticated. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchAuditLogsRequest"></a>
-
-### SearchAuditLogsRequest
-Request message for searching audit logs.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  |  |
-| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filter: - method: the API name, can be found in the docs. Usually &#34;/bytebase.v1.…&#34;, for example &#34;/bytebase.v1.UserService/CreateUser&#34;; entries written outside the v1 API carry their own prefix, such as &#34;/bytebase.mcp.Session/Authorize&#34; or &#34;/bytebase.cli.Recovery/ResetUserPassword&#34;. Support &#34;==&#34; operator. - resource: the resource the entry is about, support &#34;==&#34; operator. - severity: support &#34;==&#34; operator, check Severity enum in AuditLog message for values. - user: the actor, should in &#34;users/{email}&#34; format, support &#34;==&#34; operator. - create_time: support &#34;&gt;=&#34; and &#34;&lt;=&#34; operator. - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support &#34;==&#34; operator. - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry&#39;s mcp_delegation.correlation_id. Support &#34;==&#34; operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
-
-For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; - filter = &#34;mcp == true&#34; - filter = &#34;mcp_correlation_id == &#39;0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60&#39;&#34; |
-| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. The default sorting order is ascending. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
-| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 10 log entries will be returned. The maximum value is 5000; values above 5000 will be coerced to 5000. |
-| page_token | [string](#string) |  | A page token, received from a previous `SearchLogs` call. Provide this to retrieve the subsequent page. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchAuditLogsResponse"></a>
-
-### SearchAuditLogsResponse
-Response message for searching audit logs.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| audit_logs | [AuditLog](#bytebase-v1-AuditLog) | repeated |  |
-| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-AuditLog-Severity"></a>
-
-### AuditLog.Severity
-Severity level for audit log entries.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SEVERITY_UNSPECIFIED | 0 | Unspecified severity level. |
-| DEBUG | 1 | Debug-level information. |
-| INFO | 2 | Informational messages. |
-| NOTICE | 3 | Notable events. |
-| WARNING | 4 | Warning conditions. |
-| ERROR | 5 | Error conditions. |
-| CRITICAL | 6 | Critical conditions. |
-| ALERT | 7 | Action must be taken immediately. |
-| EMERGENCY | 8 | System is unusable. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-AuditLogService"></a>
-
-### AuditLogService
-AuditLogService manages audit logs for system activities and API calls.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) | Searches audit logs with optional filtering and pagination. Permissions required: bb.auditLogs.search |
-| ExportAuditLogs | [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest) | [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse) | Exports audit logs in a specified format for external analysis. Permissions required: bb.auditLogs.export |
-
- 
-
-
-
 <a name="v1_rollout_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2214,6 +1648,10 @@ For example: update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type in 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of taskRuns. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} Use &#34;projects/{project}/plans/{plan}/rollout/stages/-/tasks/-&#34; to list all taskRuns from a rollout. |
+| page_size | [int32](#int32) |  | The maximum number of task runs to return. The service may return fewer than this value. If unspecified, at most 1000 task runs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListTaskRuns` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListTaskRuns` must match the call that provided the page token. |
 
 
 
@@ -2229,6 +1667,7 @@ For example: update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type in 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | task_runs | [TaskRun](#bytebase-v1-TaskRun) | repeated | The taskRuns from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
 
@@ -2943,9 +2382,9 @@ For example: creator == &#34;users/{email}&#34; |
 | page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
 | filter | [string](#string) |  | Filter is the filter to apply on the search query history The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - database: the database full name in &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator. - statement: the SQL statement, support &#34;.contains()&#34; operator.
+Supported filter: - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - database: the database full name in &#34;instances/{id}/databases/{name}&#34; or &#34;projects/{project}/instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; or &#34;projects/{project}/instances/{id}&#34; format, support &#34;==&#34; operator. - type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator. - statement: the SQL statement, support &#34;==&#34; and &#34;.contains()&#34; operators.
 
-For example: project == &#34;projects/{project}&#34; database == &#34;instances/{instance}/databases/{database}&#34; instance == &#34;instances/{instance}&#34; type == &#34;QUERY&#34; type == &#34;EXPORT&#34; statement.contains(&#34;select&#34;) type == &#34;QUERY&#34; &amp;&amp; statement.contains(&#34;select&#34;) |
+For example: project == &#34;projects/{project}&#34; database == &#34;instances/{instance}/databases/{database}&#34; instance == &#34;instances/{instance}&#34; type == &#34;QUERY&#34; type == &#34;EXPORT&#34; statement == &#34;SELECT 1;&#34; statement.contains(&#34;select&#34;) type == &#34;QUERY&#34; &amp;&amp; statement.contains(&#34;select&#34;) |
 
 
 
@@ -3133,7 +2572,9 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | redis_run_commands_on | [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn) |  |  |
-| mssql_explain_format | [QueryOption.MSSQLExplainFormat](#bytebase-v1-QueryOption-MSSQLExplainFormat) |  |  |
+| explain_format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  | Which explain output the caller wants, for an explain request.
+
+Leave it unspecified for the engine&#39;s own default, which is the only output most engines have. Naming a format an engine cannot produce is INVALID_ARGUMENT rather than a silent fallback, as is any explain request against an engine that has no explain at all. |
 
 
 
@@ -3199,6 +2640,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | command_error | [QueryResult.CommandError](#bytebase-v1-QueryResult-CommandError) |  |  |
 | messages | [QueryResult.Message](#bytebase-v1-QueryResult-Message) | repeated | Informational or debug messages returned by the database engine during query execution. Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39;s DBMS_OUTPUT.PUT_LINE. |
 | masked | [MaskingReason](#bytebase-v1-MaskingReason) | repeated | Masking reasons for each column (empty for non-masked columns). |
+| query_plan | [QueryResult.QueryPlan](#bytebase-v1-QueryResult-QueryPlan) |  | Set when the result is a query plan. Unset for any other result. |
 
 
 
@@ -3263,6 +2705,22 @@ for field description.
 | file | [string](#string) |  |  |
 | line | [int32](#int32) |  |  |
 | routine | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult-QueryPlan"></a>
+
+### QueryResult.QueryPlan
+A query plan held in the result&#39;s rows.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  |  |
+| executed | [bool](#bool) |  | Whether producing the plan executed the statement, as EXPLAIN ANALYZE does. |
 
 
 
@@ -3389,16 +2847,18 @@ RuleType indicates the source of the linting rule.
 
 
 
-<a name="bytebase-v1-QueryOption-MSSQLExplainFormat"></a>
+<a name="bytebase-v1-QueryOption-ExplainFormat"></a>
 
-### QueryOption.MSSQLExplainFormat
-
+### QueryOption.ExplainFormat
+The output format of a query plan.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| MSSQL_EXPLAIN_FORMAT_UNSPECIFIED | 0 | defaults to SHOWPLAN_ALL |
-| MSSQL_EXPLAIN_FORMAT_ALL | 1 | SHOWPLAN_ALL |
-| MSSQL_EXPLAIN_FORMAT_XML | 2 | SHOWPLAN_XML |
+| EXPLAIN_FORMAT_UNSPECIFIED | 0 | The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. On a result, a default the server could not resolve, as when MySQL follows the session&#39;s explain_format; read such a plan as text. |
+| TEXT | 1 | The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server: SHOWPLAN_ALL. |
+| JSON | 2 | The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON). |
+| XML | 3 | The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server: SHOWPLAN_XML. |
+| YAML | 4 | The plan tree as YAML. PostgreSQL: EXPLAIN (FORMAT YAML). |
 
 
 
@@ -3892,6 +3352,51 @@ PlanService manages deployment plans for database changes.
 
 
 
+<a name="v1_review_rule-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/review_rule.proto
+
+
+ 
+
+
+<a name="bytebase-v1-ReviewRuleType"></a>
+
+### ReviewRuleType
+ReviewRuleType is the standard review rule set. The rules are fixed:
+every project gets them without configuration, and the only setting is a
+switch (see ReviewRulePolicy).
+
+A rule id names what the rule examines. An execution check is named for
+what it checks; a rule about the SQL itself carries REQUIRE or DISALLOW so
+the id says which way it cuts. DISALLOW on a P1 rule means the operation
+needs a person&#39;s acceptance, not that it is forbidden.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REVIEW_RULE_TYPE_UNSPECIFIED | 0 |  |
+| SYNTAX | 1 | P0: the statements do not parse for the target engine. It gates the other rules (see ReviewRulePolicy). |
+| WALK_THROUGH | 2 | P0: applying the statements to the synced schema fails: a missing table or column, a duplicate object, or an invalid reference. |
+| ONLINE_MIGRATION | 3 | P0: the change requests online migration but is not eligible. |
+| PRIOR_BACKUP | 4 | P0: the change enables prior backup but the backup cannot be taken. |
+| REQUIRE_IS_NULL | 5 | P0: = NULL or &lt;&gt; NULL in a predicate, which is always false. Test for NULL with IS NULL or IS NOT NULL. |
+| REQUIRE_WHERE | 6 | P1: UPDATE or DELETE without WHERE. |
+| DISALLOW_DROP_OBJECT | 7 | P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE. |
+| DISALLOW_TRUNCATE | 8 | P1: TRUNCATE. |
+| DISALLOW_DROP_CONSTRAINT | 9 | P1: dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint. |
+| DISALLOW_RENAME | 10 | P1: renaming a table or column. |
+| REQUIRE_PRIMARY_KEY | 11 | P1: the change creates a table without a primary key, or drops a primary key without adding one back. A table that already lacked a primary key before the change is not reported. |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="v1_issue_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -4084,6 +3589,10 @@ A comment on an issue.
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | creator | [string](#string) |  | Format: users/{email} |
+| root | [string](#string) | optional | The thread root&#39;s name, set only on replies. Immutable after creation. Format: projects/{project}/issues/{issue}/issueComments/{issueComment} Must name a thread root in the same issue, never a general comment or reply. |
+| thread_state | [IssueComment.ThreadState](#bytebase-v1-IssueComment-ThreadState) | optional | Present only on thread roots. Set OPEN on create to start a thread; an anchored root starts one without it. Omit root, thread_state, and statement_anchor to create a general comment. Update through the thread_state field mask to resolve or reopen. Adding a reply does not reopen a resolved thread. |
+| statement_anchor | [StatementAnchor](#bytebase-v1-StatementAnchor) |  | Optional source context on a root or reply. A reply&#39;s anchor must share the root&#39;s spec and sheet_sha256; it may narrow the range. Cannot be set on events. Immutable after creation. |
+| review_metadata | [IssueComment.ReviewMetadata](#bytebase-v1-IssueComment-ReviewMetadata) |  | Present on review results, the comments the review executor posts. Never accepted on create or update. |
 | approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  | Approval event. |
 | issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  | Issue update event. |
 | plan_update | [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate) |  | Plan update event. |
@@ -4148,6 +3657,24 @@ and after a PlanService.UpdatePlan call that mutated specs).
 
 
 
+<a name="bytebase-v1-IssueComment-ReviewMetadata"></a>
+
+### IssueComment.ReviewMetadata
+What a review result carries beyond its text.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| run_type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | The reviewer that posted the result. |
+| rule_type | [ReviewRuleType](#bytebase-v1-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
+| priority | [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority) |  |  |
+| targets | [string](#string) | repeated | Every database the result applies to, sorted. Format: instances/{instance}/databases/{database} |
+
+
+
+
+
+
 <a name="bytebase-v1-IssueComment-ReviewSubmission"></a>
 
 ### IssueComment.ReviewSubmission
@@ -4171,6 +3698,7 @@ Review submission event information.
 | page_token | [string](#string) |  | A page token, received from a previous `ListIssueComments` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListIssueComments` must match the call that provided the page token. |
+| filter | [string](#string) |  | CEL filter over events, root comments, and replies. Supported: root == null, root == &#34;&lt;comment name&gt;&#34;, or root in [&#34;&lt;comment name&gt;&#34;, ...]. Root names must belong to parent. Empty and root == null return the timeline (events and root comments); other filters return replies only. |
 
 
 
@@ -4290,7 +3818,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} The {reviewRun} id is the reviewer: &#34;rule&#34; or &#34;guideline&#34;. The name addresses a slot, not an execution. |
+| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} The {reviewRun} id is the reviewer: &#34;rule&#34; or &#34;ai&#34;. The name addresses a slot, not an execution. |
 | type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | Derived from the name. |
 | status | [ReviewRun.Status](#bytebase-v1-ReviewRun-Status) |  |  |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the current run was triggered. Reset on every re-run. |
@@ -4367,6 +3895,26 @@ When paginating, all other parameters provided to `SearchIssues` must match the 
 | ----- | ---- | ----- | ----------- |
 | issues | [Issue](#bytebase-v1-Issue) | repeated | The issues from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-StatementAnchor"></a>
+
+### StatementAnchor
+The saved statement revision and range referenced by a comment.
+Source currency is derived by comparing the spec and hash with the current plan.
+Historical SQL is available through SheetService.GetSheet with this hash.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| spec | [string](#string) |  | The Plan.Spec.id in the issue&#39;s plan; may no longer resolve after deletion. |
+| sheet_sha256 | [string](#string) |  | SHA256 of the saved sheet, as 64 lowercase hexadecimal characters. |
+| start_position | [Position](#bytebase-v1-Position) |  | One-based lines and Unicode code-point columns. When both columns are zero, the range covers whole lines, including the end line. Otherwise both columns must be positive, start_position is inclusive, and end_position is exclusive. |
+| end_position | [Position](#bytebase-v1-Position) |  |  |
 
 
 
@@ -4454,6 +4002,34 @@ Approval status values.
 
 
 
+<a name="bytebase-v1-IssueComment-ReviewMetadata-Priority"></a>
+
+### IssueComment.ReviewMetadata.Priority
+Priority says what resolving the thread means. It has no bearing on
+blocking, which thread_state alone decides.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PRIORITY_UNSPECIFIED | 0 |  |
+| P0 | 1 | The SQL is wrong and must change. |
+| P1 | 2 | Dangerous but legitimate; a person must accept it. |
+| P2 | 3 | Advisory. |
+
+
+
+<a name="bytebase-v1-IssueComment-ThreadState"></a>
+
+### IssueComment.ThreadState
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| THREAD_STATE_UNSPECIFIED | 0 |  |
+| OPEN | 1 |  |
+| RESOLVED | 2 |  |
+
+
+
 <a name="bytebase-v1-ReviewRun-Status"></a>
 
 ### ReviewRun.Status
@@ -4480,7 +4056,7 @@ completion transaction, so re-running supersedes instead of canceling).
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | RULE | 1 | Review against the standard rules. |
-| GUIDELINE | 2 | Review against natural-language guidelines, performed by AI. |
+| AI | 2 | Review against the natural-language AI review policy, performed by a model. |
 
 
  
@@ -5041,9 +4617,6 @@ workspace.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The maximum capability available to MCP sessions in this workspace, acting as an admin-set ceiling. Enforced server-side at three points: the /mcp endpoint decides whether a connection is admitted at all, the ceiling gate on the internal MCP chain decides, per request, which method classes are served, and under READ_ONLY the SQL clamp decides, per statement, whether it only reads. |
-| ignore_masking_exemptions | [bool](#bool) |  | Whether a request that arrived over MCP stops applying the caller&#39;s own unmasking provisioning. Two mechanisms let a user see a real value and this suppresses both: the masking exemptions granted to them, and the unmask carried by an access grant. The same user in the console is untouched.
-
-It cannot force masking where there is none. Masking substitutes values in query results, so this does not reach data copied into a column carrying no masking policy, and it does nothing on the engines Bytebase does not mask. It narrows what an agent reads through the paths Bytebase masks; it is not a confidentiality boundary. |
 
 
 
@@ -5395,8 +4968,8 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 
 ### MCPSetting.Capability
 Capability is the ceiling: a session runs at this level or lower.
-Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
-path to leave the current ceiling unchanged.
+Writing CAPABILITY_UNSPECIFIED, explicitly or by leaving
+value.mcp.capability out of the update mask, is rejected.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -5457,6 +5030,988 @@ SettingService manages workspace-level settings and configurations.
 | GetSetting | [GetSettingRequest](#bytebase-v1-GetSettingRequest) | [Setting](#bytebase-v1-Setting) | Retrieves a workspace setting by name. Permissions required: bb.settings.get |
 | UpdateSetting | [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest) | [Setting](#bytebase-v1-Setting) | Updates a workspace setting. Permissions required: bb.settings.set |
 | TestEmailSetting | [TestEmailSettingRequest](#bytebase-v1-TestEmailSettingRequest) | [TestEmailSettingResponse](#bytebase-v1-TestEmailSettingResponse) | Sends a test email using the provided config (without persisting). Permissions required: bb.settings.set |
+
+ 
+
+
+
+<a name="v1_actuator_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/actuator_service.proto
+
+
+
+<a name="bytebase-v1-ActuatorInfo"></a>
+
+### ActuatorInfo
+System information and configuration for the Bytebase instance.
+Actuator concept is similar to the Spring Boot Actuator.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  | The Bytebase server version. |
+| git_commit | [string](#string) |  | The git commit hash of the build. |
+| saas | [bool](#bool) |  | Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users. |
+| external_url | [string](#string) |  | The external URL where users or webhook callbacks access Bytebase. |
+| last_active_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time any API call was made, refreshed on each request. |
+| workspace | [string](#string) |  | The unique identifier for the workspace. Format: workspaces/{id} |
+| unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |
+| activated_instance_count | [int32](#int32) |  | The number of activated database instances. |
+| total_instance_count | [int32](#int32) |  | The total number of database instances. |
+| external_url_from_flag | [bool](#bool) |  | Whether the external URL is set via command-line flag (and thus cannot be changed via UI). |
+| replica_count | [int32](#int32) |  | The number of active replicas (servers sharing the same database). |
+| default_project | [string](#string) |  | The default project for unassigned databases. Format: projects/{id} |
+| user_count_in_iam | [int32](#int32) |  | The number of users in the workspace IAM (for seat limit display). |
+| active_vcs_user_count | [int32](#int32) |  | The number of active VCS users seen in the active window. |
+| sample | [SampleInfo](#bytebase-v1-SampleInfo) |  | Sample setup availability and provisioned resources. |
+| mcp_setting | [MCPSetting](#bytebase-v1-MCPSetting) |  | The MCP (Model Context Protocol) setting in the current workspace. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetActuatorInfoRequest"></a>
+
+### GetActuatorInfoRequest
+Request message for getting actuator information.
+
+
+
+
+
+
+<a name="bytebase-v1-SampleInfo"></a>
+
+### SampleInfo
+SampleInfo describes sample setup availability and provisioned resources.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| available | [bool](#bool) |  | Whether sample setup is currently available. |
+| instances | [SampleInfo.Instance](#bytebase-v1-SampleInfo-Instance) | repeated | The provisioned sample instances. |
+
+
+
+
+
+
+<a name="bytebase-v1-SampleInfo-Instance"></a>
+
+### SampleInfo.Instance
+Instance describes one provisioned sample instance.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance | [string](#string) |  | The provisioned sample instance. Format: instances/{instance} or projects/{project}/instances/{instance} |
+| expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the provisioned sample instance expires. |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ActuatorService"></a>
+
+### ActuatorService
+ActuatorService manages system health and operational information.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. The workspace is resolved from the authenticated session. Permissions required: None (authentication required) |
+
+ 
+
+
+
+<a name="v1_ai_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/ai_service.proto
+
+
+
+<a name="bytebase-v1-AIChatMessage"></a>
+
+### AIChatMessage
+A single message in the conversation.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [AIChatMessageRole](#bytebase-v1-AIChatMessageRole) |  | The role of the message sender. |
+| content | [string](#string) | optional | The text content of the message. Optional for assistant messages that only contain tool calls. |
+| tool_calls | [AIChatToolCall](#bytebase-v1-AIChatToolCall) | repeated | Tool calls made by the assistant. Only present in assistant messages. |
+| tool_call_id | [string](#string) | optional | The ID of the tool call this message is responding to. Only present in tool messages. |
+
+
+
+
+
+
+<a name="bytebase-v1-AIChatRequest"></a>
+
+### AIChatRequest
+Request message for AIService.Chat.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| messages | [AIChatMessage](#bytebase-v1-AIChatMessage) | repeated | The conversation messages. |
+| tool_definitions | [AIChatToolDefinition](#bytebase-v1-AIChatToolDefinition) | repeated | The tool definitions available to the AI. |
+
+
+
+
+
+
+<a name="bytebase-v1-AIChatResponse"></a>
+
+### AIChatResponse
+Response message for AIService.Chat.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [string](#string) | optional | The text content of the AI response. Optional when the response only contains tool calls. |
+| tool_calls | [AIChatToolCall](#bytebase-v1-AIChatToolCall) | repeated | Tool calls the AI wants to make. |
+| usage | [AIChatUsage](#bytebase-v1-AIChatUsage) | optional | Token usage for this provider call, when available. |
+
+
+
+
+
+
+<a name="bytebase-v1-AIChatToolCall"></a>
+
+### AIChatToolCall
+A tool call made by the AI.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The unique ID of this tool call. |
+| name | [string](#string) |  | The name of the tool to call. |
+| arguments | [string](#string) |  | The JSON-encoded arguments to pass to the tool. |
+| metadata | [string](#string) | optional | Opaque provider-specific metadata (e.g., Gemini thought_signature). Frontend must echo this back unchanged when sending tool results. |
+
+
+
+
+
+
+<a name="bytebase-v1-AIChatToolDefinition"></a>
+
+### AIChatToolDefinition
+A tool definition that the AI can invoke.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the tool. |
+| description | [string](#string) |  | A description of what the tool does. |
+| parameters_schema | [string](#string) |  | The JSON Schema describing the tool&#39;s parameters. |
+
+
+
+
+
+
+<a name="bytebase-v1-AIChatUsage"></a>
+
+### AIChatUsage
+Token usage for a single AI provider call.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| total_tokens | [int32](#int32) |  | Total tokens used by the provider call. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-AIChatMessageRole"></a>
+
+### AIChatMessageRole
+Role of a chat message.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AI_CHAT_MESSAGE_ROLE_UNSPECIFIED | 0 | Unspecified role. |
+| AI_CHAT_MESSAGE_ROLE_SYSTEM | 1 | System message providing instructions. |
+| AI_CHAT_MESSAGE_ROLE_USER | 2 | User message. |
+| AI_CHAT_MESSAGE_ROLE_ASSISTANT | 3 | Assistant (AI) message. |
+| AI_CHAT_MESSAGE_ROLE_TOOL | 4 | Tool result message. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-AIService"></a>
+
+### AIService
+AIService provides AI chat capabilities for the page agent.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Chat | [AIChatRequest](#bytebase-v1-AIChatRequest) | [AIChatResponse](#bytebase-v1-AIChatResponse) | Chat sends a conversation with tool definitions to the configured AI provider and returns the AI response. |
+
+ 
+
+
+
+<a name="v1_iam_policy-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/iam_policy.proto
+
+
+
+<a name="bytebase-v1-Binding"></a>
+
+### Binding
+Binding associates members with a role and optional conditions.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
+| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} For service accounts, the member should be: serviceAccount:{email} For workload identities, the member should be: workloadIdentity:{email} |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding, only used in the project IAM policy. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Support variables: resource.database: the canonical database full name in &#34;instances/{instance}/databases/{database}&#34; or &#34;projects/{project}/instances/{instance}/databases/{database}&#34; format, used by any role with SQL Editor read (e.g. &#34;roles/sqlEditorUser&#34;, &#34;roles/sqlEditorReadUser&#34;) or write (bb.sql.ddl / bb.sql.dml) access, support &#34;==&#34; operator. resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support &#34;in&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
+
+Known limitations of table/schema-scoped DDL/DML grants: - The scope only gates the write target, not the read sources of a write: e.g. `INSERT INTO granted_table SELECT * FROM other_table` may read `other_table` without a grant on it, so a table-scoped write grant is not an exfiltration boundary. - It must be paired with a database/project-level read grant: a table-scoped grant alone does not satisfy the SQL Editor query method permission (bb.databases.get). - A resource.schema_name-scoped grant only authorizes a write whose schema is unambiguous — qualify the table (schema.table) or select the schema for the SQL Editor session. An unqualified write whose effective schema cannot be determined ahead of execution is denied (qualify it, or use a table-only grant). - Multi-statement batches are authorized at the database level: an earlier statement can rebind the session&#39;s default schema or database mid-batch, so per-table/schema scoping is dropped and a table/schema-scoped grant requires a database-level grant. The database-level check is still per target database — a qualified cross-database write is gated by a grant on its own database, not the request database — but an unqualified write whose session default is rebound mid-batch is evaluated against the database it literally names, so qualify cross-database writes or run them as single statements. - A write target in a different project than the SQL-Editor session&#39;s database is denied: the per-target check evaluates the session project&#39;s IAM policy, so a cross-project write is failed closed (to write it, open the SQL Editor on a database in the target project). - Enforcement is on the statement&#39;s literal write target; writes routed elsewhere by a view/synonym, or into a temporary schema (e.g. pg_temp), are evaluated against what the statement names, not the ultimate base object. - Write-target gating uses an ALLOWLIST of statement types the resolver models. It does NOT cover every syntactically-identifiable cross-database write; statement types off the allowlist are authorized against the request database. The allowlist is: - Modeled table/data writes (per-table/schema-scopable): INSERT/UPDATE/DELETE/TRUNCATE/MERGE, LOAD DATA, IMPORT INTO, CREATE TABLE AS / SELECT INTO, and table-level CREATE/DROP/ALTER/RENAME/index. - Modeled non-table object DDL (gated at the DATABASE level by the object&#39;s own explicit database/schema qualifier; an unqualified name keeps the request-database check): CREATE/ALTER/DROP of view, procedure/function/routine, trigger, sequence, synonym, type, and (Oracle) package and cluster; plus Oracle ALTER/DROP MATERIALIZED VIEW (Oracle CREATE MATERIALIZED VIEW is not modeled — see below). NOT modeled (these fall back to the request-database check, so a qualified cross-database one is authorized against the request database): MySQL CREATE TRIGGER and CREATE/ALTER/DROP EVENT (bare-string AST names); MSSQL ALTER of view/procedure/function/trigger (no ALTER node in the grammar); Oracle CREATE MATERIALIZED VIEW and the niche object DDL — dimension, attribute dimension, hierarchy, analytic view, JSON duality view, materialized zonemap, operator, in-memory join group, property graph, vector index, index type, domain; COPY ... FROM; and engine-specific bulk-load / deprecated text writes. A structural &#34;write-target object database&#34; extraction layer to remove this allowlist dependence is tracked as a follow-up. - Out of scope (read sources / indirect effects): the tables a write READS (INSERT … SELECT, MERGE … USING, CREATE TABLE AS … SELECT) and objects reached indirectly via views/synonyms/function bodies/triggers are NOT gated. Invariant: for a statement ON the modeled allowlist that explicitly names a different database as its write target, the ACL uses that target database, not the request database. Statement types OFF the allowlist are authorized against the request database.
+
+For example: resource.database == &#34;instances/local-pg/databases/postgres&#34; &amp;&amp; resource.schema_name in [&#34;public&#34;,&#34;another_schema&#34;] resource.database == &#34;instances/local-pg/databases/bytebase&#34; &amp;&amp; resource.schema_name == &#34;public&#34; &amp;&amp; resource.table_name in [&#34;audit_log&#34;] resource.database == &#34;instances/local-pg/databases/postgres&#34; &amp;&amp; resource.environment_id in [&#34;test&#34;] request.time &lt; timestamp(&#34;2025-04-26T11:24:48.655Z&#34;) |
+| parsed_expr | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) |  | The parsed expression of the condition. |
+
+
+
+
+
+
+<a name="bytebase-v1-BindingDelta"></a>
+
+### BindingDelta
+A single change to a binding.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| action | [BindingDelta.Action](#bytebase-v1-BindingDelta-Action) |  | The action that was performed on a Binding. |
+| role | [string](#string) |  | Role that is assigned to `members`. For example, `roles/projectOwner`. |
+| member | [string](#string) |  | Follows the same format of Binding.members. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetIamPolicyRequest"></a>
+
+### GetIamPolicyRequest
+Request message for getting an IAM policy.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| resource | [string](#string) |  | The name of the resource to get the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
+
+
+
+
+
+
+<a name="bytebase-v1-IamPolicy"></a>
+
+### IamPolicy
+IAM policy that binds members to roles.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
+| etag | [string](#string) |  | The current etag of the policy, returned by GetIamPolicy and SetIamPolicy. Sending it back on SetIamPolicy makes the write conditional: if the policy changed since the read, the call returns ABORTED. Omitting it applies the write unconditionally, overwriting any concurrent change (AIP-154). |
+
+
+
+
+
+
+<a name="bytebase-v1-PolicyDelta"></a>
+
+### PolicyDelta
+Describes changes between two IAM policies.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| binding_deltas | [BindingDelta](#bytebase-v1-BindingDelta) | repeated | The delta for Bindings between two policies. |
+
+
+
+
+
+
+<a name="bytebase-v1-SetIamPolicyRequest"></a>
+
+### SetIamPolicyRequest
+Request message for setting an IAM policy.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| resource | [string](#string) |  | The name of the resource to set the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
+| policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
+| etag | [string](#string) |  | The current etag of the policy. Equivalent to setting `policy.etag`; supplying both with different values returns INVALID_ARGUMENT. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-BindingDelta-Action"></a>
+
+### BindingDelta.Action
+Type of action performed on a binding.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ACTION_UNSPECIFIED | 0 | Unspecified action. |
+| ADD | 1 | Add a binding. |
+| REMOVE | 2 | Remove a binding. |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="v1_audit_log_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/audit_log_service.proto
+
+
+
+<a name="bytebase-v1-AuditData"></a>
+
+### AuditData
+Additional audit data specific to certain operations.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| policy_delta | [PolicyDelta](#bytebase-v1-PolicyDelta) |  | Changes to IAM policies. |
+
+
+
+
+
+
+<a name="bytebase-v1-AuditLog"></a>
+
+### AuditLog
+Audit log entry recording system activity or API call.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the log. Formats: - projects/{project}/auditLogs/{uid} - workspaces/{workspace}/auditLogs/{uid} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the audit log was created. |
+| actor | [string](#string) |  | The principal who performed the action. Formats: users/{email}, serviceAccounts/{email}, or workloadIdentities/{email} |
+| method | [string](#string) |  | The method or action being audited. For example: /bytebase.v1.SQLService/Query or bb.project.repository.push |
+| severity | [AuditLog.Severity](#bytebase-v1-AuditLog-Severity) |  | The severity level of this audit log entry. |
+| resource | [string](#string) |  | The resource associated with this audit log. |
+| request | [string](#string) |  | The request payload in JSON format. |
+| response | [string](#string) |  | The response payload in JSON format. Some fields may be omitted if they are too large or contain sensitive information. |
+| status | [google.rpc.Status](#google-rpc-Status) |  | The status of the operation. |
+| latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration of the operation. |
+| service_data | [google.protobuf.Any](#google-protobuf-Any) |  | Service-specific metadata about the request, response, and activities. |
+| request_metadata | [RequestMetadata](#bytebase-v1-RequestMetadata) |  | Metadata about the request context. |
+| mcp_delegation | [MCPDelegation](#bytebase-v1-MCPDelegation) |  | MCP delegation provenance. Present exactly when the audited call arrived through the MCP server&#39;s delegated credential; never set for public API calls. Presence of this message is the MCP-origin marker. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportAuditLogsRequest"></a>
+
+### ExportAuditLogsRequest
+Request message for exporting audit logs.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  |  |
+| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. Check the filter field in the SearchAuditLogsRequest message. |
+| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. The default sorting order is ascending. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
+| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
+| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 10 log entries will be returned. The maximum value is 5000; values above 5000 will be coerced to 5000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ExportAuditLogs` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportAuditLogsResponse"></a>
+
+### ExportAuditLogsResponse
+Response message for exporting audit logs.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [bytes](#bytes) |  | The exported audit log content in the requested format. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
+
+
+
+
+
+
+<a name="bytebase-v1-MCPDelegation"></a>
+
+### MCPDelegation
+Provenance of a call that reached the API through the MCP (Model Context
+Protocol) server&#39;s delegated credential. The values are copied verbatim from
+the verified credential&#39;s grant state; empty fields record that the grant
+stored nothing (legacy sessions), never a resolved or synthesized value.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| scope | [string](#string) |  | The OAuth2 grant&#39;s consented scope, e.g. &#34;mcp:read-only&#34;. Empty when the grant recorded no scope. |
+| resource | [string](#string) |  | The grant&#39;s stored MCP resource URI. Empty for pre-grant legacy sessions. |
+| client_id | [string](#string) |  | The OAuth2 client the grant was consented to. Empty for legacy web-session tokens at /mcp. |
+| correlation_id | [string](#string) |  | Correlates the audit rows an MCP session produces. Minted at the /mcp boundary and session-scoped: the MCP SDK hands tool handlers the initialize-time context, so one MCP session carries one correlation ID across all of its tool calls. |
+
+
+
+
+
+
+<a name="bytebase-v1-RequestMetadata"></a>
+
+### RequestMetadata
+Metadata about the incoming request.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| caller_ip | [string](#string) |  | The IP address of the request originator. |
+| caller_supplied_user_agent | [string](#string) |  | The user agent string provided by the caller. This is supplied by the client and is not authenticated. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchAuditLogsRequest"></a>
+
+### SearchAuditLogsRequest
+Request message for searching audit logs.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  |  |
+| filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: - method: the API name, can be found in the docs. Usually &#34;/bytebase.v1.…&#34;, for example &#34;/bytebase.v1.UserService/CreateUser&#34;; entries written outside the v1 API carry their own prefix, such as &#34;/bytebase.mcp.Session/Authorize&#34; or &#34;/bytebase.cli.Recovery/ResetUserPassword&#34;. Support &#34;==&#34; operator. - resource: the resource the entry is about, support &#34;==&#34; operator. - severity: support &#34;==&#34; operator, check Severity enum in AuditLog message for values. - actor: the actor, in users/{email}, serviceAccounts/{email}, or workloadIdentities/{email} format. Support &#34;==&#34; operator. - create_time: support &#34;&gt;=&#34; and &#34;&lt;=&#34; operator. - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support &#34;==&#34; operator. - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry&#39;s mcp_delegation.correlation_id. Support &#34;==&#34; operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
+
+For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; actor == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; - filter = &#34;mcp == true&#34; - filter = &#34;mcp_correlation_id == &#39;0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60&#39;&#34; |
+| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. The default sorting order is ascending. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
+| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 10 log entries will be returned. The maximum value is 5000; values above 5000 will be coerced to 5000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchLogs` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchAuditLogsResponse"></a>
+
+### SearchAuditLogsResponse
+Response message for searching audit logs.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| audit_logs | [AuditLog](#bytebase-v1-AuditLog) | repeated |  |
+| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-AuditLog-Severity"></a>
+
+### AuditLog.Severity
+Severity level for audit log entries.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SEVERITY_UNSPECIFIED | 0 | Unspecified severity level. |
+| DEBUG | 1 | Debug-level information. |
+| INFO | 2 | Informational messages. |
+| NOTICE | 3 | Notable events. |
+| WARNING | 4 | Warning conditions. |
+| ERROR | 5 | Error conditions. |
+| CRITICAL | 6 | Critical conditions. |
+| ALERT | 7 | Action must be taken immediately. |
+| EMERGENCY | 8 | System is unusable. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-AuditLogService"></a>
+
+### AuditLogService
+AuditLogService manages audit logs for system activities and API calls.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) | Searches audit logs with optional filtering and pagination. Permissions required: bb.auditLogs.search |
+| ExportAuditLogs | [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest) | [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse) | Exports audit logs in a specified format for external analysis. Permissions required: bb.auditLogs.export |
+
+ 
+
+
+
+<a name="v1_idp_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/idp_service.proto
+
+
+
+<a name="bytebase-v1-CreateIdentityProviderRequest"></a>
+
+### CreateIdentityProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to create. |
+| identity_provider_id | [string](#string) |  | The ID to use for the identity provider, which will become the final component of the identity provider&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| validate_only | [bool](#bool) |  | If set to true, the request will be validated without actually creating the identity provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteIdentityProviderRequest"></a>
+
+### DeleteIdentityProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the identity provider to delete. Format: idps/{identity_provider} |
+
+
+
+
+
+
+<a name="bytebase-v1-FieldMapping"></a>
+
+### FieldMapping
+FieldMapping saves the field names from user info API of identity provider.
+As we save all raw json string of user info response data into `principal.idp_user_info`,
+we can extract the relevant data based with `FieldMapping`.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| identifier | [string](#string) |  | Identifier is the field name of the unique identifier in 3rd-party idp user info. Required. |
+| display_name | [string](#string) |  | DisplayName is the field name of display name in 3rd-party idp user info. Optional. |
+| phone | [string](#string) |  | Phone is the field name of primary phone in 3rd-party idp user info. Optional. |
+| groups | [string](#string) |  | Groups is the field name of groups in 3rd-party idp user info. Optional. Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/ |
+
+
+
+
+
+
+<a name="bytebase-v1-GetIdentityProviderRequest"></a>
+
+### GetIdentityProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the identity provider to retrieve. Format: idps/{idp} |
+
+
+
+
+
+
+<a name="bytebase-v1-IdentityProvider"></a>
+
+### IdentityProvider
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
+| title | [string](#string) |  | The display title of the identity provider. |
+| domain | [string](#string) |  | The domain for email matching when using this identity provider. |
+| type | [IdentityProviderType](#bytebase-v1-IdentityProviderType) |  | The type of identity provider protocol. |
+| config | [IdentityProviderConfig](#bytebase-v1-IdentityProviderConfig) |  | The configuration details for the identity provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-IdentityProviderConfig"></a>
+
+### IdentityProviderConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| oauth2_config | [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig) |  | OAuth2 protocol configuration. |
+| oidc_config | [OIDCIdentityProviderConfig](#bytebase-v1-OIDCIdentityProviderConfig) |  | OIDC protocol configuration. |
+| ldap_config | [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig) |  | LDAP protocol configuration. |
+
+
+
+
+
+
+<a name="bytebase-v1-LDAPIdentityProviderConfig"></a>
+
+### LDAPIdentityProviderConfig
+LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  | Host is the hostname or IP address of the LDAP server, e.g., &#34;ldap.example.com&#34;. |
+| port | [int32](#int32) |  | Port is the port number of the LDAP server, e.g., 389. When not set, the default port of the corresponding security protocol will be used, i.e. 389 for StartTLS and 636 for LDAPS. |
+| skip_tls_verify | [bool](#bool) |  | SkipTLSVerify controls whether to skip TLS certificate verification. |
+| bind_dn | [string](#string) |  | BindDN is the DN of the user to bind as a service account to perform search requests. |
+| bind_password | [string](#string) |  | BindPassword is the password of the user to bind as a service account. |
+| base_dn | [string](#string) |  | BaseDN is the base DN to search for users, e.g., &#34;ou=users,dc=example,dc=com&#34;. |
+| user_filter | [string](#string) |  | UserFilter is the filter to search for users, e.g., &#34;(uid=%s)&#34;. |
+| security_protocol | [LDAPIdentityProviderConfig.SecurityProtocol](#bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol) |  | SecurityProtocol is the security protocol to be used for establishing connections with the LDAP server. |
+| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | FieldMapping is the mapping of the user attributes returned by the LDAP server. |
+
+
+
+
+
+
+<a name="bytebase-v1-LDAPIdentityProviderTestRequestContext"></a>
+
+### LDAPIdentityProviderTestRequestContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| username | [string](#string) |  | The username of a directory user, substituted into the user filter. |
+| password | [string](#string) |  | The password of the directory user. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListIdentityProvidersRequest"></a>
+
+### ListIdentityProvidersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent workspace whose identity providers should be listed. It must be the workspace the caller&#39;s credential belongs to. Format: workspaces/{workspace} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListIdentityProvidersResponse"></a>
+
+### ListIdentityProvidersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| identity_providers | [IdentityProvider](#bytebase-v1-IdentityProvider) | repeated | The identity providers from the specified request. |
+
+
+
+
+
+
+<a name="bytebase-v1-OAuth2IdentityProviderConfig"></a>
+
+### OAuth2IdentityProviderConfig
+OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| auth_url | [string](#string) |  | The authorization endpoint URL for OAuth2 flow. |
+| token_url | [string](#string) |  | The token endpoint URL for exchanging authorization code. |
+| user_info_url | [string](#string) |  | The user information endpoint URL. |
+| client_id | [string](#string) |  | The OAuth2 client identifier. |
+| client_secret | [string](#string) |  | The OAuth2 client secret for authentication. |
+| scopes | [string](#string) | repeated | The list of OAuth2 scopes to request. |
+| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | Mapping configuration for user attributes from OAuth2 response. |
+| skip_tls_verify | [bool](#bool) |  | Whether to skip TLS certificate verification. |
+| auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  | The authentication style for client credentials. |
+
+
+
+
+
+
+<a name="bytebase-v1-OAuth2IdentityProviderTestRequestContext"></a>
+
+### OAuth2IdentityProviderTestRequestContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [string](#string) |  | Authorize code from website. |
+
+
+
+
+
+
+<a name="bytebase-v1-OIDCIdentityProviderConfig"></a>
+
+### OIDCIdentityProviderConfig
+OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issuer | [string](#string) |  | The OIDC issuer URL for the identity provider. |
+| client_id | [string](#string) |  | The OIDC client identifier. |
+| client_secret | [string](#string) |  | The OIDC client secret for authentication. |
+| scopes | [string](#string) | repeated | The scopes that the OIDC provider supports. Should be fetched from the well-known configuration file of the OIDC provider. |
+| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | Mapping configuration for user attributes from OIDC claims. |
+| skip_tls_verify | [bool](#bool) |  | Whether to skip TLS certificate verification. |
+| auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  | The authentication style for client credentials. |
+| auth_endpoint | [string](#string) |  | The authorization endpoint of the OIDC provider. Should be fetched from the well-known configuration file of the OIDC provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-OIDCIdentityProviderTestRequestContext"></a>
+
+### OIDCIdentityProviderTestRequestContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [string](#string) |  | Authorize code from OIDC provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-TestIdentityProviderRequest"></a>
+
+### TestIdentityProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to test connection including uncreated. |
+| oauth2_context | [OAuth2IdentityProviderTestRequestContext](#bytebase-v1-OAuth2IdentityProviderTestRequestContext) |  |  |
+| oidc_context | [OIDCIdentityProviderTestRequestContext](#bytebase-v1-OIDCIdentityProviderTestRequestContext) |  | OIDC authentication context for test connection. |
+| ldap_context | [LDAPIdentityProviderTestRequestContext](#bytebase-v1-LDAPIdentityProviderTestRequestContext) |  | LDAP credentials context for test connection. |
+
+
+
+
+
+
+<a name="bytebase-v1-TestIdentityProviderResponse"></a>
+
+### TestIdentityProviderResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| claims | [TestIdentityProviderResponse.ClaimsEntry](#bytebase-v1-TestIdentityProviderResponse-ClaimsEntry) | repeated | The map of claims returned by the identity provider. |
+| user_info | [TestIdentityProviderResponse.UserInfoEntry](#bytebase-v1-TestIdentityProviderResponse-UserInfoEntry) | repeated | The matched user info from the claims. |
+
+
+
+
+
+
+<a name="bytebase-v1-TestIdentityProviderResponse-ClaimsEntry"></a>
+
+### TestIdentityProviderResponse.ClaimsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TestIdentityProviderResponse-UserInfoEntry"></a>
+
+### TestIdentityProviderResponse.UserInfoEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateIdentityProviderRequest"></a>
+
+### UpdateIdentityProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to update.
+
+The identity provider&#39;s `name` field is used to identify the identity provider to update. Format: idps/{identity_provider} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the identity provider is not found, a new identity provider will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-IdentityProviderType"></a>
+
+### IdentityProviderType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| IDENTITY_PROVIDER_TYPE_UNSPECIFIED | 0 | Unspecified identity provider type. |
+| OAUTH2 | 1 | OAuth 2.0 authentication protocol. |
+| OIDC | 2 | OpenID Connect authentication protocol. |
+| LDAP | 3 | LDAP directory service authentication. |
+
+
+
+<a name="bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol"></a>
+
+### LDAPIdentityProviderConfig.SecurityProtocol
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SECURITY_PROTOCOL_UNSPECIFIED | 0 |  |
+| START_TLS | 1 | StartTLS is the security protocol that starts with an unencrypted connection and then upgrades to TLS. |
+| LDAPS | 2 | LDAPS is the security protocol that uses TLS from the beginning. |
+
+
+
+<a name="bytebase-v1-OAuth2AuthStyle"></a>
+
+### OAuth2AuthStyle
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OAUTH2_AUTH_STYLE_UNSPECIFIED | 0 |  |
+| IN_PARAMS | 1 | IN_PARAMS sends the &#34;client_id&#34; and &#34;client_secret&#34; in the POST body as application/x-www-form-urlencoded parameters. |
+| IN_HEADER | 2 | IN_HEADER sends the client_id and client_password using HTTP Basic Authorization. This is an optional style described in the OAuth2 RFC 6749 section 2.3.1. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-IdentityProviderService"></a>
+
+### IdentityProviderService
+IdentityProviderService manages external identity providers for SSO authentication.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetIdentityProvider | [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Gets an identity provider by name. Permissions required: bb.identityProviders.get |
+| ListIdentityProviders | [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest) | [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse) | Lists the identity providers configured for the caller&#39;s workspace. The login page reads AuthService.GetAuthenticationInfo instead, which publishes only the fields a browser needs to start an SSO redirect.
+
+Returns the same representation as GetIdentityProvider — secrets redacted, the rest of the configuration included — so granting bb.identityProviders.list conveys configuration read over the whole collection, not merely the names in it. Permissions required: bb.identityProviders.list |
+| CreateIdentityProvider | [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Creates a new identity provider. Permissions required: bb.identityProviders.create |
+| UpdateIdentityProvider | [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Updates an identity provider. Permissions required: bb.identityProviders.update When allow_missing=true, also requires: bb.identityProviders.create |
+| DeleteIdentityProvider | [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an identity provider. Permissions required: bb.identityProviders.delete |
+| TestIdentityProvider | [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest) | [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse) | Tests the connection and configuration of an identity provider. Permissions required: bb.identityProviders.update |
 
  
 
@@ -5893,6 +6448,24 @@ UserService manages user accounts and authentication.
 | ----- | ---- | ----- | ----------- |
 | workspace | [string](#string) |  | The workspace used for authentication, when one can be resolved. Format: workspaces/{workspace} |
 | restriction | [Restriction](#bytebase-v1-Restriction) |  | The effective authentication restrictions. |
+| identity_providers | [LoginIdentityProvider](#bytebase-v1-LoginIdentityProvider) | repeated | The identity providers the login page renders, in display order. |
+
+
+
+
+
+
+<a name="bytebase-v1-AuthorizationRequest"></a>
+
+### AuthorizationRequest
+AuthorizationRequest is what a browser needs to start an SSO redirect.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| endpoint | [string](#string) |  | The OAuth2 auth_url, or the authorization endpoint from the OIDC issuer&#39;s discovery document. |
+| client_id | [string](#string) |  | The OAuth2 or OIDC client identifier. |
+| scopes | [string](#string) | repeated | The scopes to request. |
 
 
 
@@ -5930,9 +6503,9 @@ UserService manages user accounts and authentication.
 
 
 
-<a name="bytebase-v1-GetAuthenticationRestrictionRequest"></a>
+<a name="bytebase-v1-GetAuthenticationInfoRequest"></a>
 
-### GetAuthenticationRestrictionRequest
+### GetAuthenticationInfoRequest
 
 
 
@@ -5955,6 +6528,27 @@ Context for identity provider authentication.
 | ----- | ---- | ----- | ----------- |
 | oauth2_context | [OAuth2IdentityProviderContext](#bytebase-v1-OAuth2IdentityProviderContext) |  | OAuth2 authentication context. |
 | oidc_context | [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext) |  | OpenID Connect authentication context. |
+
+
+
+
+
+
+<a name="bytebase-v1-LoginIdentityProvider"></a>
+
+### LoginIdentityProvider
+LoginIdentityProvider is an identity provider as the login page sees it.
+Deliberately not a view of IdentityProvider: this message is served without
+a credential, so every field it exposes is published by hand and no
+provider configuration reaches it by default.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
+| type | [IdentityProviderType](#bytebase-v1-IdentityProviderType) |  | The type of identity provider protocol. |
+| title | [string](#string) |  | The display title of the identity provider. |
+| authorization_request | [AuthorizationRequest](#bytebase-v1-AuthorizationRequest) |  | The parameters the browser needs to start the authorization redirect. Set for OAUTH2 and OIDC, absent for LDAP, whose bind happens server-side. |
 
 
 
@@ -6180,7 +6774,7 @@ AuthService handles user authentication operations.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetAuthenticationRestriction | [GetAuthenticationRestrictionRequest](#bytebase-v1-GetAuthenticationRestrictionRequest) | [AuthenticationInfo](#bytebase-v1-AuthenticationInfo) | Gets the effective restrictions needed to render authentication flows. Permissions required: None |
+| GetAuthenticationInfo | [GetAuthenticationInfoRequest](#bytebase-v1-GetAuthenticationInfoRequest) | [AuthenticationInfo](#bytebase-v1-AuthenticationInfo) | Gets everything the login page renders: the sign-in restrictions and the identity providers it offers. Permissions required: None |
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Authenticates a user and returns access tokens. Permissions required: None |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Logs out the current user session. Permissions required: None |
 | ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse) | Exchanges an external OIDC token for a Bytebase access token. Used by CI/CD pipelines with Workload Identity Federation. Permissions required: None (validates via OIDC token) |
@@ -9206,411 +9800,6 @@ GroupService manages user groups for organizing users and permissions.
 
 
 
-<a name="v1_idp_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/idp_service.proto
-
-
-
-<a name="bytebase-v1-CreateIdentityProviderRequest"></a>
-
-### CreateIdentityProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to create. |
-| identity_provider_id | [string](#string) |  | The ID to use for the identity provider, which will become the final component of the identity provider&#39;s resource name.
-
-This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
-| validate_only | [bool](#bool) |  | If set to true, the request will be validated without actually creating the identity provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteIdentityProviderRequest"></a>
-
-### DeleteIdentityProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the identity provider to delete. Format: idps/{identity_provider} |
-
-
-
-
-
-
-<a name="bytebase-v1-FieldMapping"></a>
-
-### FieldMapping
-FieldMapping saves the field names from user info API of identity provider.
-As we save all raw json string of user info response data into `principal.idp_user_info`,
-we can extract the relevant data based with `FieldMapping`.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| identifier | [string](#string) |  | Identifier is the field name of the unique identifier in 3rd-party idp user info. Required. |
-| display_name | [string](#string) |  | DisplayName is the field name of display name in 3rd-party idp user info. Optional. |
-| phone | [string](#string) |  | Phone is the field name of primary phone in 3rd-party idp user info. Optional. |
-| groups | [string](#string) |  | Groups is the field name of groups in 3rd-party idp user info. Optional. Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/ |
-
-
-
-
-
-
-<a name="bytebase-v1-GetIdentityProviderRequest"></a>
-
-### GetIdentityProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the identity provider to retrieve. Format: idps/{idp} |
-
-
-
-
-
-
-<a name="bytebase-v1-IdentityProvider"></a>
-
-### IdentityProvider
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
-| title | [string](#string) |  | The display title of the identity provider. |
-| domain | [string](#string) |  | The domain for email matching when using this identity provider. |
-| type | [IdentityProviderType](#bytebase-v1-IdentityProviderType) |  | The type of identity provider protocol. |
-| config | [IdentityProviderConfig](#bytebase-v1-IdentityProviderConfig) |  | The configuration details for the identity provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-IdentityProviderConfig"></a>
-
-### IdentityProviderConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| oauth2_config | [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig) |  | OAuth2 protocol configuration. |
-| oidc_config | [OIDCIdentityProviderConfig](#bytebase-v1-OIDCIdentityProviderConfig) |  | OIDC protocol configuration. |
-| ldap_config | [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig) |  | LDAP protocol configuration. |
-
-
-
-
-
-
-<a name="bytebase-v1-LDAPIdentityProviderConfig"></a>
-
-### LDAPIdentityProviderConfig
-LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| host | [string](#string) |  | Host is the hostname or IP address of the LDAP server, e.g., &#34;ldap.example.com&#34;. |
-| port | [int32](#int32) |  | Port is the port number of the LDAP server, e.g., 389. When not set, the default port of the corresponding security protocol will be used, i.e. 389 for StartTLS and 636 for LDAPS. |
-| skip_tls_verify | [bool](#bool) |  | SkipTLSVerify controls whether to skip TLS certificate verification. |
-| bind_dn | [string](#string) |  | BindDN is the DN of the user to bind as a service account to perform search requests. |
-| bind_password | [string](#string) |  | BindPassword is the password of the user to bind as a service account. |
-| base_dn | [string](#string) |  | BaseDN is the base DN to search for users, e.g., &#34;ou=users,dc=example,dc=com&#34;. |
-| user_filter | [string](#string) |  | UserFilter is the filter to search for users, e.g., &#34;(uid=%s)&#34;. |
-| security_protocol | [LDAPIdentityProviderConfig.SecurityProtocol](#bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol) |  | SecurityProtocol is the security protocol to be used for establishing connections with the LDAP server. |
-| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | FieldMapping is the mapping of the user attributes returned by the LDAP server. |
-
-
-
-
-
-
-<a name="bytebase-v1-LDAPIdentityProviderTestRequestContext"></a>
-
-### LDAPIdentityProviderTestRequestContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| username | [string](#string) |  | The username of a directory user, substituted into the user filter. |
-| password | [string](#string) |  | The password of the directory user. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListIdentityProvidersRequest"></a>
-
-### ListIdentityProvidersRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent workspace whose identity providers should be listed. Format: workspaces/{workspace} When unset, the workspace is resolved from the request context. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListIdentityProvidersResponse"></a>
-
-### ListIdentityProvidersResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| identity_providers | [IdentityProvider](#bytebase-v1-IdentityProvider) | repeated | The identity providers from the specified request. |
-
-
-
-
-
-
-<a name="bytebase-v1-OAuth2IdentityProviderConfig"></a>
-
-### OAuth2IdentityProviderConfig
-OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| auth_url | [string](#string) |  | The authorization endpoint URL for OAuth2 flow. |
-| token_url | [string](#string) |  | The token endpoint URL for exchanging authorization code. |
-| user_info_url | [string](#string) |  | The user information endpoint URL. |
-| client_id | [string](#string) |  | The OAuth2 client identifier. |
-| client_secret | [string](#string) |  | The OAuth2 client secret for authentication. |
-| scopes | [string](#string) | repeated | The list of OAuth2 scopes to request. |
-| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | Mapping configuration for user attributes from OAuth2 response. |
-| skip_tls_verify | [bool](#bool) |  | Whether to skip TLS certificate verification. |
-| auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  | The authentication style for client credentials. |
-
-
-
-
-
-
-<a name="bytebase-v1-OAuth2IdentityProviderTestRequestContext"></a>
-
-### OAuth2IdentityProviderTestRequestContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| code | [string](#string) |  | Authorize code from website. |
-
-
-
-
-
-
-<a name="bytebase-v1-OIDCIdentityProviderConfig"></a>
-
-### OIDCIdentityProviderConfig
-OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issuer | [string](#string) |  | The OIDC issuer URL for the identity provider. |
-| client_id | [string](#string) |  | The OIDC client identifier. |
-| client_secret | [string](#string) |  | The OIDC client secret for authentication. |
-| scopes | [string](#string) | repeated | The scopes that the OIDC provider supports. Should be fetched from the well-known configuration file of the OIDC provider. |
-| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | Mapping configuration for user attributes from OIDC claims. |
-| skip_tls_verify | [bool](#bool) |  | Whether to skip TLS certificate verification. |
-| auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  | The authentication style for client credentials. |
-| auth_endpoint | [string](#string) |  | The authorization endpoint of the OIDC provider. Should be fetched from the well-known configuration file of the OIDC provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-OIDCIdentityProviderTestRequestContext"></a>
-
-### OIDCIdentityProviderTestRequestContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| code | [string](#string) |  | Authorize code from OIDC provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-TestIdentityProviderRequest"></a>
-
-### TestIdentityProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to test connection including uncreated. |
-| oauth2_context | [OAuth2IdentityProviderTestRequestContext](#bytebase-v1-OAuth2IdentityProviderTestRequestContext) |  |  |
-| oidc_context | [OIDCIdentityProviderTestRequestContext](#bytebase-v1-OIDCIdentityProviderTestRequestContext) |  | OIDC authentication context for test connection. |
-| ldap_context | [LDAPIdentityProviderTestRequestContext](#bytebase-v1-LDAPIdentityProviderTestRequestContext) |  | LDAP credentials context for test connection. |
-
-
-
-
-
-
-<a name="bytebase-v1-TestIdentityProviderResponse"></a>
-
-### TestIdentityProviderResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| claims | [TestIdentityProviderResponse.ClaimsEntry](#bytebase-v1-TestIdentityProviderResponse-ClaimsEntry) | repeated | The map of claims returned by the identity provider. |
-| user_info | [TestIdentityProviderResponse.UserInfoEntry](#bytebase-v1-TestIdentityProviderResponse-UserInfoEntry) | repeated | The matched user info from the claims. |
-
-
-
-
-
-
-<a name="bytebase-v1-TestIdentityProviderResponse-ClaimsEntry"></a>
-
-### TestIdentityProviderResponse.ClaimsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-TestIdentityProviderResponse-UserInfoEntry"></a>
-
-### TestIdentityProviderResponse.UserInfoEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateIdentityProviderRequest"></a>
-
-### UpdateIdentityProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to update.
-
-The identity provider&#39;s `name` field is used to identify the identity provider to update. Format: idps/{identity_provider} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the identity provider is not found, a new identity provider will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-IdentityProviderType"></a>
-
-### IdentityProviderType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| IDENTITY_PROVIDER_TYPE_UNSPECIFIED | 0 | Unspecified identity provider type. |
-| OAUTH2 | 1 | OAuth 2.0 authentication protocol. |
-| OIDC | 2 | OpenID Connect authentication protocol. |
-| LDAP | 3 | LDAP directory service authentication. |
-
-
-
-<a name="bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol"></a>
-
-### LDAPIdentityProviderConfig.SecurityProtocol
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SECURITY_PROTOCOL_UNSPECIFIED | 0 |  |
-| START_TLS | 1 | StartTLS is the security protocol that starts with an unencrypted connection and then upgrades to TLS. |
-| LDAPS | 2 | LDAPS is the security protocol that uses TLS from the beginning. |
-
-
-
-<a name="bytebase-v1-OAuth2AuthStyle"></a>
-
-### OAuth2AuthStyle
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| OAUTH2_AUTH_STYLE_UNSPECIFIED | 0 |  |
-| IN_PARAMS | 1 | IN_PARAMS sends the &#34;client_id&#34; and &#34;client_secret&#34; in the POST body as application/x-www-form-urlencoded parameters. |
-| IN_HEADER | 2 | IN_HEADER sends the client_id and client_password using HTTP Basic Authorization. This is an optional style described in the OAuth2 RFC 6749 section 2.3.1. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-IdentityProviderService"></a>
-
-### IdentityProviderService
-IdentityProviderService manages external identity providers for SSO authentication.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetIdentityProvider | [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Gets an identity provider by name. Permissions required: bb.identityProviders.get |
-| ListIdentityProviders | [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest) | [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse) | Lists all configured identity providers (public endpoint for login page). Permissions required: None |
-| CreateIdentityProvider | [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Creates a new identity provider. Permissions required: bb.identityProviders.create |
-| UpdateIdentityProvider | [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Updates an identity provider. Permissions required: bb.identityProviders.update When allow_missing=true, also requires: bb.identityProviders.create |
-| DeleteIdentityProvider | [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an identity provider. Permissions required: bb.identityProviders.delete |
-| TestIdentityProvider | [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest) | [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse) | Tests the connection and configuration of an identity provider. Permissions required: bb.identityProviders.update |
-
- 
-
-
-
 <a name="v1_org_policy_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -9786,6 +9975,8 @@ For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.proje
 | masking_exemption_policy | [MaskingExemptionPolicy](#bytebase-v1-MaskingExemptionPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | query_data_policy | [QueryDataPolicy](#bytebase-v1-QueryDataPolicy) |  |  |
+| review_rule_policy | [ReviewRulePolicy](#bytebase-v1-ReviewRulePolicy) |  |  |
+| review_ai_policy | [ReviewAIPolicy](#bytebase-v1-ReviewAIPolicy) |  |  |
 | enforce | [bool](#bool) |  | Whether the policy is enforced. |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 
@@ -9806,6 +9997,49 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | disable_export | [bool](#bool) |  | workspace-level policy Disable data export in the SQL editor. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results in the SQL editor. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. If true, users can select the admin data source or read-only data source If false, 1. when read-only data source is configured, users&#39;re force to use the read-only data source 2. otherwise fallback to use the admin data source. |
+
+
+
+
+
+
+<a name="bytebase-v1-ReviewAIPolicy"></a>
+
+### ReviewAIPolicy
+Natural-language policy for the AI review. Unlike the review rule policy,
+both levels apply: the workspace policy and the project policy both reach
+the reviewer, and the project policy wins where they conflict.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [string](#string) |  | The policy text. Must not be blank, at most 64 KiB. |
+
+
+
+
+
+
+<a name="bytebase-v1-ReviewRulePolicy"></a>
+
+### ReviewRulePolicy
+Standard review rule policy: the rules switched on. The nearest policy
+wins: a project&#39;s own policy applies as is; a project without one uses
+the workspace policy; with neither, every rule is on. Getting the policy
+of a project without its own is NOT_FOUND; getting the workspace&#39;s when it
+has none returns every rule on.
+
+SYNTAX gates the rest: the other rules judge only SQL that parses, so a
+list without SYNTAX switches every rule off.
+
+A saved list is explicit, so a rule added to the standard set in a later
+release is appended to every saved policy by a data migration in that
+release.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [ReviewRuleType](#bytebase-v1-ReviewRuleType) | repeated | The rules switched on. Unknown or unspecified values are rejected. |
 
 
 
@@ -9907,6 +10141,8 @@ The type of organizational policy.
 | ROLLOUT_POLICY | 3 | Rollout deployment policy. |
 | TAG | 4 | Resource tag policy. |
 | DATA_QUERY | 6 | Query data access policy. |
+| REVIEW_RULE | 7 | Standard review rule switch. Allowed on WORKSPACE and PROJECT. |
+| REVIEW_AI | 8 | Natural-language policy for the AI review. Allowed on WORKSPACE and PROJECT. |
 
 
  
@@ -12339,6 +12575,16 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 
 
+<a name="bytebase-v1-StartTrialRequest"></a>
+
+### StartTrialRequest
+
+
+
+
+
+
+
 <a name="bytebase-v1-Subscription"></a>
 
 ### Subscription
@@ -12403,7 +12649,7 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| session_id | [string](#string) |  | The same Stripe Checkout Session ID PurchaseResponse mints, arriving back the other way, so it carries the same classification. VerifyCheckoutSession is EXCLUDED, and the MCP gate records a row for every method it refuses, so leaving this unannotated would write the id into a denial row while the response that produced it was redacted. |
+| session_id | [string](#string) |  | The same Stripe Checkout Session ID PurchaseResponse mints, arriving back the other way, so it carries the same classification. VerifyCheckoutSession is EXCLUDED, and a refusal of it streams its request to the stdout audit log, so leaving this unannotated would write the id into that line while the response that produced it was redacted. |
 
 
 
@@ -12576,6 +12822,7 @@ SubscriptionService manages enterprise subscriptions and licensing.
 | GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | GetSubscription returns the current subscription. If there is no license, we will return a free plan subscription without expiration time. If there is expired license, we will return a free plan subscription with the expiration time of the expired license. |
 | ExportVCSProviderUsers | [ExportVCSProviderUsersRequest](#bytebase-v1-ExportVCSProviderUsersRequest) | [ExportVCSProviderUsersResponse](#bytebase-v1-ExportVCSProviderUsersResponse) | Exports active VCS users as CSV. |
 | UploadLicense | [UploadLicenseRequest](#bytebase-v1-UploadLicenseRequest) | [Subscription](#bytebase-v1-Subscription) | Uploads an enterprise license (self-hosted only). |
+| StartTrial | [StartTrialRequest](#bytebase-v1-StartTrialRequest) | [Subscription](#bytebase-v1-Subscription) | StartTrial starts a free trial for an eligible SaaS workspace. |
 | CreatePurchase | [CreatePurchaseRequest](#bytebase-v1-CreatePurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | CreatePurchase creates a new subscription purchase (SaaS only). Returns a Stripe Checkout URL for the user to complete payment. |
 | UpdatePurchase | [UpdatePurchaseRequest](#bytebase-v1-UpdatePurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | UpdatePurchase updates an existing subscription (SaaS only). May return a Stripe Checkout URL if payment method change is needed. |
 | CancelPurchase | [CancelPurchaseRequest](#bytebase-v1-CancelPurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | CancelPurchase cancels an active subscription (SaaS only). |
@@ -12743,10 +12990,11 @@ WorkloadIdentityConfig for API layer
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Platform type (currently only GITHUB is supported) |
-| issuer_url | [string](#string) |  | OIDC Issuer URL (auto-filled based on provider_type, can be overridden) |
-| allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
-| subject_pattern | [string](#string) |  | Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) |
+| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Provider configuration mode. |
+| issuer_url | [string](#string) |  | HTTPS URL of the OIDC issuer. The exchange fetches {issuer_url}/.well-known/openid-configuration to verify a token, unless jwks_url names the key set directly. |
+| allowed_audiences | [string](#string) | repeated | Audiences a token may be minted for. A token authenticates if its `aud` claim matches any entry. |
+| subject_pattern | [string](#string) |  | The subject a token must carry, e.g. &#34;repo:owner/repo:ref:refs/heads/main&#34;. A trailing &#34;*&#34; is a prefix match. For GitHub and GitLab subjects it must complete an owner or group segment, so &#34;repo:my-org/*&#34; is accepted and &#34;repo:*&#34; is not. Other issuers write other vocabularies, so a wildcard outside those two is accepted as given. |
+| jwks_url | [string](#string) |  | Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url. |
 
 
 
@@ -12758,13 +13006,14 @@ WorkloadIdentityConfig for API layer
 <a name="bytebase-v1-WorkloadIdentityConfig-ProviderType"></a>
 
 ### WorkloadIdentityConfig.ProviderType
-ProviderType identifies the CI/CD platform.
+ProviderType identifies the workload identity configuration mode.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | PROVIDER_TYPE_UNSPECIFIED | 0 |  |
 | GITHUB | 1 |  |
 | GITLAB | 2 |  |
+| OIDC | 3 |  |
 
 
  
@@ -12806,16 +13055,6 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: workspaces/{workspace} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetMCPInfoRequest"></a>
-
-### GetMCPInfoRequest
-
 
 
 
@@ -12871,91 +13110,6 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | workspaces | [Workspace](#bytebase-v1-Workspace) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-MCPCapabilityMode"></a>
-
-### MCPCapabilityMode
-MCPCapabilityMode is one ceiling and the method classes it serves.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  |  |
-| served_classes | [MCPMethodClass](#bytebase-v1-MCPMethodClass) | repeated | Empty means the ceiling serves nothing, which is what DISABLED is. |
-
-
-
-
-
-
-<a name="bytebase-v1-MCPEngineEnforcement"></a>
-
-### MCPEngineEnforcement
-MCPEngineEnforcement is what the read-only ceiling and the masking toggle
-reach on one database engine.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| read_only_depth | [MCPEngineEnforcement.ReadOnlyDepth](#bytebase-v1-MCPEngineEnforcement-ReadOnlyDepth) |  |  |
-| masking | [MCPEngineEnforcement.Masking](#bytebase-v1-MCPEngineEnforcement-Masking) |  |  |
-| note | [string](#string) |  | Where the answers above are the floor rather than the whole story. Empty for most engines. |
-
-
-
-
-
-
-<a name="bytebase-v1-MCPInfo"></a>
-
-### MCPInfo
-MCPInfo is what MCP does in this workspace: the ceiling in force, what each
-ceiling serves, and the per-engine facts a read-only session depends on.
-
-Everything here is resolved when the request is served, never from a stored
-copy: the method list comes off the compiled API descriptors and the engine
-answers off the code that enforces them, so a build whose rules changed
-cannot describe the rules of the build before it.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| workspace | [string](#string) |  | The workspace this describes. Format: workspaces/{workspace}. Not this message&#39;s own resource name — MCPInfo is not a named resource and there is nothing to get it by. |
-| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. A value no row in modes serves, CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from the stored row and every MCP connection is refused. |
-| modes | [MCPCapabilityMode](#bytebase-v1-MCPCapabilityMode) | repeated | What each ceiling serves, including the one in force, so an admin can compare the choices rather than only read the current answer. |
-| methods | [MCPMethod](#bytebase-v1-MCPMethod) | repeated | Every API method some ceiling serves. A mode serves a method when the method&#39;s class is one of that mode&#39;s served_classes, which is the ceiling rule the gate evaluates. Methods no ceiling serves are absent.
-
-Being listed is necessary, not sufficient. The caller still needs the permission, and two further rules narrow what a served method does: a handful of methods are refused on the shape of the request (an issue that would grant a permission, a rollout that skips approval), and under READ_ONLY every statement SQLService/Query runs must classify as a read. |
-| engines | [MCPEngineEnforcement](#bytebase-v1-MCPEngineEnforcement) | repeated | What a read-only session and the masking toggle actually reach, per engine. Both are engine-conditional in ways the ceiling alone does not show. |
-| ignore_masking_exemptions | [bool](#bool) |  | Whether this workspace stops applying the caller&#39;s own unmasking provisioning to MCP requests. It decides which branch of each engine&#39;s masking state a caller is in, and no other API tells an MCP session: SettingService/GetSetting is served by no ceiling. |
-| data_masking_available | [bool](#bool) |  | Whether data masking is licensed for this workspace. When false nothing is masked whatever an engine supports, so the masking states below describe a mechanism that does not run. Licensing can also be set per instance, so a true here is the workspace answer, not a promise about every instance. |
-
-
-
-
-
-
-<a name="bytebase-v1-MCPMethod"></a>
-
-### MCPMethod
-MCPMethod is one API method an MCP session can reach, and what decides it.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| method | [string](#string) |  | The method as an audit entry names it, so a denial can be found by it. Example: /bytebase.v1.SQLService/Query |
-| operation_id | [string](#string) |  | The same method as call_api takes it. Example: bytebase.v1.SQLService.Query |
-| class | [MCPMethodClass](#bytebase-v1-MCPMethodClass) |  |  |
-| permission | [string](#string) |  | The IAM permission the method declares. The ceiling never grants: a session may call a served method only where the person it acts for could.
-
-Empty means the method declares no permission, which is NOT the same as needing none — a method that authorizes inside its handler declares nothing here. auth_method says which case an empty value is. |
-| auth_method | [AuthMethod](#bytebase-v1-AuthMethod) |  | How the method authorizes. IAM means the permission above is the primary rule, though not always the only one — an update carrying allow_missing additionally requires the matching create permission. CUSTOM means the handler decides and the permission field is silent. |
 
 
 
@@ -13026,35 +13180,6 @@ Empty means the method declares no permission, which is NOT the same as needing 
 
  
 
-
-<a name="bytebase-v1-MCPEngineEnforcement-Masking"></a>
-
-### MCPEngineEnforcement.Masking
-How Bytebase masks results on this engine, which is what decides whether
-ignoring masking exemptions changes anything here.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASKING_UNSPECIFIED | 0 |  |
-| NONE | 1 | Bytebase does not mask on this engine. Nothing narrows what a session reads, and ignoring masking exemptions does nothing. |
-| COLUMN | 2 | Column masking. A masking policy substitutes values in query results, and the exemptions granted to the caller are what let them see the real value — which is what ignoring exemptions suppresses. |
-| DOCUMENT | 3 | Document masking. Results are masked, but exemptions are never consulted on this path, so ignoring them changes nothing here either. |
-
-
-
-<a name="bytebase-v1-MCPEngineEnforcement-ReadOnlyDepth"></a>
-
-### MCPEngineEnforcement.ReadOnlyDepth
-How much of a read-only ceiling this engine can be held to.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| READ_ONLY_DEPTH_UNSPECIFIED | 0 |  |
-| UNSUPPORTED | 1 | Bytebase has no read-only classifier for this engine, so a read-only session is refused every statement on it, including a plain SELECT. |
-| STATEMENT | 2 | Every statement is classified before it runs and a request holding one that is not a read is refused whole. Nothing below that: the driver does not open a read-only database session, except where the note says otherwise. |
-| STATEMENT_AND_SESSION | 3 | Statement classification, and the driver opens the database session read-only as well, so the engine refuses most writes the classifier missed. Not a proof: a statement that classifies as a read can still call a function that switches the session setting back off. |
-
-
  
 
  
@@ -13074,11 +13199,6 @@ WorkspaceService manages workspace-level operations and profile.
 | DeleteWorkspace | [DeleteWorkspaceRequest](#bytebase-v1-DeleteWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Deletes a workspace. SaaS only. Cancels any active subscription and soft-deletes the workspace so all associated data becomes inaccessible. Requires workspace admin permission. |
 | LeaveWorkspace | [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Removes the calling user from a workspace and switches to the next available workspace. Available to any workspace member. Fails if the caller is the last workspace admin. |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Sets IAM policy for the workspace. Permissions required: bb.workspaces.setIamPolicy |
-| GetMCPInfo | [GetMCPInfoRequest](#bytebase-v1-GetMCPInfoRequest) | [MCPInfo](#bytebase-v1-MCPInfo) | Gets what MCP (Model Context Protocol) does in this workspace: the capability ceiling in force, what each ceiling serves, and the per-engine facts a read-only session depends on. The workspace is resolved from the authenticated session.
-
-Served to MCP sessions. An agent asking what it may do here is the point: the response says nothing a session&#39;s own denials do not already say, one refusal at a time, and knowing it up front is what stops the agent planning work the ceiling was never going to serve.
-
-Permissions required: None (authentication required) |
 | RotateDirectorySyncToken | [RotateDirectorySyncTokenRequest](#bytebase-v1-RotateDirectorySyncTokenRequest) | [RotateDirectorySyncTokenResponse](#bytebase-v1-RotateDirectorySyncTokenResponse) | Mints a new directory sync (SCIM) token, immediately invalidating the previous one. The plaintext token is returned exactly once and cannot be retrieved afterwards; only its hash is stored. Callers that lose it must rotate again and update their identity provider. Permissions required: bb.workspaces.rotateDirectorySyncToken |
 
  

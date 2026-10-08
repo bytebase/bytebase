@@ -30,6 +30,12 @@ func TestContainsDDL(t *testing.T) {
 			wantDDL: false,
 		},
 		{
+			name:    "PostgreSQL: MERGE is DML",
+			engine:  storepb.Engine_POSTGRES,
+			sql:     "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN DELETE; UPDATE t SET a = 1;",
+			wantDDL: false,
+		},
+		{
 			name:    "PostgreSQL: DDL only",
 			engine:  storepb.Engine_POSTGRES,
 			sql:     "CREATE TABLE t (id INT);",

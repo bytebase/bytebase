@@ -181,6 +181,20 @@ describe("authInterceptor", () => {
     });
   });
 
+  test("does not leave sign-in for a rejected web login", async () => {
+    const error = new ConnectError(
+      "only users can use web login",
+      Code.PermissionDenied
+    );
+    const next = vi.fn().mockRejectedValue(error);
+
+    await expect(
+      authInterceptor(next)(createRequest({ methodName: "Login" }))
+    ).rejects.toBe(error);
+
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+  });
+
   test("builds a permission denied route query from request and route metadata", async () => {
     mocks.currentRoute.value = {
       name: "workspace.database",

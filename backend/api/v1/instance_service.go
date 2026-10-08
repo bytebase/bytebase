@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
@@ -279,13 +278,9 @@ func validateProjectInstanceListFilter(parentProjectID *string, filter string) e
 	if parentProjectID == nil || filter == "" {
 		return nil
 	}
-	env, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return errors.Wrap(err, "failed to create CEL environment")
-	}
-	ast, issues := env.Parse(filter)
-	if issues != nil {
-		return errors.Errorf("failed to parse filter %q", filter)
+		return err
 	}
 
 	var validate func(celast.Expr) error

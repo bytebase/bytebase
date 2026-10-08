@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"math/big"
 	"reflect"
@@ -45,9 +44,13 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			statement = fmt.Sprintf("EXPLAIN %s", statement)
+			explained, err := base.ExplainStatement(storepb.Engine_CLICKHOUSE, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
+			if err != nil {
+				return nil, err
+			}
+			statement = explained
 		} else if queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+			statement = base.StatementWithResultLimit(storepb.Engine_CLICKHOUSE, statement, queryContext.Limit, "")
 		}
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_CLICKHOUSE, statement)
 		if err != nil {
@@ -100,10 +103,6 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	}
 
 	return results, nil
-}
-
-func getStatementWithResultLimit(statement string, limit int) string {
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(statement), limit)
 }
 
 // translateAggregateFunctionError rewrites the clickhouse-go driver's opaque

@@ -23,7 +23,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/ConnectionPanel/ConnectionPane/DatabaseHoverPanel/DatabaseHoverPanel.vue.
  * Floating panel anchored at the hovered tree row showing database context
  * (environment, instance, project, labels). Clamps the y coordinate so the
  * panel stays fully within the viewport.

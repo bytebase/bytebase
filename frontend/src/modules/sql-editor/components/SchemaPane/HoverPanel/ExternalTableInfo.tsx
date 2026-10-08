@@ -8,7 +8,6 @@ type Props = {
   readonly externalTable: string;
 };
 
-/** Replaces `HoverPanel/ExternalTableInfo.vue`. */
 export function ExternalTableInfo({ database, schema, externalTable }: Props) {
   const { t } = useTranslation();
   const externalTableMetadata = useAppStore((s) =>

@@ -11,10 +11,8 @@ function getPath(url: string): string {
   return url.replace(/[?#].*$/, "");
 }
 
-// React port of the Vue `@/router/useRecentVisit` composable. Maintains the
-// per-user recent-visit list in localStorage under the same scoped key + JSON
-// array format as the Vue version (`@vueuse` useStorage), so the two remain
-// interoperable during the migration.
+// Maintains the per-user recent-visit list in localStorage under a scoped key
+// as a JSON array.
 export function useRecentVisit() {
   const isSaaSMode = useAppStore((s) => s.isSaaSMode());
   const currentUser = useAppStore((s) => s.currentUser);

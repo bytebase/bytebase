@@ -136,6 +136,83 @@ func TestSubmitIssueAllowsPlanCheckErrorsRequiredOnlyForRollout(t *testing.T) {
 	require.False(t, result.Issue.Payload.GetDraft())
 }
 
+func TestSubmitIssuePlanCheckRunStatus(t *testing.T) {
+	tests := []struct {
+		name             string
+		status           store.PlanCheckRunStatus
+		results          []*storepb.PlanCheckRunResult_Result
+		enforceSQLReview bool
+		stale            bool
+		wantAllowed      bool
+	}{
+		{
+			name: "done advice error can be submitted without enforcement", status: store.PlanCheckRunStatusDone,
+			results:     []*storepb.PlanCheckRunResult_Result{{Status: storepb.Advice_ERROR, Type: storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE}},
+			wantAllowed: true,
+		},
+		{
+			name: "done advice error is blocked with enforcement", status: store.PlanCheckRunStatusDone,
+			results:          []*storepb.PlanCheckRunResult_Result{{Status: storepb.Advice_ERROR, Type: storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE}},
+			enforceSQLReview: true,
+		},
+		{
+			name: "failed timeout can be submitted without enforcement", status: store.PlanCheckRunStatusFailed,
+			results:     []*storepb.PlanCheckRunResult_Result{{Status: storepb.Advice_ERROR, Title: "Plan check run timed out"}},
+			wantAllowed: true,
+		},
+		{
+			name: "failed timeout is blocked with enforcement", status: store.PlanCheckRunStatusFailed,
+			results:          []*storepb.PlanCheckRunResult_Result{{Status: storepb.Advice_ERROR, Title: "Plan check run timed out"}},
+			enforceSQLReview: true,
+		},
+		{name: "failed executor can be submitted without enforcement", status: store.PlanCheckRunStatusFailed, wantAllowed: true},
+		{name: "failed executor is blocked with enforcement", status: store.PlanCheckRunStatusFailed, enforceSQLReview: true},
+		{name: "canceled run can be submitted without enforcement", status: store.PlanCheckRunStatusCanceled, wantAllowed: true},
+		{name: "canceled run is blocked with enforcement", status: store.PlanCheckRunStatusCanceled, enforceSQLReview: true},
+		{name: "stale failed run remains blocked", status: store.PlanCheckRunStatusFailed, stale: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			if test.enforceSQLReview {
+				require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+					Workspace: "default", ResourceID: "project-a",
+					Setting: &storepb.Project{EnforceSqlReview: true},
+				}))
+			}
+			plan, issue := createReadyDraft(ctx, t, stores, false)
+			run, err := stores.GetPlanCheckRun(ctx, "project-a", plan.UID)
+			require.NoError(t, err)
+			version := plan.Config.GetApprovalInputVersion()
+			if test.stale {
+				version--
+			}
+			require.NoError(t, stores.UpdatePlanCheckRun(ctx, "project-a", test.status, &storepb.PlanCheckRunResult{
+				ApprovalInputVersion: version,
+				Results:              test.results,
+			}, run.UID))
+
+			result, err := NewWorkflow(stores).SubmitIssue(ctx, SubmitIssueInput{
+				Workspace: "default", ProjectID: "project-a", IssueUID: issue.UID,
+			})
+			if test.wantAllowed {
+				require.NoError(t, err)
+				require.True(t, result.Submitted)
+				require.False(t, result.Issue.Payload.GetDraft())
+			} else {
+				var workflowErr *Error
+				require.True(t, errors.As(err, &workflowErr))
+				require.Equal(t, ErrorFailedPrecondition, workflowErr.Code)
+				got, getErr := stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+				require.NoError(t, getErr)
+				require.True(t, got.Payload.GetDraft())
+			}
+		})
+	}
+}
+
 func TestConcurrentSubmitIssueEmitsEffectsOnce(t *testing.T) {
 	ctx := context.Background()
 	stores := setupWorkflowStore(ctx, t)

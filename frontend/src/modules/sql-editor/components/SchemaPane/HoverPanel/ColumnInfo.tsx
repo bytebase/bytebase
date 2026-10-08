@@ -17,9 +17,9 @@ type Props = {
 };
 
 /**
- * Replaces `HoverPanel/ColumnInfo.vue`. Character set is shown only for
- * Postgres / ClickHouse / Snowflake; collation only for ClickHouse /
- * Snowflake (other engines surface these at the table level).
+ * Character set is shown only for Postgres / ClickHouse / Snowflake;
+ * collation only for ClickHouse / Snowflake (other engines surface these at
+ * the table level).
  */
 export function ColumnInfo({ database, schema, table, column }: Props) {
   const { t } = useTranslation();

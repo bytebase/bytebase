@@ -40,6 +40,7 @@ vi.mock("@/stores/app", () => {
     batchGetOrFetchUsers: mocks.batchGetOrFetchUsers,
     batchGetOrFetchGroups: mocks.batchGetOrFetchGroups,
     notify: mocks.notify,
+    workspaceResourceName: () => "workspaces/default",
     getUserByIdentifier: (identifier: string) =>
       mocks.usersByBinding[identifier],
     getGroupByIdentifier: (identifier: string) =>
@@ -63,6 +64,8 @@ vi.mock("@/components/AccountMultiSelect", () => ({
     disabled?: boolean;
     excludeAccounts?: string[];
     placeholder?: string;
+    accountParents: string[];
+    includeSpecialAccounts?: boolean;
   }) => {
     mocks.pickerProps(props);
     return createElement(
@@ -219,6 +222,8 @@ const lastPickerProps = () =>
     value: string[];
     excludeAccounts?: string[];
     placeholder?: string;
+    accountParents: string[];
+    includeSpecialAccounts?: boolean;
   };
 
 const writtenBindings = () => {
@@ -462,6 +467,11 @@ describe("SavedQueryGrantEditor", () => {
     expect(lastPickerProps().placeholder).toBe(
       "sql-editor.saved-query-share.add-people"
     );
+    expect(lastPickerProps().accountParents).toEqual([
+      "workspaces/default",
+      "projects/proj1",
+    ]);
+    expect(lastPickerProps().includeSpecialAccounts).toBe(false);
     unmount();
   });
 

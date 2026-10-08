@@ -78,7 +78,7 @@ func TestResolveDatabaseTarget(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			instance, database, err := resolveDatabaseTarget(ctx, stores, tt.target)
+			instance, database, err := ResolveDatabaseTarget(ctx, stores, tt.target)
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
 				require.Nil(t, instance)

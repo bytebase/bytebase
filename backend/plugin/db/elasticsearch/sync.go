@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/pkg/errors"
@@ -36,7 +37,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 
 	return &db.InstanceMetadata{
 		Version:   version,
-		Databases: []*storepb.DatabaseSchemaMetadata{dbMetadata},
+		Databases: []*metadatapb.DatabaseSchemaMetadata{dbMetadata},
 		Metadata: &storepb.Instance{
 			Roles: instanceRoles,
 		},
@@ -44,8 +45,8 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema implements db.Driver.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	var dbMetadataProto storepb.DatabaseSchemaMetadata
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	var dbMetadataProto metadatapb.DatabaseSchemaMetadata
 
 	// indices.
 	indices, err := d.getIndices(ctx)
@@ -55,7 +56,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 	// TODO(tommy): database name?
 	dbMetadataProto.Name = "node"
-	dbMetadataProto.Schemas = append(dbMetadataProto.Schemas, &storepb.SchemaMetadata{Tables: indices})
+	dbMetadataProto.Schemas = append(dbMetadataProto.Schemas, &metadatapb.SchemaMetadata{Tables: indices})
 
 	return &dbMetadataProto, nil
 }
@@ -202,8 +203,8 @@ func (d *Driver) getHiddenIndices(ctx context.Context) (map[string]bool, error) 
 	return hiddenIndices, nil
 }
 
-func (d *Driver) getIndices(ctx context.Context) ([]*storepb.TableMetadata, error) {
-	var indicesMetadata []*storepb.TableMetadata
+func (d *Driver) getIndices(ctx context.Context) ([]*metadatapb.TableMetadata, error) {
+	var indicesMetadata []*metadatapb.TableMetadata
 
 	// Get hidden indices to filter them out.
 	hiddenIndices, err := d.getHiddenIndices(ctx)
@@ -235,7 +236,7 @@ func (d *Driver) getIndices(ctx context.Context) ([]*storepb.TableMetadata, erro
 				docCount = int64(*idx.DocsCount)
 			}
 
-			indicesMetadata = append(indicesMetadata, &storepb.TableMetadata{
+			indicesMetadata = append(indicesMetadata, &metadatapb.TableMetadata{
 				Name:     idx.Index,
 				DataSize: datasize,
 				RowCount: docCount,
@@ -277,7 +278,7 @@ func (d *Driver) getIndices(ctx context.Context) ([]*storepb.TableMetadata, erro
 			if err != nil {
 				return nil, err
 			}
-			indicesMetadata = append(indicesMetadata, &storepb.TableMetadata{
+			indicesMetadata = append(indicesMetadata, &metadatapb.TableMetadata{
 				Name:     m.Index,
 				DataSize: datasize,
 				RowCount: docCount,
@@ -327,7 +328,7 @@ func (d *Driver) getIndices(ctx context.Context) ([]*storepb.TableMetadata, erro
 		if err != nil {
 			return nil, err
 		}
-		indicesMetadata = append(indicesMetadata, &storepb.TableMetadata{
+		indicesMetadata = append(indicesMetadata, &metadatapb.TableMetadata{
 			Name:     m.Index,
 			DataSize: datasize,
 			RowCount: docCount,

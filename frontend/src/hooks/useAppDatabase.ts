@@ -7,9 +7,8 @@ import { isValidDatabaseName } from "@/types/v1/database";
  * Reactively reads a database from the Zustand app store, self-fetching when
  * the current route hasn't preloaded it (the SQL editor route does not mount
  * the dashboard shells that hydrate the app store). Returns the
- * Pinia-compatible `unknownDatabase` fallback so callers can read
- * `.project` / `.instanceResource` without null checks — mirroring the legacy
- * `useDatabaseV1Store().getDatabaseByName`.
+ * `unknownDatabase` fallback so callers can read `.project` /
+ * `.instanceResource` without null checks.
  */
 export const useAppDatabase = (name: string): Database => {
   const getDatabaseByName = useAppStore((s) => s.getDatabaseByName);

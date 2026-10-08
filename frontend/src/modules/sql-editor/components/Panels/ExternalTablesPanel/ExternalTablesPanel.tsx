@@ -9,9 +9,7 @@ import { useViewStateNav } from "../common/useViewStateNav";
 import { ExternalTablesTable } from "./ExternalTablesTable";
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/Panels/ExternalTablesPanel/*`.
- * Single Columns detail tab — no viewer needed, fully unblocked from
- * the CodeViewer/AI carve-out that gates other panels.
+ * Single Columns detail tab — no viewer needed.
  */
 export function ExternalTablesPanel() {
   const { database } = useConnectionOfCurrentSQLEditorTab();
@@ -62,7 +60,8 @@ export function ExternalTablesPanel() {
           <div className="w-full h-9 flex flex-row gap-x-2 justify-between items-center">
             <Button
               appearance="secondary"
-              className="h-8 px-1 text-sm"
+              size="md"
+              className="px-1"
               onClick={() => clearDetail()}
             >
               <ChevronLeft className="size-5" />

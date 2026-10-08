@@ -167,6 +167,7 @@ func TestValidateTaskFreshnessChecksInstanceArchival(t *testing.T) {
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	require.NoError(t, err)
+	defer tx.Rollback()
 	tasks, err := s.CreateMissingTasksTx(ctx, tx, plan.ProjectID, plan.UID, []*store.TaskMessage{{
 		InstanceID: instanceID,
 		Type:       storepb.Task_DATABASE_CREATE,
@@ -214,6 +215,7 @@ func TestScheduleRunningTaskRunsSkipsArchivedInstance(t *testing.T) {
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	require.NoError(t, err)
+	defer tx.Rollback()
 	tasks, err := s.CreateMissingTasksTx(ctx, tx, plan.ProjectID, plan.UID, []*store.TaskMessage{{
 		InstanceID: instanceID,
 		Type:       storepb.Task_DATABASE_CREATE,

@@ -1,0 +1,1457 @@
+- description: Basic tables with various column types
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "posts",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "user_id",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "title",
+                  "position": 3,
+                  "type": "varchar(200)"
+                },
+                {
+                  "name": "content",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "text"
+                },
+                {
+                  "name": "published_at",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "datetime"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_user_published",
+                  "expressions": [
+                    "user_id",
+                    "published_at"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "foreign_keys": [
+                {
+                  "name": "fk_1",
+                  "columns": [
+                    "user_id"
+                  ],
+                  "referenced_table": "users",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "CASCADE"
+                }
+              ]
+            },
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "username",
+                  "position": 2,
+                  "type": "varchar(50)"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "age",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "created_at",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                },
+                {
+                  "name": "updated_at",
+                  "position": 6,
+                  "default": "CURRENT_TIMESTAMP",
+                  "on_update": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                },
+                {
+                  "name": "profile",
+                  "position": 7,
+                  "nullable": true,
+                  "type": "json"
+                },
+                {
+                  "name": "is_active",
+                  "position": 8,
+                  "nullable": true,
+                  "type": "tinyint(1)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "username",
+                  "expressions": [
+                    "username"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_email",
+                  "expressions": [
+                    "email"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_created_at",
+                  "expressions": [
+                    "created_at"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB"
+            }
+          ]
+        }
+      ]
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `posts`
+    --
+    CREATE TABLE `posts` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `user_id` int NOT NULL,
+      `title` varchar(200) NOT NULL,
+      `content` text,
+      `published_at` datetime,
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
+      KEY `idx_user_published` (`user_id`, `published_at`),
+      CONSTRAINT `fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB;
+
+    --
+    -- Table structure for `users`
+    --
+    CREATE TABLE `users` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `username` varchar(50) NOT NULL,
+      `email` varchar(100) NOT NULL,
+      `age` int,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `profile` json,
+      `is_active` tinyint(1),
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
+      UNIQUE KEY `username` (`username`),
+      KEY `idx_email` (`email`),
+      KEY `idx_created_at` (`created_at`)
+    ) ENGINE=InnoDB;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Generated columns and complex indexes
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "inventory",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "product_id",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "warehouse",
+                  "position": 3,
+                  "type": "varchar(50)"
+                },
+                {
+                  "name": "quantity",
+                  "position": 4,
+                  "type": "int"
+                },
+                {
+                  "name": "last_updated",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "on_update": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "uk_product_warehouse",
+                  "expressions": [
+                    "product_id",
+                    "warehouse"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "foreign_keys": [
+                {
+                  "name": "fk_1",
+                  "columns": [
+                    "product_id"
+                  ],
+                  "referenced_table": "products",
+                  "referenced_columns": [
+                    "id"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "price",
+                  "position": 3,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "tax_rate",
+                  "position": 4,
+                  "type": "decimal(5,2)"
+                },
+                {
+                  "name": "price_with_tax",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "decimal(10,2) GENERATED ALWAYS AS (price * (1 + tax_rate)) STORED"
+                },
+                {
+                  "name": "description",
+                  "position": 6,
+                  "nullable": true,
+                  "type": "text"
+                },
+                {
+                  "name": "tags",
+                  "position": 7,
+                  "nullable": true,
+                  "type": "json"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB"
+            }
+          ]
+        }
+      ]
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `inventory`
+    --
+    CREATE TABLE `inventory` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `product_id` int NOT NULL,
+      `warehouse` varchar(50) NOT NULL,
+      `quantity` int NOT NULL,
+      `last_updated` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
+      UNIQUE KEY `uk_product_warehouse` (`product_id`, `warehouse`),
+      CONSTRAINT `fk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
+    ) ENGINE=InnoDB;
+
+    --
+    -- Table structure for `products`
+    --
+    CREATE TABLE `products` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `price` decimal(10,2) NOT NULL,
+      `tax_rate` decimal(5,2) NOT NULL,
+      `price_with_tax` decimal(10,2) GENERATED ALWAYS AS (price * (1 + tax_rate)) STORED,
+      `description` text,
+      `tags` json,
+      PRIMARY KEY (`id`) /*T![clustered_index]  */
+    ) ENGINE=InnoDB;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Views
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "order_items",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "order_id",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "product_name",
+                  "position": 3,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "quantity",
+                  "position": 4,
+                  "type": "int"
+                },
+                {
+                  "name": "unit_price",
+                  "position": 5,
+                  "type": "decimal(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "order_id",
+                  "expressions": [
+                    "order_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "foreign_keys": [
+                {
+                  "name": "fk_1",
+                  "columns": [
+                    "order_id"
+                  ],
+                  "referenced_table": "orders",
+                  "referenced_columns": [
+                    "id"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "order_number",
+                  "position": 2,
+                  "type": "varchar(20)"
+                },
+                {
+                  "name": "customer_name",
+                  "position": 3,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "total_amount",
+                  "position": 4,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "status",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "varchar(20)"
+                },
+                {
+                  "name": "created_at",
+                  "position": 6,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "order_number",
+                  "expressions": [
+                    "order_number"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB"
+            }
+          ],
+          "views": [
+            {
+              "name": "order_summary",
+              "definition": "SELECT\n    o.id,\n    o.order_number,\n    o.customer_name,\n    o.total_amount,\n    COUNT(oi.id) AS item_count,\n    SUM(oi.quantity) AS total_quantity\nFROM orders o\nLEFT JOIN order_items oi ON o.id = oi.order_id\nGROUP BY o.id, o.order_number, o.customer_name, o.total_amount"
+            },
+            {
+              "name": "pending_orders",
+              "definition": "SELECT id, order_number, customer_name, total_amount, created_at\nFROM orders\nWHERE status = 'pending'\nORDER BY created_at DESC"
+            }
+          ]
+        }
+      ]
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Temporary view structure for `order_summary`
+    --
+    -- `order_summary` references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them
+
+    --
+    -- Temporary view structure for `pending_orders`
+    --
+    -- `pending_orders` references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them
+
+    --
+    -- Table structure for `order_items`
+    --
+    CREATE TABLE `order_items` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `order_id` int NOT NULL,
+      `product_name` varchar(100) NOT NULL,
+      `quantity` int NOT NULL,
+      `unit_price` decimal(10,2) NOT NULL,
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
+      KEY `order_id` (`order_id`),
+      CONSTRAINT `fk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`)
+    ) ENGINE=InnoDB;
+
+    --
+    -- Table structure for `orders`
+    --
+    CREATE TABLE `orders` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `order_number` varchar(20) NOT NULL,
+      `customer_name` varchar(100) NOT NULL,
+      `total_amount` decimal(10,2) NOT NULL,
+      `status` varchar(20),
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
+      UNIQUE KEY `order_number` (`order_number`)
+    ) ENGINE=InnoDB;
+
+    --
+    -- View structure for `order_summary`
+    --
+    DROP VIEW IF EXISTS `order_summary`;
+    CREATE VIEW `order_summary` AS SELECT
+        o.id,
+        o.order_number,
+        o.customer_name,
+        o.total_amount,
+        COUNT(oi.id) AS item_count,
+        SUM(oi.quantity) AS total_quantity
+    FROM orders o
+    LEFT JOIN order_items oi ON o.id = oi.order_id
+    GROUP BY o.id, o.order_number, o.customer_name, o.total_amount;
+
+    --
+    -- View structure for `pending_orders`
+    --
+    DROP VIEW IF EXISTS `pending_orders`;
+    CREATE VIEW `pending_orders` AS SELECT id, order_number, customer_name, total_amount, created_at
+    FROM orders
+    WHERE status = 'pending'
+    ORDER BY created_at DESC;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: TiDB specific features - AUTO_RANDOM
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "distributed_data",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_RANDOM(5)",
+                  "type": "bigint"
+                },
+                {
+                  "name": "data_type",
+                  "position": 2,
+                  "type": "varchar(50)"
+                },
+                {
+                  "name": "payload",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "json"
+                },
+                {
+                  "name": "created_at",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_type_created",
+                  "expressions": [
+                    "data_type",
+                    "created_at"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB"
+            },
+            {
+              "name": "users_autorand",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_RANDOM",
+                  "type": "bigint"
+                },
+                {
+                  "name": "username",
+                  "position": 2,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "created_at",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "username",
+                  "expressions": [
+                    "username"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB"
+            }
+          ]
+        }
+      ]
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `distributed_data`
+    --
+    CREATE TABLE `distributed_data` (
+      `id` bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(5) */,
+      `data_type` varchar(50) NOT NULL,
+      `payload` json,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
+      KEY `idx_type_created` (`data_type`, `created_at`)
+    ) ENGINE=InnoDB;
+
+    --
+    -- Table structure for `users_autorand`
+    --
+    CREATE TABLE `users_autorand` (
+      `id` bigint NOT NULL /*T![auto_rand] AUTO_RANDOM */,
+      `username` varchar(100) NOT NULL,
+      `email` varchar(100) NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
+      UNIQUE KEY `username` (`username`)
+    ) ENGINE=InnoDB;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Character sets and collations
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "charset_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "character_set": "latin1"
+                },
+                {
+                  "name": "description",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "text",
+                  "character_set": "utf8mb4"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "charset": "utf8mb4"
+            },
+            {
+              "name": "multilingual",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "content_utf8",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(255)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_general_ci"
+                },
+                {
+                  "name": "content_bin",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "varchar(255)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_bin"
+                },
+                {
+                  "name": "content_unicode",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "varchar(255)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_unicode_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "collation": "utf8mb4_general_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ]
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `charset_test`
+    --
+    CREATE TABLE `charset_test` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) CHARACTER SET latin1,
+      `description` text,
+      PRIMARY KEY (`id`) /*T![clustered_index]  */
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    --
+    -- Table structure for `multilingual`
+    --
+    CREATE TABLE `multilingual` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `content_utf8` varchar(255),
+      `content_bin` varchar(255) COLLATE utf8mb4_bin,
+      `content_unicode` varchar(255) COLLATE utf8mb4_unicode_ci,
+      PRIMARY KEY (`id`) /*T![clustered_index]  */
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: TiDB clustered and non-clustered indexes
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "clustered_pk",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "bigint"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "created_at",
+                  "position": 3,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_name",
+                  "expressions": [
+                    "name"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "primary_key_type": "CLUSTERED"
+            },
+            {
+              "name": "nonclustered_pk",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "bigint"
+                },
+                {
+                  "name": "code",
+                  "position": 2,
+                  "type": "varchar(50)"
+                },
+                {
+                  "name": "data",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "json"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "code",
+                  "expressions": [
+                    "code"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_code",
+                  "expressions": [
+                    "code"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "primary_key_type": "NONCLUSTERED"
+            }
+          ]
+        }
+      ]
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `clustered_pk`
+    --
+    CREATE TABLE `clustered_pk` (
+      `id` bigint NOT NULL,
+      `name` varchar(100) NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
+      KEY `idx_name` (`name`)
+    ) ENGINE=InnoDB;
+
+    --
+    -- Table structure for `nonclustered_pk`
+    --
+    CREATE TABLE `nonclustered_pk` (
+      `id` bigint NOT NULL,
+      `code` varchar(50) NOT NULL,
+      `data` json,
+      PRIMARY KEY (`id`) /*T![clustered_index] NONCLUSTERED */,
+      UNIQUE KEY `code` (`code`),
+      KEY `idx_code` (`code`)
+    ) ENGINE=InnoDB;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Connected foreign key dependencies
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "departments",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "created_at",
+                  "position": 3,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "name",
+                  "expressions": [
+                    "name"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB"
+            },
+            {
+              "name": "employees",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "department_id",
+                  "position": 3,
+                  "type": "int"
+                },
+                {
+                  "name": "manager_id",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "created_at",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_department",
+                  "expressions": [
+                    "department_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_manager",
+                  "expressions": [
+                    "manager_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "foreign_keys": [
+                {
+                  "name": "fk_1",
+                  "columns": [
+                    "department_id"
+                  ],
+                  "referenced_table": "departments",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "RESTRICT"
+                },
+                {
+                  "name": "fk_2",
+                  "columns": [
+                    "manager_id"
+                  ],
+                  "referenced_table": "employees",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "SET NULL"
+                }
+              ]
+            },
+            {
+              "name": "project_members",
+              "columns": [
+                {
+                  "name": "project_id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "employee_id",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "role",
+                  "position": 3,
+                  "type": "varchar(50)"
+                },
+                {
+                  "name": "joined_at",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "project_id",
+                    "employee_id"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "employee_id",
+                  "expressions": [
+                    "employee_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "foreign_keys": [
+                {
+                  "name": "fk_1",
+                  "columns": [
+                    "project_id"
+                  ],
+                  "referenced_table": "projects",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE"
+                },
+                {
+                  "name": "fk_2",
+                  "columns": [
+                    "employee_id"
+                  ],
+                  "referenced_table": "employees",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE"
+                }
+              ]
+            },
+            {
+              "name": "projects",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "department_id",
+                  "position": 3,
+                  "type": "int"
+                },
+                {
+                  "name": "lead_id",
+                  "position": 4,
+                  "type": "int"
+                },
+                {
+                  "name": "created_at",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_department",
+                  "expressions": [
+                    "department_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_lead",
+                  "expressions": [
+                    "lead_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "foreign_keys": [
+                {
+                  "name": "fk_1",
+                  "columns": [
+                    "department_id"
+                  ],
+                  "referenced_table": "departments",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE"
+                },
+                {
+                  "name": "fk_2",
+                  "columns": [
+                    "lead_id"
+                  ],
+                  "referenced_table": "employees",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "RESTRICT"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `departments`
+    --
+    CREATE TABLE `departments` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
+      UNIQUE KEY `name` (`name`)
+    ) ENGINE=InnoDB;
+
+    --
+    -- Table structure for `employees`
+    --
+    CREATE TABLE `employees` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `department_id` int NOT NULL,
+      `manager_id` int,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
+      KEY `idx_department` (`department_id`),
+      KEY `idx_manager` (`manager_id`),
+      CONSTRAINT `fk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_2` FOREIGN KEY (`manager_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL
+    ) ENGINE=InnoDB;
+
+    --
+    -- Table structure for `project_members`
+    --
+    CREATE TABLE `project_members` (
+      `project_id` int NOT NULL,
+      `employee_id` int NOT NULL,
+      `role` varchar(50) NOT NULL,
+      `joined_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`project_id`, `employee_id`) /*T![clustered_index]  */,
+      KEY `employee_id` (`employee_id`),
+      CONSTRAINT `fk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB;
+
+    --
+    -- Table structure for `projects`
+    --
+    CREATE TABLE `projects` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `department_id` int NOT NULL,
+      `lead_id` int NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
+      KEY `idx_department` (`department_id`),
+      KEY `idx_lead` (`lead_id`),
+      CONSTRAINT `fk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_2` FOREIGN KEY (`lead_id`) REFERENCES `employees` (`id`) ON DELETE RESTRICT
+    ) ENGINE=InnoDB;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

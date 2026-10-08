@@ -135,6 +135,60 @@ afterEach(() => {
 });
 
 describe("AgentWindow", () => {
+  test("uses an accessible panel separator for the chat sidebar", () => {
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+
+    render();
+
+    const separator = document.body.querySelector(
+      "[data-agent-sidebar-resize]"
+    );
+
+    expect(separator).toHaveAttribute("role", "separator");
+    expect(separator).toHaveAttribute("data-separator");
+    expect(separator).not.toBeInstanceOf(HTMLButtonElement);
+
+    unmount();
+  });
+
+  test("uses compact borderless controls in the chat sidebar header", () => {
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+
+    render();
+
+    const actions = document.body.querySelector(
+      "[data-agent-chat-sidebar-actions]"
+    ) as HTMLDivElement | null;
+    const controls = actions?.querySelectorAll("button");
+
+    expect(controls).toHaveLength(2);
+    expect(controls?.[0]?.className).toContain("h-6");
+    expect(controls?.[0]?.className).not.toContain("border");
+    expect(controls?.[0]?.querySelector("svg")?.className.baseVal).toContain(
+      "size-3.5"
+    );
+    expect(controls?.[1]?.className).toContain("size-6");
+    expect(controls?.[1]?.className).not.toContain("border");
+    expect(controls?.[1]?.querySelector("svg")?.className.baseVal).toContain(
+      "size-3.5"
+    );
+
+    unmount();
+  });
+
+  test("keeps the selected chat row stable while its actions are revealed", () => {
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+
+    render();
+
+    const title = document.body.querySelector("[data-agent-chat-title]");
+    const titleButton = title?.closest("button");
+
+    expect(titleButton?.className).toContain("hover:bg-transparent");
+
+    unmount();
+  });
+
   test("mounts the agent shell into the agent layer root", () => {
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
 

@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LAYER_ROOT_ID } from "@/components/ui/layer";
 import { Popover, PopoverContent } from "@/components/ui/popover";
@@ -161,20 +162,22 @@ export function FolderForm({
                     onClick={() => handleUserClick(node.id)}
                   >
                     {hasChildren ? (
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           node.toggle();
                         }}
-                        className="flex items-center justify-center size-4 shrink-0 text-control hover:text-main"
+                        className="flex items-center justify-center shrink-0 text-control hover:text-main"
                       >
                         {node.isOpen ? (
                           <ChevronDown className="size-3" />
                         ) : (
                           <ChevronRight className="size-3" />
                         )}
-                      </button>
+                      </Button>
                     ) : (
                       <span className="size-4 shrink-0" />
                     )}

@@ -8,10 +8,10 @@ import (
 
 	omniast "github.com/bytebase/omni/snowflake/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -96,7 +96,7 @@ func (r *TableNoForeignKeyRule) GetAdviceList() []*storepb.Advice {
 				Code:          code.TableHasFK.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("FOREIGN KEY is not allowed in the table %s.", r.tableOriginalName[tableName]),
-				StartPosition: common.ConvertANTLRLineToPosition(r.tableLine[tableName]),
+				StartPosition: base.ConvertANTLRLineToPosition(r.tableLine[tableName]),
 			})
 		}
 	}

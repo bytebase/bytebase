@@ -21,6 +21,41 @@ interface ColorInputProps {
   ariaLabel?: string;
 }
 
+interface ColorSwatchInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  id?: string;
+  disabled?: boolean;
+  ariaLabel?: string;
+  className?: string;
+}
+
+export function ColorSwatchInput({
+  value,
+  onChange,
+  id,
+  disabled,
+  ariaLabel,
+  className,
+}: Readonly<ColorSwatchInputProps>) {
+  return (
+    <input
+      id={id}
+      type="color"
+      className={cn(
+        "size-8 shrink-0 appearance-none rounded-xs border border-control-border bg-transparent p-0",
+        "[&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-xs [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-xs [&::-moz-color-swatch]:border-0",
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+        className
+      )}
+      value={value}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+}
+
 /**
  * A color control pairing the native swatch picker with an editable hex text
  * field, so a color can be picked visually OR typed as `#081C56`. The text

@@ -29,9 +29,6 @@ vi.mock("react-i18next", () => ({
   ),
 }));
 
-// `useConnectionOfCurrentSQLEditorTab` now lives on the Pinia bridge hook
-// (the deleted tab-vue-state shim re-exported it). It returns PLAIN values
-// `{ connection, database, instance, environment }` — no Vue refs.
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
   useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
 }));

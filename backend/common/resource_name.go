@@ -720,9 +720,14 @@ func FormatSheet(projectID string, sheetSha256 string) string {
 }
 
 // FormatReviewRun formats a review run resource name. The review run ID is
-// the reviewer: "rule" or "guideline".
+// the reviewer: "rule" or "ai".
 func FormatReviewRun(projectID string, issueUID int64, reviewRunID string) string {
 	return fmt.Sprintf("%s/%s%s", FormatIssue(projectID, issueUID), ReviewRunNamePrefix, reviewRunID)
+}
+
+// FormatIssueComment formats an issue comment resource name under its issue.
+func FormatIssueComment(issueName, issueCommentID string) string {
+	return fmt.Sprintf("%s/%s%s", issueName, IssueCommentNamePrefix, issueCommentID)
 }
 
 func FormatIssue(projectID string, issueUID int64) string {

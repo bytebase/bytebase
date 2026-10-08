@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
@@ -112,7 +112,7 @@ func checkConsentedResource(values url.Values, consented string) *oauth2Failure 
 	if requested == "" {
 		return nil
 	}
-	canonical, err := common.NormalizeExternalURL(requested)
+	canonical, err := config.NormalizeExternalURL(requested)
 	if err != nil {
 		return &oauth2Failure{code: "invalid_target", description: err.Error()}
 	}
@@ -200,7 +200,7 @@ func singleValue(values url.Values, name string) (string, error) {
 // long-lived. Normalizing at the door keeps the audience single-valued.
 func validateResource(resource, externalURL string) (string, error) {
 	mcpResource := externalURL + mcpResourcePath
-	canonical, err := common.NormalizeExternalURL(resource)
+	canonical, err := config.NormalizeExternalURL(resource)
 	if err != nil {
 		return "", err
 	}

@@ -286,9 +286,7 @@ describe("extractDomTree", () => {
             <tr style="cursor: pointer">
               <td><div><span>Prod Primary</span></div></td>
               <td>
-                <div class="n-switch n-switch--active">
-                  <div class="n-switch__rail"></div>
-                </div>
+                <button role="switch" aria-checked="true"></button>
               </td>
               <td>
                 <div>
@@ -307,10 +305,9 @@ describe("extractDomTree", () => {
     expect(count).toBe(3);
     expect(tree).toContain("<thead>Name | Enabled | Actions</thead>");
     expect(tree).toContain("[e1]<tr>Prod Primary | switch</tr>");
-    expect(tree).toContain('[e2]<div value="checked">switch</div>');
+    expect(tree).toContain("[e2]<button>switch</button>");
     expect(tree).toContain("[e3]<button>Actions</button>");
     expect(tree).not.toContain("More actions");
-    expect(tree).not.toContain("n-switch__rail");
     expect(tree).not.toContain("Prod PrimaryProd Primary");
     expect(suggestions).toEqual([
       {
@@ -322,10 +319,10 @@ describe("extractDomTree", () => {
       },
       {
         ref: "e2",
-        tag: "div",
-        role: undefined,
+        tag: "button",
+        role: "switch",
         label: "switch",
-        value: "checked",
+        value: undefined,
       },
       {
         ref: "e3",
@@ -380,66 +377,6 @@ describe("extractDomTree", () => {
         role: undefined,
         label: "checkbox",
         value: "checked",
-      },
-    ]);
-  });
-
-  test("suppresses Naive input prefix text while preserving the textbox ref", () => {
-    document.body.innerHTML = `
-      <main>
-        <div class="n-input">
-          <div class="n-input-prefix">
-            <span>Filter</span>
-          </div>
-          <div class="n-input-wrapper">
-            <input placeholder="Search instances" />
-          </div>
-        </div>
-      </main>
-    `;
-
-    const { tree, count } = extractDomTree();
-    const suggestions = extractDomRefSuggestions();
-
-    expect(count).toBe(1);
-    expect(tree).toContain("[e1]<input>Search instances</input>");
-    expect(tree).not.toContain("Filter");
-    expect(suggestions).toEqual([
-      {
-        ref: "e1",
-        tag: "input",
-        role: undefined,
-        label: "Search instances",
-        value: undefined,
-      },
-    ]);
-  });
-
-  test("serializes Naive select controls with sibling labels and selected values", () => {
-    document.body.innerHTML = `
-      <main>
-        <div class="flex items-center gap-x-2">
-          <div class="textinfolabel">Rows per page</div>
-          <div class="n-base-selection" role="combobox">
-            <div class="n-base-selection-label">50</div>
-          </div>
-        </div>
-      </main>
-    `;
-
-    const { tree, count } = extractDomTree();
-    const suggestions = extractDomRefSuggestions();
-
-    expect(count).toBe(1);
-    expect(tree).toContain('[e1]<select value="50">Rows per page</select>');
-    expect(tree).not.toContain("<div>50</div>");
-    expect(suggestions).toEqual([
-      {
-        ref: "e1",
-        tag: "select",
-        role: "combobox",
-        label: "Rows per page",
-        value: "50",
       },
     ]);
   });
@@ -641,7 +578,7 @@ describe("extractDomTree", () => {
             </tbody>
           </table>
         </main>
-        <div class="n-drawer" role="dialog" aria-modal="true">
+        <div role="dialog" aria-modal="true">
           ${drawerButtons}
         </div>
       </div>

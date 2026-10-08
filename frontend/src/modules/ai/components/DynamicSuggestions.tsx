@@ -21,8 +21,6 @@ function loadShowSuggestion(key: string): boolean {
 }
 
 /**
- * React port of `plugins/ai/components/DynamicSuggestions.vue`.
- *
  * Shows up to one "suggested prompt" pill (LLM-generated) with refresh
  * / dismiss controls. Clicking the pill emits the suggestion to the
  * parent (`ChatPanel`) which submits it via `requestAI(query)`.
@@ -47,11 +45,9 @@ export function DynamicSuggestions({ onEnter }: Props) {
   const suggestionsCount = suggestion?.suggestions.length ?? 0;
   const current = suggestion?.current();
 
-  // Kick off the initial fetch when the component mounts and the cache
-  // is empty — matches the Vue `onMounted` block. `useDynamicSuggestions`
-  // returns a fresh `computed(...)` each render, so this effect re-runs on
-  // every render — gate by `state` so we don't pile concurrent `fetch()`s
-  // on top of an in-flight one (each fetch is a paid AI completion).
+  // Kick off the initial fetch when the cache is empty. Gate by `state` so
+  // we don't pile concurrent `fetch()`s on top of an in-flight one (each
+  // fetch is a paid AI completion).
   useEffect(() => {
     if (
       suggestion &&
@@ -63,9 +59,8 @@ export function DynamicSuggestions({ onEnter }: Props) {
   }, [suggestion, state]);
 
   // Per-user dismissable flag persisted to localStorage. Defaults to
-  // visible. Same storage key the Vue version used (`useDynamicLocalStorage`
-  // backed by `vueuse.useStorage`); we keep the key compatible so a user
-  // who dismissed in Vue stays dismissed in React.
+  // visible. Vue-era releases wrote the same key; keep it unchanged so a user
+  // who dismissed the suggestion before upgrading stays dismissed.
   const storageKey = useMemo(
     () => storageKeySqlEditorAiSuggestion(currentUserEmail),
     [currentUserEmail]
@@ -110,7 +105,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
   };
 
   return (
-    <div className="flex items-center overflow-hidden h-[22px]">
+    <div className="flex h-6 items-center overflow-hidden">
       {!ready && (
         <>
           <Loader2 className="mr-2 size-4 animate-spin" />
@@ -126,10 +121,10 @@ export function DynamicSuggestions({ onEnter }: Props) {
             <Button
               appearance="outline"
               size="xs"
-              className="flex-1 overflow-hidden h-[22px]"
+              className="flex-1 overflow-hidden"
               onClick={handleConsume}
             >
-              <span className="w-full truncate leading-[22px]">{current}</span>
+              <span className="w-full truncate leading-5">{current}</span>
             </Button>
           )}
 
@@ -141,7 +136,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
               <Button
                 appearance="secondary"
                 size="xs"
-                className="shrink-0 h-[22px] px-1.5"
+                className="shrink-0"
                 onClick={handleRefresh}
                 aria-label={t("plugin.ai.conversation.tips.suggest-prompt")}
               >
@@ -150,7 +145,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
               <Button
                 appearance="secondary"
                 size="xs"
-                className="shrink-0 h-[22px] px-1.5"
+                className="shrink-0"
                 onClick={() => setShowSuggestion(false)}
                 aria-label={t("common.close")}
               >
@@ -159,7 +154,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
             </div>
           )}
           {state === "ENDED" && (
-            <span className="shrink-0 text-gray-500">
+            <span className="shrink-0 text-control-light">
               {t("plugin.ai.conversation.tips.no-more")}
             </span>
           )}

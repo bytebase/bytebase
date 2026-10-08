@@ -13,8 +13,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 var getSegmenter func() *gse.Segmenter
@@ -123,10 +123,9 @@ type ProjectRole struct {
 	Role      string
 }
 
-// approvalStatusExpr mirrors computeApprovalStatus in
-// backend/api/v1/issue_service_converter.go branch for branch — keep the two in
-// step. Payloads are marshalled with a bare protojson.Marshal, so an absent key
-// is a zero value.
+// approvalStatusExpr mirrors ComputeApprovalStatus branch for branch — keep
+// the two in step. Payloads are marshalled with a bare protojson.Marshal, so an
+// absent key is a zero value.
 const approvalStatusExpr = `
 	CASE
 		WHEN NOT COALESCE((issue.payload->'approval'->>'approvalFindingDone')::BOOLEAN, FALSE) THEN 'CHECKING'

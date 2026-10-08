@@ -1,9 +1,7 @@
 import { type IStandaloneCodeEditor } from "@/components/monaco/types";
 
-// Plain mutable holders — only ever read/written imperatively from event
-// handlers (no `watch`, no React subscription), so a `{ value }` object
-// matches every call site's `.value` access without dragging Vue's
-// reactivity system in.
+// Plain mutable holders — only ever read/written imperatively (no React
+// subscription), so a `{ value }` object is enough.
 export const activeSQLEditorRef: { value: IStandaloneCodeEditor | undefined } =
   {
     value: undefined,

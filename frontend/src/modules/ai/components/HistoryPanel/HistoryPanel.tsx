@@ -11,8 +11,6 @@ import { useAIContext } from "../context";
 import { ConversationList } from "./ConversationList";
 
 /**
- * React port of `plugins/ai/components/HistoryPanel/HistoryPanel.vue`.
- *
  * Side drawer with two columns: the conversation list on the left and
  * the selected conversation rendered in `mode="VIEW"` on the right.
  * The drawer is the only place wide enough to render the full history

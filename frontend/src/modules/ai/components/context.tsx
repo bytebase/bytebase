@@ -29,11 +29,10 @@ import { conversationListByConnection, useConversationStore } from "../store";
 import type { AIContextEvents, Conversation } from "../types";
 
 /**
- * React-shaped slice of the AI plugin's per-tab state. Mirrors the Vue
- * `AIChatInfo` (refs) with plain values + an explicit setter so consumers
- * don't have to know about Vue's reactivity.
+ * Per-tab slice of the AI plugin's chat state, with an explicit setter for
+ * the selected conversation.
  */
-export type ReactAIChatInfo = {
+export type AIChatInfo = {
   list: Conversation[];
   ready: boolean;
   selected: Conversation | undefined;
@@ -41,11 +40,9 @@ export type ReactAIChatInfo = {
 };
 
 /**
- * React-shaped AI plugin context. Replaces the Vue `AIContext` defined in
- * `plugins/ai/types/context.ts` for components under `plugins/ai/react/`.
- * Same fields, plain values, paired setters for mutable state.
+ * AI plugin context: plain values, with paired setters for mutable state.
  */
-export type ReactAIContext = {
+export type AIContextValue = {
   aiSetting: AISetting;
   engine: Engine | undefined;
   databaseMetadata: DatabaseMetadata | undefined;
@@ -54,13 +51,13 @@ export type ReactAIContext = {
   showHistoryDialog: boolean;
   setShowHistoryDialog: (next: boolean) => void;
 
-  chat: ReactAIChatInfo;
+  chat: AIChatInfo;
 
   /**
    * One-shot trigger written by the `send-chat` event handler — the
-   * downstream `ChatPanel` effect reads this and dispatches the actual
-   * AI chat request, then clears it via `setPendingSendChat(undefined)`.
-   * Same pattern as the Vue `pendingSendChat` ref.
+   * downstream `ChatPanel` effect reads this, clears it via
+   * `setPendingSendChat(undefined)`, and dispatches the actual AI chat
+   * request.
    */
   pendingSendChat: { content: string } | undefined;
   setPendingSendChat: (next: { content: string } | undefined) => void;
@@ -76,10 +73,10 @@ export type ReactAIContext = {
   events: AIContextEvents;
 };
 
-const AIContextReactContext = createContext<ReactAIContext | null>(null);
+const AIContext = createContext<AIContextValue | null>(null);
 
-export function useAIContext(): ReactAIContext {
-  const ctx = useContext(AIContextReactContext);
+export function useAIContext(): AIContextValue {
+  const ctx = useContext(AIContext);
   if (!ctx) {
     throw new Error(
       "useAIContext (React) must be used inside <AIContextProvider>"
@@ -93,9 +90,8 @@ const EMPTY_AI_SETTING: AISetting = createProto(AISettingSchema, {});
 export function AIContextProvider({ children }: { children: ReactNode }) {
   // ---- AI setting --------------------------------------------------------
 
-  // The original Vue ProvideAIContext fetched the AI setting on mount.
-  // Mirror that here. `getOrFetchSettingByName` is idempotent; firing it
-  // again on remount is cheap.
+  // Fetch the AI setting on mount. `getOrFetchSettingByName` is idempotent;
+  // firing it again on remount is cheap.
   useEffect(() => {
     void useAppStore
       .getState()
@@ -133,7 +129,7 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
   //
   // Conversations live in the Zustand `useConversationStore`. We subscribe to
   // the conversation map + per-connection ready flags and derive the current
-  // tab's chat (list / ready / selected) with plain React state — no Vue refs.
+  // tab's chat (list / ready / selected) with plain React state.
   const tabInstance = currentTab?.connection.instance;
   const tabDatabase = currentTab?.connection.database;
   const connKey =
@@ -162,7 +158,7 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
   const chatReady = connKey ? !!readyByConnection[connKey] : false;
 
   // Explicit per-connection selection; falls back to the last conversation
-  // once the connection is ready (mirrors the Vue `watch` default).
+  // once the connection is ready.
   const [selectedIdByConn, setSelectedIdByConn] = useState<
     Record<string, string | undefined>
   >({});
@@ -181,7 +177,7 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
     },
     [connKey]
   );
-  const chat = useMemo<ReactAIChatInfo>(
+  const chat = useMemo<AIChatInfo>(
     () => ({
       list: chatList,
       ready: chatReady,
@@ -195,7 +191,7 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
   const selectedIdByConnRef = useRef(selectedIdByConn);
   selectedIdByConnRef.current = selectedIdByConn;
 
-  // ---- React-side state --------------------------------------------------
+  // ---- Local state -------------------------------------------------------
 
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [pendingSendChat, setPendingSendChat] = useState<
@@ -208,7 +204,7 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
   // Stable reference to `aiContextEvents` — singleton, but keep typed.
   const events: AIContextEvents = aiContextEvents;
 
-  // ---- Event listeners (mirror ProvideAIContext.vue) ---------------------
+  // ---- Event listeners ---------------------------------------------------
 
   // The listeners fire outside render. They read the live tab via
   // `getCurrentSQLEditorTab()`, await the store's per-connection fetch (so a
@@ -247,9 +243,8 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
           setSelectedIdByConn((prev) => ({ ...prev, [ck]: c.id }));
         }
         if (input) {
-          // rAF mirrors the Vue version — gives `PromptInput`'s
-          // pending-pre-input effect a frame to land after the conversation
-          // creation settles.
+          // rAF gives `PromptInput`'s pending-pre-input effect a frame to
+          // land after the conversation creation settles.
           requestAnimationFrame(() => {
             setPendingPreInput(input);
           });
@@ -292,7 +287,7 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
 
   // ---- Memoized value bundle --------------------------------------------
 
-  const value = useMemo<ReactAIContext>(
+  const value = useMemo<AIContextValue>(
     () => ({
       aiSetting,
       engine,
@@ -320,9 +315,5 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
     ]
   );
 
-  return (
-    <AIContextReactContext.Provider value={value}>
-      {children}
-    </AIContextReactContext.Provider>
-  );
+  return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }

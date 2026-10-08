@@ -5,7 +5,6 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useAIContext } from "./context";
 
 /**
- * React port of `plugins/ai/components/ActionBar.vue`.
  * Top bar above the chat: "AI Assistant" heading on the left,
  * History + New-conversation buttons on the right.
  */
@@ -26,7 +25,6 @@ export function ActionBar() {
           <Button
             appearance="secondary"
             size="sm"
-            className="h-7 px-1.5"
             onClick={() => setShowHistoryDialog(true)}
             aria-label={t("plugin.ai.conversation.view-history-conversations")}
           >
@@ -40,7 +38,6 @@ export function ActionBar() {
           <Button
             appearance="secondary"
             size="sm"
-            className="h-7 px-1.5"
             onClick={() => events.emit("new-conversation", { input: "" })}
             aria-label={t("plugin.ai.conversation.new-conversation")}
           >

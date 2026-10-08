@@ -12,6 +12,7 @@ import { issueServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { PROJECT_V1_ROUTE_SETTINGS } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { useClickOutside } from "@/hooks/useClickOutside";
@@ -137,9 +138,11 @@ export function IssueDetailLabels() {
         {project?.forceIssueLabels && <span className="text-error">*</span>}
       </div>
       <div ref={containerRef} className="relative">
-        <button
+        <Button
+          appearance="secondary"
+          size="md"
           className={cn(
-            "flex min-h-9 w-full items-center justify-between gap-2 rounded-sm border border-control-border bg-white px-3 py-1.5 text-left text-sm transition-colors",
+            "flex min-h-9 w-full items-center justify-between gap-2 rounded-sm border border-control-border bg-background px-3 py-1.5 text-left text-sm transition-colors",
             allowChange && !isUpdating && "hover:bg-control-bg",
             open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]",
             (!allowChange || isUpdating) && "cursor-not-allowed opacity-60"
@@ -163,7 +166,9 @@ export function IssueDetailLabels() {
                     />
                     <span className="truncate">{value}</span>
                     {allowChange && !isUpdating && (
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         className="text-control-placeholder hover:text-control"
                         onClick={(e) => {
                           void removeSelectedLabel(value, e);
@@ -171,7 +176,7 @@ export function IssueDetailLabels() {
                         type="button"
                       >
                         <X className="size-3" />
-                      </button>
+                      </Button>
                     )}
                   </span>
                 );
@@ -188,12 +193,12 @@ export function IssueDetailLabels() {
               open && "rotate-180"
             )}
           />
-        </button>
+        </Button>
 
         {open && (
           <div
             className={cn(
-              "absolute mt-1 w-full overflow-hidden rounded-sm border border-control-border bg-white shadow-lg",
+              "absolute mt-1 w-full overflow-hidden rounded-sm border border-control-border bg-background shadow-lg",
               LAYER_SURFACE_CLASS
             )}
           >
@@ -221,9 +226,11 @@ export function IssueDetailLabels() {
                 options.map((option) => {
                   const isSelected = selected.includes(option.value);
                   return (
-                    <button
+                    <Button
+                      appearance="secondary"
+                      size="md"
                       key={option.value}
-                      className="flex w-full items-center gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
+                      className="flex w-full min-w-0 justify-start gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
                       disabled={isUpdating}
                       onClick={() => {
                         void toggleLabel(option.value);
@@ -235,8 +242,13 @@ export function IssueDetailLabels() {
                         className="size-4 shrink-0 rounded-sm"
                         style={{ backgroundColor: option.color }}
                       />
-                      <span>{option.value}</span>
-                    </button>
+                      <span
+                        className="min-w-0 flex-1 truncate"
+                        title={option.value}
+                      >
+                        {option.value}
+                      </span>
+                    </Button>
                   );
                 })
               )}

@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vitest";
-import { ColumnResizeHandle } from "./column-resize-handle";
 import { TableBody, TableEmptyView, TableRow } from "./table";
 
 describe("table primitives", () => {
@@ -49,16 +48,5 @@ describe("table primitives", () => {
     expect(content.props.className).toContain("sticky left-0");
     expect(content.props.style).toEqual({ width: 640 });
     expect(content.props.children).toBe("No data");
-  });
-
-  test("ColumnResizeHandle keeps its hitbox inside the header edge", () => {
-    const element = ColumnResizeHandle({ onMouseDown: () => {} });
-
-    expect(element.props.className).toContain("right-0");
-    expect(element.props.className).not.toContain("right-[-6px]");
-    expect(element.props.className).toContain("w-3");
-    expect(element.props.className).toContain("z-10");
-    expect(element.props.children.props.className).toContain("right-0");
-    expect(element.props.children.props.className).toContain("w-0.5");
   });
 });

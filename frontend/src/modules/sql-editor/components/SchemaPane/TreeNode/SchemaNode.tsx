@@ -9,8 +9,8 @@ type Props = {
 };
 
 /**
- * Replaces `TreeNode/SchemaNode.vue`. Schema namespace node — falls
- * back to the i18n "default" label when the schema name is empty.
+ * Schema namespace node — falls back to the i18n "default" label when the
+ * schema name is empty.
  */
 export function SchemaNode({ node, keyword }: Props) {
   const { t } = useTranslation();

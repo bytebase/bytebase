@@ -3,14 +3,13 @@ package store_test
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -21,10 +20,7 @@ func newProjectPurgeCacheFixture(t *testing.T) (context.Context, *sql.DB, *store
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	t.Cleanup(cancel)
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(context.Background()) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := testcontainer.NewMetadataDBWithCache(t, true)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO project (resource_id, workspace, name, deleted) VALUES
@@ -33,13 +29,7 @@ func newProjectPurgeCacheFixture(t *testing.T) (context.Context, *sql.DB, *store
 			('project-b', 'default', 'Project B', FALSE);
 	`)
 	require.NoError(t, err)
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, true)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
+
 	return ctx, db, s
 }
 
@@ -105,6 +95,7 @@ func warmProjectPurgeCaches(ctx context.Context, t *testing.T, s *store.Store) {
 // immediately unavailable through the cached getters while surviving rows
 // still resolve correctly.
 func TestDeleteProjectPurgeInvalidatesDescendantCaches(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newProjectPurgeCacheFixture(t)
 	seedProjectPurgeFixture(ctx, t, db)
 	warmProjectPurgeCaches(ctx, t, s)
@@ -160,6 +151,7 @@ func TestDeleteProjectPurgeInvalidatesDescendantCaches(t *testing.T) {
 // data. Reused rows are inserted directly so a stale cache entry would still
 // be observable through the getters.
 func TestDeleteProjectPurgeSupportsDescendantIDReuse(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newProjectPurgeCacheFixture(t)
 	seedProjectPurgeFixture(ctx, t, db)
 	warmProjectPurgeCaches(ctx, t, s)
@@ -202,6 +194,7 @@ func TestDeleteProjectPurgeSupportsDescendantIDReuse(t *testing.T) {
 // directly, so any surviving getter result can only come from the still-warm
 // cache entries.
 func TestDeleteProjectFailedTransactionKeepsDescendantCaches(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newProjectPurgeCacheFixture(t)
 	seedProjectPurgeFixture(ctx, t, db)
 	warmProjectPurgeCaches(ctx, t, s)

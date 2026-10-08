@@ -4,10 +4,10 @@ import (
 	"context"
 	"io"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	metadatapb "github.com/bytebase/omni/metadata"
 )
 
 // Dump() is not applicable to Elasticsearch.
-func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (*Driver) Dump(_ context.Context, _ io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
 	return nil
 }

@@ -172,7 +172,7 @@ describe("ConnectionPanel", () => {
     unmount();
   });
 
-  test("settings button navigates without closing the drawer (matches Vue)", () => {
+  test("settings button navigates without closing the drawer", () => {
     mocks.state.showConnectionPanel = true;
     const { container, render, unmount } = renderIntoContainer(
       <ConnectionPanel />

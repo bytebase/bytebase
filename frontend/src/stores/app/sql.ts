@@ -5,11 +5,10 @@ import { extractGrpcErrorMessage } from "@/utils/connect";
 import type { AppSliceCreator, SQLSlice } from "./types";
 
 /**
- * Port of the legacy Pinia `useSQLStore`. Stateless — just RPC wrappers
- * around `query` / `export` with the SQL editor's permission-denied + silent
- * context conventions. Failures are swallowed into the returned
- * `SQLResultSetV1.error` (mirrors the Pinia behavior so the result table
- * can render the error inline instead of bubbling a thrown exception).
+ * Stateless — just RPC wrappers around `query` / `export` with the SQL
+ * editor's permission-denied + silent context conventions. Query failures are
+ * swallowed into the returned `SQLResultSetV1.error` so the result table can
+ * render the error inline instead of bubbling a thrown exception.
  */
 export const createSQLSlice: AppSliceCreator<SQLSlice> = () => ({
   query: async (params, signal) => {

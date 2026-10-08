@@ -108,8 +108,7 @@ export const createDatabaseCatalogSlice: AppSliceCreator<
         schemas: [],
       });
       // Drop schemas that no longer exist in the database metadata, but keep
-      // them all if metadata can't be loaded (e.g. missing permission) —
-      // mirrors the legacy Pinia behavior.
+      // them all if metadata can't be loaded (e.g. missing permission).
       let metadata;
       try {
         metadata = await get().getOrFetchDatabaseMetadata({ database });

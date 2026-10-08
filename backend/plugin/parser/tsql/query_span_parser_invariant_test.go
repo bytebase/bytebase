@@ -68,7 +68,7 @@ func querySpanFixtureParseCoverage(t *testing.T) {
 				continue
 			}
 			total++
-			_, err := ParseTSQLOmni(e.Statement)
+			_, err := ParseTSQL(e.Statement)
 			if err != nil {
 				failures = append(failures, failure{fixture: path, index: i, statement: e.Statement, err: err})
 				continue
@@ -537,9 +537,9 @@ func querySpanStructuralInvariants(t *testing.T) {
 			name: "table_variable_in_from",
 			sql:  "DECLARE @t TABLE(id INT); SELECT id FROM @t",
 			check: func(t *testing.T, _ ast.Node) {
-				// ParseTSQLOmni gives a slice; this invariant only checks the first stmt (DECLARE).
+				// ParseTSQL gives a slice; this invariant only checks the first stmt (DECLARE).
 				// Walk the full parse to confirm the second has @t as TableVarRef.
-				stmts, err := ParseTSQLOmni("DECLARE @t TABLE(id INT); SELECT id FROM @t")
+				stmts, err := ParseTSQL("DECLARE @t TABLE(id INT); SELECT id FROM @t")
 				if err != nil {
 					t.Fatalf("parse: %v", err)
 				}
@@ -605,7 +605,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 
 	for _, p := range invariants {
 		t.Run(p.name, func(t *testing.T) {
-			stmts, err := ParseTSQLOmni(p.sql)
+			stmts, err := ParseTSQL(p.sql)
 			if err != nil {
 				t.Fatalf("parse err: %v\nSQL: %s", err, p.sql)
 			}

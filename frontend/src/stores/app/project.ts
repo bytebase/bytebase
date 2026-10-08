@@ -51,9 +51,7 @@ export const getListProjectFilter = (params: ProjectFilter): string => {
 
 const UNKNOWN_PROJECT_NAME = `projects/${UNKNOWN_ID}`;
 
-// The default project's feature gates. Inlined here (rather than reusing
-// the `@/types/v1/project` helpers) so the app store's load graph stays
-// free of the Pinia actuator store those helpers pull in.
+// The default project's feature gates.
 const PROJECT_DEFAULTS = {
   state: State.ACTIVE,
   enforceIssueTitle: true,
@@ -110,8 +108,7 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
       set({ projectsByName: {}, projectRequests: {}, projectErrorsByName: {} });
     },
 
-    // Mirrors the Pinia `useProjectV1Store().getProjectByName`: always
-    // returns a non-null Project, synthesizing the default-project or
+    // Always returns a non-null Project, synthesizing the default-project or
     // unknown-project placeholder when the name is not in the cache.
     getProjectByName: (name) => {
       if (name === UNKNOWN_PROJECT_NAME) return unknownProject;
@@ -309,7 +306,7 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
       let pageToken = params.pageToken;
       let result: { projects: Project[]; nextPageToken: string };
       // The API can return an empty page with a non-empty next token; keep
-      // paging until we get rows or run out (mirrors the legacy Pinia store).
+      // paging until we get rows or run out.
       while (true) {
         const request = {
           pageSize: params.pageSize,

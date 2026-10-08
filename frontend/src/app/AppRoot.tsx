@@ -1,3 +1,4 @@
+import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import {
   createBrowserRouter,
   type LoaderFunctionArgs,
@@ -14,7 +15,7 @@ setRouteNameIndex(buildRouteNameIndex());
 
 // Single root-route loader: runs on every navigation (the root route matches
 // every URL). Resolves the matched leaf route's `handle.name` and delegates to
-// the faithful `beforeEach` port; a returned `redirect()` Response navigates.
+// `rootGuard`; a returned `redirect()` Response navigates.
 function rootLoader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const matched = matchRoutes(routes, url.pathname);
@@ -43,5 +44,9 @@ export const appRouter = createBrowserRouter(routes);
 setAppRouter(appRouter);
 
 export function AppRoot() {
-  return <RouterProvider router={appRouter} />;
+  return (
+    <BaseTooltip.Provider>
+      <RouterProvider router={appRouter} />
+    </BaseTooltip.Provider>
+  );
 }

@@ -1,14 +1,12 @@
-import { createContextValues } from "@connectrpc/connect";
 import { Building2, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { workspaceServiceClientConnect } from "@/api";
-import { silentContextKey } from "@/api/context-key";
 import { router } from "@/app/router";
 import { AUTH_SIGNIN_MODULE } from "@/app/router/handles";
 import { BytebaseLogo } from "@/components/BytebaseLogo";
-import { readConsentCeiling } from "@/components/mcp/mcpPolicy";
+import { isServingMode, readConsentCeiling } from "@/components/mcp/mcpPolicy";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -18,8 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useWorkspace } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
-import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
-import type { MCPInfo } from "@/types/proto-es/v1/workspace_service_pb";
+import type { MCPSetting } from "@/types/proto-es/v1/setting_service_pb";
 import { MCPConsentCeiling } from "./MCPConsentCeiling";
 import { MCPConsentDisabled } from "./MCPConsentDisabled";
 import type { UndisclosedReason } from "./MCPConsentUndisclosed";
@@ -39,11 +36,14 @@ export function OAuth2ConsentPage() {
   //
   // Undefined is not "no policy": it is this page not holding one, which is
   // the state Allow is withheld under.
-  const [mcpInfo, setMcpInfo] = useState<MCPInfo | undefined>(undefined);
+  const [mcpSetting, setMcpSetting] = useState<MCPSetting | undefined>(
+    undefined
+  );
   const [retrying, setRetrying] = useState(false);
 
   const loadWorkspace = useAppStore((state) => state.loadWorkspace);
   const loadWorkspaceList = useAppStore((state) => state.loadWorkspaceList);
+  const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
   const switchWorkspace = useAppStore((state) => state.switchWorkspace);
 
   const isLoggedIn = useAppStore((s) => s.isLoggedIn());
@@ -75,25 +75,18 @@ export function OAuth2ConsentPage() {
 
   // Silent: the interceptor's toast names a status code, not a fix, and the
   // card this feeds says the same thing in words the person can act on.
-  const readCeiling = useCallback(async (): Promise<MCPInfo | undefined> => {
+  const readCeiling = useCallback(async (): Promise<MCPSetting | undefined> => {
     try {
-      return await workspaceServiceClientConnect.getMCPInfo(
-        {},
-        {
-          contextValues: createContextValues().set(silentContextKey, true),
-          // The shared transport has no deadline. Without one a stalled read
-          // leaves the page on its spinner with no way forward and no way out.
-          timeoutMs: 10_000,
-        }
-      );
+      const info = await refreshServerInfo();
+      return info?.mcpSetting;
     } catch {
       return undefined;
     }
-  }, []);
+  }, [refreshServerInfo]);
 
   const retryCeiling = async () => {
     setRetrying(true);
-    setMcpInfo(await readCeiling());
+    setMcpSetting(await readCeiling());
     setRetrying(false);
   };
 
@@ -115,11 +108,6 @@ export function OAuth2ConsentPage() {
       setLoading(false);
       return;
     }
-
-    // This page renders outside any shell, so the workspace bootstrap hasn't
-    // populated the app store — load server info so `isSaaSMode()` resolves
-    // and the SaaS workspace picker can render.
-    void useAppStore.getState().loadServerInfo();
 
     (async () => {
       try {
@@ -145,7 +133,7 @@ export function OAuth2ConsentPage() {
         setLoading(false);
         return;
       }
-      setMcpInfo(await readCeiling());
+      setMcpSetting(await readCeiling());
       setLoading(false);
     })();
   }, [readCeiling]);
@@ -256,26 +244,21 @@ export function OAuth2ConsentPage() {
     form.submit();
   };
 
-  // The way out of each state that has one. The two an admin has to repair get
-  // nothing: re-reading returns the same broken value, and a button that
-  // changes nothing reads as a promise that it might.
+  // The way out of the one state that has one. undisclosable gets nothing:
+  // re-reading returns the same value this page has no word for, and a button
+  // that changes nothing reads as a promise that it might. Its two repairs —
+  // reload, then ask an admin — are named in its own copy instead.
   const retryFor = (reason: UndisclosedReason): (() => void) | undefined => {
-    switch (reason) {
-      case "unknown":
-        // Wrapped rather than passed: retryCeiling is async, and handing a
-        // Promise-returning function to a `() => void` prop floats the promise
-        // (SonarCloud S6544). readCeiling swallows its own failures, so there
-        // is no rejection to route anywhere.
-        return () => {
-          void retryCeiling();
-        };
-      case "outdated":
-        // Only a fresh bundle can name this ceiling. Re-reading the policy
-        // would return the same value this page has no word for.
-        return () => globalThis.location.reload();
-      default:
-        return undefined;
+    if (reason !== "unknown") {
+      return undefined;
     }
+    // Wrapped rather than passed: retryCeiling is async, and handing a
+    // Promise-returning function to a `() => void` prop floats the promise
+    // (SonarCloud S6544). readCeiling swallows its own failures, so there is no
+    // rejection to route anywhere.
+    return () => {
+      void retryCeiling();
+    };
   };
 
   // Five branches share this slot and only the last offers a grant.
@@ -298,8 +281,8 @@ export function OAuth2ConsentPage() {
       );
     }
     // Allow renders only below this line, and only where the page holds a
-    // ceiling the server serves and this bundle can name (BOT-106).
-    const ceiling = readConsentCeiling(mcpInfo);
+    // ceiling this bundle can name (BOT-106).
+    const ceiling = readConsentCeiling(mcpSetting);
     if (ceiling.kind !== "mode") {
       return (
         <MCPConsentUndisclosed
@@ -315,7 +298,7 @@ export function OAuth2ConsentPage() {
         />
       );
     }
-    if (ceiling.info.capability === MCPSetting_Capability.DISABLED) {
+    if (!isServingMode(ceiling.mode)) {
       return (
         <MCPConsentDisabled
           workspaceTitle={
@@ -329,7 +312,7 @@ export function OAuth2ConsentPage() {
     }
     return (
       <div className="flex flex-col gap-6">
-        <div className="text-center">
+        <div className="text-center text-balance">
           <h1 className="text-xl font-semibold text-main mb-2">
             {t("oauth2.consent.title")}
           </h1>
@@ -338,19 +321,19 @@ export function OAuth2ConsentPage() {
           </p>
         </div>
         {workspaceCard}
-        <MCPConsentCeiling info={ceiling.info} />
+        <MCPConsentCeiling mode={ceiling.mode} />
         <form method="POST" action={AUTHORIZE_URL}>
-          <input type="hidden" name="client_id" value={clientId} />
-          <input type="hidden" name="redirect_uri" value={redirectUri} />
-          <input type="hidden" name="state" value={oauthState} />
-          <input type="hidden" name="code_challenge" value={codeChallenge} />
-          <input
+          <Input type="hidden" name="client_id" value={clientId} />
+          <Input type="hidden" name="redirect_uri" value={redirectUri} />
+          <Input type="hidden" name="state" value={oauthState} />
+          <Input type="hidden" name="code_challenge" value={codeChallenge} />
+          <Input
             type="hidden"
             name="code_challenge_method"
             value={codeChallengeMethod}
           />
-          <input type="hidden" name="resource" value={resource} />
-          <input type="hidden" name="scope" value={scope} />
+          <Input type="hidden" name="resource" value={resource} />
+          <Input type="hidden" name="scope" value={scope} />
           <div className="flex gap-x-2">
             <Button
               type="button"
@@ -370,7 +353,7 @@ export function OAuth2ConsentPage() {
               name="action"
               value="allow"
             >
-              {t("common.allow")}
+              {t("oauth2.consent.allow-access")}
             </Button>
           </div>
         </form>
@@ -379,13 +362,15 @@ export function OAuth2ConsentPage() {
   };
 
   return (
-    // SplashLayout's root is overflow-hidden, so this column carries its own
-    // scroll: the ceiling panel and its caution make the card taller than a
-    // short viewport, and the part that clips is Allow and Deny. The auto
-    // margins keep it centred while it still fits.
-    <div className="h-full overflow-y-auto flex flex-col mx-auto w-full max-w-sm py-8">
-      <BytebaseLogo className="mx-auto mb-8 mt-auto shrink-0" />
-      <div className="rounded-sm border border-control-border bg-white p-6 mb-auto shrink-0">
+    // An interstitial centered on the whole viewport: the card keeps one width
+    // wherever it fits and narrows only on narrower screens. SplashLayout's
+    // half-width column would narrow it on screens 1024px to 1727px wide.
+    <div className="min-h-screen flex flex-col items-center justify-center gap-8 px-4 py-8">
+      <BytebaseLogo />
+      <div
+        data-testid="oauth2-consent-card"
+        className="w-full max-w-2xl rounded-sm border border-control-border bg-background p-6"
+      >
         {consentBody()}
       </div>
     </div>

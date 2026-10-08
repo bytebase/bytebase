@@ -131,7 +131,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 			return nil, err
 		}
 		s.stopper = append(s.stopper, stopper)
-		pgURL = fmt.Sprintf("host=%s port=%d user=bb database=bb", common.GetPostgresSocketDir(), profile.DatastorePort)
+		pgURL = fmt.Sprintf("host=%s port=%d user=bb database=bb", postgres.GetPostgresSocketDir(), profile.DatastorePort)
 	} else {
 		pgURL = profile.PgURL
 	}
@@ -245,8 +245,8 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor, s.licenseService, productMetrics)
 
 	s.reviewRunScheduler = reviewrun.NewScheduler(stores, s.bus, profile, s.licenseService, productMetrics)
-	s.reviewRunScheduler.Register(store.ReviewRunTypeRule, reviewrun.NewRuleExecutor(stores, sheetManager, s.dbFactory))
-	s.reviewRunScheduler.Register(store.ReviewRunTypeGuideline, reviewrun.NewGuidelineExecutor())
+	s.reviewRunScheduler.Register(store.ReviewRunTypeRule, reviewrun.NewRuleExecutor(stores))
+	s.reviewRunScheduler.Register(store.ReviewRunTypeAI, reviewrun.NewAIReviewExecutor(stores))
 	s.notifyListener = notifylistener.NewListener(stores.GetDB(), s.bus)
 
 	// Data cleaner
@@ -367,6 +367,20 @@ func (s *Server) Run(ctx context.Context, port int) error {
 }
 
 // Shutdown will shut down the server.
+func waitRunners(ctx context.Context, wg *sync.WaitGroup) error {
+	stopped := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(stopped)
+	}()
+	select {
+	case <-stopped:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 func (s *Server) Shutdown(ctx context.Context) error {
 	slog.Info("Stopping Bytebase...")
 	slog.Info("Stopping web server...")
@@ -386,8 +400,12 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	// Wait for all runners to exit.
-	s.runnerWG.Wait()
+	// Wait for all runners to exit, but not past the shutdown deadline: one
+	// blocked on a stopped consumer must not hold the process open. A runner
+	// that outlives this gets an error from the closed store, not a nil handle.
+	if err := waitRunners(ctx, &s.runnerWG); err != nil {
+		slog.Warn("Runners did not stop before the shutdown deadline", log.BBError(err))
+	}
 
 	// Close db connection
 	if s.store != nil {

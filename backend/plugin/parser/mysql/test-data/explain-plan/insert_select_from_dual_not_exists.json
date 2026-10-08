@@ -1,0 +1,1 @@
+{"query_block":{"select_id":1,"table":{"insert":true,"table_name":"t2","access_type":"ALL","attached_subqueries":[{"dependent":false,"cacheable":true,"query_block":{"select_id":2,"message":"no matching row in const table"}}]}}}

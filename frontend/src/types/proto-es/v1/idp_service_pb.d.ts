@@ -35,9 +35,9 @@ export declare const GetIdentityProviderRequestSchema: GenMessage<GetIdentityPro
  */
 export declare type ListIdentityProvidersRequest = Message<"bytebase.v1.ListIdentityProvidersRequest"> & {
   /**
-   * The parent workspace whose identity providers should be listed.
+   * The parent workspace whose identity providers should be listed. It must be
+   * the workspace the caller's credential belongs to.
    * Format: workspaces/{workspace}
-   * When unset, the workspace is resolved from the request context.
    *
    * @generated from field: string parent = 1;
    */
@@ -766,8 +766,15 @@ export declare const IdentityProviderService: GenService<{
     output: typeof IdentityProviderSchema;
   },
   /**
-   * Lists all configured identity providers (public endpoint for login page).
-   * Permissions required: None
+   * Lists the identity providers configured for the caller's workspace.
+   * The login page reads AuthService.GetAuthenticationInfo instead,
+   * which publishes only the fields a browser needs to start an SSO redirect.
+   *
+   * Returns the same representation as GetIdentityProvider — secrets redacted,
+   * the rest of the configuration included — so granting
+   * bb.identityProviders.list conveys configuration read over the whole
+   * collection, not merely the names in it.
+   * Permissions required: bb.identityProviders.list
    *
    * @generated from rpc bytebase.v1.IdentityProviderService.ListIdentityProviders
    */

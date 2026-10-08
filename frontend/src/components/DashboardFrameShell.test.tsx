@@ -23,16 +23,6 @@ vi.mock("@/stores/app", () => ({
   useAppStore: mocks.useAppStore,
 }));
 
-// The legacy-Pinia bootstrap block reads these from `@/stores`.
-vi.mock("@/stores", () => ({
-  useEnvironmentV1Store: () => ({
-    fetchEnvironments: mocks.fetchEnvironments,
-  }),
-  useSettingV1Store: () => ({
-    getOrFetchSettingByName: mocks.getOrFetchSettingByName,
-  }),
-}));
-
 vi.mock("./BannersWrapper", () => ({
   BannersWrapper: () => <div data-testid="banners-wrapper" />,
 }));

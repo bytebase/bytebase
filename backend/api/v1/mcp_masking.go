@@ -20,31 +20,13 @@ func mcpSession(ctx context.Context) bool {
 	return ok && authCtx.DelegatedGrant != nil
 }
 
-// mcpIgnoresMaskingExemptions reports whether this request stops applying the
-// caller's own unmasking provisioning.
-//
-// No stamped settings means the gate never ran. Ignoring the exemptions is the
-// safe default there, which is why this answers true where
-// mcpReadOnlyClampApplies errors: guessing a ceiling has no safe default.
-func mcpIgnoresMaskingExemptions(ctx context.Context) bool {
-	if !mcpSession(ctx) {
-		return false
-	}
-	settings, ok := mcpSettingsFromContext(ctx)
-	if !ok {
-		return true
-	}
-	return settings.IgnoreMaskingExemptions
-}
-
 // maskedWriteRefusal is the reason to refuse SQL carrying a mask sentinel, or
 // "" to allow: the agent writes back the placeholder it read, and the real data
 // is gone with nothing in the change looking wrong.
 //
-// It applies to every MCP session, not only where the workspace ignores masking
-// exemptions. Masking runs under ordinary policy for any user who holds no
-// exemption, so the corruption is reachable in a workspace that never touched
-// the toggle — which is most of them.
+// It applies to every MCP session: masking runs under ordinary policy for any
+// user who holds no exemption, so the corruption is reachable in any workspace
+// that masks a column.
 //
 // Only masker.DefaultFullMaskSubstitution is fixed in code: a full mask emits
 // it for any value when no substitution is configured, and the range,

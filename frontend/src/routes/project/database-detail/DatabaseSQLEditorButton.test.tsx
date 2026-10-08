@@ -70,7 +70,7 @@ describe("DatabaseSQLEditorButton", () => {
     mocks.hasProjectPermission.mockReturnValue(true);
     render(<DatabaseSQLEditorButton database={database} />);
 
-    const link = screen.getByRole("link", { name: "sql-editor.self" });
+    const link = screen.getByRole("link", { name: "database.open-sql-editor" });
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
     expect(mocks.resolve).toHaveBeenCalledWith({
@@ -90,7 +90,7 @@ describe("DatabaseSQLEditorButton", () => {
   test("disables the link when project query access is missing", () => {
     render(<DatabaseSQLEditorButton database={database} />);
 
-    const link = screen.getByRole("link", { name: "sql-editor.self" });
+    const link = screen.getByRole("link", { name: "database.open-sql-editor" });
     expect(link).toHaveAttribute("aria-disabled", "true");
 
     fireEvent.click(link);

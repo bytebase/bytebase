@@ -272,7 +272,7 @@ export function DocumentJSONView({
             <Button
               size="xs"
               appearance="outline"
-              className="size-6 bg-background p-0 shadow-sm"
+              className="w-6 bg-background p-0 shadow-sm"
               aria-label={t("common.copy")}
               onClick={() => void handleCopyDocument(copyAction.documentIndex)}
             >

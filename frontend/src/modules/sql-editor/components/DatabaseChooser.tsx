@@ -11,7 +11,11 @@ import {
   useCurrentSQLEditorTab,
   useIsInBatchMode,
 } from "@/modules/sql-editor/store/tab";
-import { isValidDatabaseName, isValidInstanceName } from "@/types";
+import {
+  isValidDatabaseName,
+  isValidInstanceName,
+  isValidProjectName,
+} from "@/types";
 import {
   extractDatabaseResourceName,
   getDatabaseEnvironment,
@@ -23,7 +27,6 @@ type DatabaseChooserProps = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/DatabaseChooser.vue.
  * Breadcrumb-style chooser showing the current connection
  * (Environment > Instance > Database). Click opens the connection panel.
  */
@@ -39,6 +42,7 @@ export function DatabaseChooser({ disabled = false }: DatabaseChooserProps) {
   const projectContextReady = useSQLEditorEditorState(
     (s) => s.projectContextReady
   );
+  const projectName = useSQLEditorEditorState((s) => s.project);
 
   const instance = getInstanceResource(database);
   const environment = getDatabaseEnvironment(database);
@@ -48,6 +52,7 @@ export function DatabaseChooser({ disabled = false }: DatabaseChooserProps) {
     !!currentTab &&
     isValidInstanceName(instance.name) &&
     isValidDatabaseName(database.name);
+  const hasProject = isValidProjectName(projectName);
 
   const handleClick = () => {
     setShowConnectionPanel(true);
@@ -55,11 +60,11 @@ export function DatabaseChooser({ disabled = false }: DatabaseChooserProps) {
 
   return (
     <ConnectionChooserButton
-      disabled={disabled || !projectContextReady}
+      disabled={disabled || !projectContextReady || !hasProject}
       onClick={handleClick}
       className="overflow-hidden"
     >
-      {isConnected ? (
+      {hasProject && isConnected ? (
         <div className="flex flex-row items-center text-control truncate">
           {isInBatchMode && (
             <Tooltip content={t("sql-editor.batch-query.batch")}>
@@ -78,8 +83,10 @@ export function DatabaseChooser({ disabled = false }: DatabaseChooserProps) {
             <span className="truncate">{databaseName}</span>
           </div>
         </div>
-      ) : (
+      ) : hasProject ? (
         <span>{t("sql-editor.select-a-database-to-start")}</span>
+      ) : (
+        <span>{t("sql-editor.select-a-project-to-choose-a-database")}</span>
       )}
     </ConnectionChooserButton>
   );

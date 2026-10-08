@@ -10,6 +10,7 @@ import {
 import { UserCell } from "@/components/UserCell";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CopyButton } from "@/components/ui/copy-button";
 import { listRowStateClassName } from "@/components/ui/styles.stylex";
 import {
   Table,
@@ -179,6 +180,7 @@ function WorkloadIdentityTable({
                     <UserCell
                       title={user.title}
                       subtitle={user.email}
+                      subtitleAction={<CopyButton content={user.email} />}
                       nameClassName={
                         isDeleted
                           ? "line-through !text-control-light"
@@ -409,15 +411,19 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
         )}
 
         {/* Show inactive toggle */}
-        <label className="flex items-center gap-x-2 text-sm cursor-pointer">
+        <div className="flex items-center gap-x-2 text-sm">
           <Checkbox
+            id="show-inactive-workload-identities"
             checked={showInactive}
             onCheckedChange={(checked) => setShowInactive(checked)}
           />
-          <span className="textinfolabel">
+          <label
+            className="cursor-pointer textinfolabel"
+            htmlFor="show-inactive-workload-identities"
+          >
             {t("settings.members.show-inactive")}
-          </span>
-        </label>
+          </label>
+        </div>
 
         {showInactive && (
           <div className="flex flex-col gap-y-4">

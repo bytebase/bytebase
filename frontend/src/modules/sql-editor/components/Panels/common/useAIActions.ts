@@ -18,10 +18,9 @@ interface UseAIActionsOptions {
 }
 
 /**
- * React port of `frontend/src/plugins/ai/components/editor-actions.ts`.
  * Registers AI context-menu actions on the underlying Monaco editor.
- * Reads `aiSetting.enabled` from the same Pinia setting store the Vue
- * version uses, gating registration the same way.
+ * Registration is gated on the AI setting's `enabled` flag from the app
+ * store.
  */
 export function useAIActions({
   monaco,
@@ -33,7 +32,7 @@ export function useAIActions({
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   // Subscribe to the AI setting so the registered Monaco actions re-register
   // or unregister live when an admin toggles AI access while the editor is
-  // mounted (matches the Vue `watchEffect` behavior in `editor-actions.ts`).
+  // mounted.
   const aiEnabled = useAppStore((s) => {
     const setting = s.getSettingByName(Setting_SettingName.AI);
     return setting?.value?.value?.case === "ai"

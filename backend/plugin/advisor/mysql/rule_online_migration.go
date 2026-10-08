@@ -73,7 +73,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 		changedResources: make(map[string]base.SchemaResource),
 	}
 
-	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 
 	adviceList := rule.GetAdviceList()
 
@@ -166,8 +166,8 @@ func (r *onlineMigrationOmniRule) OnStatement(node ast.Node) {
 					Code:          code.AdviseOnlineMigrationForStatement.Int32(),
 					Title:         r.Title,
 					Content:       fmt.Sprintf("Estimated table row count of %q is %d exceeding the set value %d. Consider using online migration for this statement", fmt.Sprintf("%s.%s", resource.Database, resource.Table), tableRows, r.minRows),
-					StartPosition: common.ConvertANTLRLineToPosition(startLine),
-					EndPosition:   common.ConvertANTLRLineToPosition(endLine),
+					StartPosition: base.ConvertANTLRLineToPosition(startLine),
+					EndPosition:   base.ConvertANTLRLineToPosition(endLine),
 				})
 			}
 			break

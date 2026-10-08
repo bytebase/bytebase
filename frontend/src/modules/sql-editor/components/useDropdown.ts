@@ -68,7 +68,7 @@ export function useDropdown(
   const [showSharePanel, setShowSharePanel] = useState(false);
 
   // ------------------------------------------------------------------
-  // Reactive reads from Pinia / Vue stores
+  // Reactive reads from the app store
   // ------------------------------------------------------------------
   const savedQueryEntity = useAppStore((s) =>
     viewMode === "draft" || !currentNode?.savedQuery
@@ -215,10 +215,7 @@ export function useDropdown(
     setShowSharePanel(false);
   };
 
-  /**
-   * Opens the share panel for `node`.
-   * Mirrors Vue's handleSharePanelShow (but without x/y positioning).
-   */
+  /** Opens the share panel for `node`. */
   const handleSharePanelShow = (
     e: React.MouseEvent,
     node: SavedQueryFolderNode

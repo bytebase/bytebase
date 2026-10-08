@@ -6,8 +6,8 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
  * Returns the auto-generated title for the plan-create route's `query.name`,
  * or `undefined` when the project has `enforceIssueTitle=true` ("Require manual
  * title"). Leaving `query.name` undefined forces the plan-create page to open
- * with an empty title; `CreateButton.vue` then blocks submit until the user
- * types a deliberate title that will appear in the audit log.
+ * with an empty title; `getCreatePlanBlockers` then blocks creation until the
+ * user types a deliberate title that will appear in the audit log.
  *
  * DO NOT inline this gate away. It is the load-bearing check that makes an
  * audited project's setting mean what it says. Removing it silently reintroduces
@@ -25,7 +25,7 @@ export const planQueryNameForProject = (
  * Writes the auto-generated plan title into `query.name` unless the project
  * enforces manual titles. When `enforceIssueTitle` is true, leaves `query.name`
  * unset so the plan-create page opens with an empty title — the user must type
- * a deliberate title before `CreateButton.vue` allows submit.
+ * a deliberate title before `getCreatePlanBlockers` allows creation.
  *
  * If `query.name` is already set by the caller, this helper clears it when
  * enforcement is on, to prevent a stale pre-fill from reaching an enforced

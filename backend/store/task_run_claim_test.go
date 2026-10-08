@@ -3,18 +3,16 @@ package store_test
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
-	"github.com/bytebase/bytebase/backend/migrator"
-	"github.com/bytebase/bytebase/backend/store"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestClaimAvailableTaskRunsSkipsDeletedProjects(t *testing.T) {
+	t.Parallel()
 	fixture := newStorePostgresFixture(t, `
 		INSERT INTO instance (resource_id, workspace) VALUES ('instance-a', 'default');
 		INSERT INTO plan (id, creator, project, name, description)
@@ -43,6 +41,7 @@ func TestClaimAvailableTaskRunsSkipsDeletedProjects(t *testing.T) {
 }
 
 func TestClaimAvailableTaskRunsSkipsArchivedInstances(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskRunClaimFixture(t, `
 		INSERT INTO instance (resource_id, workspace, deleted) VALUES ('instance-a', 'default', TRUE);
 		INSERT INTO plan (id, creator, project, name, description)
@@ -71,6 +70,7 @@ func TestClaimAvailableTaskRunsSkipsArchivedInstances(t *testing.T) {
 }
 
 func TestClaimAvailableTaskRunsClaimsLiveInstanceSpecialTaskTypes(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskRunClaimFixture(t, `
 		INSERT INTO instance (resource_id, workspace) VALUES ('instance-a', 'default');
 		INSERT INTO plan (id, creator, project, name, description)
@@ -100,10 +100,7 @@ func newTaskRunClaimFixture(t *testing.T, seedSQL string) *storePostgresFixture 
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(context.Background()) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
@@ -111,14 +108,6 @@ func newTaskRunClaimFixture(t *testing.T, seedSQL string) *storePostgresFixture 
 		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
 	`+seedSQL)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 
 	return &storePostgresFixture{ctx: ctx, db: db, store: s}
 }

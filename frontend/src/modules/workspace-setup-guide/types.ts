@@ -4,26 +4,43 @@ export type GuideStepId =
   | "create-project"
   | "connect-instance"
   | "explore-database"
-  | "query-data";
+  | "query-data"
+  | "create-database-change"
+  | "mark-sensitive-data"
+  | "add-member";
 
-export type GuideScenarioId = "learn-bytebase-basics";
+export type GuideScenarioId =
+  | "query-data"
+  | "create-database-change"
+  | "mark-sensitive-data";
 
-export type GuideAnalyticsKey =
-  | "hasProject"
-  | "hasInstance"
-  | "hasExploredDatabase"
-  | "hasFirstQuery";
+export type GuideWorkspaceUsage = "team" | "solo";
 
-export type GuideRoute = Pick<ReactRoute, "name" | "params">;
+export type GuideQueryTarget = {
+  schema: string;
+  table: string;
+};
+
+export type GuideJourneyId = "workspace-setup" | GuideScenarioId;
+
+export type GuideRoute = Pick<ReactRoute, "name" | "params"> &
+  Partial<Pick<ReactRoute, "query">>;
 
 export type GuideContext = {
   hasProject: boolean;
   hasInstance: boolean;
   hasExploredDatabase: boolean;
-  hasFirstQuery: boolean;
+  hasRunStatement: boolean;
+  hasCreatedChangeIssue: boolean;
+  hasMarkedSensitiveData: boolean;
+  isSaaS: boolean;
+  hasOtherHumanUser: boolean;
+  hasOtherWorkspaceMember: boolean;
   projectName: string;
+  instanceName: string;
   databaseProjectName: string;
   databaseName: string;
+  queryTarget?: GuideQueryTarget;
   route: GuideRoute;
 };
 
@@ -34,7 +51,11 @@ export type GuideDatabase = {
 
 export type GuideAction =
   | { type: "navigate"; target: RouteTarget }
-  | { type: "open-sql-editor"; database: GuideDatabase }
+  | {
+      type: "open-sql-editor";
+      database: GuideDatabase;
+      query?: Record<string, string>;
+    }
   | {
       type: "create-change";
       project: string;
@@ -49,7 +70,6 @@ export type GuideStepActions = {
 
 export type GuideStepDefinition = {
   id: GuideStepId;
-  analyticsKey: GuideAnalyticsKey;
   labelKey: string;
   descriptionKey: string;
   isComplete: (context: GuideContext) => boolean;
@@ -57,22 +77,20 @@ export type GuideStepDefinition = {
   resolveActions: (context: GuideContext) => GuideStepActions;
 };
 
-export type GuideStepRegistry = Readonly<
-  Record<GuideStepId, GuideStepDefinition>
->;
-
-export type ScenarioStep = {
+export type GuideJourneyStep = {
   stepId: GuideStepId;
+  kind?: "prerequisite" | "learning" | "modifier";
   dependsOn?: readonly GuideStepId[];
 };
 
-export type GuideScenario = {
-  id: GuideScenarioId;
-  steps: readonly ScenarioStep[];
+export type GuideJourney = {
+  id: GuideJourneyId;
+  scenarioId?: GuideScenarioId;
+  steps: readonly GuideJourneyStep[];
 };
 
 export type ResolvedGuideStep = {
-  scenarioStep: ScenarioStep;
+  journeyStep: GuideJourneyStep;
   definition: GuideStepDefinition;
   done: boolean;
   blocked: boolean;
@@ -81,7 +99,8 @@ export type ResolvedGuideStep = {
 
 export type ResolvedGuide = {
   steps: ResolvedGuideStep[];
-  activeStep: ResolvedGuideStep;
+  complete: boolean;
+  activeStep: ResolvedGuideStep | undefined;
   highlightedStep: ResolvedGuideStep | undefined;
-  actionStep: ResolvedGuideStep;
+  actionStep: ResolvedGuideStep | undefined;
 };

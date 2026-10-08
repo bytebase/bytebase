@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/popover";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useSavedQueryAndTab } from "@/hooks/useSavedQueryAndTab";
+import { RUN_QUERY_PRODUCT_INTRO, useProductIntro } from "@/lib/productIntro";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -39,11 +40,10 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/EditorAction.vue.
  * Top toolbar in the SQL editor: Run / QueryContextSettingPopover /
  * AdminModeButton / Save / Share / ChooserGroup / OpenAIButton.
  *
- * `onExecute` is optional because `TerminalPanel.vue` mounts the toolbar in
+ * `onExecute` is optional because `TerminalPanel` mounts the toolbar in
  * ADMIN mode where the Run button is not rendered.
  */
 export function EditorAction({ onExecute }: Props) {
@@ -88,6 +88,13 @@ export function EditorAction({ onExecute }: Props) {
     if (isCosmosDBWithoutContainer) return false;
     return true;
   })();
+
+  useProductIntro({
+    id: RUN_QUERY_PRODUCT_INTRO,
+    title: t("workspace-setup-guide.steps.query-data"),
+    description: t("workspace-setup-guide.descriptions.query-data"),
+    disabled: isAdminMode || !allowQuery,
+  });
 
   const canWriteSheet = (() => {
     if (!tabSavedQuery) return false;
@@ -152,7 +159,8 @@ export function EditorAction({ onExecute }: Props) {
         {isAdminMode && (
           <Button
             appearance="outline"
-            className="h-8 px-1.5 gap-1 border-dashed text-sm"
+            size="md"
+            className="gap-1 border-dashed"
             onClick={(e) => {
               e.stopPropagation();
               exitAdminMode();
@@ -174,6 +182,7 @@ export function EditorAction({ onExecute }: Props) {
           ) : (
             <RunQueryButton
               disabled={!allowQuery}
+              productIntroTarget={RUN_QUERY_PRODUCT_INTRO}
               settingsDisabled={!showQueryContextSettingPopover}
               onClick={handleRunQuery}
             />
@@ -195,7 +204,6 @@ export function EditorAction({ onExecute }: Props) {
               <Button
                 appearance="outline"
                 size="sm"
-                className="h-7 px-1.5"
                 disabled={!allowSave}
                 onClick={handleClickSave}
                 aria-label={t("common.save")}
@@ -217,7 +225,6 @@ export function EditorAction({ onExecute }: Props) {
                     <Button
                       appearance="outline"
                       size="sm"
-                      className="h-7 px-1.5"
                       disabled={!allowShare}
                       aria-label={t("common.share")}
                     >

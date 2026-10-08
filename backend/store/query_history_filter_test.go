@@ -7,6 +7,7 @@ import (
 )
 
 func TestGetListQueryHistoryFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -38,9 +39,16 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 		},
 		{
 			name:     "instance filter",
-			filter:   `instance == "instances/test-instance/%"`,
-			wantSQL:  "(query_history.database LIKE $1)",
-			wantArgs: []any{"instances/test-instance/%"},
+			filter:   `instance == "instances/test-instance"`,
+			wantSQL:  "(query_history.database LIKE $1 ESCAPE '\\')",
+			wantArgs: []any{"instances/test-instance/databases/%"},
+			wantErr:  false,
+		},
+		{
+			name:     "project-scoped instance filter",
+			filter:   `instance == "projects/test-project/instances/test-instance"`,
+			wantSQL:  "(query_history.database LIKE $1 ESCAPE '\\')",
+			wantArgs: []any{"projects/test-project/instances/test-instance/databases/%"},
 			wantErr:  false,
 		},
 		{
@@ -53,8 +61,15 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 		{
 			name:     "statement exact match",
 			filter:   `statement == "SELECT * FROM users"`,
-			wantSQL:  "(query_history.statement LIKE $1)",
+			wantSQL:  "(query_history.statement = $1)",
 			wantArgs: []any{"SELECT * FROM users"},
+			wantErr:  false,
+		},
+		{
+			name:     "statement exact match keeps LIKE wildcards literal",
+			filter:   `statement == "SELECT _ FROM t%"`,
+			wantSQL:  "(query_history.statement = $1)",
+			wantArgs: []any{"SELECT _ FROM t%"},
 			wantErr:  false,
 		},
 		{
@@ -110,7 +125,7 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 			name:        "invalid filter syntax",
 			filter:      `invalid syntax {{`,
 			wantErr:     true,
-			errContains: "failed to parse filter",
+			errContains: "invalid filter expression",
 		},
 		{
 			name:        "unsupported variable",
@@ -131,6 +146,24 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 			errContains: "invalid project filter",
 		},
 		{
+			name:        "invalid instance format",
+			filter:      `instance == "test-instance"`,
+			wantErr:     true,
+			errContains: "invalid instance filter",
+		},
+		{
+			name:        "instance rejects a caller-supplied wildcard suffix",
+			filter:      `instance == "instances/test-instance/%"`,
+			wantErr:     true,
+			errContains: "invalid instance filter",
+		},
+		{
+			name:        "equality with non-string value",
+			filter:      `type == 1`,
+			wantErr:     true,
+			errContains: "expect string",
+		},
+		{
 			name:        "contains with non-string value",
 			filter:      `statement.contains(123)`,
 			wantErr:     true,
@@ -146,6 +179,7 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetListQueryHistoryFilter(tt.filter)
 
 			if tt.wantErr {
@@ -174,6 +208,7 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 }
 
 func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -187,7 +222,7 @@ func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
 			name:        "statement with special characters",
 			filter:      `statement == "SELECT * FROM users WHERE name = 'test'"`,
 			description: "statement with quotes should be handled correctly",
-			wantSQL:     "(query_history.statement LIKE $1)",
+			wantSQL:     "(query_history.statement = $1)",
 			wantArgs:    []any{"SELECT * FROM users WHERE name = 'test'"},
 			wantErr:     false,
 		},
@@ -216,11 +251,11 @@ func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name:        "instance with wildcard",
-			filter:      `instance == "instances/prod-%"`,
-			description: "instance filter with wildcard for LIKE query",
-			wantSQL:     "(query_history.database LIKE $1)",
-			wantArgs:    []any{"instances/prod-%"},
+			name:        "instance escapes LIKE wildcards in the id",
+			filter:      `instance == "instances/prod_%"`,
+			description: "the prefix match owns the only wildcard",
+			wantSQL:     "(query_history.database LIKE $1 ESCAPE '\\')",
+			wantArgs:    []any{`instances/prod\_\%/databases/%`},
 			wantErr:     false,
 		},
 		{
@@ -235,6 +270,7 @@ func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetListQueryHistoryFilter(tt.filter)
 
 			if tt.wantErr {
@@ -259,6 +295,7 @@ func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
 // TestGetListQueryHistoryFilter_CompareWithOriginal verifies that the new implementation
 // produces equivalent SQL to the original v1 implementation
 func TestGetListQueryHistoryFilter_CompareWithOriginal(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name               string
 		filter             string
@@ -293,6 +330,7 @@ func TestGetListQueryHistoryFilter_CompareWithOriginal(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetListQueryHistoryFilter(tt.filter)
 			require.NoError(t, err)
 			require.NotNil(t, q)
@@ -309,6 +347,7 @@ func TestGetListQueryHistoryFilter_CompareWithOriginal(t *testing.T) {
 }
 
 func TestGetListQueryHistoriesCreatorFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -353,12 +392,13 @@ func TestGetListQueryHistoriesCreatorFilter(t *testing.T) {
 		{
 			name:        "invalid CEL",
 			filter:      `creator ==`,
-			errContains: "failed to parse filter",
+			errContains: "invalid filter expression",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			creator, err := GetListQueryHistoriesCreatorFilter(tt.filter)
 			if tt.errContains != "" {
 				require.Error(t, err)

@@ -27,8 +27,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
+import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
 import { WebhookTypeIcon } from "@/components/WebhookTypeIcon";
 import { pushNotification } from "@/stores";
@@ -368,40 +375,39 @@ export function ProjectWebhookForm({
           {/* Destination type selector (create only) */}
           {create && (
             <div>
-              <label className="font-medium text-main">
+              <label
+                className="block font-medium text-main"
+                htmlFor="webhook-destination"
+              >
                 {t("project.webhook.destination")}{" "}
                 <span className="text-error">*</span>
               </label>
-              <RadioGroup
-                className="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-7"
+              <Select
                 value={String(state.type)}
-                onValueChange={(value) => updateField("type", Number(value))}
+                onValueChange={(value) => {
+                  if (value) updateField("type", Number(value));
+                }}
               >
-                {webhookTypeItemList.map((item) => (
-                  <div
-                    key={item.type}
-                    className={`flex justify-center px-2 py-4 rounded-sm border cursor-pointer hover:bg-control-bg-hover ${
-                      state.type === item.type
-                        ? "border-accent"
-                        : "border-control-border"
-                    }`}
-                    onClick={() => updateField("type", item.type)}
-                  >
-                    <div className="flex flex-col items-center">
-                      <WebhookTypeIcon type={item.type} className="size-10" />
-                      <p className="mt-1 text-center text-sm font-medium">
+                <SelectTrigger id="webhook-destination" className="mt-1 w-full">
+                  <SelectValue>
+                    {
+                      webhookTypeItemList.find(
+                        (item) => item.type === state.type
+                      )?.name
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {webhookTypeItemList.map((item) => (
+                    <SelectItem key={item.type} value={String(item.type)}>
+                      <span className="flex items-center gap-x-2">
+                        <WebhookTypeIcon type={item.type} className="size-4" />
                         {item.name}
-                      </p>
-                      <div className="mt-3">
-                        <RadioGroupItem
-                          value={String(item.type)}
-                          aria-label={item.name}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </RadioGroup>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
@@ -528,7 +534,7 @@ export function ProjectWebhookForm({
               </span>
               <div className="flex items-center mt-2">
                 <label className="flex items-center gap-x-2 cursor-pointer">
-                  <Checkbox
+                  <Switch
                     checked={state.directMessage}
                     disabled={!activitySupportDirectMessage}
                     onCheckedChange={(checked) =>

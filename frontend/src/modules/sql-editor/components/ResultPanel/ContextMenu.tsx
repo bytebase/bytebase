@@ -34,7 +34,6 @@ const ACTION_I18N_KEYS: Record<CloseTabAction, string> = {
 };
 
 /**
- * Replaces `frontend/src/views/sql-editor/EditorPanel/ResultPanel/ContextMenu.vue`.
  * Wraps a single tab button with a right-click context menu. Selecting an
  * action emits `close-tab` on `resultTabEvents`; the parent
  * `BatchQuerySelect` subscribes and performs the close.

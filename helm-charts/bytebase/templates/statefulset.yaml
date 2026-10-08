@@ -50,6 +50,10 @@ spec:
     metadata:
       labels:
         app: bytebase
+      {{- with .Values.bytebase.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       serviceAccountName: {{ template "bytebase.serviceAccountName" . }}
       {{- if and $externalPgEscapePgPassword (not $externalPgAWSRDSIAMEnabled) (not $externalPgGCPCloudSQLIAMEnabled) }}

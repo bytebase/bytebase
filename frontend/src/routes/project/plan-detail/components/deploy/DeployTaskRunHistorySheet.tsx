@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
 import { TaskRunLogViewer } from "@/components/task-run-log";
+import { Button } from "@/components/ui/button";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
 import {
   Sheet,
@@ -107,18 +108,20 @@ function TaskRunHistoryItem({
   taskRun: TaskRun;
 }) {
   const { t } = useTranslation();
-  const startTs =
-    getTimeForPbTimestampProtoEs(taskRun.startTime, 0) ||
-    getTimeForPbTimestampProtoEs(taskRun.createTime, 0);
+  const startMs =
+    getTimeForPbTimestampProtoEs(taskRun.startTime) ??
+    getTimeForPbTimestampProtoEs(taskRun.createTime);
   const duration = formatTaskRunDuration(taskRun);
   const executorEmail = executorEmailOfTaskRun(taskRun);
   const comment = getTaskRunComment(taskRun, t);
 
   return (
     <div className="rounded-sm border">
-      <button
+      <Button
+        appearance="secondary"
+        size="md"
         aria-expanded={isExpanded}
-        className="flex w-full items-center gap-x-2 rounded-sm px-3 py-2 text-left hover:bg-control-bg focus-visible:ring-2 focus-visible:ring-accent"
+        className="h-auto w-full items-center justify-start gap-x-2 rounded-sm px-3 py-2 text-left whitespace-normal hover:bg-control-bg focus-visible:ring-2 focus-visible:ring-accent"
         onClick={onToggle}
         type="button"
       >
@@ -139,7 +142,7 @@ function TaskRunHistoryItem({
           )}
         </span>
         <span className="flex shrink-0 items-center gap-x-3 text-xs text-control-light">
-          {startTs > 0 && <HumanizeTs ts={startTs / 1000} />}
+          <HumanizeTs mode="compact" tsMs={startMs} />
           {duration && (
             <span className="flex items-center gap-x-1">
               <Clock3 className="size-3" />
@@ -153,7 +156,7 @@ function TaskRunHistoryItem({
             </span>
           )}
         </span>
-      </button>
+      </Button>
       {isExpanded && (
         <div className="flex flex-col gap-2 border-t p-3">
           <TaskRunErrorAlert taskRun={taskRun} />

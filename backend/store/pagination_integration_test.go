@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -25,6 +25,7 @@ import (
 // issue IDs restart per project, so every id below is tied three ways and rows
 // cross the page boundary between reads.
 func TestPaginationStabilityAcrossProjects(t *testing.T) {
+	t.Parallel()
 	const (
 		workspaceID  = "pagination-ws"
 		projectCount = 3
@@ -33,24 +34,13 @@ func TestPaginationStabilityAcrossProjects(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
 	projectIDs := make([]string, 0, projectCount)
 	for i := range projectCount {
 		projectIDs = append(projectIDs, fmt.Sprintf("pagination-p%d", i))
 	}
 	seedTiedIssues(ctx, t, db, workspaceID, projectIDs, perProject)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 
 	// Walk the list the way the API does: a fresh LIMIT/OFFSET query per page.
 	seen := map[string]int{}
@@ -121,11 +111,9 @@ func seedTiedIssues(ctx context.Context, t *testing.T, db *sql.DB, workspaceID s
 // The feed would then be stably scrambled: "labels changed" above "title
 // changed", permanently, for that issue.
 func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
 	const (
 		workspaceID = "comment-ws"
@@ -146,14 +134,6 @@ func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
 		VALUES ($1, $2, 'users/comment@example.com', 'issue', 'OPEN', 'DATABASE_CHANGE', '')`,
 		issueUID, projectID)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 
 	want := []string{"title", "description", "labels", "status", "assignee"}
 	creates := make([]*store.IssueCommentMessage, 0, len(want))
@@ -185,7 +165,7 @@ func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
 		SELECT count(*) FROM issue_comment
 		WHERE project = $1 AND issue_id = $2 AND thread_state = 'OPEN'
 	`, projectID, issueUID).Scan(&openRoots))
-	require.Equal(t, len(want), openRoots, "new comment-only rows must be OPEN roots")
+	require.Equal(t, 0, openRoots, "unanchored comments are plain comments, not thread roots")
 
 	_, err = stores.CreateIssueComments(ctx, "users/comment@example.com",
 		&store.IssueCommentMessage{
@@ -224,11 +204,11 @@ func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
 	`, projectID, issueUID).Scan(&eventsOutsideThreads))
 	require.Equal(t, 2, eventsOutsideThreads, "event and hybrid rows must stay outside threads")
 
-	var emptyRoots int
+	var emptyPlain int
 	require.NoError(t, db.QueryRowContext(ctx, `
 		SELECT count(*) FROM issue_comment
 		WHERE project = $1 AND issue_id = $2
-		  AND payload = '{}'::jsonb AND thread_state = 'OPEN'
-	`, projectID, issueUID).Scan(&emptyRoots))
-	require.Equal(t, 1, emptyRoots, "an event-less payload is still a root comment")
+		  AND payload = '{}'::jsonb AND parent_id IS NULL AND thread_state IS NULL
+	`, projectID, issueUID).Scan(&emptyPlain))
+	require.Equal(t, 1, emptyPlain, "an event-less, unanchored payload is a plain comment")
 }

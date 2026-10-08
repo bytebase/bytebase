@@ -4,6 +4,7 @@ import (
 	"sort"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -11,22 +12,22 @@ import (
 
 func TestBuildTablesMetadata(t *testing.T) {
 	testCases := []struct {
-		input       *storepb.TableMetadata
+		input       *metadatapb.TableMetadata
 		wantNames   []string
-		wantColumns []*storepb.ColumnMetadata
+		wantColumns []*metadatapb.ColumnMetadata
 	}{
 		// No partitions.
 		{
-			input: &storepb.TableMetadata{
+			input: &metadatapb.TableMetadata{
 				Name: "orders",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{
 						Name: "id",
 					},
 				},
 			},
 			wantNames: []string{"orders"},
-			wantColumns: []*storepb.ColumnMetadata{
+			wantColumns: []*metadatapb.ColumnMetadata{
 				{
 					Name: "id",
 				},
@@ -34,17 +35,17 @@ func TestBuildTablesMetadata(t *testing.T) {
 		},
 		// Nested partitions.
 		{
-			input: &storepb.TableMetadata{
+			input: &metadatapb.TableMetadata{
 				Name: "orders",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{
 						Name: "id",
 					},
 				},
-				Partitions: []*storepb.TablePartitionMetadata{
+				Partitions: []*metadatapb.TablePartitionMetadata{
 					{
 						Name: "orders_0_100",
-						Subpartitions: []*storepb.TablePartitionMetadata{
+						Subpartitions: []*metadatapb.TablePartitionMetadata{
 							{
 								Name: "orders_0_50",
 							},
@@ -55,7 +56,7 @@ func TestBuildTablesMetadata(t *testing.T) {
 					},
 					{
 						Name: "orders_100_200",
-						Subpartitions: []*storepb.TablePartitionMetadata{
+						Subpartitions: []*metadatapb.TablePartitionMetadata{
 							{
 								Name: "orders_100_150",
 							},
@@ -67,7 +68,7 @@ func TestBuildTablesMetadata(t *testing.T) {
 				},
 			},
 			wantNames: []string{"orders", "orders_0_100", "orders_0_50", "orders_50_100", "orders_100_200", "orders_100_150", "orders_150_200"},
-			wantColumns: []*storepb.ColumnMetadata{
+			wantColumns: []*metadatapb.ColumnMetadata{
 				{
 					Name: "id",
 				},
@@ -99,13 +100,13 @@ func TestPartitionTable_CreateIndex(t *testing.T) {
 	a := require.New(t)
 
 	// Create a table with partitions
-	tableProto := &storepb.TableMetadata{
+	tableProto := &metadatapb.TableMetadata{
 		Name: "orders",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "id"},
 			{Name: "created_at"},
 		},
-		Partitions: []*storepb.TablePartitionMetadata{
+		Partitions: []*metadatapb.TablePartitionMetadata{
 			{Name: "orders_2024"},
 			{Name: "orders_2025"},
 		},
@@ -117,7 +118,7 @@ func TestPartitionTable_CreateIndex(t *testing.T) {
 
 	// Verify that CreateIndex works on partition tables (was causing nil map panic)
 	for i, table := range tables {
-		index := &storepb.IndexMetadata{
+		index := &metadatapb.IndexMetadata{
 			Name:        "idx_" + names[i] + "_created_at",
 			Expressions: []string{"created_at"},
 			Type:        "btree",
@@ -129,9 +130,9 @@ func TestPartitionTable_CreateIndex(t *testing.T) {
 }
 
 func TestSchemaMetadata_CreateTable(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "public"},
 		},
 	}
@@ -153,12 +154,12 @@ func TestSchemaMetadata_CreateTable(t *testing.T) {
 }
 
 func TestSchemaMetadata_CreateTable_AlreadyExists(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{Name: "users"},
 				},
 			},
@@ -176,12 +177,12 @@ func TestSchemaMetadata_CreateTable_AlreadyExists(t *testing.T) {
 }
 
 func TestSchemaMetadata_DropTable(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{Name: "users"},
 					{Name: "products"},
 				},
@@ -207,9 +208,9 @@ func TestSchemaMetadata_DropTable(t *testing.T) {
 }
 
 func TestSchemaMetadata_DropTable_NotExists(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "public"},
 		},
 	}
@@ -225,15 +226,15 @@ func TestSchemaMetadata_DropTable_NotExists(t *testing.T) {
 }
 
 func TestTableMetadata_CreateColumn(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "int"},
 						},
 					},
@@ -247,7 +248,7 @@ func TestTableMetadata_CreateColumn(t *testing.T) {
 	tableMeta := schemaMeta.GetTable("users")
 
 	// Create a new column
-	columnProto := &storepb.ColumnMetadata{
+	columnProto := &metadatapb.ColumnMetadata{
 		Name:     "email",
 		Type:     "varchar",
 		Nullable: true,
@@ -264,15 +265,15 @@ func TestTableMetadata_CreateColumn(t *testing.T) {
 }
 
 func TestTableMetadata_CreateColumn_AlreadyExists(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "int"},
 						},
 					},
@@ -286,7 +287,7 @@ func TestTableMetadata_CreateColumn_AlreadyExists(t *testing.T) {
 	tableMeta := schemaMeta.GetTable("users")
 
 	// Try to create column that already exists
-	columnProto := &storepb.ColumnMetadata{
+	columnProto := &metadatapb.ColumnMetadata{
 		Name: "id",
 		Type: "bigint",
 	}
@@ -297,15 +298,15 @@ func TestTableMetadata_CreateColumn_AlreadyExists(t *testing.T) {
 }
 
 func TestTableMetadata_DropColumn(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "int"},
 							{Name: "email", Type: "varchar"},
 							{Name: "name", Type: "varchar"},
@@ -335,12 +336,12 @@ func TestTableMetadata_DropColumn(t *testing.T) {
 }
 
 func TestTableMetadata_DropColumn_NotExists(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{Name: "users"},
 				},
 			},
@@ -364,29 +365,29 @@ func TestListTableNames_ExcludesPartitions(t *testing.T) {
 	// A range-partitioned table whose last partition is itself subpartitioned. Every
 	// partition and subpartition is registered in internalTables under its own name but
 	// carries the parent's proto, so listing them once yielded "sales" six times.
-	sales := &storepb.TableMetadata{
+	sales := &metadatapb.TableMetadata{
 		Name:    "sales",
-		Columns: []*storepb.ColumnMetadata{{Name: "dt"}},
-		Partitions: []*storepb.TablePartitionMetadata{
-			{Name: "p0", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
-			{Name: "p1", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
+		Columns: []*metadatapb.ColumnMetadata{{Name: "dt"}},
+		Partitions: []*metadatapb.TablePartitionMetadata{
+			{Name: "p0", Type: metadatapb.TablePartitionMetadata_RANGE, Expression: "dt"},
+			{Name: "p1", Type: metadatapb.TablePartitionMetadata_RANGE, Expression: "dt"},
 			{
-				Name: "p2", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt",
-				Subpartitions: []*storepb.TablePartitionMetadata{
-					{Name: "p2s0", Type: storepb.TablePartitionMetadata_HASH, Expression: "dt"},
-					{Name: "p2s1", Type: storepb.TablePartitionMetadata_HASH, Expression: "dt"},
+				Name: "p2", Type: metadatapb.TablePartitionMetadata_RANGE, Expression: "dt",
+				Subpartitions: []*metadatapb.TablePartitionMetadata{
+					{Name: "p2s0", Type: metadatapb.TablePartitionMetadata_HASH, Expression: "dt"},
+					{Name: "p2s1", Type: metadatapb.TablePartitionMetadata_HASH, Expression: "dt"},
 				},
 			},
 		},
 	}
-	customers := &storepb.TableMetadata{
+	customers := &metadatapb.TableMetadata{
 		Name:    "customers",
-		Columns: []*storepb.ColumnMetadata{{Name: "id"}},
+		Columns: []*metadatapb.ColumnMetadata{{Name: "id"}},
 	}
 
-	dbMetadata := NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+	dbMetadata := NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name:    "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{sales, customers}}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{sales, customers}}},
 	}, nil, &storepb.DatabaseConfig{}, storepb.Engine_MYSQL, true)
 	schemaMetadata := dbMetadata.GetSchemaMetadata("")
 
@@ -406,15 +407,15 @@ func TestListTableNames_ExcludesPartitions(t *testing.T) {
 func TestListTableNames_PartitionSharingTableName(t *testing.T) {
 	a := require.New(t)
 
-	dbMetadata := NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+	dbMetadata := NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
 			{
 				Name:    "sales",
-				Columns: []*storepb.ColumnMetadata{{Name: "dt"}},
-				Partitions: []*storepb.TablePartitionMetadata{
-					{Name: "sales", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
-					{Name: "p1", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
+				Columns: []*metadatapb.ColumnMetadata{{Name: "dt"}},
+				Partitions: []*metadatapb.TablePartitionMetadata{
+					{Name: "sales", Type: metadatapb.TablePartitionMetadata_RANGE, Expression: "dt"},
+					{Name: "p1", Type: metadatapb.TablePartitionMetadata_RANGE, Expression: "dt"},
 				},
 			},
 		}}},
@@ -430,19 +431,19 @@ func TestListTableNames_PartitionSharingTableName(t *testing.T) {
 func TestGetTable_PartitionAliasDoesNotShadowRootTable(t *testing.T) {
 	a := require.New(t)
 
-	dbMetadata := NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+	dbMetadata := NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
 			{
 				Name:    "archive",
-				Columns: []*storepb.ColumnMetadata{{Name: "archive_col"}},
+				Columns: []*metadatapb.ColumnMetadata{{Name: "archive_col"}},
 			},
 			{
 				Name:    "events",
-				Columns: []*storepb.ColumnMetadata{{Name: "events_col"}},
-				Partitions: []*storepb.TablePartitionMetadata{
-					{Name: "archive", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
-					{Name: "recent", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
+				Columns: []*metadatapb.ColumnMetadata{{Name: "events_col"}},
+				Partitions: []*metadatapb.TablePartitionMetadata{
+					{Name: "archive", Type: metadatapb.TablePartitionMetadata_RANGE, Expression: "dt"},
+					{Name: "recent", Type: metadatapb.TablePartitionMetadata_RANGE, Expression: "dt"},
 				},
 			},
 		}}},
@@ -467,14 +468,14 @@ func TestGetTable_PartitionAliasDoesNotShadowRootTable(t *testing.T) {
 func TestTableMutationsIgnorePartitionAliases(t *testing.T) {
 	a := require.New(t)
 
-	dbMetadata := NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+	dbMetadata := NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
 			{
 				Name:    "events",
-				Columns: []*storepb.ColumnMetadata{{Name: "events_col"}},
-				Partitions: []*storepb.TablePartitionMetadata{
-					{Name: "archive", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
+				Columns: []*metadatapb.ColumnMetadata{{Name: "events_col"}},
+				Partitions: []*metadatapb.TablePartitionMetadata{
+					{Name: "archive", Type: metadatapb.TablePartitionMetadata_RANGE, Expression: "dt"},
 				},
 			},
 		}}},

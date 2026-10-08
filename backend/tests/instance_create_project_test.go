@@ -16,24 +16,21 @@ func TestCreateInstanceWithoutProjectKeepsDefaultProject(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
-	databaseName := "default_project_assignment"
+	pgContainer := sharedPgTarget(t)
+	databaseName := uniqueDB("default_project_assignment")
 	createPgDatabase(t, pgContainer, databaseName)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "default-project-sync",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{Databases: []string{databaseName}},
+			Title:         "default-project-sync",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -51,14 +48,10 @@ func TestCreateInstanceWithEmptySyncDatabasesSkipsInitialDatabaseSync(t *testing
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
-	databaseName := "unsynced_database"
+	pgContainer := sharedPgTarget(t)
+	databaseName := uniqueDB("unsynced_database")
 	createPgDatabase(t, pgContainer, databaseName)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
@@ -89,14 +82,10 @@ func TestListInstanceDatabaseBeforeCreate(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
-	databaseName := "preview_database"
+	pgContainer := sharedPgTarget(t)
+	databaseName := uniqueDB("preview_database")
 	createPgDatabase(t, pgContainer, databaseName)
 
 	resp, err := ctl.instanceServiceClient.ListInstanceDatabase(ctx, connect.NewRequest(&v1pb.ListInstanceDatabaseRequest{
@@ -113,9 +102,12 @@ func TestListInstanceDatabaseBeforeCreate(t *testing.T) {
 	a.Contains(resp.Msg.Databases, databaseName)
 }
 
+// createPgDatabase creates a database behind Bytebase's back, for the tests
+// about what a sync discovers. On the shared target the instance that should
+// discover it must name it in sync_databases.
 func createPgDatabase(t *testing.T, pgContainer *Container, databaseName string) {
 	t.Helper()
 
-	_, err := pgContainer.db.Exec(fmt.Sprintf("CREATE DATABASE %s", databaseName))
+	_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", databaseName))
 	require.NoError(t, err)
 }

@@ -126,9 +126,9 @@ export declare type VerifyCheckoutSessionRequest = Message<"bytebase.v1.VerifyCh
   /**
    * The same Stripe Checkout Session ID PurchaseResponse mints, arriving back
    * the other way, so it carries the same classification. VerifyCheckoutSession
-   * is EXCLUDED, and the MCP gate records a row for every method it refuses, so
-   * leaving this unannotated would write the id into a denial row while the
-   * response that produced it was redacted.
+   * is EXCLUDED, and a refusal of it streams its request to the stdout audit
+   * log, so leaving this unannotated would write the id into that line while
+   * the response that produced it was redacted.
    *
    * @generated from field: string session_id = 1;
    */
@@ -591,6 +591,18 @@ export declare type PlanLimitConfig = Message<"bytebase.v1.PlanLimitConfig"> & {
  * Use `create(PlanLimitConfigSchema)` to create a new message.
  */
 export declare const PlanLimitConfigSchema: GenMessage<PlanLimitConfig>;
+
+/**
+ * @generated from message bytebase.v1.StartTrialRequest
+ */
+export declare type StartTrialRequest = Message<"bytebase.v1.StartTrialRequest"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.StartTrialRequest.
+ * Use `create(StartTrialRequestSchema)` to create a new message.
+ */
+export declare const StartTrialRequestSchema: GenMessage<StartTrialRequest>;
 
 /**
  * @generated from enum bytebase.v1.BillingInterval
@@ -1072,6 +1084,16 @@ export declare const SubscriptionService: GenService<{
   uploadLicense: {
     methodKind: "unary";
     input: typeof UploadLicenseRequestSchema;
+    output: typeof SubscriptionSchema;
+  },
+  /**
+   * StartTrial starts a free trial for an eligible SaaS workspace.
+   *
+   * @generated from rpc bytebase.v1.SubscriptionService.StartTrial
+   */
+  startTrial: {
+    methodKind: "unary";
+    input: typeof StartTrialRequestSchema;
     output: typeof SubscriptionSchema;
   },
   /**

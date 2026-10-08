@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -67,7 +67,7 @@ func (c *tableNoFKChecker) checkStmt(ostmt OmniStmt) {
 				Code:          code.TableHasFK.Int32(),
 				Title:         c.title,
 				Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", n.Table.Name),
-				StartPosition: common.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(constraint.Loc.Start)),
+				StartPosition: base.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(constraint.Loc.Start)),
 			})
 		}
 	case *ast.AlterTableStmt:
@@ -90,7 +90,7 @@ func (c *tableNoFKChecker) checkStmt(ostmt OmniStmt) {
 				Code:          code.TableHasFK.Int32(),
 				Title:         c.title,
 				Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", n.Table.Name),
-				StartPosition: common.ConvertANTLRLineToPosition(stmtLine),
+				StartPosition: base.ConvertANTLRLineToPosition(stmtLine),
 			})
 		}
 	default:

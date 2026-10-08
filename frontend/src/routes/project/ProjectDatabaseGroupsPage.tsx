@@ -124,7 +124,7 @@ export function ProjectDatabaseGroupsPage({
             <Button disabled={!canCreate} onClick={handleCreate}>
               <FeatureBadge
                 feature={PlanFeature.FEATURE_DATABASE_GROUPS}
-                className="text-white"
+                className="text-accent-text"
                 fallback={<Plus className="size-4 mr-1" />}
               />
               {t("common.create")}

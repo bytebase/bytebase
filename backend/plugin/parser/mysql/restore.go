@@ -46,7 +46,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 }
 
 func findFirstDML(statement string) (ast.Node, error) {
-	stmtList, err := ParseMySQLOmni(statement)
+	stmtList, err := ParseMySQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
@@ -302,7 +302,7 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 
 	var result []string
 	for i := start; i <= end; i++ {
-		stmtList, err := ParseMySQLOmni(list[i].Text)
+		stmtList, err := ParseMySQL(list[i].Text)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to parse sql")
 		}

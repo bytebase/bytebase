@@ -45,7 +45,7 @@ func (*CommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		maxLength: int(numberPayload.Number),
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type commentConventionRule struct {

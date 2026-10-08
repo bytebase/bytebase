@@ -20,7 +20,7 @@ func validateQuery(statement string) (bool, bool, error) {
 		}
 	}
 
-	list, err := ParsePLSQLOmni(statement)
+	list, err := ParsePLSQL(statement)
 	if err != nil {
 		return false, false, convertOmniError(err, base.Statement{Text: statement})
 	}

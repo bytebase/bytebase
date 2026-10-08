@@ -7,6 +7,7 @@ import (
 )
 
 func TestNormalizeSavedQueryFolder(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name    string
 		folder  string
@@ -22,6 +23,7 @@ func TestNormalizeSavedQueryFolder(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := NormalizeSavedQueryFolder(tc.folder)
 			if tc.wantErr {
 				require.Error(t, err)

@@ -29,13 +29,12 @@ type AppRouterLike = {
   state?: RouterState;
 };
 
-// vue-router navigated by route *name*; react-router navigates by *path*. To
-// keep the ported guard + auth lifecycle a faithful translation (they redirect
-// by name), we resolve names to concrete paths via a `name -> path pattern`
-// index. The index is BUILT from the route table on the React (.tsx) side and
-// REGISTERED here (`setRouteNameIndex`) — this module stays a pure `.ts` helper.
+// react-router navigates by *path*, but the guard and auth lifecycle redirect
+// by route *name*, so names resolve to concrete paths via a `name -> path
+// pattern` index. The index is BUILT from the route table on the React (.tsx)
+// side and REGISTERED here (`setRouteNameIndex`) — this module stays a pure
+// `.ts` helper.
 
-// vue-router accepted strings, numbers and arrays as query/param values.
 type NavParams = Record<string, string | string[] | undefined>;
 type NavQuery = Record<string, unknown>;
 
@@ -51,8 +50,8 @@ export function getRegisteredRoutes(): { name: string; path: string }[] {
   return [...nameIndex.entries()].map(([name, path]) => ({ name, path }));
 }
 
-// Coerce a vue-router-style query (values may be strings, numbers, arrays,
-// null/undefined) into a URL search string.
+// Coerce a query (values may be strings, numbers, arrays, null/undefined) into
+// a URL search string.
 export function buildSearchString(query: NavQuery): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
@@ -106,16 +105,15 @@ export function resolvePath(
   return path;
 }
 
-// The createBrowserRouter instance, registered by the app root in Phase 4 so
-// non-component code (the auth slice) can navigate without importing the root
-// (which would cycle through the route lazies / app store).
+// The createBrowserRouter instance, registered by the app root so non-component
+// code (the auth slice) can navigate without importing the root (which would
+// cycle through the route lazies / app store).
 let appRouter: AppRouterLike | undefined;
 
 export function setAppRouter(router: AppRouterLike): void {
   appRouter = router;
 }
 
-// Navigate by route name (mirrors vue-router `router.push({ name, query })`).
 export function navigateByName(
   name: string,
   options: { params?: NavParams; query?: NavQuery } & NavigationOptions = {}
@@ -125,7 +123,7 @@ export function navigateByName(
   return Promise.resolve(appRouter?.navigate(path, navigationOptions));
 }
 
-// Navigate to a raw path (mirrors `router.push(path)` / `router.replace(path)`).
+// Navigate to a raw path (backs `router.push(path)` / `router.replace(path)`).
 export function navigateToPath(
   path: string,
   options: NavigationOptions = {}
@@ -133,26 +131,26 @@ export function navigateToPath(
   return Promise.resolve(appRouter?.navigate(path, options));
 }
 
-// Current data-router state (location + matches), for non-hook snapshots used
-// by the `router.currentRoute.value` drop-in.
+// Current data-router state (location + matches), for the non-hook
+// `router.currentRoute.value` snapshot.
 export function getAppRouterState(): RouterState | undefined {
   return appRouter?.state;
 }
 
-// Subscribe to route changes (mirrors vue-router `router.afterEach`); returns
-// an unregister fn.
+// Subscribe to route changes (backs `router.afterEach`); returns an unregister
+// fn.
 export function subscribeRoute(onChange: () => void): () => void {
   if (!appRouter?.subscribe) return () => {};
   return appRouter.subscribe(() => onChange());
 }
 
-// History delta navigation (mirrors `router.back()` / `router.go(n)`).
+// History delta navigation (backs `router.back()` / `router.go(n)`).
 export function routerGo(delta: number): void {
   appRouter?.navigate(delta);
 }
 
-// Resolves once the data router has completed its initial load (mirrors
-// vue-router `router.isReady()`).
+// Resolves once the data router has completed its initial load (backs
+// `router.isReady()`).
 export function isAppRouterReady(): Promise<void> {
   if (!appRouter || appRouter.state?.initialized !== false) {
     return Promise.resolve();

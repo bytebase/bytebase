@@ -7,7 +7,6 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
@@ -36,13 +35,9 @@ func parseChangelogFilter(filter string, find *store.FindChangelogMessage) error
 		return nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
+		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	var parseFilter func(expr celast.Expr) error

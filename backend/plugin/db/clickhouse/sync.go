@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -23,7 +25,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, err
 	}
 
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	// Query db info
 	where := fmt.Sprintf("schema_name NOT IN (%s)", systemDatabaseClause)
 	query := `
@@ -37,7 +39,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}
 	defer rows.Close()
 	for rows.Next() {
-		database := &storepb.DatabaseSchemaMetadata{}
+		database := &metadatapb.DatabaseSchemaMetadata{}
 		if err := rows.Scan(
 			&database.Name,
 		); err != nil {
@@ -59,14 +61,14 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	schemaMetadata := &storepb.SchemaMetadata{
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	schemaMetadata := &metadatapb.SchemaMetadata{
 		Name: "",
 	}
 
 	// Query column info
 	// tableName -> columnList map
-	columnMap := make(map[string][]*storepb.ColumnMetadata)
+	columnMap := make(map[string][]*metadatapb.ColumnMetadata)
 	columnQuery := `
 		SELECT
 			table_name,
@@ -87,7 +89,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 	defer columnRows.Close()
 	for columnRows.Next() {
-		column := &storepb.ColumnMetadata{}
+		column := &metadatapb.ColumnMetadata{}
 		// Reference: https://clickhouse.com/docs/en/operations/system-tables/information_schema#columns
 		// defaultValueExpression is an expression for the default value, or an empty string if it is not defined.
 		var tableName, nullable, defaultValueExpression string
@@ -161,14 +163,14 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		// For view, the engine is "View".
 		if engine == "View" {
-			schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{
+			schemaMetadata.Views = append(schemaMetadata.Views, &metadatapb.ViewMetadata{
 				Name:       name,
 				Columns:    columnMap[name],
 				Definition: definition,
 				Comment:    comment,
 			})
 		} else {
-			table := &storepb.TableMetadata{
+			table := &metadatapb.TableMetadata{
 				Name:     name,
 				Columns:  columnMap[name],
 				Engine:   engine,
@@ -185,7 +187,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 				primaryKeys := strings.Split(primaryKey, ", ")
 				// Clickhouse save primary keys in `system`.`tables` instead of an index.
 				// This is a workaround to make it compatible with our metadata design.
-				table.Indexes = append(table.Indexes, &storepb.IndexMetadata{
+				table.Indexes = append(table.Indexes, &metadatapb.IndexMetadata{
 					Primary:     true,
 					Expressions: primaryKeys,
 				})
@@ -200,13 +202,13 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
-	return &storepb.DatabaseSchemaMetadata{
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name:    d.databaseName,
-		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
+		Schemas: []*metadatapb.SchemaMetadata{schemaMetadata},
 	}, nil
 }
 
-func (d *Driver) getDataSkippingIndices(ctx context.Context, database string, table string) ([]*storepb.IndexMetadata, error) {
+func (d *Driver) getDataSkippingIndices(ctx context.Context, database string, table string) ([]*metadatapb.IndexMetadata, error) {
 	// Select basic fields of the data skipping index.
 	// References:
 	// * https://clickhouse.com/docs/en/operations/system-tables/data_skipping_indices
@@ -226,10 +228,10 @@ func (d *Driver) getDataSkippingIndices(ctx context.Context, database string, ta
 	}
 	defer rows.Close()
 
-	var indices []*storepb.IndexMetadata
+	var indices []*metadatapb.IndexMetadata
 	for rows.Next() {
 		var expr string
-		index := &storepb.IndexMetadata{}
+		index := &metadatapb.IndexMetadata{}
 		if err := rows.Scan(
 			&index.Name,
 			&index.Type,

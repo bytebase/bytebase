@@ -10,14 +10,15 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
 } from "@/app/router/handles";
 import { ResourceIdField } from "@/components/ResourceIdField";
-import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import {
   useCreateProject,
   useCurrentUser,
+  useIntroStateByKey,
   useWorkspace,
   useWorkspacePermission,
 } from "@/hooks/useAppState";
@@ -28,6 +29,17 @@ import {
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
+import {
+  clearGuideWorkspaceUsage,
+  clearSelectedGuideScenarioId,
+  saveGuideWorkspaceUsage,
+  saveSelectedGuideScenarioId,
+} from "@/modules/workspace-setup-guide/selection";
+import { saveWorkspaceSetupFinished } from "@/modules/workspace-setup-guide/setup";
+import type {
+  GuideScenarioId,
+  GuideWorkspaceUsage,
+} from "@/modules/workspace-setup-guide/types";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
@@ -39,6 +51,10 @@ import {
   extractProjectResourceName,
 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
+import { WorkspaceSetupQuestionnaireStep } from "./WorkspaceSetupQuestionnaireStep";
+
+const WORKSPACE_SETUP_PAGE_ENTERED_KEY = "workspace-setup.page-entered.v1";
+const WORKSPACE_SETUP_VERSION = "v1";
 
 export function WorkspaceSetupPage() {
   const { t } = useTranslation();
@@ -48,6 +64,7 @@ export function WorkspaceSetupPage() {
   const prepareSampleProjectInstance = useAppStore(
     (state) => state.prepareSampleProjectInstance
   );
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
   const sampleAvailable = useAppStore(
     (state) => state.serverInfo?.sample?.available ?? false
   );
@@ -55,14 +72,13 @@ export function WorkspaceSetupPage() {
     (state) => (state.serverInfo?.sample?.instances.length ?? 0) > 0
   );
   const canPrepareSample = sampleAvailable && !sampleProvisioned;
-  const deployment = useAppStore((state) =>
-    state.isSaaSMode() ? "cloud" : "self-host"
-  );
   const { createProject, setRecentProject } = useCreateProject();
   const workspace = useWorkspace();
   const workspacePolicy = useAppStore((state) => state.workspacePolicy);
   const canUpdateWorkspace = useWorkspacePermission("bb.workspaces.update");
   const canCreateProject = useWorkspacePermission("bb.projects.create");
+  const setupPageEntered = useIntroStateByKey(WORKSPACE_SETUP_PAGE_ENTERED_KEY);
+  const setupPageEnteredRef = useRef(false);
 
   // Show workspace name field only if the user is the sole member of the
   // workspace (i.e. they just created it), not when they were invited.
@@ -72,6 +88,12 @@ export function WorkspaceSetupPage() {
       (count, b) => count + b.members.length,
       0
     ) === 1;
+  const [setupStep, setSetupStep] = useState<"scenario" | "workspace">(
+    "scenario"
+  );
+  const [selectedScenarioId, setSelectedScenarioId] =
+    useState<GuideScenarioId>();
+  const [workspaceUsage, setWorkspaceUsage] = useState<GuideWorkspaceUsage>();
 
   // `currentUser` loads asynchronously (unknownUser with an empty email until
   // then), so seed the name field once the real user is known rather than
@@ -97,9 +119,36 @@ export function WorkspaceSetupPage() {
   const [enableSampleDatabases, setEnableSampleDatabases] = useState(true);
   const [saving, setSaving] = useState(false);
   const shouldCreateProject = canCreateProject && !!projectTitle.trim();
+  const projectIsReady =
+    shouldCreateProject && !!projectResourceId && isProjectResourceIdValid;
   const sampleRequested =
     shouldCreateProject && enableSampleDatabases && canPrepareSample;
   const canEnableSample = !!projectTitle.trim() && !!projectResourceId;
+
+  useEffect(() => {
+    if (
+      !currentUser.name ||
+      !workspace?.name ||
+      setupPageEntered ||
+      setupPageEnteredRef.current
+    ) {
+      return;
+    }
+    setupPageEnteredRef.current = true;
+    try {
+      useAppStore.getState().saveIntroStateByKey({
+        key: WORKSPACE_SETUP_PAGE_ENTERED_KEY,
+        newState: true,
+      });
+    } catch {
+      // Analytics markers must not interrupt workspace setup when storage fails.
+    }
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("workspace setup page entered", {
+        properties: { setup_version: WORKSPACE_SETUP_VERSION },
+      })
+    );
+  }, [currentUser.name, setupPageEntered, workspace?.name]);
 
   const validateProjectResourceId = useCallback(
     async (id: string): Promise<ValidatedMessage[]> => {
@@ -126,7 +175,7 @@ export function WorkspaceSetupPage() {
   const canSave =
     !!name.trim() &&
     !saving &&
-    (!shouldCreateProject || (!!projectResourceId && isProjectResourceIdValid));
+    (isSaaSMode ? projectIsReady : !shouldCreateProject || projectIsReady);
 
   const handleSave = async () => {
     if (!currentUser?.name || !canSave) return;
@@ -149,7 +198,6 @@ export function WorkspaceSetupPage() {
       }
       let createdProjectName = "";
       let sampleInstanceName = "";
-      let sampleSucceeded = false;
       if (shouldCreateProject) {
         const createdProject = await createProject(
           projectTitle.trim(),
@@ -158,12 +206,16 @@ export function WorkspaceSetupPage() {
         setRecentProject(createdProject.name);
         createdProjectName = createdProject.name;
         if (sampleRequested && createdProject.name) {
+          behaviorAnalytics.captureMetric(
+            createBehaviorMetric("sample instance requested", {
+              properties: { source: "workspace_setup" },
+            })
+          );
           try {
             const sampleInstance = await prepareSampleProjectInstance(
               createdProject.name
             );
             sampleInstanceName = sampleInstance.name;
-            sampleSucceeded = true;
           } catch (error) {
             pushNotification({
               module: "bytebase",
@@ -179,13 +231,19 @@ export function WorkspaceSetupPage() {
         style: "SUCCESS",
         title: t("settings.profile.setup-success"),
       });
+      if (isSaaSMode) {
+        saveWorkspaceSetupFinished(
+          workspace?.name ?? currentUser.workspace,
+          true
+        );
+      }
       behaviorAnalytics.captureMetric(
-        createBehaviorMetric("workspace setup completed", {
+        createBehaviorMetric("workspace setup submitted", {
           properties: {
-            deployment,
-            project_created: !!createdProjectName,
-            sample_requested: sampleRequested,
-            sample_succeeded: sampleSucceeded,
+            scenario: selectedScenarioId ?? "unselected",
+            collaboration_type: workspaceUsage ?? "unselected",
+            result: "finished",
+            sample_enabled: sampleRequested,
           },
         })
       );
@@ -230,36 +288,77 @@ export function WorkspaceSetupPage() {
 
   const handleSkip = () => {
     behaviorAnalytics.captureMetric(
-      createBehaviorMetric("workspace setup skipped", {
-        properties: { deployment },
+      createBehaviorMetric("workspace setup submitted", {
+        properties: {
+          scenario: selectedScenarioId ?? "unselected",
+          collaboration_type: workspaceUsage ?? "unselected",
+          result: "skipped",
+          sample_enabled: false,
+        },
       })
     );
     goToDashboard();
   };
 
-  const displayName = name.trim() || currentUser?.email || "?";
+  const setupSteps = [
+    {
+      key: "scenario",
+      title: t("settings.profile.setup-steps.scenario"),
+    },
+    {
+      key: "workspace",
+      title: t("settings.profile.setup-steps.workspace"),
+    },
+  ];
+
+  if (setupStep === "scenario") {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="flex w-full max-w-lg flex-col gap-y-6">
+          <StepIndicator steps={setupSteps} currentKey={setupStep} />
+          <WorkspaceSetupQuestionnaireStep
+            scenarioValue={selectedScenarioId}
+            workspaceUsageValue={workspaceUsage}
+            required={isSaaSMode}
+            onScenarioChange={setSelectedScenarioId}
+            onWorkspaceUsageChange={setWorkspaceUsage}
+            onContinue={() => {
+              if (selectedScenarioId) {
+                saveSelectedGuideScenarioId(selectedScenarioId);
+              } else {
+                clearSelectedGuideScenarioId();
+              }
+              if (workspaceUsage) {
+                saveGuideWorkspaceUsage(workspaceUsage);
+              } else {
+                clearGuideWorkspaceUsage();
+              }
+              setSetupStep("workspace");
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
       <div className="w-full max-w-lg mx-4 flex flex-col items-center gap-y-6">
-        <UserAvatar
-          title={displayName}
-          colorSeed={currentUser?.email}
-          size="md"
-          className="size-16! text-2xl!"
+        <StepIndicator
+          className="w-full"
+          steps={setupSteps}
+          currentKey={setupStep}
         />
-
-        <div className="text-center">
-          <h1 className="text-xl font-semibold">
-            {t("settings.profile.setup-title")}
-          </h1>
-        </div>
+        <h1 className="sr-only">
+          {t("settings.profile.setup-steps.workspace")}
+        </h1>
 
         <div className="w-full flex flex-col gap-y-4">
           <FormField title={t("settings.profile.display-name")}>
             <Input
               data-testid="profile-display-name"
               value={name}
+              autoComplete="off"
               onChange={(e) => setName(e.target.value)}
               placeholder={t("settings.profile.display-name-placeholder")}
               autoFocus
@@ -276,6 +375,7 @@ export function WorkspaceSetupPage() {
               <Input
                 data-testid="profile-workspace-title"
                 value={workspaceTitle}
+                autoComplete="off"
                 onChange={(event) => setWorkspaceTitle(event.target.value)}
                 placeholder={t("settings.profile.workspace-name-placeholder")}
               />
@@ -283,10 +383,27 @@ export function WorkspaceSetupPage() {
           )}
 
           {canCreateProject && (
-            <FormField title={t("settings.profile.setup-first-project")}>
+            <FormField
+              title={
+                <>
+                  {t("settings.profile.setup-first-project")}
+                  {isSaaSMode && (
+                    <span
+                      aria-hidden="true"
+                      className="ml-1 text-error"
+                      data-testid="project-required-indicator"
+                    >
+                      *
+                    </span>
+                  )}
+                </>
+              }
+            >
               <Input
                 data-testid="profile-project-title"
                 value={projectTitle}
+                autoComplete="off"
+                required={isSaaSMode}
                 onChange={(event) => {
                   const title = event.target.value;
                   setProjectTitle(title);
@@ -301,6 +418,7 @@ export function WorkspaceSetupPage() {
                 <ResourceIdField
                   suffix
                   value={projectResourceId}
+                  autoComplete="off"
                   resourceName={t("common.project")}
                   resourceTitle={projectTitle}
                   validate={validateProjectResourceId}
@@ -325,28 +443,38 @@ export function WorkspaceSetupPage() {
                         "cursor-not-allowed text-control-placeholder"
                     )}
                   >
-                    {t("settings.profile.enable-sample-databases")}
+                    {t(
+                      selectedScenarioId === "query-data"
+                        ? "settings.profile.enable-sample-databases-query-data"
+                        : selectedScenarioId === "create-database-change"
+                          ? "settings.profile.enable-sample-databases-create-change"
+                          : selectedScenarioId === "mark-sensitive-data"
+                            ? "settings.profile.enable-sample-databases-mark-sensitive-data"
+                            : "settings.profile.enable-sample-databases"
+                    )}
                   </label>
                 </div>
               )}
             </FormField>
           )}
 
-          <div className="flex flex-col gap-y-2 mt-2">
-            <Button
-              onClick={() => void handleSave()}
-              disabled={!canSave}
-              className="w-full"
-            >
-              {t("settings.profile.setup-submit")}
-            </Button>
+          <div className="mt-2 flex items-center justify-between gap-x-2 border-t border-block-border pt-4">
             <Button
               appearance="secondary"
-              onClick={handleSkip}
-              className="w-full"
+              onClick={() => setSetupStep("scenario")}
             >
-              {t("settings.profile.setup-skip")}
+              {t("common.back")}
             </Button>
+            <div className="flex flex-col items-end gap-y-2 sm:flex-row sm:items-center sm:gap-x-2 sm:gap-y-0">
+              {!isSaaSMode && (
+                <Button appearance="secondary" onClick={handleSkip}>
+                  {t("settings.profile.setup-skip")}
+                </Button>
+              )}
+              <Button onClick={() => void handleSave()} disabled={!canSave}>
+                {t("settings.profile.setup-submit")}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

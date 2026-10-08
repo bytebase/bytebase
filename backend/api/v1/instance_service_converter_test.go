@@ -17,6 +17,7 @@ import (
 )
 
 func TestConvertToV1InstanceUsesOwningProjectName(t *testing.T) {
+	t.Parallel()
 	projectID := "project-a"
 	instance := &store.InstanceMessage{
 		ResourceID: "instance-a",
@@ -35,6 +36,7 @@ func TestConvertToV1InstanceUsesOwningProjectName(t *testing.T) {
 }
 
 func TestConvertDataSourceCloudSQLIPType(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		v1    v1pb.DataSource_CloudSQLIPType
@@ -47,6 +49,7 @@ func TestConvertDataSourceCloudSQLIPType(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			// v1 -> store
 			storeDS, err := convertV1DataSource(&v1pb.DataSource{
 				Type:               v1pb.DataSourceType_ADMIN,
@@ -65,6 +68,7 @@ func TestConvertDataSourceCloudSQLIPType(t *testing.T) {
 }
 
 func TestNormalizeGCPDataSources(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		engine         storepb.Engine
@@ -127,6 +131,7 @@ func TestNormalizeGCPDataSources(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			normalizeGCPDataSources(tc.engine, []*storepb.DataSource{tc.in})
 			require.Equal(t, tc.wantProjectID, tc.in.GetProjectId())
 			require.Equal(t, tc.wantInstanceID, tc.in.GetInstanceId())
@@ -136,6 +141,7 @@ func TestNormalizeGCPDataSources(t *testing.T) {
 }
 
 func TestConvertDataSourceGCPFields(t *testing.T) {
+	t.Parallel()
 	storeDS, err := convertV1DataSource(&v1pb.DataSource{
 		Type:       v1pb.DataSourceType_ADMIN,
 		ProjectId:  "my-proj",
@@ -156,6 +162,7 @@ func TestConvertDataSourceGCPFields(t *testing.T) {
 }
 
 func TestConvertDataSourceSaslConfigNeverReturnsKeytab(t *testing.T) {
+	t.Parallel()
 	got := convertDataSourceSaslConfig(&storepb.SASLConfig{
 		Mechanism: &storepb.SASLConfig_KrbConfig{
 			KrbConfig: &storepb.KerberosConfig{
@@ -203,6 +210,7 @@ func krbDataSource(id, host, keytab string) *storepb.DataSource {
 }
 
 func TestRetainStoredKeytabOnEmptyUpdate(t *testing.T) {
+	t.Parallel()
 	const storedHost = "hive.internal.example.com"
 	stored := krbDataSource("admin", storedHost, "stored-keytab")
 
@@ -325,6 +333,7 @@ func TestRetainStoredKeytabRefusesANewDestination(t *testing.T) {
 // field is named in one list or the other, which is the point: the choice gets
 // made by whoever adds it rather than defaulted.
 func TestDataSourceDestinationClassifiesEveryField(t *testing.T) {
+	t.Parallel()
 	// Fields the caller supplies an address through. Keep in step with
 	// dataSourceDestination.
 	inDestination := []string{
@@ -409,6 +418,7 @@ func TestDataSourceDestinationClassifiesEveryField(t *testing.T) {
 }
 
 func TestRetainStoredKeytabs(t *testing.T) {
+	t.Parallel()
 	const storedHost = "hive.internal.example.com"
 	stored := []*storepb.DataSource{
 		krbDataSource("admin", storedHost, "admin-keytab"),
@@ -510,6 +520,7 @@ func isInputOnly(field protoreflect.FieldDescriptor) bool {
 // audit-side leak this design opens with was the request path, and the read
 // path staying clean is what lets the annotation be SENSITIVE rather than OMIT.
 func TestConvertInstanceRolesBlanksEveryWriteOnlyField(t *testing.T) {
+	t.Parallel()
 	instance := &store.InstanceMessage{ResourceID: "instance-a"}
 	roles := []*storepb.InstanceRole{
 		{Name: "admin", Attribute: proto.String("SUPERUSER"), ConnectionLimit: proto.Int32(10)},
@@ -524,6 +535,7 @@ func TestConvertInstanceRolesBlanksEveryWriteOnlyField(t *testing.T) {
 }
 
 func TestConvertDataSourcesBlanksEveryWriteOnlyField(t *testing.T) {
+	t.Parallel()
 	// One store data source per authentication/secret shape, each with every
 	// secret populated, so the INPUT_ONLY walk covers all converter branches.
 	dataSources := []*storepb.DataSource{

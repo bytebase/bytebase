@@ -28,8 +28,8 @@ import { createUnknownDatabase, setDatabaseAccess } from "./databaseAccess";
 import type { AppSliceCreator, DatabaseSlice } from "./types";
 import { buildDatabaseFilter, isMissingOrForbidden, toError } from "./utils";
 
-// Inlined to keep the app store's load graph free of the Pinia `@/stores`
-// barrel that `@/utils/v1/database` pulls in.
+// Inlined to keep the app store's load graph free of the `@/stores` barrel
+// that `@/utils/v1/database` pulls in.
 function instanceResourceNameFromDatabase(databaseName: string): string {
   const match = databaseName.match(
     /^(?:(projects\/[^/]+)\/)?instances\/([^/]+)\/databases\//
@@ -50,9 +50,9 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
     return unknownDatabase;
   };
 
-  // Mirrors the legacy Pinia `batchComposeDatabase`: pre-caches the owning
-  // projects and guarantees `instanceResource` is populated (with a fallback)
-  // so consumers can read engine / instance off any database.
+  // Pre-caches the owning projects and guarantees `instanceResource` is
+  // populated (with a fallback) so consumers can read engine / instance off
+  // any database.
   const composeDatabases = async (
     databases: Database[],
     silent = false

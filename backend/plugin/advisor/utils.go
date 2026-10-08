@@ -9,10 +9,49 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
+
+// ExplainBudget caps the statements a row limit rule EXPLAINs at common.MaximumLintExplainSize and
+// counts the statements it leaves unchecked.
+type ExplainBudget struct {
+	used         int
+	skipped      int
+	firstSkipped *storepb.Position
+}
+
+// Spend reports whether the statement at position may be explained, recording it as skipped
+// otherwise.
+func (b *ExplainBudget) Spend(position *storepb.Position) bool {
+	if b.used < common.MaximumLintExplainSize {
+		b.used++
+		return true
+	}
+	if b.skipped == 0 {
+		b.firstSkipped = position
+	}
+	b.skipped++
+	return false
+}
+
+// AppendSkippedAdvice appends one warning covering the skipped statements, if any. It is a warning
+// whatever the rule's level.
+func (b *ExplainBudget) AppendSkippedAdvice(adviceList []*storepb.Advice, title string, adviceCode code.Code) []*storepb.Advice {
+	if b.skipped == 0 {
+		return adviceList
+	}
+	return append(adviceList, &storepb.Advice{
+		Status:        storepb.Advice_WARNING,
+		Code:          adviceCode.Int32(),
+		Title:         title,
+		Content:       fmt.Sprintf("Only the first %d statements were estimated; %d more were not checked against the row limit.", common.MaximumLintExplainSize, b.skipped),
+		StartPosition: b.firstSkipped,
+	})
+}
 
 type QueryContext struct {
 	TenantMode    bool
@@ -152,7 +191,8 @@ func ContainsDDL(engine storepb.Engine, parsedStatements []base.ParsedStatement)
 		case storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
 			storepb.StatementType_INSERT,
 			storepb.StatementType_UPDATE,
-			storepb.StatementType_DELETE:
+			storepb.StatementType_DELETE,
+			storepb.StatementType_MERGE:
 		default:
 			return true
 		}

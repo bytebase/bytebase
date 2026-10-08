@@ -9,7 +9,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/TabList/TabItem/Prefix.vue.
  * Leading icons on a tab row:
  *  - Pencil for draft (no saved query yet).
  *  - Users glyph when viewing someone else's shared savedQuery.

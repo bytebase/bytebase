@@ -12,7 +12,7 @@ import { BlockTooltip, Tooltip } from "./ui/tooltip";
  * Reads directly from the Zustand IAM caches without triggering a load —
  * every current caller mounts inside a route shell that already preloads
  * (`BannersWrapper` → `useWorkspacePermission` for workspace,
- * `ProjectRouteShell` / `SQLEditorRouteShell` → `usePermissionDataReady`
+ * `ProjectRouteGate` / `SQLEditorRouteShell` → `usePermissionDataReady`
  * for project). If a future orphan caller appears, add the trigger then.
  */
 export function usePermissionCheck(
@@ -66,7 +66,7 @@ interface PermissionGuardProps {
  * </PermissionGuard>
  * ```
  *
- * 2. Render-prop children (like Vue PermissionGuardWrapper slot props):
+ * 2. Render-prop children:
  * ```tsx
  * <PermissionGuard permissions={["bb.projects.update"]} project={project}>
  *   {({ disabled }) => <Button disabled={disabled}>Save</Button>}

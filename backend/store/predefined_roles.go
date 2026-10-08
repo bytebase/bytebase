@@ -57,6 +57,7 @@ var PredefinedRoles = []*RoleMessage{
 			permission.IdentityProvidersCreate,
 			permission.IdentityProvidersDelete,
 			permission.IdentityProvidersGet,
+			permission.IdentityProvidersList,
 			permission.IdentityProvidersUpdate,
 			permission.InstancesCreate,
 			permission.InstancesDelete,

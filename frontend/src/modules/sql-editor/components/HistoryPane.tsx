@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { Copy, Link2, Loader2, X } from "lucide-react";
 import {
   useCallback,
@@ -12,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { SQL_EDITOR_QUERY_HISTORY_MODULE } from "@/app/router/handles";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { Button } from "@/components/ui/button";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
@@ -27,13 +27,13 @@ import {
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
-import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY, getTimeForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/query_history_service_pb";
 import { extractProjectResourceName, extractQueryHistoryUID } from "@/utils";
+import { queryHistoryTabTitle } from "@/utils/v1/queryHistory";
 import { HistorySearchInput } from "./HistorySearchInput";
 
 /**
- * React migration of frontend/src/views/sql-editor/AsidePanel/HistoryPane/HistoryPane.vue.
  * Displays the query history list with search, copy, and click-to-append features.
  */
 export function HistoryPane() {
@@ -101,8 +101,8 @@ export function HistoryPane() {
   // already up-to-date by the time the event fires (`useExecuteSQL` /
   // `webTerminal` chain the emit in `.finally` after `mergeLatest`
   // resolves). The bumped reducer state triggers a render, which
-  // re-runs the Vue-bridge getter and reads the merged list —
-  // preserving any pages the user had already loaded.
+  // re-runs the `selectQueryHistoryEntry` selector and reads the merged
+  // list — preserving any pages the user had already loaded.
   useEffect(() => {
     sqlEditorEvents.on("query-executed", bumpRefresh);
     return () => {
@@ -118,11 +118,6 @@ export function HistoryPane() {
     [resetPageToken, historyQuery]
   );
 
-  const titleOfQueryHistory = (h: QueryHistory) =>
-    dayjs(getDateForPbTimestampProtoEs(h.createTime)).format(
-      "YYYY-MM-DD HH:mm:ss"
-    );
-
   const handleHistoryClick = async (history: QueryHistory) => {
     const { statement } = history;
     const tabsState = getSQLEditorTabsState();
@@ -134,7 +129,7 @@ export function HistoryPane() {
     } else {
       tabsState.addTab(
         {
-          title: `Query history at ${titleOfQueryHistory(history)}`,
+          title: queryHistoryTabTitle(history),
           statement,
         },
         /* beside */ true
@@ -202,15 +197,17 @@ export function HistoryPane() {
     >
       <div className="w-full flex flex-row justify-between items-center">
         <div className="flex items-start gap-x-1">
-          <span className="text-xs text-control-placeholder">
-            {titleOfQueryHistory(history)}
-          </span>
+          <HumanizeTs
+            className="text-xs text-control-placeholder"
+            mode="compact"
+            tsMs={getTimeForPbTimestampProtoEs(history.createTime)}
+          />
         </div>
         <div className="flex items-center gap-x-1">
           <Button
             appearance="secondary"
-            size="sm"
-            className="h-6 w-6 p-0 hover:bg-control-bg-hover"
+            size="xs"
+            className="w-6 p-0 hover:bg-control-bg-hover"
             data-copy-link-btn
             onClick={(e) => {
               e.stopPropagation();
@@ -225,8 +222,8 @@ export function HistoryPane() {
           </Button>
           <Button
             appearance="secondary"
-            size="sm"
-            className="h-6 w-6 p-0 hover:bg-control-bg-hover"
+            size="xs"
+            className="w-6 p-0 hover:bg-control-bg-hover"
             data-copy-btn
             onClick={(e) => {
               e.stopPropagation();
@@ -268,8 +265,8 @@ export function HistoryPane() {
               </div>
               <Button
                 appearance="secondary"
-                size="sm"
-                className="h-5 w-5 p-0 text-accent hover:bg-accent/10 hover:text-accent"
+                size="xs"
+                className="w-6 p-0 text-accent hover:bg-accent/10 hover:text-accent"
                 data-dismiss-linked-history
                 onClick={() => setLinkedQueryHistory(undefined)}
                 aria-label={t("common.close")}

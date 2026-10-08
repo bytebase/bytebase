@@ -1,8 +1,7 @@
-import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import { BlockTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 
 interface EllipsisTextProps {
   readonly text: string;
@@ -36,28 +35,15 @@ export function EllipsisText({ text, className, children }: EllipsisTextProps) {
   }, [text, children]);
 
   return (
-    <BaseTooltip.Provider delay={300}>
-      <BaseTooltip.Root open={isTruncated && open} onOpenChange={setOpen}>
-        <BaseTooltip.Trigger
-          render={
-            <span ref={ref} className={cn("block truncate", className)} />
-          }
-        >
-          {children ?? text}
-        </BaseTooltip.Trigger>
-        <BaseTooltip.Portal container={getLayerRoot("overlay")}>
-          <BaseTooltip.Positioner
-            side="top"
-            sideOffset={4}
-            className={LAYER_SURFACE_CLASS}
-          >
-            <BaseTooltip.Popup className="rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md whitespace-nowrap">
-              {text}
-              <BaseTooltip.Arrow className="fill-main" />
-            </BaseTooltip.Popup>
-          </BaseTooltip.Positioner>
-        </BaseTooltip.Portal>
-      </BaseTooltip.Root>
-    </BaseTooltip.Provider>
+    <BlockTooltip
+      content={text}
+      delayDuration={300}
+      open={isTruncated && open}
+      onOpenChange={setOpen}
+      popupClassName="max-w-none whitespace-nowrap"
+      render={<span ref={ref} className={cn("block truncate", className)} />}
+    >
+      {children ?? text}
+    </BlockTooltip>
   );
 }

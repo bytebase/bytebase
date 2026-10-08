@@ -31,7 +31,6 @@ const DELAY_AFTER = 100;
 const HoverStateContext = createContext<HoverStateContextValue | null>(null);
 
 /**
- * React equivalent of the Vue `useHoverStateContext("connection-pane")`.
  * Wraps a delayed-update `HoverState` plus the last cursor `Position` so the
  * hover panel can render a database preview after the open-delay elapses.
  */
@@ -63,13 +62,11 @@ export function useProvideHoverState(): HoverStateContextValue {
     [cancel]
   );
 
-  // Memoize the context value so an unrelated parent re-render (e.g.
-  // a Pinia tick triggering a Vue-bridge update somewhere up the
-  // tree) doesn't churn the `<HoverStateProvider value={…}>` reference.
-  // Without this, every consumer of `useHoverState()` (every tree row
-  // in `ConnectionPane`) re-renders, which can show up as the hover
-  // panel rapidly toggling visibility / re-positioning while the user
-  // holds the cursor over a row.
+  // Memoize the context value so an unrelated parent re-render doesn't
+  // churn the `<HoverStateProvider value={…}>` reference. Without this,
+  // every consumer of `useHoverState()` (every tree row in `ConnectionPane`)
+  // re-renders, which can show up as the hover panel rapidly toggling
+  // visibility / re-positioning while the user holds the cursor over a row.
   return useMemo(
     () => ({ state, position, setPosition, update }),
     [state, position, setPosition, update]

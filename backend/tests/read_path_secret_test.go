@@ -31,10 +31,7 @@ func TestReadPathHidesTheWebhookURL(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	project := ctl.createTestProject(ctx, t, "webhook-redaction")
 	added, err := ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
@@ -111,10 +108,7 @@ func TestEnrollmentSecretsLiveOnlyInTheMintingResponses(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	userName := common.FormatUserEmail("demo@example.com")
 	minted, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
@@ -170,10 +164,7 @@ func TestMCPServesTheReadsTheRedactionFreed(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	project, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		ProjectId: "mcp-freed-reads",
@@ -204,16 +195,16 @@ func TestMCPServesTheReadsTheRedactionFreed(t *testing.T) {
 	// mask: the credential it takes out is MariaDB's, and it is pinned against
 	// real server output in the converter's own test. What these two rows are
 	// for is the classification — the reads are served at all.
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: "mcp-freed-instance",
 		Instance: &v1pb.Instance{
-			Title:       "MCP freed instance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "MCP freed instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -288,10 +279,7 @@ func TestMFAReplacementPromotesTheNewAuthenticator(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	userName := common.FormatUserEmail("demo@example.com")
 	// liveSecret is empty for the account's first factor and holds the live
@@ -378,10 +366,7 @@ func TestSupersededPendingStateIsRefused(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	userName := common.FormatUserEmail("demo@example.com")
 	enrolled, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
@@ -465,10 +450,7 @@ func TestConfirmationCannotRevivePendingStateItRaced(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	userName := common.FormatUserEmail("demo@example.com")
 	minted, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{

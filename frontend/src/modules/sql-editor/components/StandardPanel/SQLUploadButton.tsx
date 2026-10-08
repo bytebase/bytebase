@@ -2,7 +2,7 @@ import type { ChangeEvent, ReactNode } from "react";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 import { useAppStore } from "@/stores/app";
 import { MAX_UPLOAD_FILE_SIZE_MB } from "@/utils";
 import { FileContentPreviewModal } from "./FileContentPreviewModal";
@@ -15,8 +15,6 @@ interface SQLUploadButtonProps {
 }
 
 /**
- * React port of `frontend/src/components/misc/SQLUploadButton.vue`.
- *
  * Hidden `<input type="file">` triggered by clicking the button. After
  * the user picks a file, mounts a preview modal that decodes + shows
  * the content; the parent receives the final text via `onUpdateSql`.
@@ -89,7 +87,7 @@ export function SQLUploadButton({
         type="button"
         appearance="secondary"
         size="sm"
-        className={cn("h-7 px-1", className)}
+        className={className}
         onClick={handleClick}
       >
         {children}
@@ -97,7 +95,7 @@ export function SQLUploadButton({
           <span className="ml-1">{t("sql-editor.upload-file")}</span>
         )}
       </Button>
-      <input
+      <Input
         ref={inputRef}
         type="file"
         accept=".sql,.txt,application/sql,text/plain"

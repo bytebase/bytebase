@@ -2,6 +2,7 @@ import { Trash2 } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { RouterLink } from "@/components/RouterLink";
+import { SemanticTypeSelect } from "@/components/SemanticTypeSelect";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -88,7 +89,6 @@ export function SensitiveColumnTable({
   showSelection,
   canEdit,
   showOperation,
-  semanticTypeOptions,
   classificationOptions,
   onCheckedColumnListChange,
   onSemanticTypeChange,
@@ -101,7 +101,6 @@ export function SensitiveColumnTable({
   showSelection: boolean;
   canEdit: boolean;
   showOperation: boolean;
-  semanticTypeOptions: SelectOption[];
   classificationOptions: SelectOption[];
   onCheckedColumnListChange: (columnList: MaskData[]) => void;
   onSemanticTypeChange: (
@@ -242,11 +241,11 @@ export function SensitiveColumnTable({
                     {item.column || t("common.empty")}
                   </TableCell>
                   <TableCell>
-                    <EditableSelect
+                    <SemanticTypeSelect
                       value={item.semanticTypeId}
-                      options={semanticTypeOptions}
                       disabled={semanticTypeDisabled}
-                      placeholder={t("common.empty")}
+                      emptyLabel={t("common.empty")}
+                      className="w-full"
                       onValueChange={(semanticTypeId) =>
                         void onSemanticTypeChange(item, semanticTypeId)
                       }

@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
@@ -52,13 +53,13 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, err
 	}
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	databaseNames, err := d.getNonSystemDatabaseList(ctx)
 	if err != nil {
 		return nil, err
 	}
 	for _, databaseName := range databaseNames {
-		databases = append(databases, &storepb.DatabaseSchemaMetadata{
+		databases = append(databases, &metadatapb.DatabaseSchemaMetadata{
 			Name: databaseName,
 		})
 	}
@@ -73,8 +74,8 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs the database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	schemaMetadata := &storepb.SchemaMetadata{
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	schemaMetadata := &metadatapb.SchemaMetadata{
 		Name: "",
 	}
 
@@ -174,7 +175,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get index schema of collection %s", collectionName)
 		}
-		schemaMetadata.Tables = append(schemaMetadata.Tables, &storepb.TableMetadata{
+		schemaMetadata.Tables = append(schemaMetadata.Tables, &metadatapb.TableMetadata{
 			Name:      collectionName,
 			RowCount:  count,
 			DataSize:  dataSize64,
@@ -184,23 +185,23 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	for _, viewName := range viewNames {
-		schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{Name: viewName})
+		schemaMetadata.Views = append(schemaMetadata.Views, &metadatapb.ViewMetadata{Name: viewName})
 	}
 
-	return &storepb.DatabaseSchemaMetadata{
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name:    d.databaseName,
-		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
+		Schemas: []*metadatapb.SchemaMetadata{schemaMetadata},
 	}, nil
 }
 
 // getIndexes returns all indexes schema of a collection.
 // https://www.mongodb.com/docs/manual/reference/command/listIndexes/#output
-func getIndexes(ctx context.Context, collection *mongo.Collection) ([]*storepb.IndexMetadata, error) {
+func getIndexes(ctx context.Context, collection *mongo.Collection) ([]*metadatapb.IndexMetadata, error) {
 	indexCursor, err := collection.Indexes().List(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list indexes")
 	}
-	indexMap := make(map[string]*storepb.IndexMetadata)
+	indexMap := make(map[string]*metadatapb.IndexMetadata)
 	defer indexCursor.Close(ctx)
 	for indexCursor.Next(ctx) {
 		var indexInfo bson.M
@@ -232,7 +233,7 @@ func getIndexes(ctx context.Context, collection *mongo.Collection) ([]*storepb.I
 		}
 
 		if _, ok := indexMap[indexName]; !ok {
-			indexMap[indexName] = &storepb.IndexMetadata{
+			indexMap[indexName] = &metadatapb.IndexMetadata{
 				Name:   indexName,
 				Unique: unique,
 			}
@@ -240,7 +241,7 @@ func getIndexes(ctx context.Context, collection *mongo.Collection) ([]*storepb.I
 		indexMap[indexName].Expressions = append(indexMap[indexName].Expressions, string(expression))
 	}
 
-	var indexes []*storepb.IndexMetadata
+	var indexes []*metadatapb.IndexMetadata
 	var indexNames []string
 	for name := range indexMap {
 		indexNames = append(indexNames, name)

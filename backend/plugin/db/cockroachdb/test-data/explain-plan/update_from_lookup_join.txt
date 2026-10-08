@@ -1,0 +1,33 @@
+distribution: local
+vectorized: true
+
+• update
+│ table: big
+│ set: v
+│ auto commit
+│
+└── • render
+    │
+    └── • lookup join
+        │ estimated row count: 1,000
+        │ table: big@big_pkey
+        │ equality: (id) = (id)
+        │ equality cols are key
+        │
+        └── • lookup join
+            │ estimated row count: 1,000
+            │ table: big@idx_s
+            │ equality: (id) = (s_id)
+            │
+            └── • filter
+                │ estimated row count: 10
+                │ filter: flag
+                │
+                └── • scan
+                      estimated row count: 100 (100% of the table; stats collected 40 seconds ago)
+                      table: s@s_pkey
+                      spans: FULL SCAN
+
+index recommendations: 1
+1. type: index replacement
+   SQL commands: CREATE INDEX ON capture.public.big (s_id) STORING (v) /* After successfully creating the replacement index, manually run: `ALTER INDEX capture.public.big@idx_s NOT VISIBLE` and then, after verifying workload performance, manually run: `DROP INDEX capture.public.big@idx_s` */;

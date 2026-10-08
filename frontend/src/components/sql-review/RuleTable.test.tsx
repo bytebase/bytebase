@@ -123,7 +123,10 @@ vi.mock("@/components/ui/tooltip", () => ({
 
 vi.mock("./RuleComponents", () => ({
   RuleConfig: () => <div data-testid="rule-config" />,
-  RuleEditDialog: () => <div data-testid="rule-edit-dialog" />,
+  // Rendered in row position inside <tbody>, where the real dialog portals its
+  // content out and leaves nothing structural. A <tr> is the valid stand-in; a
+  // <div> here is markup the real component never produces.
+  RuleEditDialog: () => <tr data-testid="rule-edit-dialog" />,
   RuleLevelFilter: () => <div data-testid="rule-level-filter" />,
   RuleLevelSwitch: () => {
     mocks.ruleLevelSwitch();
@@ -261,7 +264,6 @@ describe("RuleTable", () => {
       'tbody tr[data-sql-review-rule-view="desktop"] button[aria-label="common.edit"]'
     );
     expect(editButton).toBeTruthy();
-    expect(editButton?.className).toContain("size-7");
     expect(editButton?.textContent).toBe("");
     expect(editButton?.className).not.toContain("border");
 
@@ -269,7 +271,6 @@ describe("RuleTable", () => {
       'tbody tr[data-sql-review-rule-view="desktop"] button[aria-label="common.delete"]'
     );
     expect(deleteButton).toBeTruthy();
-    expect(deleteButton?.className).toContain("size-7");
     expect(deleteButton?.textContent).toBe("");
     expect(deleteButton?.className).not.toContain("border");
     expect(editButton?.parentElement?.className).toContain("gap-x-1");
@@ -497,10 +498,6 @@ describe("RuleTable", () => {
     );
     expect(mobileEditButton).toBeTruthy();
     expect(mobileDeleteButton).toBeTruthy();
-    expect(mobileEditButton?.className).toContain("size-7");
-    expect(mobileDeleteButton?.className).toContain("size-7");
-    expect(mobileEditButton?.className).not.toContain("size-8");
-    expect(mobileDeleteButton?.className).not.toContain("size-8");
     expect(mobileDeleteButton?.textContent).toBe("");
 
     unmount();

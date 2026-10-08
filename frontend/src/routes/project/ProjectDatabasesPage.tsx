@@ -46,11 +46,13 @@ import type { DatabaseFilter } from "@/lib/databaseFilter";
 import { preCreateIssue } from "@/lib/plan/issue";
 import {
   CONNECT_DATABASE_PRODUCT_INTRO,
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
   useProductIntro,
 } from "@/lib/productIntro";
 import { normalizeInstanceName } from "@/lib/resourceName";
+import { readSelectedGuideScenarioId } from "@/modules/workspace-setup-guide/selection";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -73,6 +75,7 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import { unknownDatabase } from "@/types/v1/database";
 import {
+  autoDatabaseRoute,
   engineNameV1,
   extractInstanceResourceName,
   getDefaultPagination,
@@ -81,6 +84,7 @@ import {
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   supportedEngineV1List,
 } from "@/utils";
+import { getDatabaseEngine } from "@/utils/v1/database";
 import { extractProjectResourceName } from "@/utils/v1/project";
 
 const fetchAvailableInstanceCount = async (
@@ -536,11 +540,57 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const hasVisibleDatabase = visibleDatabases.length > 0;
   const showSyncingInstanceHint =
     !!syncingInstanceId && !hasVisibleDatabase && !syncingRefreshExhausted;
+  const databaseNextActionRequested =
+    (availableInstanceCount === 1 && !!syncingInstanceId) ||
+    currentRoute.query[PRODUCT_INTRO_QUERY_KEY] ===
+      PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO;
+  const [databaseNextActionProject, setDatabaseNextActionProject] = useState<
+    string | undefined
+  >(() => (databaseNextActionRequested ? projectName : undefined));
+  useEffect(() => {
+    if (databaseNextActionRequested) {
+      setDatabaseNextActionProject(projectName);
+    }
+  }, [databaseNextActionRequested, projectName]);
   const showDatabaseNextAction =
-    hasVisibleDatabase &&
-    ((availableInstanceCount === 1 && !!syncingInstanceId) ||
-      currentRoute.query[PRODUCT_INTRO_QUERY_KEY] ===
-        PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO);
+    hasVisibleDatabase && databaseNextActionProject === projectName;
+  const selectedGuideScenarioId = readSelectedGuideScenarioId();
+  const databaseNextAction =
+    selectedGuideScenarioId === "create-database-change"
+      ? {
+          title: t("db.project-instance-synced-create-change-title"),
+          description: t(
+            "db.project-instance-synced-create-change-description"
+          ),
+          showCreateChange: true,
+          showSqlEditor: false,
+          showMarkSensitiveData: false,
+        }
+      : selectedGuideScenarioId === "query-data"
+        ? {
+            title: t("db.project-instance-synced-query-data-title"),
+            description: t("db.project-instance-synced-query-data-description"),
+            showCreateChange: false,
+            showSqlEditor: true,
+            showMarkSensitiveData: false,
+          }
+        : selectedGuideScenarioId === "mark-sensitive-data"
+          ? {
+              title: t("db.project-instance-synced-mark-sensitive-data-title"),
+              description: t(
+                "db.project-instance-synced-mark-sensitive-data-description"
+              ),
+              showCreateChange: false,
+              showSqlEditor: false,
+              showMarkSensitiveData: true,
+            }
+          : {
+              title: t("db.project-instance-synced-title"),
+              description: t("db.project-instance-synced-description"),
+              showCreateChange: true,
+              showSqlEditor: true,
+              showMarkSensitiveData: false,
+            };
   const checkingAvailableInstance =
     !hasVisibleDatabase &&
     !showSyncingInstanceHint &&
@@ -577,6 +627,22 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     );
   }, [projectName]);
 
+  const maskingDatabase = visibleDatabases.find(
+    (database) => getDatabaseEngine(database) !== Engine.REDIS
+  );
+  const handleMarkSensitiveData = useCallback(() => {
+    if (!maskingDatabase) return;
+    const target = autoDatabaseRoute(maskingDatabase);
+    void router.push({
+      ...target,
+      query: {
+        ...target.query,
+        [PRODUCT_INTRO_QUERY_KEY]: MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+      },
+      hash: "#catalog",
+    });
+  }, [maskingDatabase]);
+
   useProductIntro({
     id: CONNECT_DATABASE_PRODUCT_INTRO,
     title: t("project.connect-instance-intro-title"),
@@ -589,8 +655,8 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   });
   useProductIntro({
     id: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
-    title: t("db.project-instance-synced-title"),
-    description: t("db.project-instance-synced-description"),
+    title: databaseNextAction.title,
+    description: databaseNextAction.description,
     disabled: !showDatabaseNextAction,
   });
 
@@ -663,7 +729,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
               {hasVisibleDatabase
                 ? t("common.create")
                 : emptyProjectHasInstance
-                  ? t("project.add-database")
+                  ? t("database.create-database")
                   : t("project.connect-instance")}
             </Button>
           </PermissionGuard>
@@ -702,38 +768,55 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         <Alert
           variant="info"
           data-product-intro-target={PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO}
-          title={t("db.project-instance-synced-title")}
+          title={databaseNextAction.title}
           description={
             <div className="flex flex-col gap-y-3">
-              <span>{t("db.project-instance-synced-description")}</span>
+              <span>{databaseNextAction.description}</span>
               <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-2">
-                <PermissionGuard
-                  permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
-                  project={project}
-                >
+                {databaseNextAction.showCreateChange && (
+                  <PermissionGuard
+                    permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
+                    project={project}
+                  >
+                    <Button
+                      size="sm"
+                      appearance={
+                        databaseNextAction.showSqlEditor ? "outline" : undefined
+                      }
+                      onClick={handleCreateFirstChange}
+                    >
+                      {t("db.project-instance-synced-action")}
+                    </Button>
+                  </PermissionGuard>
+                )}
+                {databaseNextAction.showSqlEditor && (
+                  <PermissionGuard
+                    permissions={["bb.sql.select"]}
+                    project={project}
+                  >
+                    <span
+                      className="inline-flex"
+                      onClickCapture={handleOpenFirstDatabaseInSQLEditor}
+                    >
+                      <SQLEditorButton
+                        size="sm"
+                        database={visibleDatabases[0]}
+                        label={t(
+                          "db.project-instance-synced-sql-editor-action"
+                        )}
+                      />
+                    </span>
+                  </PermissionGuard>
+                )}
+                {databaseNextAction.showMarkSensitiveData && (
                   <Button
                     size="sm"
-                    appearance="outline"
-                    onClick={handleCreateFirstChange}
+                    disabled={!maskingDatabase}
+                    onClick={handleMarkSensitiveData}
                   >
-                    {t("db.project-instance-synced-action")}
+                    {t("db.project-instance-synced-mark-sensitive-data-action")}
                   </Button>
-                </PermissionGuard>
-                <PermissionGuard
-                  permissions={["bb.sql.select"]}
-                  project={project}
-                >
-                  <span
-                    className="inline-flex"
-                    onClickCapture={handleOpenFirstDatabaseInSQLEditor}
-                  >
-                    <SQLEditorButton
-                      size="sm"
-                      database={visibleDatabases[0]}
-                      label={t("db.project-instance-synced-sql-editor-action")}
-                    />
-                  </span>
-                </PermissionGuard>
+                )}
               </div>
             </div>
           }

@@ -143,7 +143,7 @@ export function ProjectReleaseDetailPage({
   return (
     <div className="flex flex-col items-start gap-y-4 p-4 relative">
       {isDeleted && (
-        <div className="h-8 w-full text-base font-medium bg-gray-700 text-white flex justify-center items-center">
+        <div className="h-8 w-full text-base font-medium bg-main-hover text-main-text flex justify-center items-center">
           {t("common.archived")}
         </div>
       )}
@@ -179,11 +179,7 @@ export function ProjectReleaseDetailPage({
       </div>
 
       <ReleaseBasicInfo
-        createTime={
-          release.createTime
-            ? getTimeForPbTimestampProtoEs(release.createTime) / 1000
-            : undefined
-        }
+        createTimeMs={getTimeForPbTimestampProtoEs(release.createTime)}
         vcsType={release.vcsSource?.vcsType}
         vcsUrl={release.vcsSource?.url}
       />
@@ -248,11 +244,11 @@ function beautifyUrl(url: string): string {
 }
 
 function ReleaseBasicInfo({
-  createTime,
+  createTimeMs,
   vcsType,
   vcsUrl,
 }: {
-  createTime: number | undefined;
+  createTimeMs: number | undefined;
   vcsType: VCSType | undefined;
   vcsUrl: string | undefined;
 }) {
@@ -263,9 +259,7 @@ function ReleaseBasicInfo({
     <div className="flex flex-row items-center pl-1 gap-4">
       <div className="flex items-center gap-1">
         <Clock4 className="size-4 text-control-light" />
-        {createTime !== undefined && (
-          <HumanizeTs ts={createTime} className="text-sm text-control" />
-        )}
+        <HumanizeTs tsMs={createTimeMs} className="text-sm text-control" />
       </div>
       {showVcs && (
         <div className="flex flex-row items-center gap-1">

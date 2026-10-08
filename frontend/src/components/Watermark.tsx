@@ -27,6 +27,14 @@ const baseLayerStyle: CSSProperties = {
   backgroundRepeat: "repeat",
 };
 
+const semanticCanvasColor = (token: string, opacity: number) => {
+  if (typeof document === "undefined") return "transparent";
+  const channels = getComputedStyle(document.documentElement)
+    .getPropertyValue(token)
+    .trim();
+  return channels ? `rgb(${channels} / ${opacity})` : "transparent";
+};
+
 function makeWatermarkDataURL(opts: {
   content: string;
   fontSize: number;
@@ -86,7 +94,7 @@ export function Watermark() {
       makeWatermarkDataURL({
         content: version,
         fontSize: VERSION_LAYER_FONT_SIZE,
-        fontColor: "rgba(255, 128, 128, 0.01)",
+        fontColor: semanticCanvasColor("--color-error", 0.01),
         rotateDeg: 15,
         cellW: VERSION_LAYER_CELL,
         cellH: VERSION_LAYER_CELL,
@@ -100,7 +108,7 @@ export function Watermark() {
         makeWatermarkDataURL({
           content: line,
           fontSize: USER_LAYER_FONT_SIZE,
-          fontColor: "rgba(128, 128, 128, 0.1)",
+          fontColor: semanticCanvasColor("--color-control", 0.1),
           rotateDeg: -15,
           cellW: USER_LAYER_CELL_W,
           cellH: USER_LAYER_CELL_H,

@@ -67,8 +67,6 @@ const isDatabaseQueryFailed = (item: BatchQueryItem) =>
   );
 
 /**
- * Replaces `frontend/src/views/sql-editor/EditorPanel/ResultPanel/BatchQuerySelect.vue`.
- *
  * Renders the batch-query tab strip above the result panel: one tab per
  * queried database, with environment-tinted backgrounds, an empty-results
  * toggle, a batch-export drawer, and a right-click context menu (close /
@@ -129,8 +127,7 @@ export function BatchQuerySelect({
     return items.filter((item) => !isEmptyQueryItem(item));
   }, [items, showEmpty, showEmptySwitch]);
 
-  // Auto-select a proper database when the items list changes (mirrors
-  // the Vue `watch(filteredItems, ..., { immediate: true })`).
+  // Auto-select a proper database when the items list changes.
   useEffect(() => {
     if (
       !selectedDatabase ||
@@ -326,7 +323,7 @@ export function BatchQuerySelect({
           <Button
             appearance={showEmpty ? "solid" : "secondary"}
             size="sm"
-            className="h-7 px-1.5 mb-2"
+            className="mb-2"
             onClick={() => setShowEmpty(!showEmpty)}
             aria-label={t(
               "sql-editor.batch-query.show-or-hide-empty-query-results"
@@ -464,13 +461,15 @@ function TabButton({
     ...styleProp,
   };
   return (
-    <button
+    <Button
+      appearance="secondary"
+      size="sm"
       type="button"
       ref={ref}
       style={style}
       onClick={onSelect}
       className={cn(
-        "inline-flex shrink-0 items-center gap-x-1 h-7 px-2 rounded-xs text-xs font-medium",
+        "inline-flex shrink-0 items-center gap-x-1 rounded-xs text-xs font-medium",
         "border border-control-border cursor-pointer whitespace-nowrap",
         className
       )}
@@ -494,6 +493,6 @@ function TabButton({
           onClose();
         }}
       />
-    </button>
+    </Button>
   );
 }

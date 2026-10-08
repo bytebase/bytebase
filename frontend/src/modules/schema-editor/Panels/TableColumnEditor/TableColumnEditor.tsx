@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import {
   distributeColumnWidths,
+  fillableWidth,
   useColumnWidths,
 } from "@/hooks/useColumnWidths";
 import { cn } from "@/lib/utils";
@@ -292,7 +293,9 @@ export function TableColumnEditor({
   const didFitRef = useRef(false);
   useLayoutEffect(() => {
     if (didFitRef.current) return;
-    const width = containerRef.current?.clientWidth ?? 0;
+    const width = containerRef.current
+      ? fillableWidth(containerRef.current)
+      : 0;
     if (width <= 0) return;
     didFitRef.current = true;
     setWidths(distributeColumnWidths(columnDefs, width));
@@ -419,7 +422,7 @@ export function TableColumnEditor({
                       <Button
                         appearance="secondary"
                         size="sm"
-                        className="size-7 p-0"
+                        className="w-7 p-0"
                         onClick={() => handleRestoreColumn(column)}
                       >
                         <RotateCcw className="size-3.5" />
@@ -428,7 +431,7 @@ export function TableColumnEditor({
                       <Button
                         appearance="secondary"
                         size="sm"
-                        className="size-7 p-0 text-control-light hover:bg-error/10 hover:text-error"
+                        className="w-7 p-0 text-control-light hover:bg-error/10 hover:text-error"
                         disabled={disableChangeTable}
                         onClick={() => handleDropColumn(column)}
                       >

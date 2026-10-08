@@ -1,0 +1,33 @@
+[
+  {
+    "Plan": {
+      "Node Type": "ModifyTable",
+      "Operation": "Update",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Relation Name": "t",
+      "Alias": "t",
+      "Plans": [
+        {
+          "Node Type": "Bitmap Heap Scan",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "t",
+          "Alias": "t",
+          "Recheck Cond": "(c < 10)",
+          "Plans": [
+            {
+              "Node Type": "Bitmap Index Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Index Name": "t_c_idx",
+              "Index Cond": "(c < 10)"
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

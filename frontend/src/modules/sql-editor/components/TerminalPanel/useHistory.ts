@@ -19,15 +19,11 @@ interface HistoryState {
 }
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/TerminalPanel/useHistory.ts`.
- *
  * Tracks an in-memory command history per ADMIN-mode tab so the up/down
- * arrow keys cycle through previously executed statements. Differs from the
- * Vue original in HOW it captures snapshots: Vue mutated reactive proxies in
- * place, so it could safely push the live tail at creation time and read its
- * statement later. zustand replaces items immutably on every patch, so we
- * push only when an item is *finalized* (a new tail just got appended,
- * meaning the prior tail's statement is locked in).
+ * arrow keys cycle through previously executed statements. zustand replaces
+ * items immutably on every patch, so we push only when an item is
+ * *finalized* (a new tail just got appended, meaning the prior tail's
+ * statement is locked in).
  */
 export function useHistory() {
   const updateWebTerminalQueryItem = useSQLEditorStore(

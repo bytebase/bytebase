@@ -82,6 +82,13 @@ export function SavedQueryGrantEditor({ savedQuery, canManage }: Props) {
   const batchGetOrFetchGroups = useAppStore((s) => s.batchGetOrFetchGroups);
   const notify = useAppStore((s) => s.notify);
   const currentUserEmail = useAppStore((s) => s.currentUser?.email);
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
+  const accountParents = useMemo(
+    () => [
+      ...new Set([workspaceResourceName, savedQuery.project].filter(Boolean)),
+    ],
+    [workspaceResourceName, savedQuery.project]
+  );
 
   const [policy, setPolicy] = useState<SavedQueryPolicy | undefined>();
   const [inviteLevel, setInviteLevel] = useState<SavedQueryBinding_Level>(
@@ -342,6 +349,8 @@ export function SavedQueryGrantEditor({ savedQuery, canManage }: Props) {
             onChange={stagePending}
             disabled={saving}
             excludeAccounts={excludeAccounts}
+            accountParents={accountParents}
+            includeSpecialAccounts={false}
             placeholder={t("sql-editor.saved-query-share.add-people")}
           />
           {/* The commit controls exist only while an add is in progress —

@@ -12,8 +12,7 @@ interface ZoomButtonProps {
 }
 
 /**
- * React port of `Canvas/ZoomButton.vue`. A three-button group: minus,
- * current zoom (read-only label), plus.
+ * A three-button group: minus, current zoom (read-only label), plus.
  */
 export function ZoomButton({ min, max, onZoomIn, onZoomOut }: ZoomButtonProps) {
   const { zoom } = useSchemaDiagramContext();

@@ -31,9 +31,11 @@ vi.mock("@/stores/app", () => ({
 
 vi.mock("@/lib/plan/issue", () => ({ preCreateIssue: vi.fn() }));
 vi.mock("./DatabaseExportSchemaButton", () => ({
-  DatabaseExportSchemaButton: () => null,
+  useDatabaseSchemaExport: () => ({ exporting: false, options: [], exportSchema: vi.fn() }),
 }));
-vi.mock("./DatabaseSyncButton", () => ({ DatabaseSyncButton: () => null }));
+vi.mock("./DatabaseSyncButton", () => ({ useDatabaseSync: () => ({ syncing: false, sync: vi.fn() }) }));
+vi.mock("./DatabaseSQLEditorButton", () => ({ DatabaseSQLEditorButton: () => <a href="/sql-editor">Open SQL Editor</a> }));
+globalThis.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
 
 import { DatabaseDetailActions } from "./DatabaseDetailActions";
 

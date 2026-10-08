@@ -10,8 +10,8 @@ type Props = {
 };
 
 /**
- * Replaces `TreeNode/DatabaseNode.vue`. The schema tree's root node:
- * engine icon + database display name (highlight-aware).
+ * The schema tree's root node: engine icon + database display name
+ * (highlight-aware).
  */
 export function DatabaseNode({ node, keyword }: Props) {
   const target = (node as TreeNode<"database">).meta.target;

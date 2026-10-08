@@ -128,12 +128,16 @@ export function LabelEditorSheet({
                         value
                       )}
                     </span>
-                    <button
-                      className="p-0.5 hover:bg-control-bg-hover rounded-xs"
+                    <Button
+                      type="button"
+                      appearance="secondary"
+                      size="xs"
+                      aria-label={t("common.remove")}
+                      className="hover:bg-control-bg-hover"
                       onClick={() => removeLabel(key)}
                     >
                       <X className="size-3" />
-                    </button>
+                    </Button>
                   </div>
                 );
               })}

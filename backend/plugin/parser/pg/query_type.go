@@ -25,6 +25,10 @@ func classifyQueryType(node ast.Node, allSystems bool) (queryType base.QueryType
 		if hasOmniIntoClause(n) {
 			return base.DDL, false
 		}
+		// A data-modifying CTE writes, so the SELECT needs DML permission.
+		if containsWriteCTE(n) {
+			return base.DML, false
+		}
 		if allSystems {
 			return base.SelectInfoSchema, false
 		}
@@ -120,22 +124,51 @@ func omniIntoClause(n *ast.SelectStmt) *ast.IntoClause {
 	return omniIntoClause(n.Rarg)
 }
 
-// isExplainAnalyzeOmni checks if an ExplainStmt has the ANALYZE option.
+// isExplainAnalyzeOmni reports whether an ExplainStmt executes its query: its last ANALYZE option
+// is not FALSE, OFF, or 0, the values PostgreSQL reads as false.
 func isExplainAnalyzeOmni(n *ast.ExplainStmt) bool {
 	if n.Options == nil {
 		return false
 	}
+	analyze := false
 	for _, item := range n.Options.Items {
-		if de, ok := item.(*ast.DefElem); ok {
-			if strings.EqualFold(de.Defname, "analyze") {
-				return true
-			}
+		de, ok := item.(*ast.DefElem)
+		if !ok || !strings.EqualFold(de.Defname, "analyze") {
+			continue
+		}
+		switch arg := de.Arg.(type) {
+		case *ast.String:
+			analyze = !strings.EqualFold(arg.Str, "false") && !strings.EqualFold(arg.Str, "off")
+		case *ast.Integer:
+			analyze = arg.Ival != 0
+		default:
+			analyze = true
 		}
 	}
-	return false
+	return analyze
 }
 
-// classifyExplainedQuery returns the QueryType for the query inside EXPLAIN ANALYZE.
+// UnwrapExplainAnalyze returns the statement that an EXPLAIN ANALYZE executes and that statement's text
+// within text, the text of the EXPLAIN. It returns any other node and text unchanged.
+func UnwrapExplainAnalyze(node ast.Node, text string) (ast.Node, string) {
+	explain, ok := node.(*ast.ExplainStmt)
+	if !ok || !isExplainAnalyzeOmni(explain) {
+		return node, text
+	}
+	inner, ok := explainedText(explain, text)
+	if !ok {
+		return explain.Query, text
+	}
+	return explain.Query, inner
+}
+
+// classifyExplainedQuery returns the QueryType for the query inside EXPLAIN
+// ANALYZE, which actually runs it — so unlike classifyQueryType's own default,
+// an unrecognized node type here must fail closed rather than pass as Select.
+// The cases below are exhaustive over what PostgreSQL actually accepts as an
+// EXPLAIN target (CALL, TRUNCATE, COPY, DDL like DROP/ALTER do not parse
+// there), matching classifyQueryType's DML/DDL classification for the same
+// node types; the default exists only for a future grammar addition.
 func classifyExplainedQuery(query ast.Node) base.QueryType {
 	if query == nil {
 		return base.Select
@@ -145,8 +178,11 @@ func classifyExplainedQuery(query ast.Node) base.QueryType {
 		if hasOmniIntoClause(n) {
 			return base.DDL
 		}
+		if containsWriteCTE(n) {
+			return base.DML
+		}
 		return base.Select
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
 		return base.DML
 	case *ast.DeclareCursorStmt:
 		return base.Select
@@ -157,6 +193,6 @@ func classifyExplainedQuery(query ast.Node) base.QueryType {
 	case *ast.ExecuteStmt:
 		return base.Select
 	default:
-		return base.Select
+		return base.QueryTypeUnknown
 	}
 }

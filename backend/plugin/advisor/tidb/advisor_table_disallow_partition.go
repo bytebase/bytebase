@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -84,6 +84,6 @@ func buildPartitionAdvice(level storepb.Advice_Status, title, text string, line 
 		Code:          advisorcode.CreateTablePartition.Int32(),
 		Title:         title,
 		Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", text),
-		StartPosition: common.ConvertANTLRLineToPosition(line),
+		StartPosition: base.ConvertANTLRLineToPosition(line),
 	}
 }

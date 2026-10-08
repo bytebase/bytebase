@@ -14,7 +14,6 @@ type Props = {
   readonly partition: string;
 };
 
-/** Replaces `HoverPanel/TablePartitionInfo.vue`. */
 export function TablePartitionInfo({
   database,
   schema,

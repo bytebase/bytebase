@@ -21,35 +21,29 @@ func TestListQueryHistories(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	ownerToken := ctl.authInterceptor.token
 	const ownerEmail = "demo@example.com"
 
-	pgContainer, err := getPgContainer(ctx)
-	defer func() {
-		pgContainer.Close(ctx)
-	}()
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	// 1. Create a Postgres instance + database as the owner.
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "pgInstance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
+			Title:         "pgInstance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			SyncDatabases: &v1pb.SyncDatabases{},
+			DataSources:   []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.GetHost(), Port: pgContainer.GetPort(), Username: "postgres", Password: "root-password", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
-	const databaseName = "history_db"
+	databaseName := uniqueDB("history_db")
 	err = ctl.createDatabase(ctx, ctl.project, instance, nil, databaseName, "postgres")
 	a.NoError(err)
 
@@ -84,7 +78,7 @@ func TestListQueryHistories(t *testing.T) {
 	a.NoError(err)
 	otherProject := otherProjectResp.Msg
 
-	const otherDatabaseName = "history_db_other"
+	otherDatabaseName := uniqueDB("history_db_other")
 	err = ctl.createDatabase(ctx, otherProject, instance, nil, otherDatabaseName, "postgres")
 	a.NoError(err)
 
@@ -110,6 +104,39 @@ func TestListQueryHistories(t *testing.T) {
 	a.NoError(err)
 	a.GreaterOrEqual(len(searchResp.Msg.QueryHistories), 2)
 	historyName := searchResp.Msg.QueryHistories[0].Name
+
+	// 2c. T18c-ii: `instance ==` matches every database of the instance. It
+	// used to compare the stored database name against "instances/{id}" with
+	// LIKE and no wildcard, so it matched nothing.
+	instanceFilterResp, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf("instance == \"%s\"", instance.Name),
+	}))
+	a.NoError(err)
+	a.Len(instanceFilterResp.Msg.QueryHistories, len(searchResp.Msg.QueryHistories))
+	for _, history := range instanceFilterResp.Msg.QueryHistories {
+		a.True(strings.HasPrefix(history.Database, instance.Name+"/databases/"), history.Database)
+	}
+	_, err = ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf("instance == \"%s/%%\"", instance.Name),
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err), "a caller-supplied wildcard is not an instance name")
+
+	// `statement ==` is exact: "_" is a character, not a LIKE wildcard.
+	statementExactResp, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+		Filter: `statement == "SELECT 1;"`,
+	}))
+	a.NoError(err)
+	a.Len(statementExactResp.Msg.QueryHistories, 1)
+	a.Equal("SELECT 1;", statementExactResp.Msg.QueryHistories[0].Statement)
+	statementWildcardResp, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+		Filter: `statement == "SELECT _;"`,
+	}))
+	a.NoError(err)
+	a.Empty(statementWildcardResp.Msg.QueryHistories)
 
 	// 3. Create an auditor user with no project role yet.
 	auditorEmail := fmt.Sprintf("auditor-%s@example.com", generateRandomString("u"))

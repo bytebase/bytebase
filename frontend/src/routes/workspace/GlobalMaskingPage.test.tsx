@@ -55,8 +55,13 @@ vi.mock("@/components/ui/select", () => ({
     createElement("div", {}, children),
   SelectContent: ({ children }: { children: ReactNode }) =>
     createElement("div", {}, children),
-  SelectItem: ({ children }: { children: ReactNode; value: string }) =>
-    createElement("div", {}, children),
+  SelectItem: ({
+    children,
+    value,
+  }: {
+    children: ReactNode;
+    value: string;
+  }) => createElement("div", { "data-semantic-type-id": value }, children),
   SelectTrigger: ({
     children,
     className,
@@ -76,6 +81,7 @@ vi.mock("@/components/ui/select", () => ({
 vi.mock("@/lib/sensitive-data/components-utils", () => ({
   factorOperatorOverrideMap: {},
   getClassificationLevelOptions: () => [],
+  getMaskingType: () => undefined,
 }));
 
 vi.mock("@/stores/app", () => {
@@ -141,6 +147,17 @@ vi.mock("@/types/proto-es/v1/setting_service_pb", () => ({
 
 vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
   PlanFeature: { FEATURE_DATA_MASKING: 1 },
+}));
+
+vi.mock("@/types/semanticTypes", () => ({
+  isBuiltinSemanticTypeId: (id: string) => id.startsWith("bb."),
+  getSemanticTypeListWithBuiltins: (
+    semanticTypes: Array<{ id: string; title: string }>
+  ) => [
+    { id: "bb.default", title: "Default" },
+    { id: "bb.default-partial", title: "Default Partial" },
+    ...semanticTypes,
+  ],
 }));
 
 vi.mock("@bufbuild/protobuf", () => ({
@@ -221,11 +238,31 @@ describe("GlobalMaskingPage", () => {
     expect(semanticTypeHeading?.className).toContain("h-9");
     expect(semanticTypeHeading?.className).toContain("items-center");
     expect(semanticTypeHeading?.parentElement?.className).toContain("gap-y-2");
+    expect(semanticTypeHeading?.parentElement?.className).toContain("w-full");
+    expect(semanticTypeHeading?.parentElement?.className).toContain(
+      "xl:w-80"
+    );
     expect(
       container.querySelector("[data-testid='expr-editor']")
     ).not.toBeNull();
-    expect(
-      container.querySelector("[data-testid='semantic-type-trigger']")
-    ).not.toBeNull();
+    const semanticTypeTrigger = container.querySelector(
+      "[data-testid='semantic-type-trigger']"
+    );
+    expect(semanticTypeTrigger).not.toBeNull();
+    expect(semanticTypeTrigger?.className).toContain("w-full");
+  });
+
+  it("lists built-in semantic types before configured types", async () => {
+    await renderPage();
+
+    const semanticTypeIds = Array.from(
+      container.querySelectorAll("[data-semantic-type-id]")
+    ).map((item) => item.getAttribute("data-semantic-type-id"));
+
+    expect(semanticTypeIds).toEqual([
+      "bb.default",
+      "bb.default-partial",
+      "DEFAULT",
+    ]);
   });
 });

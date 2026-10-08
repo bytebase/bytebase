@@ -37,7 +37,7 @@ func (*ColumnDefaultDisallowVolatileAdvisor) Check(_ context.Context, checkCtx a
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type columnDefaultDisallowVolatileRule struct {

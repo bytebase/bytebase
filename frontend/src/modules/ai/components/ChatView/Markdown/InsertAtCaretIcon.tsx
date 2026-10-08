@@ -5,8 +5,6 @@ type Props = {
 };
 
 /**
- * React port of `plugins/ai/components/ChatView/Markdown/InsertAtCaretIcon.vue`.
- *
  * Composite icon = `AlignLeftIcon` (paragraph lines) with an accent-colored
  * `ArrowLeftIcon` overlaid in the bottom-right. Visualizes "insert this
  * snippet at the editor's caret position".

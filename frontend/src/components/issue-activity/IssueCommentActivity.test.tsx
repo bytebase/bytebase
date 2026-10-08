@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { render, screen } from "@testing-library/react";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { describe, expect, test, vi } from "vitest";
@@ -20,7 +21,7 @@ import {
   getIssueCommentType,
   IssueCommentType,
 } from "@/stores/app/issueComment";
-import { IssueCommentRow } from "./IssueCommentActivity";
+import { canEditIssueComment, IssueCommentRow } from "./IssueCommentActivity";
 
 vi.mock("react-i18next", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react-i18next")>()),
@@ -35,6 +36,15 @@ vi.mock("react-i18next", async (importOriginal) => ({
       return key;
     },
   }),
+}));
+
+const mocks = vi.hoisted(() => ({
+  hasPermission: vi.fn((_project: unknown, _permission: unknown) => false),
+}));
+vi.mock("@/utils/iam/permission", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/iam/permission")>()),
+  hasProjectPermissionV2: (project: unknown, permission: unknown) =>
+    mocks.hasPermission(project, permission),
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -54,8 +64,8 @@ vi.mock("@/stores/app", () => ({
     }),
 }));
 
-vi.mock("@/components/HumanizeTs", () => ({
-  HumanizeTs: () => null,
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
 vi.mock("@/components/monaco", () => ({
@@ -116,7 +126,59 @@ const changeSpec = ({
     },
   });
 
+describe("canEditIssueComment", () => {
+  const project = { name: "projects/p1" } as Parameters<typeof canEditIssueComment>[1];
+  const own = create(IssueCommentSchema, {
+    name: "projects/p1/issues/1/issueComments/9",
+    creator: "users/me@example.com",
+    comment: "mine",
+  });
+
+  test("authoring a comment grants no edit without the update permission", () => {
+    mocks.hasPermission.mockImplementation(
+      (_project: unknown, permission: unknown) =>
+        permission === "bb.issueComments.create"
+    );
+    expect(canEditIssueComment(own, project)).toBe(false);
+  });
+
+  test("the update permission allows editing a user comment", () => {
+    mocks.hasPermission.mockImplementation(
+      (_project: unknown, permission: unknown) =>
+        permission === "bb.issueComments.update"
+    );
+    expect(canEditIssueComment(own, project)).toBe(true);
+    expect(canEditIssueComment(reviewSubmission, project)).toBe(false);
+    expect(canEditIssueComment(own, undefined)).toBe(false);
+  });
+});
+
 describe("IssueCommentRow", () => {
+  test("times a comment by when it was written, not when it was edited", () => {
+    // The two instants sit beside each other and feed the same "edited"
+    // marker, so the row has to say which one the timestamp is.
+    const writtenMs = Date.UTC(2026, 2, 2, 12);
+    render(
+      <IssueCommentRow
+        comment={create(IssueCommentSchema, {
+          creator: "users/alice@example.com",
+          comment: "a remark",
+          createTime: timestampFromMs(writtenMs),
+          updateTime: timestampFromMs(writtenMs + 60_000),
+        })}
+        isLast
+        issue={create(IssueSchema, { type: Issue_Type.DATABASE_CHANGE })}
+        linkless
+        plan={create(PlanSchema, {})}
+      />
+    );
+
+    expect(screen.getByTestId("humanize-ts").textContent).toBe(
+      String(writtenMs)
+    );
+    expect(screen.getByText("(common.edited)")).toBeInTheDocument();
+  });
+
   test("shows who bypassed review and created the rollout", () => {
     const issue = create(IssueSchema, {
       type: Issue_Type.DATABASE_CHANGE,
@@ -224,7 +286,7 @@ describe("IssueCommentRow", () => {
     expect(link).toHaveClass(
       "text-main",
       "hover:text-accent",
-      "hover:underline"
+      "hover:no-underline"
     );
     expect(link).not.toHaveAttribute("data-prevent-scroll-reset");
   });

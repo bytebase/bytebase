@@ -7,7 +7,6 @@ type Props = {
   readonly keyword: string;
 };
 
-/** Replaces frontend/src/views/sql-editor/ConnectionPanel/ConnectionPane/TreeNode/LabelNode.vue. */
 export function LabelNode({ node, keyword }: Props) {
   const { t } = useTranslation();
   const label = (node as SQLEditorTreeNode<"label">).meta.target;

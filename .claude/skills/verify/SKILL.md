@@ -1,58 +1,43 @@
 ---
 name: verify
-description: Build, launch, and drive Bytebase end-to-end to verify a change against the running app (backend + production frontend bundle + Playwright).
+description: Build and drive Bytebase with the Playwright E2E harness when a change needs verification against the running app.
 ---
 
-# Verifying Bytebase changes against the running app
+# Verify against the running app
 
-## Build the app (production bundle, embedded)
+Run commands from the repository root unless a command changes directory.
+Read [the E2E README](../../../frontend/tests/e2e/README.md) for prerequisites,
+license configuration, browser selection, and troubleshooting. Before writing
+or changing tests, read [the E2E instructions](../../../frontend/tests/e2e/AGENTS.md).
+
+## Build
 
 ```bash
-pnpm --dir frontend release   # vite build → backend/server/dist
+pnpm --dir frontend release
 go build -tags embed_frontend -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go
 ```
 
-The `embed_frontend` tag is required — without it the binary serves no UI.
+The `embed_frontend` tag is required to serve the UI. Rebuild the affected
+frontend bundle/backend binary after code changes so the test exercises the fix.
 
-## Drive it with the e2e harness
+## Run the affected scenario
 
-The harness (`frontend/tests/e2e/`) boots a fresh instance per run: embedded
-Postgres, first-signup admin (`demo@example.com` / `12345678`), and sample
-instances via `POST /v1/actuator:setupSample` (hr_prod / hr_test with the
-employee schema).
+With `BYTEBASE_E2E_LICENSE` configured as described in the README:
 
 ```bash
 cd frontend
-export BYTEBASE_E2E_LICENSE=$(grep BB_DEV_ENTERPRISE_LICENSE .env.dev-local | cut -d= -f2)
-pnpm exec playwright test sql-editor/<spec>.spec.ts --reporter=list
+pnpm exec playwright test sql-editor/sql-editor-lsp.spec.ts --reporter=list
 ```
 
-- License is mandatory (suite is enterprise-only); the dev enterprise JWT in
-  `frontend/.env.dev-local` works.
-- If the Playwright browser download hangs (it has here — 40min stall), use
-  the locally installed Chrome instead: `export BYTEBASE_BROWSER_CHANNEL=chrome`
-  (wired through `playwright.config.ts` `use.channel`).
-- Server boot takes 3–6 min (embedded PG + migrations + sample instances);
-  it is spent in globalSetup, not test time.
+Replace the example spec with the scenario relevant to the change. The harness
+owns disposable server startup, authentication, sample-instance provisioning,
+and teardown; use its current implementation rather than hand-rolling bootstrap.
+When a browser download is unavailable, `BYTEBASE_BROWSER_CHANNEL=chrome` selects
+a locally installed Chrome.
 
-## Iterating without a 6-min reboot per attempt
+## Evidence
 
-For debugging, boot a standalone server once and drive it with a plain
-Playwright script; a reusable pair of scripts exists in session scratchpads
-under `lsp-debug/` (boot-server.mjs / drive.mjs pattern): spawn
-`bytebase-build/bytebase --port <p> --data <tmp>` with `PG_URL=""`, poll
-`/healthz`, signup/login via `/v1/auth/*`, `POST /v1/actuator:setupSample`,
-poll `/v1/instances` until the sample databases appear.
-
-## Gotchas observed
-
-- `ControlOrMeta+a` select-all in Monaco is unreliable on macOS headless
-  Chrome — clear buffers by backspacing the measured content length
-  (see `setBuffer` in `sql-editor/sql-editor-lsp.spec.ts`).
-- Clicking a suggest-widget row to accept is flaky; assert on the row's
-  visibility and dismiss with Escape.
-- The LSP connection indicator text ("connected") lives in a hover tooltip —
-  don't locate it; assert on websocket frames instead (see the
-  `page.on("websocket")` frame capture in the LSP spec).
-- Backend LSP capabilities: completion (trigger chars `.` and space) and
-  executeCommand only — no hover.
+Verify the user-visible outcome, including the failure path relevant to the
+change. For LSP work, consult the existing LSP spec's buffer helpers and websocket
+assertions; connection status is a tooltip, not persistent page text.
+Report the scenario, result, and any missing prerequisite or unverified behavior.

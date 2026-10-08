@@ -8,10 +8,10 @@ import (
 
 	omniast "github.com/bytebase/omni/snowflake/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -103,7 +103,7 @@ func (c *migrationCompatibilityChecker) checkStmt(node omniast.Node, text string
 			Code:          code.CompatibilityDropTable.Int32(),
 			Title:         c.title,
 			Content:       fmt.Sprintf("Drop table %q may cause incompatibility with the existing data and code", normalizedFullDropTableName),
-			StartPosition: common.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, stmt.Loc.Start)),
+			StartPosition: base.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, stmt.Loc.Start)),
 		})
 	case *omniast.DropSchemaStmt:
 		normalizedFullDropSchemaName := c.normalizeSchemaName(stmt.Name)
@@ -120,7 +120,7 @@ func (c *migrationCompatibilityChecker) checkStmt(node omniast.Node, text string
 			Code:          code.CompatibilityDropSchema.Int32(),
 			Title:         c.title,
 			Content:       fmt.Sprintf("Drop schema %q may cause incompatibility with the existing data and code", normalizedFullDropSchemaName),
-			StartPosition: common.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, stmt.Loc.Start)),
+			StartPosition: base.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, stmt.Loc.Start)),
 		})
 	case *omniast.DropDatabaseStmt:
 		normalizedFullDropDatabaseName := normalizeDatabaseName(stmt.Name)
@@ -137,7 +137,7 @@ func (c *migrationCompatibilityChecker) checkStmt(node omniast.Node, text string
 			Code:          code.CompatibilityDropDatabase.Int32(),
 			Title:         c.title,
 			Content:       fmt.Sprintf("Drop database %q may cause incompatibility with the existing data and code", normalizedFullDropDatabaseName),
-			StartPosition: common.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, stmt.Loc.Start)),
+			StartPosition: base.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, stmt.Loc.Start)),
 		})
 	case *omniast.AlterTableStmt:
 		for _, action := range stmt.Actions {
@@ -156,7 +156,7 @@ func (c *migrationCompatibilityChecker) checkStmt(node omniast.Node, text string
 				Code:          code.CompatibilityDropColumn.Int32(),
 				Title:         c.title,
 				Content:       fmt.Sprintf("Drop column %s may cause incompatibility with the existing data and code", strings.Join(normalizedAllColumnNames, ",")),
-				StartPosition: common.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, stmt.Loc.Start)),
+				StartPosition: base.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, stmt.Loc.Start)),
 			})
 		}
 	default:

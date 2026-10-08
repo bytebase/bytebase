@@ -9,10 +9,10 @@ import (
 	"github.com/bytebase/omni/tidb/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -96,7 +96,7 @@ func (c *columnAutoIncrementInitialValueChecker) checkStmt(ostmt OmniStmt) {
 				Code:          code.AutoIncrementColumnInitialValueNotMatch.Int32(),
 				Title:         c.title,
 				Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, c.value),
-				StartPosition: common.ConvertANTLRLineToPosition(stmtLine),
+				StartPosition: base.ConvertANTLRLineToPosition(stmtLine),
 			})
 		}
 	}

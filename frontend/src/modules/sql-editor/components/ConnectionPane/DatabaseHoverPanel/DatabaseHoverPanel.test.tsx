@@ -29,10 +29,6 @@ vi.mock("./hover-state", () => ({
 
 vi.mock("@/stores", () => ({}));
 
-vi.mock("@/modules/sql-editor/store/editor-vue-state", () => ({
-  useSQLEditorVueState: () => ({ project: "" }),
-}));
-
 vi.mock("@/utils", () => ({
   getDatabaseProject: () => ({ name: "projects/p", title: "P" }),
   getInstanceResource: () => ({

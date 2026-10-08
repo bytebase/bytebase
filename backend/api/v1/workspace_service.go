@@ -208,7 +208,7 @@ func (s *WorkspaceService) RotateDirectorySyncToken(ctx context.Context, req *co
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid workspace name %q", req.Msg.GetName()))
 	}
 	if requested != workspaceID {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch"))
+		return nil, permissionDeniedError(ctx, errors.Errorf("workspace mismatch"))
 	}
 
 	// The update path this replaces gated on the same feature. Without it an
@@ -276,7 +276,7 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if contextWorkspaceID := common.GetWorkspaceIDFromContext(ctx); workspaceID != contextWorkspaceID {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot delete workspace %q from workspace %q", workspaceID, contextWorkspaceID))
+		return nil, permissionDeniedError(ctx, errors.Errorf("cannot delete workspace %q from workspace %q", workspaceID, contextWorkspaceID))
 	}
 
 	// Cancel active Stripe subscription if any.
@@ -536,7 +536,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 
 	deltas := findIamPolicyDeltas(replaced.Policy, policy.Policy)
 
-	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok {
 		p, err := convertToProtoAny(deltas)
 		if err != nil {
 			slog.Warn("audit: failed to convert to anypb.Any")

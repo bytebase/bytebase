@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -66,60 +64,9 @@ func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, err
 		}
 		issueV1.Approvers = append(issueV1.Approvers, convertedApprover)
 	}
-	issueV1.ApprovalStatus = computeApprovalStatus(approval)
+	issueV1.ApprovalStatus = store.ComputeApprovalStatus(approval)
 
 	return issueV1, nil
-}
-
-func computeApprovalStatus(approval *storepb.IssuePayloadApproval) v1pb.ApprovalStatus {
-	// If approval finding is not done, status is checking
-	// Note: approval.GetApprovalFindingDone() returns false when approval is nil
-	if !approval.GetApprovalFindingDone() {
-		return v1pb.ApprovalStatus_CHECKING
-	}
-
-	// If no approval template, approval is skipped (not required)
-	if approval.GetApprovalTemplate() == nil {
-		return v1pb.ApprovalStatus_SKIPPED
-	}
-
-	approvalTemplate := approval.GetApprovalTemplate()
-	approvers := approval.GetApprovers()
-	totalSteps := len(approvalTemplate.GetFlow().GetRoles())
-
-	// If no approvers are assigned yet, it's pending
-	if len(approvers) == 0 {
-		return v1pb.ApprovalStatus_PENDING
-	}
-
-	// Check approver statuses
-	for _, approver := range approvers {
-		if approver.GetStatus() == storepb.IssuePayloadApproval_Approver_REJECTED {
-			// Short-circuit: if any approver rejected, overall status is rejected
-			return v1pb.ApprovalStatus_REJECTED
-		}
-	}
-
-	// Check if all steps are completed
-	// Each approver corresponds to one step in the approval flow
-	// All steps are approved if:
-	// 1. Number of approvers equals number of steps
-	// 2. All approvers have APPROVED status
-	if len(approvers) >= totalSteps {
-		allApproved := true
-		for _, approver := range approvers {
-			if approver.GetStatus() != storepb.IssuePayloadApproval_Approver_APPROVED {
-				allApproved = false
-				break
-			}
-		}
-		if allApproved {
-			return v1pb.ApprovalStatus_APPROVED
-		}
-	}
-
-	// Otherwise, approval is pending (more steps to complete or waiting for approvals)
-	return v1pb.ApprovalStatus_PENDING
 }
 
 func convertToIssueType(t storepb.Issue_Type) v1pb.Issue_Type {
@@ -236,13 +183,50 @@ func convertToIssueComments(issueName string, issueComments []*store.IssueCommen
 	return res
 }
 
+// convertToIssueCommentReviewMetadata casts across the mirrored store and v1
+// enums; TestReviewRuleTypeEnumsMirror holds the rule numbering together.
+func convertToIssueCommentReviewMetadata(metadata *storepb.IssueCommentPayload_ReviewMetadata) *v1pb.IssueComment_ReviewMetadata {
+	return &v1pb.IssueComment_ReviewMetadata{
+		RunType:  convertToReviewRunType(metadata.RunType.String()),
+		RuleType: v1pb.ReviewRuleType(metadata.RuleType),
+		Priority: v1pb.IssueComment_ReviewMetadata_Priority(metadata.Priority),
+		Targets:  metadata.Targets,
+	}
+}
+
 func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1pb.IssueComment {
 	r := &v1pb.IssueComment{
 		Comment:    ic.Payload.Comment,
 		CreateTime: timestamppb.New(ic.CreatedAt),
 		UpdateTime: timestamppb.New(ic.UpdatedAt),
-		Name:       fmt.Sprintf("%s/%s%s", issueName, common.IssueCommentNamePrefix, ic.ResourceID),
-		Creator:    common.FormatUserEmail(ic.CreatorEmail),
+		Name:       common.FormatIssueComment(issueName, ic.ResourceID),
+	}
+	// A review result has no creator; its review_metadata names the reviewer.
+	if ic.CreatorEmail != "" {
+		r.Creator = common.FormatUserEmail(ic.CreatorEmail)
+	}
+
+	if ic.ParentID != nil {
+		root := common.FormatIssueComment(issueName, *ic.ParentID)
+		r.Root = &root
+	}
+	if ic.ThreadState != nil {
+		state := v1pb.IssueComment_OPEN
+		if *ic.ThreadState == store.ThreadStateResolved {
+			state = v1pb.IssueComment_RESOLVED
+		}
+		r.ThreadState = &state
+	}
+	if anchor := ic.Payload.GetStatementAnchor(); anchor != nil {
+		r.StatementAnchor = &v1pb.StatementAnchor{
+			Spec:          anchor.SpecId,
+			SheetSha256:   anchor.SheetSha256,
+			StartPosition: convertToPosition(anchor.StartPosition),
+			EndPosition:   convertToPosition(anchor.EndPosition),
+		}
+	}
+	if metadata := ic.Payload.GetReviewMetadata(); metadata != nil {
+		r.ReviewMetadata = convertToIssueCommentReviewMetadata(metadata)
 	}
 
 	switch e := ic.Payload.Event.(type) {

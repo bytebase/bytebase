@@ -22,6 +22,9 @@ type testServerStore struct {
 	// writeCtxHasDeadline shows the detached write is still bounded: dropping
 	// the request's cancellation also drops its deadline.
 	writeCtxHasDeadline bool
+	// deletedRefreshGrants records the (user, client) pairs the reauthorize
+	// tool asked to revoke.
+	deletedRefreshGrants [][2]string
 }
 
 func newTestServerStore() *testServerStore {
@@ -47,7 +50,8 @@ func (s *testServerStore) GetMCPSettingsUncached(context.Context, string) (*stor
 	return &storepb.MCPSetting{Capability: s.capability}, nil
 }
 
-func (*testServerStore) DeleteOAuth2RefreshTokensByUserAndClient(context.Context, string, string) error {
+func (s *testServerStore) DeleteOAuth2RefreshTokensByUserAndClient(_ context.Context, userEmail, clientID string) error {
+	s.deletedRefreshGrants = append(s.deletedRefreshGrants, [2]string{userEmail, clientID})
 	return nil
 }
 

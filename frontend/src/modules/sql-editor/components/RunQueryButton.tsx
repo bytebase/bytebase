@@ -8,6 +8,7 @@ import { QueryContextSettingPopover } from "./QueryContextSettingPopover";
 
 type Props = {
   readonly disabled?: boolean;
+  readonly productIntroTarget?: string;
   readonly settingsDisabled?: boolean;
   readonly size?: "sm" | "md";
   readonly type?: ComponentProps<typeof Button>["type"];
@@ -16,6 +17,7 @@ type Props = {
 
 export function RunQueryButton({
   disabled = false,
+  productIntroTarget,
   settingsDisabled = disabled,
   size = "sm",
   type = "button",
@@ -35,6 +37,7 @@ export function RunQueryButton({
             size === "sm" && "h-7"
           )}
           disabled={disabled}
+          data-product-intro-target={productIntroTarget}
           onClick={onClick}
         >
           <Play className="size-4 fill-current" />

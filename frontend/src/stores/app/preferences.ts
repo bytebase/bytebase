@@ -60,17 +60,15 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     );
   },
 
-  resetWorkspaceSetupGuide: () => {
+  resumeWorkspaceSetupGuide: () => {
     const email = getCurrentUserEmail(get);
     if (!email) return;
     const key = storageKeyIntroState(getWorkspaceResourceScope(get), email);
     const previous = readJson<Record<string, boolean>>(key, {});
-    const next: Record<string, boolean> = {
-      ...previous,
-      "workspace-setup-guide.dismissed": false,
-    };
-    for (const introStateKey of Object.keys(next)) {
-      if (introStateKey.startsWith("workspace-setup-guide.")) {
+    const next: Record<string, boolean> = { ...previous };
+    next["workspace-setup-guide.dismissed"] = false;
+    for (const introStateKey of Object.keys(previous)) {
+      if (introStateKey.startsWith("workspace-setup-guide.completed.")) {
         next[introStateKey] = false;
       }
     }
@@ -78,9 +76,8 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     set((state) => ({ introStateVersion: state.introStateVersion + 1 }));
   },
 
-  // Mirrors the Pinia `useUIStateStore.getIntroStateByKey`. Reads the per-user
-  // localStorage map scoped to the current workspace. React callers should use
-  // `useIntroStateByKey` so writes can trigger a fresh read.
+  // Reads the per-user localStorage map scoped to the current workspace. React
+  // callers should use `useIntroStateByKey` so writes can trigger a fresh read.
   getIntroStateByKey: (key) => {
     const email = getCurrentUserEmail(get);
     if (!email) return false;
@@ -91,8 +88,7 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     return map[key] ?? false;
   },
 
-  // Mirrors the Pinia `useUIStateStore.saveIntroStateByKey`: persists a
-  // single intro flag to the per-user localStorage map.
+  // Persists a single intro flag to the per-user localStorage map.
   saveIntroStateByKey: ({ key, newState }) => {
     const email = getCurrentUserEmail(get);
     if (!email) return;

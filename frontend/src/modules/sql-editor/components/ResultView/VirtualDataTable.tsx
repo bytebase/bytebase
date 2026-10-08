@@ -66,11 +66,10 @@ export interface VirtualDataTableProps {
 }
 
 /**
- * Virtualized result-table grid. Replaces the Naive UI `NVirtualList` host
- * with `@tanstack/react-virtual`'s `useVirtualizer`. The header is a
- * separate sticky row outside the virtual scroller so it can stay fixed
- * during vertical scroll without fighting the virtualizer's internal
- * positioning.
+ * Virtualized result-table grid built on `@tanstack/react-virtual`'s
+ * `useVirtualizer`. The header is a separate sticky row outside the virtual
+ * scroller so it can stay fixed during vertical scroll without fighting the
+ * virtualizer's internal positioning.
  */
 export const VirtualDataTable = forwardRef<
   VirtualDataTableHandle,
@@ -446,15 +445,15 @@ export const VirtualDataTable = forwardRef<
                   }}
                 >
                   {showRowDetailAction && (
-                    <div className="absolute left-3 top-1/2 size-6 -translate-y-1/2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
+                    <div className="absolute left-3 top-1/2 size-7 -translate-y-1/2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
                       <Tooltip
                         content={t("sql-editor.view-detail")}
                         side="right"
                       >
                         <Button
-                          size="sm"
+                          size="xs"
                           appearance="outline"
-                          className="size-6 rounded-full p-0 shadow"
+                          className="rounded-full shadow"
                           aria-label={t("sql-editor.view-detail")}
                           onClick={(event) => {
                             event.stopPropagation();
@@ -480,7 +479,9 @@ export const VirtualDataTable = forwardRef<
                     {rowIndex + 1}
                   </span>
                   {selectionEnabled && (
-                    <button
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       type="button"
                       aria-label={`Select row ${rowIndex + 1}`}
                       onClick={(e) => handleSelectRow(e, rowIndex)}
@@ -503,9 +504,8 @@ export const VirtualDataTable = forwardRef<
                       className={cn(
                         "relative shrink-0 text-sm text-control leading-5 whitespace-nowrap break-all border-block-border border-b group-even:bg-control-bg/40",
                         !isLastCol && "border-r",
-                        // Match the Vue version: an active (search-matched) row
-                        // highlights every cell in that row, not just the index
-                        // column.
+                        // An active (search-matched) row highlights every
+                        // cell in that row, not just the index column.
                         // NOTE: opacity may need visual tuning on dark themes
                         isActive &&
                           (hasStrongActiveHighlight

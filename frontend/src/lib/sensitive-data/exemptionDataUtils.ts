@@ -40,8 +40,8 @@ export function parseExpirationTimestamp(
 }
 
 // Keep a local extraction function instead of importing extractDatabaseResourceName
-// from @/utils. That utility transitively pulls in store dependencies (Pinia, etc.)
-// which break vitest when this file is imported from unit tests.
+// from @/utils. That utility transitively pulls in store dependencies, which
+// break vitest when this file is imported from unit tests.
 const databaseResourcePattern =
   /(?:^|\/)instances\/(?<instanceName>[^/]+)\/databases\/(?<databaseName>[^/]+)(?:$|\/)/;
 

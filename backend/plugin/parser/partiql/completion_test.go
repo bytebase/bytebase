@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -96,16 +97,16 @@ func getCaretPosition(statement string) (string, int, int) {
 	panic("caret position not found")
 }
 
-var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
+var databaseMetadatas = []*metadatapb.DatabaseSchemaMetadata{
 	{
 		Name: "xx-ap-east-1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "Music",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "Artist",
 							},

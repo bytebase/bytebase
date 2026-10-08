@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
+import { Input } from "@/components/ui/input";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -87,7 +88,8 @@ export function IssueDetailTitleInput() {
 
   return (
     <div className="relative min-w-0 flex-1">
-      <input
+      <Input
+        size="lg"
         className={[
           "h-10 w-full bg-transparent text-xl! font-bold text-main transition-colors outline-hidden",
           "placeholder:text-control-placeholder",

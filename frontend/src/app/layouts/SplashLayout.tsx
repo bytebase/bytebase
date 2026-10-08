@@ -6,9 +6,14 @@ import signupImage from "@/assets/illustration/signup.webp";
 import { useAppStore } from "@/stores/app";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 
-// Ported from `src/layouts/SplashLayout.vue`. Two-column auth chrome: an
-// optional branding illustration on the left (shown unless the workspace is on
-// a non-trialing enterprise plan) and the routed auth page on the right.
+// Two-column auth chrome: an optional branding illustration on the left (shown
+// unless the workspace is on a non-trialing enterprise plan) and the routed
+// auth page on the right.
+//
+// The right column owns the gutter and the page's share of the viewport (all
+// of it below lg, half from lg). A routed page fills the column up to its own
+// cap (`w-full max-w-*`) and adds no width fraction or side padding of its
+// own, which would compound with the column's.
 export function SplashLayout() {
   const matches = useMatches();
   const currentRouteName = (
@@ -24,7 +29,7 @@ export function SplashLayout() {
   return (
     <div className="min-h-screen overflow-hidden flex">
       {showBrandingImage ? (
-        <div className="hidden bg-white lg:block relative w-0 flex-1">
+        <div className="hidden bg-background lg:block relative w-0 flex-1">
           <img
             className="absolute inset-0 h-full w-full object-cover"
             src={

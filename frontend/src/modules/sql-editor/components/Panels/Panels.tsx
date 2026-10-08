@@ -54,25 +54,16 @@ const AIPaneFallback = () => (
 );
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/Panels/Panels.vue`.
- *
- * The host shell beneath `<EditorPanel>`. Two render modes:
+ * The host shell beneath the `<TabList>` in `SQLEditorHomePage`'s main
+ * column. Two render modes:
  * - `viewState.view === "CODE"` (or no viewState) — shows the saved query
  *   editor (`<StandardPanel>`) or terminal (`<TerminalPanel>`) based on
- *   the active tab's mode. The Vue version did this selection in
- *   `EditorPanel.vue` and passed the result into `<Panels>` via a named
- *   slot; React inlines it here since slots-as-children don't survive
- *   the cross-framework boundary cleanly.
+ *   the active tab's mode.
  * - any other `viewState.view` — shows a metadata browser surface
  *   (info / tables / views / functions / etc.) with the schema-select
  *   toolbar above. The AI pane mounts to the right via a horizontal
  *   resizable split when the user has both the AI panel and a
- *   "code-viewer" surface open (matches the Vue `isShowingCode`
- *   gate that previously hoisted the AI pane up from `CodeViewer.vue`).
- *
- * The Vue version's `availableActions` computation lives in
- * `useAvailableActions` (already React-side); the schema-sync watchers
- * move into React `useEffect`s here.
+ *   "code-viewer" surface open (`isShowingCode`).
  */
 export function Panels() {
   const { t } = useTranslation();
@@ -82,12 +73,6 @@ export function Panels() {
   const { database } = useConnectionOfCurrentSQLEditorTab();
 
   const tab = useCurrentSQLEditorTab();
-  // Subscribe to `mode` as its own primitive — Pinia's tabStore mutates
-  // the tab proxy in place via `Object.assign`, so `() => tabStore
-  // .currentTab` only fires Vue's watch on tab-switches (proxy
-  // reference changes), not on `mode` flipping between "SAVED_QUERY" and
-  // "ADMIN" within the same tab. Without this, clicking the admin-mode
-  // button doesn't swap to the `TerminalPanel`.
   const tabMode = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.mode
   );
@@ -104,10 +89,7 @@ export function Panels() {
   const { setSchema, updateViewState } = useViewStateNav();
   const { execute } = useExecuteSQL();
 
-  // AI plugin "run-statement" handler — mirrors Vue's
-  // `useEmitteryEventListener(AIEvents, "run-statement", ...)`. The
-  // event bus is a module-level singleton so we don't need to traverse
-  // a Vue provide chain to access it.
+  // Run statements the AI chat sends via the "run-statement" event.
   useEffect(() => {
     const off = aiContextEvents.on(
       "run-statement",
@@ -142,8 +124,7 @@ export function Panels() {
   });
 
   // Pin the active schema to a sensible default whenever the tab,
-  // database metadata, or current schema changes (mirrors the Vue
-  // immediate watcher).
+  // database metadata, or current schema changes.
   const tabId = tab?.id;
   const currentSchema = tab?.viewState?.schema;
   useEffect(() => {

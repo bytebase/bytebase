@@ -50,7 +50,7 @@ const DEFAULT_RECT: Rect = { x: 0, y: 0, width: 0, height: 0 };
 /**
  * Per-instance React context for SchemaDiagram. Owns the Emittery event
  * bus + reactive state used by Navigator / Canvas / ER children. Mounted
- * once per `<SchemaDiagram>` instance — see Stage 19 design doc §4.
+ * once per `<SchemaDiagram>` instance.
  */
 export function SchemaDiagramProvider({
   database,
@@ -69,7 +69,6 @@ export function SchemaDiagramProvider({
   // collected when the user switches databases or refreshes metadata.
   // A regular `Map` would pin every table object ever seen for the
   // lifetime of the page, leaking memory in long SQL editor sessions.
-  // Matches the Vue implementation.
   const tableIdsRef = useRef<WeakMap<TableMetadata, string>>(new WeakMap());
 
   // Reactive state.
@@ -100,9 +99,9 @@ export function SchemaDiagramProvider({
 
   const foreignKeys = useMemo<ForeignKey[]>(() => {
     // Iterate ONLY `selectedSchemas` for both endpoints. If a user
-    // deselects a schema, FK edges that reference it are dropped — same
-    // semantics as Vue's `find()` helper. Otherwise ELK gets edges whose
-    // endpoints aren't in the node list, which destabilizes layout.
+    // deselects a schema, FK edges that reference it are dropped.
+    // Otherwise ELK gets edges whose endpoints aren't in the node list,
+    // which destabilizes layout.
     const out: ForeignKey[] = [];
     for (const schema of selectedSchemas) {
       for (const table of schema.tables) {
@@ -276,9 +275,8 @@ export function useSchemaDiagramContext(): SchemaDiagramContext {
 
 /**
  * Register a geometry with the parent SchemaDiagram so the canvas can
- * include it when computing the bbox for `fit-view`. Mirrors Vue's
- * `useGeometry(geometry)` composable. Skipped when the diagram is in
- * dummy (off-screen screenshot) mode.
+ * include it when computing the bbox for `fit-view`. Skipped when the
+ * diagram is in dummy (off-screen screenshot) mode.
  */
 export function useGeometry(geometry: Geometry) {
   const ctx = useSchemaDiagramContext();

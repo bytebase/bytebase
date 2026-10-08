@@ -13,6 +13,7 @@ import (
 )
 
 func TestConvertToTaskRunStatus(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		storeStatus storepb.TaskRun_Status
 		want        v1pb.TaskRun_Status
@@ -28,12 +29,14 @@ func TestConvertToTaskRunStatus(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.storeStatus.String(), func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, test.want, convertToTaskRunStatus(test.storeStatus))
 		})
 	}
 }
 
 func TestConvertToTaskRunLogEntries_GhostMigration(t *testing.T) {
+	t.Parallel()
 	start := time.Date(2026, 5, 8, 10, 0, 0, 0, time.UTC)
 	end := start.Add(3 * time.Second)
 

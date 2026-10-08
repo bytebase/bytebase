@@ -40,7 +40,7 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		allowlist: stringArrayPayload.List,
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type indexPrimaryKeyTypeAllowlistRule struct {

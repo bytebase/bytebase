@@ -22,12 +22,10 @@ const resizeTextarea = (textarea: HTMLTextAreaElement) => {
 };
 
 /**
- * React port of `plugins/ai/components/HistoryPanel/ConversationList.vue`.
- *
  * Per-tab list of historical conversations with select / rename / delete
  * actions and a sticky "New conversation" footer.
  *
- * Behavioural pitfalls preserved from the Vue source:
+ * Behavioral pitfalls:
  *   - On tab switch (`(instance, database)` change) the inline rename is
  *     dismissed — a half-completed rename for a previous tab's
  *     conversation shouldn't survive a context change.
@@ -35,9 +33,9 @@ const resizeTextarea = (textarea: HTMLTextAreaElement) => {
  *     (`scrollIntoView({ scrollMode: "if-needed" })`) so the user can
  *     spot the active conversation in a long list. rAF defers to the
  *     next paint so the freshly-inserted node is measurable.
- *   - On delete, the next-selected conversation matches the Vue
- *     `list[index]` heuristic (try to keep the cursor near where it
- *     was). Falls back to undefined when the list empties.
+ *   - On delete, the next-selected conversation is the one now at the
+ *     deleted index, else the one before it (keeps the cursor near where
+ *     it was). Falls back to undefined when the list empties.
  */
 export function ConversationList() {
   const { t } = useTranslation();
@@ -128,7 +126,7 @@ export function ConversationList() {
                   key={conversation.id}
                   data-conversation-id={conversation.id}
                   className={cn(
-                    "flex items-start gap-x-0.5 border rounded-xs py-2 pl-2 pr-0.5 hover:bg-control-bg hover:border-accent cursor-pointer",
+                    "flex items-start gap-x-1 border rounded-xs py-2 pl-2 pr-0.5 hover:bg-control-bg hover:border-accent cursor-pointer",
                     isActive && "bg-accent/10 border-accent",
                     isRenaming && "cursor-default"
                   )}

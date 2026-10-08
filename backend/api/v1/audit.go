@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/audit"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -35,23 +36,22 @@ const (
 )
 
 // AuditInterceptor is the v1 audit interceptor for gRPC server.
+//
+// It feeds two sinks from one built row. The database stores a call to an
+// audited method that reached its handler. Stdout, when on, streams every
+// stored row and every call a permission check refused, before the insert.
 type AuditInterceptor struct {
-	store   *store.Store
-	secret  string
-	profile *config.Profile
-
-	// createAuditLogFunc, when set, replaces createAuditLog for streaming sends.
-	// Test-only seam that lets unit tests observe audit persistence ordering
-	// without a database.
-	createAuditLogFunc func(context.Context, *auditEntry) error
+	auditLogWriter audit.LogWriter
+	secret         string
+	profile        *config.Profile
 }
 
 // NewAuditInterceptor returns a new v1 API audit interceptor.
 func NewAuditInterceptor(store *store.Store, secret string, profile *config.Profile) *AuditInterceptor {
 	return &AuditInterceptor{
-		store:   store,
-		secret:  secret,
-		profile: profile,
+		auditLogWriter: store,
+		secret:         secret,
+		profile:        profile,
 	}
 }
 
@@ -59,7 +59,7 @@ func NewAuditInterceptor(store *store.Store, secret string, profile *config.Prof
 func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 		var serviceData *anypb.Any
-		ctx = common.WithSetServiceData(ctx, func(a *anypb.Any) {
+		ctx = withSetServiceData(ctx, func(a *anypb.Any) {
 			serviceData = a
 		})
 
@@ -67,35 +67,21 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 		// against. Needed for allow_without_credential methods (Login/Signup/
 		// ExchangeToken) where the workspace is resolved inside the handler.
 		var handlerAuditWorkspaceID string
-		ctx = common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
+		ctx = withSetAuditWorkspaceID(ctx, func(workspaceID string) {
 			handlerAuditWorkspaceID = workspaceID
 		})
 
-		// The MCP ceiling gate sits inside this interceptor and refuses a call
-		// before it reaches its handler. needAudit reads only the method's own
-		// audit annotation, and 47 of the 121 methods the gate refuses carry
-		// none: the four FORBIDDEN ones that were silent before the gate grew
-		// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting)
-		// plus 43 EXCLUDED ones. Their denials would leave no trace at all.
-		// A policy denial is recorded whatever the annotation says: the
-		// annotation decides whether ordinary use of a method is interesting,
-		// and a refused agent is interesting either way. Only the internal MCP
-		// chain runs the gate, so the public chain is unaffected.
-		//
-		// Recording a request that was never recorded is why redaction has to
-		// cover more than the audited RPCs: a denial must not transcribe the
-		// secret it refused. Since redaction is driven by the field annotation
-		// rather than by a per-RPC redactor, a gate-refused method is covered
-		// the moment its fields are annotated — the population is the one above,
-		// not the four named methods.
-		mcpPolicyDenied := false
-		ctx = common.WithSetMCPPolicyDenied(ctx, func() { mcpPolicyDenied = true })
+		var permissionDenied, handlerReached bool
+		ctx = withSetPermissionDenied(ctx, func() { permissionDenied = true })
+		ctx = withSetHandlerReached(ctx, func() { handlerReached = true })
 
 		startTime := time.Now()
 		response, rerr := next(ctx, req)
 		latency := time.Since(startTime)
 
-		if needAudit(ctx) || mcpPolicyDenied {
+		stored := handlerReached && needAudit(ctx)
+		streamed := (stored || permissionDenied) && in.profile.RuntimeEnableAuditLogStdout.Load()
+		if stored || streamed {
 			var respMsg any
 			if !common.IsNil(response) {
 				respMsg = response.Any()
@@ -110,6 +96,8 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 				headers:                 req.Header(),
 				peerAddr:                req.Peer().Addr,
 				latency:                 latency,
+				permissionDenied:        permissionDenied,
+				store:                   stored,
 			}
 			if err := in.createAuditLog(ctx, entry); err != nil {
 				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
@@ -176,12 +164,9 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 			headers:  c.RequestHeader(),
 			peerAddr: c.Peer().Addr,
 			latency:  time.Since(c.startTime),
+			store:    true,
 		}
-		writeAuditLog := c.interceptor.createAuditLog
-		if c.interceptor.createAuditLogFunc != nil {
-			writeAuditLog = c.interceptor.createAuditLogFunc
-		}
-		if auditErr := writeAuditLog(c.ctx, entry); auditErr != nil {
+		if auditErr := c.interceptor.createAuditLog(c.ctx, entry); auditErr != nil {
 			return auditErr
 		}
 	}
@@ -195,10 +180,10 @@ type auditEntry struct {
 	request  any
 	response any
 	method   string
-	// serviceData is populated by handlers via common.WithSetServiceData.
+	// serviceData is populated by handlers via withSetServiceData.
 	serviceData *anypb.Any
 	// handlerAuditWorkspaceID is populated by handlers via
-	// common.SetAuditWorkspaceID. Used as the validated audit parent for
+	// setAuditWorkspaceID. Used as the validated audit parent for
 	// allow_without_credential methods where authContext.Resources is empty
 	// because no workspace is in the context.
 	handlerAuditWorkspaceID string
@@ -206,9 +191,46 @@ type auditEntry struct {
 	headers                 http.Header
 	peerAddr                string
 	latency                 time.Duration
+	permissionDenied        bool
+	store                   bool
+}
+
+// auditRow is one row an audited call leaves: the payload, under the
+// workspace it belongs to.
+type auditRow struct {
+	workspaceID string
+	payload     *storepb.AuditLog
 }
 
 func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) error {
+	rows, err := in.buildAuditRows(ctx, e)
+	if err != nil {
+		return err
+	}
+	// Every line is written before any insert, so a failed insert loses no
+	// line: the stream is the surface that still works when the metadata
+	// database does not.
+	if in.profile.RuntimeEnableAuditLogStdout.Load() {
+		for _, row := range rows {
+			audit.LogAuditToStdout(ctx, row.payload)
+		}
+	}
+	if !e.store {
+		return nil
+	}
+	createAuditLogCtx := context.WithoutCancel(ctx)
+	for _, row := range rows {
+		if err := in.auditLogWriter.CreateAuditLog(createAuditLogCtx, row.workspaceID, row.payload); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// buildAuditRows decides what an audited call leaves behind — which parents
+// it is filed under, what each row carries, and whether it is recorded at
+// all — without writing anything. createAuditLog writes what it returns.
+func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) ([]auditRow, error) {
 	// Skip audit logging for validate-only requests that SUCCEEDED. A dry run
 	// that Bytebase accepted changed nothing, so recording it is noise — that
 	// is the whole reason for the skip.
@@ -221,8 +243,8 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	// flag alone made setting it a switch that turns off the record of being
 	// caught.
 	//
-	// EVERY failure records, not only a policy denial, and that is deliberate
-	// rather than incidental. The instance form runs a validate-only
+	// EVERY failure records, not only a permission refusal, and that is
+	// deliberate rather than incidental. The instance form runs a validate-only
 	// connection test before each save and on each Test Connection click, so
 	// the rows this adds are mostly failed connection tests, not refusals —
 	// a real volume change on a common flow. Keying on a denial code instead
@@ -230,7 +252,7 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	// refusals that happen to carry that code and silently drop every other
 	// rejected attempt.
 	if e.rerr == nil && isValidateOnlyRequest(e.request) {
-		return nil
+		return nil, nil
 	}
 
 	requestString := marshalAuditPayload(e.request)
@@ -238,7 +260,7 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 
 	var user string
 	if u, ok := GetUserFromContext(ctx); ok {
-		user = common.FormatUserEmail(u.Email)
+		user = common.FormatPrincipalMember(u.Email, u.Type)
 	} else {
 		// Try to get user from successful login response.
 		if loginResponse, ok := e.response.(*v1pb.LoginResponse); ok {
@@ -249,7 +271,7 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
-		return connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
 
 	requestMetadata := getRequestMetadataFromHeaders(e.headers, e.peerAddr)
@@ -264,9 +286,9 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 		auditWorkspaceID string
 	}
 	// One row per DISTINCT parent: batch requests repeat the same resource
-	// once per item, and since ACL-denied internal-chain calls are audited
-	// too, an unprivileged caller reaches this fan-out — duplicates would let
-	// one denied batch call naming N items write N identical rows.
+	// once per item, and a refused call is streamed too, so an unprivileged
+	// caller reaches this fan-out — duplicates would let one refused batch
+	// call naming N items write N identical lines.
 	var parents []auditParent
 	seenParent := make(map[string]bool)
 	appendParent := func(ap auditParent) {
@@ -284,11 +306,11 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	// A request carrying a delegated MCP grant is the one exception, because
 	// its workspace was not named by the caller: the internal MCP interceptor
 	// verified the credential and bound the workspace before the request
-	// reached this chain. Without the exception these three methods are the
-	// last silent denials in the system — the ceiling gate refuses them before
-	// dispatch, so the handler never runs and never announces a workspace —
-	// and they are the flow that mails or consumes the secret a login accepts.
-	// Presence of the grant is the marker, never a field value.
+	// reached this chain. Without the exception the ceiling gate's refusal of
+	// these three methods streams nothing — the gate refuses before dispatch,
+	// so the handler never runs and never announces a workspace — and they are
+	// the flow that mails or consumes the secret a login accepts. Presence of
+	// the grant is the marker, never a field value.
 	handlerValidatedWorkspaceMethod := (e.method == v1connect.AuthServiceRequestPasswordResetProcedure ||
 		e.method == v1connect.AuthServiceResetPasswordProcedure ||
 		e.method == v1connect.AuthServiceSendEmailLoginCodeProcedure) &&
@@ -355,8 +377,14 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	serviceData := redactAuditServiceData(e.serviceData)
 	auditStatus := redactAuditStatus(convertErrToStatus(e.rerr))
 	mcpDelegation := mcpDelegationFromAuthContext(authContext)
+	// status.code carries every failure, so severity is what separates a
+	// refused caller from other failed calls.
+	severity := storepb.AuditLog_INFO
+	if e.permissionDenied {
+		severity = storepb.AuditLog_WARNING
+	}
 
-	createAuditLogCtx := context.WithoutCancel(ctx)
+	var rows []auditRow
 	for _, ap := range parents {
 		resource := getRequestResource(e.request, e.method)
 		// For login requests, if resource is empty, try to get email from user context or MFA temp token.
@@ -372,40 +400,34 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 			}
 		}
 
-		p := &storepb.AuditLog{
-			Parent:          ap.parent,
-			Method:          e.method,
-			Resource:        resource,
-			Severity:        storepb.AuditLog_INFO,
-			User:            user,
-			Request:         requestString,
-			Response:        responseString,
-			Status:          auditStatus,
-			Latency:         durationpb.New(e.latency),
-			ServiceData:     serviceData,
-			RequestMetadata: requestMetadata,
-			McpDelegation:   mcpDelegation,
-		}
 		// Resolve workspace for audit log.
 		workspaceIDForAudit := ap.auditWorkspaceID
 		if workspaceIDForAudit == "" {
-			workspaceIDForAudit = common.GetWorkspaceIDFromContext(createAuditLogCtx)
+			workspaceIDForAudit = common.GetWorkspaceIDFromContext(ctx)
 		}
 		if workspaceIDForAudit == "" {
 			// Skip audit log if no workspace can be determined (e.g., unauthenticated request).
 			continue
 		}
-		if err := in.store.CreateAuditLog(createAuditLogCtx, workspaceIDForAudit, p); err != nil {
-			return err
-		}
-
-		// Log audit event to stdout using slog (if enabled)
-		if in.profile.RuntimeEnableAuditLogStdout.Load() {
-			common.LogAuditToStdout(ctx, p)
-		}
+		rows = append(rows, auditRow{
+			workspaceID: workspaceIDForAudit,
+			payload: &storepb.AuditLog{
+				Parent:          ap.parent,
+				Method:          e.method,
+				Resource:        resource,
+				Severity:        severity,
+				User:            user,
+				Request:         requestString,
+				Response:        responseString,
+				Status:          auditStatus,
+				Latency:         durationpb.New(e.latency),
+				ServiceData:     serviceData,
+				RequestMetadata: requestMetadata,
+				McpDelegation:   mcpDelegation,
+			},
+		})
 	}
-
-	return nil
+	return rows, nil
 }
 
 // mcpDelegationFromAuthContext copies the delegated MCP grant state onto the
@@ -526,9 +548,9 @@ func needAudit(ctx context.Context) bool {
 func getRequestMetadataFromHeaders(headers http.Header, peerAddr string) *storepb.RequestMetadata {
 	// The forwarding headers first, then the peer address ConnectRPC reports
 	// for a direct connection.
-	callerIP := common.CallerIPFromHeaders(headers)
+	callerIP := audit.CallerIPFromHeaders(headers)
 	if callerIP == "" {
-		callerIP = common.StripPort(peerAddr)
+		callerIP = audit.StripPort(peerAddr)
 	}
 	return &storepb.RequestMetadata{
 		CallerIp:                callerIP,

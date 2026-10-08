@@ -88,6 +88,25 @@ describe("SQLEditorButton", () => {
     ).toHaveAttribute("href", "/sql-editor/resolved");
   });
 
+  test("forwards query parameters to the SQL Editor route", () => {
+    render(
+      <SQLEditorButton
+        database={database}
+        query={{ schema: "public", table: "users", intro: "run-query" }}
+      />
+    );
+
+    expect(mocks.resolve).toHaveBeenCalledWith({
+      name: SQL_EDITOR_DATABASE_MODULE,
+      params: {
+        project: "database-project",
+        instance: "prod",
+        database: "customers",
+      },
+      query: { schema: "public", table: "users", intro: "run-query" },
+    });
+  });
+
   test("builds a project route when only a project is provided", () => {
     render(<SQLEditorButton project={project} />);
 

@@ -9,8 +9,7 @@ type Props = {
 };
 
 /**
- * Replaces `TreeNode/IndexNode.vue`. PrimaryKeyIcon when the index is
- * marked `primary`, IndexIcon otherwise.
+ * PrimaryKeyIcon when the index is marked `primary`, IndexIcon otherwise.
  */
 export function IndexNode({ node, keyword }: Props) {
   const target = (node as TreeNode<"index">).meta.target;

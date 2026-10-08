@@ -13,15 +13,9 @@ import { v4 as uuidv4 } from "uuid";
 import { ExprEditor, type OptionConfig } from "@/components/ExprEditor";
 import { FeatureAttention } from "@/components/FeatureAttention";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
+import { SemanticTypeSelect } from "@/components/SemanticTypeSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   WorkspacePageInfo,
   WorkspacePageLayout,
@@ -123,17 +117,6 @@ function MaskingRuleConfig({
   const [dirty, setDirty] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const settingsByName = useAppStore((s) => s.settingsByName);
-  const semanticTypeOptions = useMemo(() => {
-    const setting = useAppStore
-      .getState()
-      .getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
-    if (setting?.value?.value?.case === "semanticType") {
-      return setting.value.value.value.types ?? [];
-    }
-    return [];
-  }, [settingsByName]);
-
   const resetIdRef = useRef(0);
   const resetToRule = useCallback(
     async (rule: MaskingRulePolicy_MaskingRule) => {
@@ -208,12 +191,12 @@ function MaskingRuleConfig({
 
   return (
     <div className="flex flex-col gap-y-4 w-full">
-      <div className="flex flex-col md:flex-row items-start md:items-stretch gap-x-4 gap-y-4">
+      <div className="flex flex-col items-start gap-x-4 gap-y-4 xl:flex-row xl:items-stretch">
         <div className="flex-1 flex flex-col gap-y-2 min-w-0">
           <div className="flex items-center h-9">
             {!readonly ? (
               <Input
-                size="sm"
+                size="md"
                 className="w-64"
                 placeholder={defaultTitle}
                 value={title}
@@ -238,39 +221,19 @@ function MaskingRuleConfig({
             onUpdate={handleExprUpdate}
           />
         </div>
-        <div className="flex flex-col gap-y-2">
+        <div className="flex w-full flex-col gap-y-2 xl:w-80">
           <h3 className="flex items-center h-9 font-medium text-sm text-main">
             {t("settings.sensitive-data.semantic-types.table.semantic-type")}
           </h3>
-          <Select
+          <SemanticTypeSelect
             value={semanticType ?? ""}
             disabled={disabled || readonly}
-            onValueChange={(val) => {
-              setSemanticType(val || undefined);
+            className="w-full"
+            onValueChange={(value) => {
+              setSemanticType(value || undefined);
               setDirty(true);
             }}
-          >
-            <SelectTrigger className="min-w-40">
-              <SelectValue
-                placeholder={t("settings.sensitive-data.semantic-types.select")}
-              >
-                {(value: string | null) => {
-                  if (!value) return null;
-                  const found = semanticTypeOptions.find(
-                    (st) => st.id === value
-                  );
-                  return found?.title ?? value;
-                }}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {semanticTypeOptions.map((st) => (
-                <SelectItem key={st.id} value={st.id}>
-                  {st.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
         </div>
       </div>
 
@@ -334,7 +297,7 @@ function MaskingRuleConfig({
                 {mode === "CREATE" ? t("common.create") : t("common.update")}
               </Button>
               {errorMessages.length > 0 && (
-                <div className="absolute bottom-full mb-1 right-0 bg-gray-800 text-white text-xs rounded-xs px-2 py-1 hidden group-hover:block whitespace-nowrap z-10">
+                <div className="absolute bottom-full mb-1 right-0 bg-main text-main-text text-xs rounded-xs px-2 py-1 hidden group-hover:block whitespace-nowrap z-10">
                   <ul className="list-disc pl-4">
                     {errorMessages.map((msg, i) => (
                       <li key={i}>{msg}</li>
@@ -564,7 +527,7 @@ export function GlobalMaskingPage() {
   };
 
   return (
-    <WorkspacePageLayout className="gap-y-4">
+    <WorkspacePageLayout allowHorizontalOverflow className="gap-y-4">
       <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
 
       <WorkspacePageInfo
@@ -645,7 +608,7 @@ export function GlobalMaskingPage() {
 
       {/* Rule list */}
       {items.map((item, index) => (
-        <div key={item.rule.id} className="flex items-start gap-x-5">
+        <div key={item.rule.id} className="flex items-start gap-x-4">
           {item.mode === "NORMAL" &&
             hasPermission &&
             hasSensitiveDataFeature && (
@@ -653,33 +616,39 @@ export function GlobalMaskingPage() {
                 {reorderRules ? (
                   <div className="pt-2 flex flex-col">
                     {index > 0 && (
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
-                        className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-gray-100"
+                        className="flex items-center justify-center rounded-xs hover:bg-control-bg"
                         onClick={() => onReorder(item, -1)}
                       >
                         <ChevronUp className="w-4 h-4" />
-                      </button>
+                      </Button>
                     )}
                     {index !== items.length - 1 && (
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
-                        className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-gray-100"
+                        className="flex items-center justify-center rounded-xs hover:bg-control-bg"
                         onClick={() => onReorder(item, 1)}
                       >
                         <ChevronDown className="w-4 h-4" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ) : (
                   <div className="pt-2">
-                    <button
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       type="button"
-                      className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-gray-100"
+                      className="flex items-center justify-center rounded-xs hover:bg-control-bg"
                       onClick={() => onEdit(index)}
                     >
                       <Pencil className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

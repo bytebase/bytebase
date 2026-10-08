@@ -14,10 +14,9 @@ type Props = {
 };
 
 /**
- * Replaces `HoverPanel/TableInfo.vue`. Index size and collation are
- * hidden for ClickHouse + Snowflake; collation is also hidden for
- * Postgres because the engine reports it at the column level instead of
- * the table level. Comment is shown only when present.
+ * Index size and collation are hidden for ClickHouse + Snowflake; collation
+ * is also hidden for Postgres because the engine reports it at the column
+ * level instead of the table level. Comment is shown only when present.
  */
 export function TableInfo({ database, schema, table }: Props) {
   const { t } = useTranslation();
@@ -43,7 +42,7 @@ export function TableInfo({ database, schema, table }: Props) {
     <div className="min-w-56 max-w-[18rem] gap-y-1">
       <InfoItem title={t("common.name")}>{tableMetadata.name}</InfoItem>
       <InfoItem title={t("database.engine")}>
-        <span className="flex items-center gap-x-0.5">
+        <span className="flex items-center gap-x-1">
           <EngineIcon engine={instanceEngine} className="size-4" />
           {engineNameV1(instanceEngine)}
         </span>

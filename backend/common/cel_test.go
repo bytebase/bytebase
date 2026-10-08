@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/google/cel-go/cel"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -72,48 +71,6 @@ func TestPartialEval(t *testing.T) {
 		res, err := doEvalBindingCondition(tc.expr, tc.input)
 		a.NoError(err)
 		a.Equal(tc.want, res, tc.name)
-	}
-}
-
-func TestGetQueryExportFactors(t *testing.T) {
-	a := assert.New(t)
-	tests := []struct {
-		expression string
-		want       QueryExportFactors
-	}{
-		{
-			expression: "request.time < timestamp(\"2023-07-04T06:09:03.384Z\") && (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema_name == \"public\" && resource.table_name in [\"dept_manager\"])",
-			want: QueryExportFactors{
-				Databases: []string{"instances/postgres-sample/databases/employee"},
-			},
-		},
-		{
-			expression: "request.time < timestamp(\"2023-07-04T07:40:05.658Z\") && (resource.database in [\"instances/postgres-sample/databases/employee\"])",
-			want: QueryExportFactors{
-				Databases: []string{"instances/postgres-sample/databases/employee"},
-			},
-		},
-		{
-			expression: "request.time < timestamp(\"2023-08-02T07:33:45.686Z\") && (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema_name == \"public\" && resource.table_name in [\"dept_emp\",\"department\"])",
-			want: QueryExportFactors{
-				Databases: []string{"instances/postgres-sample/databases/employee"},
-			},
-		},
-		{
-			expression: "request.time < timestamp(\"2023-07-10T08:14:34.788Z\")",
-			want:       QueryExportFactors{},
-		},
-		{
-			expression: "request.time < timestamp(\"2023-07-10T08:15:46.773Z\") && ((resource.database in [\"instances/postgres-sample/databases/blog\"]) || (resource.database == \"instances/postgres-sample/databases/employee\" && resource.schema_name in [\"public\"]))",
-			want: QueryExportFactors{
-				Databases: []string{"instances/postgres-sample/databases/blog", "instances/postgres-sample/databases/employee"},
-			},
-		},
-	}
-	for _, tt := range tests {
-		factors, err := GetQueryExportFactors(tt.expression)
-		a.NoError(err)
-		a.Equal(tt.want, *factors)
 	}
 }
 

@@ -1,11 +1,9 @@
-import { create } from "@bufbuild/protobuf";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
-import { ListIssueCommentsRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { ReviewActivityTimeline } from "./ReviewActivityTimeline";
 import { ReviewApprovalFlow } from "./ReviewApprovalFlow";
@@ -20,7 +18,6 @@ export function PlanReviewSection() {
   const page = usePlanDetailContext();
   const issue = page.issue;
   const issueName = issue?.name ?? "";
-  const issueUpdateKey = `${issue?.updateTime?.seconds ?? ""}:${issue?.updateTime?.nanos ?? ""}`;
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
@@ -34,21 +31,6 @@ export function PlanReviewSection() {
       .catch(() => undefined);
     void loadProjectIamPolicy(projectName).catch(() => undefined);
   }, [loadProjectIamPolicy, page.projectId]);
-
-  // Refetch comments whenever the issue changes server-side (polling bumps
-  // updateTime) or after local actions refresh the issue.
-  useEffect(() => {
-    if (!issueName) return;
-    void useAppStore
-      .getState()
-      .listIssueComments(
-        create(ListIssueCommentsRequestSchema, {
-          parent: issueName,
-          pageSize: 1000,
-        })
-      )
-      .catch(() => undefined);
-  }, [issueName, issueUpdateKey]);
 
   const comments = useAppStore((state) =>
     issueName ? state.getIssueComments(issueName) : EMPTY_COMMENTS

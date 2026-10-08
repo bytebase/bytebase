@@ -111,7 +111,7 @@ func (x *AuditLog) Equal(y *AuditLog) bool {
 	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if x.User != y.User {
+	if x.Actor != y.Actor {
 		return false
 	}
 	if x.Method != y.Method {

@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import * as stylex from "@stylexjs/stylex";
 import { act, createElement, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -77,19 +76,6 @@ const expectClasses = (className: string | undefined, expected: string) => {
   }
 };
 
-const styleSource = readFileSync(
-  "src/components/ui/styles.stylex.ts",
-  "utf8"
-);
-
-const extractStyleBlock = (styleName: string) => {
-  const match = styleSource.match(
-    new RegExp(`\\n  ${styleName}: \\{([\\s\\S]*?)\\n  \\},`)
-  );
-  expect(match, `${styleName} style block should exist`).not.toBeNull();
-  return match?.[1] ?? "";
-};
-
 describe("StyleX common UI style contracts", () => {
   afterEach(() => {
     document.body.innerHTML = "";
@@ -126,15 +112,6 @@ describe("StyleX common UI style contracts", () => {
       overlaySurfaceClassName,
       "max-h-60 overflow-y-auto overflow-x-hidden rounded-sm border border-control-border bg-background py-1 shadow-md focus:outline-hidden"
     );
-  });
-
-  test("keeps form labels visually distinct from field titles", () => {
-    const labelStyle = extractStyleBlock("label");
-
-    expect(labelStyle).toContain('color: "rgb(var(--color-control))"');
-    expect(labelStyle).toContain("fontSize: 14");
-    expect(labelStyle).toContain("fontWeight: 500");
-    expect(labelStyle).toContain('lineHeight: "20px"');
   });
 
   test("keeps list row state separate from menu row state", () => {

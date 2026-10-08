@@ -5,6 +5,8 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -739,7 +741,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 	generateSequenceCommentChanges(buf, diff)
 }
 
-func generateCreateTable(schemaName, tableName string, table *storepb.TableMetadata, includeForeignKeys bool) (string, error) {
+func generateCreateTable(schemaName, tableName string, table *metadatapb.TableMetadata, includeForeignKeys bool) (string, error) {
 	var buf strings.Builder
 
 	writeMigrationCreateTable(&buf, schemaName, tableName, table.Columns, table.CheckConstraints)
@@ -832,7 +834,7 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 }
 
 // hasDefaultValue checks if a column has any default value
-func hasDefaultValue(column *storepb.ColumnMetadata) bool {
+func hasDefaultValue(column *metadatapb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
@@ -840,7 +842,7 @@ func hasDefaultValue(column *storepb.ColumnMetadata) bool {
 }
 
 // defaultValuesEqual checks if two columns have the same default value
-func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
+func defaultValuesEqual(col1, col2 *metadatapb.ColumnMetadata) bool {
 	if col1 == nil || col2 == nil {
 		return col1 == col2
 	}
@@ -852,7 +854,7 @@ func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
 }
 
 // getDefaultExpression returns the SQL expression for a column's default value
-func getDefaultExpression(column *storepb.ColumnMetadata) string {
+func getDefaultExpression(column *metadatapb.ColumnMetadata) string {
 	if column == nil {
 		return ""
 	}
@@ -1031,7 +1033,7 @@ func writeCreateSchema(out *strings.Builder, schema string) {
 	_, _ = out.WriteString("\n")
 }
 
-func writeAddColumn(out *strings.Builder, schema, table string, column *storepb.ColumnMetadata) {
+func writeAddColumn(out *strings.Builder, schema, table string, column *metadatapb.ColumnMetadata) {
 	_, _ = out.WriteString(`ALTER TABLE `)
 	if schema != "" {
 		_, _ = out.WriteString(`"`)
@@ -1137,7 +1139,7 @@ func writeAlterColumnDropDefault(out *strings.Builder, schema, table, column str
 	_, _ = out.WriteString("\n")
 }
 
-func writeAddCheckConstraint(out *strings.Builder, schema, table string, check *storepb.CheckConstraintMetadata) {
+func writeAddCheckConstraint(out *strings.Builder, schema, table string, check *metadatapb.CheckConstraintMetadata) {
 	_, _ = out.WriteString(`ALTER TABLE `)
 	if schema != "" {
 		_, _ = out.WriteString(`"`)
@@ -1254,7 +1256,7 @@ func isSystemGeneratedSequence(sequenceName string) bool {
 }
 
 // writeCreateSequence writes a CREATE SEQUENCE statement
-func writeMigrationCreateSequence(out *strings.Builder, schema string, seq *storepb.SequenceMetadata) {
+func writeMigrationCreateSequence(out *strings.Builder, schema string, seq *metadatapb.SequenceMetadata) {
 	_, _ = out.WriteString(`CREATE SEQUENCE `)
 	if schema != "" {
 		_, _ = out.WriteString(`"`)
@@ -1335,7 +1337,7 @@ func writeProcedureDiff(out *strings.Builder, procDiff *schema.ProcedureDiff) {
 }
 
 // writeView writes a CREATE VIEW statement
-func writeMigrationView(out *strings.Builder, schema string, view *storepb.ViewMetadata) {
+func writeMigrationView(out *strings.Builder, schema string, view *metadatapb.ViewMetadata) {
 	_, _ = out.WriteString(`CREATE VIEW `)
 	if schema != "" {
 		_, _ = out.WriteString(`"`)
@@ -1358,7 +1360,7 @@ func writeMigrationView(out *strings.Builder, schema string, view *storepb.ViewM
 }
 
 // writeMaterializedView writes a CREATE MATERIALIZED VIEW statement
-func writeMigrationMaterializedView(out *strings.Builder, schema string, view *storepb.MaterializedViewMetadata) {
+func writeMigrationMaterializedView(out *strings.Builder, schema string, view *metadatapb.MaterializedViewMetadata) {
 	_, _ = out.WriteString(`CREATE MATERIALIZED VIEW `)
 	if schema != "" {
 		_, _ = out.WriteString(`"`)
@@ -1381,7 +1383,7 @@ func writeMigrationMaterializedView(out *strings.Builder, schema string, view *s
 }
 
 // writeForeignKey writes an ALTER TABLE ADD CONSTRAINT statement for a foreign key
-func writeMigrationForeignKey(out *strings.Builder, schema, table string, fk *storepb.ForeignKeyMetadata) {
+func writeMigrationForeignKey(out *strings.Builder, schema, table string, fk *metadatapb.ForeignKeyMetadata) {
 	_, _ = out.WriteString(`ALTER TABLE `)
 	if schema != "" {
 		_, _ = out.WriteString(`"`)
@@ -1438,7 +1440,7 @@ func writeMigrationForeignKey(out *strings.Builder, schema, table string, fk *st
 }
 
 // writeCreateTable writes a CREATE TABLE statement
-func writeMigrationCreateTable(out *strings.Builder, schema, table string, columns []*storepb.ColumnMetadata, checks []*storepb.CheckConstraintMetadata) {
+func writeMigrationCreateTable(out *strings.Builder, schema, table string, columns []*metadatapb.ColumnMetadata, checks []*metadatapb.CheckConstraintMetadata) {
 	_, _ = out.WriteString(`CREATE TABLE `)
 	if schema != "" {
 		_, _ = out.WriteString(`"`)
@@ -1485,7 +1487,7 @@ func writeMigrationCreateTable(out *strings.Builder, schema, table string, colum
 }
 
 // writePrimaryKey writes an ALTER TABLE ADD PRIMARY KEY statement
-func writeMigrationPrimaryKey(out *strings.Builder, schema, table string, index *storepb.IndexMetadata) {
+func writeMigrationPrimaryKey(out *strings.Builder, schema, table string, index *metadatapb.IndexMetadata) {
 	_, _ = out.WriteString(`ALTER TABLE `)
 	if schema != "" {
 		_, _ = out.WriteString(`"`)
@@ -1510,7 +1512,7 @@ func writeMigrationPrimaryKey(out *strings.Builder, schema, table string, index 
 }
 
 // writeUniqueKey writes an ALTER TABLE ADD UNIQUE statement
-func writeMigrationUniqueKey(out *strings.Builder, schema, table string, index *storepb.IndexMetadata) {
+func writeMigrationUniqueKey(out *strings.Builder, schema, table string, index *metadatapb.IndexMetadata) {
 	_, _ = out.WriteString(`ALTER TABLE `)
 	if schema != "" {
 		_, _ = out.WriteString(`"`)
@@ -1535,7 +1537,7 @@ func writeMigrationUniqueKey(out *strings.Builder, schema, table string, index *
 }
 
 // writeIndex writes a CREATE INDEX statement
-func writeMigrationIndex(out *strings.Builder, schema, table string, index *storepb.IndexMetadata) {
+func writeMigrationIndex(out *strings.Builder, schema, table string, index *metadatapb.IndexMetadata) {
 	_, _ = out.WriteString(`CREATE `)
 	if index.Unique {
 		_, _ = out.WriteString(`UNIQUE `)
@@ -1746,12 +1748,12 @@ func generateColumnCommentChanges(buf *strings.Builder, tableDiff *schema.TableD
 	}
 
 	// Build maps for efficient lookup
-	oldColumnMap := make(map[string]*storepb.ColumnMetadata)
+	oldColumnMap := make(map[string]*metadatapb.ColumnMetadata)
 	for _, col := range tableDiff.OldTable.Columns {
 		oldColumnMap[col.Name] = col
 	}
 
-	newColumnMap := make(map[string]*storepb.ColumnMetadata)
+	newColumnMap := make(map[string]*metadatapb.ColumnMetadata)
 	for _, col := range tableDiff.NewTable.Columns {
 		newColumnMap[col.Name] = col
 	}
@@ -1946,7 +1948,7 @@ func writeColumnComment(out *strings.Builder, schema, table, column, comment str
 }
 
 // writeMigrationTrigger writes a CREATE TRIGGER statement for migration
-func writeMigrationTrigger(out *strings.Builder, trigger *storepb.TriggerMetadata) {
+func writeMigrationTrigger(out *strings.Builder, trigger *metadatapb.TriggerMetadata) {
 	if trigger == nil {
 		return
 	}

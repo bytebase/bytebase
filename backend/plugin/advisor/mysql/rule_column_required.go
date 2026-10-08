@@ -54,7 +54,7 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		line:            make(map[string]int),
 	}
 
-	adviceList := RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	adviceList := RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 	adviceList = append(adviceList, rule.generateAdviceList()...)
 	return adviceList, nil
 }

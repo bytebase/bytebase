@@ -16,6 +16,7 @@ import (
 )
 
 func TestValidateDomains(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 
 	testCases := []struct {
@@ -63,6 +64,7 @@ func TestValidateDomains(t *testing.T) {
 }
 
 func TestValidateApprovalTemplate(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name     string
 		template *v1pb.ApprovalTemplate
@@ -107,6 +109,7 @@ func TestValidateApprovalTemplate(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateApprovalTemplate(tc.template)
 			if tc.wantErr {
 				require.Error(t, err)
@@ -175,6 +178,7 @@ func colorWithAlpha(red, green, blue, alpha float32) *colorpb.Color {
 }
 
 func TestValidateAnnouncementTheme(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name    string
 		theme   *storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme
@@ -189,6 +193,7 @@ func TestValidateAnnouncementTheme(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateAnnouncementTheme(tc.theme)
 			if tc.wantErr {
 				require.Error(t, err)
@@ -200,6 +205,7 @@ func TestValidateAnnouncementTheme(t *testing.T) {
 }
 
 func TestValidateMCPCapability(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name       string
 		capability storepb.MCPSetting_Capability
@@ -214,6 +220,7 @@ func TestValidateMCPCapability(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateMCPCapability(tc.capability)
 			if tc.wantErr {
 				require.Error(t, err)
@@ -261,6 +268,7 @@ func TestValidateEnvironmentsColor(t *testing.T) {
 // stdout) are rejected in SaaS mode: on a shared replica they would let one
 // workspace admin change process-wide behavior affecting other workspaces.
 func TestPreflightWorkspaceProfileSaaSRestrictedPaths(t *testing.T) {
+	t.Parallel()
 	newRequest := func(path string) *connect.Request[v1pb.UpdateSettingRequest] {
 		return connect.NewRequest(&v1pb.UpdateSettingRequest{
 			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{path}},

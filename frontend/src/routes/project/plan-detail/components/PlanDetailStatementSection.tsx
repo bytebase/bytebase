@@ -7,10 +7,20 @@ import {
   releaseServiceClientConnect,
   sheetServiceClientConnect,
 } from "@/api";
-import { MonacoEditor, ReadonlyMonaco } from "@/components/monaco";
+import {
+  captureEditorViewAnchor,
+  type EditorViewAnchor,
+  focusEditorAtAnchor,
+  type IStandaloneCodeEditor,
+  lineViewAnchor,
+  MonacoEditor,
+  type MonacoModule,
+  ReadonlyMonaco,
+} from "@/components/monaco";
 import { ReleaseInfoCard } from "@/components/release/ReleaseInfoCard";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { seedSheetStatement } from "@/hooks/useSheetStatement";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
@@ -39,10 +49,12 @@ import { getStatementSize, MAX_UPLOAD_FILE_SIZE_MB } from "@/utils/sheet";
 import { getInstanceResource } from "@/utils/v1/database";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import {
+  exceedsSheetPreviewLimit,
   extractSheetUID,
   getSheetStatement,
   setSheetStatement,
 } from "@/utils/v1/sheet";
+import { usePlanDetailStore } from "../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
   createEmptyLocalSheet,
@@ -52,6 +64,29 @@ import {
 } from "../utils/localSheet";
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
+import { StatementThreadsLayer } from "./threads/StatementThreadsLayer";
+import {
+  completePreviewLineCount,
+  sheetSha256OfName,
+} from "./threads/threadModel";
+
+// Both modes reserve the same gutter so line numbers and SQL stay aligned
+// when entering or leaving edit mode. Keep these options stable: MonacoEditor
+// re-applies options on every new object.
+const STATEMENT_EDITOR_OPTIONS = {
+  glyphMargin: true,
+  lineNumbersMinChars: 2,
+  lineDecorationsWidth: 24,
+  selectionHighlight: false,
+  occurrencesHighlight: "off",
+} as const;
+
+// Sticky scroll would pin statement lines over the thread view zones.
+const THREADS_EDITOR_OPTIONS = {
+  ...STATEMENT_EDITOR_OPTIONS,
+  selectOnLineNumbers: false,
+  stickyScroll: { enabled: false },
+} as const;
 
 export function PlanDetailStatementSection({
   className,
@@ -93,6 +128,50 @@ export function PlanDetailStatementSection({
   const [draftStatement, setDraftStatement] = useState("");
   const [isSchemaEditorOpen, setIsSchemaEditorOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // The read-only editor instance, captured whenever one is created so the
+  // threads layer can attach even if threads become enabled later. Editing,
+  // an asynchronous sheet load, or an emptied statement unmounts and disposes
+  // it; forget it whenever that happens so the layer never binds to a
+  // disposed editor while the next one is still loading.
+  const showsReadonlyEditor =
+    !isLoading && !isEditing && Boolean(statement || draftStatement);
+  const [readonlyEditor, setReadonlyEditor] = useState<{
+    editor: IStandaloneCodeEditor;
+    monaco: MonacoModule;
+  }>();
+  const [editingEditor, setEditingEditor] = useState<IStandaloneCodeEditor>();
+  const editAnchorRef = useRef<EditorViewAnchor | undefined>(undefined);
+  const threadFocus = usePlanDetailStore((state) => state.threadFocus);
+  const clearThreadFocus = usePlanDetailStore(
+    (state) => state.clearThreadFocus
+  );
+  useEffect(() => {
+    if (!showsReadonlyEditor) setReadonlyEditor(undefined);
+  }, [showsReadonlyEditor]);
+  useEffect(() => {
+    if (isEditing) return;
+    setEditingEditor(undefined);
+    editAnchorRef.current = undefined;
+  }, [isEditing]);
+  // The edit editor lands on a pending Activity anchor, which may arrive
+  // before or after it mounts, or else on the place captured by Edit.
+  useEffect(() => {
+    if (!isEditing || !editingEditor) return;
+    const activityLine =
+      threadFocus?.specId === spec.id ? threadFocus.lineNumber : undefined;
+    const anchor = activityLine
+      ? lineViewAnchor(activityLine)
+      : editAnchorRef.current;
+    editAnchorRef.current = undefined;
+    if (!anchor) return;
+    focusEditorAtAnchor(editingEditor, anchor);
+    if (activityLine && threadFocus) {
+      // Activity lives in another phase section, so the editor may be off
+      // screen.
+      editingEditor.getDomNode()?.scrollIntoView({ block: "nearest" });
+      clearThreadFocus(threadFocus.nonce);
+    }
+  }, [clearThreadFocus, editingEditor, isEditing, spec.id, threadFocus]);
 
   const editingScope = useMemo(() => `statement:${spec.id}`, [spec.id]);
   const targetDatabaseName = useMemo(() => {
@@ -312,6 +391,12 @@ export function PlanDetailStatementSection({
     setIsEditing(true);
   };
 
+  const handleBeginEdit = () => {
+    editAnchorRef.current =
+      readonlyEditor && captureEditorViewAnchor(readonlyEditor.editor);
+    setIsEditing(true);
+  };
+
   const handleSchemaEditorInsert = (nextStatement: string) => {
     if (page.isCreating) {
       updateLocalStatement(nextStatement);
@@ -443,19 +528,49 @@ export function PlanDetailStatementSection({
 
   const editorContent = page.isCreating ? statement : draftStatement;
 
+  // Inline threads anchor to the saved sheet of a persisted spec. A truncated
+  // preview can still show threads on its complete lines.
+  const sheetSha256 = sheetSha256OfName(sheetName);
+  const issue = page.issue;
+  const showLargeSheetWarning = useMemo(
+    () =>
+      isEditing
+        ? exceedsSheetPreviewLimit(draftStatement)
+        : isSheetOversize ||
+          (!isLoading &&
+            Boolean(sheetSha256) &&
+            exceedsSheetPreviewLimit(statement)),
+    [
+      draftStatement,
+      isEditing,
+      isLoading,
+      isSheetOversize,
+      sheetSha256,
+      statement,
+    ]
+  );
+  const previewEndLine = useMemo(
+    () =>
+      isSheetOversize ? completePreviewLineCount(statement, true) : undefined,
+    [isSheetOversize, statement]
+  );
+  const threadsEnabled = Boolean(
+    issue && !page.isCreating && !isPendingDraft && sheetSha256
+  );
+
   return (
     <div className={cn("flex flex-col gap-y-1", className)}>
       <div className="flex items-start justify-between gap-2">
         <div
           className={cn(
             "flex items-center gap-x-1 textlabel uppercase",
-            isEmpty && "text-red-600"
+            isEmpty && "text-error"
           )}
         >
           <span>{statementTitle}</span>
           {isEmpty && <span className="text-error">*</span>}
         </div>
-        <input
+        <Input
           ref={inputRef}
           accept=".sql,.txt,application/sql,text/plain"
           className="hidden"
@@ -487,11 +602,7 @@ export function PlanDetailStatementSection({
               </>
             )}
             {!isEditing && canEdit && (
-              <Button
-                onClick={() => setIsEditing(true)}
-                size="xs"
-                appearance="outline"
-              >
+              <Button onClick={handleBeginEdit} size="xs" appearance="outline">
                 <Pencil className="h-3.5 w-3.5" />
                 {t("common.edit")}
               </Button>
@@ -522,13 +633,17 @@ export function PlanDetailStatementSection({
           </div>
         )}
       </div>
-      {isSheetOversize && (
+      {showLargeSheetWarning && (
         <Alert
           variant="warning"
           description={
             <div className="flex items-center justify-between gap-x-4">
-              <span>{t("issue.statement-from-sheet-warning")}</span>
-              {sheetName && (
+              <span>
+                {isEditing
+                  ? t("issue.statement-exceeds-preview-limit")
+                  : t("issue.statement-from-sheet-warning")}
+              </span>
+              {!isEditing && sheetName && (
                 <Button
                   disabled={isDownloading}
                   onClick={() => void downloadSheet()}
@@ -546,10 +661,10 @@ export function PlanDetailStatementSection({
         />
       )}
       {isLoading ? (
-        <div className="rounded-sm border border-control-border bg-white px-4 py-3 text-sm text-control-light">
+        <div className="rounded-sm border border-control-border bg-background px-4 py-3 text-sm text-control-light">
           {t("common.loading")}
         </div>
-      ) : statement || draftStatement || isEditing ? (
+      ) : isEditing || showsReadonlyEditor ? (
         <div className="relative overflow-hidden rounded-sm border border-control-border">
           {isEditing ? (
             <MonacoEditor
@@ -558,6 +673,8 @@ export function PlanDetailStatementSection({
               className="relative h-auto max-h-[600px] min-h-[120px]"
               content={editorContent}
               language={language}
+              options={STATEMENT_EDITOR_OPTIONS}
+              onReady={(_monaco, editor) => setEditingEditor(editor)}
               onChange={(nextStatement) => {
                 if (page.isCreating) {
                   updateLocalStatement(nextStatement);
@@ -567,16 +684,37 @@ export function PlanDetailStatementSection({
               }}
             />
           ) : (
-            <ReadonlyMonaco
-              advices={markers}
-              className="relative h-auto max-h-[600px] min-h-[120px]"
-              content={statement}
-              language={language}
-            />
+            <>
+              <ReadonlyMonaco
+                advices={markers}
+                className="relative h-auto max-h-[600px] min-h-[120px]"
+                content={statement}
+                language={language}
+                onReady={(monaco, editor) =>
+                  setReadonlyEditor({ editor, monaco })
+                }
+                options={
+                  threadsEnabled
+                    ? THREADS_EDITOR_OPTIONS
+                    : STATEMENT_EDITOR_OPTIONS
+                }
+              />
+              {threadsEnabled && issue && sheetSha256 && readonlyEditor && (
+                <StatementThreadsLayer
+                  editor={readonlyEditor.editor}
+                  issue={issue}
+                  key={sheetSha256}
+                  monaco={readonlyEditor.monaco}
+                  previewEndLine={previewEndLine}
+                  sheetSha256={sheetSha256}
+                  spec={spec}
+                />
+              )}
+            </>
           )}
         </div>
       ) : (
-        <div className="rounded-sm border border-control-border bg-white px-4 py-3 text-sm text-control-light">
+        <div className="rounded-sm border border-control-border bg-background px-4 py-3 text-sm text-control-light">
           {t("common.no-data")}
         </div>
       )}

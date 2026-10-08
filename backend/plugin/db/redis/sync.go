@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -27,9 +27,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	for _, n := range databaseNumbers {
-		databases = append(databases, &storepb.DatabaseSchemaMetadata{
+		databases = append(databases, &metadatapb.DatabaseSchemaMetadata{
 			Name: strconv.Itoa(n),
 		})
 	}
@@ -39,8 +39,8 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	return &storepb.DatabaseSchemaMetadata{Name: d.databaseName}, nil
+func (d *Driver) SyncDBSchema(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return &metadatapb.DatabaseSchemaMetadata{Name: d.databaseName}, nil
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {

@@ -7,6 +7,7 @@ import (
 )
 
 func TestGetAccountListFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -104,7 +105,7 @@ func TestGetAccountListFilter(t *testing.T) {
 			name:        "invalid filter syntax",
 			filter:      `invalid syntax {{`,
 			wantErr:     true,
-			errContains: "failed to parse filter",
+			errContains: "invalid filter expression",
 		},
 		{
 			name:        "invalid state",
@@ -122,6 +123,7 @@ func TestGetAccountListFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result, err := GetAccountListFilter(tt.filter)
 
 			if tt.wantErr {

@@ -8,51 +8,59 @@ const { mockContextRef } = vi.hoisted(() => ({
   mockContextRef: { current: undefined as unknown },
 }));
 
-vi.mock("react-i18next", () => ({
-  initReactI18next: { type: "3rdParty", init: () => {} },
-  useTranslation: () => ({
-    t: (key: string, vars?: Record<string, unknown>) => {
-      let s = key;
-      if (vars) {
-        for (const [k, v] of Object.entries(vars)) {
-          s = s.replace(`{{${k}}}`, String(v));
-        }
-        // Append a JSON suffix so we can also assert on raw vars in messy cases.
-        s += " " + JSON.stringify(vars);
-      }
-      return s;
-    },
-  }),
-}));
+vi.mock("react-i18next", async () =>
+  (await import("@/test-utils/i18n")).reactI18nextStub()
+);
 
 vi.mock("@/lib/project-member/utils", () => ({
   getRoleEnvironmentLimitationKind: (role: string) =>
     role === "roles/sqlEditorUser" ? "DDL/DML" : undefined,
 }));
 
+vi.mock("@/lib/role", () => ({
+  displayRoleTitleFromList: (role: string) => `TITLE(${role})`,
+  displayRoleDescriptionFromList: (role: string) => `DESC(${role})`,
+}));
+
+// What usePrincipal resolves: two people, a person whose record never arrived
+// (title still empty), and a service account.
+const PRINCIPALS: Record<string, { title: string; email: string }> = {
+  "users/alex@example.com": {
+    title: "Alex Kim",
+    email: "alex@example.com",
+  },
+  "users/bot@example.com": {
+    title: "CI Bot",
+    email: "bot@example.com",
+  },
+  "users/new@example.com": {
+    title: "",
+    email: "new@example.com",
+  },
+  "users/deploy@service.bytebase.com": {
+    title: "deploy",
+    email: "deploy@service.bytebase.com",
+  },
+};
+
 vi.mock("@/hooks/useAppState", () => ({
   useEnvironmentList: () => [
-    { name: "environments/prod", title: "Prod" },
-    { name: "environments/test", title: "Test" },
+    { name: "environments/prod", title: "Prod", tags: {} },
+    { name: "environments/test", title: "Test", tags: {} },
   ],
+  usePlanFeature: () => true,
 }));
 
-// Stub EnvironmentLabel — the real component pulls in Pinia stores + theme tokens.
-vi.mock("@/components/EnvironmentLabel", () => ({
-  EnvironmentLabel: ({
-    environmentName,
-    className,
-  }: {
-    environmentName: string;
-    className?: string;
-  }) => (
-    <span data-testid="env-label" className={className}>
-      {environmentName}
-    </span>
-  ),
+vi.mock("./usePrincipal", () => ({
+  usePrincipal: (identifier?: string) =>
+    identifier ? PRINCIPALS[identifier] : undefined,
 }));
 
-// Stub other modules the component pulls in.
+// Stub the badge — the real one pulls in theme tokens and router links.
+vi.mock("@/components/EnvironmentLabel", async () =>
+  (await import("@/test-utils/environmentSelectStub")).environmentBadgeStub()
+);
+
 vi.mock("@/types/v1/database", () => ({
   unknownDatabase: () => ({
     name: "instances/-/databases/-",
@@ -90,12 +98,9 @@ vi.mock("@/stores/app", () => {
   };
 });
 
-vi.mock("@/utils", () => ({
-  displayRoleTitle: (r: string) => r,
-}));
-
 vi.mock("@/utils/issue/cel", () => ({
-  convertFromCELString: async (expr: string) => {
+  readableConditionFromCELString: async (expr: string) => {
+    if (expr === "unreadable") throw new Error("unreadable");
     // Mini parser just for tests: only recognizes "environment_id in [...]".
     const m = expr.match(/environment_id in \[([^\]]*)\]/);
     if (!m) return { environments: undefined };
@@ -115,158 +120,171 @@ vi.mock("../context/IssueDetailContext", () => ({
   useIssueDetailContext: () => mockContextRef.current,
 }));
 
+const issueWith = (
+  overrides: Partial<{
+    role: string;
+    expression: string;
+    user: string;
+    creator: string;
+  }>
+) => ({
+  issue: {
+    creator: overrides.creator ?? "users/alex@example.com",
+    roleGrant: {
+      role: overrides.role ?? "roles/sqlEditorUser",
+      user: overrides.user ?? "users/alex@example.com",
+      condition: { expression: overrides.expression ?? "" },
+    },
+  },
+});
+
 beforeEach(() => {
   mockContextRef.current = undefined;
 });
 
 describe("IssueDetailRoleGrantDetails", () => {
-  test("renders Environments row and warning when role has DDL/DML and env list is non-empty", async () => {
-    mockContextRef.current = {
-      issue: {
-        roleGrant: {
-          role: "roles/sqlEditorUser",
-          condition: {
-            expression: 'resource.environment_id in ["prod", "test"]',
-          },
-        },
-      },
-    };
+  test("the grantee row shows the grant's user, not the creator, and no 'requested by' when they match", () => {
+    mockContextRef.current = issueWith({});
     render(<IssueDetailRoleGrantDetails />);
-    expect(
-      await screen.findByText(/project.members.ddl-current-some/)
-    ).toBeInTheDocument();
-    expect(screen.getByText(/common.environments/)).toBeInTheDocument();
-    // Env titles render as plain text inside the env section.
-    expect(screen.getByText("Prod, Test")).toBeInTheDocument();
+    const row = screen.getByTestId("role-grant-grantee");
+    expect(row.textContent).toContain("Alex Kim");
+    expect(row.textContent).toContain("alex@example.com");
+    expect(row.textContent).not.toContain("requested-by");
   });
 
-  test("renders binding-all warning when condition has no environment clause (unrestricted)", async () => {
-    // Expression with expiration but no environment_id clause — the grant
-    // would apply to ALL environments. This is the highest-risk scenario;
-    // the approver MUST see the warning.
-    mockContextRef.current = {
-      issue: {
-        roleGrant: {
-          role: "roles/sqlEditorUser",
-          condition: {
-            expression: 'request.time < timestamp("2026-12-31T00:00:00Z")',
-          },
-        },
-      },
-    };
+  test("'requested by' appears only when the creator differs from the grantee", () => {
+    mockContextRef.current = issueWith({ creator: "users/bot@example.com" });
     render(<IssueDetailRoleGrantDetails />);
     expect(
-      await screen.findByText(/project.members.ddl-current-all/)
-    ).toBeInTheDocument();
-    // No env list rendered for binding-all.
-    expect(screen.queryByText(/common.environments/)).not.toBeInTheDocument();
+      screen.getByTestId("role-grant-grantee").textContent
+    ).toContain('requested-by {"creator":"CI Bot"}');
   });
 
-  test("renders binding-all warning when expression is empty entirely", async () => {
-    mockContextRef.current = {
-      issue: {
-        roleGrant: {
-          role: "roles/sqlEditorUser",
-          condition: { expression: "" },
-        },
-      },
-    };
+  test("the grantee and what approving grants come before the permission list", async () => {
+    mockContextRef.current = issueWith({
+      expression: 'resource.environment_id in ["prod"]',
+    });
     render(<IssueDetailRoleGrantDetails />);
-    expect(
-      await screen.findByText(/project.members.ddl-current-all/)
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/common.environments/)).not.toBeInTheDocument();
+    const execution = await screen.findByTestId("role-grant-direct-execution");
+    const follows = (a: Element, b: Element) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(screen.getByTestId("role-grant-grantee"), execution)).toBe(
+      true
+    );
+    expect(follows(execution, screen.getByText(/^common\.permissions/))).toBe(
+      true
+    );
   });
 
-  test("hides env section entirely for empty env clause (degenerate binding-none)", async () => {
-    // A request submitted with no envs selected serializes to
-    // `environment_id in []` — degenerate, grants no env access. We hide
-    // the env section to avoid suggesting approval-relevant DDL/DML risk
-    // when the binding wouldn't grant DDL/DML anywhere anyway.
-    mockContextRef.current = {
-      issue: {
-        roleGrant: {
-          role: "roles/sqlEditorUser",
-          condition: { expression: "resource.environment_id in []" },
-        },
-      },
-    };
+  test("a list renders the approver lead naming the grantee, with one chip per environment", async () => {
+    mockContextRef.current = issueWith({
+      expression: 'resource.environment_id in ["prod", "test"]',
+    });
     render(<IssueDetailRoleGrantDetails />);
-    // Wait for the async CEL parse to complete by polling that the loading
-    // guard has lifted (envScope === undefined during parse hides everything).
-    // After parse, if any warning were going to show it would be present;
-    // assert all three are absent.
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    const lead = await screen.findByText(/lead-approver/);
+    expect(lead.textContent).toContain('"grantee":"Alex Kim"');
     expect(
-      screen.queryByText(/project.members.ddl-current-none/)
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/project.members.ddl-current-all/)
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/project.members.ddl-current-some/)
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText(/common.environments/)).not.toBeInTheDocument();
+      screen.getAllByTestId("env-label").map((el) => el.textContent)
+    ).toEqual(["environments/prod", "environments/test"]);
   });
 
-  test("hides warning when role has been deleted (helper returns undefined)", async () => {
-    mockContextRef.current = {
-      issue: {
-        roleGrant: {
-          role: "roles/wasDeleted",
-          condition: { expression: 'resource.environment_id in ["prod"]' },
-        },
-      },
-    };
+  test("the empty list renders the 'none' sentence rather than nothing", async () => {
+    mockContextRef.current = issueWith({
+      expression: "resource.environment_id in []",
+    });
     render(<IssueDetailRoleGrantDetails />);
-    expect(
-      screen.queryByText(/project.members.ddl-current-some/)
-    ).not.toBeInTheDocument();
+    expect(await screen.findByText(/direct-execution\.none/)).toBeTruthy();
+    expect(screen.queryByTestId("env-label")).toBeNull();
   });
 
-  test("hides warning when role lacks DDL/DML perms", async () => {
-    mockContextRef.current = {
-      issue: {
-        roleGrant: {
-          role: "roles/queryOnly",
-          condition: { expression: 'resource.environment_id in ["prod"]' },
-        },
-      },
-    };
+  test("no environment clause renders the unscoped warning", async () => {
+    mockContextRef.current = issueWith({
+      expression: 'request.time < timestamp("2026-10-01T00:00:00Z")',
+    });
     render(<IssueDetailRoleGrantDetails />);
-    expect(
-      screen.queryByText(/project.members.ddl-current-some/)
-    ).not.toBeInTheDocument();
+    expect(await screen.findByText(/direct-execution\.all/)).toBeTruthy();
+  });
+
+  test("an empty expression is unscoped too", () => {
+    mockContextRef.current = issueWith({ expression: "" });
+    render(<IssueDetailRoleGrantDetails />);
+    expect(screen.getByText(/direct-execution\.all/)).toBeTruthy();
+  });
+
+  test("a condition the reader rejects renders the unscoped warning, not nothing", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    try {
+      mockContextRef.current = issueWith({ expression: "unreadable" });
+      render(<IssueDetailRoleGrantDetails />);
+      expect(await screen.findByText(/direct-execution\.all/)).toBeTruthy();
+      expect(consoleError).toHaveBeenCalledWith(
+        "Failed to parse CEL expression:",
+        expect.any(Error)
+      );
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  test("a role without DDL/DML has no execution row", () => {
+    mockContextRef.current = issueWith({ role: "roles/queryOnly" });
+    render(<IssueDetailRoleGrantDetails />);
+    expect(screen.queryByTestId("role-grant-direct-execution")).toBeNull();
+  });
+
+  test("a service-account grantee is marked as one and named from its email until its record arrives", async () => {
+    mockContextRef.current = issueWith({
+      user: "users/deploy@service.bytebase.com",
+      creator: "users/alex@example.com",
+      expression: 'resource.environment_id in ["prod"]',
+    });
+    render(<IssueDetailRoleGrantDetails />);
+    expect(screen.getByText("settings.members.service-account")).toBeTruthy();
+    expect(screen.getByText("deploy")).toBeTruthy();
+    expect(screen.getByText("deploy@service.bytebase.com")).toBeTruthy();
+    expect((await screen.findByText(/lead-approver/)).textContent).toContain(
+      '"grantee":"deploy"'
+    );
+  });
+
+  test("a person as grantee carries no account badge", () => {
+    mockContextRef.current = issueWith({});
+    render(<IssueDetailRoleGrantDetails />);
+    expect(screen.queryByText("settings.members.service-account")).toBeNull();
+    expect(screen.queryByText("settings.members.workload-identity")).toBeNull();
+  });
+
+  test("a person whose record has not arrived is shown by email, not by resource name", () => {
+    mockContextRef.current = issueWith({
+      user: "users/new@example.com",
+      creator: "users/bot@example.com",
+    });
+    render(<IssueDetailRoleGrantDetails />);
+    expect(screen.getByText("new@example.com")).toBeTruthy();
+    expect(screen.queryByText("users/new@example.com")).toBeNull();
+  });
+
+  test("the role's description renders under its title", () => {
+    mockContextRef.current = issueWith({});
+    render(<IssueDetailRoleGrantDetails />);
+    expect(screen.getByText("DESC(roles/sqlEditorUser)")).toBeTruthy();
   });
 
   test("clears stale environments when the issue prop changes", async () => {
-    mockContextRef.current = {
-      issue: {
-        roleGrant: {
-          role: "roles/sqlEditorUser",
-          condition: { expression: 'resource.environment_id in ["prod"]' },
-        },
-      },
-    };
+    mockContextRef.current = issueWith({
+      expression: 'resource.environment_id in ["prod"]',
+    });
     const { rerender } = render(<IssueDetailRoleGrantDetails />);
-    expect(await screen.findByText("Prod")).toBeInTheDocument();
+    await screen.findByText(/lead-approver/);
 
-    mockContextRef.current = {
-      issue: {
-        roleGrant: {
-          role: "roles/sqlEditorUser",
-          condition: { expression: 'resource.environment_id in ["test"]' },
-        },
-      },
-    };
+    mockContextRef.current = issueWith({
+      expression: 'resource.environment_id in ["test"]',
+    });
     rerender(<IssueDetailRoleGrantDetails />);
-
-    // Without the synchronous setCondition(undefined), stale "Prod" leaks
-    // into the env row until the async CEL parse for "test" resolves.
-    expect(screen.queryByText("Prod")).not.toBeInTheDocument();
-
-    // After the new parse, "Test" shows; "Prod" stays absent.
-    expect(await screen.findByText("Test")).toBeInTheDocument();
-    expect(screen.queryByText("Prod")).not.toBeInTheDocument();
+    expect(
+      (await screen.findAllByTestId("env-label")).map((el) => el.textContent)
+    ).toEqual(["environments/test"]);
   });
 });

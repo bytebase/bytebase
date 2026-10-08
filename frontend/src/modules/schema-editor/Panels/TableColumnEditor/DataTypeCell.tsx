@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { Button } from "@/components/ui/button";
 import {
   getPortalDropdownStyle,
   isPortalDropdownStyleEqual,
@@ -29,10 +30,10 @@ interface Props {
 }
 
 /**
- * Free-text type input with a clickable suggestion dropdown, mirroring the old
- * Vue `DropdownInput`: users can type any custom type (e.g. `varchar(255)`) or
- * pick one of the engine's known types from the dropdown. The native
- * `<input list>` it replaced never opened reliably on click.
+ * Free-text type input with a clickable suggestion dropdown: users can type
+ * any custom type (e.g. `varchar(255)`) or pick one of the engine's known
+ * types from the dropdown. A native `<input list>` doesn't open reliably on
+ * click.
  *
  * Focus/click handlers live on the wrapping container because Base UI's Input
  * can swallow `onClick`/`onFocus`; React focus/click events still bubble there.
@@ -52,9 +53,9 @@ export function DataTypeCell({
   const value = column.type ?? "";
 
   // The type as first rendered. We only filter once the user edits the value
-  // away from this; an unchanged value shows the full list (matches Vue's
-  // `allowFilter`). Otherwise opening e.g. a `bigint` cell would filter to just
-  // "bigint" while a `timestamp(...)` cell — matching nothing — shows them all.
+  // away from this; an unchanged value shows the full list. Otherwise opening
+  // e.g. a `bigint` cell would filter to just "bigint" while a `timestamp(...)`
+  // cell — matching nothing — shows them all.
   const originalTypeRef = useRef(value);
 
   const allSuggestions = useMemo(
@@ -171,11 +172,13 @@ export function DataTypeCell({
             )}
           >
             {suggestions.map((type) => (
-              <button
+              <Button
+                appearance="secondary"
+                size="md"
                 key={type}
                 type="button"
                 className={cn(
-                  "block w-full px-3 py-1 text-left text-sm hover:bg-control-bg",
+                  "h-auto w-full justify-start px-3 py-1 text-left text-sm hover:bg-control-bg",
                   type === value && "bg-accent/5 text-accent"
                 )}
                 // onMouseDown (not onClick) so selection happens before the
@@ -186,7 +189,7 @@ export function DataTypeCell({
                 }}
               >
                 {type}
-              </button>
+              </Button>
             ))}
           </div>,
           getLayerRoot("overlay")

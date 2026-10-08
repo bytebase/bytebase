@@ -63,6 +63,7 @@ export function ReviewCommentComposer({ issueName }: { issueName: string }) {
       <div className="flex items-center gap-x-3">
         <div className="shrink-0 pl-0.5">
           <UserAvatar
+            colorSeed={currentUser.email}
             size="sm"
             title={currentUser.title || currentUser.email}
           />
@@ -83,7 +84,11 @@ export function ReviewCommentComposer({ issueName }: { issueName: string }) {
   return (
     <div className="flex items-start gap-x-3">
       <div className="shrink-0 pl-0.5 pt-1">
-        <UserAvatar size="sm" title={currentUser.title || currentUser.email} />
+        <UserAvatar
+          colorSeed={currentUser.email}
+          size="sm"
+          title={currentUser.title || currentUser.email}
+        />
       </div>
       <div className="min-w-0 flex-1">
         <MarkdownEditor

@@ -11,9 +11,8 @@ interface SchemaSelectorProps {
 }
 
 /**
- * React port of `Navigator/SchemaSelector.vue`. Multi-select for which
- * schemas to render in the diagram. Used only when the engine has a
- * `schema` property (e.g. Postgres).
+ * Multi-select for which schemas to render in the diagram. Used only when
+ * the engine has a `schema` property (e.g. Postgres).
  */
 export function SchemaSelector({
   schemas,

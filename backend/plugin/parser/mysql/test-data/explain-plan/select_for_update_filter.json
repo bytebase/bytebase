@@ -1,0 +1,25 @@
+{
+  "query_block": {
+    "select_id": 1,
+    "cost_info": {
+      "query_cost": "101.75"
+    },
+    "table": {
+      "table_name": "t",
+      "access_type": "ALL",
+      "rows_examined_per_scan": 1000,
+      "rows_produced_per_join": 100,
+      "filtered": "10.00",
+      "cost_info": {
+        "read_cost": "91.75",
+        "eval_cost": "10.00",
+        "prefix_cost": "101.75",
+        "data_read_per_join": "10K"
+      },
+      "used_columns": [
+        "d"
+      ],
+      "attached_condition": "(`probe`.`t`.`d` = 3)"
+    }
+  }
+}

@@ -16,9 +16,9 @@ served by no ceiling.
 
 | Class | Methods | Meaning |
 |---|---|---|
-| READ | 57 | served to a read-only session and above |
+| READ | 56 | served to a read-only session and above |
 | WRITE | 41 | served to a read-write session only |
-| EXCLUDED | 85 | served by no ceiling this phase ships |
+| EXCLUDED | 86 | served by no ceiling this phase ships |
 | FORBIDDEN | 35 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **218** | |
@@ -36,7 +36,7 @@ served by no ceiling.
 | AuditLogService/ExportAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.export |
 | AuditLogService/SearchAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.search |
 | AuthService/ExchangeToken | FORBIDDEN | MINTS_CREDENTIAL | — |
-| AuthService/GetAuthenticationRestriction | READ | — | — |
+| AuthService/GetAuthenticationInfo | READ | — | — |
 | AuthService/Login | FORBIDDEN | MINTS_CREDENTIAL | — |
 | AuthService/Logout | FORBIDDEN | ENDS_SESSION | — |
 | AuthService/Refresh | FORBIDDEN | MINTS_CREDENTIAL | — |
@@ -78,7 +78,7 @@ served by no ceiling.
 | IdentityProviderService/CreateIdentityProvider | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.identityProviders.create |
 | IdentityProviderService/DeleteIdentityProvider | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.identityProviders.delete |
 | IdentityProviderService/GetIdentityProvider | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.identityProviders.get |
-| IdentityProviderService/ListIdentityProviders | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
+| IdentityProviderService/ListIdentityProviders | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.identityProviders.list |
 | IdentityProviderService/TestIdentityProvider | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.identityProviders.update |
 | IdentityProviderService/UpdateIdentityProvider | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.identityProviders.update |
 | InstanceRoleService/ListInstanceRoles | READ | — | bb.instanceRoles.list |
@@ -209,6 +209,7 @@ served by no ceiling.
 | SubscriptionService/GetPaymentInfo | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/GetSubscription | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
 | SubscriptionService/ListPurchasePlans | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
+| SubscriptionService/StartTrial | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/UpdatePurchase | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/UploadLicense | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/VerifyCheckoutSession | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
@@ -236,7 +237,6 @@ served by no ceiling.
 | WorkloadIdentityService/UpdateWorkloadIdentity | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.workloadIdentities.update |
 | WorkspaceService/DeleteWorkspace | FORBIDDEN | ENDS_MEMBERSHIP | bb.workspaces.delete |
 | WorkspaceService/GetIamPolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workspaces.getIamPolicy |
-| WorkspaceService/GetMCPInfo | READ | — | — |
 | WorkspaceService/GetWorkspace | READ | — | — |
 | WorkspaceService/LeaveWorkspace | FORBIDDEN | ENDS_MEMBERSHIP | — |
 | WorkspaceService/ListWorkspaces | READ | — | — |

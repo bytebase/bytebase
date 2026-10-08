@@ -2,20 +2,20 @@ package store_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
 func TestClaimAvailablePlanCheckRunsDefaultsMissingApprovalInputVersion(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -42,6 +42,7 @@ func TestClaimAvailablePlanCheckRunsDefaultsMissingApprovalInputVersion(t *testi
 }
 
 func TestClaimAvailablePlanCheckRunsSkipsArchivedProjects(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -81,6 +82,7 @@ func TestClaimAvailablePlanCheckRunsSkipsArchivedProjects(t *testing.T) {
 }
 
 func TestUpdatePlanCheckRunIfApprovalInputVersionSkipsStaleWorkerOnRefreshedRow(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -136,6 +138,7 @@ func TestUpdatePlanCheckRunIfApprovalInputVersionSkipsStaleWorkerOnRefreshedRow(
 }
 
 func TestUpdatePlanCheckRunIfApprovalInputVersionAllowsClaimedRowAfterPlanVersionBump(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -181,6 +184,7 @@ func TestUpdatePlanCheckRunIfApprovalInputVersionAllowsClaimedRowAfterPlanVersio
 }
 
 func TestCreatePlanCheckRunDoesNotResetActiveSameVersionRun(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -221,6 +225,7 @@ func TestCreatePlanCheckRunDoesNotResetActiveSameVersionRun(t *testing.T) {
 }
 
 func TestCreatePlanCheckRunDoesNotResetActiveSameVersionAvailableRun(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -256,6 +261,7 @@ func TestCreatePlanCheckRunDoesNotResetActiveSameVersionAvailableRun(t *testing.
 }
 
 func TestCreatePlanCheckRunAllowsTerminalSameVersionRerun(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -305,6 +311,7 @@ func TestCreatePlanCheckRunAllowsTerminalSameVersionRerun(t *testing.T) {
 }
 
 func TestCreatePlanCheckRunSkipsStaleIncomingApprovalInputVersion(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -340,6 +347,7 @@ func TestCreatePlanCheckRunSkipsStaleIncomingApprovalInputVersion(t *testing.T) 
 }
 
 func TestRefreshPlanCheckRunIfStaleApprovalInputVersionDoesNotResetRunningCheck(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -376,6 +384,7 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionDoesNotResetRunningCheck(
 }
 
 func TestRefreshPlanCheckRunIfStaleApprovalInputVersionRefreshesTerminalStaleCheck(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -424,6 +433,7 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionRefreshesTerminalStaleChe
 }
 
 func TestRefreshPlanCheckRunIfStaleApprovalInputVersionSkipsSameVersionRow(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -471,6 +481,7 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionSkipsSameVersionRow(t *te
 }
 
 func TestRefreshPlanCheckRunIfStaleApprovalInputVersionDoesNotRewindNewerRow(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -517,6 +528,7 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionDoesNotRewindNewerRow(t *
 }
 
 func TestCancelPlanCheckRunIfApprovalInputVersionSkipsRefreshedRow(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -571,6 +583,7 @@ func TestCancelPlanCheckRunIfApprovalInputVersionSkipsRefreshedRow(t *testing.T)
 }
 
 func TestCancelPlanCheckRunIfApprovalInputVersionAllowsObservedStaleRow(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -608,6 +621,7 @@ func TestCancelPlanCheckRunIfApprovalInputVersionAllowsObservedStaleRow(t *testi
 }
 
 func TestFailStalePlanCheckRunsPreservesApprovalInputVersion(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -644,11 +658,7 @@ func TestFailStalePlanCheckRunsPreservesApprovalInputVersion(t *testing.T) {
 func setupPlanCheckRunVersionStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
@@ -656,14 +666,6 @@ func setupPlanCheckRunVersionStore(ctx context.Context, t *testing.T) *store.Sto
 		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
 	`)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 	return s
 }
 

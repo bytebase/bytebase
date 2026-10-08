@@ -20,7 +20,6 @@ const iconByTab = {
 
 /**
  * Single tab button in the SQL Editor aside panel's left gutter.
- * Replaces frontend/src/views/sql-editor/AsidePanel/GutterBar/TabItem.vue.
  * Active state reflects `useSQLEditorStore().asidePanelTab`; click handler
  * is supplied by the GutterBar parent (which writes the store).
  */
@@ -41,8 +40,9 @@ export function TabItem({ tab, onClick }: TabItemProps) {
     <Tooltip content={label} side="right" delayDuration={300}>
       <Button
         appearance="secondary"
+        size="lg"
         className={cn(
-          "size-10 p-0",
+          "w-10 p-0",
           // Active is a solid accent fill with the on-accent text color; hover
           // is a faint accent tint. Both keyed off the accent hue so active
           // always reads stronger than hover — the ghost default's full-surface

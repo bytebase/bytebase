@@ -15,7 +15,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -87,6 +86,13 @@ func parseSQLTimestamp(value string) (time.Time, error) {
 }
 
 func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(string, *sql.ColumnType, any) *v1pb.RowValue, limit int64) (*v1pb.QueryResult, error) {
+	return RowsToLimitedQueryResult(rows, valueMaker, rowValueConverter, limit, 0)
+}
+
+// RowsToLimitedQueryResult is RowsToQueryResult keeping at most maxRows rows, so that only the
+// rows it returns count towards limit. It reads the rows past maxRows without keeping them,
+// leaving rows at the end of the result set.
+func RowsToLimitedQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(string, *sql.ColumnType, any) *v1pb.RowValue, limit int64, maxRows int) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -109,6 +115,9 @@ func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) 
 
 	if columnLength > 0 {
 		for rows.Next() {
+			if maxRows > 0 && len(result.Rows) >= maxRows {
+				continue
+			}
 			values := make([]any, columnLength)
 			for i, v := range columnTypeNames {
 				values[i] = valueMaker(v, columnTypes[i])
@@ -126,7 +135,7 @@ func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) 
 			result.Rows = append(result.Rows, row)
 			n := len(result.Rows)
 			if (n&(n-1) == 0) && int64(proto.Size(result)) > limit {
-				result.Error = common.FormatMaximumSQLResultSizeMessage(limit)
+				result.Error = FormatMaximumSQLResultSizeMessage(limit)
 				break
 			}
 		}
@@ -202,7 +211,7 @@ func ConvertCommonValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
 	return NullRowValue
 }
 
-// TrimStatement trims the unused characters from the statement for making getStatementWithResultLimit() happy.
+// TrimStatement trims the unused characters from a statement before running it.
 func TrimStatement(statement string) string {
 	return strings.TrimLeftFunc(strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon), unicode.IsSpace)
 }
@@ -231,4 +240,8 @@ func GetColumnIndex(columns []string, name string) (int, bool) {
 		}
 	}
 	return 0, false
+}
+
+func FormatMaximumSQLResultSizeMessage(limit int64) string {
+	return fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", limit/1024/1024)
 }

@@ -1,8 +1,12 @@
 import { Check } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { HumanizeTs } from "@/components/HumanizeTs";
+import {
+  TIMESTAMP_COLUMN_MIN_WIDTH,
+  TIMESTAMP_COLUMN_WIDTH,
+} from "@/components/timestampColumn";
 import {
   Table,
   TableBody,
@@ -11,7 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getDateForPbTimestampProtoEs } from "@/types";
+import { useColumnWidths } from "@/hooks/useColumnWidths";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type Changelog,
   Changelog_Status,
@@ -56,6 +61,32 @@ export function DatabaseChangelogTable({
   loading: boolean;
 }) {
   const { t } = useTranslation();
+  // A fixed-layout table spreads any spare width across every column that
+  // has one, so the rollout title alone is left unsized: it takes what the
+  // others leave, and the timestamp keeps exactly the width its form needs
+  // at any viewport. Its default is only the floor the table keeps before it
+  // scrolls.
+  const columns = useMemo(
+    () => [
+      { key: "status", title: "", defaultWidth: 48, resizable: false },
+      {
+        key: "created",
+        title: t("common.created-at"),
+        defaultWidth: TIMESTAMP_COLUMN_WIDTH.compact,
+        minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
+        resizable: true,
+      },
+      {
+        key: "rollout",
+        title: t("common.rollout"),
+        defaultWidth: 200,
+        resizable: false,
+        fills: true,
+      },
+    ],
+    [t]
+  );
+  const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
   const handleRowClick = useCallback(
     (changelog: Changelog, e: React.MouseEvent) => {
@@ -76,17 +107,30 @@ export function DatabaseChangelogTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-sm border border-block-border">
-      <Table className="min-w-full">
+    <div className="overflow-x-auto rounded-sm border border-block-border">
+      <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
+        <colgroup>
+          {columns.map((column, index) => (
+            <col
+              key={column.key}
+              style={column.fills ? undefined : { width: `${widths[index]}px` }}
+            />
+          ))}
+        </colgroup>
         <TableHeader className="bg-control-bg">
           <TableRow className="text-left text-sm text-control-light hover:bg-control-bg">
-            <TableHead className="w-12" />
-            <TableHead className="w-[180px]">
-              {t("common.created-at")}
-            </TableHead>
-            <TableHead className="min-w-[200px]">
-              {t("common.rollout")}
-            </TableHead>
+            {columns.map((column, index) => (
+              <TableHead
+                key={column.key}
+                className="whitespace-nowrap"
+                resizable={column.resizable}
+                onResizeStart={
+                  column.resizable ? (e) => onResizeStart(index, e) : undefined
+                }
+              >
+                {column.title}
+              </TableHead>
+            ))}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -102,13 +146,9 @@ export function DatabaseChangelogTable({
               <TableCell className="text-main">
                 {changelog.createTime ? (
                   <HumanizeTs
-                    ts={
-                      (
-                        getDateForPbTimestampProtoEs(
-                          changelog.createTime
-                        ) as Date
-                      ).getTime() / 1000
-                    }
+                    mode="compact"
+                    truncate
+                    tsMs={getTimeForPbTimestampProtoEs(changelog.createTime)}
                   />
                 ) : (
                   "-"

@@ -19,8 +19,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/audit"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -341,8 +341,8 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// Normalize the resolved address onto the request so the per-request
 		// path sees it too: receiving middleware gets each request's headers,
 		// but never its peer address.
-		resolvedIP := common.CallerIP(c.Request())
-		c.Request().Header.Set(common.HeaderRealIP, resolvedIP)
+		resolvedIP := audit.CallerIP(c.Request())
+		c.Request().Header.Set(audit.HeaderRealIP, resolvedIP)
 		ctx = withCallerIP(ctx, resolvedIP)
 		ctx = withSessionBinding(ctx, sessionBinding{
 			fingerprint: sessionFingerprint(delegated),
@@ -488,7 +488,7 @@ func sessionFingerprint(identity auth.DelegatedMCPCredential) string {
 func liveRequestMetadata(next mcp.MethodHandler) mcp.MethodHandler {
 	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 		if extra := req.GetExtra(); extra != nil && extra.Header != nil {
-			if ip := common.CallerIPFromHeaders(extra.Header); ip != "" {
+			if ip := audit.CallerIPFromHeaders(extra.Header); ip != "" {
 				ctx = withCallerIP(ctx, ip)
 			}
 			if token, err := auth.GetTokenFromHeaders(extra.Header); err == nil && token != "" {

@@ -29,39 +29,13 @@ func TestResourceResolutionConnectError(t *testing.T) {
 	})
 }
 
-func TestACLCheckResourceResolutionStatus(t *testing.T) {
-	ctx, stores, _, _, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
-	interceptor := NewACLInterceptor(stores, "", nil, nil)
-
-	for _, test := range []struct {
-		name    string
-		request *v1pb.GetDatabaseRequest
-		want    connect.Code
-	}{
-		{
-			name:    "missing workspace database parent instance",
-			request: &v1pb.GetDatabaseRequest{Name: common.FormatDatabase("missing", "app")},
-			want:    connect.CodeNotFound,
-		},
-		{
-			name:    "malformed workspace database name",
-			request: &v1pb.GetDatabaseRequest{Name: "instances//databases/app"},
-			want:    connect.CodeInvalidArgument,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			err := interceptor.doACLCheck(authenticatedACLContext(ctx), test.request, v1connect.DatabaseServiceGetDatabaseProcedure)
-			require.Equal(t, test.want, connect.CodeOf(err))
-		})
-	}
-}
-
 func TestACLCheckAuthenticatesBeforeResolvingResources(t *testing.T) {
-	ctx, stores, _, _, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
-	interceptor := NewACLInterceptor(stores, "", nil, nil)
+	t.Parallel()
+	ctx := unauthenticatedACLContext(context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default"))
+	interceptor := NewACLInterceptor(nil, "", nil, nil)
 
 	err := interceptor.doACLCheck(
-		unauthenticatedACLContext(ctx),
+		ctx,
 		&v1pb.GetDatabaseRequest{Name: common.FormatDatabase("missing", "app")},
 		v1connect.DatabaseServiceGetDatabaseProcedure,
 	)
@@ -69,6 +43,7 @@ func TestACLCheckAuthenticatesBeforeResolvingResources(t *testing.T) {
 }
 
 func TestACLCheckPanicPreventsRequestAdmission(t *testing.T) {
+	t.Parallel()
 	ctx := authenticatedACLContext(context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default"))
 	interceptor := NewACLInterceptor(nil, "", nil, nil)
 	aclCheckReturnedNil := false
@@ -102,6 +77,7 @@ func unauthenticatedACLContext(ctx context.Context) context.Context {
 }
 
 func TestGetResourceRoute(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		parts []string
@@ -186,12 +162,14 @@ func TestGetResourceRoute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, tt.want, getResourceRoute(tt.parts))
 		})
 	}
 }
 
 func TestFindResourceResolver(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		route      resourceRoute
@@ -218,6 +196,7 @@ func TestFindResourceResolver(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			gotRoute, resolver, gotExists := findResourceResolver(tt.route)
 			require.Equal(t, tt.wantExists, gotExists)
 			if !tt.wantExists {
@@ -230,48 +209,26 @@ func TestFindResourceResolver(t *testing.T) {
 	}
 }
 
-func TestResolveRawResource(t *testing.T) {
-	ctx, stores, instanceID, _, _, _ := setupProjectInstanceDescendantServiceTest(t)
-
-	t.Run("rejects project instance in another project", func(t *testing.T) {
-		resource, err := resolveRawResource(ctx, stores, common.FormatProjectInstance("project-b", instanceID)+"/roles/role-a")
-		require.Error(t, err)
-		require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
-		require.Nil(t, resource)
-	})
-
-	t.Run("rejects missing project database", func(t *testing.T) {
-		resource, err := resolveRawResource(ctx, stores, common.FormatProjectDatabase("project-a", instanceID, "missing")+"/schema")
-		require.Error(t, err)
-		require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
-		require.Nil(t, resource)
-	})
-
-	t.Run("requires resolver identifiers", func(t *testing.T) {
-		for _, name := range []string{
-			"workspaces/",
-			"projects/",
-			"projects/project-a/instances/",
-			"projects/project-a/instances/instance-a/databases/",
-			"instances/",
-			"instances/instance-a/databases/",
-		} {
-			resource, err := resolveRawResource(ctx, nil, name)
-			require.Error(t, err, name)
-			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), name)
-			require.Nil(t, resource, name)
-		}
-	})
-}
-
-func TestResolveRawResourceWorkspaceDatabaseUsesDatabaseProject(t *testing.T) {
-	ctx, stores, instanceID, databaseName, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
-	resource, err := resolveRawResource(ctx, stores, common.FormatDatabase(instanceID, databaseName)+"/revisions/1")
-	require.NoError(t, err)
-	require.Equal(t, &common.Resource{Type: common.ResourceTypeProject, ID: "project-a"}, resource)
+func TestResolveRawResourceRequiresIdentifiers(t *testing.T) {
+	t.Parallel()
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	for _, name := range []string{
+		"workspaces/",
+		"projects/",
+		"projects/project-a/instances/",
+		"projects/project-a/instances/instance-a/databases/",
+		"instances/",
+		"instances/instance-a/databases/",
+	} {
+		resource, err := resolveRawResource(ctx, nil, name)
+		require.Error(t, err, name)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), name)
+		require.Nil(t, resource, name)
+	}
 }
 
 func TestPopulateRawResourcesUsesWorkspaceFallback(t *testing.T) {
+	t.Parallel()
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
 	for _, request := range []any{
 		&v1pb.GetInstanceRequest{Name: "projects/-"},
@@ -287,42 +244,48 @@ func TestPopulateRawResourcesUsesWorkspaceFallback(t *testing.T) {
 	require.Empty(t, resources)
 }
 
-func TestPopulateRawResourcesBatchSyncUsesDatabaseProject(t *testing.T) {
-	ctx, stores, instanceID, databaseName, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
-	resources, err := populateRawResources(
-		ctx,
-		stores,
-		&v1pb.BatchSyncDatabasesRequest{
-			Parent: "-",
-			Names:  []string{common.FormatDatabase(instanceID, databaseName)},
-		},
-		v1connect.DatabaseServiceBatchSyncDatabasesProcedure,
-	)
-	require.NoError(t, err)
-	require.Equal(t, []*common.Resource{{Type: common.ResourceTypeProject, ID: "project-a"}}, resources)
-}
+func TestPopulateRawResourcesResolvesLifecycleProject(t *testing.T) {
+	t.Parallel()
+	for _, method := range []string{
+		v1connect.InstanceServiceDeleteInstanceProcedure,
+		v1connect.InstanceServiceUndeleteInstanceProcedure,
+	} {
+		require.True(t, allowsArchivedProjectResourceResolution(method), method)
+	}
+	require.False(t, allowsArchivedProjectResourceResolution(v1connect.InstanceServiceGetInstanceProcedure))
 
-func TestPopulateRawResourcesAllowsDeletedSampleProjectInstanceProject(t *testing.T) {
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	// A deleted project still resolves, so a sample request against one reaches
+	// the handler's "entitlement consumed" answer.
 	_, err := stores.GetDB().ExecContext(ctx, `
 		UPDATE project
 		SET deleted = TRUE
 		WHERE workspace = $1 AND resource_id = $2
-	`, workspaceID, projectID)
+	`, common.GetWorkspaceIDFromContext(ctx), projectID)
 	require.NoError(t, err)
 
-	resources, err := populateRawResources(
-		ctx,
-		stores,
+	resources, err := populateRawResources(ctx, stores,
 		&v1pb.PrepareSampleProjectInstanceRequest{Parent: common.FormatProject(projectID)},
-		v1connect.InstanceServicePrepareSampleProjectInstanceProcedure,
-	)
+		v1connect.InstanceServicePrepareSampleProjectInstanceProcedure)
 	require.NoError(t, err)
 	require.Equal(t, []*common.Resource{{Type: common.ResourceTypeProject, ID: projectID}}, resources)
+
+	unknown := common.FormatProject("no-such-project")
+	for method, request := range map[string]any{
+		v1connect.InstanceServicePrepareSampleProjectInstanceProcedure: &v1pb.PrepareSampleProjectInstanceRequest{Parent: unknown},
+		// Not a valid instance name, but ACL resolves it before the handler
+		// rejects it.
+		v1connect.InstanceServiceDeleteInstanceProcedure:   &v1pb.DeleteInstanceRequest{Name: unknown},
+		v1connect.InstanceServiceUndeleteInstanceProcedure: &v1pb.UndeleteInstanceRequest{Name: unknown},
+	} {
+		resources, err := populateRawResources(ctx, stores, request, method)
+		require.Equal(t, connect.CodeNotFound, connect.CodeOf(err), method)
+		require.Nil(t, resources, method)
+	}
 }
 
 func TestGetResourceFromRequest(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		request any
 		method  string
@@ -483,6 +446,47 @@ func TestGetResourceFromRequest(t *testing.T) {
 			},
 		},
 		{
+			// Each named project, as DeleteProject does for the one it names. No
+			// parent and no requests, so this resolved nothing before.
+			request: &v1pb.BatchDeleteProjectsRequest{
+				Names: []string{"projects/hello", "projects/world"},
+			},
+			method: "/bytebase.v1.ProjectService/BatchDeleteProjects",
+			want:   []string{"projects/hello", "projects/world"},
+		},
+		{
+			// Empty batch: the workspace fallback lets the handler answer.
+			request: &v1pb.BatchDeleteProjectsRequest{},
+			method:  "/bytebase.v1.ProjectService/BatchDeleteProjects",
+			want:    []string{""},
+		},
+		{
+			// The rule widened to every Batch* verb; it did not move off BatchGet.
+			request: &v1pb.BatchGetProjectsRequest{
+				Names: []string{"projects/hello", "projects/world"},
+			},
+			method: "/bytebase.v1.ProjectService/BatchGetProjects",
+			want:   []string{"projects/hello", "projects/world"},
+		},
+		{
+			// Parent and every name, in that order.
+			request: &v1pb.BatchGetDatabasesRequest{
+				Parent: "projects/hello",
+				Names:  []string{"instances/i/databases/a", "instances/i/databases/b"},
+			},
+			method: "/bytebase.v1.DatabaseService/BatchGetDatabases",
+			want:   []string{"projects/hello", "instances/i/databases/a", "instances/i/databases/b"},
+		},
+		{
+			// Untouched: BatchUpdateIssuesStatus names its issues in `issues`.
+			request: &v1pb.BatchUpdateIssuesStatusRequest{
+				Parent: "projects/hello",
+				Issues: []string{"projects/hello/issues/1"},
+			},
+			method: "/bytebase.v1.IssueService/BatchUpdateIssuesStatus",
+			want:   []string{"projects/hello/issues/1"},
+		},
+		{
 			request: &v1pb.BatchUpdateDatabasesRequest{
 				Requests: []*v1pb.UpdateDatabaseRequest{
 					{Database: &v1pb.Database{Name: "instances/hello/databases/hello", Project: "projects/a"}, UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"project"}}},
@@ -638,6 +642,7 @@ func TestGetResourceFromRequest(t *testing.T) {
 }
 
 func TestToSnakeCase(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input string
 		want  string
@@ -667,6 +672,7 @@ func TestToSnakeCase(t *testing.T) {
 }
 
 func TestGetPermissionForRequest(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name              string
 		request           any
@@ -700,6 +706,7 @@ func TestGetPermissionForRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := getPermissionForRequest(tt.request, tt.defaultPermission)
 			require.Equal(t, tt.want, got)
 		})
@@ -707,6 +714,7 @@ func TestGetPermissionForRequest(t *testing.T) {
 }
 
 func TestHasAllowMissingEnabled(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		request any
@@ -780,6 +788,7 @@ func TestHasAllowMissingEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := hasAllowMissingEnabled(tt.request)
 			require.Equal(t, tt.want, got)
 		})

@@ -79,24 +79,22 @@ type mcpClampFixture struct {
 	token    string
 }
 
-func setupMCPClampFixture(ctx context.Context, t *testing.T) *mcpClampFixture {
+// setupMCPClampFixture builds the fixture on the caller's controller, so each
+// test decides whether a project of its own is enough or it needs a workspace.
+func setupMCPClampFixture(ctx context.Context, t *testing.T, ctl *controller) *mcpClampFixture {
 	t.Helper()
 	a := require.New(t)
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	t.Cleanup(func() { ctl.Close(ctx) })
 
-	container, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	container := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("mcp-clamp"),
 		Instance: &v1pb.Instance{
-			Title:       "MCP clamp",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{container.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "MCP clamp",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{container.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -157,7 +155,8 @@ func (f *mcpClampFixture) employeeCount(t *testing.T) int {
 func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 
 	// A read is served, and the response says what held it to reads. Postgres
 	// gets the driver session too, so the strongest depth is what it reports.
@@ -207,7 +206,7 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	// same human working in the console.
 	// Query is a database-scoped method, so its rows are parented to the
 	// project rather than to the workspace.
-	rows := deniedMCPRows(f.ctx, t, f.ctl, f.ctl.project.Name, "/bytebase.v1.SQLService/Query")
+	rows := mcpAuditRows(f.ctx, t, f.ctl, f.ctl.project.Name, "/bytebase.v1.SQLService/Query")
 	a.NotEmpty(rows, "a clamp denial must be visible to an operator with MCP provenance")
 	var denied *v1pb.AuditLog
 	for _, row := range rows {
@@ -218,6 +217,12 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	}
 	a.NotNil(denied, "the denied query must have produced a row of its own")
 	a.Contains(denied.Status.Message, "READ_ONLY")
+	a.Equal(v1pb.AuditLog_WARNING, denied.Severity, "the clamp marks its refusal")
+	for _, row := range rows {
+		if row.Status == nil {
+			a.Equal(v1pb.AuditLog_INFO, row.Severity, "a served query is not marked")
+		}
+	}
 
 	// The control. Same principal, same credential, same statement; only the
 	// ceiling changed, and the INSERT now lands. It runs on a session opened
@@ -266,7 +271,8 @@ func (f *mcpClampFixture) sequenceValue(t *testing.T) int64 {
 func TestMCPReadOnlyCeilingRefusesASessionRewrite(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 	before := f.sequenceValue(t)
 
 	disarm := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
@@ -291,7 +297,8 @@ func TestMCPReadOnlyCeilingRefusesASessionRewrite(t *testing.T) {
 func TestMCPReadOnlyCeilingJudgesTheWholeBatch(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 
 	reads := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
 		"SELECT id FROM employee; SELECT name FROM employee;")
@@ -314,7 +321,8 @@ func TestMCPReadOnlyCeilingJudgesTheWholeBatch(t *testing.T) {
 func TestMCPReadOnlyCeilingLeavesTheHumanPathAlone(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 
 	// The agent's read runs first and is SERVED, which is what actually opens
 	// a read-only Postgres session; a refused statement never reaches a
@@ -356,7 +364,8 @@ func TestMCPReadOnlyCeilingLeavesTheHumanPathAlone(t *testing.T) {
 func TestMCPReadOnlyTighteningBitesAnOpenSession(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 
 	// Start read-write, on a session opened under that ceiling.
 	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.MCPSetting_READ_WRITE))
@@ -398,7 +407,8 @@ func TestMCPReadOnlyTighteningBitesAnOpenSession(t *testing.T) {
 func TestMCPReadOnlyClampCoversAnExplainRequest(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 
 	explained := callAPIOnSession(f.ctx, t, f.session, "SQLService/Query", map[string]any{
 		"name":      f.database,
@@ -426,10 +436,7 @@ func TestMCPCutoverAdmitsReadOnlyAndNothingElse(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
 		Name: "workspaces/-",
@@ -517,7 +524,8 @@ func TestMCPCutoverAdmitsReadOnlyAndNothingElse(t *testing.T) {
 func TestMCPReadOnlyRoleDowngradeBitesTheNextRequest(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 
 	const readerEmail = "clamp-reader@example.com"
 	const readerPassword = "1024bytebase"

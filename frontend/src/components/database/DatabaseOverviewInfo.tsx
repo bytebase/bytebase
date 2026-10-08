@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { useAppDatabaseMetadata } from "@/hooks/useAppDatabaseMetadata";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
   type Database,
@@ -15,9 +16,7 @@ export function DatabaseOverviewInfo({ database }: { database: Database }) {
   const { t } = useTranslation();
   const databaseEngine = getDatabaseEngine(database);
   const databaseSchemaMetadata = useAppDatabaseMetadata(database.name);
-  const lastSyncTs = database.successfulSyncTime
-    ? Number(database.successfulSyncTime.seconds)
-    : 0;
+  const lastSyncMs = getTimeForPbTimestampProtoEs(database.successfulSyncTime);
 
   return (
     <div className="rounded-sm border border-block-border px-5 py-4">
@@ -59,7 +58,7 @@ export function DatabaseOverviewInfo({ database }: { database: Database }) {
                 <span className="text-error">
                   {t("database.sync-status-failed")}
                 </span>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-control-light">
                   {database.syncError}
                 </p>
               </>
@@ -76,7 +75,7 @@ export function DatabaseOverviewInfo({ database }: { database: Database }) {
             {t("database.last-sync")}
           </dt>
           <dd className="mt-1 text-sm text-main">
-            {lastSyncTs ? <HumanizeTs ts={lastSyncTs} /> : "-"}
+            {lastSyncMs !== undefined ? <HumanizeTs tsMs={lastSyncMs} /> : "-"}
           </dd>
         </div>
       </dl>

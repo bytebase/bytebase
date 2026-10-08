@@ -538,7 +538,8 @@ func randomPassword(reader io.Reader) (string, error) {
 	if _, err := io.ReadFull(reader, value); err != nil {
 		return "", err
 	}
-	return base64.RawURLEncoding.EncodeToString(value), nil
+	// Satisfy Cloud SQL password complexity without reducing the random entropy.
+	return "Aa0!" + base64.RawURLEncoding.EncodeToString(value), nil
 }
 
 func randomInstanceID(reader io.Reader) (string, error) {

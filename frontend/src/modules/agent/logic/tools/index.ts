@@ -213,7 +213,7 @@ call_api(operationId="SQLService/Query", body={"name": "instances/i/databases/db
 
 | Mode | Result |
 |------|--------|
-| semantic (default) | Route path, params, title + context from Pinia stores (project, database, issue, user info when available) |
+| semantic (default) | Route path, params, title + context from the app store (project, database, issue, user info when available) |
 | dom | Above + ref-labeled DOM tree of interactive elements |
 
 Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mode (default) to understand the current page context.`,

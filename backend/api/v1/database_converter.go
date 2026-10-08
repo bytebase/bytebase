@@ -3,11 +3,12 @@ package v1
 import (
 	"strings"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filter *metadataFilter, limit int) *v1pb.DatabaseMetadata {
+func convertStoreDatabaseMetadata(metadata *metadatapb.DatabaseSchemaMetadata, filter *metadataFilter, limit int) *v1pb.DatabaseMetadata {
 	m := &v1pb.DatabaseMetadata{
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
@@ -314,7 +315,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, filt
 	return m
 }
 
-func convertStoreIndexMetadata(index *storepb.IndexMetadata) *v1pb.IndexMetadata {
+func convertStoreIndexMetadata(index *metadatapb.IndexMetadata) *v1pb.IndexMetadata {
 	return &v1pb.IndexMetadata{
 		Name:              index.Name,
 		Expressions:       index.Expressions,
@@ -336,7 +337,7 @@ func convertStoreIndexMetadata(index *storepb.IndexMetadata) *v1pb.IndexMetadata
 	}
 }
 
-func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata {
+func convertStoreTableMetadata(table *metadatapb.TableMetadata) *v1pb.TableMetadata {
 	t := &v1pb.TableMetadata{
 		Name:          table.Name,
 		Engine:        table.Engine,
@@ -404,7 +405,7 @@ func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata
 	return t
 }
 
-func convertStoreTriggerMetadata(trigger *storepb.TriggerMetadata) *v1pb.TriggerMetadata {
+func convertStoreTriggerMetadata(trigger *metadatapb.TriggerMetadata) *v1pb.TriggerMetadata {
 	return &v1pb.TriggerMetadata{
 		Name:                trigger.Name,
 		Timing:              trigger.Timing,
@@ -418,7 +419,7 @@ func convertStoreTriggerMetadata(trigger *storepb.TriggerMetadata) *v1pb.Trigger
 	}
 }
 
-func convertStoreExternalTableMetadata(externalTable *storepb.ExternalTableMetadata) *v1pb.ExternalTableMetadata {
+func convertStoreExternalTableMetadata(externalTable *metadatapb.ExternalTableMetadata) *v1pb.ExternalTableMetadata {
 	t := &v1pb.ExternalTableMetadata{
 		Name:                 externalTable.Name,
 		ExternalServerName:   externalTable.ExternalServerName,
@@ -434,7 +435,7 @@ func convertStoreExternalTableMetadata(externalTable *storepb.ExternalTableMetad
 	return t
 }
 
-func convertStoreTablePartitionMetadata(partition *storepb.TablePartitionMetadata) *v1pb.TablePartitionMetadata {
+func convertStoreTablePartitionMetadata(partition *metadatapb.TablePartitionMetadata) *v1pb.TablePartitionMetadata {
 	metadata := &v1pb.TablePartitionMetadata{
 		Name:       partition.Name,
 		Expression: partition.Expression,
@@ -442,21 +443,21 @@ func convertStoreTablePartitionMetadata(partition *storepb.TablePartitionMetadat
 		UseDefault: partition.UseDefault,
 	}
 	switch partition.Type {
-	case storepb.TablePartitionMetadata_RANGE:
+	case metadatapb.TablePartitionMetadata_RANGE:
 		metadata.Type = v1pb.TablePartitionMetadata_RANGE
-	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
+	case metadatapb.TablePartitionMetadata_RANGE_COLUMNS:
 		metadata.Type = v1pb.TablePartitionMetadata_RANGE_COLUMNS
-	case storepb.TablePartitionMetadata_LIST:
+	case metadatapb.TablePartitionMetadata_LIST:
 		metadata.Type = v1pb.TablePartitionMetadata_LIST
-	case storepb.TablePartitionMetadata_LIST_COLUMNS:
+	case metadatapb.TablePartitionMetadata_LIST_COLUMNS:
 		metadata.Type = v1pb.TablePartitionMetadata_LIST_COLUMNS
-	case storepb.TablePartitionMetadata_HASH:
+	case metadatapb.TablePartitionMetadata_HASH:
 		metadata.Type = v1pb.TablePartitionMetadata_HASH
-	case storepb.TablePartitionMetadata_LINEAR_HASH:
+	case metadatapb.TablePartitionMetadata_LINEAR_HASH:
 		metadata.Type = v1pb.TablePartitionMetadata_LINEAR_HASH
-	case storepb.TablePartitionMetadata_KEY:
+	case metadatapb.TablePartitionMetadata_KEY:
 		metadata.Type = v1pb.TablePartitionMetadata_KEY
-	case storepb.TablePartitionMetadata_LINEAR_KEY:
+	case metadatapb.TablePartitionMetadata_LINEAR_KEY:
 		metadata.Type = v1pb.TablePartitionMetadata_LINEAR_KEY
 	default:
 		metadata.Type = v1pb.TablePartitionMetadata_TYPE_UNSPECIFIED
@@ -476,7 +477,7 @@ func convertStoreTablePartitionMetadata(partition *storepb.TablePartitionMetadat
 	return metadata
 }
 
-func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMetadata {
+func convertStoreColumnMetadata(column *metadatapb.ColumnMetadata) *v1pb.ColumnMetadata {
 	metadata := &v1pb.ColumnMetadata{
 		Name:                  column.Name,
 		Position:              column.Position,
@@ -499,9 +500,9 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 		IsInvisible:           column.IsInvisible,
 	}
 	switch column.IdentityGeneration {
-	case storepb.ColumnMetadata_ALWAYS:
+	case metadatapb.ColumnMetadata_ALWAYS:
 		metadata.IdentityGeneration = v1pb.ColumnMetadata_ALWAYS
-	case storepb.ColumnMetadata_BY_DEFAULT:
+	case metadatapb.ColumnMetadata_BY_DEFAULT:
 		metadata.IdentityGeneration = v1pb.ColumnMetadata_BY_DEFAULT
 	default:
 		metadata.IdentityGeneration = v1pb.ColumnMetadata_IDENTITY_GENERATION_UNSPECIFIED
@@ -509,7 +510,7 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 	return metadata
 }
 
-func convertStoreGenerationMetadata(generation *storepb.GenerationMetadata) *v1pb.GenerationMetadata {
+func convertStoreGenerationMetadata(generation *metadatapb.GenerationMetadata) *v1pb.GenerationMetadata {
 	if generation == nil {
 		return nil
 	}
@@ -517,9 +518,9 @@ func convertStoreGenerationMetadata(generation *storepb.GenerationMetadata) *v1p
 		Expression: generation.Expression,
 	}
 	switch generation.Type {
-	case storepb.GenerationMetadata_TYPE_VIRTUAL:
+	case metadatapb.GenerationMetadata_TYPE_VIRTUAL:
 		meta.Type = v1pb.GenerationMetadata_VIRTUAL
-	case storepb.GenerationMetadata_TYPE_STORED:
+	case metadatapb.GenerationMetadata_TYPE_STORED:
 		meta.Type = v1pb.GenerationMetadata_STORED
 	default:
 		meta.Type = v1pb.GenerationMetadata_TYPE_UNSPECIFIED
@@ -527,8 +528,8 @@ func convertStoreGenerationMetadata(generation *storepb.GenerationMetadata) *v1p
 	return meta
 }
 
-func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.DatabaseSchemaMetadata {
-	m := &storepb.DatabaseSchemaMetadata{
+func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *metadatapb.DatabaseSchemaMetadata {
+	m := &metadatapb.DatabaseSchemaMetadata{
 		Name:         metadata.Name,
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
@@ -538,7 +539,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 		if schema == nil {
 			continue
 		}
-		s := &storepb.SchemaMetadata{
+		s := &metadatapb.SchemaMetadata{
 			Name:     schema.Name,
 			Owner:    schema.Owner,
 			Comment:  schema.Comment,
@@ -554,7 +555,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 			if view == nil {
 				continue
 			}
-			storeView := &storepb.ViewMetadata{
+			storeView := &metadatapb.ViewMetadata{
 				Name:       view.Name,
 				Definition: view.Definition,
 				Comment:    view.Comment,
@@ -570,7 +571,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 
 			for _, dependencyColumn := range view.DependencyColumns {
 				storeView.DependencyColumns = append(storeView.DependencyColumns,
-					&storepb.DependencyColumn{
+					&metadatapb.DependencyColumn{
 						Schema: dependencyColumn.Schema,
 						Table:  dependencyColumn.Table,
 						Column: dependencyColumn.Column,
@@ -590,7 +591,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 			if materializedView == nil {
 				continue
 			}
-			storeMaterializedView := &storepb.MaterializedViewMetadata{
+			storeMaterializedView := &metadatapb.MaterializedViewMetadata{
 				Name:       materializedView.Name,
 				Definition: materializedView.Definition,
 				Comment:    materializedView.Comment,
@@ -601,7 +602,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 					continue
 				}
 				storeMaterializedView.DependencyColumns = append(storeMaterializedView.DependencyColumns,
-					&storepb.DependencyColumn{
+					&metadatapb.DependencyColumn{
 						Schema: dependencyColumn.Schema,
 						Table:  dependencyColumn.Table,
 						Column: dependencyColumn.Column,
@@ -628,7 +629,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 			if function == nil {
 				continue
 			}
-			storeFunc := &storepb.FunctionMetadata{
+			storeFunc := &metadatapb.FunctionMetadata{
 				Name:                function.Name,
 				Definition:          function.Definition,
 				Signature:           function.Signature,
@@ -640,7 +641,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 				SkipDump:            function.SkipDump,
 			}
 			for _, dep := range function.DependencyTables {
-				storeFunc.DependencyTables = append(storeFunc.DependencyTables, &storepb.DependencyTable{
+				storeFunc.DependencyTables = append(storeFunc.DependencyTables, &metadatapb.DependencyTable{
 					Schema: dep.Schema,
 					Table:  dep.Table,
 				})
@@ -651,7 +652,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 			if procedure == nil {
 				continue
 			}
-			storeProcedure := &storepb.ProcedureMetadata{
+			storeProcedure := &metadatapb.ProcedureMetadata{
 				Name:                procedure.Name,
 				Definition:          procedure.Definition,
 				Signature:           procedure.Signature,
@@ -668,7 +669,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 			if p == nil {
 				continue
 			}
-			storePackage := &storepb.PackageMetadata{
+			storePackage := &metadatapb.PackageMetadata{
 				Name:       p.Name,
 				Definition: p.Definition,
 			}
@@ -678,7 +679,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 			if task == nil {
 				continue
 			}
-			storeTask := &storepb.TaskMetadata{
+			storeTask := &metadatapb.TaskMetadata{
 				Name:         task.Name,
 				Id:           task.Id,
 				Owner:        task.Owner,
@@ -686,7 +687,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 				Warehouse:    task.Warehouse,
 				Schedule:     task.Schedule,
 				Predecessors: task.Predecessors,
-				State:        storepb.TaskMetadata_State(task.State),
+				State:        metadatapb.TaskMetadata_State(task.State),
 				Condition:    task.Condition,
 				Definition:   task.Definition,
 			}
@@ -696,14 +697,14 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 			if stream == nil {
 				continue
 			}
-			storeStream := &storepb.StreamMetadata{
+			storeStream := &metadatapb.StreamMetadata{
 				Name:       stream.Name,
 				TableName:  stream.TableName,
 				Owner:      stream.Owner,
 				Comment:    stream.Comment,
-				Type:       storepb.StreamMetadata_Type(stream.Type),
+				Type:       metadatapb.StreamMetadata_Type(stream.Type),
 				Stale:      stream.Stale,
-				Mode:       storepb.StreamMetadata_Mode(stream.Mode),
+				Mode:       metadatapb.StreamMetadata_Mode(stream.Mode),
 				Definition: stream.Definition,
 			}
 			s.Streams = append(s.Streams, storeStream)
@@ -712,7 +713,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 			if event == nil {
 				continue
 			}
-			storeEvent := &storepb.EventMetadata{
+			storeEvent := &metadatapb.EventMetadata{
 				Name:                event.Name,
 				TimeZone:            event.TimeZone,
 				Definition:          event.Definition,
@@ -727,7 +728,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 			if enum == nil {
 				continue
 			}
-			storeEnum := &storepb.EnumTypeMetadata{
+			storeEnum := &metadatapb.EnumTypeMetadata{
 				Name:     enum.Name,
 				Values:   enum.Values,
 				Comment:  enum.Comment,
@@ -739,7 +740,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 			if composite == nil {
 				continue
 			}
-			storeComposite := &storepb.CompositeTypeMetadata{
+			storeComposite := &metadatapb.CompositeTypeMetadata{
 				Name:    composite.Name,
 				Comment: composite.Comment,
 			}
@@ -747,7 +748,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 				if attribute == nil {
 					continue
 				}
-				storeComposite.Attributes = append(storeComposite.Attributes, &storepb.CompositeTypeAttribute{
+				storeComposite.Attributes = append(storeComposite.Attributes, &metadatapb.CompositeTypeAttribute{
 					Name:      attribute.Name,
 					Type:      attribute.Type,
 					Collation: attribute.Collation,
@@ -760,7 +761,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 			if sequence == nil {
 				continue
 			}
-			storeSequence := &storepb.SequenceMetadata{
+			storeSequence := &metadatapb.SequenceMetadata{
 				Name:        sequence.Name,
 				DataType:    sequence.DataType,
 				Start:       sequence.Start,
@@ -783,7 +784,7 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 		if extension == nil {
 			continue
 		}
-		m.Extensions = append(m.Extensions, &storepb.ExtensionMetadata{
+		m.Extensions = append(m.Extensions, &metadatapb.ExtensionMetadata{
 			Name:        extension.Name,
 			Schema:      extension.Schema,
 			Version:     extension.Version,
@@ -793,8 +794,8 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) *storepb.Databas
 	return m
 }
 
-func convertV1IndexMetadata(index *v1pb.IndexMetadata) *storepb.IndexMetadata {
-	return &storepb.IndexMetadata{
+func convertV1IndexMetadata(index *v1pb.IndexMetadata) *metadatapb.IndexMetadata {
+	return &metadatapb.IndexMetadata{
 		Name:              index.Name,
 		Expressions:       index.Expressions,
 		KeyLength:         index.KeyLength,
@@ -813,7 +814,7 @@ func convertV1IndexMetadata(index *v1pb.IndexMetadata) *storepb.IndexMetadata {
 	}
 }
 
-func convertStoreSpatialIndexConfig(spatial *storepb.SpatialIndexConfig) *v1pb.SpatialIndexConfig {
+func convertStoreSpatialIndexConfig(spatial *metadatapb.SpatialIndexConfig) *v1pb.SpatialIndexConfig {
 	if spatial == nil {
 		return nil
 	}
@@ -825,11 +826,11 @@ func convertStoreSpatialIndexConfig(spatial *storepb.SpatialIndexConfig) *v1pb.S
 	}
 }
 
-func convertV1SpatialIndexConfig(spatial *v1pb.SpatialIndexConfig) *storepb.SpatialIndexConfig {
+func convertV1SpatialIndexConfig(spatial *v1pb.SpatialIndexConfig) *metadatapb.SpatialIndexConfig {
 	if spatial == nil {
 		return nil
 	}
-	return &storepb.SpatialIndexConfig{
+	return &metadatapb.SpatialIndexConfig{
 		Method:       spatial.Method,
 		Tessellation: convertV1TessellationConfig(spatial.Tessellation),
 		Storage:      convertV1StorageConfig(spatial.Storage),
@@ -837,7 +838,7 @@ func convertV1SpatialIndexConfig(spatial *v1pb.SpatialIndexConfig) *storepb.Spat
 	}
 }
 
-func convertStoreTessellationConfig(tessellation *storepb.TessellationConfig) *v1pb.TessellationConfig {
+func convertStoreTessellationConfig(tessellation *metadatapb.TessellationConfig) *v1pb.TessellationConfig {
 	if tessellation == nil {
 		return nil
 	}
@@ -856,18 +857,18 @@ func convertStoreTessellationConfig(tessellation *storepb.TessellationConfig) *v
 	}
 }
 
-func convertV1TessellationConfig(tessellation *v1pb.TessellationConfig) *storepb.TessellationConfig {
+func convertV1TessellationConfig(tessellation *v1pb.TessellationConfig) *metadatapb.TessellationConfig {
 	if tessellation == nil {
 		return nil
 	}
-	gridLevels := make([]*storepb.GridLevel, len(tessellation.GridLevels))
+	gridLevels := make([]*metadatapb.GridLevel, len(tessellation.GridLevels))
 	for i, level := range tessellation.GridLevels {
-		gridLevels[i] = &storepb.GridLevel{
+		gridLevels[i] = &metadatapb.GridLevel{
 			Level:   level.Level,
 			Density: level.Density,
 		}
 	}
-	return &storepb.TessellationConfig{
+	return &metadatapb.TessellationConfig{
 		Scheme:         tessellation.Scheme,
 		GridLevels:     gridLevels,
 		CellsPerObject: tessellation.CellsPerObject,
@@ -875,7 +876,7 @@ func convertV1TessellationConfig(tessellation *v1pb.TessellationConfig) *storepb
 	}
 }
 
-func convertStoreBoundingBox(bbox *storepb.BoundingBox) *v1pb.BoundingBox {
+func convertStoreBoundingBox(bbox *metadatapb.BoundingBox) *v1pb.BoundingBox {
 	if bbox == nil {
 		return nil
 	}
@@ -887,11 +888,11 @@ func convertStoreBoundingBox(bbox *storepb.BoundingBox) *v1pb.BoundingBox {
 	}
 }
 
-func convertV1BoundingBox(bbox *v1pb.BoundingBox) *storepb.BoundingBox {
+func convertV1BoundingBox(bbox *v1pb.BoundingBox) *metadatapb.BoundingBox {
 	if bbox == nil {
 		return nil
 	}
-	return &storepb.BoundingBox{
+	return &metadatapb.BoundingBox{
 		Xmin: bbox.Xmin,
 		Ymin: bbox.Ymin,
 		Xmax: bbox.Xmax,
@@ -899,7 +900,7 @@ func convertV1BoundingBox(bbox *v1pb.BoundingBox) *storepb.BoundingBox {
 	}
 }
 
-func convertStoreStorageConfig(storage *storepb.StorageConfig) *v1pb.StorageConfig {
+func convertStoreStorageConfig(storage *metadatapb.StorageConfig) *v1pb.StorageConfig {
 	if storage == nil {
 		return nil
 	}
@@ -921,11 +922,11 @@ func convertStoreStorageConfig(storage *storepb.StorageConfig) *v1pb.StorageConf
 	}
 }
 
-func convertV1StorageConfig(storage *v1pb.StorageConfig) *storepb.StorageConfig {
+func convertV1StorageConfig(storage *v1pb.StorageConfig) *metadatapb.StorageConfig {
 	if storage == nil {
 		return nil
 	}
-	return &storepb.StorageConfig{
+	return &metadatapb.StorageConfig{
 		Fillfactor:      storage.Fillfactor,
 		Buffering:       storage.Buffering,
 		Tablespace:      storage.Tablespace,
@@ -943,7 +944,7 @@ func convertV1StorageConfig(storage *v1pb.StorageConfig) *storepb.StorageConfig 
 	}
 }
 
-func convertStoreDimensionalConfig(dimensional *storepb.DimensionalConfig) *v1pb.DimensionalConfig {
+func convertStoreDimensionalConfig(dimensional *metadatapb.DimensionalConfig) *v1pb.DimensionalConfig {
 	if dimensional == nil {
 		return nil
 	}
@@ -955,11 +956,11 @@ func convertStoreDimensionalConfig(dimensional *storepb.DimensionalConfig) *v1pb
 	}
 }
 
-func convertV1DimensionalConfig(dimensional *v1pb.DimensionalConfig) *storepb.DimensionalConfig {
+func convertV1DimensionalConfig(dimensional *v1pb.DimensionalConfig) *metadatapb.DimensionalConfig {
 	if dimensional == nil {
 		return nil
 	}
-	return &storepb.DimensionalConfig{
+	return &metadatapb.DimensionalConfig{
 		Dimensions: dimensional.Dimensions,
 		DataType:   dimensional.DataType,
 		// Note: OperatorClass field exists only in store proto
@@ -967,8 +968,8 @@ func convertV1DimensionalConfig(dimensional *v1pb.DimensionalConfig) *storepb.Di
 	}
 }
 
-func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
-	t := &storepb.TableMetadata{
+func convertV1TableMetadata(table *v1pb.TableMetadata) *metadatapb.TableMetadata {
+	t := &metadatapb.TableMetadata{
 		Name:          table.Name,
 		Engine:        table.Engine,
 		Collation:     table.Collation,
@@ -999,7 +1000,7 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 		if foreignKey == nil {
 			continue
 		}
-		t.ForeignKeys = append(t.ForeignKeys, &storepb.ForeignKeyMetadata{
+		t.ForeignKeys = append(t.ForeignKeys, &metadatapb.ForeignKeyMetadata{
 			Name:              foreignKey.Name,
 			Columns:           foreignKey.Columns,
 			ReferencedSchema:  foreignKey.ReferencedSchema,
@@ -1020,7 +1021,7 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 		if check == nil {
 			continue
 		}
-		t.CheckConstraints = append(t.CheckConstraints, &storepb.CheckConstraintMetadata{
+		t.CheckConstraints = append(t.CheckConstraints, &metadatapb.CheckConstraintMetadata{
 			Name:       check.Name,
 			Expression: check.Expression,
 		})
@@ -1034,8 +1035,8 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 	return t
 }
 
-func convertV1TriggerMetadata(trigger *v1pb.TriggerMetadata) *storepb.TriggerMetadata {
-	return &storepb.TriggerMetadata{
+func convertV1TriggerMetadata(trigger *v1pb.TriggerMetadata) *metadatapb.TriggerMetadata {
+	return &metadatapb.TriggerMetadata{
 		Name:                trigger.Name,
 		Timing:              trigger.Timing,
 		Event:               trigger.Event,
@@ -1048,8 +1049,8 @@ func convertV1TriggerMetadata(trigger *v1pb.TriggerMetadata) *storepb.TriggerMet
 	}
 }
 
-func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata) *storepb.TablePartitionMetadata {
-	metadata := &storepb.TablePartitionMetadata{
+func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata) *metadatapb.TablePartitionMetadata {
+	metadata := &metadatapb.TablePartitionMetadata{
 		Name:       tablePartition.Name,
 		Expression: tablePartition.Expression,
 		Value:      tablePartition.Value,
@@ -1057,23 +1058,23 @@ func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata
 	}
 	switch tablePartition.Type {
 	case v1pb.TablePartitionMetadata_RANGE:
-		metadata.Type = storepb.TablePartitionMetadata_RANGE
+		metadata.Type = metadatapb.TablePartitionMetadata_RANGE
 	case v1pb.TablePartitionMetadata_RANGE_COLUMNS:
-		metadata.Type = storepb.TablePartitionMetadata_RANGE_COLUMNS
+		metadata.Type = metadatapb.TablePartitionMetadata_RANGE_COLUMNS
 	case v1pb.TablePartitionMetadata_LIST:
-		metadata.Type = storepb.TablePartitionMetadata_LIST
+		metadata.Type = metadatapb.TablePartitionMetadata_LIST
 	case v1pb.TablePartitionMetadata_LIST_COLUMNS:
-		metadata.Type = storepb.TablePartitionMetadata_LIST_COLUMNS
+		metadata.Type = metadatapb.TablePartitionMetadata_LIST_COLUMNS
 	case v1pb.TablePartitionMetadata_HASH:
-		metadata.Type = storepb.TablePartitionMetadata_HASH
+		metadata.Type = metadatapb.TablePartitionMetadata_HASH
 	case v1pb.TablePartitionMetadata_LINEAR_HASH:
-		metadata.Type = storepb.TablePartitionMetadata_LINEAR_HASH
+		metadata.Type = metadatapb.TablePartitionMetadata_LINEAR_HASH
 	case v1pb.TablePartitionMetadata_KEY:
-		metadata.Type = storepb.TablePartitionMetadata_KEY
+		metadata.Type = metadatapb.TablePartitionMetadata_KEY
 	case v1pb.TablePartitionMetadata_LINEAR_KEY:
-		metadata.Type = storepb.TablePartitionMetadata_LINEAR_KEY
+		metadata.Type = metadatapb.TablePartitionMetadata_LINEAR_KEY
 	default:
-		metadata.Type = storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
+		metadata.Type = metadatapb.TablePartitionMetadata_TYPE_UNSPECIFIED
 	}
 	for _, index := range tablePartition.Indexes {
 		if index == nil {
@@ -1090,8 +1091,8 @@ func convertV1TablePartitionMetadata(tablePartition *v1pb.TablePartitionMetadata
 	return metadata
 }
 
-func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadata {
-	metadata := &storepb.ColumnMetadata{
+func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *metadatapb.ColumnMetadata {
+	metadata := &metadatapb.ColumnMetadata{
 		Name:                  column.Name,
 		Position:              column.Position,
 		Nullable:              column.Nullable,
@@ -1102,7 +1103,7 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 		Comment:               column.Comment,
 		OnUpdate:              column.OnUpdate,
 		Generation:            convertV1GenerationMetadata(column.Generation),
-		IdentityGeneration:    storepb.ColumnMetadata_IdentityGeneration(column.IdentityGeneration),
+		IdentityGeneration:    metadatapb.ColumnMetadata_IdentityGeneration(column.IdentityGeneration),
 		IsIdentity:            column.IsIdentity,
 		IdentitySeed:          column.IdentitySeed,
 		IdentityIncrement:     column.IdentityIncrement,
@@ -1114,29 +1115,29 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 
 	switch column.IdentityGeneration {
 	case v1pb.ColumnMetadata_ALWAYS:
-		metadata.IdentityGeneration = storepb.ColumnMetadata_ALWAYS
+		metadata.IdentityGeneration = metadatapb.ColumnMetadata_ALWAYS
 	case v1pb.ColumnMetadata_BY_DEFAULT:
-		metadata.IdentityGeneration = storepb.ColumnMetadata_BY_DEFAULT
+		metadata.IdentityGeneration = metadatapb.ColumnMetadata_BY_DEFAULT
 	default:
-		metadata.IdentityGeneration = storepb.ColumnMetadata_IDENTITY_GENERATION_UNSPECIFIED
+		metadata.IdentityGeneration = metadatapb.ColumnMetadata_IDENTITY_GENERATION_UNSPECIFIED
 	}
 	return metadata
 }
 
-func convertV1GenerationMetadata(generation *v1pb.GenerationMetadata) *storepb.GenerationMetadata {
+func convertV1GenerationMetadata(generation *v1pb.GenerationMetadata) *metadatapb.GenerationMetadata {
 	if generation == nil {
 		return nil
 	}
-	meta := &storepb.GenerationMetadata{
+	meta := &metadatapb.GenerationMetadata{
 		Expression: generation.Expression,
 	}
 	switch generation.Type {
 	case v1pb.GenerationMetadata_VIRTUAL:
-		meta.Type = storepb.GenerationMetadata_TYPE_VIRTUAL
+		meta.Type = metadatapb.GenerationMetadata_TYPE_VIRTUAL
 	case v1pb.GenerationMetadata_STORED:
-		meta.Type = storepb.GenerationMetadata_TYPE_STORED
+		meta.Type = metadatapb.GenerationMetadata_TYPE_STORED
 	default:
-		meta.Type = storepb.GenerationMetadata_TYPE_UNSPECIFIED
+		meta.Type = metadatapb.GenerationMetadata_TYPE_UNSPECIFIED
 	}
 	return meta
 }

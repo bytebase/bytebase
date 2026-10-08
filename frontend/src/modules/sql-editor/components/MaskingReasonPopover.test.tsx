@@ -13,7 +13,6 @@ const mocks = vi.hoisted(() => ({
     name: string;
     allowJustInTimeAccess: boolean;
   },
-  useSQLEditorVueState: vi.fn(),
   hasFeature: vi.fn(() => true),
 }));
 
@@ -33,10 +32,6 @@ vi.mock("@/stores/app", () => {
 
 vi.mock("@/hooks/useAppProject", () => ({
   useAppProject: () => mocks.projectData,
-}));
-
-vi.mock("@/modules/sql-editor/store/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
 }));
 
 vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
@@ -156,7 +151,6 @@ const setupDefaultMocks = (allowJIT = false) => {
     name: "projects/proj1",
     allowJustInTimeAccess: allowJIT,
   };
-  mocks.useSQLEditorVueState.mockReturnValue({ project: "projects/proj1" });
   mocks.hasFeature.mockReturnValue(true);
 };
 
@@ -240,6 +234,20 @@ describe("MaskingReasonPopover", () => {
 
     expect(container.textContent).toContain("Email");
     expect(container.textContent).toContain("masking.reason.semantic-type");
+    unmount();
+  });
+
+  test("wraps a long masking context within the popover", () => {
+    const context = "Column-level semantic type: sample-" + "x".repeat(500);
+    const { container, render, unmount } = renderIntoContainer(
+      <MaskingReasonPopover reason={makeReason({ context })} />
+    );
+    render();
+
+    const contextValue = Array.from(container.querySelectorAll("span")).find(
+      (element) => element.textContent === context
+    );
+    expect(contextValue?.className).toContain("wrap-anywhere");
     unmount();
   });
 

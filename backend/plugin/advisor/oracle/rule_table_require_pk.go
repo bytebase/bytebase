@@ -8,10 +8,10 @@ import (
 
 	"github.com/bytebase/omni/oracle/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -35,7 +35,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 
 	rule := NewTableRequirePKRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // TableRequirePKRule is the rule implementation for table requires PK.
@@ -122,7 +122,7 @@ func (r *TableRequirePKRule) GetAdviceList() ([]*storepb.Advice, error) {
 				r.level,
 				code.TableNoPK.Int32(),
 				fmt.Sprintf("Table %s requires PRIMARY KEY.", normalizeIdentifierName(tableName)),
-				common.ConvertANTLRLineToPosition(r.tableLine[tableName]),
+				base.ConvertANTLRLineToPosition(r.tableLine[tableName]),
 			)
 		}
 	}

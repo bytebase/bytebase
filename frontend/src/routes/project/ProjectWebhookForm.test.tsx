@@ -122,4 +122,16 @@ describe("ProjectWebhookForm", () => {
 
     expect(container.textContent).not.toContain("project.webhook.url-hidden");
   });
+
+  test("places the destination control below its label", () => {
+    const container = renderForm(true);
+
+    expect(
+      container.querySelector('label[for="webhook-destination"]')
+    ).toHaveClass("block");
+    expect(container.querySelector("#webhook-destination")).toHaveClass(
+      "mt-1",
+      "w-full"
+    );
+  });
 });

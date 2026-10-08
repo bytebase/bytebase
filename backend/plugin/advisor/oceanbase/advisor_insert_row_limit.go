@@ -9,10 +9,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -61,25 +61,18 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 			continue
 		}
 		checker.checkInsert(stmt.Text, stmt.BaseLine(), insert)
-		if checker.explainCount >= common.MaximumLintExplainSize {
-			break
-		}
 	}
-	return checker.generateAdvice()
+	return checker.explains.AppendSkippedAdvice(checker.adviceList, checker.title, code.InsertTooManyRows), nil
 }
 
 type insertRowLimitChecker struct {
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
-	maxRow       int
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
-}
-
-func (checker *insertRowLimitChecker) generateAdvice() ([]*storepb.Advice, error) {
-	return checker.adviceList, nil
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
+	maxRow     int
+	driver     *sql.DB
+	ctx        context.Context
+	explains   advisor.ExplainBudget
 }
 
 func (checker *insertRowLimitChecker) checkInsert(text string, baseLine int, stmt *ast.InsertStmt) {
@@ -94,8 +87,10 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(text string, l
 	if checker.driver == nil {
 		return
 	}
+	if !checker.explains.Spend(base.ConvertANTLRLineToPosition(line)) {
+		return
+	}
 
-	checker.explainCount++
 	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_OCEANBASE, fmt.Sprintf("EXPLAIN format=json %s", text))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
@@ -103,7 +98,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(text string, l
 			Code:          code.InsertTooManyRows.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
 		})
 		return
 	}
@@ -114,7 +109,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(text string, l
 			Code:          code.Internal.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
 		})
 	} else if rowCount > int64(checker.maxRow) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
@@ -122,7 +117,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(text string, l
 			Code:          code.InsertTooManyRows.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", text, rowCount, checker.maxRow),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
 		})
 	}
 }
@@ -134,7 +129,7 @@ func (checker *insertRowLimitChecker) handleNoInsertQueryExpression(text string,
 			Code:          code.InsertTooManyRows.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", text, len(stmt.Values), checker.maxRow),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
 		})
 	}
 }

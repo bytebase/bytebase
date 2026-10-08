@@ -19,13 +19,9 @@ import { projectResourceNameFromId, useAppStore } from "@/stores/app";
 // permission checks need the loaded `Project` resource, so this loads the
 // project (and its IAM policy, via `usePermissionDataReady`) before gating the
 // routed leaf on `route.requiredPermissions` — the aggregated parent
-// (`bb.projects.get`) + leaf permission lists from the route handles. Mirrors
-// the project-load + gate of the Vue-bridge `ProjectRouteShell`, but renders an
-// `<Outlet/>` for react-router instead of a teleport target. A user lacking a
-// route permission sees the request-role / permission-denied fallback instead
-// of mounting the page and failing on individual API calls. (The rest of
-// `ProjectRouteShell`'s chrome — archived banner, IAM-remind dialog, document
-// title — stays with the deferred shell-mounting phase.)
+// (`bb.projects.get`) + leaf permission lists from the route handles. A user
+// lacking a route permission sees the request-role / permission-denied fallback
+// instead of mounting the page and failing on individual API calls.
 export function ProjectRouteGate() {
   const params = useParams();
   const projectId = params.projectId ?? "";
@@ -54,7 +50,7 @@ export function ProjectRouteGate() {
       if (stale) return;
       if (!nextProject) {
         // Project missing or not accessible (e.g. no `bb.projects.get`): drop
-        // it from recent visits and bounce to landing, like ProjectRouteShell.
+        // it from recent visits and bounce to landing.
         const projectRoute = navigateRef.current.resolve({
           name: PROJECT_V1_ROUTE_DETAIL,
           params: { projectId },

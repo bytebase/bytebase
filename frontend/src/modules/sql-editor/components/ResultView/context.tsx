@@ -352,8 +352,7 @@ export function SQLResultViewProvider({
     ]
   );
 
-  // Click outside the result-scroll buttons → deselect (mirrors Vue
-  // global click listener in `selection-logic.ts`).
+  // Click outside the result-scroll buttons → deselect.
   useEffect(() => {
     if (copying) return;
     const handler = (e: MouseEvent) => {

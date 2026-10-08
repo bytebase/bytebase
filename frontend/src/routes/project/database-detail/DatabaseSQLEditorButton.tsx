@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useCurrentRoute } from "@/app/router";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { SQLEditorButton } from "@/components/SQLEditorButton";
@@ -11,22 +12,22 @@ export function DatabaseSQLEditorButton({
   database: Database;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation();
   const route = useCurrentRoute();
   const project = useProjectByName(database.project);
 
   return (
-    <dd className="md:mr-4">
-      <PermissionGuard permissions={["bb.sql.select"]} project={project}>
-        {({ disabled: permissionDisabled }) => (
-          <SQLEditorButton
-            database={database}
-            disabled={disabled || permissionDisabled}
-            openInNewTab={!route.name?.startsWith("sql-editor")}
-            appearance="secondary"
-            size="sm"
-          />
-        )}
-      </PermissionGuard>
-    </dd>
+    <PermissionGuard permissions={["bb.sql.select"]} project={project}>
+      {({ disabled: permissionDisabled }) => (
+        <SQLEditorButton
+          database={database}
+          disabled={disabled || permissionDisabled}
+          openInNewTab={!route.name?.startsWith("sql-editor")}
+          appearance="solid"
+          size="md"
+          label={t("database.open-sql-editor")}
+        />
+      )}
+    </PermissionGuard>
   );
 }

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import { FOLD_HEAD, FOLD_TAIL, foldTimeline } from "./foldTimeline";
 

@@ -1,5 +1,6 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import {
   getLayerRoot,
   LAYER_BACKDROP_CLASS,
@@ -17,13 +18,15 @@ export function SessionExpiredSurface({
 
   const logoutFooter = (
     <div className="mt-4 flex justify-center">
-      <button
+      <Button
         type="button"
-        className="text-sm text-control-light hover:underline"
+        appearance="link"
+        size="md"
+        className="h-auto p-0 text-sm text-control-light"
         onClick={() => useAppStore.getState().logout()}
       >
         {t("common.logout")}
-      </button>
+      </Button>
     </div>
   );
 
@@ -41,7 +44,7 @@ export function SessionExpiredSurface({
             {t("auth.token-expired-title")}
           </BaseDialog.Title>
           <div
-            className="bg-white shadow-lg rounded-sm py-3 flex pointer-events-auto flex-col gap-3"
+            className="bg-background shadow-lg rounded-sm py-3 flex pointer-events-auto flex-col gap-3"
             style={{
               maxWidth: "calc(100vw - 80px)",
               maxHeight: "calc(100vh - 80px)",

@@ -602,7 +602,7 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
 
     const titleInput = getTitleInput();
     expect(titleInput).toBeTruthy();
-    expect(titleInput.value).toBe("quick-action.create-db 'widgets'");
+    expect(titleInput.value).toBe("database.create-database 'widgets'");
   });
 
   it("does not auto-fill title when enforceIssueTitle is true", async () => {
@@ -628,7 +628,7 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     await fillInstance();
     await fillDatabaseName("widgets");
     await flush();
-    expect(getTitleInput().value).toBe("quick-action.create-db 'widgets'");
+    expect(getTitleInput().value).toBe("database.create-database 'widgets'");
 
     // Step 1: type a custom title.
     await act(async () => {
@@ -650,13 +650,13 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     // Step 5: retype dbName and verify each keystroke tracks.
     await fillDatabaseName("f");
     await flush();
-    expect(getTitleInput().value).toBe("quick-action.create-db 'f'");
+    expect(getTitleInput().value).toBe("database.create-database 'f'");
     await fillDatabaseName("fo");
     await flush();
-    expect(getTitleInput().value).toBe("quick-action.create-db 'fo'");
+    expect(getTitleInput().value).toBe("database.create-database 'fo'");
     await fillDatabaseName("foo");
     await flush();
-    expect(getTitleInput().value).toBe("quick-action.create-db 'foo'");
+    expect(getTitleInput().value).toBe("database.create-database 'foo'");
   });
 
   it("clears the auto-filled title when the database name is cleared (BYT-9310 stale-ghost fix)", async () => {
@@ -668,7 +668,7 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     await fillInstance();
     await fillDatabaseName("widgets");
     await flush();
-    expect(getTitleInput().value).toBe("quick-action.create-db 'widgets'");
+    expect(getTitleInput().value).toBe("database.create-database 'widgets'");
 
     // Clear the database name.
     await fillDatabaseName("");
@@ -683,7 +683,7 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     await fillDatabaseName("widgets");
     await flush();
 
-    expect(getTitleInput().value).toBe("quick-action.create-db 'widgets'");
+    expect(getTitleInput().value).toBe("database.create-database 'widgets'");
 
     await act(async () => {
       nativeChange(getTitleInput(), "my custom title");
@@ -854,7 +854,7 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
             id: expect.any(String),
           },
         ],
-        title: "quick-action.create-db 'widgets'",
+        title: "database.create-database 'widgets'",
       },
     });
     expect(mocks.createIssue).toHaveBeenCalledOnce();
@@ -864,7 +864,7 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
         draft: false,
         labels: ["required"],
         plan: "projects/foo/plans/123",
-        title: "quick-action.create-db 'widgets'",
+        title: "database.create-database 'widgets'",
         type: 1,
       },
       parent: "projects/foo",

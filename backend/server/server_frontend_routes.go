@@ -9,8 +9,6 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
-
-	"github.com/bytebase/bytebase/backend/common"
 )
 
 // registerFrontendRoutes wires up static file serving for the embedded frontend
@@ -66,5 +64,14 @@ func registerFrontendRoutes(e *echo.Echo, distFS fs.FS) {
 // of falling through to the SPA's HTML5 fallback (which would return index.html).
 func defaultAPIRequestSkipper(c *echo.Context) bool {
 	path := c.Request().URL.Path
-	return common.HasPrefixes(path, "/api", "/v1", "/bytebase.v1", "/.well-known", webhookAPIPrefix)
+	return hasPrefixes(path, "/api", "/v1", "/bytebase.v1", "/.well-known", webhookAPIPrefix)
+}
+
+func hasPrefixes(src string, prefixes ...string) bool {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(src, prefix) {
+			return true
+		}
+	}
+	return false
 }

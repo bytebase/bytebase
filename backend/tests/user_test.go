@@ -18,12 +18,10 @@ import (
 )
 
 func TestDeleteUser(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	expectErrorMsg := "workspace must have at least one admin"
 
@@ -128,12 +126,10 @@ func TestDeleteUser(t *testing.T) {
 // occupying a seat even though its IAM binding lingers, while a pending member
 // (in IAM, no principal) still counts.
 func TestBatchGetUsers(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	first, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
 		User: &v1pb.User{Title: "first", Email: "batch-first@bytebase.com", Password: "1024bytebase"},
@@ -164,12 +160,10 @@ func TestBatchGetUsers(t *testing.T) {
 }
 
 func TestSeatCountExcludesDeletedPrincipal(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspaceInfo := func() int32 {
 		actuator, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
@@ -215,12 +209,10 @@ func TestSeatCountExcludesDeletedPrincipal(t *testing.T) {
 // workspace can still add a seat-neutral member (service account / workload
 // identity) to its IAM, while adding another end user remains blocked.
 func TestSeatLimitAllowsServiceAccountWhenOverLimit(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	const freeSeatLimit = 20
 
@@ -308,12 +300,10 @@ func TestSeatLimitAllowsServiceAccountWhenOverLimit(t *testing.T) {
 // workspace is at the limit — closing the delete-bound-user, refill, undelete
 // loophole. Undelete is still allowed when a seat is free.
 func TestSeatLimitGuardsUndeleteOfBoundUser(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	const freeSeatLimit = 20
 
@@ -386,12 +376,10 @@ func TestSeatLimitGuardsUndeleteOfBoundUser(t *testing.T) {
 }
 
 func TestUpdateUserEmail(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// 1. Create a user
 	originalEmail := "original@bytebase.com"
@@ -477,16 +465,16 @@ func TestUpdateUserEmail(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("email-update"),
 		Instance: &v1pb.Instance{
-			Title:       "email-update",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "email-update",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -636,7 +624,7 @@ func TestUpdateUserEmail(t *testing.T) {
 	// Search for audit logs related to the project (audit logs were created when user created issue/comment)
 	auditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
 		Parent: "projects/" + projectID,
-		Filter: fmt.Sprintf(`user == "%s"`, common.FormatUserEmail(newEmail)),
+		Filter: fmt.Sprintf(`actor == "%s"`, common.FormatUserEmail(newEmail)),
 	}))
 	a.NoError(err)
 	// We should have at least some audit logs from the issue/comment creation
@@ -644,22 +632,20 @@ func TestUpdateUserEmail(t *testing.T) {
 	// Verify no audit logs have the old email
 	oldEmailAuditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
 		Parent: "projects/" + projectID,
-		Filter: fmt.Sprintf(`user == "%s"`, common.FormatUserEmail(originalEmail)),
+		Filter: fmt.Sprintf(`actor == "%s"`, common.FormatUserEmail(originalEmail)),
 	}))
 	a.NoError(err)
 	a.Empty(oldEmailAuditLogs.Msg.AuditLogs, "Should not have audit logs with old email")
 }
 
 func TestGetCurrentUser_ServiceAccount(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Create a dummy user before creating the service account.
-	_, err = ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+	_, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
 		User: &v1pb.User{
 			Title:    "dummy",
 			Email:    "dummy@bytebase.com",

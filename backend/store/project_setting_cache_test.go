@@ -16,6 +16,7 @@ import (
 // pre-update row and caches it, so the stale setting outlives the write and
 // every later authorization check runs on it.
 func TestUpdateProjectsDoesNotLeaveAStaleSettingCached(t *testing.T) {
+	t.Parallel()
 	fixture := newStorePostgresFixture(t, `
 		UPDATE project SET setting = '{"allowLastPlanEditorApproval": true}' WHERE resource_id = 'project-a';
 	`)

@@ -15,8 +15,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/server"
 )
 
@@ -157,7 +157,7 @@ func start() {
 	var err error
 
 	if flags.externalURL != "" {
-		flags.externalURL, err = common.NormalizeExternalURL(flags.externalURL)
+		flags.externalURL, err = config.NormalizeExternalURL(flags.externalURL)
 		if err != nil {
 			slog.Error("invalid --external-url", log.BBError(err))
 			return

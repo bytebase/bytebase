@@ -12,6 +12,7 @@ import { sqlEditorRoutes } from "@/app/router/routes/sqlEditor";
 export const routes: RouteObject[] = [
   {
     element: <RootLayout />,
+    shouldRevalidate: () => true,
     // Catch-all for uncaught render/loader exceptions anywhere in the
     // tree: show a user-facing recovery page instead of react-router's
     // developer default screen.
@@ -42,7 +43,7 @@ function joinPath(parent: string, child: string): string {
 
 // Flatten the nested route table into a `name -> full path pattern` map,
 // joining parent/child segments. Registered into `navigation.ts` at app boot so
-// the ported guard + auth lifecycle can resolve their by-name redirects to
+// the route guard and auth lifecycle can resolve their by-name redirects to
 // paths. Lives here (a `.tsx` module) so `navigation.ts` stays a pure `.ts`.
 export function buildRouteNameIndex(
   list: RouteObject[] = routes,

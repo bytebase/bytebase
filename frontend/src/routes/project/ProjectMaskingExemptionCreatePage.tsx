@@ -48,8 +48,13 @@ export function ProjectMaskingExemptionCreatePage({
 }) {
   const { t } = useTranslation();
   const projectsByName = useAppStore((s) => s.projectsByName);
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
 
   const projectName = `${projectNamePrefix}${projectId}`;
+  const accountParents = useMemo(
+    () => [...new Set([workspaceResourceName, projectName].filter(Boolean))],
+    [workspaceResourceName, projectName]
+  );
   // subscribe to re-render on project cache change
   void projectsByName;
   const project = useProjectByName(projectName);
@@ -301,7 +306,11 @@ export function ProjectMaskingExemptionCreatePage({
                 <CircleHelp className="size-4 textinfolabel" />
               </Tooltip>
             </div>
-            <AccountMultiSelect value={memberList} onChange={setMemberList} />
+            <AccountMultiSelect
+              value={memberList}
+              onChange={setMemberList}
+              accountParents={accountParents}
+            />
           </div>
         </div>
       </div>

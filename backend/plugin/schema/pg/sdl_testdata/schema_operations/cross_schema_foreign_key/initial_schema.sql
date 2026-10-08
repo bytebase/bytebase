@@ -1,1 +1,0 @@
--- Only public schema exists initially

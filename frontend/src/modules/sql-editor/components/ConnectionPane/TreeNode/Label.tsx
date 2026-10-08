@@ -16,7 +16,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/ConnectionPanel/ConnectionPane/TreeNode/Label.vue.
  * Dispatches on `node.meta.type` to render the right leaf component; only
  * the `database` case consumes the checkbox/click callbacks.
  */

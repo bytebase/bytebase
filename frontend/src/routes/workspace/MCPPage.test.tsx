@@ -23,7 +23,7 @@ vi.mock("@/components/ExternalUrlAlert", () => ({ ExternalUrlAlert: () => null }
 vi.mock("./mcp/MCPAccessPolicySection", () => ({
   MCPAccessPolicySection: () => null,
 }));
-vi.mock("@/utils", () => ({ isDev: () => false, cn: (...a: unknown[]) => a.join(" ") }));
+vi.mock("@/utils", () => ({ cn: (...a: unknown[]) => a.join(" ") }));
 
 const { MCPPage } = await import("./MCPPage");
 
@@ -58,6 +58,15 @@ const allTabValues = (container: HTMLElement) => {
 };
 
 describe("MCPPage connect panel", () => {
+  test("scrolls client tabs horizontally without vertical overflow", () => {
+    const { container, unmount } = render(<MCPPage />);
+    const tabList = container.querySelector('[role="tablist"]');
+
+    expect(tabList?.classList.contains("overflow-x-auto")).toBe(true);
+    expect(tabList?.classList.contains("overflow-y-hidden")).toBe(true);
+    unmount();
+  });
+
   // Codex, #21237: three of the six commands were invalid. Each was checked
   // against its own source — the codex CLI's own AddArgs (name is positional,
   // --url is the flag, there is no --transport), the Copilot CLI docs

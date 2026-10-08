@@ -231,9 +231,9 @@ func (x *GetIdentityProviderRequest) GetName() string {
 
 type ListIdentityProvidersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent workspace whose identity providers should be listed.
+	// The parent workspace whose identity providers should be listed. It must be
+	// the workspace the caller's credential belongs to.
 	// Format: workspaces/{workspace}
-	// When unset, the workspace is resolved from the request context.
 	Parent        string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1427,10 +1427,10 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x14v1/idp_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"J\n" +
 	"\x1aGetIdentityProviderRequest\x12,\n" +
 	"\x04name\x18\x01 \x01(\tB\x18\xe0A\x02\xfaA\x12\n" +
-	"\x10bytebase.com/IdPR\x04name\"S\n" +
-	"\x1cListIdentityProvidersRequest\x123\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1b\xfaA\x18\n" +
-	"\x16bytebase.com/WorkspaceR\x06parent\"m\n" +
+	"\x10bytebase.com/IdPR\x04name\"r\n" +
+	"\x1cListIdentityProvidersRequest\x12R\n" +
+	"\x06parent\x18\x01 \x01(\tB:\xe0A\x02\xfaA\x18\n" +
+	"\x16bytebase.com/Workspace\xbaH\x19\xc8\x01\x01r\x142\x12^workspaces/[^/]+$R\x06parent\"m\n" +
 	"\x1dListIdentityProvidersResponse\x12L\n" +
 	"\x12identity_providers\x18\x01 \x03(\v2\x1d.bytebase.v1.IdentityProviderR\x11identityProviders\"\xc7\x01\n" +
 	"\x1dCreateIdentityProviderRequest\x12O\n" +
@@ -1534,10 +1534,10 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x0fOAuth2AuthStyle\x12!\n" +
 	"\x1dOAUTH2_AUTH_STYLE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tIN_PARAMS\x10\x01\x12\r\n" +
-	"\tIN_HEADER\x10\x022\x8f\t\n" +
+	"\tIN_HEADER\x10\x022\xb2\t\n" +
 	"\x17IdentityProviderService\x12\xa7\x01\n" +
-	"\x13GetIdentityProvider\x12'.bytebase.v1.GetIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"H\xdaA\x04name\x8a\xea0\x18bb.identityProviders.get\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/{name=idps/*}\x12\xb1\x01\n" +
-	"\x15ListIdentityProviders\x12).bytebase.v1.ListIdentityProvidersRequest\x1a*.bytebase.v1.ListIdentityProvidersResponse\"A\xdaA\x00\x80\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02,Z \x12\x1e/v1/{parent=workspaces/*}/idps\x12\b/v1/idps\x12\xba\x01\n" +
+	"\x13GetIdentityProvider\x12'.bytebase.v1.GetIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"H\xdaA\x04name\x8a\xea0\x18bb.identityProviders.get\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/{name=idps/*}\x12\xd4\x01\n" +
+	"\x15ListIdentityProviders\x12).bytebase.v1.ListIdentityProvidersRequest\x1a*.bytebase.v1.ListIdentityProvidersResponse\"d\xdaA\x06parent\x8a\xea0\x19bb.identityProviders.list\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02,Z \x12\x1e/v1/{parent=workspaces/*}/idps\x12\b/v1/idps\x12\xba\x01\n" +
 	"\x16CreateIdentityProvider\x12*.bytebase.v1.CreateIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"U\xdaA\x00\x8a\xea0\x1bbb.identityProviders.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x02\x1d:\x11identity_provider\"\b/v1/idps\x12\xf3\x01\n" +
 	"\x16UpdateIdentityProvider\x12*.bytebase.v1.UpdateIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"\x8d\x01\xdaA\x1didentity_provider,update_mask\x8a\xea0\x1bbb.identityProviders.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x028:\x11identity_provider2#/v1/{identity_provider.name=idps/*}\x12\xad\x01\n" +
 	"\x16DeleteIdentityProvider\x12*.bytebase.v1.DeleteIdentityProviderRequest\x1a\x16.google.protobuf.Empty\"O\xdaA\x04name\x8a\xea0\x1bbb.identityProviders.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x13*\x11/v1/{name=idps/*}\x12\xb2\x01\n" +

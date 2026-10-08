@@ -24,8 +24,6 @@ interface SVGLineProps {
 }
 
 /**
- * React port of `frontend/src/components/SchemaDiagram/ER/libs/SVGLine.vue`.
- *
  * Renders a polyline + optional decorator paths inside an absolutely
  * positioned SVG. Hover (across both the visible line and a wider
  * invisible "glow" track) flips the stroke color and width.

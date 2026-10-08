@@ -19,10 +19,13 @@ export interface InstanceSpecs {
   allowEditPort: boolean;
   allowUsingEmptyPassword: boolean;
   showAuthenticationDatabase: boolean;
-  hasReadonlyReplicaHost: boolean;
-  hasReadonlyReplicaPort: boolean;
   hasExtraParameters: boolean;
 }
+
+export const hasConnectionDatabase = (engine: Engine, type: DataSourceType) =>
+  [Engine.POSTGRES, Engine.REDSHIFT, Engine.COCKROACHDB, Engine.MSSQL].includes(
+    engine
+  ) && type === DataSourceType.ADMIN;
 
 export const useInstanceSpecs = (
   basicInfo: BasicInfo,
@@ -30,12 +33,10 @@ export const useInstanceSpecs = (
   editingDataSource: EditDataSource | undefined
 ): InstanceSpecs => {
   return useMemo(() => {
-    const showDatabase =
-      (basicInfo.engine === Engine.POSTGRES ||
-        basicInfo.engine === Engine.REDSHIFT ||
-        basicInfo.engine === Engine.COCKROACHDB ||
-        basicInfo.engine === Engine.MSSQL) &&
-      editingDataSource?.type === DataSourceType.ADMIN;
+    const showDatabase = hasConnectionDatabase(
+      basicInfo.engine,
+      editingDataSource?.type ?? DataSourceType.DATA_SOURCE_UNSPECIFIED
+    );
 
     const showSSL = instanceV1HasSSL(basicInfo.engine);
     const showSSH = instanceV1HasSSH(basicInfo.engine);
@@ -59,8 +60,6 @@ export const useInstanceSpecs = (
 
     const allowUsingEmptyPassword = basicInfo.engine !== Engine.SPANNER;
     const showAuthenticationDatabase = basicInfo.engine === Engine.MONGODB;
-    const hasReadonlyReplicaHost = basicInfo.engine !== Engine.SPANNER;
-    const hasReadonlyReplicaPort = basicInfo.engine !== Engine.SPANNER;
     const hasExtraParameters = instanceV1HasExtraParameters(basicInfo.engine);
 
     return {
@@ -73,8 +72,6 @@ export const useInstanceSpecs = (
       allowEditPort,
       allowUsingEmptyPassword,
       showAuthenticationDatabase,
-      hasReadonlyReplicaHost,
-      hasReadonlyReplicaPort,
       hasExtraParameters,
     };
   }, [

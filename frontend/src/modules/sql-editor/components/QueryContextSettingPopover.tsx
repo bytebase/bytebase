@@ -39,7 +39,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/QueryContextSettingPopover.vue.
  * Popover for selecting query data source, Redis command mode, and max row count.
  */
 export function QueryContextSettingPopover({

@@ -1,11 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
+  QueryOption_ExplainFormat,
+  QueryResult_QueryPlanSchema,
   QueryResultSchema,
   QueryRowSchema,
   RowValueSchema,
@@ -98,8 +100,10 @@ vi.mock("@/components/monaco/MonacoEditor", () => ({
   },
 }));
 
+const { runQuery } = vi.hoisted(() => ({ runQuery: vi.fn() }));
+
 vi.mock("@/hooks/useExecuteSQL", () => ({
-  useExecuteSQL: () => ({ runQuery: vi.fn() }),
+  useExecuteSQL: () => ({ runQuery }),
 }));
 
 vi.mock("@/lib/clipboard", () => ({
@@ -197,12 +201,8 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
 
 vi.mock("@/stores/app", () => ({
   useAppStore: {
-    getState: () => ({ notify: vi.fn() }),
+    getState: () => ({}),
   },
-}));
-
-vi.mock("@/utils/pev2", () => ({
-  createExplainToken: vi.fn(),
 }));
 
 vi.mock("@/utils/util", () => ({
@@ -250,6 +250,41 @@ vi.mock("./ErrorView", () => ({
 vi.mock("./ResultStatusBar", () => ({
   formatQueryTime: () => "-",
   ResultStatusBar: () => <div data-testid="result-status" />,
+}));
+
+vi.mock("./QueryPlanResultView", () => ({
+  QueryPlanResultView: ({
+    rawPlan,
+    initialPlan,
+    loadPlan,
+    disallowCopyingData,
+  }: {
+    rawPlan: string;
+    initialPlan?: { source: string; statement: string };
+    loadPlan?: () => Promise<
+      { source: string; statement: string } | undefined
+    >;
+    disallowCopyingData?: boolean;
+  }) => {
+    const [plan, setPlan] = useState(initialPlan);
+    return (
+      <div
+        data-testid="query-plan-result"
+        data-copy-disabled={disallowCopyingData}
+      >
+        <span data-testid="raw-plan">{rawPlan}</span>
+        {plan ? <span data-testid="inline-plan">{plan.source}</span> : null}
+        {loadPlan ? (
+          <button
+            type="button"
+            onClick={() => void loadPlan().then(setPlan)}
+          >
+            common.plan
+          </button>
+        ) : null}
+      </div>
+    );
+  },
 }));
 
 vi.mock("./SelectionCopyTooltips", () => ({
@@ -346,11 +381,6 @@ describe("SingleResultView document view", () => {
 
       expect(screen.getByText("sql-editor.table-view")).toBeInTheDocument();
       expect(screen.getByText("sql-editor.json-view")).toBeInTheDocument();
-      expect(
-        screen.getByRole("radiogroup", {
-          name: "sql-editor.result-view-mode",
-        })
-      ).toHaveClass("h-7");
       expect(
         screen.getByText("sql-editor.json-view").closest("label")
       ).toHaveClass("bg-accent/10", "text-accent");
@@ -579,5 +609,501 @@ describe("SingleResultView document view", () => {
     const [tableViewToggle] = screen.getAllByRole("checkbox");
     fireEvent.click(tableViewToggle);
     expect(screen.getByTestId("result-table")).toHaveTextContent("hits");
+  });
+});
+
+const textPlanResult = (statement: string) =>
+  create(QueryResultSchema, {
+    columnNames: ["QUERY PLAN"],
+    statement,
+    queryPlan: create(QueryResult_QueryPlanSchema, {
+      format: QueryOption_ExplainFormat.TEXT,
+    }),
+    rows: [
+      create(QueryRowSchema, {
+        values: [
+          create(RowValueSchema, {
+            kind: { case: "stringValue", value: "Result" },
+          }),
+        ],
+      }),
+    ],
+  });
+
+describe("SingleResultView explain visualizer", () => {
+  beforeEach(() => {
+    runQuery.mockReset();
+  });
+
+  test("PostgreSQL asks for the JSON plan instead of reusing the text plan", async () => {
+    const planJSON = '[{"Plan": {"Node Type": "Seq Scan"}}]';
+    runQuery.mockImplementation(
+      async (
+        _database: unknown,
+        context: {
+          resultSet?: { results: unknown[] };
+        }
+      ) => {
+        context.resultSet = {
+          results: [
+            create(QueryResultSchema, {
+              statement: "EXPLAIN (FORMAT JSON) SELECT 1",
+              rows: [
+                create(QueryRowSchema, {
+                  values: [
+                    create(RowValueSchema, {
+                      kind: { case: "stringValue", value: planJSON },
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        };
+      }
+    );
+
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{
+          ...params,
+          engine: Engine.POSTGRES,
+          explain: false,
+          statement: "EXPLAIN SELECT 1",
+        }}
+        database={databaseForEngine(Engine.POSTGRES)}
+        result={create(QueryResultSchema, {
+          columnNames: ["QUERY PLAN"],
+          columnTypeNames: ["TEXT"],
+          statement: "EXPLAIN SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+          }),
+          rows: [
+            create(QueryRowSchema, {
+              values: [
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: "Seq Scan on t" },
+                }),
+              ],
+            }),
+          ],
+        })}
+        showExport={false}
+      />
+    );
+
+    expect(screen.getByTestId("raw-plan")).toHaveTextContent("Seq Scan on t");
+    fireEvent.click(screen.getByText("common.plan"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("inline-plan")).toHaveTextContent(planJSON)
+    );
+    expect(runQuery).toHaveBeenCalledTimes(1);
+    expect(
+      runQuery.mock.calls[0][1].params.queryOption?.explainFormat
+    ).toBe(QueryOption_ExplainFormat.JSON);
+    expect(runQuery.mock.calls[0][1].params.explain).toBe(true);
+    expect(runQuery.mock.calls[0][1].params.statement).toBe(
+      "EXPLAIN SELECT 1"
+    );
+  });
+
+  test("re-runs only the statement for the tab the user clicked", async () => {
+    runQuery.mockImplementation(
+      async (_database: unknown, context: { resultSet?: { results: unknown[] } }) => {
+        const plan = (name: string) =>
+          create(QueryResultSchema, {
+            statement: name,
+            rows: [
+              create(QueryRowSchema, {
+                values: [
+                  create(RowValueSchema, {
+                    kind: { case: "stringValue", value: `plan of ${name}` },
+                  }),
+                ],
+              }),
+            ],
+          });
+        context.resultSet = { results: [plan("second")] };
+      }
+    );
+
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{
+          ...params,
+          engine: Engine.POSTGRES,
+          explain: true,
+          statement: "first; second",
+        }}
+        database={databaseForEngine(Engine.POSTGRES)}
+        result={create(QueryResultSchema, {
+          columnNames: ["QUERY PLAN"],
+          columnTypeNames: ["TEXT"],
+          statement: "second",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+          }),
+          rows: [
+            create(QueryRowSchema, {
+              values: [
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: "Seq Scan on t" },
+                }),
+              ],
+            }),
+          ],
+        })}
+        resultIndex={1}
+        showExport={false}
+      />
+    );
+
+    fireEvent.click(screen.getByText("common.plan"));
+
+    await waitFor(() => expect(runQuery).toHaveBeenCalled());
+    expect(runQuery.mock.calls[0][1].params.statement).toBe("second");
+    expect(screen.getByTestId("inline-plan")).toHaveTextContent(
+      "plan of second"
+    );
+  });
+
+  test.each([[Engine.MSSQL, QueryOption_ExplainFormat.XML, "<ShowPlanXML/>"]])(
+    "asks engine %s for the plan in the format its visualizer reads",
+    async (engine, explainFormat, plan) => {
+      runQuery.mockImplementation(
+        async (
+          _database: unknown,
+          context: { resultSet?: { results: unknown[] } }
+        ) => {
+          context.resultSet = {
+            results: [
+              create(QueryResultSchema, {
+                statement: "SELECT 1",
+                rows: [
+                  create(QueryRowSchema, {
+                    values: [
+                      create(RowValueSchema, {
+                        kind: { case: "stringValue", value: plan },
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          };
+        }
+      );
+
+      render(
+        <SingleResultView
+          disallowCopyingData={false}
+          params={{ ...params, engine, explain: true }}
+          database={databaseForEngine(engine)}
+          result={create(QueryResultSchema, {
+            columnNames: ["QUERY PLAN"],
+            statement: "SELECT 1",
+            queryPlan: create(QueryResult_QueryPlanSchema, {
+              format: QueryOption_ExplainFormat.TEXT,
+            }),
+            rows: [
+              create(QueryRowSchema, {
+                values: [
+                  create(RowValueSchema, {
+                    kind: { case: "stringValue", value: "a readable plan" },
+                  }),
+                ],
+              }),
+            ],
+          })}
+          showExport={false}
+        />
+      );
+
+      fireEvent.click(screen.getByText("common.plan"));
+
+      await waitFor(() =>
+        expect(screen.getByTestId("inline-plan")).toHaveTextContent(plan)
+      );
+      expect(
+        runQuery.mock.calls[0][1].params.queryOption?.explainFormat
+      ).toBe(explainFormat);
+    }
+  );
+
+  test("Spanner hands over the plan already in the result", async () => {
+    const plan = '{"planNodes":[]}';
+
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{ ...params, engine: Engine.SPANNER, explain: true }}
+        database={databaseForEngine(Engine.SPANNER)}
+        result={create(QueryResultSchema, {
+          columnNames: ["QUERY PLAN"],
+          columnTypeNames: ["JSON"],
+          statement: "SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.JSON,
+          }),
+          rows: [
+            create(QueryRowSchema, {
+              values: [
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: plan },
+                }),
+              ],
+            }),
+          ],
+        })}
+        showExport={false}
+      />
+    );
+
+    expect(runQuery).not.toHaveBeenCalled();
+    expect(screen.getByTestId("inline-plan")).toHaveTextContent(plan);
+  });
+
+  test("uses a typed structured plan without running another query", async () => {
+    const plan = '[{"Plan":{"Node Type":"Result"}}]';
+
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{
+          ...params,
+          engine: Engine.POSTGRES,
+          explain: false,
+          statement: "EXPLAIN (FORMAT JSON) SELECT 1",
+        }}
+        database={databaseForEngine(Engine.POSTGRES)}
+        result={create(QueryResultSchema, {
+          columnNames: ["QUERY PLAN"],
+          statement: "EXPLAIN (FORMAT JSON) SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.JSON,
+          }),
+          rows: [
+            create(QueryRowSchema, {
+              values: [
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: plan },
+                }),
+              ],
+            }),
+          ],
+        })}
+        showExport={false}
+      />
+    );
+
+    expect(runQuery).not.toHaveBeenCalled();
+    expect(screen.getByTestId("inline-plan")).toHaveTextContent(plan);
+  });
+
+  test("does not offer a re-explain after the plan executed the query", () => {
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{
+          ...params,
+          engine: Engine.POSTGRES,
+          explain: false,
+          statement: "EXPLAIN ANALYZE SELECT 1",
+        }}
+        database={databaseForEngine(Engine.POSTGRES)}
+        result={create(QueryResultSchema, {
+          columnNames: ["QUERY PLAN"],
+          statement: "EXPLAIN ANALYZE SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+            executed: true,
+          }),
+          rows: [],
+        })}
+        showExport={false}
+      />
+    );
+
+    expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+    expect(screen.queryByText("common.plan")).toBeNull();
+    expect(runQuery).not.toHaveBeenCalled();
+  });
+
+  test("does not replay after a result that was not a plan", () => {
+    const earlier = create(QueryResultSchema, { statement: "SET x = 1" });
+    const current = textPlanResult("EXPLAIN SELECT 1");
+
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{ ...params, engine: Engine.POSTGRES }}
+        database={databaseForEngine(Engine.POSTGRES)}
+        result={current}
+        results={[earlier, current]}
+        resultIndex={1}
+        showExport={false}
+      />
+    );
+
+    expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+    expect(screen.queryByText("common.plan")).toBeNull();
+  });
+
+  test("ignores later statements when replaying an earlier plan", async () => {
+    const current = textPlanResult("EXPLAIN SELECT 1");
+    const later = create(QueryResultSchema, { statement: "SET x = 1" });
+    runQuery.mockImplementation(
+      async (_database: unknown, context: { resultSet?: { results: unknown[] } }) => {
+        context.resultSet = {
+          results: [
+            create(QueryResultSchema, {
+              statement: "EXPLAIN (FORMAT JSON) SELECT 1",
+              rows: [
+                create(QueryRowSchema, {
+                  values: [
+                    create(RowValueSchema, {
+                      kind: { case: "stringValue", value: "[]" },
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        };
+      }
+    );
+
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{
+          ...params,
+          engine: Engine.POSTGRES,
+          statement: "EXPLAIN SELECT 1; SET x = 1",
+        }}
+        database={databaseForEngine(Engine.POSTGRES)}
+        result={current}
+        results={[current, later]}
+        resultIndex={0}
+        showExport={false}
+      />
+    );
+
+    fireEvent.click(screen.getByText("common.plan"));
+
+    await waitFor(() => expect(runQuery).toHaveBeenCalled());
+    expect(runQuery.mock.calls[0][1].params.statement).toBe(
+      "EXPLAIN SELECT 1"
+    );
+  });
+
+  test("shows a text plan inline for an engine it cannot draw", () => {
+    render(
+      <SingleResultView
+        disallowCopyingData
+        params={{ ...params, engine: Engine.MYSQL, explain: true }}
+        database={databaseForEngine(Engine.MYSQL)}
+        result={create(QueryResultSchema, {
+          columnNames: ["EXPLAIN"],
+          statement: "SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+          }),
+          rows: [
+            create(QueryRowSchema, {
+              values: [
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: "-> Table scan on t" },
+                }),
+              ],
+            }),
+          ],
+        })}
+        showExport={false}
+      />
+    );
+
+    expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+    expect(screen.getByTestId("query-plan-result")).toHaveAttribute(
+      "data-copy-disabled",
+      "true"
+    );
+    expect(screen.getByTestId("raw-plan")).toHaveTextContent(
+      "-> Table scan on t"
+    );
+    expect(runQuery).not.toHaveBeenCalled();
+  });
+
+  test("keeps multi-column explain output in the result table", () => {
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{ ...params, engine: Engine.MYSQL, explain: true }}
+        database={databaseForEngine(Engine.MYSQL)}
+        result={create(QueryResultSchema, {
+          columnNames: ["table", "type"],
+          columnTypeNames: ["TEXT", "TEXT"],
+          statement: "EXPLAIN SELECT * FROM t",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+          }),
+          rows: [
+            create(QueryRowSchema, {
+              values: [
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: "t" },
+                }),
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: "ALL" },
+                }),
+              ],
+            }),
+          ],
+        })}
+        showExport={false}
+      />
+    );
+
+    expect(screen.queryByTestId("query-plan-result")).toBeNull();
+    expect(screen.getByTestId("result-table")).toHaveTextContent(
+      "table,typet,ALL"
+    );
+  });
+
+  test("SQL Server multi-column SHOWPLAN_ALL still opens the visualizer", () => {
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{ ...params, engine: Engine.MSSQL, explain: true }}
+        database={databaseForEngine(Engine.MSSQL)}
+        result={create(QueryResultSchema, {
+          columnNames: ["StmtText", "EstimateRows"],
+          columnTypeNames: ["TEXT", "TEXT"],
+          statement: "SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+          }),
+          rows: [
+            create(QueryRowSchema, {
+              values: [
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: "Clustered Index Scan" },
+                }),
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: "1" },
+                }),
+              ],
+            }),
+          ],
+        })}
+        showExport={false}
+      />
+    );
+
+    expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
   });
 });

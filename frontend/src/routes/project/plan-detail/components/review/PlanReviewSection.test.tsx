@@ -24,7 +24,7 @@ import { PlanReviewSection } from "./PlanReviewSection";
 const mocks = vi.hoisted(() => ({
   comments: [] as IssueComment[],
   getIssueComments: vi.fn((_issueName: string) => [] as IssueComment[]),
-  listIssueComments: vi.fn(async () => ({ issueComments: [] })),
+  fetchIssueCommentThreads: vi.fn(async () => []),
   getOrFetchProjectByName: vi.fn(async () => ({})),
   loadProjectIamPolicy: vi.fn(async () => ({})),
   getUserByIdentifier: vi.fn(() => undefined),
@@ -89,7 +89,7 @@ vi.mock("@/stores/app", () => ({
       }),
     {
       getState: () => ({
-        listIssueComments: mocks.listIssueComments,
+        fetchIssueCommentThreads: mocks.fetchIssueCommentThreads,
         getOrFetchProjectByName: mocks.getOrFetchProjectByName,
         loadProjectIamPolicy: mocks.loadProjectIamPolicy,
         getProjectByName: mocks.getProjectByName,
@@ -152,10 +152,8 @@ vi.mock("@/components/MarkdownEditor", () => ({
   ),
 }));
 
-vi.mock("@/components/HumanizeTs", () => ({
-  HumanizeTs: ({ ts }: { ts: number }) => (
-    <span data-testid="humanize-ts">{ts}</span>
-  ),
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
 vi.mock("@/components/UserAvatar", () => ({

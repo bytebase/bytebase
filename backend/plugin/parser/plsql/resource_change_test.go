@@ -3,6 +3,7 @@ package plsql
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -83,7 +84,7 @@ DELETE FROM t2 WHERE c1 = 1;`
 	changedResources.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T2"}, false)
 	want := &base.ChangeSummary{
 		ChangedResources: changedResources,
-		SampleDMLS: []string{
+		DMLStatements: []string{
 			"INSERT INTO t1 SELECT * FROM t2;",
 			"UPDATE t1 SET c1 = 5 WHERE c2 = 1;",
 			"DELETE FROM t2 WHERE c1 = 1;",
@@ -103,15 +104,15 @@ DELETE FROM t2 WHERE c1 = 1;`
 
 func TestExtractChangedResourcesDropIndexUsesMetadata(t *testing.T) {
 	statement := `DROP INDEX idx_t1_c1;`
-	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: "DB",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "DB",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "T1",
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name: "IDX_T1_C1",
 							},
@@ -152,7 +153,7 @@ END;`
 	changedResources.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T1"}, false)
 	want := &base.ChangeSummary{
 		ChangedResources: changedResources,
-		SampleDMLS: []string{
+		DMLStatements: []string{
 			"UPDATE t1 SET c1 = 5;",
 		},
 		DMLCount: 1,

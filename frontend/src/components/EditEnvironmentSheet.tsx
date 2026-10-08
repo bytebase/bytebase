@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetBody,
@@ -12,7 +18,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useEnvironmentList } from "@/hooks/useAppState";
-import { cn } from "@/lib/utils";
 
 export function EditEnvironmentSheet({
   open,
@@ -35,6 +40,10 @@ export function EditEnvironmentSheet({
     }
   }, [open]);
 
+  const selectedEnvironment = environments.find(
+    (environment) => environment.name === selected
+  );
+
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent width="narrow">
@@ -42,26 +51,25 @@ export function EditEnvironmentSheet({
           <SheetTitle>{t("database.edit-environment")}</SheetTitle>
         </SheetHeader>
         <SheetBody>
-          <RadioGroup
-            className="flex-col items-stretch gap-y-1"
+          <Select
             value={selected}
-            onValueChange={(value) => setSelected(value as string)}
+            onValueChange={(value) => setSelected(String(value))}
           >
-            {environments.map((env) => (
-              <RadioGroupItem
-                key={env.name}
-                value={env.name}
-                className={cn(
-                  "flex items-center gap-x-3 px-3 py-2.5 rounded-sm cursor-pointer border transition-colors",
-                  selected === env.name
-                    ? "border-accent bg-accent/5"
-                    : "border-transparent hover:bg-control-bg"
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={t("common.select")}>
+                {selectedEnvironment && (
+                  <EnvironmentLabel environment={selectedEnvironment} />
                 )}
-              >
-                <EnvironmentLabel environment={env} />
-              </RadioGroupItem>
-            ))}
-          </RadioGroup>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {environments.map((env) => (
+                <SelectItem key={env.name} value={env.name}>
+                  <EnvironmentLabel environment={env} />
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </SheetBody>
         <SheetFooter>
           <Button appearance="secondary" onClick={onClose}>

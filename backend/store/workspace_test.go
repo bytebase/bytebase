@@ -2,40 +2,29 @@ package store_test
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"testing"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
 func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+	_, stores, _ := testcontainer.NewMetadataDB(t)
 
 	const workspaceID = "workspace-defaults"
-	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
+	_, err := stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
 		ResourceID: workspaceID,
 		AdditionalSettings: []store.AdditionalSetting{{
 			Name:    storepb.SettingName_AI,
@@ -84,20 +73,44 @@ func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
 	require.NotNil(t, project)
 }
 
-func TestListWorkspacesByEmailEvaluatesBindingConditions(t *testing.T) {
+// TestCreateWorkspaceSwitchesEveryReviewRuleOn pins that a new workspace has
+// its own review rule policy row, which the workspace SQL Review page updates
+// rather than creates, and that each workspace gets exactly one.
+func TestCreateWorkspaceSwitchesEveryReviewRuleOn(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	_, stores, _ := testcontainer.NewMetadataDB(t)
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+	workspaceIDs := []string{"review-rules-a", "review-rules-b"}
+	for _, workspaceID := range workspaceIDs {
+		_, err := stores.CreateWorkspace(ctx, &store.WorkspaceMessage{ResourceID: workspaceID}, "admin@example.com")
+		require.NoError(t, err)
+	}
+
+	for _, workspaceID := range workspaceIDs {
+		resourceType := storepb.Policy_WORKSPACE
+		policyType := storepb.Policy_REVIEW_RULE
+		policies, err := stores.ListPolicies(ctx, &store.FindPolicyMessage{
+			Workspace:    workspaceID,
+			ResourceType: &resourceType,
+			Resource:     new(common.FormatWorkspace(workspaceID)),
+			Type:         &policyType,
+			ShowAll:      true,
+		})
+		require.NoError(t, err)
+		require.Len(t, policies, 1)
+		require.True(t, policies[0].Enforce)
+		require.False(t, policies[0].InheritFromParent)
+		rules := &storepb.ReviewRulePolicy{}
+		require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(policies[0].Payload), rules))
+		require.Equal(t, store.GetDefaultReviewRulePolicy().Rules, rules.Rules)
+	}
+}
+
+func TestListWorkspacesByEmailEvaluatesBindingConditions(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
 	const email = "member@example.com"
 	activeCondition := `request.time < timestamp("2099-01-01T00:00:00Z")`

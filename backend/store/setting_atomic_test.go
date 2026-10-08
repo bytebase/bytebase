@@ -3,19 +3,18 @@ package store_test
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -32,21 +31,10 @@ func newSettingAtomicFixtureWithCache(t *testing.T, enableCache bool) (context.C
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	t.Cleanup(cancel)
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(context.Background()) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := testcontainer.NewMetadataDBWithCache(t, enableCache)
 
 	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default');`)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, enableCache)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 
 	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
 		Name:      storepb.SettingName_WORKSPACE_PROFILE,
@@ -71,6 +59,7 @@ func mustProfile(t *testing.T, setting *store.SettingMessage) *storepb.Workspace
 // Against a read-then-UpsertSetting implementation this fails: the second
 // update merges onto a stale read and silently reverts the first's field.
 func TestUpdateSettingAtomicInterleaving(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newSettingAtomicFixture(t)
 
 	entered := make(chan struct{})
@@ -161,6 +150,7 @@ func TestUpdateSettingAtomicInterleaving(t *testing.T) {
 // transaction with no write, leaves the cache untouched, and surfaces
 // unwrapped so callers keep typed errors.
 func TestUpdateSettingAtomicApplyAbort(t *testing.T) {
+	t.Parallel()
 	ctx, _, s := newSettingAtomicFixture(t)
 
 	sentinel := errors.New("validation failed")
@@ -188,6 +178,7 @@ func TestUpdateSettingAtomicApplyAbort(t *testing.T) {
 // TestUpdateSettingAtomicMissingRow pins that a missing setting row is an
 // error, not a silent create — the primitive updates existing state only.
 func TestUpdateSettingAtomicMissingRow(t *testing.T) {
+	t.Parallel()
 	ctx, _, s := newSettingAtomicFixture(t)
 
 	_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_AI,
@@ -206,6 +197,7 @@ func TestUpdateSettingAtomicMissingRow(t *testing.T) {
 // implementation whose commit releases the row lock before an unordered cache
 // write.
 func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
+	t.Parallel()
 	ctx, _, s := newSettingAtomicFixture(t)
 
 	pauseFirst := make(chan struct{})
@@ -331,6 +323,7 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 // cache a pre-commit snapshot after a newer value was already published.
 // Uncached readers must leave publication to the ordered paths.
 func TestSettingCacheNoFillFromUncachedReads(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newSettingAtomicFixture(t)
 	// Drop the seed's cache entry so the next cached read must fill.
 	s.DeleteCache()
@@ -358,6 +351,7 @@ func TestSettingCacheNoFillFromUncachedReads(t *testing.T) {
 // setting read in an HA process serializes behind a single lock, including
 // while a writer sits in its commit-to-publish window.
 func TestGetSettingCacheDisabledNotSerialized(t *testing.T) {
+	t.Parallel()
 	ctx, _, s := newSettingAtomicFixtureWithCache(t, false)
 
 	pause := make(chan struct{})
@@ -422,6 +416,7 @@ func TestGetSettingCacheDisabledNotSerialized(t *testing.T) {
 // request context — the canceled read was swallowed and postCommit silently
 // skipped, leaving derived runtime state diverged from the database forever.
 func TestUpdateSettingAtomicPublishSurvivesCancellation(t *testing.T) {
+	t.Parallel()
 	ctx, _, s := newSettingAtomicFixture(t)
 
 	updateCtx, cancel := context.WithCancel(ctx)
@@ -465,6 +460,7 @@ func TestUpdateSettingAtomicPublishSurvivesCancellation(t *testing.T) {
 // decodes to nothing — and the unfiltered list is how the settings API serves
 // every other setting, so one unreadable row must not take them all down.
 func TestListSettingsSkipsNamesThisBuildDoesNotKnow(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newSettingAtomicFixture(t)
 
 	// Inserted by hand because the point is a name this build's enum cannot
@@ -500,6 +496,7 @@ func TestListSettingsSkipsNamesThisBuildDoesNotKnow(t *testing.T) {
 // enforcement would then run one policy while the console showed another. That
 // is BOT-100's defect widened to every setting.
 func TestListSettingsRefusesAnUnparsedRow(t *testing.T) {
+	t.Parallel()
 	// Cache off: the fixture's own write would otherwise serve every read from
 	// memory, and the point is what the database hands back.
 	ctx, db, s := newSettingAtomicFixtureWithCache(t, false)
@@ -526,6 +523,7 @@ func TestListSettingsRefusesAnUnparsedRow(t *testing.T) {
 // WorkspaceProfileSetting with the signup settings, password restrictions and
 // announcements erased.
 func TestUpdateSettingAtomicRefusesAnUnparsedRow(t *testing.T) {
+	t.Parallel()
 	// Cache off: the point is what the locked row hands the writer.
 	ctx, db, s := newSettingAtomicFixtureWithCache(t, false)
 

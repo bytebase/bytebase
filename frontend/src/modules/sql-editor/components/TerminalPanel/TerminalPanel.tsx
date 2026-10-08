@@ -2,6 +2,7 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { IStandaloneCodeEditor } from "@/components/monaco/types";
+import { Button } from "@/components/ui/button";
 import { ConnectionHolder } from "@/modules/sql-editor/components/ConnectionHolder";
 import { EditorAction } from "@/modules/sql-editor/components/EditorAction";
 import { ResultView } from "@/modules/sql-editor/components/ResultView";
@@ -20,22 +21,18 @@ import { CompactSQLEditor } from "./CompactSQLEditor";
 import { useHistory } from "./useHistory";
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/TerminalPanel/TerminalPanel.vue`.
- *
  * Hosts the admin-mode terminal: a top action bar, then a vertically
  * scrolling stack of `<CompactSQLEditor>` + `<ResultView>` rows (one per
  * historical query). Tail row is editable; older rows are read-only.
- * When the underlying Pinia tab is disconnected we render
- * `<ConnectionHolder>` instead (mirrors the Vue `v-if`).
+ * When the tab is disconnected we render `<ConnectionHolder>` instead.
  *
  * State source:
- * - `webTerminalStore.getQueryStateByTab(currentTab).queryItemList` — the
+ * - `useSQLEditorStore`'s `webTerminalQueryItemsByTabId[currentTabId]` — the
  *   per-tab list of query items (statements + their result sets).
- * - `useHistory()` — the up/down arrow command-history Pinia composable.
+ * - `useHistory()` — the up/down arrow command history.
  *
  * Auto-scroll: a ResizeObserver on the inner stack scrolls the outer
- * container to the bottom whenever the stack grows (replacing Vue's
- * `useElementSize` + watch).
+ * container to the bottom whenever the stack grows.
  */
 export function TerminalPanel() {
   const { t } = useTranslation();
@@ -70,7 +67,7 @@ export function TerminalPanel() {
 
   // Subscribe to the per-tab query items from the zustand slice — every
   // mutation (push, status flip, resultSet attach) produces a new array
-  // reference, so the component re-renders without any Vue `watch`.
+  // reference, so the component re-renders.
   const queryList = useSQLEditorStore(
     (s) =>
       (currentTabId
@@ -164,8 +161,7 @@ export function TerminalPanel() {
   };
 
   // Auto-scroll the outer container to the bottom whenever the inner
-  // stack resizes. ResizeObserver replaces `@vueuse/core`'s
-  // `useElementSize` + `watch(queryListHeight, ...)`.
+  // stack resizes.
   const containerRef = useRef<HTMLDivElement | null>(null);
   const stackRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -250,13 +246,15 @@ export function TerminalPanel() {
                       <div className="absolute inset-0 bg-overlay/20 flex justify-center items-center gap-2">
                         <Loader2 className="size-5 animate-spin text-control-light" />
                         {query === currentQuery && expired && (
-                          <button
+                          <Button
+                            appearance="secondary"
+                            size="md"
                             type="button"
-                            className="text-control-placeholder cursor-pointer hover:underline text-sm select-none"
+                            className="h-auto cursor-pointer p-0 text-sm text-control-placeholder hover:underline select-none"
                             onClick={handleCancelQuery}
                           >
                             {t("common.cancel")}
-                          </button>
+                          </Button>
                         )}
                       </div>
                     )}

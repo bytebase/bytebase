@@ -24,6 +24,7 @@ import (
 // it struck roughly half of all enrollments — so the instants here are chosen
 // rather than sampled from time.Now().
 func TestPendingMFAVersionSurvivesNanosecondClocks(t *testing.T) {
+	t.Parallel()
 	ctx, _, s := newSettingAtomicFixture(t)
 	a := require.New(t)
 

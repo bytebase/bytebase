@@ -232,11 +232,11 @@ function ApprovalStepItem({
         )}
       >
         {status === "approved" ? (
-          <Check className="h-3.5 w-3.5 text-white" />
+          <Check className="h-3.5 w-3.5 text-accent-text" />
         ) : status === "rejected" ? (
-          <X className="h-3.5 w-3.5 text-white" />
+          <X className="h-3.5 w-3.5 text-accent-text" />
         ) : status === "current" ? (
-          <User className="h-3.5 w-3.5 text-white" />
+          <User className="h-3.5 w-3.5 text-accent-text" />
         ) : (
           <span className="text-xs font-medium text-control">{stepNumber}</span>
         )}
@@ -342,7 +342,7 @@ function ApprovalUserText({ candidate }: { candidate: string }) {
   return (
     <span className="inline-flex items-center gap-1">
       <span
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium text-white"
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-medium text-accent-text"
         style={{ backgroundColor: getAvatarColor(displayName) }}
       >
         {getInitials(displayName)}
@@ -419,14 +419,14 @@ function ApprovalCandidateRow({
   return (
     <div className="inline-flex items-center gap-1.5">
       <span
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium text-white"
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-medium text-accent-text"
         style={{ backgroundColor: getAvatarColor(displayName) }}
       >
         {getInitials(displayName)}
       </span>
       <span className="text-xs text-control">{displayName}</span>
       {isCurrentUser && (
-        <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] text-success">
+        <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-xs text-success">
           {t("common.you")}
         </span>
       )}

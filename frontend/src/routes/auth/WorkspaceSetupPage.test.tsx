@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { fireEvent } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { act } from "react";
@@ -13,8 +10,6 @@ import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
-
-const componentDir = dirname(fileURLToPath(import.meta.url));
 
 const mocks = vi.hoisted(() => ({
   canUpdateWorkspace: true,
@@ -42,6 +37,13 @@ const mocks = vi.hoisted(() => ({
   setRecentProject: vi.fn(),
   routerReplace: vi.fn(),
   captureMetric: vi.fn(),
+  introState: {} as Record<string, boolean>,
+  saveIntroStateByKey: vi.fn(),
+  clearGuideWorkspaceUsage: vi.fn(),
+  clearSelectedGuideScenarioId: vi.fn(),
+  saveGuideWorkspaceUsage: vi.fn(),
+  saveSelectedGuideScenarioId: vi.fn(),
+  saveWorkspaceSetupFinished: vi.fn(() => true),
   pushNotification: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => false),
   canCreateProject: true,
@@ -56,6 +58,21 @@ vi.mock("@/app/analytics/provider", () => ({
   },
 }));
 
+vi.mock("@/modules/workspace-setup-guide/selection", () => ({
+  clearGuideWorkspaceUsage: mocks.clearGuideWorkspaceUsage,
+  clearSelectedGuideScenarioId: mocks.clearSelectedGuideScenarioId,
+  isGuideWorkspaceUsage: (value: unknown) =>
+    value === "team" || value === "solo",
+  isGuideScenarioId: (value: unknown) =>
+    value === "query-data" || value === "create-database-change",
+  saveGuideWorkspaceUsage: mocks.saveGuideWorkspaceUsage,
+  saveSelectedGuideScenarioId: mocks.saveSelectedGuideScenarioId,
+}));
+
+vi.mock("@/modules/workspace-setup-guide/setup", () => ({
+  saveWorkspaceSetupFinished: mocks.saveWorkspaceSetupFinished,
+}));
+
 vi.mock("@/hooks/useAppState", () => ({
   useCurrentUser: () => mocks.currentUser,
   useWorkspace: () => mocks.workspace,
@@ -67,10 +84,12 @@ vi.mock("@/hooks/useAppState", () => ({
     createProject: mocks.createProject,
     setRecentProject: mocks.setRecentProject,
   }),
+  useIntroStateByKey: (key: string) => mocks.introState[key] ?? false,
 }));
 
-vi.mock("@/stores/app", () => ({
-  useAppStore: (
+vi.mock("@/stores/app", () => {
+  const useAppStore = Object.assign(
+    (
     selector: (state: {
       workspacePolicy: IamPolicy;
       updateUser: typeof mocks.updateUser;
@@ -82,7 +101,7 @@ vi.mock("@/stores/app", () => ({
       isSaaSMode: () => boolean;
     }) => unknown
   ) =>
-    selector({
+      selector({
       workspacePolicy: mocks.workspacePolicy,
       updateUser: mocks.updateUser,
       updateWorkspace: mocks.updateWorkspace,
@@ -93,9 +112,16 @@ vi.mock("@/stores/app", () => ({
           instances: mocks.sampleInstances,
         },
       },
-      isSaaSMode: () => mocks.isSaaSMode,
-    }),
-}));
+        isSaaSMode: () => mocks.isSaaSMode,
+      }),
+    {
+      getState: () => ({
+        saveIntroStateByKey: mocks.saveIntroStateByKey,
+      }),
+    }
+  );
+  return { useAppStore };
+});
 
 vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
@@ -110,11 +136,13 @@ vi.mock("@/components/ResourceIdField", async () => {
     ResourceIdField: ({
       value,
       resourceTitle,
+      autoComplete,
       onChange,
       onValidationChange,
     }: {
       value: string;
       resourceTitle?: string;
+      autoComplete?: string;
       onChange?: (value: string) => void;
       onValidationChange?: (valid: boolean) => void;
     }) => {
@@ -127,6 +155,7 @@ vi.mock("@/components/ResourceIdField", async () => {
         <input
           data-testid="project-resource-id"
           value={value}
+          autoComplete={autoComplete}
           onChange={(event) => {
             onChange?.(event.target.value);
             onValidationChange?.(event.target.value.length > 0);
@@ -149,7 +178,7 @@ vi.mock("@/utils", () => ({
 }));
 
 vi.mock("@/components/UserAvatar", () => ({
-  UserAvatar: () => null,
+  UserAvatar: () => <div data-testid="user-avatar" />,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -158,10 +187,44 @@ vi.mock("react-i18next", () => ({
     t: (key: string) =>
       (
         ({
-          "settings.profile.setup-title": "Welcome! Set up your workspace",
+          "common.back": "Back",
+          "settings.profile.setup-scenario.outcome-title":
+            "What would you like to do with Bytebase?",
+          "settings.profile.setup-scenario.create-database-change.title":
+            "Create a database change",
+          "settings.profile.setup-scenario.create-database-change.description":
+            "Define a change and create its issue.",
+          "settings.profile.setup-scenario.query-data.title":
+            "Query data",
+          "settings.profile.setup-scenario.query-data.description":
+            "Open SQL Editor and run a statement.",
+          "settings.profile.setup-scenario.mark-sensitive-data.title":
+            "Mark sensitive data",
+          "settings.profile.setup-scenario.mark-sensitive-data.description":
+            "Identify sensitive columns and apply masking.",
+          "settings.profile.setup-scenario.workspace-usage.title":
+            "Who will use Bytebase with you?",
+          "settings.profile.setup-scenario.workspace-usage.team.title":
+            "My team",
+          "settings.profile.setup-scenario.workspace-usage.team.description":
+            "I will work with other people.",
+          "settings.profile.setup-scenario.workspace-usage.solo.title":
+            "Just me",
+          "settings.profile.setup-scenario.workspace-usage.solo.description":
+            "I will use Bytebase on my own.",
+          "settings.profile.setup-scenario.continue": "Continue",
+          "settings.profile.setup-steps.scenario": "Choose a goal",
+          "settings.profile.setup-steps.workspace": "Set up workspace",
           "settings.profile.setup-first-project": "Setup 1st project",
+          "settings.profile.setup-skip": "I'll do this later",
           "settings.profile.enable-sample-databases":
             "Enable sample databases",
+          "settings.profile.enable-sample-databases-query-data":
+            "Enable sample databases to start querying immediately",
+          "settings.profile.enable-sample-databases-create-change":
+            "Enable sample databases as a safe change target",
+          "settings.profile.enable-sample-databases-mark-sensitive-data":
+            "Enable sample databases to try data masking immediately",
           "settings.profile.setup-submit": "Setup my workspace",
           "instance.prepare-sample-instance-failed":
             "Failed to prepare Sample Project Instance.",
@@ -192,6 +255,28 @@ const renderIntoContainer = (element: ReactElement) => {
   };
 };
 
+const renderWorkspaceForm = () => {
+  const page = renderIntoContainer(<WorkspaceSetupPage />);
+  page.render();
+  if (mocks.isSaaSMode) {
+    const labels = [...page.container.querySelectorAll("label")];
+    act(() => {
+      fireEvent.click(
+        labels.find((label) => label.textContent?.includes("Query data"))!
+      );
+      fireEvent.click(
+        labels.find((label) => label.textContent?.includes("Just me"))!
+      );
+    });
+  }
+  const continueWithoutSelection = [
+    ...page.container.querySelectorAll("button"),
+  ].find((button) => button.textContent === "Continue");
+  if (!continueWithoutSelection) throw new Error("Continue not found");
+  act(() => fireEvent.click(continueWithoutSelection));
+  return page;
+};
+
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.canUpdateWorkspace = true;
@@ -199,6 +284,10 @@ beforeEach(async () => {
   mocks.sampleAvailable = true;
   mocks.sampleInstances = [];
   mocks.isSaaSMode = false;
+  mocks.introState = {};
+  mocks.saveIntroStateByKey.mockImplementation(({ key, newState }) => {
+    mocks.introState[key] = newState;
+  });
   mocks.workspacePolicy = {
     bindings: [
       {
@@ -218,28 +307,419 @@ beforeEach(async () => {
 });
 
 describe("WorkspaceSetupPage", () => {
-  test("uses the shared product intro query key after creating a project", () => {
-    const source = readFileSync(join(componentDir, "WorkspaceSetupPage.tsx"), {
-      encoding: "utf8",
+  test("records setup page entry only once per lifecycle", () => {
+    const first = renderIntoContainer(<WorkspaceSetupPage />);
+    first.render();
+
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup page entered",
+      properties: { setup_version: "v1" },
+    });
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: "workspace-setup.page-entered.v1",
+      newState: true,
     });
 
-    expect(source).toContain(
-      "[PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO"
-    );
-    expect(source).toContain("PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO");
-    expect(source).toContain(
-      "query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO }"
-    );
+    first.render();
+    first.unmount();
+
+    const second = renderIntoContainer(<WorkspaceSetupPage />);
+    second.render();
+
+    expect(mocks.captureMetric).toHaveBeenCalledTimes(1);
+    second.unmount();
   });
 
-  test("shows workspace name when the sole member can update the workspace", () => {
+  test("records setup page entry when its marker cannot be saved", () => {
+    mocks.saveIntroStateByKey.mockImplementation(() => {
+      throw new Error("localStorage unavailable");
+    });
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+
+    expect(() => page.render()).not.toThrow();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup page entered",
+      properties: { setup_version: "v1" },
+    });
+
+    page.unmount();
+  });
+
+  test("uses the shared step indicator for both setup steps", async () => {
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+    page.render();
+
+    const initialIndicator = page.container.querySelector(
+      "[data-slot='step-indicator']"
+    );
+    expect(initialIndicator).not.toBeNull();
+    expect(
+      [...initialIndicator!.querySelectorAll("li span")].map(
+        (label) => label.textContent
+      )
+    ).toEqual(["Choose a goal", "Set up workspace"]);
+    expect(initialIndicator!.querySelector("svg")).toBeNull();
+
+    const queryOption = [...page.container.querySelectorAll("label")].find(
+      (label) => label.textContent?.includes("Query data")
+    )!;
+    await act(async () => {
+      fireEvent.click(queryOption);
+      await Promise.resolve();
+    });
+    const continueButton = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Continue"
+    )!;
+    await act(async () => {
+      fireEvent.click(continueButton);
+      await Promise.resolve();
+    });
+
+    const workspaceIndicator = page.container.querySelector(
+      "[data-slot='step-indicator']"
+    );
+    expect(workspaceIndicator).not.toBeNull();
+    expect(workspaceIndicator!.querySelector("svg")).not.toBeNull();
+    page.unmount();
+  });
+
+  test("uses stable wizard footer actions for workspace setup", () => {
+    const page = renderWorkspaceForm();
+    const buttons = [...page.container.querySelectorAll("button")];
+    const back = buttons.find((button) => button.textContent === "Back")!;
+    const skip = buttons.find(
+      (button) => button.textContent === "I'll do this later"
+    )!;
+    const submit = buttons.find(
+      (button) => button.textContent === "Setup my workspace"
+    )!;
+    const footer = back.parentElement!;
+
+    expect(footer.className).toContain("justify-between");
+    expect(footer.className).toContain("gap-x-2");
+    expect(footer.firstElementChild).toBe(back);
+    expect(footer.lastElementChild).toContainElement(skip);
+    expect(footer.lastElementChild).toContainElement(submit);
+    expect(footer.lastElementChild?.textContent).toBe(
+      "I'll do this laterSetup my workspace"
+    );
+    expect(footer.querySelector(".w-full")).toBeNull();
+    page.unmount();
+  });
+
+  test("starts with two unanswered questionnaire groups", () => {
     const page = renderIntoContainer(<WorkspaceSetupPage />);
 
     page.render();
 
     expect(page.container.textContent).toContain(
+      "What would you like to do with Bytebase?"
+    );
+    expect(page.container.querySelectorAll("[role='radio']")).toHaveLength(5);
+    expect(page.container.textContent).toContain("Create a database change");
+    expect(page.container.textContent).toContain("Mark sensitive data");
+    expect(page.container.textContent).toContain("Who will use Bytebase with you?");
+    expect(page.container.textContent).toContain("My team");
+    expect(page.container.textContent).toContain("Just me");
+    expect(page.container.textContent).not.toContain("Learn Bytebase Basics");
+    expect(page.container.textContent).not.toContain("Setup 1st project");
+    expect(page.container.textContent).not.toContain("Skip");
+
+    page.unmount();
+  });
+
+  test("requires both questionnaire answers in SaaS", async () => {
+    mocks.isSaaSMode = true;
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+    page.render();
+    const continueButton = page.container.querySelector("button")!;
+
+    expect(continueButton).toBeDisabled();
+
+    const labels = [...page.container.querySelectorAll("label")];
+    await act(async () => {
+      fireEvent.click(
+        labels.find((label) => label.textContent?.includes("Query data"))!
+      );
+      await Promise.resolve();
+    });
+    expect(continueButton).toBeDisabled();
+
+    await act(async () => {
+      fireEvent.click(
+        labels.find((label) => label.textContent?.includes("Just me"))!
+      );
+      await Promise.resolve();
+    });
+    expect(continueButton).toBeEnabled();
+    page.unmount();
+  });
+
+  test("removes the skip action from SaaS workspace setup", () => {
+    mocks.isSaaSMode = true;
+    const page = renderWorkspaceForm();
+
+    expect(page.container.textContent).not.toContain("I'll do this later");
+    expect(page.container.textContent).toContain("Setup my workspace");
+    page.unmount();
+  });
+
+  test("persists Create a database change when the questionnaire continues", async () => {
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+    page.render();
+    const changeOption = [...page.container.querySelectorAll("label")].find(
+      (label) => label.textContent?.includes("Create a database change")
+    )!;
+
+    await act(async () => {
+      fireEvent.click(changeOption);
+      await Promise.resolve();
+    });
+    const continueButton = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Continue"
+    )!;
+    await act(async () => {
+      fireEvent.click(continueButton);
+      await Promise.resolve();
+    });
+    expect(page.container.textContent).toContain(
+      "Enable sample databases as a safe change target"
+    );
+    expect(mocks.saveSelectedGuideScenarioId).toHaveBeenCalledWith(
+      "create-database-change"
+    );
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup page entered",
+      properties: { setup_version: "v1" },
+    });
+    page.unmount();
+  });
+
+  test("persists both answers without recording before setup ends", async () => {
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+    page.render();
+    const labels = [...page.container.querySelectorAll("label")];
+
+    await act(async () => {
+      fireEvent.click(
+        labels.find((label) => label.textContent?.includes("Query data"))!
+      );
+      fireEvent.click(
+        labels.find((label) => label.textContent?.includes("My team"))!
+      );
+      await Promise.resolve();
+    });
+    const continueButton = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Continue"
+    )!;
+    await act(async () => {
+      fireEvent.click(continueButton);
+      await Promise.resolve();
+    });
+
+    expect(mocks.saveSelectedGuideScenarioId).toHaveBeenCalledWith(
+      "query-data"
+    );
+    expect(mocks.saveGuideWorkspaceUsage).toHaveBeenCalledWith("team");
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup page entered",
+      properties: { setup_version: "v1" },
+    });
+
+    const submit = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("Setup my workspace")
+    )!;
+    await act(async () => {
+      fireEvent.click(submit);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup submitted",
+      properties: {
+        scenario: "query-data",
+        collaboration_type: "team",
+        result: "finished",
+        sample_enabled: true,
+      },
+    });
+    page.unmount();
+  });
+
+  test("persists Query Data before optional workspace setup", async () => {
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+    page.render();
+    const queryOption = [...page.container.querySelectorAll("label")].find(
+      (label) => label.textContent?.includes("Query data")
+    )!;
+
+    await act(async () => {
+      fireEvent.click(queryOption);
+      await Promise.resolve();
+    });
+    const continueButton = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Continue"
+    )!;
+    await act(async () => {
+      fireEvent.click(continueButton);
+      await Promise.resolve();
+    });
+    expect(mocks.saveSelectedGuideScenarioId).toHaveBeenCalledWith(
+      "query-data"
+    );
+    expect(page.container.textContent).toContain(
+      "Enable sample databases to start querying immediately"
+    );
+
+    const submit = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("Setup my workspace")
+    )!;
+    await act(async () => {
+      fireEvent.click(submit);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.saveSelectedGuideScenarioId).toHaveBeenCalledWith(
+      "query-data"
+    );
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup submitted",
+      properties: {
+        scenario: "query-data",
+        collaboration_type: "unselected",
+        result: "finished",
+        sample_enabled: true,
+      },
+    });
+    page.unmount();
+  });
+
+  test("preserves an explicit selection when optional setup fails", async () => {
+    mocks.updateUser.mockRejectedValueOnce(new Error("update failed"));
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+    page.render();
+    const changeOption = [...page.container.querySelectorAll("label")].find(
+      (label) => label.textContent?.includes("Create a database change")
+    )!;
+    await act(async () => {
+      fireEvent.click(changeOption);
+      await Promise.resolve();
+    });
+    const continueButton = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Continue"
+    )!;
+    await act(async () => {
+      fireEvent.click(continueButton);
+      await Promise.resolve();
+    });
+    const submit = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("Setup my workspace")
+    )!;
+
+    await act(async () => {
+      fireEvent.click(submit);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.saveSelectedGuideScenarioId).toHaveBeenCalledWith(
+      "create-database-change"
+    );
+    expect(mocks.captureMetric).toHaveBeenCalled();
+    page.unmount();
+  });
+
+  test("preserves the selected scenario when workspace setup is skipped", async () => {
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+    page.render();
+    const queryOption = [...page.container.querySelectorAll("label")].find(
+      (label) => label.textContent?.includes("Query data")
+    )!;
+
+    await act(async () => {
+      fireEvent.click(queryOption);
+      await Promise.resolve();
+    });
+    const continueButton = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Continue"
+    )!;
+    await act(async () => {
+      fireEvent.click(continueButton);
+      await Promise.resolve();
+    });
+    const skipSetupButton = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent === "I'll do this later"
+    )!;
+    await act(async () => {
+      fireEvent.click(skipSetupButton);
+      await Promise.resolve();
+    });
+
+    expect(mocks.saveSelectedGuideScenarioId).toHaveBeenCalledWith(
+      "query-data"
+    );
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup submitted",
+      properties: {
+        scenario: "query-data",
+        collaboration_type: "unselected",
+        result: "skipped",
+        sample_enabled: false,
+      },
+    });
+    expect(mocks.routerReplace).toHaveBeenCalled();
+    page.unmount();
+  });
+
+  test("continuing without a scenario keeps scenario storage empty", async () => {
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+    page.render();
+    const continueButton = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Continue"
+    )!;
+
+    await act(async () => {
+      fireEvent.click(continueButton);
+      await Promise.resolve();
+    });
+    const submit = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("Setup my workspace")
+    )!;
+    await act(async () => {
+      fireEvent.click(submit);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.clearSelectedGuideScenarioId).toHaveBeenCalledOnce();
+    expect(mocks.clearGuideWorkspaceUsage).toHaveBeenCalledOnce();
+    expect(mocks.saveSelectedGuideScenarioId).not.toHaveBeenCalled();
+    expect(mocks.saveGuideWorkspaceUsage).not.toHaveBeenCalled();
+    expect(mocks.captureMetric).toHaveBeenCalledTimes(3);
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup submitted",
+      properties: {
+        scenario: "unselected",
+        collaboration_type: "unselected",
+        result: "finished",
+        sample_enabled: true,
+      },
+    });
+    page.unmount();
+  });
+
+  test("shows workspace name when the sole member can update the workspace", () => {
+    const page = renderWorkspaceForm();
+
+    expect(page.container.textContent).not.toContain(
       "Welcome! Set up your workspace"
     );
+    expect(page.container.querySelector("[data-testid='user-avatar']")).toBeNull();
+    const heading = page.container.querySelector("h1");
+    expect(heading).toHaveTextContent("Set up workspace");
+    expect(heading).toHaveClass("sr-only");
     expect(page.container.textContent).toContain(
       "settings.profile.workspace-name"
     );
@@ -260,6 +740,23 @@ describe("WorkspaceSetupPage", () => {
     page.unmount();
   });
 
+  test("disables browser autocomplete for setup inputs", () => {
+    const page = renderWorkspaceForm();
+
+    for (const testId of [
+      "profile-display-name",
+      "profile-workspace-title",
+      "profile-project-title",
+      "project-resource-id",
+    ]) {
+      expect(
+        page.container.querySelector(`[data-testid='${testId}']`)
+      ).toHaveAttribute("autocomplete", "off");
+    }
+
+    page.unmount();
+  });
+
   test("hides workspace name for users joining an existing workspace", () => {
     mocks.workspacePolicy = {
       bindings: [
@@ -273,9 +770,7 @@ describe("WorkspaceSetupPage", () => {
         },
       ],
     } as IamPolicy;
-    const page = renderIntoContainer(<WorkspaceSetupPage />);
-
-    page.render();
+    const page = renderWorkspaceForm();
 
     expect(page.container.textContent).not.toContain(
       "settings.profile.workspace-name"
@@ -285,9 +780,7 @@ describe("WorkspaceSetupPage", () => {
   });
 
   test("can optionally create a project and continue to its databases page", async () => {
-    const page = renderIntoContainer(<WorkspaceSetupPage />);
-
-    page.render();
+    const page = renderWorkspaceForm();
 
     expect(page.container.textContent).toContain("Setup 1st project");
     expect(page.container.textContent).not.toContain(
@@ -343,6 +836,21 @@ describe("WorkspaceSetupPage", () => {
     expect(mocks.createProject.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.prepareSampleProjectInstance.mock.invocationCallOrder[0]
     );
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "sample instance requested",
+      properties: { source: "workspace_setup" },
+    });
+    const sampleMetricCall = mocks.captureMetric.mock.calls.find(
+      ([metric]) => metric.event === "sample instance requested"
+    );
+    expect(sampleMetricCall).toBeDefined();
+    expect(sampleMetricCall![0]).toEqual({
+      event: "sample instance requested",
+      properties: { source: "workspace_setup" },
+    });
+    expect(mocks.captureMetric.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.prepareSampleProjectInstance.mock.invocationCallOrder[0]
+    );
     expect(mocks.routerReplace).toHaveBeenCalledWith({
       name: "workspace.project.database",
       params: { projectId: "new-project" },
@@ -356,13 +864,15 @@ describe("WorkspaceSetupPage", () => {
   });
 
   test("allows setup without creating a project when its title is cleared", async () => {
-    const page = renderIntoContainer(<WorkspaceSetupPage />);
-
-    page.render();
+    const page = renderWorkspaceForm();
 
     const projectNameInput = page.container.querySelector(
       "[data-testid='profile-project-title']"
     ) as HTMLInputElement;
+    expect(projectNameInput).not.toBeRequired();
+    expect(
+      page.container.querySelector("[data-testid='project-required-indicator']")
+    ).toBeNull();
     await act(async () => {
       fireEvent.change(projectNameInput, { target: { value: "" } });
       await Promise.resolve();
@@ -389,6 +899,19 @@ describe("WorkspaceSetupPage", () => {
 
     expect(mocks.createProject).not.toHaveBeenCalled();
     expect(mocks.prepareSampleProjectInstance).not.toHaveBeenCalled();
+    expect(mocks.captureMetric).not.toHaveBeenCalledWith({
+      event: "sample instance requested",
+      properties: expect.anything(),
+    });
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup submitted",
+      properties: {
+        scenario: "unselected",
+        collaboration_type: "unselected",
+        result: "finished",
+        sample_enabled: false,
+      },
+    });
     expect(mocks.setRecentProject).not.toHaveBeenCalled();
     expect(mocks.routerReplace).toHaveBeenCalledWith({
       name: "workspace.project",
@@ -398,10 +921,32 @@ describe("WorkspaceSetupPage", () => {
     page.unmount();
   });
 
-  test("requires a project ID while the project title is present", async () => {
-    const page = renderIntoContainer(<WorkspaceSetupPage />);
+  test("requires the first project in SaaS", async () => {
+    mocks.isSaaSMode = true;
+    const page = renderWorkspaceForm();
 
-    page.render();
+    const projectNameInput = page.container.querySelector(
+      "[data-testid='profile-project-title']"
+    ) as HTMLInputElement;
+    expect(projectNameInput).toBeRequired();
+    expect(
+      page.container.querySelector("[data-testid='project-required-indicator']")
+    ).toHaveClass("ml-1");
+    await act(async () => {
+      fireEvent.change(projectNameInput, { target: { value: "" } });
+      await Promise.resolve();
+    });
+
+    const save = Array.from(page.container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Setup my workspace")
+    ) as HTMLButtonElement;
+    expect(save).toBeDisabled();
+
+    page.unmount();
+  });
+
+  test("requires a project ID while the project title is present", async () => {
+    const page = renderWorkspaceForm();
 
     const projectResourceIdInput = page.container.querySelector(
       "[data-testid='project-resource-id']"
@@ -420,9 +965,7 @@ describe("WorkspaceSetupPage", () => {
   });
 
   test("does not prepare sample databases when the user opts out", async () => {
-    const page = renderIntoContainer(<WorkspaceSetupPage />);
-
-    page.render();
+    const page = renderWorkspaceForm();
 
     const sampleCheckbox = page.container.querySelector(
       "[data-testid='enable-sample-databases']"
@@ -448,6 +991,15 @@ describe("WorkspaceSetupPage", () => {
       params: { projectId: "new-project" },
       query: { intro: "connect-database" },
     });
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup submitted",
+      properties: {
+        scenario: "unselected",
+        collaboration_type: "unselected",
+        result: "finished",
+        sample_enabled: false,
+      },
+    });
 
     page.unmount();
   });
@@ -456,9 +1008,7 @@ describe("WorkspaceSetupPage", () => {
     mocks.prepareSampleProjectInstance.mockRejectedValue(
       new Error("sample target unavailable")
     );
-    const page = renderIntoContainer(<WorkspaceSetupPage />);
-
-    page.render();
+    const page = renderWorkspaceForm();
 
     const submit = Array.from(page.container.querySelectorAll("button")).find(
       (button) => button.textContent?.includes("Setup my workspace")
@@ -480,15 +1030,22 @@ describe("WorkspaceSetupPage", () => {
       params: { projectId: "new-project" },
       query: { intro: "connect-database" },
     });
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup submitted",
+      properties: {
+        scenario: "unselected",
+        collaboration_type: "unselected",
+        result: "finished",
+        sample_enabled: true,
+      },
+    });
 
     page.unmount();
   });
 
   test("hides sample database setup when the target is unavailable", () => {
     mocks.sampleAvailable = false;
-    const page = renderIntoContainer(<WorkspaceSetupPage />);
-
-    page.render();
+    const page = renderWorkspaceForm();
 
     expect(
       page.container.querySelector(
@@ -501,9 +1058,7 @@ describe("WorkspaceSetupPage", () => {
 
   test("hides sample database setup when the workspace already provisioned a sample", () => {
     mocks.sampleInstances = [{ instance: "instances/sample" }];
-    const page = renderIntoContainer(<WorkspaceSetupPage />);
-
-    page.render();
+    const page = renderWorkspaceForm();
 
     expect(
       page.container.querySelector(
@@ -515,12 +1070,10 @@ describe("WorkspaceSetupPage", () => {
   });
 
   test("skips workspace setup to the projects page with create project highlighted", async () => {
-    const page = renderIntoContainer(<WorkspaceSetupPage />);
-
-    page.render();
+    const page = renderWorkspaceForm();
 
     const skip = Array.from(page.container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("settings.profile.setup-skip")
+      (button) => button.textContent === "I'll do this later"
     ) as HTMLButtonElement;
     await act(async () => {
       skip.click();
@@ -533,8 +1086,13 @@ describe("WorkspaceSetupPage", () => {
       query: { intro: "create-project" },
     });
     expect(mocks.captureMetric).toHaveBeenCalledWith({
-      event: "workspace setup skipped",
-      properties: { deployment: "self-host" },
+      event: "workspace setup submitted",
+      properties: {
+        scenario: "unselected",
+        collaboration_type: "unselected",
+        result: "skipped",
+        sample_enabled: false,
+      },
     });
 
     page.unmount();
@@ -545,11 +1103,9 @@ describe("WorkspaceSetupPage", () => {
     { isSaaSMode: true, deployment: "cloud" },
   ])(
     "records a completed setup for the $deployment deployment",
-    async ({ isSaaSMode, deployment }) => {
+    async ({ isSaaSMode }) => {
       mocks.isSaaSMode = isSaaSMode;
-      const page = renderIntoContainer(<WorkspaceSetupPage />);
-
-      page.render();
+      const page = renderWorkspaceForm();
 
       const submit = Array.from(
         page.container.querySelectorAll("button")
@@ -563,14 +1119,22 @@ describe("WorkspaceSetupPage", () => {
       });
 
       expect(mocks.captureMetric).toHaveBeenCalledWith({
-        event: "workspace setup completed",
+        event: "workspace setup submitted",
         properties: {
-          deployment,
-          project_created: true,
-          sample_requested: true,
-          sample_succeeded: true,
+          scenario: isSaaSMode ? "query-data" : "unselected",
+          collaboration_type: isSaaSMode ? "solo" : "unselected",
+          result: "finished",
+          sample_enabled: true,
         },
       });
+      if (isSaaSMode) {
+        expect(mocks.saveWorkspaceSetupFinished).toHaveBeenCalledWith(
+          "workspaces/ws1",
+          true
+        );
+      } else {
+        expect(mocks.saveWorkspaceSetupFinished).not.toHaveBeenCalled();
+      }
 
       page.unmount();
     }

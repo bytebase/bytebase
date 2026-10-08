@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { ReactRoute } from "@/app/router";
 import { Engine } from "@/types/proto-es/v1/common_pb";

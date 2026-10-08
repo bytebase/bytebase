@@ -41,7 +41,7 @@ func TestRefusedEndpointsAreNotAdvertised(t *testing.T) {
 			"AuthService has a served authentication restriction endpoint")
 		endpoints := idx.GetServiceEndpoints("AuthService")
 		require.Len(t, endpoints, 1)
-		require.Equal(t, "bytebase.v1.AuthService.GetAuthenticationRestriction", endpoints[0].OperationID)
+		require.Equal(t, "bytebase.v1.AuthService.GetAuthenticationInfo", endpoints[0].OperationID)
 	})
 
 	t.Run("a service whose every method is refused is not listed at all", func(t *testing.T) {

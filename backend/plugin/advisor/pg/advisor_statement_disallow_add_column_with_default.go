@@ -36,7 +36,7 @@ func (*StatementDisallowAddColumnWithDefaultAdvisor) Check(_ context.Context, ch
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type statementDisallowAddColumnWithDefaultRule struct {

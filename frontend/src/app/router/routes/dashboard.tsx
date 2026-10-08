@@ -43,6 +43,7 @@ import {
   PROJECT_V1_ROUTE_RELEASES,
   PROJECT_V1_ROUTE_SERVICE_ACCOUNTS,
   PROJECT_V1_ROUTE_SETTINGS,
+  PROJECT_V1_ROUTE_SQL_REVIEW,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
   PROJECT_V1_ROUTE_WEBHOOK_CREATE,
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
@@ -81,6 +82,7 @@ import { lazyPage } from "@/app/router/lazyPage";
 import { ProjectRouteGate } from "@/app/router/ProjectRouteGate";
 import { RouteGroupOutlet } from "@/app/router/RouteGroupOutlet";
 import type { Permission } from "@/types";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 
 // Workspace and project routes nested under the dashboard layouts. Leaf route
 // modules are lazy-loaded from their owner under src/routes.
@@ -182,43 +184,49 @@ const workspaceLevelRoutes: RouteObject[] = [
         index: true,
         handle: {
           name: WORKSPACE_ROUTE_SQL_REVIEW,
-          requiredPermissionList: (): Permission[] => [
-            "bb.reviewConfigs.list",
-            "bb.policies.get",
-          ],
+          // The V2 page reads the review rule policy only.
+          requiredPermissionList: (): Permission[] =>
+            sqlReviewV2Enabled()
+              ? ["bb.policies.get"]
+              : ["bb.reviewConfigs.list", "bb.policies.get"],
         },
         lazy: lazyPage(
           () => import("@/routes/workspace/SQLReviewPage"),
           (m) => m.SQLReviewPage
         ),
       },
-      {
-        path: "new",
-        handle: {
-          name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
-          requiredPermissionList: (): Permission[] => [
-            "bb.reviewConfigs.create",
-          ],
-        },
-        lazy: lazyPage(
-          () => import("@/routes/workspace/SQLReviewCreatePage"),
-          (m) => m.SQLReviewCreatePage
-        ),
-      },
-      {
-        path: ":sqlReviewPolicySlug",
-        handle: {
-          name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-          requiredPermissionList: (): Permission[] => [
-            "bb.reviewConfigs.get",
-            "bb.policies.get",
-          ],
-        },
-        lazy: lazyPage(
-          () => import("@/routes/workspace/SQLReviewDetailPage"),
-          (m) => m.SQLReviewDetailPage
-        ),
-      },
+      // The v1 review policy pages go away with SQL Review V2.
+      ...(sqlReviewV2Enabled()
+        ? []
+        : [
+            {
+              path: "new",
+              handle: {
+                name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+                requiredPermissionList: (): Permission[] => [
+                  "bb.reviewConfigs.create",
+                ],
+              },
+              lazy: lazyPage(
+                () => import("@/routes/workspace/SQLReviewCreatePage"),
+                (m) => m.SQLReviewCreatePage
+              ),
+            },
+            {
+              path: ":sqlReviewPolicySlug",
+              handle: {
+                name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+                requiredPermissionList: (): Permission[] => [
+                  "bb.reviewConfigs.get",
+                  "bb.policies.get",
+                ],
+              },
+              lazy: lazyPage(
+                () => import("@/routes/workspace/SQLReviewDetailPage"),
+                (m) => m.SQLReviewDetailPage
+              ),
+            },
+          ]),
     ],
   },
   // /idps — SettingRouteShell layout. The parent carries the route permission
@@ -227,7 +235,10 @@ const workspaceLevelRoutes: RouteObject[] = [
   {
     path: "idps",
     handle: {
-      requiredPermissionList: (): Permission[] => ["bb.identityProviders.get"],
+      requiredPermissionList: (): Permission[] => [
+        "bb.identityProviders.get",
+        "bb.identityProviders.list",
+      ],
     },
     element: <RouteGroupOutlet />,
     children: [
@@ -413,7 +424,6 @@ const workspaceLevelRoutes: RouteObject[] = [
         path: "mcp",
         handle: {
           name: WORKSPACE_ROUTE_MCP,
-          requiredPermissionList: (): Permission[] => ["bb.settings.get"],
         },
         lazy: lazyPage(
           () => import("@/routes/workspace/MCPPage"),
@@ -480,9 +490,9 @@ const workspaceSettingRoutes: RouteObject[] = [
   },
 ];
 
-// Environment detail — redirect-only route in vue (it redirected to the
-// environments dashboard with the environment name as a `#hash`). A leaf with
-// no element/lazy renders a blank body, so the redirect is the element here.
+// Environment detail is redirect-only: it goes to the environments dashboard
+// with the environment name as a `#hash`. A leaf with no element/lazy renders a
+// blank body, so the loader performs the redirect.
 const environmentV1Routes: RouteObject[] = [
   {
     path: "environments/:environmentName",
@@ -546,12 +556,12 @@ const instanceRoutes: RouteObject[] = [
 // Project routes (`/projects/:projectId/**`).
 //
 // The `requiredPermissionList` entries on the parent (`bb.projects.get`) and
-// each leaf are ported 1:1 from the legacy vue routes and aggregate via
-// `assembleRoute` into `route.requiredPermissions`. `ProjectRouteGate` (the
-// parent element) loads the project and enforces those permissions before its
-// `<Outlet/>` mounts the leaf — project-scoped checks need the loaded `Project`
-// resource, which is why `BodyLayout` routes project routes straight to this
-// gate instead of its generic workspace-level `RoutePermissionGuardShell`.
+// each leaf aggregate via `assembleRoute` into `route.requiredPermissions`.
+// `ProjectRouteGate` (the parent element) loads the project and enforces those
+// permissions before its `<Outlet/>` mounts the leaf — project-scoped checks
+// need the loaded `Project` resource, which is why `BodyLayout` routes project
+// routes straight to this gate instead of its generic workspace-level
+// `RoutePermissionGuardShell`.
 const projectV1Routes: RouteObject[] = [
   {
     path: "projects/:projectId",
@@ -564,8 +574,7 @@ const projectV1Routes: RouteObject[] = [
         index: true,
         handle: { name: PROJECT_V1_ROUTE_DETAIL },
         // The project root has no page of its own — redirect to the Issues
-        // tab (mirrors the legacy vue-router DETAIL → ISSUES redirect). `issues`
-        // is relative to the parent `projects/:projectId`.
+        // tab. `issues` is relative to the parent `projects/:projectId`.
         element: <Navigate to="issues" replace />,
       },
       {
@@ -828,6 +837,23 @@ const projectV1Routes: RouteObject[] = [
           (m) => m.WorkloadIdentitiesPage
         ),
       },
+      // Dark-launched with SQL Review V2: the route exists only where the
+      // sidebar entry that leads to it does.
+      ...(sqlReviewV2Enabled()
+        ? [
+            {
+              path: "sql-review",
+              handle: {
+                name: PROJECT_V1_ROUTE_SQL_REVIEW,
+                requiredPermissionList: (): Permission[] => ["bb.policies.get"],
+              },
+              lazy: lazyPage(
+                () => import("@/routes/project/ProjectSQLReviewPage"),
+                (m) => m.ProjectSQLReviewPage
+              ),
+            },
+          ]
+        : []),
       {
         path: "settings",
         handle: { name: PROJECT_V1_ROUTE_SETTINGS },
@@ -977,8 +1003,8 @@ const projectV1Routes: RouteObject[] = [
   },
 ];
 
-// `/` DashboardLayout → BodyLayout child holding the dashboard routes, plus
-// the `/issues` IssuesRouteShell route.
+// `/` DashboardLayout → BodyLayout child holding the dashboard routes,
+// including the `/issues` My Issues page.
 export const dashboardRoutes: RouteObject[] = [
   {
     path: "/",

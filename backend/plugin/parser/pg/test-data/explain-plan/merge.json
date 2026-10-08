@@ -1,0 +1,69 @@
+[
+  {
+    "Plan": {
+      "Node Type": "ModifyTable",
+      "Operation": "Merge",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Relation Name": "big",
+      "Alias": "big",
+      "Startup Cost": 3.25,
+      "Total Cost": 185.61,
+      "Plan Rows": 0,
+      "Plan Width": 0,
+      "Plans": [
+        {
+          "Node Type": "Hash Join",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Join Type": "Inner",
+          "Startup Cost": 3.25,
+          "Total Cost": 185.61,
+          "Plan Rows": 10000,
+          "Plan Width": 12,
+          "Inner Unique": true,
+          "Hash Cond": "(big.s_id = s.id)",
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "big",
+              "Alias": "big",
+              "Startup Cost": 0.00,
+              "Total Cost": 155.00,
+              "Plan Rows": 10000,
+              "Plan Width": 10
+            },
+            {
+              "Node Type": "Hash",
+              "Parent Relationship": "Inner",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 2.00,
+              "Total Cost": 2.00,
+              "Plan Rows": 100,
+              "Plan Width": 10,
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "s",
+                  "Alias": "s",
+                  "Startup Cost": 0.00,
+                  "Total Cost": 2.00,
+                  "Plan Rows": 100,
+                  "Plan Width": 10
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

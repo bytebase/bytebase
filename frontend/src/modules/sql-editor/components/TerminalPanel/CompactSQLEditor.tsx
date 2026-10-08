@@ -37,13 +37,11 @@ interface CompactSQLEditorProps {
 }
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/TerminalPanel/CompactSQLEditor.vue`.
- *
  * Terminal-style Monaco editor with a CLI-like prompt:
  *   SQL>  first_line
  *      -> second_line
  *
- * Wires up the same keybindings + context keys as the Vue version:
+ * Wires up keybindings + context keys:
  * Cmd+Enter (run), Cmd+E (explain / dry-run for BigQuery), Alt+Shift+C
  * (clear screen), Enter-when-statement-ends-with-`;` (run), and
  * Up/Down arrow at top/bottom for history navigation.
@@ -214,7 +212,6 @@ export function CompactSQLEditor({
 
       // Monaco commands don't return a disposable — they live with the
       // editor instance and clean up when the editor is destroyed.
-      // Match the Vue version's fire-and-forget pattern.
       editor.addCommand(
         monaco.KeyCode.Enter,
         () => execute(false),
@@ -294,7 +291,7 @@ export function CompactSQLEditor({
     };
   }, [engine, editorState]);
 
-  // Format-content event from useSQLEditorContext (Vue `editorEvents`).
+  // Format-content event from `sqlEditorEvents`.
   useEffect(() => {
     const off = sqlEditorEvents.on("format-content", () => {
       const editor = editorRef.current;

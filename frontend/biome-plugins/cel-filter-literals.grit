@@ -1,0 +1,22 @@
+// A value interpolated straight into a double-quoted CEL string literal breaks
+// the filter the moment it holds a `"`, and the backend rejects the whole
+// expression. celString / celStringList / celMapField in
+// src/utils/v1/celLiteral.ts own the quotes so the escape cannot be forgotten.
+language js
+
+JsTemplateExpression() as $template where {
+  or {
+    and {
+      $template <: r"[\s\S]*\.(?:contains|matches|startsWith|endsWith)\(\"\$\{[\s\S]*",
+      register_diagnostic(span=$template, message="Raw value in a CEL string argument; use name.contains(${celString(x)}).")
+    },
+    and {
+      $template <: r"[\s\S]*(?:[a-z][a-zA-Z0-9_.]*|\}|\])\s*(?:==|!=|>=|<=|<|>)\s*\"\$\{[\s\S]*",
+      register_diagnostic(span=$template, message="Raw value in a CEL comparison operand; use state == ${celString(x)}.")
+    },
+    and {
+      $template <: r"[\s\S]*\bin\s*\[\$\{[^\n]*\"\$\{[\s\S]*",
+      register_diagnostic(span=$template, message="Raw value in a CEL list element; use engine in ${celStringList(xs)}.")
+    }
+  }
+}

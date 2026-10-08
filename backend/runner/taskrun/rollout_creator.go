@@ -205,8 +205,8 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 		return
 	}
 
-	// Tickle task run scheduler
-	rc.bus.TaskRunTickleChan <- 0
+	// Tickle the pending task run scheduler.
+	bus.Tickle(rc.bus.TaskRunPendingTickleChan)
 
 	slog.Info("successfully auto-created rollout", slog.String("project", ref.ProjectID), slog.Int("plan_id", int(planID)))
 }

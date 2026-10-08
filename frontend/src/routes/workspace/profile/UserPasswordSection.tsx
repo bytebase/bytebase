@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { WorkspaceProfileSetting_PasswordRestriction } from "@/types/proto-es/v1/setting_service_pb";
@@ -149,9 +150,9 @@ export function UserPasswordSection({
                   {passwordChecks.map((check, i) => (
                     <li key={i} className="flex gap-x-1 items-center">
                       {check.matched ? (
-                        <CircleCheck className="w-4 text-green-400" />
+                        <CircleCheck className="w-4 text-success" />
                       ) : (
-                        <CircleAlert className="w-4 text-red-400" />
+                        <CircleAlert className="w-4 text-error" />
                       )}
                       {check.text}
                     </li>
@@ -174,7 +175,9 @@ export function UserPasswordSection({
               className={passwordHint ? "border-error focus:ring-error" : ""}
               onChange={(e) => onPasswordChange(e.target.value)}
             />
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               type="button"
               tabIndex={-1}
               className="hover:cursor-pointer absolute right-3"
@@ -185,7 +188,7 @@ export function UserPasswordSection({
               ) : (
                 <EyeOff className="w-4 h-4" />
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -209,7 +212,9 @@ export function UserPasswordSection({
               }
               onChange={(e) => onPasswordConfirmChange(e.target.value)}
             />
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               type="button"
               tabIndex={-1}
               className="hover:cursor-pointer absolute right-3"
@@ -220,7 +225,7 @@ export function UserPasswordSection({
               ) : (
                 <EyeOff className="w-4 h-4" />
               )}
-            </button>
+            </Button>
           </div>
           {passwordMismatch && (
             <span className="text-error text-sm mt-1 pl-1">

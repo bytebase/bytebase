@@ -34,30 +34,30 @@ export interface ProjectTableProps {
   /** Rows to render. */
   readonly projectList: readonly Project[];
   /**
-   * When set, the row whose `name` matches gets a leading check icon
-   * (mirrors Vue's `:current-project` mode used in the project switcher).
+   * When set, the row whose `name` matches gets a leading check icon (used in
+   * the project switcher).
    */
   readonly currentProject?: Project;
   /** Highlight keyword for the id and title cells. */
   readonly keyword?: string;
   /**
    * Show the loading spinner row instead of `emptyContent` when there
-   * are no projects. Mirrors NDataTable's `:loading` prop.
+   * are no projects.
    */
   readonly loading?: boolean;
   /**
    * Custom empty-state node. Defaults to a "No data" placeholder.
    */
   readonly emptyContent?: ReactNode;
-  /** Mirrors Vue's `:show-selection`. Adds a leading checkbox column. */
+  /** Adds a leading checkbox column. */
   readonly showSelection?: boolean;
-  /** Mirrors Vue's `:show-labels`. Defaults to true. */
+  /** Shows the labels column. Defaults to true. */
   readonly showLabels?: boolean;
   /** Adds a dedicated state column. */
   readonly showState?: boolean;
   /**
-   * Mirrors Vue's `:show-actions`. When set, the trailing column renders
-   * `renderActions(project)` (typically the project action dropdown).
+   * When set, the trailing column renders `renderActions(project)` (typically
+   * the project action dropdown).
    */
   readonly showActions?: boolean;
   readonly renderActions?: RenderActions;
@@ -78,12 +78,9 @@ export interface ProjectTableProps {
 }
 
 /**
- * React port of `frontend/src/components/v2/Model/ProjectV1Table.vue`.
- *
  * Renders the standard project listing — id / title / labels columns,
  * with optional leading current-project check, leading selection
- * checkboxes, and trailing action-dropdown slot. Matches the prop
- * shape of the Vue component so call sites read the same way.
+ * checkboxes, and trailing action-dropdown slot.
  *
  * Two surfaces consume this today:
  *   - `ProjectsPage` (settings) — `showSelection` + `showActions` +
@@ -393,8 +390,8 @@ function ResourceStateBadge({ state }: { state: State }) {
 }
 
 /**
- * Mirrors Vue's `LabelsCell` — show up to N labels inline, "..." for
- * the rest, and a tooltip on hover that lists all of them.
+ * Show up to N labels inline, "..." for the rest, and a tooltip on hover that
+ * lists all of them.
  */
 function LabelsCell({ labels }: { labels: { [key: string]: string } }) {
   const entries = Object.entries(labels);

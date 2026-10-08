@@ -15,7 +15,7 @@ export function LearnMoreLink({ href, className }: LearnMoreLinkProps) {
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "inline-flex items-center gap-x-0.5 hover:underline",
+        "inline-flex items-center gap-x-1 hover:underline",
         className
       )}
     >

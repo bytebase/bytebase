@@ -115,6 +115,8 @@ func classifyOmniStatementType(node redshiftast.Node) storepb.StatementType {
 		return storepb.StatementType_UPDATE
 	case *redshiftast.DeleteStmt:
 		return storepb.StatementType_DELETE
+	case *redshiftast.MergeStmt:
+		return storepb.StatementType_MERGE
 	case *redshiftast.RedshiftObjectStmt:
 		return classifyOmniRedshiftObjectStatementType(n.Command, n.ObjectType)
 	default:

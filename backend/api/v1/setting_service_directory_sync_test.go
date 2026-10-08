@@ -17,6 +17,7 @@ import (
 // may ever be converted into it. The directory sync token used to be, which is
 // how it leaked to every member.
 func TestWorkspaceProfileNeverExposesDirectorySyncToken(t *testing.T) {
+	t.Parallel()
 	const tokenHash = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
 
 	got := convertToWorkspaceProfileSetting(&storepb.WorkspaceProfileSetting{
@@ -78,6 +79,7 @@ func TestRotateDirectorySyncTokenRejectsMalformedNames(t *testing.T) {
 // before it is written — otherwise anyone with audit-log read access gets a
 // working SCIM credential.
 func TestRotateDirectorySyncTokenResponseIsRedactedForAudit(t *testing.T) {
+	t.Parallel()
 	const token = "b17c0d9e-2222-4000-8000-fedcbafedcba"
 
 	got := marshalAuditPayload(&v1pb.RotateDirectorySyncTokenResponse{Token: token})
@@ -87,6 +89,7 @@ func TestRotateDirectorySyncTokenResponseIsRedactedForAudit(t *testing.T) {
 // Guard against the next secret being dropped into this member-readable blob.
 // If this fails, either redact the new field or move it out of WORKSPACE_PROFILE.
 func TestWorkspaceProfileHasNoSecretShapedFields(t *testing.T) {
+	t.Parallel()
 	// Only string/bytes fields can carry a credential. Booleans like
 	// disallow_password_signin and durations like refresh_token_duration name a
 	// policy, not a secret, so restricting by kind keeps this guard free of an

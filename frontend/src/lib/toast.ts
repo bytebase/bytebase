@@ -52,9 +52,9 @@ export function mapNotificationToToast(item: NotificationCreate): ToastOptions {
   };
 }
 
-// Filter mirrors the previous Vue NotificationContext: only the "bytebase"
-// module renders; other modules (e.g. agent) own their own UI surface.
-export function pushReactNotification(item: NotificationCreate): void {
+// Only the "bytebase" module renders here; other modules (e.g. agent) own
+// their own UI surface.
+export function pushNotification(item: NotificationCreate): void {
   if (item.module !== "bytebase") return;
   toastManager.add(mapNotificationToToast(item));
 }

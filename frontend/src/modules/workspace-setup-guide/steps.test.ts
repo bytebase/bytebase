@@ -1,21 +1,28 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import {
-  DATABASE_ROUTE_DASHBOARD,
-  INSTANCE_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_INSTANCES,
+  PROJECT_V1_ROUTE_PLAN_DETAIL,
+  WORKSPACE_ROUTE_MEMBERS,
+  WORKSPACE_ROUTE_USERS,
 } from "@/app/router/handles";
 import {
   CREATE_INSTANCE_PRODUCT_INTRO,
   CREATE_PROJECT_PRODUCT_INTRO,
-  PREPARE_DATABASE_PRODUCT_INTRO,
-  PREPARE_DATABASE_TRANSFER_TIP,
+  CREATE_USER_PRODUCT_INTRO,
+  GRANT_ACCESS_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
-  PRODUCT_INTRO_TIP_QUERY_KEY,
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
-import { GUIDE_STEP_REGISTRY } from "./steps";
-import type { GuideContext } from "./types";
+import { GUIDE_STEP_DEFINITIONS } from "./steps";
+import type { GuideContext, GuideStepDefinition, GuideStepId } from "./types";
+
+const GUIDE_STEP_BY_ID = Object.fromEntries(
+  GUIDE_STEP_DEFINITIONS.map((definition) => [definition.id, definition])
+) as Record<GuideStepId, GuideStepDefinition>;
 
 const createContext = (
   overrides: Partial<GuideContext> = {}
@@ -23,125 +30,135 @@ const createContext = (
   hasProject: false,
   hasInstance: false,
   hasExploredDatabase: false,
-  hasFirstQuery: false,
+  hasRunStatement: false,
+  hasCreatedChangeIssue: false,
+  hasMarkedSensitiveData: false,
+  isSaaS: false,
+  hasOtherHumanUser: false,
+  hasOtherWorkspaceMember: false,
   projectName: "",
+  instanceName: "",
   databaseProjectName: "",
   databaseName: "",
+  queryTarget: undefined,
   route: { name: "workspace.home", params: {} },
   ...overrides,
 });
 
-describe("GUIDE_STEP_REGISTRY", () => {
-  test("preserves legacy analytics and translation keys", () => {
-    expect(
-      Object.values(GUIDE_STEP_REGISTRY).map(
-        ({ id, analyticsKey, labelKey, descriptionKey }) => ({
-          id,
-          analyticsKey,
-          labelKey,
-          descriptionKey,
-        })
-      )
-    ).toEqual([
-      {
-        id: "create-project",
-        analyticsKey: "hasProject",
-        labelKey: "workspace-setup-guide.steps.project",
-        descriptionKey: "workspace-setup-guide.descriptions.project",
-      },
-      {
-        id: "connect-instance",
-        analyticsKey: "hasInstance",
-        labelKey: "workspace-setup-guide.steps.instance",
-        descriptionKey: "workspace-setup-guide.descriptions.instance",
-      },
-      {
-        id: "explore-database",
-        analyticsKey: "hasExploredDatabase",
-        labelKey: "workspace-setup-guide.steps.database",
-        descriptionKey: "workspace-setup-guide.descriptions.database",
-      },
-      {
-        id: "query-data",
-        analyticsKey: "hasFirstQuery",
-        labelKey: "workspace-setup-guide.steps.query",
-        descriptionKey: "workspace-setup-guide.descriptions.sql-editor",
-      },
+describe("GUIDE_STEP_DEFINITIONS", () => {
+  test("contains only reusable resource and customer-action definitions", () => {
+    expect(GUIDE_STEP_DEFINITIONS.map(({ id }) => id)).toEqual([
+      "create-project",
+      "connect-instance",
+      "explore-database",
+      "query-data",
+      "create-database-change",
+      "mark-sensitive-data",
+      "add-member",
     ]);
   });
 
-  test("routes project creation with the current product intro", () => {
-    expect(
-      GUIDE_STEP_REGISTRY["create-project"].resolveActions(createContext())
-    ).toEqual({
-      select: {
-        type: "navigate",
-        target: {
-          name: "workspace.project",
-          query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
-        },
+  test.each([
+    ["create-project", { hasProject: true }],
+    ["connect-instance", { hasInstance: true }],
+    [
+      "explore-database",
+      {
+        hasExploredDatabase: true,
+        databaseProjectName: "projects/app",
+        databaseName: "instances/sample/databases/employee",
       },
-    });
-    expect(
-      GUIDE_STEP_REGISTRY["create-project"].resolveActions(
-        createContext({ hasProject: true })
-      )
-    ).toEqual({});
+    ],
+    ["query-data", { hasRunStatement: true }],
+    ["create-database-change", { hasCreatedChangeIssue: true }],
+    ["mark-sensitive-data", { hasMarkedSensitiveData: true }],
+    ["add-member", { hasOtherWorkspaceMember: true }],
+  ] as const)("uses observable evidence for %s", (stepId, completed) => {
+    expect(GUIDE_STEP_BY_ID[stepId].isComplete(createContext(completed))).toBe(
+      true
+    );
   });
 
-  test("routes instance connection through the project when available", () => {
+  test("keeps database exploration incomplete without a concrete target", () => {
     expect(
-      GUIDE_STEP_REGISTRY["connect-instance"].resolveActions(
-        createContext({ projectName: "projects/app" })
+      GUIDE_STEP_BY_ID["explore-database"].isComplete(
+        createContext({ hasExploredDatabase: true })
       )
+    ).toBe(false);
+  });
+
+  test.each([createContext(), createContext({ projectName: "projects/app" })])(
+    "always opens the workspace project list with the create highlight",
+    (context) => {
+      expect(
+        GUIDE_STEP_BY_ID["create-project"].resolveActions(context)
+      ).toEqual({
+        select: {
+          type: "navigate",
+          target: {
+            name: PROJECT_V1_ROUTE_DASHBOARD,
+            query: {
+              [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO,
+            },
+          },
+        },
+      });
+    }
+  );
+
+  test.each([
+    createContext({ projectName: "projects/app" }),
+    createContext({
+      projectName: "projects/app",
+      instanceName: "instances/prod",
+    }),
+  ])(
+    "always opens the project instance list with the create highlight",
+    (context) => {
+      expect(
+        GUIDE_STEP_BY_ID["connect-instance"].resolveActions(context)
+      ).toEqual({
+        select: {
+          type: "navigate",
+          target: {
+            name: PROJECT_V1_ROUTE_INSTANCES,
+            params: { projectId: "app" },
+            query: {
+              [PRODUCT_INTRO_QUERY_KEY]: CREATE_INSTANCE_PRODUCT_INTRO,
+            },
+          },
+        },
+      });
+    }
+  );
+
+  test("keeps the connect action fixed while its project dependency is blocked", () => {
+    expect(
+      GUIDE_STEP_BY_ID["connect-instance"].resolveActions(createContext())
     ).toEqual({
       select: {
         type: "navigate",
         target: {
           name: PROJECT_V1_ROUTE_INSTANCES,
-          params: { projectId: "app" },
-          query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_INSTANCE_PRODUCT_INTRO },
-        },
-      },
-    });
-    expect(
-      GUIDE_STEP_REGISTRY["connect-instance"].resolveActions(createContext())
-    ).toEqual({
-      select: {
-        type: "navigate",
-        target: {
-          name: INSTANCE_ROUTE_DASHBOARD,
-          query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_INSTANCE_PRODUCT_INTRO },
-        },
-      },
-    });
-  });
-
-  test("routes database preparation with transfer guidance", () => {
-    expect(
-      GUIDE_STEP_REGISTRY["explore-database"].resolveActions(createContext())
-    ).toEqual({
-      select: {
-        type: "navigate",
-        target: {
-          name: DATABASE_ROUTE_DASHBOARD,
+          params: { projectId: "" },
           query: {
-            [PRODUCT_INTRO_QUERY_KEY]: PREPARE_DATABASE_PRODUCT_INTRO,
-            [PRODUCT_INTRO_TIP_QUERY_KEY]: PREPARE_DATABASE_TRANSFER_TIP,
+            [PRODUCT_INTRO_QUERY_KEY]: CREATE_INSTANCE_PRODUCT_INTRO,
           },
         },
       },
     });
   });
 
-  test("routes an existing project database with synced guidance", () => {
+  test.each([
+    createContext({ projectName: "projects/app" }),
+    createContext({
+      projectName: "projects/app",
+      databaseProjectName: "projects/other",
+      databaseName: "instances/sample/databases/employee",
+    }),
+  ])("always opens the project database page with its highlight", (context) => {
     expect(
-      GUIDE_STEP_REGISTRY["explore-database"].resolveActions(
-        createContext({
-          databaseProjectName: "projects/app",
-          databaseName: "instances/sample/databases/employee",
-        })
-      )
+      GUIDE_STEP_BY_ID["explore-database"].resolveActions(context)
     ).toEqual({
       select: {
         type: "navigate",
@@ -156,59 +173,184 @@ describe("GUIDE_STEP_REGISTRY", () => {
     });
   });
 
-  test("resolves the current query and change actions together", () => {
+  test.each([false, true])(
+    "always queries the discovered database when completion is %s",
+    (hasRunStatement) => {
+      expect(
+        GUIDE_STEP_BY_ID["query-data"].resolveActions(
+          createContext({
+            hasRunStatement,
+            databaseName: "instances/sample/databases/employee",
+            databaseProjectName: "projects/app",
+            queryTarget: { schema: "public", table: "employee" },
+          })
+        )
+      ).toEqual({
+        select: {
+          type: "navigate",
+          target: {
+            name: "sql-editor.database",
+            params: {
+              project: "app",
+              instance: "sample",
+              database: "employee",
+            },
+            query: {
+              schema: "public",
+              table: "employee",
+              intro: "run-query",
+              panel: "schema",
+            },
+          },
+        },
+        primary: {
+          type: "open-sql-editor",
+          database: {
+            name: "instances/sample/databases/employee",
+            project: "projects/app",
+          },
+          query: {
+            schema: "public",
+            table: "employee",
+            intro: "run-query",
+            panel: "schema",
+          },
+        },
+      });
+    }
+  );
+
+  test("opens the database without the run intro when no table is known", () => {
     expect(
-      GUIDE_STEP_REGISTRY["query-data"].resolveActions(
+      GUIDE_STEP_BY_ID["query-data"].resolveActions(
         createContext({
+          databaseName: "instances/sample/databases/empty",
           databaseProjectName: "projects/app",
-          databaseName: "instances/sample/databases/employee",
         })
       )
     ).toEqual({
+      select: {
+        type: "navigate",
+        target: {
+          name: "sql-editor.database",
+          params: {
+            project: "app",
+            instance: "sample",
+            database: "empty",
+          },
+        },
+      },
       primary: {
         type: "open-sql-editor",
         database: {
-          name: "instances/sample/databases/employee",
+          name: "instances/sample/databases/empty",
           project: "projects/app",
         },
-      },
-      secondary: {
-        type: "create-change",
-        project: "projects/app",
-        database: "instances/sample/databases/employee",
       },
     });
   });
 
-  test("omits query actions without a complete database target", () => {
-    expect(
-      GUIDE_STEP_REGISTRY["query-data"].resolveActions(createContext())
-    ).toEqual({});
+  test.each([false, true])(
+    "always opens the discovered database catalog when sensitive data completion is %s",
+    (hasMarkedSensitiveData) => {
+      expect(
+        GUIDE_STEP_BY_ID["mark-sensitive-data"].resolveActions(
+          createContext({
+            hasMarkedSensitiveData,
+            databaseName: "instances/sample/databases/employee",
+            databaseProjectName: "projects/app",
+          })
+        )
+      ).toEqual({
+        select: {
+          type: "navigate",
+          target: {
+            name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+            params: {
+              projectId: "app",
+              instanceId: "sample",
+              databaseName: "employee",
+            },
+            query: {
+              parent: "instances/sample",
+              intro: "mark-sensitive-data",
+            },
+            hash: "#catalog",
+          },
+        },
+      });
+    }
+  );
+
+  test.each([false, true])(
+    "always starts a database change when completion is %s",
+    (hasCreatedChangeIssue) => {
+      expect(
+        GUIDE_STEP_BY_ID["create-database-change"].resolveActions(
+          createContext({
+            hasCreatedChangeIssue,
+            databaseName: "instances/sample/databases/employee",
+            databaseProjectName: "projects/app",
+          })
+        )
+      ).toEqual({
+        select: {
+          type: "create-change",
+          project: "projects/app",
+          database: "instances/sample/databases/employee",
+        },
+      });
+    }
+  );
+
+  test("opens Users when self-host has no other human user", () => {
+    const context = createContext();
+
+    expect(GUIDE_STEP_BY_ID["add-member"].resolveActions(context)).toEqual({
+      select: {
+        type: "navigate",
+        target: {
+          name: WORKSPACE_ROUTE_USERS,
+          query: {
+            [PRODUCT_INTRO_QUERY_KEY]: CREATE_USER_PRODUCT_INTRO,
+          },
+        },
+      },
+    });
   });
 
   test.each([
-    ["create-project", { hasProject: true }],
-    ["connect-instance", { hasInstance: true }],
-    ["explore-database", { hasExploredDatabase: true }],
-    ["query-data", { hasFirstQuery: true }],
-  ] as const)("evaluates completion for %s", (stepId, completed) => {
-    expect(
-      GUIDE_STEP_REGISTRY[stepId].isComplete(createContext(completed))
-    ).toBe(true);
-    expect(GUIDE_STEP_REGISTRY[stepId].isComplete(createContext())).toBe(false);
+    createContext({ isSaaS: true }),
+    createContext({ hasOtherHumanUser: true }),
+  ])("opens Members when the teammate can be granted access", (context) => {
+    expect(GUIDE_STEP_BY_ID["add-member"].resolveActions(context)).toEqual({
+      select: {
+        type: "navigate",
+        target: {
+          name: WORKSPACE_ROUTE_MEMBERS,
+          query: {
+            [PRODUCT_INTRO_QUERY_KEY]: GRANT_ACCESS_PRODUCT_INTRO,
+          },
+        },
+      },
+    });
   });
 
   test.each([
-    ["create-project", "workspace.project", true],
-    ["connect-instance", "workspace.instance.detail", true],
-    ["connect-instance", "workspace.project.instance", true],
-    ["explore-database", "workspace.database.detail", true],
-    ["explore-database", "workspace.project.database", true],
+    ["create-project", PROJECT_V1_ROUTE_DASHBOARD, true],
+    ["connect-instance", PROJECT_V1_ROUTE_INSTANCES, true],
+    ["explore-database", "workspace.project.database.detail", true],
     ["query-data", "sql-editor.database", true],
-    ["query-data", "workspace.home", false],
-  ] as const)("matches %s against %s", (stepId, name, expected) => {
-    expect(GUIDE_STEP_REGISTRY[stepId].matchesRoute({ name, params: {} })).toBe(
-      expected
-    );
+    ["create-database-change", PROJECT_V1_ROUTE_PLAN_DETAIL, true],
+    ["mark-sensitive-data", PROJECT_V1_ROUTE_DATABASE_DETAIL, true],
+    ["add-member", WORKSPACE_ROUTE_USERS, true],
+    ["add-member", WORKSPACE_ROUTE_MEMBERS, true],
+  ] as const)("matches %s on %s", (stepId, name, expected) => {
+    expect(
+      GUIDE_STEP_BY_ID[stepId as GuideStepId].matchesRoute({
+        name,
+        params: {},
+      })
+    ).toBe(expected);
   });
 });

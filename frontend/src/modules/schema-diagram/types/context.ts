@@ -11,10 +11,8 @@ import type { Geometry, Point, Rect } from "./geometry";
 import type { ForeignKey } from "./schema";
 
 /**
- * React port of the Vue `SchemaDiagramContext`. Values are stored as plain
- * fields (held by React state inside the provider) instead of Vue `Ref<T>`,
- * matching the per-instance React-context pattern decided in the Stage 19
- * design doc.
+ * Per-instance context for `<SchemaDiagram>`. Values are stored as plain
+ * fields held by React state inside the provider.
  *
  * Mutators are exposed as methods rather than direct setters so the
  * provider can scope updates inside `useState`/`useRef` correctly. Methods

@@ -1,5 +1,6 @@
 import type { RouteObject } from "react-router";
 import { SplashLayout } from "@/app/layouts/SplashLayout";
+import { workspaceSetupGuard } from "@/app/router/guard";
 import {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
@@ -18,17 +19,11 @@ import { lazyPage } from "@/app/router/lazyPage";
 export const authRoutes: RouteObject[] = [
   {
     path: "/oauth2/consent",
-    element: <SplashLayout />,
-    children: [
-      {
-        index: true,
-        handle: { name: OAUTH2_CONSENT_MODULE },
-        lazy: lazyPage(
-          () => import("@/routes/auth/OAuth2ConsentPage"),
-          (m) => m.OAuth2ConsentPage
-        ),
-      },
-    ],
+    handle: { name: OAUTH2_CONSENT_MODULE },
+    lazy: lazyPage(
+      () => import("@/routes/auth/OAuth2ConsentPage"),
+      (m) => m.OAuth2ConsentPage
+    ),
   },
   {
     path: "/auth",
@@ -44,9 +39,9 @@ export const authRoutes: RouteObject[] = [
         ),
       },
       {
-        // vue used `alias: "signin"` on the index child; react-router has no
-        // alias, so `/auth/signin` is an explicit sibling rendering the same
-        // page under the same route name.
+        // react-router has no route alias, so `/auth/signin` is an explicit
+        // sibling rendering the same page under the same route name as the
+        // index child.
         path: "signin",
         handle: { name: AUTH_SIGNIN_MODULE },
         lazy: lazyPage(
@@ -89,6 +84,7 @@ export const authRoutes: RouteObject[] = [
       {
         path: "setup",
         handle: { name: AUTH_SETUP_MODULE },
+        loader: ({ request }) => workspaceSetupGuard(new URL(request.url)),
         lazy: lazyPage(
           () => import("@/routes/auth/WorkspaceSetupPage"),
           (m) => m.WorkspaceSetupPage

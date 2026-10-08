@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"connectrpc.com/connect"
@@ -45,28 +46,9 @@ func NewInternalMCPAuthInterceptor(store *store.Store, secret string, profile *c
 // WrapUnary implements the ConnectRPC interceptor interface for unary RPCs.
 func (in *InternalMCPAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		tokenStr, err := GetTokenFromHeaders(req.Header())
-		if err != nil {
-			return nil, connect.NewError(connect.CodeUnauthenticated, err)
-		}
-		cred, err := VerifyInternalMCPToken(tokenStr, in.secret)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeUnauthenticated, err)
-		}
-
-		authContext, err := getAuthContext(req.Spec().Procedure)
+		cred, authContext, err := authenticateDelegated(req.Header(), req.Spec().Procedure, in.secret)
 		if err != nil {
 			return nil, err
-		}
-		// The credential's grant state travels verbatim into the AuthContext —
-		// this is the contract P1b's enforcement keys on (see
-		// common.DelegatedGrant for the empty-state semantics). Grant state
-		// only: the principal is re-resolved below, and RBAC downstream.
-		authContext.DelegatedGrant = &common.DelegatedGrant{
-			Scope:         cred.Scope,
-			Resource:      cred.Resource,
-			ClientID:      cred.ClientID,
-			CorrelationID: cred.CorrelationID,
 		}
 		ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
 
@@ -80,6 +62,34 @@ func (in *InternalMCPAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.
 		ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, cred.WorkspaceID)
 		return next(ctx, req)
 	}
+}
+
+// authenticateDelegated verifies the delegated credential a request carries and
+// builds the AuthContext for its procedure. The credential's grant state
+// travels verbatim into the AuthContext — this is the contract P1b's
+// enforcement keys on (see common.DelegatedGrant for the empty-state
+// semantics). Grant state only: the principal is re-resolved by the caller on
+// every request, and RBAC downstream.
+func authenticateDelegated(header http.Header, procedure, secret string) (*DelegatedMCPCredential, *common.AuthContext, error) {
+	tokenStr, err := GetTokenFromHeaders(header)
+	if err != nil {
+		return nil, nil, connect.NewError(connect.CodeUnauthenticated, err)
+	}
+	cred, err := VerifyInternalMCPToken(tokenStr, secret)
+	if err != nil {
+		return nil, nil, connect.NewError(connect.CodeUnauthenticated, err)
+	}
+	authContext, err := getAuthContext(procedure)
+	if err != nil {
+		return nil, nil, err
+	}
+	authContext.DelegatedGrant = &common.DelegatedGrant{
+		Scope:         cred.Scope,
+		Resource:      cred.Resource,
+		ClientID:      cred.ClientID,
+		CorrelationID: cred.CorrelationID,
+	}
+	return cred, authContext, nil
 }
 
 // WrapStreamingClient implements the ConnectRPC interceptor interface for streaming clients.

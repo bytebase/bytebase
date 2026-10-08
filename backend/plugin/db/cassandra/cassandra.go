@@ -18,7 +18,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/inf.v0"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -158,7 +157,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, rawStatement string
 						result.Rows = append(result.Rows, row)
 						n := len(result.Rows)
 						if (n&(n-1) == 0) && int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
-							result.Error = common.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
+							result.Error = util.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
 							break
 						}
 

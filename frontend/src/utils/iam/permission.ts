@@ -1,9 +1,8 @@
 import type { Permission } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
-// Permission checks resolve against the React app store (the single source of
-// truth for the current user, workspace IAM policy, and roles). The legacy
-// Pinia `usePermissionStore` is no longer populated and must not be used.
+// Permission checks resolve against the app store (the single source of truth
+// for the current user, workspace IAM policy, and roles).
 //
 // The app store *registers* its checkers here at init rather than this module
 // importing the store directly: `@/utils` sits in the early barrel-import

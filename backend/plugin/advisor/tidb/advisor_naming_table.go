@@ -8,10 +8,10 @@ import (
 	"github.com/bytebase/omni/tidb/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -112,7 +112,7 @@ func (c *namingTableConventionChecker) checkStmt(ostmt OmniStmt) {
 				Code:          code.NamingTableConventionMismatch.Int32(),
 				Title:         c.title,
 				Content:       fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, c.format),
-				StartPosition: common.ConvertANTLRLineToPosition(line),
+				StartPosition: base.ConvertANTLRLineToPosition(line),
 			})
 		}
 		if c.maxLength > 0 && len(tableName) > c.maxLength {
@@ -121,7 +121,7 @@ func (c *namingTableConventionChecker) checkStmt(ostmt OmniStmt) {
 				Code:          code.NamingTableConventionMismatch.Int32(),
 				Title:         c.title,
 				Content:       fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, c.maxLength),
-				StartPosition: common.ConvertANTLRLineToPosition(line),
+				StartPosition: base.ConvertANTLRLineToPosition(line),
 			})
 		}
 	}

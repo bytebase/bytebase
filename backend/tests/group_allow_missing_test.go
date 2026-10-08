@@ -19,10 +19,7 @@ func TestUpdateGroupAllowMissingRequiresCreatePermission(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	adminToken := ctl.authInterceptor.token
 	const password = "1024bytebase"
@@ -53,7 +50,7 @@ func TestUpdateGroupAllowMissingRequiresCreatePermission(t *testing.T) {
 	// Fixture check: if this ever passes, the role gained bb.groups.create and the
 	// denial below would prove nothing.
 	ctl.authInterceptor.token = dbaToken
-	_, err = ctl.groupServiceClient.CreateGroup(ctx, connect.NewRequest(&v1pb.CreateGroupRequest{
+	_, err := ctl.groupServiceClient.CreateGroup(ctx, connect.NewRequest(&v1pb.CreateGroupRequest{
 		Group:      &v1pb.Group{Title: "Front door"},
 		GroupEmail: fmt.Sprintf("front-%s@example.com", generateRandomString("g")),
 	}))

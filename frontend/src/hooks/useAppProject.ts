@@ -7,9 +7,8 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
  * Reactively reads a project from the Zustand app store, self-fetching
  * when the current route hasn't preloaded it (the SQL editor route does
  * not mount the dashboard shells that hydrate the app store). Returns the
- * Pinia-compatible fallback (`unknownProject` / default project) so
- * callers can read `.title` etc. without null checks — mirroring the
- * legacy `useProjectV1Store().getProjectByName`.
+ * `getProjectByName` fallback (`unknownProject` / default project) so
+ * callers can read `.title` etc. without null checks.
  */
 export const useAppProject = (name: string): Project => {
   const getProjectByName = useAppStore((s) => s.getProjectByName);

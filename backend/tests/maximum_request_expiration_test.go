@@ -66,11 +66,7 @@ func TestRoleGrantMaximumExpiration(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Cap request expiration to 7 days.
 	a.NoError(ctl.setMaximumRequestExpiration(ctx, durationpb.New(7*24*time.Hour)))
@@ -93,7 +89,7 @@ func TestRoleGrantMaximumExpiration(t *testing.T) {
 	// Request expiration does not cap role grants.
 	a.NoError(ctl.setMaximumRequestExpiration(ctx, durationpb.New(7*24*time.Hour)))
 	overCap := fmt.Sprintf(`request.time < timestamp("%s")`, time.Now().Add(30*24*time.Hour).Format(time.RFC3339))
-	_, err = ctl.issueServiceClient.CreateIssue(ctx, newRoleGrantIssue(overCap))
+	_, err := ctl.issueServiceClient.CreateIssue(ctx, newRoleGrantIssue(overCap))
 	a.NoError(err, "role grant expiration should ignore the request expiration cap")
 
 	// Cap role expiration to 7 days.
@@ -128,11 +124,7 @@ func TestSetIamPolicyMaximumRoleExpiration(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	newProjectDeveloperBinding := func(days int) *v1pb.Binding {
 		return &v1pb.Binding{
@@ -182,23 +174,19 @@ func TestAccessGrantMaximumExpiration(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Create an instance and database to target.
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("inst"),
 		Instance: &v1pb.Instance{
-			Title:       "Test Instance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "Test Instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)

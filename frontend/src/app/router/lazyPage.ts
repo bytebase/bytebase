@@ -3,17 +3,17 @@ import { useLocation, useMatches, useParams } from "react-router";
 
 // Adapter for react-router's `lazy` route field.
 //
-// Page components were authored for the Vue layer, which injected route data as
-// props. react-router renders a route's `Component` with no props, so we wrap
-// the resolved page in a thin component that forwards the current route data:
+// Page components take route data as props. react-router renders a route's
+// `Component` with no props, so we wrap the resolved page in a thin component
+// that forwards the current route data:
 //   - `useParams()` → the `:param` props (projectId, instanceId, databaseName,
 //     issueId, …). Without these the project issue dashboard built a
 //     `project:<projectId>` scope from `undefined` and crashed.
 //   - `routeName` → the matched leaf route's `handle.name`, and `routeQuery` →
 //     the parsed query string. Pages like the plan detail decide which phase /
-//     stage / task / spec to show from these (mirroring the Vue `route.name` /
-//     `route.query`); `routeHash` preserves secondary anchors during canonical
-//     redirects. Without injection that selection silently never fires.
+//     stage / task / spec to show from these; `routeHash` preserves secondary
+//     anchors during canonical redirects. Without injection that selection
+//     silently never fires.
 // Pages that don't declare these props simply ignore the extras.
 export const lazyPage =
   <T extends Record<string, unknown>>(

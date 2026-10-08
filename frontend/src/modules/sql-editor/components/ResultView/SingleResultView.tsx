@@ -43,11 +43,15 @@ import type {
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
-  QueryOption_MSSQLExplainFormat,
+  QueryOption_ExplainFormat,
   QueryOptionSchema,
   type QueryResult,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { createExplainToken } from "@/utils/pev2";
+import {
+  isVisualizerEngine,
+  VISUALIZER_EXPLAIN_FORMATS,
+  type VisualizerEngine,
+} from "@/utils/explainToken";
 import {
   flattenElasticsearchSearchResult,
   flattenNoSQLQueryResult,
@@ -64,6 +68,10 @@ import { DetailPanel } from "./DetailPanel";
 import { DocumentJSONView } from "./DocumentJSONView";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
+import {
+  type InlineQueryPlan,
+  QueryPlanResultView,
+} from "./QueryPlanResultView";
 import { formatQueryTime, ResultStatusBar } from "./ResultStatusBar";
 import { SelectionCopyTooltips } from "./SelectionCopyTooltips";
 import { TextSearchControl } from "./TextSearchControl";
@@ -88,6 +96,10 @@ export interface SingleResultViewProps {
   params: SQLEditorQueryParams;
   database: Database;
   result: QueryResult;
+  // Every result of the run, and which one this view shows. Visualize uses
+  // earlier results to decide whether replaying this statement is safe.
+  results?: QueryResult[];
+  resultIndex?: number;
   showExport: boolean;
   // Optional tooltip shown on the export button — used to explain when the
   // export is enabled by a JIT access grant despite the policy disabling it.
@@ -272,6 +284,8 @@ function SingleResultViewInner({
   params,
   database,
   result,
+  results = [],
+  resultIndex = 0,
   showExport,
   exportTooltip,
   maximumExportCount,
@@ -387,26 +401,38 @@ function SingleResultViewInner({
     [flattenedTableView, result.masked]
   );
 
-  const showVisualizeButton =
-    (engine === Engine.POSTGRES ||
-      engine === Engine.MSSQL ||
-      engine === Engine.SPANNER) &&
-    !!params.explain;
-
-  const visualizeExplain = async () => {
-    let token: string | undefined;
-    try {
-      if (engine === Engine.POSTGRES || engine === Engine.SPANNER) {
-        token = getExplainTokenFromResult(result, engine);
-      } else if (engine === Engine.MSSQL) {
-        token = await getExplainTokenForMSSQL(database, params, runQuery);
-      }
-      if (!token) return;
-      window.open(`/explain-visualizer.html?token=${token}`, "_blank");
-    } catch {
-      // ignore
-    }
-  };
+  const plan = result.queryPlan;
+  const planInRows =
+    isVisualizerEngine(engine) &&
+    plan?.format ===
+      QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
+  const resultPlan = useMemo(() => getInlineQueryPlan(result), [result]);
+  // Replaying this statement is safe only when every earlier statement was
+  // itself a non-executing plan and could not change session state.
+  const canReplay =
+    isVisualizerEngine(engine) &&
+    plan?.format === QueryOption_ExplainFormat.TEXT &&
+    !plan.executed &&
+    results
+      .slice(0, resultIndex)
+      .every((earlier) => earlier.queryPlan && !earlier.queryPlan.executed);
+  // Multi-column plans (SQL Server SHOWPLAN_ALL) keep their table unless the
+  // XML plan can be loaded for the visualizer.
+  const showInlinePlan =
+    !!plan && (result.columnNames.length === 1 || canReplay);
+  const loadPlan = useCallback(
+    () =>
+      isVisualizerEngine(engine)
+        ? getInlineQueryPlanForStatement(
+            database,
+            params,
+            result.statement,
+            runQuery,
+            engine
+          )
+        : Promise.resolve(undefined),
+    [database, engine, params, result.statement, runQuery]
+  );
 
   const queryTime = formatQueryTime(result.latency);
 
@@ -427,8 +453,7 @@ function SingleResultViewInner({
     // `result.statement`. The backend may rewrite the result statement
     // with an auto-appended LIMIT for non-admin reads — re-running that
     // rewritten SQL on the export path silently caps the exported rows
-    // even when the user asks for more. This matches the Vue
-    // multi-result export, which already used `executeParams.statement`.
+    // even when the user asks for more.
     onExport?.({ ...req, statement: params.statement });
   };
 
@@ -475,7 +500,32 @@ function SingleResultViewInner({
         </>
       )}
 
-      {viewMode === "RESULT" && (
+      {viewMode === "RESULT" && showInlinePlan && (
+        <>
+          <div
+            className={cn(
+              "flex flex-col",
+              compact ? "h-80 overflow-hidden" : "flex-1 min-h-0"
+            )}
+          >
+            <QueryPlanResultView
+              key={`${database.name}\n${engine}\n${result.statement}`}
+              rawPlan={resultPlan?.source ?? ""}
+              initialPlan={planInRows ? resultPlan : undefined}
+              engine={isVisualizerEngine(engine) ? engine : undefined}
+              loadPlan={canReplay ? loadPlan : undefined}
+              disallowCopyingData={disallowCopyingData}
+            />
+          </div>
+          <ResultStatusBar
+            database={database}
+            statement={result.statement ?? ""}
+            queryTime={queryTime}
+          />
+        </>
+      )}
+
+      {viewMode === "RESULT" && !showInlinePlan && (
         <>
           {result.error && (
             <Alert variant="error" className="w-full mb-2">
@@ -549,7 +599,7 @@ function SingleResultViewInner({
                   onValueChange={setDocumentViewMode}
                   ariaLabel={t("sql-editor.result-view-mode")}
                   appearance="soft"
-                  className="h-7 flex-nowrap"
+                  className="flex-nowrap"
                   size="xs"
                 />
               ) : supportsTableViewToggle ? (
@@ -575,7 +625,7 @@ function SingleResultViewInner({
                 <Button
                   size="sm"
                   appearance="outline"
-                  className="h-7 px-2 text-control border-control-border hover:bg-control-bg-hover"
+                  className="px-2 text-control border-control-border hover:bg-control-bg-hover"
                   onClick={handleCopyJSON}
                 >
                   <CopyIcon className="size-4" />
@@ -677,7 +727,7 @@ function SingleResultViewInner({
                     <Button
                       size="sm"
                       appearance="secondary"
-                      className="size-7 p-0"
+                      className="w-7 p-0"
                       onClick={clearSearchCandidate}
                     >
                       <XIcon className="size-4" />
@@ -689,9 +739,9 @@ function SingleResultViewInner({
                   <Tooltip content={t("sql-editor.scroll-to-top")}>
                     <div className="rounded-full shadow bg-background">
                       <Button
-                        size="sm"
+                        size="md"
                         appearance="secondary"
-                        className="size-9 p-0 rounded-full"
+                        className="w-9 p-0 rounded-full"
                         onClick={() => scrollToRow(0)}
                       >
                         <ArrowUpIcon className="size-4" />
@@ -701,9 +751,9 @@ function SingleResultViewInner({
                   <Tooltip content={t("sql-editor.scroll-to-bottom")}>
                     <div className="rounded-full shadow bg-background">
                       <Button
-                        size="sm"
+                        size="md"
                         appearance="secondary"
-                        className="size-9 p-0 rounded-full"
+                        className="w-9 p-0 rounded-full"
                         onClick={() => scrollToRow(rows.length - 1)}
                       >
                         <ArrowDownIcon className="size-4" />
@@ -720,13 +770,11 @@ function SingleResultViewInner({
             database={database}
             statement={result.statement ?? ""}
             queryTime={queryTime}
-            showVisualizeButton={showVisualizeButton}
-            onVisualizeExplain={visualizeExplain}
           />
         </>
       )}
 
-      {!isJSONView && (
+      {!isJSONView && !showInlinePlan && (
         <DetailPanel
           rows={rows}
           columns={columns}
@@ -782,38 +830,43 @@ function DatabaseInfo({ database }: { database: Database }) {
   );
 }
 
-function getExplainTokenFromResult(
-  result: QueryResult,
-  engine: Engine
-): string | undefined {
+function getInlineQueryPlan(result: QueryResult): InlineQueryPlan | undefined {
   const { statement } = result;
   if (!statement) return undefined;
   const lines = result.rows.map((row) =>
     row.values.map((value) => String(extractSQLRowValuePlain(value)))
   );
-  const explain = lines.map((line) => line[0]).join("\n");
-  if (!explain) return undefined;
-  return createExplainToken({ statement, explain, engine });
+  // Multi-column plans keep every column, tab-separated under a header.
+  const source =
+    result.columnNames.length > 1
+      ? [result.columnNames, ...lines].map((line) => line.join("\t")).join("\n")
+      : lines.map((line) => line[0]).join("\n");
+  if (!source) return undefined;
+  return { statement, source };
 }
 
-async function getExplainTokenForMSSQL(
+async function getInlineQueryPlanForStatement(
   database: Database,
   params: SQLEditorQueryParams,
-  runQuery: ReturnType<typeof useExecuteSQL>["runQuery"]
-): Promise<string | undefined> {
+  statement: string,
+  runQuery: ReturnType<typeof useExecuteSQL>["runQuery"],
+  engine: VisualizerEngine
+): Promise<InlineQueryPlan | undefined> {
+  if (!statement) return undefined;
+  const explainFormat =
+    QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
   const context: SQLEditorDatabaseQueryContext = {
     id: uuidv4(),
     params: {
       ...params,
-      queryOption: create(QueryOptionSchema, {
-        mssqlExplainFormat:
-          QueryOption_MSSQLExplainFormat.MSSQL_EXPLAIN_FORMAT_XML,
-      }),
+      statement,
+      explain: true,
+      queryOption: create(QueryOptionSchema, { explainFormat }),
     },
     status: "PENDING",
   };
   await runQuery(database, context);
   const result = context.resultSet?.results[0];
   if (!result) return undefined;
-  return getExplainTokenFromResult(result, Engine.MSSQL);
+  return getInlineQueryPlan(result);
 }

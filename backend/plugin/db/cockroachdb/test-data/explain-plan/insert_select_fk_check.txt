@@ -1,0 +1,31 @@
+distribution: local
+vectorized: true
+
+• root
+│
+├── • insert
+│   │ into: child(id, parent_id, v)
+│   │
+│   └── • buffer
+│       │ label: buffer 1
+│       │
+│       └── • render
+│           │
+│           └── • scan
+│                 estimated row count: 49 (49% of the table; stats collected 39 seconds ago)
+│                 table: parent@parent_pkey
+│                 spans: [ - /49]
+│
+└── • constraint-check
+    │
+    └── • error if rows
+        │
+        └── • lookup join (anti)
+            │ estimated row count: 0
+            │ table: parent@parent_pkey
+            │ equality: (id) = (id)
+            │ equality cols are key
+            │
+            └── • scan buffer
+                  estimated row count: 49
+                  label: buffer 1

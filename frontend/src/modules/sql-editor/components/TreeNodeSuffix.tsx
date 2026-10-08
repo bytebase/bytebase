@@ -160,7 +160,7 @@ export function TreeNodeSuffix({
       <Star
         className={cn(
           "size-4 shrink-0",
-          savedQueryLite.starred ? "text-yellow-400" : "text-control-light"
+          savedQueryLite.starred ? "text-warning" : "text-control-light"
         )}
         onClick={(e) => {
           e.stopPropagation();

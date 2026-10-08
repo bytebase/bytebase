@@ -15,20 +15,15 @@ type Props = {
    */
   readonly fallbackText?: ReactNode;
   /**
-   * Override the default rendered children entirely. Mirrors Vue's
-   * `<template #default>` slot — used by `TextNode` to inject custom
-   * content when `node.meta.target.render` is set.
+   * Override the default rendered children entirely. Used by `TextNode` to
+   * inject custom content when `node.meta.target.render` is set.
    */
   readonly children?: ReactNode;
   readonly className?: string;
 };
 
 /**
- * Replaces `frontend/src/views/sql-editor/AsidePanel/SchemaPane/TreeNode/CommonNode.vue`.
- *
  * Layout: [optional indent spacers] [icon] [text|highlight|fallback] [suffix].
- * Mirrors the Vue widths (20×20 indent + icon, 2px text padding) so rows
- * align across the Vue→React swap.
  */
 export function CommonNode({
   text,

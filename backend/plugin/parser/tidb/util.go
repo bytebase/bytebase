@@ -1,6 +1,8 @@
 package tidb
 
 import (
+	"strings"
+
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 )
 
@@ -8,7 +10,7 @@ func splitInitialAndRecursivePart(node *tidbast.SetOprStmt, selfName string) ([]
 	for i, selectStmt := range node.SelectList.Selects {
 		tableList := ExtractMySQLTableList(selectStmt, false /* asName */)
 		for _, table := range tableList {
-			if table.Schema.O == "" && table.Name.O == selfName {
+			if table.Schema.O == "" && strings.EqualFold(table.Name.O, selfName) {
 				return node.SelectList.Selects[:i], node.SelectList.Selects[i:]
 			}
 		}

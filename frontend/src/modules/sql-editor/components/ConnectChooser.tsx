@@ -38,10 +38,9 @@ type ConnectChooserProps = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/ConnectChooser.vue.
- * Schema/Container chooser button used inside the SQL Editor toolbar's
- * NButtonGroup. Renders a chosen value (truncated) or a placeholder hint;
- * clicking opens a dropdown popover for selection.
+ * Schema/Container chooser button used in the SQL Editor toolbar. Renders a
+ * chosen value (truncated) or a placeholder hint; clicking opens a dropdown
+ * popover for selection.
  *
  * Note: uses a custom trigger button + portal dropdown rather than the
  * shared <Combobox> component, because <Combobox> does not expose a
@@ -180,10 +179,10 @@ export function ConnectChooser({
     >
       <SearchInput
         ref={inputRef}
+        size="sm"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         wrapperClassName="m-2"
-        className="h-7"
       />
       <div className="max-h-60 overflow-y-auto">
         {filteredOptions.length === 0 ? (
@@ -194,11 +193,13 @@ export function ConnectChooser({
           filteredOptions.map((option) => {
             const isSelected = option.value === value;
             return (
-              <button
+              <Button
+                appearance="secondary"
+                size="md"
                 key={option.value}
                 type="button"
                 className={cn(
-                  "w-full text-left px-3 py-1.5 text-sm flex items-center gap-x-2 transition-colors",
+                  "h-auto w-full justify-start px-3 py-1.5 text-left text-sm transition-colors",
                   "hover:bg-control-bg",
                   isSelected && "bg-accent/5"
                 )}
@@ -215,7 +216,7 @@ export function ConnectChooser({
                 {isSelected && (
                   <Check className="size-4 text-accent shrink-0" />
                 )}
-              </button>
+              </Button>
             );
           })
         )}
@@ -263,9 +264,9 @@ export function ConnectChooser({
         <Button
           ref={triggerRef}
           variant="default"
-          size="sm"
+          size="md"
           className={cn(
-            "h-7 min-w-[10rem] px-1.5 gap-1 rounded-r-none text-sm",
+            "h-auto min-w-[10rem] gap-1 rounded-r-none px-1.5 py-1 text-sm",
             triggerClassName
           )}
           aria-label={placeholder}

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import type { MessageInitShape } from "@bufbuild/protobuf";
 import { create } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
@@ -160,6 +161,27 @@ describe("getTaskRunComment", () => {
     expect(comment).toContain("task-run.status.waiting-max-tasks-per-rollout");
   });
 
+  test("keeps a waiting cause with no report time out of the comment", () => {
+    // The message names the last report, so without one there is nothing to
+    // name; the row falls through to whatever detail it carries.
+    const comment = getTaskRunComment(
+      makeTaskRun({
+        detail: "still waiting",
+        schedulerInfo: {
+          waitingCause: {
+            cause: { case: "parallelTasksLimit", value: true },
+          },
+        },
+        status: TaskRun_Status.RUNNING,
+      }),
+      t
+    );
+    expect(comment).not.toContain(
+      "task-run.status.waiting-max-tasks-per-rollout"
+    );
+    expect(comment).toBe("still waiting");
+  });
+
   test("falls back to detail, then a dash", () => {
     expect(
       getTaskRunComment(
@@ -174,6 +196,19 @@ describe("getTaskRunComment", () => {
 });
 
 describe("getTaskRunWaitingMessage", () => {
+  test("names a run scheduled for the epoch rather than hiding it", () => {
+    // A time that is there is a time to name, even this one: the reading that
+    // treated it as absent could only ever be wrong about it.
+    expect(
+      getTaskRunWaitingMessage(
+        makeTaskRun({ runTime: ts(0), status: TaskRun_Status.PENDING }),
+        t
+      )
+    ).toBe(
+      'task-run.status.enqueued-with-rollout-time:{"time":"Jan 1, 1970, 8:00:00 AM GMT+8"}'
+    );
+  });
+
   test("reports waiting states and stays silent otherwise", () => {
     expect(
       getTaskRunWaitingMessage(

@@ -12,7 +12,6 @@ interface EllipsisCellProps {
 }
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/common/EllipsisCell.vue`.
  * Renders truncated text with keyword highlighting; on hover, when the
  * text is actually overflowing, a tooltip portals out the full content
  * (also highlighted, or a custom `tooltip` string when provided).

@@ -7,18 +7,18 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useAppStore } from "@/stores/app";
-import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
+import { getTimeForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
 
 /**
- * Replaces `SchemaPane/SyncSchemaButton.vue`. RefreshCcw button with a
- * hover popover showing the last sync time + click-to-sync hint.
+ * RefreshCcw button with a hover tooltip showing the last sync time +
+ * click-to-sync hint.
  *
  *  - Disabled when the active tab has no valid database connection (no
  *    `database.name`) or while a sync is in flight.
- *  - On click, calls `databaseStore.syncDatabase(name, refresh=true)`,
- *    then `dbSchemaStore.getOrFetchDatabaseMetadata({ skipCache: true })`
- *    so the SchemaPane reactively rebuilds with the fresh metadata.
- *  - Spinner: same Vue rule — `animate-spin` while `isSyncing` is true.
+ *  - On click, calls the app store's `syncDatabase(name, refresh=true)`,
+ *    then `getOrFetchDatabaseMetadata({ skipCache: true })` so the
+ *    SchemaPane reactively rebuilds with the fresh metadata.
+ *  - Spinner: the icon spins while `isSyncing` is true.
  */
 export function SyncSchemaButton({ className }: { className?: string }) {
   const { t } = useTranslation();
@@ -42,12 +42,7 @@ export function SyncSchemaButton({ className }: { className?: string }) {
     }
   };
 
-  const lastSyncDate = getDateForPbTimestampProtoEs(
-    database.successfulSyncTime
-  );
-  const lastSyncTs = lastSyncDate
-    ? Math.floor(lastSyncDate.getTime() / 1000)
-    : 0;
+  const lastSyncMs = getTimeForPbTimestampProtoEs(database.successfulSyncTime);
 
   const button = (
     <Button
@@ -68,8 +63,8 @@ export function SyncSchemaButton({ className }: { className?: string }) {
   );
 
   if (disabled) {
-    // Vue disables the popover on disabled state — match that so we don't
-    // surface a "last synced" tooltip with stale-looking placeholder data.
+    // No tooltip when disabled, so we don't surface a "last synced" tooltip
+    // with stale-looking placeholder data.
     return button;
   }
 
@@ -78,11 +73,11 @@ export function SyncSchemaButton({ className }: { className?: string }) {
       side="bottom"
       content={
         <div className="flex flex-col gap-1">
-          {lastSyncTs > 0 ? (
+          {lastSyncMs !== undefined ? (
             <Trans
               t={t}
               i18nKey="sql-editor.last-synced"
-              components={{ time: <HumanizeTs ts={lastSyncTs} /> }}
+              components={{ time: <HumanizeTs tsMs={lastSyncMs} /> }}
             />
           ) : null}
           <div>

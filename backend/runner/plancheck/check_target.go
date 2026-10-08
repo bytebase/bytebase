@@ -5,6 +5,8 @@ import storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 // CheckTarget represents a derived check target from a plan.
 // This is computed at runtime from the plan's specs, not stored.
 type CheckTarget struct {
+	// SpecID is the plan spec (PlanConfig.Spec.id) the target comes from.
+	SpecID string
 	// Target is the canonical database resource name: instances/{instance}/databases/{database}
 	// or projects/{project}/instances/{instance}/databases/{database}.
 	Target string

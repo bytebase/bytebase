@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
@@ -129,8 +130,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
 	singleSQLs, err := standard.SplitSQL(statement)
@@ -143,7 +144,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 
 	// Execute based on transaction mode
-	if transactionMode == common.TransactionModeOff {
+	if transactionMode == transaction.ModeOff {
 		return d.executeInAutoCommitMode(ctx, singleSQLs, opts)
 	}
 	return d.executeInTransactionMode(ctx, singleSQLs, opts)

@@ -22,7 +22,8 @@ message AuditLog {
   // Example: projects/{project}
   string resource = 3;
 
-  // Format: users/{email}.
+  // The principal who performed the action.
+  // Formats: users/{email}, serviceAccounts/{email}, or workloadIdentities/{email}.
   string user = 4;
 
   Severity severity = 5;

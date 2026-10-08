@@ -10,8 +10,6 @@ interface UploadFileButtonProps {
 }
 
 /**
- * React port of
- * `frontend/src/views/sql-editor/EditorPanel/StandardPanel/UploadFileButton.vue`.
  * Tooltip-wrapped icon button that delegates to `SQLUploadButton`.
  */
 export function UploadFileButton({ onUpload }: UploadFileButtonProps) {

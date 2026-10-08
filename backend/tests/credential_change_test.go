@@ -40,10 +40,7 @@ func TestChangePasswordProofAndRevocation(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	metadataDB, err := sql.Open("pgx", ctl.profile.PgURL)
 	a.NoError(err)
@@ -134,6 +131,18 @@ func TestChangePasswordProofAndRevocation(t *testing.T) {
 	a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
 	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{Email: email, Password: newPassword}))
 	a.NoError(err)
+
+	// On a workspace that accepts signups, a registered address is reported
+	// as taken, and that outranks the password policy: a registered user
+	// should be told to log in, not to pick a better password.
+	for _, password := range []string{"password-long-enough", "short"} {
+		_, err := ctl.authServiceClient.Signup(ctx, connect.NewRequest(&v1pb.SignupRequest{
+			Email:    email,
+			Title:    "Signup test",
+			Password: password,
+		}))
+		a.Equal(connect.CodeAlreadyExists, connect.CodeOf(err), "password %q", password)
+	}
 	ctl.authInterceptor.token = adminToken
 }
 
@@ -141,16 +150,13 @@ func TestCredentialProofSharesLoginLockout(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	const email = "lockout-victim@example.com"
 	const password = "victim-password-1"
 	adminToken := ctl.authInterceptor.token
 	ctl.authInterceptor.token = ""
-	_, err = ctl.authServiceClient.Signup(ctx, connect.NewRequest(&v1pb.SignupRequest{
+	_, err := ctl.authServiceClient.Signup(ctx, connect.NewRequest(&v1pb.SignupRequest{
 		Email:    email,
 		Title:    "Lockout Victim",
 		Password: password,
@@ -189,10 +195,7 @@ func TestMFALifecycleFactorBoundProofs(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	const email = "demo@example.com"
 	const password = "1024bytebase"
@@ -202,7 +205,7 @@ func TestMFALifecycleFactorBoundProofs(t *testing.T) {
 	// While a live factor exists, factor-touching methods refuse the password:
 	// ResetPassword mints one from mailbox possession alone, so accepting it
 	// here would let a stolen session plus mailbox strip the second factor.
-	_, err = ctl.userServiceClient.DisableMFA(ctx, connect.NewRequest(&v1pb.DisableMFARequest{
+	_, err := ctl.userServiceClient.DisableMFA(ctx, connect.NewRequest(&v1pb.DisableMFARequest{
 		Name:       userName,
 		Credential: passwordProofOf(password),
 	}))
@@ -266,10 +269,7 @@ func TestEmailCodeProofIsCloudOnly(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	metadataDB, err := sql.Open("pgx", ctl.profile.PgURL)
 	a.NoError(err)
@@ -354,10 +354,7 @@ func TestRecoveryCodeProofIsSpentOnce(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	const email = "demo@example.com"
 	const password = "1024bytebase"

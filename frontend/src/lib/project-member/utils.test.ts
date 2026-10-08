@@ -1,5 +1,9 @@
+// @vitest-environment node
 import { describe, expect, test, vi } from "vitest";
-import { getRoleEnvironmentLimitationKind } from "./utils";
+import {
+  getRoleEnvironmentLimitationKind,
+  getRolesEnvironmentLimitationKind,
+} from "./utils";
 
 const fixtures: Record<string, string[]> = {
   "roles/sqlEditorUser": ["bb.sql.ddl", "bb.sql.dml"],
@@ -9,27 +13,12 @@ const fixtures: Record<string, string[]> = {
   "roles/projectViewer": [],
 };
 vi.mock("@/stores/app", () => ({
-  useAppStore: Object.assign(
-    (selector: (state: unknown) => unknown) =>
-      selector({
-        getRoleByName: (role: string) =>
-          fixtures[role] === undefined
-            ? undefined
-            : { name: role, permissions: fixtures[role] },
-      }),
-    {
-      getState: () => ({
-        getRoleByName: (role: string) =>
-          fixtures[role] === undefined
-            ? undefined
-            : { name: role, permissions: fixtures[role] },
-      }),
-    }
-  ),
+  useAppStore: { getState: () => ({ roleList: [] }) },
 }));
 vi.mock("@/utils", () => ({
   displayRoleTitle: (r: string) => r,
-  checkRoleContainsAnyPermission: () => false,
+  checkRoleContainsAnyPermission: (role: string, ...permissions: string[]) =>
+    permissions.some((permission) => fixtures[role]?.includes(permission)),
 }));
 
 describe("getRoleEnvironmentLimitationKind", () => {
@@ -59,5 +48,32 @@ describe("getRoleEnvironmentLimitationKind", () => {
     expect(
       getRoleEnvironmentLimitationKind("roles/doesNotExist")
     ).toBeUndefined();
+  });
+});
+
+describe("getRolesEnvironmentLimitationKind", () => {
+  test("unions the roles' permissions", () => {
+    expect(
+      getRolesEnvironmentLimitationKind([
+        "roles/sqlEditorDDLOnly",
+        "roles/sqlEditorDMLOnly",
+      ])
+    ).toBe("DDL/DML");
+    expect(getRolesEnvironmentLimitationKind(["roles/sqlEditorDDLOnly"])).toBe(
+      "DDL"
+    );
+  });
+
+  test("ignores roles without the permissions and unknown roles", () => {
+    expect(
+      getRolesEnvironmentLimitationKind(["roles/queryOnly", "roles/missing"])
+    ).toBeUndefined();
+    expect(getRolesEnvironmentLimitationKind([])).toBeUndefined();
+    expect(
+      getRolesEnvironmentLimitationKind([
+        "roles/missing",
+        "roles/sqlEditorUser",
+      ])
+    ).toBe("DDL/DML");
   });
 });

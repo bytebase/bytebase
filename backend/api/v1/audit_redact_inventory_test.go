@@ -28,9 +28,9 @@ import (
 // "what the audit row writes down" and a new credential shows up as one line of
 // diff.
 //
-// The population is wider than the audited RPCs: WrapUnary writes a row on
-// `needAudit(ctx) || mcpPolicyDenied`, so gate-refused methods carrying no
-// audit annotation are in scope. Every registered Any type is in scope too,
+// The population is wider than the audited RPCs: WrapUnary streams every call
+// a permission check refused, so refused methods carrying no audit annotation
+// are in scope. Every registered Any type is in scope too,
 // since those reach the row without passing marshalAuditPayload — which is why
 // the registry is enforced at its call sites for this list to mean anything.
 //
@@ -48,6 +48,7 @@ import (
 // leaves the audited surface without anyone deciding what the audit row may
 // record for it.
 func TestLintAuditPayloadInventory(t *testing.T) {
+	t.Parallel()
 	found := auditRecordedScalarFields(t)
 
 	recorded := map[string]bool{}
@@ -256,13 +257,10 @@ var auditRecordedFields = []string{
 	"bytebase.v1.ApprovalTemplate.title",
 	"bytebase.v1.ApproveIssueRequest.comment",
 	"bytebase.v1.ApproveIssueRequest.name",
-	"bytebase.v1.AuditLog.method",
-	"bytebase.v1.AuditLog.name",
-	"bytebase.v1.AuditLog.request",
-	"bytebase.v1.AuditLog.resource",
-	"bytebase.v1.AuditLog.response",
-	"bytebase.v1.AuditLog.user",
 	"bytebase.v1.AuthenticationInfo.workspace",
+	"bytebase.v1.AuthorizationRequest.client_id",
+	"bytebase.v1.AuthorizationRequest.endpoint",
+	"bytebase.v1.AuthorizationRequest.scopes",
 	"bytebase.v1.BatchCancelTaskRunsRequest.parent",
 	"bytebase.v1.BatchCancelTaskRunsRequest.task_runs",
 	"bytebase.v1.BatchCreateRevisionsRequest.parent",
@@ -492,7 +490,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.FunctionMetadata.sql_mode",
 	"bytebase.v1.GenerationMetadata.expression",
 	"bytebase.v1.GetAccessGrantRequest.name",
-	"bytebase.v1.GetAuthenticationRestrictionRequest.workspace",
+	"bytebase.v1.GetAuthenticationInfoRequest.workspace",
 	"bytebase.v1.GetChangelogRequest.name",
 	"bytebase.v1.GetDatabaseCatalogRequest.name",
 	"bytebase.v1.GetDatabaseGroupRequest.name",
@@ -578,10 +576,12 @@ var auditRecordedFields = []string{
 	"bytebase.v1.IssueComment.IssueUpdate.to_description",
 	"bytebase.v1.IssueComment.IssueUpdate.to_labels",
 	"bytebase.v1.IssueComment.IssueUpdate.to_title",
+	"bytebase.v1.IssueComment.ReviewMetadata.targets",
 	"bytebase.v1.IssueComment.comment",
 	"bytebase.v1.IssueComment.creator",
 	"bytebase.v1.IssueComment.name",
 	"bytebase.v1.IssueComment.payload",
+	"bytebase.v1.IssueComment.root",
 	"bytebase.v1.KerberosConfig.instance",
 	"bytebase.v1.KerberosConfig.kdc_host",
 	"bytebase.v1.KerberosConfig.kdc_port",
@@ -625,6 +625,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.ListInstancesRequest.page_token",
 	"bytebase.v1.ListInstancesRequest.parent",
 	"bytebase.v1.ListInstancesResponse.next_page_token",
+	"bytebase.v1.ListIssueCommentsRequest.filter",
 	"bytebase.v1.ListIssueCommentsRequest.page_token",
 	"bytebase.v1.ListIssueCommentsRequest.parent",
 	"bytebase.v1.ListIssueCommentsResponse.next_page_token",
@@ -669,7 +670,9 @@ var auditRecordedFields = []string{
 	"bytebase.v1.ListServiceAccountsRequest.page_token",
 	"bytebase.v1.ListServiceAccountsRequest.parent",
 	"bytebase.v1.ListServiceAccountsResponse.next_page_token",
+	"bytebase.v1.ListTaskRunsRequest.page_token",
 	"bytebase.v1.ListTaskRunsRequest.parent",
+	"bytebase.v1.ListTaskRunsResponse.next_page_token",
 	"bytebase.v1.ListUsersRequest.filter",
 	"bytebase.v1.ListUsersRequest.page_token",
 	"bytebase.v1.ListUsersResponse.next_page_token",
@@ -677,18 +680,11 @@ var auditRecordedFields = []string{
 	"bytebase.v1.ListWorkloadIdentitiesRequest.page_token",
 	"bytebase.v1.ListWorkloadIdentitiesRequest.parent",
 	"bytebase.v1.ListWorkloadIdentitiesResponse.next_page_token",
+	"bytebase.v1.LoginIdentityProvider.name",
+	"bytebase.v1.LoginIdentityProvider.title",
 	"bytebase.v1.LoginRequest.email",
 	"bytebase.v1.LoginRequest.idp_name",
 	"bytebase.v1.LoginRequest.workspace",
-	"bytebase.v1.MCPDelegation.client_id",
-	"bytebase.v1.MCPDelegation.correlation_id",
-	"bytebase.v1.MCPDelegation.resource",
-	"bytebase.v1.MCPDelegation.scope",
-	"bytebase.v1.MCPEngineEnforcement.note",
-	"bytebase.v1.MCPInfo.workspace",
-	"bytebase.v1.MCPMethod.method",
-	"bytebase.v1.MCPMethod.operation_id",
-	"bytebase.v1.MCPMethod.permission",
 	"bytebase.v1.MaskingExemptionPolicy.Exemption.members",
 	"bytebase.v1.MaskingReason.algorithm",
 	"bytebase.v1.MaskingReason.context",
@@ -807,13 +803,12 @@ var auditRecordedFields = []string{
 	"bytebase.v1.RemoveDataSourceRequest.name",
 	"bytebase.v1.RequestIssueRequest.comment",
 	"bytebase.v1.RequestIssueRequest.name",
-	"bytebase.v1.RequestMetadata.caller_ip",
-	"bytebase.v1.RequestMetadata.caller_supplied_user_agent",
 	"bytebase.v1.RequestPasswordResetRequest.email",
 	"bytebase.v1.RequestPasswordResetRequest.workspace",
 	"bytebase.v1.RequestReauthCodeRequest.name",
 	"bytebase.v1.ResetPasswordRequest.email",
 	"bytebase.v1.RetryIssueApprovalRequest.name",
+	"bytebase.v1.ReviewAIPolicy.content",
 	"bytebase.v1.ReviewConfig.name",
 	"bytebase.v1.ReviewConfig.resources",
 	"bytebase.v1.ReviewConfig.title",
@@ -923,6 +918,8 @@ var auditRecordedFields = []string{
 	"bytebase.v1.Stage.id",
 	"bytebase.v1.Stage.name",
 	"bytebase.v1.StartMFAEnrollmentRequest.name",
+	"bytebase.v1.StatementAnchor.sheet_sha256",
+	"bytebase.v1.StatementAnchor.spec",
 	"bytebase.v1.StorageConfig.buffering",
 	"bytebase.v1.StorageConfig.data_compression",
 	"bytebase.v1.StorageConfig.sort_in_tempdb",
@@ -1050,6 +1047,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.WorkloadIdentity.title",
 	"bytebase.v1.WorkloadIdentityConfig.allowed_audiences",
 	"bytebase.v1.WorkloadIdentityConfig.issuer_url",
+	"bytebase.v1.WorkloadIdentityConfig.jwks_url",
 	"bytebase.v1.WorkloadIdentityConfig.subject_pattern",
 	"bytebase.v1.Workspace.logo",
 	"bytebase.v1.Workspace.name",
@@ -1087,6 +1085,7 @@ var auditRecordedFields = []string{
 // caller_supplied_user_agent is caller-controlled and the likeliest candidate —
 // and this fails, because nothing would redact it.
 func TestAuditRowNeedsNoRedactionBeyondTheAnyPayloads(t *testing.T) {
+	t.Parallel()
 	for _, message := range []proto.Message{&storepb.RequestMetadata{}, &storepb.MCPDelegation{}} {
 		descriptor := message.ProtoReflect().Descriptor()
 		require.Nil(t, planFor(descriptor),
@@ -1113,6 +1112,7 @@ func TestAuditRowNeedsNoRedactionBeyondTheAnyPayloads(t *testing.T) {
 // Without it a new Any field would be governed by nothing: the runtime drops
 // what it cannot place, so the payload would vanish silently.
 func TestLintAuditAnyFieldsAreRegistered(t *testing.T) {
+	t.Parallel()
 	found := auditReachableAnyFields(t)
 
 	var unregistered []string

@@ -167,15 +167,15 @@ const renderIntoContainer = (element: ReactElement) => {
 };
 
 // Default state: connected, saved query mode, AI enabled, showAIPanel=false
-type VueStateValues = {
+type StateValues = {
   isDisconnected: boolean;
   currentMode: string | undefined;
   showAIPanel: boolean;
   openAIEnabled: boolean;
 };
 
-const setupDefaultMocks = (overrides: Partial<VueStateValues> = {}) => {
-  const values: VueStateValues = {
+const setupDefaultMocks = (overrides: Partial<StateValues> = {}) => {
+  const values: StateValues = {
     isDisconnected: false,
     currentMode: "SAVED_QUERY",
     showAIPanel: false,

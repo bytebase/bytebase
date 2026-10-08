@@ -1,3 +1,4 @@
+// @vitest-environment node
 import type { LoaderFunctionArgs } from "react-router";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 

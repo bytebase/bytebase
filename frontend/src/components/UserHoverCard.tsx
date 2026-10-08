@@ -72,7 +72,7 @@ export function UserHoverCard({
       >
         <div className="flex items-start gap-x-3">
           <UserAvatar title={title} colorSeed={email} />
-          <div className="flex min-w-0 flex-col gap-y-0.5">
+          <div className="flex min-w-0 flex-col gap-y-1">
             <div className="flex items-center gap-x-1.5">
               <span className="truncate font-medium text-main">{title}</span>
               {isDeleted && (

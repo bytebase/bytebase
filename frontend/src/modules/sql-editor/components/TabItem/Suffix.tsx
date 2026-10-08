@@ -11,7 +11,6 @@ type Props = {
 type IconKind = "unsaved" | "saving" | "close" | "dummy";
 
 /**
- * Replaces frontend/src/views/sql-editor/TabList/TabItem/Suffix.vue.
  * Trailing affordance of a tab: close button (✕) or dirty/saving indicator
  * depending on tab state + hover.
  */

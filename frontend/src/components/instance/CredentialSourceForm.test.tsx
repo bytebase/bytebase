@@ -183,8 +183,9 @@ describe("CredentialSourceForm", () => {
 
     const { container, unmount } = render(<StatefulCredentialSourceForm />);
 
-    const radios = container.querySelectorAll('[role="radio"]');
-    const specificCredential = radios[1] as HTMLElement;
+    const specificCredential = container.querySelector(
+      '[role="switch"]'
+    ) as HTMLElement;
     act(() => {
       specificCredential.click();
     });
@@ -218,12 +219,12 @@ describe("CredentialSourceForm", () => {
 
     const { container, unmount } = render(<StatefulCredentialSourceForm />);
 
-    const radios = container.querySelectorAll('[role="radio"]');
-    const defaultCredential = radios[0] as HTMLElement;
-    const specificCredential = radios[1] as HTMLElement;
+    const specificCredential = container.querySelector(
+      '[role="switch"]'
+    ) as HTMLElement;
 
-    expect(defaultCredential.getAttribute("aria-checked")).toBe("false");
     expect(specificCredential.getAttribute("aria-checked")).toBe("true");
+    expect(specificCredential).toHaveAttribute("aria-disabled", "true");
     expect(
       container.querySelector("textarea")?.getAttribute("placeholder")
     ).toBe("instance.type-or-paste-credentials-write-only");
@@ -252,11 +253,9 @@ describe("CredentialSourceForm", () => {
       />
     );
 
-    const radios = container.querySelectorAll('[role="radio"]');
-    const specificCredential = radios[1] as HTMLElement;
-    act(() => {
-      specificCredential.click();
-    });
+    const specificCredential = container.querySelector(
+      '[role="switch"]'
+    ) as HTMLElement;
 
     expect(specificCredential.getAttribute("aria-checked")).toBe("true");
     expect(onDataSourceChange).not.toHaveBeenCalled();

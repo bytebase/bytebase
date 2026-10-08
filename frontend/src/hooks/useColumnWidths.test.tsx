@@ -1,7 +1,11 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { useColumnWidths } from "./useColumnWidths";
+import {
+  distributeColumnWidths,
+  fillableWidth,
+  useColumnWidths,
+} from "./useColumnWidths";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -363,5 +367,178 @@ describe("useColumnWidths", () => {
     releaseMouse();
     expect(handle.current!.widths).toEqual([170, 200]);
     expect(handle.current!.onResizeStart).toBe(originalOnResizeStart);
+  });
+});
+
+describe("distributeColumnWidths", () => {
+  test("a column that does not grow keeps its width at any container width", () => {
+    const columns = [
+      { key: "date", defaultWidth: 260, minWidth: 140, grow: false },
+      { key: "title", defaultWidth: 400, minWidth: 180 },
+      { key: "actions", defaultWidth: 100, resizable: false },
+    ];
+    for (const containerWidth of [700, 1100, 1800]) {
+      const [date, title, actions] = distributeColumnWidths(
+        columns,
+        containerWidth
+      );
+      expect(date).toBe(260);
+      expect(actions).toBe(100);
+      expect(title).toBe(Math.max(180, containerWidth - 360));
+    }
+  });
+
+  test("fills the container exactly whenever every floor fits", () => {
+    // A column raised to its floor has to take that width from the others,
+    // or the table overruns a container it could have filled.
+    const columns = [
+      { key: "status", defaultWidth: 160, minWidth: 128 },
+      { key: "creator", defaultWidth: 200, minWidth: 128 },
+      { key: "date", defaultWidth: 270, minWidth: 140, grow: false },
+      { key: "statement", defaultWidth: 400, minWidth: 180 },
+      { key: "actions", defaultWidth: 140, resizable: false },
+    ];
+    const floors = 128 + 128 + 270 + 180 + 140;
+    for (let containerWidth = floors; containerWidth <= 1800; containerWidth++) {
+      const widths = distributeColumnWidths(columns, containerWidth);
+      expect(widths.reduce((sum, w) => sum + w, 0)).toBe(containerWidth);
+      columns.forEach((column, i) => {
+        expect(widths[i]).toBeGreaterThanOrEqual(
+          column.minWidth ?? column.defaultWidth
+        );
+      });
+      expect(widths[2]).toBe(270);
+      expect(widths[4]).toBe(140);
+    }
+  });
+
+  test("keeps every floor when the container is too narrow for them", () => {
+    const widths = distributeColumnWidths(
+      [
+        { key: "a", defaultWidth: 200, minWidth: 150 },
+        { key: "b", defaultWidth: 200, minWidth: 150 },
+      ],
+      200
+    );
+    expect(widths).toEqual([150, 150]);
+  });
+
+  test("its minimum floors a drag, not the width it opens at", () => {
+    const columns = [
+      { key: "date", defaultWidth: 260, minWidth: 140, grow: false },
+      { key: "title", defaultWidth: 400 },
+    ];
+    expect(distributeColumnWidths(columns, 500)[0]).toBe(260);
+    mount(columns);
+    startDrag(0, 400);
+    moveMouse(0);
+    expect(handle.current!.widths[0]).toBe(140);
+    releaseMouse();
+    unmount();
+  });
+});
+
+describe("distributeColumnWidths with a yield order", () => {
+  const columns = [
+    { key: "date", defaultWidth: 270, minWidth: 140, grow: false, yieldOrder: 1 },
+    { key: "title", defaultWidth: 400, minWidth: 180, yieldOrder: 2 },
+    { key: "owner", defaultWidth: 200, minWidth: 128, yieldOrder: 3 },
+    { key: "actions", defaultWidth: 140, resizable: false },
+  ];
+  const preferred = 270 + 400 + 200 + 140;
+  const floors = 140 + 180 + 128 + 140;
+
+  test("gives way in order, each column to its floor before the next", () => {
+    for (let width = floors; width < preferred; width++) {
+      const [date, title, owner, actions] = distributeColumnWidths(
+        columns,
+        width
+      );
+      expect(date + title + owner + actions).toBe(width);
+      expect(actions).toBe(140);
+      if (title < 400) {
+        expect(date).toBe(140);
+      }
+      if (owner < 200) {
+        expect(title).toBe(180);
+      }
+    }
+  });
+
+  test("keeps every preferred width once the container holds them", () => {
+    const [date, title, owner] = distributeColumnWidths(columns, preferred);
+    expect([date, title, owner]).toEqual([270, 400, 200]);
+    // Spare width still goes to the columns that grow, not the date.
+    expect(distributeColumnWidths(columns, preferred + 300)[0]).toBe(270);
+  });
+
+  test("raises a column whose default is under its floor, and takes that from the next", () => {
+    const narrowDefault = [
+      { defaultWidth: 100, minWidth: 120, yieldOrder: 1 },
+      { defaultWidth: 300, minWidth: 100, yieldOrder: 2 },
+    ];
+    expect(distributeColumnWidths(narrowDefault, 350)).toEqual([120, 230]);
+  });
+});
+
+describe("fillableWidth", () => {
+  // jsdom lays nothing out, so each case states what a browser reports; it
+  // does report the inline border and padding back as the computed style.
+  const scroller = (
+    rect: number,
+    offset: number,
+    client: number,
+    { border = "0px", padding = "0px" } = {}
+  ) => {
+    const node = document.createElement("div");
+    node.style.borderLeftWidth = border;
+    node.style.borderRightWidth = border;
+    node.style.paddingLeft = padding;
+    node.style.paddingRight = padding;
+    document.body.appendChild(node);
+    Object.defineProperty(node, "offsetWidth", { value: offset });
+    Object.defineProperty(node, "clientWidth", { value: client });
+    node.getBoundingClientRect = () => ({ width: rect }) as DOMRect;
+    return node;
+  };
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  test.each([
+    [
+      "a whole width, inside a 1px border",
+      () => scroller(800, 800, 798, { border: "1px" }),
+      798,
+    ],
+    // 795.5 inside reads as 796; a table that wide scrolls by half a pixel.
+    [
+      "a fractional width clientWidth rounds up",
+      () => scroller(797.5, 798, 796, { border: "1px" }),
+      795,
+    ],
+    // At 150% a 1px border snaps to two thirds of a pixel: 798.67 inside,
+    // though offsetWidth less clientWidth reads 1.
+    [
+      "a width whose borders the browser snapped",
+      () => scroller(800, 800, 799, { border: "0.666667px" }),
+      798,
+    ],
+    // 798.47 inside reads as 798, so the rounded widths differ by 2 and leave
+    // two thirds of a pixel over the borders: rounding, not a scrollbar.
+    [
+      "a width whose rounding looks like a scrollbar",
+      () => scroller(799.8, 800, 798, { border: "0.666667px" }),
+      798,
+    ],
+    // 17px beside the content, known only to the pixel from two rounded widths.
+    ["a width beside a vertical scrollbar", () => scroller(800, 800, 783), 782],
+    [
+      "a width inside padding",
+      () => scroller(800, 800, 800, { padding: "8px" }),
+      784,
+    ],
+  ])("fills %s without scrolling", (_, make, width) => {
+    expect(fillableWidth(make())).toBe(width);
   });
 });

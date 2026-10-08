@@ -71,9 +71,13 @@ func (ctl *controller) changeDatabaseWithConfigAndReturnRollout(ctx context.Cont
 	return rollout, nil
 }
 
+const pollInterval = 100 * time.Millisecond
+
 // waitRollout waits for pipeline to finish and approves tasks when necessary.
+// Both loops read before they wait: a ticker in front of the first read charges
+// its interval to every caller, and this waits twice.
 func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName string) error {
-	ticker := time.NewTicker(300 * time.Millisecond)
+	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
 	// Add timeout to prevent infinite loops
@@ -83,35 +87,28 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 	// Wait for approval
 waitApproval:
 	for {
+		issueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueName}))
+		if err != nil {
+			return err
+		}
+		issue := issueResp.Msg
+		if issue.ApprovalStatus == v1pb.ApprovalStatus_APPROVED || issue.ApprovalStatus == v1pb.ApprovalStatus_SKIPPED {
+			break waitApproval
+		}
+		// If the issue is pending approval, approve it (test user should be project owner)
+		if issue.ApprovalStatus == v1pb.ApprovalStatus_PENDING {
+			if _, err := ctl.issueServiceClient.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{
+				Name: issueName,
+			})); err != nil {
+				return errors.Wrapf(err, "failed to approve issue")
+			}
+		}
+
 		select {
 		case <-timeout:
-			// Timeout - fetch current state for debugging
-			issueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueName}))
-			if err != nil {
-				return errors.Wrapf(err, "timeout after %v waiting for approval (failed to fetch issue state)", time.Since(startTime))
-			}
-			issue := issueResp.Msg
 			return errors.Errorf("timeout after %v waiting for approval to complete, current approval status: %s",
 				time.Since(startTime), issue.ApprovalStatus.String())
-
 		case <-ticker.C:
-			issueResp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issueName}))
-			if err != nil {
-				return err
-			}
-			issue := issueResp.Msg
-			if issue.ApprovalStatus == v1pb.ApprovalStatus_APPROVED || issue.ApprovalStatus == v1pb.ApprovalStatus_SKIPPED {
-				break waitApproval
-			}
-			// If the issue is pending approval, approve it (test user should be project owner)
-			if issue.ApprovalStatus == v1pb.ApprovalStatus_PENDING {
-				_, err := ctl.issueServiceClient.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{
-					Name: issueName,
-				}))
-				if err != nil {
-					return errors.Wrapf(err, "failed to approve issue")
-				}
-			}
 		}
 	}
 
@@ -140,7 +137,12 @@ waitApproval:
 		}
 	}
 
-	for range ticker.C {
+	for {
+		select {
+		case <-timeout:
+			return errors.Errorf("timeout after %v waiting for rollout to complete", time.Since(startTime))
+		default:
+		}
 		rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
 			Name: rolloutName,
 		}))
@@ -186,16 +188,16 @@ waitApproval:
 		}
 
 		if completed {
-			break
+			return nil
 		}
+		<-ticker.C
 	}
-	return nil
 }
 
 // waitRolloutWithoutApproval waits for a rollout to complete without going through the issue approval flow.
 // This is used for test scenarios where issues are not created (e.g., direct rollout creation).
 func (ctl *controller) waitRolloutWithoutApproval(ctx context.Context, rolloutName string) error {
-	ticker := time.NewTicker(300 * time.Millisecond)
+	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
 	// Add timeout to prevent infinite loops
@@ -228,16 +230,55 @@ func (ctl *controller) waitRolloutWithoutApproval(ctx context.Context, rolloutNa
 	}
 
 	for {
+		rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
+			Name: rolloutName,
+		}))
+		if err != nil {
+			return err
+		}
+		rollout := rolloutResp.Msg
+		completed := true
+		var runTasks []string
+		for _, stage := range rollout.Stages {
+			for _, task := range stage.Tasks {
+				switch task.Status {
+				case v1pb.Task_NOT_STARTED:
+					runTasks = append(runTasks, task.Name)
+					completed = false
+				case v1pb.Task_DONE:
+					continue
+				case v1pb.Task_SKIPPED:
+					continue
+				case v1pb.Task_FAILED:
+					resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{Parent: task.Name}))
+					if err != nil {
+						return err
+					}
+					if len(resp.Msg.TaskRuns) > 0 {
+						return errors.New(resp.Msg.TaskRuns[0].Detail)
+					}
+				default:
+					completed = false
+				}
+			}
+		}
+
+		// Rollout tasks.
+		if len(runTasks) > 0 {
+			if _, err := ctl.rolloutServiceClient.BatchRunTasks(ctx, connect.NewRequest(&v1pb.BatchRunTasksRequest{
+				Parent: fmt.Sprintf("%s/stages/-", rolloutName),
+				Tasks:  runTasks,
+			})); err != nil {
+				return err
+			}
+		}
+
+		if completed {
+			return nil
+		}
+
 		select {
 		case <-timeout:
-			// Timeout - fetch current state for debugging
-			rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
-				Name: rolloutName,
-			}))
-			if err != nil {
-				return errors.Wrapf(err, "timeout after %v waiting for rollout (failed to fetch rollout state)", time.Since(startTime))
-			}
-			rollout := rolloutResp.Msg
 			var taskStatuses []string
 			for _, stage := range rollout.Stages {
 				for _, task := range stage.Tasks {
@@ -246,55 +287,7 @@ func (ctl *controller) waitRolloutWithoutApproval(ctx context.Context, rolloutNa
 			}
 			return errors.Errorf("timeout after %v waiting for rollout to complete, task statuses: %s",
 				time.Since(startTime), strings.Join(taskStatuses, ", "))
-
 		case <-ticker.C:
-			rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
-				Name: rolloutName,
-			}))
-			if err != nil {
-				return err
-			}
-			rollout := rolloutResp.Msg
-			completed := true
-			var runTasks []string
-			for _, stage := range rollout.Stages {
-				for _, task := range stage.Tasks {
-					switch task.Status {
-					case v1pb.Task_NOT_STARTED:
-						runTasks = append(runTasks, task.Name)
-						completed = false
-					case v1pb.Task_DONE:
-						continue
-					case v1pb.Task_SKIPPED:
-						continue
-					case v1pb.Task_FAILED:
-						resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{Parent: task.Name}))
-						if err != nil {
-							return err
-						}
-						if len(resp.Msg.TaskRuns) > 0 {
-							return errors.New(resp.Msg.TaskRuns[0].Detail)
-						}
-					default:
-						completed = false
-					}
-				}
-			}
-
-			// Rollout tasks.
-			if len(runTasks) > 0 {
-				_, err := ctl.rolloutServiceClient.BatchRunTasks(ctx, connect.NewRequest(&v1pb.BatchRunTasksRequest{
-					Parent: fmt.Sprintf("%s/stages/-", rolloutName),
-					Tasks:  runTasks,
-				}))
-				if err != nil {
-					return err
-				}
-			}
-
-			if completed {
-				return nil
-			}
 		}
 	}
 }

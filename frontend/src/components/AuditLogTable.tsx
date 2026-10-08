@@ -13,8 +13,13 @@ import {
   type SearchParams,
   type ValueOption,
 } from "@/components/AdvancedSearch";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
+import {
+  TIMESTAMP_COLUMN_MIN_WIDTH,
+  TIMESTAMP_COLUMN_WIDTH,
+} from "@/components/timestampColumn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -32,8 +37,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tooltip } from "@/components/ui/tooltip";
-import { usePlanFeature } from "@/hooks/useAppState";
+import { BlockTooltip, Tooltip } from "@/components/ui/tooltip";
+import { usePlanFeature, useWorkspaceResourceName } from "@/hooks/useAppState";
 import { useColumnWidths } from "@/hooks/useColumnWidths";
 import { PagedTableFooter } from "@/hooks/usePagedData";
 import {
@@ -43,13 +48,14 @@ import {
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
-  extractUserEmail,
   getProjectIdPlanUidStageUidFromRolloutName,
   planNamePrefix,
   projectNamePrefix,
+  serviceAccountNamePrefix,
   userNamePrefix,
+  workloadIdentityNamePrefix,
 } from "@/stores/modules/v1/common";
-import { getDateForPbTimestampProtoEs } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import type {
   AuditLog,
@@ -67,11 +73,9 @@ import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
 import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { protobufJsonRegistry } from "@/types/protobufJsonRegistry";
-import {
-  formatAbsoluteDateTime,
-  getDefaultPagination,
-  humanizeDurationV1,
-} from "@/utils";
+import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
+import { getDefaultPagination, humanizeDurationV1 } from "@/utils";
+import { isValidEmail } from "@/utils/util";
 import { celString } from "@/utils/v1/celLiteral";
 
 dayjs.extend(utc);
@@ -83,9 +87,49 @@ dayjs.extend(utc);
 interface AuditLogFilter {
   method?: string;
   level?: AuditLog_Severity;
-  userEmail?: string;
+  actor?: string;
   createdTsAfter?: number;
   createdTsBefore?: number;
+}
+
+function uniqueValueOptions(options: ValueOption[]): ValueOption[] {
+  return [...new Map(options.map((option) => [option.value, option])).values()];
+}
+
+const ACTOR_NAME_PREFIXES = [
+  userNamePrefix,
+  serviceAccountNamePrefix,
+  workloadIdentityNamePrefix,
+];
+
+// Returns the resource name an actor value stands for, lowercased with the
+// canonical prefix: account emails are stored lowercase, and AdvancedSearch
+// lowercases the keyword. A bare email takes the account kind its domain names.
+function toActorName(value: string): string {
+  const lowered = value.toLowerCase();
+  const prefix = ACTOR_NAME_PREFIXES.find((candidate) =>
+    lowered.startsWith(candidate.toLowerCase())
+  );
+  if (prefix) {
+    return `${prefix}${lowered.slice(prefix.length)}`;
+  }
+  switch (getAccountTypeByEmail(lowered)) {
+    case AccountType.SERVICE_ACCOUNT:
+      return `${serviceAccountNamePrefix}${lowered}`;
+    case AccountType.WORKLOAD_IDENTITY:
+      return `${workloadIdentityNamePrefix}${lowered}`;
+    default:
+      return `${userNamePrefix}${lowered}`;
+  }
+}
+
+function toActorOptions(
+  accounts: Array<{ name: string; email: string; title: string }>
+): ValueOption[] {
+  return accounts.map((account) => ({
+    value: account.name,
+    keywords: [account.email, account.title],
+  }));
 }
 
 function buildFilterString(filter: AuditLogFilter): string {
@@ -93,8 +137,15 @@ function buildFilterString(filter: AuditLogFilter): string {
   if (filter.method) parts.push(`method == ${celString(filter.method)}`);
   if (filter.level !== undefined)
     parts.push(`severity == ${celString(AuditLog_Severity[filter.level])}`);
-  if (filter.userEmail)
-    parts.push(`user == ${celString(`${userNamePrefix}${filter.userEmail}`)}`);
+  if (filter.actor) {
+    const actor = toActorName(filter.actor);
+    const legacyUser = `${userNamePrefix}${actor.slice(actor.indexOf("/") + 1)}`;
+    parts.push(
+      actor === legacyUser
+        ? `actor == ${celString(actor)}`
+        : `(actor == ${celString(actor)} || actor == ${celString(legacyUser)})`
+    );
+  }
   if (filter.createdTsAfter)
     parts.push(
       `create_time >= ${celString(dayjs(filter.createdTsAfter).utc().format())}`
@@ -111,7 +162,7 @@ function buildAuditLogFilter(params: SearchParams): AuditLogFilter {
   const method = params.scopes.find((s) => s.id === "method")?.value;
   if (method) filter.method = method;
   const actor = params.scopes.find((s) => s.id === "actor")?.value;
-  if (actor) filter.userEmail = actor;
+  if (actor) filter.actor = actor;
   const level = params.scopes.find((s) => s.id === "level")?.value;
   if (level)
     filter.level = AuditLog_Severity[level as keyof typeof AuditLog_Severity];
@@ -266,20 +317,16 @@ function McpProvenanceDetail({
 // none.
 function AuditLogActorCell({ log }: Readonly<{ log: AuditLog }>) {
   const { t } = useTranslation();
-  const email = extractUserEmail(log.user);
   return (
     <div className="flex items-center gap-x-1.5">
-      {email ? (
-        // As a flex item the anchor is blockified, so `truncate` now ellipses
-        // where the bare inline anchor used to hard-clip; `title` keeps the
-        // full address reachable.
-        <a
-          href={`mailto:${email}`}
-          title={email}
-          className="text-accent hover:underline truncate min-w-0"
+      {log.actor ? (
+        <BlockTooltip
+          content={log.actor}
+          popupClassName="break-all"
+          render={<span className="min-w-0" />}
         >
-          {email}
-        </a>
+          <span className="block truncate">{log.actor}</span>
+        </BlockTooltip>
       ) : (
         <span>-</span>
       )}
@@ -319,13 +366,16 @@ function JSONStringView({ jsonString }: { jsonString: string }) {
         <p className="line-clamp-2">
           <code className="text-sm break-all">{jsonString}</code>
         </p>
-        <div className="hidden group-hover:block shrink-0 h-[22px]">
-          <button
-            className="p-0.5 border border-control-border rounded-xs hover:bg-control-bg"
+        <div className="hidden h-6 shrink-0 group-hover:block">
+          <Button
+            type="button"
+            appearance="outline"
+            size="xs"
+            aria-label={t("common.view-details")}
             onClick={() => setShowModal(true)}
           >
             <Maximize2 className="size-3" />
-          </button>
+          </Button>
         </div>
       </div>
       {showModal && (
@@ -421,13 +471,19 @@ function useColumnDefs(): ColumnDef[] {
       {
         key: "create_time",
         title: t("audit-log.table.created-ts"),
-        defaultWidth: 220,
-        minWidth: 160,
+        defaultWidth: TIMESTAMP_COLUMN_WIDTH.datetime,
+        minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
         resizable: true,
         sortable: true,
         render: (log: AuditLog) =>
-          formatAbsoluteDateTime(
-            getDateForPbTimestampProtoEs(log.createTime)?.getTime() ?? 0
+          log.createTime ? (
+            <HumanizeTs
+              mode="datetime"
+              truncate
+              tsMs={getTimeForPbTimestampProtoEs(log.createTime)}
+            />
+          ) : (
+            "-"
           ),
       },
       {
@@ -577,6 +633,11 @@ export function AuditLogTable({
 }: AuditLogTableProps) {
   const { t } = useTranslation();
   const hasAuditLogFeature = usePlanFeature(PlanFeature.FEATURE_AUDIT_LOG);
+  const workspaceResourceName = useWorkspaceResourceName();
+  const projectAccountParent =
+    parent !== `${projectNamePrefix}-` && parent.startsWith(projectNamePrefix)
+      ? parent
+      : "";
   const columns = useColumnDefs();
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
@@ -749,18 +810,66 @@ export function AuditLogTable({
     return "";
   }, [filter, t]);
   const listUsers = useAppStore((state) => state.listUsers);
-  const searchUsers = useCallback(
+  const listServiceAccounts = useAppStore((state) => state.listServiceAccounts);
+  const listWorkloadIdentities = useAppStore(
+    (state) => state.listWorkloadIdentities
+  );
+  const searchActors = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const { users } = await listUsers({
-        pageSize: getDefaultPagination(),
-        filter: keyword.trim() ? { query: keyword } : undefined,
+      const actor = toActorName(keyword.trim());
+      // The account lists match display names and emails, not resource names.
+      const query = actor.slice(actor.indexOf("/") + 1);
+      const pageSize = getDefaultPagination();
+      // The server checks the list permissions; silent keeps a denied list
+      // from redirecting to /403, and allSettled then drops it.
+      const accountParams = (parent: string) => ({
+        parent,
+        pageSize,
+        showDeleted: false,
+        filter: { query },
+        skipCache: true,
+        silent: true,
       });
-      return users.map((u) => ({
-        value: u.email,
-        keywords: [u.email, u.title],
-      }));
+      const accountParents = [
+        workspaceResourceName,
+        projectAccountParent,
+      ].filter(Boolean);
+
+      const results = await Promise.allSettled([
+        listUsers({ pageSize, filter: { query } }).then(({ users }) =>
+          toActorOptions(users)
+        ),
+        ...accountParents.map((parent) =>
+          listServiceAccounts(accountParams(parent)).then(
+            ({ serviceAccounts }) => toActorOptions(serviceAccounts)
+          )
+        ),
+        ...accountParents.map((parent) =>
+          listWorkloadIdentities(accountParams(parent)).then(
+            ({ workloadIdentities }) => toActorOptions(workloadIdentities)
+          )
+        ),
+      ]);
+      // The lists reach only this page's parents and skip deleted accounts, so
+      // a full service account or workload identity email is offered as typed.
+      const typedAccount =
+        isValidEmail(query) && !actor.startsWith(userNamePrefix)
+          ? [{ value: actor, keywords: [query] }]
+          : [];
+      return uniqueValueOptions([
+        ...typedAccount,
+        ...results.flatMap((result) =>
+          result.status === "fulfilled" ? result.value : []
+        ),
+      ]);
     },
-    [listUsers]
+    [
+      listUsers,
+      listServiceAccounts,
+      listWorkloadIdentities,
+      workspaceResourceName,
+      projectAccountParent,
+    ]
   );
 
   const scopeOptions = useMemo((): ScopeOption[] => {
@@ -769,7 +878,7 @@ export function AuditLogTable({
         id: "actor",
         title: t("audit-log.advanced-search.scope.actor.title"),
         description: t("audit-log.advanced-search.scope.actor.description"),
-        onSearch: searchUsers,
+        onSearch: searchActors,
       },
       {
         id: "method",
@@ -792,7 +901,7 @@ export function AuditLogTable({
           })),
       },
     ];
-  }, [t, searchUsers]);
+  }, [t, searchActors]);
 
   const pageSizeOptions = getPageSizeOptions();
 

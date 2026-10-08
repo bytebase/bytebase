@@ -1,6 +1,8 @@
 package schema
 
 import (
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -59,17 +61,17 @@ type MaterializedViewChange struct {
 // ViewComparer provides engine-specific view comparison logic.
 type ViewComparer interface {
 	// CompareView compares two views and returns the detected changes.
-	CompareView(oldView, newView *storepb.ViewMetadata) ([]ViewChange, error)
+	CompareView(oldView, newView *metadatapb.ViewMetadata) ([]ViewChange, error)
 
 	// CompareMaterializedView compares two materialized views and returns the detected changes.
-	CompareMaterializedView(oldMV, newMV *storepb.MaterializedViewMetadata) ([]MaterializedViewChange, error)
+	CompareMaterializedView(oldMV, newMV *metadatapb.MaterializedViewMetadata) ([]MaterializedViewChange, error)
 }
 
 // DefaultViewComparer provides default view comparison logic that can be used by most engines.
 type DefaultViewComparer struct{}
 
 // CompareView compares two views using default logic.
-func (*DefaultViewComparer) CompareView(oldView, newView *storepb.ViewMetadata) ([]ViewChange, error) {
+func (*DefaultViewComparer) CompareView(oldView, newView *metadatapb.ViewMetadata) ([]ViewChange, error) {
 	if oldView == nil || newView == nil {
 		return nil, nil
 	}
@@ -98,7 +100,7 @@ func (*DefaultViewComparer) CompareView(oldView, newView *storepb.ViewMetadata) 
 }
 
 // CompareMaterializedView compares two materialized views using default logic.
-func (*DefaultViewComparer) CompareMaterializedView(oldMV, newMV *storepb.MaterializedViewMetadata) ([]MaterializedViewChange, error) {
+func (*DefaultViewComparer) CompareMaterializedView(oldMV, newMV *metadatapb.MaterializedViewMetadata) ([]MaterializedViewChange, error) {
 	if oldMV == nil || newMV == nil {
 		return nil, nil
 	}

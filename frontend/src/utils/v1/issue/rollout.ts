@@ -155,6 +155,18 @@ export const isTaskActivelyTransitioning = (
   return !task.runTime || getTimeForPbTimestampProtoEs(task.runTime) <= nowMs;
 };
 
+/**
+ * When a task is due to run, or nothing at all: a schedule belongs to a task
+ * still waiting for it, and a task that has started or finished is described
+ * by its run, not by the time it was once meant to begin. A task with no
+ * runTime is due now rather than scheduled, which is the same reading
+ * `isTaskActivelyTransitioning` above takes of the field.
+ */
+export const scheduledRunTimeMs = (task: Task): number | undefined =>
+  task.status === Task_Status.PENDING
+    ? getTimeForPbTimestampProtoEs(task.runTime)
+    : undefined;
+
 // Task_Status ONLY. Task_Status and TaskRun_Status share names but their
 // numeric values are offset by one (Task_Status.PENDING === 2 ===
 // TaskRun_Status.RUNNING), so one switch cannot serve both enums — a task

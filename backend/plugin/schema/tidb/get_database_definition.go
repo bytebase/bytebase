@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -60,7 +61,7 @@ func init() {
 	schema.RegisterGetProcedureDefinition(storepb.Engine_TIDB, GetProcedureDefinition)
 }
 
-func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
 	if len(metadata.Schemas) == 0 {
 		return "", nil
 	}
@@ -150,7 +151,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 	return buf.String(), nil
 }
 
-func GetTableDefinition(_ string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
+func GetTableDefinition(_ string, table *metadatapb.TableMetadata, _ []*metadatapb.SequenceMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeTable(&buf, table); err != nil {
 		return "", err
@@ -158,7 +159,7 @@ func GetTableDefinition(_ string, table *storepb.TableMetadata, _ []*storepb.Seq
 	return buf.String(), nil
 }
 
-func GetViewDefinition(_ string, view *storepb.ViewMetadata) (string, error) {
+func GetViewDefinition(_ string, view *metadatapb.ViewMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeView(&buf, view); err != nil {
 		return "", err
@@ -166,7 +167,7 @@ func GetViewDefinition(_ string, view *storepb.ViewMetadata) (string, error) {
 	return buf.String(), nil
 }
 
-func GetFunctionDefinition(_ string, function *storepb.FunctionMetadata) (string, error) {
+func GetFunctionDefinition(_ string, function *metadatapb.FunctionMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeFunction(&buf, function); err != nil {
 		return "", err
@@ -174,7 +175,7 @@ func GetFunctionDefinition(_ string, function *storepb.FunctionMetadata) (string
 	return buf.String(), nil
 }
 
-func GetProcedureDefinition(_ string, procedure *storepb.ProcedureMetadata) (string, error) {
+func GetProcedureDefinition(_ string, procedure *metadatapb.ProcedureMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeProcedure(&buf, procedure); err != nil {
 		return "", err
@@ -182,7 +183,7 @@ func GetProcedureDefinition(_ string, procedure *storepb.ProcedureMetadata) (str
 	return buf.String(), nil
 }
 
-func writeEvent(out io.Writer, event *storepb.EventMetadata) error {
+func writeEvent(out io.Writer, event *metadatapb.EventMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -269,7 +270,7 @@ func writeEvent(out io.Writer, event *storepb.EventMetadata) error {
 	return err
 }
 
-func writeTrigger(out io.Writer, tableName string, trigger *storepb.TriggerMetadata) error {
+func writeTrigger(out io.Writer, tableName string, trigger *metadatapb.TriggerMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -374,7 +375,7 @@ func writeTrigger(out io.Writer, tableName string, trigger *storepb.TriggerMetad
 	return err
 }
 
-func writeProcedure(out io.Writer, procedure *storepb.ProcedureMetadata) error {
+func writeProcedure(out io.Writer, procedure *metadatapb.ProcedureMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -452,7 +453,7 @@ func writeProcedure(out io.Writer, procedure *storepb.ProcedureMetadata) error {
 	return err
 }
 
-func writeFunction(out io.Writer, function *storepb.FunctionMetadata) error {
+func writeFunction(out io.Writer, function *metadatapb.FunctionMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -530,7 +531,7 @@ func writeFunction(out io.Writer, function *storepb.FunctionMetadata) error {
 	return err
 }
 
-func writeView(out io.Writer, view *storepb.ViewMetadata) error {
+func writeView(out io.Writer, view *metadatapb.ViewMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -579,7 +580,7 @@ func writeView(out io.Writer, view *storepb.ViewMetadata) error {
 	return err
 }
 
-func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
+func writeTable(out *strings.Builder, table *metadatapb.TableMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -685,7 +686,7 @@ func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
 }
 
 // Copy the logic from backend/plugin/schema/mysql/state.go.
-func printPartitionClause(buf *strings.Builder, partitions []*storepb.TablePartitionMetadata) error {
+func printPartitionClause(buf *strings.Builder, partitions []*metadatapb.TablePartitionMetadata) error {
 	if len(partitions) == 0 {
 		return nil
 	}
@@ -695,35 +696,35 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 		return err
 	}
 	switch partitions[0].Type {
-	case storepb.TablePartitionMetadata_RANGE:
+	case metadatapb.TablePartitionMetadata_RANGE:
 		if _, err := fmt.Fprintf(buf, "RANGE (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
+	case metadatapb.TablePartitionMetadata_RANGE_COLUMNS:
 		if _, err := fmt.Fprintf(buf, "RANGE COLUMNS (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_LIST:
+	case metadatapb.TablePartitionMetadata_LIST:
 		if _, err := fmt.Fprintf(buf, "LIST (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_LIST_COLUMNS:
+	case metadatapb.TablePartitionMetadata_LIST_COLUMNS:
 		if _, err := fmt.Fprintf(buf, "LIST COLUMNS (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_HASH:
+	case metadatapb.TablePartitionMetadata_HASH:
 		if _, err := fmt.Fprintf(buf, "HASH (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_KEY:
+	case metadatapb.TablePartitionMetadata_KEY:
 		if _, err := fmt.Fprintf(buf, "KEY (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_LINEAR_HASH:
+	case metadatapb.TablePartitionMetadata_LINEAR_HASH:
 		if _, err := fmt.Fprintf(buf, "LINEAR HASH (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
-	case storepb.TablePartitionMetadata_LINEAR_KEY:
+	case metadatapb.TablePartitionMetadata_LINEAR_KEY:
 		if _, err := fmt.Fprintf(buf, "LINEAR KEY (%s)", partitions[0].Expression); err != nil {
 			return err
 		}
@@ -750,19 +751,19 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 			return err
 		}
 		switch partitions[0].Subpartitions[0].Type {
-		case storepb.TablePartitionMetadata_HASH:
+		case metadatapb.TablePartitionMetadata_HASH:
 			if _, err := fmt.Fprintf(buf, "HASH (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
 				return err
 			}
-		case storepb.TablePartitionMetadata_LINEAR_HASH:
+		case metadatapb.TablePartitionMetadata_LINEAR_HASH:
 			if _, err := fmt.Fprintf(buf, "LINEAR HASH (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
 				return err
 			}
-		case storepb.TablePartitionMetadata_KEY:
+		case metadatapb.TablePartitionMetadata_KEY:
 			if _, err := fmt.Fprintf(buf, "KEY (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
 				return err
 			}
-		case storepb.TablePartitionMetadata_LINEAR_KEY:
+		case metadatapb.TablePartitionMetadata_LINEAR_KEY:
 			if _, err := fmt.Fprintf(buf, "LINEAR KEY (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
 				return err
 			}
@@ -857,17 +858,17 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 	return nil
 }
 
-func getPrepositionByType(tp storepb.TablePartitionMetadata_Type) (string, error) {
+func getPrepositionByType(tp metadatapb.TablePartitionMetadata_Type) (string, error) {
 	switch tp {
-	case storepb.TablePartitionMetadata_RANGE:
+	case metadatapb.TablePartitionMetadata_RANGE:
 		return "LESS THAN", nil
-	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
+	case metadatapb.TablePartitionMetadata_RANGE_COLUMNS:
 		return "LESS THAN", nil
-	case storepb.TablePartitionMetadata_LIST:
+	case metadatapb.TablePartitionMetadata_LIST:
 		return "IN", nil
-	case storepb.TablePartitionMetadata_LIST_COLUMNS:
+	case metadatapb.TablePartitionMetadata_LIST_COLUMNS:
 		return "IN", nil
-	case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_HASH, storepb.TablePartitionMetadata_LINEAR_KEY:
+	case metadatapb.TablePartitionMetadata_HASH, metadatapb.TablePartitionMetadata_KEY, metadatapb.TablePartitionMetadata_LINEAR_HASH, metadatapb.TablePartitionMetadata_LINEAR_KEY:
 		return "", nil
 	default:
 		return "", errors.Errorf("unsupported partition type: %v", tp)
@@ -907,26 +908,26 @@ func writePartitionOptions(buf io.StringWriter) error {
 	return nil
 }
 
-func getVersionSpecificComment(partitions []*storepb.TablePartitionMetadata) string {
+func getVersionSpecificComment(partitions []*metadatapb.TablePartitionMetadata) string {
 	if len(partitions) == 0 {
 		return ""
 	}
 	partition := partitions[0]
-	if partition.Type == storepb.TablePartitionMetadata_RANGE_COLUMNS || partition.Type == storepb.TablePartitionMetadata_LIST_COLUMNS {
+	if partition.Type == metadatapb.TablePartitionMetadata_RANGE_COLUMNS || partition.Type == metadatapb.TablePartitionMetadata_LIST_COLUMNS {
 		// MySQL introduce columns partitioning in 5.5+
 		return "\n/*!50500"
 	}
 	return "\n/*!50100"
 }
 
-func printCheckClause(buf *strings.Builder, check *storepb.CheckConstraintMetadata) error {
+func printCheckClause(buf *strings.Builder, check *metadatapb.CheckConstraintMetadata) error {
 	if _, err := fmt.Fprintf(buf, ",\n  CONSTRAINT `%s` CHECK %s", check.Name, check.Expression); err != nil {
 		return err
 	}
 	return nil
 }
 
-func printForeignKeyClause(buf *strings.Builder, fk *storepb.ForeignKeyMetadata) error {
+func printForeignKeyClause(buf *strings.Builder, fk *metadatapb.ForeignKeyMetadata) error {
 	if _, err := fmt.Fprintf(buf, ",\n  CONSTRAINT `%s` FOREIGN KEY (", fk.Name); err != nil {
 		return err
 	}
@@ -976,7 +977,7 @@ func printForeignKeyClause(buf *strings.Builder, fk *storepb.ForeignKeyMetadata)
 	return nil
 }
 
-func printIndexClause(buf *strings.Builder, index *storepb.IndexMetadata) error {
+func printIndexClause(buf *strings.Builder, index *metadatapb.IndexMetadata) error {
 	if index.Primary {
 		return nil
 	}
@@ -1067,7 +1068,7 @@ func printIndexKeyPart(buf *strings.Builder, expr string, length int64, descendi
 	return nil
 }
 
-func printPrimaryKeyClause(buf *strings.Builder, table *storepb.TableMetadata) error {
+func printPrimaryKeyClause(buf *strings.Builder, table *metadatapb.TableMetadata) error {
 	for _, index := range table.GetIndexes() {
 		if index.Primary {
 			if _, err := fmt.Fprint(buf, ",\n  PRIMARY KEY ("); err != nil {
@@ -1104,15 +1105,15 @@ func printPrimaryKeyClause(buf *strings.Builder, table *storepb.TableMetadata) e
 	return nil
 }
 
-func isAutoIncrement(column *storepb.ColumnMetadata) bool {
+func isAutoIncrement(column *metadatapb.ColumnMetadata) bool {
 	return strings.EqualFold(column.GetDefault(), autoIncrementSymbol)
 }
 
-func isAutoRandom(column *storepb.ColumnMetadata) bool {
+func isAutoRandom(column *metadatapb.ColumnMetadata) bool {
 	return strings.HasPrefix(column.GetDefault(), autoRandomSymbol)
 }
 
-func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, table *storepb.TableMetadata) error {
+func printColumnClause(buf *strings.Builder, column *metadatapb.ColumnMetadata, table *metadatapb.TableMetadata) error {
 	if _, err := fmt.Fprintf(buf, "  `%s` %s", column.Name, column.Type); err != nil {
 		return err
 	}
@@ -1134,11 +1135,11 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 			return err
 		}
 		switch column.Generation.Type {
-		case storepb.GenerationMetadata_TYPE_STORED:
+		case metadatapb.GenerationMetadata_TYPE_STORED:
 			if _, err := fmt.Fprint(buf, "STORED"); err != nil {
 				return err
 			}
-		case storepb.GenerationMetadata_TYPE_VIRTUAL:
+		case metadatapb.GenerationMetadata_TYPE_VIRTUAL:
 			if _, err := fmt.Fprint(buf, "VIRTUAL"); err != nil {
 				return err
 			}
@@ -1181,7 +1182,7 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 	return nil
 }
 
-func printDefaultClause(buf *strings.Builder, column *storepb.ColumnMetadata) error {
+func printDefaultClause(buf *strings.Builder, column *metadatapb.ColumnMetadata) error {
 	// Check if column has any default value
 	hasDefault := column.Default != ""
 	if !hasDefault {
@@ -1233,7 +1234,7 @@ func typeSupportsDefaultValue(tp string) bool {
 	}
 }
 
-func writeInvalidTemporaryView(out io.Writer, view *storepb.ViewMetadata) error {
+func writeInvalidTemporaryView(out io.Writer, view *metadatapb.ViewMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err
@@ -1263,7 +1264,7 @@ func writeInvalidTemporaryView(out io.Writer, view *storepb.ViewMetadata) error 
 	return err
 }
 
-func writeTemporaryView(out io.Writer, view *storepb.ViewMetadata) error {
+func writeTemporaryView(out io.Writer, view *metadatapb.ViewMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
 		return err

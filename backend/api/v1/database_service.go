@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
-	"github.com/google/cel-go/cel"
+	metadatapb "github.com/bytebase/omni/metadata"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
@@ -201,7 +201,9 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 		}
 		if !ok {
 			// Same code and message as a missing database: a different one would
-			// tell the caller a database exists in a project they cannot see.
+			// tell the caller a database exists in a project they cannot see. The
+			// mark records the refusal the caller is not told about.
+			setPermissionDenied(ctx)
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
 		}
 		database, err := s.convertToDatabase(ctx, databaseMessage)
@@ -299,7 +301,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", permission.InstancesGet, req.Msg.Parent))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.InstancesGet, req.Msg.Parent))
 		}
 		find.InstanceID = &instanceID
 	} else if projectID, err := common.GetProjectID(req.Msg.Parent); err == nil {
@@ -318,7 +320,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", permission.ProjectsGet, req.Msg.Parent))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.ProjectsGet, req.Msg.Parent))
 		}
 		find.ProjectID = &projectID
 	} else if _, err := common.GetWorkspaceID(req.Msg.Parent); err == nil {
@@ -327,7 +329,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.DatabasesList))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q", permission.DatabasesList))
 		}
 	} else if instanceID, err := common.GetInstanceID(req.Msg.Parent); err == nil {
 		if _, err := s.getInstanceForDatabaseResource(ctx, nil, instanceID); err != nil {
@@ -338,7 +340,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.InstancesGet))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q", permission.InstancesGet))
 		}
 		find.InstanceID = &instanceID
 	} else {
@@ -555,13 +557,9 @@ func getDatabaseMetadataFilter(filter string) (*metadataFilter, error) {
 		return nil, nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	var getFilter func(expr celast.Expr) error
@@ -904,9 +902,16 @@ func (s *DatabaseService) validateDiffSchemaTargetProject(ctx context.Context, r
 	if err != nil {
 		return err
 	}
-	// One error for both: a distinct one would confirm what lives in a project
-	// the caller cannot see.
-	if target == nil || target.ProjectID != source.ProjectID {
+	return checkDiffSchemaTargetProject(source.ProjectID, target, changelog)
+}
+
+// checkDiffSchemaTargetProject confines a changelog target to the source
+// database's project. The ACL interceptor authorizes request.name only, so without this
+// a changelog under another project's database would hand over that project's
+// schema. One error for a missing and a foreign changelog: a distinct one
+// would confirm what lives in a project the caller cannot see.
+func checkDiffSchemaTargetProject(projectID string, target *store.DatabaseMessage, changelog string) error {
+	if target == nil || target.ProjectID != projectID {
 		return connect.NewError(connect.CodeNotFound, errors.Errorf("changelog %q not found", changelog))
 	}
 	return nil
@@ -1240,7 +1245,26 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	if err != nil {
 		return storepb.Engine_ENGINE_UNSPECIFIED, err
 	}
-	return common.ConvertToParserEngine(rawEngine)
+	return convertToParserEngine(rawEngine)
+}
+
+func convertToParserEngine(e storepb.Engine) (storepb.Engine, error) {
+	switch e {
+	case storepb.Engine_POSTGRES:
+		return storepb.Engine_POSTGRES, nil
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+		return storepb.Engine_MYSQL, nil
+	case storepb.Engine_TIDB:
+		return storepb.Engine_TIDB, nil
+	case storepb.Engine_ORACLE:
+		return storepb.Engine_ORACLE, nil
+	case storepb.Engine_MSSQL:
+		return storepb.Engine_MSSQL, nil
+	case storepb.Engine_COCKROACHDB:
+		return storepb.Engine_COCKROACHDB, nil
+	default:
+		return storepb.Engine_ENGINE_UNSPECIFIED, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid engine type %v", e))
+	}
 }
 
 func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store.DatabaseMessage) (*v1pb.Database, error) {
@@ -1408,7 +1432,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if schemaMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("schema %q not found", req.Msg.Schema))
 		}
-		var functionMetadata *storepb.FunctionMetadata
+		var functionMetadata *metadatapb.FunctionMetadata
 		for _, fn := range schemaMetadata.GetProto().GetFunctions() {
 			if fn.Name == req.Msg.Object {
 				functionMetadata = fn
@@ -1456,7 +1480,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 	}
 }
 
-func (*DatabaseService) getSingleFileSDL(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
+func (*DatabaseService) getSingleFileSDL(engine storepb.Engine, metadata *metadatapb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
 	sdlText, err := schema.GetDatabaseDefinition(engine, schema.GetDefinitionContext{
 		SkipBackupSchema: true,
 		SDLFormat:        true,
@@ -1471,7 +1495,7 @@ func (*DatabaseService) getSingleFileSDL(engine storepb.Engine, metadata *storep
 	}), nil
 }
 
-func (*DatabaseService) getMultiFileSDL(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
+func (*DatabaseService) getMultiFileSDL(engine storepb.Engine, metadata *metadatapb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
 	// Get multi-file schema from schema package
 	result, err := schema.GetMultiFileDatabaseDefinition(engine, schema.GetDefinitionContext{
 		SkipBackupSchema: true,

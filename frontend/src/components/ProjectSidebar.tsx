@@ -26,6 +26,7 @@ import {
   PROJECT_V1_ROUTE_RELEASES,
   PROJECT_V1_ROUTE_SERVICE_ACCOUNTS,
   PROJECT_V1_ROUTE_SETTINGS,
+  PROJECT_V1_ROUTE_SQL_REVIEW,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
@@ -34,6 +35,7 @@ import { RouterLink } from "@/components/RouterLink";
 import { useRecentVisit } from "@/hooks/useRecentVisit";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -109,6 +111,12 @@ function useSidebarItems(): SidebarItem[] {
             title: t("gitops.self"),
             path: PROJECT_V1_ROUTE_GITOPS,
             type: "div",
+          },
+          {
+            title: t("sql-review.title"),
+            path: PROJECT_V1_ROUTE_SQL_REVIEW,
+            type: "div",
+            hide: !sqlReviewV2Enabled(),
           },
         ],
       },
@@ -228,7 +236,7 @@ function filterSidebarList(items: SidebarItem[]): SidebarItem[] {
 // ---------------------------------------------------------------------------
 
 const parentRouteClass =
-  "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-xs text-gray-700 outline-item whitespace-nowrap text-sm!";
+  "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-xs text-main outline-item whitespace-nowrap text-sm!";
 const childRouteClass =
   "group w-full flex items-center pl-9 pr-2 py-1 outline-item mb-0.5 rounded-xs whitespace-nowrap";
 
@@ -245,7 +253,7 @@ export function ProjectSidebar() {
   recordVisitRef.current = record;
 
   // Ensure the project is fetched into the store cache.
-  // ProjectRouteShell also fetches it, but this guards against race conditions.
+  // ProjectRouteGate also fetches it, but this guards against race conditions.
   useEffect(() => {
     if (projectId) {
       useAppStore
@@ -383,7 +391,7 @@ export function ProjectSidebar() {
           className={`${parentRouteClass} cursor-pointer no-underline text-inherit ${classes.join(" ")}`}
           onClick={() => recordItemVisit(item.path!)}
         >
-          {Icon && <Icon className="mr-2 w-5 h-5 text-gray-500" />}
+          {Icon && <Icon className="mr-2 w-5 h-5 text-control-light" />}
           {item.title}
         </RouterLink>
       );
@@ -397,10 +405,10 @@ export function ProjectSidebar() {
           className={`${parentRouteClass} cursor-pointer ${classes.join(" ")}`}
           onClick={() => onGroupClick(item, key)}
         >
-          {Icon && <Icon className="mr-2 w-5 h-5 text-gray-500" />}
+          {Icon && <Icon className="mr-2 w-5 h-5 text-control-light" />}
           {item.title}
           {hasChildren && (
-            <div className="ml-auto text-gray-500">
+            <div className="ml-auto text-control-light">
               {isExpanded ? (
                 <ChevronDown className="w-4 h-4" />
               ) : (

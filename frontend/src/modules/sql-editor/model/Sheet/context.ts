@@ -848,8 +848,7 @@ const cachedSavedQueriesForView = (view: SheetViewMode): SavedQuery[] => {
   // SQLEditorLayout awaits `loadCurrentUser()` in its bootstrap, so by the
   // time saved queries land here the app-store `currentUser` is populated.
   // Empty `email` falls through to creator `"users/"`, which matches no
-  // saved queries — they'd render as Shared rather than Mine, same fallback
-  // the previous Pinia path had.
+  // saved queries — they'd render as Shared rather than Mine.
   const email = useAppStore.getState().currentUser?.email ?? "";
   const creator = `users/${email}`;
   const appState = useAppStore.getState();
@@ -1417,8 +1416,7 @@ const bindWatchers = () => {
     }
 
     // Rebuild a view's tree when its folder set changes (add / remove /
-    // move folder). Mirrors the Vue `watch(folderContext.folders,
-    // rebuildTree)`. Debounced + idempotent `mergeFolders` inside the
+    // move folder). Debounced + idempotent `mergeFolders` inside the
     // rebuild keeps this from looping: the rebuild only writes folders
     // back when a saved query introduces a brand-new path, which settles
     // after one extra pass.
@@ -1439,10 +1437,9 @@ const bindWatchers = () => {
     }
 
     // Draft-tab set / title change → rebuild the draft tree. The draft
-    // view's `sheetLikeItemList` is derived from open tabs without a
-    // saved query, so adding / closing / renaming a draft must refresh it.
-    // Mirrors the Vue `watch(sheetLikeItemList, rebuildTree)` for the
-    // draft view context.
+    // view's items (`sheetLikeItemsForView`) are derived from open tabs
+    // without a saved query, so adding / closing / renaming a draft must
+    // refresh it.
     const draftSig = computeDraftSignature(tabsState);
     if (draftSig !== _lastDraftSig) {
       _lastDraftSig = draftSig;
@@ -1452,10 +1449,8 @@ const bindWatchers = () => {
 
   // Rebuild the saved query-backed trees whenever the saved query cache
   // mutates — a fetch, a title patch (e.g. renamed from the editor tab),
-  // a star toggle, or a delete. Mirrors the Vue
-  // `watch(sheetLikeItemList, rebuildTree)` that drove the tree off the
-  // saved query list. The "draft" view is tab-derived, not saved query-
-  // derived, so it doesn't need this. Debounced rebuilds coalesce the
+  // a star toggle, or a delete. The "draft" view is tab-derived, not saved
+  // query-derived, so it doesn't need this. Debounced rebuilds coalesce the
   // burst of cache writes a single fetch produces.
   useAppStore.subscribe((state, prev) => {
     if (state.savedQueriesByKey === prev.savedQueriesByKey) return;
@@ -1640,19 +1635,13 @@ export function useSheetContextByView(view: SheetViewMode): ViewContext {
 
 /**
  * Eagerly initialize the sheet-state watchers + storage hydration so
- * the rest of the app sees a populated context on mount. Kept as a
- * no-op-shaped function for source compatibility with the Pinia-era
- * `provideSheetContext()` boot call.
+ * the rest of the app sees a populated context on mount.
  */
 export function provideSheetContext(): void {
   bindWatchers();
 }
 
-// `KEY` was a Vue `InjectionKey`; kept exported as a Symbol for source
-// compatibility (no current consumers).
-export const KEY = Symbol("bb.sql-editor.sheet");
-
-// ---- tree helpers (unchanged) ----------------------------------------------
+// ---- tree helpers ----------------------------------------------------------
 
 export const revealNodes = <T>(
   node: SavedQueryFolderNode,
@@ -1679,7 +1668,7 @@ export const revealSavedQueries = <T>(
   });
 };
 
-// ---- openSavedQueryByName (unchanged behavior) ------------------------------
+// ---- openSavedQueryByName --------------------------------------------------
 
 export const openSavedQueryByName = async ({
   savedQuery,
@@ -1736,6 +1725,6 @@ export const openSavedQueryByName = async ({
 };
 
 // Touch the editor store import so it's eagerly evaluated alongside the
-// tab store (matches the historical Pinia-era load order).
+// tab store.
 void useSQLEditorEditorStore;
 void useSQLEditorTabsStore;

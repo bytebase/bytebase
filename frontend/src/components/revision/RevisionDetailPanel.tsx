@@ -2,6 +2,7 @@ import { ArrowUpRight, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { sheetServiceClientConnect } from "@/api";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { ReadonlyMonaco } from "@/components/monaco";
 import { RouterLink } from "@/components/RouterLink";
 import { TaskRunLogViewer } from "@/components/task-run-log";
@@ -10,7 +11,7 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { useRevisionByName } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
-import { bytesToString, formatAbsoluteDateTime } from "@/utils";
+import { bytesToString } from "@/utils";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import { extractTaskLink, getRevisionType } from "@/utils/v1/revision";
 
@@ -112,16 +113,14 @@ export function RevisionDetailPanel({
   const taskFullLink = revision?.taskRun
     ? extractTaskLink(revision.taskRun)
     : "";
-  const formattedCreateTime = revision
-    ? formatAbsoluteDateTime(getTimeForPbTimestampProtoEs(revision.createTime))
-    : "";
+  const createTimeMs = getTimeForPbTimestampProtoEs(revision?.createTime);
   const formattedStatementSize = statement
     ? bytesToString(new TextEncoder().encode(statement).length)
     : "";
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-2 text-sm text-gray-400">
+      <div className="flex items-center justify-center py-2 text-sm text-control-placeholder">
         <LoaderCircle className="h-4 w-4 animate-spin" />
       </div>
     );
@@ -140,8 +139,12 @@ export function RevisionDetailPanel({
           </h2>
           <div className="flex items-center gap-x-3 text-sm text-control-light">
             <span>{getRevisionType(revision.type)}</span>
-            {formattedCreateTime ? <span aria-hidden="true">•</span> : null}
-            {formattedCreateTime ? <span>{formattedCreateTime}</span> : null}
+            {createTimeMs !== undefined ? (
+              <>
+                <span aria-hidden="true">•</span>
+                <HumanizeTs mode="datetime" tsMs={createTimeMs} />
+              </>
+            ) : null}
           </div>
         </div>
 
@@ -177,7 +180,7 @@ export function RevisionDetailPanel({
             {withheld && !statement ? (
               <Alert variant="info" description={withheldMessage} />
             ) : (
-              <div className="overflow-hidden rounded-sm border border-control-border bg-white">
+              <div className="overflow-hidden rounded-sm border border-control-border bg-background">
                 <ReadonlyMonaco
                   content={statement}
                   className="relative h-auto max-h-[600px] min-h-[120px]"

@@ -8,12 +8,10 @@ type Props = {
 };
 
 /**
- * React port of `plugins/ai/components/ChatView/AIMessageView.vue`.
- *
  * Three render states keyed off `message.status`:
  *   - DONE → `<Markdown>` of `message.content`, full-width bubble.
  *   - LOADING → small spinner, content-width bubble.
- *   - FAILED → warning icon + error text, capped at 40% width.
+ *   - FAILED → warning icon + error text, capped at 80% width.
  *
  * `codeBlockProps.width: 1.0` because the AI bubble already spans the
  * row, so an embedded code card uses 100% of the bubble width.

@@ -14,6 +14,7 @@ import (
 // rows belonging to a surviving project must not be collateral.
 
 func TestDeleteProjectPurgeKeepsOtherProjectSavedQueryStars(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO project (resource_id, workspace, name) VALUES ('project-b', 'default', 'Project B');
 		INSERT INTO service_account (name, email, workspace, service_key_hash, project)

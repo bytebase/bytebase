@@ -17,11 +17,9 @@ import {
   resolveLocalApprovalConfig,
 } from "@/utils";
 
-// Standalone Zustand port of the legacy Pinia `useWorkspaceApprovalSettingStore`.
-// Keeps the same surface (a reactive `config` + rule mutators) so consumers
-// only swap the import path. Reads/writes the WORKSPACE_APPROVAL setting through
-// the app store (fetch) and the setting service (upsert), then syncs the app
-// store cache — no Pinia dependency.
+// Workspace approval `config` + rule mutators. Reads/writes the
+// WORKSPACE_APPROVAL setting through the app store (fetch) and the setting
+// service (upsert), then syncs the app store cache.
 export type WorkspaceApprovalSettingState = {
   config: LocalApprovalConfig;
   fetchConfig: () => Promise<void>;
@@ -56,7 +54,7 @@ export const useWorkspaceApprovalSettingStore =
           allowMissing: true,
         })
       );
-      // Keep the app-store setting cache in sync (mirrors the Pinia bridge).
+      // Keep the app-store setting cache in sync.
       useAppStore.getState().setSettingByName(response);
     };
 

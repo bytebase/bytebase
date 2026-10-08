@@ -72,15 +72,8 @@ func createKeytabInstance(ctx context.Context, t *testing.T, ctl *controller, in
 // the caller's host.
 func TestKeytabIsNotInheritedByANewDestination(t *testing.T) {
 	t.Parallel()
-	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	// Not defer: the parallel subtests below outlive this function body, and a
-	// Cleanup runs only once they are all done.
-	t.Cleanup(func() { ctl.Close(ctx) })
+	ctl, ctx := startProject(ctx, t)
 
 	t.Run("UpdateDataSource", func(t *testing.T) {
 		t.Parallel()

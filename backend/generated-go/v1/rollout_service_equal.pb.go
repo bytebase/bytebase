@@ -187,6 +187,12 @@ func (x *ListTaskRunsRequest) Equal(y *ListTaskRunsRequest) bool {
 	if x.Parent != y.Parent {
 		return false
 	}
+	if x.PageSize != y.PageSize {
+		return false
+	}
+	if x.PageToken != y.PageToken {
+		return false
+	}
 	return true
 }
 
@@ -204,6 +210,9 @@ func (x *ListTaskRunsResponse) Equal(y *ListTaskRunsResponse) bool {
 		if !x.TaskRuns[i].Equal(y.TaskRuns[i]) {
 			return false
 		}
+	}
+	if x.NextPageToken != y.NextPageToken {
+		return false
 	}
 	return true
 }

@@ -2,6 +2,7 @@ package base
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -73,6 +74,39 @@ type QuerySpan struct {
 	ElasticsearchAnalysis     *ElasticsearchAnalysis
 	NotFoundError             error
 	FunctionNotSupportedError error
+	// UnresolvedColumnsError prevents masking consumers from treating missing
+	// column metadata as an absence of masking policies. Other consumers may ignore it.
+	UnresolvedColumnsError *UnresolvedColumnsError
+}
+
+// UnresolvedColumnsError identifies relations whose synced metadata has no columns.
+type UnresolvedColumnsError struct {
+	// Relations each carry an empty Column field.
+	Relations []ColumnResource
+}
+
+func (e *UnresolvedColumnsError) Error() string {
+	names := make([]string, 0, len(e.Relations))
+	for _, r := range e.Relations {
+		names = append(names, r.String())
+	}
+	slices.Sort(names)
+	return fmt.Sprintf("the synced schema describes no columns for %s", strings.Join(names, ", "))
+}
+
+// Databases returns the sorted, distinct database names that need re-syncing.
+func (e *UnresolvedColumnsError) Databases() []string {
+	seen := make(map[string]bool, len(e.Relations))
+	var out []string
+	for _, r := range e.Relations {
+		if r.Database == "" || seen[r.Database] {
+			continue
+		}
+		seen[r.Database] = true
+		out = append(out, r.Database)
+	}
+	slices.Sort(out)
+	return out
 }
 
 // QuerySpanResult is the result column of a query span.
@@ -92,7 +126,13 @@ type QuerySpanResult struct {
 
 // ColumnResource is the resource key for a column.
 type ColumnResource struct {
-	// Server is the normalized server name, it's empty if the column comes from the connected server.
+	// Instance is the resource ID of the Bytebase instance that owns Database when the column
+	// was reached through an Oracle database link; empty means the connected instance. A column
+	// with Server set and Instance empty was reached through a remote reference Bytebase could
+	// not resolve.
+	Instance string `yaml:"instance,omitempty"`
+	// Server is the normalized server name as the statement wrote it (an MSSQL linked server or
+	// an Oracle database link); it's empty if the column comes from the connected server.
 	Server string
 	// Database is the normalized database name, it should not be empty.
 	Database string

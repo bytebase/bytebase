@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import {
   buildBehaviorAnalyticsConfig,
@@ -237,19 +238,23 @@ describe("behavior analytics metrics", () => {
 
   test("creates allowlisted custom action metrics and drops unsafe properties", () => {
     expect(
-      createBehaviorMetric("setup guide action clicked", {
+      createBehaviorMetric("workspace setup submitted", {
         routeId: "workspace.landing",
         resource: "projects/demo",
         properties: {
-          step: "hasProject",
+          scenario: "query-data",
+          result: "finished",
+          sample_enabled: true,
         },
       })
     ).toEqual({
-      event: "setup guide action clicked",
+      event: "workspace setup submitted",
       properties: {
         route_id: "workspace.landing",
         resource: "projects/demo",
-        step: "hasProject",
+        scenario: "query-data",
+        result: "finished",
+        sample_enabled: true,
       },
     });
   });

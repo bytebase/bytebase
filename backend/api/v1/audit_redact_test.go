@@ -23,6 +23,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -30,8 +31,9 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// Audited RPCs write their request and response payloads to audit_log, and to
-// stdout when RuntimeEnableAuditLogStdout is set. Anything with
+// Audited RPCs write their request and response payloads to audit_log, and
+// refused calls of any RPC write them to stdout when RuntimeEnableAuditLogStdout
+// is set. Anything with
 // bb.auditLogs.search/export, or read access to the log pipeline, can read
 // them. Redaction therefore owes the row two things, and the first group below
 // is exactly those two:
@@ -167,6 +169,16 @@ func TestAuditRowKeepsItsSubstance(t *testing.T) {
 		{
 			name:     "audit export retains page token",
 			value:    &v1pb.ExportAuditLogsResponse{Content: []byte(secretSentinel), NextPageToken: "next-page-token"},
+			response: true,
+			want:     []string{"next-page-token"},
+		},
+		{
+			// A search's own row must not copy the rows it read.
+			name: "audit search retains page token and drops the results",
+			value: &v1pb.SearchAuditLogsResponse{
+				AuditLogs:     []*v1pb.AuditLog{{Name: secretSentinel, Request: secretSentinel, Response: secretSentinel}},
+				NextPageToken: "next-page-token",
+			},
 			response: true,
 			want:     []string{"next-page-token"},
 		},
@@ -378,6 +390,7 @@ func TestAuditPlanHandlesCyclicDescriptors(t *testing.T) {
 // sits inside one today — exactly why either bug would go unnoticed until one
 // did.
 func TestAuditRedactionFollowsACycleToAnyDepth(t *testing.T) {
+	t.Parallel()
 	descriptor := cyclicSensitiveDescriptor(t)
 	secret := descriptor.Fields().ByName("secret")
 	child := descriptor.Fields().ByName("child")
@@ -418,6 +431,7 @@ func TestAuditRedactionFollowsACycleToAnyDepth(t *testing.T) {
 // type with a plan today, so this violation of "redaction does not mutate the
 // caller's message" would otherwise go uncaught until one appeared.
 func TestAuditRedactionRebuildsMapsRatherThanSharing(t *testing.T) {
+	t.Parallel()
 	descriptor := mapOfSensitiveDescriptor(t)
 	entryValue := dynamicpb.NewMessage(descriptor.Fields().ByName("entries").MapValue().Message())
 	entryValue.Set(entryValue.Descriptor().Fields().ByName("secret"), protoreflect.ValueOfString(secretSentinel))
@@ -444,6 +458,7 @@ func TestAuditRedactionRebuildsMapsRatherThanSharing(t *testing.T) {
 // app_role is a message that would survive as {}, so clearing would make token
 // auth indistinguishable from unconfigured while AppRole stayed legible.
 func TestAuditRedactionKeepsSensitiveOneofArmsPresent(t *testing.T) {
+	t.Parallel()
 	request := &v1pb.AddDataSourceRequest{DataSource: &v1pb.DataSource{
 		ExternalSecret: &v1pb.DataSourceExternalSecret{
 			Url:        "https://vault.example.com",
@@ -476,6 +491,7 @@ func TestAuditRedactionKeepsSensitiveOneofArmsPresent(t *testing.T) {
 // pointer, never copied. A 5 MB sheet inside an audited batch used to be cloned
 // only to have its content nulled.
 func TestAuditRedactionSharesUnannotatedSubtrees(t *testing.T) {
+	t.Parallel()
 	labels := map[string]string{"env": "prod"}
 	instance := &v1pb.Instance{
 		Name:        "instances/instance-a",
@@ -582,11 +598,11 @@ func TestAuditRedactsPackedAny(t *testing.T) {
 // response carries every row of an admin-mode query — and Send builds its own
 // auditEntry and calls createAuditLog directly, so a redaction walk that lived
 // in WrapUnary would silently skip it. Everything else about streaming
-// persistence is exercised through the createAuditLogFunc stub, which bypasses
-// the real path; this one writes a real row and reads it back.
+// persistence is exercised through a fake audit log writer; this one writes a
+// real row through the store and reads it back.
 func TestStreamingAuditRedactsRows(t *testing.T) {
+	t.Parallel()
 	st := newAuditLiveStore(t)
-	t.Cleanup(func() { require.NoError(t, st.Close()) })
 	interceptor := NewAuditInterceptor(st, "test-secret", &config.Profile{})
 
 	handler := interceptor.WrapStreamingHandler(func(_ context.Context, conn connect.StreamingHandlerConn) error {
@@ -615,10 +631,22 @@ func TestStreamingAuditRedactsRows(t *testing.T) {
 	rows, err := st.SearchAuditLogs(ctx, &store.AuditLogFind{})
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
-	require.NotContains(t, rows[0].Payload.Response, secretSentinel, "an admin-mode result row reached the audit log")
-	require.Contains(t, rows[0].Payload.Response, "card_number", "the column names and the statement are the point of the row")
-	require.Contains(t, rows[0].Payload.Response, `"rowsCount":"1"`,
+	response := rows[0].Payload.Response
+	require.NotContains(t, response, secretSentinel, "an admin-mode result row reached the audit log")
+	require.Contains(t, response, "card_number", "the column names and the statement are the point of the row")
+	require.Contains(t, response, `"rowsCount":"1"`,
 		"how many rows the query returned survives; only the rows themselves are dropped")
+}
+
+// newAuditLiveStore is a real metadata store holding the audit test
+// workspace, for the one test that exercises the interceptor's write half.
+func newAuditLiveStore(t *testing.T) *store.Store {
+	t.Helper()
+	db, st, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(context.Background(), fmt.Sprintf(
+		`INSERT INTO workspace (resource_id) VALUES ('%s')`, auditTestWorkspace))
+	require.NoError(t, err)
+	return st
 }
 
 // ---- Guards on the fixtures the sweep builds for itself ------------------
@@ -628,6 +656,7 @@ func TestStreamingAuditRedactsRows(t *testing.T) {
 // instance at marshal time; it would be a hole if an annotation could ever sit
 // inside one.
 func TestNoAnnotationOutsideBytebaseProtos(t *testing.T) {
+	t.Parallel()
 	var annotated []string
 	protoregistry.GlobalFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
 		if strings.HasPrefix(string(fd.Package()), "bytebase.") {

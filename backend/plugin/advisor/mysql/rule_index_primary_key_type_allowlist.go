@@ -8,10 +8,10 @@ import (
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -50,7 +50,7 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		tablesNewColumns: make(tableColumnTypes),
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type indexPrimaryKeyTypeAllowlistOmniRule struct {
@@ -92,7 +92,7 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkCreateTable(n *ast.CreateTab
 						Code:          code.IndexPKType.Int32(),
 						Title:         r.Title,
 						Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", col.Name, tableName, columnType),
-						StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(col.Loc))),
+						StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(col.Loc))),
 					})
 				}
 			}
@@ -131,7 +131,7 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkAlterTable(n *ast.AlterTable
 								Code:          code.IndexPKType.Int32(),
 								Title:         r.Title,
 								Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", col.Name, tableName, columnType),
-								StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
+								StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
 							})
 						}
 					}
@@ -150,7 +150,7 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkAlterTable(n *ast.AlterTable
 								Code:          code.IndexPKType.Int32(),
 								Title:         r.Title,
 								Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", col.Name, tableName, columnType),
-								StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
+								StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
 							})
 						}
 					}
@@ -170,7 +170,7 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkAlterTable(n *ast.AlterTable
 								Code:          code.IndexPKType.Int32(),
 								Title:         r.Title,
 								Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", col.Name, tableName, columnType),
-								StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
+								StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
 							})
 						}
 					}
@@ -202,7 +202,7 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkConstraint(tableName string,
 				Code:          code.IndexPKType.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
-				StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(line)),
+				StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(line)),
 			})
 		}
 	}

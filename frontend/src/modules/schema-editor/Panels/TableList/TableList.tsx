@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import {
   distributeColumnWidths,
+  fillableWidth,
   useColumnWidths,
 } from "@/hooks/useColumnWidths";
 import { cn } from "@/lib/utils";
@@ -150,7 +151,9 @@ export function TableList({
   const didFitRef = useRef(false);
   useLayoutEffect(() => {
     if (didFitRef.current) return;
-    const width = containerRef.current?.clientWidth ?? 0;
+    const width = containerRef.current
+      ? fillableWidth(containerRef.current)
+      : 0;
     if (width <= 0) return;
     didFitRef.current = true;
     setWidths(distributeColumnWidths(columnDefs, width));
@@ -233,7 +236,7 @@ export function TableList({
                       <Button
                         appearance="secondary"
                         size="sm"
-                        className="size-7 p-0"
+                        className="w-7 p-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRestore(table);
@@ -245,7 +248,7 @@ export function TableList({
                       <Button
                         appearance="secondary"
                         size="sm"
-                        className="size-7 p-0 text-error hover:text-error"
+                        className="w-7 p-0 text-error hover:text-error"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDrop(table);

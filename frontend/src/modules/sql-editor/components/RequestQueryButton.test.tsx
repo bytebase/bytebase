@@ -19,8 +19,6 @@ const mocks = vi.hoisted(() => ({
     allowRequestRole: boolean;
   },
   roleList: [] as Array<{ name: string; permissions: string[] }>,
-  useSQLEditorVueState: vi.fn(),
-  useSubscriptionV1Store: vi.fn(),
   hasFeature: vi.fn(() => true),
   loadSubscription: vi.fn(),
   hasInstanceFeature: vi.fn(() => true),
@@ -49,7 +47,6 @@ vi.mock("./theme/useActiveSQLEditorTheme", () => ({
 }));
 
 vi.mock("@/stores", () => ({
-  useSubscriptionV1Store: mocks.useSubscriptionV1Store,
   hasFeature: mocks.hasFeature,
 }));
 
@@ -75,10 +72,6 @@ vi.mock("@/stores/app", () => {
     ),
   };
 });
-
-vi.mock("@/modules/sql-editor/store/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
-}));
 
 vi.mock("@/utils/v1/databaseResource", () => ({
   parseStringToResource: mocks.parseStringToResource,
@@ -219,7 +212,6 @@ const setupDefaultMocks = (allowJIT = false, allowRequestRole = true) => {
       permissions: ["bb.sql.select", "bb.sql.explain"],
     },
   ];
-  mocks.useSQLEditorVueState.mockReturnValue({ project: "projects/proj1" });
   mocks.hasInstanceFeature.mockReturnValue(false);
   mocks.appHasFeature.mockReturnValue(true);
 };

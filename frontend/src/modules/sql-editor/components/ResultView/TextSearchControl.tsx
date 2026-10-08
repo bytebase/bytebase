@@ -86,7 +86,7 @@ export function TextSearchControl({
             <Button
               size="sm"
               appearance="secondary"
-              className="size-7 p-0"
+              className="w-7 p-0"
               aria-label={t("sql-editor.result-detail.previous-match")}
               disabled={matchCount === 0}
               onClick={() => onMove(-1)}
@@ -98,7 +98,7 @@ export function TextSearchControl({
             <Button
               size="sm"
               appearance="secondary"
-              className="size-7 p-0"
+              className="w-7 p-0"
               aria-label={t("sql-editor.result-detail.next-match")}
               disabled={matchCount === 0}
               onClick={() => onMove(1)}
@@ -110,7 +110,7 @@ export function TextSearchControl({
             <Button
               size="sm"
               appearance="secondary"
-              className="size-7 border-l border-control-border p-0"
+              className="w-7 border-l border-control-border p-0"
               aria-label={t("common.close")}
               onClick={() => {
                 onQueryChange("");

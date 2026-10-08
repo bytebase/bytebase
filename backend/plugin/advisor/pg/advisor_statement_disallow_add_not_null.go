@@ -37,7 +37,7 @@ func (*StatementDisallowAddNotNullAdvisor) Check(_ context.Context, checkCtx adv
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type statementDisallowAddNotNullRule struct {

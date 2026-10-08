@@ -16,10 +16,10 @@ interface ForeignKeyLineProps {
 const ZERO_RECT: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
 /**
- * React port of `ER/ForeignKeyLine.vue`. Reads each endpoint's column
- * rect by querying the live DOM (via `data-bb-node-id` /
- * `data-bb-column-name`), picks anchor sides, builds the SVG path, and
- * registers it as a geometry so fit-view's bbox includes the FK line.
+ * Reads each endpoint's column rect by querying the live DOM (via
+ * `data-bb-node-id` / `data-bb-column-name`), picks anchor sides, builds
+ * the SVG path, and registers it as a geometry so fit-view's bbox includes
+ * the FK line.
  *
  * Recomputes when the context emits `render` (typically after layout
  * resolves or when a table is dragged).

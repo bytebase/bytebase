@@ -15,7 +15,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -192,7 +191,11 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	for _, singleSQL := range singleSQLs {
 		statement := util.TrimStatement(singleSQL.Text)
 		if queryCtx.Explain {
-			statement = fmt.Sprintf("EXPLAIN %s", statement)
+			explained, err := base.ExplainStatement(storepb.Engine_HIVE, statement, db.ExplainFormat(queryCtx.Option.GetExplainFormat()))
+			if err != nil {
+				return nil, err
+			}
+			statement = explained
 		}
 
 		result, err := d.queryStatementWithLimit(ctx, statement, queryCtx.MaximumSQLResultSize)
@@ -313,7 +316,7 @@ func (d *Driver) queryStatementWithLimit(ctx context.Context, statement string, 
 		// Check size limit
 		n := len(result.Rows)
 		if (n&(n-1) == 0) && limit > 0 && int64(proto.Size(result)) > limit {
-			result.Error = common.FormatMaximumSQLResultSizeMessage(limit)
+			result.Error = util.FormatMaximumSQLResultSizeMessage(limit)
 			break
 		}
 	}

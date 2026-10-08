@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
 }));
 
@@ -147,9 +148,7 @@ vi.mock("./HistorySearchInput", () => ({
 
 vi.mock("@/types", () => ({
   DEBOUNCE_SEARCH_DELAY: 300,
-  getDateForPbTimestampProtoEs: vi.fn((ts: unknown) =>
-    ts ? new Date("2024-01-15T10:30:00Z") : new Date(0)
-  ),
+  getTimeForPbTimestampProtoEs: () => new Date("2024-01-15T10:30:00Z").getTime(),
 }));
 
 vi.mock("@/utils", () => ({

@@ -17,8 +17,7 @@ const mocks = vi.hoisted(() => ({
   pushNotification: vi.fn(),
   openWindowForSSO: vi.fn(),
   actuatorStore: null as unknown,
-  identityProviderList: [] as unknown[],
-  listIdentityProviders: vi.fn(),
+  identityProviders: [] as unknown[],
   authStore: null as unknown,
 }));
 
@@ -38,12 +37,23 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/stores/app", () => {
-  const getState = () => ({
-    ...(mocks.actuatorStore as Record<string, unknown>),
-    identityProviderList: () => mocks.identityProviderList,
-    listIdentityProviders: mocks.listIdentityProviders,
-    login: (mocks.authStore as { login: unknown }).login,
-  });
+  const getState = () => {
+    const store = mocks.actuatorStore as Record<string, unknown>;
+    const info = store.authenticationInfo as Record<string, unknown> | undefined;
+    const isSaaSMode = store.isSaaSMode;
+    return {
+      ...store,
+      isSaaSMode:
+        typeof isSaaSMode === "function"
+          ? (isSaaSMode as () => boolean)
+          : () => false,
+      // The login page reads its providers off the authentication info.
+      authenticationInfo: info
+        ? { ...info, identityProviders: mocks.identityProviders }
+        : info,
+      login: (mocks.authStore as { login: unknown }).login,
+    };
+  };
   return {
     useAppStore: Object.assign(
       (selector?: (state: ReturnType<typeof getState>) => unknown) =>
@@ -120,20 +130,13 @@ beforeEach(async () => {
     },
     fetchAuthenticationInfo: vi.fn(async () => ({})),
   };
-  mocks.identityProviderList = [
+  mocks.identityProviders = [
     {
       name: "idps/corp-ldap",
       title: "Corp LDAP",
       type: IdentityProviderType.LDAP,
     },
   ];
-  mocks.listIdentityProviders.mockResolvedValue([
-    {
-      name: "idps/corp-ldap",
-      title: "Corp LDAP",
-      type: IdentityProviderType.LDAP,
-    },
-  ]);
   mocks.authStore = {
     login: vi.fn(async () => {}),
   };
@@ -153,8 +156,7 @@ describe("SigninPage", () => {
       },
       fetchAuthenticationInfo: vi.fn(async () => ({})),
     };
-    mocks.identityProviderList = [];
-    mocks.listIdentityProviders.mockResolvedValue([]);
+    mocks.identityProviders = [];
 
     const { render, unmount } = renderIntoContainer(<SigninPage />);
     render();
@@ -179,8 +181,7 @@ describe("SigninPage", () => {
       },
       fetchAuthenticationInfo: vi.fn(async () => ({})),
     };
-    mocks.identityProviderList = [];
-    mocks.listIdentityProviders.mockResolvedValue([]);
+    mocks.identityProviders = [];
 
     const { render, unmount } = renderIntoContainer(<SigninPage />);
     render();
@@ -238,15 +239,20 @@ describe("SigninPage", () => {
         name: "idps/github",
         title: "GitHub",
         type: IdentityProviderType.OAUTH2,
+        authorizationRequest: {
+          endpoint: "https://github.com/login/oauth/authorize",
+        },
       },
       {
         name: "idps/google",
         title: "Google",
         type: IdentityProviderType.OAUTH2,
+        authorizationRequest: {
+          endpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+        },
       },
     ];
-    mocks.identityProviderList = idps;
-    mocks.listIdentityProviders.mockResolvedValue(idps);
+    mocks.identityProviders = idps;
 
     const { container, render, unmount } = renderIntoContainer(<SigninPage />);
     render();
@@ -313,8 +319,7 @@ describe("SigninPage", () => {
       },
       fetchAuthenticationInfo: vi.fn(async () => ({})),
     };
-    mocks.identityProviderList = [];
-    mocks.listIdentityProviders.mockResolvedValue([]);
+    mocks.identityProviders = [];
 
     const { container, render, unmount } = renderIntoContainer(<SigninPage />);
     render();
@@ -342,8 +347,7 @@ describe("SigninPage", () => {
       },
       fetchAuthenticationInfo: vi.fn(async () => ({})),
     };
-    mocks.identityProviderList = [];
-    mocks.listIdentityProviders.mockResolvedValue([]);
+    mocks.identityProviders = [];
 
     const { container, render, unmount } = renderIntoContainer(
       <SigninPage allowSignup={false} />
@@ -372,8 +376,7 @@ describe("SigninPage", () => {
       },
       fetchAuthenticationInfo: vi.fn(async () => ({})),
     };
-    mocks.identityProviderList = [];
-    mocks.listIdentityProviders.mockResolvedValue([]);
+    mocks.identityProviders = [];
 
     const { container, render, unmount } = renderIntoContainer(<SigninPage />);
     render();
@@ -385,6 +388,155 @@ describe("SigninPage", () => {
       "auth.sign-in.sign-in-or-create"
     );
 
+    unmount();
+  });
+
+  test("shows recovery instructions after an SSO failure", async () => {
+    mocks.currentRoute.value.query = {
+      failedIdpName: "idps/okta",
+    };
+    const idps = [
+      {
+        name: "idps/okta",
+        title: "Okta",
+        type: IdentityProviderType.OIDC,
+      },
+    ];
+    mocks.identityProviders = idps;
+
+    const { container, render, unmount } = renderIntoContainer(<SigninPage />);
+    render();
+    await flushPromises();
+
+    expect(container.textContent).toContain(
+      'auth.sign-in.sso-failure.title:{"idp":"Okta"}'
+    );
+    expect(container.textContent).toContain(
+      "auth.sign-in.sso-failure.no-fallback"
+    );
+    expect(container.textContent).toContain(
+      "auth.sign-in.sso-failure.recovery-guide"
+    );
+
+    const oktaButton = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button")
+    ).find((button) =>
+      button.textContent?.includes(
+        'auth.sign-in.continue-with-idp:{"idp":"Okta"}'
+      )
+    );
+    expect(oktaButton).toBeTruthy();
+    await act(async () => {
+      oktaButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+    expect(mocks.openWindowForSSO).toHaveBeenCalledWith(
+      idps[0],
+      false,
+      undefined
+    );
+    unmount();
+  });
+
+  test("offers recovery help when password signin is disabled and email-code signin is available", async () => {
+    mocks.currentRoute.value.query = {
+      failedIdpName: "idps/okta",
+    };
+    mocks.actuatorStore = {
+      authenticationInfo: {
+        workspace: "workspaces/default",
+        restriction: {
+          disallowPasswordSignin: true,
+          allowEmailCodeSignin: true,
+          disallowSignup: true,
+        },
+      },
+      fetchAuthenticationInfo: vi.fn(async () => ({})),
+    };
+    const idps = [
+      {
+        name: "idps/okta",
+        title: "Okta",
+        type: IdentityProviderType.OIDC,
+      },
+    ];
+    mocks.identityProviders = idps;
+
+    const { container, render, unmount } = renderIntoContainer(<SigninPage />);
+    render();
+    await flushPromises();
+
+    expect(container.textContent).toContain(
+      'auth.sign-in.sso-failure.title:{"idp":"Okta"}'
+    );
+    expect(container.textContent).toContain(
+      "auth.sign-in.sso-failure.password-disabled"
+    );
+    expect(container.textContent).toContain(
+      "auth.sign-in.sso-failure.recovery-guide"
+    );
+    expect(container.textContent).not.toContain(
+      "auth.sign-in.sso-failure.no-fallback"
+    );
+    unmount();
+  });
+
+  test("directs Cloud users to Bytebase support instead of the recovery guide", async () => {
+    mocks.currentRoute.value.query = {
+      failedIdpName: "idps/okta",
+    };
+    mocks.actuatorStore = {
+      authenticationInfo: {
+        workspace: "workspaces/default",
+        restriction: {
+          disallowPasswordSignin: true,
+          allowEmailCodeSignin: false,
+          disallowSignup: true,
+        },
+      },
+      fetchAuthenticationInfo: vi.fn(async () => ({})),
+      isSaaSMode: () => true,
+    };
+    const idps = [
+      {
+        name: "idps/okta",
+        title: "Okta",
+        type: IdentityProviderType.OIDC,
+      },
+    ];
+    mocks.identityProviders = idps;
+
+    const { container, render, unmount } = renderIntoContainer(<SigninPage />);
+    render();
+    await flushPromises();
+
+    expect(container.textContent).toContain(
+      "auth.sign-in.sso-failure.contact-support"
+    );
+    expect(container.textContent).not.toContain(
+      "auth.sign-in.sso-failure.recovery-guide"
+    );
+    expect(
+      container.querySelector(
+        'a[href="https://docs.bytebase.com/faq#how-to-reach-us?source=console"]'
+      )
+    ).toBeTruthy();
+    unmount();
+  });
+
+  test("shows recovery instructions when no signin method is configured", async () => {
+    mocks.identityProviders = [];
+
+    const { container, render, unmount } = renderIntoContainer(<SigninPage />);
+    render();
+    await flushPromises();
+
+    expect(container.textContent).toContain(
+      "auth.sign-in.no-method-available.title"
+    );
+    expect(container.textContent).toContain(
+      "auth.sign-in.sso-failure.recovery-guide"
+    );
     unmount();
   });
 });

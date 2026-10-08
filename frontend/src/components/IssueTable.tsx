@@ -9,6 +9,7 @@ import {
   AdvancedSearch,
   type ScopeOption,
   type SearchParams,
+  type SearchScope,
   type ValueOption,
 } from "@/components/AdvancedSearch";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
@@ -36,6 +37,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
@@ -72,8 +74,6 @@ import {
   getValuesFromSearchParams,
   projectOfIssue,
   upsertScope,
-  type SearchParams as VueSearchParams,
-  type SearchScope as VueSearchScope,
 } from "@/utils";
 
 // ===========================================================================
@@ -221,7 +221,7 @@ export function PresetButtons({
 
   const isActive = useCallback(
     (preset: PresetValue): boolean => {
-      const vp = params as VueSearchParams;
+      const vp = params as SearchParams;
       if (preset === "WAITING_APPROVAL") {
         return (
           getValueFromSearchParams(vp, "approval") ===
@@ -254,7 +254,7 @@ export function PresetButtons({
     (preset: PresetValue) => {
       const myEmail = me?.email ?? "";
       const readonlyScopes = params.scopes.filter((s) => s.readonly);
-      let newParams: VueSearchParams = {
+      let newParams: SearchParams = {
         query: "",
         scopes: [...readonlyScopes],
       };
@@ -292,7 +292,7 @@ export function PresetButtons({
         scopes: newParams.scopes.map((s) => ({
           id: s.id,
           value: s.value,
-          readonly: (s as VueSearchScope & { readonly?: boolean }).readonly,
+          readonly: (s as SearchScope & { readonly?: boolean }).readonly,
         })),
       });
     },
@@ -637,9 +637,7 @@ export const IssueListItem = memo(function IssueListItem({
 
   const issueProject = useMemo(() => projectOfIssue(issue), [issue]);
 
-  const createTimeTs = Math.floor(
-    getTimeForPbTimestampProtoEs(issue.createTime, 0) / 1000
-  );
+  const createTimeMs = getTimeForPbTimestampProtoEs(issue.createTime);
 
   const issueUrl = useMemo(() => {
     const issueRoute = getIssueRoute(issue);
@@ -769,9 +767,13 @@ export const IssueListItem = memo(function IssueListItem({
           </div>
           <div className="flex items-center flex-wrap gap-x-1 text-xs text-control-light mt-1">
             <span className="opacity-80">#{extractIssueUID(issue.name)}</span>
-            <span>&middot;</span>
-            {t("common.created")}
-            <HumanizeTs ts={createTimeTs} />
+            {createTimeMs !== undefined && (
+              <>
+                <span>&middot;</span>
+                {t("common.created")}
+                <HumanizeTs tsMs={createTimeMs} />
+              </>
+            )}
             <span>&middot;</span>
             {getAccountTypeByEmail(creator.email) === AccountType.USER ? (
               <UserHoverCard
@@ -1125,7 +1127,8 @@ export function BatchIssueStatusActionDrawer({
             <div className="font-medium text-control">
               {t("common.comment")}
             </div>
-            <textarea
+            <Textarea
+              size="md"
               className="w-full border border-control-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-accent min-h-[6rem] resize-y"
               value={comment}
               placeholder={t("issue.leave-a-comment")}

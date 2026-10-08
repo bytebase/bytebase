@@ -1,11 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
+import { useTimeReading } from "@/hooks/useTimeReading";
 import { normalizeInstanceName } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
-import { formatAbsoluteDateTime } from "@/utils";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { daysLeftReading, formatAbsoluteDateTime } from "@/utils/datetime";
 
 type SampleExpirationAlertProps = Readonly<{
   instanceName: string;
@@ -21,20 +20,22 @@ export function SampleExpirationAlert({
     ({ instance }) => instance === canonicalInstanceName
   )?.expireTime;
 
-  if (!expireTime) {
+  const expireTimeMs = getTimeForPbTimestampProtoEs(expireTime);
+  const daysLeft = useTimeReading(daysLeftReading, expireTimeMs);
+
+  if (expireTimeMs === undefined || daysLeft === undefined) {
     return null;
   }
 
-  const expireTimeMs = getTimeForPbTimestampProtoEs(expireTime);
   const formattedExpireTime = formatAbsoluteDateTime(expireTimeMs);
-  const remainingMs = expireTimeMs - Date.now();
   const description =
-    remainingMs > 0
-      ? t("instance.sample-expiration-future", {
-          count: Math.ceil(remainingMs / DAY_MS),
+    daysLeft.kind === "passed"
+      ? t("instance.sample-expiration-expired", {
           time: formattedExpireTime,
         })
-      : t("instance.sample-expiration-expired", {
+      : t("instance.sample-expiration-future", {
+          // The last day counts as one.
+          count: daysLeft.kind === "days" ? daysLeft.days : 1,
           time: formattedExpireTime,
         });
 

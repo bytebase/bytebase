@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/hex"
+	"slices"
 	"strings"
 	"time"
 
@@ -11,12 +12,13 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
-// ThreadState is the resolvable state carried by a thread's root comment.
-// Events and replies have no state (NULL thread_state).
+// ThreadState is the resolvable state carried by a thread's root comment: a
+// comment created with OPEN or a statement anchor. Plain comments, events, and
+// replies have no state (NULL thread_state).
 type ThreadState string
 
 const (
@@ -25,17 +27,20 @@ const (
 )
 
 type IssueCommentMessage struct {
-	ProjectID    string
-	ResourceID   string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	IssueUID     int64
-	Payload      *storepb.IssueCommentPayload
+	ProjectID  string
+	ResourceID string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	IssueUID   int64
+	Payload    *storepb.IssueCommentPayload
+	// CreatorEmail is empty on a review result, which a reviewer posts;
+	// Payload.ReviewMetadata names it.
 	CreatorEmail string
 	// ParentID names the thread's root comment on a reply; nil on root
 	// comments and events.
 	ParentID *string
-	// ThreadState is set on thread roots; nil on replies and events.
+	// ThreadState is set on thread roots; nil on plain comments, replies,
+	// and events.
 	ThreadState *ThreadState
 }
 
@@ -199,11 +204,11 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 			Payload: &storepb.IssueCommentPayload{},
 		}
 		var p []byte
-		var parentID, threadState sql.NullString
+		var creator, parentID, threadState sql.NullString
 		if err := rows.Scan(
 			&ic.ProjectID,
 			&ic.ResourceID,
-			&ic.CreatorEmail,
+			&creator,
 			&ic.CreatedAt,
 			&ic.UpdatedAt,
 			&ic.IssueUID,
@@ -213,6 +218,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
 		}
+		ic.CreatorEmail = creator.String
 		if parentID.Valid {
 			ic.ParentID = &parentID.String
 		}
@@ -251,8 +257,8 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 		if create.ParentID != nil {
 			return nil, common.Errorf(common.Invalid, "replies must be created through CreateIssueCommentReply")
 		}
-		if create.ThreadState != nil {
-			return nil, common.Errorf(common.Invalid, "thread state is derived on create; a new root starts OPEN")
+		if create.ThreadState != nil && (*create.ThreadState != ThreadStateOpen || create.Payload.GetEvent() != nil) {
+			return nil, common.Errorf(common.Invalid, "only a comment can start a thread, in OPEN state")
 		}
 		if err := validateIssueCommentPayload(create.Payload); err != nil {
 			return nil, err
@@ -264,8 +270,9 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 		projectIDs = append(projectIDs, create.ProjectID)
 		issueIDs = append(issueIDs, create.IssueUID)
 		payloads = append(payloads, payload)
-		// Event-less writes are roots. Event and hybrid rows remain outside threads.
-		threadRoots = append(threadRoots, create.Payload.GetEvent() == nil)
+		// Internal reviewers start threads with anchors; API clients can also
+		// explicitly start an unanchored thread.
+		threadRoots = append(threadRoots, create.ThreadState != nil || create.Payload.GetStatementAnchor() != nil)
 	}
 
 	// Use UNNEST to insert all comments in one query.
@@ -319,11 +326,10 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 
 // CreateIssueCommentReply creates a reply in the thread rooted at
 // create.ParentID and returns it with ResourceID, CreatedAt, and UpdatedAt
-// filled in. The insert-select pins every reply invariant in one statement:
-// the parent is a root comment (thread_state set, so never an event or a
-// reply) in the same project and issue, and replying never changes the
-// thread state. Like CreateIssueComments, it requires only the referenced
-// rows to exist, regardless of project lifecycle.
+// filled in. The insert-select pins thread membership in one statement:
+// the parent is a thread root in the same project and issue, and replying
+// never changes the thread state. Like CreateIssueComments, it requires only
+// the referenced rows to exist, regardless of project lifecycle.
 func (s *Store) CreateIssueCommentReply(ctx context.Context, creator string, create *IssueCommentMessage) (*IssueCommentMessage, error) {
 	if create.ParentID == nil {
 		return nil, common.Errorf(common.Invalid, "a reply must name its thread root")
@@ -342,6 +348,22 @@ func (s *Store) CreateIssueCommentReply(ctx context.Context, creator string, cre
 		return nil, errors.Wrapf(err, "failed to marshal payload")
 	}
 
+	if anchor := create.Payload.GetStatementAnchor(); anchor != nil {
+		root, err := s.GetIssueComment(ctx, &FindIssueCommentMessage{
+			ProjectID: create.ProjectID, IssueUID: &create.IssueUID, ResourceID: create.ParentID,
+		})
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get thread root")
+		}
+		if root == nil {
+			return nil, common.Errorf(common.NotFound, "thread root %s not found in issue %d", *create.ParentID, create.IssueUID)
+		}
+		// Anchors are immutable, so this check remains valid through the
+		// insert, which still checks thread membership atomically.
+		if !anchorWithinRoot(anchor, root.Payload.GetStatementAnchor()) {
+			return nil, common.Errorf(common.Invalid, "a reply anchor must lie within the spec, sheet, and range of thread root %s", *create.ParentID)
+		}
+	}
 	q := qb.Q().Space(`
 		INSERT INTO issue_comment (creator, project, issue_id, payload, parent_id)
 		SELECT ?, root.project, root.issue_id, ?, root.resource_id
@@ -387,10 +409,34 @@ func (s *Store) replyTargetError(ctx context.Context, create *IssueCommentMessag
 		// concurrent write landed between the insert and this diagnosis.
 		return common.Errorf(common.Conflict, "comment %s changed concurrently; retry the reply", *create.ParentID)
 	default:
-		// Events, hybrid comment+event rows, and unclassified legacy rows
+		// Plain comments, events, hybrid comment+event rows, and legacy rows
 		// all carry NULL thread_state.
 		return common.Errorf(common.Invalid, "comment %s is not a thread root and cannot be replied to", *create.ParentID)
 	}
+}
+
+// anchorWithinRoot compares ranges on the same saved statement revision.
+func anchorWithinRoot(anchor, root *storepb.IssueCommentPayload_StatementAnchor) bool {
+	if root == nil || root.SpecId != anchor.SpecId || root.SheetSha256 != anchor.SheetSha256 ||
+		root.StartPosition == nil || root.EndPosition == nil {
+		return false
+	}
+	start, end := statementAnchorBounds(anchor)
+	rootStart, rootEnd := statementAnchorBounds(root)
+	return slices.Compare(rootStart[:], start[:]) <= 0 && slices.Compare(end[:], rootEnd[:]) <= 0
+}
+
+// Normalize to [line, column] pairs with an exclusive end. Whole-line ranges
+// end at the next line's first column; int64 avoids overflowing the last line.
+func statementAnchorBounds(anchor *storepb.IssueCommentPayload_StatementAnchor) (start, end [2]int64) {
+	start = [2]int64{int64(anchor.StartPosition.Line), int64(anchor.StartPosition.Column)}
+	end = [2]int64{int64(anchor.EndPosition.Line), int64(anchor.EndPosition.Column)}
+	if start[1] == 0 && end[1] == 0 {
+		start[1] = 1
+		end[0]++
+		end[1] = 1
+	}
+	return start, end
 }
 
 func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommentMessage) error {
@@ -418,10 +464,13 @@ func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommen
 	if patch.ThreadState != nil {
 		q.And("thread_state IS NOT NULL")
 	}
-	// Text edits apply to rows that already render text: roots, replies, and
-	// hybrid event+comment rows — never to pure events.
+	// Text edits apply to rows that already render text: thread roots,
+	// replies, hybrid event+comment rows, and plain comments (protojson omits
+	// an empty comment, so a contentless one is {}) — never to pure events,
+	// and never to review results, whose text is the reviewer's.
 	if patch.Comment != nil {
-		q.And("(payload ?? 'comment' OR thread_state IS NOT NULL OR parent_id IS NOT NULL)")
+		q.And("(payload ?? 'comment' OR payload = '{}'::jsonb OR thread_state IS NOT NULL OR parent_id IS NOT NULL)")
+		q.And("NOT (payload ?? 'reviewMetadata')")
 	}
 
 	query, args, err := q.ToSQL()
@@ -440,6 +489,12 @@ func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommen
 	if rows == 0 {
 		if patch.ThreadState != nil {
 			return common.Errorf(common.NotFound, "comment %s in project %s is missing or not a thread root; nothing was updated", patch.ResourceID, patch.ProjectID)
+		}
+		var reviewResult bool
+		if err := s.GetDB().QueryRowContext(ctx,
+			"SELECT payload ? 'reviewMetadata' FROM issue_comment WHERE project = $1 AND resource_id = $2",
+			patch.ProjectID, patch.ResourceID).Scan(&reviewResult); err == nil && reviewResult {
+			return common.Errorf(common.Invalid, "comment %s in project %s is a review result; its text belongs to the reviewer and only its thread state can change", patch.ResourceID, patch.ProjectID)
 		}
 		return common.Errorf(common.NotFound, "comment %s in project %s is missing or a pure event; nothing was updated", patch.ResourceID, patch.ProjectID)
 	}

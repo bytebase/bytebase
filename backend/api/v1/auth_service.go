@@ -25,6 +25,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/plugin/idp/wif"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -103,10 +104,11 @@ func NewAuthService(store *store.Store, secret string, licenseService *enterpris
 	}
 }
 
-// GetAuthenticationRestriction returns the public restrictions needed by authentication flows.
-func (s *AuthService) GetAuthenticationRestriction(
+// GetAuthenticationInfo returns everything the login page renders: the sign-in
+// restrictions and the identity providers it offers.
+func (s *AuthService) GetAuthenticationInfo(
 	ctx context.Context,
-	req *connect.Request[v1pb.GetAuthenticationRestrictionRequest],
+	req *connect.Request[v1pb.GetAuthenticationInfoRequest],
 ) (*connect.Response[v1pb.AuthenticationInfo], error) {
 	workspaceID, err := s.resolveAuthenticationWorkspaceID(ctx, &req.Msg.Workspace)
 	if err != nil {
@@ -118,8 +120,14 @@ func (s *AuthService) GetAuthenticationRestriction(
 		return nil, err
 	}
 
+	identityProviders, err := s.listLoginIdentityProviders(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
 	info := &v1pb.AuthenticationInfo{
-		Restriction: restriction,
+		Restriction:       restriction,
+		IdentityProviders: identityProviders,
 	}
 	if workspaceID != "" {
 		info.Workspace = common.FormatWorkspace(workspaceID)
@@ -151,9 +159,70 @@ func (s *AuthService) resolveAuthenticationWorkspaceID(ctx context.Context, work
 		}
 	}
 	if workspaceID != "" {
-		common.SetAuditWorkspaceID(ctx, workspaceID)
+		setAuditWorkspaceID(ctx, workspaceID)
 	}
 	return workspaceID, nil
+}
+
+// listLoginIdentityProviders returns the providers the login page renders for a
+// workspace, falling back to the global providers when the workspace has none.
+func (s *AuthService) listLoginIdentityProviders(ctx context.Context, workspaceID string) ([]*v1pb.LoginIdentityProvider, error) {
+	find := &store.FindIdentityProviderMessage{}
+	if workspaceID != "" {
+		find.Workspace = &workspaceID
+	}
+	identityProviders, err := s.store.ListIdentityProviders(ctx, find)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list identity providers"))
+	}
+	// Global providers are the SaaS shared login path. Self-hosted has none to
+	// fall back to, and counting them there would disagree with the
+	// workspace-scoped check UpdateSetting makes for disallow_password_signin.
+	if len(identityProviders) == 0 && workspaceID != "" && s.profile.SaaS {
+		identityProviders, err = s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list global identity providers"))
+		}
+	}
+
+	var loginIdentityProviders []*v1pb.LoginIdentityProvider
+	for _, identityProvider := range identityProviders {
+		loginIdentityProviders = append(loginIdentityProviders, convertToLoginIdentityProvider(identityProvider))
+	}
+	return loginIdentityProviders, nil
+}
+
+// convertToLoginIdentityProvider publishes the fields a browser needs to start
+// an SSO redirect and nothing else. This response is served without a
+// credential, so fields are added here by hand, never copied from the config.
+func convertToLoginIdentityProvider(identityProvider *store.IdentityProviderMessage) *v1pb.LoginIdentityProvider {
+	provider := &v1pb.LoginIdentityProvider{
+		Name:  common.IdentityProviderNamePrefix + identityProvider.ResourceID,
+		Type:  v1pb.IdentityProviderType(identityProvider.Type),
+		Title: identityProvider.Title,
+	}
+
+	if v := identityProvider.Config.GetOauth2Config(); v != nil {
+		provider.AuthorizationRequest = &v1pb.AuthorizationRequest{
+			Endpoint: v.AuthUrl,
+			ClientId: v.ClientId,
+			Scopes:   v.Scopes,
+		}
+	} else if v := identityProvider.Config.GetOidcConfig(); v != nil {
+		provider.AuthorizationRequest = &v1pb.AuthorizationRequest{
+			ClientId: v.ClientId,
+			Scopes:   v.Scopes,
+		}
+		// The authorization endpoint is not stored; it comes from the issuer's
+		// discovery document, which the plugin caches.
+		openidConfiguration, err := oidc.GetOpenIDConfiguration(v.Issuer, v.SkipTlsVerify)
+		if err != nil {
+			slog.Warn("failed to fetch openid configuration", slog.String("issuer", v.Issuer), log.BBError(err))
+		} else {
+			provider.AuthorizationRequest.Endpoint = openidConfiguration.AuthorizationEndpoint
+		}
+	}
+	return provider
 }
 
 // Login is the auth login method including SSO.
@@ -170,6 +239,9 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	// 1. Authenticate user (password, IDP, or MFA completion)
 	loginUser, loginMethod, err := s.authenticateLogin(ctx, request)
 	if err != nil {
+		return nil, err
+	}
+	if err := rejectWebLoginForNonEndUser(request.Web, loginUser.Type); err != nil {
 		return nil, err
 	}
 
@@ -196,7 +268,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
 		}
 	}
-	common.SetAuditWorkspaceID(ctx, workspaceID)
+	setAuditWorkspaceID(ctx, workspaceID)
 
 	// 4. Post-auth checks (deleted, domain, license). The fetched restriction
 	// is reused by needResetPassword below to spare a duplicate settings read.
@@ -221,6 +293,13 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	// 7. Build response and finalize
 	requireResetPassword := loginMethod.requiresPasswordReset() && s.needResetPassword(ctx, loginUser, workspaceID, restriction)
 	return s.finalizeLogin(ctx, req.Header(), request.Web, loginUser, token, workspaceID, requireResetPassword)
+}
+
+func rejectWebLoginForNonEndUser(web bool, principalType storepb.PrincipalType) error {
+	if web && principalType != storepb.PrincipalType_END_USER {
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
+	}
+	return nil
 }
 
 func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage, workspaceID string, restriction *v1pb.Restriction) bool {
@@ -308,7 +387,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
 	}
 	// Announce it on every exit path so denied signups still produce audit entries.
-	common.SetAuditWorkspaceID(ctx, workspaceID)
+	setAuditWorkspaceID(ctx, workspaceID)
 
 	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
 	if err != nil {
@@ -880,7 +959,7 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find workspace"))
 	}
 	if ws == nil {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("not a member of workspace %q", workspaceID))
+		return nil, permissionDeniedError(ctx, errors.Errorf("not a member of workspace %q", workspaceID))
 	}
 
 	// Validate the target workspace's sign-in policies.
@@ -1043,9 +1122,6 @@ func (s *AuthService) finalizeLogin(ctx context.Context, header http.Header, web
 	resp := connect.NewResponse(response)
 
 	if web {
-		if user.Type != storepb.PrincipalType_END_USER {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
-		}
 		// A fresh session: the refresh token gets the full refresh duration.
 		d := auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID)
 		if err := s.issueSessionCookies(ctx, resp.Header(), header.Get("Origin"), user.Email, workspaceID, token, time.Now().Add(d)); err != nil {
@@ -1128,7 +1204,7 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	// Announce the workspace as soon as we know it (from the WI record) so
 	// that a deactivated-WI attempt — which compliance wants to see — still
 	// lands in the audit log.
-	common.SetAuditWorkspaceID(ctx, wi.Workspace)
+	setAuditWorkspaceID(ctx, wi.Workspace)
 	if wi.MemberDeleted {
 		return nil, connect.NewError(connect.CodeUnauthenticated,
 			errors.New("workload identity has been deactivated"))

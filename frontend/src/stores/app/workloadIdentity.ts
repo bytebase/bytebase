@@ -55,16 +55,24 @@ export const createWorkloadIdentitySlice: AppSliceCreator<
           pageToken: params.pageToken,
           showDeleted: params.showDeleted,
           filter: buildAccountListFilter(params.filter ?? {}),
-        })
+        }),
+        {
+          contextValues: createContextValues().set(
+            silentContextKey,
+            params.silent ?? false
+          ),
+        }
       );
-    set((state) => ({
-      workloadIdentitiesByName: {
-        ...state.workloadIdentitiesByName,
-        ...Object.fromEntries(
-          response.workloadIdentities.map((wi) => [wi.name, wi])
-        ),
-      },
-    }));
+    if (!params.skipCache) {
+      set((state) => ({
+        workloadIdentitiesByName: {
+          ...state.workloadIdentitiesByName,
+          ...Object.fromEntries(
+            response.workloadIdentities.map((wi) => [wi.name, wi])
+          ),
+        },
+      }));
+    }
     return {
       workloadIdentities: response.workloadIdentities,
       nextPageToken: response.nextPageToken,

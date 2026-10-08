@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -23,11 +24,11 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
@@ -171,12 +172,12 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
 	// Execute based on transaction mode
-	if transactionMode == common.TransactionModeOff {
+	if transactionMode == transaction.ModeOff {
 		return d.executeInAutoCommitMode(ctx, statement, opts)
 	}
 	return d.executeInTransactionMode(ctx, statement, opts)
@@ -378,7 +379,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 
 	// Regular query processing (unchanged)
 	batch := tsqlbatch.NewBatcher(statement)
-	var results []*v1pb.QueryResult
+	// Callers pair results[i] with the request's i-th statement, so the further
+	// result sets of procedure calls come after every statement's result.
+	var results, procedureResults []*v1pb.QueryResult
 	for {
 		command, err := batch.Next()
 		if err != nil {
@@ -386,8 +389,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 				v := batch.Batch()
 				if v != nil && len(v.Text) > 0 {
 					// Query the last batch.
-					qr, err := d.queryBatch(ctx, conn, v.Text, queryContext)
+					qr, more, err := d.queryBatch(ctx, conn, v.Text, queryContext)
 					results = append(results, qr...)
+					procedureResults = append(procedureResults, more...)
 					if err != nil {
 						return results, err
 					}
@@ -404,8 +408,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		case *tsqlbatch.GoCommand:
 			b := batch.Batch()
 			// Query the batch.
-			qr, err := d.queryBatch(ctx, conn, b.Text, queryContext)
+			qr, more, err := d.queryBatch(ctx, conn, b.Text, queryContext)
 			results = append(results, qr...)
+			procedureResults = append(procedureResults, more...)
 			if err != nil {
 				return results, err
 			}
@@ -414,31 +419,40 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		}
 		batch.Reset(nil)
 	}
-	return results, nil
+	return append(results, procedureResults...), nil
 }
 
-// queryBatch queries a batch of SQL statements, for Result Set-Generating statements, it returns the results, for Row Count-Generating statements,
-// it returns the affected rows, for other statements, it returns the empty query result.
+// showplanStatistic picks the SET statement that turns on the requested explain
+// output. SQL Server has no JSON showplan; which formats an engine may be asked
+// for is decided at the API boundary (validateExplainFormat), so anything else
+// arriving here takes the default plan.
+func showplanStatistic(option *v1pb.QueryOption) string {
+	if option.GetExplainFormat() == v1pb.QueryOption_XML {
+		return "SHOWPLAN_XML"
+	}
+	return "SHOWPLAN_ALL"
+}
+
+// queryBatch queries a batch of SQL statements and returns one result for each: the result set of a Result Set-Generating
+// statement, the affected rows of a Row Count-Generating statement, or an empty result. The second slice holds a procedure
+// call's result sets after its first.
 // https://learn.microsoft.com/en-us/sql/odbc/reference/develop-app/result-generating-and-result-free-statements?view=sql-server-ver16
-func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, queryContext db.QueryContext) ([]*v1pb.QueryResult, []*v1pb.QueryResult, error) {
 	singleSQLs, err := tsqlparser.SplitSQL(batch)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	singleSQLs = base.FilterEmptyStatements(singleSQLs)
 	if len(singleSQLs) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	// Special handling for EXPLAIN queries in MSSQL using explain
 	if queryContext.Explain {
-		explain := "SHOWPLAN_ALL"
-		if queryContext.Option.MssqlExplainFormat == v1pb.QueryOption_MSSQL_EXPLAIN_FORMAT_XML {
-			explain = "SHOWPLAN_XML"
-		}
+		explain := showplanStatistic(queryContext.Option)
 		// Enable explain mode once for all statements
 		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET %s ON", explain)); err != nil { // NOSONAR(go:S2077) explain is a hardcoded constant ("SHOWPLAN_ALL" or "SHOWPLAN_XML"), not user input
-			return nil, errors.Wrap(err, "failed to enable explain mode")
+			return nil, nil, errors.Wrap(err, "failed to enable explain mode")
 		}
 		// Ensure explain is turned off after processing
 		defer func() {
@@ -492,29 +506,31 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 			}
 		}
 
-		return results, nil
+		return results, nil, nil
 	}
 
 	// Regular query processing for non-EXPLAIN queries
 	startTime := time.Now()
 	var stmtTypes []stmtType
+	var refinedSQLs []string
 	batchBuf := new(strings.Builder)
 	for _, singleSQL := range singleSQLs {
 		stmtType, err := getStmtType(singleSQL.Text)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		stmtTypes = append(stmtTypes, stmtType)
 		// Before sending the batch to server, we add the limit clause to the statement.
 		s := singleSQL.Text
 		if queryContext.Limit > 0 {
-			s = getStatementWithResultLimit(s, queryContext.Limit)
+			s = base.StatementWithResultLimit(storepb.Engine_MSSQL, s, queryContext.Limit, "")
 		}
+		refinedSQLs = append(refinedSQLs, s)
 		if _, err := batchBuf.WriteString(s); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if _, err := batchBuf.WriteString("\n"); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -522,22 +538,17 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 	retmsg := &sqlexp.ReturnMessage{}
 	rows, qe := conn.QueryContext(ctx, refinedBatch, retmsg) // NOSONAR(go:S2077) intentional execution of user-authored SQL in SQL Editor
 	if qe != nil {
-		return nil, qe
+		return nil, nil, qe
 	}
 	defer rows.Close()
-	nextResultSetIdx := getNextResultSetIdx(stmtTypes, 0)
-	nextAffectedRowsIdx := getNextAffectedRowsIdx(stmtTypes, 0)
-	skipRowsAffected := false
-	results := true
-	var ret []*v1pb.QueryResult
-	for results {
-		queryResult := new(v1pb.QueryResult)
-		msg := retmsg.Message(ctx)
-		// While meeting the RowsAffected and MsgNext, fill up the lap for the other statement types.
-		switch m := msg.(type) {
+	var resultSets []*v1pb.QueryResult
+	var rowCounts []int64
+	inResultSet := false
+	for more := true; more; {
+		switch m := retmsg.Message(ctx).(type) {
 		case sqlexp.MsgNotice:
 			if err := isExitError(err); err != nil {
-				return ret, err
+				return nil, nil, err
 			}
 		case sqlexp.MsgError:
 			err := m.Error
@@ -545,61 +556,130 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 			if errors.As(err, &e) {
 				err = unpackGoMSSQLDBError(e)
 			}
-			queryResult.Error = err.Error()
-			ret = append(ret, queryResult)
-			return ret, err
+			return nil, nil, err
 		case sqlexp.MsgRowsAffected:
-			// Assuming the rows affected appears after the MsgNext for SELECT statement, and ignore the MsgRowsAffected
-			// for SELECT statement for now.
-			if skipRowsAffected {
-				skipRowsAffected = false
-				nextAffectedRowsIdx = getNextAffectedRowsIdx(stmtTypes, nextAffectedRowsIdx+1)
-				continue
+			// The count that closes a result set is the result set's own row count.
+			if !inResultSet {
+				rowCounts = append(rowCounts, m.Count)
 			}
-			queryResult = util.BuildAffectedRowsResult(m.Count, nil)
-			emptyResultSets := make([]*v1pb.QueryResult, nextAffectedRowsIdx-len(ret))
-			for i := 0; i < len(emptyResultSets); i++ {
-				emptyResultSets[i] = &v1pb.QueryResult{}
-			}
-			ret = append(ret, emptyResultSets...)
-			ret = append(ret, queryResult)
-			nextAffectedRowsIdx = getNextAffectedRowsIdx(stmtTypes, nextAffectedRowsIdx+1)
 		case sqlexp.MsgNextResultSet:
-			results = rows.NextResultSet()
+			inResultSet = false
+			more = rows.NextResultSet()
 			if err = rows.Err(); err != nil {
-				return ret, err
+				return nil, nil, err
 			}
 		case sqlexp.MsgNext:
-			r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
+			result, err := readResultSet(rows, queryContext)
 			if err != nil {
-				queryResult.Error = err.Error()
-				ret = append(ret, queryResult)
-				return ret, err
+				return nil, nil, err
 			}
-			if err := rows.Err(); err != nil {
-				return ret, err
-			}
-			queryResult = r
-			// Fill up the lap for the other statement types.
-			emptyResultSets := make([]*v1pb.QueryResult, nextResultSetIdx-len(ret))
-			for i := 0; i < len(emptyResultSets); i++ {
-				emptyResultSets[i] = &v1pb.QueryResult{}
-			}
-			ret = append(ret, emptyResultSets...)
-			ret = append(ret, queryResult)
-			nextResultSetIdx = getNextResultSetIdx(stmtTypes, nextResultSetIdx+1)
-			skipRowsAffected = true
+			resultSets = append(resultSets, result)
+			inResultSet = true
 		default:
 		}
 	}
 
+	results, procedureResults, err := matchResults(refinedSQLs, stmtTypes, resultSets, rowCounts)
+	if err != nil {
+		return nil, nil, err
+	}
+	if queryContext.MaskingEnabled {
+		for i, t := range stmtTypes {
+			if t&(stmtTypeProcedure|stmtTypeOutput) != 0 {
+				withholdRows(results[i])
+			}
+		}
+		for _, result := range procedureResults {
+			withholdRows(result)
+		}
+	}
 	latency := time.Since(startTime)
-	for i, res := range ret {
+	for _, res := range slices.Concat(results, procedureResults) {
 		res.Latency = durationpb.New(latency)
-		res.Statement = singleSQLs[i].Text
+	}
+	return results, procedureResults, nil
+}
+
+// readResultSet reads the current result set. The limit rewrite covers only SELECT,
+// so the row limit is applied here as well, for the rows of a procedure call or an
+// OUTPUT clause.
+func readResultSet(rows *sql.Rows, queryContext db.QueryContext) (*v1pb.QueryResult, error) {
+	result, err := util.RowsToLimitedQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize, queryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+	if result.Error != "" {
+		// The read stopped at the size limit, and the next message only arrives
+		// once the rest of the result set has been read. Past the end of a result
+		// set, Next would read the following one.
+		for rows.Next() {
+		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+	return result, nil
+}
+
+// withholdRows empties a result set of a procedure call or an OUTPUT clause,
+// whose rows masking cannot trace to columns.
+func withholdRows(result *v1pb.QueryResult) {
+	if len(result.ColumnNames) == 0 {
+		return
+	}
+	result.Rows = nil
+	result.RowsCount = 0
+	result.Error = "Rows returned by a procedure call or an OUTPUT clause are hidden because data masking can't be applied to them."
+}
+
+// matchResults gives each statement of a batch its result. SQL Server returns
+// results in statement order but does not say which statement returned each, so
+// a batch whose procedure call returns result sets must have no other statement
+// that returns any. The procedure call's result sets after its first are
+// returned separately.
+func matchResults(statements []string, types []stmtType, resultSets []*v1pb.QueryResult, rowCounts []int64) ([]*v1pb.QueryResult, []*v1pb.QueryResult, error) {
+	var withResultSet, withRowCount, procedures int
+	for _, t := range types {
+		switch {
+		case t&stmtTypeResultSetGenerating != 0:
+			withResultSet++
+		case t&stmtTypeRowCountGenerating != 0:
+			withRowCount++
+		case t&stmtTypeProcedure != 0:
+			procedures++
+		default:
+		}
+	}
+	procedureReturnedSets := len(resultSets) != withResultSet
+	if procedureReturnedSets && (withResultSet > 0 || procedures != 1) {
+		return nil, nil, errors.New("cannot match the batch's result sets to its statements; a procedure call that returns rows must be the only statement in its batch that does, so separate the others with GO")
+	}
+	// SET NOCOUNT and procedure calls change how many row counts arrive, so the
+	// counts are shown only when each belongs to one statement.
+	if len(rowCounts) != withRowCount {
+		rowCounts = nil
 	}
 
-	return ret, nil
+	results := make([]*v1pb.QueryResult, len(types))
+	var procedureResults []*v1pb.QueryResult
+	for i, t := range types {
+		result := &v1pb.QueryResult{}
+		switch {
+		case t&stmtTypeResultSetGenerating != 0:
+			result, resultSets = resultSets[0], resultSets[1:]
+		case t&stmtTypeRowCountGenerating != 0 && len(rowCounts) > 0:
+			result, rowCounts = util.BuildAffectedRowsResult(rowCounts[0], nil), rowCounts[1:]
+		case t&stmtTypeProcedure != 0 && procedureReturnedSets:
+			result, procedureResults = resultSets[0], resultSets[1:]
+			for _, r := range procedureResults {
+				r.Statement = statements[i]
+			}
+		default:
+		}
+		result.Statement = statements[i]
+		results[i] = result
+	}
+	return results, procedureResults, nil
 }
 
 func isExitError(err error) error {
@@ -617,22 +697,4 @@ func isExitError(err error) error {
 		return errors.Errorf("meet exit error, state: %d", errState)
 	}
 	return nil
-}
-
-func getNextAffectedRowsIdx(s []stmtType, beginIdx int) int {
-	for i := beginIdx; i < len(s); i++ {
-		if s[i]&stmtTypeRowCountGenerating != 0 {
-			return i
-		}
-	}
-	return len(s)
-}
-
-func getNextResultSetIdx(s []stmtType, beginIdx int) int {
-	for i := beginIdx; i < len(s); i++ {
-		if s[i]&stmtTypeResultSetGenerating != 0 {
-			return i
-		}
-	}
-	return len(s)
 }

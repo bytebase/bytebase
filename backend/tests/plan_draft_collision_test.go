@@ -18,10 +18,7 @@ func TestCollision_PlanDraftMetadataSync(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	require.NoError(t, err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 	createDraft := func(project *v1pb.Project, database *v1pb.Database, title string) (*v1pb.Plan, *v1pb.Issue) {
@@ -61,11 +58,12 @@ func TestCollision_PlanDraftMetadataSync(t *testing.T) {
 	}
 
 	planA, issueA := createDraft(fixture.ProjectA, fixture.DatabaseA, "Draft A")
-	_, issueB := createDraft(fixture.ProjectB, fixture.DatabaseB, "Draft B")
+	planB, issueB := createDraft(fixture.ProjectB, fixture.DatabaseB, "Draft B")
+	waitPlanCheckRunSettled(ctx, t, ctl, planB.Name)
 	beforeB := snapshotProject(ctx, t, ctl, fixture.ProjectB)
 
 	const updatedTitle = "Updated draft A"
-	_, err = ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+	_, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
 		Plan:       &v1pb.Plan{Name: planA.Name, Title: updatedTitle},
 		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title"}},
 	}))

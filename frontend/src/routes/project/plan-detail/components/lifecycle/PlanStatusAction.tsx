@@ -21,6 +21,7 @@ import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { PlanCheckResultsDrawer } from "@/components/plan-check/PlanCheckSection";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
@@ -88,9 +89,11 @@ export function PlanStatusAction({
       <Popover onOpenChange={setOpen} open={open}>
         <PopoverTrigger
           render={
-            <button
+            <Button
+              appearance="secondary"
+              size="md"
               className={cn(
-                "inline-flex h-9 shrink-0 items-center gap-x-1 rounded-full border px-3 text-sm hover:bg-control-bg/40",
+                "inline-flex shrink-0 items-center gap-x-1 rounded-full border text-sm hover:bg-control-bg/40",
                 TONE_TRIGGER[tone]
               )}
               type="button"
@@ -148,7 +151,7 @@ export function PlanStatusAction({
 function GateLabel({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <span className="min-w-0 flex-1">
-      <span className="block text-sm font-medium leading-tight text-main">
+      <span className="block break-words text-sm font-medium leading-tight text-main">
         {title}
       </span>
       {subtitle && (
@@ -177,8 +180,10 @@ function GateRow({
 }) {
   return (
     <div>
-      <button
-        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-control-bg/40"
+      <Button
+        appearance="secondary"
+        size="md"
+        className="h-auto w-full items-center justify-start gap-3 px-4 py-3 text-left whitespace-normal hover:bg-control-bg/40"
         onClick={onToggle}
         type="button"
       >
@@ -190,7 +195,7 @@ function GateRow({
             open && "rotate-180"
           )}
         />
-      </button>
+      </Button>
       {open && <div className="border-t bg-control-bg/20">{children}</div>}
     </div>
   );
@@ -312,14 +317,16 @@ function ChecksGateRow({
       {icon}
       <GateLabel subtitle={subtitle} title={title} />
       {summary.total > 0 && (
-        <button
-          className="inline-flex shrink-0 items-center gap-0.5 text-xs text-accent hover:underline"
+        <Button
+          appearance="secondary"
+          size="xs"
+          className="inline-flex shrink-0 items-center gap-1 text-xs text-accent hover:underline"
           onClick={onViewDetails}
           type="button"
         >
           {t("common.view-details")}
           <ChevronRight className="size-3.5" />
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -399,14 +406,16 @@ function ReRequestGuidance({ issue }: { issue: Issue }) {
     <span className="text-xs leading-relaxed text-control-light">
       {t("plan.review.rejection.guidance-prefix")}{" "}
       {canReRequest ? (
-        <button
+        <Button
+          appearance="secondary"
+          size="xs"
           className="font-medium text-accent hover:underline disabled:opacity-60"
           disabled={reRequesting}
           onClick={() => void handleReRequest()}
           type="button"
         >
           {t("plan.review.rejection.re-request-review")}
-        </button>
+        </Button>
       ) : (
         <span>{t("plan.review.rejection.re-request-review")}</span>
       )}{" "}
@@ -426,7 +435,9 @@ function BypassAction({
 }) {
   const { t } = useTranslation();
   return (
-    <button
+    <Button
+      appearance="secondary"
+      size="xs"
       className="inline-flex shrink-0 items-center gap-x-1 text-xs text-control-placeholder underline hover:text-control disabled:opacity-60"
       disabled={bypass.creating}
       onClick={onClick}
@@ -434,6 +445,6 @@ function BypassAction({
     >
       {bypass.creating && <Loader2 className="size-3 animate-spin" />}
       {t("plan.review.footer.bypass-and-deploy")}
-    </button>
+    </Button>
   );
 }

@@ -31,7 +31,9 @@ vi.mock("@/api", () => ({
   issueServiceClientConnect: { updateIssue: mocks.updateIssue },
 }));
 
-vi.mock("@/components/HumanizeTs", () => ({ HumanizeTs: () => null }));
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
+}));
 
 vi.mock("@/components/ui/checkbox", () => ({
   Checkbox: ({ checked }: { checked: boolean }) => (

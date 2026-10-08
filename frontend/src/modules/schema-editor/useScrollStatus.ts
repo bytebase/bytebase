@@ -53,7 +53,6 @@ export function useScrollStatus(): ScrollStatusContext {
 
 /**
  * Hook to consume a pending scroll-to-table event when the condition matches.
- * Replaces the Vue `useConsumePendingScrollToTable` composable.
  */
 export function useConsumePendingScrollToTable(
   condition: RichMetadataWithDB<RichSchemaMetadata> | undefined,
@@ -83,7 +82,6 @@ export function useConsumePendingScrollToTable(
 
 /**
  * Hook to consume a pending scroll-to-column event when the condition matches.
- * Replaces the Vue `useConsumePendingScrollToColumn` composable.
  */
 export function useConsumePendingScrollToColumn(
   condition: RichMetadataWithDB<RichTableMetadata> | undefined,

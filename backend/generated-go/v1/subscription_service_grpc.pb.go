@@ -22,6 +22,7 @@ const (
 	SubscriptionService_GetSubscription_FullMethodName        = "/bytebase.v1.SubscriptionService/GetSubscription"
 	SubscriptionService_ExportVCSProviderUsers_FullMethodName = "/bytebase.v1.SubscriptionService/ExportVCSProviderUsers"
 	SubscriptionService_UploadLicense_FullMethodName          = "/bytebase.v1.SubscriptionService/UploadLicense"
+	SubscriptionService_StartTrial_FullMethodName             = "/bytebase.v1.SubscriptionService/StartTrial"
 	SubscriptionService_CreatePurchase_FullMethodName         = "/bytebase.v1.SubscriptionService/CreatePurchase"
 	SubscriptionService_UpdatePurchase_FullMethodName         = "/bytebase.v1.SubscriptionService/UpdatePurchase"
 	SubscriptionService_CancelPurchase_FullMethodName         = "/bytebase.v1.SubscriptionService/CancelPurchase"
@@ -44,6 +45,8 @@ type SubscriptionServiceClient interface {
 	ExportVCSProviderUsers(ctx context.Context, in *ExportVCSProviderUsersRequest, opts ...grpc.CallOption) (*ExportVCSProviderUsersResponse, error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(ctx context.Context, in *UploadLicenseRequest, opts ...grpc.CallOption) (*Subscription, error)
+	// StartTrial starts a free trial for an eligible SaaS workspace.
+	StartTrial(ctx context.Context, in *StartTrialRequest, opts ...grpc.CallOption) (*Subscription, error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
 	// Returns a Stripe Checkout URL for the user to complete payment.
 	CreatePurchase(ctx context.Context, in *CreatePurchaseRequest, opts ...grpc.CallOption) (*PurchaseResponse, error)
@@ -92,6 +95,16 @@ func (c *subscriptionServiceClient) UploadLicense(ctx context.Context, in *Uploa
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Subscription)
 	err := c.cc.Invoke(ctx, SubscriptionService_UploadLicense_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriptionServiceClient) StartTrial(ctx context.Context, in *StartTrialRequest, opts ...grpc.CallOption) (*Subscription, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Subscription)
+	err := c.cc.Invoke(ctx, SubscriptionService_StartTrial_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -172,6 +185,8 @@ type SubscriptionServiceServer interface {
 	ExportVCSProviderUsers(context.Context, *ExportVCSProviderUsersRequest) (*ExportVCSProviderUsersResponse, error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(context.Context, *UploadLicenseRequest) (*Subscription, error)
+	// StartTrial starts a free trial for an eligible SaaS workspace.
+	StartTrial(context.Context, *StartTrialRequest) (*Subscription, error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
 	// Returns a Stripe Checkout URL for the user to complete payment.
 	CreatePurchase(context.Context, *CreatePurchaseRequest) (*PurchaseResponse, error)
@@ -204,6 +219,9 @@ func (UnimplementedSubscriptionServiceServer) ExportVCSProviderUsers(context.Con
 }
 func (UnimplementedSubscriptionServiceServer) UploadLicense(context.Context, *UploadLicenseRequest) (*Subscription, error) {
 	return nil, status.Error(codes.Unimplemented, "method UploadLicense not implemented")
+}
+func (UnimplementedSubscriptionServiceServer) StartTrial(context.Context, *StartTrialRequest) (*Subscription, error) {
+	return nil, status.Error(codes.Unimplemented, "method StartTrial not implemented")
 }
 func (UnimplementedSubscriptionServiceServer) CreatePurchase(context.Context, *CreatePurchaseRequest) (*PurchaseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreatePurchase not implemented")
@@ -294,6 +312,24 @@ func _SubscriptionService_UploadLicense_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SubscriptionServiceServer).UploadLicense(ctx, req.(*UploadLicenseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriptionService_StartTrial_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartTrialRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionServiceServer).StartTrial(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionService_StartTrial_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionServiceServer).StartTrial(ctx, req.(*StartTrialRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -424,6 +460,10 @@ var SubscriptionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UploadLicense",
 			Handler:    _SubscriptionService_UploadLicense_Handler,
+		},
+		{
+			MethodName: "StartTrial",
+			Handler:    _SubscriptionService_StartTrial_Handler,
 		},
 		{
 			MethodName: "CreatePurchase",

@@ -24,7 +24,7 @@ func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context
 		return nil, errors.Wrapf(err, "failed to find masking rule policy")
 	}
 
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
+	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, s.store)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find semantic types setting")
 	}

@@ -8,6 +8,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   setPendingInsertAtCaret: vi.fn(),
+  state: { resultPanelMaximized: false },
+  collapse: vi.fn(),
+  expand: vi.fn(),
+  separatorDisabled: undefined as boolean | undefined,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -19,10 +23,22 @@ vi.mock("react-resizable-panels", () => ({
   Group: ({ children }: { children: ReactElement | ReactElement[] }) => (
     <div>{children}</div>
   ),
-  Panel: ({ children }: { children: ReactElement | ReactElement[] }) => (
-    <div>{children}</div>
-  ),
-  Separator: () => <div />,
+  Panel: ({
+    children,
+    panelRef,
+  }: {
+    children: ReactElement | ReactElement[];
+    panelRef?: { current: unknown };
+  }) => {
+    if (panelRef) {
+      panelRef.current = { collapse: mocks.collapse, expand: mocks.expand };
+    }
+    return <div>{children}</div>;
+  },
+  Separator: ({ disabled }: { disabled?: boolean }) => {
+    mocks.separatorDisabled = disabled;
+    return <div />;
+  },
 }));
 
 vi.mock("@/app/router", () => ({
@@ -93,7 +109,10 @@ vi.mock("@/modules/sql-editor/model/events", () => ({
 
 vi.mock("@/modules/sql-editor/store", () => ({
   useSQLEditorStore: (selector: (state: unknown) => unknown) =>
-    selector({ setPendingInsertAtCaret: mocks.setPendingInsertAtCaret }),
+    selector({
+      setPendingInsertAtCaret: mocks.setPendingInsertAtCaret,
+      resultPanelMaximized: mocks.state.resultPanelMaximized,
+    }),
 }));
 
 vi.mock("@/modules/sql-editor/store/editor", () => ({
@@ -125,10 +144,22 @@ import { SQLEditorHomePage } from "./SQLEditorHomePage";
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 
+const setWindowWidth = (width: number) => {
+  Object.defineProperty(window, "innerWidth", {
+    value: width,
+    configurable: true,
+  });
+};
+
 beforeEach(() => {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
+  setWindowWidth(1440);
+  mocks.state.resultPanelMaximized = false;
+  mocks.collapse.mockClear();
+  mocks.expand.mockClear();
+  mocks.separatorDisabled = undefined;
 });
 
 afterEach(() => {
@@ -145,5 +176,62 @@ describe("SQLEditorHomePage guide", () => {
     render();
 
     expect(container.textContent).toContain("unified-guide");
+  });
+});
+
+// The sidebar goes away for two unrelated reasons, and only a narrow window
+// wants the phone treatment: a floating toggle over a drawer. A maximized
+// result pane must not drag that onto a desktop window.
+describe("SQLEditorHomePage sidebar", () => {
+  const sidebarToggles = () =>
+    document.querySelectorAll(
+      'button[aria-label="Expand sidebar"], button[aria-label="Collapse sidebar"]'
+    );
+  const sidebarDrawers = () =>
+    document.querySelectorAll('[role="dialog"][aria-label="Sidebar"]');
+
+  test("leaves the phone drawer out of a maximized desktop window", () => {
+    mocks.state.resultPanelMaximized = true;
+    render();
+
+    expect(sidebarToggles()).toHaveLength(0);
+    expect(sidebarDrawers()).toHaveLength(0);
+  });
+
+  test("keeps the phone toggle in a narrow window", () => {
+    setWindowWidth(600);
+    render();
+
+    expect(sidebarToggles()).toHaveLength(1);
+  });
+
+  // Dragging a collapsed sidebar open would leave the result pane short of the
+  // width its control still claims.
+  test("locks the sidebar separator while the pane is maximized", () => {
+    mocks.state.resultPanelMaximized = true;
+    render();
+
+    expect(mocks.separatorDisabled).toBe(true);
+  });
+
+  test("leaves the sidebar separator draggable while the pane is docked", () => {
+    render();
+
+    expect(mocks.separatorDisabled).toBe(false);
+  });
+
+  test("collapses the sidebar a maximized narrow window grows into", () => {
+    setWindowWidth(600);
+    mocks.state.resultPanelMaximized = true;
+    render();
+    // The desktop panel the collapse acts on does not exist while narrow.
+    expect(mocks.collapse).not.toHaveBeenCalled();
+
+    act(() => {
+      setWindowWidth(1440);
+      window.dispatchEvent(new Event("resize"));
+    });
+
+    expect(mocks.collapse).toHaveBeenCalled();
   });
 });

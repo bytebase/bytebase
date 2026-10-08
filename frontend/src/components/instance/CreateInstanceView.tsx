@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
 import {
   InfoPanel,
   InfoPanelContent,
@@ -11,6 +13,7 @@ import {
 import type { InfoSection } from "@/components/instance/info-content";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { ResponsiveFormLayout } from "@/components/ui/form";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -148,7 +151,7 @@ function CreateInstanceFormInner({
   const infoPanelTitle = useMemo(() => {
     if (!activeInfoSection) return "";
     const titleMap: Record<InfoSection, string> = {
-      host: t("instance.host-or-socket"),
+      host: t("instance.hostname"),
       port: t("instance.port"),
       authentication: t("instance.connection-info"),
       ssl: t("data-source.ssl-connection"),
@@ -178,6 +181,11 @@ function CreateInstanceFormInner({
     if (!parent || isPreparingSampleProjectInstance || state.isRequesting) {
       return;
     }
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("sample instance requested", {
+        properties: { source: "instance_creation" },
+      })
+    );
     setIsPreparingSampleProjectInstance(true);
     setState((prev) => ({ ...prev, isRequesting: true }));
     try {
@@ -213,7 +221,7 @@ function CreateInstanceFormInner({
       <div className="min-w-0 min-h-0 flex-1 flex flex-col">
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-auto">
-          <div className="px-4 py-4 sm:px-6 gap-y-4 flex flex-col">
+          <ResponsiveFormLayout className="px-4 py-4 sm:px-6 gap-y-4 flex flex-col">
             {canPrepareSampleProjectInstance && (
               <Alert
                 title={t("instance.sample-project-instance-title")}
@@ -241,7 +249,7 @@ function CreateInstanceFormInner({
               </Alert>
             )}
             <InstanceFormBody onOpenInfoPanel={handleOpenInfoPanel} />
-          </div>
+          </ResponsiveFormLayout>
         </div>
 
         <InstanceFormButtons onCreated={onCreated} />

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -33,14 +34,11 @@ func setupPlanUpdateFixture(t *testing.T, withIssue bool) *planUpdateFixture {
 	t.Helper()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	t.Cleanup(func() { _ = ctl.Close(ctx) })
+	ctl, ctx := startProject(ctx, t)
 	// The fixture creates a database through a bootstrap Plan owned and approved
 	// by the test user. Keep that setup flow independent of the feature under
 	// test; individual tests can set the project policy they need afterwards.
-	_, err = ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+	_, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
 		Project: &v1pb.Project{
 			Name:                        ctl.project.Name,
 			AllowLastPlanEditorApproval: true,
@@ -50,16 +48,16 @@ func setupPlanUpdateFixture(t *testing.T, withIssue bool) *planUpdateFixture {
 	a.NoError(err)
 
 	instanceName := "planUpdateInstance_" + generateRandomString("inst")
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       instanceName,
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         instanceName,
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -154,7 +152,7 @@ func TestPlanLastEditorAttributionAndApproval(t *testing.T) {
 	a.NoError(err)
 	a.False(newProject.Msg.AllowLastPlanEditorApproval)
 	a.Equal("users/demo@example.com", f.plan.LastPlanEditor)
-	_, err = f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+	projectResp, err := f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
 		Project: &v1pb.Project{
 			Name:                        f.ctl.project.Name,
 			AllowSelfApproval:           false,
@@ -163,6 +161,7 @@ func TestPlanLastEditorAttributionAndApproval(t *testing.T) {
 		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_self_approval", "allow_last_plan_editor_approval"}},
 	}))
 	a.NoError(err)
+	a.False(projectResp.Msg.AllowLastPlanEditorApproval)
 
 	installWorkspaceApprovalRule(f.ctx, t, f.ctl, f.ctl.project, []string{"roles/projectOwner"})
 	editor := provisionApprover(f.ctx, t, f.ctl, f.ctl.project, "last-plan-editor", "roles/projectOwner")
@@ -228,11 +227,29 @@ func TestPlanLastEditorAttributionAndApproval(t *testing.T) {
 		_, err := f.ctl.issueServiceClient.ApproveIssue(f.ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: issue.Name}))
 		a.Error(err)
 		a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
+	})
+
+	renamedEmail := "renamed-" + editor.Email
+	renamed, err := f.ctl.userServiceClient.UpdateEmail(f.ctx, connect.NewRequest(&v1pb.UpdateEmailRequest{
+		Name:  common.FormatUserEmail(editor.Email),
+		Email: renamedEmail,
+	}))
+	a.NoError(err)
+	a.Equal(renamedEmail, renamed.Msg.Email)
+	editor.Email = renamedEmail
+	gotPlan, err := f.ctl.planServiceClient.GetPlan(f.ctx, connect.NewRequest(&v1pb.GetPlanRequest{Name: updated.Name}))
+	a.NoError(err)
+	a.Equal(common.FormatUserEmail(renamedEmail), gotPlan.Msg.LastPlanEditor)
+
+	withImpersonation(f.ctx, t, f.ctl, editor, func() {
+		_, err := f.ctl.issueServiceClient.ApproveIssue(f.ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: issue.Name}))
+		a.Error(err)
+		a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
 		_, err = f.ctl.issueServiceClient.RejectIssue(f.ctx, connect.NewRequest(&v1pb.RejectIssueRequest{Name: issue.Name}))
 		a.NoError(err)
 	})
 
-	projectResp, err := f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+	projectResp, err = f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
 		Project: &v1pb.Project{
 			Name:                        f.ctl.project.Name,
 			AllowLastPlanEditorApproval: true,

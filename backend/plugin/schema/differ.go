@@ -4,6 +4,8 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -68,8 +70,8 @@ type MetadataDiff struct {
 type SchemaDiff struct {
 	Action     MetadataDiffAction
 	SchemaName string
-	OldSchema  *storepb.SchemaMetadata
-	NewSchema  *storepb.SchemaMetadata
+	OldSchema  *metadatapb.SchemaMetadata
+	NewSchema  *metadatapb.SchemaMetadata
 }
 
 // TableDiff represents changes to a table.
@@ -77,8 +79,8 @@ type TableDiff struct {
 	Action     MetadataDiffAction
 	SchemaName string
 	TableName  string
-	OldTable   *storepb.TableMetadata
-	NewTable   *storepb.TableMetadata
+	OldTable   *metadatapb.TableMetadata
+	NewTable   *metadatapb.TableMetadata
 
 	// Column changes
 	ColumnChanges []*ColumnDiff
@@ -111,50 +113,50 @@ type TableDiff struct {
 // ColumnDiff represents changes to a column.
 type ColumnDiff struct {
 	Action    MetadataDiffAction
-	OldColumn *storepb.ColumnMetadata
-	NewColumn *storepb.ColumnMetadata
+	OldColumn *metadatapb.ColumnMetadata
+	NewColumn *metadatapb.ColumnMetadata
 }
 
 // IndexDiff represents changes to an index.
 type IndexDiff struct {
 	Action   MetadataDiffAction
-	OldIndex *storepb.IndexMetadata
-	NewIndex *storepb.IndexMetadata
+	OldIndex *metadatapb.IndexMetadata
+	NewIndex *metadatapb.IndexMetadata
 }
 
 // ForeignKeyDiff represents changes to a foreign key.
 type ForeignKeyDiff struct {
 	Action        MetadataDiffAction
-	OldForeignKey *storepb.ForeignKeyMetadata
-	NewForeignKey *storepb.ForeignKeyMetadata
+	OldForeignKey *metadatapb.ForeignKeyMetadata
+	NewForeignKey *metadatapb.ForeignKeyMetadata
 }
 
 // CheckConstraintDiff represents changes to a check constraint.
 type CheckConstraintDiff struct {
 	Action             MetadataDiffAction
-	OldCheckConstraint *storepb.CheckConstraintMetadata
-	NewCheckConstraint *storepb.CheckConstraintMetadata
+	OldCheckConstraint *metadatapb.CheckConstraintMetadata
+	NewCheckConstraint *metadatapb.CheckConstraintMetadata
 }
 
 // ExcludeConstraintDiff represents changes to an EXCLUDE constraint (PostgreSQL specific).
 type ExcludeConstraintDiff struct {
 	Action               MetadataDiffAction
-	OldExcludeConstraint *storepb.ExcludeConstraintMetadata
-	NewExcludeConstraint *storepb.ExcludeConstraintMetadata
+	OldExcludeConstraint *metadatapb.ExcludeConstraintMetadata
+	NewExcludeConstraint *metadatapb.ExcludeConstraintMetadata
 }
 
 // PrimaryKeyDiff represents changes to a primary key constraint.
 type PrimaryKeyDiff struct {
 	Action        MetadataDiffAction
-	OldPrimaryKey *storepb.IndexMetadata
-	NewPrimaryKey *storepb.IndexMetadata
+	OldPrimaryKey *metadatapb.IndexMetadata
+	NewPrimaryKey *metadatapb.IndexMetadata
 }
 
 // UniqueConstraintDiff represents changes to a unique constraint.
 type UniqueConstraintDiff struct {
 	Action              MetadataDiffAction
-	OldUniqueConstraint *storepb.IndexMetadata
-	NewUniqueConstraint *storepb.IndexMetadata
+	OldUniqueConstraint *metadatapb.IndexMetadata
+	NewUniqueConstraint *metadatapb.IndexMetadata
 }
 
 // TriggerDiff represents changes to a trigger.
@@ -163,15 +165,15 @@ type TriggerDiff struct {
 	SchemaName  string // Schema name of the table that owns the trigger
 	TableName   string // Table name that owns the trigger
 	TriggerName string // Trigger name
-	OldTrigger  *storepb.TriggerMetadata
-	NewTrigger  *storepb.TriggerMetadata
+	OldTrigger  *metadatapb.TriggerMetadata
+	NewTrigger  *metadatapb.TriggerMetadata
 }
 
 // PartitionDiff represents changes to table partitions.
 type PartitionDiff struct {
 	Action       MetadataDiffAction
-	OldPartition *storepb.TablePartitionMetadata
-	NewPartition *storepb.TablePartitionMetadata
+	OldPartition *metadatapb.TablePartitionMetadata
+	NewPartition *metadatapb.TablePartitionMetadata
 }
 
 // ViewDiff represents changes to a view.
@@ -179,8 +181,8 @@ type ViewDiff struct {
 	Action     MetadataDiffAction
 	SchemaName string
 	ViewName   string
-	OldView    *storepb.ViewMetadata
-	NewView    *storepb.ViewMetadata
+	OldView    *metadatapb.ViewMetadata
+	NewView    *metadatapb.ViewMetadata
 }
 
 // MaterializedViewDiff represents changes to a materialized view.
@@ -188,8 +190,8 @@ type MaterializedViewDiff struct {
 	Action               MetadataDiffAction
 	SchemaName           string
 	MaterializedViewName string
-	OldMaterializedView  *storepb.MaterializedViewMetadata
-	NewMaterializedView  *storepb.MaterializedViewMetadata
+	OldMaterializedView  *metadatapb.MaterializedViewMetadata
+	NewMaterializedView  *metadatapb.MaterializedViewMetadata
 	IndexChanges         []*IndexDiff // Index changes on materialized view
 }
 
@@ -198,8 +200,8 @@ type FunctionDiff struct {
 	Action       MetadataDiffAction
 	SchemaName   string
 	FunctionName string
-	OldFunction  *storepb.FunctionMetadata
-	NewFunction  *storepb.FunctionMetadata
+	OldFunction  *metadatapb.FunctionMetadata
+	NewFunction  *metadatapb.FunctionMetadata
 
 	// Detailed change information for advanced engines
 	SignatureChanged    bool
@@ -214,8 +216,8 @@ type ProcedureDiff struct {
 	Action        MetadataDiffAction
 	SchemaName    string
 	ProcedureName string
-	OldProcedure  *storepb.ProcedureMetadata
-	NewProcedure  *storepb.ProcedureMetadata
+	OldProcedure  *metadatapb.ProcedureMetadata
+	NewProcedure  *metadatapb.ProcedureMetadata
 }
 
 // SequenceDiff represents changes to a sequence.
@@ -223,8 +225,8 @@ type SequenceDiff struct {
 	Action       MetadataDiffAction
 	SchemaName   string
 	SequenceName string
-	OldSequence  *storepb.SequenceMetadata
-	NewSequence  *storepb.SequenceMetadata
+	OldSequence  *metadatapb.SequenceMetadata
+	NewSequence  *metadatapb.SequenceMetadata
 }
 
 // EnumTypeDiff represents changes to an enum type.
@@ -232,8 +234,8 @@ type EnumTypeDiff struct {
 	Action       MetadataDiffAction
 	SchemaName   string
 	EnumTypeName string
-	OldEnumType  *storepb.EnumTypeMetadata
-	NewEnumType  *storepb.EnumTypeMetadata
+	OldEnumType  *metadatapb.EnumTypeMetadata
+	NewEnumType  *metadatapb.EnumTypeMetadata
 }
 
 // CompositeTypeDiff represents changes to a composite type.
@@ -241,32 +243,32 @@ type CompositeTypeDiff struct {
 	Action            MetadataDiffAction
 	SchemaName        string
 	CompositeTypeName string
-	OldCompositeType  *storepb.CompositeTypeMetadata
-	NewCompositeType  *storepb.CompositeTypeMetadata
+	OldCompositeType  *metadatapb.CompositeTypeMetadata
+	NewCompositeType  *metadatapb.CompositeTypeMetadata
 }
 
 // ExtensionDiff represents changes to an extension.
 type ExtensionDiff struct {
 	Action        MetadataDiffAction
 	ExtensionName string
-	OldExtension  *storepb.ExtensionMetadata
-	NewExtension  *storepb.ExtensionMetadata
+	OldExtension  *metadatapb.ExtensionMetadata
+	NewExtension  *metadatapb.ExtensionMetadata
 }
 
 // EventTriggerDiff represents changes to an event trigger.
 type EventTriggerDiff struct {
 	Action           MetadataDiffAction
 	EventTriggerName string
-	OldEventTrigger  *storepb.EventTriggerMetadata
-	NewEventTrigger  *storepb.EventTriggerMetadata
+	OldEventTrigger  *metadatapb.EventTriggerMetadata
+	NewEventTrigger  *metadatapb.EventTriggerMetadata
 }
 
 // EventDiff represents changes to an event.
 type EventDiff struct {
 	Action    MetadataDiffAction
 	EventName string
-	OldEvent  *storepb.EventMetadata
-	NewEvent  *storepb.EventMetadata
+	OldEvent  *metadatapb.EventMetadata
+	NewEvent  *metadatapb.EventMetadata
 }
 
 // CommentObjectType represents the type of database object that has a comment.
@@ -664,7 +666,7 @@ func compareColumns(engine storepb.Engine, oldTable, newTable *model.TableMetada
 }
 
 // columnsEqual checks if two columns are equal.
-func columnsEqual(engine storepb.Engine, col1, col2 *storepb.ColumnMetadata) bool {
+func columnsEqual(engine storepb.Engine, col1, col2 *metadatapb.ColumnMetadata) bool {
 	if col1.Type != col2.Type {
 		return false
 	}
@@ -720,7 +722,7 @@ func columnsEqual(engine storepb.Engine, col1, col2 *storepb.ColumnMetadata) boo
 }
 
 // defaultValuesEqual compares default values.
-func defaultValuesEqual(col1, col2 *storepb.ColumnMetadata) bool {
+func defaultValuesEqual(col1, col2 *metadatapb.ColumnMetadata) bool {
 	// Quick check for identical strings
 	if col1.Default == col2.Default {
 		return true
@@ -768,7 +770,7 @@ func normalizePostgreSQLTypecastInDefault(defaultValue string) string {
 }
 
 // generationMetadataEqual compares two generation metadata structs.
-func generationMetadataEqual(engine storepb.Engine, gen1, gen2 *storepb.GenerationMetadata) bool {
+func generationMetadataEqual(engine storepb.Engine, gen1, gen2 *metadatapb.GenerationMetadata) bool {
 	if gen1 == nil && gen2 == nil {
 		return true
 	}
@@ -820,7 +822,7 @@ func compareIndexes(engine storepb.Engine, oldTable, newTable *model.TableMetada
 }
 
 // indexesEqual checks if two indexes are equal.
-func indexesEqual(engine storepb.Engine, idx1, idx2 *storepb.IndexMetadata) bool {
+func indexesEqual(engine storepb.Engine, idx1, idx2 *metadatapb.IndexMetadata) bool {
 	if idx1.Type != idx2.Type {
 		return false
 	}
@@ -908,7 +910,7 @@ func descendingArraysEqual(desc1, desc2 []bool) bool {
 }
 
 // spatialConfigsEqual checks if two spatial index configurations are equal.
-func spatialConfigsEqual(cfg1, cfg2 *storepb.SpatialIndexConfig) bool {
+func spatialConfigsEqual(cfg1, cfg2 *metadatapb.SpatialIndexConfig) bool {
 	if cfg1 == nil && cfg2 == nil {
 		return true
 	}
@@ -951,7 +953,7 @@ func spatialConfigsEqual(cfg1, cfg2 *storepb.SpatialIndexConfig) bool {
 }
 
 // tessellationConfigsEqual checks if two tessellation configurations are equal.
-func tessellationConfigsEqual(cfg1, cfg2 *storepb.TessellationConfig) bool {
+func tessellationConfigsEqual(cfg1, cfg2 *metadatapb.TessellationConfig) bool {
 	if cfg1 == nil && cfg2 == nil {
 		return true
 	}
@@ -979,7 +981,7 @@ func tessellationConfigsEqual(cfg1, cfg2 *storepb.TessellationConfig) bool {
 }
 
 // boundingBoxesEqual checks if two bounding boxes are equal.
-func boundingBoxesEqual(bb1, bb2 *storepb.BoundingBox) bool {
+func boundingBoxesEqual(bb1, bb2 *metadatapb.BoundingBox) bool {
 	if bb1 == nil && bb2 == nil {
 		return true
 	}
@@ -994,7 +996,7 @@ func boundingBoxesEqual(bb1, bb2 *storepb.BoundingBox) bool {
 }
 
 // gridLevelsEqual checks if two grid level lists are equal.
-func gridLevelsEqual(grids1, grids2 []*storepb.GridLevel) bool {
+func gridLevelsEqual(grids1, grids2 []*metadatapb.GridLevel) bool {
 	if len(grids1) != len(grids2) {
 		return false
 	}
@@ -1010,7 +1012,7 @@ func gridLevelsEqual(grids1, grids2 []*storepb.GridLevel) bool {
 }
 
 // storageConfigsEqual checks if two storage configurations are equal.
-func storageConfigsEqual(cfg1, cfg2 *storepb.StorageConfig) bool {
+func storageConfigsEqual(cfg1, cfg2 *metadatapb.StorageConfig) bool {
 	if cfg1 == nil && cfg2 == nil {
 		return true
 	}
@@ -1035,7 +1037,7 @@ func storageConfigsEqual(cfg1, cfg2 *storepb.StorageConfig) bool {
 }
 
 // dimensionalConfigsEqual checks if two dimensional configurations are equal.
-func dimensionalConfigsEqual(cfg1, cfg2 *storepb.DimensionalConfig) bool {
+func dimensionalConfigsEqual(cfg1, cfg2 *metadatapb.DimensionalConfig) bool {
 	if cfg1 == nil && cfg2 == nil {
 		return true
 	}
@@ -1051,15 +1053,15 @@ func dimensionalConfigsEqual(cfg1, cfg2 *storepb.DimensionalConfig) bool {
 }
 
 // compareForeignKeys compares two lists of foreign keys.
-func compareForeignKeys(oldFKs, newFKs []*storepb.ForeignKeyMetadata) []*ForeignKeyDiff {
+func compareForeignKeys(oldFKs, newFKs []*metadatapb.ForeignKeyMetadata) []*ForeignKeyDiff {
 	var changes []*ForeignKeyDiff
 
-	oldFKMap := make(map[string]*storepb.ForeignKeyMetadata)
+	oldFKMap := make(map[string]*metadatapb.ForeignKeyMetadata)
 	for _, fk := range oldFKs {
 		oldFKMap[fk.Name] = fk
 	}
 
-	newFKMap := make(map[string]*storepb.ForeignKeyMetadata)
+	newFKMap := make(map[string]*metadatapb.ForeignKeyMetadata)
 	for _, fk := range newFKs {
 		newFKMap[fk.Name] = fk
 	}
@@ -1099,7 +1101,7 @@ func compareForeignKeys(oldFKs, newFKs []*storepb.ForeignKeyMetadata) []*Foreign
 }
 
 // foreignKeysEqual checks if two foreign keys are equal.
-func foreignKeysEqual(fk1, fk2 *storepb.ForeignKeyMetadata) bool {
+func foreignKeysEqual(fk1, fk2 *metadatapb.ForeignKeyMetadata) bool {
 	if fk1.ReferencedSchema != fk2.ReferencedSchema {
 		return false
 	}
@@ -1135,15 +1137,15 @@ func foreignKeysEqual(fk1, fk2 *storepb.ForeignKeyMetadata) bool {
 }
 
 // compareCheckConstraints compares two lists of check constraints.
-func compareCheckConstraints(engine storepb.Engine, oldChecks, newChecks []*storepb.CheckConstraintMetadata) []*CheckConstraintDiff {
+func compareCheckConstraints(engine storepb.Engine, oldChecks, newChecks []*metadatapb.CheckConstraintMetadata) []*CheckConstraintDiff {
 	var changes []*CheckConstraintDiff
 
-	oldCheckMap := make(map[string]*storepb.CheckConstraintMetadata)
+	oldCheckMap := make(map[string]*metadatapb.CheckConstraintMetadata)
 	for _, check := range oldChecks {
 		oldCheckMap[check.Name] = check
 	}
 
-	newCheckMap := make(map[string]*storepb.CheckConstraintMetadata)
+	newCheckMap := make(map[string]*metadatapb.CheckConstraintMetadata)
 	for _, check := range newChecks {
 		newCheckMap[check.Name] = check
 	}
@@ -1183,7 +1185,7 @@ func compareCheckConstraints(engine storepb.Engine, oldChecks, newChecks []*stor
 }
 
 // checkConstraintsEqual checks if two check constraints are equal.
-func checkConstraintsEqual(engine storepb.Engine, check1, check2 *storepb.CheckConstraintMetadata) bool {
+func checkConstraintsEqual(engine storepb.Engine, check1, check2 *metadatapb.CheckConstraintMetadata) bool {
 	// First try semantic comparison
 	if CompareExpressionsSemantically(engine, check1.Expression, check2.Expression) {
 		return true
@@ -1355,15 +1357,15 @@ func extractAnyValues(expr string) []string {
 }
 
 // comparePartitions compares two lists of partitions.
-func comparePartitions(engine storepb.Engine, oldPartitions, newPartitions []*storepb.TablePartitionMetadata) []*PartitionDiff {
+func comparePartitions(engine storepb.Engine, oldPartitions, newPartitions []*metadatapb.TablePartitionMetadata) []*PartitionDiff {
 	var changes []*PartitionDiff
 
-	oldPartMap := make(map[string]*storepb.TablePartitionMetadata)
+	oldPartMap := make(map[string]*metadatapb.TablePartitionMetadata)
 	for _, part := range oldPartitions {
 		oldPartMap[part.Name] = part
 	}
 
-	newPartMap := make(map[string]*storepb.TablePartitionMetadata)
+	newPartMap := make(map[string]*metadatapb.TablePartitionMetadata)
 	for _, part := range newPartitions {
 		newPartMap[part.Name] = part
 	}
@@ -1403,15 +1405,15 @@ func comparePartitions(engine storepb.Engine, oldPartitions, newPartitions []*st
 }
 
 // compareTriggers compares two lists of triggers.
-func compareTriggers(oldTriggers, newTriggers []*storepb.TriggerMetadata) []*TriggerDiff {
+func compareTriggers(oldTriggers, newTriggers []*metadatapb.TriggerMetadata) []*TriggerDiff {
 	var changes []*TriggerDiff
 
-	oldTriggerMap := make(map[string]*storepb.TriggerMetadata)
+	oldTriggerMap := make(map[string]*metadatapb.TriggerMetadata)
 	for _, trigger := range oldTriggers {
 		oldTriggerMap[trigger.Name] = trigger
 	}
 
-	newTriggerMap := make(map[string]*storepb.TriggerMetadata)
+	newTriggerMap := make(map[string]*metadatapb.TriggerMetadata)
 	for _, trigger := range newTriggers {
 		newTriggerMap[trigger.Name] = trigger
 	}
@@ -1455,7 +1457,7 @@ func compareTriggers(oldTriggers, newTriggers []*storepb.TriggerMetadata) []*Tri
 }
 
 // triggersEqual checks if two triggers are equal.
-func triggersEqual(t1, t2 *storepb.TriggerMetadata) bool {
+func triggersEqual(t1, t2 *metadatapb.TriggerMetadata) bool {
 	if t1 == nil || t2 == nil {
 		return t1 == t2
 	}
@@ -1501,7 +1503,7 @@ func normalizeTriggerBody(body string) string {
 }
 
 // partitionsEqual checks if two partitions are equal.
-func partitionsEqual(engine storepb.Engine, part1, part2 *storepb.TablePartitionMetadata) bool {
+func partitionsEqual(engine storepb.Engine, part1, part2 *metadatapb.TablePartitionMetadata) bool {
 	if part1.Type != part2.Type {
 		return false
 	}
@@ -1519,7 +1521,7 @@ func partitionsEqual(engine storepb.Engine, part1, part2 *storepb.TablePartition
 		return false
 	}
 	// Create maps for subpartition comparison
-	subPart1Map := make(map[string]*storepb.TablePartitionMetadata)
+	subPart1Map := make(map[string]*metadatapb.TablePartitionMetadata)
 	for _, sub := range part1.Subpartitions {
 		subPart1Map[sub.Name] = sub
 	}
@@ -1686,7 +1688,7 @@ func compareFunctions(engine storepb.Engine, diff *MetadataDiff, schemaName stri
 	// Functions can have overloading, so we need to handle them carefully
 	// Group functions by signature to properly match overloaded functions
 	// Build map of old functions by signature
-	oldFuncsBySignature := make(map[string]*storepb.FunctionMetadata)
+	oldFuncsBySignature := make(map[string]*metadatapb.FunctionMetadata)
 	for _, fn := range oldSchema.GetProto().GetFunctions() {
 		if !fn.GetSkipDump() {
 			sig := fn.Signature
@@ -1698,7 +1700,7 @@ func compareFunctions(engine storepb.Engine, diff *MetadataDiff, schemaName stri
 	}
 
 	// Build map of new functions by signature
-	newFuncsBySignature := make(map[string]*storepb.FunctionMetadata)
+	newFuncsBySignature := make(map[string]*metadatapb.FunctionMetadata)
 	for _, fn := range newSchema.GetProto().GetFunctions() {
 		if !fn.GetSkipDump() {
 			sig := fn.Signature
@@ -1809,7 +1811,7 @@ func compareFunctions(engine storepb.Engine, diff *MetadataDiff, schemaName stri
 }
 
 // functionsEqual checks if two functions are equal.
-func functionsEqual(fn1, fn2 *storepb.FunctionMetadata) bool {
+func functionsEqual(fn1, fn2 *metadatapb.FunctionMetadata) bool {
 	if fn1.Definition != fn2.Definition {
 		// Try normalized comparison for PostgreSQL functions
 		norm1 := normalizePostgreSQLFunction(fn1.Definition)
@@ -1883,14 +1885,14 @@ func compareProcedures(diff *MetadataDiff, schemaName string, oldSchema, newSche
 // compareSequences compares sequences between two schemas.
 func compareSequences(diff *MetadataDiff, schemaName string, oldSchema, newSchema *model.SchemaMetadata) {
 	// Get sequences from proto since there's no ListSequenceNames method
-	oldSeqMap := make(map[string]*storepb.SequenceMetadata)
+	oldSeqMap := make(map[string]*metadatapb.SequenceMetadata)
 	for _, seq := range oldSchema.GetProto().Sequences {
 		if !seq.GetSkipDump() {
 			oldSeqMap[seq.Name] = seq
 		}
 	}
 
-	newSeqMap := make(map[string]*storepb.SequenceMetadata)
+	newSeqMap := make(map[string]*metadatapb.SequenceMetadata)
 	for _, seq := range newSchema.GetProto().Sequences {
 		if !seq.GetSkipDump() {
 			newSeqMap[seq.Name] = seq
@@ -1930,7 +1932,7 @@ func compareSequences(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 	}
 }
 
-func sequencesEqual(oldSeq, newSeq *storepb.SequenceMetadata) bool {
+func sequencesEqual(oldSeq, newSeq *metadatapb.SequenceMetadata) bool {
 	return oldSeq.DataType == newSeq.DataType &&
 		oldSeq.Start == newSeq.Start &&
 		oldSeq.MinValue == newSeq.MinValue &&
@@ -1949,14 +1951,14 @@ func compareEnumTypes(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 	newSchemaProto := newSchema.GetProto()
 
 	// Build maps of enum types
-	oldEnumMap := make(map[string]*storepb.EnumTypeMetadata)
+	oldEnumMap := make(map[string]*metadatapb.EnumTypeMetadata)
 	for _, enum := range oldSchemaProto.EnumTypes {
 		if !enum.GetSkipDump() {
 			oldEnumMap[enum.Name] = enum
 		}
 	}
 
-	newEnumMap := make(map[string]*storepb.EnumTypeMetadata)
+	newEnumMap := make(map[string]*metadatapb.EnumTypeMetadata)
 	for _, enum := range newSchemaProto.EnumTypes {
 		if !enum.GetSkipDump() {
 			newEnumMap[enum.Name] = enum
@@ -2001,14 +2003,14 @@ func compareCompositeTypes(diff *MetadataDiff, schemaName string, oldSchema, new
 	oldSchemaProto := oldSchema.GetProto()
 	newSchemaProto := newSchema.GetProto()
 
-	oldCompositeMap := make(map[string]*storepb.CompositeTypeMetadata)
+	oldCompositeMap := make(map[string]*metadatapb.CompositeTypeMetadata)
 	for _, composite := range oldSchemaProto.CompositeTypes {
 		if !composite.GetSkipDump() {
 			oldCompositeMap[composite.Name] = composite
 		}
 	}
 
-	newCompositeMap := make(map[string]*storepb.CompositeTypeMetadata)
+	newCompositeMap := make(map[string]*metadatapb.CompositeTypeMetadata)
 	for _, composite := range newSchemaProto.CompositeTypes {
 		if !composite.GetSkipDump() {
 			newCompositeMap[composite.Name] = composite
@@ -2049,7 +2051,7 @@ func compareCompositeTypes(diff *MetadataDiff, schemaName string, oldSchema, new
 }
 
 // compositeTypesEqual checks attributes (order-sensitive) and comments.
-func compositeTypesEqual(oldComposite, newComposite *storepb.CompositeTypeMetadata) bool {
+func compositeTypesEqual(oldComposite, newComposite *metadatapb.CompositeTypeMetadata) bool {
 	if oldComposite.Comment != newComposite.Comment {
 		return false
 	}
@@ -2082,14 +2084,14 @@ func enumValuesEqual(oldValues, newValues []string) bool {
 }
 
 // compareExtensions compares extensions between old and new database metadata.
-func compareExtensions(diff *MetadataDiff, oldMetadata, newMetadata *storepb.DatabaseSchemaMetadata) {
+func compareExtensions(diff *MetadataDiff, oldMetadata, newMetadata *metadatapb.DatabaseSchemaMetadata) {
 	// Build maps of extensions
-	oldExtensionMap := make(map[string]*storepb.ExtensionMetadata)
+	oldExtensionMap := make(map[string]*metadatapb.ExtensionMetadata)
 	for _, extension := range oldMetadata.Extensions {
 		oldExtensionMap[extension.Name] = extension
 	}
 
-	newExtensionMap := make(map[string]*storepb.ExtensionMetadata)
+	newExtensionMap := make(map[string]*metadatapb.ExtensionMetadata)
 	for _, extension := range newMetadata.Extensions {
 		newExtensionMap[extension.Name] = extension
 	}
@@ -2140,14 +2142,14 @@ func compareExtensions(diff *MetadataDiff, oldMetadata, newMetadata *storepb.Dat
 }
 
 // compareEventTriggers compares event triggers between old and new database metadata.
-func compareEventTriggers(diff *MetadataDiff, oldMetadata, newMetadata *storepb.DatabaseSchemaMetadata) {
+func compareEventTriggers(diff *MetadataDiff, oldMetadata, newMetadata *metadatapb.DatabaseSchemaMetadata) {
 	// Build maps of event triggers
-	oldEventTriggerMap := make(map[string]*storepb.EventTriggerMetadata)
+	oldEventTriggerMap := make(map[string]*metadatapb.EventTriggerMetadata)
 	for _, eventTrigger := range oldMetadata.EventTriggers {
 		oldEventTriggerMap[eventTrigger.Name] = eventTrigger
 	}
 
-	newEventTriggerMap := make(map[string]*storepb.EventTriggerMetadata)
+	newEventTriggerMap := make(map[string]*metadatapb.EventTriggerMetadata)
 	for _, eventTrigger := range newMetadata.EventTriggers {
 		newEventTriggerMap[eventTrigger.Name] = eventTrigger
 	}
@@ -2206,12 +2208,12 @@ func compareEvents(diff *MetadataDiff, _ string, oldSchema, newSchema *model.Sch
 	newSchemaProto := newSchema.GetProto()
 
 	// Build maps of events
-	oldEventMap := make(map[string]*storepb.EventMetadata)
+	oldEventMap := make(map[string]*metadatapb.EventMetadata)
 	for _, event := range oldSchemaProto.Events {
 		oldEventMap[event.Name] = event
 	}
 
-	newEventMap := make(map[string]*storepb.EventMetadata)
+	newEventMap := make(map[string]*metadatapb.EventMetadata)
 	for _, event := range newSchemaProto.Events {
 		newEventMap[event.Name] = event
 	}

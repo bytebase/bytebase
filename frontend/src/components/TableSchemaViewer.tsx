@@ -1,12 +1,8 @@
 import { create } from "@bufbuild/protobuf";
-import { Copy } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { databaseServiceClientConnect } from "@/api";
 import { ReadonlyMonaco } from "@/components/monaco/ReadonlyMonaco";
-import { Button } from "@/components/ui/button";
-import { Tooltip } from "@/components/ui/tooltip";
-import { writeTextToClipboard } from "@/lib/clipboard";
+import { CopyButton } from "@/components/ui/copy-button";
 import {
   type Database,
   type GetSchemaStringRequest_ObjectType,
@@ -23,8 +19,6 @@ type Props = {
 };
 
 /**
- * React port of `frontend/src/components/TableSchemaViewer.vue`.
- *
  * Fetches the SDL-style schema text for a database / schema / table /
  * view via `databaseServiceClientConnect.getSchemaString` and displays
  * it read-only. Header shows a `schema.object` (or `object` for
@@ -37,7 +31,6 @@ export function TableSchemaViewer({
   type,
   className,
 }: Props) {
-  const { t } = useTranslation();
   const [schemaString, setSchemaString] = useState<string>("");
 
   const engine = getInstanceResource(database).engine;
@@ -66,10 +59,6 @@ export function TableSchemaViewer({
     };
   }, [database.name, schema, object, type]);
 
-  const handleCopy = async () => {
-    await writeTextToClipboard(schemaString);
-  };
-
   return (
     <div
       className={`w-full h-auto flex flex-col justify-start items-center ${className ?? ""}`}
@@ -78,17 +67,7 @@ export function TableSchemaViewer({
         <div className="text-sm text-control flex-1 truncate">
           {resourceName}
         </div>
-        <Tooltip content={t("common.copy")}>
-          <Button
-            type="button"
-            appearance="secondary"
-            size="sm"
-            disabled={!schemaString}
-            onClick={handleCopy}
-          >
-            <Copy className="size-4" />
-          </Button>
-        </Tooltip>
+        <CopyButton content={schemaString} disabled={!schemaString} size="sm" />
       </div>
       <ReadonlyMonaco
         content={schemaString}

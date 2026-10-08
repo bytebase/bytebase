@@ -62,7 +62,7 @@ export function DeployStageList({
             <StageProgressCard stage={stage} />
           </PlanDetailTabItem>
           {index < rollout.stages.length - 1 && (
-            <ArrowRight className="mx-2 h-4 w-4 shrink-0 text-gray-400" />
+            <ArrowRight className="mx-2 h-4 w-4 shrink-0 text-control-placeholder" />
           )}
         </div>
       ))}

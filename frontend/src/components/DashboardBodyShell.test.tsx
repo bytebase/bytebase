@@ -107,6 +107,7 @@ describe("DashboardBodyShell", () => {
     expect(targets.quickstart).toBeInstanceOf(HTMLDivElement);
     expect(targets.mainContainer?.id).toBe("bb-layout-main");
     expect(targets.mainContainer?.className).toContain("overscroll-y-contain");
+    expect(targets.mainContainer?.className).toContain("overflow-x-auto");
     expect(targets.desktopSidebar?.className).toContain("overscroll-y-contain");
     expect(targets.mobileSidebar?.className).toContain("overscroll-y-contain");
     expect(
@@ -257,6 +258,7 @@ describe("DashboardBodyShell", () => {
     expect(
       container.querySelector('[data-label="bb-main-body-wrapper"]')?.className
     ).toContain("border-x");
+    expect(targets.mainContainer?.className).not.toContain("overflow-x-auto");
     expect(
       container.querySelector(
         '[data-testid="dashboard-header"][data-show-logo="true"][data-show-mobile-toggle="false"]'

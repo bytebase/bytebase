@@ -15,8 +15,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // WorkspaceMessage is the message for a workspace.
@@ -189,6 +189,20 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 		create.ResourceID, string(iamPayload),
 	); err != nil {
 		return nil, errors.Wrap(err, "failed to create workspace IAM policy")
+	}
+
+	// Every standard SQL review rule starts on. The workspace SQL Review page
+	// updates this row, so it exists from the start.
+	reviewRulePayload, err := protojson.Marshal(GetDefaultReviewRulePolicy())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal review rule policy")
+	}
+	if _, err := tx.ExecContext(ctx,
+		`INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent, enforce)
+		 VALUES ($1, 'WORKSPACE', 'workspaces/' || $1, 'REVIEW_RULE', $2, FALSE, TRUE)`,
+		create.ResourceID, string(reviewRulePayload),
+	); err != nil {
+		return nil, errors.Wrap(err, "failed to create workspace review rule policy")
 	}
 
 	// Create default project — used by schema sync to hold unassigned databases.

@@ -19,14 +19,12 @@ import {
 } from "./TreeNode/icons";
 
 /**
- * React equivalent of Vue's
- * `useCurrentTabViewStateContext().availableActions`. Returns the same
- * ordered list, with the same per-instance support gating for
- * Sequences / External Tables / Packages, plus the trailing Diagram.
+ * Returns the ordered schema-view actions, with per-instance support
+ * gating for Sequences / External Tables / Packages, plus the trailing
+ * Diagram.
  *
- * Lifted to its own module (out of `SchemaPane.tsx`) so the AsidePanel
- * `ActionBar` and the SchemaPane right-click menu can share a single
- * source of truth.
+ * Lives in its own module so the AsidePanel `ActionBar` and the SchemaPane
+ * right-click menu can share a single source of truth.
  */
 export function useAvailableActions(): AvailableAction[] {
   const { t } = useTranslation();

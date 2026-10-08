@@ -14,9 +14,8 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/components/BytebaseLogo.vue. Shows the workspace's
- * custom logo when set, otherwise the bundled Bytebase fallback SVG.
- *
+ * Shows the workspace's custom logo when set, otherwise the bundled Bytebase
+ * fallback SVG.
  */
 export function BytebaseLogo({
   builtinTheme = "light",

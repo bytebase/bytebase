@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -17,10 +17,7 @@ func newSampleInstanceFixture(t *testing.T) (context.Context, *store.Store) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(context.Background()) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES
 			('workspace-a'), ('workspace-b'), ('workspace-c'), ('workspace-d');
@@ -31,17 +28,11 @@ func newSampleInstanceFixture(t *testing.T) (context.Context, *store.Store) {
 			('project-workspace-d', 'workspace-d', 'Project D');
 	`)
 	require.NoError(t, err)
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 	return ctx, stores
 }
 
 func TestSampleInstanceSetupPersistsOpaquePayload(t *testing.T) {
+	t.Parallel()
 	ctx, stores := newSampleInstanceFixture(t)
 	create := &store.SampleInstanceSetupMessage{
 		WorkspaceID: "workspace-a",
@@ -73,6 +64,7 @@ func TestSampleInstanceSetupPersistsOpaquePayload(t *testing.T) {
 }
 
 func TestSampleInstanceSetupPermanentLifecycle(t *testing.T) {
+	t.Parallel()
 	ctx, stores := newSampleInstanceFixture(t)
 	setup := &store.SampleInstanceSetupMessage{
 		WorkspaceID: "workspace-a",
@@ -109,6 +101,7 @@ func TestSampleInstanceSetupPermanentLifecycle(t *testing.T) {
 }
 
 func TestSampleInstanceSetupCleanupIsWorkspaceScoped(t *testing.T) {
+	t.Parallel()
 	ctx, stores := newSampleInstanceFixture(t)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	for _, workspace := range []string{"workspace-a", "workspace-b"} {
@@ -153,6 +146,7 @@ func TestSampleInstanceSetupCleanupIsWorkspaceScoped(t *testing.T) {
 }
 
 func TestSampleInstanceSetupDeletedRowRemainsTombstone(t *testing.T) {
+	t.Parallel()
 	ctx, stores := newSampleInstanceFixture(t)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	expiresAt := now.Add(time.Hour)

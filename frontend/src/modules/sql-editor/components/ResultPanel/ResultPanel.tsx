@@ -11,6 +11,7 @@ import {
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import {
   getSQLEditorTabsState,
   useCurrentSQLEditorTab,
@@ -23,10 +24,9 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { formatAbsoluteDateTime, getInstanceResource } from "@/utils";
 import { BatchQuerySelect } from "./BatchQuerySelect";
 import { DatabaseQueryContext } from "./DatabaseQueryContext";
+import { MaximizeToggle } from "./MaximizeToggle";
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/ResultPanel/ResultPanel.vue`.
- *
  * Hosts the batch-query database selector at the top, then a card-style
  * tab strip of query contexts for the currently selected database, with
  * each tab rendering a `<DatabaseQueryContext>` (spinner / cancelled /
@@ -75,8 +75,24 @@ export function ResultPanel() {
 
   const hasMultipleContexts = (queryContexts?.length ?? 0) > 1;
 
-  // Mirror Vue's `watch(queryContexts.[0]?.id, ..., { immediate: true })`:
-  // when the head of the contexts list changes, switch the active tab to
+  const showTabStrip =
+    selectedDatabase !== undefined && (queryContexts?.length ?? 0) > 0;
+  const resultPanelMaximized = useSQLEditorStore((s) => s.resultPanelMaximized);
+  const setResultPanelMaximized = useSQLEditorStore(
+    (s) => s.setResultPanelMaximized
+  );
+  // The maximize control lives in the tab strip, so whatever takes the strip
+  // away takes the only way back with it: closing the last result, or hiding
+  // every batch result behind the empty-results filter, which leaves stored
+  // contexts but nothing selectable. Hand the editor back instead of leaving
+  // it collapsed behind a pane with no control on it. The strip is also
+  // briefly absent while the selector picks a database, which costs nothing:
+  // maximizing does not survive a remount anyway.
+  useEffect(() => {
+    if (!showTabStrip && resultPanelMaximized) setResultPanelMaximized(false);
+  }, [showTabStrip, resultPanelMaximized, setResultPanelMaximized]);
+
+  // When the head of the contexts list changes, switch the active tab to
   // it (newest run becomes selected).
   const headId = queryContexts?.[0]?.id;
   useEffect(() => {
@@ -153,7 +169,7 @@ export function ResultPanel() {
           onSelectedDatabaseChange={setSelectedDatabase}
         />
       </div>
-      {selectedDatabase && queryContexts && queryContexts.length > 0 && (
+      {showTabStrip && selectedDatabase && queryContexts && (
         <Tabs
           value={selectedTab ?? ""}
           onValueChange={(v) => setSelectedTab(v as string)}
@@ -162,64 +178,67 @@ export function ResultPanel() {
             isBatchQuery ? "pt-0" : "pt-2"
           )}
         >
-          <TabsList className="shrink-0 gap-x-1 border-b border-control-border overflow-x-auto overflow-y-hidden">
-            {queryContexts.map((context) => (
-              // Order matters: `Tooltip` MUST wrap `TabContextMenu`, not the
-              // other way around. `ContextMenuTrigger` uses Base UI's
-              // `render` prop, which clones the given element and attaches
-              // `onContextMenu` / `ref` to it — that only works when the
-              // rendered element forwards unknown props onto its DOM
-              // (`TabsTrigger` does, our `Tooltip` wrapper doesn't). With
-              // Tooltip on the outside, the trigger renders `TabsTrigger`
-              // directly and the right-click handler reaches the DOM.
-              <Tooltip
-                key={context.id}
-                content={context.params.statement}
-                popupClassName="ph-no-capture"
-              >
-                <TabContextMenu
-                  onSelect={(action) => {
-                    switch (action) {
-                      case "CLOSE":
-                        closeTab(context.id);
-                        break;
-                      case "CLOSE_OTHERS":
-                        closeOthers(context.id);
-                        break;
-                      case "CLOSE_TO_THE_RIGHT":
-                        closeToTheRight(context.id);
-                        break;
-                      case "CLOSE_ALL":
-                        closeAll();
-                        break;
-                    }
-                  }}
+          <div className="shrink-0 flex items-center gap-x-2 border-b border-control-border">
+            <TabsList className="min-w-0 flex-1 gap-x-1 overflow-x-auto overflow-y-hidden">
+              {queryContexts.map((context) => (
+                // Order matters: `Tooltip` MUST wrap `TabContextMenu`, not the
+                // other way around. `ContextMenuTrigger` uses Base UI's
+                // `render` prop, which clones the given element and attaches
+                // `onContextMenu` / `ref` to it — that only works when the
+                // rendered element forwards unknown props onto its DOM
+                // (`TabsTrigger` does, our `Tooltip` wrapper doesn't). With
+                // Tooltip on the outside, the trigger renders `TabsTrigger`
+                // directly and the right-click handler reaches the DOM.
+                <Tooltip
+                  key={context.id}
+                  content={context.params.statement}
+                  popupClassName="ph-no-capture"
                 >
-                  <TabsTrigger
-                    value={context.id}
-                    className="flex items-center gap-x-2 px-3 py-1 shrink-0"
-                  >
-                    <span className="truncate">{tabName(context)}</span>
-                    {context.resultSet?.error && (
-                      <CircleAlert className="size-4 text-error shrink-0" />
-                    )}
-                    {context.status === "EXECUTING" && (
-                      <Loader2 className="size-3 animate-spin shrink-0" />
-                    )}
-                    {hasMultipleContexts && (
-                      <X
-                        className="size-4 text-control-light hover:text-control shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
+                  <TabContextMenu
+                    onSelect={(action) => {
+                      switch (action) {
+                        case "CLOSE":
                           closeTab(context.id);
-                        }}
-                      />
-                    )}
-                  </TabsTrigger>
-                </TabContextMenu>
-              </Tooltip>
-            ))}
-          </TabsList>
+                          break;
+                        case "CLOSE_OTHERS":
+                          closeOthers(context.id);
+                          break;
+                        case "CLOSE_TO_THE_RIGHT":
+                          closeToTheRight(context.id);
+                          break;
+                        case "CLOSE_ALL":
+                          closeAll();
+                          break;
+                      }
+                    }}
+                  >
+                    <TabsTrigger
+                      value={context.id}
+                      className="flex items-center gap-x-2 px-3 py-1 shrink-0"
+                    >
+                      <span className="truncate">{tabName(context)}</span>
+                      {context.resultSet?.error && (
+                        <CircleAlert className="size-4 text-error shrink-0" />
+                      )}
+                      {context.status === "EXECUTING" && (
+                        <Loader2 className="size-3 animate-spin shrink-0" />
+                      )}
+                      {hasMultipleContexts && (
+                        <X
+                          className="size-4 text-control-light hover:text-control shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            closeTab(context.id);
+                          }}
+                        />
+                      )}
+                    </TabsTrigger>
+                  </TabContextMenu>
+                </Tooltip>
+              ))}
+            </TabsList>
+            <MaximizeToggle />
+          </div>
           {queryContexts.map((context, i) => (
             <TabsPanel
               key={context.id}
@@ -275,8 +294,8 @@ const CLOSE_ACTION_KEYS: Record<CloseAction, string> = {
 /**
  * Right-click context menu wrapper for a single tab. Local to ResultPanel
  * so the close-tab handler is delivered directly via prop, sidestepping
- * the cross-component `resultTabEvents` channel that Stage 18's
- * `BatchQuerySelect` already owns for its database-strip tabs.
+ * the cross-component `resultTabEvents` channel that `BatchQuerySelect`
+ * owns for its database-strip tabs.
  */
 function TabContextMenu({
   children,

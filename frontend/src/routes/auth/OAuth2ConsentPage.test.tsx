@@ -24,6 +24,8 @@ const mocks = vi.hoisted(() => ({
   workspaceList: { value: [] as { name: string; title: string }[] },
   loadWorkspace: vi.fn(async () => {}),
   loadWorkspaceList: vi.fn(async () => {}),
+  loadServerInfo: vi.fn(),
+  refreshServerInfo: vi.fn(),
   switchWorkspace: vi.fn(async () => {}),
   routerReplace: vi.fn(),
   routerBack: vi.fn(),
@@ -34,7 +36,6 @@ const mocks = vi.hoisted(() => ({
     },
   },
   fetchImpl: vi.fn(),
-  getMCPInfo: vi.fn(),
 }));
 mocks.useAuthStore.mockImplementation(() => ({
   get isLoggedIn() {
@@ -55,15 +56,11 @@ mocks.useAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
     isLoggedIn: () => mocks.isLoggedIn.value,
     loadWorkspace: mocks.loadWorkspace,
     loadWorkspaceList: mocks.loadWorkspaceList,
+    loadServerInfo: mocks.loadServerInfo,
+    refreshServerInfo: mocks.refreshServerInfo,
     switchWorkspace: mocks.switchWorkspace,
   })
 );
-// The consent page also calls `useAppStore.getState().loadServerInfo()` on mount.
-(mocks.useAppStore as unknown as { getState: () => unknown }).getState =
-  () => ({
-    loadServerInfo: vi.fn().mockResolvedValue(undefined),
-  });
-
 vi.mock("@/hooks/useAppState", () => ({
   useWorkspace: mocks.useWorkspace,
 }));
@@ -126,17 +123,11 @@ vi.mock("@/components/BytebaseLogo", () => ({
   BytebaseLogo: () => null,
 }));
 
-vi.mock("@/api", () => ({
-  workspaceServiceClientConnect: { getMCPInfo: mocks.getMCPInfo },
-}));
-
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, vars?: Record<string, string>) =>
       vars ? `${key}:${JSON.stringify(vars)}` : key,
   }),
-  // The page now reaches the connect client for GetMCPInfo, and @/api's error
-  // middleware imports the shared i18n instance, which registers this.
   initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
@@ -159,15 +150,6 @@ const renderIntoContainer = (element: ReactElement) => {
   };
 };
 
-// Every real GetMCPInfo response carries one row per ceiling the gate serves.
-// The page reads that table to tell a policy it can disclose from one the
-// server refuses, so a fixture without it is not a response the server sends.
-const SERVED_MODES = [
-  { capability: 1 },
-  { capability: 3 },
-  { capability: 4 },
-];
-
 const flushPromises = () =>
   act(async () => {
     await Promise.resolve();
@@ -188,18 +170,12 @@ beforeEach(async () => {
   mocks.currentRoute.value.fullPath = "/oauth2/consent";
   globalThis.fetch = mocks.fetchImpl as typeof fetch;
   mocks.fetchImpl.mockReset();
-  mocks.getMCPInfo.mockReset();
   // Default: a served read-only ceiling, the page's ordinary case. Allow
   // renders only under one, so a failing default would leave every test that
   // is not about the ceiling asserting against the undisclosed card.
-  mocks.getMCPInfo.mockResolvedValue({
-    capability: 3,
-    ignoreMaskingExemptions: false,
-    dataMaskingAvailable: true,
-    modes: SERVED_MODES,
-    methods: [],
-    engines: [],
-  });
+  const serverInfo = { mcpSetting: { capability: 3 } };
+  mocks.loadServerInfo.mockResolvedValue(serverInfo);
+  mocks.refreshServerInfo.mockResolvedValue(serverInfo);
   ({ OAuth2ConsentPage } = await import("./OAuth2ConsentPage"));
 });
 
@@ -527,18 +503,39 @@ describe("OAuth2ConsentPage", () => {
     code_challenge_method: "S256",
   });
 
-  const renderWithCeiling = async (info: Record<string, unknown>) => {
+  const renderWithCeiling = async (setting: Record<string, unknown>) => {
     mocks.currentRoute.value.query = consentQuery();
     mocks.fetchImpl.mockResolvedValue({
       ok: true,
       json: async () => ({ client_name: "Acme" }),
     });
-    mocks.getMCPInfo.mockResolvedValue({ modes: SERVED_MODES, ...info });
+    mocks.refreshServerInfo.mockResolvedValue({ mcpSetting: setting });
     const handle = renderIntoContainer(<OAuth2ConsentPage />);
     handle.render();
     await flushPromises();
     return handle;
   };
+
+  test("refreshes the ceiling before presenting consent", async () => {
+    mocks.currentRoute.value.query = consentQuery();
+    mocks.fetchImpl.mockResolvedValue({
+      ok: true,
+      json: async () => ({ client_name: "Acme" }),
+    });
+    mocks.loadServerInfo.mockResolvedValue({ mcpSetting: { capability: 3 } });
+    mocks.refreshServerInfo.mockResolvedValue({ mcpSetting: { capability: 4 } });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <OAuth2ConsentPage />
+    );
+    render();
+    await flushPromises();
+
+    expect(mocks.refreshServerInfo).toHaveBeenCalledOnce();
+    expect(mocks.loadServerInfo).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("settings.mcp.ladder.row.run-statements.title");
+    unmount();
+  });
 
   // Codex, #21237: the !response.ok branch returned, its sibling catch did not.
   // The render checks loading before error, so a failed client lookup sat
@@ -547,9 +544,6 @@ describe("OAuth2ConsentPage", () => {
   test("a failed client lookup shows its error without waiting on the policy", async () => {
     mocks.currentRoute.value.query = consentQuery();
     mocks.fetchImpl.mockRejectedValue(new Error("network down"));
-    // Never settles: if the error waits on this, the test sees the spinner.
-    mocks.getMCPInfo.mockReturnValue(new Promise(() => {}));
-
     const handle = renderIntoContainer(<OAuth2ConsentPage />);
     handle.render();
     await flushPromises();
@@ -561,55 +555,84 @@ describe("OAuth2ConsentPage", () => {
     handle.unmount();
   });
 
-  test("a read-only ceiling says what the session may not do", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 3,
-      ignoreMaskingExemptions: false,
-      methods: [],
-      engines: [],
-    });
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.read");
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.no-write");
-    expect(container.textContent).not.toContain("oauth2.consent.mcp.line.write");
-    // The masking line is the toggle's, not the ceiling's.
+  test("a read-only ceiling starts compact and can reveal the complete MCP policy boundary", async () => {
+    const { container, unmount } = await renderWithCeiling({ capability: 3 });
+    expect(container.textContent).toContain("settings.mcp.ladder.row.read-schemas.title");
     expect(container.textContent).not.toContain(
-      "oauth2.consent.mcp.line.masking"
+      "settings.mcp.ladder.row.read-schemas.details"
     );
-    expect(container.textContent).toContain("common.allow");
+    expect(container.textContent).toContain(
+      "settings.mcp.ladder.row.run-statements.title"
+    );
+    expect(container.textContent).not.toContain(
+      "settings.mcp.ladder.row.run-statements.details"
+    );
+    expect(container.textContent).toContain("settings.mcp.ladder.stops.read");
+    expect(container.textContent).toContain("settings.mcp.ladder.floor.text");
+    expect(container.textContent).not.toContain("oauth2.consent.mcp.line.no-write");
+    expect(container.textContent).toContain("settings.mcp.ladder.show-details");
+    expect(container.textContent).toContain("oauth2.consent.allow-access");
+
+    const detailsAction = [...container.querySelectorAll("button")].find(
+      (button) =>
+        button.textContent?.includes("settings.mcp.ladder.show-details")
+    );
+    const sessionTitle = [...container.querySelectorAll("p")].find((node) =>
+      node.textContent?.includes("oauth2.consent.mcp.title")
+    );
+    const modeBadge = [...container.querySelectorAll("span")].find((node) =>
+      node.textContent?.includes("settings.mcp.policy.mode.read-only.title")
+    );
+    expect(detailsAction).toHaveAttribute("aria-expanded", "false");
+    expect(detailsAction?.parentElement).toHaveClass("ml-auto", "shrink-0");
+    expect(sessionTitle?.parentElement).toHaveClass("items-center", "gap-2");
+    expect(sessionTitle?.parentElement?.parentElement).toHaveClass(
+      "flex-col",
+      "gap-2"
+    );
+    expect(modeBadge).toHaveClass("whitespace-nowrap");
+    expect(modeBadge?.parentElement).toHaveClass(
+      "flex-wrap",
+      "max-w-full"
+    );
+    expect(modeBadge?.parentElement).not.toHaveClass("ml-auto", "xl:ml-auto");
+    act(() => detailsAction?.click());
+
+    expect(container.textContent).toContain(
+      "settings.mcp.ladder.row.read-schemas.details"
+    );
+    expect(container.textContent).toContain(
+      "settings.mcp.ladder.row.run-statements.details"
+    );
+    expect(container.textContent).toContain("settings.mcp.ladder.hide-details");
+    expect(detailsAction).toHaveAttribute("aria-expanded", "true");
     unmount();
+  });
+
+  test("each ceiling states the shared policy bound", async () => {
+    const readOnly = await renderWithCeiling({ capability: 3 });
+    expect(readOnly.container.textContent).toContain(
+      "settings.mcp.policy.bound"
+    );
+    expect(readOnly.container.textContent).toContain(
+      "settings.mcp.policy.audit"
+    );
+    readOnly.unmount();
+
+    const readWrite = await renderWithCeiling({ capability: 4 });
+    expect(readWrite.container.textContent).toContain(
+      "settings.mcp.policy.bound"
+    );
+    expect(readWrite.container.textContent).toContain(
+      "settings.mcp.policy.audit"
+    );
+    readWrite.unmount();
   });
 
   test("a read-write ceiling adds the write line and the caution", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 4,
-      ignoreMaskingExemptions: true,
-      dataMaskingAvailable: true,
-      methods: [],
-      engines: [],
-    });
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.write");
+    const { container, unmount } = await renderWithCeiling({ capability: 4 });
+    expect(container.textContent).toContain("settings.mcp.ladder.row.run-statements.title");
     expect(container.textContent).toContain("oauth2.consent.mcp.write-caution");
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.masking");
-    unmount();
-  });
-
-  // The masking line promises a restriction. The toggle withholds unmasking
-  // exemptions from MCP sessions, which restricts nothing on a workspace where
-  // masking does not run — and this card is read at the moment someone decides
-  // whether to hand over access.
-  test("the masking line is not promised where masking does not run", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 4,
-      ignoreMaskingExemptions: true,
-      dataMaskingAvailable: false,
-      methods: [],
-      engines: [],
-    });
-    // The rest of the card is unchanged, so this is the line and not the card.
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.write");
-    expect(container.textContent).not.toContain(
-      "oauth2.consent.mcp.line.masking"
-    );
     unmount();
   });
 
@@ -618,13 +641,7 @@ describe("OAuth2ConsentPage", () => {
   // access_denied to the registered redirect_uri, which is the answer it is
   // blocked on.
   test("dismissing a disabled ceiling denies the request instead of going back", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 1,
-      ignoreMaskingExemptions: false,
-      dataMaskingAvailable: true,
-      methods: [],
-      engines: [],
-    });
+    const { container, unmount } = await renderWithCeiling({ capability: 1 });
 
     const submitted: HTMLFormElement[] = [];
     const realSubmit = HTMLFormElement.prototype.submit;
@@ -650,50 +667,36 @@ describe("OAuth2ConsentPage", () => {
   // Codex, #21237: a SaaS user whose current workspace has MCP off could not
   // switch to one that permits it without abandoning the OAuth flow.
   test("the disabled screen keeps the workspace switcher", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 1,
-      ignoreMaskingExemptions: false,
-      dataMaskingAvailable: true,
-      methods: [],
-      engines: [],
-    });
+    const { container, unmount } = await renderWithCeiling({ capability: 1 });
     expect(container.textContent).toContain("oauth2.consent.workspace-label");
     unmount();
   });
 
   test("a disabled ceiling offers nothing to approve", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 1,
-      ignoreMaskingExemptions: false,
-      methods: [],
-      engines: [],
-    });
+    const { container, unmount } = await renderWithCeiling({ capability: 1 });
     expect(container.textContent).toContain("oauth2.consent.mcp.disabled.title");
     expect(container.textContent).toContain(
       "oauth2.consent.mcp.disabled.ask-admin"
     );
     // Nothing to approve and nothing to deny: the grant is not on offer.
-    expect(container.textContent).not.toContain("common.allow");
+    expect(container.textContent).not.toContain("oauth2.consent.allow-access");
     expect(container.textContent).not.toContain("common.deny");
     unmount();
   });
 
-  // BOT-106, and the reason this is a blocker rather than a tidy-up. The page
-  // used to fall through to a generic "access your account" card with Allow
-  // live whenever GetMCPInfo failed for ANY reason. The two broken-ceiling
-  // cases were cosmetic — the POST refuses those anyway — but a transient
-  // failure is not: the POST reads the ceiling for itself, succeeds, and issues
-  // a grant against a card that never named the ceiling it was granting.
-  //
-  // A timeout arrives here the same way: the client throws, and the page cannot
-  // tell a deadline from a refusal, which is the whole point of failing closed.
+  // Failing closed here is load-bearing. The POST refuses a stored value
+  // nothing resolves, but it refuses neither a transient failure nor a tier
+  // this bundle is too old to name; in both, it reads the ceiling for itself,
+  // succeeds, and issues a grant against a card that never named what it was
+  // granting. A timeout arrives the same way: the client throws, and the page
+  // cannot tell a deadline from a refusal.
   test("a failed policy read offers no grant and can be retried", async () => {
     mocks.currentRoute.value.query = consentQuery();
     mocks.fetchImpl.mockResolvedValue({
       ok: true,
       json: async () => ({ client_name: "Acme" }),
     });
-    mocks.getMCPInfo.mockRejectedValueOnce(new Error("deadline exceeded"));
+    mocks.refreshServerInfo.mockResolvedValueOnce(undefined);
 
     const { container, render, unmount } = renderIntoContainer(
       <OAuth2ConsentPage />
@@ -705,7 +708,7 @@ describe("OAuth2ConsentPage", () => {
       "oauth2.consent.mcp.undisclosed.unknown.title"
     );
     // The hole: neither the grant button nor the form that carries it.
-    expect(container.textContent).not.toContain("common.allow");
+    expect(container.textContent).not.toContain("oauth2.consent.allow-access");
     expect(container.querySelector('form[method="POST"]')).toBeNull();
 
     // The default mock resolves, so the retry reaches a ceiling and the page
@@ -718,81 +721,44 @@ describe("OAuth2ConsentPage", () => {
       retry?.click();
     });
     await flushPromises();
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.read");
-    expect(container.textContent).toContain("common.allow");
+    expect(container.textContent).toContain("settings.mcp.ladder.row.read-schemas.title");
+    expect(container.textContent).toContain("oauth2.consent.allow-access");
     unmount();
   });
 
-  test("a ceiling no mode serves says so and offers no grant", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      // The reserved 2, or a ceiling a newer release wrote. It parses, so only
-      // its absence from the serving table catches it.
-      capability: 2,
-      ignoreMaskingExemptions: false,
-      dataMaskingAvailable: true,
-      methods: [],
-      engines: [],
-    });
+  // The guarantee, at the page: Allow reaches the screen only under a ceiling
+  // this build can name. Every value it cannot name is one case — the reserved
+  // 2, a tier a newer release wrote, and a row that resolved to nothing all
+  // leave the page with nothing to disclose, whichever of them it is.
+  //
+  // The Allow assertion leads deliberately. Behind a title assertion it never
+  // runs, so a regression would report a copy mismatch rather than a grant
+  // offered without a disclosure.
+  test.each([
+    ["the reserved tier", 2],
+    ["a tier a newer release wrote", 5],
+    ["a value nothing could resolve", 0],
+  ])("%s offers no grant and no retry", async (_name, capability) => {
+    const { container, unmount } = await renderWithCeiling({ capability });
+    expect(container.textContent).not.toContain("oauth2.consent.allow-access");
+    expect(container.querySelector('form[method="POST"]')).toBeNull();
     expect(container.textContent).toContain(
-      "oauth2.consent.mcp.undisclosed.unserved.title"
+      "oauth2.consent.mcp.undisclosed.undisclosable.title"
     );
-    expect(container.textContent).not.toContain("common.allow");
-    // The other state only an admin can fix, held to the same rule.
+    // Both repairs are named in the copy instead. Re-reading returns the same
+    // value, and only a fresh bundle could name a newer tier, so neither
+    // remedy is a button this page can press.
     expect(container.textContent).not.toContain(
-      "oauth2.consent.mcp.undisclosed.unserved.retry"
+      "oauth2.consent.mcp.undisclosed.undisclosable.retry"
     );
-    unmount();
-  });
-
-  // The server serves this ceiling and this bundle has no word for it: a newer
-  // release's value against a page that was already open. Falling through to
-  // the read-only wording would understate what was approved, and telling the
-  // user to find an admin would send them after a policy that is working.
-  test("a ceiling this page cannot name asks for a reload, not a grant", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 5,
-      ignoreMaskingExemptions: false,
-      dataMaskingAvailable: true,
-      modes: [...SERVED_MODES, { capability: 5 }],
-      methods: [],
-      engines: [],
-    });
-    expect(container.textContent).toContain(
-      "oauth2.consent.mcp.undisclosed.outdated.title"
-    );
-    expect(container.textContent).not.toContain("common.allow");
-
-    const reload = vi.fn();
-    Object.defineProperty(globalThis, "location", {
-      writable: true,
-      value: { ...globalThis.location, reload },
-    });
-    const retry = [...container.querySelectorAll("button")].find((b) =>
-      b.textContent?.includes("oauth2.consent.mcp.undisclosed.outdated.retry")
-    );
-    expect(retry).toBeDefined();
-    await act(async () => {
-      retry?.click();
-    });
-    await flushPromises();
-    // A reload, not a re-read: only a fresh bundle can name this ceiling, so
-    // refetching the policy would return the same value with no word for it.
-    expect(reload).toHaveBeenCalledTimes(1);
-    expect(mocks.getMCPInfo).toHaveBeenCalledTimes(1);
     unmount();
   });
 
   // Same reasoning as the disabled screen: history leaves the OAuth client
-  // waiting on a callback that never comes, and these four states are the ones
-  // where the person has nothing else to do here.
+  // waiting on a callback that never comes, and these states are the ones where
+  // the person has nothing else to do here.
   test("dismissing an undisclosed policy denies the request", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 0,
-      ignoreMaskingExemptions: false,
-      dataMaskingAvailable: true,
-      methods: [],
-      engines: [],
-    });
+    const { container, unmount } = await renderWithCeiling({ capability: 0 });
 
     const submitted: HTMLFormElement[] = [];
     const realSubmit = HTMLFormElement.prototype.submit;

@@ -5,7 +5,6 @@ import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/u
 import { AdminModeButton } from "./AdminModeButton";
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorPanel/ReadonlyModeNotSupported.vue.
  * Shown when the current tab targets an instance without read-only mode —
  * prompts the user to switch to admin mode instead.
  */

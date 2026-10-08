@@ -21,6 +21,7 @@ func batchMoveDatabaseIntoProjectA(fixture *storePostgresFixture) error {
 }
 
 func TestBatchUpdateDatabasesRejectsArchivedInstance(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO instance (resource_id, workspace, project, deleted)
 			VALUES ('instance-a', 'default', NULL, TRUE);
@@ -38,6 +39,7 @@ func TestBatchUpdateDatabasesRejectsArchivedInstance(t *testing.T) {
 }
 
 func TestBatchUpdateDatabasesClearsEnvironmentOnArchivedInstance(t *testing.T) {
+	t.Parallel()
 	environmentID, unset := "env-a", ""
 	fixture := newStorePostgresFixture(t, `
 		INSERT INTO instance (resource_id, workspace, project, deleted)
@@ -60,6 +62,7 @@ func TestBatchUpdateDatabasesClearsEnvironmentOnArchivedInstance(t *testing.T) {
 }
 
 func TestBatchUpdateDatabasesByEnvironment(t *testing.T) {
+	t.Parallel()
 	envA, unset := "env-a", ""
 	fixture := newStorePostgresFixture(t, `
 		INSERT INTO workspace (resource_id) VALUES ('other');

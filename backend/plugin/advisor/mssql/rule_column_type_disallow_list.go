@@ -44,7 +44,7 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 		OmniBaseRule:  OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 		disallowTypes: disallowTypes,
 	}
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type columnTypeDisallowListRule struct {

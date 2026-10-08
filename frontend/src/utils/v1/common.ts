@@ -1,5 +1,4 @@
 import { isEqual, snakeCase } from "lodash-es";
-import { humanizeTs } from "../util";
 
 export const calcUpdateMask = (
   a: Record<string, unknown>,
@@ -18,10 +17,6 @@ export const calcUpdateMask = (
   }
   const keys = [...updateMask.values(), ...bKeys.values()];
   return toSnakeCase ? keys.map(snakeCase) : keys;
-};
-
-export const humanizeDate = (date: Date | undefined) => {
-  return humanizeTs(Math.floor((date?.getTime() ?? 0) / 1000));
 };
 
 // The list of supported encodings.

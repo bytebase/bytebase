@@ -14,6 +14,7 @@ import {
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
@@ -25,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type {
@@ -89,6 +91,8 @@ function getDefaultValue(
 
 const VALUE_MULTI_FIELD_CLASS =
   "min-h-9 px-3 py-1 text-sm leading-5 rounded-xs border border-control-border bg-background";
+const VALUE_TAG_CLASS =
+  "inline-flex min-w-0 max-w-full items-center gap-1 rounded-xs bg-control-bg px-1.5 py-0.5 text-xs";
 
 // Clone root, apply a mutation to the clone, return the clone.
 function updateExpr(
@@ -360,10 +364,12 @@ function SearchableSelect({
 
   return (
     <div className="min-w-28">
-      <button
+      <Button
         ref={triggerRef}
         type="button"
-        className="inline-flex h-9 w-full items-center rounded-xs border border-control-border bg-background px-3 text-left text-sm leading-5 text-control disabled:opacity-50"
+        appearance="outline"
+        size="md"
+        className="w-full justify-start bg-background text-left text-control"
         disabled={disabled}
         onClick={handleOpen}
       >
@@ -374,7 +380,7 @@ function SearchableSelect({
             </span>
           )}
         </span>
-      </button>
+      </Button>
       {open && (
         <PortaledDropdown
           anchorRef={triggerRef}
@@ -546,14 +552,13 @@ function MultiSearchableSelect({
           <span className="text-control-placeholder">{placeholder ?? ""}</span>
         )}
         {value.map((v) => (
-          <span
-            key={v}
-            className="inline-flex items-center gap-1 bg-control-bg text-xs px-1.5 py-0.5 rounded-xs"
-          >
-            {getLabelForValue(v)}
+          <span key={v} className={VALUE_TAG_CLASS}>
+            <span className="min-w-0 truncate">{getLabelForValue(v)}</span>
             {!disabled && (
-              <button
+              <Button
                 type="button"
+                appearance="secondary"
+                size="xs"
                 className="text-control-placeholder hover:text-control-light"
                 onMouseDown={(e) => {
                   e.stopPropagation();
@@ -561,7 +566,7 @@ function MultiSearchableSelect({
                 }}
               >
                 <X className="size-3" />
-              </button>
+              </Button>
             )}
           </span>
         ))}
@@ -570,8 +575,7 @@ function MultiSearchableSelect({
         <PortaledDropdown
           anchorRef={triggerRef}
           dropdownRef={dropdownRef}
-          matchAnchorWidth
-          className="bg-background border border-control-border rounded-sm shadow-md"
+          className="w-80 max-w-[calc(100vw-2rem)] bg-background border border-control-border rounded-sm shadow-md"
         >
           <div className="p-1 border-b border-control-border">
             <SearchInput
@@ -664,24 +668,24 @@ function TagInput({
       )}
     >
       {value.map((tag) => (
-        <span
-          key={tag}
-          className="inline-flex items-center gap-1 bg-control-bg text-xs px-1.5 py-0.5 rounded-xs"
-        >
-          {tag}
+        <span key={tag} className={VALUE_TAG_CLASS}>
+          <span className="min-w-0 truncate">{tag}</span>
           {!disabled && (
-            <button
+            <Button
               type="button"
+              appearance="secondary"
+              size="xs"
               className="text-control-placeholder hover:text-control-light"
               onClick={() => removeTag(tag)}
             >
               <X className="size-3" />
-            </button>
+            </Button>
           )}
         </span>
       ))}
       {!disabled && (
-        <input
+        <Input
+          size="xs"
           className="flex-1 min-w-16 h-5 border-0 bg-transparent p-0 text-sm leading-5 shadow-none outline-none placeholder:text-control-placeholder focus:border-0 focus:ring-0"
           placeholder={value.length === 0 ? (placeholder ?? "") : ""}
           value={inputValue}
@@ -742,12 +746,14 @@ function MultiCheckSelect({
 
   return (
     <div className="min-w-32">
-      <button
+      <Button
         ref={triggerRef}
         type="button"
+        appearance="secondary"
+        size="xs"
         className={cn(
           VALUE_MULTI_FIELD_CLASS,
-          "inline-flex w-full flex-wrap items-center gap-1 text-left hover:bg-control-bg disabled:pointer-events-none disabled:opacity-50"
+          "h-auto w-full flex-wrap justify-start text-left whitespace-normal hover:bg-control-bg disabled:pointer-events-none"
         )}
         disabled={disabled}
         onClick={() => setOpen(!open)}
@@ -756,13 +762,12 @@ function MultiCheckSelect({
           <span className="text-control-placeholder">{placeholder}</span>
         )}
         {value.map((v) => (
-          <span
-            key={v}
-            className="inline-flex items-center gap-1 bg-control-bg text-xs px-1.5 py-0.5 rounded-xs"
-          >
-            {renderValue
-              ? renderValue(v, getLabelForValue(v))
-              : getLabelForValue(v)}
+          <span key={v} className={VALUE_TAG_CLASS}>
+            <span className="min-w-0 truncate">
+              {renderValue
+                ? renderValue(v, getLabelForValue(v))
+                : getLabelForValue(v)}
+            </span>
             {!disabled && (
               <span
                 role="button"
@@ -778,7 +783,7 @@ function MultiCheckSelect({
             )}
           </span>
         ))}
-      </button>
+      </Button>
       {open && (
         <PortaledDropdown
           anchorRef={triggerRef}
@@ -1075,7 +1080,7 @@ function ValueInput({
       return (
         <Input
           type="number"
-          className="max-w-20"
+          className="w-full"
           value={getNumberValue()}
           disabled={readonly}
           onChange={(e) => setNumberValue(Number(e.target.value))}
@@ -1096,7 +1101,7 @@ function ValueInput({
             if (val != null) setBooleanValue(val === "true");
           }}
         >
-          <SelectTrigger className="min-w-24">
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1108,7 +1113,7 @@ function ValueInput({
     }
     return (
       <Input
-        className="min-w-28"
+        className="w-full"
         value={getStringValue()}
         disabled={readonly}
         onChange={(e) => setStringValue(e.target.value)}
@@ -1144,7 +1149,7 @@ function ValueInput({
           else setStringValue(val);
         }}
       >
-        <SelectTrigger className="min-w-28">
+        <SelectTrigger className="w-full">
           <SelectValue placeholder={t("cel.condition.select-value")}>
             {(value: string | null) => {
               if (!value) return null;
@@ -1226,7 +1231,7 @@ function ConditionRow({
         groupPath={groupPath}
         operandIndex={operandIndex}
       />
-      <div className="flex-1 min-w-0">
+      <div className="w-56 shrink-0">
         <ValueInput
           expr={expr}
           groupPath={groupPath}
@@ -1234,9 +1239,11 @@ function ConditionRow({
         />
       </div>
       {!readonly && (
-        <button
+        <Button
           type="button"
-          className="shrink-0 size-7 flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-control-bg"
+          appearance="secondary"
+          size="sm"
+          className="shrink-0 text-control-placeholder hover:text-control hover:bg-control-bg"
           onClick={() =>
             doUpdate((group) => {
               group.args.splice(operandIndex, 1);
@@ -1244,7 +1251,7 @@ function ConditionRow({
           }
         >
           <Trash2 className="size-3.5" />
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -1268,7 +1275,8 @@ function RawStringEditor({
 
   return (
     <div className="w-full flex items-start gap-x-1">
-      <textarea
+      <Textarea
+        size="xs"
         className="flex-1 min-h-16 max-h-24 px-2 py-1 text-sm rounded-xs border border-control-border bg-background resize-y disabled:opacity-50"
         placeholder="Enter raw CEL expression"
         value={expr.content}
@@ -1283,9 +1291,11 @@ function RawStringEditor({
         }}
       />
       {!readonly && (
-        <button
+        <Button
           type="button"
-          className="shrink-0 size-7 flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-control-bg"
+          appearance="secondary"
+          size="sm"
+          className="shrink-0 text-control-placeholder hover:text-control hover:bg-control-bg"
           onClick={() =>
             doUpdate((group) => {
               group.args.splice(operandIndex, 1);
@@ -1293,7 +1303,7 @@ function RawStringEditor({
           }
         >
           <Trash2 className="size-3.5" />
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -1398,9 +1408,11 @@ function ConditionGroup({
           </div>
           {!readonly && (
             <div className="flex items-center justify-end">
-              <button
+              <Button
                 type="button"
-                className="size-[22px] flex items-center justify-center rounded-xs hover:bg-control-bg"
+                appearance="secondary"
+                size="xs"
+                className="hover:bg-control-bg"
                 onClick={() =>
                   parentDoUpdate((group) => {
                     group.args.splice(operandIndex!, 1);
@@ -1408,7 +1420,7 @@ function ConditionGroup({
                 }
               >
                 <Trash2 className="size-3.5" />
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -1485,43 +1497,51 @@ function ConditionGroup({
         </div>
       ))}
 
-      {!root && (
+      {!root && !readonly && (
         <div className="pl-1.5 pb-1 flex gap-x-1">
-          <button
+          <Button
             type="button"
-            className="inline-flex items-center gap-1 text-sm text-control-light px-1.5 py-0.5 rounded-xs hover:bg-control-bg disabled:opacity-50"
+            appearance="secondary"
+            size="md"
+            className="h-auto gap-1 px-1.5 py-0.5 text-sm text-control-light hover:bg-control-bg"
             disabled={readonly}
             onClick={addCondition}
           >
             <Plus className="size-4" />
             {t("cel.condition.add")}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="inline-flex items-center gap-1 text-sm text-control-light px-1.5 py-0.5 rounded-xs hover:bg-control-bg disabled:opacity-50"
+            appearance="secondary"
+            size="md"
+            className="h-auto gap-1 px-1.5 py-0.5 text-sm text-control-light hover:bg-control-bg"
             disabled={readonly}
             onClick={addRawString}
           >
             <Plus className="size-4" />
             {t("cel.condition.add-raw-expression")}
-          </button>
+          </Button>
         </div>
       )}
 
-      {root && (
+      {root && !readonly && (
         <div className="flex gap-x-1">
-          <button
+          <Button
             type="button"
-            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-control-bg disabled:opacity-50"
+            appearance="secondary"
+            size="md"
+            className="h-auto gap-1 px-1.5 py-0.5 text-sm hover:bg-control-bg"
             disabled={readonly}
             onClick={addCondition}
           >
             <Plus className="size-4" />
             {t("cel.condition.add")}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-control-bg disabled:opacity-50"
+            appearance="secondary"
+            size="md"
+            className="h-auto gap-1 px-1.5 py-0.5 text-sm hover:bg-control-bg"
             disabled={readonly}
             onClick={addConditionGroup}
           >
@@ -1530,17 +1550,19 @@ function ConditionGroup({
             <Tooltip content={t("cel.condition.group.tooltip")}>
               <HelpCircle className="ml-1 size-3 text-control-placeholder" />
             </Tooltip>
-          </button>
+          </Button>
           {enableRawExpression && (
-            <button
+            <Button
               type="button"
-              className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-control-bg disabled:opacity-50"
+              appearance="secondary"
+              size="md"
+              className="h-auto gap-1 px-1.5 py-0.5 text-sm hover:bg-control-bg"
               disabled={readonly}
               onClick={addRawString}
             >
               <Plus className="size-4" />
               {t("cel.condition.add-raw-expression")}
-            </button>
+            </Button>
           )}
         </div>
       )}

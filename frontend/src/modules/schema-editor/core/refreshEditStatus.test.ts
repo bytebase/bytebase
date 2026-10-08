@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test, vi } from "vitest";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";

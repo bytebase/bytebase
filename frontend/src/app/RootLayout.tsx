@@ -12,7 +12,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Watermark } from "@/components/Watermark";
 import { AgentWindow } from "@/modules/agent/components/AgentWindow";
 
-// Translate a react-router Location into the legacy `ReactRoute` snapshot the
+// Translate a react-router Location into the `ReactRoute` snapshot the
 // registered `beforeEach` leave guards expect (they read `to.name` /
 // `to.fullPath`). Route name comes from matching the path against the table.
 function snapshotLocation(location: Location): ReactRoute {
@@ -29,10 +29,10 @@ function snapshotLocation(location: Location): ReactRoute {
   );
 }
 
-// Single blocker reproducing vue-router's global `beforeEach` cancellation:
-// consults every registered leave guard and blocks the navigation if any calls
-// `next(false)`. The guards run `window.confirm` synchronously and remember a
-// pending target themselves, so a blocked navigation simply stays put.
+// Single blocker that consults every registered `beforeEach` leave guard and
+// blocks the navigation if any calls `next(false)`. The guards run
+// `window.confirm` synchronously and remember a pending target themselves, so
+// a blocked navigation simply stays put.
 function LeaveGuardBlocker() {
   const blockerRef = useRef<ReturnType<typeof useBlocker> | null>(null);
   const blocker = useBlocker(
@@ -59,10 +59,9 @@ function LeaveGuardBlocker() {
 }
 
 // Root route element for the react-router app shell. Hosts the global overlays
-// that previously lived in `ReactApp.tsx` (Watermark / Toaster / AgentWindow /
-// SessionExpiredSurfaceGate) and wraps the routed tree in `<AuthGate>` so the
-// session lifecycle (load gate, poll, cross-tab switch, inactivity reminder)
-// runs around every page.
+// (Watermark / Toaster / AgentWindow / SessionExpiredSurfaceGate) and wraps the
+// routed tree in `<AuthGate>` so the session lifecycle (load gate, poll,
+// cross-tab switch, inactivity reminder) runs around every page.
 export function RootLayout() {
   return (
     <>

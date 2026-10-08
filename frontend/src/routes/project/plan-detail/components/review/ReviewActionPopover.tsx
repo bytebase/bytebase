@@ -93,7 +93,7 @@ export function ReviewActionPopover({
         onSubmit={() => void submit()}
       />
       <RadioGroup
-        className="flex-col items-stretch gap-y-2.5"
+        className="flex-col items-stretch gap-y-2"
         value={action}
         onValueChange={(value) => setAction(value as ReviewAction)}
       >

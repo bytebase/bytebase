@@ -106,8 +106,7 @@ const mapGroupNode = (
     const appStore = useAppStore.getState();
     // Best-effort: trigger a background fetch and render the cached
     // instance (or an `unknownInstance` placeholder until the fetch
-    // resolves). Matches the legacy Pinia `useInstanceResourceByName`
-    // behavior — synchronous read with an async hydrate.
+    // resolves).
     void appStore.fetchInstance(value);
     const instance = appStore.instancesByName[value] ?? unknownInstance();
     return mapTreeNodeByType("instance", instance, parent);

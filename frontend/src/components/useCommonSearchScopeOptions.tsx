@@ -17,12 +17,9 @@ import {
 } from "@/utils";
 
 /**
- * React port of `useCommonSearchScopeOptions` from
- * frontend/src/components/AdvancedSearch/useCommonSearchScopeOptions.ts.
- * Initial scope: what SQL Editor ConnectionPane uses — `instance`, `label`,
- * and `engine`. Other scope ids (project, environment, state, etc.) remain
- * to be ported when a consumer needs them; the `scopeCreators` switch
- * short-circuits unknown ids rather than inventing a scope.
+ * Supports the scope ids SQL Editor ConnectionPane uses — `instance`,
+ * `label`, and `engine`. The `scopeCreators` switch short-circuits unknown
+ * ids rather than inventing a scope.
  */
 export function useCommonSearchScopeOptions(
   supportOptionIdList: SearchScopeId[],

@@ -173,7 +173,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
 	}
 	// audit log.
-	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && existedSetting != nil {
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok && existedSetting != nil {
 		v1pbSetting, err := convertToSettingMessage(existedSetting)
 		if err != nil {
 			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
@@ -198,21 +198,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("mcp setting is required"))
 		}
 
-		mcpSetting := &storepb.MCPSetting{Capability: storepb.MCPSetting_READ_WRITE}
-		if existedSetting != nil {
-			existing, ok := existedSetting.Value.(*storepb.MCPSetting)
-			if !ok {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP))
-			}
-			mcpSetting = proto.CloneOf(existing)
-		}
-
+		// Built from the request alone because capability is the only field. A
+		// second field needs a merge onto the stored row, or saving one erases
+		// the other.
+		mcpSetting := &storepb.MCPSetting{}
 		for _, path := range request.Msg.UpdateMask.Paths {
 			switch path {
 			case "value.mcp.capability":
 				mcpSetting.Capability = convertToStoreMCPCapability(payload.Capability)
-			case "value.mcp.ignore_masking_exemptions":
-				mcpSetting.IgnoreMaskingExemptions = payload.IgnoreMaskingExemptions
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
 			}
@@ -582,7 +575,7 @@ func (s *SettingService) updateAppIMSetting(ctx context.Context, request *connec
 
 	// Re-capture the audit before-image from the locked row the merge ran
 	// against, overwriting UpdateSetting's earlier pre-lock snapshot.
-	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
 		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
 			Name:      storepb.SettingName_APP_IM,
 			Workspace: workspaceID,
@@ -805,7 +798,7 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 
 	// Re-capture the audit before-image from the locked row the merge ran
 	// against, overwriting UpdateSetting's earlier pre-lock snapshot.
-	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
 		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
 			Name:      storepb.SettingName_WORKSPACE_PROFILE,
 			Workspace: workspaceID,
@@ -862,7 +855,7 @@ func (s *SettingService) preflightWorkspaceProfilePaths(ctx context.Context, wor
 				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("external URL is managed via --external-url command-line flag and cannot be changed through the UI"))
 			}
 			if payload.ExternalUrl != "" {
-				externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
+				externalURL, err := config.NormalizeExternalURL(payload.ExternalUrl)
 				if err != nil {
 					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid external url: %v", err))
 				}
@@ -1108,7 +1101,7 @@ func (s *SettingService) checkSettingPermission(ctx context.Context, req connect
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		err := connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", perm))
+		err := permissionDeniedError(ctx, errors.Errorf("user does not have permission %q", perm))
 		if detail, detailErr := connect.NewErrorDetail(&v1pb.PermissionDeniedDetail{
 			Method:              req.Spec().Procedure,
 			RequiredPermissions: []string{string(perm)},

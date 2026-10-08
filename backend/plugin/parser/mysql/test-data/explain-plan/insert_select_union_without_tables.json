@@ -1,0 +1,1 @@
+{"query_block":{"union_result":{"using_temporary_table":true,"select_id":3,"table_name":"<union1,2>","access_type":"ALL","query_specifications":[{"dependent":false,"cacheable":true,"query_block":{"select_id":1,"table":{"insert":true,"table_name":"t2","access_type":"ALL"}}},{"dependent":false,"cacheable":true,"query_block":{"select_id":2,"message":"No tables used"}}]}}}

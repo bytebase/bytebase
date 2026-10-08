@@ -5,6 +5,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import type { TreeDataNode } from "@/components/ui/tree";
 import { Tree } from "@/components/ui/tree";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
+import { classificationLevelBackgroundClasses } from "./classification-level";
 
 interface TreeNode {
   key: string;
@@ -72,14 +73,6 @@ function buildTreeData(
   return toNodes(map);
 }
 
-const bgColorList = [
-  "bg-green-200",
-  "bg-yellow-200",
-  "bg-orange-300",
-  "bg-amber-500",
-  "bg-red-500",
-];
-
 function LevelBadge({
   level,
   config,
@@ -89,7 +82,8 @@ function LevelBadge({
 }) {
   const levelObj = config.levels.find((l) => l.level === level);
   if (!levelObj) return null;
-  const color = bgColorList[level - 1] ?? "bg-control-bg-hover";
+  const color =
+    classificationLevelBackgroundClasses[level - 1] ?? "bg-control-bg-hover";
   return (
     <span className={`ml-1 px-1 py-0.5 rounded-xs text-xs ${color}`}>
       {levelObj.title}

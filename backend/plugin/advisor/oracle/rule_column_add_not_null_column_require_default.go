@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/oracle/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -34,7 +34,7 @@ func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(_ context.Context, che
 
 	rule := NewColumnAddNotNullColumnRequireDefaultRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // ColumnAddNotNullColumnRequireDefaultRule is the rule implementation for adding not null column requires default.
@@ -76,7 +76,7 @@ func (r *ColumnAddNotNullColumnRequireDefaultRule) OnStatement(node ast.Node) {
 					r.level,
 					code.NotNullColumnWithNoDefault.Int32(),
 					fmt.Sprintf("Adding not null column %q requires default.", col.Name),
-					common.ConvertANTLRLineToPosition(r.locLine(col.Loc)),
+					base.ConvertANTLRLineToPosition(r.locLine(col.Loc)),
 				)
 			}
 		}

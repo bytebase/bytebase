@@ -1,3 +1,4 @@
+import { ExternalLink } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { router } from "@/app/router";
@@ -12,13 +13,14 @@ import { RouterLink } from "@/components/RouterLink";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
-import { useIdentityProviderList } from "@/hooks/useAppState";
 import { resolveWorkspaceName } from "@/lib/workspace";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { idpNamePrefix } from "@/stores/modules/v1/common";
-import type { LoginRequest } from "@/types/proto-es/v1/auth_service_pb";
-import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
+import type {
+  LoginIdentityProvider,
+  LoginRequest,
+} from "@/types/proto-es/v1/auth_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 import { openWindowForSSO } from "@/utils";
 
@@ -29,6 +31,25 @@ export type SigninPageProps = {
   readonly hideFooter?: boolean;
   readonly footerOverride?: React.ReactNode;
 };
+
+type SSOFailure = {
+  idpName: string;
+};
+
+const ADMIN_RECOVERY_URL =
+  "https://docs.bytebase.com/administration/admin-recovery?source=console";
+const SUPPORT_URL =
+  "https://docs.bytebase.com/faq#how-to-reach-us?source=console";
+
+function queryString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function queryFailure(query: Record<string, unknown>): SSOFailure | undefined {
+  const idpName = queryString(query.failedIdpName);
+  if (!idpName) return undefined;
+  return { idpName };
+}
 
 export function SigninPage(props: SigninPageProps) {
   const {
@@ -41,11 +62,16 @@ export function SigninPage(props: SigninPageProps) {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const query = router.currentRoute.value.query;
+  const initialSSOFailure = queryFailure(query);
+  const [ssoFailure, setSSOFailure] = useState<SSOFailure | undefined>(
+    initialSSOFailure
+  );
 
   const authenticationInfo = useAppStore((s) => s.authenticationInfo);
-  const identityProviders = useIdentityProviderList();
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
+  const identityProviders = authenticationInfo?.identityProviders ?? [];
 
-  const query = router.currentRoute.value.query;
   const invitedEmail = (query.email as string | undefined) ?? "";
 
   const disallowSignup =
@@ -79,7 +105,7 @@ export function SigninPage(props: SigninPageProps) {
     }
   }, [initialized, needsInitialSetup, disallowSignup]);
 
-  const trySigninWithIdp = async (idp: IdentityProvider) => {
+  const trySigninWithIdp = async (idp: LoginIdentityProvider) => {
     try {
       await openWindowForSSO(idp, false, query.redirect as string);
     } catch (error) {
@@ -89,6 +115,7 @@ export function SigninPage(props: SigninPageProps) {
         title: "Request error occurred",
         description: (error as Error).message,
       });
+      setSSOFailure({ idpName: idp.name });
     }
   };
 
@@ -106,40 +133,30 @@ export function SigninPage(props: SigninPageProps) {
     }
   };
 
-  // Initial load: fetch authentication info + IDPs + handle `idp` query param.
-  // Ref guard is critical — the `?idp=<name>` path triggers an SSO redirect
-  // via `trySigninWithIdp`, which must not fire twice under StrictMode.
+  // Initial load: fetch authentication info, which carries the providers this
+  // page renders, then handle the `idp` query param. Ref guard is critical —
+  // the `?idp=<name>` path triggers an SSO redirect via `trySigninWithIdp`,
+  // which must not fire twice under StrictMode.
   const initRef = useRef(false);
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
     (async () => {
-      const workspaceName = resolveWorkspaceName();
-      const listIdentityProviders =
-        useAppStore.getState().listIdentityProviders;
-      try {
-        const [idpList] = await Promise.all([
-          listIdentityProviders(workspaceName),
-          useAppStore.getState().fetchAuthenticationInfo(workspaceName),
-        ]);
-        if (idpList.length === 0 && workspaceName) {
-          await listIdentityProviders();
-        }
-      } catch (error) {
+      const info = await useAppStore
+        .getState()
+        .fetchAuthenticationInfo(resolveWorkspaceName());
+      if (!info) {
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: "Request error occurred",
-          description: (error as Error).message,
+          description: t("auth.sign-in.load-failed"),
         });
       }
       const idpQuery = query.idp;
       if (idpQuery) {
         const name = `${idpNamePrefix}${idpQuery}`;
-        const idp = useAppStore
-          .getState()
-          .identityProviderList()
-          .find((i: IdentityProvider) => i.name === name);
+        const idp = info?.identityProviders.find((i) => i.name === name);
         if (idp) {
           // On success this navigates away; on failure `trySigninWithIdp`
           // pushes a notification and we still need to show the form so the
@@ -221,6 +238,49 @@ export function SigninPage(props: SigninPageProps) {
     allowSignupProp &&
     !authenticationInfo?.restriction?.disallowSignup;
   const showTerms = allowSignupProp && emailCodeEnabled;
+  const disallowPasswordSignin =
+    !!authenticationInfo?.restriction?.disallowPasswordSignin;
+  const hasNoPasswordFallback =
+    disallowPasswordSignin &&
+    !authenticationInfo?.restriction?.allowEmailCodeSignin;
+  const noSigninMethodAvailable =
+    hasNoPasswordFallback && identityProviders.length === 0;
+  const failedIdp = ssoFailure
+    ? identityProviders.find((idp) => idp.name === ssoFailure.idpName)
+    : undefined;
+  const failedIdpTitle =
+    failedIdp?.title ?? ssoFailure?.idpName.replace(idpNamePrefix, "") ?? "";
+  const recoveryLinks = (
+    <ul className="mt-2 list-disc pl-5">
+      <li>{t("auth.sign-in.sso-failure.contact-administrator")}</li>
+      <li>
+        {isSaaSMode ? (
+          <a
+            href={SUPPORT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium underline"
+          >
+            {t("auth.sign-in.sso-failure.contact-support")}
+            <ExternalLink className="ml-1 inline size-3" />
+          </a>
+        ) : (
+          <>
+            {t("auth.sign-in.sso-failure.administrators")}{" "}
+            <a
+              href={ADMIN_RECOVERY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline"
+            >
+              {t("auth.sign-in.sso-failure.recovery-guide")}
+              <ExternalLink className="ml-1 inline size-3" />
+            </a>
+          </>
+        )}
+      </li>
+    </ul>
+  );
 
   return (
     <>
@@ -242,6 +302,39 @@ export function SigninPage(props: SigninPageProps) {
           />
         )}
 
+        {noSigninMethodAvailable && (
+          <Alert
+            variant="info"
+            className="mb-4"
+            title={t("auth.sign-in.no-method-available.title")}
+            description={t("auth.sign-in.no-method-available.description")}
+          >
+            {recoveryLinks}
+          </Alert>
+        )}
+
+        {ssoFailure && (
+          <Alert
+            variant="warning"
+            className="mb-4"
+            title={t("auth.sign-in.sso-failure.title", {
+              idp: failedIdpTitle,
+            })}
+            description={t("auth.sign-in.sso-failure.description")}
+          >
+            {disallowPasswordSignin && (
+              <div className="mt-2">
+                <p>
+                  {hasNoPasswordFallback
+                    ? t("auth.sign-in.sso-failure.no-fallback")
+                    : t("auth.sign-in.sso-failure.password-disabled")}
+                </p>
+                {recoveryLinks}
+              </div>
+            )}
+          </Alert>
+        )}
+
         {separatedIdps.length > 0 && (
           <div className="flex flex-col gap-y-2">
             {separatedIdps.map((idp) => (
@@ -261,13 +354,15 @@ export function SigninPage(props: SigninPageProps) {
 
         {separatedIdps.length > 0 && methods.length > 0 && (
           <AuthDivider className="my-4">
-            <span className="px-2 bg-white text-control">{t("common.or")}</span>
+            <span className="px-2 bg-background text-control">
+              {t("common.or")}
+            </span>
           </AuthDivider>
         )}
 
         {methods.length === 1 && methods[0].panel}
         {methods.length > 1 && (
-          <div className="rounded-sm border border-control-border bg-white p-4">
+          <div className="rounded-sm border border-control-border bg-background p-4">
             <Tabs defaultValue={defaultTab}>
               <TabsList>
                 {methods.map((method) => (
@@ -298,7 +393,7 @@ export function SigninPage(props: SigninPageProps) {
                 // with the localized text inside <terms>/<privacy> tags.
                 terms: (
                   <a
-                    href="https://www.bytebase.com/terms"
+                    href="https://www.bytebase.com/legal/terms"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-control"

@@ -1,11 +1,14 @@
 package pg
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/bytebase/omni/pg/catalog"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -16,6 +19,10 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+
+	// Registers the PostgreSQL ParseStatements func these tests reach through
+	// base. Nothing in this package's own imports pulls it in.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -29,15 +36,15 @@ type testData struct {
 }
 
 func TestWalkThrough(t *testing.T) {
-	originDatabase := &storepb.DatabaseSchemaMetadata{
+	originDatabase := &metadatapb.DatabaseSchemaMetadata{
 		Name: "postgres",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "test",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "int",
@@ -53,11 +60,11 @@ func TestWalkThrough(t *testing.T) {
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "v1",
 						Definition: "SELECT id, name FROM test",
-						DependencyColumns: []*storepb.DependencyColumn{
+						DependencyColumns: []*metadatapb.DependencyColumn{
 							{
 								Schema: "public",
 								Table:  "test",
@@ -90,7 +97,7 @@ func TestWalkThrough(t *testing.T) {
 	for i := range tests {
 		test := &tests[i]
 		// Make a deep copy to avoid mutation across tests
-		protoData, ok := proto.Clone(originDatabase).(*storepb.DatabaseSchemaMetadata)
+		protoData, ok := proto.Clone(originDatabase).(*metadatapb.DatabaseSchemaMetadata)
 		require.True(t, ok)
 
 		// Create DatabaseMetadata for walk-through
@@ -98,7 +105,7 @@ func TestWalkThrough(t *testing.T) {
 
 		stmts, _ := sm.GetStatementsForChecks(storepb.Engine_POSTGRES, test.Statement)
 		asts := base.ExtractASTs(stmts)
-		advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
+		advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
 		if test.Advice != nil {
 			require.NotNil(t, advice)
 			require.Equal(t, test.Advice.Code, advice.Code)
@@ -114,29 +121,29 @@ func TestWalkThrough(t *testing.T) {
 			continue
 		}
 
-		want := &storepb.DatabaseSchemaMetadata{}
+		want := &metadatapb.DatabaseSchemaMetadata{}
 		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
 		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform(),
-			protocmp.SortRepeatedFields(&storepb.DatabaseSchemaMetadata{}, "schemas"),
-			protocmp.SortRepeatedFields(&storepb.SchemaMetadata{}, "tables", "views"),
-			protocmp.SortRepeatedFields(&storepb.TableMetadata{}, "indexes", "columns"),
+			protocmp.SortRepeatedFields(&metadatapb.DatabaseSchemaMetadata{}, "schemas"),
+			protocmp.SortRepeatedFields(&metadatapb.SchemaMetadata{}, "tables", "views"),
+			protocmp.SortRepeatedFields(&metadatapb.TableMetadata{}, "indexes", "columns"),
 		)
 		require.Empty(t, diff)
 	}
 }
 
 func TestWalkThroughANTLR(t *testing.T) {
-	originDatabase := &storepb.DatabaseSchemaMetadata{
+	originDatabase := &metadatapb.DatabaseSchemaMetadata{
 		Name: "postgres",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "test",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "int",
@@ -152,11 +159,11 @@ func TestWalkThroughANTLR(t *testing.T) {
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "v1",
 						Definition: "SELECT id, name FROM test",
-						DependencyColumns: []*storepb.DependencyColumn{
+						DependencyColumns: []*metadatapb.DependencyColumn{
 							{
 								Schema: "public",
 								Table:  "test",
@@ -188,7 +195,7 @@ func TestWalkThroughANTLR(t *testing.T) {
 	for i := range tests {
 		test := &tests[i]
 		// Make a deep copy to avoid mutation across tests
-		protoData, ok := proto.Clone(originDatabase).(*storepb.DatabaseSchemaMetadata)
+		protoData, ok := proto.Clone(originDatabase).(*metadatapb.DatabaseSchemaMetadata)
 		require.True(t, ok)
 
 		// Create DatabaseMetadata for walk-through
@@ -202,7 +209,7 @@ func TestWalkThroughANTLR(t *testing.T) {
 		asts := base.ExtractASTs(stmts)
 
 		// Call WalkThrough with AST
-		advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
+		advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
 		if advice != nil {
 			// Compare the advice fields
 			if test.Advice != nil {
@@ -217,14 +224,14 @@ func TestWalkThroughANTLR(t *testing.T) {
 			continue
 		}
 
-		want := &storepb.DatabaseSchemaMetadata{}
+		want := &metadatapb.DatabaseSchemaMetadata{}
 		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
 		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform(),
-			protocmp.SortRepeatedFields(&storepb.DatabaseSchemaMetadata{}, "schemas"),
-			protocmp.SortRepeatedFields(&storepb.SchemaMetadata{}, "tables", "views"),
-			protocmp.SortRepeatedFields(&storepb.TableMetadata{}, "indexes", "columns"),
+			protocmp.SortRepeatedFields(&metadatapb.DatabaseSchemaMetadata{}, "schemas"),
+			protocmp.SortRepeatedFields(&metadatapb.SchemaMetadata{}, "tables", "views"),
+			protocmp.SortRepeatedFields(&metadatapb.TableMetadata{}, "indexes", "columns"),
 		)
 		require.Empty(t, diff)
 	}
@@ -318,9 +325,9 @@ func TestWalkThroughSearchPathState(t *testing.T) {
 			state := newSearchPathTestState(test.searchPath)
 			stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, test.sql)
 			require.NoError(t, err)
-			ctx := test.session
-			ctx.RawSQL = test.sql
-			advice := WalkThroughWithContext(ctx, state, base.ExtractASTs(stmts))
+			wtCtx := test.session
+			wtCtx.RawSQL = test.sql
+			advice := WalkThroughWithContext(context.Background(), wtCtx, state, base.ExtractASTs(stmts))
 			require.Nil(t, advice)
 			test.assert(t, state)
 		})
@@ -328,21 +335,21 @@ func TestWalkThroughSearchPathState(t *testing.T) {
 }
 
 func newSearchPathTestState(searchPath string) *model.DatabaseMetadata {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name:       "postgres",
 		SearchPath: searchPath,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "alice"},
 			{Name: "bob"},
 			{
 				Name: "app",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					newSearchPathTestTable("dup"),
 				},
 			},
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					newSearchPathTestTable("dup"),
 				},
 			},
@@ -351,10 +358,10 @@ func newSearchPathTestState(searchPath string) *model.DatabaseMetadata {
 	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
 }
 
-func newSearchPathTestTable(name string) *storepb.TableMetadata {
-	return &storepb.TableMetadata{
+func newSearchPathTestTable(name string) *metadatapb.TableMetadata {
+	return &metadatapb.TableMetadata{
 		Name: name,
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{
 				Name:     "id",
 				Type:     "int",
@@ -363,4 +370,87 @@ func newSearchPathTestTable(name string) *storepb.TableMetadata {
 			},
 		},
 	}
+}
+
+// TestClone_SearchPath tests Clone preserves search path and session user.
+func TestClone_SearchPath(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Name: "postgres",
+		Schemas: []*metadatapb.SchemaMetadata{
+			{Name: "public"},
+			{Name: "alice"},
+		},
+	}
+
+	catBefore := catalog.New()
+	catBefore.SetSessionUser("alice")
+	catBefore.SetSearchPath([]string{"$user", "public"})
+	_, err := catBefore.LoadMetadata(context.Background(), meta, catalog.LoadMetadataOptions{Full: true})
+	require.NoError(t, err)
+
+	catAfter := catBefore.Clone()
+
+	// CREATE TABLE without schema should use search path ($user → alice)
+	_, err = catAfter.Exec(`CREATE TABLE my_table (id int);`, nil)
+	require.NoError(t, err)
+
+	// Table should be in alice schema on clone
+	require.NotNil(t, catAfter.GetRelation("alice", "my_table"))
+
+	// Original should NOT have it
+	require.Nil(t, catBefore.GetRelation("alice", "my_table"))
+
+	// Diff should show the new table
+	diff := catalog.Diff(catBefore, catAfter)
+	require.False(t, diff.IsEmpty())
+
+	foundAliceTable := false
+	for _, rel := range diff.Relations {
+		if rel.SchemaName == "alice" && rel.Name == "my_table" && rel.Action == catalog.DiffAdd {
+			foundAliceTable = true
+		}
+	}
+	require.True(t, foundAliceTable, "diff should show alice.my_table as added")
+}
+
+// TestClone_WalkThroughFunction tests the actual WalkThroughWithContext function
+// using Clone produces correct FinalMetadata.
+func TestClone_WalkThroughFunction(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Name: "postgres",
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*metadatapb.TableMetadata{
+					{
+						Name: "test",
+						Columns: []*metadatapb.ColumnMetadata{
+							{Name: "id", Type: "integer", Position: 1},
+							{Name: "name", Type: "text", Position: 2, Nullable: true},
+						},
+						Indexes: []*metadatapb.IndexMetadata{
+							{Name: "test_pkey", Expressions: []string{"id"}, Unique: true, Primary: true},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	state := model.NewDatabaseMetadata(meta, nil, nil, storepb.Engine_POSTGRES, true)
+	wtCtx := schema.WalkThroughContext{
+		RawSQL: `CREATE TABLE public.new_table (id int PRIMARY KEY, val text);`,
+	}
+
+	advice := WalkThroughWithContext(context.Background(), wtCtx, state, nil)
+	require.Nil(t, advice, "walk-through should succeed")
+
+	// Check FinalMetadata has the new table
+	newTbl := state.GetSchemaMetadata("public").GetTable("new_table")
+	require.NotNil(t, newTbl, "new_table should exist in FinalMetadata")
+
+	// Check original table is preserved
+	origTbl := state.GetSchemaMetadata("public").GetTable("test")
+	require.NotNil(t, origTbl, "test table should still exist")
+	require.Equal(t, 2, len(origTbl.GetProto().Columns))
 }

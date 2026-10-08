@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // UpdateDBSchemaMessage is the message for updating db schema.
@@ -79,7 +80,7 @@ func (s *Store) UpsertDBSchema(
 	ctx context.Context,
 	instanceID,
 	databaseName string,
-	dbMetadata *storepb.DatabaseSchemaMetadata,
+	dbMetadata *metadatapb.DatabaseSchemaMetadata,
 	dbConfig *storepb.DatabaseConfig,
 	rawDump []byte,
 ) error {
@@ -172,7 +173,7 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 }
 
 func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, config []byte, workspaceID string, instanceID string) (*model.DatabaseMetadata, error) {
-	var databaseSchema storepb.DatabaseSchemaMetadata
+	var databaseSchema metadatapb.DatabaseSchemaMetadata
 	var databaseConfig storepb.DatabaseConfig
 	if err := common.ProtojsonUnmarshaler.Unmarshal(metadata, &databaseSchema); err != nil {
 		return nil, err

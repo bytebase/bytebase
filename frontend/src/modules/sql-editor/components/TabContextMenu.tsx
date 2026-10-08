@@ -29,7 +29,6 @@ type Target = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/TabList/ContextMenu.vue.
  * Tab right-click menu. Uses the same invisible-trigger pattern as
  * SheetTree's context menu: a 0x0 `position: fixed` MenuTrigger positioned
  * at the cursor is `.click()`-ed programmatically so Base UI records a

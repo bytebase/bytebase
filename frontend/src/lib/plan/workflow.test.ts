@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test, vi } from "vitest";
 import type {
@@ -10,6 +11,7 @@ import type {
   Plan,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { planEvents } from "./events";
 import {
   createPlanWithDraftReview,
   DraftReviewIssueCreationError,
@@ -61,6 +63,8 @@ describe("createPlanWithDraftReview", () => {
       calls.push("issue");
       return draftIssue;
     });
+    const issueCreated = vi.fn();
+    const off = planEvents.on("database-change-issue-created", issueCreated);
 
     const result = await createPlanWithDraftReview({
       createIssue,
@@ -82,6 +86,16 @@ describe("createPlanWithDraftReview", () => {
       plan: "projects/p1/plans/123",
       title: "Add index",
     });
+    await vi.waitFor(() =>
+      expect(issueCreated).toHaveBeenCalledWith({
+        name: "database-change-issue-created",
+        data: {
+          issue: "projects/p1/issues/456",
+          project: "projects/p1",
+        },
+      })
+    );
+    off();
   });
 
   test("reports the persisted malformed plan and never retries when draft issue creation fails", async () => {
@@ -90,6 +104,8 @@ describe("createPlanWithDraftReview", () => {
     const createIssue = vi.fn(async () => {
       throw failure;
     });
+    const issueCreated = vi.fn();
+    const off = planEvents.on("database-change-issue-created", issueCreated);
 
     const promise = createPlanWithDraftReview({
       createIssue,
@@ -106,6 +122,8 @@ describe("createPlanWithDraftReview", () => {
     } satisfies Partial<DraftReviewIssueCreationError>);
     expect(createPlan).toHaveBeenCalledOnce();
     expect(createIssue).toHaveBeenCalledOnce();
+    expect(issueCreated).not.toHaveBeenCalled();
+    off();
   });
 });
 

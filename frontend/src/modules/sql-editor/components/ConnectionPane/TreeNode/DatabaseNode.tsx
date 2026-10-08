@@ -26,7 +26,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/ConnectionPanel/ConnectionPane/TreeNode/DatabaseNode.vue.
  * Shows an optional batch-mode checkbox, an inline "Instance → Database"
  * breadcrumb (engine icon + instance name, chevron, database name), and a
  * RequestQueryButton when the current user can't query this database.

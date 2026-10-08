@@ -44,7 +44,8 @@ const mocks = vi.hoisted(() => {
     instanceV1SupportsTrigger: vi.fn(() => false),
     bytesToString: vi.fn((size: number) => `${size} B`),
     hasProjectPermissionV2: vi.fn(() => true),
-    dialogProps: [] as unknown[],
+    sheetProps: [] as unknown[],
+    useProductIntro: vi.fn(),
     useTranslation: vi.fn(() => ({
       t: (key: string) => key,
     })),
@@ -110,6 +111,11 @@ vi.mock("@/hooks/useDatabaseCatalog", () => ({
   useDatabaseCatalog: () => mocks.useDatabaseCatalog(),
 }));
 
+vi.mock("@/lib/productIntro", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/productIntro")>()),
+  useProductIntro: mocks.useProductIntro,
+}));
+
 vi.mock("@/stores/app/databaseCatalog", () => ({
   getColumnCatalog: mocks.getColumnCatalog,
   getTableCatalog: mocks.getTableCatalog,
@@ -138,10 +144,10 @@ vi.mock("@/components/ui/input", () => ({
   ),
 }));
 
-vi.mock("./TableDetailDialog", () => ({
+vi.mock("./TableDetailSheet", () => ({
   EditableClassificationCell: () => null,
-  TableDetailDialog: (props: unknown) => {
-    mocks.dialogProps.push(props);
+  TableDetailSheet: (props: unknown) => {
+    mocks.sheetProps.push(props);
     return null;
   },
 }));
@@ -221,6 +227,7 @@ const makeTable = (name: string) =>
   }) as never;
 
 beforeEach(async () => {
+  mocks.useProductIntro.mockClear();
   mocks.currentRoute.value.query = {};
   mocks.routerReplace.mockReset();
   mocks.useTranslation.mockReset();
@@ -288,13 +295,51 @@ beforeEach(async () => {
   mocks.instanceV1SupportsColumn.mockReturnValue(true);
   mocks.instanceV1SupportsIndex.mockReset();
   mocks.instanceV1SupportsIndex.mockReturnValue(true);
-  mocks.dialogProps.length = 0;
+  mocks.sheetProps.length = 0;
 
   vi.resetModules();
   ({ DatabaseObjectExplorer } = await import("./DatabaseObjectExplorer"));
 });
 
 describe("DatabaseObjectExplorer", () => {
+  test.each([
+    [Engine.MONGODB, true, false],
+    [Engine.COSMOSDB, true, false],
+    [Engine.ELASTICSEARCH, true, false],
+    [Engine.POSTGRES, true, true],
+    [Engine.MONGODB, false, true],
+  ])(
+    "offers the NoSQL masking intro for engine %s with update permission %s",
+    (engine, permission, disabled) => {
+      mocks.getDatabaseEngine.mockReturnValue(engine);
+      mocks.hasProjectPermissionV2.mockReturnValue(permission);
+      const { container, render, unmount } = renderIntoContainer(
+        createElement(DatabaseObjectExplorer, {
+          database: makeDatabase(),
+          loading: false,
+          selectedSchemaName: "public",
+          tableSearchKeyword: "",
+          externalTableSearchKeyword: "",
+          onSelectedSchemaNameChange: vi.fn(),
+          onTableSearchKeywordChange: vi.fn(),
+          onExternalTableSearchKeywordChange: vi.fn(),
+        }),
+      );
+      render();
+      expect(mocks.useProductIntro).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "mark-sensitive-data",
+          disabled,
+        }),
+      );
+      expect(
+        container.querySelector(
+          '[data-product-intro-target="mark-sensitive-data"]',
+        ),
+      ).not.toBeNull();
+      unmount();
+    },
+  );
   test("renders the default schema label when the schema name is empty", async () => {
     mocks.dbSchemaStore.mockReturnValue({
       getSchemaList: vi.fn(() => [{ name: "" }]),
@@ -356,9 +401,9 @@ describe("DatabaseObjectExplorer", () => {
     clickElement(ordersRow as HTMLTableRowElement);
     await flush();
 
-    const latestDialogProps = mocks.dialogProps.at(-1);
-    expect(() => JSON.stringify(latestDialogProps)).not.toThrow();
-    expect(latestDialogProps).toEqual(
+    const latestSheetProps = mocks.sheetProps.at(-1);
+    expect(() => JSON.stringify(latestSheetProps)).not.toThrow();
+    expect(latestSheetProps).toEqual(
       expect.objectContaining({
         table: expect.objectContaining({
           partitions: [

@@ -11,6 +11,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -39,7 +40,7 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	rule := NewStatementDmlDryRunRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver)
 
 	if checkCtx.Driver != nil {
-		return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+		return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 	}
 
 	return rule.GetAdviceList()
@@ -91,7 +92,7 @@ func (r *StatementDmlDryRunRule) handleStmt(text string, lineNumber int) {
 			r.level,
 			code.StatementDMLDryRunFailed.Int32(),
 			fmt.Sprintf("Failed to dry run statement at line %d: %v", lineNumber, err),
-			common.ConvertANTLRLineToPosition(lineNumber),
+			base.ConvertANTLRLineToPosition(lineNumber),
 		)
 	}
 }

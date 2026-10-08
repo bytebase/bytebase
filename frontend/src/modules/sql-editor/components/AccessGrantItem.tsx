@@ -4,16 +4,17 @@ import { RouterLink } from "@/components/RouterLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useTimeReading } from "@/hooks/useTimeReading";
 import { cn } from "@/lib/utils";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  getAccessGrantDisplayStatus,
+  accessGrantStatusReading,
   getAccessGrantDisplayStatusText,
-  getAccessGrantExpirationText,
-  getAccessGrantExpireTimeMs,
   getAccessGrantStatusTagType,
+  getActiveAccessGrantDeadlineMs,
 } from "@/utils/accessGrant";
+import { countdownReading, formatAbsoluteDateTime } from "@/utils/datetime";
 
 function mapTagTypeToBadgeVariant(
   tagType: "success" | "warning" | "error" | "default"
@@ -41,33 +42,45 @@ export function AccessGrantItem({
 }: Props) {
   const { t } = useTranslation();
 
-  const displayStatus = getAccessGrantDisplayStatus(grant, issue);
+  // Two readings, each on its own boundary. The countdown's last step lands on
+  // the deadline, the same instant the status turns expired, so the status
+  // subscription adds no wake today -- it is here so the badge does not depend
+  // on that coincidence holding.
+  const deadlineMs = getActiveAccessGrantDeadlineMs(grant);
+  const countdown = useTimeReading(countdownReading, deadlineMs);
+  const displayStatus = useTimeReading(accessGrantStatusReading, {
+    grant,
+    issue,
+  });
   const isActive = displayStatus === "ACTIVE";
   const isExpired = displayStatus === "EXPIRED";
   const isRejectedOrCanceled =
     displayStatus !== "ACTIVE" && displayStatus !== "PENDING";
-  const statusLabel = getAccessGrantDisplayStatusText(grant, issue);
-  const expireTimeMs = getAccessGrantExpireTimeMs(grant);
+  const statusLabel = getAccessGrantDisplayStatusText(displayStatus);
 
   const statusTagType = getAccessGrantStatusTagType(displayStatus);
   const badgeVariant = mapTagTypeToBadgeVariant(statusTagType);
 
-  const expirationText = (() => {
-    if (displayStatus !== "ACTIVE" && displayStatus !== "EXPIRED") return;
-    const info = getAccessGrantExpirationText(grant);
-    if (info.type === "never" || info.type === "duration") return;
-
-    if (!isExpired && expireTimeMs !== undefined) {
-      const diff = expireTimeMs - Date.now();
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      if (hours >= 24) {
-        return t("sql-editor.expire-at", { time: info.value });
+  // The countdown is the one form that hides the deadline, so it alone carries
+  // it in a tooltip; the other two are interpolated sentences and state the
+  // deadline in full themselves.
+  const expiration = (() => {
+    if (deadlineMs === undefined || countdown === undefined) return undefined;
+    const deadline = formatAbsoluteDateTime(deadlineMs);
+    switch (countdown.kind) {
+      case "passed":
+        return { text: `${t("issue.access-grant.expired-at")} ${deadline}` };
+      case "beyondDay":
+        return { text: t("sql-editor.expire-at", { time: deadline }) };
+      case "within": {
+        const { hours, minutes } = countdown;
+        const left = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
+        return {
+          text: t("sql-editor.expire-in", { time: left }),
+          hiddenDeadline: deadline,
+        };
       }
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const dur = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
-      return t("sql-editor.expire-in", { time: dur });
     }
-    return `${t("issue.access-grant.expired-at")} ${info.value}`;
   })();
 
   const visibleTargets = grant.targets.slice(0, 2);
@@ -100,7 +113,7 @@ export function AccessGrantItem({
   return (
     <div
       className={cn(
-        "w-full p-2 gap-y-2 border-b flex flex-col justify-start items-start hover:bg-control-bg",
+        "w-full min-w-0 p-2 gap-y-2 border-b flex flex-col justify-start items-start hover:bg-control-bg",
         highlight
           ? "bb-access-grant-highlight"
           : "transition-colors duration-1000"
@@ -121,14 +134,14 @@ export function AccessGrantItem({
         <div className="flex items-center gap-x-1 shrink-0">
           <Badge
             variant={badgeVariant}
-            className="text-[10px] px-1.5 py-0 rounded-full"
+            className="text-xs px-1.5 py-0 rounded-full"
           >
             {statusLabel}
           </Badge>
           {grant.unmask && (
             <Badge
               variant="default"
-              className="text-[10px] px-1.5 py-0 rounded-full"
+              className="text-xs px-1.5 py-0 rounded-full"
             >
               {t("sql-editor.grant-type-unmask")}
             </Badge>
@@ -136,15 +149,19 @@ export function AccessGrantItem({
           {grant.export && (
             <Badge
               variant="default"
-              className="text-[10px] px-1.5 py-0 rounded-full"
+              className="text-xs px-1.5 py-0 rounded-full"
             >
               {t("sql-editor.grant-type-export")}
             </Badge>
           )}
         </div>
-        {expirationText && (
+        {expiration && (
+          // The span stays outside the tooltip: it carries this row's layout,
+          // and a tooltip with nothing to say renders its children bare.
           <span className="text-xs text-control-placeholder shrink-0">
-            {expirationText}
+            <Tooltip content={expiration.hiddenDeadline}>
+              {expiration.text}
+            </Tooltip>
           </span>
         )}
       </div>
@@ -159,7 +176,7 @@ export function AccessGrantItem({
       >
         <p
           className={cn(
-            "max-w-full text-xs wrap-break-word whitespace-pre-wrap font-mono line-clamp-2",
+            "w-full min-w-0 text-xs wrap-anywhere whitespace-pre-wrap font-mono line-clamp-2",
             (isExpired || isRejectedOrCanceled) &&
               "line-through text-control-placeholder"
           )}
@@ -194,9 +211,8 @@ export function AccessGrantItem({
           <div>
             {isActive && (
               <Button
-                size="sm"
+                size="xs"
                 variant="default"
-                className="h-6 text-xs"
                 data-run-btn
                 onClick={(e) => {
                   e.stopPropagation();
@@ -211,8 +227,7 @@ export function AccessGrantItem({
             {isRejectedOrCanceled && (
               <Button
                 appearance="secondary"
-                size="sm"
-                className="h-6 text-xs"
+                size="xs"
                 data-re-request-btn
                 onClick={(e) => {
                   e.stopPropagation();

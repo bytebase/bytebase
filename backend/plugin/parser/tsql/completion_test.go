@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -143,16 +144,16 @@ func getCaretPosition(statement string) (string, int, int) {
 	panic("caret position not found")
 }
 
-var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
+var databaseMetadatas = []*metadatapb.DatabaseSchemaMetadata{
 	{
 		Name: "Company",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "dbo",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "Employees",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "Id",
 								Type: "int",
@@ -165,7 +166,7 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 					},
 					{
 						Name: "Address",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "EmployeeId",
 								Type: "int",
@@ -177,7 +178,7 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 						},
 					},
 				},
-				Sequences: []*storepb.SequenceMetadata{
+				Sequences: []*metadatapb.SequenceMetadata{
 					{
 						Name: "EmployeeIdSeq",
 					},
@@ -185,7 +186,7 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 						Name: "OrderSeq",
 					},
 				},
-				Procedures: []*storepb.ProcedureMetadata{
+				Procedures: []*metadatapb.ProcedureMetadata{
 					{
 						Name: "SyncEmployees",
 					},
@@ -193,10 +194,10 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 			},
 			{
 				Name: "MySchema",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "SalaryLevel",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "Id",
 								Type: "int",
@@ -208,17 +209,17 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name: "SalaryView",
 					},
 				},
-				Sequences: []*storepb.SequenceMetadata{
+				Sequences: []*metadatapb.SequenceMetadata{
 					{
 						Name: "SalarySeq",
 					},
 				},
-				Procedures: []*storepb.ProcedureMetadata{
+				Procedures: []*metadatapb.ProcedureMetadata{
 					{
 						Name: "SyncSalary",
 					},
@@ -228,13 +229,13 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 	},
 	{
 		Name: "School",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "dbo",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "Student",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "Id",
 								Type: "int",
@@ -246,12 +247,12 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 						},
 					},
 				},
-				Sequences: []*storepb.SequenceMetadata{
+				Sequences: []*metadatapb.SequenceMetadata{
 					{
 						Name: "StudentSeq",
 					},
 				},
-				Procedures: []*storepb.ProcedureMetadata{
+				Procedures: []*metadatapb.ProcedureMetadata{
 					{
 						Name: "SyncStudents",
 					},

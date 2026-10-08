@@ -137,7 +137,7 @@ describe("VirtualDataTable row detail action", () => {
     });
     expect(action).toHaveClass(
       "border",
-      "size-6",
+      "h-6",
       "rounded-full",
       "shadow"
     );

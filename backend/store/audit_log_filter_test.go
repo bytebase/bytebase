@@ -5,6 +5,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func mustParseTime(t *testing.T, s string) time.Time {
@@ -14,9 +18,10 @@ func mustParseTime(t *testing.T, s string) time.Time {
 	return parsedTime
 }
 
-func TestGetSearchAuditLogsFilter_WithoutUserLookup(t *testing.T) {
-	// Note: This test skips user filter tests since they require database access
-	// User filter functionality is tested in integration tests
+func TestGetSearchAuditLogsFilter(t *testing.T) {
+	t.Parallel()
+	// Note: This test skips principal lookup filters since they require database access.
+	// Principal lookup filtering is tested in integration tests.
 
 	tests := []struct {
 		name        string
@@ -53,6 +58,19 @@ func TestGetSearchAuditLogsFilter_WithoutUserLookup(t *testing.T) {
 			wantSQL:  "(payload->>'severity' = $1)",
 			wantArgs: []any{"INFO"},
 			wantErr:  false,
+		},
+		{
+			name:     "actor filter uses the legacy storage key",
+			filter:   `actor == "serviceAccounts/deploy@service.bytebase.com"`,
+			wantSQL:  "(payload->>'user' = $1)",
+			wantArgs: []any{"serviceAccounts/deploy@service.bytebase.com"},
+			wantErr:  false,
+		},
+		{
+			name:        "user filter is no longer supported",
+			filter:      `user == "users/alice@example.com"`,
+			wantErr:     true,
+			errContains: "unknown variable user",
 		},
 		{
 			name:     "create_time greater than or equal",
@@ -114,7 +132,7 @@ func TestGetSearchAuditLogsFilter_WithoutUserLookup(t *testing.T) {
 			name:        "invalid filter syntax",
 			filter:      `invalid syntax {{`,
 			wantErr:     true,
-			errContains: "failed to parse filter",
+			errContains: "invalid filter expression",
 		},
 		{
 			name:        "unsupported variable",
@@ -138,6 +156,7 @@ func TestGetSearchAuditLogsFilter_WithoutUserLookup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetSearchAuditLogsFilter(tt.filter)
 
 			if tt.wantErr {
@@ -167,7 +186,22 @@ func TestGetSearchAuditLogsFilter_WithoutUserLookup(t *testing.T) {
 	}
 }
 
+func TestAuditLogUserUsesProtoJSONName(t *testing.T) {
+	t.Parallel()
+
+	payload, err := protojson.Marshal(&storepb.AuditLog{
+		User: "serviceAccounts/deploy@service.bytebase.com",
+	})
+	require.NoError(t, err)
+	require.JSONEq(t, `{"user":"serviceAccounts/deploy@service.bytebase.com"}`, string(payload))
+
+	var auditLog storepb.AuditLog
+	require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal(payload, &auditLog))
+	require.Equal(t, "serviceAccounts/deploy@service.bytebase.com", auditLog.User)
+}
+
 func TestGetSearchAuditLogsFilter_EdgeCases(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -205,6 +239,7 @@ func TestGetSearchAuditLogsFilter_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetSearchAuditLogsFilter(tt.filter)
 
 			if tt.wantErr {

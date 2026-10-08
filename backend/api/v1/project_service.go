@@ -639,7 +639,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok {
 		deltas := findIamPolicyDeltas(replaced.Policy, iamPolicyMessage.Policy)
 		p, err := convertToProtoAny(deltas)
 		if err != nil {

@@ -9,6 +9,7 @@ import (
 )
 
 func TestDeleteInstancePurgeInvalidatesDescendantCaches(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newProjectPurgeCacheFixture(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO instance (resource_id, workspace, project, deleted)

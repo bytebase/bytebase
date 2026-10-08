@@ -38,11 +38,10 @@ export function ProjectSelect({
   portal,
 }: ProjectSelectProps) {
   const { t } = useTranslation();
-  // Projects referenced by `value` that aren't in the paged fetch.
-  // Mirrors Vue's `additionalOptions` so deep-linked URLs (e.g.
-  // `/sql-editor/projects/foo/...`) show the correct project label
-  // when the user lands on the page before the matching page-1 fetch
-  // returns it.
+  // Projects referenced by `value` that aren't in the paged fetch, so
+  // deep-linked URLs (e.g. `/sql-editor/projects/foo/...`) show the correct
+  // project label when the user lands on the page before the matching page-1
+  // fetch returns it.
   const [additionalProjects, setAdditionalProjects] = useState<Project[]>([]);
 
   // Read `excludeDefault` from a ref inside the callback so the

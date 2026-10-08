@@ -22,8 +22,6 @@ import { HistoryPanel } from "./HistoryPanel/HistoryPanel";
 import { PromptInput } from "./PromptInput";
 
 /**
- * React port of `plugins/ai/components/ChatPanel.vue`.
- *
  * The chat surface: ActionBar on top, ChatView in the middle (or a
  * spinner while the per-tab fetch lands), DynamicSuggestions +
  * PromptInput at the bottom, and the HistoryPanel drawer mounted once.
@@ -38,8 +36,7 @@ import { PromptInput } from "./PromptInput";
  *   5. On FAILED, emit `error` on `aiContextEvents` for the host to
  *      surface (e.g. toast).
  *
- * Two `flush: "post"` watch blocks from the Vue version translate to
- * `useEffect` + rAF in React:
+ * Two effects react to provider state:
  *   - Auto-create an empty conversation when the per-tab fetch resolves
  *     to an empty list.
  *   - Fire `requestAI` when the `send-chat` event handler in the
@@ -161,10 +158,7 @@ export function ChatPanel() {
   requestAIRef.current = requestAI;
 
   // Auto-create an empty conversation when the per-tab fetch resolves
-  // to an empty list. Mirrors the Vue `watch([ready, conversationList],
-  // ..., { immediate: true })` — `requestAnimationFrame` defers to the
-  // next paint so any concurrent provider-side `new-conversation` flow
-  // gets a chance to claim the slot first.
+  // to an empty list.
   useEffect(() => {
     if (!ready) return;
     if (conversationList.length > 0) return;
@@ -175,15 +169,13 @@ export function ChatPanel() {
       database: tab?.connection.database ?? "",
     });
     // We intentionally watch only the boolean transition + the empty
-    // condition, not the full `conversationList` reference — Vue's
-    // version reacts on identity; the React version reacts on the
-    // length so we don't fire each time a new message arrives.
+    // condition, not the full `conversationList` reference, so we don't
+    // fire each time a new message arrives.
   }, [ready, conversationList.length, store]);
 
-  // Fire `requestAI` when a pending send-chat lands. The Vue version
-  // used `watch(..., { flush: "post" })` — we approximate by waiting
-  // for the next animation frame so the conversation creation in the
-  // provider's `send-chat` handler has settled.
+  // Fire `requestAI` when a pending send-chat lands. Wait for the next
+  // animation frame so the conversation creation in the provider's
+  // `send-chat` handler has settled.
   useEffect(() => {
     if (!ready) return;
     if (!pendingSendChat) return;

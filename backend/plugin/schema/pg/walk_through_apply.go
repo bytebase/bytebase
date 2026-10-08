@@ -2,25 +2,25 @@ package pg
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"google.golang.org/protobuf/proto"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/catalog"
 	omniparser "github.com/bytebase/omni/pg/parser"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // applyDiffToMetadata applies a SchemaDiff (from user DDL execution) to a
 // clone of the original metadata proto, producing the post-DDL metadata.
 // The original proto is NOT modified.
-func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, catBefore, catAfter *catalog.Catalog, diff *catalog.SchemaDiff) *storepb.DatabaseSchemaMetadata {
+func applyDiffToMetadata(original *metadatapb.DatabaseSchemaMetadata, catBefore, catAfter *catalog.Catalog, diff *catalog.SchemaDiff) *metadatapb.DatabaseSchemaMetadata {
 	if diff == nil || diff.IsEmpty() {
 		return original
 	}
 
-	result, ok := proto.Clone(original).(*storepb.DatabaseSchemaMetadata)
+	result, ok := proto.Clone(original).(*metadatapb.DatabaseSchemaMetadata)
 	if !ok {
 		return original
 	}
@@ -28,14 +28,18 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, catBefore, ca
 	for _, s := range diff.Schemas {
 		switch s.Action {
 		case catalog.DiffAdd:
-			result.Schemas = append(result.Schemas, &storepb.SchemaMetadata{Name: s.Name})
+			result.Schemas = append(result.Schemas, &metadatapb.SchemaMetadata{Name: s.Name})
 		case catalog.DiffDrop:
 			result.Schemas = removeSchema(result.Schemas, s.Name)
 		default:
 		}
 	}
 
+	renamed := renamePartitions(result, catAfter, diff.Relations)
 	for _, rel := range diff.Relations {
+		if (rel.From != nil && renamed[rel.From.OID]) || (rel.To != nil && renamed[rel.To.OID]) {
+			continue
+		}
 		if rel.Action == catalog.DiffDrop {
 			if sm := findSchema(result, rel.SchemaName); sm != nil {
 				dropRelation(sm, rel)
@@ -88,7 +92,7 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, catBefore, ca
 		sm := findOrCreateSchema(result, e.SchemaName)
 		switch e.Action {
 		case catalog.DiffAdd:
-			sm.EnumTypes = append(sm.EnumTypes, &storepb.EnumTypeMetadata{
+			sm.EnumTypes = append(sm.EnumTypes, &metadatapb.EnumTypeMetadata{
 				Name:   e.Name,
 				Values: e.ToValues,
 			})
@@ -171,7 +175,7 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, catBefore, ca
 	return result
 }
 
-func findSchema(meta *storepb.DatabaseSchemaMetadata, name string) *storepb.SchemaMetadata {
+func findSchema(meta *metadatapb.DatabaseSchemaMetadata, name string) *metadatapb.SchemaMetadata {
 	for _, s := range meta.Schemas {
 		if s.Name == name {
 			return s
@@ -180,19 +184,19 @@ func findSchema(meta *storepb.DatabaseSchemaMetadata, name string) *storepb.Sche
 	return nil
 }
 
-func findOrCreateSchema(meta *storepb.DatabaseSchemaMetadata, name string) *storepb.SchemaMetadata {
+func findOrCreateSchema(meta *metadatapb.DatabaseSchemaMetadata, name string) *metadatapb.SchemaMetadata {
 	for _, s := range meta.Schemas {
 		if s.Name == name {
 			return s
 		}
 	}
-	s := &storepb.SchemaMetadata{Name: name}
+	s := &metadatapb.SchemaMetadata{Name: name}
 	meta.Schemas = append(meta.Schemas, s)
 	return s
 }
 
-func removeSchema(schemas []*storepb.SchemaMetadata, name string) []*storepb.SchemaMetadata {
-	out := make([]*storepb.SchemaMetadata, 0, len(schemas))
+func removeSchema(schemas []*metadatapb.SchemaMetadata, name string) []*metadatapb.SchemaMetadata {
+	out := make([]*metadatapb.SchemaMetadata, 0, len(schemas))
 	for _, s := range schemas {
 		if s.Name != name {
 			out = append(out, s)
@@ -201,7 +205,7 @@ func removeSchema(schemas []*storepb.SchemaMetadata, name string) []*storepb.Sch
 	return out
 }
 
-func addRelation(sm *storepb.SchemaMetadata, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
+func addRelation(sm *metadatapb.SchemaMetadata, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
 	if rel.To == nil {
 		return
 	}
@@ -216,14 +220,17 @@ func addRelation(sm *storepb.SchemaMetadata, cat *catalog.Catalog, rel catalog.R
 	}
 }
 
-func dropRelation(sm *storepb.SchemaMetadata, rel catalog.RelationDiffEntry) {
+func dropRelation(sm *metadatapb.SchemaMetadata, rel catalog.RelationDiffEntry) {
 	name := rel.Name
 	sm.Tables = removeTableByName(sm.Tables, name)
 	sm.Views = removeViewByName(sm.Views, name)
 	sm.MaterializedViews = removeMatViewByName(sm.MaterializedViews, name)
+	for _, t := range sm.Tables {
+		t.Partitions = removePartitionByName(t.Partitions, name)
+	}
 }
 
-func modifyRelation(sm *storepb.SchemaMetadata, catBefore, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
+func modifyRelation(sm *metadatapb.SchemaMetadata, catBefore, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
 	if rel.To == nil {
 		return
 	}
@@ -231,6 +238,10 @@ func modifyRelation(sm *storepb.SchemaMetadata, catBefore, cat *catalog.Catalog,
 	case 'r', 'p', 'f':
 		tbl := findTable(sm, rel.Name)
 		if tbl == nil {
+			if p := findPartition(sm, rel.Name); p != nil {
+				applyPartitionDiffs(p, catBefore, cat, rel)
+				return
+			}
 			sm.Tables = append(sm.Tables, relationToTableProto(cat, rel.To))
 			return
 		}
@@ -247,7 +258,47 @@ func modifyRelation(sm *storepb.SchemaMetadata, catBefore, cat *catalog.Catalog,
 	}
 }
 
-func applyColumnDiffs(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
+// renamePartitions renames each partition the diff renames where it stands,
+// with its indexes and constraints as the catalog now has them. The diff shows
+// a rename as a drop and an add of the same relation, which would otherwise
+// turn the partition into a table of its own. It returns the OIDs it handled.
+func renamePartitions(result *metadatapb.DatabaseSchemaMetadata, catAfter *catalog.Catalog, relations []catalog.RelationDiffEntry) map[uint32]bool {
+	added := make(map[uint32]catalog.RelationDiffEntry)
+	for _, rel := range relations {
+		if rel.Action == catalog.DiffAdd && rel.To != nil {
+			added[rel.To.OID] = rel
+		}
+	}
+	renamed := make(map[uint32]bool)
+	for _, rel := range relations {
+		if rel.Action != catalog.DiffDrop || rel.From == nil {
+			continue
+		}
+		add, ok := added[rel.From.OID]
+		sm := findSchema(result, rel.SchemaName)
+		if !ok || add.SchemaName != rel.SchemaName || sm == nil {
+			continue
+		}
+		if p := findPartition(sm, rel.Name); p != nil {
+			tbl := relationToTableProto(catAfter, add.To)
+			p.Name = add.Name
+			p.Indexes, p.CheckConstraints, p.ExcludeConstraints = tbl.Indexes, tbl.CheckConstraints, tbl.ExcludeConstraints
+			renamed[rel.From.OID] = true
+		}
+	}
+	return renamed
+}
+
+// applyPartitionDiffs applies a partition's index and constraint changes. A
+// partition's metadata holds only those; its columns are its parent table's.
+func applyPartitionDiffs(p *metadatapb.TablePartitionMetadata, catBefore, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
+	tbl := &metadatapb.TableMetadata{Indexes: p.Indexes, CheckConstraints: p.CheckConstraints, ExcludeConstraints: p.ExcludeConstraints}
+	applyIndexDiffs(tbl, cat, rel)
+	applyConstraintDiffs(tbl, catBefore, cat, rel)
+	p.Indexes, p.CheckConstraints, p.ExcludeConstraints = tbl.Indexes, tbl.CheckConstraints, tbl.ExcludeConstraints
+}
+
+func applyColumnDiffs(tbl *metadatapb.TableMetadata, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
 	for _, cd := range rel.Columns {
 		switch cd.Action {
 		case catalog.DiffAdd:
@@ -270,7 +321,7 @@ func applyColumnDiffs(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel cata
 	}
 }
 
-func applyIndexDiffs(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
+func applyIndexDiffs(tbl *metadatapb.TableMetadata, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
 	for _, id := range rel.Indexes {
 		switch id.Action {
 		case catalog.DiffAdd:
@@ -293,7 +344,7 @@ func applyIndexDiffs(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel catal
 	}
 }
 
-func applyConstraintDiffs(tbl *storepb.TableMetadata, catBefore, catAfter *catalog.Catalog, rel catalog.RelationDiffEntry) {
+func applyConstraintDiffs(tbl *metadatapb.TableMetadata, catBefore, catAfter *catalog.Catalog, rel catalog.RelationDiffEntry) {
 	for _, cd := range rel.Constraints {
 		switch cd.Action {
 		case catalog.DiffAdd:
@@ -316,7 +367,7 @@ func applyConstraintDiffs(tbl *storepb.TableMetadata, catBefore, catAfter *catal
 	}
 }
 
-func addConstraintToTable(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel catalog.RelationDiffEntry, con *catalog.Constraint) {
+func addConstraintToTable(tbl *metadatapb.TableMetadata, cat *catalog.Catalog, rel catalog.RelationDiffEntry, con *catalog.Constraint) {
 	switch con.Type {
 	case catalog.ConstraintPK, catalog.ConstraintUnique:
 		idx := cat.GetIndexByOID(con.IndexOID)
@@ -326,12 +377,12 @@ func addConstraintToTable(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel 
 	case catalog.ConstraintFK:
 		tbl.ForeignKeys = append(tbl.ForeignKeys, constraintToFKProto(cat, rel.To, con))
 	case catalog.ConstraintCheck:
-		tbl.CheckConstraints = append(tbl.CheckConstraints, &storepb.CheckConstraintMetadata{
+		tbl.CheckConstraints = append(tbl.CheckConstraints, &metadatapb.CheckConstraintMetadata{
 			Name:       con.Name,
 			Expression: con.CheckExpr,
 		})
 	case catalog.ConstraintExclude:
-		tbl.ExcludeConstraints = append(tbl.ExcludeConstraints, &storepb.ExcludeConstraintMetadata{
+		tbl.ExcludeConstraints = append(tbl.ExcludeConstraints, &metadatapb.ExcludeConstraintMetadata{
 			Name:       con.Name,
 			Expression: con.CheckExpr,
 		})
@@ -339,7 +390,7 @@ func addConstraintToTable(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel 
 	}
 }
 
-func removeConstraintFromTable(tbl *storepb.TableMetadata, cat *catalog.Catalog, con *catalog.Constraint) {
+func removeConstraintFromTable(tbl *metadatapb.TableMetadata, cat *catalog.Catalog, con *catalog.Constraint) {
 	switch con.Type {
 	case catalog.ConstraintPK, catalog.ConstraintUnique:
 		// Constraint name and backing index name may differ; resolve via IndexOID.
@@ -349,7 +400,7 @@ func removeConstraintFromTable(tbl *storepb.TableMetadata, cat *catalog.Catalog,
 		}
 		tbl.Indexes = removeIndexByName(tbl.Indexes, idxName)
 	case catalog.ConstraintFK:
-		out := make([]*storepb.ForeignKeyMetadata, 0, len(tbl.ForeignKeys))
+		out := make([]*metadatapb.ForeignKeyMetadata, 0, len(tbl.ForeignKeys))
 		for _, fk := range tbl.ForeignKeys {
 			if fk.Name != con.Name {
 				out = append(out, fk)
@@ -357,7 +408,7 @@ func removeConstraintFromTable(tbl *storepb.TableMetadata, cat *catalog.Catalog,
 		}
 		tbl.ForeignKeys = out
 	case catalog.ConstraintCheck:
-		out := make([]*storepb.CheckConstraintMetadata, 0, len(tbl.CheckConstraints))
+		out := make([]*metadatapb.CheckConstraintMetadata, 0, len(tbl.CheckConstraints))
 		for _, c := range tbl.CheckConstraints {
 			if c.Name != con.Name {
 				out = append(out, c)
@@ -365,7 +416,7 @@ func removeConstraintFromTable(tbl *storepb.TableMetadata, cat *catalog.Catalog,
 		}
 		tbl.CheckConstraints = out
 	case catalog.ConstraintExclude:
-		out := make([]*storepb.ExcludeConstraintMetadata, 0, len(tbl.ExcludeConstraints))
+		out := make([]*metadatapb.ExcludeConstraintMetadata, 0, len(tbl.ExcludeConstraints))
 		for _, c := range tbl.ExcludeConstraints {
 			if c.Name != con.Name {
 				out = append(out, c)
@@ -378,8 +429,8 @@ func removeConstraintFromTable(tbl *storepb.TableMetadata, cat *catalog.Catalog,
 
 // --- Conversion helpers: omni types → proto types ---
 
-func columnToProto(cat *catalog.Catalog, col *catalog.Column) *storepb.ColumnMetadata {
-	cm := &storepb.ColumnMetadata{
+func columnToProto(cat *catalog.Catalog, col *catalog.Column) *metadatapb.ColumnMetadata {
+	cm := &metadatapb.ColumnMetadata{
 		Name:     col.Name,
 		Position: int32(col.AttNum),
 		Type:     cat.FormatType(col.TypeOID, col.TypeMod),
@@ -387,8 +438,8 @@ func columnToProto(cat *catalog.Catalog, col *catalog.Column) *storepb.ColumnMet
 		Default:  col.Default,
 	}
 	if col.Generated == 's' {
-		cm.Generation = &storepb.GenerationMetadata{
-			Type:       storepb.GenerationMetadata_TYPE_STORED,
+		cm.Generation = &metadatapb.GenerationMetadata{
+			Type:       metadatapb.GenerationMetadata_TYPE_STORED,
 			Expression: col.GenerationExpr,
 		}
 	}
@@ -396,17 +447,17 @@ func columnToProto(cat *catalog.Catalog, col *catalog.Column) *storepb.ColumnMet
 		cm.IsIdentity = true
 		switch col.Identity {
 		case 'a':
-			cm.IdentityGeneration = storepb.ColumnMetadata_ALWAYS
+			cm.IdentityGeneration = metadatapb.ColumnMetadata_ALWAYS
 		case 'd':
-			cm.IdentityGeneration = storepb.ColumnMetadata_BY_DEFAULT
+			cm.IdentityGeneration = metadatapb.ColumnMetadata_BY_DEFAULT
 		default:
 		}
 	}
 	return cm
 }
 
-func indexToProto(_ *catalog.Catalog, rel *catalog.Relation, idx *catalog.Index) *storepb.IndexMetadata {
-	im := &storepb.IndexMetadata{
+func indexToProto(_ *catalog.Catalog, rel *catalog.Relation, idx *catalog.Index) *metadatapb.IndexMetadata {
+	im := &metadatapb.IndexMetadata{
 		Name:         idx.Name,
 		Type:         idx.AccessMethod,
 		Unique:       idx.IsUnique,
@@ -442,8 +493,8 @@ func indexToProto(_ *catalog.Catalog, rel *catalog.Relation, idx *catalog.Index)
 	return im
 }
 
-func constraintToFKProto(cat *catalog.Catalog, rel *catalog.Relation, con *catalog.Constraint) *storepb.ForeignKeyMetadata {
-	fk := &storepb.ForeignKeyMetadata{
+func constraintToFKProto(cat *catalog.Catalog, rel *catalog.Relation, con *catalog.Constraint) *metadatapb.ForeignKeyMetadata {
+	fk := &metadatapb.ForeignKeyMetadata{
 		Name: con.Name,
 	}
 
@@ -480,8 +531,8 @@ func constraintToFKProto(cat *catalog.Catalog, rel *catalog.Relation, con *catal
 	return fk
 }
 
-func sequenceToProto(cat *catalog.Catalog, seq *catalog.Sequence) *storepb.SequenceMetadata {
-	return &storepb.SequenceMetadata{
+func sequenceToProto(cat *catalog.Catalog, seq *catalog.Sequence) *metadatapb.SequenceMetadata {
+	return &metadatapb.SequenceMetadata{
 		Name:      seq.Name,
 		DataType:  cat.FormatType(seq.TypeOID, -1),
 		Start:     fmt.Sprintf("%d", seq.Start),
@@ -521,7 +572,7 @@ func wtFKMatchToString(match byte) string {
 
 // --- Slice helpers ---
 
-func findTable(sm *storepb.SchemaMetadata, name string) *storepb.TableMetadata {
+func findTable(sm *metadatapb.SchemaMetadata, name string) *metadatapb.TableMetadata {
 	for _, t := range sm.Tables {
 		if t.Name == name {
 			return t
@@ -530,8 +581,39 @@ func findTable(sm *storepb.SchemaMetadata, name string) *storepb.TableMetadata {
 	return nil
 }
 
-func removeTableByName(tables []*storepb.TableMetadata, name string) []*storepb.TableMetadata {
-	out := make([]*storepb.TableMetadata, 0, len(tables))
+// findPartition returns the partition named name, at any depth, of a table in sm.
+func findPartition(sm *metadatapb.SchemaMetadata, name string) *metadatapb.TablePartitionMetadata {
+	var find func(partitions []*metadatapb.TablePartitionMetadata) *metadatapb.TablePartitionMetadata
+	find = func(partitions []*metadatapb.TablePartitionMetadata) *metadatapb.TablePartitionMetadata {
+		for _, p := range partitions {
+			if p.Name == name {
+				return p
+			}
+			if sub := find(p.Subpartitions); sub != nil {
+				return sub
+			}
+		}
+		return nil
+	}
+	for _, t := range sm.Tables {
+		if p := find(t.Partitions); p != nil {
+			return p
+		}
+	}
+	return nil
+}
+
+// removePartitionByName removes the partition named name, at any depth.
+func removePartitionByName(partitions []*metadatapb.TablePartitionMetadata, name string) []*metadatapb.TablePartitionMetadata {
+	partitions = slices.DeleteFunc(partitions, func(p *metadatapb.TablePartitionMetadata) bool { return p.Name == name })
+	for _, p := range partitions {
+		p.Subpartitions = removePartitionByName(p.Subpartitions, name)
+	}
+	return partitions
+}
+
+func removeTableByName(tables []*metadatapb.TableMetadata, name string) []*metadatapb.TableMetadata {
+	out := make([]*metadatapb.TableMetadata, 0, len(tables))
 	for _, t := range tables {
 		if t.Name != name {
 			out = append(out, t)
@@ -540,8 +622,8 @@ func removeTableByName(tables []*storepb.TableMetadata, name string) []*storepb.
 	return out
 }
 
-func removeViewByName(views []*storepb.ViewMetadata, name string) []*storepb.ViewMetadata {
-	out := make([]*storepb.ViewMetadata, 0, len(views))
+func removeViewByName(views []*metadatapb.ViewMetadata, name string) []*metadatapb.ViewMetadata {
+	out := make([]*metadatapb.ViewMetadata, 0, len(views))
 	for _, v := range views {
 		if v.Name != name {
 			out = append(out, v)
@@ -550,8 +632,8 @@ func removeViewByName(views []*storepb.ViewMetadata, name string) []*storepb.Vie
 	return out
 }
 
-func removeMatViewByName(mvs []*storepb.MaterializedViewMetadata, name string) []*storepb.MaterializedViewMetadata {
-	out := make([]*storepb.MaterializedViewMetadata, 0, len(mvs))
+func removeMatViewByName(mvs []*metadatapb.MaterializedViewMetadata, name string) []*metadatapb.MaterializedViewMetadata {
+	out := make([]*metadatapb.MaterializedViewMetadata, 0, len(mvs))
 	for _, m := range mvs {
 		if m.Name != name {
 			out = append(out, m)
@@ -560,8 +642,8 @@ func removeMatViewByName(mvs []*storepb.MaterializedViewMetadata, name string) [
 	return out
 }
 
-func removeSequenceByName(seqs []*storepb.SequenceMetadata, name string) []*storepb.SequenceMetadata {
-	out := make([]*storepb.SequenceMetadata, 0, len(seqs))
+func removeSequenceByName(seqs []*metadatapb.SequenceMetadata, name string) []*metadatapb.SequenceMetadata {
+	out := make([]*metadatapb.SequenceMetadata, 0, len(seqs))
 	for _, s := range seqs {
 		if s.Name != name {
 			out = append(out, s)
@@ -570,8 +652,8 @@ func removeSequenceByName(seqs []*storepb.SequenceMetadata, name string) []*stor
 	return out
 }
 
-func removeColumnByName(cols []*storepb.ColumnMetadata, name string) []*storepb.ColumnMetadata {
-	out := make([]*storepb.ColumnMetadata, 0, len(cols))
+func removeColumnByName(cols []*metadatapb.ColumnMetadata, name string) []*metadatapb.ColumnMetadata {
+	out := make([]*metadatapb.ColumnMetadata, 0, len(cols))
 	for _, c := range cols {
 		if c.Name != name {
 			out = append(out, c)
@@ -580,8 +662,8 @@ func removeColumnByName(cols []*storepb.ColumnMetadata, name string) []*storepb.
 	return out
 }
 
-func removeIndexByName(indexes []*storepb.IndexMetadata, name string) []*storepb.IndexMetadata {
-	out := make([]*storepb.IndexMetadata, 0, len(indexes))
+func removeIndexByName(indexes []*metadatapb.IndexMetadata, name string) []*metadatapb.IndexMetadata {
+	out := make([]*metadatapb.IndexMetadata, 0, len(indexes))
 	for _, i := range indexes {
 		if i.Name != name {
 			out = append(out, i)
@@ -590,8 +672,8 @@ func removeIndexByName(indexes []*storepb.IndexMetadata, name string) []*storepb
 	return out
 }
 
-func removeEnumByName(enums []*storepb.EnumTypeMetadata, name string) []*storepb.EnumTypeMetadata {
-	out := make([]*storepb.EnumTypeMetadata, 0, len(enums))
+func removeEnumByName(enums []*metadatapb.EnumTypeMetadata, name string) []*metadatapb.EnumTypeMetadata {
+	out := make([]*metadatapb.EnumTypeMetadata, 0, len(enums))
 	for _, e := range enums {
 		if e.Name != name {
 			out = append(out, e)
@@ -600,16 +682,16 @@ func removeEnumByName(enums []*storepb.EnumTypeMetadata, name string) []*storepb
 	return out
 }
 
-func functionToProto(cat *catalog.Catalog, up *catalog.UserProc, identity string) *storepb.FunctionMetadata {
-	return &storepb.FunctionMetadata{
+func functionToProto(cat *catalog.Catalog, up *catalog.UserProc, identity string) *metadatapb.FunctionMetadata {
+	return &metadatapb.FunctionMetadata{
 		Name:       up.Name,
 		Definition: buildUserProcDDL(cat, up),
 		Signature:  identity,
 	}
 }
 
-func procedureToProto(cat *catalog.Catalog, up *catalog.UserProc, identity string) *storepb.ProcedureMetadata {
-	return &storepb.ProcedureMetadata{
+func procedureToProto(cat *catalog.Catalog, up *catalog.UserProc, identity string) *metadatapb.ProcedureMetadata {
+	return &metadatapb.ProcedureMetadata{
 		Name:       up.Name,
 		Definition: buildUserProcDDL(cat, up),
 		Signature:  identity,
@@ -695,8 +777,8 @@ func buildUserProcDDL(cat *catalog.Catalog, up *catalog.UserProc) string {
 	return b.String()
 }
 
-func removeProcedureByIdentity(procs []*storepb.ProcedureMetadata, identity string) []*storepb.ProcedureMetadata {
-	out := make([]*storepb.ProcedureMetadata, 0, len(procs))
+func removeProcedureByIdentity(procs []*metadatapb.ProcedureMetadata, identity string) []*metadatapb.ProcedureMetadata {
+	out := make([]*metadatapb.ProcedureMetadata, 0, len(procs))
 	for _, p := range procs {
 		if p.Signature != identity {
 			out = append(out, p)
@@ -705,8 +787,8 @@ func removeProcedureByIdentity(procs []*storepb.ProcedureMetadata, identity stri
 	return out
 }
 
-func removeFunctionByIdentity(funcs []*storepb.FunctionMetadata, identity string) []*storepb.FunctionMetadata {
-	out := make([]*storepb.FunctionMetadata, 0, len(funcs))
+func removeFunctionByIdentity(funcs []*metadatapb.FunctionMetadata, identity string) []*metadatapb.FunctionMetadata {
+	out := make([]*metadatapb.FunctionMetadata, 0, len(funcs))
 	for _, f := range funcs {
 		if f.Signature != identity {
 			out = append(out, f)
@@ -720,7 +802,7 @@ func removeFunctionByIdentity(funcs []*storepb.FunctionMetadata, identity string
 // metadata (the catalog does not track comments, and it only keeps the bare
 // collation name) for attributes that survive by name. Attributes unchanged
 // between from and to keep their previous metadata verbatim, so a composite
-// degraded to the text-backed pseudo fallback does not rewrite untouched
+// degraded to a text-backed stand-in does not rewrite untouched
 // attributes to text — mirroring the per-column granularity of table diffs.
 //
 // Within a degraded composite this is a deliberate trade-off: an attribute
@@ -728,10 +810,10 @@ func removeFunctionByIdentity(funcs []*storepb.FunctionMetadata, identity string
 // read text in from and to), so that rare change is missed in favor of not
 // corrupting every untouched attribute. Walk-through metadata is advisory;
 // post-execution sync restores ground truth. The root fix is modeling the
-// types the loader cannot install today (e.g. domains).
-func compositeTypeToProto(cat *catalog.Catalog, name string, from, to *catalog.Relation, previous *storepb.CompositeTypeMetadata) *storepb.CompositeTypeMetadata {
-	previousAttributes := make(map[string]*storepb.CompositeTypeAttribute)
-	composite := &storepb.CompositeTypeMetadata{Name: name}
+// types LoadMetadata cannot install today (e.g. domains).
+func compositeTypeToProto(cat *catalog.Catalog, name string, from, to *catalog.Relation, previous *metadatapb.CompositeTypeMetadata) *metadatapb.CompositeTypeMetadata {
+	previousAttributes := make(map[string]*metadatapb.CompositeTypeAttribute)
+	composite := &metadatapb.CompositeTypeMetadata{Name: name}
 	if previous != nil {
 		composite.Comment = previous.Comment
 		composite.SkipDump = previous.SkipDump
@@ -759,7 +841,7 @@ func compositeTypeToProto(cat *catalog.Catalog, name string, from, to *catalog.R
 		if fc != nil &&
 			fc.TypeOID == c.TypeOID && fc.TypeMod == c.TypeMod && fc.CollationName == c.CollationName {
 			if prev := previousAttributes[fc.Name]; prev != nil {
-				composite.Attributes = append(composite.Attributes, &storepb.CompositeTypeAttribute{
+				composite.Attributes = append(composite.Attributes, &metadatapb.CompositeTypeAttribute{
 					Name:      c.Name,
 					Type:      prev.Type,
 					Collation: prev.Collation,
@@ -768,14 +850,14 @@ func compositeTypeToProto(cat *catalog.Catalog, name string, from, to *catalog.R
 				continue
 			}
 		}
-		attribute := &storepb.CompositeTypeAttribute{
+		attribute := &metadatapb.CompositeTypeAttribute{
 			Name: c.Name,
 			Type: qualifyWalkThroughAttributeType(cat, c.TypeOID, cat.FormatType(c.TypeOID, c.TypeMod)),
 		}
 		// Previous metadata is only consulted for the column identity that
 		// survived (same attnum): a dropped-and-re-added attribute must not
 		// inherit the old attribute's collation reference or comment.
-		var surviving *storepb.CompositeTypeAttribute
+		var surviving *metadatapb.CompositeTypeAttribute
 		if fc != nil {
 			surviving = previousAttributes[fc.Name]
 		}
@@ -801,8 +883,8 @@ func compositeTypeToProto(cat *catalog.Catalog, name string, from, to *catalog.R
 	return composite
 }
 
-func removeCompositeTypeByName(composites []*storepb.CompositeTypeMetadata, name string) []*storepb.CompositeTypeMetadata {
-	out := make([]*storepb.CompositeTypeMetadata, 0, len(composites))
+func removeCompositeTypeByName(composites []*metadatapb.CompositeTypeMetadata, name string) []*metadatapb.CompositeTypeMetadata {
+	out := make([]*metadatapb.CompositeTypeMetadata, 0, len(composites))
 	for _, composite := range composites {
 		if composite.Name != name {
 			out = append(out, composite)
@@ -877,4 +959,12 @@ func quoteWalkThroughIdent(name string) string {
 		return name
 	}
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+}
+
+func wtIsSystemSchema(s string) bool {
+	switch s {
+	case "pg_catalog", "pg_toast", "information_schema":
+		return true
+	}
+	return strings.HasPrefix(s, "pg_")
 }

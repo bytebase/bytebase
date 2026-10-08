@@ -1,0 +1,3 @@
+
+CREATE VIEW ent_cmb_v AS SELECT roleid, name FROM role;
+CREATE FUNCTION ent_cmb_f() RETURNS INT DETERMINISTIC RETURN 7;

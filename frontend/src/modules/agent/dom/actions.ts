@@ -144,7 +144,6 @@ async function handleInput(
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
     target = el;
   } else {
-    // Naive UI wraps inputs — find the inner element
     target = findInnerInput(el);
   }
 
@@ -175,31 +174,10 @@ async function handleSelect(
     return { success: true, message: `Selected "${value}"` };
   }
 
-  // Naive UI select — click to open, then pick option
-  dispatchClick(el);
-
-  return new Promise<DomActionResult>((resolve) => {
-    setTimeout(() => {
-      const options = document.querySelectorAll(".n-base-select-option");
-      for (const opt of Array.from(options)) {
-        const text = opt.textContent?.trim();
-        if (text === value) {
-          dispatchClick(opt);
-          resolve({ success: true, message: `Selected "${value}"` });
-          return;
-        }
-      }
-      resolve({
-        success: false,
-        message: `Option "${value}" not found. Available options: ${Array.from(
-          options
-        )
-          .map((o) => o.textContent?.trim())
-          .filter(Boolean)
-          .join(", ")}`,
-      });
-    }, 200);
-  });
+  return {
+    success: false,
+    message: `[${el.tagName.toLowerCase()}] is not a native <select>; click it to open the options, then click the option`,
+  };
 }
 
 async function handleRead(el: Element): Promise<DomActionResult> {

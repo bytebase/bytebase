@@ -25,10 +25,7 @@ func TestSheetProjectScope(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	projectA := ctl.project
 	projectBResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
@@ -160,10 +157,7 @@ func TestSheetHistoryOnDatabaseTransfer(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	projectA := ctl.project
 	projectBResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
@@ -268,10 +262,7 @@ func TestSheetHistoryAfterOwnerPurge(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	purgedResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		ProjectId: generateRandomString("sheet-purge"),
@@ -330,10 +321,7 @@ func TestCollision_SheetWrite(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -354,7 +342,7 @@ func TestCollision_SheetWrite(t *testing.T) {
 
 	// Read A's shared-content sheet through the public API.
 	sharedHash := sha256.Sum256([]byte(sharedContent))
-	_, err = ctl.sheetServiceClient.GetSheet(ctx, connect.NewRequest(&v1pb.GetSheetRequest{
+	_, err := ctl.sheetServiceClient.GetSheet(ctx, connect.NewRequest(&v1pb.GetSheetRequest{
 		Name: fmt.Sprintf("%s/sheets/%s", fixture.ProjectA.Name, hex.EncodeToString(sharedHash[:])),
 	}))
 	a.NoError(err)

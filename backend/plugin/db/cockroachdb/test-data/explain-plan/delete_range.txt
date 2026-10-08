@@ -1,0 +1,6 @@
+distribution: local
+vectorized: true
+
+• delete range
+  from: big2
+  spans: [ - /100]

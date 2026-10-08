@@ -6,7 +6,6 @@ type Props = {
 };
 
 /**
- * React port of `plugins/ai/components/ChatView/UserMessageView.vue`.
  * User-authored message bubble. Width clamped to 60% of the row so an
  * AI response (`w-full`) and a user prompt visually contrast.
  */

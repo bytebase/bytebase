@@ -298,7 +298,7 @@ describe("TabList", () => {
     unmount();
   });
 
-  test("+ button calls savedQueryStore.createSavedQuery", () => {
+  test("+ button opens an unsaved local tab", () => {
     setup([makeTab("a")]);
     const { container, render, unmount } = renderIntoContainer(<TabList />);
     render();
@@ -309,8 +309,8 @@ describe("TabList", () => {
     act(() => {
       addButton?.click();
     });
-    expect(mocks.createSavedQuery).toHaveBeenCalled();
-    expect(mocks.addTab).not.toHaveBeenCalled();
+    expect(mocks.createSavedQuery).not.toHaveBeenCalled();
+    expect(mocks.addTab).toHaveBeenCalled();
     unmount();
   });
 

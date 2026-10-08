@@ -285,7 +285,7 @@ func dataSource(profile *config.Profile, entry *storepb.SelfHostSampleInstanceSe
 		Id:       "admin",
 		Type:     storepb.DataSourceType_ADMIN,
 		Username: entry.RoleName,
-		Host:     common.GetPostgresSocketDir(),
+		Host:     postgres.GetPostgresSocketDir(),
 		Port:     strconv.Itoa(profile.Port + 3 + int(entry.PortOffset)),
 		Database: entry.DatabaseName,
 	}

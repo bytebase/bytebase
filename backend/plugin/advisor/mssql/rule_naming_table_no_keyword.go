@@ -34,7 +34,7 @@ func (*NamingTableNoKeywordAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	rule := &namingTableNoKeywordRule{
 		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 	}
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type namingTableNoKeywordRule struct {

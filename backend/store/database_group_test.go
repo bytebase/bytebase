@@ -8,6 +8,7 @@ import (
 )
 
 func TestBuildListDatabaseGroupsQueryMultiProjectFilter(t *testing.T) {
+	t.Parallel()
 	resourceID := "group-a"
 	tests := []struct {
 		name        string
@@ -59,6 +60,7 @@ func TestBuildListDatabaseGroupsQueryMultiProjectFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			query, args, err := buildListDatabaseGroupsQuery(tt.find)
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)

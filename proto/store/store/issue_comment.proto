@@ -6,6 +6,8 @@ import "store/approval.proto";
 import "store/common.proto";
 import "store/issue.proto";
 import "store/plan.proto";
+import "store/review_rule.proto";
+import "store/review_run.proto";
 
 option go_package = "generated-go/store";
 
@@ -23,6 +25,12 @@ message IssueCommentPayload {
   // The statement context an inline comment references. Set at creation and
   // immutable afterward; never set together with an event.
   StatementAnchor statement_anchor = 9;
+
+  // Present on review results only, beside the text and never together with
+  // an event. Written by the review executor; CreateIssueComment rejects it.
+  // The anchor is statement_anchor; a result without one addresses the whole
+  // change.
+  ReviewMetadata review_metadata = 10;
 
   message Approval {
     IssuePayloadApproval.Approver.Status status = 1;
@@ -49,6 +57,40 @@ message IssueCommentPayload {
   message PlanUpdate {
     repeated PlanConfig.Spec from_specs = 1;
     repeated PlanConfig.Spec to_specs = 2;
+  }
+
+  // ReviewMetadata is what a review result carries beyond its text: which
+  // reviewer posted it, what it was judged against, its priority, and the
+  // databases it applies to. Results from the same reviewer are superseded
+  // together: when a run completes, it resolves every OPEN root of its type
+  // in the transaction that posts the new results.
+  message ReviewMetadata {
+    // Priority says what resolving the thread means. It has no bearing on
+    // blocking: an OPEN root thread blocks whatever its priority, and a
+    // result with no thread state never does.
+    enum Priority {
+      PRIORITY_UNSPECIFIED = 0;
+      // The SQL is wrong and must change. Resolving without changing the SQL
+      // is a claim of false positive.
+      P0 = 1;
+      // Dangerous but legitimate; a person must accept it.
+      P1 = 2;
+      // Advisory.
+      P2 = 3;
+    }
+
+    // The reviewer slot that posted the result; review_run.type stores the
+    // same enum by name.
+    ReviewRun.Type run_type = 1;
+    // The rule judged against. Set if and only if run_type is RULE.
+    ReviewRuleType rule_type = 2;
+    // A result merged across databases carries the highest priority among
+    // them.
+    Priority priority = 3;
+    // Every database the result applies to, sorted. Always complete; the
+    // renderer collapses it when it equals the spec's target set.
+    // Format: instances/{instance}/databases/{database}
+    repeated string targets = 4;
   }
 
   // StatementAnchor records the anchored statement revision and range.

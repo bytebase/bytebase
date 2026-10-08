@@ -32,7 +32,13 @@ import {
   FormSection,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { usePlanFeature } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import {
@@ -193,18 +199,29 @@ export const AnnouncementSection = forwardRef<
               "settings.general.workspace.announcement-theme.description"
             )}
           >
-            <SegmentedControl
-              ariaLabel={t(
-                "settings.general.workspace.announcement-theme.self"
-              )}
+            <Select
               disabled={disabled}
               value={selectedTheme}
-              onValueChange={onSelectTheme}
-              options={THEME_OPTIONS.map((option) => ({
-                value: option,
-                label: themeOptionLabel(option),
-              }))}
-            />
+              onValueChange={(value) => {
+                if (value) onSelectTheme(value);
+              }}
+            >
+              <SelectTrigger
+                aria-label={t(
+                  "settings.general.workspace.announcement-theme.self"
+                )}
+                className="w-full sm:w-80"
+              >
+                <SelectValue>{themeOptionLabel(selectedTheme)}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {THEME_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {themeOptionLabel(option)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {selectedTheme === "custom" && (
               <FormControlGroup>

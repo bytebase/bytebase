@@ -30,7 +30,7 @@ mkdir_output() {
 }
 
 # Go and node version checks.
-TARGET_GO_VERSION="1.26.5"
+TARGET_GO_VERSION="1.27.1"
 GO_VERSION=`go version | { read _ _ v _; echo ${v#go}; }`
 if [ "$(version ${GO_VERSION})" -lt "$(version $TARGET_GO_VERSION)" ];
 then

@@ -13,19 +13,11 @@ import { ProjectSidebar } from "@/components/ProjectSidebar";
 import { RoutePermissionGuardShell } from "@/components/RoutePermissionGuardShell";
 import { WorkspaceSetupGuide } from "@/modules/workspace-setup-guide/WorkspaceSetupGuide";
 
-// Ported from `src/layouts/BodyLayout.vue`. Mounts the workspace
-// `DashboardBodyShell` (header + sidebar slot + body slot) and portals the
-// React sidebar, routed body (`<Outlet/>` — the Vue named views collapse to
-// one outlet here, gated by `RoutePermissionGuardShell` on non-project
-// routes), and quickstart into the shell's reported targets. The
-// shell owns the responsive sidebar / mobile drawer; this layout supplies the
-// React `DashboardSidebar` tree directly instead of the Vue ReactSidebarMount.
-// Also ports the agent keyboard shortcut from the Vue layout's lifecycle.
-//
-// NOTE: the Vue layout's periodic "refresh reminder" (actuatorStore
-// .tryToRemindRefresh) is intentionally omitted — it reads Pinia-only actuator
-// state with no app-store equivalent yet, and this layout is restricted to
-// `useAppStore` / react-router reads. Reattach once that surface is ported.
+// Mounts the workspace `DashboardBodyShell` (header + sidebar slot + body slot)
+// and portals the sidebar, routed body (`<Outlet/>`, gated by
+// `RoutePermissionGuardShell` on non-project routes), and quickstart into the
+// shell's reported targets. The shell owns the responsive sidebar / mobile
+// drawer.
 export function BodyLayout() {
   const matches = useMatches();
   const location = useLocation();
@@ -34,7 +26,7 @@ export function BodyLayout() {
   )?.name;
   const isRootPath = currentRouteName === WORKSPACE_ROOT_MODULE;
   // Workspace "My Issues" is a standalone full-width page: header (with logo)
-  // but no sidebar, mirroring the Vue IssuesRouteShell (variant="issues").
+  // but no sidebar (the shell's `issues` variant).
   const isMyIssues = currentRouteName === WORKSPACE_ROUTE_MY_ISSUES;
   // Project-scoped routes (`workspace.project.*`) get the project sidebar; the
   // bare projects list (`workspace.project`) keeps the workspace sidebar.
@@ -57,14 +49,13 @@ export function BodyLayout() {
   // into the shell's content target and reports a non-null target only once the
   // route's `requiredPermissions` are satisfied, so a restricted page never
   // mounts (it shows the permission-denied / request-role fallback instead).
-  // This mirrors the Vue `BodyLayout.vue` content teleport. Project routes
-  // (`workspace.project.*`) bypass this gate — their gating belongs to
-  // `ProjectRouteShell`, which loads the project resource for project-scoped
-  // permission checks.
+  // Project routes (`workspace.project.*`) bypass this gate — their gating
+  // belongs to `ProjectRouteGate`, which loads the project resource for
+  // project-scoped permission checks.
   const [permissionTarget, setPermissionTarget] =
     useState<HTMLDivElement | null>(null);
 
-  // Agent toggle shortcut (Ctrl/Cmd+Shift+A), ported from the Vue layout.
+  // Agent toggle shortcut (Ctrl/Cmd+Shift+A).
   useEffect(() => {
     const handler = async (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "A") {

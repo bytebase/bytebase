@@ -1,12 +1,15 @@
 package tidb
 
 import (
+	"context"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
@@ -87,4 +90,70 @@ func TestBuildExecuteCommandsDoesNotNormalizeDelimiterForLargeSheet(t *testing.T
 	require.NoError(t, err)
 	require.Len(t, commands, 1)
 	require.Equal(t, statement, commands[0].Text)
+}
+
+func TestExecuteCreateIndexInTransaction(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container, database := testcontainer.NewTiDBDatabase(t)
+
+	tidbDriver := openTestDriver(ctx, t, container)
+	defer func() {
+		require.NoError(t, tidbDriver.Close(ctx))
+	}()
+
+	_, err := tidbDriver.Execute(ctx, fmt.Sprintf(`
+		USE %[1]s;
+		CREATE TABLE %[1]s.execute_create_index_in_transaction (id INT);
+		BEGIN;
+		CREATE INDEX idx_execute_create_index_in_transaction ON %[1]s.execute_create_index_in_transaction(id);
+		COMMIT;
+	`, database), db.ExecuteOptions{})
+	require.NoError(t, err)
+
+	var count int
+	query := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM information_schema.tidb_indexes
+		WHERE table_schema = '%s'
+			AND table_name = 'execute_create_index_in_transaction'
+			AND key_name = 'idx_execute_create_index_in_transaction'
+	`, database)
+	err = tidbDriver.db.QueryRowContext(ctx, query).Scan(&count)
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
+}
+
+func TestExecutePreparedStatementFlowWithCreateIndexString(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container, database := testcontainer.NewTiDBDatabase(t)
+
+	tidbDriver := openTestDriver(ctx, t, container)
+	defer func() {
+		require.NoError(t, tidbDriver.Close(ctx))
+	}()
+
+	statement := fmt.Sprintf(`
+		USE %[1]s;
+		CREATE TABLE %[1]s.prepare_statement_flow (id INT);
+		SET @sql := 'CREATE INDEX idx_prepare_statement_flow ON %[1]s.prepare_statement_flow(id)';
+		PREPARE stmt FROM @sql;
+		EXECUTE stmt;
+		DEALLOCATE PREPARE stmt;
+	`, database)
+	_, err := tidbDriver.Execute(ctx, statement, db.ExecuteOptions{})
+	require.NoError(t, err)
+
+	var count int
+	query := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM information_schema.tidb_indexes
+		WHERE table_schema = '%s'
+			AND table_name = 'prepare_statement_flow'
+			AND key_name = 'idx_prepare_statement_flow'
+	`, database)
+	err = tidbDriver.db.QueryRowContext(ctx, query).Scan(&count)
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
 }

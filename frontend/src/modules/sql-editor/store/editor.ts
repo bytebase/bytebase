@@ -166,8 +166,8 @@ export const getSQLEditorEditorState = (): SQLEditorEditorState =>
   useSQLEditorEditorStore.getState();
 
 /**
- * Low-level subscription primitive for non-React consumers (Vue compat
- * shim, side-effect modules). Returns an unsubscribe function.
+ * Low-level subscription primitive for non-React consumers (e.g.
+ * side-effect modules). Returns an unsubscribe function.
  */
 export const subscribeSQLEditorEditorState = (
   listener: (state: SQLEditorEditorState) => void

@@ -24,7 +24,7 @@ import { bindingMatchesUser, projectWideBindings } from "./utils";
 
 // Merge a member's role set into a policy clone: drop the member from roles it
 // no longer holds, add it to roles it gained, and append bindings for brand-new
-// roles. Mirrors the Vue workspace store's mergeBinding.
+// roles.
 const mergeBinding = ({
   member,
   roles,
@@ -217,8 +217,7 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
   },
 
   updateProjectIamPolicy: async (project, policy) => {
-    // Dedupe members within each binding (mirrors the Pinia store's
-    // pre-write normalization).
+    // Dedupe members within each binding before the write.
     const deduped = cloneDeep(policy);
     for (const binding of deduped.bindings) {
       if (binding.members) {

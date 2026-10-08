@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -60,4 +61,81 @@ func TestInternalInterceptorRejectsStreaming(t *testing.T) {
 	in := NewInternalMCPAuthInterceptor(nil, testSecret, nil)
 	err := in.WrapStreamingHandler(nil)(context.Background(), nil)
 	require.Error(t, err)
+}
+
+// TestAuthenticateDelegatedCarriesGrantVerbatim pins the AuthContext contract
+// P1b keys on: every internal-chain request carries the verified credential's
+// grant state — scope, resource, client, correlation — verbatim, and the two
+// empty-scope states stay distinguishable (see common.DelegatedGrant). The
+// principal is deliberately not part of this step; it is re-resolved against
+// the store on every request, which backend/tests pins on a live server
+// (TestMCPMembershipRevocationBitesLiveSession).
+func TestAuthenticateDelegatedCarriesGrantVerbatim(t *testing.T) {
+	rows := []struct {
+		name string
+		cred DelegatedMCPCredential
+	}{
+		{
+			name: "a consented grant travels verbatim",
+			cred: DelegatedMCPCredential{
+				Principal:     "live@example.com",
+				WorkspaceID:   "ws-live",
+				ClientID:      "client-A",
+				CorrelationID: "corr-1",
+				Scope:         "mcp:read-only",
+				Resource:      testResource,
+			},
+		},
+		{
+			name: "legacy pre-grant session: scope and resource both empty",
+			cred: DelegatedMCPCredential{
+				Principal:     "live@example.com",
+				WorkspaceID:   "ws-live",
+				CorrelationID: "corr-2",
+			},
+		},
+		{
+			// A grant that recorded no scope: a scope-less consent (permanent
+			// population) or a PR-3-era mint during a rolling upgrade
+			// (transient, and its grant DID record a scope). The populated
+			// resource is what keeps it distinguishable from the genuinely
+			// pre-grant row above — collapsing the two could widen a consented
+			// read-only session to full legacy semantics.
+			name: "grant-backed token: resource present, scope empty",
+			cred: DelegatedMCPCredential{
+				Principal:     "live@example.com",
+				WorkspaceID:   "ws-live",
+				ClientID:      "client-A",
+				CorrelationID: "corr-3",
+				Resource:      testResource,
+			},
+		},
+	}
+	for _, row := range rows {
+		t.Run(row.name, func(t *testing.T) {
+			token, err := GenerateInternalMCPToken(row.cred, testSecret)
+			require.NoError(t, err)
+			header := http.Header{}
+			header.Set("Authorization", "Bearer "+token)
+
+			cred, authContext, err := authenticateDelegated(header, "/bytebase.v1.SQLService/Query", testSecret)
+			require.NoError(t, err)
+			require.Equal(t, row.cred, *cred)
+			require.NotNil(t, authContext.DelegatedGrant,
+				"every internal-chain request must carry its delegated grant state")
+			require.Equal(t, row.cred.Scope, authContext.DelegatedGrant.Scope)
+			require.Equal(t, row.cred.Resource, authContext.DelegatedGrant.Resource)
+			require.Equal(t, row.cred.ClientID, authContext.DelegatedGrant.ClientID)
+			require.Equal(t, row.cred.CorrelationID, authContext.DelegatedGrant.CorrelationID)
+		})
+	}
+
+	t.Run("the public chain carries no delegated grant", func(t *testing.T) {
+		// The public interceptor builds its AuthContext from the method alone
+		// and never touches the grant; only the internal chain sets it.
+		authContext, err := getAuthContext("/bytebase.v1.SQLService/Query")
+		require.NoError(t, err)
+		require.Nil(t, authContext.DelegatedGrant,
+			"a public-chain request must leave the delegated grant zero-valued")
+	})
 }

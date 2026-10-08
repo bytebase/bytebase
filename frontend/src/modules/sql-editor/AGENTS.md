@@ -19,4 +19,4 @@ src/modules/sql-editor/
 - `legacy/` may read old persisted formats but must not become a home for new runtime behavior.
 - The current React and Zustand imports are authoritative. Some parity comments retain historical implementation context; they do not describe active framework boundaries.
 - The AI module may consume SQL Editor hooks and state. Avoid the reverse dependency unless the UI is explicitly an AI integration surface.
-- Run focused tests under this module, then the standard frontend fix, check, type-check, and full test commands.
+- Run focused tests under this module, then `pnpm --dir frontend fix` and `pnpm --dir frontend test`.

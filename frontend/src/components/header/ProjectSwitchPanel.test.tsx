@@ -231,7 +231,6 @@ describe("ProjectSwitchPanel", () => {
 
     render();
 
-    // Rows are now `<tr>` (table layout, mirroring Vue's ProjectV1Table).
     const row = Array.from(container.querySelectorAll("tr")).find((tr) =>
       tr.textContent?.includes("Recent Project")
     );

@@ -73,7 +73,7 @@ export function MaskingReasonPopover({
           nativeButton={false}
           render={
             <div
-              className="inline-flex items-center gap-0.5 cursor-pointer"
+              className="inline-flex items-center gap-1 cursor-pointer"
               onClick={stopResultTableEvent}
               onPointerDown={stopResultTableEvent}
             >
@@ -135,7 +135,7 @@ export function MaskingReasonPopover({
                 <span className="text-control-placeholder">
                   {t("masking.reason.context")}:
                 </span>
-                <span className="ml-1">{reason.context}</span>
+                <span className="ml-1 wrap-anywhere">{reason.context}</span>
               </div>
             )}
 

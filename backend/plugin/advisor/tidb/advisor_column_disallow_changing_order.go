@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -53,7 +53,7 @@ func (*ColumnDisallowChangingOrderAdvisor) Check(_ context.Context, checkCtx adv
 				Code:          code.ChangeColumnOrder.Int32(),
 				Title:         title,
 				Content:       fmt.Sprintf("\"%s\" changes column order", ostmt.TrimmedText()),
-				StartPosition: common.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(alter.Loc.Start)),
+				StartPosition: base.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(alter.Loc.Start)),
 			})
 		}
 	}

@@ -31,8 +31,7 @@ import { celString, celStringList } from "@/utils/v1/celLiteral";
 import type { AppSliceCreator, IssueSlice } from "./types";
 
 // Resource names are `projects/{project}/issues/{issue}` — yank the project
-// resource out of the head without importing the heavy `@/utils/v1/project`
-// barrel (which pulls the Pinia actuator chain into the app-store graph).
+// resource out of the head.
 function projectResourceFromIssueName(issueName: string): string {
   const match = issueName.match(/^(projects\/[^/]+)\//);
   return match?.[1] ?? "";
@@ -88,8 +87,7 @@ export interface CreateIssueByPlanOptions {
 
 /**
  * Creates a plan, then an issue referencing it, and (unless skipped) a rollout.
- * Relocated from the legacy Pinia `experimental-issue` module — a stateless
- * orchestration helper over the plan/issue/rollout services.
+ * A stateless orchestration helper over the plan/issue/rollout services.
  */
 export const experimentalCreateIssueByPlan = async (
   project: Project,
@@ -128,9 +126,8 @@ export const experimentalCreateIssueByPlan = async (
 };
 
 /**
- * Port of the legacy Pinia `useIssueV1Store`. Stateless fetches (no per-issue
- * cache — callers consume the result once) that also prime the owning
- * project(s) in the app store, matching the Pinia behavior so downstream code
+ * Stateless fetches (no per-issue cache — callers consume the result once)
+ * that also prime the owning project(s) in the app store so downstream code
  * that reads a project synchronously after the call sees it cached.
  */
 export const createIssueSlice: AppSliceCreator<IssueSlice> = (_set, get) => ({

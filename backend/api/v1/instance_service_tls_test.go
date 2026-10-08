@@ -63,6 +63,7 @@ ZboOWVe3icTy64BT3OQhmg==
 -----END RSA PRIVATE KEY-----`
 
 func TestValidateAndSanitizeDataSourceTLSRejectsSameSlotMixedMaterial(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		ds   *storepb.DataSource
@@ -86,6 +87,7 @@ func TestValidateAndSanitizeDataSourceTLSRejectsSameSlotMixedMaterial(t *testing
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateAndSanitizeDataSourceTLS(tc.ds)
 			require.Error(t, err)
 			require.Contains(t, err.Error(), tc.want)
@@ -94,6 +96,7 @@ func TestValidateAndSanitizeDataSourceTLSRejectsSameSlotMixedMaterial(t *testing
 }
 
 func TestValidateAndSanitizeDataSourceTLSRejectsMergedSameSlotMixedMaterial(t *testing.T) {
+	t.Parallel()
 	ds := &storepb.DataSource{UseSsl: true, SslCa: "inline-ca", SslCaPath: "/tmp/ca.pem"}
 
 	err := validateAndSanitizeDataSourceTLS(ds)
@@ -102,17 +105,20 @@ func TestValidateAndSanitizeDataSourceTLSRejectsMergedSameSlotMixedMaterial(t *t
 }
 
 func TestValidateAndSanitizeDataSourceTLSAllowsCrossSlotMixedMaterial(t *testing.T) {
+	t.Parallel()
 	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCertPath: "/tmp/cert.pem", SslKeyPath: "/tmp/key.pem"})
 	require.NoError(t, err)
 }
 
 func TestValidateAndSanitizeDataSourceTLSMatchesRuntimeCAPoolParsing(t *testing.T) {
+	t.Parallel()
 	caBundle := validKeyPEM + "\n" + validCAPEM
 	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCa: caBundle})
 	require.NoError(t, err)
 }
 
 func TestValidateAndSanitizeDataSourceTLSRejectsSourceSwitchWithoutClearingOldField(t *testing.T) {
+	t.Parallel()
 	ds := &storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCaPath: "/tmp/ca.pem"}
 
 	err := validateAndSanitizeDataSourceTLS(ds)
@@ -122,6 +128,7 @@ func TestValidateAndSanitizeDataSourceTLSRejectsSourceSwitchWithoutClearingOldFi
 }
 
 func TestValidateAndSanitizeDataSourceTLSAllowsSourceSwitchWithExplicitOldFieldClear(t *testing.T) {
+	t.Parallel()
 	ds := &storepb.DataSource{UseSsl: true, SslCaPath: "/tmp/ca.pem"}
 
 	err := validateAndSanitizeDataSourceTLS(ds)
@@ -129,6 +136,7 @@ func TestValidateAndSanitizeDataSourceTLSAllowsSourceSwitchWithExplicitOldFieldC
 }
 
 func TestValidateAndSanitizeDataSourceTLSRejectsPathToInlineSwitchWithoutClearingOldField(t *testing.T) {
+	t.Parallel()
 	ds := &storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCaPath: "/tmp/ca.pem"}
 
 	err := validateAndSanitizeDataSourceTLS(ds)
@@ -138,40 +146,47 @@ func TestValidateAndSanitizeDataSourceTLSRejectsPathToInlineSwitchWithoutClearin
 }
 
 func TestValidateAndSanitizeDataSourceTLSAllowsCertPathAndInlineKey(t *testing.T) {
+	t.Parallel()
 	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: validKeyPEM})
 	require.NoError(t, err)
 }
 
 func TestValidateAndSanitizeDataSourceTLSAllowsCertInlineAndKeyPath(t *testing.T) {
+	t.Parallel()
 	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCert: validCAPEM, SslKeyPath: "/tmp/key.pem"})
 	require.NoError(t, err)
 }
 
 func TestValidateAndSanitizeDataSourceTLSMatchesRuntimeCertPEMScanning(t *testing.T) {
+	t.Parallel()
 	certBundle := validKeyPEM + "\n" + validCAPEM
 	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCert: certBundle, SslKeyPath: "/tmp/key.pem"})
 	require.NoError(t, err)
 }
 
 func TestValidateAndSanitizeDataSourceTLSRejectsMalformedInlineCertWithKeyPath(t *testing.T) {
+	t.Parallel()
 	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCert: "not-a-cert", SslKeyPath: "/tmp/key.pem"})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid ssl_cert PEM")
 }
 
 func TestValidateAndSanitizeDataSourceTLSRejectsMalformedInlineKeyWithCertPath(t *testing.T) {
+	t.Parallel()
 	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: "not-a-key"})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid ssl_key PEM")
 }
 
 func TestValidateAndSanitizeDataSourceTLSMatchesRuntimeKeyPEMScanning(t *testing.T) {
+	t.Parallel()
 	keyBundle := validCAPEM + "\n" + validKeyPEM
 	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: keyBundle})
 	require.NoError(t, err)
 }
 
 func TestValidateAndSanitizeDataSourceTLSAllowsEd25519PrivateKey(t *testing.T) {
+	t.Parallel()
 	keyPEM := generateEd25519KeyPEM(t)
 	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: keyPEM})
 	require.NoError(t, err)
@@ -188,6 +203,7 @@ func generateEd25519KeyPEM(t *testing.T) string {
 }
 
 func TestValidateAndSanitizeDataSourceTLSRejectsRelativePath(t *testing.T) {
+	t.Parallel()
 	ds := &storepb.DataSource{UseSsl: true, SslCaPath: "ca.pem"}
 
 	err := validateAndSanitizeDataSourceTLS(ds)
@@ -196,6 +212,7 @@ func TestValidateAndSanitizeDataSourceTLSRejectsRelativePath(t *testing.T) {
 }
 
 func TestValidateAndSanitizeDataSourceTLSRejectsIncompleteCertPath(t *testing.T) {
+	t.Parallel()
 	ds := &storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem"}
 
 	err := validateAndSanitizeDataSourceTLS(ds)
@@ -204,6 +221,7 @@ func TestValidateAndSanitizeDataSourceTLSRejectsIncompleteCertPath(t *testing.T)
 }
 
 func TestValidateAndSanitizeDataSourceTLSAllowsValidPathOnlyCert(t *testing.T) {
+	t.Parallel()
 	ds := &storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKeyPath: "/tmp/key.pem"}
 
 	err := validateAndSanitizeDataSourceTLS(ds)
@@ -211,6 +229,7 @@ func TestValidateAndSanitizeDataSourceTLSAllowsValidPathOnlyCert(t *testing.T) {
 }
 
 func TestValidateAndSanitizeDataSourceTLSClearsAllWhenDisabled(t *testing.T) {
+	t.Parallel()
 	ds := &storepb.DataSource{
 		UseSsl:      false,
 		SslCa:       "inline-ca",

@@ -34,6 +34,7 @@ vi.mock("@/stores/app", () => ({
     {
       getState: () => ({
         loadWorkspaceProfile: mocks.loadWorkspaceProfile,
+        notify: vi.fn(),
       }),
     }
   ),

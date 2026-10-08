@@ -18,9 +18,10 @@ import {
   PermissionGuard,
   usePermissionCheck,
 } from "@/components/PermissionGuard";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { usePlanFeature } from "@/hooks/useAppState";
 import {
   DOMAIN_RESTRICTION_PRODUCT_INTRO,
@@ -206,10 +207,6 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
         });
       }
 
-      // Pinia and the React app store both cache the workspace profile.
-      // Pinia's computed updates automatically; the React store is a
-      // load-once cache, so we refresh it here so consumers like
-      // <Watermark /> and <BannersWrapper /> pick up the new values.
       await useAppStore.getState().loadWorkspaceProfile(true);
     }, [state, domainInput, getInitialState]);
 
@@ -303,12 +300,12 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                     }
                   }}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-control-light pointer-events-none">
                   {t("settings.general.workspace.maximum-expiration.days")}
                 </span>
               </div>
               <label className="flex items-center gap-x-2">
-                <Checkbox
+                <Switch
                   checked={expiration.neverExpire}
                   disabled={!canEdit}
                   onCheckedChange={(checked) =>
@@ -344,7 +341,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
             <FormField
               title={
                 <span className="flex items-center gap-x-2">
-                  <Checkbox
+                  <Switch
                     checked={state.enableWatermark}
                     disabled={!canEdit || !hasWatermarkFeature}
                     onCheckedChange={(checked) =>
@@ -409,27 +406,29 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                   {state.domains.map((domain, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-1 rounded-xs bg-gray-100 px-2 py-1.5 text-sm"
+                      className="inline-flex items-center gap-1 rounded-xs bg-control-bg px-2 py-1.5 text-sm"
                     >
                       {domain}
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
-                        className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                        className="text-control-light hover:text-control disabled:opacity-50"
                         disabled={!canEdit}
                         onClick={() => removeDomain(index)}
                       >
                         <X className="h-3.5 w-3.5" />
-                      </button>
+                      </Button>
                     </span>
                   ))}
                 </div>
 
-                {/* Enforce restriction checkbox */}
+                {/* Enforce restriction toggle */}
                 <div className="w-full flex flex-row justify-between items-center">
                   <FormField
                     title={
                       <div className="flex items-start gap-x-2">
-                        <Checkbox
+                        <Switch
                           aria-describedby={membersRestrictionDescriptionId}
                           aria-labelledby={membersRestrictionLabelId}
                           checked={state.enableRestriction}

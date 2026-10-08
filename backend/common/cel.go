@@ -232,61 +232,6 @@ func validateCELExpr(expression *expr.Expr, conditionCELAttributes []cel.EnvOpti
 	return prog, nil
 }
 
-// QueryExportFactors is the factors for query and export.
-type QueryExportFactors struct {
-	Databases []string
-}
-
-// GetQueryExportFactors is used to get risk factors from query and export expressions.
-func GetQueryExportFactors(expression string) (*QueryExportFactors, error) {
-	// If the expression is empty, return an empty struct.
-	if expression == "" {
-		return &QueryExportFactors{}, nil
-	}
-
-	factors := &QueryExportFactors{}
-	e, err := cel.NewEnv(IAMPolicyConditionCELAttributes...)
-	if err != nil {
-		return nil, err
-	}
-	ast, issues := e.Compile(expression)
-	if issues != nil {
-		return nil, errors.Errorf("found issue %v", issues)
-	}
-	parsedExpr, err := cel.AstToParsedExpr(ast)
-	if err != nil {
-		return nil, err
-	}
-	callExpr := parsedExpr.Expr.GetCallExpr()
-	findField(callExpr, factors)
-	return factors, nil
-}
-
-func findField(callExpr *exprproto.Expr_Call, factors *QueryExportFactors) {
-	if callExpr == nil {
-		return
-	}
-	if len(callExpr.Args) == 2 {
-		idExpr := callExpr.Args[0].GetIdentExpr()
-		if idExpr != nil {
-			if idExpr.Name == CELAttributeResourceDatabase && callExpr.Function == "_==_" {
-				factors.Databases = append(factors.Databases, callExpr.Args[1].GetConstExpr().GetStringValue())
-			}
-			if idExpr.Name == CELAttributeResourceDatabase && callExpr.Function == "@in" {
-				list := callExpr.Args[1].GetListExpr()
-				for _, element := range list.Elements {
-					factors.Databases = append(factors.Databases, element.GetConstExpr().GetStringValue())
-				}
-			}
-			return
-		}
-	}
-	for _, arg := range callExpr.Args {
-		callExpr := arg.GetCallExpr()
-		findField(callExpr, factors)
-	}
-}
-
 func EvalBindingCondition(expr string, requestTime time.Time) (bool, error) {
 	input := map[string]any{
 		CELAttributeRequestTime: requestTime,

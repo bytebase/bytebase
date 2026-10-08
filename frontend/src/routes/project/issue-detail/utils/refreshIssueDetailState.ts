@@ -4,16 +4,14 @@ import {
   planServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/api";
+import { listAllTaskRuns } from "@/api/taskRun";
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetPlanCheckRunRequestSchema,
   GetPlanRequestSchema,
   type PlanCheckRun,
 } from "@/types/proto-es/v1/plan_service_pb";
-import {
-  GetRolloutRequestSchema,
-  ListTaskRunsRequestSchema,
-} from "@/types/proto-es/v1/rollout_service_pb";
+import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { UNKNOWN_PLAN_NAME } from "@/types/v1/issue/plan";
 import { getRolloutFromPlan } from "@/utils";
 import type { IssueDetailPageState } from "../hooks/useIssueDetailPage";
@@ -75,14 +73,9 @@ export async function refreshIssueDetailState(
 
   const nextTaskRuns =
     rolloutResult !== undefined
-      ? await rolloutServiceClientConnect
-          .listTaskRuns(
-            create(ListTaskRunsRequestSchema, {
-              parent: `${rolloutResult.name}/stages/-/tasks/-`,
-            })
-          )
-          .then((response) => response.taskRuns)
-          .catch(() => [])
+      ? await listAllTaskRuns(`${rolloutResult.name}/stages/-/tasks/-`).catch(
+          () => []
+        )
       : [];
 
   page.patchState({

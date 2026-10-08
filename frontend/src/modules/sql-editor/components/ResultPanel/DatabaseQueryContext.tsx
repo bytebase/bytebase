@@ -19,14 +19,13 @@ export interface DatabaseQueryContextProps {
 }
 
 /**
- * React port of `DatabaseQueryContext.vue`. Three render paths:
+ * Three render paths:
  * - EXECUTING — spinner + elapsed-time + cancel button
  * - CANCELLED — re-execute button
  * - default  — `<ResultView>` with the executed result set
  *
- * Auto-runs the query when status flips to `PENDING`. Mirrors the Vue
- * watcher behavior — same `useExecuteSQL().runQuery` entrypoint that
- * `EditorMain.tsx` already uses from React.
+ * Auto-runs the query via `useExecuteSQL().runQuery` when status flips to
+ * `PENDING`.
  */
 export function DatabaseQueryContext({
   database,
@@ -37,8 +36,8 @@ export function DatabaseQueryContext({
   const { runQuery } = useExecuteSQL();
   const isExecuting = context.status === "EXECUTING";
 
-  // Trigger run on status === PENDING. Pinia's reactivity already
-  // surfaces context.status changes through props; the effect dep array
+  // Trigger run on status === PENDING. Tab store updates surface
+  // context.status changes through props; the effect dep array
   // re-fires whenever the status flips back to PENDING (which the
   // re-execute button below does).
   const lastRanContextRef = useRef<string | null>(null);

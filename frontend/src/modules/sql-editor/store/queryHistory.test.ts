@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { create, type StoreApi } from "zustand";
 import {
@@ -36,6 +37,8 @@ const stubUIStateSlice = (): UIStateSlice => ({
   highlightAccessGrantName: undefined,
   isShowingCode: false,
   aiPanelSize: 0.3,
+  resultPanelSize: 0.4,
+  resultPanelMaximized: false,
   linkedQueryHistory: undefined,
   linkedQueryHistoryTabId: undefined,
   linkedQueryHistoryBaseline: undefined,
@@ -47,6 +50,8 @@ const stubUIStateSlice = (): UIStateSlice => ({
   setHighlightAccessGrantName: vi.fn(),
   setIsShowingCode: vi.fn(),
   handleEditorPanelResize: vi.fn(),
+  setResultPanelMaximized: vi.fn(),
+  handleResultPanelResize: vi.fn(),
 });
 
 const stubTreeSlice = (): TreeSlice => ({

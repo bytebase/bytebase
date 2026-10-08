@@ -63,16 +63,24 @@ export const createServiceAccountSlice: AppSliceCreator<ServiceAccountSlice> = (
           pageToken: params.pageToken,
           showDeleted: params.showDeleted,
           filter: buildAccountListFilter(params.filter ?? {}),
-        })
+        }),
+        {
+          contextValues: createContextValues().set(
+            silentContextKey,
+            params.silent ?? false
+          ),
+        }
       );
-    set((state) => ({
-      serviceAccountsByName: {
-        ...state.serviceAccountsByName,
-        ...Object.fromEntries(
-          response.serviceAccounts.map((sa) => [sa.name, sa])
-        ),
-      },
-    }));
+    if (!params.skipCache) {
+      set((state) => ({
+        serviceAccountsByName: {
+          ...state.serviceAccountsByName,
+          ...Object.fromEntries(
+            response.serviceAccounts.map((sa) => [sa.name, sa])
+          ),
+        },
+      }));
+    }
     return {
       serviceAccounts: response.serviceAccounts,
       nextPageToken: response.nextPageToken,

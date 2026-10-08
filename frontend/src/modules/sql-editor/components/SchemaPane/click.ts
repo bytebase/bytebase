@@ -24,11 +24,11 @@ export type UseClickEventsResult = {
  * consumer subscribed via `useEffect`. Emittery's `emit` is async — its
  * implementation `await resolvedPromise` before invoking listeners, so the
  * actual `toggleNode` work was deferred to a microtask after every click.
- * Combined with the downstream Vue-watch / React-render / react-arborist
- * recompute, that microtask hop pushed the paint out far enough that
- * users saw "no response until I move the mouse" (the next input event
- * was what gave the browser a chance to flush). Plain callbacks invoked
- * synchronously from `handleClick` keep all the work in the same tick.
+ * Combined with the downstream React render / react-arborist recompute,
+ * that microtask hop pushed the paint out far enough that users saw "no
+ * response until I move the mouse" (the next input event was what gave
+ * the browser a chance to flush). Plain callbacks invoked synchronously
+ * from `handleClick` keep all the work in the same tick.
  *
  * The single-click handler ALWAYS fires immediately (instant expand),
  * for every node type. Only `table` and `view` rows have a distinct

@@ -17,7 +17,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -97,6 +96,7 @@ func forbiddenProceduresFromDescriptors(t *testing.T) map[string]v1pb.MCPDenialR
 // Membership is a security decision, so adding or removing one has to be
 // deliberate: this list is the second signature on that decision.
 func TestForbiddenClassMembership(t *testing.T) {
+	t.Parallel()
 	want := []string{
 		v1connect.AuthServiceLoginProcedure,
 		v1connect.AuthServiceSignupProcedure,
@@ -349,10 +349,12 @@ func checkEveryClassHasAServingDecision(
 }
 
 func TestLintEveryMethodIsClassified(t *testing.T) {
+	t.Parallel()
 	require.Empty(t, checkEveryMethodIsClassified(mcpClassificationsFromDescriptors(t)))
 }
 
 func TestLintReasonsMatchTheClass(t *testing.T) {
+	t.Parallel()
 	require.Empty(t, checkReasonsMatchTheClass(mcpClassificationsFromDescriptors(t), mcpDenialReasons))
 }
 
@@ -366,6 +368,7 @@ func mcpEnums(t *testing.T) (classes, modes protoreflect.EnumDescriptor) {
 }
 
 func TestLintEveryClassHasAServingDecision(t *testing.T) {
+	t.Parallel()
 	classes, modes := mcpEnums(t)
 	require.Empty(t, checkEveryClassHasAServingDecision(
 		mcpClassificationsFromDescriptors(t), mcpServingClasses, mcpDeniedClasses, classes, modes))
@@ -379,6 +382,7 @@ func TestLintEveryClassHasAServingDecision(t *testing.T) {
 // serving a class cannot leave discovery hiding it — or the reverse, which is
 // the one that would offer an agent work it can never do.
 func TestLintRefusedClassesMatchTheServingTable(t *testing.T) {
+	t.Parallel()
 	served := map[v1pb.MCPMethodClass]bool{}
 	for _, classes := range mcpServingClasses {
 		for _, class := range classes {
@@ -400,6 +404,7 @@ func TestLintRefusedClassesMatchTheServingTable(t *testing.T) {
 // that serves no class cannot start admitting sessions — or the reverse, which
 // would refuse a connection whose methods the gate is ready to serve.
 func TestLintCeilingAdmissionMatchesTheServingTable(t *testing.T) {
+	t.Parallel()
 	values := storepb.MCPSetting_Capability(0).Descriptor().Values()
 	for i := range values.Len() {
 		capability := storepb.MCPSetting_Capability(values.Get(i).Number())
@@ -424,6 +429,7 @@ func TestLintCeilingAdmissionMatchesTheServingTable(t *testing.T) {
 // something else entirely, and every serving decision above would be about the
 // wrong vocabulary.
 func TestMCPCapabilityEnumsAgree(t *testing.T) {
+	t.Parallel()
 	v1Values := v1pb.MCPSetting_Capability(0).Descriptor().Values()
 	storeValues := storepb.MCPSetting_Capability(0).Descriptor().Values()
 
@@ -573,6 +579,7 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 // so forbidding it would cost an agent legitimate work while protecting nothing
 // an anonymous client could not already read.
 func TestForbiddenClassLeavesReadsAlone(t *testing.T) {
+	t.Parallel()
 	got := forbiddenProceduresFromDescriptors(t)
 	for _, procedure := range []string{
 		v1connect.IdentityProviderServiceGetIdentityProviderProcedure,
@@ -631,6 +638,7 @@ func TestForbiddenClassLeavesReadsAlone(t *testing.T) {
 //     of UpdateUser does not. UpdateUser is FORBIDDEN either way, so that
 //     response is not a surface an agent reaches.
 func TestExcludedOnlyForALeak(t *testing.T) {
+	t.Parallel()
 	var got []string
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		if row.reason == v1pb.MCPDenialReason_RETURNS_A_STORED_SECRET {
@@ -656,6 +664,7 @@ func TestExcludedOnlyForALeak(t *testing.T) {
 // regression coming back — an MCP session unable to name a project or an
 // instance, and so unable to reach a database at all.
 func TestTheLeakingReadsAreServed(t *testing.T) {
+	t.Parallel()
 	class := map[string]v1pb.MCPMethodClass{}
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		class[row.procedure] = row.class
@@ -701,6 +710,7 @@ func TestTheLeakingReadsAreServed(t *testing.T) {
 // resolves them by operation ID. An alias classified more permissively than the
 // method it forwards to is a straight bypass of that method's classification.
 func TestDeprecatedSQLServiceAliasesMatchTheirCanonicalMethod(t *testing.T) {
+	t.Parallel()
 	class := map[string]v1pb.MCPMethodClass{}
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		class[row.procedure] = row.class
@@ -777,6 +787,7 @@ func renderMCPInventory(rows []mcpClassification) string {
 // annotations. It fails on a stale file rather than regenerating silently, so a
 // classification change shows up in the diff a reviewer reads.
 func TestMCPClassificationInventory(t *testing.T) {
+	t.Parallel()
 	rendered := renderMCPInventory(mcpClassificationsFromDescriptors(t))
 	if os.Getenv("MCP_INVENTORY") == "write" {
 		require.NoError(t, os.WriteFile(mcpInventoryPath, []byte(rendered), 0o600))
@@ -793,16 +804,15 @@ func TestMCPClassificationInventory(t *testing.T) {
 // exercised without a database. The end-to-end path exists too, in
 // backend/tests, now that a READ_ONLY ceiling admits a connection.
 type mcpGateStore struct {
-	ceiling                 storepb.MCPSetting_Capability
-	ignoreMaskingExemptions bool
-	err                     error
+	ceiling storepb.MCPSetting_Capability
+	err     error
 }
 
 func (s mcpGateStore) GetMCPSettingsUncached(context.Context, string) (*storepb.MCPSetting, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
-	return &storepb.MCPSetting{Capability: s.ceiling, IgnoreMaskingExemptions: s.ignoreMaskingExemptions}, nil
+	return &storepb.MCPSetting{Capability: s.ceiling}, nil
 }
 
 func readWriteCeiling() mcpGateStore {
@@ -825,7 +835,7 @@ type mcpGateResult struct {
 // invokeMCPGate runs one request through the gate alone. auditMarked is what
 // the audit interceptor reads when the request comes back out; standing in for
 // it here keeps the class rules provable without a database, and
-// TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation proves the real
+// TestMCPGateRefusalIsStreamedWithoutAnAuditAnnotation proves the real
 // interceptor honors the mark.
 func invokeMCPGate(t *testing.T, stores mcpSettingsReader, authCtx *common.AuthContext, procedure string, req connect.AnyRequest) mcpGateResult {
 	t.Helper()
@@ -840,7 +850,7 @@ func invokeMCPGate(t *testing.T, stores mcpSettingsReader, authCtx *common.AuthC
 		ctx = context.WithValue(ctx, common.AuthContextKey, authCtx)
 	}
 	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, auditTestWorkspace)
-	ctx = common.WithSetMCPPolicyDenied(ctx, func() { out.auditMarked = true })
+	ctx = withSetPermissionDenied(ctx, func() { out.auditMarked = true })
 	_, out.err = NewInternalMCPGateInterceptor(stores).WrapUnary(next)(ctx,
 		&specRequest{AnyRequest: req, procedure: procedure})
 	return out
@@ -1004,6 +1014,7 @@ func TestMCPGateFailsClosedOnTheCeiling(t *testing.T) {
 // lint fails the build on one, and if a build ever ships past that, the method
 // is refused rather than served.
 func TestMCPGateFailsClosedOnAnUnclassifiedMethod(t *testing.T) {
+	t.Parallel()
 	got := invokeMCPGate(t, readWriteCeiling(), classContext(v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED),
 		"/bytebase.v1.NewService/NewMethod", connect.NewRequest(&v1pb.GetUserRequest{}))
 	require.Error(t, got.err)
@@ -1041,6 +1052,7 @@ func TestMCPGateFallsBackToGenericWording(t *testing.T) {
 
 // TestMCPGateFailsClosedWithoutAnAuthContext pins that the gate does not guess.
 func TestMCPGateFailsClosedWithoutAnAuthContext(t *testing.T) {
+	t.Parallel()
 	got := invokeMCPGate(t, readWriteCeiling(), nil,
 		v1connect.AuthServiceLoginProcedure, connect.NewRequest(&v1pb.LoginRequest{}))
 	require.Error(t, got.err, "without a resolved classification the interceptor must not guess")
@@ -1151,24 +1163,24 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	})
 }
 
-// TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation is the typed
-// policy-denial record, end to end through the real audit interceptor and a
-// real store. Every method below is refused and carries no audit annotation, so
-// its denial produced nothing at all before the gate started marking its own
-// refusals: needAudit reads the annotation and nothing else.
+// TestMCPGateRefusalIsStreamedWithoutAnAuditAnnotation is the policy-denial
+// line, end to end through the real audit interceptor. Every method below is
+// refused and carries no audit annotation, so its refusal is never stored and
+// reaches the stdout stream only because the gate marks it.
 //
-// The first four are the FORBIDDEN half of that population, which was the whole
-// of it while the gate refused FORBIDDEN alone. Enforcing EXCLUDED raises it to
-// 47, and TestWebhook is the fifth case here because it is the member the wider
-// population added whose request carries a credential.
+// TestWebhook is here because it is an EXCLUDED method whose request carries a
+// credential.
 //
 // Each request below carries a secret or an unbounded body, which is why the
-// rows are checked for what they wrote as well as that they wrote. The gate
-// refuses before dispatch, so nothing in them was ever used — recording one
-// verbatim would turn a silent denial into a worse one.
-func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
-	st := newAuditLiveStore(t)
-	auditIn := NewAuditInterceptor(st, "test-secret", &config.Profile{})
+// lines are checked for what they wrote as well as that they wrote. The gate
+// refuses before dispatch, so nothing in them was ever used — streaming one
+// verbatim would turn a refusal into a leak.
+//
+// Not parallel: it captures slog.Default.
+func TestMCPGateRefusalIsStreamedWithoutAnAuditAnnotation(t *testing.T) {
+	lines := captureAuditStream(t)
+	auditIn, captured := newRecordingAuditInterceptor()
+	auditIn.profile.RuntimeEnableAuditLogStdout.Store(true)
 	gate := NewInternalMCPGateInterceptor(readWriteCeiling())
 
 	invoke := func(t *testing.T, correlationID, procedure string, req connect.AnyRequest) {
@@ -1194,22 +1206,30 @@ func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
 		require.False(t, handlerReached)
 	}
 
-	assertOneDeniedRow := func(t *testing.T, correlationID, procedure string) *storepb.AuditLog {
+	// assertOneRefusalLine returns the request the refusal's line carries.
+	assertOneRefusalLine := func(t *testing.T, correlationID, procedure string) string {
 		t.Helper()
-		rows := findRowsByCorrelation(t, st, correlationID)
-		require.Len(t, rows, 1, "a policy denial must be recorded even where the method asks for no audit row")
-		row := rows[0].Payload
-		require.Equal(t, procedure, row.Method)
-		require.Equal(t, int32(connect.CodePermissionDenied), row.GetStatus().GetCode())
-		require.Equal(t, "workspaces/"+auditTestWorkspace, row.Parent)
-		require.Equal(t, "mcp:read-write", row.GetMcpDelegation().GetScope(),
-			"the row must carry the MCP provenance an operator filters on")
-		return row
+		require.Empty(t, rowsByCorrelation(captured.stored(), correlationID), "a refusal is never stored")
+		var matched []map[string]any
+		for _, line := range lines() {
+			if line["mcp_correlation_id"] == correlationID {
+				matched = append(matched, line)
+			}
+		}
+		require.Len(t, matched, 1, "a policy denial must be streamed even where the method asks for no audit row")
+		line := matched[0]
+		require.Equal(t, procedure, line["method"])
+		require.InDelta(t, float64(connect.CodePermissionDenied), line["status_code"], 0)
+		require.Equal(t, "workspaces/"+auditTestWorkspace, line["parent"])
+		require.Equal(t, storepb.AuditLog_WARNING.String(), line["severity"])
+		require.Equal(t, "mcp:read-write", line["mcp_scope"],
+			"the line must carry the MCP provenance an operator filters on")
+		return lineText(line, "request")
 	}
 
 	t.Run("Refresh", func(t *testing.T) {
 		invoke(t, "corr-refresh", v1connect.AuthServiceRefreshProcedure, connect.NewRequest(&v1pb.RefreshRequest{}))
-		assertOneDeniedRow(t, "corr-refresh", v1connect.AuthServiceRefreshProcedure)
+		assertOneRefusalLine(t, "corr-refresh", v1connect.AuthServiceRefreshProcedure)
 	})
 
 	t.Run("SwitchWorkspace", func(t *testing.T) {
@@ -1224,20 +1244,24 @@ func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
 				RecoveryCode: &recovery,
 				MfaTempToken: &temp,
 			}))
-		row := assertOneDeniedRow(t, "corr-switch", v1connect.AuthServiceSwitchWorkspaceProcedure)
+		request := assertOneRefusalLine(t, "corr-switch", v1connect.AuthServiceSwitchWorkspaceProcedure)
 		for _, proof := range []string{otp, recovery, temp} {
-			require.NotContains(t, row.Request, proof, "an MFA proof must not be transcribed into the row")
+			require.NotContains(t, request, proof, "an MFA proof must not be transcribed into the line")
 		}
 	})
 
 	// One subtest per oneof arm: each arm masks a different credential, and
 	// only the arm the request carries runs.
+	const idpIssuer = "https://collector.attacker.example.com"
 	idpRequest := func() *v1pb.TestIdentityProviderRequest {
 		return &v1pb.TestIdentityProviderRequest{
 			IdentityProvider: &v1pb.IdentityProvider{
 				Config: &v1pb.IdentityProviderConfig{
 					Config: &v1pb.IdentityProviderConfig_OidcConfig{
-						OidcConfig: &v1pb.OIDCIdentityProviderConfig{ClientSecret: "idp-client-secret"},
+						OidcConfig: &v1pb.OIDCIdentityProviderConfig{
+							Issuer:       idpIssuer,
+							ClientSecret: "idp-client-secret",
+						},
 					},
 				},
 			},
@@ -1265,21 +1289,23 @@ func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
 			correlationID := "corr-idp-" + name
 			invoke(t, correlationID, v1connect.IdentityProviderServiceTestIdentityProviderProcedure,
 				connect.NewRequest(arm.request))
-			row := assertOneDeniedRow(t, correlationID, v1connect.IdentityProviderServiceTestIdentityProviderProcedure)
-			require.NotContains(t, row.Request, "idp-client-secret")
-			require.NotContains(t, row.Request, arm.secret)
+			request := assertOneRefusalLine(t, correlationID, v1connect.IdentityProviderServiceTestIdentityProviderProcedure)
+			require.NotContains(t, request, "idp-client-secret")
+			require.NotContains(t, request, arm.secret)
+			require.Contains(t, request, "collector.attacker.example.com",
+				"the issuer the agent named is the point of the line and stays readable")
 		})
 	}
 
 	t.Run("TestIdentityProvider/empty context arm", func(t *testing.T) {
 		// A oneof wrapper set with a nil payload. It cannot arrive over JSON,
 		// but the audit path must not panic on a message shape the type system
-		// permits — a panic here costs the row the gate exists to write.
+		// permits — a panic here costs the line the gate exists to write.
 		invoke(t, "corr-idp-nil", v1connect.IdentityProviderServiceTestIdentityProviderProcedure,
 			connect.NewRequest(&v1pb.TestIdentityProviderRequest{
 				Context: &v1pb.TestIdentityProviderRequest_LdapContext{},
 			}))
-		assertOneDeniedRow(t, "corr-idp-nil", v1connect.IdentityProviderServiceTestIdentityProviderProcedure)
+		assertOneRefusalLine(t, "corr-idp-nil", v1connect.IdentityProviderServiceTestIdentityProviderProcedure)
 	})
 
 	t.Run("TestWebhook", func(t *testing.T) {
@@ -1292,22 +1318,21 @@ func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
 				Project: "projects/p",
 				Webhook: &v1pb.Webhook{Url: "https://hooks.example.com/T000/B000/secret-token"},
 			}))
-		row := assertOneDeniedRow(t, "corr-webhook", v1connect.ProjectServiceTestWebhookProcedure)
-		require.NotContains(t, row.Request, "secret-token",
-			"the webhook URL is a bearer credential and must not be transcribed into the row")
+		request := assertOneRefusalLine(t, "corr-webhook", v1connect.ProjectServiceTestWebhookProcedure)
+		require.NotContains(t, request, "secret-token",
+			"the webhook URL is a bearer credential and must not be transcribed into the line")
 	})
 
 	aiChatBody := "the whole conversation the caller sent"
 	t.Run("AIService/Chat", func(t *testing.T) {
-		// Not a secret but an unbounded body, and the audit row stores it
-		// whole — the size cap applies to the stdout logger only. A denial
-		// needs the fact of the call, not the transcript.
+		// Not a secret but an unbounded body. A denial needs the fact of the
+		// call, not the transcript.
 		invoke(t, "corr-ai", v1connect.AIServiceChatProcedure,
 			connect.NewRequest(&v1pb.AIChatRequest{
 				Messages: []*v1pb.AIChatMessage{{Content: &aiChatBody}},
 			}))
-		row := assertOneDeniedRow(t, "corr-ai", v1connect.AIServiceChatProcedure)
-		require.NotContains(t, row.Request, aiChatBody)
+		request := assertOneRefusalLine(t, "corr-ai", v1connect.AIServiceChatProcedure)
+		require.NotContains(t, request, aiChatBody)
 	})
 
 	t.Run("TestEmailSetting", func(t *testing.T) {
@@ -1321,10 +1346,10 @@ func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
 					},
 				},
 			}))
-		row := assertOneDeniedRow(t, "corr-email", v1connect.SettingServiceTestEmailSettingProcedure)
-		require.NotContains(t, row.Request, "relay-password")
-		require.Contains(t, row.Request, "smtp.attacker.example",
-			"the host the agent named is the point of the row and stays readable")
+		request := assertOneRefusalLine(t, "corr-email", v1connect.SettingServiceTestEmailSettingProcedure)
+		require.NotContains(t, request, "relay-password")
+		require.Contains(t, request, "smtp.attacker.example",
+			"the host the agent named is the point of the line and stays readable")
 	})
 }
 
@@ -1337,13 +1362,13 @@ type mcpDenialRequestReview struct {
 
 // mcpDenialRequestsUnderReview is the population the redaction sweep has to
 // consider: every method carrying NO audit annotation whose request holds
-// anything beyond the AIP vocabulary below. Before the gate, none of these
-// produced an audit row at all; now a denial writes one, so whatever the
-// request holds is what lands in the audit_log table.
+// anything beyond the AIP vocabulary below. A refusal of any of them is
+// streamed to stdout, so whatever the request holds is what lands in the
+// stdout audit log.
 //
-// It covers READ and WRITE as well as the refused classes, because the gate can
-// refuse those too — an uninterpretable stored ceiling refuses whatever the
-// method's class is, and that refusal is a policy denial like any other.
+// It covers every class, because ACL on either chain and the ceiling gate can
+// refuse any of them — an uninterpretable stored ceiling refuses whatever the
+// method's class is, and that refusal is a permission refusal like any other.
 //
 // The decision is keyed on (method, field), not on the field name alone. A name
 // exempted globally is an exemption for every future method that happens to
@@ -1456,7 +1481,7 @@ var mcpDenialRequestsUnderReview = map[string]mcpDenialRequestReview{
 	v1connect.IssueServiceSearchIssuesProcedure: {
 		[]string{"query"}, "recorded: the caller's own search text",
 	},
-	v1connect.AuthServiceGetAuthenticationRestrictionProcedure: {
+	v1connect.AuthServiceGetAuthenticationInfoProcedure: {
 		[]string{"workspace"}, "recorded: a workspace resource name",
 	},
 	v1connect.IssueServiceGetIssueProcedure: {
@@ -1511,6 +1536,7 @@ func mcpRequestFieldNeedsReview(field protoreflect.FieldDescriptor) bool {
 // message-typed fields the inventory's scalar scope does not — DiffMetadata's
 // target_metadata is a whole schema, and no string field names it.
 func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
+	t.Parallel()
 	needsReview := map[string][]string{}
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		if row.audit {
@@ -1539,8 +1565,9 @@ func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
 	}
 	slices.Sort(undecided)
 	require.Empty(t, undecided,
-		"these methods are unaudited and the gate can refuse them, so a denial writes their request into an "+
-			"audit row: decide what may be recorded and record it in mcpDenialRequestsUnderReview")
+		"these methods are unaudited and a permission check can refuse them, so a refusal streams their "+
+			"request to the stdout audit log: decide what may be recorded and record it in "+
+			"mcpDenialRequestsUnderReview")
 
 	var stale []string
 	for procedure := range mcpDenialRequestsUnderReview {
@@ -1576,6 +1603,7 @@ func TestRejectMCPOriginatedGrantIssue(t *testing.T) {
 		"an MCP session may not create an access grant": {mcpSession, v1pb.Issue_ACCESS_GRANT, true},
 		"an MCP session may not create an unknown type": {mcpSession, v1pb.Issue_Type(9999), true},
 		"an MCP session composes database changes":      {mcpSession, v1pb.Issue_DATABASE_CHANGE, false},
+		"an unset type is left to buildIssueMessage":    {mcpSession, v1pb.Issue_TYPE_UNSPECIFIED, false},
 		"the console creates a role grant":              {console, v1pb.Issue_ROLE_GRANT, false},
 		"a request with no auth context at all":         {context.Background(), v1pb.Issue_ROLE_GRANT, false},
 	} {

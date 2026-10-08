@@ -14,13 +14,7 @@ const extractDatabaseName = (resource: string) => {
   return matches?.groups?.databaseName ?? "";
 };
 
-export function DatabaseSyncButton({
-  database,
-  disabled = false,
-}: {
-  database: Database;
-  disabled?: boolean;
-}) {
+export function useDatabaseSync(database: Database) {
   const { t } = useTranslation();
   const getOrFetchDatabaseMetadata = useAppStore(
     (s) => s.getOrFetchDatabaseMetadata
@@ -61,13 +55,25 @@ export function DatabaseSyncButton({
     }
   }, [database, getOrFetchDatabaseMetadata, t]);
 
+  return { syncing, sync: handleClick };
+}
+
+export function DatabaseSyncButton({
+  database,
+  disabled = false,
+}: {
+  database: Database;
+  disabled?: boolean;
+}) {
+  const { t } = useTranslation();
+  const { syncing, sync } = useDatabaseSync(database);
   return (
     <Button
       appearance="outline"
       disabled={disabled || syncing}
-      onClick={() => void handleClick()}
+      onClick={() => void sync()}
     >
-      <RefreshCw className="h-4 w-4" />
+      <RefreshCw className="size-4" />
       {t("database.sync-database")}
     </Button>
   );

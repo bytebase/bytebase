@@ -2,26 +2,23 @@ package store_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestCreatePendingTaskRunsRejectsMultipleProjects(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(context.Background()) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
@@ -37,14 +34,6 @@ func TestCreatePendingTaskRunsRejectsMultipleProjects(t *testing.T) {
 			(101, 'project-b', 101, 'instance-a', 'DATABASE_SCHEMA_UPDATE');
 	`)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 
 	err = s.CreatePendingTaskRuns(ctx, "creator@example.com",
 		&store.TaskRunMessage{ProjectID: "project-a", TaskUID: 101},

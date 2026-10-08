@@ -37,8 +37,8 @@ export function BinaryFormatButton({
         render={
           <Button
             appearance={hasOverride ? "solid" : "outline"}
-            size="sm"
-            className={cn("ml-1 size-5 rounded-full p-0")}
+            size="xs"
+            className={cn("ml-1 w-6 rounded-full p-0")}
             onClick={(e) => e.stopPropagation()}
           />
         }

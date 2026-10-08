@@ -108,7 +108,7 @@ test.describe("data-export policy control wording and wiring", () => {
     await gotoGeneralSettings();
 
     // The description teaches the access-grant path and quotes the exact
-    // "Request export" button label (coupling locked by messages.test.ts).
+    // "Request export" button label (coupling enforced by scripts/check-i18n.mjs).
     await expect(
       page.getByText(
         /In projects that allow access grants, users can still click "Request export"/

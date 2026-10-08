@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -57,7 +57,7 @@ func (*DisallowOrderByAdvisor) Check(_ context.Context, checkCtx advisor.Context
 				Code:          code.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", ostmt.TrimmedText()),
-				StartPosition: common.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
+				StartPosition: base.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
 			})
 		}
 	}
