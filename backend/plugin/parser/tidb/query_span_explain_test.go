@@ -159,3 +159,21 @@ func TestExplainAnalyzeAccessTables(t *testing.T) {
 		})
 	}
 }
+
+func TestRecursiveCTEShadowedInitialReference(t *testing.T) {
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{{
+		Name: "db",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}}}},
+		}},
+	}})
+	statement := "WITH RECURSIVE c(id) AS (SELECT COALESCE((SELECT id FROM (WITH c AS (SELECT id FROM t) SELECT id FROM c) x), 0) UNION ALL SELECT id + 1 FROM c WHERE id < 10) SELECT id FROM c"
+	span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+	}, base.Statement{Text: statement}, "db", "", false)
+	require.NoError(t, err)
+	require.Nil(t, span.NotFoundError)
+	require.Len(t, span.Results, 1)
+	require.Equal(t, base.SourceColumnSet{{Database: "db", Table: "t"}: true}, span.SourceColumns)
+}

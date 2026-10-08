@@ -202,17 +202,11 @@ var systemDatabases = map[string]bool{
 
 func (q *querySpanExtractor) getAccessTables(node tidbast.Node, includeUncached bool) base.SourceColumnSet {
 	accessesMap := make(base.SourceColumnSet)
-	var tables []*tidbast.TableName
-	if includeUncached {
-		// ANALYZE executes before metadata can be refreshed. Keep every physical
-		// target for authorization, excluding only references to in-scope CTEs.
-		v := &accessTableVisitor{resolveCTEs: true}
-		node.Accept(v)
-		tables = v.tables
-	} else {
-		tables = ExtractMySQLTableList(node, false /* asName */)
-	}
-	for _, table := range tables {
+	// ANALYZE executes before metadata can be refreshed. Keep every physical
+	// target for authorization, excluding only references to in-scope CTEs.
+	v := &accessTableVisitor{resolveCTEs: includeUncached}
+	node.Accept(v)
+	for _, table := range v.tables {
 		databaseName := table.Schema.O
 		if databaseName == "" {
 			databaseName = q.defaultDatabase

@@ -56,11 +56,6 @@ func validateQuery(statement string) (bool, bool, error) {
 // ExtractMySQLTableList extracts all the TableNames from node.
 // If asName is true, extract AsName prior to OrigName.
 func ExtractMySQLTableList(in ast.Node, asName bool) []*ast.TableName {
-	if !asName {
-		v := &accessTableVisitor{}
-		in.Accept(v)
-		return v.tables
-	}
 	input := []*ast.TableName{}
 	return extractTableList(in, input, asName)
 }
@@ -82,6 +77,7 @@ func (v *accessTableVisitor) Enter(node ast.Node) (ast.Node, bool) {
 			if n.IsRecursive {
 				v.cteScopes[len(v.cteScopes)-1][n.Name.L] = true
 			}
+		default:
 		}
 	}
 	if table, ok := node.(*ast.TableName); ok {
@@ -105,6 +101,7 @@ func (v *accessTableVisitor) Leave(node ast.Node) (ast.Node, bool) {
 		case *ast.CommonTableExpression:
 			// Non-recursive CTEs become visible only after their definition.
 			v.cteScopes[len(v.cteScopes)-1][n.Name.L] = true
+		default:
 		}
 	}
 	return node, true
