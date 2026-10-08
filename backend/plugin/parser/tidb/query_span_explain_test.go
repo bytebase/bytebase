@@ -10,6 +10,13 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+func TestExplainAnalyzeDigestRejected(t *testing.T) {
+	span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{},
+		base.Statement{Text: "EXPLAIN ANALYZE 'sqldigest'"}, "db", "", false)
+	require.ErrorContains(t, err, "EXPLAIN ANALYZE by digest is not supported")
+	require.Nil(t, span)
+}
+
 func TestExplainAnalyzeAccessTables(t *testing.T) {
 	var metadata []*metadatapb.DatabaseSchemaMetadata
 	for _, database := range []string{"db", "other"} {

@@ -69,6 +69,9 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		if !explain.Analyze {
 			return &base.QuerySpan{Type: base.Explain, Results: []base.QuerySpanResult{}, SourceColumns: base.SourceColumnSet{}}, nil
 		}
+		if explain.Stmt == nil {
+			return nil, errors.New("EXPLAIN ANALYZE by digest is not supported: referenced tables cannot be determined")
+		}
 		accessNode = explain.Stmt
 		includeUncached = true
 	}
