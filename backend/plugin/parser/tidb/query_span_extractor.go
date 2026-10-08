@@ -64,10 +64,15 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	node := nodeList[0]
 
 	accessNode := node
-	if explain, ok := node.(*tidbast.ExplainStmt); ok && explain.Analyze {
+	includeUncached := false
+	if explain, ok := node.(*tidbast.ExplainStmt); ok {
+		if !explain.Analyze {
+			return &base.QuerySpan{Type: base.Explain, Results: []base.QuerySpanResult{}, SourceColumns: base.SourceColumnSet{}}, nil
+		}
 		accessNode = explain.Stmt
+		includeUncached = true
 	}
-	accessTables := q.getAccessTables(accessNode)
+	accessTables := q.getAccessTables(accessNode, includeUncached)
 	allSystems, mixed := isMixedQuery(accessTables)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
@@ -195,9 +200,18 @@ var systemDatabases = map[string]bool{
 	"metrics_schema": true,
 }
 
-func (q *querySpanExtractor) getAccessTables(node tidbast.Node) base.SourceColumnSet {
+func (q *querySpanExtractor) getAccessTables(node tidbast.Node, includeUncached bool) base.SourceColumnSet {
 	accessesMap := make(base.SourceColumnSet)
-	tables := ExtractMySQLTableList(node, false /* asName */)
+	var tables []*tidbast.TableName
+	if includeUncached {
+		// ANALYZE executes before metadata can be refreshed. Keep every physical
+		// target for authorization, excluding only references to in-scope CTEs.
+		v := &accessTableVisitor{resolveCTEs: true}
+		node.Accept(v)
+		tables = v.tables
+	} else {
+		tables = ExtractMySQLTableList(node, false /* asName */)
+	}
 	for _, table := range tables {
 		databaseName := table.Schema.O
 		if databaseName == "" {
@@ -210,7 +224,7 @@ func (q *querySpanExtractor) getAccessTables(node tidbast.Node) base.SourceColum
 		// We do this because we do not have too much time to implement the real behavior.
 		// XXX(rebelice/zp): Can we pass more information here to make this function know the context and then
 		// figure out whether the table is the table the query actually accesses
-		if !q.existsTableMetadata(databaseName, table.Name.O) {
+		if !includeUncached && !q.existsTableMetadata(databaseName, table.Name.O) {
 			continue
 		}
 

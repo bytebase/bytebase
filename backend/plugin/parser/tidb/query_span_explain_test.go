@@ -24,12 +24,16 @@ func TestExplainAnalyzeAccessTables(t *testing.T) {
 			}},
 		})
 	}
+	metadata = append(metadata, &metadatapb.DatabaseSchemaMetadata{
+		Name: "information_schema", Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{{Name: "tables"}}}},
+	})
 	getter, lister := buildMockDatabaseMetadataGetter(metadata)
 	for _, tc := range []struct {
 		name      string
 		statement string
 		queryType base.QueryType
 		sources   base.SourceColumnSet
+		wantMixed bool
 	}{
 		{
 			name:      "count with predicate",
@@ -74,6 +78,59 @@ func TestExplainAnalyzeAccessTables(t *testing.T) {
 			sources:   base.SourceColumnSet{{Database: "other", Table: "t"}: true},
 		},
 		{
+			name:      "uncached joined tables",
+			statement: "EXPLAIN ANALYZE SELECT * FROM t JOIN missing ON TRUE JOIN other.missing2 ON TRUE",
+			queryType: base.Select,
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true, {Database: "db", Table: "missing"}: true, {Database: "other", Table: "missing2"}: true},
+		},
+		{
+			name:      "uncached nested predicate",
+			statement: "EXPLAIN ANALYZE SELECT * FROM t WHERE id IN (SELECT id FROM unsynced.missing)",
+			queryType: base.Select,
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true, {Database: "unsynced", Table: "missing"}: true},
+		},
+		{
+			name:      "CTE references are not physical targets",
+			statement: "EXPLAIN ANALYZE WITH c AS (SELECT * FROM missing) SELECT * FROM c JOIN t ON TRUE",
+			queryType: base.Select,
+			sources:   base.SourceColumnSet{{Database: "db", Table: "missing"}: true, {Database: "db", Table: "t"}: true},
+		},
+		{
+			name:      "qualified table sharing CTE name",
+			statement: "EXPLAIN ANALYZE WITH c AS (SELECT * FROM t) SELECT * FROM c JOIN other.c ON TRUE",
+			queryType: base.Select,
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true, {Database: "other", Table: "c"}: true},
+		},
+		{
+			name:      "non recursive CTE reads same named physical table",
+			statement: "EXPLAIN ANALYZE WITH t AS (SELECT * FROM t) SELECT * FROM t",
+			queryType: base.Select,
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true},
+		},
+		{
+			name:      "recursive CTE reference",
+			statement: "EXPLAIN ANALYZE WITH RECURSIVE c AS (SELECT id FROM missing UNION ALL SELECT id + 1 FROM c WHERE id < 5) SELECT * FROM c",
+			queryType: base.Select,
+			sources:   base.SourceColumnSet{{Database: "db", Table: "missing"}: true},
+		},
+		{
+			name:      "nested CTE does not hide outer physical table",
+			statement: "EXPLAIN ANALYZE SELECT * FROM (WITH missing AS (SELECT * FROM t) SELECT * FROM missing) x JOIN missing ON TRUE",
+			queryType: base.Select,
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true, {Database: "db", Table: "missing"}: true},
+		},
+		{
+			name:      "plain explain permits mixed tables",
+			statement: "EXPLAIN SELECT * FROM t JOIN information_schema.tables ON TRUE",
+			queryType: base.Explain,
+			sources:   base.SourceColumnSet{},
+		},
+		{
+			name:      "analyze still rejects mixed tables",
+			statement: "EXPLAIN ANALYZE SELECT * FROM t JOIN information_schema.tables ON TRUE",
+			wantMixed: true,
+		},
+		{
 			name:      "plain explain",
 			statement: "EXPLAIN SELECT * FROM t",
 			queryType: base.Explain,
@@ -91,6 +148,10 @@ func TestExplainAnalyzeAccessTables(t *testing.T) {
 				GetDatabaseMetadataFunc: getter,
 				ListDatabaseNamesFunc:   lister,
 			}, base.Statement{Text: tc.statement}, "db", "", false)
+			if tc.wantMixed {
+				require.ErrorIs(t, err, base.MixUserSystemTablesError)
+				return
+			}
 			require.NoError(t, err)
 			require.Equal(t, tc.queryType, span.Type)
 			require.Equal(t, tc.sources, span.SourceColumns)
