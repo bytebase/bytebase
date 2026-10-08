@@ -3537,6 +3537,7 @@
       "manage-license": "管理证书",
       "missing-license-attention": "请给实例分配证书以解锁该功能。",
       "n-license-remain": "剩余 {{n}} 个",
+      "project-instance-hint": "此列表仅包含工作空间实例。要管理项目实例的证书，请前往该实例的详情页。",
       "require-license": "需要实例证书",
       "success-notification": "证书分配更新成功",
       "used-and-total-instance": "活跃/总实例限制",

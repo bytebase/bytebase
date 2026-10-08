@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
@@ -22,27 +23,15 @@ import { PagedTableFooter } from "@/hooks/usePagedData";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { isValidInstanceName } from "@/types";
-import { State } from "@/types/proto-es/v1/common_pb";
 import type {
   Instance,
   UpdateInstanceRequest,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { UpdateInstanceRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  extractInstanceResourceName,
-  extractProjectResourceName,
-  hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
 
 const PAGE_SIZE = 50;
-
-interface InstancePageCursor {
-  parents: (string | undefined)[];
-  parentIndex: number;
-  pageToken: string;
-}
 
 export interface InstanceAssignmentSheetProps {
   open: boolean;
@@ -65,7 +54,7 @@ export function InstanceAssignmentSheet({
 
   const [instances, setInstances] = useState<Instance[]>([]);
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
-  const [nextPage, setNextPage] = useState<InstancePageCursor>();
+  const [nextPageToken, setNextPageToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetchingMore, setFetchingMore] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -97,7 +86,7 @@ export function InstanceAssignmentSheet({
   }, []);
 
   const fetchInstances = useCallback(
-    async (refresh: boolean, cursor?: InstancePageCursor) => {
+    async (refresh: boolean, pageToken = "") => {
       const fetchId = ++fetchIdRef.current;
       if (refresh) {
         setLoading(true);
@@ -105,53 +94,18 @@ export function InstanceAssignmentSheet({
         setFetchingMore(true);
       }
       try {
-        const store = useAppStore.getState();
-        let page = cursor;
-        if (refresh || !page) {
-          const parents: (string | undefined)[] = [undefined];
-          let pageToken = "";
-          do {
-            const result = await store.fetchProjectList({
-              pageSize: PAGE_SIZE,
-              pageToken,
-              filter: { state: State.ACTIVE, excludeDefault: true },
-            });
-            parents.push(
-              ...result.projects
-                .filter((project) =>
-                  hasProjectPermissionV2(project, "bb.instances.list")
-                )
-                .map((project) => project.name)
-            );
-            pageToken = result.nextPageToken ?? "";
-          } while (pageToken);
-          page = { parents, parentIndex: 0, pageToken: "" };
-        } else {
-          page = { ...page };
-        }
-        const fetched: Instance[] = [];
-        // Each collection owns its continuation token; never reuse it under another parent.
-        while (page.parentIndex < page.parents.length) {
-          const result = await store.fetchInstanceList({
-            parent: page.parents[page.parentIndex],
-            pageSize: PAGE_SIZE - fetched.length,
-            pageToken: page.pageToken,
-          });
-          fetched.push(...result.instances);
-          page.pageToken = result.nextPageToken ?? "";
-          if (!page.pageToken) page.parentIndex++;
-          if (
-            fetched.length >= PAGE_SIZE ||
-            (page.pageToken && fetched.length > 0)
-          )
-            break;
-        }
+        const result = await useAppStore.getState().fetchInstanceList({
+          pageSize: PAGE_SIZE,
+          pageToken: refresh ? "" : pageToken,
+        });
         if (fetchId !== fetchIdRef.current) {
           return;
         }
-        setInstances((prev) => (refresh ? fetched : [...prev, ...fetched]));
-        setNextPage(page.parentIndex < page.parents.length ? page : undefined);
-        applyActivatedSelection(fetched);
+        setInstances((prev) =>
+          refresh ? result.instances : [...prev, ...result.instances]
+        );
+        setNextPageToken(result.nextPageToken ?? "");
+        applyActivatedSelection(result.instances);
       } finally {
         if (fetchId === fetchIdRef.current) {
           setLoading(false);
@@ -164,10 +118,9 @@ export function InstanceAssignmentSheet({
 
   useEffect(() => {
     if (!open) {
-      fetchIdRef.current++;
       setInstances([]);
       setSelectedNames(new Set());
-      setNextPage(undefined);
+      setNextPageToken("");
       setProcessing(false);
       return;
     }
@@ -234,25 +187,11 @@ export function InstanceAssignmentSheet({
         }
       }
 
-      // Release capacity first so a full license pool can move between collections.
-      for (const activation of [false, true]) {
-        const groups = new Map<string | undefined, UpdateInstanceRequest[]>();
-        for (const request of requests) {
-          if (request.instance?.activation !== activation) continue;
-          const projectID = extractProjectResourceName(request.instance.name);
-          const parent = projectID ? `projects/${projectID}` : undefined;
-          const group = groups.get(parent) ?? [];
-          group.push(request);
-          groups.set(parent, group);
-        }
-        for (const [parent, group] of groups) {
-          const updated = await useAppStore
-            .getState()
-            .batchUpdateInstances(group, parent);
-          for (const instance of updated) {
-            useAppStore.getState().updateDatabaseInstance(instance);
-          }
-        }
+      const updated = await useAppStore
+        .getState()
+        .batchUpdateInstances(requests);
+      for (const instance of updated) {
+        useAppStore.getState().updateDatabaseInstance(instance);
       }
       await refreshServerInfo();
       pushNotification({
@@ -276,29 +215,10 @@ export function InstanceAssignmentSheet({
     refreshServerInfo,
   ]);
 
-  const projectedLicenseCount = useMemo(() => {
-    const loadedByName = new Map(
-      instances.map((instance) => [instance.name, instance])
-    );
-    let count = activatedInstanceCount;
-    for (const name of selectedNames) {
-      const instance =
-        loadedByName.get(name) ??
-        useAppStore.getState().getInstanceByName(name);
-      if (!instance.activation) count++;
-    }
-    for (const instance of instances) {
-      if (instance.activation && !selectedNames.has(instance.name)) count--;
-    }
-    return count;
-  }, [activatedInstanceCount, instances, selectedNames]);
-
   const confirmDisabled =
     !canManageSubscription ||
-    loading ||
-    fetchingMore ||
     processing ||
-    projectedLicenseCount > instanceLicenseCount;
+    selectedNames.size > instanceLicenseCount;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -325,6 +245,10 @@ export function InstanceAssignmentSheet({
               <span>{totalLicenseCount}</span>
             </div>
           </div>
+
+          <Alert variant="info">
+            {t("subscription.instance-assignment.project-instance-hint")}
+          </Alert>
 
           <div className="overflow-x-auto rounded-sm border border-control-border">
             <Table className="min-w-[36rem]">
@@ -409,9 +333,9 @@ export function InstanceAssignmentSheet({
             pageSize={PAGE_SIZE}
             pageSizeOptions={[PAGE_SIZE]}
             onPageSizeChange={() => {}}
-            hasMore={Boolean(nextPage)}
+            hasMore={Boolean(nextPageToken)}
             isFetchingMore={fetchingMore}
-            onLoadMore={() => fetchInstances(false, nextPage)}
+            onLoadMore={() => fetchInstances(false, nextPageToken)}
           />
         </SheetBody>
         <SheetFooter>

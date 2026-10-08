@@ -3537,6 +3537,7 @@
       "manage-license": "ライセンスの管理",
       "missing-license-attention": "この機能のロックを解除するには、インスタンスにライセンスを割り当ててください。",
       "n-license-remain": "残り {{n}}",
+      "project-instance-hint": "この一覧にはワークスペースのインスタンスのみが表示されます。プロジェクトのインスタンスのライセンスを管理するには、そのインスタンスの詳細ページを開いてください。",
       "require-license": "インスタンスライセンスが必要です",
       "success-notification": "ライセンスの割り当てが正常に更新されました",
       "used-and-total-instance": "アクティブ/合計インスタンス制限",

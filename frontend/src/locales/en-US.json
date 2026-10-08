@@ -3537,6 +3537,7 @@
       "manage-license": "Manage Instance License",
       "missing-license-attention": "You need to assign license to the instance to enable this feature.",
       "n-license-remain": "{{n}} remaining",
+      "project-instance-hint": "This list only includes workspace instances. To manage a project instance license, open its instance detail page.",
       "require-license": "Require instance license",
       "success-notification": "Successfully update license assignment",
       "used-and-total-instance": "Active / Total Instance Limit",
