@@ -56,8 +56,30 @@ func validateQuery(statement string) (bool, bool, error) {
 // ExtractMySQLTableList extracts all the TableNames from node.
 // If asName is true, extract AsName prior to OrigName.
 func ExtractMySQLTableList(in ast.Node, asName bool) []*ast.TableName {
+	if !asName {
+		v := &accessTableVisitor{}
+		in.Accept(v)
+		return v.tables
+	}
 	input := []*ast.TableName{}
 	return extractTableList(in, input, asName)
+}
+
+// Authorization needs every base table, including tables nested inside expressions
+// and derived queries. The alias-oriented extractor below can collapse those tables.
+type accessTableVisitor struct {
+	tables []*ast.TableName
+}
+
+func (v *accessTableVisitor) Enter(node ast.Node) (ast.Node, bool) {
+	if table, ok := node.(*ast.TableName); ok {
+		v.tables = append(v.tables, table)
+	}
+	return node, false
+}
+
+func (*accessTableVisitor) Leave(node ast.Node) (ast.Node, bool) {
+	return node, true
 }
 
 // -------------------------------------------- DO NOT TOUCH --------------------------------------------

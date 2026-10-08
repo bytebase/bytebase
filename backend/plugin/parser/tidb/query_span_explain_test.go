@@ -44,6 +44,30 @@ func TestExplainAnalyzeAccessTables(t *testing.T) {
 			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true, {Database: "db", Table: "u"}: true, {Database: "other", Table: "t"}: true},
 		},
 		{
+			name:      "derived join retains every table",
+			statement: "EXPLAIN ANALYZE SELECT * FROM (SELECT t.id FROM t JOIN u ON t.id = u.id) x",
+			queryType: base.Select,
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true, {Database: "db", Table: "u"}: true},
+		},
+		{
+			name:      "nested derived join across databases",
+			statement: "EXPLAIN ANALYZE SELECT * FROM (SELECT * FROM (SELECT t.id FROM t JOIN other.t u ON t.id = u.id) x) y",
+			queryType: base.Select,
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true, {Database: "other", Table: "t"}: true},
+		},
+		{
+			name:      "derived predicate subquery",
+			statement: "EXPLAIN ANALYZE SELECT * FROM (SELECT id FROM t WHERE id IN (SELECT id FROM other.u)) x",
+			queryType: base.Select,
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true, {Database: "other", Table: "u"}: true},
+		},
+		{
+			name:      "subqueries inside compound expressions",
+			statement: "EXPLAIN ANALYZE SELECT COALESCE((SELECT max(id) FROM other.t), 0) FROM t WHERE id > 0 AND id IN (SELECT id FROM u)",
+			queryType: base.Select,
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true, {Database: "db", Table: "u"}: true, {Database: "other", Table: "t"}: true},
+		},
+		{
 			name:      "qualified table",
 			statement: "EXPLAIN ANALYZE SELECT count(*) FROM other.t",
 			queryType: base.Select,
