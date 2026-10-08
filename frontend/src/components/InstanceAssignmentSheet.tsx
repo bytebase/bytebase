@@ -246,7 +246,7 @@ export function InstanceAssignmentSheet({
             </div>
           </div>
 
-          <Alert variant="info">
+          <Alert variant="info" role="note">
             {t("subscription.instance-assignment.project-instance-hint")}
           </Alert>
 
