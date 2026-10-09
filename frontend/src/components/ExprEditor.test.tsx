@@ -1,5 +1,6 @@
 import * as stylex from "@stylexjs/stylex";
-import { act, type ReactElement, useState } from "react";
+import { fireEvent, waitFor } from "@testing-library/react";
+import { act, type ReactElement, StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Factor } from "@/modules/cel/types/factor";
@@ -161,6 +162,76 @@ describe("ExprEditor", () => {
   afterEach(() => {
     document.body.innerHTML = "";
   });
+
+  test.each(["_==_", "@in"] as const)(
+    "cancels replaced searches and survives StrictMode replay for %s",
+    async (operator) => {
+      const signals: AbortSignal[] = [];
+      const config: OptionConfig = {
+        options: [],
+        search: async ({ signal }) => {
+          signals.push(signal!);
+          return { options: [], nextPageToken: "" };
+        },
+      };
+      const { container, unmount } = renderIntoContainer(
+        <StrictMode>
+          <ExprEditor
+            expr={{
+              type: ExprType.ConditionGroup,
+              operator: "_&&_",
+              args: [
+                operator === "@in"
+                  ? {
+                      type: ExprType.Condition,
+                      operator,
+                      args: [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["selected"]],
+                    }
+                  : {
+                      type: ExprType.Condition,
+                      operator,
+                      args: [CEL_ATTRIBUTE_RESOURCE_DATABASE, "selected"],
+                    },
+              ],
+            }}
+            factorList={[CEL_ATTRIBUTE_RESOURCE_DATABASE]}
+            optionConfigMap={
+              new Map([[CEL_ATTRIBUTE_RESOURCE_DATABASE, config]])
+            }
+            onUpdate={() => {}}
+          />
+        </StrictMode>
+      );
+      await flushEffects();
+      expect(signals).toHaveLength(2);
+      expect(signals[0].aborted).toBe(true);
+      expect(signals[1].aborted).toBe(false);
+      const trigger =
+        operator === "@in"
+          ? Array.from(container.querySelectorAll("div")).find((el) =>
+              el.className.includes("cursor-pointer")
+            )
+          : Array.from(container.querySelectorAll("button")).find(
+              (el) => el.textContent === "selected"
+            );
+      expect(trigger).toBeTruthy();
+      await act(async () => {
+        fireEvent.click(trigger!);
+      });
+      expect(signals[1].aborted).toBe(true);
+      const input = document.querySelector(
+        'input[placeholder="common.filter-by-name"]'
+      );
+      expect(input).toBeTruthy();
+      await act(async () => {
+        fireEvent.change(input!, { target: { value: "new" } });
+      });
+      await waitFor(() => expect(signals[2].aborted).toBe(true));
+      expect(signals[3].aborted).toBe(false);
+      unmount();
+      expect(signals[3].aborted).toBe(true);
+    }
+  );
 
   test("keeps the next condition value after deleting the first condition", async () => {
     const initialExpr: ConditionGroupExpr = {

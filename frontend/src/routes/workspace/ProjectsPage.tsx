@@ -419,7 +419,10 @@ export function ProjectsPage() {
     prevDepsRef.current = depsKey;
 
     fetchProjects(true);
-    return () => abortRef.current?.abort();
+    return () => {
+      prevDepsRef.current = "";
+      abortRef.current?.abort();
+    };
   }, [
     searchText,
     stateFilter,
