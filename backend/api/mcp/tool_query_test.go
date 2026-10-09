@@ -307,15 +307,7 @@ func TestQueryDatabase_MissingWorkspaceID(t *testing.T) {
 }
 
 func TestQueryDatabase_WorkspacePermissionDenied(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"message": "permission denied",
-			"code":    "PERMISSION_DENIED",
-		})
-	})
-	s := newTestServerWithMock(t, handler)
+	s := newTestServerWithMock(t, &projectRoleAPI{databases: hrAndFinanceDatabases(), searchPages: [][]string{{}}})
 
 	_, err := s.resolveDatabase(testContext(), "employee_db", "", "")
 	require.Error(t, err)
@@ -323,7 +315,7 @@ func TestQueryDatabase_WorkspacePermissionDenied(t *testing.T) {
 	var te *toolError
 	require.ErrorAs(t, err, &te)
 	require.Equal(t, "PERMISSION_DENIED", te.Code)
-	require.Contains(t, te.Suggestion, "bb.databases.list")
+	require.Contains(t, te.Suggestion, "role in the project")
 }
 
 func TestQueryDatabase_Ambiguous(t *testing.T) {

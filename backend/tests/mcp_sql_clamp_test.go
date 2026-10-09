@@ -575,9 +575,9 @@ func TestMCPReadOnlyRoleDowngradeBitesTheNextRequest(t *testing.T) {
 	defer session.Close()
 
 	// call_api rather than query_database, so the only thing under test is the
-	// permission on the query itself: query_database resolves the database by
-	// listing workspace-wide first, and a listing denial would refuse this for
-	// a reason that is not the one this test is about.
+	// permission on the query itself: query_database lists databases before it
+	// queries, and once the role is gone that listing refuses first, for a
+	// reason that is not the one this test is about.
 	query := map[string]any{"name": f.database, "statement": "SELECT id FROM employee"}
 	served := callAPIOnSession(f.ctx, t, session, "SQLService/Query", query)
 	a.Equal(http.StatusOK, served.Status, "the reader starts able to read: %s", served.Error)
