@@ -3552,6 +3552,7 @@
       "manage-license": "Administrar licencia",
       "missing-license-attention": "Debe asignar una licencia a la instancia para habilitar esta función.",
       "n-license-remain": "permanecer {{n}}",
+      "project-instance-hint": "Esta lista solo incluye instancias del espacio de trabajo. Para administrar la licencia de una instancia de proyecto, abra su página de detalles.",
       "require-license": "Requerir licencia de instancia",
       "success-notification": "Actualizar correctamente la asignación de licencia",
       "used-and-total-instance": "Límite de instancias activas/totales",

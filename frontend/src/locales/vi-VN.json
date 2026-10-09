@@ -3552,6 +3552,7 @@
       "manage-license": "Quản lý giấy phép phiên bản",
       "missing-license-attention": "Bạn cần gán giấy phép cho phiên bản để bật tính năng này.",
       "n-license-remain": "còn lại {{n}}",
+      "project-instance-hint": "Danh sách này chỉ bao gồm các phiên bản trong không gian làm việc. Để quản lý giấy phép của một phiên bản dự án, hãy mở trang chi tiết của phiên bản đó.",
       "require-license": "Yêu cầu giấy phép phiên bản",
       "success-notification": "Đã cập nhật thành công gán giấy phép",
       "used-and-total-instance": "Giới hạn phiên bản đang hoạt động / Tổng số",
