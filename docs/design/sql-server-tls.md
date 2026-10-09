@@ -199,7 +199,10 @@ Tests:
 
 ## Not in this PR
 
-- The SQL Server connection docs (bytebase/bytebase.com#232) describe today's trust-all behavior.
-  Update them when this ships.
+- The SQL Server connection page (bytebase/bytebase.com#232,
+  `docs/get-started/connect/sql-server.mdx`) warns in its TLS section that Bytebase doesn't verify
+  the certificate yet. When this ships, replace the warning with the release version and how TLS
+  mode and Verify server certificate behave. Also drop its Extra Parameters note that
+  `TrustServerCertificate` fails.
 - A hint in the connection error that points at the CA and Host fields.
 - Client certificates (D8).
