@@ -54,6 +54,7 @@ const mocks = vi.hoisted(() => ({
   ),
   scopeOptions: { value: undefined as unknown },
   onSearchParamsChange: { value: undefined as unknown },
+  onTimeRangeParamsChange: { value: undefined as unknown },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -115,7 +116,14 @@ vi.mock("@/components/AdvancedSearch", () => ({
 }));
 
 vi.mock("@/components/TimeRangePicker", () => ({
-  TimeRangePicker: () => <div data-testid="time-range-picker" />,
+  TimeRangePicker: ({
+    onParamsChange,
+  }: {
+    onParamsChange: unknown;
+  }) => {
+    mocks.onTimeRangeParamsChange.value = onParamsChange;
+    return <div data-testid="time-range-picker" />;
+  },
 }));
 
 vi.mock("@/components/FeatureAttention", () => ({
@@ -244,6 +252,49 @@ afterEach(() => {
 });
 
 describe("AuditLogTable", () => {
+  test("explains why a range larger than 30 days cannot be exported", async () => {
+    vi.useFakeTimers();
+    mocks.searchAuditLogs.mockResolvedValue({ auditLogs: [], nextPageToken: "" });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <AuditLogTable parent="projects/-" canExport />
+    );
+    await render();
+
+    await act(async () => {
+      (
+        mocks.onTimeRangeParamsChange.value as
+          | ((params: {
+              query: string;
+              scopes: Array<{ id: string; value: string }>;
+            }) => void)
+          | undefined
+      )?.({
+        query: "",
+        scopes: [{ id: "created", value: "1000,2678401001" }],
+      });
+    });
+
+    const exportButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.export"
+    );
+    expect(exportButton).toBeInstanceOf(HTMLButtonElement);
+    expect((exportButton as HTMLButtonElement).disabled).toBe(true);
+
+    await act(async () => {
+      exportButton?.parentElement?.dispatchEvent(
+        new FocusEvent("focusin", { bubbles: true })
+      );
+      vi.advanceTimersByTime(100);
+    });
+
+    expect(document.getElementById("bb-react-layer-overlay")?.textContent).toContain(
+      "audit-log.export-tooltip"
+    );
+
+    unmount();
+  });
+
   test("opens the date whole, and lets a reader narrow it to the day", async () => {
     mocks.searchAuditLogs.mockResolvedValue({
       auditLogs: [
