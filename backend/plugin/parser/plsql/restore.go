@@ -116,6 +116,9 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get database metadata for %s", sourceDatabase)
 	}
+	if metadata == nil {
+		return "", errors.Errorf("database metadata for database %q not found (database not synced)", sourceDatabase)
+	}
 
 	schemaMetadata := metadata.GetSchemaMetadata("")
 	if schemaMetadata == nil {
