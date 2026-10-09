@@ -34,6 +34,7 @@ import {
   getDatabaseEnvironment,
   hexToRgb,
 } from "@/utils";
+import { ExportGrantLookupStatus } from "../ExportGrantLookupStatus";
 import { TabContextMenu } from "./ContextMenu";
 import { type CloseTabAction, resultTabEvents } from "./resultTabContext";
 
@@ -168,11 +169,25 @@ export function BatchQuerySelect({
     matchedDatabases,
     unmatchedDatabases,
     tooltip: exportTooltip,
+    loading: grantLoading,
+    failedDatabases,
+    retry,
   } = useExportGrantBypass({
     enabled: !policyAllowsExport,
     project,
-    statement: batchStatement,
-    targets: queriedDatabaseNames,
+    targets: queriedDatabaseNames.flatMap((database) => {
+      const params = contextsByDatabase.get(database)?.params;
+      return params?.statement
+        ? [
+            {
+              database,
+              statement: params.statement,
+              schema: params.connection.schema ?? "",
+              container: params.connection.table ?? "",
+            },
+          ]
+        : [];
+    }),
   });
 
   // When the policy allows export, every queried DB is authorized;
@@ -199,7 +214,9 @@ export function BatchQuerySelect({
   // button label change from "Batch export" to "Partial batch export"
   // so the user knows up-front the action operates on a strict subset.
   const isPartialExport =
-    showExport && !policyAllowsExport && unmatchedDatabases.length > 0;
+    showExport &&
+    !policyAllowsExport &&
+    matchedDatabases.length < queriedDatabaseNames.length;
 
   const handleCloseSingleResultView = (item: BatchQueryItem) => {
     const contexts = currentTab?.databaseQueryContexts?.get(item.database.name);
@@ -345,7 +362,12 @@ export function BatchQuerySelect({
         pre-seeds the uncovered set so the user can extend coverage
         without losing the immediate export.
       */}
-      <div className="mb-2 flex flex-row gap-2">
+      <div className="mb-2 flex flex-row flex-wrap items-center gap-2">
+        <ExportGrantLookupStatus
+          loading={grantLoading}
+          failed={failedDatabases.length > 0}
+          onRetry={retry}
+        />
         {showExport && (
           <DataExportButton
             size="sm"

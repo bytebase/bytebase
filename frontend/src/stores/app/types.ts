@@ -167,6 +167,9 @@ export type AccessGrantFilter = {
   // boundary whitespace on both sides — internal whitespace preserved
   // byte-for-byte. PR #20491 bot review #3349385091.
   statementExact?: string;
+  queryHash?: string;
+  schema?: string;
+  container?: string;
   creator?: string;
   status?: Exclude<AccessGrantDisplayStatus, "UNKNOWN">[];
   issue?: string;

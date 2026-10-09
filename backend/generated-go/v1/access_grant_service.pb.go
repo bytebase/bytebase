@@ -350,16 +350,22 @@ type ListAccessGrantsRequest struct {
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Filter expression using AIP-160 syntax.
 	// Supported fields:
-	// - name: the fullname in "projects/{project}/accessGrants/{access_grant}" format, support "==" operator.
-	// - creator: the creator name in "users/{email}" format, support "==" operator.
-	// - status: the access status, support "==" and "in" operator.
-	// - issue: the access issue fullname, support "==" operator.
-	// - expire_time: the access expire time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
-	// - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
-	// - query: the access query, support "==" and ".contains(xx)" operator
-	// - target: the target database fullname, support "==" operator.
-	// - unmask: whether the grant allows unmasking sensitive data, support "==" operator with a boolean literal.
-	// - export: whether the grant allows exporting the query result, support "==" operator with a boolean literal.
+	//   - name: the fullname in "projects/{project}/accessGrants/{access_grant}" format, support "==" operator.
+	//   - creator: the creator name in "users/{email}" format, support "==" operator.
+	//   - status: the access status, support "==" and "in" operator.
+	//   - issue: the access issue fullname, support "==" operator.
+	//   - expire_time: the access expire time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
+	//   - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
+	//   - query: the access query, support "==" and ".contains(xx)" operator.
+	//     Equality trims only boundary ASCII space, tab, LF, CR, vertical tab, and form feed.
+	//   - query_hash: supports "==" with a lowercase hexadecimal SHA-256 digest of
+	//     the UTF-8 query after the same boundary trim. Internal whitespace and Unicode
+	//     remain unchanged.
+	//   - schema: execution schema, supports "=="; empty matches only empty or absent values.
+	//   - container: execution container, supports "=="; empty matches only empty or absent values.
+	//   - target: the target database fullname, support "==" operator.
+	//   - unmask: whether the grant allows unmasking sensitive data, support "==" operator with a boolean literal.
+	//   - export: whether the grant allows exporting the query result, support "==" operator with a boolean literal.
 	//
 	// Examples:
 	// - creator == "users/dev@example.com"
