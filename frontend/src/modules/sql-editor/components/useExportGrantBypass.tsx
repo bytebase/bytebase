@@ -1,41 +1,33 @@
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { RouterLink } from "@/components/RouterLink";
 import { useAppStore } from "@/stores/app";
-import { isAccessGrantFilterWithinCELLimit } from "@/stores/app/accessGrant";
-import type { AccessGrantFilter } from "@/stores/app/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
+import { hashAccessGrantQuery } from "./accessGrantQueryHash";
+
+interface ExportGrantTarget {
+  database: string;
+  statement: string;
+  schema: string;
+  container: string;
+}
 
 interface UseExportGrantBypassArgs {
-  /**
-   * Whether to actively look for a JIT export grant. Pass
-   * `policy.disableExport` — when the policy already allows export
-   * there's no bypass to surface.
-   */
   enabled: boolean;
-  /**
-   * Project parent for the access-grant search (e.g. `"projects/foo"`).
-   * The hook is a no-op when this is empty / undefined.
-   */
   project: string | undefined;
-  /** Statement to match against grant.payload.query. */
-  statement: string;
-  /**
-   * Queried target database resource names. Single-element OK —
-   * `ResultView` passes `[database.name]`, `BatchQuerySelect` passes
-   * the full queried set. Empty array == no lookup.
-   *
-   * Internally the hook fires one `searchMyAccessGrants` call per
-   * target in parallel (each with `target == "x"` and `pageSize: 1`).
-   * Oversized CEL filters are not sent.
-   * The fan-out shape is correct by construction: a single multi-
-   * target `target in [...]` query with a row-limit could cluster all
-   * results on one target and silently hide coverage for the others.
-   */
-  targets: readonly string[];
+  targets: readonly ExportGrantTarget[];
 }
 
 interface UseExportGrantBypassResult {
+  loading: boolean;
+  failedDatabases: string[];
+  retry: () => void;
   /**
    * Subset of `targets` for which an active export grant exists.
    * `BatchQuerySelect` uses this to filter the export drawer's
@@ -70,162 +62,110 @@ interface UseExportGrantBypassResult {
 // readable.
 const LIST_CAP = 5;
 
-// Cap parallel `SearchMyAccessGrants` lookups so a batch query over
-// hundreds of databases (database-group expansion, multi-tenant
-// projects) doesn't fire hundreds of concurrent RPCs the moment
-// results render — that would put real DB/CEL-parser pressure on the
-// API for a UI affordance the user might never interact with. Bot
-// review #3357335452.
-//
-// 10 is a pragmatic ceiling: the common 1–10 DB batch fits in one
-// chunk (same single round-trip as before the cap), and a 200-DB
-// batch becomes 20 sequential rounds of 10 — bounded server load,
-// ≤2s tail latency on typical RTTs.
+// Bound concurrent lookups when a batch spans many databases.
 const LOOKUP_CONCURRENCY = 10;
+
+type Lookup = { grant?: AccessGrant; failed: boolean };
 
 export function useExportGrantBypass({
   enabled,
   project,
-  statement,
   targets,
 }: UseExportGrantBypassArgs): UseExportGrantBypassResult {
   const { t } = useTranslation();
   const searchMyAccessGrants = useAppStore((s) => s.searchMyAccessGrants);
   const fetchIssueByName = useAppStore((s) => s.fetchIssueByName);
-
-  // Per-target grant: `grantsByTarget[target]` is the active export
-  // grant for that target, or `undefined` when none.
-  const [grantsByTarget, setGrantsByTarget] = useState<
-    Record<string, AccessGrant | undefined>
-  >({});
-  // Issue title per unique grant name. Populated by parallel fetches
-  // once `uniqueGrants` is known.
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => setAttempt((value) => value + 1), []);
+  const [lookup, setLookup] = useState<{
+    key: string;
+    byTarget: Record<string, Lookup>;
+  }>();
   const [issueTitlesByGrantName, setIssueTitlesByGrantName] = useState<
     Record<string, string>
   >({});
-
-  // Stable join key so identity changes on the `targets` array don't
-  // re-fire the search effect on every parent render.
-  const targetsKey = useMemo(() => targets.join(","), [targets]);
+  const targetsKey = JSON.stringify(targets);
+  const lookupKey = JSON.stringify([enabled, project, targetsKey, attempt]);
+  const active = enabled && !!project && targets.length > 0;
+  // Compare during render: an effect reset alone exposes old grants for one render.
+  const currentLookup =
+    active && lookup?.key === lookupKey ? lookup : undefined;
+  const loading = active && !currentLookup;
 
   useEffect(() => {
-    if (!enabled || !statement || !project || targetsKey === "") {
-      // Idempotent reset — only swap state when it actually needs to
-      // clear, so callers passing a fresh `[database.name]` literal
-      // each render don't trip a "reset → re-render → reset" loop
-      // (`Object.is({}, {})` is false).
-      setGrantsByTarget((prev) => (Object.keys(prev).length === 0 ? prev : {}));
-      return;
-    }
-    // Clear stale matches synchronously so the UI doesn't surface a
-    // grant matched to the previous (statement, targets) tuple while
-    // the new search is in flight. Without this, a user changing the
-    // SQL statement would briefly see Export promise authorization
-    // the new statement doesn't actually have. Bot review #3357266207.
-    // Same idempotent-reset guard so the no-prior-data case (initial
-    // mount, subsequent identity-only re-renders) doesn't churn.
-    setGrantsByTarget((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+    if (!active || !project) return;
     let canceled = false;
     void (async () => {
-      // Fan out: one search per target. Each call narrows to the
-      // single target server-side so `pageSize: 1` suffices.
-      //
-      // Each request is independently try/catch'd: a failure on
-      // target A (network, auth, rate-limit) MUST NOT discard the
-      // successful results from targets B/C/D. `Promise.all` would
-      // reject the whole batch on the first failure; we want partial
-      // success. The failed target falls back to `undefined`, which
-      // ResultView/BatchQuerySelect treat as "no grant" → Request
-      // Export surfaces for that DB. Bot review #3357266207.
-      //
-      // Chunked at `LOOKUP_CONCURRENCY` so we cap the in-flight RPC
-      // count even on batches of hundreds of DBs. Bot review
-      // #3357335452.
-      const byTarget: Record<string, AccessGrant | undefined> = {};
-      for (let i = 0; i < targets.length; i += LOOKUP_CONCURRENCY) {
+      const byTarget: Record<string, Lookup> = {};
+      const queryHashes = new Map<string, string>();
+      const requests: ExportGrantTarget[] = JSON.parse(targetsKey);
+      for (let i = 0; i < requests.length; i += LOOKUP_CONCURRENCY) {
         if (canceled) return;
-        const chunk = targets.slice(i, i + LOOKUP_CONCURRENCY);
-        const chunkResults = await Promise.all(
-          chunk.map(async (target) => {
+        await Promise.all(
+          requests.slice(i, i + LOOKUP_CONCURRENCY).map(async (target) => {
             try {
-              const filter: AccessGrantFilter = {
-                statementExact: statement,
-                status: ["ACTIVE"],
-                export: true,
-                target,
-              };
-              if (!isAccessGrantFilterWithinCELLimit(filter)) {
-                return { target, grant: undefined as AccessGrant | undefined };
+              let queryHash = queryHashes.get(target.statement);
+              if (!queryHash) {
+                queryHash = hashAccessGrantQuery(target.statement);
+                queryHashes.set(target.statement, queryHash);
               }
               const res = await searchMyAccessGrants({
                 parent: project,
-                filter,
+                filter: {
+                  queryHash,
+                  schema: target.schema,
+                  container: target.container,
+                  status: ["ACTIVE"],
+                  export: true,
+                  target: target.database,
+                },
                 pageSize: 1,
               });
-              return { target, grant: res.accessGrants[0] };
-            } catch {
-              return {
-                target,
-                grant: undefined as AccessGrant | undefined,
+              byTarget[target.database] = {
+                grant: res.accessGrants[0],
+                failed: false,
               };
+            } catch {
+              byTarget[target.database] = { failed: true };
             }
           })
         );
-        for (const { target, grant } of chunkResults) {
-          byTarget[target] = grant;
-        }
       }
-      if (canceled) return;
-      // Single commit at the end (not per-chunk) — the matched /
-      // unmatched derivation downstream is whole-set, so partial
-      // updates would flicker Export ↔ Request Export as chunks
-      // resolve.
-      setGrantsByTarget(byTarget);
+      if (!canceled) setLookup({ key: lookupKey, byTarget });
     })();
     return () => {
       canceled = true;
     };
-    // `targets` intentionally NOT in the dep array — the array literal
-    // is a fresh identity on every parent render, which would defeat
-    // the `targetsKey` stabilization and trigger an infinite "search
-    // → setState → re-render → search" loop. The closure captures the
-    // `targets` from the render that last bumped `targetsKey`; since
-    // `targetsKey` is a value-stable join of the same content, that
-    // captured array carries the right values to iterate.
-  }, [enabled, project, statement, targetsKey, searchMyAccessGrants]);
+  }, [active, project, targetsKey, lookupKey, searchMyAccessGrants]);
 
-  // Partition into matched/unmatched AND build the dedup'd grant list.
-  // A single grant can cover multiple targets (its `targets` array
-  // overlapping the queried set), so the per-target search returns the
-  // same grant for several keys — collapse by `grant.name`.
-  //
-  // Keyed by `targetsKey` (not `targets`) so per-render fresh array
-  // literals don't churn this memo's identity, which would in turn
-  // churn every downstream `useMemo` / `useEffect` that depends on
-  // `uniqueGrants` (and trip an infinite loop via the issue-fetch
-  // effect).
-  const { matchedDatabases, unmatchedDatabases, uniqueGrants } = useMemo(() => {
-    const matched: string[] = [];
-    const unmatched: string[] = [];
+  const {
+    matchedDatabases,
+    unmatchedDatabases,
+    failedDatabases,
+    uniqueGrants,
+  } = useMemo(() => {
+    const matchedDatabases: string[] = [];
+    const unmatchedDatabases: string[] = [];
+    const failedDatabases: string[] = [];
     const seen = new Map<string, AccessGrant>();
-    for (const target of targets) {
-      const grant = grantsByTarget[target];
-      if (grant) {
-        matched.push(target);
-        if (!seen.has(grant.name)) seen.set(grant.name, grant);
-      } else {
-        unmatched.push(target);
-      }
+    for (const { database: target } of JSON.parse(
+      targetsKey
+    ) as ExportGrantTarget[]) {
+      const result = currentLookup?.byTarget[target];
+      if (!result) continue;
+      if (result.failed) failedDatabases.push(target);
+      else if (result.grant) {
+        matchedDatabases.push(target);
+        seen.set(result.grant.name, result.grant);
+      } else unmatchedDatabases.push(target);
     }
     return {
-      matchedDatabases: matched,
-      unmatchedDatabases: unmatched,
+      matchedDatabases,
+      unmatchedDatabases,
+      failedDatabases,
       uniqueGrants: Array.from(seen.values()),
     };
-    // See the search-effect dep-array comment: keyed by `targetsKey`
-    // (a value-stable join), not by `targets` (a fresh identity each
-    // render).
-  }, [targetsKey, grantsByTarget]);
+  }, [currentLookup, targetsKey]);
 
   const primaryGrant = uniqueGrants[0];
   const grantName = primaryGrant?.name ?? "";
@@ -398,6 +338,9 @@ export function useExportGrantBypass({
   }, [t, enabled, uniqueGrants, issueTitlesByGrantName]);
 
   return {
+    loading,
+    failedDatabases,
+    retry,
     matchedDatabases,
     unmatchedDatabases,
     grantName,
