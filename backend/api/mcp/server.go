@@ -79,7 +79,7 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	mcpServer := mcp.NewServer(&mcp.Implementation{
 		Name:    "bytebase",
 		Version: profile.Version,
-	}, nil)
+	}, &mcp.ServerOptions{Instructions: serverInstructions})
 
 	// Load OpenAPI index for API discovery and execution (embedded)
 	openAPIIndex, err := NewOpenAPIIndex()
@@ -231,12 +231,28 @@ func refuseSessionlessProtocol(next http.Handler) http.Handler {
 func (s *Server) registerTools() {
 	s.registerSearchTool()
 	s.registerCallTool()
-	s.registerSkillTool()
 	s.registerQueryTool()
 	s.registerSchemaTool()
 	s.registerChangeTool()
 	s.registerReauthorizeTool()
 }
+
+// serverInstructions route an agent to the right tool. A client may add them
+// to the model's prompt for the whole session (MCP InitializeResult
+// instructions). One server serves every workspace, and an admin can change a
+// workspace's MCP access policy at any time, so they name no workspace and
+// assume no mode.
+const serverInstructions = `Bytebase governs access to databases and changes to them. Every call runs as the connected user, within that user's permissions and the workspace's MCP access policy.
+
+Choose the tool by task:
+- Read data: query_database. Before you write SQL for a database, read its schema with get_schema.
+- Inspect a schema: get_schema.
+- Change a database: propose_database_change, the easiest way into the governed workflow. It creates the plan and the issue and runs the plan checks; approval and rollout follow the project's policy. ` + singleDatabaseLimit + `
+- Anything else: search_api to find the operation and its request schema, then call_api.
+
+When the workspace's MCP access policy is Read-write, query_database can also run DML and DDL. They take effect at once, without an issue or approval, as far as the engine and the user's permissions allow. On an instance with a read-only data source, query_database runs every statement through that data source, so make changes there with propose_database_change. Use propose_database_change for any change that should be reviewed.
+
+When Bytebase refuses a call, the error states the reason. Pass it on to the user: a person acts on it in the Bytebase console.`
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
 //
