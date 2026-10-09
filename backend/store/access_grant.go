@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -50,8 +52,6 @@ type FindAccessGrantMessage struct {
 }
 
 // FindActiveAccessGrantMessage scopes a statement-bound JIT grant lookup.
-// It deliberately uses structured fields rather than a CEL filter so a large
-// statement can be passed directly to PostgreSQL as a parameter.
 type FindActiveAccessGrantMessage struct {
 	Workspace     string
 	ProjectID     string
@@ -73,7 +73,7 @@ type UpdateAccessGrantMessage struct {
 
 // CreateAccessGrant creates a new access grant.
 func (s *Store) CreateAccessGrant(ctx context.Context, create *AccessGrantMessage) (*AccessGrantMessage, error) {
-	payload, err := protojson.Marshal(create.Payload)
+	payload, err := marshalAccessGrantPayload(create.Payload)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal payload")
 	}
@@ -101,6 +101,21 @@ func (s *Store) CreateAccessGrant(ctx context.Context, create *AccessGrantMessag
 	}
 
 	return create, nil
+}
+
+func marshalAccessGrantPayload(payload *storepb.AccessGrantPayload) ([]byte, error) {
+	if payload != nil {
+		payload.QueryHash = ""
+		if payload.Query != "" {
+			payload.QueryHash = hashAccessGrantQuery(payload.Query)
+		}
+	}
+	return protojson.Marshal(payload)
+}
+
+func hashAccessGrantQuery(query string) string {
+	digest := sha256.Sum256([]byte(strings.Trim(query, " \t\n\r\v\f")))
+	return hex.EncodeToString(digest[:])
 }
 
 // GetAccessGrant gets an access grant.
@@ -221,7 +236,7 @@ func getActiveAccessGrantFilter(find *FindActiveAccessGrantMessage) *qb.Query {
 		And("access_grant.status = ?", storepb.AccessGrant_ACTIVE.String()).
 		And("access_grant.expire_time > ?", find.ExpireTime).
 		And("access_grant.payload->'targets' @> jsonb_build_array(to_jsonb(?::text))", find.Target).
-		And("btrim(access_grant.payload->>'query', E' \\t\\n\\r\\x0b\\f') = ?", find.Statement).
+		And("access_grant.payload->>'queryHash' = ?", hashAccessGrantQuery(find.Statement)).
 		And("COALESCE(access_grant.payload->>'schema', '') = ?", find.Schema).
 		And("COALESCE(access_grant.payload->>'container', '') = ?", find.Container)
 	if find.RequireExport {
@@ -254,7 +269,7 @@ func (s *Store) UpdateAccessGrant(ctx context.Context, id string, update *Update
 		set.Comma("expire_time = ?", *v)
 	}
 	if v := update.Payload; v != nil {
-		p, err := protojson.Marshal(v)
+		p, err := marshalAccessGrantPayload(v)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to marshal payload")
 		}
@@ -412,7 +427,7 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 					if !ok || len(hash) != 64 || strings.Trim(hash, "0123456789abcdef") != "" {
 						return nil, errors.New("query_hash must be a lowercase hexadecimal SHA-256 digest")
 					}
-					return qb.Q().Space("encode(sha256(convert_to(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\x0b\\f'), 'UTF8')), 'hex') = ?", hash), nil
+					return qb.Q().Space("access_grant.payload->>'queryHash' = ?", hash), nil
 				case "schema", "container":
 					contextValue, ok := value.(string)
 					if !ok {
