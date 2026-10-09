@@ -1,8 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { AccessGrantSchema } from "@/types/proto-es/v1/access_grant_service_pb";
 import { hashAccessGrantQuery } from "./accessGrantQueryHash";
+import * as queryHashUtils from "./accessGrantQueryHash";
 import { useExportGrantBypass } from "./useExportGrantBypass";
 
 const { searchMyAccessGrants, fetchIssueByName } = vi.hoisted(() => ({
@@ -17,6 +18,52 @@ const target = {database: "instances/i/databases/d", statement: "SELECT 1", sche
 const grant = create(AccessGrantSchema, {name: "projects/p/accessGrants/g"});
 const args = {enabled: true, project: "projects/p", targets: [target]};
 beforeEach(() => vi.resetAllMocks());
+afterEach(() => vi.restoreAllMocks());
+
+test("large batches keep render keys compact and reuse hashes across renders", async () => {
+  const hash = vi.spyOn(queryHashUtils, "hashAccessGrantQuery");
+  const stringify = JSON.stringify;
+  let largestSerialization = 0;
+  vi.spyOn(JSON, "stringify").mockImplementation((value, replacer, space) => {
+    const serialized = stringify(value, replacer as never, space);
+    largestSerialization = Math.max(largestSerialization, serialized?.length ?? 0);
+    return serialized;
+  });
+  searchMyAccessGrants.mockResolvedValue({ accessGrants: [grant] });
+  const statement = "SELECT '" + "x".repeat(110_000) + "'";
+  const { result, rerender } = renderHook(({ sql }) => useExportGrantBypass({
+    ...args,
+    targets: Array.from({ length: 200 }, (_, i) => ({ ...target, database: `db${i}`, statement: sql })),
+  }), { initialProps: { sql: statement } });
+  await waitFor(() => expect(result.current.matchedDatabases).toHaveLength(200));
+  expect(hash).toHaveBeenCalledTimes(1);
+  expect(searchMyAccessGrants).toHaveBeenCalledTimes(200);
+
+  rerender({ sql: statement });
+  expect(hash).toHaveBeenCalledTimes(1);
+  expect(searchMyAccessGrants).toHaveBeenCalledTimes(200);
+  expect(largestSerialization).toBeLessThan(50_000);
+
+  rerender({ sql: statement + " AS changed" });
+  expect(result.current.grantName).toBe("");
+  await waitFor(() => expect(result.current.matchedDatabases).toHaveLength(200));
+  expect(hash).toHaveBeenCalledTimes(2);
+  expect(searchMyAccessGrants).toHaveBeenCalledTimes(400);
+});
+
+test("hash failures remain retryable lookup errors", async () => {
+  const hash = vi.spyOn(queryHashUtils, "hashAccessGrantQuery").mockImplementation(() => {
+    throw new Error("invalid UTF-8");
+  });
+  const { result } = renderHook(() => useExportGrantBypass(args));
+  await waitFor(() => expect(result.current.failedDatabases).toEqual([target.database]));
+  expect(result.current.unmatchedDatabases).toEqual([]);
+  expect(searchMyAccessGrants).not.toHaveBeenCalled();
+  hash.mockRestore();
+  searchMyAccessGrants.mockResolvedValue({ accessGrants: [grant] });
+  act(() => result.current.retry());
+  await waitFor(() => expect(result.current.grantName).toBe(grant.name));
+});
 
 test("long SQL is hashed and execution context remains exact", async () => {
   searchMyAccessGrants.mockResolvedValue({accessGrants: [grant]});

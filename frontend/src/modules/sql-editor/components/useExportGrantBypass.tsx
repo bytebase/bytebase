@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -66,6 +67,9 @@ const LIST_CAP = 5;
 const LOOKUP_CONCURRENCY = 10;
 
 type Lookup = { grant?: AccessGrant; failed: boolean };
+type ExportGrantLookupTarget = Omit<ExportGrantTarget, "statement"> & {
+  queryHash: string | null;
+};
 
 export function useExportGrantBypass({
   enabled,
@@ -75,8 +79,14 @@ export function useExportGrantBypass({
   const { t } = useTranslation();
   const searchMyAccessGrants = useAppStore((s) => s.searchMyAccessGrants);
   const fetchIssueByName = useAppStore((s) => s.fetchIssueByName);
+  const queryHashes = useRef(new Map<string, string | null>());
   const [attempt, setAttempt] = useState(0);
-  const retry = useCallback(() => setAttempt((value) => value + 1), []);
+  const retry = useCallback(() => {
+    for (const [statement, hash] of queryHashes.current) {
+      if (hash === null) queryHashes.current.delete(statement);
+    }
+    setAttempt((value) => value + 1);
+  }, []);
   const [lookup, setLookup] = useState<{
     key: string;
     byTarget: Record<string, Lookup>;
@@ -84,9 +94,28 @@ export function useExportGrantBypass({
   const [issueTitlesByGrantName, setIssueTitlesByGrantName] = useState<
     Record<string, string>
   >({});
-  const targetsKey = JSON.stringify(targets);
-  const lookupKey = JSON.stringify([enabled, project, targetsKey, attempt]);
   const active = enabled && !!project && targets.length > 0;
+  const currentHashes = new Map<string, string | null>();
+  const lookupTargets: ExportGrantLookupTarget[] = active
+    ? targets.map(({ statement, ...context }) => {
+        if (!currentHashes.has(statement)) {
+          let hash = queryHashes.current.get(statement);
+          if (hash === undefined) {
+            try {
+              hash = hashAccessGrantQuery(statement);
+            } catch {
+              hash = null;
+            }
+          }
+          currentHashes.set(statement, hash);
+        }
+        return { ...context, queryHash: currentHashes.get(statement)! };
+      })
+    : [];
+  // Retain only current statements; repeated targets and renders reuse their hashes.
+  queryHashes.current = currentHashes;
+  const targetsKey = JSON.stringify(lookupTargets);
+  const lookupKey = JSON.stringify([enabled, project, targetsKey, attempt]);
   // Compare during render: an effect reset alone exposes old grants for one render.
   const currentLookup =
     active && lookup?.key === lookupKey ? lookup : undefined;
@@ -97,22 +126,20 @@ export function useExportGrantBypass({
     let canceled = false;
     void (async () => {
       const byTarget: Record<string, Lookup> = {};
-      const queryHashes = new Map<string, string>();
-      const requests: ExportGrantTarget[] = JSON.parse(targetsKey);
+      const requests: ExportGrantLookupTarget[] = JSON.parse(targetsKey);
       for (let i = 0; i < requests.length; i += LOOKUP_CONCURRENCY) {
         if (canceled) return;
         await Promise.all(
           requests.slice(i, i + LOOKUP_CONCURRENCY).map(async (target) => {
             try {
-              let queryHash = queryHashes.get(target.statement);
-              if (!queryHash) {
-                queryHash = hashAccessGrantQuery(target.statement);
-                queryHashes.set(target.statement, queryHash);
+              if (target.queryHash === null) {
+                byTarget[target.database] = { failed: true };
+                return;
               }
               const res = await searchMyAccessGrants({
                 parent: project,
                 filter: {
-                  queryHash,
+                  queryHash: target.queryHash,
                   schema: target.schema,
                   container: target.container,
                   status: ["ACTIVE"],
@@ -150,7 +177,7 @@ export function useExportGrantBypass({
     const seen = new Map<string, AccessGrant>();
     for (const { database: target } of JSON.parse(
       targetsKey
-    ) as ExportGrantTarget[]) {
+    ) as ExportGrantLookupTarget[]) {
       const result = currentLookup?.byTarget[target];
       if (!result) continue;
       if (result.failed) failedDatabases.push(target);
