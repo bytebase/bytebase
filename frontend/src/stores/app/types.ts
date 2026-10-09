@@ -418,6 +418,7 @@ export type ProjectSlice = {
     nextPageToken?: string;
   }>;
   fetchProjectList: (params: {
+    signal?: AbortSignal;
     pageSize?: number;
     pageToken?: string;
     silent?: boolean;

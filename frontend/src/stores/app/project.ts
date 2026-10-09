@@ -312,11 +312,12 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
         projects: [],
         nextPageToken: "",
       };
-      // SearchProjects filters permissions after pagination. Request only the
-      // remaining rows so filling a page never discards projects past its end.
+      // SearchProjects filters permissions after pagination. Keep scan batches
+      // full-sized and retain overflow rows so the continuation skips nothing.
       while (true) {
+        params.signal?.throwIfAborted();
         const request = {
-          pageSize: pageSize - result.projects.length,
+          pageSize,
           pageToken,
           filter,
           orderBy: params.orderBy,
@@ -326,6 +327,7 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
           ? await projectServiceClientConnect.listProjects(
               createProto(ListProjectsRequestSchema, request),
               {
+                signal: params.signal,
                 contextValues: createContextValues().set(
                   silentContextKey,
                   params.silent ?? true
@@ -335,12 +337,14 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
           : await projectServiceClientConnect.searchProjects(
               createProto(SearchProjectsRequestSchema, request),
               {
+                signal: params.signal,
                 contextValues: createContextValues().set(
                   silentContextKey,
                   params.silent ?? true
                 ),
               }
             );
+        params.signal?.throwIfAborted();
         result.projects.push(...response.projects);
         result.nextPageToken = response.nextPageToken;
         if (result.nextPageToken !== "" && result.projects.length < pageSize) {

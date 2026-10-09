@@ -62,11 +62,12 @@ describe("fetchProjectList", () => {
     const a = project("a");
     const b = project("b");
     const c = project("c");
+    const d = project("d");
     mocks.searchProjects
       .mockResolvedValueOnce({ projects: [a], nextPageToken: "scan-3" })
-      .mockResolvedValueOnce({ projects: [], nextPageToken: "scan-5" })
-      .mockResolvedValueOnce({ projects: [b, c], nextPageToken: "scan-7" })
-      .mockResolvedValueOnce({ projects: [project("d")], nextPageToken: "" });
+      .mockResolvedValueOnce({ projects: [], nextPageToken: "scan-6" })
+      .mockResolvedValueOnce({ projects: [b, c, d], nextPageToken: "scan-9" })
+      .mockResolvedValueOnce({ projects: [project("e")], nextPageToken: "" });
     const store = createStore();
     const params = {
       pageSize: 3,
@@ -75,8 +76,8 @@ describe("fetchProjectList", () => {
       cache: true,
     };
     const first = await store.fetchProjectList(params);
-    expect(first).toEqual({ projects: [a, b, c], nextPageToken: "scan-7" });
-    expect(Object.values(store.projectsByName)).toEqual([a, b, c]);
+    expect(first).toEqual({ projects: [a, b, c, d], nextPageToken: "scan-9" });
+    expect(Object.values(store.projectsByName)).toEqual([a, b, c, d]);
     expect(
       mocks.searchProjects.mock.calls.map(([request]) => ({
         pageSize: request.pageSize,
@@ -84,8 +85,8 @@ describe("fetchProjectList", () => {
       }))
     ).toEqual([
       { pageSize: 3, pageToken: "" },
-      { pageSize: 2, pageToken: "scan-3" },
-      { pageSize: 2, pageToken: "scan-5" },
+      { pageSize: 3, pageToken: "scan-3" },
+      { pageSize: 3, pageToken: "scan-6" },
     ]);
     for (const [request] of mocks.searchProjects.mock.calls) {
       expect(request).toMatchObject({
@@ -98,10 +99,10 @@ describe("fetchProjectList", () => {
       ...params,
       pageToken: first.nextPageToken,
     });
-    expect(second).toEqual({ projects: [project("d")], nextPageToken: "" });
+    expect(second).toEqual({ projects: [project("e")], nextPageToken: "" });
     expect(mocks.searchProjects.mock.calls[3][0]).toMatchObject({
       pageSize: 3,
-      pageToken: "scan-7",
+      pageToken: "scan-9",
     });
   });
 
@@ -158,6 +159,65 @@ describe("fetchProjectList", () => {
     expect(mocks.searchProjects).not.toHaveBeenCalled();
     expect(store.projectsByName).toEqual({});
   });
+
+  test("does not start an already canceled fetch", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      createStore().fetchProjectList({ pageSize: 2, signal: controller.signal })
+    ).rejects.toMatchObject({ name: "AbortError" });
+    expect(mocks.searchProjects).not.toHaveBeenCalled();
+  });
+
+  test.each([false, true])(
+    "passes cancellation to the RPC and stops an in-flight fetch (canList=%s)",
+    async (canList) => {
+      mocks.hasWorkspacePermissionV2.mockReturnValue(canList);
+      const rpc = canList ? mocks.listProjects : mocks.searchProjects;
+      const controller = new AbortController();
+      rpc.mockImplementationOnce((_request, options) => {
+        expect(options.signal).toBe(controller.signal);
+        return new Promise((_resolve, reject) => {
+          options.signal.addEventListener(
+            "abort",
+            () => reject(options.signal.reason),
+            { once: true }
+          );
+        });
+      });
+      const store = createStore();
+      const pending = store.fetchProjectList({
+        pageSize: 2,
+        signal: controller.signal,
+        cache: true,
+      });
+      controller.abort();
+      await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+      expect(rpc).toHaveBeenCalledTimes(1);
+      expect(store.projectsByName).toEqual({});
+    }
+  );
+
+  test.each(["next", ""])(
+    "discards a response that arrives after cancellation (token=%s)",
+    async (nextPageToken) => {
+      const controller = new AbortController();
+      mocks.searchProjects.mockImplementationOnce(async () => {
+        controller.abort();
+        return { projects: [project("a")], nextPageToken };
+      });
+      const store = createStore();
+      await expect(
+        store.fetchProjectList({
+          pageSize: 2,
+          signal: controller.signal,
+          cache: true,
+        })
+      ).rejects.toMatchObject({ name: "AbortError" });
+      expect(mocks.searchProjects).toHaveBeenCalledTimes(1);
+      expect(store.projectsByName).toEqual({});
+    }
+  );
 
   test("propagates a refill failure without caching a partial page", async () => {
     mocks.searchProjects

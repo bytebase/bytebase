@@ -361,7 +361,8 @@ export function ProjectsPage() {
       if (!isLoggedIn) return;
 
       abortRef.current?.abort();
-      abortRef.current = new AbortController();
+      const controller = new AbortController();
+      abortRef.current = controller;
       const currentFetchId = ++fetchIdRef.current;
 
       if (isRefresh) {
@@ -373,6 +374,7 @@ export function ProjectsPage() {
       try {
         const token = isRefresh ? "" : nextPageTokenRef.current;
         const result = await useAppStore.getState().fetchProjectList({
+          signal: controller.signal,
           pageToken: token,
           pageSize,
           filter: {
@@ -385,7 +387,8 @@ export function ProjectsPage() {
           cache: true,
         });
 
-        if (currentFetchId !== fetchIdRef.current) return;
+        if (controller.signal.aborted || currentFetchId !== fetchIdRef.current)
+          return;
 
         if (isRefresh) {
           setProjects(result.projects);
@@ -395,6 +398,7 @@ export function ProjectsPage() {
         nextPageTokenRef.current = result.nextPageToken ?? "";
         setHasMore(Boolean(result.nextPageToken));
       } catch (e) {
+        if (controller.signal.aborted) return;
         if (e instanceof Error && e.name === "AbortError") return;
         console.error(e);
       } finally {
