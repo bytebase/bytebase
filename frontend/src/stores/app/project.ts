@@ -304,12 +304,20 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
       const showDeleted = params.filter?.state !== State.ACTIVE;
       const canList = hasWorkspacePermissionV2("bb.projects.list");
       let pageToken = params.pageToken;
-      let result: { projects: Project[]; nextPageToken: string };
-      // The API can return an empty page with a non-empty next token; keep
-      // paging until we get rows or run out.
+      const pageSize = Math.min(
+        params.pageSize && params.pageSize > 0 ? params.pageSize : 10,
+        1000
+      );
+      const result: { projects: Project[]; nextPageToken: string } = {
+        projects: [],
+        nextPageToken: "",
+      };
+      // SearchProjects filters permissions after pagination. Keep scan batches
+      // full-sized and retain overflow rows so the continuation skips nothing.
       while (true) {
+        params.signal?.throwIfAborted();
         const request = {
-          pageSize: params.pageSize,
+          pageSize,
           pageToken,
           filter,
           orderBy: params.orderBy,
@@ -319,6 +327,7 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
           ? await projectServiceClientConnect.listProjects(
               createProto(ListProjectsRequestSchema, request),
               {
+                signal: params.signal,
                 contextValues: createContextValues().set(
                   silentContextKey,
                   params.silent ?? true
@@ -328,17 +337,17 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
           : await projectServiceClientConnect.searchProjects(
               createProto(SearchProjectsRequestSchema, request),
               {
+                signal: params.signal,
                 contextValues: createContextValues().set(
                   silentContextKey,
                   params.silent ?? true
                 ),
               }
             );
-        result = {
-          projects: response.projects,
-          nextPageToken: response.nextPageToken,
-        };
-        if (result.nextPageToken !== "" && result.projects.length === 0) {
+        params.signal?.throwIfAborted();
+        result.projects.push(...response.projects);
+        result.nextPageToken = response.nextPageToken;
+        if (result.nextPageToken !== "" && result.projects.length < pageSize) {
           pageToken = result.nextPageToken;
           continue;
         }
