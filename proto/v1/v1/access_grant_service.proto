@@ -199,7 +199,7 @@ message ListAccessGrantsRequest {
   //   Equality trims only boundary ASCII space, tab, LF, CR, vertical tab, and form feed.
   // - query_hash: supports "==" with a lowercase hexadecimal SHA-256 digest of
   //   the UTF-8 query after the same boundary trim. Internal whitespace and Unicode
-  //   remain unchanged. This is a discovery filter; authorization compares full SQL.
+  //   remain unchanged.
   // - schema: execution schema, supports "=="; empty matches only empty or absent values.
   // - container: execution container, supports "=="; empty matches only empty or absent values.
   // - target: the target database fullname, support "==" operator.
