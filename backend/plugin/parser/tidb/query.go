@@ -60,6 +60,66 @@ func ExtractMySQLTableList(in ast.Node, asName bool) []*ast.TableName {
 	return extractTableList(in, input, asName)
 }
 
+// Authorization needs every base table, including tables nested inside expressions
+// and derived queries. The alias-oriented extractor below can collapse those tables.
+type accessTableVisitor struct {
+	tables        []*ast.TableName
+	resolveCTEs   bool
+	cteScopes     []map[string]bool
+	lockingTables map[*ast.TableName]bool
+}
+
+func (v *accessTableVisitor) Enter(node ast.Node) (ast.Node, bool) {
+	if selectStmt, ok := node.(*ast.SelectStmt); ok && selectStmt.LockInfo != nil {
+		if v.lockingTables == nil {
+			v.lockingTables = make(map[*ast.TableName]bool)
+		}
+		// Locking clauses reference FROM aliases, whose physical sources are visited separately.
+		for _, table := range selectStmt.LockInfo.Tables {
+			v.lockingTables[table] = true
+		}
+	}
+	if v.resolveCTEs {
+		switch n := node.(type) {
+		case *ast.SelectStmt, *ast.SetOprStmt, *ast.SetOprSelectList, *ast.UpdateStmt, *ast.DeleteStmt:
+			v.cteScopes = append(v.cteScopes, make(map[string]bool))
+		case *ast.CommonTableExpression:
+			if n.IsRecursive {
+				v.cteScopes[len(v.cteScopes)-1][n.Name.L] = true
+			}
+		default:
+		}
+	}
+	if table, ok := node.(*ast.TableName); ok {
+		if v.lockingTables[table] {
+			return node, true
+		}
+		if v.resolveCTEs && table.Schema.O == "" {
+			for _, scope := range v.cteScopes {
+				if scope[table.Name.L] {
+					return node, true
+				}
+			}
+		}
+		v.tables = append(v.tables, table)
+	}
+	return node, false
+}
+
+func (v *accessTableVisitor) Leave(node ast.Node) (ast.Node, bool) {
+	if v.resolveCTEs {
+		switch n := node.(type) {
+		case *ast.SelectStmt, *ast.SetOprStmt, *ast.SetOprSelectList, *ast.UpdateStmt, *ast.DeleteStmt:
+			v.cteScopes = v.cteScopes[:len(v.cteScopes)-1]
+		case *ast.CommonTableExpression:
+			// Non-recursive CTEs become visible only after their definition.
+			v.cteScopes[len(v.cteScopes)-1][n.Name.L] = true
+		default:
+		}
+	}
+	return node, true
+}
+
 // -------------------------------------------- DO NOT TOUCH --------------------------------------------
 
 // extractTableList extracts all the TableNames from node.

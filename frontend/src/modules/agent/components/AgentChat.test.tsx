@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
 (
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   })),
   hasWorkspacePermissionV2: vi.fn(() => true),
   routerPush: vi.fn(),
+  getSettingByName: vi.fn(),
 }));
 
 let AgentChat: typeof import("./AgentChat").AgentChat;
@@ -59,6 +61,14 @@ vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
 }));
 
+vi.mock("@/stores/app", () => {
+  const state = { getSettingByName: mocks.getSettingByName };
+  const useAppStore = <T,>(selector: (value: typeof state) => T) =>
+    selector(state);
+  useAppStore.getState = () => state;
+  return { useAppStore };
+});
+
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
   const root = createRoot(container);
@@ -100,11 +110,63 @@ beforeEach(async () => {
   mocks.hasWorkspacePermissionV2.mockReset();
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
   mocks.routerPush.mockReset();
+  mocks.getSettingByName.mockReset();
+  mocks.getSettingByName.mockReturnValue(undefined);
 
   ({ AgentChat } = await import("./AgentChat"));
 });
 
 describe("AgentChat", () => {
+  test("shows AI setup when the cached AI setting is disabled", () => {
+    mocks.getSettingByName.mockImplementation((name) => {
+      if (name !== Setting_SettingName.AI) return undefined;
+      return {
+        value: {
+          value: {
+            case: "ai",
+            value: { enabled: false },
+          },
+        },
+      };
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+
+    render();
+
+    expect(container.textContent).toContain("agent.ai-not-configured.title");
+
+    const dismissButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.dismiss"
+    );
+    act(() => {
+      dismissButton?.click();
+    });
+    expect(container.textContent).not.toContain(
+      "agent.ai-not-configured.title"
+    );
+
+    unmount();
+  });
+
+  test("keeps assistant links within the chat bubble", () => {
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content:
+        "Configure billing at https://platform.openai.com/settings/organization/billing/.",
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+
+    render();
+
+    const link = container.querySelector("a");
+    expect(link).toBeInstanceOf(HTMLElement);
+    expect(link?.className).toContain("break-all");
+
+    unmount();
+  });
+
   test("renders inline code with wrap-safe styling", () => {
     useAgentStore.getState().addMessage({
       role: "assistant",
@@ -210,6 +272,7 @@ describe("AgentChat", () => {
   test("routes AI configuration recovery to general settings with intro", () => {
     const chat = useAgentStore.getState().ensureCurrentChat();
     useAgentStore.setState((state) => ({
+      visible: true,
       chats: state.chats.map((item) =>
         item.id === chat.id ? { ...item, requiresAIConfiguration: true } : item
       ),
@@ -234,6 +297,7 @@ describe("AgentChat", () => {
       hash: "#ai-assistant",
       query: { intro: "ai-assistant" },
     });
+    expect(useAgentStore.getState().visible).toBe(false);
 
     unmount();
   });

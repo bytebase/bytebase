@@ -7,6 +7,7 @@ import esES from "@/locales/es-ES.json";
 import jaJP from "@/locales/ja-JP.json";
 import viVN from "@/locales/vi-VN.json";
 import zhCN from "@/locales/zh-CN.json";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type { DomRefSuggestion } from "../dom";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
@@ -28,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   buildSystemPrompt: vi.fn(() => "system"),
   createToolExecutor: vi.fn(() => ({})),
   getToolDefinitions: vi.fn(() => []),
+  getOrFetchSettingByName: vi.fn(),
 }));
 
 let AgentInput: typeof import("./AgentInput").AgentInput;
@@ -72,6 +74,17 @@ vi.mock("@/app/router", async (importOriginal) => ({
   },
 }));
 
+vi.mock("@/stores/app", () => {
+  const state = {
+    getOrFetchSettingByName: mocks.getOrFetchSettingByName,
+    getSettingByName: () => undefined,
+  };
+  const useAppStore = <T,>(selector: (value: typeof state) => T) =>
+    selector(state);
+  useAppStore.getState = () => state;
+  return { useAppStore };
+});
+
 vi.mock("../dom", () => ({
   lazyExtractDomRefSuggestions: mocks.lazyExtractDomRefSuggestions,
 }));
@@ -80,7 +93,8 @@ vi.mock("../logic/agentLoop", () => ({
   runAgentLoop: mocks.runAgentLoop,
 }));
 
-vi.mock("../logic/aiConfiguration", () => ({
+vi.mock("../logic/aiConfiguration", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../logic/aiConfiguration")>()),
   isAgentAIConfigurationError: mocks.isAgentAIConfigurationError,
 }));
 
@@ -176,6 +190,8 @@ beforeEach(async () => {
   mocks.createToolExecutor.mockReturnValue({});
   mocks.getToolDefinitions.mockReset();
   mocks.getToolDefinitions.mockReturnValue([]);
+  mocks.getOrFetchSettingByName.mockReset();
+  mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
 
   ({ AgentInput } = await import("./AgentInput"));
 });
@@ -185,6 +201,34 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test("shows AI setup before the first prompt when AI is disabled", async () => {
+    mocks.getOrFetchSettingByName.mockResolvedValue({
+      value: {
+        value: {
+          case: "ai",
+          value: { enabled: false },
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+
+    await act(async () => {
+      render();
+      await Promise.resolve();
+    });
+    const chatId = useAgentStore.getState().currentChatId!;
+    expect(mocks.getOrFetchSettingByName).toHaveBeenCalledWith(
+      Setting_SettingName.AI,
+      true
+    );
+    expect(useAgentStore.getState().getChat(chatId)).toMatchObject({
+      requiresAIConfiguration: true,
+    });
+
+    unmount();
+  });
+
   test("React locale token usage labels include the token count", () => {
     for (const locale of [enUS, esES, jaJP, viVN, zhCN]) {
       expect(locale.agent["chat-total-tokens"]).toContain("{{count}}");

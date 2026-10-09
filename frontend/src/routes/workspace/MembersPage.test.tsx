@@ -18,6 +18,7 @@ const {
   maximumRoleExpirationSeconds,
   maximumRequestExpirationSeconds,
   accountSelectProps,
+  roleList,
 } = vi.hoisted(() => ({
   mockUseProductIntro: vi.fn(),
   mockPushNotification: vi.fn(),
@@ -25,6 +26,12 @@ const {
   maximumRoleExpirationSeconds: { value: undefined as number | undefined },
   maximumRequestExpirationSeconds: { value: undefined as number | undefined },
   accountSelectProps: { value: undefined as { accountParents: string[] } | undefined },
+  roleList: {
+    value: [{ name: "roles/sqlEditorUser", permissions: [] }] as Array<{
+      name: string;
+      permissions: string[];
+    }>,
+  },
 }));
 
 vi.mock("@/components/AccountMultiSelect", () => ({
@@ -325,7 +332,7 @@ vi.mock("@/hooks/useAppState", () => ({
 vi.mock("@/stores/app", () => {
   const buildState = () => ({
     batchGetOrFetchUsers: vi.fn(async () => []),
-    roleList: [{ name: "roles/sqlEditorUser", permissions: [] }],
+    roleList: roleList.value,
     workspacePolicy: { bindings: [] },
     patchWorkspaceIamPolicy: vi.fn(),
     findWorkspaceRolesByMember: () => [],
@@ -394,6 +401,7 @@ beforeEach(() => {
   maximumRoleExpirationSeconds.value = undefined;
   maximumRequestExpirationSeconds.value = undefined;
   accountSelectProps.value = undefined;
+  roleList.value = [{ name: "roles/sqlEditorUser", permissions: [] }];
   projectIamPolicy.bindings = [];
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -754,5 +762,37 @@ describe("MembersPage onboarding intro", () => {
     expect(mockUseProductIntro).toHaveBeenCalledWith(
       expect.objectContaining({ id: "grant-access", disabled: true })
     );
+  });
+});
+
+describe("MembersPage workspace role grant drawer", () => {
+  it("shows the selected roles' permissions", async () => {
+    roleList.value = [
+      {
+        name: "roles/workspaceDBA",
+        permissions: ["bb.instances.get", "bb.instances.list"],
+      },
+    ];
+    await renderWorkspacePage();
+
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      grantButton.click();
+    });
+    await flush();
+
+    const roleInput = container.querySelector(
+      "[data-testid='role-select']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      nativeChange(roleInput, "roles/workspaceDBA");
+    });
+    await flush();
+
+    expect(container.textContent).toContain("common.permissions");
+    expect(container.textContent).toContain("bb.instances.get");
+    expect(container.textContent).toContain("bb.instances.list");
   });
 });

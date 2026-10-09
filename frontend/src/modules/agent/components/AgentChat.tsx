@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -10,7 +10,10 @@ import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
 } from "@/lib/productIntro";
+import { useAppStore } from "@/stores/app";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
 import type { AgentMessage, ToolCall } from "../logic/types";
 import {
   selectCurrentChatRequiresAIConfiguration,
@@ -28,16 +31,27 @@ interface AgentChatProps {
 export function AgentChat({ className }: AgentChatProps) {
   const { t } = useTranslation();
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [
+    isAIConfigurationRecoveryDismissed,
+    setAIConfigurationRecoveryDismissed,
+  ] = useState(false);
 
   const messages = useAgentStore(selectMessages);
   const loading = useAgentStore(selectLoading);
   const error = useAgentStore(selectError);
-  const showAIConfigurationRecovery = useAgentStore(
+  const chatRequiresAIConfiguration = useAgentStore(
     selectCurrentChatRequiresAIConfiguration
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const aiConfigurationEnabled = useAppStore((s) =>
+    getAgentAIConfigurationEnabled(s.getSettingByName(Setting_SettingName.AI))
+  );
   const allMessages = useAgentStore(selectMessages);
   const clearError = useAgentStore((s) => s.clearError);
+
+  const showAIConfigurationRecovery =
+    chatRequiresAIConfiguration ||
+    (aiConfigurationEnabled === false && !isAIConfigurationRecoveryDismissed);
 
   const allowConfigure = hasWorkspacePermissionV2("bb.settings.set");
 
@@ -96,9 +110,11 @@ export function AgentChat({ className }: AgentChatProps) {
 
   function goConfigure() {
     clearError(currentChatId);
+    useAgentStore.getState().toggle();
   }
 
   function dismiss() {
+    setAIConfigurationRecoveryDismissed(true);
     clearError(currentChatId);
   }
 
@@ -108,6 +124,10 @@ export function AgentChat({ className }: AgentChatProps) {
         chatContainerRef.current.scrollHeight;
     }
   }, [currentChatId, messages.length]);
+
+  useEffect(() => {
+    setAIConfigurationRecoveryDismissed(false);
+  }, [aiConfigurationEnabled, currentChatId]);
 
   return (
     <div
@@ -161,7 +181,7 @@ export function AgentChat({ className }: AgentChatProps) {
                     ),
                     a: ({ children, href }) => (
                       <a
-                        className="text-accent underline"
+                        className="break-all text-accent underline"
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer"
