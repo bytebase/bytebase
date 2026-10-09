@@ -1307,7 +1307,11 @@
           "template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} y otorgar al usuario los privilegios necesarios. Primero debe habilitar el flujo de trabajo impulsado por SQL de ClickHouse {{link}} y luego ejecutar la siguiente consulta para crear el usuario."
         },
         "mysql": {
-          "template": "A continuación se muestra un ejemplo para crear el usuario {{user}}@% con la contraseña {{password}} y otorgarle al usuario los privilegios necesarios."
+          "template": "A continuación se muestra un ejemplo para crear el usuario {{user}}@% con la contraseña {{password}} y otorgarle al usuario los privilegios necesarios.",
+          "warn": "Para que Bytebase pueda ejecutar cambios que asignan DEFINER a otra cuenta, otorga también SET_USER_ID en MySQL 8.0 o SET_ANY_DEFINER en MySQL 8.4 y versiones posteriores. Algunos proveedores de nube restringen estos privilegios."
+        },
+        "oracle": {
+          "warn": "GRANT ALL PRIVILEGES no funciona en Amazon RDS for Oracle."
         },
         "postgresql": {
           "template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} y otorgar al usuario los privilegios necesarios. Si la instancia de conexión está alojada por ti mismo, puedes otorgar SUPERUSER.",
