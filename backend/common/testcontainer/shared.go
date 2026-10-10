@@ -92,6 +92,7 @@ func SharedPg17Container(t testing.TB) *Container { return shared(t, sharedPg17)
 func SharedTLSPgContainer(t testing.TB) *Container { return shared(t, sharedTLSPg) }
 
 // SharedMSSQLContainer is SharedPgContainer for SQL Server; tests take a database each.
+// Its certificate is signed by the CA at GetTLSCAPath.
 func SharedMSSQLContainer(t testing.TB) *Container { return shared(t, sharedMSSQL) }
 
 // SharedTiDBContainer is SharedPgContainer for TiDB; tests take a database each
