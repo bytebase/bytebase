@@ -5067,6 +5067,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | active_vcs_user_count | [int32](#int32) |  | The number of active VCS users seen in the active window. |
 | sample | [SampleInfo](#bytebase-v1-SampleInfo) |  | Sample setup availability and provisioned resources. |
 | mcp_setting | [MCPSetting](#bytebase-v1-MCPSetting) |  | The MCP (Model Context Protocol) setting in the current workspace. |
+| ai_enabled | [bool](#bool) |  | Whether the workspace AI setting enables the AI agent. |
 
 
 

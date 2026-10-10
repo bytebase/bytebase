@@ -62,6 +62,26 @@ afterEach(() => {
 const s = (store: StoreApi<AgentState>) => store.getState();
 
 describe("useAgentStore (Zustand)", () => {
+  test("opens the selected chat without toggling or interrupting it", () => {
+    const store = createAgentStore();
+    const chatId = s(store).currentChatId;
+    expect(chatId).not.toBeNull();
+    s(store).startChatRun(
+      chatId!,
+      { path: "/projects/orders", title: "Order service" },
+      { runId: "run-1" }
+    );
+    s(store).open();
+    s(store).minimize();
+    s(store).open();
+    s(store).open();
+    expect(s(store).visible).toBe(true);
+    expect(s(store).minimized).toBe(false);
+    expect(s(store).currentChatId).toBe(chatId);
+    expect(s(store).getChat(chatId)?.status).toBe("running");
+    expect(s(store).chats).toHaveLength(1);
+  });
+
   test("creates a default chat when no persisted state exists", () => {
     const store = createAgentStore();
 

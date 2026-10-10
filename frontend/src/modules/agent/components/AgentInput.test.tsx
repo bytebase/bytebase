@@ -30,6 +30,17 @@ const mocks = vi.hoisted(() => ({
   createToolExecutor: vi.fn(() => ({})),
   getToolDefinitions: vi.fn(() => []),
   getOrFetchSettingByName: vi.fn(),
+  currentRoute: {
+    fullPath: "/demo",
+    name: "" as string,
+    params: {} as Record<string, string>,
+  },
+  projectsByName: {
+    "projects/orders": {
+      name: "projects/orders",
+      title: "Order service",
+    },
+  },
 }));
 
 let AgentInput: typeof import("./AgentInput").AgentInput;
@@ -66,18 +77,21 @@ vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
   router: {
     currentRoute: {
-      value: {
-        fullPath: "/demo",
-      },
+      value: mocks.currentRoute,
     },
     push: mocks.routerPush,
   },
+}));
+
+vi.mock("@/hooks/useReactiveRoute", () => ({
+  useReactiveRoute: () => mocks.currentRoute,
 }));
 
 vi.mock("@/stores/app", () => {
   const state = {
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
     getSettingByName: () => undefined,
+    projectsByName: mocks.projectsByName,
   };
   const useAppStore = <T,>(selector: (value: typeof state) => T) =>
     selector(state);
@@ -118,9 +132,9 @@ const renderIntoContainer = (element: ReactElement) => {
 
   return {
     container,
-    render: () => {
+    render: (nextElement = element) => {
       act(() => {
-        root.render(element);
+        root.render(nextElement);
       });
     },
     unmount: () =>
@@ -192,6 +206,9 @@ beforeEach(async () => {
   mocks.getToolDefinitions.mockReturnValue([]);
   mocks.getOrFetchSettingByName.mockReset();
   mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
+  mocks.currentRoute.fullPath = "/demo";
+  mocks.currentRoute.name = "";
+  mocks.currentRoute.params = {};
 
   ({ AgentInput } = await import("./AgentInput"));
 });
@@ -201,6 +218,79 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test("shows the current Home project beside token usage only on Project Home", () => {
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string, values?: Record<string, unknown>) =>
+        key === "agent.project-context"
+          ? `Context: ${values?.project ?? ""}`
+          : key === "agent.chat-total-tokens"
+            ? `Total tokens: ${values?.count ?? ""}`
+            : key,
+    });
+    mocks.currentRoute.fullPath = "/projects/orders";
+    mocks.currentRoute.name = "workspace.project.detail";
+    mocks.currentRoute.params = { projectId: "orders" };
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    const footer = view.container.querySelector("[data-agent-input-footer]");
+    expect(footer?.querySelector("[data-agent-project-context]")?.textContent).toBe(
+      "Context: Order service"
+    );
+    expect(footer?.textContent).toContain("Total tokens");
+
+    mocks.currentRoute.fullPath = "/projects/unloaded";
+    mocks.currentRoute.params = { projectId: "unloaded" };
+    view.render(<AgentInput />);
+    expect(footer?.querySelector("[data-agent-project-context]")).toBeNull();
+
+    mocks.currentRoute.fullPath = "/demo";
+    mocks.currentRoute.name = "workspace.landing";
+    mocks.currentRoute.params = {};
+    view.render(<AgentInput />);
+    expect(footer?.querySelector("[data-agent-project-context]")).toBeNull();
+    view.unmount();
+  });
+
+  test("adds the loaded Home project only when sending from Project Home", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    mocks.currentRoute.fullPath = "/projects/orders";
+    mocks.currentRoute.name = "workspace.project.detail";
+    mocks.currentRoute.params = { projectId: "orders" };
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    const textarea = view.container.querySelector("textarea");
+    expect(textarea).not.toBeNull();
+    await act(async () => {
+      setTextareaValue(textarea!, "What changed?");
+      textarea!.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("button:not(:disabled)")?.click();
+    });
+    expect(mocks.buildSystemPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        project: { name: "projects/orders", title: "Order service" },
+      })
+    );
+
+    mocks.currentRoute.fullPath = "/demo";
+    mocks.currentRoute.name = "workspace.landing";
+    mocks.currentRoute.params = {};
+    await act(async () => {
+      setTextareaValue(textarea!, "And now?");
+      textarea!.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("button:not(:disabled)")?.click();
+    });
+    expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(
+      expect.objectContaining({ project: undefined })
+    );
+    view.unmount();
+  });
+
   test("shows AI setup before the first prompt when AI is disabled", async () => {
     mocks.getOrFetchSettingByName.mockResolvedValue({
       value: {

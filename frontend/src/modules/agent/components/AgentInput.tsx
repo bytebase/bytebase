@@ -10,10 +10,12 @@ import {
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { router } from "@/app/router";
+import { type ReactRoute, router } from "@/app/router";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
 import { Button } from "@/components/ui/button";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { Textarea } from "@/components/ui/textarea";
+import { useReactiveRoute } from "@/hooks/useReactiveRoute";
 import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type { DomRefSuggestion } from "../dom";
@@ -88,6 +90,20 @@ const getCurrentPageSnapshot = () => ({
   title: document.title,
 });
 
+const getHomeProjectName = (route: ReactRoute) => {
+  if (route.name !== PROJECT_V1_ROUTE_DETAIL) return undefined;
+  const projectId = route.params.projectId;
+  if (typeof projectId !== "string") return undefined;
+  return `projects/${projectId}`;
+};
+
+const getHomeProjectContext = () => {
+  const projectName = getHomeProjectName(router.currentRoute.value);
+  if (!projectName) return undefined;
+  const project = useAppStore.getState().projectsByName[projectName];
+  return project ? { name: project.name, title: project.title } : undefined;
+};
+
 const buildMentionListStyle = (rect: DOMRect): CSSProperties => ({
   left: rect.left,
   top: rect.top - 4,
@@ -110,6 +126,11 @@ interface DomRefMentionOption {
 
 export function AgentInput() {
   const { t } = useTranslation();
+  const route = useReactiveRoute();
+  const homeProjectName = getHomeProjectName(route);
+  const homeProject = useAppStore((s) =>
+    homeProjectName ? s.projectsByName[homeProjectName] : undefined
+  );
 
   // Zustand selectors
   const currentChat = useAgentStore(selectCurrentChat);
@@ -464,7 +485,10 @@ export function AgentInput() {
       runTokens.set(chatId, runToken);
       store.setAbortController(chatId, controller);
 
-      const systemPrompt = buildSystemPrompt(page);
+      const systemPrompt = buildSystemPrompt({
+        ...page,
+        project: getHomeProjectContext(),
+      });
       const tools = getToolDefinitions();
       const executor = createToolExecutor(router, {
         chatId,
@@ -772,10 +796,19 @@ export function AgentInput() {
       )}
 
       <div
-        className="mb-1 flex justify-end text-xs text-control-light"
+        className="mb-1 flex items-center gap-2 text-xs text-control-light"
         data-agent-input-footer
       >
-        {currentChatTokenUsageLabel}
+        {homeProject && (
+          <span
+            className="min-w-0 truncate"
+            data-agent-project-context
+            title={homeProject.title}
+          >
+            {t("agent.project-context", { project: homeProject.title })}
+          </span>
+        )}
+        <span className="ml-auto shrink-0">{currentChatTokenUsageLabel}</span>
       </div>
 
       {/* Confirm buttons */}

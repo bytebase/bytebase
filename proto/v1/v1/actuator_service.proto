@@ -103,4 +103,7 @@ message ActuatorInfo {
 
   // The MCP (Model Context Protocol) setting in the current workspace.
   MCPSetting mcp_setting = 30 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether the workspace AI setting enables the AI agent.
+  bool ai_enabled = 31 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

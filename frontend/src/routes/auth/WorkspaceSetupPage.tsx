@@ -7,7 +7,7 @@ import { behaviorAnalytics } from "@/app/analytics/provider";
 import { router } from "@/app/router";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
-  PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_DETAIL,
 } from "@/app/router/handles";
 import { ResourceIdField } from "@/components/ResourceIdField";
 import { Button } from "@/components/ui/button";
@@ -23,10 +23,8 @@ import {
   useWorkspacePermission,
 } from "@/hooks/useAppState";
 import {
-  CONNECT_DATABASE_PRODUCT_INTRO,
   CREATE_PROJECT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
-  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
 import {
@@ -46,10 +44,7 @@ import { projectNamePrefix } from "@/stores/modules/v1/common";
 import type { ValidatedMessage } from "@/types";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
-import {
-  extractInstanceResourceName,
-  extractProjectResourceName,
-} from "@/utils";
+import { extractProjectResourceName } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import { WorkspaceSetupQuestionnaireStep } from "./WorkspaceSetupQuestionnaireStep";
 
@@ -197,7 +192,6 @@ export function WorkspaceSetupPage() {
         );
       }
       let createdProjectName = "";
-      let sampleInstanceName = "";
       if (shouldCreateProject) {
         const createdProject = await createProject(
           projectTitle.trim(),
@@ -212,10 +206,7 @@ export function WorkspaceSetupPage() {
             })
           );
           try {
-            const sampleInstance = await prepareSampleProjectInstance(
-              createdProject.name
-            );
-            sampleInstanceName = sampleInstance.name;
+            await prepareSampleProjectInstance(createdProject.name);
           } catch (error) {
             pushNotification({
               module: "bytebase",
@@ -248,22 +239,11 @@ export function WorkspaceSetupPage() {
         })
       );
       if (createdProjectName) {
-        const sampleInstanceId =
-          extractInstanceResourceName(sampleInstanceName);
         router.replace({
-          name: PROJECT_V1_ROUTE_DATABASES,
+          name: PROJECT_V1_ROUTE_DETAIL,
           params: {
             projectId: extractProjectResourceName(createdProjectName),
           },
-          query: sampleInstanceId
-            ? {
-                syncingInstance: sampleInstanceId,
-                [PRODUCT_INTRO_QUERY_KEY]:
-                  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
-              }
-            : {
-                [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO,
-              },
         });
       } else {
         goToDashboard();

@@ -19,7 +19,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -64,7 +63,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -109,7 +107,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -16927,6 +16924,11 @@ components:
           title: mcp_setting
           description: The MCP (Model Context Protocol) setting in the current workspace.
           readOnly: true
+        aiEnabled:
+          type: boolean
+          title: ai_enabled
+          description: Whether the workspace AI setting enables the AI agent.
+          readOnly: true
       title: ActuatorInfo
       additionalProperties: false
       description: |-
@@ -31995,7 +31997,7 @@ components:
           description: 'A URL that acts as a globally unique identifier for the type of the serialized message. For example: `type.googleapis.com/google.rpc.ErrorInfo`.'
         value:
           type: string
-          format: binary
+          format: byte
           description: The Protobuf message, serialized as bytes and base64-encoded. The specific message type is identified by the `type` field.
         debug:
           type: object

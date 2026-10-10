@@ -1,4 +1,4 @@
-import { Navigate, type RouteObject, redirect } from "react-router";
+import { type RouteObject, redirect } from "react-router";
 import { BodyLayout } from "@/app/layouts/BodyLayout";
 import { DashboardLayout } from "@/app/layouts/DashboardLayout";
 import { RouteErrorPage } from "@/app/RouteErrorPage";
@@ -573,9 +573,10 @@ const projectV1Routes: RouteObject[] = [
       {
         index: true,
         handle: { name: PROJECT_V1_ROUTE_DETAIL },
-        // The project root has no page of its own — redirect to the Issues
-        // tab. `issues` is relative to the parent `projects/:projectId`.
-        element: <Navigate to="issues" replace />,
+        lazy: lazyPage(
+          () => import("@/routes/project/ProjectHomePage"),
+          (m) => m.ProjectHomePage
+        ),
       },
       {
         path: "instances/new",

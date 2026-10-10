@@ -38,6 +38,7 @@ const t = vi.hoisted(
       "common.database": "Database",
       "common.databases": "Databases",
       "common.groups": "Groups",
+      "common.home": "Home",
       "common.issues": "Issues",
       "common.instances": "Instances",
       "common.manage": "Manage",
@@ -139,6 +140,23 @@ beforeEach(async () => {
 });
 
 describe("ProjectSidebar", () => {
+  test("shows Home as the active root route, including for the default project", () => {
+    mocks.defaultProject = "projects/sample";
+    mocks.currentRoute.name = "workspace.project.detail";
+    const { container, render, unmount } = renderIntoContainer(
+      <ProjectSidebar />
+    );
+    render();
+
+    const home = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent?.trim() === "Home"
+    );
+    expect(home?.className).toContain("router-link-active");
+    expect(home?.getAttribute("href")).toContain("workspace.project.detail");
+
+    unmount();
+  });
+
   test("renders project instances before databases", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ProjectSidebar />
