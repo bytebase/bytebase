@@ -318,17 +318,31 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 		if err != nil {
 			return err
 		}
+		// The SET overwrites project, environment and metadata; the WHERE keeps
+		// a row in its own project and must stay in the statement so the refusal
+		// is atomic with the write. A soft-deleted row is held too, not exempted:
+		// `deleted` also marks a live database the instance's sync allowlist
+		// excluded, which the store cannot tell from a freed name. The only
+		// caller is the create-database task.
 		query, args, err := qb.Q().Space(`INSERT INTO db (instance, project, environment, name, deleted, metadata)
 			VALUES (?, ?, ?, ?, ?, ?)
 			ON CONFLICT (instance, name) DO UPDATE SET
 				project = EXCLUDED.project, environment = EXCLUDED.environment,
-				name = EXCLUDED.name, metadata = EXCLUDED.metadata`,
+				name = EXCLUDED.name, metadata = EXCLUDED.metadata
+			WHERE db.project = EXCLUDED.project
+			RETURNING name`,
 			create.InstanceID, projectID, environment, create.DatabaseName, create.Deleted, metadata).ToSQL()
 		if err != nil {
 			return errors.Wrap(err, "failed to build sql")
 		}
-		_, err = tx.ExecContext(ctx, query, args...)
-		return err
+		var name string
+		if err := tx.QueryRowContext(ctx, query, args...).Scan(&name); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return common.Errorf(common.Invalid, "a database with this name already belongs to another project on this instance")
+			}
+			return err
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
