@@ -2725,7 +2725,7 @@
             "title": "Xuất kết quả truy vấn"
           },
           "manage": {
-            "details": "Đồng bộ phiên bản và cơ sở dữ liệu · Cài đặt và nhãn cơ sở dữ liệu · Chuyển cơ sở dữ liệu giữa các dự án · Nhóm cơ sở dữ liệu · Truy vấn đã lưu",
+            "details": "Đồng bộ phiên bản và cơ sở dữ liệu · Truy vấn đã lưu",
             "title": "Quản lý vận hành cơ sở dữ liệu"
           },
           "propose": {

@@ -2725,7 +2725,7 @@
             "title": "Exportar resultados de consulta"
           },
           "manage": {
-            "details": "Sincronizar instancias y bases de datos · Configuración y etiquetas de bases de datos · Mover bases de datos entre proyectos · Grupos de bases de datos · Consultas guardadas",
+            "details": "Sincronizar instancias y bases de datos · Consultas guardadas",
             "title": "Gestionar el mantenimiento de bases de datos"
           },
           "propose": {

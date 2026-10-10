@@ -16808,6 +16808,7 @@ components:
         - OPENS_AN_ADMIN_CONNECTION
         - SENDS_DATA_TO_A_THIRD_PARTY
         - RETURNS_A_STORED_SECRET
+        - REDRAWS_GOVERNANCE_BOUNDARY
       description: |-
         Why an MCP session may not call an RPC. The mechanism, not the wording: each
          value names what its methods actually do, and the serving side turns that
@@ -16817,7 +16818,7 @@ components:
 
          One enum covers both refused classes, and every value belongs to exactly one
          of them: values 1-8 name a mechanism that breaks the MCP boundary, which is
-         what FORBIDDEN means, and values 9-13 name a scope decision this phase took,
+         what FORBIDDEN means, and values 9-14 name a scope decision this phase took,
          which is what EXCLUDED means. The distinction is real and lives on the class
          annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope
          decision is what a future admin-capable ceiling would argue with, one

@@ -2725,7 +2725,7 @@
             "title": "Export query results"
           },
           "manage": {
-            "details": "Sync instances and databases · Database settings and labels · Move databases between projects · Database groups · Saved queries",
+            "details": "Sync instances and databases · Saved queries",
             "title": "Manage database housekeeping"
           },
           "propose": {
