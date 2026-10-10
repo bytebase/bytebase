@@ -136,7 +136,68 @@ describe("InfoPanel i18n", () => {
     render();
 
     expect(container.querySelector("p")?.textContent).toBe(contentKey);
-    expect(container.querySelector("a")?.textContent).toBe(linkTitleKey);
+    expect(container.querySelector("a.accent-link")?.textContent).toBe(
+      linkTitleKey
+    );
+
+    unmount();
+  });
+
+  test.each([
+    Engine.MYSQL,
+    Engine.TIDB,
+    Engine.MARIADB,
+    Engine.OCEANBASE,
+  ])("grants no privilege that only some versions accept for engine %s", async (engine) => {
+    const { InfoPanelContent } = await import("./InfoPanel");
+    const { container, render, unmount } = renderIntoContainer(
+      <InfoPanelContent engine={engine} section="authentication" />
+    );
+
+    render();
+
+    const code = container.querySelector("code")?.textContent ?? "";
+    expect(code).toContain("ON *.* to bytebase@'%';");
+    expect(code).not.toMatch(
+      /\/\*!|SET_USER_ID|SET_ANY_DEFINER|ALLOW_NONEXISTENT_DEFINER/
+    );
+
+    unmount();
+  });
+
+  test("warns about the MySQL definer privilege and links to the MySQL docs", async () => {
+    const { InfoPanelContent } = await import("./InfoPanel");
+    const { container, render, unmount } = renderIntoContainer(
+      <InfoPanelContent engine={Engine.MYSQL} section="authentication" />
+    );
+
+    render();
+
+    const alert = container.querySelector("[role=alert]");
+    expect(alert?.textContent).toContain(
+      "instance.sentence.create-user-example.mysql.warn"
+    );
+    expect(alert?.querySelector("a")?.getAttribute("href")).toBe(
+      "https://docs.bytebase.com/get-started/connect/mysql?source=console#create-a-user-for-bytebase"
+    );
+
+    unmount();
+  });
+
+  test.each([
+    Engine.TIDB,
+    Engine.MARIADB,
+    Engine.OCEANBASE,
+  ])("shows no MySQL definer warning for engine %s", async (engine) => {
+    const { InfoPanelContent } = await import("./InfoPanel");
+    const { container, render, unmount } = renderIntoContainer(
+      <InfoPanelContent engine={engine} section="authentication" />
+    );
+
+    render();
+
+    expect(container.querySelector("code")).not.toBeNull();
+    expect(container.querySelector("[role=alert]")).toBeNull();
 
     unmount();
   });

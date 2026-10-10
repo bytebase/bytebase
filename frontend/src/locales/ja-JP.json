@@ -1307,7 +1307,11 @@
           "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。次のコマンドを実行してユーザーを作成する前に、{{link}} を有効にする必要があります。"
         },
         "mysql": {
-          "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。"
+          "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。",
+          "warn": "DEFINER を別のアカウントに設定する変更を Bytebase で実行するには、MySQL 8.0 では SET_USER_ID、MySQL 8.4 以降では SET_ANY_DEFINER も付与してください。一部のクラウドプロバイダーはこれらの権限を制限しています。"
+        },
+        "oracle": {
+          "warn": "Amazon RDS for Oracle では GRANT ALL PRIVILEGES を実行できません。"
         },
         "postgresql": {
           "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。接続しているインスタンスが自己ホスト型の場合は、SUPERUSER を付与できます。",

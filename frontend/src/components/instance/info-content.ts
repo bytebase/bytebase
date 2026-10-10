@@ -31,12 +31,19 @@ export type InfoSnippetLinkTitleKey =
   | "instance.info.ssh-tunnel.link"
   | "instance.info.ssl-tls-connection.link";
 
+export type InfoSnippetWarningKey =
+  "instance.sentence.create-user-example.mysql.warn";
+
 export type InfoSnippet = {
   contentKey: InfoSnippetContentKey;
   contentInterpolation?: Record<string, string>;
   codeBlock?: {
     language: string;
     code: string;
+  };
+  warning?: {
+    key: InfoSnippetWarningKey;
+    url: string;
   };
   learnMoreLinks?: {
     titleKey: InfoSnippetLinkTitleKey;
@@ -92,6 +99,29 @@ ALTER USER ${DATASOURCE_ADMIN_USER_NAME} WITH SUPERUSER;`,
   },
 };
 
+const mysqlAuthentication: InfoSnippet = {
+  contentKey: "instance.info.mysql.authentication.content",
+  contentInterpolation: {
+    user: DATASOURCE_ADMIN_USER_NAME,
+  },
+  codeBlock: {
+    language: "sql",
+    code: `CREATE USER ${DATASOURCE_ADMIN_USER_NAME}@'%' IDENTIFIED BY 'YOUR_DB_PWD';
+
+GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW,
+DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES,
+SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE,
+RELOAD, LOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE
+ON *.* to ${DATASOURCE_ADMIN_USER_NAME}@'%';`,
+  },
+  learnMoreLinks: [
+    {
+      titleKey: "instance.info.configure-database-user.link",
+      url: "https://docs.bytebase.com/get-started/instance?source=console#configure-a-database-user",
+    },
+  ],
+};
+
 const mysqlContent: Partial<Record<InfoSection, InfoSnippet>> = {
   host: {
     contentKey: "instance.info.mysql.host.content",
@@ -102,29 +132,7 @@ const mysqlContent: Partial<Record<InfoSection, InfoSnippet>> = {
       },
     ],
   },
-  authentication: {
-    contentKey: "instance.info.mysql.authentication.content",
-    contentInterpolation: {
-      user: DATASOURCE_ADMIN_USER_NAME,
-    },
-    codeBlock: {
-      language: "sql",
-      code: `CREATE USER ${DATASOURCE_ADMIN_USER_NAME}@'%' IDENTIFIED BY 'YOUR_DB_PWD';
-
-GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW,
-DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES,
-SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE,
-RELOAD, LOCK TABLES, REPLICATION CLIENT, REPLICATION SLAVE
-/*!80000 , SET_USER_ID */
-ON *.* to ${DATASOURCE_ADMIN_USER_NAME}@'%';`,
-    },
-    learnMoreLinks: [
-      {
-        titleKey: "instance.info.configure-database-user.link",
-        url: "https://docs.bytebase.com/get-started/instance?source=console#configure-a-database-user",
-      },
-    ],
-  },
+  authentication: mysqlAuthentication,
   ssl: {
     contentKey: "instance.info.mysql.ssl.content",
     learnMoreLinks: [
@@ -142,6 +150,19 @@ ON *.* to ${DATASOURCE_ADMIN_USER_NAME}@'%';`,
         url: "https://docs.bytebase.com/get-started/instance?source=console#ssh-tunnel",
       },
     ],
+  },
+};
+
+// TiDB, MariaDB, and OceanBase reuse the MySQL snippets, but the definer warning names
+// MySQL versions, so only MySQL gets it.
+const mysqlOnlyContent: Partial<Record<InfoSection, InfoSnippet>> = {
+  ...mysqlContent,
+  authentication: {
+    ...mysqlAuthentication,
+    warning: {
+      key: "instance.sentence.create-user-example.mysql.warn",
+      url: "https://docs.bytebase.com/get-started/connect/mysql?source=console#create-a-user-for-bytebase",
+    },
   },
 };
 
@@ -204,7 +225,7 @@ const engineContentMap: Partial<
   Record<Engine, Partial<Record<InfoSection, InfoSnippet>>>
 > = {
   [Engine.POSTGRES]: postgresqlContent,
-  [Engine.MYSQL]: mysqlContent,
+  [Engine.MYSQL]: mysqlOnlyContent,
   [Engine.TIDB]: mysqlContent,
   [Engine.MARIADB]: mysqlContent,
   [Engine.OCEANBASE]: mysqlContent,
