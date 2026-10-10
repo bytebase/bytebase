@@ -971,8 +971,10 @@ func TestChange_PolicyDenialKeepsItsOwnRemedy(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.sheetStatus = http.StatusForbidden
 	mock.sheetResponse = map[string]any{"message": "/bytebase.v1.SheetService/CreateSheet " +
-		"is not available to MCP sessions for this request because its SQL contains \"******\". " +
-		"Perform this action signed in to the Bytebase console instead"}
+		"is not available to MCP sessions for this request because its SQL contains \"******\", which is how " +
+		"Bytebase displays a masked value, not the value itself: writing it back would overwrite the real data, " +
+		"and filtering on it matches nothing. Remove \"******\" from the statement; if the change needs the real " +
+		"value, ask someone who can see it unmasked to make the change in the Bytebase console."}
 	s := newChangeTestServer(t, mock)
 
 	result, _, err := s.handleChange(testContext(), nil, ChangeInput{

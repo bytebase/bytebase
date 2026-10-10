@@ -298,7 +298,7 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusServiceUnavailable, "cannot verify token audience; retry shortly")
 		}
 		if !allowed {
-			return s.unauthorized(c, "invalid token: audience mismatch")
+			return s.unauthorized(c, "invalid token: audience mismatch; it was issued for a different Bytebase server or workspace, so reconnect to authorize again")
 		}
 
 		// Establish the delegated identity that carries this request's principal

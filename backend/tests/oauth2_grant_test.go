@@ -434,7 +434,7 @@ func TestOAuth2IssuanceRechecksTheCeiling(t *testing.T) {
 
 	code, description := oauth2Error(t, ctl, oauth2RefreshForm(clientID, refreshToken, nil), http.StatusServiceUnavailable)
 	a.Equal("temporarily_unavailable", code, "a compliant client discards the grant on invalid_grant, and this one must keep it")
-	a.Contains(description, "turned MCP access off")
+	a.Contains(description, "turned off MCP access")
 	a.NotNil(storedRefreshToken(ctx, t, db, clientID, refreshToken), "a refused refresh must not consume the token")
 
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))

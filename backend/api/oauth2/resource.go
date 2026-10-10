@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -78,7 +79,14 @@ func (s *Service) parseGrantParams(ctx context.Context, values url.Values, works
 	if err != nil {
 		slog.Error("rejected an MCP OAuth consent because no external URL is configured",
 			slog.String("resource", resource))
-		return grantParams{}, &oauth2Failure{code: "server_error", description: err.Error()}
+		// The message, not Error(): the error_description reaches the client,
+		// and a connect error's Error() leads with its code.
+		description := err.Error()
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			description = connectErr.Message()
+		}
+		return grantParams{}, &oauth2Failure{code: "server_error", description: description}
 	}
 
 	if resource == "" {

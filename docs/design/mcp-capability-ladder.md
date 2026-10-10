@@ -70,7 +70,7 @@ the product.
 | read | Read data by running queries | Run read-only queries · Under Read-only, a request is refused whole unless every statement is shown to be a read that returns data; how deeply that can be checked varies by engine, and on some engines no statement can be shown to be a read at all · Your own query history · Saved queries and sheets you have access to | 9 READ methods: `SQLService/Query`, query history (4), saved-query reads (3), `GetSheet` |
 | read | Read the change workflow | Issues and comments · Plans and plan checks · Rollouts, task runs and logs · Releases · Rollback previews | 16 READ methods: issue, plan, rollout and release reads |
 | — | *Read-only stops here* | | 56 methods |
-| write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
+| write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves or rejects an issue, its own or anyone else's; whether a human must approve a change before it runs depends on the workspace's approval rules and the project's settings | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
 | write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
 | write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
 | write | Export query results | Download results as a file. Data leaves Bytebase | 1 WRITE method: `SQLService/Export` |
@@ -182,17 +182,19 @@ classification alone, and a statement that classifies as a read can still call a
 writes. The proto calls the ceiling "classifier-enforced, not proven", and the row says so in the
 admin's words.
 
-Approval is stated as the project's policy, never as a promise. The backend requires an approved
-issue before a rollout only when the project has `require_issue_approval` on and an issue is linked
+Approval is stated as a bound, never as a promise. The backend requires an approved issue before a
+rollout only when the project has `require_issue_approval` on and an issue is linked
 (`backend/api/v1/rollout_service.go`); the MCP-origin guard there refuses an issueless rollout only
-under that same flag, and an issue whose approval finding produced no template counts as approved
-with no human acting. The console turns the flag on for new projects; the API default is off. A row
-that said "of an approved change" would therefore promise more than the gate enforces, and the
-wording an admin reads while choosing Read-write is the wrong place to be generous. What holds
-unconditionally is that an agent never approves its own change, because the three approval methods
-are FORBIDDEN, and that is the half the rows state. Whether MCP-originated rollouts should require
-approval regardless of the project flag is a product question tracked separately (BOT-71), not one
-this doc decides.
+under that same flag, and an issue whose approval finding produced no template from the workspace's
+approval rules counts as approved with no human acting. The console turns the flag on for new
+projects; the API default is off. A row that said "of an approved change" would therefore promise
+more than the gate enforces, and the wording an admin reads while choosing Read-write is the wrong
+place to be generous. What holds unconditionally is that an agent never approves or rejects an
+issue, whoever created it, because the three approval methods are FORBIDDEN, and that is the half
+the rows state. The first wording, "never approves its own change", was true and failed the
+complement axis: a reader takes the reassuring half and concludes another person's issue is fair
+game. Whether MCP-originated rollouts should require approval regardless of the project flag is a
+product question tracked separately (BOT-71), not one this doc decides.
 
 ### The verb rule
 
@@ -360,6 +362,35 @@ deliberately no setting that forces masking for MCP sessions. Field 2 is deleted
 migration, because the store's unmarshaler discards the unknown key and the next save rewrites the
 row without it. The masked-write guard stays, because it never depended on the toggle.
 
+**D13 — A denial is held to the same axes as a row.** The rows say what a mode allows; a denial says
+what it refused, and an agent relays it to a person who trusts it over the mechanism. The denials
+were held only to "state what the method does", and a 2026-09-24 audit found 36 that misled or
+confused. The one that prompted it refused ApproveIssue on an issue another person created with
+"an agent does not move its own change through that gate": true, and on the complement axis it
+tells the reader that approving someone else's change is allowed. The rules now sit on the reason
+table in `backend/api/v1/mcp_gate.go`:
+
+- **Scope.** A reason states what the method *can* do at the gate's grain, which is the whole
+  method, for every caller, argument and resource owner. It says "own" only where enforcement
+  checks ownership.
+- **Kind.** The template says which refusal it is: not available whatever the policy (FORBIDDEN),
+  under no MCP access policy (EXCLUDED), or needing Read-write. Only the last is worth asking an
+  admin about, and only it names Integration > MCP > Access policy as the way out. Every gate
+  refusal keeps the phrase "not available to MCP sessions", which is what tests and a reader
+  searching the audit log recognize a refusal by.
+- **Next step.** Each reason carries one, and a method its step would misdirect overrides it. The
+  console is not always the answer: the same masked write run there overwrites the real value,
+  switching workspace means reauthorizing the MCP connection, and only an approver can approve.
+- **Words.** The Access policy page's: "MCP access policy", Read-only, Read-write. Never "ceiling",
+  an enum name or "principal". A message shown on its own is complete sentences, and the ceiling
+  verdicts stay ASCII because they travel in an OAuth `error_description`.
+
+`TestMCPDenialWording` renders every reason and refusal path and checks what a check can. The
+classification inventory prints each reason's rendered denial beside the methods it covers, so a
+reviewer reads the sentence where it has to be true. The MCP tools still recognize a policy
+refusal by its wording ("MCP session" or "MCP access policy"), and
+`TestMCPRefusalsNameThemselvesToTheQueryTool` holds every producer to it.
+
 ## States
 
 | State | What the section shows |
@@ -497,6 +528,10 @@ promise. What to do:
 
 The consent screen renders row titles only, so a caveat that belongs to one mode or one engine has
 to live in the bound line there (D10), not in a row's sub-items.
+
+Annotating a method FORBIDDEN or EXCLUDED changes what an agent is told instead (D13). Pick the
+reason whose sentence is true of the whole method, then read its rendered denial in
+`backend/api/v1/testdata/mcp_method_classification.md` beside every other method it covers.
 
 
 ## Out of scope

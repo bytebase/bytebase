@@ -1455,7 +1455,7 @@ func rejectMCPOriginatedIssuelessRollout(ctx context.Context, project *store.Pro
 		return nil
 	}
 	return permissionDeniedError(ctx, errors.Errorf(
-		"an MCP session may not %s for a plan with no issue: this project requires issue approval, and a "+
-			"rollout created without an issue never meets that gate. Create an issue for the plan and have it "+
-			"approved, or perform this action signed in to the Bytebase console instead", action))
+		"An MCP session may not %s for a plan with no issue, because this project requires issue approval and "+
+			"a rollout created without an issue would skip it. Create an issue for the plan and have it approved, "+
+			"or, if your role allows it, do this in the Bytebase console.", action))
 }

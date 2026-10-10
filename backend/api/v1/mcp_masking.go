@@ -51,11 +51,17 @@ func maskedWriteRefusal(ctx context.Context, statement []byte) string {
 		return ""
 	}
 	return fmt.Sprintf(
-		"its SQL contains %q, the placeholder Bytebase substitutes for a masked value rather than "+
-			"a value anything holds. Writing it back would replace the real data with it, and "+
-			"matching on it would match nothing. Remove the literal, whatever the statement does "+
-			"with it", masker.DefaultFullMaskSubstitution)
+		"its SQL contains %q, which is how Bytebase displays a masked value, not the value itself: "+
+			"writing it back would overwrite the real data, and filtering on it matches nothing",
+		masker.DefaultFullMaskSubstitution)
 }
+
+// maskedWriteNextStep sends the change to someone who sees the real value. The
+// guard runs only for MCP sessions, so the same statement run in the console
+// writes the placeholder over the real value.
+var maskedWriteNextStep = fmt.Sprintf(
+	"Remove %q from the statement; if the change needs the real value, ask someone who can see it "+
+		"unmasked to make the change in the Bytebase console.", masker.DefaultFullMaskSubstitution)
 
 // refuseMaskedWriteSheet guards the sheet door. PlanService/CreatePlan carries
 // a sheet name and no statement of its own, there is no UpdateSheet, and a

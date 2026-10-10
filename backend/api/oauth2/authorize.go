@@ -18,6 +18,11 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+// redirectURIMismatch is shown in the user's browser, so it names the fix: a
+// client whose callback changed has to register again.
+const redirectURIMismatch = "redirect_uri does not match any redirect URI this client registered; " +
+	"remove and reconnect the Bytebase MCP server in your client so it registers again"
+
 // sessionClaims is the subset of session JWT claims we need at the OAuth2
 // authorize step. workspace_id carries the workspace the user is currently
 // acting in; that workspace becomes the one bound to the issued authorization
@@ -58,7 +63,7 @@ func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "redirect_uri is required")
 	}
 	if !validateRedirectURI(redirectURI, client.Config.RedirectUris) {
-		return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect_uri not registered")
+		return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", redirectURIMismatch)
 	}
 
 	// PKCE is required
@@ -116,7 +121,7 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 	}
 
 	if !validateRedirectURI(redirectURI, client.Config.RedirectUris) {
-		return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect_uri not registered")
+		return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", redirectURIMismatch)
 	}
 
 	if action == "deny" {

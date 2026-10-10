@@ -253,10 +253,10 @@ func TestMCPServesTheReadsTheRedactionFreed(t *testing.T) {
 		operation string
 		reason    string
 	}{
-		{"UserService/ListUsers", "administers the workspace"},
-		{"UserService/GetUser", "administers the workspace"},
+		{"UserService/ListUsers", "belongs to workspace administration"},
+		{"UserService/GetUser", "belongs to workspace administration"},
 		{"QueryHistoryService/ListQueryHistories", "SQL that other people wrote"},
-		{"ProjectService/TestWebhook", "third party"},
+		{"ProjectService/TestWebhook", "contacts an outside service"},
 		// The deprecated SQLService alias of a refused method, which the MCP
 		// spec indexes by its own operation ID and would otherwise be a way
 		// round the canonical method's class.

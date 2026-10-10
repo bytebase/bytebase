@@ -87,7 +87,7 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	}
 
 	// Resolve database.
-	resolved, resolveResult := s.resolveTarget(ctx, req, input.Database, input.Instance, input.Project)
+	resolved, resolveResult := s.resolveTarget(ctx, req, "Which one should this query run against?", input.Database, input.Instance, input.Project)
 	if resolveResult != nil {
 		return resolveResult, nil, nil
 	}
@@ -179,11 +179,8 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 	}
 	resp, err := s.apiRequest(ctx, "/bytebase.v1.SQLService/Query", body)
 	if err != nil {
-		return nil, &toolError{
-			Code:       "QUERY_ERROR",
-			Message:    fmt.Sprintf("query request failed: %s", err.Error()),
-			Suggestion: "check network connectivity and try again",
-		}
+		return nil, internalRequestError("QUERY_ERROR", "run the query", err,
+			"narrow the query, for example with a WHERE clause or a LIMIT, and try again")
 	}
 	if resp.Status >= 400 {
 		errMsg := parseError(resp.Body)
@@ -340,12 +337,11 @@ func parseLatencyMs(latency string) int64 {
 // TestMCPRefusalsNameThemselvesToTheQueryTool (backend/api/v1).
 func IsPolicyRefusal(message string) bool {
 	for _, phrase := range []string{
-		"MCP capability ceiling",
-		// Singular, so it also matches the plural the gate uses and the two
+		// Singular, so it also matches the plural the gate uses and the
 		// refusals that live outside it (rejectMCPOriginatedGrantIssue,
-		// rejectMCPOriginatedIssuelessRollout).
+		// rejectMCPOriginatedIssuelessRollout, the token-mint guard).
 		"MCP session",
-		"MCP classification",
+		"MCP access policy",
 	} {
 		if strings.Contains(message, phrase) {
 			return true

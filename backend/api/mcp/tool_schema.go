@@ -240,7 +240,7 @@ func (s *Server) handleGetSchema(ctx context.Context, req *mcp.CallToolRequest, 
 		return nil, nil, err
 	}
 
-	resolved, resolveResult := s.resolveTarget(ctx, req, input.Database, input.Instance, input.Project)
+	resolved, resolveResult := s.resolveTarget(ctx, req, "Which one's schema do you want?", input.Database, input.Instance, input.Project)
 	if resolveResult != nil {
 		return resolveResult, nil, nil
 	}
@@ -373,11 +373,8 @@ func (s *Server) fetchMetadata(ctx context.Context, resourceName, filter string,
 
 	resp, err := s.apiRequest(ctx, "/bytebase.v1.DatabaseService/GetDatabaseMetadata", body)
 	if err != nil {
-		return nil, &toolError{
-			Code:       "SCHEMA_FETCH_ERROR",
-			Message:    fmt.Sprintf("metadata request failed: %s", err.Error()),
-			Suggestion: "check network connectivity and try again",
-		}
+		return nil, internalRequestError("SCHEMA_FETCH_ERROR", "load the schema", err,
+			"narrow it with the schema or table argument and try again")
 	}
 
 	if resp.Status >= 400 {
@@ -399,7 +396,7 @@ func translateMetadataError(resp *apiResponse) error {
 		return &toolError{
 			Code:       "DATABASE_NOT_FOUND",
 			Message:    "database not found",
-			Suggestion: "check the database name or use search_api to list available databases",
+			Suggestion: "check the database name, or " + listDatabasesHint,
 		}
 	case http.StatusForbidden, http.StatusUnauthorized:
 		if IsPolicyRefusal(errMsg) {
@@ -417,7 +414,7 @@ func translateMetadataError(resp *apiResponse) error {
 		}
 		return &toolError{
 			Code:       "SCHEMA_SYNC_FAILED",
-			Message:    "the database is reachable but the schema sync failed",
+			Message:    "Bytebase could not load this database's schema",
 			Suggestion: suggestion,
 		}
 	default:
