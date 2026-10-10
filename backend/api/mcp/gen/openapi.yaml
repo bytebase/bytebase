@@ -9610,6 +9610,10 @@ components:
             - $ref: '#/components/schemas/bytebase.v1.MCPSetting'
           title: mcp_setting
           description: The MCP (Model Context Protocol) setting in the current workspace.
+        aiEnabled:
+          type: boolean
+          title: ai_enabled
+          description: Whether the workspace AI setting enables the AI agent.
       title: ActuatorInfo
       additionalProperties: false
       description: |-

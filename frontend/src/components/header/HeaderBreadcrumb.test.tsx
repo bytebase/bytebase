@@ -3,7 +3,7 @@ import { cloneElement, createContext, useContext } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { PROJECT_V1_ROUTE_ISSUES } from "@/app/router/handles";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -188,7 +188,7 @@ beforeEach(async () => {
 });
 
 describe("HeaderBreadcrumb", () => {
-  test("opens project switcher only from the chevron and links title to project issues", () => {
+  test("opens project switcher only from the chevron and links title to project home", () => {
     const { container, render, unmount } = renderIntoContainer(
       <HeaderBreadcrumb />
     );
@@ -196,7 +196,7 @@ describe("HeaderBreadcrumb", () => {
     render();
 
     const projectLink = container.querySelector<HTMLAnchorElement>(
-      `a[data-route-name="${PROJECT_V1_ROUTE_ISSUES}"]`
+      `a[data-route-name="${PROJECT_V1_ROUTE_DETAIL}"]`
     );
     expect(projectLink).not.toBeNull();
     expect(projectLink?.textContent).toContain("Recent Project");
@@ -254,7 +254,7 @@ describe("HeaderBreadcrumb", () => {
     render();
 
     expect(
-      container.querySelector(`a[data-route-name="${PROJECT_V1_ROUTE_ISSUES}"]`)
+      container.querySelector(`a[data-route-name="${PROJECT_V1_ROUTE_DETAIL}"]`)
     ).toBeNull();
     const projectButton = Array.from(container.querySelectorAll("button")).find(
       (button) => button.textContent?.includes("Recent Project")

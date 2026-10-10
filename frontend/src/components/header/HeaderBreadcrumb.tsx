@@ -11,7 +11,7 @@ import {
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
-import { PROJECT_V1_ROUTE_ISSUES } from "@/app/router/handles";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -276,12 +276,12 @@ export function ProjectSegment({
           ) : (
             <RouterLink
               to={{
-                name: PROJECT_V1_ROUTE_ISSUES,
+                name: PROJECT_V1_ROUTE_DETAIL,
                 params: { projectId },
               }}
               onClick={() => {
                 const resolvedRoute = navigate.resolve({
-                  name: PROJECT_V1_ROUTE_ISSUES,
+                  name: PROJECT_V1_ROUTE_DETAIL,
                   params: { projectId },
                 });
                 record(resolvedRoute.fullPath);

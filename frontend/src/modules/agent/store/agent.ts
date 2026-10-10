@@ -344,6 +344,7 @@ export interface AgentState {
   abortControllersByChatId: Record<string, AbortController>;
 
   // UI actions
+  open: () => void;
   toggle: () => void;
   minimize: () => void;
   restore: () => void;
@@ -611,6 +612,20 @@ export const createAgentStore = () => {
         abortControllersByChatId: {},
 
         // UI actions
+        open: () =>
+          set((state) => {
+            state.visible = true;
+            state.minimized = false;
+            if (typeof window !== "undefined") {
+              state.position = clampAgentWindowPosition(
+                window.innerWidth,
+                window.innerHeight,
+                state.size.width,
+                state.size.height,
+                state.position
+              );
+            }
+          }),
         toggle: () =>
           set((state) => {
             state.visible = !state.visible;

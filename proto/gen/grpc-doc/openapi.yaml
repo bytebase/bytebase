@@ -16921,6 +16921,11 @@ components:
           title: mcp_setting
           description: The MCP (Model Context Protocol) setting in the current workspace.
           readOnly: true
+        aiEnabled:
+          type: boolean
+          title: ai_enabled
+          description: Whether the workspace AI setting enables the AI agent.
+          readOnly: true
       title: ActuatorInfo
       additionalProperties: false
       description: |-
