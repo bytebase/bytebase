@@ -45,6 +45,7 @@ func init() {
 		schema.RegisterGetViewDefinition(engine, GetViewDefinition)
 		schema.RegisterGetMaterializedViewDefinition(engine, GetMaterializedViewDefinition)
 		schema.RegisterGetFunctionDefinition(engine, GetFunctionDefinition)
+		schema.RegisterGetProcedureDefinition(engine, GetProcedureDefinition)
 		schema.RegisterGetSequenceDefinition(engine, GetSequenceDefinition)
 		schema.RegisterGetMultiFileDatabaseDefinition(engine, GetMultiFileDatabaseDefinition)
 	}
@@ -143,6 +144,17 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *metadatapb
 				dependencyID := getObjectID(dependency.Schema, dependency.Table)
 				graph.AddEdge(dependencyID, funcID)
 			}
+		}
+	}
+
+	// Construct procedures.
+	procedureMap := make(map[string]*metadatapb.ProcedureMetadata)
+	for _, schema := range metadata.Schemas {
+		for _, procedure := range schema.Procedures {
+			if procedure.SkipDump {
+				continue
+			}
+			procedureMap[getObjectID(schema.Name, procedureIdentity(procedure))] = procedure
 		}
 	}
 
@@ -288,6 +300,18 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *metadatapb
 		}
 	}
 
+	// Construct procedures (after functions; no dependency edges are tracked for them).
+	procedureIDs := make([]string, 0, len(procedureMap))
+	for id := range procedureMap {
+		procedureIDs = append(procedureIDs, id)
+	}
+	slices.Sort(procedureIDs)
+	for _, objectID := range procedureIDs {
+		if err := writeProcedure(&buf, getSchemaNameFromID(objectID), procedureMap[objectID]); err != nil {
+			return "", err
+		}
+	}
+
 	// Construct triggers.
 	for _, schema := range metadata.Schemas {
 		if err := writeSchemaTriggers(&buf, schema); err != nil {
@@ -389,6 +413,15 @@ func GetSchemaDefinition(schema *metadatapb.SchemaMetadata) (string, error) {
 			dependencyID := getObjectID(dependency.Schema, dependency.Table)
 			graph.AddEdge(dependencyID, funcID)
 		}
+	}
+
+	// Construct procedures.
+	procedureMap := make(map[string]*metadatapb.ProcedureMetadata)
+	for _, procedure := range schema.Procedures {
+		if procedure.SkipDump {
+			continue
+		}
+		procedureMap[getObjectID(schema.Name, procedureIdentity(procedure))] = procedure
 	}
 
 	// Create non-identity sequences before tables to prevent errors when tables reference
@@ -520,6 +553,18 @@ func GetSchemaDefinition(schema *metadatapb.SchemaMetadata) (string, error) {
 			if err := writeMaterializedView(&buf, getSchemaNameFromID(objectID), view); err != nil {
 				return "", err
 			}
+		}
+	}
+
+	// Construct procedures (after functions; no dependency edges are tracked for them).
+	procedureIDs := make([]string, 0, len(procedureMap))
+	for id := range procedureMap {
+		procedureIDs = append(procedureIDs, id)
+	}
+	slices.Sort(procedureIDs)
+	for _, objectID := range procedureIDs {
+		if err := writeProcedure(&buf, getSchemaNameFromID(objectID), procedureMap[objectID]); err != nil {
+			return "", err
 		}
 	}
 
@@ -2715,6 +2760,39 @@ func writeFunctionComment(out io.Writer, schema string, function *metadatapb.Fun
 	return err
 }
 
+func procedureIdentity(p *metadatapb.ProcedureMetadata) string {
+	if p.Signature != "" {
+		return p.Signature
+	}
+	return p.Name
+}
+
+func GetProcedureDefinition(schema string, procedure *metadatapb.ProcedureMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeProcedure(&buf, schema, procedure); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func writeProcedureSDL(out io.Writer, _ string, procedure *metadatapb.ProcedureMetadata) error {
+	// The procedure definition should already include the complete CREATE PROCEDURE statement
+	definition := strings.TrimSpace(procedure.Definition)
+	// Remove trailing semicolon if present
+	definition = strings.TrimSuffix(definition, ";")
+
+	_, err := io.WriteString(out, definition)
+	return err
+}
+
+func writeProcedureCommentSDL(out io.Writer, schemaName string, procedure *metadatapb.ProcedureMetadata) error {
+	return writeFunctionCommentSDL(out, schemaName, &metadatapb.FunctionMetadata{
+		Definition: procedure.Definition,
+		Signature:  procedure.Signature,
+		Comment:    procedure.Comment,
+	})
+}
+
 func writeExtension(out io.Writer, extension *metadatapb.ExtensionMetadata) error {
 	if _, err := io.WriteString(out, `CREATE EXTENSION IF NOT EXISTS "`); err != nil {
 		return err
@@ -3153,6 +3231,28 @@ func getSDLFormat(metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
 			// Write function comment if present
 			if len(function.Comment) > 0 {
 				if err := writeFunctionCommentSDL(&buf, schema.Name, function); err != nil {
+					return "", err
+				}
+			}
+		}
+
+		// Write procedures after functions
+		for _, procedure := range schema.Procedures {
+			if procedure.SkipDump {
+				continue
+			}
+
+			if err := writeProcedureSDL(&buf, schema.Name, procedure); err != nil {
+				return "", err
+			}
+
+			if _, err := buf.WriteString(";\n\n"); err != nil {
+				return "", err
+			}
+
+			// Write procedure comment if present
+			if len(procedure.Comment) > 0 {
+				if err := writeProcedureCommentSDL(&buf, schema.Name, procedure); err != nil {
 					return "", err
 				}
 			}
@@ -4363,6 +4463,32 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *m
 
 			files = append(files, schema.File{
 				Name:    fmt.Sprintf("schemas/%s/%s/%s.sql", schemaName, folderName, function.Name),
+				Content: buf.String(),
+			})
+		}
+
+		// Generate procedure files
+		for _, procedure := range schemaMetadata.Procedures {
+			if procedure.SkipDump {
+				continue
+			}
+
+			var buf strings.Builder
+			if err := writeProcedureSDL(&buf, schemaName, procedure); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate procedure SDL for %s.%s", schemaName, procedure.Name)
+			}
+			buf.WriteString(";\n")
+
+			// Write procedure comment if present
+			if len(procedure.Comment) > 0 {
+				buf.WriteString("\n")
+				if err := writeProcedureCommentSDL(&buf, schemaName, procedure); err != nil {
+					return nil, errors.Wrapf(err, "failed to generate procedure comment for %s.%s", schemaName, procedure.Name)
+				}
+			}
+
+			files = append(files, schema.File{
+				Name:    fmt.Sprintf("schemas/%s/procedures/%s.sql", schemaName, procedure.Name),
 				Content: buf.String(),
 			})
 		}
