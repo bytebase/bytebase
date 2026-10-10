@@ -520,6 +520,7 @@ CREATE TABLE access_grant (
 );
 
 CREATE INDEX idx_access_grant_project_creator_expire_time ON access_grant(project, creator, expire_time);
+CREATE INDEX idx_access_grant_project_creator_query_hash ON access_grant(project, creator, (payload->>'queryHash'));
 
 CREATE TABLE query_history (
     -- global unique

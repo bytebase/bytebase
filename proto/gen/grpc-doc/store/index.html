@@ -1650,6 +1650,14 @@ The server computes expire_time from this value at activation time. </p></td>
                   <td><p>The container name to execute the query against, used for CosmosDB only. </p></td>
                 </tr>
               
+                <tr>
+                  <td>query_hash</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Lowercase hex SHA-256 of query after trimming boundary space, tab, LF, CR,
+vertical tab, and form feed. Derived by the store for grant matching. </p></td>
+                </tr>
+
             </tbody>
           </table>
 
