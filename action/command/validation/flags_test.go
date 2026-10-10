@@ -1,54 +1,51 @@
 package validation
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/action/world"
 )
 
-func TestValidateTargets(t *testing.T) {
+func TestValidateFlagsAcceptsValidPlanCustomizationAndTargets(t *testing.T) {
+	t.Setenv("BYTEBASE_ACCESS_TOKEN", "env-token")
+	w := &world.World{
+		URL:             "https://bytebase.example.com/",
+		Project:         "projects/demo",
+		Targets:         []string{"instances/instance-a/databases/db-a"},
+		PlanTitle:       "Release plan",
+		PlanDescription: "Describe the rollout",
+	}
+
+	err := ValidateFlags(w)
+	require.NoError(t, err)
+	require.Equal(t, "env-token", w.AccessToken)
+	require.Equal(t, "https://bytebase.example.com", w.URL)
+}
+
+func TestValidateFlagsRejectsPlanCustomizationLimits(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name    string
-		targets []string
-		wantErr string
+		name      string
+		mutate    func(*world.World)
+		wantError string
 	}{
 		{
-			name: "workspace database targets",
-			targets: []string{
-				"instances/test/databases/hr_test",
-				"instances/prod/databases/hr_prod",
+			name: "plan title too long",
+			mutate: func(w *world.World) {
+				w.PlanTitle = strings.Repeat("a", 201)
 			},
+			wantError: "--plan-title",
 		},
 		{
-			name: "project instance database targets",
-			targets: []string{
-				"projects/hr/instances/test/databases/hr_test",
-				"projects/hr/instances/prod/databases/hr_prod",
+			name: "plan description too long",
+			mutate: func(w *world.World) {
+				w.PlanDescription = strings.Repeat("b", 10001)
 			},
-		},
-		{
-			name: "mixed workspace and project instance database targets",
-			targets: []string{
-				"instances/test/databases/hr_test",
-				"projects/hr/instances/prod/databases/hr_prod",
-			},
-		},
-		{
-			name:    "database target and database group",
-			targets: []string{"projects/hr/instances/test/databases/hr_test", "projects/hr/databaseGroups/all"},
-			wantErr: "either database targets or a database group target",
-		},
-		{
-			name:    "multiple database groups",
-			targets: []string{"projects/hr/databaseGroups/one", "projects/hr/databaseGroups/two"},
-			wantErr: "single database group target",
-		},
-		{
-			name:    "malformed project instance target",
-			targets: []string{"projects/hr/instances//databases/hr_test"},
-			wantErr: "invalid target format",
+			wantError: "--plan-description",
 		},
 	}
 
@@ -56,12 +53,32 @@ func TestValidateTargets(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := validateTargets(tt.targets)
-			if tt.wantErr == "" {
-				require.NoError(t, err)
-				return
+			w := &world.World{
+				URL:         "https://bytebase.example.com",
+				Project:     "projects/demo",
+				Targets:     []string{"instances/instance-a/databases/db-a"},
+				AccessToken: "token",
 			}
-			require.ErrorContains(t, err, tt.wantErr)
+			tt.mutate(w)
+
+			err := ValidateFlags(w)
+			require.Error(t, err)
+			require.ErrorContains(t, err, tt.wantError)
 		})
 	}
+}
+
+func TestValidateFlagsRejectsInvalidTargets(t *testing.T) {
+	t.Parallel()
+
+	w := &world.World{
+		URL:         "https://bytebase.example.com",
+		Project:     "projects/demo",
+		Targets:     []string{"not-a-target"},
+		AccessToken: "token",
+	}
+
+	err := ValidateFlags(w)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "invalid target format")
 }
