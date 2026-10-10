@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
     },
     currentUser: { name: "users/alice", email: "alice@example.com", workspace: "workspaces/demo" },
     fetchDatabases: vi.fn(),
+    fetchInstanceList: vi.fn(),
     listIssues: vi.fn(),
     listPlans: vi.fn(),
     environmentList: [{ name: "environments/prod", title: "Production" }],
@@ -101,6 +102,7 @@ beforeEach(() => {
       }),
     ],
   });
+  mocks.state.fetchInstanceList.mockResolvedValue({ instances: [] });
   mocks.state.listIssues.mockResolvedValue({ issues: [] });
   mocks.state.listPlans.mockResolvedValue({ plans: [] });
 });
@@ -113,7 +115,7 @@ describe("ProjectHomePage", () => {
       expect(screen.getByText("project.home.prepare")).toBeTruthy();
     });
     expect(screen.getByText("project.home.query")).toBeTruthy();
-    expect(screen.getByText("project.home.access")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /project.home.access/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "project.home.ask-ai" }));
     await waitFor(() => expect(mocks.open).toHaveBeenCalledOnce());
   });
@@ -139,6 +141,84 @@ describe("ProjectHomePage", () => {
     expect(emptyAction.classList.contains("px-2")).toBe(false);
     expect(emptyAction.classList.contains("hover:underline")).toBe(true);
     expect(screen.queryByText("project.home.query")).toBeNull();
+    expect(screen.queryByRole("link", { name: /project.home.issues/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /project.home.access/ })).toBeNull();
+  });
+
+  test("suggests managing members for a new project only with write permission", async () => {
+    mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
+    render(<ProjectHomePage projectId="orders" />);
+    const shortcuts = screen.getByRole("region", { name: "project.home.shortcuts" });
+    expect(await within(shortcuts).findByRole("link", { name: /project.home.members/ })).toBeTruthy();
+    expect(within(shortcuts).queryByRole("link", { name: /project.home.issues/ })).toBeNull();
+
+    mocks.missedPermissions = ["bb.projects.setIamPolicy"];
+    render(<ProjectHomePage projectId="second" />);
+    await waitFor(() => expect(mocks.state.fetchDatabases).toHaveBeenCalled());
+    const secondShortcuts = screen.getAllByRole("region", { name: "project.home.shortcuts" })[1];
+    expect(within(secondShortcuts).queryByRole("link", { name: /project.home.members/ })).toBeNull();
+  });
+
+  test("labels a saved Members shortcut as view-only without management permission", async () => {
+    const key = storageKeyProjectHomeShortcuts(
+      "workspaces/demo",
+      "alice@example.com",
+      "projects/orders"
+    );
+    localStorage.setItem(key, '["members"]');
+    mocks.missedPermissions = ["bb.projects.setIamPolicy"];
+    render(<ProjectHomePage projectId="orders" />);
+    expect(await screen.findByRole("link", { name: /project.home.view-members/ })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /project.home.members/ })).toBeNull();
+  });
+
+  test("suggests creating a database when an instance exists but no database does", async () => {
+    mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
+    mocks.state.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "projects/orders/instances/primary" }],
+    });
+    render(<ProjectHomePage projectId="orders" />);
+    const shortcuts = screen.getByRole("region", { name: "project.home.shortcuts" });
+    const createLink = await within(shortcuts).findByRole("link", {
+      name: /project.home.create-database/,
+    });
+    expect(JSON.parse(createLink.getAttribute("data-to")!)).toEqual({
+      name: "workspace.project.database",
+      params: { projectId: "orders" },
+      query: { createDatabase: "1" },
+    });
+    const databaseAction = within(
+      screen.getByRole("region", { name: "project.home.databases" })
+    ).getByRole("link", { name: "project.home.create-database" });
+    expect(databaseAction.getAttribute("data-to")).toBe(
+      createLink.getAttribute("data-to")
+    );
+    expect(within(shortcuts).queryByRole("link", { name: /project.home.connect/ })).toBeNull();
+  });
+
+  test("suggests connecting an instance when only workspace instances exist", async () => {
+    mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
+    mocks.state.fetchInstanceList.mockImplementation(async ({ parent }) => ({
+      instances: parent ? [] : [{ name: "instances/shared" }],
+    }));
+    render(<ProjectHomePage projectId="orders" />);
+    const shortcuts = screen.getByRole("region", { name: "project.home.shortcuts" });
+    expect(await within(shortcuts).findByRole("link", { name: /project.home.connect/ })).toBeTruthy();
+    expect(within(shortcuts).queryByRole("link", { name: /project.home.create-database/ })).toBeNull();
+    expect(mocks.state.fetchInstanceList).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: "projects/orders" })
+    );
+    expect(mocks.state.fetchInstanceList).toHaveBeenCalledOnce();
+  });
+
+  test("does not claim a connection is needed when instance discovery fails", async () => {
+    mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
+    mocks.state.fetchInstanceList.mockRejectedValue(new Error("unavailable"));
+    render(<ProjectHomePage projectId="orders" />);
+    await waitFor(() => expect(mocks.state.fetchInstanceList).toHaveBeenCalled());
+    const shortcuts = screen.getByRole("region", { name: "project.home.shortcuts" });
+    expect(within(shortcuts).queryByRole("link", { name: /project.home.connect/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: "project.home.connect" })).toBeNull();
   });
 
   test("keeps browsing Instances on the list when the member cannot connect", async () => {
@@ -355,7 +435,6 @@ describe("ProjectHomePage", () => {
     expect(JSON.parse(localStorage.getItem(key)!)).toEqual([
       "query",
       "plans",
-      "access",
     ]);
   });
 
@@ -525,7 +604,7 @@ describe("ProjectHomePage", () => {
     mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
     render(<ProjectHomePage projectId="orders" />);
     await waitFor(() => expect(screen.getByText("project.home.no-databases")).toBeTruthy());
-    expect(screen.getByRole("link", { name: "project.home.connect" }).getAttribute("href")).toContain("workspace.project.instance");
+    expect((await screen.findByRole("link", { name: "project.home.connect" })).getAttribute("href")).toContain("workspace.project.instance");
     expect(
       within(screen.getByRole("region", { name: "project.home.databases" }))
         .queryByRole("link", { name: "project.home.view-all" })

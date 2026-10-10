@@ -425,6 +425,24 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
+  test("opens the create database sheet from a Project Home shortcut", async () => {
+    mocks.routerCurrentQuery = { createDatabase: "1" };
+    mocks.fetchInstanceList.mockResolvedValueOnce({
+      instances: [{ name: "instances/prod", title: "Prod" }],
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector("[data-testid='create-database-sheet']")).not.toBeNull();
+
+    act(() => root.unmount());
+  });
+
   test("only checks workspace instances for the default project", async () => {
     mocks.fetchInstanceList.mockImplementation(async (params) => {
       if (params?.parent) {

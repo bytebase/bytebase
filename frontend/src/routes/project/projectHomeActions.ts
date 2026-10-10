@@ -4,6 +4,7 @@ export type DatabaseAvailability = "loading" | "present" | "empty" | "unknown";
 export type ProjectHomeAction =
   | "plans"
   | "query"
+  | "createDatabase"
   | "access"
   | "issues"
   | "instances"
@@ -13,6 +14,7 @@ export type ProjectHomeAction =
 
 export type ProjectHomeActionInput = {
   availability: DatabaseAvailability;
+  instanceAvailability: DatabaseAvailability;
   isDefault: boolean;
   accessGrantsAvailable: boolean;
   hasPermission: (permission: Permission) => boolean;
@@ -20,25 +22,38 @@ export type ProjectHomeActionInput = {
 
 export function getProjectHomeActions({
   availability,
+  instanceAvailability,
   isDefault,
-  accessGrantsAvailable,
   hasPermission,
 }: ProjectHomeActionInput): ProjectHomeAction[] {
   const actions: ProjectHomeAction[] = [];
   const canListDatabases = hasPermission("bb.databases.list");
   const canListPlans =
     canListDatabases && hasPermission("bb.plans.list") && !isDefault;
-  const canListIssues = hasPermission("bb.issues.list") && !isDefault;
   const canListInstances = hasPermission("bb.instances.list") && !isDefault;
-  const canPrepare =
-    canListPlans &&
-    availability === "present" &&
-    hasPermission("bb.plans.create");
+  const canManageMembers =
+    !isDefault &&
+    hasPermission("bb.projects.getIamPolicy") &&
+    hasPermission("bb.projects.setIamPolicy");
+  const canCreateDatabase =
+    canListDatabases &&
+    hasPermission("bb.instances.list") &&
+    hasPermission("bb.issues.create") &&
+    hasPermission("bb.plans.create") &&
+    hasPermission("bb.sheets.create");
 
-  if (availability === "empty" && canListInstances) {
-    actions.push("instances");
+  if (availability === "empty") {
+    if (instanceAvailability === "present" && canCreateDatabase) {
+      actions.push("createDatabase");
+    } else if (instanceAvailability === "empty" && canListInstances) {
+      actions.push("instances");
+    }
+    if (canManageMembers) actions.push("members");
+    if (actions.length === 0 && canListInstances) actions.push("instances");
+    if (actions.length === 0 && canListDatabases) actions.push("databases");
+    return actions;
   }
-  if (canListPlans && availability !== "empty") {
+  if (canListPlans && availability === "present") {
     actions.push("plans");
   }
   if (
@@ -48,28 +63,11 @@ export function getProjectHomeActions({
   ) {
     actions.push("query");
   }
-  if (
-    accessGrantsAvailable &&
-    hasPermission("bb.accessGrants.list") &&
-    !isDefault
-  ) {
-    actions.push("access");
-  }
-  if (canListIssues && !canPrepare) {
-    actions.push("issues");
-  }
   if (actions.length === 0 && canListDatabases) {
     actions.push("databases");
   }
   if (actions.length === 0 && canListInstances) {
     actions.push("instances");
-  }
-  if (
-    actions.length === 0 &&
-    !isDefault &&
-    hasPermission("bb.projects.getIamPolicy")
-  ) {
-    actions.push("members");
   }
   return actions;
 }
@@ -79,6 +77,18 @@ export function getProjectHomeAvailableActions(
 ): ProjectHomeAction[] {
   const actions = getProjectHomeActions(input);
   const { hasPermission, isDefault } = input;
+  if (
+    input.availability === "empty" &&
+    input.instanceAvailability === "present" &&
+    hasPermission("bb.databases.list") &&
+    hasPermission("bb.instances.list") &&
+    hasPermission("bb.issues.create") &&
+    hasPermission("bb.plans.create") &&
+    hasPermission("bb.sheets.create") &&
+    !actions.includes("createDatabase")
+  ) {
+    actions.push("createDatabase");
+  }
   if (
     hasPermission("bb.databases.list") &&
     hasPermission("bb.plans.list") &&
@@ -110,6 +120,14 @@ export function getProjectHomeAvailableActions(
     !actions.includes("members")
   ) {
     actions.push("members");
+  }
+  if (
+    input.accessGrantsAvailable &&
+    hasPermission("bb.accessGrants.list") &&
+    !isDefault &&
+    !actions.includes("access")
+  ) {
+    actions.push("access");
   }
   if (
     hasPermission("bb.databases.list") &&

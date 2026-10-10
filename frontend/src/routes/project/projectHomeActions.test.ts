@@ -18,13 +18,14 @@ const actions = (
 ) =>
   getProjectHomeActions({
     availability,
+    instanceAvailability: "empty",
     isDefault,
     accessGrantsAvailable: true,
     hasPermission: (permission) => permissions.includes(permission),
   });
 
 describe("getProjectHomeActions", () => {
-  test("offers creation, querying, and access for a connected project", () => {
+  test("offers creation and querying for a connected project without duplicating work queues", () => {
     expect(
       actions(
         [
@@ -36,16 +37,16 @@ describe("getProjectHomeActions", () => {
         ],
         "present"
       )
-    ).toEqual(["plans", "query", "access"]);
+    ).toEqual(["plans", "query"]);
   });
 
-  test("uses review wording when a member cannot create plans", () => {
+  test("keeps read-only plans without defaulting to Issues", () => {
     expect(
       actions(
         ["bb.databases.list", "bb.plans.list", "bb.issues.list"],
         "present"
       )
-    ).toEqual(["plans", "issues"]);
+    ).toEqual(["plans"]);
   });
 
   test("links an empty project to project instances only when connection is allowed", () => {
@@ -56,6 +57,43 @@ describe("getProjectHomeActions", () => {
     expect(
       actions(["bb.instances.list", "bb.instances.create"], "empty", true)
     ).toEqual([]);
+  });
+
+  test("suggests instance setup and membership for a brand-new project", () => {
+    expect(
+      actions(
+        [
+          "bb.instances.list",
+          "bb.instances.create",
+          "bb.projects.getIamPolicy",
+          "bb.projects.setIamPolicy",
+          "bb.issues.list",
+          "bb.accessGrants.list",
+        ],
+        "empty"
+      )
+    ).toEqual(["instances", "members"]);
+  });
+
+  test("suggests database creation instead of connection when an instance exists", () => {
+    expect(
+      getProjectHomeActions({
+        availability: "empty",
+        instanceAvailability: "present",
+        isDefault: false,
+        accessGrantsAvailable: true,
+        hasPermission: (permission) =>
+          [
+            "bb.databases.list",
+            "bb.instances.list",
+            "bb.issues.create",
+            "bb.plans.create",
+            "bb.sheets.create",
+            "bb.projects.getIamPolicy",
+            "bb.projects.setIamPolicy",
+          ].includes(permission),
+      })
+    ).toEqual(["createDatabase", "members"]);
   });
 
   test("uses neutral instance browsing when database availability is unknown", () => {
@@ -75,16 +113,15 @@ describe("getProjectHomeActions", () => {
     ]);
   });
 
-  test("offers members when that is the only reachable destination", () => {
-    expect(actions(["bb.projects.getIamPolicy"], "unknown")).toEqual([
-      "members",
-    ]);
+  test("does not suggest membership management without write permission", () => {
+    expect(actions(["bb.projects.getIamPolicy"], "empty")).toEqual([]);
   });
 
   test("omits access grants when its licensed feature is unavailable", () => {
     expect(
-      getProjectHomeActions({
+      getProjectHomeAvailableActions({
         availability: "present",
+        instanceAvailability: "unknown",
         isDefault: false,
         accessGrantsAvailable: false,
         hasPermission: (permission) => permission === "bb.accessGrants.list",
@@ -96,6 +133,7 @@ describe("getProjectHomeActions", () => {
     expect(
       getProjectHomeAvailableActions({
         availability: "present",
+        instanceAvailability: "unknown",
         isDefault: false,
         accessGrantsAvailable: true,
         hasPermission: (permission) =>
@@ -112,17 +150,18 @@ describe("getProjectHomeActions", () => {
     ).toEqual([
       "plans",
       "query",
-      "access",
       "issues",
       "instances",
       "databases",
       "members",
+      "access",
     ]);
   });
 
   test("offers GitOps in customization only when its route is reachable", () => {
     const input = {
       availability: "present" as const,
+      instanceAvailability: "unknown" as const,
       isDefault: false,
       accessGrantsAvailable: true,
       hasPermission: (permission: Permission) =>
@@ -147,6 +186,7 @@ describe("getProjectHomeActions", () => {
     expect(
       getProjectHomeAvailableActions({
         availability: "unknown",
+        instanceAvailability: "unknown",
         isDefault: false,
         accessGrantsAvailable: false,
         hasPermission: (permission) =>

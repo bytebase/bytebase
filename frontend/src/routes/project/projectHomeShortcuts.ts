@@ -3,6 +3,7 @@ import type { ProjectHomeAction } from "./projectHomeActions";
 const ACTION_IDS = new Set<ProjectHomeAction>([
   "plans",
   "query",
+  "createDatabase",
   "access",
   "issues",
   "instances",

@@ -2012,6 +2012,8 @@
       "browse-instances-description": "このプロジェクトに接続されたインスタンスを確認します。",
       "connect": "インスタンスを接続",
       "connect-description": "データベースサーバーをこのプロジェクトに接続します。",
+      "create-database": "データベースを作成",
+      "create-database-description": "接続済みインスタンスに最初のデータベースを作成します。",
       "created-by-you": "あなたが作成",
       "customize": "カスタマイズ",
       "customize-title": "ショートカットをカスタマイズ",
@@ -2024,13 +2026,14 @@
       "instances-description": "プロジェクトのインスタンスを接続、管理します。",
       "issues": "課題",
       "issues-description": "このプロジェクトの申請と承認を確認します。",
-      "members": "メンバー",
+      "members": "メンバーを管理",
       "members-description": "プロジェクトのメンバーを管理します。",
       "more-shortcuts": "その他のショートカット",
       "needs-review": "あなたのレビュー待ち",
       "no-actions": "現在利用できるプロジェクト操作はありません。",
       "no-active-issues": "このプロジェクトには、あなたが作成した、またはレビュー待ちの未完了の課題はありません。",
       "no-databases": "アクセスできるデータベースはまだありません。",
+      "no-databases-create-description": "接続済みインスタンスにデータベースを作成して始めましょう。",
       "no-databases-description": "インスタンスを接続して、このプロジェクトにデータベースを追加します。",
       "no-databases-prerequisite": "ここにデータベースを表示するには、インスタンスの接続が必要です。",
       "no-shortcuts": "ショートカットが選択されていません。",
@@ -2045,7 +2048,9 @@
       "selected-shortcuts": "選択したショートカット",
       "shortcuts": "あなたのショートカット",
       "view-all": "すべて表示",
-      "view-issues": "課題を見る"
+      "view-issues": "課題を見る",
+      "view-members": "メンバーを見る",
+      "view-members-description": "このプロジェクトにアクセスできるメンバーを確認します。"
     },
     "masking-exemption": {
       "advanced-search": {

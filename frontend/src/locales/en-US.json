@@ -2012,6 +2012,8 @@
       "browse-instances-description": "See the instances connected to this project.",
       "connect": "Connect an instance",
       "connect-description": "Connect a database server to this project.",
+      "create-database": "Create a database",
+      "create-database-description": "Create the first database on a connected instance.",
       "created-by-you": "You created",
       "customize": "Customize",
       "customize-title": "Customize your shortcuts",
@@ -2024,13 +2026,14 @@
       "instances-description": "Connect and manage project instances.",
       "issues": "Issues",
       "issues-description": "Review requests and approvals for this project.",
-      "members": "Members",
+      "members": "Manage members",
       "members-description": "Manage project membership.",
       "more-shortcuts": "More shortcuts",
       "needs-review": "Needs your review",
       "no-actions": "No project actions are available to you yet.",
       "no-active-issues": "No open issues created by you or awaiting your review in this project.",
       "no-databases": "No accessible databases yet.",
+      "no-databases-create-description": "Create a database on a connected instance to get started.",
       "no-databases-description": "Connect an instance to bring databases into this project.",
       "no-databases-prerequisite": "An instance must be connected before databases appear here.",
       "no-shortcuts": "No shortcuts selected.",
@@ -2045,7 +2048,9 @@
       "selected-shortcuts": "Selected shortcuts",
       "shortcuts": "Your shortcuts",
       "view-all": "View all",
-      "view-issues": "View issues"
+      "view-issues": "View issues",
+      "view-members": "View members",
+      "view-members-description": "See who has access to this project."
     },
     "masking-exemption": {
       "advanced-search": {

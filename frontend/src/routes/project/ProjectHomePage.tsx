@@ -8,6 +8,7 @@ import {
   PlugZap,
   ShieldCheck,
   SquareTerminal,
+  UsersRound,
   Workflow,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -42,7 +43,11 @@ import {
 } from "@/components/ui/sheet";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types/iam";
-import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
+import {
+  ApprovalStatus,
+  IssueStatus,
+  State,
+} from "@/types/proto-es/v1/common_pb";
 import type { Database as DatabaseResource } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoDatabaseRoute } from "@/utils/auto-route";
@@ -76,8 +81,11 @@ const HOME_PERMISSIONS: Permission[] = [
   "bb.issues.get",
   "bb.instances.list",
   "bb.instances.create",
+  "bb.issues.create",
+  "bb.sheets.create",
   "bb.workloadIdentities.list",
   "bb.projects.getIamPolicy",
+  "bb.projects.setIamPolicy",
   "bb.accessGrants.list",
 ];
 const PLAN_DETAIL_PERMISSIONS: Permission[] = [
@@ -89,11 +97,12 @@ const PLAN_DETAIL_PERMISSIONS: Permission[] = [
 const workIcons = {
   plans: Workflow,
   query: SquareTerminal,
+  createDatabase: Database,
   access: ShieldCheck,
   issues: CircleDot,
   instances: Database,
   databases: Database,
-  members: ShieldCheck,
+  members: UsersRound,
   gitops: GitBranch,
 } as const;
 
@@ -117,6 +126,12 @@ function actionTarget(
       return {
         name: SQL_EDITOR_PROJECT_MODULE,
         params: { project: projectId },
+      };
+    case "createDatabase":
+      return {
+        name: PROJECT_V1_ROUTE_DATABASES,
+        params,
+        query: { createDatabase: "1" },
       };
     case "access":
       return { name: PROJECT_V1_ROUTE_ACCESS_GRANTS, params };
@@ -154,6 +169,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     state.hasInstanceFeature(PlanFeature.FEATURE_JIT)
   );
   const fetchDatabases = useAppStore((state) => state.fetchDatabases);
+  const fetchInstanceList = useAppStore((state) => state.fetchInstanceList);
   const listIssues = useAppStore((state) => state.listIssues);
   const workspace = useAppStore(
     (state) => state.currentUser?.workspace ?? state.serverInfo?.workspace ?? ""
@@ -188,9 +204,11 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   );
   const canReadIssues = !missedPermissions.includes("bb.issues.get");
   const canListIssues = !missedPermissions.includes("bb.issues.list");
-  const canConnectInstance =
-    projectName !== defaultProject &&
+  const canListProjectInstances =
     !missedPermissions.includes("bb.instances.list") &&
+    projectName !== defaultProject;
+  const canConnectInstance =
+    canListProjectInstances &&
     !missedPermissions.includes("bb.instances.create");
   const [databaseState, setDatabaseState] = useState<{
     projectName: string;
@@ -204,6 +222,14 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
       : "loading";
   const databases =
     databaseState.projectName === projectName ? databaseState.databases : [];
+  const [instanceState, setInstanceState] = useState<{
+    projectName: string;
+    availability: DatabaseAvailability;
+  }>({ projectName, availability: "loading" });
+  const instanceAvailability =
+    instanceState.projectName === projectName
+      ? instanceState.availability
+      : "loading";
   const activeIssueKey = `${projectName}:${memberName}:${canReadIssues}`;
   const [activeIssueState, setActiveIssueState] = useState<{
     key: string;
@@ -249,6 +275,38 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
       active = false;
     };
   }, [canPreviewDatabases, fetchDatabases, projectName]);
+
+  useEffect(() => {
+    if (availability !== "empty") return;
+    let active = true;
+    setInstanceState({
+      projectName,
+      availability: canListProjectInstances ? "loading" : "unknown",
+    });
+    if (!canListProjectInstances) return;
+    void fetchInstanceList({
+      parent: projectName,
+      pageSize: 1,
+      filter: { state: State.ACTIVE },
+      silent: true,
+    })
+      .then(({ instances }) => {
+        if (active) {
+          setInstanceState({
+            projectName,
+            availability: instances.length ? "present" : "empty",
+          });
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setInstanceState({ projectName, availability: "unknown" });
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [availability, canListProjectInstances, fetchInstanceList, projectName]);
 
   useEffect(() => {
     let active = true;
@@ -324,6 +382,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const actionInput = useMemo(
     () => ({
       availability,
+      instanceAvailability,
       isDefault: projectName === defaultProject,
       accessGrantsAvailable,
       hasPermission: (permission: Permission) =>
@@ -332,6 +391,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     [
       accessGrantsAvailable,
       availability,
+      instanceAvailability,
       defaultProject,
       missedPermissions,
       projectName,
@@ -400,6 +460,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const actionIcon = (action: ProjectHomeAction) =>
     action === "instances" &&
     availability === "empty" &&
+    instanceAvailability === "empty" &&
     !missedPermissions.includes("bb.instances.create")
       ? PlugZap
       : workIcons[action];
@@ -407,7 +468,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const actionCopy = (action: ProjectHomeAction) => {
     switch (action) {
       case "instances":
-        return availability === "empty"
+        return availability === "empty" && instanceAvailability === "empty"
           ? missedPermissions.includes("bb.instances.create")
             ? [
                 t("project.home.browse-instances"),
@@ -428,6 +489,11 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
             ];
       case "query":
         return [t("project.home.query"), t("project.home.query-description")];
+      case "createDatabase":
+        return [
+          t("project.home.create-database"),
+          t("project.home.create-database-description"),
+        ];
       case "access":
         return [t("project.home.access"), t("project.home.access-description")];
       case "issues":
@@ -438,10 +504,12 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
           t("project.home.databases-description"),
         ];
       case "members":
-        return [
-          t("project.home.members"),
-          t("project.home.members-description"),
-        ];
+        return missedPermissions.includes("bb.projects.setIamPolicy")
+          ? [
+              t("project.home.view-members"),
+              t("project.home.view-members-description"),
+            ]
+          : [t("project.home.members"), t("project.home.members-description")];
       case "gitops":
         return [t("gitops.self"), t("project.home.gitops-description")];
     }
@@ -623,12 +691,20 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
               </p>
               {availability === "empty" && (
                 <>
-                  <p className="mt-1">
-                    {canConnectInstance
-                      ? t("project.home.no-databases-description")
-                      : t("project.home.no-databases-prerequisite")}
-                  </p>
-                  {canConnectInstance && (
+                  {instanceAvailability === "empty" && (
+                    <p className="mt-1">
+                      {canConnectInstance
+                        ? t("project.home.no-databases-description")
+                        : t("project.home.no-databases-prerequisite")}
+                    </p>
+                  )}
+                  {instanceAvailability === "present" &&
+                    availableActions.includes("createDatabase") && (
+                      <p className="mt-1">
+                        {t("project.home.no-databases-create-description")}
+                      </p>
+                    )}
+                  {canConnectInstance && instanceAvailability === "empty" && (
                     <RouterLink
                       to={{
                         name: PROJECT_V1_ROUTE_INSTANCE_CREATE,
@@ -643,6 +719,19 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
                       />
                     </RouterLink>
                   )}
+                  {instanceAvailability === "present" &&
+                    availableActions.includes("createDatabase") && (
+                      <RouterLink
+                        to={actionTarget("createDatabase", projectId, false)}
+                        className="mt-3 inline-flex items-center py-1 text-sm font-medium text-control no-underline hover:text-main hover:underline focus-visible:underline"
+                      >
+                        {t("project.home.create-database")}
+                        <ArrowUpRight
+                          className="ml-1 size-4"
+                          aria-hidden="true"
+                        />
+                      </RouterLink>
+                    )}
                 </>
               )}
             </div>
@@ -682,7 +771,9 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
                     to={actionTarget(
                       action,
                       projectId,
-                      availability === "empty" && canConnectInstance
+                      availability === "empty" &&
+                        instanceAvailability === "empty" &&
+                        canConnectInstance
                     )}
                     className="group flex min-w-0 items-start gap-3 rounded-xs px-1 py-4 text-main no-underline outline-item hover:bg-control-bg"
                   >
