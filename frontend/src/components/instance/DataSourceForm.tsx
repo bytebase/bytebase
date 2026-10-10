@@ -1,6 +1,13 @@
 import { create } from "@bufbuild/protobuf";
-import { Info } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Info, Plus } from "lucide-react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Button } from "@/components/ui/button";
@@ -107,6 +114,10 @@ const mergeTlsUpdateState = (
     clientCert: current.clientCert || next.clientCert,
   };
 };
+
+function SecretManagerFieldTitle({ children }: { children: ReactNode }) {
+  return <span className="textlabel">{children}</span>;
+}
 
 export function RedisSentinelFields({
   dataSource,
@@ -704,7 +715,7 @@ export function DataSourceForm({
         {item.value !==
           DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED &&
           currentPlan === PlanType.FREE && (
-            <span className="rounded-full border border-current px-1.5 py-0.5 text-xs">
+            <span className="rounded-xs border border-current px-1.5 py-0.5 text-xs">
               Pro
             </span>
           )}
@@ -1101,7 +1112,7 @@ export function DataSourceForm({
                           )?.label
                         }
                       >
-                        <ResponsiveFormLayout>
+                        <ResponsiveFormLayout layout="vertical">
                           <fieldset
                             aria-label={t(
                               "instance.iam-extension.credential-source"
@@ -1184,13 +1195,13 @@ export function DataSourceForm({
                                     )?.label
                                   }
                                   description={
-                                    <LearnMoreLink
-                                      href="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration"
-                                      className="text-sm text-accent"
-                                    />
+                                    <LearnMoreLink href="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration" />
                                   }
                                 >
-                                  <ResponsiveFormLayout className="mt-2">
+                                  <ResponsiveFormLayout
+                                    layout="vertical"
+                                    className="mt-2"
+                                  >
                                     <fieldset
                                       className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
                                       aria-label={t(
@@ -1204,14 +1215,14 @@ export function DataSourceForm({
                                           <FormField
                                             validationField="externalSecret.url"
                                             title={
-                                              <>
+                                              <SecretManagerFieldTitle>
                                                 {t(
                                                   "instance.external-secret-vault.vault-url"
                                                 )}{" "}
                                                 <span className="text-error">
                                                   *
                                                 </span>
-                                              </>
+                                              </SecretManagerFieldTitle>
                                             }
                                           >
                                             <Input
@@ -1237,11 +1248,11 @@ export function DataSourceForm({
                                           </FormField>
                                           <FormField
                                             title={
-                                              <>
+                                              <SecretManagerFieldTitle>
                                                 {t(
                                                   "instance.external-secret-vault.vault-auth-type.self"
                                                 )}
-                                              </>
+                                              </SecretManagerFieldTitle>
                                             }
                                           >
                                             <RadioGroup
@@ -1331,12 +1342,12 @@ export function DataSourceForm({
                                                 <FormField
                                                   validationField="externalSecret.token"
                                                   title={
-                                                    <>
+                                                    <SecretManagerFieldTitle>
                                                       {tokenLabel}{" "}
                                                       <span className="text-error">
                                                         *
                                                       </span>
-                                                    </>
+                                                    </SecretManagerFieldTitle>
                                                   }
                                                 >
                                                   {/* Token source is host-backed for env/file,
@@ -1446,14 +1457,14 @@ export function DataSourceForm({
                                               <FormField
                                                 validationField="externalSecret.roleId"
                                                 title={
-                                                  <>
+                                                  <SecretManagerFieldTitle>
                                                     {t(
                                                       "instance.external-secret-vault.vault-auth-type.approle.role-id"
                                                     )}{" "}
                                                     <span className="text-error">
                                                       *
                                                     </span>
-                                                  </>
+                                                  </SecretManagerFieldTitle>
                                                 }
                                               >
                                                 <Input
@@ -1495,14 +1506,14 @@ export function DataSourceForm({
                                               <FormField
                                                 validationField="externalSecret.secretId"
                                                 title={
-                                                  <>
+                                                  <SecretManagerFieldTitle>
                                                     {t(
                                                       "instance.external-secret-vault.vault-auth-type.approle.secret-id"
                                                     )}{" "}
                                                     <span className="text-error">
                                                       *
                                                     </span>
-                                                  </>
+                                                  </SecretManagerFieldTitle>
                                                 }
                                               >
                                                 {/* Environment secret id reads from the host,
@@ -1602,14 +1613,16 @@ export function DataSourceForm({
                                           {/* Vault TLS config */}
                                           <FormField
                                             title={
-                                              <>
+                                              <SecretManagerFieldTitle>
                                                 {t(
                                                   "instance.external-secret-vault.vault-tls-config"
                                                 )}
-                                              </>
+                                              </SecretManagerFieldTitle>
                                             }
                                           >
                                             <SslCertificateForm
+                                              layout="vertical"
+                                              verifyControlLayout="inline"
                                               verify={
                                                 !dataSource.externalSecret
                                                   .skipVaultTlsVerification
@@ -1667,14 +1680,14 @@ export function DataSourceForm({
                                           <FormField
                                             validationField="externalSecret.engineName"
                                             title={
-                                              <>
+                                              <SecretManagerFieldTitle>
                                                 {t(
                                                   "instance.external-secret-vault.vault-secret-engine-name"
                                                 )}{" "}
                                                 <span className="text-error">
                                                   *
                                                 </span>
-                                              </>
+                                              </SecretManagerFieldTitle>
                                             }
                                             description={
                                               <>
@@ -1714,14 +1727,14 @@ export function DataSourceForm({
                                         <FormField
                                           validationField="externalSecret.url"
                                           title={
-                                            <>
+                                            <SecretManagerFieldTitle>
                                               {t(
                                                 "instance.external-secret-azure.vault-url"
                                               )}{" "}
                                               <span className="text-error">
                                                 *
                                               </span>
-                                            </>
+                                            </SecretManagerFieldTitle>
                                           }
                                           description={
                                             <>
@@ -1758,12 +1771,12 @@ export function DataSourceForm({
                                       <FormField
                                         validationField="externalSecret.secretName"
                                         title={
-                                          <>
+                                          <SecretManagerFieldTitle>
                                             {secretNameLabel}{" "}
                                             <span className="text-error">
                                               *
                                             </span>
-                                          </>
+                                          </SecretManagerFieldTitle>
                                         }
                                         description={secretNameDescription}
                                       >
@@ -1795,12 +1808,12 @@ export function DataSourceForm({
                                           <FormField
                                             validationField="externalSecret.passwordKeyName"
                                             title={
-                                              <>
+                                              <SecretManagerFieldTitle>
                                                 {secretKeyLabel}{" "}
                                                 <span className="text-error">
                                                   *
                                                 </span>
-                                              </>
+                                              </SecretManagerFieldTitle>
                                             }
                                           >
                                             <Input
@@ -1912,10 +1925,7 @@ export function DataSourceForm({
                         <span className="text-control-light">
                           {t("data-source.snowflake-keypair-tip")}
                         </span>
-                        <LearnMoreLink
-                          href="https://docs.snowflake.com/en/user-guide/key-pair-auth"
-                          className="text-sm text-accent"
-                        />
+                        <LearnMoreLink href="https://docs.snowflake.com/en/user-guide/key-pair-auth" />
                       </div>
                     </FormField>
                     <FormField
@@ -2319,12 +2329,13 @@ export function DataSourceForm({
                   </>
                 ) : (
                   <Button
-                    appearance="link"
+                    appearance="outline"
                     size="sm"
                     className="self-start"
                     onClick={() => setShowExtraParameters(true)}
                     disabled={!allowEdit}
                   >
+                    <Plus className="h-4 w-4" />
                     {t("instance.add-parameter")}
                   </Button>
                 )}
@@ -2353,10 +2364,10 @@ function AwsRegionField({
     <FormField
       validationField="region"
       title={
-        <>
+        <span className="textlabel">
           {t("instance.database-region")}
           {required && <span className="text-error"> *</span>}
-        </>
+        </span>
       }
     >
       <Input

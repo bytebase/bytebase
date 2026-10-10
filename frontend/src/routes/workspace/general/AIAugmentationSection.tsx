@@ -309,10 +309,7 @@ export const AIAugmentationSection = forwardRef<
                   description={
                     <>
                       {t("settings.general.workspace.ai-assistant.description")}{" "}
-                      <LearnMoreLink
-                        href="https://docs.bytebase.com/ai-assistant?source=console"
-                        className="text-accent text-sm ml-1"
-                      />
+                      <LearnMoreLink href="https://docs.bytebase.com/ai-assistant?source=console" />
                     </>
                   }
                 />

@@ -917,7 +917,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
 
   if (issue.approvalStatus === ApprovalStatus.CHECKING) {
     return (
-      <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
+      <span className="shrink-0 mt-1 inline-flex items-center rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs text-control-light">
         {t("custom-approval.issue-review.generating-approval-flow")}
       </span>
     );
@@ -933,7 +933,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
     if (status === ApprovalStatus.APPROVED) {
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
-          <span className="inline-flex items-center rounded-full bg-success/10 text-success px-2 py-0.5 text-xs">
+          <span className="inline-flex items-center rounded-xs border border-transparent bg-success/10 px-1.5 py-0.5 text-xs text-success">
             {t("issue.table.approved")}
           </span>
           <span className="text-xs text-control-light whitespace-nowrap sm:mt-1">
@@ -945,7 +945,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
     if (status === ApprovalStatus.REJECTED) {
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
-          <span className="inline-flex items-center rounded-full bg-warning/10 text-warning px-2 py-0.5 text-xs">
+          <span className="inline-flex items-center rounded-xs border border-transparent bg-warning/10 px-1.5 py-0.5 text-xs text-warning">
             {t("common.rejected")}
           </span>
           <span className="text-xs text-control-light whitespace-nowrap sm:mt-1">
@@ -960,7 +960,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
       const roleName = role ? displayRoleTitleFromList(role, roleList) : "";
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
-          <span className="inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
+          <span className="inline-flex items-center rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs text-control-light">
             {progressText}
           </span>
           {roleName && (
@@ -974,7 +974,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
   }
 
   return (
-    <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
+    <span className="shrink-0 mt-1 inline-flex items-center rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs text-control-light">
       {t("custom-approval.approval-flow.skip")}
     </span>
   );

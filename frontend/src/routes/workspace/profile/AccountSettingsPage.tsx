@@ -380,10 +380,7 @@ export function AccountSettingsPage() {
                 description={
                   <>
                     {t("two-factor.description")}{" "}
-                    <LearnMoreLink
-                      href="https://docs.bytebase.com/administration/2fa?source=console"
-                      className="ml-1 text-accent"
-                    />
+                    <LearnMoreLink href="https://docs.bytebase.com/administration/2fa?source=console" />
                   </>
                 }
               >

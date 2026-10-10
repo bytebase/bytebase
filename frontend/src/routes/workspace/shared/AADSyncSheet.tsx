@@ -113,10 +113,7 @@ export function AADSyncSheet({
             {/* Description */}
             <p className="text-sm text-control-light">
               {t("settings.members.entra-sync.description")}{" "}
-              <LearnMoreLink
-                href="https://docs.bytebase.com/administration/scim/overview?source=console"
-                className="text-accent"
-              />
+              <LearnMoreLink href="https://docs.bytebase.com/administration/scim/overview?source=console" />
             </p>
 
             {/* Missing external URL warning */}

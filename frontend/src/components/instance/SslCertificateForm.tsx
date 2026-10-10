@@ -1,7 +1,7 @@
 import { type DragEvent, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
-import { ResponsiveFormLayout } from "@/components/ui/form";
+import { FormControlRow, ResponsiveFormLayout } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -37,6 +37,7 @@ import {
 } from "./ValidationField";
 
 interface SslCertificateFormProps {
+  layout?: "responsive" | "vertical" | "horizontal";
   useSsl?: boolean;
   onUseSslChange?: (val: boolean) => void;
   caSource?: LocalTlsCaSource;
@@ -66,6 +67,7 @@ interface SslCertificateFormProps {
   onKeyPathChange?: (val: string) => void;
   disabled?: boolean;
   showVerify?: boolean;
+  verifyControlLayout?: "field" | "inline";
   showKeyAndCert?: boolean;
   verifyLabel?: string;
   caLabel?: string;
@@ -278,6 +280,7 @@ function ClientCertSourceSelector({
 }
 
 export function SslCertificateForm({
+  layout = "responsive",
   useSsl,
   onUseSslChange,
   caSource,
@@ -307,6 +310,7 @@ export function SslCertificateForm({
   onKeyPathChange,
   disabled = false,
   showVerify = true,
+  verifyControlLayout = "field",
   showKeyAndCert = false,
   verifyLabel,
   caLabel,
@@ -729,6 +733,35 @@ export function SslCertificateForm({
       return null;
     }
 
+    const verifySwitch = (
+      <Switch
+        className="self-start"
+        aria-label={resolvedVerifyLabel}
+        checked={verify}
+        onCheckedChange={(val) => onVerifyChange?.(val)}
+        disabled={disabled}
+      />
+    );
+    const disabledDescription = !verify && (
+      <p className="text-xs leading-4 text-control-light">
+        {t("data-source.ssl.verification-disabled-description")}
+      </p>
+    );
+
+    if (verifyControlLayout === "inline") {
+      return (
+        <div className="flex flex-col gap-y-1">
+          <FormControlRow className="w-fit">
+            {verifySwitch}
+            <span className="text-sm font-normal leading-5 text-control">
+              {resolvedVerifyLabel}
+            </span>
+          </FormControlRow>
+          {disabledDescription}
+        </div>
+      );
+    }
+
     return (
       <FormField
         title={
@@ -737,18 +770,8 @@ export function SslCertificateForm({
           </span>
         }
       >
-        <Switch
-          className="self-start"
-          aria-label={resolvedVerifyLabel}
-          checked={verify}
-          onCheckedChange={(val) => onVerifyChange?.(val)}
-          disabled={disabled}
-        />
-        {!verify && (
-          <p className="text-xs leading-4 text-control-light">
-            {t("data-source.ssl.verification-disabled-description")}
-          </p>
-        )}
+        {verifySwitch}
+        {disabledDescription}
       </FormField>
     );
   };
@@ -824,7 +847,7 @@ export function SslCertificateForm({
   };
 
   return (
-    <ResponsiveFormLayout className="flex flex-col gap-4">
+    <ResponsiveFormLayout layout={layout} className="flex flex-col gap-4">
       {showPostureUi && (
         <>
           {renderPostureControl()}

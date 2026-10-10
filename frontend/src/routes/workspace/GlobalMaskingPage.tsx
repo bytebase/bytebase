@@ -537,10 +537,7 @@ export function GlobalMaskingPage() {
               <>{t("custom-approval.rule.first-match-wins")} </>
             )}
             {t("settings.sensitive-data.global-rules.description")}{" "}
-            <LearnMoreLink
-              href="https://docs.bytebase.com/security/data-masking/overview/?source=console"
-              className="text-accent"
-            />
+            <LearnMoreLink href="https://docs.bytebase.com/security/data-masking/overview/?source=console" />
           </>
         }
       />

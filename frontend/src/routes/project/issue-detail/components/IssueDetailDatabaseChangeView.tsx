@@ -815,7 +815,7 @@ function IssueDetailDatabaseGroupTarget({
     <div className={cn("flex w-full flex-col gap-2", className)}>
       <div className="flex items-center gap-x-2">
         <FolderTree className="h-5 w-5 shrink-0 text-control" />
-        <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs">
+        <span className="inline-flex items-center rounded-xs border px-1.5 py-0.5 text-xs">
           {t("common.database-group")}
         </span>
         <span className="min-w-0 truncate text-sm text-main">

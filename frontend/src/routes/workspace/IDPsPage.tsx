@@ -1624,10 +1624,7 @@ function CreateWizardDrawer({
                       {t(
                         "settings.sso.form.user-information-mapping-description"
                       )}{" "}
-                      <LearnMoreLink
-                        href="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console"
-                        className="text-accent ml-1"
-                      />
+                      <LearnMoreLink href="https://docs.bytebase.com/administration/sso/oauth2#user-information-field-mapping?source=console" />
                     </p>
                   </div>
                   <div className="max-w-2xl mx-auto flex flex-col gap-y-6 w-full">
@@ -1739,10 +1736,7 @@ export function IDPsPage() {
         description={
           <>
             {t("settings.sso.description")}{" "}
-            <LearnMoreLink
-              href="https://docs.bytebase.com/administration/sso/overview?source=console"
-              className="text-accent"
-            />
+            <LearnMoreLink href="https://docs.bytebase.com/administration/sso/overview?source=console" />
           </>
         }
       />

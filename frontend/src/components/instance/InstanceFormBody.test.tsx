@@ -283,6 +283,27 @@ test("uses a switch for synchronization scope", () => {
   );
 });
 
+test("hides database-selection guidance while syncing all databases", () => {
+  render(
+    <InstanceFormProvider>
+      <SyncDatabases
+        isCreating
+        showLabel
+        allowEdit
+        disabledReason="Enter a hostname to choose which databases to sync."
+        onSyncDatabasesChange={() => undefined}
+      />
+    </InstanceFormProvider>
+  );
+
+  expect(
+    screen.queryByText(
+      "Enter a hostname to choose which databases to sync."
+    )
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("switch")).not.toHaveAttribute("aria-describedby");
+});
+
 test("keeps newly loaded selections in the database preview", async () => {
   mocks.listInstanceDatabases.mockResolvedValue({ databases: ["analytics"] });
   const instance = create(InstanceSchema, {
