@@ -177,7 +177,7 @@ function getGrantStatement(
       case Engine.MSSQL:
         return `-- If you use Cloud RDS, you need to checkout their documentation for setting up a semi-super privileged user.\nCREATE LOGIN ${DATASOURCE_ADMIN_USER_NAME} WITH PASSWORD = 'YOUR_DB_PWD';\nALTER SERVER ROLE sysadmin ADD MEMBER ${DATASOURCE_ADMIN_USER_NAME};`;
       case Engine.ORACLE:
-        return `-- Run in the pluggable database that Bytebase connects to, not the CDB root.\nCREATE USER ${DATASOURCE_ADMIN_USER_NAME} IDENTIFIED BY "YOUR_DB_PWD";\nGRANT ALL PRIVILEGES TO ${DATASOURCE_ADMIN_USER_NAME};`;
+        return `-- Run in the database Bytebase connects to.\n-- In a container database (CDB), that is the pluggable database, not the root.\nCREATE USER ${DATASOURCE_ADMIN_USER_NAME} IDENTIFIED BY "YOUR_DB_PWD";\nGRANT ALL PRIVILEGES TO ${DATASOURCE_ADMIN_USER_NAME};`;
     }
   } else {
     const mysqlReadonlyStatement = `CREATE USER ${DATASOURCE_READONLY_USER_NAME}@'%' IDENTIFIED BY 'YOUR_DB_PWD';\n\nGRANT SELECT, SHOW DATABASES, SHOW VIEW, USAGE ON *.* to ${DATASOURCE_READONLY_USER_NAME}@'%';`;

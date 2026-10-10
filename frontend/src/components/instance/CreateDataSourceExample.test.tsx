@@ -52,7 +52,8 @@ describe.each([
 test("Oracle admin example double-quotes the password and warns about Amazon RDS", () => {
   expect(renderExample(Engine.ORACLE, DataSourceType.ADMIN)).toBe(
     [
-      "-- Run in the pluggable database that Bytebase connects to, not the CDB root.",
+      "-- Run in the database Bytebase connects to.",
+      "-- In a container database (CDB), that is the pluggable database, not the root.",
       'CREATE USER bytebase IDENTIFIED BY "YOUR_DB_PWD";',
       "GRANT ALL PRIVILEGES TO bytebase;",
     ].join("\n")
