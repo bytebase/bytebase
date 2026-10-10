@@ -286,6 +286,9 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get database metadata")
 	}
+	if metadata == nil {
+		return nil, errors.Errorf("database metadata for database %q not found (database not synced)", tCtx.DatabaseName)
+	}
 
 	searchPath := metadata.GetSearchPath()
 	var dmls []statementInfo

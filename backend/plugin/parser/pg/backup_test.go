@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/yamltest"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 type rollbackCase struct {
@@ -72,4 +73,14 @@ func TestBackup(t *testing.T) {
 	if record {
 		yamltest.Record(t, filepath, tests)
 	}
+}
+
+func TestBackupUnsyncedDatabase(t *testing.T) {
+	_, err := TransformDMLToSelect(context.Background(), base.TransformContext{
+		GetDatabaseMetadataFunc: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
+			return "", nil, nil
+		},
+		DatabaseName: "db",
+	}, "UPDATE t SET a = 1 WHERE b = 1;", "db", "backupSchema", "rollback")
+	require.ErrorContains(t, err, `database metadata for database "db" not found (database not synced)`)
 }
