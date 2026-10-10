@@ -292,7 +292,7 @@ export function TabList() {
                   size="xs"
                   type="button"
                   className={cn(
-                    "bg-control-bg/20 hover:bg-accent/10 py-1 px-1.5",
+                    "h-auto bg-control-bg/20 hover:bg-accent/10 py-1 px-1.5",
                     "border-t border-x rounded-t-sm hover:border-accent disabled:opacity-50"
                   )}
                   disabled={loading}
