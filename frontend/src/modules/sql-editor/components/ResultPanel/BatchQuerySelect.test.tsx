@@ -66,8 +66,11 @@ vi.mock("@/modules/sql-editor/components/RequestExportButton", () => ({
 
 vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
   useExportGrantBypass: () => ({
-    matchedDatabases: [],
+    loading: false,
+    failedDatabases: [],
     unmatchedDatabases: [],
+    retry: vi.fn(),
+    matchedDatabases: [],
     tooltip: undefined,
   }),
 }));

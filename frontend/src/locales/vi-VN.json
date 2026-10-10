@@ -1308,7 +1308,11 @@
           "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết. Đầu tiên, bạn cần bật {{link}} quy trình công việc dựa trên SQL và sau đó chạy truy vấn sau để tạo người dùng."
         },
         "mysql": {
-          "template": "Dưới đây là ví dụ để tạo người dùng {{user}}@% với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết."
+          "template": "Dưới đây là ví dụ để tạo người dùng {{user}}@% với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết.",
+          "warn": "Để Bytebase chạy các thay đổi đặt DEFINER thành một tài khoản khác, hãy cấp thêm SET_USER_ID trên MySQL 8.0 hoặc SET_ANY_DEFINER trên MySQL 8.4 trở lên. Một số nhà cung cấp đám mây hạn chế các đặc quyền này."
+        },
+        "oracle": {
+          "warn": "GRANT ALL PRIVILEGES không hoạt động trên Amazon RDS for Oracle."
         },
         "postgresql": {
           "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết. Nếu phiên bản kết nối được tự lưu trữ, thì bạn có thể cấp SUPERUSER.",
@@ -3343,6 +3347,9 @@
     "export-available-via-issue": "Xuất khả dụng qua issue \"{{title}}\"",
     "export-available-via-n-grants": "Xuất khả dụng qua {{count}} cấp quyền truy cập:",
     "export-enabled-by-grant": "Xuất được kích hoạt bởi cấp quyền truy cập",
+    "export-grant-lookup-failed": "Không thể kiểm tra quyền xuất.",
+    "export-grant-lookup-loading": "Đang kiểm tra quyền xuất…",
+    "export-grant-lookup-retry": "Thử lại",
     "format": "Định dạng",
     "format-default": "Mặc định",
     "format-sql": "Định dạng SQL",

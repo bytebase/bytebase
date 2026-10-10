@@ -1308,7 +1308,11 @@
           "template": "创建用户 {{user}}，密码 {{password}}，并授予必要权限的例子如下。您需要首先启用 {{link}}，才能执行以下创建用户的命令。"
         },
         "mysql": {
-          "template": "创建用户 {{user}}，密码 {{password}}，并授予必要权限的例子如下。"
+          "template": "创建用户 {{user}}，密码 {{password}}，并授予必要权限的例子如下。",
+          "warn": "如需让 Bytebase 执行将 DEFINER 设为其他账户的变更，还需授予 MySQL 8.0 的 SET_USER_ID 或 MySQL 8.4 及以上版本的 SET_ANY_DEFINER。部分云服务商会限制这些权限。"
+        },
+        "oracle": {
+          "warn": "GRANT ALL PRIVILEGES 在 Amazon RDS for Oracle 上无法执行。"
         },
         "postgresql": {
           "template": "创建用户 {{user}}，密码 {{password}}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。",
@@ -3343,6 +3347,9 @@
     "export-available-via-issue": "通过工单 \"{{title}}\" 可导出",
     "export-available-via-n-grants": "通过 {{count}} 个访问授权可导出:",
     "export-enabled-by-grant": "由访问授权启用导出",
+    "export-grant-lookup-failed": "无法检查导出权限。",
+    "export-grant-lookup-loading": "正在检查导出权限…",
+    "export-grant-lookup-retry": "重试",
     "format": "格式化",
     "format-default": "默认",
     "format-sql": "格式化 SQL",

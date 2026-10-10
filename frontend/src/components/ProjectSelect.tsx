@@ -55,17 +55,21 @@ export function ProjectSelect({
   const excludeDefaultRef = useRef(excludeDefault);
   excludeDefaultRef.current = excludeDefault;
 
-  const fetchPage = useCallback(async (query: string, pageToken: string) => {
-    const result = await useAppStore.getState().fetchProjectList({
-      filter: { query, excludeDefault: excludeDefaultRef.current },
-      pageSize: getDefaultPagination(),
-      pageToken,
-    });
-    return {
-      items: result.projects,
-      nextPageToken: result.nextPageToken,
-    };
-  }, []);
+  const fetchPage = useCallback(
+    async (query: string, pageToken: string, signal: AbortSignal) => {
+      const result = await useAppStore.getState().fetchProjectList({
+        signal,
+        filter: { query, excludeDefault: excludeDefaultRef.current },
+        pageSize: getDefaultPagination(),
+        pageToken,
+      });
+      return {
+        items: result.projects,
+        nextPageToken: result.nextPageToken,
+      };
+    },
+    []
+  );
   const {
     items: projects,
     search,
