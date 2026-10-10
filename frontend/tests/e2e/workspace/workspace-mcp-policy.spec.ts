@@ -151,15 +151,19 @@ test.describe("MCP access policy capability ladder", () => {
     // The chip names the policy without an "In force" label, and the audit
     // fact belongs to the section description rather than to the current state.
     await expect(page.getByText("In force")).toHaveCount(0);
+    await expect(page.getByText(COPY.policy.audit)).toHaveCount(1);
     await expect(
-      page.getByText(/^MCP policy denials are streamed to stdout/)
-    ).toHaveCount(0);
-    await expect(page.getByText(COPY.policy.description)).toBeVisible();
+      page.getByText(
+        COPY.policy.description
+          .replace("{{bound}}", COPY.policy.bound)
+          .replace("{{audit}}", COPY.policy.audit)
+      )
+    ).toBeVisible();
     // Pinned as a literal, not read from the locale: this description carries
     // the page's only audit disclosure, so the claim has to survive a copy edit
     // that keeps the sentence and drops the clause.
     await expect(
-      page.getByText(/policy refusals are streamed to stdout when audit logging/)
+      page.getByText(/MCP operations are recorded in Bytebase audit logs/)
     ).toBeVisible();
 
     // Connect a client carries the authentication clause; nothing repeats it

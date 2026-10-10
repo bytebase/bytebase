@@ -204,12 +204,19 @@ test.describe("Direct export when the policy allows it (C1, C9)", () => {
     ).toBeVisible({ timeout: 10_000 });
     const drawer = await openExportDrawer();
     await expect(drawer.getByText("Export format")).toBeVisible();
+    // The format is a Select whose list renders in a popup outside the drawer.
+    const formatSelect = drawer.getByRole("combobox");
+    await expect(formatSelect).toHaveText("CSV");
+    await formatSelect.click();
     for (const fmt of ["CSV", "JSON", "SQL", "XLSX"]) {
       await expect(
-        drawer.getByRole("radio", { name: fmt, exact: true }),
-        `format radio "${fmt}" must be offered`,
+        page.getByRole("option", { name: fmt, exact: true }),
+        `format option "${fmt}" must be offered`,
       ).toBeVisible();
     }
+    // Re-pick the default to close the list without dismissing the drawer.
+    await page.getByRole("option", { name: "CSV", exact: true }).click();
+    await expect(formatSelect).toHaveText("CSV");
     await expect(
       drawer.getByText("Encrypt with password (Optional)"),
     ).toBeVisible();

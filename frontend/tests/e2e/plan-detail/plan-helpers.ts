@@ -21,6 +21,17 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   ]);
 }
 
+// The admin in these specs creates, edits, and approves its own plans, so it is
+// both the issue creator and the last plan editor. Those are separate,
+// cumulative approval permissions that a new project denies, so they move
+// together; restore snapshots must cover both fields.
+export function authorMayApprove(allow: boolean): {
+  allowSelfApproval: boolean;
+  allowLastPlanEditorApproval: boolean;
+} {
+  return { allowSelfApproval: allow, allowLastPlanEditorApproval: allow };
+}
+
 // Recover a plan's linked review-issue name from the Plan proto's OUTPUT_ONLY
 // `issue` field. A UI-created plan's draft review issue is created together with
 // the plan, so this is usually populated immediately — but poll briefly to

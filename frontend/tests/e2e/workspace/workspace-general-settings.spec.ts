@@ -8,11 +8,11 @@
 //
 // Covers:
 //   - W1 wording + policy→UI: the retitled label and its description render
-//     in the SQL Editor settings section, and the checkbox reflects the LIVE
-//     workspace DATA_QUERY policy in both states (checked = export allowed
+//     in the SQL Editor settings section, and the switch reflects the LIVE
+//     workspace DATA_QUERY policy in both states (on = export allowed
 //     without approval = disableExport:false).
-//   - W2 UI→policy wiring: unchecking + Update persists disableExport:true
-//     (verified via the API, not just the UI), and re-checking + Update
+//   - W2 UI→policy wiring: switching off + Update persists disableExport:true
+//     (verified via the API, not just the UI), and switching on + Update
 //     restores it — both directions of the `checked={!disableExport}`
 //     inversion in SQLEditorSection.tsx.
 //
@@ -57,15 +57,15 @@ async function setQueryDataPolicy(
   });
 }
 
-// The checkbox lives inside the FormField title span next to the label text
-// (SQLEditorSection.tsx renders `<Checkbox/>{label}<FeatureBadge/>` in one
+// The switch lives inside the FormField title span next to the label text
+// (SQLEditorSection.tsx renders `<Switch/>{label}<FeatureBadge/>` in one
 // inline-flex span), so scope by that span rather than by accessible name —
 // the label text is a sibling, not an aria label.
-function exportCheckbox() {
+function exportSwitch() {
   return page
     .locator("span", { hasText: EXPORT_LABEL })
     .first()
-    .getByRole("checkbox");
+    .getByRole("switch");
 }
 
 async function gotoGeneralSettings(): Promise<void> {
@@ -102,7 +102,7 @@ test.afterAll(async () => {
 });
 
 test.describe("data-export policy control wording and wiring", () => {
-  test("the retitled checkbox and its description render, reflecting the live policy in both states (W1)", async () => {
+  test("the retitled switch and its description render, reflecting the live policy in both states (W1)", async () => {
     // Known state first (own your fixtures): export allowed without approval.
     await setQueryDataPolicy({ ...originalQueryDataPolicy, disableExport: false });
     await gotoGeneralSettings();
@@ -114,23 +114,23 @@ test.describe("data-export policy control wording and wiring", () => {
         /In projects that allow access grants, users can still click "Request export"/
       )
     ).toBeVisible();
-    await expect(exportCheckbox()).toBeChecked();
+    await expect(exportSwitch()).toBeChecked();
 
-    // Flip the policy via API → a fresh load shows the checkbox unchecked.
+    // Flip the policy via API → a fresh load shows the switch off.
     await setQueryDataPolicy({ ...originalQueryDataPolicy, disableExport: true });
     await gotoGeneralSettings();
-    await expect(exportCheckbox()).not.toBeChecked();
+    await expect(exportSwitch()).not.toBeChecked();
   });
 
-  test("unchecking + Update persists disableExport, re-checking restores it (W2)", async () => {
+  test("switching off + Update persists disableExport, switching on restores it (W2)", async () => {
     // Start from export-allowed so the test owns its precondition.
     await setQueryDataPolicy({ ...originalQueryDataPolicy, disableExport: false });
     await gotoGeneralSettings();
-    await expect(exportCheckbox()).toBeChecked();
+    await expect(exportSwitch()).toBeChecked();
 
-    // Uncheck → the dirty bar's Update commits the policy.
-    await exportCheckbox().click();
-    await expect(exportCheckbox()).not.toBeChecked();
+    // Switch off → the dirty bar's Update commits the policy.
+    await exportSwitch().click();
+    await expect(exportSwitch()).not.toBeChecked();
     await page.getByRole("button", { name: "Update", exact: true }).click();
     await expect(
       page.getByText("Configuration is updated.").first()
@@ -139,9 +139,9 @@ test.describe("data-export policy control wording and wiring", () => {
       .poll(readDisableExport, { timeout: 10_000 })
       .toBe(true);
 
-    // Re-check → Update → the policy returns to export-without-approval.
-    await exportCheckbox().click();
-    await expect(exportCheckbox()).toBeChecked();
+    // Switch on → Update → the policy returns to export-without-approval.
+    await exportSwitch().click();
+    await expect(exportSwitch()).toBeChecked();
     await page.getByRole("button", { name: "Update", exact: true }).click();
     await expect
       .poll(readDisableExport, { timeout: 10_000 })
