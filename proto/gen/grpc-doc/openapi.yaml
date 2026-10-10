@@ -19,7 +19,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -64,7 +63,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -109,7 +107,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -32000,7 +31997,7 @@ components:
           description: 'A URL that acts as a globally unique identifier for the type of the serialized message. For example: `type.googleapis.com/google.rpc.ErrorInfo`.'
         value:
           type: string
-          format: binary
+          format: byte
           description: The Protobuf message, serialized as bytes and base64-encoded. The specific message type is identified by the `type` field.
         debug:
           type: object

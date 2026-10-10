@@ -17,7 +17,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -57,7 +56,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -97,7 +95,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -137,7 +134,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -177,7 +173,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -217,7 +212,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -257,7 +251,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -300,7 +293,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -342,7 +334,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -384,7 +375,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -427,7 +417,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -470,7 +459,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -512,7 +500,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -554,7 +541,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -596,7 +582,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -641,7 +626,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -683,7 +667,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -728,7 +711,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -772,7 +754,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -814,7 +795,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -856,7 +836,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -898,7 +877,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -940,7 +918,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -982,7 +959,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1024,7 +1000,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1066,7 +1041,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1108,7 +1082,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1150,7 +1123,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1192,7 +1164,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1234,7 +1205,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1277,7 +1247,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1321,7 +1290,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1363,7 +1331,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1405,7 +1372,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1448,7 +1414,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1490,7 +1455,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1532,7 +1496,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1574,7 +1537,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1616,7 +1578,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1658,7 +1619,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1700,7 +1660,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1742,7 +1701,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1784,7 +1742,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1826,7 +1783,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1871,7 +1827,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1913,7 +1868,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1955,7 +1909,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -1998,7 +1951,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2040,7 +1992,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2083,7 +2034,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2125,7 +2075,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2167,7 +2116,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2209,7 +2157,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2257,7 +2204,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2299,7 +2245,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2342,7 +2287,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2384,7 +2328,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2426,7 +2369,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2468,7 +2410,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2510,7 +2451,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2552,7 +2492,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2596,7 +2535,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2638,7 +2576,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2680,7 +2617,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2722,7 +2658,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2764,7 +2699,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2806,7 +2740,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2848,7 +2781,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2892,7 +2824,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2934,7 +2865,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -2976,7 +2906,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3018,7 +2947,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3060,7 +2988,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3102,7 +3029,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3144,7 +3070,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3186,7 +3111,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3228,7 +3152,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3270,7 +3193,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3312,7 +3234,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3354,7 +3275,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3403,7 +3323,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3451,7 +3370,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3493,7 +3411,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3535,7 +3452,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3577,7 +3493,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3619,7 +3534,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3661,7 +3575,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3703,7 +3616,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3745,7 +3657,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3787,7 +3698,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3829,7 +3739,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3871,7 +3780,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3913,7 +3821,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3955,7 +3862,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -3997,7 +3903,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4039,7 +3944,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4082,7 +3986,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4124,7 +4027,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4166,7 +4068,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4210,7 +4111,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4252,7 +4152,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4294,7 +4193,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4336,7 +4234,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4379,7 +4276,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4421,7 +4317,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4463,7 +4358,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4505,7 +4399,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4547,7 +4440,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4589,7 +4481,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4631,7 +4522,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4673,7 +4563,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4715,7 +4604,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4757,7 +4645,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4800,7 +4687,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4842,7 +4728,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4884,7 +4769,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4926,7 +4810,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -4968,7 +4851,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5010,7 +4892,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5052,7 +4933,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5094,7 +4974,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5136,7 +5015,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5179,7 +5057,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5221,7 +5098,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5263,7 +5139,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5305,7 +5180,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5347,7 +5221,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5390,7 +5263,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5432,7 +5304,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5474,7 +5345,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5516,7 +5386,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5558,7 +5427,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5600,7 +5468,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5642,7 +5509,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5684,7 +5550,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5726,7 +5591,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5769,7 +5633,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5814,7 +5677,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5856,7 +5718,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5898,7 +5759,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5940,7 +5800,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -5982,7 +5841,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6024,7 +5882,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6066,7 +5923,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6108,7 +5964,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6150,7 +6005,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6192,7 +6046,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6234,7 +6087,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6277,7 +6129,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6321,7 +6172,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6366,7 +6216,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6409,7 +6258,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6453,7 +6301,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6497,7 +6344,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6541,7 +6387,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6584,7 +6429,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6627,7 +6471,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6673,7 +6516,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6719,7 +6561,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6762,7 +6603,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6805,7 +6645,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6849,7 +6688,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6892,7 +6730,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6938,7 +6775,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -6981,7 +6817,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7023,7 +6858,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7065,7 +6899,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7108,7 +6941,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7150,7 +6982,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7192,7 +7023,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7234,7 +7064,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7276,7 +7105,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7318,7 +7146,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7360,7 +7187,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7402,7 +7228,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7444,7 +7269,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7486,7 +7310,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7526,7 +7349,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7568,7 +7390,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7608,7 +7429,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7648,7 +7468,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7691,7 +7510,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7731,7 +7549,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7771,7 +7588,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7813,7 +7629,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7853,7 +7668,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7893,7 +7707,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7938,7 +7751,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -7983,7 +7795,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8027,7 +7838,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8070,7 +7880,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8112,7 +7921,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8157,7 +7965,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8205,7 +8012,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8247,7 +8053,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8290,7 +8095,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8333,7 +8137,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8377,7 +8180,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8422,7 +8224,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8466,7 +8267,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8508,7 +8308,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8550,7 +8349,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8593,7 +8391,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8636,7 +8433,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8678,7 +8474,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8720,7 +8515,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8763,7 +8557,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8805,7 +8598,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8847,7 +8639,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8890,7 +8681,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8932,7 +8722,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -8977,7 +8766,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -9020,7 +8808,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -9060,7 +8847,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -9105,7 +8891,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -9147,7 +8932,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -9187,7 +8971,6 @@ paths:
         - name: Connect-Protocol-Version
           in: header
           description: Define the version of the Connect protocol
-          required: true
           schema:
             $ref: '#/components/schemas/connect-protocol-version'
           example: 1
@@ -9407,6 +9190,7 @@ components:
               description: |-
                 Input only. The time-to-live duration for the access grant.
                  The server computes `expire_time` from this value at activation time.
+              writeOnly: true
           title: ttl
       unevaluatedProperties: false
       not:
@@ -9445,6 +9229,7 @@ components:
              An ACTIVE grant with `expire_time` in the past is effectively expired
              and no longer authorizes access. Use `expire_time` to determine
              whether an ACTIVE grant has expired.
+          readOnly: true
         issue:
           type: string
           title: issue
@@ -9452,6 +9237,7 @@ components:
             The issue associated with the access grant.
              Can be empty.
              Format: projects/{project}/issues/{issue}
+          readOnly: true
         targets:
           type: array
           items:
@@ -9472,10 +9258,12 @@ components:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
+          readOnly: true
         updateTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: update_time
+          readOnly: true
         reason:
           type: string
           title: reason
@@ -9492,6 +9280,9 @@ components:
           title: container
           description: The container name to execute the query against, used for CosmosDB only.
       title: AccessGrant
+      required:
+        - creator
+        - targets
     bytebase.v1.AccessGrant.Status:
       type: string
       title: Status
@@ -9511,6 +9302,8 @@ components:
             The name of the access grant to activate.
              Format: projects/{project}/accessGrants/{access_grant}
       title: ActivateAccessGrantRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.Activity:
       type: object
@@ -9536,84 +9329,102 @@ components:
           type: string
           title: version
           description: The Bytebase server version.
+          readOnly: true
         gitCommit:
           type: string
           title: git_commit
           description: The git commit hash of the build.
+          readOnly: true
         saas:
           type: boolean
           title: saas
           description: Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.
+          readOnly: true
         externalUrl:
           type: string
           title: external_url
           description: The external URL where users or webhook callbacks access Bytebase.
+          readOnly: true
         lastActiveTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: last_active_time
           description: The last time any API call was made, refreshed on each request.
+          readOnly: true
         workspace:
           type: string
           title: workspace
           description: |-
             The unique identifier for the workspace.
              Format: workspaces/{id}
+          readOnly: true
         unlicensedFeatures:
           type: array
           items:
             type: string
+            readOnly: true
           title: unlicensed_features
           description: List of features that are not licensed.
+          readOnly: true
         activatedInstanceCount:
           type: integer
           title: activated_instance_count
           format: int32
           description: The number of activated database instances.
+          readOnly: true
         totalInstanceCount:
           type: integer
           title: total_instance_count
           format: int32
           description: The total number of database instances.
+          readOnly: true
         externalUrlFromFlag:
           type: boolean
           title: external_url_from_flag
           description: Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
+          readOnly: true
         replicaCount:
           type: integer
           title: replica_count
           format: int32
           description: The number of active replicas (servers sharing the same database).
+          readOnly: true
         defaultProject:
           type: string
           title: default_project
           description: |-
             The default project for unassigned databases.
              Format: projects/{id}
+          readOnly: true
         userCountInIam:
           type: integer
           title: user_count_in_iam
           format: int32
           description: The number of users in the workspace IAM (for seat limit display).
+          readOnly: true
         activeVcsUserCount:
           type: integer
           title: active_vcs_user_count
           format: int32
           description: The number of active VCS users seen in the active window.
+          readOnly: true
         sample:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.SampleInfo'
           title: sample
           description: Sample setup availability and provisioned resources.
+          readOnly: true
         mcpSetting:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.MCPSetting'
           title: mcp_setting
           description: The MCP (Model Context Protocol) setting in the current workspace.
+          readOnly: true
         aiEnabled:
           type: boolean
           title: ai_enabled
           description: Whether the workspace AI setting enables the AI agent.
+          readOnly: true
       title: ActuatorInfo
       additionalProperties: false
       description: |-
@@ -9640,6 +9451,9 @@ components:
           title: validate_only
           description: Validate only also tests the data source connection.
       title: AddDataSourceRequest
+      required:
+        - name
+        - dataSource
       additionalProperties: false
     bytebase.v1.AddWebhookRequest:
       type: object
@@ -9656,6 +9470,9 @@ components:
           title: webhook
           description: The webhook to add.
       title: AddWebhookRequest
+      required:
+        - project
+        - webhook
       additionalProperties: false
     bytebase.v1.AdminExecuteRequest:
       type: object
@@ -9693,6 +9510,8 @@ components:
             Container is the container name to execute the query against, used for
              CosmosDB only.
       title: AdminExecuteRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.AdminExecuteResponse:
       type: object
@@ -9948,12 +9767,15 @@ components:
         clientId:
           type: string
           title: client_id
+          writeOnly: true
         clientSecret:
           type: string
           title: client_secret
+          writeOnly: true
         robotCode:
           type: string
           title: robot_code
+          writeOnly: true
       title: DingTalk
       additionalProperties: false
     bytebase.v1.AppIMSetting.Feishu:
@@ -9962,9 +9784,11 @@ components:
         appId:
           type: string
           title: app_id
+          writeOnly: true
         appSecret:
           type: string
           title: app_secret
+          writeOnly: true
       title: Feishu
       additionalProperties: false
     bytebase.v1.AppIMSetting.IMSetting:
@@ -10054,9 +9878,11 @@ components:
         appId:
           type: string
           title: app_id
+          writeOnly: true
         appSecret:
           type: string
           title: app_secret
+          writeOnly: true
       title: Lark
       additionalProperties: false
     bytebase.v1.AppIMSetting.Slack:
@@ -10065,6 +9891,7 @@ components:
         token:
           type: string
           title: token
+          writeOnly: true
       title: Slack
       additionalProperties: false
     bytebase.v1.AppIMSetting.Teams:
@@ -10074,14 +9901,17 @@ components:
           type: string
           title: tenant_id
           description: Azure AD tenant ID (Directory ID).
+          writeOnly: true
         clientId:
           type: string
           title: client_id
           description: Azure AD application (client) ID.
+          writeOnly: true
         clientSecret:
           type: string
           title: client_secret
           description: Azure AD client secret.
+          writeOnly: true
       title: Teams
       additionalProperties: false
     bytebase.v1.AppIMSetting.Wecom:
@@ -10090,12 +9920,15 @@ components:
         corpId:
           type: string
           title: corp_id
+          writeOnly: true
         agentId:
           type: string
           title: agent_id
+          writeOnly: true
         secret:
           type: string
           title: secret
+          writeOnly: true
       title: Wecom
       additionalProperties: false
     bytebase.v1.ApprovalFlow:
@@ -10155,6 +9988,8 @@ components:
           title: comment
           description: The comment explaining the approval decision.
       title: ApproveIssueRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.AuditBehavior:
       type: string
@@ -10188,11 +10023,13 @@ components:
              Formats:
              - projects/{project}/auditLogs/{uid}
              - workspaces/{workspace}/auditLogs/{uid}
+          readOnly: true
         createTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
           description: The timestamp when the audit log was created.
+          readOnly: true
         actor:
           type: string
           title: actor
@@ -10252,6 +10089,7 @@ components:
             MCP delegation provenance. Present exactly when the audited call arrived
              through the MCP server's delegated credential; never set for public API
              calls. Presence of this message is the MCP-origin marker.
+          readOnly: true
       title: AuditLog
       additionalProperties: false
       description: Audit log entry recording system activity or API call.
@@ -10286,17 +10124,20 @@ components:
           description: |-
             The workspace used for authentication, when one can be resolved.
              Format: workspaces/{workspace}
+          readOnly: true
         restriction:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.Restriction'
           title: restriction
           description: The effective authentication restrictions.
+          readOnly: true
         identityProviders:
           type: array
           items:
             $ref: '#/components/schemas/bytebase.v1.LoginIdentityProvider'
           title: identity_providers
           description: The identity providers the login page renders, in display order.
+          readOnly: true
       title: AuthenticationInfo
       additionalProperties: false
     bytebase.v1.AuthorizationRequest:
@@ -10340,6 +10181,8 @@ components:
             The taskRuns to cancel.
              Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
       title: BatchCancelTaskRunsRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.BatchCancelTaskRunsResponse:
       type: object
@@ -10363,6 +10206,9 @@ components:
             The request message specifying the revisions to create.
              A maximum of 100 revisions can be created in a batch.
       title: BatchCreateRevisionsRequest
+      required:
+        - parent
+        - requests
       additionalProperties: false
     bytebase.v1.BatchCreateRevisionsResponse:
       type: object
@@ -10390,6 +10236,9 @@ components:
             $ref: '#/components/schemas/bytebase.v1.CreateSheetRequest'
           title: requests
       title: BatchCreateSheetsRequest
+      required:
+        - parent
+        - requests
       additionalProperties: false
     bytebase.v1.BatchCreateSheetsResponse:
       type: object
@@ -10423,6 +10272,8 @@ components:
              When purge=true, all databases will be moved to the default project before deletion.
              When purge=false (soft delete/archive), the projects and their databases/issues remain unchanged.
       title: BatchDeleteProjectsRequest
+      required:
+        - names
       additionalProperties: false
     bytebase.v1.BatchDeparseRequest:
       type: object
@@ -10467,6 +10318,9 @@ components:
           title: names
           description: The list of database names to retrieve.
       title: BatchGetDatabasesRequest
+      required:
+        - parent
+        - names
       additionalProperties: false
     bytebase.v1.BatchGetDatabasesResponse:
       type: object
@@ -10491,6 +10345,8 @@ components:
             The group names to retrieve.
              Format: groups/{email}
       title: BatchGetGroupsRequest
+      required:
+        - names
       additionalProperties: false
       description: Request message for batch getting groups.
     bytebase.v1.BatchGetGroupsResponse:
@@ -10517,6 +10373,8 @@ components:
             The names of projects to retrieve.
              Format: projects/{project}
       title: BatchGetProjectsRequest
+      required:
+        - names
       additionalProperties: false
     bytebase.v1.BatchGetProjectsResponse:
       type: object
@@ -10541,6 +10399,8 @@ components:
             The user names to retrieve.
              Format: users/{email}
       title: BatchGetUsersRequest
+      required:
+        - names
       additionalProperties: false
     bytebase.v1.BatchGetUsersResponse:
       type: object
@@ -10605,6 +10465,8 @@ components:
           title: skip_prior_backup
           description: If true, skip prior backup for this run even if the task has prior backup enabled.
       title: BatchRunTasksRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.BatchRunTasksResponse:
       type: object
@@ -10633,6 +10495,8 @@ components:
           maxLength: 1000
           description: The reason for skipping the tasks.
       title: BatchSkipTasksRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.BatchSkipTasksResponse:
       type: object
@@ -10655,6 +10519,8 @@ components:
           title: names
           description: The list of database names to sync.
       title: BatchSyncDatabasesRequest
+      required:
+        - names
       additionalProperties: false
     bytebase.v1.BatchSyncDatabasesResponse:
       type: object
@@ -10681,6 +10547,8 @@ components:
             The request message specifying the instances to sync.
              A maximum of 1000 instances can be synced in a batch.
       title: BatchSyncInstancesRequest
+      required:
+        - requests
       additionalProperties: false
     bytebase.v1.BatchSyncInstancesResponse:
       type: object
@@ -10706,6 +10574,8 @@ components:
             The request message specifying the resources to update.
              A maximum of 1000 databases can be modified in a batch.
       title: BatchUpdateDatabasesRequest
+      required:
+        - requests
       additionalProperties: false
     bytebase.v1.BatchUpdateDatabasesResponse:
       type: object
@@ -10737,6 +10607,8 @@ components:
           title: requests
           description: The request message specifying the resources to update.
       title: BatchUpdateInstancesRequest
+      required:
+        - requests
       additionalProperties: false
     bytebase.v1.BatchUpdateInstancesResponse:
       type: object
@@ -10777,6 +10649,8 @@ components:
           title: reason
           description: The reason for the status change.
       title: BatchUpdateIssuesStatusRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.BatchUpdateIssuesStatusResponse:
       type: object
@@ -10850,6 +10724,7 @@ components:
             - $ref: '#/components/schemas/google.api.expr.v1alpha1.Expr'
           title: parsed_expr
           description: The parsed expression of the condition.
+          readOnly: true
       title: Binding
       additionalProperties: false
       description: Binding associates members with a role and optional conditions.
@@ -10923,6 +10798,8 @@ components:
             The name of the plan check run to cancel.
              Format: projects/{project}/plans/{plan}/planCheckRun
       title: CancelPlanCheckRunRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.CancelPlanCheckRunResponse:
       type: object
@@ -10964,6 +10841,8 @@ components:
           title: credential
       title: ChangePasswordRequest
       required:
+        - name
+        - newPassword
         - credential
       additionalProperties: false
     bytebase.v1.Changelog:
@@ -10998,6 +10877,7 @@ components:
           description: |-
             The title of the plan associated with this changelog's task run.
              This field is populated by deriving the plan from task_run for display purposes.
+          readOnly: true
       title: Changelog
       additionalProperties: false
     bytebase.v1.Changelog.Status:
@@ -11069,6 +10949,9 @@ components:
             The non-bot VCS pull request or merge request creator observed by bytebase-release.
              If absent, Bytebase skips VCS user tracking and VCS user limit enforcement.
       title: CheckReleaseRequest
+      required:
+        - parent
+        - release
       additionalProperties: false
     bytebase.v1.CheckReleaseResponse:
       type: object
@@ -11345,10 +11228,11 @@ components:
           title: otp_code
           maxLength: 64
           description: |-
-            Required for first-time enrollment, rejected otherwise. A *fresh* code,
+            (OPTIONAL) Required for first-time enrollment, rejected otherwise. A *fresh* code,
              not the one EnableMFA took.
       title: ConfirmRecoveryCodesRequest
       required:
+        - name
         - pendingVersion
         - credential
       additionalProperties: false
@@ -11367,6 +11251,9 @@ components:
           title: access_grant
           description: The access grant to create.
       title: CreateAccessGrantRequest
+      required:
+        - parent
+        - accessGrant
       additionalProperties: false
     bytebase.v1.CreateDatabaseGroupRequest:
       type: object
@@ -11396,6 +11283,9 @@ components:
           title: validate_only
           description: If set, validate the create request and preview the full database group response, but do not actually create it.
       title: CreateDatabaseGroupRequest
+      required:
+        - parent
+        - databaseGroup
       additionalProperties: false
       description: Request message for creating a database group.
     bytebase.v1.CreateGroupRequest:
@@ -11413,6 +11303,9 @@ components:
             The email to use for the group, which will become the final component
              of the group's resource name.
       title: CreateGroupRequest
+      required:
+        - group
+        - groupEmail
       additionalProperties: false
       description: Request message for creating a group.
     bytebase.v1.CreateIdentityProviderRequest:
@@ -11437,6 +11330,8 @@ components:
           title: validate_only
           description: If set to true, the request will be validated without actually creating the identity provider.
       title: CreateIdentityProviderRequest
+      required:
+        - identityProvider
       additionalProperties: false
     bytebase.v1.CreateInstanceRequest:
       type: object
@@ -11469,6 +11364,8 @@ components:
           title: validate_only
           description: Validate only also tests the data source connection.
       title: CreateInstanceRequest
+      required:
+        - instance
       additionalProperties: false
     bytebase.v1.CreateIssueCommentRequest:
       type: object
@@ -11485,6 +11382,8 @@ components:
           title: issue_comment
           description: The comment to create.
       title: CreateIssueCommentRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.CreateIssueRequest:
       type: object
@@ -11501,6 +11400,9 @@ components:
           title: issue
           description: The issue to create.
       title: CreateIssueRequest
+      required:
+        - parent
+        - issue
       additionalProperties: false
     bytebase.v1.CreatePlanRequest:
       type: object
@@ -11517,6 +11419,9 @@ components:
           title: plan
           description: The plan to create.
       title: CreatePlanRequest
+      required:
+        - parent
+        - plan
       additionalProperties: false
     bytebase.v1.CreatePolicyRequest:
       type: object
@@ -11539,6 +11444,9 @@ components:
           title: type
           description: The type of policy to create.
       title: CreatePolicyRequest
+      required:
+        - parent
+        - policy
       additionalProperties: false
     bytebase.v1.CreateProjectRequest:
       type: object
@@ -11558,6 +11466,8 @@ components:
              This value should be 4-63 characters, and valid characters
              are /[a-z][0-9]-/.
       title: CreateProjectRequest
+      required:
+        - project
       additionalProperties: false
     bytebase.v1.CreatePurchaseRequest:
       type: object
@@ -11604,6 +11514,9 @@ components:
              Must be a valid IANA timezone (e.g., "UTC", "America/Los_Angeles").
              Default: "UTC".
       title: CreateReleaseRequest
+      required:
+        - parent
+        - release
       additionalProperties: false
     bytebase.v1.CreateReviewConfigRequest:
       type: object
@@ -11614,6 +11527,8 @@ components:
           title: review_config
           description: The SQL review config to create.
       title: CreateReviewConfigRequest
+      required:
+        - reviewConfig
       additionalProperties: false
     bytebase.v1.CreateRevisionRequest:
       type: object
@@ -11628,6 +11543,9 @@ components:
           title: revision
           description: The revision to create.
       title: CreateRevisionRequest
+      required:
+        - parent
+        - revision
       additionalProperties: false
     bytebase.v1.CreateRoleRequest:
       type: object
@@ -11647,6 +11565,9 @@ components:
              This value should be 4-63 characters, and valid characters
              are /[a-z][A-Z][0-9]/.
       title: CreateRoleRequest
+      required:
+        - role
+        - roleId
       additionalProperties: false
     bytebase.v1.CreateRolloutRequest:
       type: object
@@ -11668,6 +11589,8 @@ components:
              If unspecified, all stages are created.
              If set to "", no stages are created.
       title: CreateRolloutRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.CreateSavedQueryRequest:
       type: object
@@ -11684,6 +11607,9 @@ components:
           title: saved_query
           description: The saved query to create.
       title: CreateSavedQueryRequest
+      required:
+        - parent
+        - savedQuery
       additionalProperties: false
     bytebase.v1.CreateServiceAccountRequest:
       type: object
@@ -11707,6 +11633,9 @@ components:
           title: service_account
           description: The service account to create.
       title: CreateServiceAccountRequest
+      required:
+        - serviceAccountId
+        - serviceAccount
       additionalProperties: false
       description: Request message for creating a service account.
     bytebase.v1.CreateSheetRequest:
@@ -11724,6 +11653,9 @@ components:
           title: sheet
           description: The sheet to create.
       title: CreateSheetRequest
+      required:
+        - parent
+        - sheet
       additionalProperties: false
     bytebase.v1.CreateUserRequest:
       type: object
@@ -11734,6 +11666,8 @@ components:
           title: user
           description: The user to create.
       title: CreateUserRequest
+      required:
+        - user
       additionalProperties: false
     bytebase.v1.CreateWorkloadIdentityRequest:
       type: object
@@ -11757,6 +11691,9 @@ components:
           title: workload_identity
           description: The workload identity to create.
       title: CreateWorkloadIdentityRequest
+      required:
+        - workloadIdentityId
+        - workloadIdentity
       additionalProperties: false
       description: Request message for creating a workload identity.
     bytebase.v1.CredentialProof:
@@ -11954,6 +11891,7 @@ components:
           type: string
           title: password
           description: The password for database authentication.
+          writeOnly: true
         useSsl:
           type: boolean
           title: use_ssl
@@ -11962,50 +11900,62 @@ components:
           type: string
           title: ssl_ca
           description: The SSL certificate authority certificate.
+          writeOnly: true
         sslCert:
           type: string
           title: ssl_cert
           description: The SSL client certificate.
+          writeOnly: true
         sslKey:
           type: string
           title: ssl_key
           description: The SSL client private key.
+          writeOnly: true
         sslCaPath:
           type: string
           title: ssl_ca_path
           description: The local filesystem path to the SSL certificate authority certificate.
+          writeOnly: true
         sslCertPath:
           type: string
           title: ssl_cert_path
           description: The local filesystem path to the SSL client certificate.
+          writeOnly: true
         sslKeyPath:
           type: string
           title: ssl_key_path
           description: The local filesystem path to the SSL client private key.
+          writeOnly: true
         sslCaSet:
           type: boolean
           title: ssl_ca_set
           description: Whether an SSL certificate authority certificate has been configured.
+          readOnly: true
         sslCertSet:
           type: boolean
           title: ssl_cert_set
           description: Whether an SSL client certificate has been configured.
+          readOnly: true
         sslKeySet:
           type: boolean
           title: ssl_key_set
           description: Whether an SSL client private key has been configured.
+          readOnly: true
         sslCaPathSet:
           type: boolean
           title: ssl_ca_path_set
           description: Whether an SSL certificate authority path has been configured.
+          readOnly: true
         sslCertPathSet:
           type: boolean
           title: ssl_cert_path_set
           description: Whether an SSL client certificate path has been configured.
+          readOnly: true
         sslKeyPathSet:
           type: boolean
           title: ssl_key_path_set
           description: Whether an SSL client private key path has been configured.
+          readOnly: true
         verifyTlsCertificate:
           type: boolean
           title: verify_tls_certificate
@@ -12071,20 +12021,24 @@ components:
           type: string
           title: ssh_password
           description: The password to login the server. If it's empty string, no password is required.
+          writeOnly: true
         sshPrivateKey:
           type: string
           title: ssh_private_key
           description: The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
+          writeOnly: true
         authenticationPrivateKey:
           type: string
           title: authentication_private_key
           description: |-
             PKCS#8 private key in PEM format. If it's empty string, no private key is required.
              Used for authentication when connecting to the data source.
+          writeOnly: true
         authenticationPrivateKeyPassphrase:
           type: string
           title: authentication_private_key_passphrase
           description: Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted.
+          writeOnly: true
         externalSecret:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.DataSourceExternalSecret'
@@ -12109,7 +12063,7 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.DataSource.Address'
           title: additional_addresses
-          description: additional_addresses is used for MongoDB replica set.
+          description: (OPTIONAL) additional_addresses is used for MongoDB replica set.
         directConnection:
           type: boolean
           title: direct_connection
@@ -12133,6 +12087,7 @@ components:
         masterPassword:
           type: string
           title: master_password
+          writeOnly: true
         redisType:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.DataSource.RedisType'
@@ -12165,24 +12120,29 @@ components:
         accessKeyId:
           type: string
           title: access_key_id
+          writeOnly: true
         secretAccessKey:
           type: string
           title: secret_access_key
+          writeOnly: true
         sessionToken:
           type: string
           title: session_token
+          writeOnly: true
         roleArn:
           type: string
           title: role_arn
           description: |-
             ARN of IAM role to assume for cross-account access.
              See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html
+          writeOnly: true
         externalId:
           type: string
           title: external_id
           description: |-
             Optional external ID for additional security when assuming role.
              See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html
+          writeOnly: true
       title: AWSCredential
       additionalProperties: false
     bytebase.v1.DataSource.Address:
@@ -12217,6 +12177,7 @@ components:
         clientSecret:
           type: string
           title: client_secret
+          writeOnly: true
       title: AzureCredential
       additionalProperties: false
     bytebase.v1.DataSource.CloudSQLIPType:
@@ -12234,6 +12195,7 @@ components:
         content:
           type: string
           title: content
+          writeOnly: true
       title: GCPCredential
       additionalProperties: false
     bytebase.v1.DataSource.RedisType:
@@ -12264,6 +12226,7 @@ components:
                 Token for direct authentication. Interpreted according to token_type:
                  the literal token (PLAIN), an environment variable name (ENVIRONMENT),
                  or a file path (FILE).
+              writeOnly: true
           title: token
       unevaluatedProperties: false
       not:
@@ -12324,14 +12287,17 @@ components:
           type: string
           title: vault_ssl_ca
           description: CA certificate for Vault server verification.
+          writeOnly: true
         vaultSslCert:
           type: string
           title: vault_ssl_cert
           description: Client certificate for mutual TLS authentication with Vault.
+          writeOnly: true
         vaultSslKey:
           type: string
           title: vault_ssl_key
           description: Client private key for mutual TLS authentication with Vault.
+          writeOnly: true
       title: DataSourceExternalSecret
     bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption:
       type: object
@@ -12340,10 +12306,12 @@ components:
           type: string
           title: role_id
           description: The role ID for Vault AppRole authentication.
+          writeOnly: true
         secretId:
           type: string
           title: secret_id
           description: the secret id for the role without ttl.
+          writeOnly: true
         type:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType'
@@ -12408,11 +12376,13 @@ components:
             - $ref: '#/components/schemas/bytebase.v1.State'
           title: state
           description: The existence of a database.
+          readOnly: true
         successfulSyncTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: successful_sync_time
           description: The latest synchronization time.
+          readOnly: true
         project:
           type: string
           title: project
@@ -12426,13 +12396,14 @@ components:
             The release that was last applied to this database.
              Format: projects/{project}/releases/{release_id}
              Example: projects/my-project/releases/release_20260115-RC00
+          readOnly: true
         environment:
           type:
             - string
             - "null"
           title: environment
           description: |-
-            The environment resource.
+            (OPTIONAL) The environment resource.
              Format: environments/prod where prod is the environment resource ID.
         effectiveEnvironment:
           type:
@@ -12443,6 +12414,7 @@ components:
             The effective environment based on environment tag above and environment
              tag on the instance. Inheritance follows
              https://cloud.google.com/resource-manager/docs/tags/tags-overview.
+          readOnly: true
         labels:
           type: object
           title: labels
@@ -12455,19 +12427,23 @@ components:
             - $ref: '#/components/schemas/bytebase.v1.InstanceResource'
           title: instance_resource
           description: The instance resource.
+          readOnly: true
         backupAvailable:
           type: boolean
           title: backup_available
           description: The database is available for DML prior backup.
+          readOnly: true
         syncStatus:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.SyncStatus'
           title: sync_status
           description: The sync status of the database.
+          readOnly: true
         syncError:
           type: string
           title: sync_error
           description: The error message if sync failed.
+          readOnly: true
       title: Database
       additionalProperties: false
     bytebase.v1.DatabaseCatalog:
@@ -12533,7 +12509,10 @@ components:
             $ref: '#/components/schemas/bytebase.v1.DatabaseGroup.Database'
           title: matched_databases
           description: The list of databases that match the database group condition.
+          readOnly: true
       title: DatabaseGroup
+      required:
+        - title
       additionalProperties: false
       description: A group of databases matched by expressions.
     bytebase.v1.DatabaseGroup.Database:
@@ -12617,6 +12596,7 @@ components:
              Examples:
              - "text/plain; charset=utf-8" for SINGLE_FILE format
              - "application/zip" for MULTI_FILE format
+          readOnly: true
       title: DatabaseSDLSchema
       additionalProperties: false
       description: DatabaseSDLSchema contains the schema in SDL format.
@@ -12640,6 +12620,8 @@ components:
             The name of the database group to delete.
              Format: projects/{project}/databaseGroups/{databaseGroup}
       title: DeleteDatabaseGroupRequest
+      required:
+        - name
       additionalProperties: false
       description: Request message for deleting a database group.
     bytebase.v1.DeleteGroupRequest:
@@ -12652,6 +12634,8 @@ components:
             The name of the group to delete.
              Format: groups/{email}
       title: DeleteGroupRequest
+      required:
+        - name
       additionalProperties: false
       description: Request message for deleting a group.
     bytebase.v1.DeleteIdentityProviderRequest:
@@ -12664,6 +12648,8 @@ components:
             The name of the identity provider to delete.
              Format: idps/{identity_provider}
       title: DeleteIdentityProviderRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.DeleteInstanceRequest:
       type: object
@@ -12690,6 +12676,8 @@ components:
              administrative cleanup of old soft-deleted instances.
              The instance must already be soft-deleted for this to work.
       title: DeleteInstanceRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.DeletePolicyRequest:
       type: object
@@ -12703,6 +12691,8 @@ components:
              Workspace resource name: workspaces/{workspace-id}.
              Environment resource name: environments/environment-id.
       title: DeletePolicyRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.DeleteProjectRequest:
       type: object
@@ -12724,6 +12714,8 @@ components:
              When purge=true, all databases will be moved to the default project before deletion.
              When purge=false (soft delete/archive), the project and its databases/issues remain unchanged.
       title: DeleteProjectRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.DeleteReleaseRequest:
       type: object
@@ -12735,6 +12727,8 @@ components:
             The name of the release to delete.
              Format: projects/{project}/releases/{release}
       title: DeleteReleaseRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.DeleteReviewConfigRequest:
       type: object
@@ -12746,6 +12740,8 @@ components:
             The name of the SQL review config to delete.
              Format: reviewConfigs/{reviewConfig}
       title: DeleteReviewConfigRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.DeleteRevisionRequest:
       type: object
@@ -12757,6 +12753,8 @@ components:
             The name of the revision to delete.
              Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
       title: DeleteRevisionRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.DeleteRoleRequest:
       type: object
@@ -12768,6 +12766,8 @@ components:
             The name of the role to delete.
              Format: roles/{role}
       title: DeleteRoleRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.DeleteSavedQueryRequest:
       type: object
@@ -12777,6 +12777,8 @@ components:
           title: name
           description: 'Format: projects/{project}/savedQueries/{savedQuery}'
       title: DeleteSavedQueryRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.DeleteServiceAccountRequest:
       type: object
@@ -12788,6 +12790,8 @@ components:
             The name of the service account to delete.
              Format: serviceAccounts/{email}
       title: DeleteServiceAccountRequest
+      required:
+        - name
       additionalProperties: false
       description: Request message for deleting a service account.
     bytebase.v1.DeleteUserRequest:
@@ -12800,6 +12804,8 @@ components:
             The name of the user to delete.
              Format: users/{email}
       title: DeleteUserRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.DeleteWorkloadIdentityRequest:
       type: object
@@ -12811,6 +12817,8 @@ components:
             The name of the workload identity to delete.
              Format: workloadIdentities/{email}
       title: DeleteWorkloadIdentityRequest
+      required:
+        - name
       additionalProperties: false
       description: Request message for deleting a workload identity.
     bytebase.v1.DeleteWorkspaceRequest:
@@ -12821,6 +12829,8 @@ components:
           title: name
           description: 'Format: workspaces/{workspace}'
       title: DeleteWorkspaceRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.DependencyColumn:
       type: object
@@ -12873,6 +12883,9 @@ components:
              stored source, so any object omitted from the target (for example by a
              truncated metadata fetch) is treated as dropped.
       title: DiffMetadataRequest
+      required:
+        - name
+        - targetMetadata
       additionalProperties: false
     bytebase.v1.DiffMetadataResponse:
       type: object
@@ -12927,6 +12940,8 @@ components:
              database: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
              changelog: instances/{instance}/databases/{database}/changelogs/{changelog} or projects/{project}/instances/{instance}/databases/{database}/changelogs/{changelog}
       title: DiffSchemaRequest
+      required:
+        - name
     bytebase.v1.DiffSchemaResponse:
       type: object
       properties:
@@ -13001,9 +13016,11 @@ components:
             - $ref: '#/components/schemas/bytebase.v1.CredentialProof'
           title: credential
           description: |-
-            Required for a self-service call against a live factor, and then only
+            (OPTIONAL) Required for a self-service call against a live factor, and then only
              otp_code or recovery_code. Unused on an admin-assisted call.
       title: DisableMFARequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.EmailSetting:
       type: object
@@ -13044,6 +13061,7 @@ components:
         password:
           type: string
           title: password
+          writeOnly: true
         encryption:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.EmailSetting.SMTPConfig.Encryption'
@@ -13100,10 +13118,12 @@ components:
             - $ref: '#/components/schemas/bytebase.v1.CredentialProof'
           title: credential
           description: |-
-            Proof of the *existing* factor, not the new device above. Required for a
+            (OPTIONAL) Proof of the *existing* factor, not the new device above. Required for a
              rotation, and for first-time enrollment on an account with a password.
       title: EnableMFARequest
       required:
+        - name
+        - otpCode
         - pendingVersion
       additionalProperties: false
     bytebase.v1.Engine:
@@ -13179,6 +13199,7 @@ components:
             The resource name of the environment.
              Format: environments/{environment}.
              Output only.
+          readOnly: true
         id:
           type: string
           title: id
@@ -13303,6 +13324,8 @@ components:
             A page token, received from a previous `ExportAuditLogs` call.
              Provide this to retrieve the subsequent page.
       title: ExportAuditLogsRequest
+      required:
+        - parent
       additionalProperties: false
       description: Request message for exporting audit logs.
     bytebase.v1.ExportAuditLogsResponse:
@@ -13393,6 +13416,8 @@ components:
             Container is the container name to execute the query against, used for
              CosmosDB only.
       title: ExportRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.ExportResponse:
       type: object
@@ -13621,6 +13646,8 @@ components:
             The name of the access grant to retrieve.
              Format: projects/{project}/accessGrants/{access_grant}
       title: GetAccessGrantRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetActuatorInfoRequest:
       type: object
@@ -13654,6 +13681,8 @@ components:
             - $ref: '#/components/schemas/bytebase.v1.ChangelogView'
           title: view
       title: GetChangelogRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetDatabaseCatalogRequest:
       type: object
@@ -13665,6 +13694,8 @@ components:
             The name of the database catalog to retrieve.
              Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
       title: GetDatabaseCatalogRequest
+      required:
+        - name
       additionalProperties: false
       description: Request message for getting a database catalog.
     bytebase.v1.GetDatabaseGroupRequest:
@@ -13682,6 +13713,8 @@ components:
           title: view
           description: The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
       title: GetDatabaseGroupRequest
+      required:
+        - name
       additionalProperties: false
       description: Request message for getting a database group.
     bytebase.v1.GetDatabaseMetadataRequest:
@@ -13721,6 +13754,8 @@ components:
              if limit is 20, then only 20 tables will be returned for each schema, total 60 tables.
              Default 0, means no limit.
       title: GetDatabaseMetadataRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetDatabaseRequest:
       type: object
@@ -13732,6 +13767,8 @@ components:
             The name of the database to retrieve.
              Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
       title: GetDatabaseRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetDatabaseSDLSchemaRequest:
       type: object
@@ -13748,6 +13785,8 @@ components:
           title: format
           description: The format of the SDL schema output.
       title: GetDatabaseSDLSchemaRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat:
       type: string
@@ -13767,6 +13806,8 @@ components:
             The name of the database to retrieve schema.
              Format: instances/{instance}/databases/{database}/schema or projects/{project}/instances/{instance}/databases/{database}/schema
       title: GetDatabaseSchemaRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetGroupRequest:
       type: object
@@ -13778,6 +13819,8 @@ components:
             The name of the group to retrieve.
              Format: groups/{email}
       title: GetGroupRequest
+      required:
+        - name
       additionalProperties: false
       description: Request message for getting a group.
     bytebase.v1.GetIamPolicyRequest:
@@ -13791,6 +13834,8 @@ components:
              Format: projects/{project}
              Format: workspaces/{workspace}
       title: GetIamPolicyRequest
+      required:
+        - resource
       additionalProperties: false
       description: Request message for getting an IAM policy.
     bytebase.v1.GetIdentityProviderRequest:
@@ -13803,6 +13848,8 @@ components:
             The name of the identity provider to retrieve.
              Format: idps/{idp}
       title: GetIdentityProviderRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetInstanceRequest:
       type: object
@@ -13814,6 +13861,8 @@ components:
             The name of the instance to retrieve.
              Format: instances/{instance} or projects/{project}/instances/{instance}
       title: GetInstanceRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetIssueRequest:
       type: object
@@ -13829,6 +13878,8 @@ components:
           title: force
           description: If set to true, bypass cache and fetch the latest data.
       title: GetIssueRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetPaymentInfoRequest:
       type: object
@@ -13844,6 +13895,8 @@ components:
             The name of the plan check run to retrieve.
              Format: projects/{project}/plans/{plan}/planCheckRun
       title: GetPlanCheckRunRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetPlanRequest:
       type: object
@@ -13855,6 +13908,8 @@ components:
             The name of the plan to retrieve.
              Format: projects/{project}/plans/{plan}
       title: GetPlanRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetPolicyRequest:
       type: object
@@ -13866,6 +13921,8 @@ components:
             The name of the policy to retrieve.
              Format: {resource type}/{resource id}/policies/{policy type}
       title: GetPolicyRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetProjectRequest:
       type: object
@@ -13877,6 +13934,8 @@ components:
             The name of the project to retrieve.
              Format: projects/{project}
       title: GetProjectRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetQueryHistoryRequest:
       type: object
@@ -13888,6 +13947,8 @@ components:
             The name of the query history to retrieve.
              Format: projects/{project}/queryHistories/{id}
       title: GetQueryHistoryRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetReleaseRequest:
       type: object
@@ -13897,6 +13958,8 @@ components:
           title: name
           description: 'Format: projects/{project}/releases/{release}'
       title: GetReleaseRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetReviewConfigRequest:
       type: object
@@ -13908,6 +13971,8 @@ components:
             The name of the SQL review config to retrieve.
              Format: reviewConfigs/{reviewConfig}
       title: GetReviewConfigRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetRevisionRequest:
       type: object
@@ -13919,6 +13984,8 @@ components:
             The name of the revision.
              Format: instances/{instance}/databases/{database}/revisions/{revision} or projects/{project}/instances/{instance}/databases/{database}/revisions/{revision}
       title: GetRevisionRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetRoleRequest:
       type: object
@@ -13930,6 +13997,8 @@ components:
             The name of the role to retrieve.
              Format: roles/{role}
       title: GetRoleRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetRolloutRequest:
       type: object
@@ -13942,6 +14011,8 @@ components:
              This is the rollout resource name, which is the plan name plus /rollout suffix.
              Format: projects/{project}/plans/{plan}/rollout
       title: GetRolloutRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetSavedQueryPolicyRequest:
       type: object
@@ -13951,6 +14022,8 @@ components:
           title: resource
           description: 'Format: projects/{project}/savedQueries/{savedQuery}'
       title: GetSavedQueryPolicyRequest
+      required:
+        - resource
       additionalProperties: false
     bytebase.v1.GetSavedQueryRequest:
       type: object
@@ -13960,6 +14033,8 @@ components:
           title: name
           description: 'Format: projects/{project}/savedQueries/{savedQuery}'
       title: GetSavedQueryRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetSchemaStringRequest:
       type: object
@@ -13990,6 +14065,8 @@ components:
             If use the metadata to generate the schema string, the type is OBJECT_TYPE_UNSPECIFIED.
              Also the schema and object are empty.
       title: GetSchemaStringRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetSchemaStringRequest.ObjectType:
       type: string
@@ -14022,6 +14099,8 @@ components:
             The name of the service account to retrieve.
              Format: serviceAccounts/{email}
       title: GetServiceAccountRequest
+      required:
+        - name
       additionalProperties: false
       description: Request message for getting a service account.
     bytebase.v1.GetSettingRequest:
@@ -14032,6 +14111,8 @@ components:
           title: name
           description: The resource name of the setting.
       title: GetSettingRequest
+      required:
+        - name
       additionalProperties: false
       description: The request message for getting a setting.
     bytebase.v1.GetSettingResponse:
@@ -14058,6 +14139,8 @@ components:
           title: raw
           description: By default, the content of the sheet is cut off, set the `raw` to true to retrieve the full content.
       title: GetSheetRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetSubscriptionRequest:
       type: object
@@ -14071,6 +14154,8 @@ components:
           title: parent
           description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
       title: GetTaskRunLogRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.GetTaskRunRequest:
       type: object
@@ -14080,6 +14165,8 @@ components:
           title: name
           description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
       title: GetTaskRunRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetTaskRunSessionRequest:
       type: object
@@ -14089,6 +14176,8 @@ components:
           title: parent
           description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
       title: GetTaskRunSessionRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.GetUserRequest:
       type: object
@@ -14100,6 +14189,8 @@ components:
             The name of the user to retrieve.
              Format: users/{email}
       title: GetUserRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.GetWorkloadIdentityRequest:
       type: object
@@ -14111,6 +14202,8 @@ components:
             The name of the workload identity to retrieve.
              Format: workloadIdentities/{email}
       title: GetWorkloadIdentityRequest
+      required:
+        - name
       additionalProperties: false
       description: Request message for getting a workload identity.
     bytebase.v1.GetWorkspaceRequest:
@@ -14148,6 +14241,7 @@ components:
           description: |-
             The name of the group to retrieve.
              Format: groups/{group}, the group should be email or uuid.
+          readOnly: true
         title:
           type: string
           title: title
@@ -14465,6 +14559,7 @@ components:
           type: string
           title: engine_version
           description: The version of the database engine.
+          readOnly: true
         externalLink:
           type: string
           title: external_link
@@ -14481,7 +14576,7 @@ components:
             - "null"
           title: environment
           description: |-
-            The environment resource.
+            (OPTIONAL) The environment resource.
              Format: environments/prod where prod is the environment resource ID.
         activation:
           type: boolean
@@ -14493,6 +14588,7 @@ components:
             $ref: '#/components/schemas/bytebase.v1.InstanceRole'
           title: roles
           description: Database roles available in this instance.
+          readOnly: true
         syncInterval:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Duration'
@@ -14510,6 +14606,7 @@ components:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: last_sync_time
           description: The last time the instance was synced.
+          readOnly: true
         labels:
           type: object
           title: labels
@@ -14537,6 +14634,7 @@ components:
           type: string
           title: engine_version
           description: The version of the database engine.
+          readOnly: true
         dataSources:
           type: array
           items:
@@ -14583,6 +14681,7 @@ components:
             - "null"
           title: password
           description: The role password.
+          writeOnly: true
         connectionLimit:
           type:
             - integer
@@ -14650,14 +14749,17 @@ components:
           type: string
           title: creator
           description: 'Format: users/hello@world.com'
+          readOnly: true
         createTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
+          readOnly: true
         updateTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: update_time
+          readOnly: true
         plan:
           type: string
           title: plan
@@ -14686,16 +14788,18 @@ components:
             - $ref: '#/components/schemas/bytebase.v1.ApprovalStatus'
           title: approval_status
           description: The overall approval status for the issue.
+          readOnly: true
         accessGrant:
           type: string
           title: access_grant
           description: |-
             The access grant associated with this issue.
              Format: projects/{project}/accessGrants/{access_grant}
+          readOnly: true
         draft:
           type: boolean
           title: draft
-          description: Whether this issue is a Draft Review Issue.
+          description: (OPTIONAL) Whether this issue is a Draft Review Issue.
       title: Issue
       additionalProperties: false
     bytebase.v1.Issue.Approver:
@@ -14806,21 +14910,24 @@ components:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
+          readOnly: true
         updateTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: update_time
+          readOnly: true
         creator:
           type: string
           title: creator
           description: 'Format: users/{email}'
+          readOnly: true
         root:
           type:
             - string
             - "null"
           title: root
           description: |-
-            The thread root's name, set only on replies. Immutable after creation.
+            (IMMUTABLE) The thread root's name, set only on replies. Immutable after creation.
              Format: projects/{project}/issues/{issue}/issueComments/{issueComment}
              Must name a thread root in the same issue, never a general comment or reply.
         threadState:
@@ -14839,7 +14946,7 @@ components:
             - $ref: '#/components/schemas/bytebase.v1.StatementAnchor'
           title: statement_anchor
           description: |-
-            Optional source context on a root or reply. A reply's anchor must share
+            (IMMUTABLE) Optional source context on a root or reply. A reply's anchor must share
              the root's spec and sheet_sha256; it may narrow the range.
              Cannot be set on events. Immutable after creation.
         reviewMetadata:
@@ -14849,6 +14956,7 @@ components:
           description: |-
             Present on review results, the comments the review executor posts.
              Never accepted on create or update.
+          readOnly: true
       title: IssueComment
       description: A comment on an issue.
     bytebase.v1.IssueComment.Approval:
@@ -15018,6 +15126,7 @@ components:
           title: keytab
           format: byte
           description: The keytab file contents for authentication.
+          writeOnly: true
         kdcHost:
           type: string
           title: kdc_host
@@ -15135,6 +15244,8 @@ components:
           title: name
           description: 'Format: workspaces/{workspace}'
       title: LeaveWorkspaceRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.ListAccessGrantsRequest:
       type: object
@@ -15198,6 +15309,8 @@ components:
              - order_by = "expire_time desc"
              - order_by = "expire_time asc, create_time desc"
       title: ListAccessGrantsRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListAccessGrantsResponse:
       type: object
@@ -15263,6 +15376,8 @@ components:
              status == "FAILED"
              has_schema_snapshot == true && create_time < "2024-01-02T00:00:00Z"
       title: ListChangelogsRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListChangelogsResponse:
       type: object
@@ -15296,6 +15411,8 @@ components:
           title: view
           description: The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
       title: ListDatabaseGroupsRequest
+      required:
+        - parent
       additionalProperties: false
       description: Request message for listing database groups.
     bytebase.v1.ListDatabaseGroupsResponse:
@@ -15390,6 +15507,8 @@ components:
              - order_by = "name desc"
              - order_by = "name desc, project asc"
       title: ListDatabasesRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListDatabasesResponse:
       type: object
@@ -15512,6 +15631,9 @@ components:
           title: instance
           description: The target instance. We need to set this field if the target instance is not created yet.
       title: ListInstanceDatabaseRequest
+      required:
+        - name
+        - instance
       additionalProperties: false
     bytebase.v1.ListInstanceDatabaseResponse:
       type: object
@@ -15558,6 +15680,8 @@ components:
           title: refresh
           description: Refresh will refresh and return the latest data.
       title: ListInstanceRolesRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListInstanceRolesResponse:
       type: object
@@ -15713,6 +15837,8 @@ components:
              Root names must belong to parent. Empty and root == null return the
              timeline (events and root comments); other filters return replies only.
       title: ListIssueCommentsRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListIssueCommentsResponse:
       type: object
@@ -15798,6 +15924,8 @@ components:
              - order_by = "create_time desc"
              - order_by = "update_time asc"
       title: ListIssuesRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListIssuesResponse:
       type: object
@@ -15866,6 +15994,8 @@ components:
              spec_type == "change_database_config"
              state == "ACTIVE"
       title: ListPlansRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListPlansResponse:
       type: object
@@ -15904,6 +16034,8 @@ components:
           title: show_deleted
           description: Show deleted policies if specified.
       title: ListPoliciesRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListPoliciesResponse:
       type: object
@@ -16031,6 +16163,8 @@ components:
              For example:
              creator == "users/{email}"
       title: ListQueryHistoriesRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListQueryHistoriesResponse:
       type: object
@@ -16041,6 +16175,7 @@ components:
             $ref: '#/components/schemas/bytebase.v1.QueryHistory'
           title: query_histories
           description: The list of query histories.
+          readOnly: true
         nextPageToken:
           type: string
           title: next_page_token
@@ -16058,6 +16193,8 @@ components:
           title: parent
           description: 'Format: projects/{project}'
       title: ListReleaseCategoriesRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListReleaseCategoriesResponse:
       type: object
@@ -16111,6 +16248,8 @@ components:
              For example:
              category == "webapp"
       title: ListReleasesRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListReleasesResponse:
       type: object
@@ -16175,6 +16314,8 @@ components:
           title: show_deleted
           description: Whether to include deleted revisions in the results.
       title: ListRevisionsRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListRevisionsResponse:
       type: object
@@ -16251,6 +16392,8 @@ components:
              update_time >= "2025-01-02T15:04:05Z07:00"
              task_type in ["DATABASE_MIGRATE", "DATABASE_CREATE"]
       title: ListRolloutsRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListRolloutsResponse:
       type: object
@@ -16314,6 +16457,8 @@ components:
              create time. Empty means `title` ascending. `resource_id` is always
              appended as a final tiebreak so pages stay stable.
       title: ListSavedQueriesRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListSavedQueriesResponse:
       type: object
@@ -16445,6 +16590,8 @@ components:
              When paginating, all other parameters provided to `ListTaskRuns` must match
              the call that provided the page token.
       title: ListTaskRunsRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.ListTaskRunsResponse:
       type: object
@@ -17082,6 +17229,9 @@ components:
             Where it lands. A path like "a/b/c"; empty drops the `source_folder`
              prefix, promoting the folder's contents toward the root.
       title: MoveMySavedQueriesRequest
+      required:
+        - parent
+        - sourceFolder
       additionalProperties: false
     bytebase.v1.MoveMySavedQueriesResponse:
       type: object
@@ -17209,6 +17359,7 @@ components:
           description: |-
             The authorization endpoint of the OIDC provider.
              Should be fetched from the well-known configuration file of the OIDC provider.
+          readOnly: true
       title: OIDCIdentityProviderConfig
       additionalProperties: false
       description: OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
@@ -17405,6 +17556,7 @@ components:
             The issue associated with the plan.
              Can be empty.
              Format: projects/{project}/issues/{issue}
+          readOnly: true
         title:
           type: string
           title: title
@@ -17425,14 +17577,17 @@ components:
           type: string
           title: creator
           description: 'Format: users/hello@world.com'
+          readOnly: true
         createTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
+          readOnly: true
         updateTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: update_time
+          readOnly: true
         planCheckRunStatusCount:
           type: object
           title: plan_check_run_status_count
@@ -17447,10 +17602,12 @@ components:
              - WARNING
              - ERROR
              - RUNNING
+          readOnly: true
         hasRollout:
           type: boolean
           title: has_rollout
           description: Whether the plan has started the rollout.
+          readOnly: true
         approvalStatus:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.ApprovalStatus'
@@ -17458,6 +17615,7 @@ components:
           description: |-
             The approval status of the linked issue.
              Unspecified when no linked issue exists or the linked issue is a draft.
+          readOnly: true
         rolloutStageSummaries:
           type: array
           items:
@@ -17466,6 +17624,7 @@ components:
           description: |-
             Per-stage rollout status summary.
              Ordered by environment deployment order. Empty when no rollout exists.
+          readOnly: true
         issueStatus:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.IssueStatus'
@@ -17473,6 +17632,7 @@ components:
           description: |-
             The lifecycle status of the linked issue.
              Unspecified when no linked issue exists.
+          readOnly: true
         lastPlanEditor:
           type: string
           title: last_plan_editor
@@ -17480,6 +17640,7 @@ components:
             The user who last created or updated the Plan specs.
              Format: users/hello@world.com. For legacy Plans without stored attribution,
              this falls back to the Plan creator.
+          readOnly: true
       title: Plan
       additionalProperties: false
     bytebase.v1.Plan.ChangeDatabaseConfig:
@@ -17529,31 +17690,34 @@ components:
           type: string
           title: table
           description: |-
-            table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
+            (OPTIONAL) table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
              For example, in MongoDB, it only creates the database when we first store data in that database.
         characterSet:
           type: string
           title: character_set
-          description: character_set is the character set of the database.
+          description: (OPTIONAL) character_set is the character set of the database.
         collation:
           type: string
           title: collation
-          description: collation is the collation of the database.
+          description: (OPTIONAL) collation is the collation of the database.
         cluster:
           type: string
           title: cluster
-          description: cluster is the cluster of the database. This is only applicable to ClickHouse for "ON CLUSTER <<cluster>>".
+          description: (OPTIONAL) cluster is the cluster of the database. This is only applicable to ClickHouse for "ON CLUSTER <<cluster>>".
         owner:
           type: string
           title: owner
-          description: owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
+          description: (OPTIONAL) owner is the owner of the database. This is only applicable to Postgres for "WITH OWNER <<owner>>".
         environment:
           type: string
           title: environment
           description: |-
-            The environment resource.
+            (OPTIONAL) The environment resource.
              Format: environments/prod where prod is the environment resource ID.
       title: CreateDatabaseConfig
+      required:
+        - target
+        - database
       additionalProperties: false
     bytebase.v1.Plan.RolloutStageSummary:
       type: object
@@ -17648,6 +17812,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
+          readOnly: true
       title: PlanCheckRun
       additionalProperties: false
     bytebase.v1.PlanCheckRun.Result:
@@ -17990,6 +18155,7 @@ components:
             - $ref: '#/components/schemas/bytebase.v1.PolicyResourceType'
           title: resource_type
           description: The resource type for the policy.
+          readOnly: true
       title: Policy
     bytebase.v1.PolicyDelta:
       type: object
@@ -18067,6 +18233,8 @@ components:
             The project that owns the sample instance.
              Format: projects/{project}
       title: PrepareSampleProjectInstanceRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.PreviewTaskRunRollbackRequest:
       type: object
@@ -18076,6 +18244,8 @@ components:
           title: name
           description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
       title: PreviewTaskRunRollbackRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.PreviewTaskRunRollbackResponse:
       type: object
@@ -18392,31 +18562,38 @@ components:
           description: |-
             The name for the query history.
              Format: projects/{project}/queryHistories/{id}
+          readOnly: true
         database:
           type: string
           title: database
           description: |-
             The database name to execute the query.
              Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName}
+          readOnly: true
         creator:
           type: string
           title: creator
+          readOnly: true
         createTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
+          readOnly: true
         statement:
           type: string
           title: statement
+          readOnly: true
         error:
           type:
             - string
             - "null"
           title: error
+          readOnly: true
         duration:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Duration'
           title: duration
+          readOnly: true
         type:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.QueryHistory.Type'
@@ -18520,6 +18697,8 @@ components:
             Container is the container name to execute the query against, used for
              CosmosDB only.
       title: QueryRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.QueryResponse:
       type: object
@@ -18832,6 +19011,8 @@ components:
           maxLength: 260
           description: 'Format: users/{email}. Must be the caller''s own name.'
       title: RegenerateRecoveryCodesRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.RegenerateRecoveryCodesResponse:
       type: object
@@ -18863,6 +19044,8 @@ components:
           title: comment
           description: The comment explaining the rejection decision.
       title: RejectIssueRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.Release:
       type: object
@@ -18871,6 +19054,7 @@ components:
           type: string
           title: name
           description: 'Format: projects/{project}/releases/{release}'
+          readOnly: true
         category:
           type: string
           title: category
@@ -18892,15 +19076,18 @@ components:
           type: string
           title: creator
           description: 'Format: users/hello@world.com'
+          readOnly: true
         createTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
+          readOnly: true
         state:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.State'
           title: state
           description: The lifecycle state of the release.
+          readOnly: true
         type:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.Release.Type'
@@ -18933,10 +19120,12 @@ components:
           title: statement
           format: byte
           description: The raw SQL statement content.
+          writeOnly: true
         sheetSha256:
           type: string
           title: sheet_sha256
           description: The SHA256 hash value of the sheet content or the statement.
+          readOnly: true
       title: File
       additionalProperties: false
       description: A SQL file in a release.
@@ -18980,6 +19169,9 @@ components:
             Identified by data source ID.
              Only READ_ONLY data source can be removed.
       title: RemoveDataSourceRequest
+      required:
+        - name
+        - dataSource
       additionalProperties: false
     bytebase.v1.RemoveWebhookRequest:
       type: object
@@ -18990,6 +19182,8 @@ components:
           title: webhook
           description: The webhook to remove. Identified by its url.
       title: RemoveWebhookRequest
+      required:
+        - webhook
       additionalProperties: false
     bytebase.v1.RequestIssueRequest:
       type: object
@@ -19005,6 +19199,8 @@ components:
           title: comment
           description: The comment explaining the request.
       title: RequestIssueRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.RequestMetadata:
       type: object
@@ -19055,6 +19251,8 @@ components:
           maxLength: 260
           description: 'Format: users/{email}. Must be the caller''s own name.'
       title: RequestReauthCodeRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.ResetPasswordRequest:
       type: object
@@ -19087,25 +19285,30 @@ components:
           type: boolean
           title: disallow_signup
           description: Whether self-service user signup is disabled.
+          readOnly: true
         disallowPasswordSignin:
           type: boolean
           title: disallow_password_signin
           description: Whether password sign-in is disabled for all end users.
+          readOnly: true
         passwordRestriction:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.WorkspaceProfileSetting.PasswordRestriction'
           title: password_restriction
           description: Password complexity and restriction requirements.
+          readOnly: true
         allowEmailCodeSignin:
           type: boolean
           title: allow_email_code_signin
           description: Whether email + 6-digit code signin is enabled for this workspace.
+          readOnly: true
         passwordResetEnabled:
           type: boolean
           title: password_reset_enabled
           description: |-
             Whether password reset via email is available for this workspace.
              True when the workspace (or deployment) has an email setting configured.
+          readOnly: true
       title: Restriction
       additionalProperties: false
     bytebase.v1.RetryIssueApprovalRequest:
@@ -19118,6 +19321,8 @@ components:
             The name of the issue whose approval-finding should be retried.
              Format: projects/{project}/issues/{issue}
       title: RetryIssueApprovalRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.ReviewAIPolicy:
       type: object
@@ -19141,6 +19346,7 @@ components:
           description: |-
             The name of the SQL review config.
              Format: reviewConfigs/{reviewConfig}
+          readOnly: true
         title:
           type: string
           title: title
@@ -19230,15 +19436,18 @@ components:
             - $ref: '#/components/schemas/bytebase.v1.ReviewRun.Type'
           title: type
           description: Derived from the name.
+          readOnly: true
         status:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.ReviewRun.Status'
           title: status
+          readOnly: true
         createTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
           description: When the current run was triggered. Reset on every re-run.
+          readOnly: true
         endTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
@@ -19246,6 +19455,7 @@ components:
           description: |-
             When the run reached a terminal status. Unset while AVAILABLE or
              RUNNING.
+          readOnly: true
         error:
           type: string
           title: error
@@ -19253,6 +19463,7 @@ components:
             Fatal execution error, set if and only if status is FAILED: the review
              failed to execute (a platform problem, never the SQL — SQL problems are
              review results on a DONE run).
+          readOnly: true
       title: ReviewRun
       additionalProperties: false
     bytebase.v1.ReviewRun.Status:
@@ -19292,17 +19503,20 @@ components:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
+          readOnly: true
         deleter:
           type: string
           title: deleter
           description: |-
             Format: users/hello@world.com
              Can be empty.
+          readOnly: true
         deleteTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: delete_time
           description: Can be empty.
+          readOnly: true
         file:
           type: string
           title: file
@@ -19324,6 +19538,7 @@ components:
           type: string
           title: sheet_sha256
           description: The SHA256 hash value of the sheet.
+          readOnly: true
         taskRun:
           type: string
           title: task_run
@@ -19356,6 +19571,8 @@ components:
             The name of the access grant to revoke.
              Format: projects/{project}/accessGrants/{access_grant}
       title: RevokeAccessGrantRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.RiskLevel:
       type: string
@@ -19446,20 +19663,24 @@ components:
           description: |-
             The title of the rollout, inherited from the associated plan.
              This field is output only and cannot be directly set.
+          readOnly: true
         stages:
           type: array
           items:
             $ref: '#/components/schemas/bytebase.v1.Stage'
           title: stages
           description: Stages and thus tasks of the rollout.
+          readOnly: true
         createTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
+          readOnly: true
         updateTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: update_time
+          readOnly: true
       title: Rollout
       additionalProperties: false
     bytebase.v1.RolloutPolicy:
@@ -19488,6 +19709,8 @@ components:
             The workspace whose directory sync token is rotated.
              Format: workspaces/{workspace}
       title: RotateDirectorySyncTokenRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.RotateDirectorySyncTokenResponse:
       type: object
@@ -19496,6 +19719,7 @@ components:
           type: string
           title: token
           description: The new token, in plaintext. This is the only time it is ever returned.
+          readOnly: true
       title: RotateDirectorySyncTokenResponse
       additionalProperties: false
     bytebase.v1.RowValue:
@@ -19718,6 +19942,8 @@ components:
              This should match the spec.id field in Plan.Spec.
              If not set, all specs in the plan will be used.
       title: RunPlanChecksRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.RunPlanChecksResponse:
       type: object
@@ -19731,6 +19957,8 @@ components:
           title: name
           description: 'Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}'
       title: RunReviewRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.SASLConfig:
       type: object
@@ -20045,12 +20273,14 @@ components:
           type: boolean
           title: available
           description: Whether sample setup is currently available.
+          readOnly: true
         instances:
           type: array
           items:
             $ref: '#/components/schemas/bytebase.v1.SampleInfo.Instance'
           title: instances
           description: The provisioned sample instances.
+          readOnly: true
       title: SampleInfo
       additionalProperties: false
       description: SampleInfo describes sample setup availability and provisioned resources.
@@ -20063,11 +20293,13 @@ components:
           description: |-
             The provisioned sample instance.
              Format: instances/{instance} or projects/{project}/instances/{instance}
+          readOnly: true
         expireTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: expire_time
           description: The time when the provisioned sample instance expires.
+          readOnly: true
       title: Instance
       additionalProperties: false
       description: Instance describes one provisioned sample instance.
@@ -20078,12 +20310,13 @@ components:
           type: string
           title: name
           description: |-
-            Server-generated.
+            (IMMUTABLE) Server-generated.
              Format: projects/{project}/savedQueries/{savedQuery}
         project:
           type: string
           title: project
           description: 'Format: projects/{project}'
+          readOnly: true
         database:
           type: string
           title: database
@@ -20103,14 +20336,17 @@ components:
           description: |-
             The owner. Ownership does not transfer.
              Format: users/{email}
+          readOnly: true
         createTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
+          readOnly: true
         updateTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: update_time
+          readOnly: true
         content:
           type: string
           title: content
@@ -20123,10 +20359,12 @@ components:
           title: content_size
           format: int64
           description: The full size of the content, which may exceed the `content` returned.
+          readOnly: true
         starred:
           type: boolean
           title: starred
           description: Whether the calling user starred it.
+          readOnly: true
         folder:
           type: string
           title: folder
@@ -20135,6 +20373,10 @@ components:
             The folder holding this saved query. A path like "a/b/c"; empty means
              unfiled.
       title: SavedQuery
+      required:
+        - name
+        - title
+        - content
       additionalProperties: false
     bytebase.v1.SavedQueryBinding:
       type: object
@@ -20156,6 +20398,9 @@ components:
              as the creator. Naming one under "user:" grants nothing rather than
              failing. Groups are stored as references, so membership stays live.
       title: SavedQueryBinding
+      required:
+        - level
+        - members
       additionalProperties: false
       description: Binds members to one access level on one saved query.
     bytebase.v1.SavedQueryBinding.Level:
@@ -20372,6 +20617,8 @@ components:
             A page token, received from a previous `SearchLogs` call.
              Provide this to retrieve the subsequent page.
       title: SearchAuditLogsRequest
+      required:
+        - parent
       additionalProperties: false
       description: Request message for searching audit logs.
     bytebase.v1.SearchAuditLogsResponse:
@@ -20446,6 +20693,8 @@ components:
              - order_by = "create_time desc"
              - order_by = "update_time asc"
       title: SearchIssuesRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.SearchIssuesResponse:
       type: object
@@ -20491,6 +20740,8 @@ components:
           title: order_by
           description: Check the order_by field in the ListAccessGrantsRequest message.
       title: SearchMyAccessGrantsRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.SearchMyAccessGrantsResponse:
       type: object
@@ -20641,6 +20892,8 @@ components:
              statement.contains("select")
              type == "QUERY" && statement.contains("select")
       title: SearchQueryHistoriesRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.SearchQueryHistoriesResponse:
       type: object
@@ -20651,6 +20904,7 @@ components:
             $ref: '#/components/schemas/bytebase.v1.QueryHistory'
           title: query_histories
           description: The list of history.
+          readOnly: true
         nextPageToken:
           type: string
           title: next_page_token
@@ -20708,6 +20962,8 @@ components:
             A page token from a previous SearchSavedQueries call. Keep every other
              parameter the same as the call that returned it.
       title: SearchSavedQueriesRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.SearchSavedQueriesResponse:
       type: object
@@ -20740,6 +20996,8 @@ components:
              syntax as SearchSavedQueries.filter, except `title`. A folder is returned
              when at least one saved query the caller can read matches.
       title: SearchSavedQueryFoldersRequest
+      required:
+        - parent
       additionalProperties: false
     bytebase.v1.SearchSavedQueryFoldersResponse:
       type: object
@@ -20879,6 +21137,7 @@ components:
           description: |-
             The name of the service account.
              Format: serviceAccounts/{email}
+          readOnly: true
         state:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.State'
@@ -20891,6 +21150,7 @@ components:
             The email of the service account.
              For workspace-level: {name}@service.bytebase.com
              For project-level: {name}@{project-id}.service.bytebase.com
+          readOnly: true
         title:
           type: string
           title: title
@@ -20900,11 +21160,13 @@ components:
           type: string
           title: service_key
           description: The service key for authentication. Only returned on creation or key rotation.
+          readOnly: true
         createTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
           description: The timestamp when the service account was created.
+          readOnly: true
       title: ServiceAccount
       additionalProperties: false
       description: ServiceAccount represents an API integration account.
@@ -20926,9 +21188,12 @@ components:
           type: string
           title: etag
           description: |-
-            The current etag of the policy. Equivalent to setting `policy.etag`;
+            (OPTIONAL) The current etag of the policy. Equivalent to setting `policy.etag`;
              supplying both with different values returns INVALID_ARGUMENT.
       title: SetIamPolicyRequest
+      required:
+        - resource
+        - policy
       additionalProperties: false
       description: Request message for setting an IAM policy.
     bytebase.v1.SetSavedQueryPolicyRequest:
@@ -20946,6 +21211,9 @@ components:
             The new policy, replacing the stored one in full. Empty `bindings` makes
              the saved query private again.
       title: SetSavedQueryPolicyRequest
+      required:
+        - resource
+        - policy
       additionalProperties: false
     bytebase.v1.Setting:
       type: object
@@ -20954,7 +21222,7 @@ components:
           type: string
           title: name
           description: |-
-            The resource name of the setting.
+            (IDENTIFIER) The resource name of the setting.
              Format: settings/{setting}
              Example: "settings/SEMANTIC_TYPES"
         value:
@@ -20963,6 +21231,8 @@ components:
           title: value
           description: The configuration value of the setting.
       title: Setting
+      required:
+        - value
       additionalProperties: false
       description: The schema of setting.
     bytebase.v1.Setting.SettingName:
@@ -21096,7 +21366,7 @@ components:
           type: string
           title: name
           description: |-
-            The name of the sheet resource.
+            (IMMUTABLE) The name of the sheet resource.
              Format: projects/{project}/sheets/{sheet}
              The sheet ID is generated by the server on creation and cannot be changed.
         content:
@@ -21112,7 +21382,11 @@ components:
           title: content_size
           format: int64
           description: content_size is the full size of the content, may not match the size of the `content` field.
+          readOnly: true
       title: Sheet
+      required:
+        - name
+        - content
       additionalProperties: false
     bytebase.v1.SignupRequest:
       type: object
@@ -21179,6 +21453,7 @@ components:
             id is the environment id of the stage.
              e.g., "prod".
              Use "-" when the stage has no environment or deleted environment.
+          readOnly: true
         environment:
           type: string
           title: environment
@@ -21202,6 +21477,8 @@ components:
           maxLength: 260
           description: 'Format: users/{email}. Must be the caller''s own name.'
       title: StartMFAEnrollmentRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.StartMFAEnrollmentResponse:
       type: object
@@ -21440,36 +21717,45 @@ components:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.PlanType'
           title: plan
+          readOnly: true
         seats:
           type: integer
           title: seats
           format: int32
+          readOnly: true
         instances:
           type: integer
           title: instances
           format: int32
+          readOnly: true
         activeInstances:
           type: integer
           title: active_instances
           format: int32
+          readOnly: true
         expiresTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: expires_time
+          readOnly: true
         trialing:
           type: boolean
           title: trialing
+          readOnly: true
         orgName:
           type: string
           title: org_name
+          readOnly: true
         ha:
           type: boolean
           title: ha
           description: Whether high availability (multiple replicas) is enabled.
+          readOnly: true
         etag:
           type: string
           title: etag
           description: Etag for optimistic concurrency on purchase updates. Only set in SaaS mode.
+          readOnly: true
       title: Subscription
       additionalProperties: false
     bytebase.v1.SwitchWorkspaceRequest:
@@ -21519,6 +21805,8 @@ components:
             The name of the database to sync.
              Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
       title: SyncDatabaseRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.SyncDatabaseResponse:
       type: object
@@ -21550,6 +21838,8 @@ components:
             When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only
              the instance metadata (such as the database list) and any newly discovered databases will be synced.
       title: SyncInstanceRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.SyncInstanceResponse:
       type: object
@@ -21906,6 +22196,7 @@ components:
           description: |-
             The update_time is the update time of latest task run.
              If there are no task runs, it will be empty.
+          readOnly: true
         runTime:
           oneOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
@@ -21914,6 +22205,7 @@ components:
           description: |-
             The run_time is the scheduled run time of latest task run.
              If there are no task runs or the task run is not scheduled, it will be empty.
+          readOnly: true
       title: Task
     bytebase.v1.Task.DatabaseCreate:
       type: object
@@ -22050,10 +22342,12 @@ components:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
+          readOnly: true
         updateTime:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: update_time
+          readOnly: true
         status:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.TaskRun.Status'
@@ -22070,6 +22364,7 @@ components:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: start_time
           description: The time when the task run started execution.
+          readOnly: true
         hasPriorBackup:
           type: boolean
           title: has_prior_backup
@@ -22082,6 +22377,7 @@ components:
             - $ref: '#/components/schemas/bytebase.v1.TaskRun.SchedulerInfo'
           title: scheduler_info
           description: Scheduling information about the task run.
+          readOnly: true
         runTime:
           oneOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
@@ -22090,6 +22386,7 @@ components:
           description: |-
             The task run should run after run_time.
              This can only be set when creating the task run calling BatchRunTasks.
+          readOnly: true
       title: TaskRun
       additionalProperties: false
     bytebase.v1.TaskRun.SchedulerInfo:
@@ -22668,6 +22965,10 @@ components:
           type: string
           title: to
       title: TestEmailSettingRequest
+      required:
+        - parent
+        - emailSetting
+        - to
       additionalProperties: false
     bytebase.v1.TestEmailSettingResponse:
       type: object
@@ -22770,6 +23071,9 @@ components:
              so leave url empty and set name to test the one already stored; set url to
              test a url before saving it.
       title: TestWebhookRequest
+      required:
+        - project
+        - webhook
       additionalProperties: false
     bytebase.v1.TestWebhookResponse:
       type: object
@@ -22833,6 +23137,8 @@ components:
             The name of the deleted instance.
              Format: instances/{instance} or projects/{project}/instances/{instance}
       title: UndeleteInstanceRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.UndeleteProjectRequest:
       type: object
@@ -22844,6 +23150,8 @@ components:
             The name of the deleted project.
              Format: projects/{project}
       title: UndeleteProjectRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.UndeleteReleaseRequest:
       type: object
@@ -22855,6 +23163,8 @@ components:
             The name of the deleted release.
              Format: projects/{project}/releases/{release}
       title: UndeleteReleaseRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.UndeleteServiceAccountRequest:
       type: object
@@ -22866,6 +23176,8 @@ components:
             The name of the deleted service account.
              Format: serviceAccounts/{email}
       title: UndeleteServiceAccountRequest
+      required:
+        - name
       additionalProperties: false
       description: Request message for restoring a deleted service account.
     bytebase.v1.UndeleteUserRequest:
@@ -22878,6 +23190,8 @@ components:
             The name of the deleted user.
              Format: users/{email}
       title: UndeleteUserRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.UndeleteWorkloadIdentityRequest:
       type: object
@@ -22889,6 +23203,8 @@ components:
             The name of the deleted workload identity.
              Format: workloadIdentities/{email}
       title: UndeleteWorkloadIdentityRequest
+      required:
+        - name
       additionalProperties: false
       description: Request message for restoring a deleted workload identity.
     bytebase.v1.UpdateDataSourceRequest:
@@ -22921,6 +23237,9 @@ components:
             If set to true, and the data source is not found, a new data source will be created.
              In this situation, `update_mask` is ignored.
       title: UpdateDataSourceRequest
+      required:
+        - name
+        - dataSource
       additionalProperties: false
     bytebase.v1.UpdateDatabaseCatalogRequest:
       type: object
@@ -22937,6 +23256,8 @@ components:
              is erased. There is no `update_mask` because `schemas` is a repeated field,
              and AIP-161 forbids addressing one element of one.
       title: UpdateDatabaseCatalogRequest
+      required:
+        - catalog
       additionalProperties: false
       description: Request message for updating a database catalog.
     bytebase.v1.UpdateDatabaseGroupRequest:
@@ -22963,6 +23284,8 @@ components:
             If set to true, and the database group is not found, a new database group will be created.
              In this situation, `update_mask` is ignored.
       title: UpdateDatabaseGroupRequest
+      required:
+        - databaseGroup
       additionalProperties: false
       description: Request message for updating a database group.
     bytebase.v1.UpdateDatabaseRequest:
@@ -22983,6 +23306,8 @@ components:
           title: update_mask
           description: The list of fields to update.
       title: UpdateDatabaseRequest
+      required:
+        - database
       additionalProperties: false
     bytebase.v1.UpdateEmailRequest:
       type: object
@@ -23000,6 +23325,9 @@ components:
           maxLength: 254
           description: The new email address.
       title: UpdateEmailRequest
+      required:
+        - name
+        - email
       additionalProperties: false
     bytebase.v1.UpdateGroupRequest:
       type: object
@@ -23025,6 +23353,8 @@ components:
             If set to true, and the group is not found, a new group will be created.
              In this situation, `update_mask` is ignored.
       title: UpdateGroupRequest
+      required:
+        - group
       additionalProperties: false
       description: Request message for updating a group.
     bytebase.v1.UpdateIdentityProviderRequest:
@@ -23051,6 +23381,8 @@ components:
             If set to true, and the identity provider is not found, a new identity provider will be created.
              In this situation, `update_mask` is ignored.
       title: UpdateIdentityProviderRequest
+      required:
+        - identityProvider
       additionalProperties: false
     bytebase.v1.UpdateInstanceRequest:
       type: object
@@ -23078,6 +23410,8 @@ components:
              the instance only under its encoded active, non-default project; it never
              falls back to a workspace instance.
       title: UpdateInstanceRequest
+      required:
+        - instance
       additionalProperties: false
     bytebase.v1.UpdateIssueCommentRequest:
       type: object
@@ -23105,6 +23439,9 @@ components:
             If set to true, and the issue comment is not found, a new issue comment will be created.
              In this situation, `update_mask` is ignored.
       title: UpdateIssueCommentRequest
+      required:
+        - parent
+        - updateMask
       additionalProperties: false
     bytebase.v1.UpdateIssueRequest:
       type: object
@@ -23130,6 +23467,9 @@ components:
             If set to true, and the issue is not found, a new issue will be created.
              In this situation, `update_mask` is ignored.
       title: UpdateIssueRequest
+      required:
+        - issue
+        - updateMask
       additionalProperties: false
     bytebase.v1.UpdatePlanRequest:
       type: object
@@ -23155,6 +23495,9 @@ components:
             If set to true, and the plan is not found, a new plan will be created.
              In this situation, `update_mask` is ignored.
       title: UpdatePlanRequest
+      required:
+        - plan
+        - updateMask
       additionalProperties: false
     bytebase.v1.UpdatePolicyRequest:
       type: object
@@ -23182,6 +23525,8 @@ components:
             If set to true, and the policy is not found, a new policy will be created.
              In this situation, `update_mask` is ignored.
       title: UpdatePolicyRequest
+      required:
+        - policy
       additionalProperties: false
     bytebase.v1.UpdateProjectRequest:
       type: object
@@ -23207,6 +23552,8 @@ components:
             If set to true, and the project is not found, a new project will be created.
              In this situation, `update_mask` is ignored.
       title: UpdateProjectRequest
+      required:
+        - project
       additionalProperties: false
     bytebase.v1.UpdatePurchaseRequest:
       type: object
@@ -23242,6 +23589,8 @@ components:
           title: update_mask
           description: The list of fields to be updated.
       title: UpdateReleaseRequest
+      required:
+        - release
       additionalProperties: false
     bytebase.v1.UpdateReviewConfigRequest:
       type: object
@@ -23266,6 +23615,8 @@ components:
             If set to true, and the config is not found, a new config will be created.
              In this situation, `update_mask` is ignored.
       title: UpdateReviewConfigRequest
+      required:
+        - reviewConfig
       additionalProperties: false
     bytebase.v1.UpdateRoleRequest:
       type: object
@@ -23287,6 +23638,8 @@ components:
             If set to true, and the role is not found, a new role will be created.
              In this situation, `update_mask` is ignored.
       title: UpdateRoleRequest
+      required:
+        - role
       additionalProperties: false
     bytebase.v1.UpdateSavedQueryRequest:
       type: object
@@ -23307,6 +23660,8 @@ components:
              `saved_query.title`). Supported: `title`, `content`, `database`, `folder`.
              At least one path is required.
       title: UpdateSavedQueryRequest
+      required:
+        - savedQuery
       additionalProperties: false
     bytebase.v1.UpdateSavedQueryStarRequest:
       type: object
@@ -23320,6 +23675,8 @@ components:
           title: starred
           description: Whether the caller stars the saved query.
       title: UpdateSavedQueryStarRequest
+      required:
+        - name
       additionalProperties: false
     bytebase.v1.UpdateServiceAccountRequest:
       type: object
@@ -23341,6 +23698,8 @@ components:
             The list of fields to update.
              Supported fields: title, service_key (triggers key rotation)
       title: UpdateServiceAccountRequest
+      required:
+        - serviceAccount
       additionalProperties: false
       description: Request message for updating a service account.
     bytebase.v1.UpdateSettingRequest:
@@ -23365,6 +23724,8 @@ components:
             - $ref: '#/components/schemas/google.protobuf.FieldMask'
           title: update_mask
       title: UpdateSettingRequest
+      required:
+        - setting
       additionalProperties: false
       description: The request message for updating or creating a setting.
     bytebase.v1.UpdateUserRequest:
@@ -23391,6 +23752,8 @@ components:
             If set to true, and the user is not found, a new user will be created.
              In this situation, `update_mask` is ignored.
       title: UpdateUserRequest
+      required:
+        - user
       additionalProperties: false
     bytebase.v1.UpdateWebhookRequest:
       type: object
@@ -23412,6 +23775,8 @@ components:
             If set to true, and the webhook is not found, a new webhook will be created.
              In this situation, `update_mask` is ignored.
       title: UpdateWebhookRequest
+      required:
+        - webhook
       additionalProperties: false
     bytebase.v1.UpdateWorkloadIdentityRequest:
       type: object
@@ -23433,6 +23798,8 @@ components:
             The list of fields to update.
              Supported fields: title, workload_identity_config
       title: UpdateWorkloadIdentityRequest
+      required:
+        - workloadIdentity
       additionalProperties: false
       description: Request message for updating a workload identity.
     bytebase.v1.UpdateWorkspaceRequest:
@@ -23447,6 +23814,8 @@ components:
             - $ref: '#/components/schemas/google.protobuf.FieldMask'
           title: update_mask
       title: UpdateWorkspaceRequest
+      required:
+        - workspace
       additionalProperties: false
     bytebase.v1.UploadLicenseRequest:
       type: object
@@ -23465,6 +23834,7 @@ components:
           description: |-
             The name of the user.
              Format: users/{email}
+          readOnly: true
         state:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.State'
@@ -23486,12 +23856,14 @@ components:
           description: |
             The password for authentication. Only used during user creation or password updates.
             string.max_bytes = 72
+          writeOnly: true
         mfaEnabled:
           type: boolean
           title: mfa_enabled
           description: |-
             Whether the user has a live MFA factor. Set by ConfirmRecoveryCodes and
              DisableMFA, never by an update.
+          readOnly: true
         phone:
           type: string
           title: phone
@@ -23507,16 +23879,19 @@ components:
           type: array
           items:
             type: string
+            readOnly: true
           title: groups
           description: |-
             The groups for the user.
              Format: groups/{email}
+          readOnly: true
         workspace:
           type: string
           title: workspace
           description: |-
             The current workspace.
              Format: workspaces/{id}
+          readOnly: true
       title: User
       additionalProperties: false
     bytebase.v1.User.Profile:
@@ -23661,6 +24036,7 @@ components:
              Required to create a webhook. Not required on TestWebhook, where an empty
              url on a request that names a webhook means the one already stored, so the
              field carries no REQUIRED behavior it would contradict there.
+          writeOnly: true
         urlSupportsDirectMessage:
           type: boolean
           title: url_supports_direct_message
@@ -23674,6 +24050,7 @@ components:
              Reads do not return the url, so a client editing a saved webhook cannot
              work this out for itself. It is a fact about the stored url and says
              nothing about what the url is.
+          readOnly: true
         directMessage:
           type: boolean
           title: direct_message
@@ -23687,7 +24064,7 @@ components:
             $ref: '#/components/schemas/bytebase.v1.Activity.Type'
           title: notification_types
           description: |-
-            notification_types is the list of activities types that the webhook is interested in.
+            (UNORDERED_LIST) notification_types is the list of activities types that the webhook is interested in.
              Bytebase will only send notifications to the webhook if the activity type is in the list.
              It should not be empty, and should be a subset of the following:
              - ISSUE_CREATED
@@ -23697,6 +24074,9 @@ components:
              - PIPELINE_FAILED
              - PIPELINE_COMPLETED
       title: Webhook
+      required:
+        - type
+        - title
       additionalProperties: false
     bytebase.v1.WebhookType:
       type: string
@@ -23721,6 +24101,7 @@ components:
           description: |-
             The name of the workload identity.
              Format: workloadIdentities/{email}
+          readOnly: true
         state:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.State'
@@ -23733,6 +24114,7 @@ components:
             The email of the workload identity.
              For workspace-level: {name}@workload.bytebase.com
              For project-level: {name}@{project-id}.workload.bytebase.com
+          readOnly: true
         title:
           type: string
           title: title
@@ -23743,12 +24125,15 @@ components:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: create_time
           description: The timestamp when the workload identity was created.
+          readOnly: true
         workloadIdentityConfig:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.WorkloadIdentityConfig'
           title: workload_identity_config
           description: The workload identity configuration for OIDC token validation.
       title: WorkloadIdentity
+      required:
+        - workloadIdentityConfig
       additionalProperties: false
       description: WorkloadIdentity represents an external CI/CD workload identity.
     bytebase.v1.WorkloadIdentityConfig:
@@ -23788,6 +24173,11 @@ components:
           title: jwks_url
           description: Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url.
       title: WorkloadIdentityConfig
+      required:
+        - providerType
+        - issuerUrl
+        - allowedAudiences
+        - subjectPattern
       additionalProperties: false
       description: WorkloadIdentityConfig for API layer
     bytebase.v1.WorkloadIdentityConfig.ProviderType:
@@ -24008,6 +24398,7 @@ components:
             Whether a directory sync token has been generated for this workspace.
              The token itself is never returned; this only lets the UI decide between
              offering "generate" and "regenerate".
+          readOnly: true
       title: WorkspaceProfileSetting
       additionalProperties: false
     bytebase.v1.WorkspaceProfileSetting.PasswordRestriction:
@@ -24102,7 +24493,7 @@ components:
           description: 'A URL that acts as a globally unique identifier for the type of the serialized message. For example: `type.googleapis.com/google.rpc.ErrorInfo`.'
         value:
           type: string
-          format: binary
+          format: byte
           description: The Protobuf message, serialized as bytes and base64-encoded. The specific message type is identified by the `type` field.
         debug:
           type: object
