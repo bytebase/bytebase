@@ -275,7 +275,7 @@ export function TabList() {
             items={tabs.map((tab) => tab.id)}
             strategy={horizontalListSortingStrategy}
           >
-            <div className="relative flex flex-nowrap h-9 pt-0.5">
+            <div className="relative flex flex-nowrap pt-0.5">
               {tabs.map((tab, index) => (
                 <TabItem
                   key={tab.id}
@@ -289,17 +289,17 @@ export function TabList() {
               <div className="shrink-0 sticky right-0 bg-background flex items-stretch justify-end">
                 <Button
                   appearance="secondary"
-                  size="xs"
+                  size="md"
                   type="button"
                   className={cn(
-                    "h-auto bg-control-bg/20 hover:bg-accent/10 py-1 px-1.5",
+                    "bg-control-bg/20 hover:bg-accent/10",
                     "border-t border-x rounded-t-sm hover:border-accent disabled:opacity-50"
                   )}
                   disabled={loading}
                   onClick={handleAddTab}
                   aria-label={t("common.add")}
                 >
-                  <Plus className="size-5" strokeWidth={2.5} />
+                  <Plus className="size-4" strokeWidth={2.5} />
                 </Button>
               </div>
             </div>
