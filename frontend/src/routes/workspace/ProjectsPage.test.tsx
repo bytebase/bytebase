@@ -1,9 +1,14 @@
-import { render, waitFor } from "@testing-library/react";
-import { StrictMode, type ReactNode } from "react";
+import { fireEvent, render, waitFor } from "@testing-library/react";
+import { StrictMode, type MouseEvent, type ReactNode } from "react";
 import { describe, expect, test, vi } from "vitest";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
 import { ProjectsPage } from "./ProjectsPage";
 
-const mocks = vi.hoisted(() => ({ fetchProjectList: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  fetchProjectList: vi.fn(),
+  routerPush: vi.fn(),
+  routerResolve: vi.fn(() => ({ fullPath: "/projects/visible" })),
+}));
 vi.mock("@/stores/app", () => {
   const state = {
     isLoggedIn: () => true,
@@ -21,7 +26,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 vi.mock("@/app/router", () => ({
-  router: {},
+  router: { push: mocks.routerPush, resolve: mocks.routerResolve },
   useCurrentRoute: () => ({ query: {} }),
 }));
 vi.mock("@/app/router/NavigationScrollRestoration", () => ({
@@ -39,8 +44,24 @@ vi.mock("@/components/PermissionGuard", () => ({
   PermissionGuard: () => null,
 }));
 vi.mock("@/components/ProjectTable", () => ({
-  ProjectTable: ({ projectList }: { projectList: { name: string }[] }) => (
-    <div>{projectList.map((p) => p.name).join(",")}</div>
+  ProjectTable: ({
+    projectList,
+    onRowClick,
+  }: {
+    projectList: { name: string }[];
+    onRowClick?: (project: { name: string }, event: MouseEvent<HTMLElement>) => void;
+  }) => (
+    <div>
+      {projectList.map((project) => (
+        <button
+          key={project.name}
+          type="button"
+          onClick={(event) => onRowClick?.(project, event)}
+        >
+          {project.name}
+        </button>
+      ))}
+    </div>
   ),
 }));
 vi.mock("@/components/WorkspacePageLayout", () => {
@@ -80,6 +101,30 @@ vi.mock("@/utils", async (original) => ({
 }));
 
 describe("ProjectsPage", () => {
+  test("opens Project Home from a project row and in a new tab", async () => {
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/visible" }],
+      nextPageToken: "",
+    });
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    const view = render(<ProjectsPage />);
+    const row = await view.findByRole("button", { name: "projects/visible" });
+    const destination = {
+      name: PROJECT_V1_ROUTE_DETAIL,
+      params: { projectId: "visible" },
+    };
+
+    fireEvent.click(row);
+    expect(mocks.routerPush).toHaveBeenCalledWith(destination);
+
+    fireEvent.click(row, { metaKey: true });
+    expect(mocks.routerResolve).toHaveBeenLastCalledWith(destination);
+    expect(open).toHaveBeenCalledWith("/projects/visible", "_blank");
+
+    view.unmount();
+    open.mockRestore();
+  });
+
   test("restarts the canceled initial fetch during StrictMode replay", async () => {
     const signals: AbortSignal[] = [];
     mocks.fetchProjectList.mockImplementation(
