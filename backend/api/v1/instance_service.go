@@ -8,7 +8,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"log/slog"
+	"net"
+	"net/netip"
+	"net/url"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -44,11 +48,16 @@ type InstanceService struct {
 	dbFactory      *dbfactory.DBFactory
 	schemaSyncer   *schemasync.Syncer
 	sampleManager  sample.Manager
+	// lookupHost resolves a hostname before a Cloud connection test. Nil uses
+	// the system resolver.
+	lookupHost func(ctx context.Context, host string) ([]netip.Addr, error)
 }
 
 const (
 	connectionCategoryHeader             = "bytebase-connection-failure-category"
 	connectionCategoryNetworkUnreachable = "network_unreachable"
+	connectionCategoryHostNotFound       = "host_not_found"
+	connectionCategoryPrivateAddress     = "private_address"
 	connectionCategoryAuthFailed         = "auth_failed"
 	connectionCategoryPermissionDenied   = "permission_denied"
 	connectionCategorySSLTLSFailed       = "ssl_tls_failed"
@@ -57,6 +66,161 @@ const (
 	connectionCategoryUnknown            = "unknown"
 	connectionCategorySuccess            = "success"
 )
+
+// connectionTestTimeout bounds a connection test so the form hears the driver's
+// reason before a gateway in front of Bytebase times the request out. See
+// docs/design/instance-connection-failure-recovery.md, D3.
+const connectionTestTimeout = 20 * time.Second
+
+// hostLookupTimeout bounds the DNS lookup that precedes a Cloud connection test.
+const hostLookupTimeout = 3 * time.Second
+
+// cgnatPrefix is 100.64.0.0/10, the carrier-grade NAT range that overlay
+// networks hand out; netip has no predicate for it.
+var cgnatPrefix = netip.MustParsePrefix("100.64.0.0/10")
+
+// dialedHost extracts the hostname or IP from what users type into the host
+// field: a bare host, a host:port pair, or an endpoint URL.
+func dialedHost(host string) string {
+	host = strings.ToLower(strings.TrimSpace(host))
+	if strings.Contains(host, "://") {
+		if u, err := url.Parse(host); err == nil {
+			return u.Hostname()
+		}
+		return host
+	}
+	if _, err := netip.ParseAddr(strings.Trim(host, "[]")); err == nil {
+		return strings.Trim(host, "[]")
+	}
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		return h
+	}
+	return host
+}
+
+// isUnroutableAddress reports whether addr is one that no public network
+// routes: loopback, private, link-local, carrier-grade NAT, or unspecified.
+func isUnroutableAddress(addr netip.Addr) bool {
+	addr = addr.Unmap()
+	return addr.IsLoopback() ||
+		addr.IsPrivate() ||
+		addr.IsLinkLocalUnicast() ||
+		addr.IsUnspecified() ||
+		cgnatPrefix.Contains(addr)
+}
+
+// isLocalName reports whether host is a name that resolves only where it is
+// used from: localhost, Docker's host alias, a single-label name such as a
+// compose service, or a name under a suffix reserved for private use.
+func isLocalName(host string) bool {
+	host = strings.TrimSuffix(host, ".")
+	if host == "" {
+		return false
+	}
+	if host == "localhost" || host == "host.docker.internal" {
+		return true
+	}
+	for _, suffix := range []string{".localhost", ".local", ".internal", ".home.arpa"} {
+		if strings.HasSuffix(host, suffix) {
+			return true
+		}
+	}
+	return !strings.ContainsAny(host, ".:/")
+}
+
+// dialsHostname reports whether the data source's host is a hostname or IP that
+// Bytebase dials, rather than an account locator (Snowflake), a Cloud SQL
+// connection name, or nothing (BigQuery, Spanner, DynamoDB).
+func dialsHostname(engine storepb.Engine, dataSource *storepb.DataSource) bool {
+	switch engine {
+	case storepb.Engine_SNOWFLAKE, storepb.Engine_BIGQUERY, storepb.Engine_SPANNER, storepb.Engine_DYNAMODB:
+		return false
+	default:
+		return dataSource.GetAuthenticationType() != storepb.DataSource_GOOGLE_CLOUD_SQL_IAM
+	}
+}
+
+// isPrivateOrLocalHost reports whether the data source names a host that
+// Bytebase Cloud can never reach: a literal unroutable IP, or a local name on an
+// engine that dials a hostname. An SSH tunnel resolves the host from the
+// bastion, so it exempts the data source.
+func isPrivateOrLocalHost(engine storepb.Engine, dataSource *storepb.DataSource) bool {
+	if dataSource.GetSshHost() != "" {
+		return false
+	}
+	host := dialedHost(dataSource.GetHost())
+	if host == "" {
+		return false
+	}
+	if addr, err := netip.ParseAddr(host); err == nil {
+		return isUnroutableAddress(addr)
+	}
+	return dialsHostname(engine, dataSource) && isLocalName(host)
+}
+
+// connectionProbe is the outcome of opening a driver and pinging it.
+type connectionProbe struct {
+	err error
+	// openFailed is true when the driver could not be built, which is a
+	// configuration failure rather than a database that did not answer.
+	openFailed bool
+	// timedOut is true when the probe's own bound passed before it finished.
+	timedOut bool
+}
+
+// probeConnection opens a driver and pings it, and returns within timeout
+// whether or not the driver does. Some drivers ignore the context while they
+// dial, an SSH tunnel among them, so the attempt runs on its own goroutine and
+// is abandoned at the bound; it still closes the driver it ends up with.
+func probeConnection(ctx context.Context, timeout time.Duration, open func(context.Context) (db.Driver, error)) connectionProbe {
+	probeCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	done := make(chan connectionProbe, 1)
+	go func() {
+		driver, err := open(probeCtx)
+		if err != nil {
+			done <- connectionProbe{err: err, openFailed: true}
+			return
+		}
+		err = driver.Ping(probeCtx)
+		// The request may be over by the time an abandoned attempt gets here.
+		driver.Close(context.WithoutCancel(ctx))
+		done <- connectionProbe{err: err}
+	}()
+	select {
+	case probe := <-done:
+		probe.timedOut = probe.err != nil && errors.Is(probeCtx.Err(), context.DeadlineExceeded)
+		return probe
+	case <-probeCtx.Done():
+		return connectionProbe{err: probeCtx.Err(), timedOut: errors.Is(probeCtx.Err(), context.DeadlineExceeded)}
+	}
+}
+
+// describeConnectionTimeout names what did not answer when the connection test
+// ran out of time, so the form shows it instead of a gateway's bare status. A
+// driver that ignores the deadline may still return its own reason after it;
+// that reason is kept.
+func describeConnectionTimeout(timedOut bool, dataSource *storepb.DataSource, err error) error {
+	if !timedOut {
+		return err
+	}
+	if category := classifyConnectionFailure(err); category != connectionCategoryTimeout && category != connectionCategoryUnknown {
+		return err
+	}
+	target := joinHostPort(dataSource.GetHost(), dataSource.GetPort())
+	if dataSource.GetSshHost() != "" {
+		// Either hop may be the one that stalled.
+		target = fmt.Sprintf("%s through the SSH tunnel at %s", target, joinHostPort(dataSource.GetSshHost(), dataSource.GetSshPort()))
+	}
+	return errors.Wrapf(err, "connection to %s timed out after %s", target, connectionTestTimeout)
+}
+
+func joinHostPort(host, port string) string {
+	if port == "" {
+		return host
+	}
+	return net.JoinHostPort(host, port)
+}
 
 func classifyConnectionFailure(err error) string {
 	if err == nil {
@@ -72,14 +236,19 @@ func classifyConnectionFailure(err error) string {
 		}
 	}
 	text := strings.ToLower(err.Error())
+	// pgx reports its opportunistic TLS attempt next to the plaintext attempt's
+	// real failure; the note is not a cause.
+	text = strings.ReplaceAll(text, "tls error: server refused tls connection", "")
+	// A driver that retries until its deadline reports the timeout and the
+	// last cause together, so the causes that name what to fix come first.
 	switch {
-	case strings.Contains(text, "timeout"),
-		strings.Contains(text, "timed out"),
-		strings.Contains(text, "deadline exceeded"):
-		return connectionCategoryTimeout
-	case strings.Contains(text, "ssl"),
-		strings.Contains(text, "tls"),
-		strings.Contains(text, "certificate"),
+	case strings.Contains(text, "no such host"),
+		strings.Contains(text, "unknown host"),
+		strings.Contains(text, "enotfound"),
+		strings.Contains(text, "hostname resolving error"),
+		strings.Contains(text, "could not translate host"):
+		return connectionCategoryHostNotFound
+	case strings.Contains(text, "certificate"),
 		strings.Contains(text, "x509"):
 		return connectionCategorySSLTLSFailed
 	case strings.Contains(text, "permission denied"),
@@ -90,23 +259,36 @@ func classifyConnectionFailure(err error) string {
 	case strings.Contains(text, "password"),
 		strings.Contains(text, "authentication"),
 		strings.Contains(text, "auth failed"),
+		strings.Contains(text, "auth error"),
 		strings.Contains(text, "login failed"),
+		strings.Contains(text, "logon failed"),
 		strings.Contains(text, "invalid credential"),
 		strings.Contains(text, "invalid password"),
-		strings.Contains(text, "access denied"):
+		strings.Contains(text, "access denied"),
+		strings.Contains(text, "role") && strings.Contains(text, "does not exist"):
 		return connectionCategoryAuthFailed
-	case strings.Contains(text, "unsupported"):
-		return connectionCategoryUnsupportedEngine
-	case strings.Contains(text, "network"),
-		strings.Contains(text, "unreachable"),
-		strings.Contains(text, "no route"),
-		strings.Contains(text, "no such host"),
-		strings.Contains(text, "unknown host"),
-		strings.Contains(text, "enotfound"),
-		strings.Contains(text, "econnrefused"),
+	case strings.Contains(text, "econnrefused"),
 		strings.Contains(text, "connection refused"),
 		strings.Contains(text, "connection reset"),
-		strings.Contains(text, "could not translate host"):
+		strings.Contains(text, "no route"),
+		strings.Contains(text, "unreachable"):
+		return connectionCategoryNetworkUnreachable
+	// A connection test is canceled only by the caller or a gateway giving up
+	// on it, so cancellation reads as a timeout.
+	case strings.Contains(text, "timeout"),
+		strings.Contains(text, "timed out"),
+		strings.Contains(text, "deadline exceeded"),
+		strings.Contains(text, "canceled"),
+		strings.Contains(text, "cancelled"):
+		return connectionCategoryTimeout
+	case strings.Contains(text, "ssl"),
+		strings.Contains(text, "tls"):
+		return connectionCategorySSLTLSFailed
+	// An endpoint that answers in another protocol is not the selected engine.
+	case strings.Contains(text, "unsupported"),
+		strings.Contains(text, "deserialization failed"):
+		return connectionCategoryUnsupportedEngine
+	case strings.Contains(text, "network"):
 		return connectionCategoryNetworkUnreachable
 	default:
 		return connectionCategoryUnknown
@@ -168,24 +350,94 @@ func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, met
 	start := time.Now()
 
 	err := func() *connect.Error {
-		driver, err := s.dbFactory.GetDataSourceDriver(
-			ctx, instance, dataSource,
-			db.ConnectionContext{
-				ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
-			},
-		)
-		if err != nil {
-			return newConnectionTestErrorWithCategory(connect.CodeInternal, err, "failed to get database driver")
+		if reason := s.privateHostReason(ctx, instance.Metadata.GetEngine(), dataSource); reason != "" {
+			connectErr := connect.NewError(connect.CodeInvalidArgument, errors.New(reason))
+			connectErr.Meta().Set(connectionCategoryHeader, connectionCategoryPrivateAddress)
+			return connectErr
 		}
-		defer driver.Close(ctx)
-		if err := driver.Ping(ctx); err != nil {
-			return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, "failed to connect to database")
+
+		probe := probeConnection(ctx, connectionTestTimeout, func(ctx context.Context) (db.Driver, error) {
+			return s.dbFactory.GetDataSourceDriver(
+				ctx, instance, dataSource,
+				db.ConnectionContext{
+					ReadOnly: dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
+				},
+			)
+		})
+		if probe.err == nil {
+			return nil
 		}
-		return nil
+		if probe.openFailed && !probe.timedOut {
+			return newConnectionTestErrorWithCategory(connect.CodeInternal, probe.err, "failed to get database driver")
+		}
+		return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, describeConnectionTimeout(probe.timedOut, dataSource, probe.err), "failed to connect to database")
 	}()
 	category := classifyConnectionFailure(err)
 	slog.Info("instance connection check completed", buildInstanceConnectionLogAttrs(method, category, instance, dataSource, time.Since(start))...)
 	return err
+}
+
+// privateHostReason says why Bytebase Cloud can never reach the data source,
+// or returns "" when it might. A connection test with a reason is answered
+// without dialing.
+func (s *InstanceService) privateHostReason(ctx context.Context, engine storepb.Engine, dataSource *storepb.DataSource) string {
+	if !s.profile.SaaS || s.isSampleTargetHost(dataSource.GetHost()) {
+		return ""
+	}
+	if isPrivateOrLocalHost(engine, dataSource) {
+		return fmt.Sprintf("%q is a private or local address that Bytebase Cloud cannot reach", dataSource.GetHost())
+	}
+	if s.resolvesToPrivateAddress(ctx, engine, dataSource) {
+		// The address is left out: the name may be one of Bytebase Cloud's own.
+		return fmt.Sprintf("%q resolves to a private address that Bytebase Cloud cannot reach", dataSource.GetHost())
+	}
+	return ""
+}
+
+// resolvesToPrivateAddress reports whether every address the data source's
+// hostname resolves to is unroutable. A lookup that fails decides nothing: the
+// driver reports it with its own reason.
+func (s *InstanceService) resolvesToPrivateAddress(ctx context.Context, engine storepb.Engine, dataSource *storepb.DataSource) bool {
+	// An SSH tunnel resolves the name from the bastion, and an SRV name has
+	// service records and may have no address of its own.
+	if dataSource.GetSshHost() != "" || dataSource.GetSrv() || !dialsHostname(engine, dataSource) {
+		return false
+	}
+	host := dialedHost(dataSource.GetHost())
+	if host == "" || strings.ContainsAny(host, "/,") {
+		return false
+	}
+	if _, err := netip.ParseAddr(host); err == nil {
+		return false
+	}
+	lookup := s.lookupHost
+	if lookup == nil {
+		lookup = func(ctx context.Context, host string) ([]netip.Addr, error) {
+			return net.DefaultResolver.LookupNetIP(ctx, "ip", host)
+		}
+	}
+	ctx, cancel := context.WithTimeout(ctx, hostLookupTimeout)
+	defer cancel()
+	addrs, err := lookup(ctx, host)
+	if err != nil {
+		return false
+	}
+	return len(addrs) > 0 && !slices.ContainsFunc(addrs, func(addr netip.Addr) bool {
+		return !isUnroutableAddress(addr)
+	})
+}
+
+// isSampleTargetHost reports whether host is the Cloud sample database, which
+// Bytebase Cloud reaches on whatever address its own deployment gives it.
+func (s *InstanceService) isSampleTargetHost(host string) bool {
+	if s.profile.SampleProjectInstancePgURL == "" {
+		return false
+	}
+	u, err := url.Parse(s.profile.SampleProjectInstancePgURL)
+	if err != nil {
+		return false
+	}
+	return u.Hostname() != "" && strings.EqualFold(u.Hostname(), strings.TrimSpace(host))
 }
 
 // NewInstanceService creates a new InstanceService.
@@ -430,9 +682,18 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
-	if err == nil {
-		defer driver.Close(ctx)
+	// Without the bound, an unreachable host holds the request in the initial
+	// sync until a gateway times it out, and the client is told that creating
+	// an instance failed when it was saved.
+	probe := probeConnection(ctx, connectionTestTimeout, func(ctx context.Context) (db.Driver, error) {
+		return s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
+	})
+	if probe.err != nil {
+		slog.Warn("Skipped the initial sync of an instance that did not answer",
+			slog.String("instance", instance.ResourceID),
+			slog.String("category", classifyConnectionFailure(probe.err)),
+			log.BBError(probe.err))
+	} else {
 		updatedInstance, _, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
 		if err != nil {
 			slog.Warn("Failed to sync instance",
