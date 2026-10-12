@@ -162,6 +162,7 @@ func TestMaskedWriteGuardIsWiredIntoTheGate(t *testing.T) {
 			require.False(t, got.dispatched, "the refusal must land before anything is written")
 			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
 			require.Contains(t, got.err.Error(), masker.DefaultFullMaskSubstitution)
+			require.Contains(t, got.err.Error(), mcpConsoleWayOut)
 			require.True(t, got.auditMarked, "every policy denial is an audited outcome")
 		})
 	}

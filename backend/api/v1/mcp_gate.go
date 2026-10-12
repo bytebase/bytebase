@@ -412,12 +412,12 @@ func (in *internalMCPGateInterceptor) refuse(ctx context.Context, req connect.An
 	switch authCtx.MCPMethodClass {
 	case v1pb.MCPMethodClass_FORBIDDEN:
 		return ctx, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-			"%s is not available to MCP sessions because %s. Perform this action signed in to the Bytebase console instead",
-			procedure, denialReason(authCtx.MCPMethodClass, authCtx.MCPDenialReason, reasonForbiddenClass)))
+			"%s is not available to MCP sessions because %s. %s",
+			procedure, denialReason(authCtx.MCPMethodClass, authCtx.MCPDenialReason, reasonForbiddenClass), mcpConsoleWayOut))
 	case v1pb.MCPMethodClass_EXCLUDED:
 		return ctx, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-			"%s is served by no MCP capability ceiling because %s. Perform this action signed in to the Bytebase console instead",
-			procedure, denialReason(authCtx.MCPMethodClass, authCtx.MCPDenialReason, reasonExcludedClass)))
+			"%s is served by no MCP capability ceiling because %s. %s",
+			procedure, denialReason(authCtx.MCPMethodClass, authCtx.MCPDenialReason, reasonExcludedClass), mcpConsoleWayOut))
 	case v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE:
 	default:
 		return ctx, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
@@ -514,10 +514,12 @@ func describeServedClasses(served []v1pb.MCPMethodClass) string {
 	return strings.Join(names, " and ") + " methods"
 }
 
+const mcpConsoleWayOut = "Perform this action signed in to the Bytebase console instead"
+
 // mcpRequestShapeRefusals holds the refusals a per-method class cannot express,
 // because what the call does depends on a field of the request rather than on
-// which method it is. Each entry returns the reason to refuse for, or "" to
-// allow.
+// which method it is. Each entry returns the reason to refuse for and the way
+// out, or an empty reason to allow.
 //
 // This lives inside the gate rather than beside it. The decision is the same
 // decision — may this MCP session make this call? — and it has to be taken at
@@ -530,16 +532,23 @@ func describeServedClasses(served []v1pb.MCPMethodClass) string {
 // The table is deliberately small and expected to stay that way. A method that
 // needs one is a method whose class annotation is not the whole truth, and the
 // better fix is usually to split the RPC.
-var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) string{
+var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (reason, wayOut string){
 	v1connect.IssueServiceCreateIssueProcedure:       refuseGrantIssueCreation,
-	v1connect.SheetServiceCreateSheetProcedure:       refuseMaskedWriteSheet,
-	v1connect.SheetServiceBatchCreateSheetsProcedure: refuseMaskedWriteSheetBatch,
-	v1connect.ReleaseServiceCreateReleaseProcedure:   refuseMaskedWriteRelease,
-	v1connect.SQLServiceQueryProcedure:               refuseMaskedWriteQuery,
-	v1connect.SQLServiceExportProcedure:              refuseMaskedWriteExport,
+	v1connect.SheetServiceCreateSheetProcedure:       inTheConsole(refuseMaskedWriteSheet),
+	v1connect.SheetServiceBatchCreateSheetsProcedure: inTheConsole(refuseMaskedWriteSheetBatch),
+	v1connect.ReleaseServiceCreateReleaseProcedure:   inTheConsole(refuseMaskedWriteRelease),
+	v1connect.SQLServiceQueryProcedure:               inTheConsole(refuseMaskedWriteQuery),
+	v1connect.SQLServiceExportProcedure:              inTheConsole(refuseMaskedWriteExport),
 
-	v1connect.SavedQueryServiceCreateSavedQueryProcedure: refuseMaskedWriteSavedQuery,
-	v1connect.SavedQueryServiceUpdateSavedQueryProcedure: refuseMaskedWriteSavedQueryUpdate,
+	v1connect.SavedQueryServiceCreateSavedQueryProcedure: inTheConsole(refuseMaskedWriteSavedQuery),
+	v1connect.SavedQueryServiceUpdateSavedQueryProcedure: inTheConsole(refuseMaskedWriteSavedQueryUpdate),
+}
+
+// inTheConsole gives a refusal the console as its way out.
+func inTheConsole(refuse func(context.Context, any) string) func(context.Context, any) (string, string) {
+	return func(ctx context.Context, msg any) (string, string) {
+		return refuse(ctx, msg), mcpConsoleWayOut
+	}
 }
 
 // refuseByRequestShape applies the table above. The context carries what the
@@ -549,13 +558,12 @@ func refuseByRequestShape(ctx context.Context, procedure string, msg any) error 
 	if !ok {
 		return nil
 	}
-	reason := refuse(ctx, msg)
+	reason, wayOut := refuse(ctx, msg)
 	if reason == "" {
 		return nil
 	}
 	return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-		"%s is not available to MCP sessions for this request because %s. "+
-			"Perform this action signed in to the Bytebase console instead", procedure, reason))
+		"%s is not available to MCP sessions for this request because %s. %s", procedure, reason, wayOut))
 }
 
 // refuseGrantIssueCreation is the CreateIssue carve-out. CreateIssue is WRITE
@@ -567,19 +575,6 @@ func refuseByRequestShape(ctx context.Context, procedure string, msg any) error 
 // ProjectService/SetIamPolicy, EXCLUDED for exactly that outcome. The session
 // ends up granting access with no human step.
 //
-// It is an allow-list of the type the class covers, not a deny-list of the ones
-// that reach past it. A deny-list would silently admit the next issue type
-// somebody adds, and adding an issue type is not where anyone would think to
-// re-read the MCP ceiling. ACCESS_GRANT is refused by that allow-list and never
-// reaches the handler in the first place: buildIssueMessage has no arm for it,
-// so the type is an invalid argument there, and those issues are written by
-// AccessGrantService/CreateAccessGrant, which is EXCLUDED.
-//
-// An unset type is NOT refused: nothing can be created from it, since
-// buildIssueMessage's default arm rejects an unspecified type as an invalid
-// argument, so refusing it here would protect nothing and would answer a
-// mechanism that does not apply.
-//
 // UpdateIssue is deliberately NOT in this table, and the reason is the limit of
 // what a request shape can decide. allow_missing makes UpdateIssue create the
 // issue — but only when it does not already exist, which is not a field of the
@@ -588,20 +583,46 @@ func refuseByRequestShape(ctx context.Context, procedure string, msg any) error 
 // ignores, and refusing on that would refuse an ordinary edit for a mechanism
 // that is not running. The creation it really does reach is guarded where the
 // creation happens instead: rejectMCPOriginatedGrantIssue in issue_service.go.
-func refuseGrantIssueCreation(_ context.Context, msg any) string {
+func refuseGrantIssueCreation(_ context.Context, msg any) (string, string) {
 	request, ok := msg.(*v1pb.CreateIssueRequest)
 	if !ok {
 		// The table is keyed by procedure, so the request type is fixed. A
 		// mismatch is a wiring bug, and a wiring bug on a refusal path fails
 		// closed.
-		return fmt.Sprintf("its request could not be read as an issue (%T)", msg)
+		return fmt.Sprintf("its request could not be read as an issue (%T)", msg), mcpConsoleWayOut
 	}
-	switch request.GetIssue().GetType() {
+	return grantIssueRefusal(request.GetIssue().GetType())
+}
+
+// grantIssueRefusal is the issue-type allow-list that both MCP guards on issue
+// creation apply: refuseGrantIssueCreation here, and rejectMCPOriginatedGrantIssue
+// on the UpdateIssue allow_missing path the gate cannot see. It returns why a
+// type is refused and the way out, or an empty reason for a type an MCP session
+// may create.
+//
+// It is an allow-list of the type the class covers, not a deny-list of the ones
+// that reach past it. A deny-list would silently admit the next issue type
+// somebody adds, and adding an issue type is not where anyone would think to
+// re-read the MCP ceiling. ACCESS_GRANT is refused by that allow-list too, but
+// for a different reason: buildIssueMessage has no arm for it, so the type is an
+// invalid argument for every caller, and AccessGrantService/CreateAccessGrant
+// files those issues itself. The refusal names that method as the way out.
+//
+// An unset type is NOT refused: nothing can be created from it, since
+// buildIssueMessage's default arm rejects an unspecified type as an invalid
+// argument, so refusing it would protect nothing and would answer a
+// mechanism that does not apply.
+func grantIssueRefusal(issueType v1pb.Issue_Type) (reason, wayOut string) {
+	switch issueType {
 	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_TYPE_UNSPECIFIED:
-		return ""
+		return "", ""
+	case v1pb.Issue_ACCESS_GRANT:
+		reason = fmt.Sprintf("an ACCESS_GRANT issue is filed by %s, not created directly",
+			v1connect.AccessGrantServiceCreateAccessGrantProcedure)
+		return reason, "Request the access with that method instead"
 	default:
 		return fmt.Sprintf(
 			"a %v issue completes on creation whenever the workspace approval rule produces no template, "+
-				"which grants access with no human step", request.GetIssue().GetType())
+				"which grants access with no human step", issueType), mcpConsoleWayOut
 	}
 }

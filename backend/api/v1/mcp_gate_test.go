@@ -1099,9 +1099,9 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		require.True(t, got.dispatched)
 	})
 
-	for _, issueType := range []v1pb.Issue_Type{
-		v1pb.Issue_ROLE_GRANT,
-		v1pb.Issue_ACCESS_GRANT,
+	for issueType, tt := range map[v1pb.Issue_Type]struct{ wayOut, notWayOut string }{
+		v1pb.Issue_ROLE_GRANT:   {mcpConsoleWayOut, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
+		v1pb.Issue_ACCESS_GRANT: {v1connect.AccessGrantServiceCreateAccessGrantProcedure, mcpConsoleWayOut},
 	} {
 		t.Run("CreateIssue refuses "+issueType.String(), func(t *testing.T) {
 			got := invokeMCPGate(t, readWriteCeiling(), write, v1connect.IssueServiceCreateIssueProcedure,
@@ -1113,6 +1113,8 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 			require.False(t, got.dispatched)
 			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
 			require.Contains(t, got.err.Error(), issueType.String())
+			require.Contains(t, got.err.Error(), tt.wayOut)
+			require.NotContains(t, got.err.Error(), tt.notWayOut)
 			require.True(t, got.auditMarked)
 		})
 	}
@@ -1618,25 +1620,28 @@ func TestRejectMCPOriginatedGrantIssue(t *testing.T) {
 	for name, tt := range map[string]struct {
 		ctx       context.Context
 		issueType v1pb.Issue_Type
-		refused   bool
+		// wayOut is empty for a creation the guard allows.
+		wayOut, notWayOut string
 	}{
-		"an MCP session may not create a role grant":    {mcpSession, v1pb.Issue_ROLE_GRANT, true},
-		"an MCP session may not create an access grant": {mcpSession, v1pb.Issue_ACCESS_GRANT, true},
-		"an MCP session may not create an unknown type": {mcpSession, v1pb.Issue_Type(9999), true},
-		"an MCP session composes database changes":      {mcpSession, v1pb.Issue_DATABASE_CHANGE, false},
-		"an unset type is left to buildIssueMessage":    {mcpSession, v1pb.Issue_TYPE_UNSPECIFIED, false},
-		"the console creates a role grant":              {console, v1pb.Issue_ROLE_GRANT, false},
-		"a request with no auth context at all":         {context.Background(), v1pb.Issue_ROLE_GRANT, false},
+		"an MCP session may not create a role grant":    {mcpSession, v1pb.Issue_ROLE_GRANT, mcpConsoleWayOut, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
+		"an MCP session may not create an access grant": {mcpSession, v1pb.Issue_ACCESS_GRANT, v1connect.AccessGrantServiceCreateAccessGrantProcedure, mcpConsoleWayOut},
+		"an MCP session may not create an unknown type": {mcpSession, v1pb.Issue_Type(9999), mcpConsoleWayOut, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
+		"an MCP session composes database changes":      {mcpSession, v1pb.Issue_DATABASE_CHANGE, "", ""},
+		"an unset type is left to buildIssueMessage":    {mcpSession, v1pb.Issue_TYPE_UNSPECIFIED, "", ""},
+		"the console creates a role grant":              {console, v1pb.Issue_ROLE_GRANT, "", ""},
+		"a request with no auth context at all":         {context.Background(), v1pb.Issue_ROLE_GRANT, "", ""},
 	} {
 		t.Run(name, func(t *testing.T) {
 			err := rejectMCPOriginatedGrantIssue(tt.ctx, tt.issueType)
-			if !tt.refused {
+			if tt.wayOut == "" {
 				require.NoError(t, err, "this guard binds MCP sessions and nothing else")
 				return
 			}
 			require.Error(t, err)
 			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
 			require.Contains(t, err.Error(), tt.issueType.String(), "the denial must name the type it refused")
+			require.Contains(t, err.Error(), tt.wayOut)
+			require.NotContains(t, err.Error(), tt.notWayOut)
 		})
 	}
 }

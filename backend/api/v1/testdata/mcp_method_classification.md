@@ -17,8 +17,8 @@ served by no ceiling.
 | Class | Methods | Meaning |
 |---|---|---|
 | READ | 56 | served to a read-only session and above |
-| WRITE | 36 | served to a read-write session only |
-| EXCLUDED | 90 | served by no ceiling this phase ships |
+| WRITE | 37 | served to a read-write session only |
+| EXCLUDED | 89 | served by no ceiling this phase ships |
 | FORBIDDEN | 36 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **218** | |
@@ -27,7 +27,7 @@ served by no ceiling.
 |---|---|---|---|
 | AIService/Chat | EXCLUDED | SENDS_DATA_TO_A_THIRD_PARTY | — |
 | AccessGrantService/ActivateAccessGrant | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | bb.accessGrants.activate |
-| AccessGrantService/CreateAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.create |
+| AccessGrantService/CreateAccessGrant | WRITE | — | bb.accessGrants.create |
 | AccessGrantService/GetAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.get |
 | AccessGrantService/ListAccessGrants | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.list |
 | AccessGrantService/RevokeAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.revoke |

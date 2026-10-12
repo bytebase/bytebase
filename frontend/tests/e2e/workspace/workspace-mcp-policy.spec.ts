@@ -199,7 +199,7 @@ test.describe("MCP access policy capability ladder", () => {
     await expect(page.getByText(COPY.ladder.stops.write)).toBeVisible();
     await expect(page.getByText(COPY.ladder.floor.text)).toBeVisible();
 
-    // One second-level control for all eight rows, not eight expanders.
+    // One second-level control for all the rows, not one expander per row.
     await expect(page.getByText(EXPORT_DETAILS)).toHaveCount(0);
     await page.getByRole("button", { name: "Show details" }).click();
     await expect(page.getByText(EXPORT_DETAILS)).toBeVisible();

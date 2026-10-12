@@ -20,6 +20,7 @@ export type MCPCapabilityRowId =
   | "read-data"
   | "read-workflow"
   | "propose"
+  | "request-access"
   | "run-rollouts"
   | "run-statements"
   | "export"
@@ -51,6 +52,7 @@ export const MCP_CAPABILITY_ROWS: readonly MCPCapabilityRow[] = [
   { id: "read-data", tier: "read" },
   { id: "read-workflow", tier: "read" },
   { id: "propose", tier: "write" },
+  { id: "request-access", tier: "write" },
   { id: "run-rollouts", tier: "write" },
   { id: "run-statements", tier: "write" },
   { id: "export", tier: "write" },

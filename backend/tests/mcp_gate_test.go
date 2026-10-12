@@ -6,12 +6,16 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -85,6 +89,12 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 // issue an agent exists to compose; a ROLE_GRANT issue completes on creation
 // when the workspace rule produces no approval template and writes the project
 // IAM binding the request named, with no human in it.
+//
+// An access grant is requested with AccessGrantService/CreateAccessGrant, which
+// a Read-write session may call, but only for a request that waits for a
+// person. One that no approval rule sends to a person would be granted at once,
+// so it is refused before any row is written. A person in the console is
+// unaffected.
 func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -142,7 +152,8 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	})
 	a.Equal(http.StatusForbidden, upsert.Status,
 		"allow_missing on a missing issue is a creation, and the guard must reach it: %s", upsert.Error)
-	a.Contains(upsert.Error, "may not create a ROLE_GRANT issue")
+	a.Contains(upsert.Error, "may not create this issue")
+	a.Contains(upsert.Error, "ROLE_GRANT", "the denial must name the issue type it refused")
 
 	// The same upsert for the type an agent is allowed to create reaches the
 	// handler, which then asks for the plan it has no way to do without. The
@@ -180,6 +191,108 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.Equal(http.StatusBadRequest, untyped.Status,
 		"an unset type is the handler's invalid argument: %s", untyped.Error)
 	a.NotContains(untyped.Error, "MCP session")
+
+	accessGrantIssue := callAPIOnSession(ctx, t, session, "IssueService/CreateIssue", map[string]any{
+		"parent": projectName,
+		"issue":  map[string]any{"type": "ACCESS_GRANT", "title": "let me read the table"},
+	})
+	a.Equal(http.StatusForbidden, accessGrantIssue.Status)
+	a.Contains(accessGrantIssue.Error, "AccessGrantService/CreateAccessGrant",
+		"the refusal must name the method that files the request")
+	a.NotContains(accessGrantIssue.Error, "Bytebase console")
+
+	pgContainer := sharedPgTarget(t)
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst"),
+		Instance: &v1pb.Instance{
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "MCP access grant instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
+		},
+	}))
+	a.NoError(err)
+	dbName := generateRandomString("db")
+	a.NoError(ctl.createDatabase(ctx, project.Msg, instance.Msg, nil, dbName, ""))
+	target := fmt.Sprintf("%s/databases/%s", instance.Msg.Name, dbName)
+	requestAccess := map[string]any{
+		"parent": projectName,
+		"accessGrant": map[string]any{
+			"targets": []string{target},
+			"query":   "SELECT 1",
+			"reason":  "the agent needs one read",
+			"ttl":     "3600s",
+		},
+	}
+
+	// The seeded fallback rule sends the request to a project owner, so it is
+	// filed and waits, with that finding saved on its issue.
+	filed := callAPIOnSession(ctx, t, session, "AccessGrantService/CreateAccessGrant", requestAccess)
+	a.Equal(http.StatusOK, filed.Status, filed.Error)
+	var pending v1pb.AccessGrant
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(filed.RawResponse), &pending))
+	a.Equal(v1pb.AccessGrant_PENDING, pending.Status)
+	issue, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: pending.Issue}))
+	a.NoError(err)
+	a.Equal([]string{"roles/projectOwner"}, issue.Msg.GetApprovalTemplate().GetFlow().GetRoles())
+	a.Equal(v1pb.ApprovalStatus_PENDING, issue.Msg.ApprovalStatus)
+
+	activate := callAPIOnSession(ctx, t, session, "AccessGrantService/ActivateAccessGrant", map[string]any{
+		"name": pending.Name,
+	})
+	a.Equal(http.StatusForbidden, activate.Status)
+	a.Contains(activate.Error, "approv", "refused as an approval decision, not as workspace administration")
+	still, err := ctl.accessGrantServiceClient.GetAccessGrant(ctx, connect.NewRequest(&v1pb.GetAccessGrantRequest{Name: pending.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.AccessGrant_PENDING, still.Msg.Status)
+
+	rowCounts := func() (int, int) {
+		grants, err := ctl.accessGrantServiceClient.ListAccessGrants(ctx, connect.NewRequest(&v1pb.ListAccessGrantsRequest{Parent: projectName}))
+		a.NoError(err)
+		issues, err := ctl.issueServiceClient.ListIssues(ctx, connect.NewRequest(&v1pb.ListIssuesRequest{Parent: projectName}))
+		a.NoError(err)
+		return len(grants.Msg.AccessGrants), len(issues.Msg.Issues)
+	}
+	grantsBefore, issuesBefore := rowCounts()
+	for name, rules := range map[string][]*v1pb.WorkspaceApprovalSetting_Rule{
+		"a rule that names no approver": {{
+			Source:    v1pb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS,
+			Condition: &expr.Expr{Expression: "true"},
+			Template:  &v1pb.ApprovalTemplate{Flow: &v1pb.ApprovalFlow{}},
+		}},
+		"no rule at all": nil,
+	} {
+		_, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+			AllowMissing: true,
+			Setting: &v1pb.Setting{
+				Name: "settings/WORKSPACE_APPROVAL",
+				Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{Rules: rules},
+				}},
+			},
+		}))
+		a.NoError(err, name)
+		refused := callAPIOnSession(ctx, t, session, "AccessGrantService/CreateAccessGrant", requestAccess)
+		a.Equal(http.StatusForbidden, refused.Status, name)
+		a.Contains(refused.Error, "no approval rule requires a person to approve it", name)
+	}
+	grantsAfter, issuesAfter := rowCounts()
+	a.Equal(grantsBefore, grantsAfter, "a refused request leaves no access grant")
+	a.Equal(issuesBefore, issuesAfter, "a refused request leaves no issue")
+
+	granted, err := ctl.accessGrantServiceClient.CreateAccessGrant(ctx, connect.NewRequest(&v1pb.CreateAccessGrantRequest{
+		Parent: projectName,
+		AccessGrant: &v1pb.AccessGrant{
+			Targets:    []string{target},
+			Query:      "SELECT 1",
+			Reason:     "a person asks the same",
+			Expiration: &v1pb.AccessGrant_Ttl{Ttl: durationpb.New(time.Hour)},
+		},
+	}))
+	a.NoError(err)
+	a.Equal(v1pb.AccessGrant_ACTIVE, granted.Msg.Status, "with no rule, a console request is granted at once, as before")
 }
 
 // TestMCPCannotRunAnIssuelessRollout is the rule rollout_service.proto says the
