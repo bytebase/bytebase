@@ -191,8 +191,9 @@ lead scoring; team accounts do first work at 34% against 22%. Emails are chips: 
 Enter, type the next; a pasted list splits; an invalid entry is shown struck through and not sent.
 There is no role picker. An earlier draft offered a "Role in <project>" selector, which names
 Bytebase's project roles to a user ten seconds into the product. Invitees are added as Workspace
-Member and as Project Developer on the new project, one sentence says they can query and propose
-changes there, and roles are changed later in Members, where the names mean something. Greptile
+Member, and on the new project as Project Developer and SQL Editor Read User, which together let
+them propose changes and run read-only queries. One sentence says so, and roles are changed later
+in Members, where the names mean something. Greptile
 asks a default role (Admin or Member); Linear, Neon and Metabase ask for emails only. Rejected: the "Just me / My team" question (it only decided whether
 this screen appears, and the screen is now always offered and one click to pass), the role
 selector, and the free-text email box.
@@ -309,4 +310,6 @@ RDS IAM, Cloud SQL), which come from the one-click instance research. Persisting
 workspace; it travels as an event property and in the guide's local state until a consumer needs
 it server-side. The weekly exporter change that reads "set up" from the backend lives
 in the hub repository. Any change to the sample itself, such as a test and prod pair, which would
-reopen ADR-0004. Making setup mandatory on self-hosted.
+reopen ADR-0004. Making setup mandatory on self-hosted. Enforcing mandatory setup across browsers:
+the flag is per-browser today, so an unfinished account can still enter from another one, as 3
+accounts have since Sep 20, and closing that needs server-side state.
