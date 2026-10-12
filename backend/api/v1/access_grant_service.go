@@ -297,8 +297,8 @@ func refuseUnattendedMCPAccessGrant(ctx context.Context, approval *storepb.Issue
 	}
 	return permissionDeniedError(ctx, errors.Errorf(
 		"%s is not available to MCP sessions for this request because no approval rule requires a person to approve it, "+
-			"so the access would be granted at once with no human step. Ask a workspace admin to add an approval rule "+
-			"that covers access requests, or request the access in the Bytebase console.",
+			"so the access would be granted at once with no human step. Ask a workspace admin to give access requests "+
+			"an approval rule that names an approver, or request the access in the Bytebase console.",
 		v1connect.AccessGrantServiceCreateAccessGrantProcedure))
 }
 
