@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     i18n: { language: "en-US" },
   })),
   getOrFetchSettingByName: vi.fn(),
+  currentContext: "projects/orders" as string | undefined,
 }));
 
 function createMockStorage(): Storage {
@@ -55,6 +56,10 @@ vi.mock("@/stores/app", () => {
   useAppStore.getState = () => state;
   return { useAppStore };
 });
+
+vi.mock("../logic/chatContext", () => ({
+  getCurrentChatContext: () => mocks.currentContext,
+}));
 
 vi.mock("./AgentChat", () => ({
   AgentChat: () => <div data-testid="agent-chat" />,
@@ -138,6 +143,7 @@ beforeEach(async () => {
   });
   mocks.getOrFetchSettingByName.mockReset();
   mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
+  mocks.currentContext = "projects/orders";
 
   ({ AgentWindow } = await import("./AgentWindow"));
 });
@@ -149,6 +155,36 @@ afterEach(() => {
 });
 
 describe("AgentWindow", () => {
+  test("binds the initial empty chat when opened under a project", () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    expect(useAgentStore.getState().getChat(chatId)?.context).toBeUndefined();
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    expect(useAgentStore.getState().getChat(chatId)?.context).toBe(
+      "projects/orders"
+    );
+    unmount();
+  });
+
+  test("binds a new empty chat to the current resource context", async () => {
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const trigger = document.body.querySelector(
+      "[aria-label='agent.new-chat']"
+    ) as HTMLButtonElement | null;
+    await act(async () => trigger?.click());
+
+    const chatId = useAgentStore.getState().currentChatId!;
+    expect(useAgentStore.getState().getChat(chatId)?.context).toBe(
+      "projects/orders"
+    );
+    expect(useAgentStore.getState().getMessages(chatId)).toEqual([]);
+    unmount();
+  });
+
   test("checks AI configuration when opening an existing chat", async () => {
     const chatId = useAgentStore.getState().currentChatId!;
     mocks.getOrFetchSettingByName.mockResolvedValue({
