@@ -58,8 +58,8 @@ service AccessGrantService {
     option (bytebase.v1.permission) = "bb.accessGrants.activate";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
   // Revokes an active access grant.

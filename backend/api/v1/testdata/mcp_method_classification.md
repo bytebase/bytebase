@@ -18,15 +18,15 @@ served by no ceiling.
 |---|---|---|
 | READ | 56 | served to a read-only session and above |
 | WRITE | 36 | served to a read-write session only |
-| EXCLUDED | 91 | served by no ceiling this phase ships |
-| FORBIDDEN | 35 | never served, whatever the ceiling |
+| EXCLUDED | 90 | served by no ceiling this phase ships |
+| FORBIDDEN | 36 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **218** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
 | AIService/Chat | EXCLUDED | SENDS_DATA_TO_A_THIRD_PARTY | — |
-| AccessGrantService/ActivateAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.activate |
+| AccessGrantService/ActivateAccessGrant | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | bb.accessGrants.activate |
 | AccessGrantService/CreateAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.create |
 | AccessGrantService/GetAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.get |
 | AccessGrantService/ListAccessGrants | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.list |

@@ -76,7 +76,7 @@ the product.
 | write | Export query results | Download results as a file. Data leaves Bytebase | 1 WRITE method: `SQLService/Export` |
 | write | Manage database housekeeping | Sync instances and databases · Saved queries | 9 WRITE methods: sync, saved-query writes |
 | — | *Read-write stops here* | | 92 methods |
-| floor | Never, in any mode: approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history. | | 126 methods: 35 FORBIDDEN, 91 EXCLUDED |
+| floor | Never, in any mode: approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history. | | 126 methods: 36 FORBIDDEN, 90 EXCLUDED |
 
 Every row is displayed under every mode — served, or muted with a `—` — and against every engine a
 workspace happens to hold, so **every line on this card must be true on both axes: mode and engine.**
@@ -192,8 +192,9 @@ under that same flag, and an issue whose approval finding produced no template c
 with no human acting. The console turns the flag on for new projects; the API default is off. A row
 that said "of an approved change" would therefore promise more than the gate enforces, and the
 wording an admin reads while choosing Read-write is the wrong place to be generous. What holds
-unconditionally is that an agent never approves its own change, because the three approval methods
-are FORBIDDEN, and that is the half the rows state. Whether MCP-originated rollouts should require
+unconditionally is that an agent never approves its own change, because the approval methods are
+FORBIDDEN: approving, rejecting and re-checking an issue, and activating an access grant. That is
+the half the rows state. Whether MCP-originated rollouts should require
 approval regardless of the project flag is a product question tracked separately (BOT-71), not one
 this doc decides.
 

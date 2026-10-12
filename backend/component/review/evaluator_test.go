@@ -788,6 +788,42 @@ func TestBuildCELVariablesForAccessGrantResolvesProjectInstanceWithoutCache(t *t
 	require.Equal(t, "prod", variables[0][common.CELAttributeResourceEnvironmentID])
 }
 
+func TestEvaluateAccessGrantApprovalWithoutApprovalWorkflow(t *testing.T) {
+	ctx := context.Background()
+	const workspaceID = "workspace-a"
+	s := setupApprovalRunnerStoreInWorkspace(ctx, t, workspaceID)
+	projectID := "project-a"
+	setupApprovalProjectInstanceDatabase(ctx, t, s)
+	// A rule that matches every access request, so the missing template below
+	// comes from the plan, not from an empty rule set.
+	_, err := s.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_WORKSPACE_APPROVAL,
+		Workspace: workspaceID,
+		Value: &storepb.WorkspaceApprovalSetting{Rules: []*storepb.WorkspaceApprovalSetting_Rule{{
+			Source:    storepb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS,
+			Condition: &expr.Expr{Expression: "true"},
+			Template:  &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},
+		}}},
+	})
+	require.NoError(t, err)
+	project, err := s.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &projectID})
+	require.NoError(t, err)
+	// No license is stored, so the workspace is on the Free plan, which has no
+	// approval workflow.
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
+	require.NoError(t, err)
+
+	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
+	finding, riskLevel, err := EvaluateAccessGrantApproval(ctx, s, licenseService, project, &storepb.AccessGrantPayload{
+		Targets: []string{"projects/project-a/instances/prod/databases/app"},
+		Query:   "SELECT 1",
+	})
+	require.NoError(t, err)
+	require.True(t, finding.GetApprovalFindingDone())
+	require.Nil(t, finding.GetApprovalTemplate())
+	require.Equal(t, storepb.RiskLevel_LOW, riskLevel)
+}
+
 func TestBuildCELVariablesForAccessGrantRejectsArchivedProjectInstanceWithoutCache(t *testing.T) {
 	ctx := context.Background()
 	const workspaceID = "workspace-a"

@@ -200,3 +200,46 @@ func TestConvertToAccessGrantNilPayloadIsSafe(t *testing.T) {
 	require.Empty(t, ag.Schema)
 	require.Empty(t, ag.Container)
 }
+
+func TestRefuseUnattendedMCPAccessGrant(t *testing.T) {
+	t.Parallel()
+	mcpSession := context.WithValue(context.Background(), common.AuthContextKey,
+		&common.AuthContext{DelegatedGrant: &common.DelegatedGrant{CorrelationID: "corr-grant"}})
+	console := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{})
+	noTemplate := &storepb.IssuePayloadApproval{ApprovalFindingDone: true}
+	noApprover := &storepb.IssuePayloadApproval{
+		ApprovalFindingDone: true,
+		ApprovalTemplate:    &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{}},
+	}
+	ownerApproves := &storepb.IssuePayloadApproval{
+		ApprovalFindingDone: true,
+		ApprovalTemplate:    &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},
+	}
+
+	for name, tt := range map[string]struct {
+		ctx      context.Context
+		approval *storepb.IssuePayloadApproval
+		code     connect.Code
+	}{
+		"an MCP request no rule sends to a person":        {mcpSession, noTemplate, connect.CodePermissionDenied},
+		"an MCP request whose rule names no approver":     {mcpSession, noApprover, connect.CodePermissionDenied},
+		"an MCP request a project owner approves":         {mcpSession, ownerApproves, 0},
+		"a console request no rule sends to a person":     {console, noTemplate, 0},
+		"a request with no auth context":                  {context.Background(), noTemplate, 0},
+		"a template with no flow is an error, not a pass": {console, &storepb.IssuePayloadApproval{ApprovalFindingDone: true, ApprovalTemplate: &storepb.ApprovalTemplate{}}, connect.CodeInternal},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			err := refuseUnattendedMCPAccessGrant(tt.ctx, tt.approval)
+			if tt.code == 0 {
+				require.NoError(t, err)
+				return
+			}
+			require.Equal(t, tt.code, connect.CodeOf(err))
+			if tt.code == connect.CodePermissionDenied {
+				require.Contains(t, err.Error(), "not available to MCP sessions")
+				require.Contains(t, err.Error(), "no approval rule requires a person")
+			}
+		})
+	}
+}

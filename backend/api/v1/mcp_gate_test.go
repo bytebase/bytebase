@@ -126,6 +126,7 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.IssueServiceApproveIssueProcedure,
 		v1connect.IssueServiceRejectIssueProcedure,
 		v1connect.IssueServiceRetryIssueApprovalProcedure,
+		v1connect.AccessGrantServiceActivateAccessGrantProcedure,
 		v1connect.UserServiceChangePasswordProcedure,
 		v1connect.UserServiceStartMFAEnrollmentProcedure,
 		v1connect.UserServiceEnableMFAProcedure,
@@ -184,6 +185,7 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.IssueServiceApproveIssueProcedure:                      v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
 		v1connect.IssueServiceRejectIssueProcedure:                       v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
 		v1connect.IssueServiceRetryIssueApprovalProcedure:                v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
+		v1connect.AccessGrantServiceActivateAccessGrantProcedure:         v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
 	}
 	// Wording for every mechanism in use is checkReasonsMatchTheClass's job, over
 	// every class rather than only the ones enumerated here.
