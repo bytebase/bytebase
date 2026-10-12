@@ -1214,9 +1214,9 @@ func collectStatementTypes(celVarsList []map[string]any) []string {
 	return result
 }
 
-// getApproversForRole retrieves the list of users who have the specified role
-// for the given project. It queries both project and workspace IAM policies.
-// Only returns END_USER type principals (excludes service accounts, system bots, etc).
+// getApproversForRole returns the people who hold the role in the project or
+// workspace IAM policy, for a notification to mention. A service account or
+// workload identity that holds the role can approve too, but has nobody to notify.
 func getApproversForRole(ctx context.Context, stores *store.Store, projectID string, role string) ([]webhook.User, error) {
 	// Get project to determine workspace
 	project, err := stores.GetProjectByResourceID(ctx, projectID)
