@@ -24,6 +24,7 @@ import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { formatAbsoluteDateTime } from "@/utils";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
+import { getCurrentChatContext } from "../logic/chatContext";
 import type { AgentChat as AgentChatRecord } from "../logic/types";
 import {
   selectCurrentChat,
@@ -365,7 +366,10 @@ export function AgentWindow() {
         store.clearCurrentChat();
         return;
       }
-      store.createChat({ page: getCurrentPageSnapshot() });
+      store.createChat({
+        page: getCurrentPageSnapshot(),
+        context: getCurrentChatContext(),
+      });
     },
     [showArchivedOnly, selectFirstDisplayedChat, getCurrentPageSnapshot]
   );
@@ -433,7 +437,10 @@ export function AgentWindow() {
 
   const createChat = useCallback(() => {
     if (isChatCreationDisabled) return;
-    useAgentStore.getState().createChat({ page: getCurrentPageSnapshot() });
+    useAgentStore.getState().createChat({
+      page: getCurrentPageSnapshot(),
+      context: getCurrentChatContext(),
+    });
   }, [isChatCreationDisabled, getCurrentPageSnapshot]);
 
   const handleChatRowClick = useCallback(
@@ -831,6 +838,13 @@ export function AgentWindow() {
 
   useEffect(() => {
     if (!visible || !currentChatId) return;
+    useAgentStore
+      .getState()
+      .ensureCurrentChat(getCurrentPageSnapshot(), getCurrentChatContext());
+  }, [currentChatId, getCurrentPageSnapshot, visible]);
+
+  useEffect(() => {
+    if (!visible || !currentChatId) return;
 
     let cancelled = false;
     void getOrFetchSettingByName(Setting_SettingName.AI, true).then(
@@ -973,7 +987,7 @@ export function AgentWindow() {
             maxSize={maxSidebarWidth}
             groupResizeBehavior="preserve-pixel-size"
           >
-            <aside className="flex size-full flex-col border-r border-block-border bg-control-bg">
+            <aside className="flex size-full flex-col bg-control-bg">
               {/* Sidebar header */}
               <div className="border-b border-block-border px-3 py-3">
                 <div className="flex items-center justify-between gap-x-2">
@@ -1067,8 +1081,8 @@ export function AgentWindow() {
               </div>
 
               {/* Chat list */}
-              <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
-                <div className="flex flex-col gap-y-1" data-agent-chat-list>
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="flex flex-col" data-agent-chat-list>
                   {displayedChats.map((chat) => (
                     <div
                       key={chat.id}

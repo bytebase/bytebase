@@ -29,6 +29,7 @@ interface PersistedAgentState {
 
 interface CreateChatOptions {
   page?: AgentChatSnapshot;
+  context?: string;
   select?: boolean;
   title?: string;
   archived?: boolean;
@@ -48,6 +49,7 @@ const createChatRecord = (options: CreateChatOptions = {}): AgentChat => {
   return {
     id: uuidv4(),
     title: options.title ?? "",
+    context: options.context,
     createdTs: now,
     updatedTs: now,
     status: DEFAULT_CHAT_STATUS,
@@ -189,6 +191,10 @@ const normalizeChat = (raw: unknown): AgentChat => {
   return {
     id: typeof chat.id === "string" ? chat.id : uuidv4(),
     title: typeof chat.title === "string" ? chat.title : "",
+    context:
+      typeof chat.context === "string" && chat.context.trim()
+        ? chat.context
+        : undefined,
     createdTs: typeof chat.createdTs === "number" ? chat.createdTs : now,
     updatedTs: typeof chat.updatedTs === "number" ? chat.updatedTs : now,
     status,
@@ -353,7 +359,11 @@ export interface AgentState {
 
   // Chat CRUD
   createChat: (options?: CreateChatOptions) => AgentChat;
-  ensureCurrentChat: (page?: AgentChatSnapshot) => AgentChat;
+  ensureCurrentChat: (page?: AgentChatSnapshot, context?: string) => AgentChat;
+  selectChatContext: (
+    context: string,
+    page?: AgentChatSnapshot
+  ) => AgentChat | null;
   setCurrentChat: (chatId: string) => void;
   clearCurrentChat: () => void;
   updateChatPage: (chatId: string, page: AgentChatSnapshot) => AgentChat | null;
@@ -719,21 +729,52 @@ export const createAgentStore = () => {
           return chat;
         },
 
-        ensureCurrentChat: (page) => {
+        ensureCurrentChat: (page, context) => {
           const existing = _getChat(get().currentChatId);
           if (existing) {
-            if (page && !existing.page) {
+            if (
+              (page && !existing.page) ||
+              (context &&
+                !existing.context &&
+                get().getMessages(existing.id).length === 0)
+            ) {
               set((state) => {
                 const chat = state.chats.find((c) => c.id === existing.id);
                 if (chat) {
-                  chat.page = page;
+                  if (page && !chat.page) chat.page = page;
+                  if (
+                    context &&
+                    !chat.context &&
+                    !state.messagesByChatId[chat.id]?.length
+                  ) {
+                    chat.context = context;
+                  }
                   _touchChatInDraft(state.chats, chat.id);
                 }
               });
             }
             return _getChat(existing.id)!;
           }
-          return get().createChat({ page });
+          return get().createChat({ page, context });
+        },
+
+        selectChatContext: (context, page) => {
+          if (!context || _hasRunningChat()) return null;
+          const current = _getChat(get().currentChatId);
+          if (!current) return get().createChat({ page, context });
+          if (current.context === context) return current;
+          if (get().getPendingAsk(current.id)) return null;
+          if (get().getMessages(current.id).length > 0) {
+            return get().createChat({ page, context });
+          }
+          set((state) => {
+            const chat = state.chats.find((c) => c.id === current.id);
+            if (chat) {
+              chat.context = context;
+              _touchChatInDraft(state.chats, chat.id);
+            }
+          });
+          return _getChat(current.id);
         },
 
         setCurrentChat: (chatId) => {
