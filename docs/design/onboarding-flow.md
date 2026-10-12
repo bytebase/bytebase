@@ -157,7 +157,8 @@ either way. In place first; the drawer only if a real engine proves it.
 **D8 · Reachability facts before the test, recovery at the failure.** Before a test runs, the
 wizard classifies the address Bytebase Cloud itself would dial: the database host, or the SSH host
 once a tunnel is configured, because the database host is then resolved from the bastion. When that
-address is localhost, a private range (10/8, 172.16/12, 192.168/16) or an internal hostname, it is
+address is localhost, a private range (10/8, 172.16/12, 192.168/16, or the IPv6 loopback,
+unique-local and link-local ranges) or an internal hostname, it is
 named as unreachable from Bytebase Cloud with the three ways out (public endpoint, SSH tunnel under
 Advanced, the sample for now), and the test button stays disabled until the address changes or a
 tunnel is configured. The Cloud egress address is shown inline with a copy action, next to the
@@ -167,14 +168,16 @@ sample for now" in place. Rejected: the current static banner, and the raw drive
 whole explanation.
 
 **D9 · Screen 3's Continue is the commit, and it waits for the database.** Until then nothing
-exists on the server. Continue creates the project, then either prepares the sample or creates the
-tested instance in that project, and the button shows progress until a database exists. The sample
-request returns with the database ready (Given). `CreateInstance` does not: it returns the instance
-even when its first sync fails or finds nothing, so on that path the commit also requires at least
-one discovered database in the project, and otherwise stays on screen 3 saying the instance
-connected but no database was found, with "Sync again" and the sample card. Passing screen 3
-therefore means a database exists on both paths. A failure stays on screen 3 with the error, "Try again" and the other card, where today
-the wizard reports a finish even when the sample request fails and offers no retry. After the
+exists on the server, so a connection test validates without a project parent and the parent is
+attached only to the create. Continue creates the project, then either prepares the sample or
+creates the tested instance in that project, and the button shows progress until a database
+exists. The sample request returns with the database ready (Given). `CreateInstance` does not: it
+returns the instance even when its first sync fails or finds nothing, so on that path the commit
+also requires at least one discovered database in the project, and otherwise stays on screen 3
+saying the instance connected but no database was found, with "Sync again" and the sample card.
+Passing screen 3 therefore means a database exists on both paths. A failure stays on screen 3
+with the error, "Try again" and the other card, where today the wizard reports a finish even when
+the sample request fails and offers no retry. After the
 commit the project and the source are fixed, because the project exists and the sample entitlement
 is spent on it: the project name is read-only on a retry, and screen 4 has no Back. Rejected:
 issuing the sample request in the background and letting Finish wait for it. That adds a pending
@@ -189,15 +192,16 @@ Enter, type the next; a pasted list splits; an invalid entry is shown struck thr
 There is no role picker. An earlier draft offered a "Role in <project>" selector, which names
 Bytebase's project roles to a user ten seconds into the product. Invitees are added as Workspace
 Member and as Project Developer on the new project, one sentence says they can query and propose
-changes there, and roles are changed later in Members, where the names mean something. Greptile asks a default role (Admin or Member); Linear, Neon and
-Metabase ask for emails only. Rejected: the "Just me / My team" question (it only decided whether
+changes there, and roles are changed later in Members, where the names mean something. Greptile
+asks a default role (Admin or Member); Linear, Neon and Metabase ask for emails only. Rejected: the "Just me / My team" question (it only decided whether
 this screen appears, and the screen is now always offered and one click to pass), the role
 selector, and the free-text email box.
 
-**D11 · The last button opens the goal's first action.** For the schema-change goal, the
-new-change dialog targeting the sample database; for the query goal, the SQL Editor on it with a
-generated SELECT. On the own-instance path the same action opens in the project and the user picks
-the database. No landing page in between. The landing page and the guide bar are separate work; the
+**D11 · Finish opens the goal's first action.** Screen 4's Finish sends the invites, clears the
+setup flag and navigates straight to the action, with no screen in between: for the schema-change
+goal, the new-change dialog targeting the sample database; for the query goal, the SQL Editor on it
+with a generated SELECT. On the own-instance path the same action opens in the project and the
+user picks the database. The landing page and the guide bar are separate work; the
 wizard passes them goal, team size and source so the guide starts at the goal step with the
 automatic "explore database" step already done. Rejected: landing on the project databases page,
 where 73 of 100 finishers idle.
@@ -221,7 +225,7 @@ source, own engine and address class, team size, invite count). No event carries
 username, an email address or a credential. Each connection test emits `instance connection test`
 with engine, result, cause and attempt number. `workspace setup submitted` keeps its meaning, the
 workspace has a project and a database, so it fires when screen 3's commit returns, and it gains
-`result=failed` with `failure_stage` (project, sample, instance). The last button emits
+`result=failed` with `failure_stage` (project, sample, instance). Finish emits
 `first action opened`. No client event can be the record, though: the 17 lost finishes lost every
 custom event after the wizard mounted, including one that fires before the backend calls, and 13
 accounts since Sep 11 were never tracked at all. The weekly exporter therefore reads "set up" from
@@ -263,8 +267,7 @@ from the customer's own network.
 | 3 · skipped | "I'll do this later", self-hosted only | leaves for the workspace landing; nothing is created | n/a |
 | 3 Own · no database | the instance was created but its first sync failed or found nothing | "Connected, but no database was found", the sync error if there is one, Sync again, Use the sample for now | disabled |
 | 4 Team | size unset | five size options, chips input, one line about membership; no Back | disabled, "Pick a team size to finish" |
-| 4 Team | size set | same; "Finish without inviting" or "Send N invites and finish" | enabled |
-| Finish | after screen 4 | one button: open the goal's first action | n/a |
+| 4 Team | size set | same; the button reads "Finish without inviting" or "Send N invites and finish" | enabled; sends the invites, clears the setup flag and opens the goal's first action |
 
 A reload before the commit returns to the same screen with the draft; a reload after it returns
 to screen 4.
@@ -288,7 +291,7 @@ today; the own-instance info panel falls back to its overlay sheet.
 | `proto/v1/v1/actuator_service.proto`, `backend/api/v1/actuator_service.go` | SaaS only: expose the Cloud egress addresses (from the environment) so the form can show them inline. |
 
 Tests to write: vitest for each screen's validation and gating message, for the address classifier
-(localhost, private ranges, internal hostnames, public; the SSH host once a tunnel is configured;
+(localhost, IPv4 and IPv6 private ranges, internal hostnames, public; the SSH host once a tunnel is configured;
 off on self-hosted) and for the chips parser; a draft test asserting that no credential field
 reaches storage; the instance-form contract test (wizard-mode labels equal page labels); an e2e
 spec under `frontend/tests/e2e` that walks the sample path, the own path through a failed and then
