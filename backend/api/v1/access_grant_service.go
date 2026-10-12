@@ -213,9 +213,8 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		Schema:            ag.Schema,
 		Container:         ag.Container,
 	}
-	// The finding is decided here, once, and saved on the issue: the issue
-	// workflow skips a finding that is already done, so an approval-rule edit
-	// after this check cannot change whether this request waits for a person.
+	// Decided once and saved on the issue: the workflow skips a done finding, so
+	// a later rule edit cannot change whether this request waits for a person.
 	approval, riskLevel, err := review.EvaluateAccessGrantApproval(ctx, s.store, s.licenseService, project, payload)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to evaluate the approval rules for this access grant"))
@@ -262,15 +261,14 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update access grant payload"))
 	}
 
-	// Step 4: Post-create: webhook, auto-approve. The saved finding emits no
-	// approval event from the workflow, so the approvers are notified here.
+	// Step 4: Post-create: webhook, auto-approve, and notify the approvers, since
+	// a saved finding emits no approval event.
 	issue, err = startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	review.NotifyApprovalRequested(ctx, s.store, s.webhookManager, issue, project)
 	if issue.Status == storepb.Issue_DONE {
-		// Refresh the grant if issue is completed.
 		grant, err = s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
 			Workspace: common.GetWorkspaceIDFromContext(ctx),
 			ID:        &grant.ID,
@@ -284,8 +282,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 }
 
 // refuseUnattendedMCPAccessGrant refuses an MCP session's request that would
-// count as approved on creation, because an approved access grant takes effect
-// at once with no human step. A console request is left as it was.
+// count as approved on creation: an approved grant takes effect at once.
 func refuseUnattendedMCPAccessGrant(ctx context.Context, approval *storepb.IssuePayloadApproval) error {
 	approved, err := utils.CheckApprovalApproved(approval)
 	if err != nil {

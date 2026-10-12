@@ -90,11 +90,9 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 // when the workspace rule produces no approval template and writes the project
 // IAM binding the request named, with no human in it.
 //
-// An access grant is requested with AccessGrantService/CreateAccessGrant, which
-// a Read-write session may call, but only for a request that waits for a
-// person. One that no approval rule sends to a person would be granted at once,
-// so it is refused before any row is written. A person in the console is
-// unaffected.
+// Access requests go through AccessGrantService/CreateAccessGrant instead: a
+// Read-write session is served only for a request that waits for a person, and
+// a person in the console is unaffected.
 func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -227,8 +225,7 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		},
 	}
 
-	// The seeded fallback rule sends the request to a project owner, so it is
-	// filed and waits, with that finding saved on its issue.
+	// The seeded fallback rule sends the request to a project owner.
 	filed := callAPIOnSession(ctx, t, session, "AccessGrantService/CreateAccessGrant", requestAccess)
 	a.Equal(http.StatusOK, filed.Status, filed.Error)
 	var pending v1pb.AccessGrant

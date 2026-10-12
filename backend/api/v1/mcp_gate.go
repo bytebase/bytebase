@@ -517,21 +517,10 @@ func describeServedClasses(served []v1pb.MCPMethodClass) string {
 const mcpConsoleWayOut = "Perform this action signed in to the Bytebase console instead"
 
 // mcpRequestShapeRefusals holds the refusals a per-method class cannot express,
-// because what the call does depends on a field of the request rather than on
-// which method it is. Each entry returns the reason to refuse for and the way
-// out, or an empty reason to allow.
-//
-// This lives inside the gate rather than beside it. The decision is the same
-// decision — may this MCP session make this call? — and it has to be taken at
-// the same point in the chain, so that the denial is marked the same way, is
-// worded the same way, and reaches the caller before any handler side effect
-// can land. A second interceptor would duplicate the slot, the message, and the
-// audit mark to serve one method, and it would put the exception somewhere the
-// next person reading the class rule would not find it.
-//
-// The table is deliberately small and expected to stay that way. A method that
-// needs one is a method whose class annotation is not the whole truth, and the
-// better fix is usually to split the RPC.
+// because what the call does depends on a request field. Each entry returns the
+// reason and the way out, or an empty reason to allow. The table lives in the
+// gate so a refusal is audited and worded like a class refusal and lands before
+// the handler runs. A method that needs an entry usually wants splitting instead.
 var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (reason, wayOut string){
 	v1connect.IssueServiceCreateIssueProcedure:       refuseGrantIssueCreation,
 	v1connect.SheetServiceCreateSheetProcedure:       inTheConsole(refuseMaskedWriteSheet),
@@ -544,7 +533,6 @@ var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (rea
 	v1connect.SavedQueryServiceUpdateSavedQueryProcedure: inTheConsole(refuseMaskedWriteSavedQueryUpdate),
 }
 
-// inTheConsole gives a refusal the console as its way out.
 func inTheConsole(refuse func(context.Context, any) string) func(context.Context, any) (string, string) {
 	return func(ctx context.Context, msg any) (string, string) {
 		return refuse(ctx, msg), mcpConsoleWayOut
@@ -566,23 +554,10 @@ func refuseByRequestShape(ctx context.Context, procedure string, msg any) error 
 		"%s is not available to MCP sessions for this request because %s. %s", procedure, reason, wayOut))
 }
 
-// refuseGrantIssueCreation is the CreateIssue carve-out. CreateIssue is WRITE
-// for the database-change issue it exists for, and an agent composing a change
-// is the whole point of the MCP surface. A ROLE_GRANT issue is a different
-// method wearing the same name: it completes on creation whenever the workspace
-// approval rule produces no template, and completing it writes the project IAM
-// binding for whichever grantee the request names — which is
-// ProjectService/SetIamPolicy, EXCLUDED for exactly that outcome. The session
-// ends up granting access with no human step.
-//
-// UpdateIssue is deliberately NOT in this table, and the reason is the limit of
-// what a request shape can decide. allow_missing makes UpdateIssue create the
-// issue — but only when it does not already exist, which is not a field of the
-// request. An AIP upsert sends the complete resource, so a caller PATCHing an
-// existing ROLE_GRANT issue carries type=ROLE_GRANT in a body the handler
-// ignores, and refusing on that would refuse an ordinary edit for a mechanism
-// that is not running. The creation it really does reach is guarded where the
-// creation happens instead: rejectMCPOriginatedGrantIssue in issue_service.go.
+// refuseGrantIssueCreation applies grantIssueRefusal to CreateIssue. UpdateIssue
+// is not in the table: allow_missing creates only when the issue is missing,
+// which the request cannot show, so the handler guards that creation instead
+// (rejectMCPOriginatedGrantIssue).
 func refuseGrantIssueCreation(_ context.Context, msg any) (string, string) {
 	request, ok := msg.(*v1pb.CreateIssueRequest)
 	if !ok {
@@ -594,24 +569,13 @@ func refuseGrantIssueCreation(_ context.Context, msg any) (string, string) {
 	return grantIssueRefusal(request.GetIssue().GetType())
 }
 
-// grantIssueRefusal is the issue-type allow-list that both MCP guards on issue
-// creation apply: refuseGrantIssueCreation here, and rejectMCPOriginatedGrantIssue
-// on the UpdateIssue allow_missing path the gate cannot see. It returns why a
-// type is refused and the way out, or an empty reason for a type an MCP session
-// may create.
-//
-// It is an allow-list of the type the class covers, not a deny-list of the ones
-// that reach past it. A deny-list would silently admit the next issue type
-// somebody adds, and adding an issue type is not where anyone would think to
-// re-read the MCP ceiling. ACCESS_GRANT is refused by that allow-list too, but
-// for a different reason: buildIssueMessage has no arm for it, so the type is an
-// invalid argument for every caller, and AccessGrantService/CreateAccessGrant
-// files those issues itself. The refusal names that method as the way out.
-//
-// An unset type is NOT refused: nothing can be created from it, since
-// buildIssueMessage's default arm rejects an unspecified type as an invalid
-// argument, so refusing it would protect nothing and would answer a
-// mechanism that does not apply.
+// grantIssueRefusal is the issue-type allow-list both MCP guards on issue
+// creation share; an empty reason allows the type. It is an allow-list so an
+// issue type added later is refused until someone decides otherwise. A
+// ROLE_GRANT issue completes on creation when no approval rule requires a
+// person, writing the project IAM binding it names with no human step. Only
+// CreateAccessGrant files an ACCESS_GRANT issue, so that refusal points there.
+// An unset type is left to buildIssueMessage, which rejects it as invalid.
 func grantIssueRefusal(issueType v1pb.Issue_Type) (reason, wayOut string) {
 	switch issueType {
 	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_TYPE_UNSPECIFIED:

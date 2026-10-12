@@ -908,14 +908,10 @@ func EvaluateAccessGrantApproval(ctx context.Context, stores *store.Store, licen
 	return finding, calculateRiskLevelFromCELVars(celVarsList), nil
 }
 
-// buildCELVariablesForAccessGrantPayload emits one CEL variable map per
-// (target database, schema, table) referenced by the grant's query, so
-// REQUEST_ACCESS rules can key on `resource.db_engine / resource.database_name
-// / resource.schema_name / resource.table_name` attributes.
-//
-// Statement parsing failures fall back to per-target vars without
-// schema/table info — rules keyed on db_engine / database_name / env
-// still evaluate.
+// buildCELVariablesForAccessGrantPayload emits one CEL variable map per target
+// database, schema and table the grant's query reads, for REQUEST_ACCESS rules.
+// A statement that does not parse yields one map per target, so rules on the
+// engine, database or environment still evaluate.
 func buildCELVariablesForAccessGrantPayload(ctx context.Context, stores *store.Store, projectID string, grant *storepb.AccessGrantPayload) ([]map[string]any, error) {
 	baseVars := map[string]any{
 		common.CELAttributeResourceProjectID: projectID,

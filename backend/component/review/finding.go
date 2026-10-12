@@ -57,8 +57,7 @@ func DispatchApprovalEvents(ctx context.Context, stores *store.Store, webhookMan
 }
 
 // approvalWorkflowAvailable reports whether approval rules apply in the
-// workspace. Without the feature, every issue intentionally falls back to no
-// approval template.
+// workspace; without the feature, every issue gets no approval template.
 func approvalWorkflowAvailable(ctx context.Context, licenseService *enterprise.LicenseService, workspace string) bool {
 	return licenseService.IsFeatureEnabled(ctx, workspace, v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) == nil
 }

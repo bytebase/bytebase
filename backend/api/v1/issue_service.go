@@ -591,29 +591,10 @@ func linkedIssueForCreate(planUID int64, existing, issue *store.IssueMessage) (*
 	return existing, nil
 }
 
-// rejectMCPOriginatedGrantIssue refuses an MCP session creating an issue of any
-// type but the database change an agent exists to compose, by the same
-// allow-list and wording as the gate (grantIssueRefusal). A ROLE_GRANT issue
-// completes on creation whenever the workspace approval rule produces no
-// template, and completing it writes the project IAM binding for whichever
-// grantee the request named — which is ProjectService/SetIamPolicy, a method
-// the MCP ceiling refuses outright. The session would end up granting access
-// with no human step.
-//
-// It lives here rather than only in the ceiling gate because CREATION is the
-// fact it turns on, and the gate cannot see that fact. UpdateIssue with
-// allow_missing is the same creation under another name, but only when the
-// issue does not exist: the handler reaches this function through that branch
-// alone, so an ordinary AIP upsert of an issue that DOES exist never arrives
-// here — and it must not be refused, since the type in a full-resource PATCH
-// says nothing about whether the call creates anything. The gate keeps its own
-// refusal for CreateIssue, where the request shape IS the whole story and the
-// denial can land before dispatch; this one covers the delegation the gate
-// cannot follow, the same way rejectMCPOriginatedTokenMint sits at the mint
-// rather than only at its callers.
-//
-// Presence of the delegated grant is the MCP-origin marker, never a field
-// value (common.DelegatedGrant).
+// rejectMCPOriginatedGrantIssue applies grantIssueRefusal where the issue is
+// created, for UpdateIssue with allow_missing, which reaches CreateIssue only
+// when the issue is missing; an upsert of an existing issue is never refused.
+// MCP origin is the delegated grant's presence (common.DelegatedGrant).
 func rejectMCPOriginatedGrantIssue(ctx context.Context, issueType v1pb.Issue_Type) error {
 	authCtx, ok := common.GetAuthContextFromContext(ctx)
 	if !ok || authCtx.DelegatedGrant == nil {
