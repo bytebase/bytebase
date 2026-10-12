@@ -86,7 +86,7 @@ promises can depend on either.
 > the end, the project is the container the databases go into, and the team size keys the guide.
 > Nothing is collected for its own sake except one qualification question, labeled as such. The
 > database step is a gate: a sample that is verified ready, or an own instance that passed its
-> test, with the facts a failing test needs on the screen where it fails.
+> test and yielded a database, with the facts a failing test needs on the screen where it fails.
 
 ## Decisions
 
@@ -167,9 +167,12 @@ whole explanation.
 
 **D9 · Screen 3's Continue is the commit, and it waits for the database.** Until then nothing
 exists on the server. Continue creates the project, then either prepares the sample or creates the
-tested instance in that project, and the button shows progress until the call returns. The sample
-request returns with the database ready (Given), so passing screen 3 means a database exists on
-both paths. A failure stays on screen 3 with the error, "Try again" and the other card, where today
+tested instance in that project, and the button shows progress until a database exists. The sample
+request returns with the database ready (Given). `CreateInstance` does not: it returns the instance
+even when its first sync fails or finds nothing, so on that path the commit also requires at least
+one discovered database in the project, and otherwise stays on screen 3 saying the instance
+connected but no database was found, with "Sync again" and the sample card. Passing screen 3
+therefore means a database exists on both paths. A failure stays on screen 3 with the error, "Try again" and the other card, where today
 the wizard reports a finish even when the sample request fails and offers no retry. After the
 commit the project and the source are fixed, because the project exists and the sample entitlement
 is spent on it: the project name is read-only on a retry, and screen 4 has no Back. Rejected:
@@ -219,9 +222,10 @@ with engine, result, cause and attempt number. `workspace setup submitted` keeps
 workspace has a project and a database, so it fires when screen 3's commit returns, and it gains
 `result=failed` with `failure_stage` (project, sample, instance). The last button emits
 `first action opened`. No client event can be the record, though: the 17 lost finishes lost every
-custom event in their session, including one that fires before the backend calls. The weekly
-exporter therefore treats the backend signature (a project plus a sample instance or a successful
-`CreateInstance`, within three minutes of the page-entered event) as the truth for "set up".
+custom event after the wizard mounted, including one that fires before the backend calls, and 13
+accounts since Sep 11 were never tracked at all. The weekly exporter therefore reads "set up" from
+the backend alone: the workspace has a project with a database, timed from the workspace's
+creation.
 
 **D14 · Gate, draft and resume.** The gate is unchanged: first login, sole admin, mandatory on
 Cloud. Until the commit, the wizard's answers live in a local draft, so Back, a refresh and a
@@ -253,6 +257,7 @@ egress address do not apply because Bytebase dials from the customer's own netwo
 | 3 Own · connected | test passed | "Connected"; the checklist's host and credentials rows are done, the databases rows wait for Continue | enabled |
 | 3 · committing | Continue pressed | the button shows progress while the project and the database are created; the form is read-only | n/a |
 | 3 · commit failed | project, sample or instance creation failed | the error, Try again, and the other card; the project name is read-only once the project exists | enabled for a retry |
+| 3 Own · no database | the instance was created but its first sync failed or found nothing | "Connected, but no database was found", the sync error if there is one, Sync again, Use the sample for now | disabled |
 | 4 Team | size unset | five size options, chips input, one line about membership; no Back | disabled, "Pick a team size to finish" |
 | 4 Team | size set | same; "Finish without inviting" or "Send N invites and finish" | enabled |
 | Finish | after screen 4 | one button: open the goal's first action | n/a |
@@ -283,7 +288,8 @@ Tests to write: vitest for each screen's validation and gating message, for the 
 off on self-hosted) and for the chips parser; a draft test asserting that no credential field
 reaches storage; the instance-form contract test (wizard-mode labels equal page labels); an e2e
 spec under `frontend/tests/e2e` that walks the sample path, the own path through a failed and then
-a passing test, a reload on screen 4 returning to screen 4, the team screen with chips and with
+a passing test and through an instance that yields no database, a reload on screen 4 returning to
+screen 4, the team screen with chips and with
 "Finish without inviting", and asserts the first action opens; and event tests that each Continue
 and the submitted result carry the properties in D13.
 
@@ -294,6 +300,6 @@ hand-off in D11; a project home page is its own design. The live-preview panel f
 alternative kept for later). Provider presets for the own-instance form (Neon pooler parameter,
 RDS IAM, Cloud SQL), which come from the one-click instance research. Persisting team size on the
 workspace; it travels as an event property and in the guide's local state until a consumer needs
-it server-side. The weekly exporter change that reads "set up" from the backend signature lives
+it server-side. The weekly exporter change that reads "set up" from the backend lives
 in the hub repository. Any change to the sample itself, such as a test and prod pair, which would
 reopen ADR-0004. Making setup mandatory on self-hosted.
