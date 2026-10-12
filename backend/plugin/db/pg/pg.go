@@ -211,10 +211,7 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	if err != nil {
 		return nil, err
 	}
-	if tlscfg != nil {
-		connConfig.TLSConfig = tlscfg
-		util.ApplyPGTLSConfig(tlscfg, connConfig.Host, connConfig.Fallbacks)
-	}
+	util.ApplyPGTLSConfig(tlscfg, &connConfig.Config)
 
 	// Apply pgbouncer-safe defaults unless the user has explicitly configured
 	// them via ExtraConnectionParameters (preserves escape hatches such as

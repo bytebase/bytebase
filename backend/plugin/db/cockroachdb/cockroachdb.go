@@ -158,10 +158,7 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	if err != nil {
 		return nil, err
 	}
-	if tlscfg != nil {
-		connConfig.TLSConfig = tlscfg
-		util.ApplyPGTLSConfig(tlscfg, connConfig.Host, connConfig.Fallbacks)
-	}
+	util.ApplyPGTLSConfig(tlscfg, &connConfig.Config)
 	appName := "bytebase"
 	if config.ConnectionContext.TaskRunUID != nil {
 		appName = fmt.Sprintf("bytebase-taskrun-%d", *config.ConnectionContext.TaskRunUID)

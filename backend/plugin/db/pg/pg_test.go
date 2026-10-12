@@ -4,16 +4,21 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
+	"io"
 	"math/big"
+	"net"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
@@ -178,6 +183,114 @@ func TestGetPGConnectionConfigVerifiesCustomCAForAllHosts(t *testing.T) {
 		require.NotNil(t, fallback.TLSConfig.RootCAs)
 		require.NotNil(t, fallback.TLSConfig.VerifyPeerCertificate)
 		require.NoError(t, fallback.TLSConfig.VerifyPeerCertificate([][]byte{serverCertDERByHost[hosts[i+1]]}, nil))
+	}
+}
+
+func TestGetPGConnectionConfigKeepsServerName(t *testing.T) {
+	caPEM, _ := generateCAAndServerCertificates(t, []string{"pg-1.example.com"})
+	tests := []struct {
+		name          string
+		dataSource    *storepb.DataSource
+		wantPrimary   string
+		wantFallbacks []string
+	}{
+		{
+			name:        "hostname without verification",
+			dataSource:  &storepb.DataSource{Host: "pg-1.example.com", UseSsl: true},
+			wantPrimary: "pg-1.example.com",
+		},
+		{
+			name:        "hostname verified against a custom CA",
+			dataSource:  &storepb.DataSource{Host: "pg-1.example.com", UseSsl: true, VerifyTlsCertificate: true, SslCa: caPEM},
+			wantPrimary: "pg-1.example.com",
+		},
+		{
+			name:       "IP address has no name to send",
+			dataSource: &storepb.DataSource{Host: "203.0.113.5", UseSsl: true},
+		},
+		{
+			name: "sslsni=0 opts out",
+			dataSource: &storepb.DataSource{
+				Host:                      "pg-1.example.com",
+				UseSsl:                    true,
+				ExtraConnectionParameters: map[string]string{"sslsni": "0"},
+			},
+		},
+		{
+			name:          "each host of a multi-host address sends its own name",
+			dataSource:    &storepb.DataSource{Host: "pg-1.example.com,pg-2.example.com", UseSsl: true},
+			wantPrimary:   "pg-1.example.com",
+			wantFallbacks: []string{"pg-2.example.com"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.dataSource.Username = "dba"
+			test.dataSource.Port = "5432"
+			connConfig, err := getPGConnectionConfig(db.ConnectionConfig{DataSource: test.dataSource})
+			require.NoError(t, err)
+			require.NotNil(t, connConfig.TLSConfig)
+			require.Equal(t, test.wantPrimary, connConfig.TLSConfig.ServerName)
+			var fallbacks []string
+			for _, fallback := range connConfig.Fallbacks {
+				fallbacks = append(fallbacks, fallback.TLSConfig.ServerName)
+			}
+			require.Equal(t, test.wantFallbacks, fallbacks)
+		})
+	}
+}
+
+// TestPGTLSHandshakeSendsServerName reads the server name off the wire: a
+// pooler that routes by it has nothing else to go on before the handshake.
+func TestPGTLSHandshakeSendsServerName(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	serverNames := make(chan string, 1)
+	go func() {
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		// PostgreSQL negotiates TLS in the clear first: an 8-byte SSLRequest,
+		// answered with 'S'.
+		if _, err := io.ReadFull(conn, make([]byte, 8)); err != nil {
+			return
+		}
+		if _, err := conn.Write([]byte{'S'}); err != nil {
+			return
+		}
+		_ = tls.Server(conn, &tls.Config{
+			GetConfigForClient: func(hello *tls.ClientHelloInfo) (*tls.Config, error) {
+				serverNames <- hello.ServerName
+				return nil, errors.New("the test has what it needs")
+			},
+		}).Handshake()
+	}()
+
+	_, port, err := net.SplitHostPort(listener.Addr().String())
+	require.NoError(t, err)
+	connConfig, err := getPGConnectionConfig(db.ConnectionConfig{
+		DataSource: &storepb.DataSource{Username: "dba", Host: "localhost", Port: port, UseSsl: true},
+	})
+	require.NoError(t, err)
+	// pgx would otherwise try every address localhost resolves to.
+	connConfig.LookupFunc = func(context.Context, string) ([]string, error) {
+		return []string{"127.0.0.1"}, nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, err = pgconn.ConnectConfig(ctx, &connConfig.Config)
+	require.Error(t, err)
+
+	select {
+	case serverName := <-serverNames:
+		require.Equal(t, "localhost", serverName)
+	case <-ctx.Done():
+		require.Fail(t, "the server never saw a TLS handshake")
 	}
 }
 

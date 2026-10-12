@@ -233,13 +233,21 @@ func GetPGSSLMode(ds *storepb.DataSource) SSLMode {
 	return sslMode
 }
 
-// ApplyPGTLSConfig applies Bytebase TLS settings to pgx primary and fallback TLS configs.
-func ApplyPGTLSConfig(tlscfg *tls.Config, host string, fallbacks []*pgconn.FallbackConfig) {
+// ApplyPGTLSConfig replaces pgx's TLS settings for the primary host with
+// tlscfg and applies them to the fallback hosts. tlscfg decides certificates
+// and verification only. The server name pgx derived from the connection
+// string is kept, because it is what the handshake sends (SNI) and what a
+// pooler that routes by name reads; sslsni=0 still turns it off.
+func ApplyPGTLSConfig(tlscfg *tls.Config, config *pgconn.Config) {
 	if tlscfg == nil {
 		return
 	}
-	applyPGTLSConfigForHost(tlscfg, host, tlscfg)
-	for _, fallback := range fallbacks {
+	if config.TLSConfig != nil {
+		tlscfg.ServerName = config.TLSConfig.ServerName
+	}
+	config.TLSConfig = tlscfg
+	applyPGTLSConfigForHost(tlscfg, config.Host, tlscfg)
+	for _, fallback := range config.Fallbacks {
 		if fallback != nil && fallback.TLSConfig != nil {
 			applyPGTLSConfigForHost(fallback.TLSConfig, fallback.Host, tlscfg)
 		}
