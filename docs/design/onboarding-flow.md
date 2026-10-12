@@ -60,7 +60,23 @@ opens.
 
 Two measurement defects shape the design too. Step 1 to step 2 has never emitted an event, so
 leavers cannot be placed on a screen. And 17 finishes produced no finish event because the
-console's analytics went silent after the wizard mounted; "finished" has to come from the backend.
+console's analytics went silent after the wizard mounted; whether a workspace is set up has to
+come from the backend.
+
+## Given
+
+Two existing contracts bound the design. Neither changes here.
+
+**The sample is ADR-0004's Sample Project Instance.** One per workspace, prepared for one project
+by a single-use entitlement: one PostgreSQL database (`bb_sample_<id>`) on Bytebase's shared Cloud
+SQL instance, seeded with the employee dataset, available for seven days.
+`PrepareSampleProjectInstance` is synchronous: it returns once the database is seeded, discovered
+and assigned to the project, within a three-minute bound. A repeated call for the same project
+returns the same instance, so a retry is safe.
+
+**A new workspace is on the free plan.** Changes with SQL review and rollout, the SQL Editor and
+query history work there. Data masking and custom approval are Enterprise, so nothing the wizard
+promises can depend on either.
 
 ## Principle
 
@@ -91,9 +107,10 @@ mandatory-state leavers never clicked anything, consistent with an OAuth redirec
 tab nobody is looking at; a screen with nothing to decide is the cheapest first screen.
 
 **D3 · Two goals.** "Review and roll out a schema change" and "Query data with guardrails", each
-with a one-line finish line under the card. "Mark sensitive data" is removed as a goal: masking is
-a guardrail on querying and is shown inside the query finish line, and the goal led straight into
-an Enterprise gate (1 of 9 choosers acted). Both finish lines are reachable on the free plan.
+with a one-line finish line under the card: a change that passed SQL review and rolled out to the
+database, and a query result from it. "Mark sensitive data" is removed as a goal: masking guards
+querying rather than being a destination, and as an Enterprise feature it led its choosers into a
+gate (1 of 9 acted). Both remaining finish lines are reachable on the free plan.
 
 **D4 · The project is named where the databases are added.** Screen 3 opens with the project name
 (required, empty with example placeholder; the resource id derived from it, editable, collapsed)
@@ -102,12 +119,13 @@ to hold databases, so naming it beside them teaches by adjacency and removes the
 ("the databases you add next...") that the workspace screen needed. Rejected: prefilling the name,
 which removes the one keystroke burst and the lesson with it; and keeping it on screen 1.
 
-**D5 · The database step is a gate with two cards.** "Continue with sample databases" is the
-primary, preselected card: two PostgreSQL databases, hr_test and hr_prod, hosted by Bytebase Cloud,
-assigned to the project. "Connect my own instance" must pass Test connection before Continue
-enables. There is no skip and no "Continue anyway". 93 of 100 finishers keep the sample on and it
-has not failed in 143 attempts since Sep 8; the 7 who turn it off are the own-database path.
-Rejected: the checkbox, and the skip.
+**D5 · The database step is a gate with two cards.** "Continue with the sample database" is the
+primary, preselected card: the Sample Project Instance, one PostgreSQL database with the employee
+data, hosted by Bytebase Cloud, assigned to the project, available for seven days. It is offered
+when the server reports the sample available; otherwise the own-instance card is the only path.
+"Connect my own instance" must pass Test connection before Continue enables. There is no skip and
+no "Continue anyway". 93 of 100 finishers keep the sample on and it has not failed in 143 attempts
+since Sep 8; the 7 who turn it off are the own-database path. Rejected: the checkbox, and the skip.
 
 **D6 · The own-instance path renders the real instance form, in sync by construction.** The
 wizard mounts the page's own `InstanceFormBody` and `DataSourceForm` under `InstanceFormContext`,
@@ -116,8 +134,8 @@ in the wizard without anyone remembering to add it. The wizard contributes layou
 compact field density the form already has, the existing hide-advanced flag turned into one
 "Advanced" disclosure (SSL/TLS, SSH tunnel, extra connection parameters, read-only replica), and
 where the info panel goes. Engine comes first because it decides which fields exist; environment
-defaults to Test; authentication method stays a select (password, AWS RDS IAM, Cloud SQL IAM,
-Azure IAM, external secret). A contract test renders both and asserts that the set of field labels
+defaults to Test; authentication offers whatever the page offers for that engine. A contract test
+renders both and asserts that the set of field labels
 in wizard mode equals the page's. Rejected: a wizard-specific mini form. The 62 failures were not
 missing fields; they were missing facts on screen, and a second form would drift the day the page
 changed.
@@ -135,48 +153,56 @@ if an engine's form is still too tall in place (Oracle wallet, AWS IAM's six fie
 opens the real page in a full-width drawer and waits for the created instance; same component
 either way. In place first; the drawer only if a real engine proves it.
 
-**D8 · Reachability facts before the test, recovery at the failure.** Before a test runs, a host
-that is localhost, a private range (10/8, 172.16/12, 192.168/16) or an internal hostname is named as
-unreachable from Bytebase Cloud, with the three ways out (public endpoint, SSH tunnel under
-Advanced, the sample for now), and the test button stays disabled. The Cloud egress address is shown
-inline with a copy action, next to the allowlist instruction, instead of a "Learn more" link. A
-failed test names the cause (credentials, timeout, DNS, TLS, unknown), gives the one fact the fix
-needs, and offers "Test again" and "Use the sample for now" in place. The draft survives Back and
-refresh. Rejected: the current static banner, and the raw driver message as the whole explanation.
+**D8 · Reachability facts before the test, recovery at the failure.** Before a test runs, the
+wizard classifies the address Bytebase Cloud itself would dial: the database host, or the SSH host
+once a tunnel is configured, because the database host is then resolved from the bastion. When that
+address is localhost, a private range (10/8, 172.16/12, 192.168/16) or an internal hostname, it is
+named as unreachable from Bytebase Cloud with the three ways out (public endpoint, SSH tunnel under
+Advanced, the sample for now), and the test button stays disabled until the address changes or a
+tunnel is configured. The Cloud egress address is shown inline with a copy action, next to the
+allowlist instruction, instead of a "Learn more" link. A failed test names the cause (credentials,
+timeout, DNS, TLS, unknown), gives the one fact the fix needs, and offers "Test again" and "Use the
+sample for now" in place. Rejected: the current static banner, and the raw driver message as the
+whole explanation.
 
-**D9 · The sample provisions during screen 4, and Finish waits for it.** Screen 3's Continue
-creates the project and starts sample provisioning in the background; screen 4's footer reports
-"Preparing hr_test and hr_prod..." and then ready. Finish is enabled only when the sample is ready,
-and a provisioning failure shows "Try the sample again" instead of a silent success. Today the
-wizard reports a finish even when the sample request fails and offers no retry; the path is
-untested only because provisioning has not failed since Sep 8. The minute the sample takes is spent
-on the team screen rather than on a spinner or, as today, on a landing page polling 12 times.
+**D9 · Screen 3's Continue is the commit, and it waits for the database.** Until then nothing
+exists on the server. Continue creates the project, then either prepares the sample or creates the
+tested instance in that project, and the button shows progress until the call returns. The sample
+request returns with the database ready (Given), so passing screen 3 means a database exists on
+both paths. A failure stays on screen 3 with the error, "Try again" and the other card, where today
+the wizard reports a finish even when the sample request fails and offers no retry. After the
+commit the project and the source are fixed, because the project exists and the sample entitlement
+is spent on it: the project name is read-only on a retry, and screen 4 has no Back. Rejected:
+issuing the sample request in the background and letting Finish wait for it. That adds a pending
+and a failed state to screen 4 and to Finish in order to hide a wait that today's finishers
+complete, with the whole wizard around it, in a median of one minute.
 
 **D10 · Team: size required, invites optional, no role.** "How many people will use Bytebase?"
 with five options (Just me, 2–10, 11–50, 51–200, 200+) is one required click, the flow's only
 qualification question. It keys the guide's team step (only above "Just me"), the plan hint, and
 lead scoring; team accounts do first work at 34% against 22%. Emails are chips: type one, press
 Enter, type the next; a pasted list splits; an invalid entry is shown struck through and not sent.
-There is no role picker. Today's "Role in <project>" selector names Bytebase's project roles,
-which a user ten seconds into the product cannot judge; invitees join as members who can query
-and propose changes in the project, one sentence says so, and roles are changed later in Members,
-where the names mean something. Greptile asks a default role (Admin or Member); Linear, Neon and
+There is no role picker. An earlier draft offered a "Role in <project>" selector, which names
+Bytebase's project roles to a user ten seconds into the product. Invitees are added as Workspace
+Member and as Project Developer on the new project, one sentence says they can query and propose
+changes there, and roles are changed later in Members, where the names mean something. Greptile asks a default role (Admin or Member); Linear, Neon and
 Metabase ask for emails only. Rejected: the "Just me / My team" question (it only decided whether
 this screen appears, and the screen is now always offered and one click to pass), the role
 selector, and the free-text email box.
 
 **D11 · The last button opens the goal's first action.** For the schema-change goal, the
-new-change dialog targeting hr_test; for the query goal, the SQL Editor on hr_test with a generated
-SELECT. No landing page in between. The landing page and the guide bar are separate work; the
+new-change dialog targeting the sample database; for the query goal, the SQL Editor on it with a
+generated SELECT. On the own-instance path the same action opens in the project and the user picks
+the database. No landing page in between. The landing page and the guide bar are separate work; the
 wizard passes them goal, team size and source so the guide starts at the goal step with the
 automatic "explore database" step already done. Rejected: landing on the project databases page,
 where 73 of 100 finishers idle.
 
 **D12 · The left panel is a story per screen, from bytebase.com's Rive files.** Screen 1 plays the
 homepage hero (requests flowing into review); screen 2 swaps to the chosen goal's feature animation
-(Change Review, or Dynamic Data Masking) the moment a card is pressed; screen 3 draws a diagram
-from what the user typed (sample instance, hr_test and hr_prod, flowing into the project name) or,
-for an own instance, the connection checklist with the info panel; screen 4 plays Access Controls,
+(Change Review, or Dynamic Data Masking as the picture of a guardrail; the card's finish line does
+not depend on it) the moment a card is pressed; screen 3 draws a diagram from what the user typed
+(the sample instance and its database flowing into the project name) or, for an own instance, the connection checklist with the info panel; screen 4 plays Access Controls,
 which is why no role is asked. The files (`masthead`, `dcm-review`, `data-masking`, `iam`) and the
 `RivePlayer` wrapper exist in the bytebase.com repository; the frontend is React, so the wrapper
 ports as is, with `rive.wasm` self-hosted and the files lazy-loaded on the setup route only. The
@@ -185,21 +211,32 @@ frame. The rocket illustration stays on sign-in and sign-up. Rejected for now: a
 panel teaches nothing) and a live preview of the product being configured (strongest teaching,
 highest drift; planned for screen 3 later).
 
-**D13 · Instrumentation.** Each Continue emits `workspace setup screen continued` with the
-screen number and the answers so far (goal, project named, source, own engine and host class, team
-size, invite count). Each connection test emits `instance connection test` with engine, result,
-cause and attempt number. `workspace setup finish clicked` fires before the backend calls on
-screen 3, so a closed tab cannot lose the finish. `workspace setup submitted` gains
-`result=failed` with `failure_stage` (project, sample, invite) and `sample_succeeded`. The last
-button emits `first action opened`. The weekly exporter treats the backend signature (project and
-sample instance, or a successful `CreateInstance`, within three minutes of the page-entered event)
-as the truth for "finished", whatever the events say.
+**D13 · Instrumentation.** Each Continue emits `workspace setup screen continued` on the click,
+before any backend call, with the screen number and the answers so far (goal, project named,
+source, own engine and address class, team size, invite count). No event carries a host, a
+username, an email address or a credential. Each connection test emits `instance connection test`
+with engine, result, cause and attempt number. `workspace setup submitted` keeps its meaning, the
+workspace has a project and a database, so it fires when screen 3's commit returns, and it gains
+`result=failed` with `failure_stage` (project, sample, instance). The last button emits
+`first action opened`. No client event can be the record, though: the 17 lost finishes lost every
+custom event in their session, including one that fires before the backend calls. The weekly
+exporter therefore treats the backend signature (a project plus a sample instance or a successful
+`CreateInstance`, within three minutes of the page-entered event) as the truth for "set up".
 
-**D14 · The gate and the drafts.** The gate is unchanged: first login, sole admin, mandatory on
-Cloud. Answers from screens 1 and 2 and the own-instance draft are held locally until screen 3
-completes, so Back, refresh and a re-login resume with nothing retyped. Every disabled Continue
-says why, in words, beside the button; two of the 42 leavers stalled on a disabled button with no
-explanation.
+**D14 · Gate, draft and resume.** The gate is unchanged: first login, sole admin, mandatory on
+Cloud. Until the commit, the wizard's answers live in a local draft, so Back, a refresh and a
+re-login in the same browser resume where the user left. The draft holds the answers and the
+non-secret connection fields only. Passwords, tokens, private keys and certificates, the SSH
+tunnel's included, stay in memory and are re-entered after a reload; the wizard has no safe place
+to keep them. The draft also records the commit, and the flag that sends a Cloud account back to
+the wizard clears on Finish, not at the commit. A return after the commit therefore resumes on
+screen 4, so reloading skips neither the team-size question nor the hand-off to the first action.
+Every disabled Continue says why, in words, beside the button; two of the 42 leavers stalled on a
+disabled button with no explanation.
+
+**D15 · Self-hosted keeps its differences.** The same four screens serve self-hosted, where setup
+is offered once and screen 3 keeps "I'll do this later", and where D8's classification and the
+egress address do not apply because Bytebase dials from the customer's own network.
 
 ## States
 
@@ -209,17 +246,19 @@ explanation.
 | 2 Goal | none chosen | two cards, hero animation | disabled |
 | 2 Goal | chosen | card pressed, panel swaps to the goal's animation | enabled |
 | 3 Project | no name | project field empty; panel shows "New project" placeholder | disabled, "Continue needs a project name" |
-| 3 Sample | named | sample card preselected; diagram of instance, two databases, project | enabled, "Continue with sample" |
+| 3 Sample | named | sample card preselected; diagram of the sample instance, its database, the project | enabled, "Continue with sample" |
 | 3 Own · idle | form shown | engine, environment, essentials, authentication, Advanced collapsed, egress address; layout 30/70; panel = info facts + checklist | disabled, "No skip: pass the test or use the sample" |
-| 3 Own · unreachable host | localhost, private range or internal hostname | amber notice naming the address and the three ways out; test button disabled | disabled |
-| 3 Own · testing | after Test connection | checklist rows fill in: host reachable, credentials accepted, databases discovered, assigned to project | disabled |
+| 3 Own · unreachable address | the dialed address is localhost, a private range or an internal hostname | amber notice naming the address and the three ways out; test button disabled until the address changes or an SSH tunnel is configured | disabled |
 | 3 Own · failed | credentials, timeout, DNS, TLS, unknown | red box: cause, the fact the fix needs, Test again, Use the sample for now, the engine's guide | disabled |
-| 3 Own · connected | test passed | "Connected · N databases found · assigned to <project>" | enabled |
-| 4 Team | size unset | five size options, chips input, one line about membership; footer shows provisioning progress | disabled, "Pick a team size to finish" |
+| 3 Own · connected | test passed | "Connected"; the checklist's host and credentials rows are done, the databases rows wait for Continue | enabled |
+| 3 · committing | Continue pressed | the button shows progress while the project and the database are created; the form is read-only | n/a |
+| 3 · commit failed | project, sample or instance creation failed | the error, Try again, and the other card; the project name is read-only once the project exists | enabled for a retry |
+| 4 Team | size unset | five size options, chips input, one line about membership; no Back | disabled, "Pick a team size to finish" |
 | 4 Team | size set | same; "Finish without inviting" or "Send N invites and finish" | enabled |
-| 4 Team | sample still preparing | footer "Preparing hr_test and hr_prod in <project>..."; Finish waits | disabled until ready |
-| Finish | ready | one button: open the goal's first action | n/a |
-| Finish | sample failed | "Try the sample again" and "Connect my own instance instead" | n/a |
+| Finish | after screen 4 | one button: open the goal's first action | n/a |
+
+A reload before the commit returns to the same screen with the draft; a reload after it returns
+to screen 4.
 
 Narrow viewports (below 1024px): the left panel hides on every screen, as the sign-in shell does
 today; the own-instance info panel falls back to its overlay sheet.
@@ -228,7 +267,7 @@ today; the own-instance info panel falls back to its overlay sheet.
 
 | File | Change |
 |---|---|
-| `frontend/src/routes/auth/WorkspaceSetupPage.tsx` | Rewrite as four screens with local draft state, per-screen gating messages, background sample provisioning, and the first-action hand-off. |
+| `frontend/src/routes/auth/WorkspaceSetupPage.tsx` | Rewrite as four screens with the local draft, per-screen gating messages, the commit on screen 3, and the first-action hand-off. |
 | `frontend/src/routes/auth/WorkspaceSetupQuestionnaireStep.tsx` | Retire; the goal moves to screen 2 and the team question is removed. |
 | `frontend/src/app/layouts/SplashLayout.tsx` | Setup variant: a panel slot instead of the fixed illustration, and a 30/70 mode while the own-instance form is open. |
 | `frontend/src/components/workspace-setup/` (new) | Screen components, the Rive panel (port of bytebase.com `RivePlayer.tsx` with self-hosted `rive.wasm` and the four files), the topology and checklist panel, the chips input. |
@@ -236,15 +275,17 @@ today; the own-instance info panel falls back to its overlay sheet.
 | `frontend/src/components/instance/InfoPanel.tsx` | Accept a docked target outside the form so the wizard's left panel can host it. |
 | `frontend/src/modules/workspace-setup-guide/` | Take goal, team size and source from the wizard; mark "explore database" done on arrival; show the team step only above "Just me". |
 | `frontend/src/locales/en-US.json` (and the other locales) | New strings for the four screens; retire `setup-scenario.mark-sensitive-data` and `setup-scenario.workspace-usage`. |
-| `frontend/src/stores/app/workspace.ts`, `frontend/src/app/router/guard.ts` | Unchanged gate; the guard's "setup unfinished" flag now clears only when screen 3 completes. |
-| `backend/api/v1/actuator_service.go` | SaaS only: expose the Cloud egress addresses (from the environment) so the form can show them inline. |
+| `frontend/src/modules/workspace-setup-guide/setup.ts`, `frontend/src/app/router/guard.ts`, `frontend/src/stores/app/auth.ts` | Gate unchanged. The setup-finished flag is saved on Finish instead of on submit, and the draft's commit marker resumes a returning account on screen 4. |
+| `proto/v1/v1/actuator_service.proto`, `backend/api/v1/actuator_service.go` | SaaS only: expose the Cloud egress addresses (from the environment) so the form can show them inline. |
 
-Tests to write: vitest for each screen's validation and gating message, for the host classifier
-(localhost, private ranges, internal hostnames, public) and for the chips parser; the instance-form
-contract test (wizard-mode labels equal page labels); an e2e spec under `frontend/tests/e2e` that
-walks the sample path, the own path through a failed and then a passing test, the team screen with
-chips and with "Finish without inviting", and asserts the first action opens; and event tests that
-each Continue, the finish click and the submitted result carry the properties in D13.
+Tests to write: vitest for each screen's validation and gating message, for the address classifier
+(localhost, private ranges, internal hostnames, public; the SSH host once a tunnel is configured;
+off on self-hosted) and for the chips parser; a draft test asserting that no credential field
+reaches storage; the instance-form contract test (wizard-mode labels equal page labels); an e2e
+spec under `frontend/tests/e2e` that walks the sample path, the own path through a failed and then
+a passing test, a reload on screen 4 returning to screen 4, the team screen with chips and with
+"Finish without inviting", and asserts the first action opens; and event tests that each Continue
+and the submitted result carry the properties in D13.
 
 ## Not in this PR
 
@@ -253,5 +294,6 @@ hand-off in D11; a project home page is its own design. The live-preview panel f
 alternative kept for later). Provider presets for the own-instance form (Neon pooler parameter,
 RDS IAM, Cloud SQL), which come from the one-click instance research. Persisting team size on the
 workspace; it travels as an event property and in the guide's local state until a consumer needs
-it server-side. The weekly exporter change that reads "finished" from the backend signature lives
-in the hub repository.
+it server-side. The weekly exporter change that reads "set up" from the backend signature lives
+in the hub repository. Any change to the sample itself, such as a test and prod pair, which would
+reopen ADR-0004. Making setup mandatory on self-hosted.
