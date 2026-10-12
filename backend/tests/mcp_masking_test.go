@@ -251,7 +251,7 @@ func (f *mcpMaskingFixture) exemptFromMasking(t *testing.T, member string) strin
 // preCheckAccess finds a grant only on an exact match of creator, trimmed query
 // text, ACTIVE status and a live expire_time, so all four are pinned here
 // instead of being left to the issue workflow that also activates grants.
-func (f *mcpMaskingFixture) grantUnmask(t *testing.T, export bool) {
+func (f *mcpMaskingFixture) grantUnmask(t *testing.T, export bool, schema string) {
 	t.Helper()
 	a := require.New(t)
 
@@ -272,6 +272,7 @@ func (f *mcpMaskingFixture) grantUnmask(t *testing.T, export bool) {
 			Reason:     "MCP masking end-to-end coverage",
 			Unmask:     true,
 			Export:     export,
+			Schema:     schema,
 			Expiration: &v1pb.AccessGrant_ExpireTime{ExpireTime: timestamppb.New(time.Now().Add(time.Hour))},
 		},
 	}))
@@ -429,7 +430,7 @@ func TestMCPMaskingFollowsTheCallersProvisioning(t *testing.T) {
 	a.Equal(maskPlaceholder, f.agentReadsSecret(t, f.session),
 		"precondition: without the exemption the column masks again")
 
-	f.grantUnmask(t, true /* export */)
+	f.grantUnmask(t, true /* export */, "" /* schema */)
 	a.Equal(maskedSecret, f.consoleReadsSecret(t), "the grant unmasks in the console")
 	a.Equal(maskedSecret, f.agentReadsSecret(t, f.session),
 		"and the same grant unmasks the caller's MCP session")
@@ -573,4 +574,31 @@ func TestMCPMaskedWriteIsRefused(t *testing.T) {
 	a.Equal(http.StatusOK, agentRan.Status, "the execution door is open: %s", agentRan.Error)
 	a.Equal("rotated-by-agent", f.consoleReadsSecret(t),
 		"the agent's write landed, so the refusals above were the guard and not a closed door")
+}
+
+// TestMCPQueryAppliesAGrantFiledWithASchema is the matching rule the schema
+// input exists for: an access grant stored with a schema applies only to a
+// query that passes the same schema.
+func TestMCPQueryAppliesAGrantFiledWithASchema(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	f := setupMCPMaskingFixture(context.Background(), t)
+	f.grantUnmask(t, false /* export */, "public")
+
+	withoutSchema := queryDatabaseOnSession(f.ctx, t, f.session, f.name, secretQuery)
+	a.False(withoutSchema.isError, withoutSchema.text)
+	a.Equal([][]any{{maskPlaceholder}}, withoutSchema.output.Rows, "a grant filed with a schema skips a query without one")
+	a.Len(withoutSchema.output.MaskedColumns, 1)
+	a.Equal("secret", withoutSchema.output.MaskedColumns[0].Column)
+	a.Empty(withoutSchema.output.AppliedAccessGrant)
+
+	withSchema := callQueryDatabase(f.ctx, t, f.session, map[string]any{
+		"database":  f.name,
+		"statement": secretQuery,
+		"schema":    "public",
+	})
+	a.False(withSchema.isError, withSchema.text)
+	a.Equal([][]any{{maskedSecret}}, withSchema.output.Rows, "passing the grant's schema applies it")
+	a.Empty(withSchema.output.MaskedColumns)
+	a.NotEmpty(withSchema.output.AppliedAccessGrant)
 }
