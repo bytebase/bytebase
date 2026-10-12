@@ -18,11 +18,15 @@ func TestPreCheckAccessQueryHash(t *testing.T) {
 	t.Parallel()
 	longSQL := "SELECT '" + strings.Repeat("x", 110_000) + "' AS v"
 	for _, tc := range []struct {
-		name      string
-		approved  string
-		statement string
-		dropHash  bool
-		want      bool
+		name           string
+		approved       string
+		statement      string
+		dropHash       bool
+		grantSchema    string
+		grantContainer string
+		schema         *string
+		container      string
+		want           bool
 	}{
 		{name: "plain", approved: "SELECT 1", statement: "SELECT 1", want: true},
 		{name: "boundary whitespace", approved: "\v\fSELECT 1\r\n", statement: " \tSELECT 1\n", want: true},
@@ -33,6 +37,9 @@ func TestPreCheckAccessQueryHash(t *testing.T) {
 		{name: "Unicode boundary", approved: "\u00a0SELECT 1", statement: "SELECT 1"},
 		{name: "missing stored hash", approved: "SELECT 1", statement: "SELECT 1", dropHash: true},
 		{name: "write statement", approved: "DELETE FROM t", statement: "DELETE FROM t"},
+		{name: "grant schema, query without", approved: "SELECT 1", statement: "SELECT 1", grantSchema: "public"},
+		{name: "grant schema, query with it", approved: "SELECT 1", statement: "SELECT 1", grantSchema: "public", schema: new("public"), want: true},
+		{name: "grant container, query with it", approved: "SELECT 1", statement: "SELECT 1", grantContainer: "employee", container: "employee", want: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -49,6 +56,7 @@ func TestPreCheckAccessQueryHash(t *testing.T) {
 				ProjectID: "grant-project", Creator: "caller@example.com", Status: storepb.AccessGrant_ACTIVE, ExpireTime: &expires,
 				Payload: &storepb.AccessGrantPayload{
 					Query: tc.approved, Targets: []string{"instances/test/databases/db"}, Export: true, Unmask: true,
+					Schema: tc.grantSchema, Container: tc.grantContainer,
 				},
 			})
 			require.NoError(t, err)
@@ -61,7 +69,7 @@ func TestPreCheckAccessQueryHash(t *testing.T) {
 			instance := &store.InstanceMessage{ResourceID: "test", Metadata: &storepb.Instance{Engine: storepb.Engine_POSTGRES}}
 			database := &store.DatabaseMessage{ProjectID: "grant-project", InstanceID: "test", DatabaseName: "db"}
 			for _, requireExport := range []bool{false, true} {
-				got := service.preCheckAccess(ctx, tc.statement, instance, database, nil, "", requireExport)
+				got := service.preCheckAccess(ctx, tc.statement, instance, database, tc.schema, tc.container, requireExport)
 				if tc.want {
 					require.NotNil(t, got)
 					require.Equal(t, grant.ID, got.ID)

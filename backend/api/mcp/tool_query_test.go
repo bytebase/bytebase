@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -809,19 +810,14 @@ func TestMaskedColumns(t *testing.T) {
 			want:   []MaskedColumn{{Column: "ssn", Index: 1, SemanticType: "SSN", Algorithm: "Full mask", Context: "Global masking rule: PII"}},
 		},
 		{
-			name:   "semantic type falls back to its ID",
-			result: `{"columnNames":["ssn"],"masked":[{"semanticTypeId":"ssn","algorithm":"Partial mask"}]}`,
-			want:   []MaskedColumn{{Column: "ssn", Index: 0, SemanticType: "ssn", Algorithm: "Partial mask"}},
-		},
-		{
 			name:   "column from several source columns has no semantic type",
 			result: `{"columnNames":["contact"],"masked":[{"algorithm":"Full mask","context":"Multiple source columns"}]}`,
 			want:   []MaskedColumn{{Column: "contact", Index: 0, Algorithm: "Full mask", Context: "Multiple source columns"}},
 		},
 		{
 			name:   "list shorter than the columns",
-			result: `{"columnNames":["ssn","id"],"masked":[{"semanticTypeId":"ssn","algorithm":"Full mask"}]}`,
-			want:   []MaskedColumn{{Column: "ssn", Index: 0, SemanticType: "ssn", Algorithm: "Full mask"}},
+			result: `{"columnNames":["ssn","id"],"masked":[{"semanticTypeId":"ssn","semanticTypeTitle":"SSN","algorithm":"Full mask"}]}`,
+			want:   []MaskedColumn{{Column: "ssn", Index: 0, SemanticType: "SSN", Algorithm: "Full mask"}},
 		},
 		{
 			name:   "list longer than the columns",
@@ -829,8 +825,8 @@ func TestMaskedColumns(t *testing.T) {
 		},
 		{
 			name:   "columns sharing a name",
-			result: `{"columnNames":["email","email"],"masked":[{},{"semanticTypeId":"email","algorithm":"Partial mask"}]}`,
-			want:   []MaskedColumn{{Column: "email", Index: 1, SemanticType: "email", Algorithm: "Partial mask"}},
+			result: `{"columnNames":["email","email"],"masked":[{},{"semanticTypeId":"email","semanticTypeTitle":"Email","algorithm":"Partial mask"}]}`,
+			want:   []MaskedColumn{{Column: "email", Index: 1, SemanticType: "Email", Algorithm: "Partial mask"}},
 		},
 		{
 			name:   "no masked field",
@@ -852,15 +848,17 @@ func TestQueryDatabase_MaskedColumnsNameTheirReasons(t *testing.T) {
 	}
 	qr := protoQueryResponse(t, &v1pb.QueryResponse{
 		Results: []*v1pb.QueryResult{{
-			ColumnNames:     []string{"id", "ssn"},
-			ColumnTypeNames: []string{"int4", "varchar"},
+			ColumnNames:     []string{"id", "ssn", "email"},
+			ColumnTypeNames: []string{"int4", "varchar", "varchar"},
 			Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{
 				{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
 				{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}},
+				{Kind: &v1pb.RowValue_StringValue{StringValue: "j***@example.com"}},
 			}}},
 			Masked: []*v1pb.MaskingReason{
 				nil,
 				{SemanticTypeId: "ssn", SemanticTypeTitle: "SSN", Algorithm: "Full mask", Context: "Global masking rule: PII"},
+				{SemanticTypeId: "email", SemanticTypeTitle: "Email", Algorithm: "Partial mask", Context: "Column-level semantic type: Email"},
 			},
 		}},
 	})
@@ -868,7 +866,7 @@ func TestQueryDatabase_MaskedColumnsNameTheirReasons(t *testing.T) {
 
 	result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
 		Database:  "employee_db",
-		Statement: "SELECT id, ssn FROM users",
+		Statement: "SELECT id, ssn, email FROM users",
 	})
 	require.NoError(t, err)
 	require.False(t, result.IsError)
@@ -877,14 +875,12 @@ func TestQueryDatabase_MaskedColumnsNameTheirReasons(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, []MaskedColumn{
 		{Column: "ssn", Index: 1, SemanticType: "SSN", Algorithm: "Full mask", Context: "Global masking rule: PII"},
+		{Column: "email", Index: 2, SemanticType: "Email", Algorithm: "Partial mask", Context: "Column-level semantic type: Email"},
 	}, output.MaskedColumns)
 	require.Empty(t, output.AppliedAccessGrant)
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
-	require.Contains(t, text, "Masked columns: ssn. ")
-	require.Contains(t, text, "masking exemption")
-	require.Contains(t, text, "AccessGrantService/CreateAccessGrant")
-	require.Contains(t, text, "AccessGrantService/SearchMyAccessGrants")
+	require.Contains(t, text, "Masked columns: ssn, email.\n")
 	require.Contains(t, text, `"maskedColumns":[{"column":"ssn","index":1,`)
 }
 
@@ -1020,18 +1016,24 @@ func TestQueryDatabase_ForwardsSchemaAndContainerOnlyWhenSet(t *testing.T) {
 			require.NoError(t, err)
 			require.False(t, result.IsError)
 
-			var body map[string]json.RawMessage
-			require.NoError(t, json.Unmarshal(queryBody, &body))
-			for key, want := range map[string]string{"schema": tc.schema, "container": tc.container} {
-				raw, present := body[key]
-				if want == "" {
-					require.False(t, present, "%s must be left out when unset, not sent empty", key)
+			// The server decodes the body with DiscardUnknown too, so a misnamed
+			// key would lose the value without an error.
+			var request v1pb.QueryRequest
+			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal(queryBody, &request))
+			for _, field := range []struct {
+				name string
+				want string
+				got  *string
+			}{
+				{name: "schema", want: tc.schema, got: request.Schema},
+				{name: "container", want: tc.container, got: request.Container},
+			} {
+				if field.want == "" {
+					require.Nil(t, field.got, "%s must be left out when unset, not sent empty", field.name)
 					continue
 				}
-				require.True(t, present, "%s must be forwarded", key)
-				var got string
-				require.NoError(t, json.Unmarshal(raw, &got))
-				require.Equal(t, want, got)
+				require.NotNil(t, field.got, "%s must reach QueryRequest.%s", field.name, field.name)
+				require.Equal(t, field.want, *field.got)
 			}
 		})
 	}

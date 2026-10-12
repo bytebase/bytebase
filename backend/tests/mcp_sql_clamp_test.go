@@ -41,18 +41,12 @@ type QueryToolOutput struct {
 // queryDatabaseOnSession runs the query_database tool the way a client would.
 func queryDatabaseOnSession(ctx context.Context, t *testing.T, session *mcp.ClientSession, database, statement string) queryToolResult {
 	t.Helper()
-	return callQueryDatabase(ctx, t, session, map[string]any{
-		"database":  database,
-		"statement": statement,
-	})
-}
-
-// callQueryDatabase runs the query_database tool with any arguments.
-func callQueryDatabase(ctx context.Context, t *testing.T, session *mcp.ClientSession, arguments map[string]any) queryToolResult {
-	t.Helper()
 	result, err := session.CallTool(ctx, &mcp.CallToolParams{
-		Name:      "query_database",
-		Arguments: arguments,
+		Name: "query_database",
+		Arguments: map[string]any{
+			"database":  database,
+			"statement": statement,
+		},
 	})
 	require.NoError(t, err)
 

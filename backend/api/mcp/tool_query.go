@@ -1,7 +1,6 @@
 package mcp
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -49,13 +48,14 @@ type QueryOutput struct {
 	AppliedAccessGrant string         `json:"appliedAccessGrant,omitempty"`
 }
 
-// MaskedColumn is a result column whose values the data masking policy replaced.
+// MaskedColumn is a result column whose values masking replaced.
 type MaskedColumn struct {
+	// Column repeats columns[Index], so a model reading one entry need not
+	// count positions.
 	Column string `json:"column"`
 	// Index is the column's position in columns and in each row, which tells
 	// apart columns that share a name.
-	Index int `json:"index"`
-	// SemanticType is the semantic type's title, or its ID when it has none.
+	Index        int    `json:"index"`
 	SemanticType string `json:"semanticType,omitempty"`
 	Algorithm    string `json:"algorithm,omitempty"`
 	Context      string `json:"context,omitempty"`
@@ -81,12 +81,7 @@ query_database(database="employee", instance="projects/hr/instances/prod-pg", st
 
 **Notes:**
 - Masked data: masking replaces a value fully (by default "******"), partly (e.g. "**rn**"), or with a hash. maskedColumns in the result names each masked column and why (not reported for MongoDB, CosmosDB or Elasticsearch). A masked value is a placeholder, not a value anything holds, so never write it back and never filter on it. Any statement containing "******" is refused. When showing a partly masked value, wrap it in backticks: "**rn**" renders as bold Markdown.
-`
-
-// maskedValuesNextStep follows the masked column names in a result's text. It
-// has to hold whether or not the session may call CreateAccessGrant.
-const maskedValuesNextStep = `The workspace's data masking policy masked their values; maskedColumns gives each reason.
-To see them, the user can ask a project owner for a masking exemption covering this data, or, if the project allows just-in-time access, request an access grant with Unmask for this exact statement (AccessGrantService/CreateAccessGrant; if MCP refuses it, the user can request it in the SQL Editor). After approval, rerun the statement exactly as granted, passing the grant's schema and container (AccessGrantService/SearchMyAccessGrants shows them).
+- Seeing masked values: the user can ask a project owner for a masking exemption, or, if the project allows just-in-time access, request an access grant with Unmask for this exact statement in the SQL Editor. After approval, rerun the granted statement unchanged and pass the grant's schema and container. appliedAccessGrant in the result names the grant that applied.
 `
 
 func (s *Server) registerQueryTool() {
@@ -155,7 +150,7 @@ func formatQueryOutput(statement, resourceName string, output *QueryOutput) stri
 		for _, column := range output.MaskedColumns {
 			names = append(names, column.Column)
 		}
-		fmt.Fprintf(&sb, "Masked columns: %s. %s", strings.Join(names, ", "), maskedValuesNextStep)
+		fmt.Fprintf(&sb, "Masked columns: %s.\n", strings.Join(names, ", "))
 	}
 
 	sb.WriteString("\n")
@@ -203,7 +198,6 @@ type queryResult struct {
 
 // maskingReason holds the MaskingReason fields the tool reports.
 type maskingReason struct {
-	SemanticTypeID    string `json:"semanticTypeId"`
 	SemanticTypeTitle string `json:"semanticTypeTitle"`
 	Algorithm         string `json:"algorithm"`
 	Context           string `json:"context"`
@@ -322,7 +316,7 @@ func maskedColumns(columns []string, reasons []maskingReason) []MaskedColumn {
 		masked = append(masked, MaskedColumn{
 			Column:       columns[i],
 			Index:        i,
-			SemanticType: cmp.Or(reason.SemanticTypeTitle, reason.SemanticTypeID),
+			SemanticType: reason.SemanticTypeTitle,
 			Algorithm:    reason.Algorithm,
 			Context:      reason.Context,
 		})
