@@ -16927,6 +16927,16 @@ components:
           title: mcp_setting
           description: The MCP (Model Context Protocol) setting in the current workspace.
           readOnly: true
+        egressIpAddresses:
+          type: array
+          items:
+            type: string
+            readOnly: true
+          title: egress_ip_addresses
+          description: |-
+            The public IP addresses or CIDR ranges Bytebase connects to databases from.
+             Empty when the deployment does not publish them.
+          readOnly: true
       title: ActuatorInfo
       additionalProperties: false
       description: |-

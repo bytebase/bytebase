@@ -201,6 +201,14 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: bytebase.v1.MCPSetting mcp_setting = 30;
    */
   mcpSetting?: MCPSetting | undefined;
+
+  /**
+   * The public IP addresses or CIDR ranges Bytebase connects to databases from.
+   * Empty when the deployment does not publish them.
+   *
+   * @generated from field: repeated string egress_ip_addresses = 31;
+   */
+  egressIpAddresses: string[];
 };
 
 /**

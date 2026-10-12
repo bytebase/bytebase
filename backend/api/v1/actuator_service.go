@@ -106,6 +106,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		ReplicaCount:        int32(s.licenseService.CountActiveReplicas(ctx)),
 		ExternalUrl:         s.profile.ExternalURL,
 		Sample:              &v1pb.SampleInfo{},
+		EgressIpAddresses:   s.profile.EgressIPs,
 	}
 
 	if workspaceID != "" {

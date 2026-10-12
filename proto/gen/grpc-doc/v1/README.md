@@ -5067,6 +5067,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | active_vcs_user_count | [int32](#int32) |  | The number of active VCS users seen in the active window. |
 | sample | [SampleInfo](#bytebase-v1-SampleInfo) |  | Sample setup availability and provisioned resources. |
 | mcp_setting | [MCPSetting](#bytebase-v1-MCPSetting) |  | The MCP (Model Context Protocol) setting in the current workspace. |
+| egress_ip_addresses | [string](#string) | repeated | The public IP addresses or CIDR ranges Bytebase connects to databases from. Empty when the deployment does not publish them. |
 
 
 

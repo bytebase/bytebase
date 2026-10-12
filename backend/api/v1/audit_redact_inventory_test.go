@@ -225,6 +225,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.AccessGrant.targets",
 	"bytebase.v1.ActivateAccessGrantRequest.name",
 	"bytebase.v1.ActuatorInfo.default_project",
+	"bytebase.v1.ActuatorInfo.egress_ip_addresses",
 	"bytebase.v1.ActuatorInfo.external_url",
 	"bytebase.v1.ActuatorInfo.git_commit",
 	"bytebase.v1.ActuatorInfo.unlicensed_features",

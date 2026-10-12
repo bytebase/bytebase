@@ -110,5 +110,13 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if !x.McpSetting.Equal(y.McpSetting) {
 		return false
 	}
+	if len(x.EgressIpAddresses) != len(y.EgressIpAddresses) {
+		return false
+	}
+	for i := 0; i < len(x.EgressIpAddresses); i++ {
+		if x.EgressIpAddresses[i] != y.EgressIpAddresses[i] {
+			return false
+		}
+	}
 	return true
 }

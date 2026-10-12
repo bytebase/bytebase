@@ -2,6 +2,8 @@
 package config
 
 import (
+	"net/netip"
+	"strings"
 	"sync/atomic"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -45,6 +47,10 @@ type Profile struct {
 	// Sample Project Instances. It is read only from the environment and must
 	// never be logged.
 	SampleProjectInstancePgURL string
+	// EgressIPs are the public addresses Bytebase connects to databases from,
+	// shown in the instance form for users to allow in their firewall. Each
+	// entry is an IP address or a CIDR range.
+	EgressIPs []string
 
 	// LastActiveTS is the service last active timestamp, any API calls will refresh this value.
 	LastActiveTS atomic.Int64
@@ -74,4 +80,25 @@ var saasFeatureControlMap = map[string]bool{}
 // IsFeatureUnavailable returns if the feature is unavailable in SaaS mode.
 func (prof *Profile) IsFeatureUnavailable(feature string) bool {
 	return prof.SaaS && saasFeatureControlMap[feature]
+}
+
+// ParseEgressIPs reads a comma-separated list of IP addresses and CIDR ranges.
+// It returns the valid entries in order and the entries it dropped.
+func ParseEgressIPs(raw string) (valid []string, invalid []string) {
+	for entry := range strings.SplitSeq(raw, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		if addr, err := netip.ParseAddr(entry); err == nil {
+			valid = append(valid, addr.String())
+			continue
+		}
+		if prefix, err := netip.ParsePrefix(entry); err == nil {
+			valid = append(valid, prefix.String())
+			continue
+		}
+		invalid = append(invalid, entry)
+	}
+	return valid, invalid
 }

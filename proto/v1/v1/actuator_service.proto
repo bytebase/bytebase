@@ -103,4 +103,8 @@ message ActuatorInfo {
 
   // The MCP (Model Context Protocol) setting in the current workspace.
   MCPSetting mcp_setting = 30 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The public IP addresses or CIDR ranges Bytebase connects to databases from.
+  // Empty when the deployment does not publish them.
+  repeated string egress_ip_addresses = 31 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

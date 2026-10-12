@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"log/slog"
 	"os"
 	"time"
 
@@ -10,6 +11,10 @@ import (
 )
 
 func getBaseProfile(dataDir string) *config.Profile {
+	egressIPs, invalidEgressIPs := config.ParseEgressIPs(os.Getenv("EGRESS_IPS"))
+	if len(invalidEgressIPs) > 0 {
+		slog.Warn("ignored EGRESS_IPS entries that are neither an IP address nor a CIDR range", slog.Any("entries", invalidEgressIPs))
+	}
 	config := &config.Profile{
 		ExternalURL:                flags.externalURL,
 		Port:                       flags.port,     // Using flags.port as our gRPC server port.
@@ -24,6 +29,7 @@ func getBaseProfile(dataDir string) *config.Profile {
 		GitCommit:                  gitcommit,
 		PgURL:                      os.Getenv("PG_URL"),
 		SampleProjectInstancePgURL: os.Getenv("SAMPLE_PROJECT_INSTANCE_PG_URL"),
+		EgressIPs:                  egressIPs,
 		ReplicaID:                  uuid.NewString(),
 		StripeAPISecret:            os.Getenv("STRIPE_API_SECRET"),
 		StripeWebhookSecret:        os.Getenv("STRIPE_WEBHOOK_SECRET"),
