@@ -28,12 +28,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useCurrentUser } from "@/hooks/useAppState";
+import { principalLabel, usePrincipal } from "@/hooks/usePrincipal";
 import { displayRoleTitleFromList } from "@/lib/role";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { userNamePrefix } from "@/stores/modules/v1/common";
-import { unknownUser } from "@/types";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { RequestIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
@@ -217,11 +217,7 @@ function ReviewGateRow({
   const steps = useMemo(() => deriveSteps(issue), [issue]);
   const rejectedStep = steps.find((step) => step.status === "rejected");
   const currentStep = steps.find((step) => step.status === "current");
-  const rejecter = useAppStore((state) =>
-    rejectedStep?.approver
-      ? state.getUserByIdentifier(rejectedStep.approver)
-      : undefined
-  );
+  const rejecter = usePrincipal(rejectedStep?.approver);
   const approvedCount = steps.filter(
     (step) => step.status === "approved"
   ).length;
@@ -233,7 +229,7 @@ function ReviewGateRow({
     icon = <CircleX className="size-5 shrink-0 text-error" />;
     title = t("plan.lifecycle.gate-review-rejected");
     subtitle = t("plan.review.approval-flow.rejected-by", {
-      user: (rejecter ?? unknownUser(rejectedStep?.approver ?? "")).title,
+      user: principalLabel(rejecter),
     });
   } else if (issue.approvalStatus === ApprovalStatus.APPROVED) {
     icon = <CircleCheck className="size-5 shrink-0 text-success" />;

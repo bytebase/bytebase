@@ -37,7 +37,7 @@ import {
   isThreadRoot,
 } from "@/stores/app/issueComment";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
@@ -309,7 +309,7 @@ function SyntheticHeader({
   const { t } = useTranslation();
   return (
     <>
-      <ActorName principal={source.creator} />
+      <CommentCreator creator={source.creator} />
       {source.type === "plan-created" ? (
         <span className="wrap-break-word min-w-0 text-control-light">
           {t("plan.review.activity.created-this-plan")}
@@ -323,11 +323,6 @@ function SyntheticHeader({
       />
     </>
   );
-}
-
-function ActorName({ principal }: { principal: string }) {
-  const user = useAppStore((state) => state.getUserByIdentifier(principal));
-  return <CommentCreator creator={user ?? unknownUser(principal)} />;
 }
 
 // A comment-backed timeline row: delegates layout/icon/header to the shared

@@ -475,8 +475,9 @@ export class BytebaseApiClient {
   }
 
   // Service Accounts
+  // `serviceKey` is returned only here; it is the account's login password.
   async createServiceAccount(parent: string, serviceAccountId: string, title: string) {
-    return this.request<{ name: string; email: string }>("POST",
+    return this.request<{ name: string; email: string; serviceKey: string }>("POST",
       `/v1/${parent}/serviceAccounts?serviceAccountId=${serviceAccountId}`,
       { title });
   }
