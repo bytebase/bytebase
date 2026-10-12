@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
@@ -620,6 +621,14 @@ func TestInitializeServesInstructions(t *testing.T) {
 	for _, tool := range tools {
 		require.NotEqual(t, "get_skill", tool.Name)
 	}
+}
+
+func TestServerInstructionsFitClientLimit(t *testing.T) {
+	// Claude Code truncates each server's instructions at 2,048 characters by
+	// default (code.claude.com/docs/en/mcp), and the confirmation sentence for
+	// direct DML and DDL sits near the end.
+	require.LessOrEqual(t, utf8.RuneCountInString(serverInstructions), 2048)
+	require.Contains(t, serverInstructions, "ask them to confirm")
 }
 
 func TestToolGuidanceNamesOnlyRegisteredTools(t *testing.T) {
