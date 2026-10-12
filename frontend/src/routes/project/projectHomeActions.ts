@@ -31,6 +31,7 @@ export function getProjectHomeActions({
   const canListPlans =
     canListDatabases && hasPermission("bb.plans.list") && !isDefault;
   const canListInstances = hasPermission("bb.instances.list") && !isDefault;
+  const canConnectInstance = hasPermission("bb.instances.create") && !isDefault;
   const canManageMembers =
     !isDefault &&
     hasPermission("bb.projects.getIamPolicy") &&
@@ -45,11 +46,16 @@ export function getProjectHomeActions({
   if (availability === "empty") {
     if (instanceAvailability === "present" && canCreateDatabase) {
       actions.push("createDatabase");
-    } else if (instanceAvailability === "empty" && canListInstances) {
+    } else if (
+      instanceAvailability !== "present" &&
+      (canListInstances || canConnectInstance)
+    ) {
       actions.push("instances");
     }
     if (canManageMembers) actions.push("members");
-    if (actions.length === 0 && canListInstances) actions.push("instances");
+    if (actions.length === 0 && (canListInstances || canConnectInstance)) {
+      actions.push("instances");
+    }
     if (actions.length === 0 && canListDatabases) actions.push("databases");
     return actions;
   }

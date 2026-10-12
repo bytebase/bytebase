@@ -188,6 +188,7 @@ export const AIAugmentationSection = forwardRef<
       }),
       updateMask: create(FieldMaskSchema, { paths }),
     });
+    await useAppStore.getState().refreshServerInfo();
   }, [state, getInitialState, aiSetting]);
 
   useImperativeHandle(ref, () => ({ isDirty, revert, update }));

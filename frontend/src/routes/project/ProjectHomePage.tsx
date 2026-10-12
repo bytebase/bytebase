@@ -208,7 +208,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     !missedPermissions.includes("bb.instances.list") &&
     projectName !== defaultProject;
   const canConnectInstance =
-    canListProjectInstances &&
+    projectName !== defaultProject &&
     !missedPermissions.includes("bb.instances.create");
   const [databaseState, setDatabaseState] = useState<{
     projectName: string;
@@ -457,31 +457,35 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     );
   };
 
-  const actionIcon = (action: ProjectHomeAction) =>
-    action === "instances" &&
+  const shouldOfferInstanceConnection =
     availability === "empty" &&
-    instanceAvailability === "empty" &&
-    !missedPermissions.includes("bb.instances.create")
+    canConnectInstance &&
+    (instanceAvailability === "empty" || !canListProjectInstances);
+
+  const actionIcon = (action: ProjectHomeAction) =>
+    action === "instances" && shouldOfferInstanceConnection
       ? PlugZap
       : workIcons[action];
 
   const actionCopy = (action: ProjectHomeAction) => {
     switch (action) {
       case "instances":
-        return availability === "empty" && instanceAvailability === "empty"
-          ? missedPermissions.includes("bb.instances.create")
-            ? [
+        return availability === "empty" &&
+          (instanceAvailability === "empty" || !canListProjectInstances)
+          ? canConnectInstance
+            ? [t("project.home.connect"), t("project.home.connect-description")]
+            : [
                 t("project.home.browse-instances"),
                 t("project.home.browse-instances-description"),
               ]
-            : [t("project.home.connect"), t("project.home.connect-description")]
           : [
               t("project.home.instances"),
               t("project.home.instances-description"),
             ];
       case "plans":
         return availability === "present" &&
-          !missedPermissions.includes("bb.plans.create")
+          !missedPermissions.includes("bb.plans.create") &&
+          !missedPermissions.includes("bb.issues.create")
           ? [t("project.home.prepare"), t("project.home.prepare-description")]
           : [
               t("project.home.review-plans"),
@@ -691,7 +695,8 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
               </p>
               {availability === "empty" && (
                 <>
-                  {instanceAvailability === "empty" && (
+                  {(instanceAvailability === "empty" ||
+                    shouldOfferInstanceConnection) && (
                     <p className="mt-1">
                       {canConnectInstance
                         ? t("project.home.no-databases-description")
@@ -704,7 +709,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
                         {t("project.home.no-databases-create-description")}
                       </p>
                     )}
-                  {canConnectInstance && instanceAvailability === "empty" && (
+                  {shouldOfferInstanceConnection && (
                     <RouterLink
                       to={{
                         name: PROJECT_V1_ROUTE_INSTANCE_CREATE,
@@ -771,9 +776,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
                     to={actionTarget(
                       action,
                       projectId,
-                      availability === "empty" &&
-                        instanceAvailability === "empty" &&
-                        canConnectInstance
+                      shouldOfferInstanceConnection
                     )}
                     className="group flex min-w-0 items-start gap-3 rounded-xs px-1 py-4 text-main no-underline outline-item hover:bg-control-bg"
                   >

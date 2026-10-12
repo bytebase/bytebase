@@ -232,6 +232,26 @@ describe("ProjectHomePage", () => {
     expect(screen.queryByRole("link", { name: "project.home.connect" })).toBeNull();
   });
 
+  test("offers instance connection without project instance list permission", async () => {
+    mocks.missedPermissions = ["bb.instances.list"];
+    mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
+    render(<ProjectHomePage projectId="orders" />);
+
+    const connectLink = await screen.findByRole("link", {
+      name: "project.home.connect",
+    });
+    const shortcut = within(
+      screen.getByRole("region", { name: "project.home.shortcuts" })
+    ).getByRole("link", { name: /project.home.connect/ });
+    expect(connectLink.getAttribute("href")).toBe(
+      "workspace.project.instance.create"
+    );
+    expect(shortcut.getAttribute("href")).toBe(
+      "workspace.project.instance.create"
+    );
+    expect(mocks.state.fetchInstanceList).not.toHaveBeenCalled();
+  });
+
   test("does not infer emptiness from an error or offer project instances for the default project", async () => {
     mocks.state.fetchDatabases.mockRejectedValueOnce(new Error("unavailable"));
     const view = render(<ProjectHomePage projectId="orders" />);
@@ -468,6 +488,15 @@ describe("ProjectHomePage", () => {
 
   test("labels plans as review-only without create permission", async () => {
     mocks.missedPermissions = ["bb.plans.create"];
+    render(<ProjectHomePage projectId="orders" />);
+    await waitFor(() => {
+      expect(screen.getByText("project.home.review-plans")).toBeTruthy();
+    });
+    expect(screen.queryByText("project.home.prepare")).toBeNull();
+  });
+
+  test("labels plans as review-only without issue creation permission", async () => {
+    mocks.missedPermissions = ["bb.issues.create"];
     render(<ProjectHomePage projectId="orders" />);
     await waitFor(() => {
       expect(screen.getByText("project.home.review-plans")).toBeTruthy();
