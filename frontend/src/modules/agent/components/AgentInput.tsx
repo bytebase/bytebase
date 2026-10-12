@@ -10,12 +10,11 @@ import {
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { type ReactRoute, router } from "@/app/router";
-import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
+import { router } from "@/app/router";
 import { Button } from "@/components/ui/button";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { Textarea } from "@/components/ui/textarea";
-import { useReactiveRoute } from "@/hooks/useReactiveRoute";
+import { projectNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type { DomRefSuggestion } from "../dom";
@@ -25,6 +24,7 @@ import {
   getAgentAIConfigurationEnabled,
   isAgentAIConfigurationError,
 } from "../logic/aiConfiguration";
+import { getCurrentChatContext } from "../logic/chatContext";
 import { buildOutboundHistory } from "../logic/outboundHistory";
 import { buildSystemPrompt } from "../logic/prompt";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
@@ -33,9 +33,11 @@ import {
   selectCurrentChat,
   selectCurrentChatRequiresAIConfiguration,
   selectCurrentPendingAsk,
+  selectHasRunningChat,
   selectLoading,
   useAgentStore,
 } from "../store/agent";
+import { AgentContextPicker } from "./AgentContextPicker";
 
 // Module-level map — survives across renders.
 const runTokens = new Map<string, number>();
@@ -90,20 +92,6 @@ const getCurrentPageSnapshot = () => ({
   title: document.title,
 });
 
-const getHomeProjectName = (route: ReactRoute) => {
-  if (route.name !== PROJECT_V1_ROUTE_DETAIL) return undefined;
-  const projectId = route.params.projectId;
-  if (typeof projectId !== "string") return undefined;
-  return `projects/${projectId}`;
-};
-
-const getHomeProjectContext = () => {
-  const projectName = getHomeProjectName(router.currentRoute.value);
-  if (!projectName) return undefined;
-  const project = useAppStore.getState().projectsByName[projectName];
-  return project ? { name: project.name, title: project.title } : undefined;
-};
-
 const buildMentionListStyle = (rect: DOMRect): CSSProperties => ({
   left: rect.left,
   top: rect.top - 4,
@@ -126,21 +114,28 @@ interface DomRefMentionOption {
 
 export function AgentInput() {
   const { t } = useTranslation();
-  const route = useReactiveRoute();
-  const homeProjectName = getHomeProjectName(route);
-  const homeProject = useAppStore((s) =>
-    homeProjectName ? s.projectsByName[homeProjectName] : undefined
-  );
-
   // Zustand selectors
   const currentChat = useAgentStore(selectCurrentChat);
   const currentPendingAsk = useAgentStore(selectCurrentPendingAsk);
   const loading = useAgentStore(selectLoading);
+  const hasRunningChat = useAgentStore(selectHasRunningChat);
+  const hasMessages = useAgentStore((s) =>
+    Boolean(s.messagesByChatId[s.currentChatId ?? ""]?.length)
+  );
   const isAIConfigurationBlocked = useAgentStore(
     selectCurrentChatRequiresAIConfiguration
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
+  const context = currentChat?.context;
+  const projectContext = context?.startsWith(projectNamePrefix)
+    ? context
+    : undefined;
+  const contextProject = useAppStore((s) =>
+    projectContext ? s.projectsByName[projectContext] : undefined
+  );
+  const workspace = useAppStore((s) => s.workspace);
+  const getOrFetchProjectByName = useAppStore((s) => s.getOrFetchProjectByName);
   const aiConfigurationEnabled = useAppStore((s) =>
     getAgentAIConfigurationEnabled(s.getSettingByName(Setting_SettingName.AI))
   );
@@ -193,6 +188,25 @@ export function AgentInput() {
       }),
     [currentChat?.totalTokensUsed, t]
   );
+  const contextTitle = projectContext
+    ? contextProject?.title || projectContext.slice(projectNamePrefix.length)
+    : context === workspace?.name
+      ? workspace?.title || context
+      : context;
+
+  const selectContext = useCallback((resource: string) => {
+    return Boolean(
+      useAgentStore
+        .getState()
+        .selectChatContext(resource, getCurrentPageSnapshot())
+    );
+  }, []);
+
+  useEffect(() => {
+    if (projectContext && !contextProject) {
+      void getOrFetchProjectByName(projectContext, true);
+    }
+  }, [contextProject, getOrFetchProjectByName, projectContext]);
 
   const blockWhenAIIsNotConfigured = useCallback(
     async (chatId: string) => {
@@ -487,7 +501,7 @@ export function AgentInput() {
 
       const systemPrompt = buildSystemPrompt({
         ...page,
-        project: getHomeProjectContext(),
+        context: store.getChat(chatId)?.context,
       });
       const tools = getToolDefinitions();
       const executor = createToolExecutor(router, {
@@ -572,7 +586,10 @@ export function AgentInput() {
     if (store.isChatRunning(chat?.id)) return;
 
     const currentPage = getCurrentPageSnapshot();
-    const thread = store.ensureCurrentChat(currentPage);
+    const thread = store.ensureCurrentChat(
+      currentPage,
+      getCurrentChatContext()
+    );
     const chatId = thread.id;
     if (await blockWhenAIIsNotConfigured(chatId)) return;
     store.clearError(chatId);
@@ -796,19 +813,18 @@ export function AgentInput() {
       )}
 
       <div
-        className="mb-1 flex items-center gap-2 text-xs text-control-light"
+        className="mb-1 flex items-center justify-between gap-2 text-xs text-control-light"
         data-agent-input-footer
       >
-        {homeProject && (
-          <span
-            className="min-w-0 truncate"
-            data-agent-project-context
-            title={homeProject.title}
-          >
-            {t("agent.project-context", { project: homeProject.title })}
-          </span>
-        )}
-        <span className="ml-auto shrink-0">{currentChatTokenUsageLabel}</span>
+        <AgentContextPicker
+          context={context}
+          contextTitle={contextTitle}
+          workspace={workspace}
+          hasMessages={hasMessages}
+          disabled={hasRunningChat || Boolean(currentPendingAsk)}
+          onSelect={selectContext}
+        />
+        <span className="shrink-0">{currentChatTokenUsageLabel}</span>
       </div>
 
       {/* Confirm buttons */}
@@ -949,6 +965,7 @@ export function AgentInput() {
             <Button
               size="md"
               className="shrink-0 self-end whitespace-nowrap"
+              data-agent-send
               disabled={isSendDisabled}
               onClick={() => void send()}
             >

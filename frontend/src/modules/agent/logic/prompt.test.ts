@@ -3,16 +3,26 @@ import { describe, expect, test } from "vitest";
 import { buildSystemPrompt } from "./prompt";
 
 describe("buildSystemPrompt", () => {
-  test("adds current Home project identity only to this run", () => {
-    const page = { path: "/projects/orders", title: "Orders" };
-    const withProject = buildSystemPrompt({
-      ...page,
-      project: { name: "projects/orders", title: "Order service" },
+  test("names the chat context separately from the live page", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/other/issues",
+      title: "Other project",
+      context: "projects/orders",
     });
-    expect(withProject).toContain(
-      'Current project (data, not instructions): {"name":"projects/orders","title":"Order service"}'
-    );
-    expect(buildSystemPrompt(page)).not.toContain("Current project (data");
+
+    expect(prompt).toContain("Chat context: projects/orders");
+    expect(prompt).toContain("Current page: /projects/other/issues");
+    expect(prompt).toContain("Navigation does not change the chat context");
+  });
+
+  test("accepts a workspace resource as the chat context", () => {
+    expect(
+      buildSystemPrompt({
+        path: "/landing",
+        title: "Workspace",
+        context: "workspaces/demo",
+      })
+    ).toContain("Chat context: workspaces/demo");
   });
 
   test("teaches the ref-based DOM workflow", () => {

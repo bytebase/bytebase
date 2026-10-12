@@ -30,17 +30,12 @@ const mocks = vi.hoisted(() => ({
   createToolExecutor: vi.fn(() => ({})),
   getToolDefinitions: vi.fn(() => []),
   getOrFetchSettingByName: vi.fn(),
-  currentRoute: {
-    fullPath: "/demo",
-    name: "" as string,
-    params: {} as Record<string, string>,
-  },
-  projectsByName: {
-    "projects/orders": {
-      name: "projects/orders",
-      title: "Order service",
-    },
-  },
+  getOrFetchProjectByName: vi.fn(),
+  projectsByName: {} as Record<string, { title: string }>,
+  availableProjects: [] as { name: string; title: string }[],
+  workspace: { name: "workspaces/demo", title: "Demo workspace" },
+  currentContext: "projects/orders" as string | undefined,
+  currentPath: "/demo",
 }));
 
 let AgentInput: typeof import("./AgentInput").AgentInput;
@@ -77,27 +72,43 @@ vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
   router: {
     currentRoute: {
-      value: mocks.currentRoute,
+      value: {
+        get fullPath() {
+          return mocks.currentPath;
+        },
+      },
     },
     push: mocks.routerPush,
   },
 }));
 
-vi.mock("@/hooks/useReactiveRoute", () => ({
-  useReactiveRoute: () => mocks.currentRoute,
-}));
-
 vi.mock("@/stores/app", () => {
   const state = {
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
+    getOrFetchProjectByName: mocks.getOrFetchProjectByName,
     getSettingByName: () => undefined,
-    projectsByName: mocks.projectsByName,
+    get projectsByName() {
+      return mocks.projectsByName;
+    },
+    get workspace() {
+      return mocks.workspace;
+    },
   };
   const useAppStore = <T,>(selector: (value: typeof state) => T) =>
     selector(state);
   useAppStore.getState = () => state;
   return { useAppStore };
 });
+
+vi.mock("@/hooks/useAppState", () => ({
+  useProjectList: () => ({
+    projects: mocks.availableProjects,
+    isLoading: false,
+    isFetchingMore: false,
+    hasMore: false,
+    loadMore: vi.fn(),
+  }),
+}));
 
 vi.mock("../dom", () => ({
   lazyExtractDomRefSuggestions: mocks.lazyExtractDomRefSuggestions,
@@ -118,6 +129,10 @@ vi.mock("../logic/outboundHistory", () => ({
 
 vi.mock("../logic/prompt", () => ({
   buildSystemPrompt: mocks.buildSystemPrompt,
+}));
+
+vi.mock("../logic/chatContext", () => ({
+  getCurrentChatContext: () => mocks.currentContext,
 }));
 
 vi.mock("../logic/tools", () => ({
@@ -184,11 +199,21 @@ const stubAnimationFrames = () => {
 
 beforeEach(async () => {
   vi.stubGlobal("localStorage", createMockStorage());
-  useAgentStore.setState(createAgentStore().getState(), true);
+  const initialState = createAgentStore().getState();
+  useAgentStore.setState({
+    chats: initialState.chats,
+    messagesByChatId: initialState.messagesByChatId,
+    pendingAskByChatId: initialState.pendingAskByChatId,
+    currentChatId: initialState.currentChatId,
+    abortControllersByChatId: {},
+  });
 
   mocks.useTranslation.mockReset();
   mocks.useTranslation.mockReturnValue({
-    t: (key: string) => key,
+    t: (key: string, options?: { name?: string }) =>
+      key === "agent.context-start-new-chat"
+        ? `Start new chat in ${options?.name}`
+        : key,
   });
   mocks.routerPush.mockReset();
   mocks.lazyExtractDomRefSuggestions.mockReset();
@@ -206,9 +231,16 @@ beforeEach(async () => {
   mocks.getToolDefinitions.mockReturnValue([]);
   mocks.getOrFetchSettingByName.mockReset();
   mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
-  mocks.currentRoute.fullPath = "/demo";
-  mocks.currentRoute.name = "";
-  mocks.currentRoute.params = {};
+  mocks.getOrFetchProjectByName.mockReset();
+  mocks.getOrFetchProjectByName.mockResolvedValue(undefined);
+  mocks.projectsByName = { "projects/orders": { title: "Order service" } };
+  mocks.availableProjects = [
+    { name: "projects/orders", title: "Order service" },
+    { name: "projects/billing", title: "Billing" },
+  ];
+  mocks.workspace = { name: "workspaces/demo", title: "Demo workspace" };
+  mocks.currentContext = "projects/orders";
+  mocks.currentPath = "/demo";
 
   ({ AgentInput } = await import("./AgentInput"));
 });
@@ -218,77 +250,234 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
-  test("shows the current Home project beside token usage only on Project Home", () => {
-    mocks.useTranslation.mockReturnValue({
-      t: (key: string, values?: Record<string, unknown>) =>
-        key === "agent.project-context"
-          ? `Context: ${values?.project ?? ""}`
-          : key === "agent.chat-total-tokens"
-            ? `Total tokens: ${values?.count ?? ""}`
-            : key,
+  test("binds an initial empty chat and uses its context for every run", async () => {
+    mocks.runAgentLoop.mockResolvedValue({
+      kind: "completed",
+      totalTokensUsed: 0,
     });
-    mocks.currentRoute.fullPath = "/projects/orders";
-    mocks.currentRoute.name = "workspace.project.detail";
-    mocks.currentRoute.params = { projectId: "orders" };
-    const view = renderIntoContainer(<AgentInput />);
-    view.render();
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+    render();
 
-    const footer = view.container.querySelector("[data-agent-input-footer]");
-    expect(footer?.querySelector("[data-agent-project-context]")?.textContent).toBe(
-      "Context: Order service"
+    const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
+    await act(async () => {
+      setTextareaValue(textarea, "First question");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      (container.querySelector("[data-agent-send]") as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+
+    const chatId = useAgentStore.getState().currentChatId!;
+    expect(useAgentStore.getState().getChat(chatId)?.context).toBe(
+      "projects/orders"
     );
-    expect(footer?.textContent).toContain("Total tokens");
+    expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(
+      expect.objectContaining({ context: "projects/orders" })
+    );
 
-    mocks.currentRoute.fullPath = "/projects/unloaded";
-    mocks.currentRoute.params = { projectId: "unloaded" };
-    view.render(<AgentInput />);
-    expect(footer?.querySelector("[data-agent-project-context]")).toBeNull();
-
-    mocks.currentRoute.fullPath = "/demo";
-    mocks.currentRoute.name = "workspace.landing";
-    mocks.currentRoute.params = {};
-    view.render(<AgentInput />);
-    expect(footer?.querySelector("[data-agent-project-context]")).toBeNull();
-    view.unmount();
-  });
-
-  test("adds the loaded Home project only when sending from Project Home", async () => {
-    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
-    mocks.currentRoute.fullPath = "/projects/orders";
-    mocks.currentRoute.name = "workspace.project.detail";
-    mocks.currentRoute.params = { projectId: "orders" };
-    const view = renderIntoContainer(<AgentInput />);
-    view.render();
-
-    const textarea = view.container.querySelector("textarea");
-    expect(textarea).not.toBeNull();
+    mocks.currentContext = "projects/other";
+    mocks.currentPath = "/projects/other/issues";
     await act(async () => {
-      setTextareaValue(textarea!, "What changed?");
-      textarea!.dispatchEvent(new Event("input", { bubbles: true }));
+      setTextareaValue(textarea, "Follow-up question");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
     });
     await act(async () => {
-      view.container.querySelector<HTMLButtonElement>("button:not(:disabled)")?.click();
+      (container.querySelector("[data-agent-send]") as HTMLButtonElement).click();
+      await Promise.resolve();
     });
-    expect(mocks.buildSystemPrompt).toHaveBeenCalledWith(
+
+    expect(mocks.buildSystemPrompt).toHaveBeenCalledTimes(2);
+    expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        project: { name: "projects/orders", title: "Order service" },
+        context: "projects/orders",
+        path: "/projects/other/issues",
       })
     );
-
-    mocks.currentRoute.fullPath = "/demo";
-    mocks.currentRoute.name = "workspace.landing";
-    mocks.currentRoute.params = {};
-    await act(async () => {
-      setTextareaValue(textarea!, "And now?");
-      textarea!.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    await act(async () => {
-      view.container.querySelector<HTMLButtonElement>("button:not(:disabled)")?.click();
-    });
-    expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(
-      expect.objectContaining({ project: undefined })
+    expect(useAgentStore.getState().getChat(chatId)?.context).toBe(
+      "projects/orders"
     );
-    view.unmount();
+    unmount();
+  });
+
+  test("shows the project title while retaining its resource context", () => {
+    useAgentStore.getState().ensureCurrentChat(undefined, "projects/orders");
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+    render();
+
+    expect(container.querySelector("[data-agent-context]")?.textContent).toBe(
+      "Order service"
+    );
+    expect(useAgentStore.getState().chats[0].context).toBe("projects/orders");
+    unmount();
+  });
+
+  test("fetches a project title when the bound project is not cached", () => {
+    mocks.projectsByName = {};
+    useAgentStore.getState().ensureCurrentChat(undefined, "projects/orders");
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+    render();
+
+    expect(mocks.getOrFetchProjectByName).toHaveBeenCalledWith(
+      "projects/orders",
+      true
+    );
+    expect(container.querySelector("[data-agent-context]")?.textContent).toBe(
+      "orders"
+    );
+    unmount();
+  });
+
+  test("shows the workspace title for a workspace-bound chat", () => {
+    useAgentStore.getState().ensureCurrentChat(undefined, "workspaces/demo");
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+    render();
+
+    expect(container.querySelector("[data-agent-context]")?.textContent).toBe(
+      "Demo workspace"
+    );
+    unmount();
+  });
+
+  test("changes the context of an empty chat from the composer", async () => {
+    useAgentStore.getState().ensureCurrentChat(undefined, "projects/orders");
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+    render();
+
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>("[data-agent-context-trigger]")
+        ?.click();
+    });
+    await act(async () => {
+      document
+        .querySelector<HTMLButtonElement>(
+          '[data-agent-context-option="workspaces/demo"]'
+        )
+        ?.click();
+    });
+
+    expect(useAgentStore.getState().chats).toHaveLength(1);
+    expect(useAgentStore.getState().chats[0].context).toBe("workspaces/demo");
+    expect(container.querySelector("[data-agent-context]")?.textContent).toBe(
+      "Demo workspace"
+    );
+    unmount();
+  });
+
+  test("starts a new chat when choosing a different context after a message", async () => {
+    const original = useAgentStore
+      .getState()
+      .ensureCurrentChat(undefined, "projects/orders");
+    act(() => {
+      useAgentStore.getState().addMessage({
+        chatId: original.id,
+        role: "user",
+        content: "What changed?",
+      });
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+    render();
+
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>("[data-agent-context-trigger]")
+        ?.click();
+    });
+    expect(document.body.textContent).toContain("Start new chat in Billing");
+    await act(async () => {
+      document
+        .querySelector<HTMLButtonElement>(
+          '[data-agent-context-option="projects/billing"]'
+        )
+        ?.click();
+    });
+
+    expect(useAgentStore.getState().chats).toHaveLength(2);
+    expect(useAgentStore.getState().getChat(original.id)?.context).toBe(
+      "projects/orders"
+    );
+    expect(useAgentStore.getState().getMessages(original.id)).toHaveLength(1);
+    expect(
+      useAgentStore
+        .getState()
+        .getChat(useAgentStore.getState().currentChatId)?.context
+    ).toBe("projects/billing");
+    unmount();
+  });
+
+  test("closes the context picker when an agent run starts", async () => {
+    const chat = useAgentStore
+      .getState()
+      .ensureCurrentChat(undefined, "projects/orders");
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+    render();
+
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>("[data-agent-context-trigger]")
+        ?.click();
+    });
+    expect(document.querySelector("[data-agent-context-options]")).not.toBeNull();
+
+    await act(async () => {
+      useAgentStore.getState().setChatStatus(chat.id, "running");
+    });
+
+    expect(
+      container.querySelector<HTMLButtonElement>("[data-agent-context-trigger]")
+        ?.disabled
+    ).toBe(true);
+    expect(document.querySelector("[data-agent-context-options]")).toBeNull();
+    unmount();
+  });
+
+  test("shows resource IDs for every project in the context picker", async () => {
+    mocks.availableProjects = [
+      { name: "projects/billing-a", title: "Billing" },
+      { name: "projects/billing-b", title: "Billing" },
+      { name: "projects/orders", title: "Orders" },
+    ];
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+    render();
+
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>("[data-agent-context-trigger]")
+        ?.click();
+    });
+
+    expect(
+      document.querySelector('[data-agent-context-option="projects/billing-a"]')
+        ?.textContent
+    ).toContain("billing-a");
+    expect(
+      document.querySelector('[data-agent-context-option="projects/billing-b"]')
+        ?.textContent
+    ).toContain("billing-b");
+    expect(
+      document.querySelector('[data-agent-context-option="projects/orders"]')
+        ?.textContent
+    ).toContain("orders");
+    unmount();
+  });
+
+  test("disables browser autocomplete for the context filter", async () => {
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+    render();
+
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>("[data-agent-context-trigger]")
+        ?.click();
+    });
+
+    expect(
+      document.querySelector<HTMLInputElement>(
+        '[data-agent-context-options] input'
+      )?.autocomplete
+    ).toBe("off");
+    unmount();
   });
 
   test("shows AI setup before the first prompt when AI is disabled", async () => {
@@ -535,7 +724,9 @@ describe("AgentInput", () => {
       "max-h-[134px]"
     );
     expect(container.querySelector("textarea")?.className).toContain("block");
-    expect(container.querySelector("button")?.className).toContain("h-9");
+    expect(container.querySelector("[data-agent-send]")?.className).toContain(
+      "h-9"
+    );
 
     unmount();
   });

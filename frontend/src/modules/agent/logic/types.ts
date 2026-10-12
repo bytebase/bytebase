@@ -43,6 +43,7 @@ export interface AgentMessage extends Message {
 export interface AgentChat {
   id: string;
   title: string;
+  context?: string;
   createdTs: number;
   updatedTs: number;
   status: AgentChatStatus;
