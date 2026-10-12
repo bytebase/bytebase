@@ -83,6 +83,7 @@ const HOME_PERMISSIONS: Permission[] = [
   "bb.instances.create",
   "bb.issues.create",
   "bb.sheets.create",
+  "bb.sql.select",
   "bb.workloadIdentities.list",
   "bb.projects.getIamPolicy",
   "bb.projects.setIamPolicy",

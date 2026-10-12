@@ -65,7 +65,8 @@ export function getProjectHomeActions({
   if (
     availability === "present" &&
     canListDatabases &&
-    hasPermission("bb.projects.getIamPolicy")
+    hasPermission("bb.projects.getIamPolicy") &&
+    hasPermission("bb.sql.select")
   ) {
     actions.push("query");
   }

@@ -44,6 +44,7 @@ const mocks = vi.hoisted(() => ({
     loadSubscription: vi.fn(),
   },
   missedPermissions: [] as Permission[],
+  probedPermissions: [] as Permission[],
   open: vi.fn(),
 }));
 
@@ -58,9 +59,10 @@ vi.mock("@/stores/app", () => ({
   ),
 }));
 vi.mock("@/components/ComponentPermissionGuard", () => ({
-  useComponentPermissionState: () => ({
-    missedPermissions: mocks.missedPermissions,
-  }),
+  useComponentPermissionState: ({ permissions }: { permissions: Permission[] }) => {
+    mocks.probedPermissions = permissions;
+    return { missedPermissions: mocks.missedPermissions };
+  },
 }));
 vi.mock("@/components/ProjectPageLayout", () => ({
   ProjectPageLayout: ({ children }: { children: ReactNode }) => (
@@ -91,6 +93,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   mocks.missedPermissions = [];
+  mocks.probedPermissions = [];
   mocks.state.serverInfo.aiEnabled = true;
   mocks.state.serverInfo.defaultProject = "projects/default";
   mocks.state.hasInstanceFeature.mockReturnValue(true);
@@ -118,6 +121,17 @@ describe("ProjectHomePage", () => {
     expect(screen.queryByRole("link", { name: /project.home.access/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "project.home.ask-ai" }));
     await waitFor(() => expect(mocks.open).toHaveBeenCalledOnce());
+  });
+
+  test("does not advertise querying without SQL select permission", async () => {
+    mocks.missedPermissions = ["bb.sql.select"];
+    render(<ProjectHomePage projectId="orders" />);
+
+    expect(mocks.probedPermissions).toContain("bb.sql.select");
+    await waitFor(() => {
+      expect(screen.getByText("project.home.prepare")).toBeTruthy();
+    });
+    expect(screen.queryByText("project.home.query")).toBeNull();
   });
 
   test("opens instance creation from both empty-project entry points", async () => {

@@ -33,6 +33,7 @@ describe("getProjectHomeActions", () => {
           "bb.plans.list",
           "bb.plans.create",
           "bb.projects.getIamPolicy",
+          "bb.sql.select",
           "bb.accessGrants.list",
         ],
         "present"
@@ -47,6 +48,12 @@ describe("getProjectHomeActions", () => {
         "present"
       )
     ).toEqual(["plans"]);
+  });
+
+  test("does not suggest querying when the member cannot select SQL data", () => {
+    expect(
+      actions(["bb.databases.list", "bb.projects.getIamPolicy"], "present")
+    ).toEqual(["databases"]);
   });
 
   test("links an empty project to project instances only when connection is allowed", () => {
@@ -144,6 +151,7 @@ describe("getProjectHomeActions", () => {
             "bb.issues.list",
             "bb.instances.list",
             "bb.projects.getIamPolicy",
+            "bb.sql.select",
             "bb.accessGrants.list",
           ].includes(permission),
       })

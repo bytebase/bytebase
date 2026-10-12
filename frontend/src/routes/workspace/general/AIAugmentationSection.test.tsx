@@ -86,7 +86,8 @@ describe("AIAugmentationSection", () => {
     mocks.refreshServerInfo.mockResolvedValue(undefined);
   });
 
-  test("refreshes the actuator info after enabling AI", async () => {
+  test("saves AI without depending on a second actuator request", async () => {
+    mocks.refreshServerInfo.mockRejectedValue(new Error("refresh failed"));
     const ref = createRef<SectionHandle>();
     render(
       <AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />
@@ -95,6 +96,7 @@ describe("AIAugmentationSection", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "enable-ai" }));
     await act(async () => ref.current?.update());
 
-    expect(mocks.refreshServerInfo).toHaveBeenCalledOnce();
+    expect(mocks.upsertSetting).toHaveBeenCalledOnce();
+    expect(mocks.refreshServerInfo).not.toHaveBeenCalled();
   });
 });
