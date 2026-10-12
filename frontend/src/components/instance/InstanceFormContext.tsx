@@ -12,6 +12,8 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
 import { SecretInputProvider } from "@/components/SecretInput";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -59,22 +61,32 @@ export type LocalState = {
   isRequesting: boolean;
 };
 
-const localConnectionHosts = new Set([
-  "localhost",
-  "0.0.0.0",
-  "::1",
-  "[::1]",
-  "host.docker.internal",
-]);
+// Addresses that point at the Bytebase host itself on a self-hosted
+// deployment, where the Docker host alias is the usual fix.
+const bytebaseHostAddresses = new Set(["localhost", "0.0.0.0", "::1", "[::1]"]);
 
-const isLocalConnectionHost = (host: string) =>
-  localConnectionHosts.has(host) || host.startsWith("127.");
+const isBytebaseHostAddress = (host: string) =>
+  bytebaseHostAddresses.has(host) || host.startsWith("127.");
 
 type TestConnectionResult = {
   success: boolean;
   message: string;
   failureCategory: ConnectionFailureCategory;
+  host: string;
 };
+
+// The sample database as the way forward when the user's own database cannot
+// be connected: "prepare" provisions it, "open" goes to the one that exists.
+export type SampleInstanceOption = {
+  kind: "prepare" | "open";
+  pending: boolean;
+  run: (source: SampleInstanceSource) => void;
+};
+
+export type SampleInstanceSource =
+  | "instance_creation"
+  | "connection_recovery"
+  | "private_host_warning";
 
 export interface InstanceFormContextValue {
   instance: Instance | undefined;
@@ -134,6 +146,10 @@ export interface InstanceFormContextValue {
   emitDataSourceReset: () => void;
   showConnectionOptionsEvent: number;
   emitShowConnectionOptions: () => void;
+  sampleInstance: SampleInstanceOption | undefined;
+  sshTunnelRequestEvent: number;
+  // Turns the SSH tunnel on for the data source and sends the user to it.
+  requestSshTunnel: (dataSourceId: string) => void;
 }
 
 const InstanceFormCtx = createContext<InstanceFormContextValue | null>(null);
@@ -154,6 +170,8 @@ export function InstanceFormProvider({
   project,
   hideAdvancedFeatures = false,
   onDismiss,
+  onSampleInstancePrepared,
+  onOpenSampleInstance,
   children,
 }: {
   instance?: Instance;
@@ -161,6 +179,10 @@ export function InstanceFormProvider({
   project?: Project;
   hideAdvancedFeatures?: boolean;
   onDismiss?: () => void;
+  // Set when the project may still provision its sample instance.
+  onSampleInstancePrepared?: (instance: Instance) => void;
+  // Set when a sample instance already exists to go to.
+  onOpenSampleInstance?: () => void;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -200,6 +222,9 @@ export function InstanceFormProvider({
     state: instance?.state,
   });
   const isCreating = instance === undefined;
+  // Read by callbacks that must see the latest request state.
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   useEffect(() => {
     // Removing the final label unmounts the editor before it can clear errors.
@@ -250,6 +275,69 @@ export function InstanceFormProvider({
   const emitShowConnectionOptions = useCallback(() => {
     setShowConnectionOptionsEvent((prev) => prev + 1);
   }, []);
+
+  const [sshTunnelRequestEvent, setSshTunnelRequestEvent] = useState(0);
+  const requestSshTunnel = useCallback((dataSourceId: string) => {
+    setDataSourceEditState((prev) => ({
+      editingDataSourceId: dataSourceId,
+      // A port is what turns the tunnel switch on before there is a host.
+      dataSources: prev.dataSources.map((ds) =>
+        ds.id === dataSourceId && !ds.sshPort ? { ...ds, sshPort: "22" } : ds
+      ),
+    }));
+    setSshTunnelRequestEvent((prev) => prev + 1);
+  }, []);
+
+  const [isPreparingSampleInstance, setIsPreparingSampleInstance] =
+    useState(false);
+  const prepareSampleInstance = useCallback(
+    async (source: SampleInstanceSource) => {
+      if (!parent || !onSampleInstancePrepared) return;
+      if (isPreparingSampleInstance || stateRef.current.isRequesting) return;
+      behaviorAnalytics.captureMetric(
+        createBehaviorMetric("sample instance requested", {
+          properties: { source },
+        })
+      );
+      setIsPreparingSampleInstance(true);
+      setState((prev) => ({ ...prev, isRequesting: true }));
+      try {
+        onSampleInstancePrepared(
+          await useAppStore.getState().prepareSampleProjectInstance(parent)
+        );
+      } catch (error) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("instance.prepare-sample-instance-failed"),
+          description: extractGrpcErrorMessage(error),
+        });
+      } finally {
+        setIsPreparingSampleInstance(false);
+        setState((prev) => ({ ...prev, isRequesting: false }));
+      }
+    },
+    [isPreparingSampleInstance, onSampleInstancePrepared, parent, t]
+  );
+  const sampleInstance = useMemo((): SampleInstanceOption | undefined => {
+    if (onSampleInstancePrepared && parent) {
+      return {
+        kind: "prepare",
+        pending: isPreparingSampleInstance,
+        run: (source) => void prepareSampleInstance(source),
+      };
+    }
+    if (onOpenSampleInstance) {
+      return { kind: "open", pending: false, run: onOpenSampleInstance };
+    }
+    return undefined;
+  }, [
+    isPreparingSampleInstance,
+    onOpenSampleInstance,
+    onSampleInstancePrepared,
+    parent,
+    prepareSampleInstance,
+  ]);
 
   const hasPermission = useCallback(
     (permission: Permission) => hasInstancePermission(project, permission),
@@ -438,10 +526,6 @@ export function InstanceFormProvider({
     extractDataSourceFromEdit,
   ]);
 
-  // Use ref for testConnection to avoid stale closures
-  const stateRef = useRef(state);
-  stateRef.current = state;
-
   const testConnection = useCallback(
     async (
       editingDS: EditDataSource,
@@ -456,7 +540,12 @@ export function InstanceFormProvider({
           });
         }
         setState((prev) => ({ ...prev, isTestingConnection: false }));
-        return { success: true, message: "", failureCategory: "unknown" };
+        return {
+          success: true,
+          message: "",
+          failureCategory: "unknown",
+          host: "",
+        };
       };
       const fail = (host: string, err: unknown): TestConnectionResult => {
         let failureCategory = normalizeConnectionFailureCategory(
@@ -478,16 +567,7 @@ export function InstanceFormProvider({
             ? err.rawMessage
             : extractGrpcErrorMessage(err);
         if (!silent) {
-          const normalizedHost = host.trim().toLowerCase();
-          if (isSaaSMode && isLocalConnectionHost(normalizedHost)) {
-            error = `${error}\n\n${t(
-              "instance.failed-to-connect-instance-saas-local-host",
-              { host }
-            )}`;
-          } else if (
-            isLocalConnectionHost(normalizedHost) &&
-            normalizedHost !== "host.docker.internal"
-          ) {
+          if (!isSaaSMode && isBytebaseHostAddress(host.trim().toLowerCase())) {
             error = `${error}\n\n${t("instance.failed-to-connect-instance-localhost")}`;
           }
           pushNotification({
@@ -496,7 +576,9 @@ export function InstanceFormProvider({
             title:
               failureCategory === "timeout"
                 ? t("instance.connection-recovery.timeout.test-title")
-                : t("instance.failed-to-connect-instance"),
+                : failureCategory === "private_address"
+                  ? t("instance.connection-recovery.private.title")
+                  : t("instance.failed-to-connect-instance"),
             description:
               failureCategory === "timeout"
                 ? `${t(
@@ -504,12 +586,16 @@ export function InstanceFormProvider({
                       ? "instance.connection-recovery.timeout.description-saas"
                       : "instance.connection-recovery.timeout.description-self-hosted"
                   )}\n\n${t("error-page.error-details")}: ${error}`
-                : error,
+                : failureCategory === "private_address"
+                  ? t("instance.connection-recovery.private.description", {
+                      host,
+                    })
+                  : error,
             manualHide: true,
           });
         }
         setState((prev) => ({ ...prev, isTestingConnection: false }));
-        return { success: false, message: error, failureCategory };
+        return { success: false, message: error, failureCategory, host };
       };
 
       setState((prev) => ({ ...prev, isTestingConnection: true }));
@@ -652,6 +738,9 @@ export function InstanceFormProvider({
       emitDataSourceReset,
       showConnectionOptionsEvent,
       emitShowConnectionOptions,
+      sampleInstance,
+      sshTunnelRequestEvent,
+      requestSshTunnel,
     }),
     [
       instance,
@@ -690,6 +779,9 @@ export function InstanceFormProvider({
       emitDataSourceReset,
       showConnectionOptionsEvent,
       emitShowConnectionOptions,
+      sampleInstance,
+      sshTunnelRequestEvent,
+      requestSshTunnel,
     ]
   );
 

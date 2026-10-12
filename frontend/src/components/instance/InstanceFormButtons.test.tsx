@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   batchUpdateDatabases: vi.fn(),
   captureMetric: vi.fn(),
   hasFeature: vi.fn(() => true),
+  isSaaSMode: false,
   onCreated: vi.fn(),
   context: undefined as Record<string, unknown> | undefined,
 }));
@@ -69,7 +70,7 @@ vi.mock("@/stores/app", () => {
     hasFeature: mocks.hasFeature,
     instanceLicenseCount: () => 100,
     activatedInstanceCount: () => 1,
-    isSaaSMode: () => false,
+    isSaaSMode: () => mocks.isSaaSMode,
     createInstance: mocks.createInstance,
     updateInstance: mocks.updateInstance,
     getInstanceByName: mocks.getInstanceByName,
@@ -171,6 +172,7 @@ const flushPromises = async () => {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.hasFeature.mockReturnValue(true);
+  mocks.isSaaSMode = false;
   mocks.routerCurrentName = "workspace.instance.create";
   mocks.routerCurrentQuery = {};
 
@@ -227,6 +229,10 @@ beforeEach(() => {
     onDismiss: vi.fn(),
     emitShowConnectionOptions: vi.fn(),
     emitDataSourceReset: vi.fn(),
+    specs: { showSSH: true },
+    hideAdvancedFeatures: false,
+    sampleInstance: undefined,
+    requestSshTunnel: vi.fn(),
   };
 
   mocks.createInstance.mockResolvedValue(
@@ -665,6 +671,248 @@ describe("InstanceFormButtons", () => {
 
     await act(async () => {
       root.unmount();
+    });
+  });
+
+  describe("recovery actions", () => {
+    const buttonNamed = (container: HTMLElement, text: string) =>
+      Array.from(container.querySelectorAll("button")).find((button) =>
+        button.textContent?.includes(text)
+      ) as HTMLButtonElement | undefined;
+
+    const failWith = (failure: {
+      message: string;
+      failureCategory: string;
+      host?: string;
+    }) => {
+      const context = mocks.context as {
+        testConnection: ReturnType<typeof vi.fn>;
+      };
+      context.testConnection.mockResolvedValue({
+        success: false,
+        host: "db.example.com",
+        ...failure,
+      });
+      return context.testConnection;
+    };
+
+    const renderAndClick = async (text: string) => {
+      const container = document.createElement("div");
+      const root = createRoot(container);
+      await act(async () => {
+        root.render(<InstanceFormButtons />);
+      });
+      await act(async () => {
+        buttonNamed(container, text)?.click();
+        await flushPromises();
+      });
+      return {
+        container,
+        unmount: () => act(() => root.unmount()),
+      };
+    };
+
+    test("an unverified retry turns verification off in the form and tests again", async () => {
+      const context = mocks.context as {
+        adminDataSource: Record<string, unknown>;
+        editingDataSource: Record<string, unknown>;
+        setDataSourceEditState: ReturnType<typeof vi.fn>;
+      };
+      context.adminDataSource.useSsl = true;
+      context.adminDataSource.verifyTlsCertificate = true;
+      context.editingDataSource = context.adminDataSource;
+      const testConnection = failWith({
+        message: "x509: certificate signed by unknown authority",
+        failureCategory: "ssl_tls_failed",
+      });
+
+      const view = await renderAndClick("instance.test-connection");
+      expect(view.container.textContent).toContain(
+        "instance.connection-recovery.actions.skip-tls-verify-note"
+      );
+
+      await act(async () => {
+        buttonNamed(
+          view.container,
+          "instance.connection-recovery.actions.skip-tls-verify"
+        )?.click();
+        await flushPromises();
+      });
+
+      const updater = context.setDataSourceEditState.mock.calls[0][0];
+      expect(
+        updater({ dataSources: [context.adminDataSource] }).dataSources[0]
+      ).toMatchObject({ id: "admin", verifyTlsCertificate: false });
+      expect(testConnection).toHaveBeenCalledTimes(2);
+      expect(testConnection).toHaveBeenLastCalledWith(
+        expect.objectContaining({ id: "admin", verifyTlsCertificate: false }),
+        false
+      );
+      expect(mocks.createInstance).not.toHaveBeenCalled();
+      view.unmount();
+    });
+
+    test("no unverified retry is offered while verification is already off", async () => {
+      failWith({
+        message: "x509: certificate signed by unknown authority",
+        failureCategory: "ssl_tls_failed",
+      });
+      const view = await renderAndClick("instance.test-connection");
+      expect(
+        buttonNamed(
+          view.container,
+          "instance.connection-recovery.actions.skip-tls-verify"
+        )
+      ).toBeUndefined();
+      view.unmount();
+    });
+
+    test("the SSH tunnel action leaves a failed create and goes to the tunnel", async () => {
+      mocks.isSaaSMode = true;
+      const context = mocks.context as {
+        adminDataSource: Record<string, unknown>;
+        requestSshTunnel: ReturnType<typeof vi.fn>;
+      };
+      context.adminDataSource.authenticationType =
+        DataSource_AuthenticationType.PASSWORD;
+      failWith({
+        message: '"10.0.0.5" is a private or local address',
+        failureCategory: "private_address",
+        host: "10.0.0.5",
+      });
+
+      const view = await renderAndClick("common.create");
+      expect(view.container.textContent).toContain("common.continue-anyway");
+
+      await act(async () => {
+        buttonNamed(
+          view.container,
+          "instance.connection-recovery.actions.ssh-tunnel"
+        )?.click();
+        await flushPromises();
+      });
+
+      expect(context.requestSshTunnel).toHaveBeenCalledWith("admin");
+      expect(view.container.textContent).not.toContain(
+        "common.continue-anyway"
+      );
+      expect(mocks.createInstance).not.toHaveBeenCalled();
+      view.unmount();
+    });
+
+    test("a refused private address is not repeated as raw server text", async () => {
+      mocks.isSaaSMode = true;
+      failWith({
+        message: "SERVER_TEXT_FOR_PRIVATE_ADDRESS",
+        failureCategory: "private_address",
+        host: "10.0.0.5",
+      });
+      const view = await renderAndClick("instance.test-connection");
+      expect(view.container.textContent).toContain(
+        "instance.connection-recovery.private.title"
+      );
+      expect(view.container.textContent).not.toContain(
+        "SERVER_TEXT_FOR_PRIVATE_ADDRESS"
+      );
+      view.unmount();
+    });
+
+    test("no tunnel is offered to a data source whose tunnel is already on", async () => {
+      mocks.isSaaSMode = true;
+      const context = mocks.context as {
+        adminDataSource: Record<string, unknown>;
+      };
+      context.adminDataSource.authenticationType =
+        DataSource_AuthenticationType.PASSWORD;
+      context.adminDataSource.sshPort = "22";
+      failWith({
+        message: "connection to db.example.com:5432 timed out after 20s",
+        failureCategory: "timeout",
+      });
+      const view = await renderAndClick("instance.test-connection");
+      expect(view.container.textContent).toContain(
+        "connection to db.example.com:5432 timed out after 20s"
+      );
+      expect(
+        buttonNamed(
+          view.container,
+          "instance.connection-recovery.actions.ssh-tunnel"
+        )
+      ).toBeUndefined();
+      view.unmount();
+    });
+
+    test("the sample is offered after a test that never reached the database", async () => {
+      mocks.isSaaSMode = true;
+      const run = vi.fn();
+      (mocks.context as Record<string, unknown>).sampleInstance = {
+        kind: "prepare",
+        pending: false,
+        run,
+      };
+      failWith({
+        message: "connection to db.example.com:5432 timed out after 20s",
+        failureCategory: "timeout",
+      });
+
+      const view = await renderAndClick("instance.test-connection");
+      await act(async () => {
+        buttonNamed(view.container, "instance.use-sample-instance")?.click();
+        await flushPromises();
+      });
+
+      expect(run).toHaveBeenCalledWith("connection_recovery");
+      view.unmount();
+    });
+
+    test("an existing sample is offered as the place to continue", async () => {
+      mocks.isSaaSMode = true;
+      (mocks.context as Record<string, unknown>).sampleInstance = {
+        kind: "open",
+        pending: false,
+        run: vi.fn(),
+      };
+      failWith({
+        message: "lookup db.corp.example: no such host",
+        failureCategory: "host_not_found",
+      });
+
+      const view = await renderAndClick("instance.test-connection");
+      expect(
+        buttonNamed(
+          view.container,
+          "instance.connection-recovery.actions.open-sample"
+        )
+      ).toBeDefined();
+      view.unmount();
+    });
+
+    test("a self-hosted deployment gets no Cloud alternatives", async () => {
+      (
+        mocks.context as { adminDataSource: Record<string, unknown> }
+      ).adminDataSource.authenticationType =
+        DataSource_AuthenticationType.PASSWORD;
+      (mocks.context as Record<string, unknown>).sampleInstance = {
+        kind: "prepare",
+        pending: false,
+        run: vi.fn(),
+      };
+      failWith({
+        message: "dial tcp 10.0.0.5:5432: connect: connection refused",
+        failureCategory: "network_unreachable",
+      });
+
+      const view = await renderAndClick("instance.test-connection");
+      expect(
+        buttonNamed(
+          view.container,
+          "instance.connection-recovery.actions.ssh-tunnel"
+        )
+      ).toBeUndefined();
+      expect(
+        buttonNamed(view.container, "instance.use-sample-instance")
+      ).toBeUndefined();
+      view.unmount();
     });
   });
 

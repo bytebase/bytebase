@@ -1016,6 +1016,12 @@
     "connection-database": "Cơ sở dữ liệu kết nối",
     "connection-info": "Thông tin kết nối",
     "connection-recovery": {
+      "actions": {
+        "open-sample": "Tiếp tục với phiên bản mẫu",
+        "skip-tls-verify": "Kiểm tra mà không xác minh chứng chỉ",
+        "skip-tls-verify-note": "Tắt \"Xác minh chứng chỉ máy chủ\". Kết nối vẫn được mã hóa, nhưng Bytebase không còn xác nhận rằng đã kết nối đúng máy chủ của bạn.",
+        "ssh-tunnel": "Thiết lập đường hầm SSH"
+      },
       "auth": {
         "description": "Kiểm tra tên người dùng, mật khẩu, token hoặc cấu hình xác thực IAM, rồi kiểm tra kết nối lại.",
         "steps": {
@@ -1026,6 +1032,11 @@
         "title": "Kiểm tra thông tin đăng nhập cơ sở dữ liệu"
       },
       "docs": "Mở hướng dẫn kết nối",
+      "host-not-found": {
+        "description-saas": "Bytebase Cloud phân giải hostname bằng DNS công khai. Hãy dùng hostname hoặc địa chỉ IP công khai, hoặc kết nối qua đường hầm SSH.",
+        "description-self-hosted": "Bytebase không phân giải được hostname này. Hãy kiểm tra chính tả và DNS mà hệ thống triển khai Bytebase có thể dùng.",
+        "title": "Không phân giải được hostname này"
+      },
       "network": {
         "description-saas": "Xác nhận host và port có thể truy cập từ Bytebase Cloud. Kiểm tra firewall, allowlist, proxy, tunnel và liệu cơ sở dữ liệu có chỉ nhận lưu lượng mạng riêng hay không.",
         "description-self-hosted": "Xác nhận host và port có thể truy cập từ môi trường triển khai Bytebase. Kiểm tra firewall, định tuyến mạng, proxy, tunnel và liệu cơ sở dữ liệu có chỉ nhận lưu lượng từ mạng khác hay không.",
@@ -1045,6 +1056,10 @@
           "workflow": "Chỉ cấp thêm quyền cho quy trình bạn định dùng, ví dụ thay đổi schema hoặc SQL Editor."
         },
         "title": "Kiểm tra quyền cơ sở dữ liệu"
+      },
+      "private": {
+        "description": "\"{{host}}\" là địa chỉ riêng tư hoặc cục bộ. Hãy dùng hostname hoặc địa chỉ IP công khai, hoặc kết nối qua đường hầm SSH.",
+        "title": "Bytebase Cloud không thể truy cập địa chỉ này"
       },
       "timeout": {
         "description-saas": "Kiểm tra kết nối không hoàn tất kịp thời. Kiểm tra firewall, cấu hình port, định tuyến mạng và liệu cơ sở dữ liệu có cho phép kết nối từ Bytebase Cloud hay không.",
@@ -1138,7 +1153,6 @@
     },
     "failed-to-connect-instance": "Kiểm tra kết nối thất bại.",
     "failed-to-connect-instance-localhost": "Địa chỉ này trỏ đến máy chủ Bytebase. Nếu cơ sở dữ liệu chạy trên máy chủ Docker, hãy thử dùng \"host.docker.internal\" làm địa chỉ host.",
-    "failed-to-connect-instance-saas-local-host": "\"{{host}}\" là địa chỉ chỉ dùng cục bộ nên Bytebase Cloud không thể dùng để truy cập cơ sở dữ liệu. Hãy nhập hostname hoặc địa chỉ IP của cơ sở dữ liệu mà Bytebase Cloud có thể truy cập.",
     "filter-instance-name": "Lọc tên phiên bản",
     "find-gcp-project-id": "Để tìm ID dự án GCP, xem",
     "find-gcp-project-id-and-instance-id": "Để tìm ID dự án GCP và ID phiên bản, xem",
@@ -1330,6 +1344,7 @@
         }
       },
       "firewall-info": "Thêm IP của Bytebase Cloud vào allowlist của firewall cơ sở dữ liệu.",
+      "firewall-info-addresses": "Cho phép Bytebase Cloud trong firewall cơ sở dữ liệu:",
       "google-cloud-sql": {
         "instance-name": "Tên kết nối phiên bản",
         "instance-name-tips": "Tên kết nối phiên bản phải giống như {{instance}}.",

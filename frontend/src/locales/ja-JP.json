@@ -1016,6 +1016,12 @@
     "connection-database": "接続先データベース",
     "connection-info": "接続情報",
     "connection-recovery": {
+      "actions": {
+        "open-sample": "サンプルインスタンスで続ける",
+        "skip-tls-verify": "証明書を検証せずにテスト",
+        "skip-tls-verify-note": "「サーバー証明書を検証」をオフにします。接続は暗号化されたままですが、Bytebase は接続先がお客様のサーバーであることを確認しなくなります。",
+        "ssh-tunnel": "SSH トンネルを設定"
+      },
       "auth": {
         "description": "ユーザー名、パスワード、トークン、または IAM 認証設定を確認してから、もう一度接続をテストしてください。",
         "steps": {
@@ -1026,6 +1032,11 @@
         "title": "データベース認証情報を確認"
       },
       "docs": "接続ガイドを開く",
+      "host-not-found": {
+        "description-saas": "Bytebase Cloud はパブリック DNS でホスト名を解決します。パブリックなホスト名または IP アドレスを使用するか、SSH トンネル経由で接続してください。",
+        "description-self-hosted": "Bytebase はこのホスト名を解決できませんでした。スペルと、Bytebase のデプロイ環境で利用できる DNS を確認してください。",
+        "title": "このホスト名を解決できません"
+      },
       "network": {
         "description-saas": "ホストとポートが Bytebase Cloud から到達可能か確認してください。ファイアウォールルール、許可リスト、プロキシ、トンネル、およびデータベースがプライベートネットワーク接続のみを許可していないかを確認してください。",
         "description-self-hosted": "ホストとポートが Bytebase のデプロイ環境から到達可能か確認してください。ファイアウォールルール、ネットワークルーティング、プロキシ、トンネル、およびデータベースが別のネットワークからの通信のみを許可していないかを確認してください。",
@@ -1045,6 +1056,10 @@
           "workflow": "スキーマ変更や SQL Editor など、利用予定のワークフローに必要な追加権限だけを付与してください。"
         },
         "title": "データベース権限を確認"
+      },
+      "private": {
+        "description": "「{{host}}」はプライベートまたはローカルのアドレスです。パブリックなホスト名または IP アドレスを使用するか、SSH トンネル経由で接続してください。",
+        "title": "Bytebase Cloud はこのアドレスに到達できません"
       },
       "timeout": {
         "description-saas": "接続テストが時間内に完了しませんでした。ファイアウォールルール、ポート設定、ネットワークルーティング、および Bytebase Cloud からの接続が許可されているかを確認してください。",
@@ -1138,7 +1153,6 @@
     },
     "failed-to-connect-instance": "接続テストに失敗しました。",
     "failed-to-connect-instance-localhost": "このアドレスは Bytebase ホストを指しています。データベースが Docker ホストで実行されている場合は、ホストアドレスに「host.docker.internal」を使用してください。",
-    "failed-to-connect-instance-saas-local-host": "「{{host}}」はローカル専用アドレスのため、Bytebase Cloud からデータベースへの接続には使用できません。Bytebase Cloud から到達可能なデータベースのホスト名または IP アドレスを入力してください。",
     "filter-instance-name": "インスタンス名のフィルタリング",
     "find-gcp-project-id": "GCP プロジェクト ID とインスタンス ID を表示するには、次を参照してください。",
     "find-gcp-project-id-and-instance-id": "GCP プロジェクト ID の確認方法については、次を参照してください",
@@ -1330,6 +1344,7 @@
         }
       },
       "firewall-info": "Bytebase Cloud の IP をデータベースファイアウォールの許可リストに追加してください。",
+      "firewall-info-addresses": "データベースファイアウォールで Bytebase Cloud を許可してください：",
       "google-cloud-sql": {
         "instance-name": "インスタンス接続名",
         "instance-name-tips": "インスタンス接続名は {{instance}} である必要があります。",

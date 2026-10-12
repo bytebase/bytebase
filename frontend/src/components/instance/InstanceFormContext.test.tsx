@@ -31,6 +31,8 @@ const mocks = vi.hoisted(() => ({
   hasInstancePermission: vi.fn(() => true),
   pushNotification: vi.fn(),
   createInstance: vi.fn(),
+  prepareSampleProjectInstance: vi.fn(),
+  captureMetric: vi.fn(),
   isSaaSMode: false,
   hasSSL: false,
   hasExtraParameters: false,
@@ -105,12 +107,17 @@ vi.mock("@/stores", () => ({
   pushNotification: mocks.pushNotification,
 }));
 
+vi.mock("@/app/analytics/provider", () => ({
+  behaviorAnalytics: { captureMetric: mocks.captureMetric },
+}));
+
 let mockEnvironmentList: { id: string; name: string }[] = [];
 
 vi.mock("@/stores/app", () => {
   const appState = () => ({
     createDataSource: vi.fn(),
     createInstance: mocks.createInstance,
+    prepareSampleProjectInstance: mocks.prepareSampleProjectInstance,
     listInstanceDatabases: mocks.listInstanceDatabases,
     updateDataSource: vi.fn(),
     hasUnifiedInstanceLicense: () => false,
@@ -792,7 +799,46 @@ describe("InstanceFormProvider", () => {
     }
   );
 
-  test("explains local-only hosts in Bytebase Cloud without Docker advice", async () => {
+  test("explains a private address in Bytebase Cloud's own words", async () => {
+    mocks.isSaaSMode = true;
+    mocks.createInstance.mockRejectedValue(
+      new ConnectError(
+        '"127.1.2.3" is a private or local address',
+        Code.InvalidArgument,
+        { "bytebase-connection-failure-category": "private_address" }
+      )
+    );
+    const onResult = vi.fn();
+    const harness = renderIntoContainer();
+
+    await harness.render(
+      <InstanceFormProvider>
+        <ConnectionProbe host="127.1.2.3" onResult={onResult} />
+      </InstanceFormProvider>
+    );
+    await act(async () => {
+      (harness.container.firstElementChild as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.pushNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "instance.connection-recovery.private.title",
+        description: "instance.connection-recovery.private.description",
+      })
+    );
+    expect(onResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        failureCategory: "private_address",
+        host: "127.1.2.3",
+      })
+    );
+
+    harness.unmount();
+  });
+
+  test("gives no Docker advice in Bytebase Cloud", async () => {
     mocks.isSaaSMode = true;
     mocks.createInstance.mockRejectedValue(new Error("connection refused"));
     const harness = renderIntoContainer();
@@ -809,18 +855,7 @@ describe("InstanceFormProvider", () => {
     });
 
     expect(mocks.pushNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        description: expect.stringContaining(
-          "instance.failed-to-connect-instance-saas-local-host"
-        ),
-      })
-    );
-    expect(mocks.pushNotification).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        description: expect.stringContaining(
-          "instance.failed-to-connect-instance-localhost"
-        ),
-      })
+      expect.objectContaining({ description: "connection refused" })
     );
 
     harness.unmount();
@@ -1573,5 +1608,153 @@ describe("InstanceFormProvider", () => {
         })
       ).toBe("true");
     });
+  });
+  describe("sample instance", () => {
+    const SampleProbe = ({ source }: { source: "connection_recovery" }) => {
+      const ctx = useInstanceFormContext();
+      return (
+        <button
+          type="button"
+          data-kind={ctx.sampleInstance?.kind ?? "none"}
+          data-pending={String(ctx.sampleInstance?.pending ?? false)}
+          data-requesting={String(ctx.state.isRequesting)}
+          onClick={() => ctx.sampleInstance?.run(source)}
+        />
+      );
+    };
+    const probe = (container: HTMLElement) =>
+      container.firstElementChild as HTMLButtonElement;
+
+    test("prepares the sample for the project and hands it to the create flow", async () => {
+      const instance = { name: "projects/demo/instances/sample" };
+      let finish: (value: typeof instance) => void = () => {};
+      mocks.prepareSampleProjectInstance.mockReturnValue(
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+      );
+      const onPrepared = vi.fn();
+      const harness = renderIntoContainer();
+      await harness.render(
+        <InstanceFormProvider
+          parent="projects/demo"
+          onSampleInstancePrepared={onPrepared}
+        >
+          <SampleProbe source="connection_recovery" />
+        </InstanceFormProvider>
+      );
+      expect(probe(harness.container).dataset.kind).toBe("prepare");
+
+      await act(async () => {
+        probe(harness.container).click();
+      });
+      expect(mocks.captureMetric).toHaveBeenCalledWith({
+        event: "sample instance requested",
+        properties: { source: "connection_recovery" },
+      });
+      expect(mocks.prepareSampleProjectInstance).toHaveBeenCalledWith(
+        "projects/demo"
+      );
+      expect(probe(harness.container).dataset.pending).toBe("true");
+      expect(probe(harness.container).dataset.requesting).toBe("true");
+
+      await act(async () => {
+        finish(instance);
+      });
+      expect(onPrepared).toHaveBeenCalledWith(instance);
+      expect(probe(harness.container).dataset.pending).toBe("false");
+      expect(probe(harness.container).dataset.requesting).toBe("false");
+      harness.unmount();
+    });
+
+    test("reports a failed preparation and releases the form", async () => {
+      mocks.prepareSampleProjectInstance.mockRejectedValue(
+        new Error("The sample instance cannot be provisioned.")
+      );
+      const onPrepared = vi.fn();
+      const harness = renderIntoContainer();
+      await harness.render(
+        <InstanceFormProvider
+          parent="projects/demo"
+          onSampleInstancePrepared={onPrepared}
+        >
+          <SampleProbe source="connection_recovery" />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        probe(harness.container).click();
+      });
+
+      expect(mocks.pushNotification).toHaveBeenCalledWith({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "instance.prepare-sample-instance-failed",
+        description: "The sample instance cannot be provisioned.",
+      });
+      expect(onPrepared).not.toHaveBeenCalled();
+      expect(probe(harness.container).dataset.requesting).toBe("false");
+      harness.unmount();
+    });
+
+    test("opens the sample that already exists", async () => {
+      const onOpen = vi.fn();
+      const harness = renderIntoContainer();
+      await harness.render(
+        <InstanceFormProvider parent="projects/demo" onOpenSampleInstance={onOpen}>
+          <SampleProbe source="connection_recovery" />
+        </InstanceFormProvider>
+      );
+      expect(probe(harness.container).dataset.kind).toBe("open");
+      await act(async () => {
+        probe(harness.container).click();
+      });
+      expect(onOpen).toHaveBeenCalled();
+      expect(mocks.prepareSampleProjectInstance).not.toHaveBeenCalled();
+      harness.unmount();
+    });
+
+    test("offers nothing when the page gave no sample option", async () => {
+      const harness = renderIntoContainer();
+      await harness.render(
+        <InstanceFormProvider parent="projects/demo">
+          <SampleProbe source="connection_recovery" />
+        </InstanceFormProvider>
+      );
+      expect(probe(harness.container).dataset.kind).toBe("none");
+      harness.unmount();
+    });
+  });
+
+  test("an SSH tunnel request turns the tunnel on and sends the user to it", async () => {
+    const TunnelProbe = () => {
+      const ctx = useInstanceFormContext();
+      return (
+        <button
+          type="button"
+          data-ssh-port={ctx.adminDataSource.sshPort ?? ""}
+          data-ssh-host={ctx.adminDataSource.sshHost ?? ""}
+          data-request={String(ctx.sshTunnelRequestEvent)}
+          onClick={() => ctx.requestSshTunnel(ctx.adminDataSource.id)}
+        />
+      );
+    };
+    const harness = renderIntoContainer();
+    await harness.render(
+      <InstanceFormProvider>
+        <TunnelProbe />
+      </InstanceFormProvider>
+    );
+    const probe = harness.container.firstElementChild as HTMLButtonElement;
+    expect(probe.dataset.sshPort).toBe("");
+    expect(probe.dataset.request).toBe("0");
+
+    await act(async () => {
+      probe.click();
+    });
+
+    expect(probe.dataset.sshPort).toBe("22");
+    expect(probe.dataset.sshHost).toBe("");
+    expect(probe.dataset.request).toBe("1");
+    harness.unmount();
   });
 });

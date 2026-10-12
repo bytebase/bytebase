@@ -1,4 +1,10 @@
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { SecretInput } from "@/components/SecretInput";
 import {
@@ -29,6 +35,8 @@ interface SshConnectionFormProps {
   disabled?: boolean;
   isCreating?: boolean;
   secretValues?: { sshPassword?: string; sshPrivateKey?: string };
+  // Changes when the form sends the user here to fill in a tunnel.
+  focusRequest?: number;
   onChange: (value: Partial<SshValue>) => void;
 }
 
@@ -51,11 +59,31 @@ export function SshConnectionForm({
   instance,
   isCreating = instance === undefined,
   secretValues,
+  focusRequest = 0,
   disabled = false,
   onChange,
 }: SshConnectionFormProps) {
   const { t } = useTranslation();
   const [sshType, setSshType] = useState<SshType>(() => guessSshType(value));
+  const hostRef = useRef<HTMLInputElement>(null);
+  const handledFocusRequest = useRef(focusRequest);
+  const focusTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // The host input mounts only once the tunnel is on. ResponsiveFormLayout
+  // then replaces its fields once after measuring itself, so focus is set
+  // after that settles, on whichever input the ref holds by then.
+  useEffect(() => {
+    if (focusRequest === handledFocusRequest.current || sshType === "NONE") {
+      return;
+    }
+    handledFocusRequest.current = focusRequest;
+    clearTimeout(focusTimer.current);
+    focusTimer.current = setTimeout(() => {
+      hostRef.current?.scrollIntoView({ block: "center" });
+      hostRef.current?.focus();
+    }, 50);
+  }, [focusRequest, sshType]);
+  useEffect(() => () => clearTimeout(focusTimer.current), []);
 
   // Sync type from props when value changes externally.
   useEffect(() => {
@@ -106,6 +134,7 @@ export function SshConnectionForm({
                   <div className="flex flex-wrap items-center gap-2">
                     <Input
                       id="sshHost"
+                      ref={hostRef}
                       className="min-w-0 flex-1"
                       value={value.sshHost}
                       disabled={disabled}

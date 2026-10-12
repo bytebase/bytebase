@@ -193,6 +193,7 @@ export function DataSourceForm({
     hideAdvancedFeatures,
     needsKeytabResupply,
     dataSourceResetEvent,
+    sshTunnelRequestEvent,
   } = ctx;
 
   const {
@@ -2202,6 +2203,7 @@ export function DataSourceForm({
                     ),
                   }}
                   instance={instance}
+                  focusRequest={sshTunnelRequestEvent}
                   disabled={!allowEdit}
                   onChange={handleSSHChange}
                 />

@@ -82,7 +82,13 @@ import {
   urlfy,
 } from "@/utils";
 import { normalizeAuthenticationType } from "./authentication";
+import {
+  CloudEgressAddresses,
+  useCloudEgressAddresses,
+} from "./CloudEgressAddresses";
 import type { EditDataSource } from "./common";
+import { isPrivateOrLocalHost } from "./connection-host";
+import { sshTunnelIsOn } from "./connection-recovery-actions";
 import {
   MongoDBConnectionStringSchemaList,
   RedisConnectionType,
@@ -946,6 +952,10 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
     resetDataSource,
     setResourceIdValidated,
     parent,
+    state,
+    hideAdvancedFeatures,
+    sampleInstance,
+    requestSshTunnel,
   } = ctx;
   const connectionDataSource = editingDataSource ?? adminDataSource;
   const {
@@ -963,6 +973,23 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
   const activatedInstanceCount = useAppStore((s) => s.activatedInstanceCount());
   const currentPlan = useAppStore((s) => s.currentPlan());
   const isSaaSMode = useAppStore((s) => s.isSaaSMode());
+  const egressAddresses = useCloudEgressAddresses();
+  // An address that already connects, such as the Cloud sample database, is
+  // left alone; the warning is for what the user is typing.
+  const storedHost = instance?.dataSources.find(
+    (ds) => ds.id === connectionDataSource.id
+  )?.host;
+  const showPrivateHostWarning =
+    isSaaSMode &&
+    allowEdit &&
+    connectionDataSource.host !== storedHost &&
+    isPrivateOrLocalHost(basicInfo.engine, connectionDataSource);
+  const canUseSshTunnel =
+    specs.showSSH &&
+    !hideAdvancedFeatures &&
+    connectionDataSource.authenticationType ===
+      DataSource_AuthenticationType.PASSWORD &&
+    !sshTunnelIsOn(connectionDataSource);
 
   const [isEngineSelectorCollapsed, setIsEngineSelectorCollapsed] =
     useState(false);
@@ -1552,8 +1579,17 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               <div className="flex flex-col gap-4">
                 {isSaaSMode && (
                   <Alert variant="info">
-                    <div className="flex flex-wrap items-center gap-x-2">
-                      <span>{t("instance.sentence.firewall-info")}</span>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      {egressAddresses.length > 0 ? (
+                        <>
+                          <span>
+                            {t("instance.sentence.firewall-info-addresses")}
+                          </span>
+                          <CloudEgressAddresses addresses={egressAddresses} />
+                        </>
+                      ) : (
+                        <span>{t("instance.sentence.firewall-info")}</span>
+                      )}
                       <LearnMoreLink href="https://docs.bytebase.com/get-started/cloud#prerequisites" />
                     </div>
                   </Alert>
@@ -1655,6 +1691,52 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                           </>
                         )}
                     </div>
+                    {showPrivateHostWarning && (
+                      <Alert
+                        variant="warning"
+                        title={t("instance.connection-recovery.private.title")}
+                        description={t(
+                          "instance.connection-recovery.private.description",
+                          { host: connectionDataSource.host.trim() }
+                        )}
+                      >
+                        {(canUseSshTunnel || sampleInstance) && (
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            {canUseSshTunnel && (
+                              <Button
+                                size="sm"
+                                appearance="outline"
+                                onClick={() =>
+                                  requestSshTunnel(connectionDataSource.id)
+                                }
+                              >
+                                {t(
+                                  "instance.connection-recovery.actions.ssh-tunnel"
+                                )}
+                              </Button>
+                            )}
+                            {sampleInstance && (
+                              <Button
+                                size="sm"
+                                appearance="outline"
+                                disabled={
+                                  sampleInstance.pending || state.isRequesting
+                                }
+                                onClick={() =>
+                                  sampleInstance.run("private_host_warning")
+                                }
+                              >
+                                {sampleInstance.kind === "open"
+                                  ? t(
+                                      "instance.connection-recovery.actions.open-sample"
+                                    )
+                                  : t("instance.use-sample-instance")}
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </Alert>
+                    )}
                     {connectionDataSource.authenticationType ===
                       DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM && (
                       <p className="text-xs text-control-light">

@@ -20,6 +20,7 @@ import type {
   Instance,
 } from "@/types/proto-es/v1/instance_service_pb";
 import {
+  DataSource_AuthenticationType,
   DataSourceType,
   InstanceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
@@ -38,6 +39,7 @@ import { isIAMAuthentication } from "./authentication";
 import {
   type ConnectionFailureCategory,
   ConnectionRecovery,
+  type ConnectionRecoveryAction,
 } from "./ConnectionRecovery";
 import type { EditDataSource } from "./common";
 import {
@@ -46,6 +48,10 @@ import {
   extractDataSourceEditState,
   hasSslConfig,
 } from "./common";
+import {
+  recoveryActionKinds,
+  sshTunnelIsOn,
+} from "./connection-recovery-actions";
 import { useInstanceFormContext } from "./InstanceFormContext";
 
 interface InstanceFormButtonsProps {
@@ -55,10 +61,21 @@ interface InstanceFormButtonsProps {
   className?: string;
 }
 
-type ConnectionFailureDialogState = {
-  open: boolean;
+type ConnectionFailure = {
   message: string;
   failureCategory: ConnectionFailureCategory;
+  host: string;
+  dataSourceId: string;
+};
+
+type ConnectionFailureDialogState = ConnectionFailure & { open: boolean };
+
+const noConnectionFailure: ConnectionFailureDialogState = {
+  open: false,
+  message: "",
+  failureCategory: "unknown",
+  host: "",
+  dataSourceId: "",
 };
 
 export function InstanceFormButtons({
@@ -96,22 +113,23 @@ export function InstanceFormButtons({
     onDismiss,
     emitShowConnectionOptions,
     parent,
+    specs,
+    hideAdvancedFeatures,
+    sampleInstance,
+    requestSshTunnel,
   } = context;
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
 
   const hasExternalSecretFeature = useAppStore((s) =>
     s.hasFeature(PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER)
   );
   const [connectionFailureDialogState, setConnectionFailureDialogState] =
-    useState<ConnectionFailureDialogState>({
-      open: false,
-      message: "",
-      failureCategory: "unknown",
-    });
+    useState<ConnectionFailureDialogState>(noConnectionFailure);
   const [connectionFailureResolver, setConnectionFailureResolver] = useState<
     ((confirmed: boolean) => void) | undefined
   >();
   const [testConnectionFailure, setTestConnectionFailure] = useState<
-    ConnectionFailureDialogState | undefined
+    ConnectionFailure | undefined
   >();
 
   const checkExternalSecretFeature = (dataSources: DataSource[]) => {
@@ -173,25 +191,16 @@ export function InstanceFormButtons({
   };
 
   const closeConnectionFailureDialog = (confirmed: boolean) => {
-    setConnectionFailureDialogState({
-      open: false,
-      message: "",
-      failureCategory: "unknown",
-    });
+    setConnectionFailureDialogState(noConnectionFailure);
     connectionFailureResolver?.(confirmed);
     setConnectionFailureResolver(undefined);
   };
 
   const confirmContinueWithConnectionFailure = async (
-    message: string,
-    failureCategory: ConnectionFailureCategory
+    failure: ConnectionFailure
   ): Promise<boolean> => {
     return await new Promise<boolean>((resolve) => {
-      setConnectionFailureDialogState({
-        open: true,
-        message,
-        failureCategory,
-      });
+      setConnectionFailureDialogState({ ...failure, open: true });
       setConnectionFailureResolver(() => resolve);
     });
   };
@@ -288,10 +297,10 @@ export function InstanceFormButtons({
       doCreate();
     } else {
       maybeOpenConnectionOptions(editingDS);
-      const confirmed = await confirmContinueWithConnectionFailure(
-        testResult.message,
-        testResult.failureCategory
-      );
+      const confirmed = await confirmContinueWithConnectionFailure({
+        ...testResult,
+        dataSourceId: editingDS.id,
+      });
       if (confirmed) {
         doCreate();
       }
@@ -394,10 +403,10 @@ export function InstanceFormButtons({
       const testResult = await testConnection(editState, true);
       if (!testResult.success) {
         maybeOpenConnectionOptions(editState);
-        const continueAnyway = await confirmContinueWithConnectionFailure(
-          testResult.message,
-          testResult.failureCategory
-        );
+        const continueAnyway = await confirmContinueWithConnectionFailure({
+          ...testResult,
+          dataSourceId: editState.id,
+        });
         if (!continueAnyway) return true;
       }
 
@@ -435,10 +444,10 @@ export function InstanceFormButtons({
           const testResult = await testConnection(editingDS, true);
           if (!testResult.success) {
             maybeOpenConnectionOptions(editingDS);
-            const continueAnyway = await confirmContinueWithConnectionFailure(
-              testResult.message,
-              testResult.failureCategory
-            );
+            const continueAnyway = await confirmContinueWithConnectionFailure({
+              ...testResult,
+              dataSourceId: editingDS.id,
+            });
             if (!continueAnyway) return true;
           }
           pendingRequestRunners.push(() =>
@@ -495,35 +504,107 @@ export function InstanceFormButtons({
     }
   };
 
+  const runConnectionTest = async (dataSource: EditDataSource) => {
+    setTestConnectionFailure(undefined);
+    const testResult = await testConnection(dataSource, false);
+    if (!testResult.success) {
+      setTestConnectionFailure({ ...testResult, dataSourceId: dataSource.id });
+      maybeOpenConnectionOptions(dataSource);
+    }
+  };
+
   const testConnectionForCurrentEditingDS = async () => {
     if (!editingDataSource) return;
-    setTestConnectionFailure(undefined);
     behaviorAnalytics.captureMetric(
       createBehaviorMetric("instance connection test clicked", {
         routeId: router.currentRoute.value.name?.toString(),
       })
     );
+    await runConnectionTest(editingDataSource);
+  };
 
-    const testResult = await testConnection(editingDataSource, false);
-    if (!testResult.success) {
-      setTestConnectionFailure({
-        open: false,
-        message: testResult.message,
-        failureCategory: testResult.failureCategory,
-      });
-      maybeOpenConnectionOptions(editingDataSource);
-    }
+  // Every action leaves the Create or Update in progress: the user sees the
+  // changed setting and its test result before saving it.
+  const recoveryActions = (
+    failure: ConnectionFailure
+  ): ConnectionRecoveryAction[] => {
+    const dataSource = [adminDataSource, ...readonlyDataSourceList].find(
+      (ds) => ds.id === failure.dataSourceId
+    );
+    if (!dataSource || !allowEdit) return [];
+    const run = (action: () => void) => () => {
+      closeConnectionFailureDialog(false);
+      setTestConnectionFailure(undefined);
+      action();
+    };
+    return recoveryActionKinds({
+      category: failure.failureCategory,
+      message: failure.message,
+      isSaaSMode,
+      canUseSshTunnel:
+        specs.showSSH &&
+        !hideAdvancedFeatures &&
+        dataSource.authenticationType ===
+          DataSource_AuthenticationType.PASSWORD &&
+        !sshTunnelIsOn(dataSource),
+      hasSampleInstance: !!sampleInstance,
+      verifiesServerCertificate:
+        dataSource.useSsl && dataSource.verifyTlsCertificate,
+    }).map((kind): ConnectionRecoveryAction => {
+      switch (kind) {
+        case "ssh-tunnel":
+          return {
+            key: kind,
+            label: t("instance.connection-recovery.actions.ssh-tunnel"),
+            onClick: run(() => requestSshTunnel(dataSource.id)),
+          };
+        case "sample":
+          return {
+            key: kind,
+            label:
+              sampleInstance?.kind === "open"
+                ? t("instance.connection-recovery.actions.open-sample")
+                : t("instance.use-sample-instance"),
+            disabled: sampleInstance?.pending || state.isRequesting,
+            onClick: run(() => sampleInstance?.run("connection_recovery")),
+          };
+        case "skip-tls-verify":
+          return {
+            key: kind,
+            label: t("instance.connection-recovery.actions.skip-tls-verify"),
+            note: t(
+              "instance.connection-recovery.actions.skip-tls-verify-note"
+            ),
+            disabled: state.isRequesting || state.isTestingConnection,
+            onClick: run(() => {
+              const unverified = { ...dataSource, verifyTlsCertificate: false };
+              setDataSourceEditState((prev) => ({
+                ...prev,
+                dataSources: prev.dataSources.map((ds) =>
+                  ds.id === unverified.id ? unverified : ds
+                ),
+              }));
+              void runConnectionTest(unverified);
+            }),
+          };
+      }
+    });
   };
 
   const testConnectionFeedback = testConnectionFailure && (
     <div className="border-t border-block-border px-4 py-3 sm:px-6">
       <ConnectionRecovery
         category={testConnectionFailure.failureCategory}
+        host={testConnectionFailure.host}
+        actions={recoveryActions(testConnectionFailure)}
         className="max-w-3xl"
       />
-      <p className="mt-2 whitespace-pre-wrap break-all text-sm text-error">
-        {testConnectionFailure.message}
-      </p>
+      {/* The private-address panel already says all the server said. */}
+      {testConnectionFailure.failureCategory !== "private_address" && (
+        <p className="mt-2 whitespace-pre-wrap break-all text-sm text-error">
+          {testConnectionFailure.message}
+        </p>
+      )}
     </div>
   );
 
@@ -547,6 +628,8 @@ export function InstanceFormButtons({
         </AlertDialogTitle>
         <ConnectionRecovery
           category={connectionFailureDialogState.failureCategory}
+          host={connectionFailureDialogState.host}
+          actions={recoveryActions(connectionFailureDialogState)}
           className="my-2"
         />
         <AlertDialogDescription className="whitespace-pre-wrap break-all">

@@ -1016,6 +1016,12 @@
     "connection-database": "Base de datos de conexión",
     "connection-info": "Información de conexión",
     "connection-recovery": {
+      "actions": {
+        "open-sample": "Continuar con la instancia de ejemplo",
+        "skip-tls-verify": "Probar sin verificar el certificado",
+        "skip-tls-verify-note": "Desactiva \"Verificar certificado del servidor\". La conexión sigue cifrada, pero Bytebase ya no confirma que ha llegado a tu servidor.",
+        "ssh-tunnel": "Configurar un túnel SSH"
+      },
       "auth": {
         "description": "Verifica el usuario, la contraseña, el token o la configuración de autenticación IAM y vuelve a probar la conexión.",
         "steps": {
@@ -1026,6 +1032,11 @@
         "title": "Revisar credenciales de base de datos"
       },
       "docs": "Abrir guía de conexión",
+      "host-not-found": {
+        "description-saas": "Bytebase Cloud resuelve los nombres de host en el DNS público. Usa un nombre de host o una dirección IP públicos, o conéctate mediante un túnel SSH.",
+        "description-self-hosted": "Bytebase no pudo resolver este nombre de host. Revisa cómo está escrito y el DNS disponible para tu despliegue de Bytebase.",
+        "title": "Este nombre de host no se resuelve"
+      },
       "network": {
         "description-saas": "Confirma que el host y el puerto sean accesibles desde Bytebase Cloud. Revisa reglas de firewall, listas de permitidos, proxies, túneles y si la base de datos solo acepta tráfico de red privada.",
         "description-self-hosted": "Confirma que el host y el puerto sean accesibles desde tu despliegue de Bytebase. Revisa el firewall, las rutas de red, los proxies, los túneles y si la base de datos solo acepta tráfico de otra red.",
@@ -1045,6 +1056,10 @@
           "workflow": "Concede privilegios adicionales solo para los flujos que planeas usar, como cambios de esquema o SQL Editor."
         },
         "title": "Revisar permisos de base de datos"
+      },
+      "private": {
+        "description": "\"{{host}}\" es una dirección privada o local. Usa un nombre de host o una dirección IP públicos, o conéctate mediante un túnel SSH.",
+        "title": "Bytebase Cloud no puede acceder a esta dirección"
       },
       "timeout": {
         "description-saas": "La prueba de conexión no se completó a tiempo. Revisa reglas de firewall, configuración de puertos, rutas de red y si la base de datos permite conexiones desde Bytebase Cloud.",
@@ -1138,7 +1153,6 @@
     },
     "failed-to-connect-instance": "La prueba de conexión falló.",
     "failed-to-connect-instance-localhost": "Esta dirección apunta al host de Bytebase. Si la base de datos se ejecuta en el host de Docker, prueba \"host.docker.internal\" como dirección del host.",
-    "failed-to-connect-instance-saas-local-host": "\"{{host}}\" es una dirección local que Bytebase Cloud no puede usar para acceder a tu base de datos. Introduce un nombre de host o una dirección IP accesible desde Bytebase Cloud.",
     "filter-instance-name": "Filtrar nombre de instancia",
     "find-gcp-project-id": "Para encontrar el ID del proyecto de GCP, consulta",
     "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
@@ -1330,6 +1344,7 @@
         }
       },
       "firewall-info": "Agrega la IP de Bytebase Cloud a la lista permitida del firewall de la base de datos.",
+      "firewall-info-addresses": "Permite Bytebase Cloud en el firewall de la base de datos:",
       "google-cloud-sql": {
         "instance-name": "Nombre de conexión de instancia",
         "instance-name-tips": "El nombre de la conexión de la instancia debería ser {{instance}}.",

@@ -1016,6 +1016,12 @@
     "connection-database": "Connection database",
     "connection-info": "Connection info",
     "connection-recovery": {
+      "actions": {
+        "open-sample": "Continue with the sample instance",
+        "skip-tls-verify": "Test without verifying the certificate",
+        "skip-tls-verify-note": "Turns off Verify server certificate. The connection stays encrypted, but Bytebase no longer confirms it reached your server.",
+        "ssh-tunnel": "Set up an SSH tunnel"
+      },
       "auth": {
         "description": "Verify the username, password, token, or IAM authentication settings, then test the connection again.",
         "steps": {
@@ -1026,6 +1032,11 @@
         "title": "Check database credentials"
       },
       "docs": "Open connection guide",
+      "host-not-found": {
+        "description-saas": "Bytebase Cloud looks up hostnames in public DNS. Use a public hostname or IP address, or connect through an SSH tunnel.",
+        "description-self-hosted": "Bytebase couldn't resolve this hostname. Check the spelling and the DNS available to your Bytebase deployment.",
+        "title": "This hostname doesn't resolve"
+      },
       "network": {
         "description-saas": "Confirm the host and port are reachable from Bytebase Cloud. Check firewall rules, allowlists, proxies, tunnels, and whether the database only accepts private network traffic.",
         "description-self-hosted": "Confirm the host and port are reachable from your Bytebase deployment. Check firewall rules, network routing, proxies, tunnels, and whether the database only accepts traffic from another network.",
@@ -1045,6 +1056,10 @@
           "workflow": "Grant extra privileges only for the workflows you plan to run, such as schema change or SQL Editor."
         },
         "title": "Check database permissions"
+      },
+      "private": {
+        "description": "\"{{host}}\" is a private or local address. Use a public hostname or IP address, or connect through an SSH tunnel.",
+        "title": "Bytebase Cloud can't reach this address"
       },
       "timeout": {
         "description-saas": "The connection test did not complete in time. Check firewall rules, port settings, network routing, and whether the database allows connections from Bytebase Cloud.",
@@ -1138,7 +1153,6 @@
     },
     "failed-to-connect-instance": "Connection test failed.",
     "failed-to-connect-instance-localhost": "This address points to the Bytebase host. If the database runs on the Docker host, try \"host.docker.internal\" as the host address.",
-    "failed-to-connect-instance-saas-local-host": "\"{{host}}\" is a local-only address that Bytebase Cloud cannot use to reach your database. Enter a database hostname or IP address reachable from Bytebase Cloud.",
     "filter-instance-name": "Filter instance name",
     "find-gcp-project-id": "To find GCP Project ID, see",
     "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
@@ -1330,6 +1344,7 @@
         }
       },
       "firewall-info": "Allowlist the Bytebase Cloud IP in your database firewall.",
+      "firewall-info-addresses": "Allow Bytebase Cloud in your database firewall:",
       "google-cloud-sql": {
         "instance-name": "Instance Connection Name",
         "instance-name-tips": "The instance connection name should look like {{instance}}.",

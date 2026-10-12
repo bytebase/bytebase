@@ -106,4 +106,57 @@ describe("SshConnectionForm", () => {
       root.unmount();
     });
   });
+  test("a focus request waits for the tunnel fields, then focuses the host", () => {
+    function Requested({ focusRequest }: { focusRequest: number }) {
+      const [value, setValue] = useState<SshValue>(emptySshValue);
+      return (
+        <>
+          <button
+            type="button"
+            data-testid="enable"
+            onClick={() => setValue((prev) => ({ ...prev, sshPort: "22" }))}
+          />
+          <SshConnectionForm
+            value={value}
+            focusRequest={focusRequest}
+            onChange={(partial) => setValue((prev) => ({ ...prev, ...partial }))}
+          />
+        </>
+      );
+    }
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    const { container, root } = mount(<Requested focusRequest={0} />);
+
+    // The request arrives while the tunnel is still off.
+    act(() => {
+      root.render(<Requested focusRequest={1} />);
+    });
+    expect(container.querySelector("#sshHost")).toBeNull();
+
+    vi.useFakeTimers();
+    try {
+      act(() => {
+        (
+          container.querySelector("[data-testid='enable']") as HTMLButtonElement
+        ).click();
+      });
+      // The fields have just mounted and the layout may still replace them.
+      expect(document.activeElement).not.toBe(
+        container.querySelector("#sshHost")
+      );
+
+      act(() => {
+        vi.advanceTimersByTime(50);
+      });
+      expect(document.activeElement).toBe(container.querySelector("#sshHost"));
+      expect(scrollIntoView).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });

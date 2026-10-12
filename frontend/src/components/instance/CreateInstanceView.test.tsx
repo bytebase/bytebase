@@ -1,5 +1,4 @@
 import { act } from "react";
-import { Code, ConnectError } from "@connectrpc/connect";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -11,8 +10,8 @@ const mocks = vi.hoisted(() => ({
   useUnsavedChangesGuard: vi.fn(),
   onDismiss: vi.fn(),
   onCreated: vi.fn(),
-  prepareSampleProjectInstance: vi.fn(),
-  captureMetric: vi.fn(),
+  routerPush: vi.fn(),
+  runSampleInstance: vi.fn(),
   pushNotification: vi.fn(),
   isSaaSMode: false,
   sampleAvailable: true,
@@ -24,8 +23,10 @@ const mocks = vi.hoisted(() => ({
   instanceFormContext: {
     basicInfo: { engine: 0 },
     state: { isRequesting: false },
-    setState: vi.fn(),
     valueChanged: false,
+    sampleInstance: undefined as
+      | { kind: "prepare" | "open"; pending: boolean; run: () => void }
+      | undefined,
   },
 }));
 
@@ -63,8 +64,8 @@ vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
   useUnsavedChangesGuard: mocks.useUnsavedChangesGuard,
 }));
 
-vi.mock("@/app/analytics/provider", () => ({
-  behaviorAnalytics: { captureMetric: mocks.captureMetric },
+vi.mock("@/app/router", () => ({
+  router: { push: mocks.routerPush },
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -79,7 +80,6 @@ vi.mock("@/stores/app", () => ({
           },
         },
         totalInstanceCount: () => mocks.totalInstanceCount,
-        prepareSampleProjectInstance: mocks.prepareSampleProjectInstance,
       }),
     {
       getState: () => ({
@@ -142,23 +142,10 @@ beforeEach(async () => {
   mocks.totalInstanceCount = 0;
   mocks.instanceCountLimit = 10;
   mocks.activatedInstanceCount = 0;
-  mocks.prepareSampleProjectInstance.mockResolvedValue({
-    name: "projects/demo/instances/sample",
-  });
   mocks.providerProps = undefined;
   mocks.instanceFormContext.state.isRequesting = false;
-  mocks.instanceFormContext.setState.mockImplementation(
-    (
-      updater: (state: { isRequesting: boolean }) => {
-        isRequesting: boolean;
-      }
-    ) => {
-      mocks.instanceFormContext.state = updater(
-        mocks.instanceFormContext.state
-      );
-    }
-  );
   mocks.instanceFormContext.valueChanged = false;
+  mocks.instanceFormContext.sampleInstance = undefined;
   globalThis.ResizeObserver = class ResizeObserver {
     observe() {}
     unobserve() {}
@@ -292,6 +279,8 @@ describe("CreateInstanceView", () => {
     expect(mocks.providerProps).toEqual({
       parent: "projects/demo",
       project,
+      onSampleInstancePrepared: mocks.onCreated,
+      onOpenSampleInstance: undefined,
     });
 
     act(() => {
@@ -329,296 +318,148 @@ describe("CreateInstanceView", () => {
     });
   });
 
-  test("prepares the sample instance and follows the existing created flow", async () => {
-    mocks.isSaaSMode = true;
-    const instance = { name: "projects/demo/instances/sample" };
-    mocks.prepareSampleProjectInstance.mockResolvedValue(instance);
+  const renderView = (parent?: string) => {
     const container = document.createElement("div");
     const root = createRoot(container);
-
     act(() => {
       root.render(
         <CreateInstanceView
-          parent="projects/demo"
+          parent={parent}
           onDismiss={mocks.onDismiss}
           onCreated={mocks.onCreated}
         />
       );
     });
+    return { container, unmount: () => act(() => root.unmount()) };
+  };
 
-    const button = [...container.querySelectorAll("button")].find((element) =>
-      element.textContent?.includes("Use sample instance")
-    ) as HTMLButtonElement;
-    await act(async () => {
-      button.click();
+  const sampleButton = (container: HTMLElement) =>
+    [...container.querySelectorAll("button")].find((element) =>
+      /sample/i.test(element.textContent ?? "")
+    ) as HTMLButtonElement | undefined;
+
+  describe("which sample option the form provider is given", () => {
+    test("a project with no instance may prepare its sample", () => {
+      mocks.isSaaSMode = true;
+      const view = renderView("projects/demo");
+      expect(mocks.providerProps?.onSampleInstancePrepared).toBe(
+        mocks.onCreated
+      );
+      expect(mocks.providerProps?.onOpenSampleInstance).toBeUndefined();
+      view.unmount();
     });
 
-    expect(mocks.prepareSampleProjectInstance).toHaveBeenCalledWith(
-      "projects/demo"
-    );
-    expect(mocks.captureMetric).toHaveBeenCalledWith({
-      event: "sample instance requested",
-      properties: { source: "instance_creation" },
+    test("none when the sample target is unavailable", () => {
+      mocks.sampleAvailable = false;
+      const view = renderView("projects/demo");
+      expect(mocks.providerProps?.onSampleInstancePrepared).toBeUndefined();
+      view.unmount();
     });
-    expect(mocks.captureMetric.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.prepareSampleProjectInstance.mock.invocationCallOrder[0]
-    );
-    expect(mocks.onCreated).toHaveBeenCalledWith(instance);
 
-    act(() => {
-      root.unmount();
+    test("none when the workspace already has an instance", () => {
+      mocks.totalInstanceCount = 1;
+      const view = renderView("projects/demo");
+      expect(mocks.providerProps?.onSampleInstancePrepared).toBeUndefined();
+      view.unmount();
+    });
+
+    test("none for workspace-owned instance creation", () => {
+      const view = renderView();
+      expect(mocks.providerProps?.onSampleInstancePrepared).toBeUndefined();
+      view.unmount();
+    });
+
+    test("a project-owned sample that exists is opened, not prepared again", () => {
+      mocks.sampleInstances = [{ instance: "projects/demo/instances/sample" }];
+      const view = renderView("projects/other");
+      expect(mocks.providerProps?.onSampleInstancePrepared).toBeUndefined();
+
+      (mocks.providerProps?.onOpenSampleInstance as () => void)();
+      expect(mocks.routerPush).toHaveBeenCalledWith({
+        name: "workspace.project.database",
+        params: { projectId: "demo" },
+      });
+      view.unmount();
+    });
+
+    test("a workspace-owned sample has no project to open", () => {
+      mocks.sampleInstances = [{ instance: "instances/sample" }];
+      const view = renderView("projects/demo");
+      expect(mocks.providerProps?.onSampleInstancePrepared).toBeUndefined();
+      expect(mocks.providerProps?.onOpenSampleInstance).toBeUndefined();
+      view.unmount();
     });
   });
 
-  test("hides sample instance creation when the target is unavailable", () => {
-    mocks.isSaaSMode = true;
-    mocks.sampleAvailable = false;
-    const container = document.createElement("div");
-    const root = createRoot(container);
+  describe("the sample offer above the form", () => {
+    const prepare = (pending = false) => ({
+      kind: "prepare" as const,
+      pending,
+      run: mocks.runSampleInstance,
+    });
 
-    act(() => {
-      root.render(
-        <CreateInstanceView
-          parent="projects/demo"
-          onDismiss={mocks.onDismiss}
-          onCreated={mocks.onCreated}
-        />
+    test("is absent when the provider has no sample to prepare", () => {
+      const view = renderView("projects/demo");
+      expect(sampleButton(view.container)).toBeUndefined();
+      view.unmount();
+    });
+
+    test("is absent when the sample only needs opening", () => {
+      mocks.instanceFormContext.sampleInstance = {
+        ...prepare(),
+        kind: "open",
+      };
+      const view = renderView("projects/demo");
+      expect(sampleButton(view.container)).toBeUndefined();
+      view.unmount();
+    });
+
+    test("prepares the sample from the instance creation page", () => {
+      mocks.instanceFormContext.sampleInstance = prepare();
+      const view = renderView("projects/demo");
+      act(() => sampleButton(view.container)?.click());
+      expect(mocks.runSampleInstance).toHaveBeenCalledWith("instance_creation");
+      view.unmount();
+    });
+
+    test("is disabled while preparation is running", () => {
+      mocks.instanceFormContext.sampleInstance = prepare(true);
+      const view = renderView("projects/demo");
+      expect(sampleButton(view.container)).toBeDisabled();
+      expect(sampleButton(view.container)).toHaveTextContent(
+        "Preparing Sample Project Instance…"
       );
+      view.unmount();
     });
 
-    expect(container.textContent).not.toContain("Use sample instance");
-
-    act(() => {
-      root.unmount();
+    test("is disabled while regular creation is running", () => {
+      mocks.instanceFormContext.sampleInstance = prepare();
+      mocks.instanceFormContext.state.isRequesting = true;
+      const view = renderView("projects/demo");
+      expect(sampleButton(view.container)).toBeDisabled();
+      view.unmount();
     });
-  });
 
-  test("hides sample instance creation when a sample was already provisioned", () => {
-    mocks.isSaaSMode = true;
-    mocks.sampleInstances = [{ instance: "instances/sample" }];
-    const container = document.createElement("div");
-    const root = createRoot(container);
+    test("is permanent for a self-hosted project", () => {
+      mocks.instanceFormContext.sampleInstance = prepare();
+      const view = renderView("projects/demo");
+      expect(view.container.textContent).toContain("Use sample instance");
+      expect(view.container.textContent).toContain("ready-to-use database.");
+      expect(view.container.textContent).not.toContain("7 days");
+      view.unmount();
+    });
 
-    act(() => {
-      root.render(
-        <CreateInstanceView
-          parent="projects/demo"
-          onDismiss={mocks.onDismiss}
-          onCreated={mocks.onCreated}
-        />
+    test("keeps seven-day copy for SaaS", () => {
+      mocks.isSaaSMode = true;
+      mocks.instanceFormContext.sampleInstance = prepare();
+      const view = renderView("projects/demo");
+      expect(view.container.textContent).toContain(
+        "Use sample instance (Available for 7 days)"
       );
-    });
-
-    expect(container.textContent).not.toContain("Use sample instance");
-
-    act(() => {
-      root.unmount();
-    });
-  });
-
-  test("hides sample instance creation when the workspace has an instance", () => {
-    mocks.isSaaSMode = true;
-    mocks.totalInstanceCount = 1;
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(
-        <CreateInstanceView
-          parent="projects/demo"
-          onDismiss={mocks.onDismiss}
-          onCreated={mocks.onCreated}
-        />
+      expect(view.container.textContent).toContain(
+        "ready-to-use database for 7 days."
       );
-    });
-
-    expect(container.textContent).not.toContain("Use sample instance");
-
-    act(() => {
-      root.unmount();
-    });
-  });
-
-  test("disables the sample action while preparation is running", async () => {
-    mocks.isSaaSMode = true;
-    let resolvePreparation: (instance: { name: string }) => void;
-    mocks.prepareSampleProjectInstance.mockReturnValue(
-      new Promise((resolve) => {
-        resolvePreparation = resolve;
-      })
-    );
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(
-        <CreateInstanceView
-          parent="projects/demo"
-          onDismiss={mocks.onDismiss}
-          onCreated={mocks.onCreated}
-        />
-      );
-    });
-
-    const button = [...container.querySelectorAll("button")].find((element) =>
-      element.textContent?.includes("Use sample instance")
-    ) as HTMLButtonElement;
-    act(() => {
-      button.click();
-    });
-
-    expect(button).toBeDisabled();
-    expect(button).toHaveTextContent("Preparing Sample Project Instance…");
-    expect(
-      container.querySelector("[data-testid='instance-form-buttons']")
-    ).toBeDisabled();
-
-    await act(async () => {
-      resolvePreparation!({ name: "projects/demo/instances/sample" });
-    });
-
-    act(() => {
-      root.unmount();
-    });
-  });
-
-  test("disables the sample action while regular creation is running", () => {
-    mocks.isSaaSMode = true;
-    mocks.instanceFormContext.state.isRequesting = true;
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(
-        <CreateInstanceView
-          parent="projects/demo"
-          onDismiss={mocks.onDismiss}
-          onCreated={mocks.onCreated}
-        />
-      );
-    });
-
-    const button = [...container.querySelectorAll("button")].find((element) =>
-      element.textContent?.includes("Use sample instance")
-    ) as HTMLButtonElement;
-    expect(button).toBeDisabled();
-
-    act(() => {
-      root.unmount();
-    });
-  });
-
-  test("shows localized feedback when sample preparation fails", async () => {
-    mocks.isSaaSMode = true;
-    mocks.prepareSampleProjectInstance.mockRejectedValue(
-      new ConnectError(
-        "The sample instance cannot be provisioned. Try again later.",
-        Code.Internal
-      )
-    );
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(
-        <CreateInstanceView
-          parent="projects/demo"
-          onDismiss={mocks.onDismiss}
-          onCreated={mocks.onCreated}
-        />
-      );
-    });
-
-    const button = [...container.querySelectorAll("button")].find((element) =>
-      element.textContent?.includes("Use sample instance")
-    ) as HTMLButtonElement;
-    await act(async () => {
-      button.click();
-    });
-
-    expect(mocks.pushNotification).toHaveBeenCalledWith({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "Failed to prepare Sample Project Instance.",
-      description:
-        "[internal] The sample instance cannot be provisioned. Try again later.",
-    });
-    expect(mocks.captureMetric).toHaveBeenCalledWith({
-      event: "sample instance requested",
-      properties: { source: "instance_creation" },
-    });
-
-    act(() => {
-      root.unmount();
-    });
-  });
-
-  test("shows permanent sample creation for a self-hosted project", () => {
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(
-        <CreateInstanceView
-          parent="projects/demo"
-          onDismiss={mocks.onDismiss}
-          onCreated={mocks.onCreated}
-        />
-      );
-    });
-
-    expect(container.textContent).toContain("Use sample instance");
-    expect(container.textContent).toContain("ready-to-use database.");
-    expect(container.textContent).not.toContain("7 days");
-
-    act(() => {
-      root.unmount();
-    });
-  });
-
-  test("keeps seven-day sample copy for SaaS", () => {
-    mocks.isSaaSMode = true;
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(
-        <CreateInstanceView
-          parent="projects/demo"
-          onDismiss={mocks.onDismiss}
-          onCreated={mocks.onCreated}
-        />
-      );
-    });
-
-    expect(container.textContent).toContain(
-      "Use sample instance (Available for 7 days)"
-    );
-    expect(container.textContent).toContain("ready-to-use database for 7 days.");
-
-    act(() => {
-      root.unmount();
-    });
-  });
-
-  test("keeps sample creation out of workspace-owned instance creation", () => {
-    mocks.isSaaSMode = true;
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(
-        <CreateInstanceView
-          onDismiss={mocks.onDismiss}
-          onCreated={mocks.onCreated}
-        />
-      );
-    });
-
-    expect(container.textContent).not.toContain("Use sample instance");
-
-    act(() => {
-      root.unmount();
+      view.unmount();
     });
   });
 });

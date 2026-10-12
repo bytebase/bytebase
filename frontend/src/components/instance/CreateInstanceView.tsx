@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { createBehaviorMetric } from "@/app/analytics/behavior";
-import { behaviorAnalytics } from "@/app/analytics/provider";
+import { router } from "@/app/router";
+import { PROJECT_V1_ROUTE_DATABASES } from "@/app/router/handles";
 import {
   InfoPanel,
   InfoPanelContent,
@@ -20,7 +20,6 @@ import { useAppStore } from "@/stores/app";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { isValidProjectName } from "@/types/v1/project";
-import { extractGrpcErrorMessage } from "@/utils/connect";
 
 const MIN_DOCKED_MAIN_WIDTH = 700;
 const DOCKED_INFO_RAIL_WIDTH = 500;
@@ -46,16 +45,27 @@ export function CreateInstanceView({
   const sampleAvailable = useAppStore(
     (state) => state.serverInfo?.sample?.available ?? false
   );
-  const sampleProvisioned = useAppStore(
-    (state) => (state.serverInfo?.sample?.instances.length ?? 0) > 0
+  const sampleInstanceName = useAppStore(
+    (state) => state.serverInfo?.sample?.instances[0]?.instance
   );
   const totalInstanceCount = useAppStore((state) => state.totalInstanceCount());
   const canPrepareSampleProjectInstance =
     sampleAvailable &&
-    !sampleProvisioned &&
+    !sampleInstanceName &&
     totalInstanceCount === 0 &&
     !!parent &&
     isValidProjectName(parent);
+  // A project-owned sample is reached through its project's databases.
+  const sampleProjectId = /^projects\/([^/]+)\/instances\//.exec(
+    sampleInstanceName ?? ""
+  )?.[1];
+  const openSampleInstance = useCallback(() => {
+    if (!sampleProjectId) return;
+    router.push({
+      name: PROJECT_V1_ROUTE_DATABASES,
+      params: { projectId: sampleProjectId },
+    });
+  }, [sampleProjectId]);
 
   // Check instance limit on mount
   useEffect(() => {
@@ -79,12 +89,14 @@ export function CreateInstanceView({
         parent={parent}
         project={project}
         onDismiss={onDismiss}
+        onSampleInstancePrepared={
+          canPrepareSampleProjectInstance ? onCreated : undefined
+        }
+        onOpenSampleInstance={sampleProjectId ? openSampleInstance : undefined}
       >
         <CreateInstanceFormInner
-          canPrepareSampleProjectInstance={canPrepareSampleProjectInstance}
           isSaaSMode={isSaaSMode}
           onCreated={onCreated}
-          parent={parent}
         />
       </InstanceFormProvider>
     </div>
@@ -92,26 +104,15 @@ export function CreateInstanceView({
 }
 
 function CreateInstanceFormInner({
-  canPrepareSampleProjectInstance,
   isSaaSMode,
   onCreated,
-  parent,
 }: {
-  canPrepareSampleProjectInstance: boolean;
   isSaaSMode: boolean;
   onCreated: (instance: Instance) => void;
-  parent?: string;
 }) {
   const { t } = useTranslation();
-  const { basicInfo, state, setState } = useInstanceFormContext();
+  const { basicInfo, state, sampleInstance } = useInstanceFormContext();
   const currentEngine = basicInfo.engine;
-  const prepareSampleProjectInstance = useAppStore(
-    (state) => state.prepareSampleProjectInstance
-  );
-  const [
-    isPreparingSampleProjectInstance,
-    setIsPreparingSampleProjectInstance,
-  ] = useState(false);
 
   const [activeInfoSection, setActiveInfoSection] = useState<
     InfoSection | undefined
@@ -177,40 +178,6 @@ function CreateInstanceFormInner({
     setActiveInfoSection(section);
   }, []);
 
-  const handlePrepareSampleProjectInstance = useCallback(async () => {
-    if (!parent || isPreparingSampleProjectInstance || state.isRequesting) {
-      return;
-    }
-    behaviorAnalytics.captureMetric(
-      createBehaviorMetric("sample instance requested", {
-        properties: { source: "instance_creation" },
-      })
-    );
-    setIsPreparingSampleProjectInstance(true);
-    setState((prev) => ({ ...prev, isRequesting: true }));
-    try {
-      onCreated(await prepareSampleProjectInstance(parent));
-    } catch (error) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("instance.prepare-sample-instance-failed"),
-        description: extractGrpcErrorMessage(error),
-      });
-    } finally {
-      setIsPreparingSampleProjectInstance(false);
-      setState((prev) => ({ ...prev, isRequesting: false }));
-    }
-  }, [
-    isPreparingSampleProjectInstance,
-    onCreated,
-    parent,
-    prepareSampleProjectInstance,
-    setState,
-    state.isRequesting,
-    t,
-  ]);
-
   return (
     <div
       ref={layoutRef}
@@ -222,7 +189,7 @@ function CreateInstanceFormInner({
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-auto">
           <ResponsiveFormLayout className="px-4 py-4 sm:px-6 gap-y-4 flex flex-col">
-            {canPrepareSampleProjectInstance && (
+            {sampleInstance?.kind === "prepare" && (
               <Alert
                 title={t("instance.sample-project-instance-title")}
                 description={
@@ -235,12 +202,10 @@ function CreateInstanceFormInner({
               >
                 <Button
                   className="mt-3"
-                  disabled={
-                    isPreparingSampleProjectInstance || state.isRequesting
-                  }
-                  onClick={handlePrepareSampleProjectInstance}
+                  disabled={sampleInstance.pending || state.isRequesting}
+                  onClick={() => sampleInstance.run("instance_creation")}
                 >
-                  {isPreparingSampleProjectInstance
+                  {sampleInstance.pending
                     ? t("instance.preparing-sample-instance")
                     : isSaaSMode
                       ? t("instance.use-sample-instance")

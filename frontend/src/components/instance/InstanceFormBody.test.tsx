@@ -29,7 +29,9 @@ const mocks = vi.hoisted(() => ({
   createInstance: vi.fn(),
   isSaaSMode: false,
   hasSSL: false,
+  hasSSH: false,
   hasExtraParameters: false,
+  egressIpAddresses: [] as string[],
   listInstanceDatabases: vi.fn(async () => ({
     databases: ["app", "analytics"],
   })),
@@ -50,6 +52,11 @@ vi.mock("@/components/ResourceIdField", () => ({
   ResourceIdField: () => null,
 }));
 vi.mock("@/components/RouterLink", () => ({ RouterLink: () => null }));
+vi.mock("@/components/ui/copy-button", () => ({
+  CopyButton: ({ content }: { content: string }) => (
+    <button type="button" data-copy={content} />
+  ),
+}));
 vi.mock("./DataSourceForm", () => ({
   DataSourceForm: ({
     dataSource,
@@ -147,6 +154,7 @@ vi.mock("@/stores/app", () => {
     activatedInstanceCount: () => 0,
     currentPlan: () => 1,
     isSaaSMode: () => mocks.isSaaSMode,
+    serverInfo: { egressIpAddresses: mocks.egressIpAddresses },
     environmentList: mockEnvironmentList,
   });
   return {
@@ -173,7 +181,7 @@ vi.mock("@/utils", () => ({
   RE_GCP_PROJECT_ID: /^[a-z-]+$/,
   RE_GCP_INSTANCE_ID: /^[a-z-]+$/,
   instanceV1HasExtraParameters: () => mocks.hasExtraParameters,
-  instanceV1HasSSH: () => false,
+  instanceV1HasSSH: () => mocks.hasSSH,
   instanceV1HasSSL: () => mocks.hasSSL,
   isValidSpannerDataSource: (ds: { projectId: string; instanceId: string }) =>
     ds.projectId !== "" && ds.instanceId !== "",
@@ -223,9 +231,13 @@ function Editor() {
   context = useInstanceFormContext();
   return <InstanceFormBody />;
 }
-function mount(engine: Engine) {
+function mount(
+  engine: Engine,
+  providerProps: Partial<Parameters<typeof InstanceFormProvider>[0]> = {}
+) {
   return render(
     <InstanceFormProvider
+      {...providerProps}
       instance={create(InstanceSchema, {
         name: "instances/prod",
         title: "Prod",
@@ -260,7 +272,12 @@ function mount(engine: Engine) {
   );
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  mocks.isSaaSMode = false;
+  mocks.hasSSH = false;
+  mocks.egressIpAddresses = [];
+});
 
 const input = (container: HTMLElement, id: string) =>
   container.querySelector<HTMLInputElement>(`#${id}`)!;
@@ -637,4 +654,130 @@ test("Redis connection mode belongs to the selected data source", async () => {
   expect(context.adminDataSource.redisType).not.toBe(
     DataSource_RedisType.CLUSTER
   );
+});
+
+const privateHostWarning = () =>
+  screen.queryByText("instance.connection-recovery.private.title");
+
+test("Cloud warns under Host as soon as a private address is typed", () => {
+  mocks.isSaaSMode = true;
+  mocks.hasSSH = true;
+  const { container } = mount(Engine.POSTGRES);
+  expect(privateHostWarning()).toBeNull();
+
+  fireEvent.change(input(container, "host"), {
+    target: { value: "10.0.0.5" },
+  });
+  expect(privateHostWarning()).toBeInTheDocument();
+
+  fireEvent.click(
+    screen.getByText("instance.connection-recovery.actions.ssh-tunnel")
+  );
+  expect(context.adminDataSource.sshPort).toBe("22");
+  expect(context.sshTunnelRequestEvent).toBe(1);
+  // The tunnel is on now; the warning stays until it has a host.
+  expect(privateHostWarning()).toBeInTheDocument();
+  expect(
+    screen.queryByText("instance.connection-recovery.actions.ssh-tunnel")
+  ).toBeNull();
+});
+
+test("the private-address warning goes away once a tunnel has a host", () => {
+  mocks.isSaaSMode = true;
+  const { container } = mount(Engine.POSTGRES);
+  fireEvent.change(input(container, "host"), {
+    target: { value: "192.168.1.10" },
+  });
+  expect(privateHostWarning()).toBeInTheDocument();
+
+  act(() => {
+    context.setDataSourceEditState((prev) => ({
+      ...prev,
+      dataSources: prev.dataSources.map((ds) =>
+        ds.id === "admin" ? { ...ds, sshHost: "bastion.example.com" } : ds
+      ),
+    }));
+  });
+  expect(privateHostWarning()).toBeNull();
+});
+
+test("Cloud stays quiet about a public host", () => {
+  mocks.isSaaSMode = true;
+  const { container } = mount(Engine.POSTGRES);
+  fireEvent.change(input(container, "host"), {
+    target: { value: "db.example.com" },
+  });
+  expect(privateHostWarning()).toBeNull();
+});
+
+test("Cloud leaves a stored private address alone until it is edited", () => {
+  mocks.isSaaSMode = true;
+  const { container } = render(
+    <InstanceFormProvider
+      instance={create(InstanceSchema, {
+        name: "instances/sample",
+        engine: Engine.POSTGRES,
+        state: State.ACTIVE,
+        dataSources: [
+          {
+            id: "admin",
+            type: DataSourceType.ADMIN,
+            authenticationType: DataSource_AuthenticationType.PASSWORD,
+            host: "10.0.0.5",
+            port: "5432",
+          },
+        ],
+      })}
+    >
+      <Editor />
+    </InstanceFormProvider>
+  );
+  expect(privateHostWarning()).toBeNull();
+
+  fireEvent.change(input(container, "host"), {
+    target: { value: "10.0.0.6" },
+  });
+  expect(privateHostWarning()).toBeInTheDocument();
+});
+
+test("a self-hosted deployment never warns about a private address", () => {
+  const { container } = mount(Engine.POSTGRES);
+  fireEvent.change(input(container, "host"), {
+    target: { value: "10.0.0.5" },
+  });
+  expect(privateHostWarning()).toBeNull();
+});
+
+test("the private-address warning offers the sample that already exists", () => {
+  mocks.isSaaSMode = true;
+  const onOpenSampleInstance = vi.fn();
+  const { container } = mount(Engine.POSTGRES, { onOpenSampleInstance });
+  fireEvent.change(input(container, "host"), {
+    target: { value: "localhost" },
+  });
+
+  fireEvent.click(
+    screen.getByText("instance.connection-recovery.actions.open-sample")
+  );
+  expect(onOpenSampleInstance).toHaveBeenCalledWith("private_host_warning");
+});
+
+test("the Cloud firewall notice lists the addresses to allow", () => {
+  mocks.isSaaSMode = true;
+  mocks.egressIpAddresses = ["203.0.113.7"];
+  const { container } = mount(Engine.POSTGRES);
+
+  expect(
+    screen.getByText("instance.sentence.firewall-info-addresses")
+  ).toBeInTheDocument();
+  expect(screen.getByText("203.0.113.7")).toBeInTheDocument();
+  expect(container.querySelector("[data-copy='203.0.113.7']")).not.toBeNull();
+});
+
+test("the Cloud firewall notice falls back to the docs when no address is published", () => {
+  mocks.isSaaSMode = true;
+  mount(Engine.POSTGRES);
+  expect(
+    screen.getByText("instance.sentence.firewall-info")
+  ).toBeInTheDocument();
 });

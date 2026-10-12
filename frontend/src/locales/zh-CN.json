@@ -1016,6 +1016,12 @@
     "connection-database": "连接数据库",
     "connection-info": "连接信息",
     "connection-recovery": {
+      "actions": {
+        "open-sample": "继续使用示例实例",
+        "skip-tls-verify": "不验证证书进行测试",
+        "skip-tls-verify-note": "将关闭“验证服务器证书”。连接仍会加密，但 Bytebase 不再确认连接到的是您的服务器。",
+        "ssh-tunnel": "设置 SSH 隧道"
+      },
       "auth": {
         "description": "请检查用户名、密码、令牌或 IAM 认证配置，然后重新测试连接。",
         "steps": {
@@ -1026,6 +1032,11 @@
         "title": "检查数据库凭据"
       },
       "docs": "打开连接指南",
+      "host-not-found": {
+        "description-saas": "Bytebase Cloud 通过公共 DNS 解析主机名。请使用公网主机名或 IP 地址，或通过 SSH 隧道连接。",
+        "description-self-hosted": "Bytebase 无法解析此主机名。请检查拼写，以及 Bytebase 部署环境可用的 DNS。",
+        "title": "无法解析此主机名"
+      },
       "network": {
         "description-saas": "请确认 Bytebase Cloud 可以访问主机和端口。检查防火墙规则、允许列表、代理、隧道，以及数据库是否只接受私有网络流量。",
         "description-self-hosted": "请确认部署 Bytebase 的网络可以访问主机和端口。检查防火墙规则、网络路由、代理、隧道，以及数据库是否只接受来自其他网络的流量。",
@@ -1045,6 +1056,10 @@
           "workflow": "仅为计划使用的工作流授予额外权限，例如 schema 变更或 SQL Editor。"
         },
         "title": "检查数据库权限"
+      },
+      "private": {
+        "description": "“{{host}}”是私有或本地地址。请使用公网主机名或 IP 地址，或通过 SSH 隧道连接。",
+        "title": "Bytebase Cloud 无法访问此地址"
       },
       "timeout": {
         "description-saas": "连接测试未能在规定时间内完成。请检查防火墙规则、端口设置、网络路由，以及数据库是否允许来自 Bytebase Cloud 的连接。",
@@ -1138,7 +1153,6 @@
     },
     "failed-to-connect-instance": "连接测试失败。",
     "failed-to-connect-instance-localhost": "此地址指向 Bytebase 主机。如果数据库运行在 Docker 宿主机上，请尝试使用 \"host.docker.internal\" 作为主机地址。",
-    "failed-to-connect-instance-saas-local-host": "“{{host}}”是仅限本机使用的地址，Bytebase Cloud 无法通过它访问您的数据库。请输入 Bytebase Cloud 可访问的数据库主机名或 IP 地址。",
     "filter-instance-name": "过滤实例名称",
     "find-gcp-project-id": "查看 GCP 项目 ID 的方法见",
     "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
@@ -1330,6 +1344,7 @@
         }
       },
       "firewall-info": "请在数据库防火墙中将 Bytebase Cloud IP 加入允许列表。",
+      "firewall-info-addresses": "请在数据库防火墙中允许 Bytebase Cloud：",
       "google-cloud-sql": {
         "instance-name": "实例连接名称",
         "instance-name-tips": "实例连接名称应为 {{instance}}。",
