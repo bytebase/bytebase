@@ -122,9 +122,10 @@ which removes the one keystroke burst and the lesson with it; and keeping it on 
 **D5 · The database step is a gate with two cards.** "Continue with the sample database" is the
 primary, preselected card: the Sample Project Instance, one PostgreSQL database with the employee
 data, hosted by Bytebase Cloud, assigned to the project, available for seven days. It is offered
-when the server reports the sample available; otherwise the own-instance card is the only path.
-"Connect my own instance" must pass Test connection before Continue enables. There is no skip and
-no "Continue anyway". 93 of 100 finishers keep the sample on and it has not failed in 143 attempts
+when the server reports the sample available and unused; otherwise the own-instance card is the
+only path. "Connect my own instance" must pass Test connection before Continue enables, and a
+passing result belongs to the values it tested: editing a connection field clears it. There is no
+skip and no "Continue anyway". 93 of 100 finishers keep the sample on and it has not failed in 143 attempts
 since Sep 8; the 7 who turn it off are the own-database path. Rejected: the checkbox, and the skip.
 
 **D6 · The own-instance path renders the real instance form, in sync by construction.** The
@@ -239,8 +240,10 @@ Every disabled Continue says why, in words, beside the button; two of the 42 lea
 disabled button with no explanation.
 
 **D15 · Self-hosted keeps its differences.** The same four screens serve self-hosted, where setup
-is offered once and screen 3 keeps "I'll do this later", and where D8's classification and the
-egress address do not apply because Bytebase dials from the customer's own network.
+is offered once and screen 3 keeps "I'll do this later". That action leaves the wizard for the
+workspace landing as it does today, with no screen 4 and no first action, since nothing was
+created. D8's classification and the egress address do not apply there, because Bytebase dials
+from the customer's own network.
 
 ## States
 
@@ -257,6 +260,7 @@ egress address do not apply because Bytebase dials from the customer's own netwo
 | 3 Own · connected | test passed | "Connected"; the checklist's host and credentials rows are done, the databases rows wait for Continue | enabled |
 | 3 · committing | Continue pressed | the button shows progress while the project and the database are created; the form is read-only | n/a |
 | 3 · commit failed | project, sample or instance creation failed | the error, Try again, and the other card; the project name is read-only once the project exists | enabled for a retry |
+| 3 · skipped | "I'll do this later", self-hosted only | leaves for the workspace landing; nothing is created | n/a |
 | 3 Own · no database | the instance was created but its first sync failed or found nothing | "Connected, but no database was found", the sync error if there is one, Sync again, Use the sample for now | disabled |
 | 4 Team | size unset | five size options, chips input, one line about membership; no Back | disabled, "Pick a team size to finish" |
 | 4 Team | size set | same; "Finish without inviting" or "Send N invites and finish" | enabled |
@@ -289,7 +293,7 @@ off on self-hosted) and for the chips parser; a draft test asserting that no cre
 reaches storage; the instance-form contract test (wizard-mode labels equal page labels); an e2e
 spec under `frontend/tests/e2e` that walks the sample path, the own path through a failed and then
 a passing test and through an instance that yields no database, a reload on screen 4 returning to
-screen 4, the team screen with chips and with
+screen 4, the self-hosted skip, the team screen with chips and with
 "Finish without inviting", and asserts the first action opens; and event tests that each Continue
 and the submitted result carry the properties in D13.
 
