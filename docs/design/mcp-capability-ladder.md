@@ -398,16 +398,16 @@ under
 `settings.mcp.ladder.*` are new; the rest replace existing `settings.mcp.*` and
 `oauth2.consent.mcp.*` values.
 
-- Section description: "Every MCP session is limited by the connected user's Bytebase permissions and the target database engine's supported operations. MCP operations are recorded in Bytebase audit logs."
+- Section description: "The most any MCP session may do here. Sessions are also capped by each user's permissions, and policy refusals are streamed to stdout when audit logging to stdout is enabled."
 - Disclosure line, collapsed — Read-only: "Read schemas, data and the change workflow; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported".
   Read-write: "Read schemas, data and the change workflow; propose, request access, run, export and manage".
   Expanded heading: "{mode} allows". Details control: "Show details" / "Hide details".
 - Disabled — view sentence: "No MCP session can connect to this workspace." Edit static line:
   "Nothing is allowed; no MCP session can connect."
-- Card captions: Disabled "No sessions can connect"; Read-only "Explore and query"; Read-write
-  "Change data and schemas".
-- "Best for" lines: Disabled "keeping MCP off until you are ready to turn it on";
-  Read-only "querying and exploring data, using natural language"; Read-write
+- Card captions: Disabled "No sessions connect"; Read-only "Explore and query"; Read-write "Change
+  data and schemas".
+- "Best for" lines, unchanged: Disabled "keeping MCP off until you are ready to turn it on";
+  Read-only "querying and exploring data, including by people who do not write SQL"; Read-write
   "making database changes through an AI agent, still capped by each user's own permissions".
 - The Read-only description sentence ("Sessions can explore schemas and run read-only queries…")
   is retired everywhere; its content lives in the Read-only summary and in row 2's sub-item.

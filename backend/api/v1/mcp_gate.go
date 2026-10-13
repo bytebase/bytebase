@@ -284,8 +284,8 @@ func mcpSettingsForCurrentWorkspace(ctx context.Context, reader mcpSettingsReade
 // permits — and neither is allowed to describe itself as the other.
 //
 // A refusal that turns on a fact the request does not carry, such as whether an
-// issue exists, is taken in the handler that loads the fact, keyed on mcpSession;
-// TestMCPRefusalsNameThemselvesToTheQueryTool checks each one.
+// issue exists, is taken in the handler that loads the fact and keyed on MCP
+// origin; TestMCPRefusalsNameThemselvesToTheQueryTool checks each one.
 type internalMCPGateInterceptor struct {
 	store mcpSettingsReader
 }
