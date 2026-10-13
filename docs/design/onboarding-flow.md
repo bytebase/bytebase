@@ -166,28 +166,28 @@ return with no Back, and needed a resume rule for an account that reloaded after
 
 **D7 · Team: size required, invites optional, no role.** "How many people will use Bytebase?" with
 five options (Just me, 2–10, 11–50, 51–200, 200+) is one required click, the flow's only
-qualification question. It is a radio group laid out in one row, not a segmented control, which the
-UX contract keeps for view switches. It keys the guide's team step (only above "Just me"), the plan
-hint, and lead scoring; team accounts do first work at 34% against 22%. The invite field appears
-once a size above "Just me" is chosen, so the two answers cannot disagree and a solo account, the
-majority, sees one question and Finish. Emails are chips: type one, press Enter, type the next; a
-pasted list splits; an invalid entry is shown struck through and not sent. Inviting is Cloud's: an
-invitation is an email, and only Cloud has an email service at first run (Given). On Cloud the field
-reads "Invite teammates" and the button "Send N invites and finish". On self-hosted the same field
-reads "Add members": Finish adds those addresses as workspace members with the same roles and sends
-nothing, the line under the field says so and that each person gets access once they have an account
-with that address, and the button reads "Add N members and finish". Calling it an invitation there
-would promise an email that never arrives. There is no role picker. An earlier draft offered a "Role
-in <project>" selector, which names Bytebase's project roles to a user ten seconds into the product.
-Invitees are added as Workspace Member, and on the new project as Project Developer and SQL Editor
-Read User, which together let them propose changes and run read-only queries. One sentence says so,
-and roles are changed later in Members, where the names mean something. On the own-instance path
-that sentence also says the project's databases appear once the instance is connected, because those
-invitees arrive first. Holding their invitations until then would need somewhere to hold them, which
-the 7 of 100 finishers on that path do not justify. Greptile asks a default role (Admin or Member);
-Linear, Neon and Metabase ask for emails only. Rejected: the "Just me / My team" question (it only
-decided whether this screen appears, and the screen is now always offered and one click to pass),
-the role selector, and the free-text email box.
+qualification question. It is a radio group, in a row that wraps on narrow screens, not a segmented
+control, which the UX contract keeps for view switches. It keys the guide's team step (only above
+"Just me"), the plan hint, and lead scoring; team accounts do first work at 34% against 22%. The
+invite field appears once a size above "Just me" is chosen, so the two answers cannot disagree and a
+solo account, the majority, sees one question and Finish. Emails are chips: type one, press Enter,
+type the next; a pasted list splits; an invalid entry is shown struck through and not sent. Inviting
+is Cloud's: an invitation is an email, and only Cloud has an email service at first run (Given). On
+Cloud the field reads "Invite teammates" and the button "Send N invites and finish". On self-hosted
+the same field reads "Add members": Finish adds those addresses as workspace members with the same
+roles and sends nothing, the line under the field says so and that each person gets access once they
+have an account with that address, and the button reads "Add N members and finish". Calling it an
+invitation there would promise an email that never arrives. There is no role picker. An earlier
+draft offered a "Role in <project>" selector, which names Bytebase's project roles to a user ten
+seconds into the product. Invitees are added as Workspace Member, and on the new project as Project
+Developer and SQL Editor Read User, which together let them propose changes and run read-only
+queries. One sentence says so, and roles are changed later in Members, where the names mean
+something. On the own-instance path that sentence also says the project's databases appear once the
+instance is connected, because those invitees arrive first. Holding their invitations until then
+would need somewhere to hold them, which the 7 of 100 finishers on that path do not justify.
+Greptile asks a default role (Admin or Member); Linear, Neon and Metabase ask for emails only.
+Rejected: the "Just me / My team" question (it only decided whether this screen appears, and the
+screen is now always offered and one click to pass), the role selector, and the free-text email box.
 
 **D8 · Finish lands on the project home, and the home puts the goal's step first.** The project home
 ([#21572], on main since Oct 13) makes the project root a page of its own: a "Next step" band chosen
@@ -255,12 +255,13 @@ explanation.
 
 **D12 · Self-hosted keeps its differences.** The same four screens serve self-hosted, where setup is
 offered once and screen 3 keeps "I'll do this later". That action saves the two names from screen 1
-and leaves for the workspace landing as it does today. No project is created, so nothing else is
-left behind. The skip is offered only while that holds: once a Finish attempt has created the
-project, screen 3 no longer shows it, and the way out is Finish. Two lines of copy follow the
-deployment (Given) instead of repeating Cloud's. The sample choice says the database runs on this
-server and names no expiry, as the product's existing self-hosted sample strings do. And screen 4
-adds members where Cloud invites them (D7).
+and then leaves for the workspace landing as it does today; if the save fails it stays on screen 3
+with the error and can be pressed again. No project is created, so nothing else is left behind. The
+skip is offered only while that holds: once a Finish attempt has created the project, screen 3 no
+longer shows it, and the way out is Finish. Two lines of copy follow the deployment (Given) instead
+of repeating Cloud's. The sample choice says the database runs on this server and names no expiry,
+as the product's existing self-hosted sample strings do. And screen 4 adds members where Cloud
+invites them (D7).
 
 ## States
 
@@ -274,7 +275,7 @@ adds members where Cloud invites them (D7).
 | 3 Sample | named, sample chosen | diagram of the sample instance, its database, the project | Continue enabled |
 | 3 Own | named, own instance chosen | one line on what happens after setup; diagram of the user's instance joining the project later | Continue enabled |
 | 3 · no sample | the server reports the sample unavailable or used | only the own-instance choice, with the reason | Continue enabled once named |
-| 3 · skipped | "I'll do this later", self-hosted only | saves the screen-1 names and leaves for the workspace landing; no project is created | n/a |
+| 3 · skipped | "I'll do this later", self-hosted only | saves the screen-1 names and leaves for the workspace landing; no project is created; a failed save stays here with the error | n/a |
 | 3 · project exists | Back after a Finish attempt that created the project | project name and ID read-only, with a line saying the project exists and is renamed in its settings; the database choice read-only once the sample is prepared; no "I'll do this later" on self-hosted | Continue enabled |
 | 4 Team | size unset | five size options, nothing else | Finish disabled, with "Pick a team size to finish" under the question; Back enabled |
 | 4 Team | "Just me" | the size options only; no invite field | Finish enabled |
