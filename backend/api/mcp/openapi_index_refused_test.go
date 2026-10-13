@@ -53,10 +53,9 @@ func TestRefusedEndpointsAreNotAdvertised(t *testing.T) {
 	})
 
 	t.Run("a service keeps only the methods a ceiling serves", func(t *testing.T) {
-		// ProjectService is the mixed case. Its four reads are served now that
-		// the webhook URL no longer rides out on them; its writes administer
-		// the workspace and TestWebhook posts to a third party, so those stay
-		// refused and stay unadvertised.
+		// ProjectService is the mixed case. Its reads are served; its writes
+		// administer the workspace and TestWebhook posts to a third party, so
+		// those stay refused and stay unadvertised.
 		var served []string
 		for _, ep := range idx.GetServiceEndpoints("ProjectService") {
 			served = append(served, ep.OperationID)
@@ -66,6 +65,7 @@ func TestRefusedEndpointsAreNotAdvertised(t *testing.T) {
 			"bytebase.v1.ProjectService.ListProjects",
 			"bytebase.v1.ProjectService.BatchGetProjects",
 			"bytebase.v1.ProjectService.SearchProjects",
+			"bytebase.v1.ProjectService.GetIamPolicy",
 		}, served)
 		require.Contains(t, idx.Services(), "ProjectService")
 	})
