@@ -83,9 +83,12 @@ user has no workspace role and points at the menu. Rejected: `--add-role <role>`
 **D4 · Recovery runs beside the running server.** The runbook and the command stop telling the
 operator to stop and restart Bytebase. Recovery reaches the metadata database exactly as the server
 does: the same image, flags, environment, network and mounted files. On Kubernetes that is a Job
-whose pod is the server's pod template with only the command replaced. `PG_URL` alone is not
-enough: it can be a file path, and the connection can rely on the pod's service account (AWS RDS
-and Cloud SQL IAM authentication), an init container or mounted TLS files. Two conditions stay:
+built from the server's pod template, running `bytebase recovery` where the template runs the
+server. A literal `PG_URL` is not always enough. It can be a file path. The connection can rely on
+the pod's service account (AWS RDS and Cloud SQL IAM authentication) or on mounted TLS files. With
+the chart's `escapePassword`, the container's start script builds `PG_URL`, so the Job keeps that
+script. The runbook gives the Job for each of these, and the example under States is the simplest
+one. Two conditions stay:
 
 - **The same build as the running server.** Recovery does not migrate the schema, and an older
   build drops setting fields it does not know (`ProtojsonUnmarshaler` discards unknown fields).
@@ -181,7 +184,7 @@ What the operator does:
 | From a pipeline | Not supported | A Job |
 | A leaked password | Works until the restart | Works for up to one more minute |
 
-On Kubernetes, for a server that reads `PG_URL` from a Secret:
+On Kubernetes, in the simplest case of a server that reads `PG_URL` from a Secret:
 
 ```yaml
 apiVersion: batch/v1
@@ -219,9 +222,12 @@ container every time it exits and repeat the action without end.
 
 - **Every server with the caches on reads each cached entry again once a minute.** Settings and
   policies are single-row reads. The user list is one query a minute (D7).
-- **A change made directly in the metadata database is live within a minute.** Today it waits for
-  a restart. The same limit now bounds a stale entry in any of these three caches, including the
-  policies that permission checks read.
+- **What these three caches hold is live within a minute after a direct change to the metadata
+  database.** Today it waits for a restart. That bounds a stale entry in any of them, including
+  the policies that permission checks read. It does not reach what the server copies out of the
+  workspace profile when it starts, such as the audit-log-to-stdout flag and the debug level, or
+  the caches that still have no expiry (projects, instances, databases). Recovery changes none of
+  those.
 - **The menu keeps its prompts and its checks.** It loses only the lines that say to stop and
   restart Bytebase.
 
@@ -232,7 +238,7 @@ container every time it exits and repeat the action without end.
 | `backend/bin/server/cmd/recovery.go` | The two subcommands (D1 to D3), the result lines and exit status (D6), and no stop or restart lines (D4) |
 | `backend/store/store.go` | `userEmailCache`, `settingCache` and `policyCache` as `expirable.LRU` with a one-minute lifetime that tests can shorten (D5) |
 | `backend/store/setting.go` | The comments that say the setting cache has no TTL |
-| `docs/operations/admin-recovery.md`, `docs/operations/high-availability.md` | The runbook without the stop and the restart, with the one-minute wait, the subcommands and the Job |
+| `docs/operations/admin-recovery.md`, `docs/operations/high-availability.md` | The runbook without the stop and the restart, with the one-minute wait, the subcommands, and the Job for each way a deployment supplies `PG_URL` |
 
 Tests:
 
