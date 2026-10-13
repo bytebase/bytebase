@@ -84,15 +84,8 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 		"a served, audited MCP call is stored")
 }
 
-// TestMCPGateRefusesGrantIssues is the one refusal a per-method class cannot
-// express, over the live handler. CreateIssue is WRITE for the database-change
-// issue an agent exists to compose; a ROLE_GRANT issue completes on creation
-// when the workspace rule produces no approval template and writes the project
-// IAM binding the request named, with no human in it.
-//
-// Access requests go through AccessGrantService/CreateAccessGrant instead: a
-// Read-write session is served only for a request that waits for a person, and
-// a person in the console is unaffected.
+// TestMCPGateRefusesGrantIssues covers, over one live MCP session, the grant
+// issues a session may not create and the access request it may file instead.
 func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -106,9 +99,8 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.NoError(err)
 	projectName := project.Msg.Name
 
-	// CreateIssue is WRITE and the refusal under test is the one the class
-	// cannot express. Pinned so this test does not depend on the resolved
-	// default.
+	// CreateIssue and CreateAccessGrant are WRITE. Pinned so this test does not
+	// depend on the resolved default.
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 
 	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
@@ -129,12 +121,6 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.Contains(grant.Error, "ROLE_GRANT", "the denial must name the issue type it refused")
 	a.Contains(grant.Error, "no human step")
 
-	// The bypass: UpdateIssue with allow_missing creates the issue when it does
-	// not exist, by calling CreateIssue directly — a Go call, so the ceiling
-	// gate never sees it. The gate deliberately does not refuse UpdateIssue,
-	// because an AIP upsert sends the complete resource and the request cannot
-	// say whether it will create anything; the guard sits at the creation
-	// instead, and this is what proves it is there.
 	upsert := callAPIOnSession(ctx, t, session, "IssueService/UpdateIssue", map[string]any{
 		"issue": map[string]any{
 			"name":  projectName + "/issues/999999",
@@ -245,6 +231,25 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.NoError(err)
 	a.Equal(v1pb.AccessGrant_PENDING, still.Msg.Status)
 
+	consoleRequest := func() *v1pb.AccessGrant {
+		granted, err := ctl.accessGrantServiceClient.CreateAccessGrant(ctx, connect.NewRequest(&v1pb.CreateAccessGrantRequest{
+			Parent: projectName,
+			AccessGrant: &v1pb.AccessGrant{
+				Targets:    []string{target},
+				Query:      "SELECT 1",
+				Reason:     "a person asks the same",
+				Expiration: &v1pb.AccessGrant_Ttl{Ttl: durationpb.New(time.Hour)},
+			},
+		}))
+		a.NoError(err)
+		return granted.Msg
+	}
+	consolePending := consoleRequest()
+	a.Equal(v1pb.AccessGrant_PENDING, consolePending.Status, "under the seeded rule, a console request waits as before")
+	consoleIssue, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: consolePending.Issue}))
+	a.NoError(err)
+	a.Equal([]string{"roles/projectOwner"}, consoleIssue.Msg.GetApprovalTemplate().GetFlow().GetRoles())
+
 	rowCounts := func() (int, int) {
 		grants, err := ctl.accessGrantServiceClient.ListAccessGrants(ctx, connect.NewRequest(&v1pb.ListAccessGrantsRequest{Parent: projectName}))
 		a.NoError(err)
@@ -252,44 +257,37 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		a.NoError(err)
 		return len(grants.Msg.AccessGrants), len(issues.Msg.Issues)
 	}
-	grantsBefore, issuesBefore := rowCounts()
-	for name, rules := range map[string][]*v1pb.WorkspaceApprovalSetting_Rule{
-		"a rule that names no approver": {{
+	for _, tc := range []struct {
+		name  string
+		rules []*v1pb.WorkspaceApprovalSetting_Rule
+	}{
+		{"a rule that names no approver", []*v1pb.WorkspaceApprovalSetting_Rule{{
 			Source:    v1pb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS,
 			Condition: &expr.Expr{Expression: "true"},
 			Template:  &v1pb.ApprovalTemplate{Flow: &v1pb.ApprovalFlow{}},
-		}},
-		"no rule at all": nil,
+		}}},
+		{"no rule at all", nil},
 	} {
 		_, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 			AllowMissing: true,
 			Setting: &v1pb.Setting{
 				Name: "settings/WORKSPACE_APPROVAL",
 				Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_WorkspaceApproval{
-					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{Rules: rules},
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{Rules: tc.rules},
 				}},
 			},
 		}))
-		a.NoError(err, name)
+		a.NoError(err, tc.name)
+		grantsBefore, issuesBefore := rowCounts()
 		refused := callAPIOnSession(ctx, t, session, "AccessGrantService/CreateAccessGrant", requestAccess)
-		a.Equal(http.StatusForbidden, refused.Status, name)
-		a.Contains(refused.Error, "no approval rule requires a person to approve it", name)
+		a.Equal(http.StatusForbidden, refused.Status, tc.name)
+		a.Contains(refused.Error, "no approval rule requires a person to approve it", tc.name)
+		a.Contains(refused.Error, "an approval rule that names an approver", tc.name)
+		grantsAfter, issuesAfter := rowCounts()
+		a.Equal(grantsBefore, grantsAfter, "%s: a refused request leaves no access grant", tc.name)
+		a.Equal(issuesBefore, issuesAfter, "%s: a refused request leaves no issue", tc.name)
+		a.Equal(v1pb.AccessGrant_ACTIVE, consoleRequest().Status, "%s: a console request is granted at once, as before", tc.name)
 	}
-	grantsAfter, issuesAfter := rowCounts()
-	a.Equal(grantsBefore, grantsAfter, "a refused request leaves no access grant")
-	a.Equal(issuesBefore, issuesAfter, "a refused request leaves no issue")
-
-	granted, err := ctl.accessGrantServiceClient.CreateAccessGrant(ctx, connect.NewRequest(&v1pb.CreateAccessGrantRequest{
-		Parent: projectName,
-		AccessGrant: &v1pb.AccessGrant{
-			Targets:    []string{target},
-			Query:      "SELECT 1",
-			Reason:     "a person asks the same",
-			Expiration: &v1pb.AccessGrant_Ttl{Ttl: durationpb.New(time.Hour)},
-		},
-	}))
-	a.NoError(err)
-	a.Equal(v1pb.AccessGrant_ACTIVE, granted.Msg.Status, "with no rule, a console request is granted at once, as before")
 }
 
 // TestMCPCannotRunAnIssuelessRollout is the rule rollout_service.proto says the

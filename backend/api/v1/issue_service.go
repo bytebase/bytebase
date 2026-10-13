@@ -592,12 +592,11 @@ func linkedIssueForCreate(planUID int64, existing, issue *store.IssueMessage) (*
 }
 
 // rejectMCPOriginatedGrantIssue applies grantIssueRefusal where the issue is
-// created, for UpdateIssue with allow_missing, which reaches CreateIssue only
-// when the issue is missing; an upsert of an existing issue is never refused.
-// MCP origin is the delegated grant's presence (common.DelegatedGrant).
+// created. It is the only guard for UpdateIssue with allow_missing: that call
+// creates only when the issue is missing, which its request cannot show, and an
+// upsert of an existing issue never reaches here.
 func rejectMCPOriginatedGrantIssue(ctx context.Context, issueType v1pb.Issue_Type) error {
-	authCtx, ok := common.GetAuthContextFromContext(ctx)
-	if !ok || authCtx.DelegatedGrant == nil {
+	if !mcpSession(ctx) {
 		return nil
 	}
 	reason, wayOut := grantIssueRefusal(issueType)

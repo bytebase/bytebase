@@ -1081,11 +1081,8 @@ func TestMCPGateFailsClosedWithoutAnAuthContext(t *testing.T) {
 	require.Equal(t, connect.CodeInternal, connect.CodeOf(got.err))
 }
 
-// TestMCPGateRefusesGrantIssues pins the one refusal a per-method class cannot
-// express. CreateIssue is WRITE for the database-change issue an agent exists
-// to compose; the grant types complete on creation and hand out access with no
-// human step. UpdateIssue is the same method under another name whenever
-// allow_missing is set.
+// TestMCPGateRefusesGrantIssues pins the gate's issue-type allow-list for
+// CreateIssue and the way out each refusal names.
 func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	write := classContext(v1pb.MCPMethodClass_WRITE)
 
@@ -1147,14 +1144,8 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		require.True(t, got.dispatched)
 	})
 
-	// UpdateIssue reaches the gate unrefused whatever its body says, including
-	// allow_missing with a grant type. The gate cannot tell an upsert that
-	// creates from one that edits — "the issue does not exist" is not a field
-	// of the request — and an AIP upsert sends the complete resource, so a
-	// caller PATCHing an existing ROLE_GRANT issue carries that type in a body
-	// the handler ignores. rejectMCPOriginatedGrantIssue guards the creation
-	// where the creation happens; TestMCPGateRefusesGrantIssues (backend/tests)
-	// is the end-to-end proof that the bypass stays closed.
+	// UpdateIssue passes the gate whatever its body says;
+	// rejectMCPOriginatedGrantIssue guards its allow_missing creation.
 	for name, request := range map[string]*v1pb.UpdateIssueRequest{
 		"allow_missing with a grant type": {
 			Issue:        &v1pb.Issue{Name: "projects/p/issues/1", Type: v1pb.Issue_ROLE_GRANT},
@@ -1602,18 +1593,8 @@ func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
 	require.Empty(t, stale, "these no longer need a redaction decision; drop them so the list keeps meaning something")
 }
 
-// TestRejectMCPOriginatedGrantIssue pins the guard that sits at the creation
-// rather than at the gate, and in particular pins the half that makes putting
-// MCP policy inside a service handler safe: a human in the console is a request
-// with no delegated grant, and must be untouched by it.
-//
-// The gate cannot take this decision. UpdateIssue creates only when the issue is
-// missing, which is not a field of the request, and an AIP upsert sends the
-// complete resource — so a caller PATCHing an existing ROLE_GRANT issue carries
-// that type in a body the handler ignores. Refusing on the request shape there
-// would refuse an ordinary edit for a mechanism that is not running.
 func TestRejectMCPOriginatedGrantIssue(t *testing.T) {
-	mcpSession := context.WithValue(context.Background(), common.AuthContextKey,
+	mcpCtx := context.WithValue(context.Background(), common.AuthContextKey,
 		&common.AuthContext{DelegatedGrant: &common.DelegatedGrant{CorrelationID: "corr-issue"}})
 	console := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{})
 
@@ -1623,11 +1604,11 @@ func TestRejectMCPOriginatedGrantIssue(t *testing.T) {
 		// wayOut is empty for a creation the guard allows.
 		wayOut, notWayOut string
 	}{
-		"an MCP session may not create a role grant":    {mcpSession, v1pb.Issue_ROLE_GRANT, mcpConsoleWayOut, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
-		"an MCP session may not create an access grant": {mcpSession, v1pb.Issue_ACCESS_GRANT, v1connect.AccessGrantServiceCreateAccessGrantProcedure, mcpConsoleWayOut},
-		"an MCP session may not create an unknown type": {mcpSession, v1pb.Issue_Type(9999), mcpConsoleWayOut, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
-		"an MCP session composes database changes":      {mcpSession, v1pb.Issue_DATABASE_CHANGE, "", ""},
-		"an unset type is left to buildIssueMessage":    {mcpSession, v1pb.Issue_TYPE_UNSPECIFIED, "", ""},
+		"an MCP session may not create a role grant":    {mcpCtx, v1pb.Issue_ROLE_GRANT, mcpConsoleWayOut, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
+		"an MCP session may not create an access grant": {mcpCtx, v1pb.Issue_ACCESS_GRANT, v1connect.AccessGrantServiceCreateAccessGrantProcedure, mcpConsoleWayOut},
+		"an MCP session may not create an unknown type": {mcpCtx, v1pb.Issue_Type(9999), mcpConsoleWayOut, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
+		"an MCP session composes database changes":      {mcpCtx, v1pb.Issue_DATABASE_CHANGE, "", ""},
+		"an unset type is left to buildIssueMessage":    {mcpCtx, v1pb.Issue_TYPE_UNSPECIFIED, "", ""},
 		"the console creates a role grant":              {console, v1pb.Issue_ROLE_GRANT, "", ""},
 		"a request with no auth context at all":         {context.Background(), v1pb.Issue_ROLE_GRANT, "", ""},
 	} {

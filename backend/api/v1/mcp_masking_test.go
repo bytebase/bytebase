@@ -280,6 +280,10 @@ func TestMCPRefusalsNameThemselvesToTheQueryTool(t *testing.T) {
 	issueless := rejectMCPOriginatedIssuelessRollout(mcpCtx, approvalProject, nil, "create a rollout")
 	require.Error(t, issueless)
 	require.True(t, mcp.IsPolicyRefusal(issueless.Error()))
+
+	unattended := refuseUnattendedMCPAccessGrant(mcpCtx, &storepb.IssuePayloadApproval{ApprovalFindingDone: true})
+	require.Error(t, unattended)
+	require.True(t, mcp.IsPolicyRefusal(unattended.Error()))
 }
 
 // TestMaskPlaceholderMatchIsDeliberatelyBroad records which side of the trade

@@ -326,22 +326,10 @@ func mcpSettingsForCurrentWorkspace(ctx context.Context, reader mcpSettingsReade
 // cannot resolve the token audience. Both refuse — an unknown policy never
 // permits — and neither is allowed to describe itself as the other.
 //
-// One gap survives, and it is worth knowing because nothing in the annotations
-// shows it.
-//
-//   - Two refusals this gate is the right slot for the CLASS of, but not the
-//     right place for the decision, because the fact they turn on is not in the
-//     request. Both are guarded at the point where the fact is loaded, and both
-//     key on the delegated grant so the console is untouched:
-//     rejectMCPOriginatedGrantIssue (issue_service.go), for the issue types
-//     that complete into a permission grant, and
-//     rejectMCPOriginatedIssuelessRollout (rollout_service.go), for the
-//     issueless plan that reaches execution without ever meeting the approval
-//     the three FORBIDDEN approval methods exist to protect. Without the
-//     second, those three are decorative in the change lane: an agent that
-//     cannot clear the gate could skip it instead. The gate keeps the half it
-//     can decide — CreateIssue, where the request shape IS the whole story —
-//     so the denial still lands before dispatch wherever that is possible.
+// Some MCP refusals turn on a fact the request does not carry, such as whether
+// an issue exists or what the approval rules decide. Those are taken in the
+// handler where the fact is loaded, keyed on mcpSession so the console is
+// untouched, and TestMCPRefusalsNameThemselvesToTheQueryTool checks each one.
 type internalMCPGateInterceptor struct {
 	store mcpSettingsReader
 }
@@ -554,10 +542,8 @@ func refuseByRequestShape(ctx context.Context, procedure string, msg any) error 
 		"%s is not available to MCP sessions for this request because %s. %s", procedure, reason, wayOut))
 }
 
-// refuseGrantIssueCreation applies grantIssueRefusal to CreateIssue. UpdateIssue
-// is not in the table: allow_missing creates only when the issue is missing,
-// which the request cannot show, so the handler guards that creation instead
-// (rejectMCPOriginatedGrantIssue).
+// refuseGrantIssueCreation applies grantIssueRefusal to CreateIssue. UpdateIssue's
+// allow_missing creation is guarded in its handler (rejectMCPOriginatedGrantIssue).
 func refuseGrantIssueCreation(_ context.Context, msg any) (string, string) {
 	request, ok := msg.(*v1pb.CreateIssueRequest)
 	if !ok {
@@ -569,13 +555,10 @@ func refuseGrantIssueCreation(_ context.Context, msg any) (string, string) {
 	return grantIssueRefusal(request.GetIssue().GetType())
 }
 
-// grantIssueRefusal is the issue-type allow-list both MCP guards on issue
-// creation share; an empty reason allows the type. It is an allow-list so an
-// issue type added later is refused until someone decides otherwise. A
-// ROLE_GRANT issue completes on creation when no approval rule requires a
-// person, writing the project IAM binding it names with no human step. Only
-// CreateAccessGrant files an ACCESS_GRANT issue, so that refusal points there.
-// An unset type is left to buildIssueMessage, which rejects it as invalid.
+// grantIssueRefusal is the issue-type allow-list both MCP creation guards share;
+// an empty reason allows the type, and a type added later is refused until
+// someone decides otherwise. An unset type is left to buildIssueMessage, which
+// rejects it as invalid.
 func grantIssueRefusal(issueType v1pb.Issue_Type) (reason, wayOut string) {
 	switch issueType {
 	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_TYPE_UNSPECIFIED:

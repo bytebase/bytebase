@@ -887,12 +887,11 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 
 // EvaluateAccessGrantApproval returns the approval finding an access grant
 // request receives, computed as the issue workflow computes it but from the
-// request itself, so the caller can decide before any row is written.
-func EvaluateAccessGrantApproval(ctx context.Context, stores *store.Store, licenseService *enterprise.LicenseService, project *store.ProjectMessage, grant *storepb.AccessGrantPayload) (*storepb.IssuePayloadApproval, storepb.RiskLevel, error) {
+// request itself, so the caller can decide before any row is written. It skips
+// the workflow's FEATURE_APPROVAL_WORKFLOW check: its caller requires FEATURE_JIT,
+// which plan.yaml grants only with the approval workflow.
+func EvaluateAccessGrantApproval(ctx context.Context, stores *store.Store, project *store.ProjectMessage, grant *storepb.AccessGrantPayload) (*storepb.IssuePayloadApproval, storepb.RiskLevel, error) {
 	finding := &storepb.IssuePayloadApproval{ApprovalFindingDone: true}
-	if !approvalWorkflowAvailable(ctx, licenseService, project.Workspace) {
-		return finding, calculateRiskLevelFromCELVars(nil), nil
-	}
 	approvalSetting, err := stores.GetWorkspaceApprovalSetting(ctx, project.Workspace)
 	if err != nil {
 		return nil, storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrap(err, "failed to get workspace approval setting")

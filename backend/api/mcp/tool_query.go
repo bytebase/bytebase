@@ -341,9 +341,8 @@ func parseLatencyMs(latency string) int64 {
 func IsPolicyRefusal(message string) bool {
 	for _, phrase := range []string{
 		"MCP capability ceiling",
-		// Singular, so it also matches the plural the gate uses and the two
-		// refusals that live outside it (rejectMCPOriginatedGrantIssue,
-		// rejectMCPOriginatedIssuelessRollout).
+		// Singular, so it also matches the plural the gate uses and the
+		// refusals taken in handlers.
 		"MCP session",
 		"MCP classification",
 	} {

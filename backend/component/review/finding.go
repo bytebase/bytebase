@@ -56,12 +56,6 @@ func DispatchApprovalEvents(ctx context.Context, stores *store.Store, webhookMan
 	}
 }
 
-// approvalWorkflowAvailable reports whether approval rules apply in the
-// workspace; without the feature, every issue gets no approval template.
-func approvalWorkflowAvailable(ctx context.Context, licenseService *enterprise.LicenseService, workspace string) bool {
-	return licenseService.IsFeatureEnabled(ctx, workspace, v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) == nil
-}
-
 func evaluateApprovalTemplateForIssue(
 	ctx context.Context,
 	stores *store.Store,
@@ -83,8 +77,9 @@ func evaluateApprovalTemplateForIssue(
 	}
 
 	approvalTemplate, celVarsList, approvalInputVersion, done, err := func() (*storepb.ApprovalTemplate, []map[string]any, int64, bool, error) {
-		if !approvalWorkflowAvailable(ctx, licenseService, project.Workspace) {
-			return nil, nil, approvalInputVersion, true, nil
+		if licenseService.IsFeatureEnabled(ctx, project.Workspace, v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
+			// An unavailable approval-workflow feature intentionally falls back to no approval template.
+			return nil, nil, approvalInputVersion, true, nil //nolint:nilerr
 		}
 
 		approvalSource, err := getApprovalSourceFromIssue(ctx, stores, issue)

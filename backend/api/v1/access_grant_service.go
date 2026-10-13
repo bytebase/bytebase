@@ -155,7 +155,6 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	if err != nil {
 		return nil, err
 	}
-	// Validate the query is a read-only statement (SELECT).
 	if ok, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), ag.Query); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid query"))
 	} else if !ok {
@@ -215,7 +214,7 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	}
 	// Decided once and saved on the issue: the workflow skips a done finding, so
 	// a later rule edit cannot change whether this request waits for a person.
-	approval, riskLevel, err := review.EvaluateAccessGrantApproval(ctx, s.store, s.licenseService, project, payload)
+	approval, riskLevel, err := review.EvaluateAccessGrantApproval(ctx, s.store, project, payload)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to evaluate the approval rules for this access grant"))
 	}
@@ -223,7 +222,6 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, err
 	}
 
-	// Step 1: Create the access grant.
 	grant, err := s.store.CreateAccessGrant(ctx, &store.AccessGrantMessage{
 		ProjectID:  projectID,
 		Creator:    creatorEmail,
@@ -235,7 +233,6 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create access grant"))
 	}
 
-	// Step 2: Create the associated issue.
 	issue, err := s.store.CreateIssue(ctx, &store.IssueMessage{
 		ProjectID:    projectID,
 		CreatorEmail: creatorEmail,
@@ -252,7 +249,6 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
 
-	// Step 3: Update access grant payload with the issue ID.
 	grant.Payload.IssueId = int64(issue.UID)
 	grant, err = s.store.UpdateAccessGrant(ctx, grant.ID, &store.UpdateAccessGrantMessage{
 		Payload: grant.Payload,
@@ -261,12 +257,11 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update access grant payload"))
 	}
 
-	// Step 4: Post-create: webhook, auto-approve, and notify the approvers, since
-	// a saved finding emits no approval event.
 	issue, err = startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, creatorEmail, creatorEmail, issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+	// A saved finding emits no approval event, so notify the approvers here.
 	review.NotifyApprovalRequested(ctx, s.store, s.webhookManager, issue, project)
 	if issue.Status == storepb.Issue_DONE {
 		grant, err = s.store.GetAccessGrant(ctx, &store.FindAccessGrantMessage{
@@ -288,8 +283,7 @@ func refuseUnattendedMCPAccessGrant(ctx context.Context, approval *storepb.Issue
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check the approval finding"))
 	}
-	authCtx, ok := common.GetAuthContextFromContext(ctx)
-	if !approved || !ok || authCtx.DelegatedGrant == nil {
+	if !approved || !mcpSession(ctx) {
 		return nil
 	}
 	return permissionDeniedError(ctx, errors.Errorf(
