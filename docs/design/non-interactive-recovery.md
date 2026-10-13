@@ -95,7 +95,15 @@ lifetime `rolesCache` and the group caches already use. An entry is dropped one 
 stored, and a read does not extend it, so a recovery change is live on every running server within
 about one minute. All three need it: with the setting cache alone, a password reset would still
 wait for a restart, and so would a role the menu adds. `settingCache` and `policyCache` hold every
-setting and every policy type, so all of them are read again once a minute. Rejected:
+setting and every policy type, so all of them are read again once a minute.
+
+The minute runs from when the server stored its copy, not from recovery's commit. A read already in
+progress when recovery commits returns the old value and stores it with a full lifetime, so that
+server is late by the length of that one read: milliseconds for a setting or a policy, the
+user-list query for a user. "Within one minute" in this document and in the command's output means
+that lifetime.
+
+Rejected:
 
 - **A message to running servers,** as a new type on the `bytebase_signal` channel that clears the
   caches. It is instant, but PostgreSQL delivers a notification only to sessions listening when it
@@ -111,6 +119,9 @@ setting and every policy type, so all of them are read again once a minute. Reje
   the full user list (`resolvePrincipal` reaches `GetUserByEmail` through `GetAccountByEmail`).
 - **Two minutes for the user cache.** It halves the user-list reloads, but then the wait differs
   by action and a leaked password works a minute longer.
+- **Counting the lifetime from the start of the read.** It makes the limit exact, but it replaces
+  the stock expiring cache with a custom one at every place that fills these caches. The gain is
+  the length of one read, and only when that read overlaps recovery's commit.
 
 The message can be added on top later if a minute proves too slow. A missed one would then cost a
 minute and no longer a restart.
