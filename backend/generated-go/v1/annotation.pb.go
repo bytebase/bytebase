@@ -281,9 +281,7 @@ const (
 	// Administers the workspace rather than doing database work: identity,
 	// credentials, access control, governance policy, billing, workspace and
 	// instance configuration, project lifecycle, and the operator's own audit
-	// trail. Reading is administration too where the read returns account
-	// records or a stored secret, rather than the state of a database or the
-	// access and policies that govern it.
+	// trail.
 	MCPDenialReason_ADMINISTERS_THE_WORKSPACE MCPDenialReason = 9
 	// Returns SQL that other people wrote. The permission gating it reads as an
 	// ordinary list permission, so the exclusion is per method rather than per

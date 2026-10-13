@@ -705,6 +705,33 @@ func TestTheLeakingReadsAreServed(t *testing.T) {
 	}
 }
 
+// TestTheApprovalReadsAreServed refuses what the inventory only records: the
+// inventory is regenerated from the annotations, so moving one of these reads
+// out of READ would pass with a rewritten inventory.
+func TestTheApprovalReadsAreServed(t *testing.T) {
+	t.Parallel()
+	class := map[string]v1pb.MCPMethodClass{}
+	for _, row := range mcpClassificationsFromDescriptors(t) {
+		class[row.procedure] = row.class
+	}
+	for _, procedure := range []string{
+		v1connect.ProjectServiceGetIamPolicyProcedure,
+		v1connect.WorkspaceServiceGetIamPolicyProcedure,
+		v1connect.GroupServiceGetGroupProcedure,
+		v1connect.GroupServiceListGroupsProcedure,
+		v1connect.GroupServiceBatchGetGroupsProcedure,
+		v1connect.RoleServiceGetRoleProcedure,
+		v1connect.RoleServiceListRolesProcedure,
+		v1connect.OrgPolicyServiceGetPolicyProcedure,
+		v1connect.OrgPolicyServiceListPoliciesProcedure,
+		v1connect.AccessGrantServiceGetAccessGrantProcedure,
+		v1connect.AccessGrantServiceListAccessGrantsProcedure,
+	} {
+		require.Equal(t, v1pb.MCPMethodClass_READ, class[procedure],
+			"%s must be READ: an agent working for a user has to name who approves, see the masking rules and exemptions, and see pending access requests (journey 1)", procedure)
+	}
+}
+
 // TestDeprecatedSQLServiceAliasesMatchTheirCanonicalMethod pins the three
 // query-history RPCs that SQLService still carries as deprecated aliases of
 // QueryHistoryService. They have no HTTP binding, but the MCP surface indexes

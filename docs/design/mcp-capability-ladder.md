@@ -69,7 +69,7 @@ the product.
 | read | Read schemas and metadata | Schemas · Databases and instances · Projects and database groups · Catalogs, changelogs and revisions · SQL review configs · Your own session and workspace facts | 30 READ methods: `DatabaseService` reads, projects, instances, database groups, catalogs, changelogs, revisions, review configs, session facts |
 | read | Read data by running queries | Run read-only queries · Under Read-only, a request is refused whole unless every statement is shown to be a read that returns data; how deeply that can be checked varies by engine, and on some engines no statement can be shown to be a read at all · Your own query history · Saved queries and sheets you have access to | 9 READ methods: `SQLService/Query`, query history (4), saved-query reads (3), `GetSheet` |
 | read | Read the change workflow | Issues and comments · Plans and plan checks · Rollouts, task runs and logs · Releases · Rollback previews | 16 READ methods: issue, plan, rollout and release reads |
-| read | Read members, roles and policies | Who holds which role in the workspace and its projects · Groups and their members · Roles and their permissions · Masking rules, masking exemptions and other policies · Access grants, including pending requests · Each only as far as the user's own permissions allow | 12 READ methods: `GetIamPolicy` on projects and the workspace, group reads (3), role reads (2), `GetPolicy`, `ListPolicies`, access-grant reads (3, with `SearchMyAccessGrants`) |
+| read | Read members, roles and policies | Who holds which role in the workspace and its projects · Groups and their members · Roles and their permissions · Masking rules and exemptions · Rollout, data query, tag and review policies · Access grants, including pending requests | 12 READ methods: `GetIamPolicy` on projects and the workspace, group reads (3), role reads (2), `GetPolicy`, `ListPolicies`, access-grant reads (3, with `SearchMyAccessGrants`) |
 | — | *Read-only stops here* | | 67 methods |
 | write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
 | write | Request access grants | Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after a person approves it, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants | 1 WRITE method: `AccessGrantService/CreateAccessGrant` |
@@ -210,17 +210,21 @@ active is an approval method above, FORBIDDEN to the session. The person who app
 requester, signed in to the console; the rows promise a person, not a second one.
 
 The members row shows who holds which role, the groups and their members, each role's permissions
-and every policy type, so an agent can tell which people an approval step waits on. Three choices
-in its wording are deliberate. It says *members*, not users: `UserService` reads stay EXCLUDED, so
-a member is the email in a binding, not an account record. Its bound is the user's own
-permissions, not "what the user can see in the console", because the two differ at one edge: the
-console reads a policy only through `GetPolicy`, which asks for
+and every policy type, so an agent can tell which people an approval step waits on. Two choices in
+its wording are deliberate. It says *members*, not users: `UserService` reads stay EXCLUDED, so a
+member is the email in a binding, not an account record. And it names the policy types it serves
+rather than "other policies": the propose and rollout rows speak of the project's approval policy,
+and the approval rules behind it are a workspace setting no MCP read reaches.
+
+The row states no bound of its own; the section's shared line limits every session by the user's
+Bytebase permissions. That line has to say permissions rather than what the console shows, because
+the two differ at one edge: the console reads a policy only through `GetPolicy`, which asks for
 `bb.policies.getMaskingExemptionPolicy` or `bb.policies.getMaskingRulePolicy` on those two types,
 while `ListPolicies` asks only for `bb.policies.list` and returns every type. Every built-in role
 that holds `bb.policies.list` also holds both masking permissions, so the edge reaches custom roles
-only. And an access grant carries the statement its requester asked to run, which is SQL another
-person wrote; the floor's query-history promise still holds, because it rests on
-`SearchQueryHistories` pinning the creator, which this row does not touch.
+only. An access grant carries the statement its requester asked to run, which is SQL another person
+wrote; the floor's query-history promise still holds, because it rests on `SearchQueryHistories`
+pinning the creator, which this row does not touch.
 
 ### The verb rule
 

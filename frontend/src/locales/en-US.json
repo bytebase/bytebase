@@ -2774,7 +2774,7 @@
             "title": "Propose changes"
           },
           "read-access": {
-            "details": "Who holds which role in the workspace and its projects · Groups and their members · Roles and their permissions · Masking rules, masking exemptions and other policies · Access grants, including pending requests · Each only as far as the user's own permissions allow",
+            "details": "Who holds which role in the workspace and its projects · Groups and their members · Roles and their permissions · Masking rules and exemptions · Rollout, data query, tag and review policies · Access grants, including pending requests",
             "title": "Read members, roles and policies"
           },
           "read-data": {

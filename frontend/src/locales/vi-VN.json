@@ -2774,7 +2774,7 @@
             "title": "Đề xuất thay đổi"
           },
           "read-access": {
-            "details": "Ai giữ vai trò nào trong không gian làm việc và các dự án của nó · Nhóm và thành viên của nhóm · Vai trò và quyền của vai trò · Quy tắc che giấu, miễn trừ che giấu và các chính sách khác · Cấp quyền truy cập, kể cả các yêu cầu đang chờ duyệt · Mỗi mục chỉ trong phạm vi quyền của chính người dùng cho phép",
+            "details": "Ai giữ vai trò nào trong không gian làm việc và các dự án của nó · Nhóm và thành viên của nhóm · Vai trò và quyền của vai trò · Quy tắc che giấu và miễn trừ che giấu · Chính sách triển khai, truy vấn dữ liệu, tag và rà soát · Cấp quyền truy cập, kể cả các yêu cầu đang chờ duyệt",
             "title": "Đọc thành viên, vai trò và chính sách"
           },
           "read-data": {
