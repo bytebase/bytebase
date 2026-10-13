@@ -169,21 +169,23 @@ five options (Just me, 2–10, 11–50, 51–200, 200+) is one required click, t
 qualification question. It is a radio group, in a row that wraps on narrow screens, not a segmented
 control, which the UX contract keeps for view switches. It keys the guide's team step (only above
 "Just me"), the plan hint, and lead scoring; team accounts do first work at 34% against 22%. The
-invite field appears once a size above "Just me" is chosen, so the two answers cannot disagree and a
-solo account, the majority, sees one question and Finish. Emails are chips: type one, press Enter,
-type the next; a pasted list splits; an invalid entry is shown struck through and not sent. Inviting
-is Cloud's: an invitation is an email, and only Cloud has an email service at first run (Given). On
-Cloud the field reads "Invite teammates" and the button "Send N invites and finish". On self-hosted
-the same field reads "Add members": Finish adds those addresses as workspace members with the same
-roles and sends nothing, the line under the field says so and that each person gets access once they
-have an account with that address, and the button reads "Add N members and finish". Calling it an
-invitation there would promise an email that never arrives. There is no role picker. An earlier
-draft offered a "Role in <project>" selector, which names Bytebase's project roles to a user ten
-seconds into the product. Invitees are added as Workspace Member, and on the new project as Project
-Developer and SQL Editor Read User, which together let them propose changes and run read-only
-queries. One sentence says so, and roles are changed later in Members, where the names mean
-something. On the own-instance path that sentence also says the project's databases appear once the
-instance is connected, because those invitees arrive first. Holding their invitations until then
+invite field appears once a size above "Just me" is chosen, so "Just me" never comes with invitees
+and a solo account, the majority, sees one question and Finish. The size is how many people will use
+Bytebase, not how many are invited today, so the two numbers are not reconciled further. Emails are
+chips: type one, press Enter, type the next; a pasted list splits and repeats are dropped; an
+invalid entry, or the owner's own address, is shown struck through, is not sent and is not counted
+on the button. Inviting is Cloud's: an invitation is an email, and only Cloud has an email service
+at first run (Given). On Cloud the field reads "Invite teammates" and the button "Send N invites and
+finish". On self-hosted the same field reads "Add members": Finish adds those addresses as workspace
+members with the same roles and sends nothing, the line under the field says so and that each person
+gets access once they have an account with that address, and the button reads "Add N members and
+finish". Calling it an invitation there would promise an email that never arrives. There is no role
+picker. An earlier draft offered a "Role in <project>" selector, which names Bytebase's project
+roles to a user ten seconds into the product. Invitees are added as Workspace Member, and on the new
+project as Project Developer and SQL Editor Read User, which together let them propose changes and
+run read-only queries. One sentence says so, and roles are changed later in Members, where the names
+mean something. On the own-instance path that sentence also says the project's databases appear once
+the instance is connected, because those invitees arrive first. Holding their invitations until then
 would need somewhere to hold them, which the 7 of 100 finishers on that path do not justify.
 Greptile asks a default role (Admin or Member); Linear, Neon and Metabase ask for emails only.
 Rejected: the "Just me / My team" question (it only decided whether this screen appears, and the
