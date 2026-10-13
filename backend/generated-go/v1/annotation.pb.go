@@ -272,10 +272,11 @@ const (
 	// key is sent to. A session that can widen its own ceiling is not bounded
 	// by it.
 	MCPDenialReason_REWRITES_SESSION_BOUNDARY MCPDenialReason = 7
-	// Works the human approval step that gates the change: recording the review
-	// decision, or re-running the finding that sets it and can clear the issue
-	// outright. An agent composes a change; it does not move its own change
-	// through the gate.
+	// Decides whether a change or an access request passes its human approval:
+	// recording the review decision, re-running the finding that sets it and can
+	// clear the issue outright, or activating an access grant without it. An
+	// agent composes a change or files a request; it does not decide that for its
+	// own work.
 	MCPDenialReason_DRIVES_THE_APPROVAL_DECISION MCPDenialReason = 8
 	// Administers the workspace rather than doing database work: identity,
 	// credentials, access control, governance policy, billing, workspace and

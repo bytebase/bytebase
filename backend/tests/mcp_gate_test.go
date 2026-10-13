@@ -290,23 +290,8 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	}
 }
 
-// TestMCPCannotRunAnIssuelessRollout is the rule rollout_service.proto says the
-// gate PR owes, and the reason it is a rule rather than a classification.
-//
-// Three approval RPCs are FORBIDDEN so an agent cannot move its own change
-// through the human gate. That buys nothing if the agent can go round it: both
-// approval checks on the execution path are guarded on a LINKED ISSUE existing,
-// so a plan created without one reaches task creation with no approval whatever
-// require_issue_approval says. CreatePlan, CreateRollout and BatchRunTasks are
-// all WRITE and stay WRITE — issueless deployment is a supported contract, the
-// shipped GitOps Service Agent role holds no issue permission at all — so the
-// refusal is per session, not per method.
-//
-// The ceiling gate cannot take it: "the plan has no linked issue" is not a
-// field of either request. The guard sits where the fact is loaded, and the
-// control that matters most is the last one — a human doing the identical thing
-// must be unaffected, because that is the risk of putting MCP policy in a
-// handler at all.
+// TestMCPCannotRunAnIssuelessRollout pins rejectMCPOriginatedIssuelessRollout
+// over a live session, and that a console user doing the same is unaffected.
 func TestMCPCannotRunAnIssuelessRollout(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

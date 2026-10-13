@@ -156,50 +156,12 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	// follow-up (BOT-53); disallowing first is the deliberate order.
 	v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY: {v1pb.MCPMethodClass_FORBIDDEN, "it rewrites the workspace settings that bound this session, including the switch meant to contain it"},
 
-	// The four approval methods. ApproveIssue and RejectIssue are two actions of
-	// one handler (issue_review.go reviewIssue), and that handler records the
-	// review decision itself: applyReviewAction requires an approver role via
-	// canReview, enforces the self-approval guard, and appends an APPROVED or
-	// REJECTED approver (component/review/workflow.go). An agent composes a
-	// change; it does not move its own change through the gate. That is the
-	// whole claim,
-	// and it is deliberately narrower than "an agent only executes approved work",
-	// which this classification does NOT deliver: CreatePlan, CreateRollout and
-	// BatchRunTasks are all WRITE, and both approval checks on the execution
-	// path are guarded on an issue existing, so a plan created without one
-	// reaches execution with no approval at all. Whether an issueless rollout
-	// belongs in WRITE is the gate PR's decision to take deliberately rather
-	// than inherit.
-	//
-	// RequestIssue is the third action of the same handler and is deliberately
-	// NOT here — it is WRITE. Spec §1b-1 named four approval methods; that line
-	// grouped by RPC family rather than by mechanism, and the mechanism does not
-	// agree. This action requires the issue to be already rejected, requires the
-	// actor to be the issue CREATOR, never calls canReview, and records no
-	// decision: it strips the REJECTED approvers and returns the issue to
-	// PENDING for a fresh human decision. It cannot approve anything, so
-	// refusing it protects nothing the other two do not, and it costs the
-	// propose-fix-resubmit loop, since while a rejection stands Approve and
-	// Reject both hard-fail and this is the only exit from that state. The
-	// reasoning is on the RPC in issue_service.proto. Raised by the Codex
-	// review; Vincent took the call.
-	//
-	// RetryIssueApproval is the near miss and is in deliberately. It casts no
-	// vote — it re-runs approval-template finding for an issue stuck in
-	// CHECKING, and only the issue creator may call it (issue_service.go
-	// canRequestIssue) — but it is the other half of the reason's wording
-	// rather than an exception to it: on an auto-approved result the same call
-	// activates the grant and enqueues the rollout (issue_service.go:789,796),
-	// so it moves an issue through the gate without any human acting. What it
-	// does not buy is containment of re-derivation in general: UpdatePlan with
-	// a specs mask, and UpdateIssue on a label change, both reset
-	// ApprovalFindingDone and force the template to be found again against the
-	// current workspace rule (component/review/plan.go, metadata.go), and both
-	// stay WRITE. That is the intended line — editing a proposal is the agent's
-	// job, and re-review after an edit is the system working — not an oversight.
-	// Refusing RetryIssueApproval costs an agent the self-service recovery for
-	// its own stuck issue; the operator retries from the console.
-	v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION: {v1pb.MCPMethodClass_FORBIDDEN, "it works the approval step meant to gate the change, and an agent does not move its own change through that gate"},
+	// The approval methods. ApproveIssue and RejectIssue record the review
+	// decision (applyReviewAction). RetryIssueApproval re-runs the finding and, on
+	// an auto-approved result, completes the issue itself. ActivateAccessGrant
+	// activates a pending grant without reading its approval. RequestIssue stays
+	// WRITE: it records no decision, only returning a rejected issue to review.
+	v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION: {v1pb.MCPMethodClass_FORBIDDEN, "it decides whether a change or an access request passes its human approval, and an agent does not decide that for its own work"},
 
 	// The other refused class. An EXCLUDED method is out of scope for the modes
 	// this release ships and an admin-capable ceiling could legitimately serve

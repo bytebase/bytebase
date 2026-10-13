@@ -44,6 +44,8 @@ service AccessGrantService {
     option (bytebase.v1.permission) = "bb.accessGrants.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    // WRITE, but an MCP session is refused a request that no approval rule
+    // sends to a person (refuseUnattendedMCPAccessGrant).
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 

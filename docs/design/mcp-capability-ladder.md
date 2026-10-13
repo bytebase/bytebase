@@ -90,8 +90,8 @@ the engine says so without naming engines, because per-engine depth is out of sc
 
 Both axes have caught lines here, and the engine axis caught the same line twice. On the mode axis,
 the read-only clamp holds only under Read-only (`mcpReadOnlyClampApplies`), so without its qualifier
-row 2 promised a whole-request refusal under Read-write while row 6 on the same screen offered INSERT
-and DROP.
+row 2 promised a whole-request refusal under Read-write while the DML and DDL row on the same screen
+offered INSERT and DROP.
 
 On the engine axis, three drafts failed in three different ways, and the shape of the failure is the
 lesson. Naming engines (PostgreSQL, CockroachDB, Redshift) went stale against the Redshift datashare
@@ -167,9 +167,9 @@ outcome. Parallelism between the two is broken on purpose.
 
 Two choices in the wording are deliberate. Row 2 says *Read data by running queries* rather than
 "Run queries" so the verb stays Read and the sub-item carries the rule that keeps it true under
-Read-only. Row 6 is not a method at all: it names the statement clamp being lifted, because that is
-a real difference between the modes that no method name shows, and a future custom policy will want
-it as its own switch.
+Read-only. The DML and DDL row is not a method at all: it names the statement clamp being lifted,
+because that is a real difference between the modes that no method name shows, and a future custom
+policy will want it as its own switch.
 
 Every sub-item names only what the served methods can do. Sheets are created, never edited: there
 is no update RPC. Releases and revisions are created and deleted: `ReleaseService/UpdateRelease` is
@@ -218,13 +218,13 @@ changes.
 
 One verb for the whole write tier was tried and rejected:
 
-- **Write** for all five: "Write query results" (export writes nothing to a database), "Write
+- **Write** for every write row: "Write query results" (export writes nothing to a database), "Write
   change proposals" (nothing reaches a database until approval), "Write rollouts" (not English),
   "Write database housekeeping" (reads as a data change).
-- **Change** for all five: fails for exports and rollouts, and makes "Change proposals" and
+- **Change** for every write row: fails for exports and rollouts, and makes "Change proposals" and
   "Change data with SQL" read as the same thing — the distinction the FORBIDDEN approval methods
   exist to protect.
-- **Manage** for all five: hides the hazard on exports and on SQL.
+- **Manage** for every write row: hides the hazard on exports and on SQL.
 
 Per row: *Propose* over Create (Create fits the method names but hides that the project's approval
 policy may still require a human); *Export* over Read or Download (Read hides the egress hazard,
@@ -241,9 +241,9 @@ The tier is named once, by the dividers, so no row repeats it in its title.
 
 **D1 — Placement: a disclosure inside the Access policy section, collapsed by default.**
 Not a drawer (a second surface, one mode at a time) and not a separate section (it belongs to the
-policy it describes). Collapsed, the trigger line *is* the mode's description: "▸ Read schemas, data
-and the change workflow; propose, run, export and manage". The read half is the same phrase in
-both modes, because Read-write serves exactly the read rows Read-only serves; the EXCLUDED reads
+policy it describes). Collapsed, the trigger line *is* the mode's description, the summary under
+Copy. The read half is the same phrase in both modes, because Read-write serves exactly the read
+rows Read-only serves; the EXCLUDED reads
 (audit logs, users, roles, IAM policies, other people's query history, task-run sessions) are
 refused in every mode, so no summary may say "read everything". The line never repeats the mode
 name, which the chip (view) or the
@@ -398,16 +398,16 @@ under
 `settings.mcp.ladder.*` are new; the rest replace existing `settings.mcp.*` and
 `oauth2.consent.mcp.*` values.
 
-- Section description: "The most any MCP session may do here. Sessions are also capped by each user's permissions, and policy refusals are streamed to stdout when audit logging to stdout is enabled."
+- Section description: "Every MCP session is limited by the connected user's Bytebase permissions and the target database engine's supported operations. MCP operations are recorded in Bytebase audit logs."
 - Disclosure line, collapsed — Read-only: "Read schemas, data and the change workflow; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported".
-  Read-write: "Read schemas, data and the change workflow; propose, run, export and manage".
+  Read-write: "Read schemas, data and the change workflow; propose, request access, run, export and manage".
   Expanded heading: "{mode} allows". Details control: "Show details" / "Hide details".
 - Disabled — view sentence: "No MCP session can connect to this workspace." Edit static line:
   "Nothing is allowed; no MCP session can connect."
-- Card captions: Disabled "No sessions connect"; Read-only "Explore and query"; Read-write "Change
-  data and schemas".
-- "Best for" lines, unchanged: Disabled "keeping MCP off until you are ready to turn it on";
-  Read-only "querying and exploring data, including by people who do not write SQL"; Read-write
+- Card captions: Disabled "No sessions can connect"; Read-only "Explore and query"; Read-write
+  "Change data and schemas".
+- "Best for" lines: Disabled "keeping MCP off until you are ready to turn it on";
+  Read-only "querying and exploring data, using natural language"; Read-write
   "making database changes through an AI agent, still capped by each user's own permissions".
 - The Read-only description sentence ("Sessions can explore schemas and run read-only queries…")
   is retired everywhere; its content lives in the Read-only summary and in row 2's sub-item.
