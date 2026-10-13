@@ -84,3 +84,60 @@ func TestBackupUnsyncedDatabase(t *testing.T) {
 	}, "UPDATE t SET a = 1 WHERE b = 1;", "db", "backupSchema", "rollback")
 	require.ErrorContains(t, err, `database metadata for database "db" not found (database not synced)`)
 }
+
+func TestBackupRejectsDataModifyingCTE(t *testing.T) {
+	tests := []struct {
+		name      string
+		statement string
+		wantErr   string
+	}{
+		{
+			name:      "delete CTE feeding update",
+			statement: "WITH d AS (DELETE FROM test2 WHERE a > 1 RETURNING a) UPDATE test SET c = 1 WHERE a IN (SELECT a FROM d);",
+			wantErr:   `data-modifying WITH query "d";`,
+		},
+		{
+			name:      "insert CTE feeding delete",
+			statement: "WITH i AS (INSERT INTO test2 (a) VALUES (1) RETURNING a) DELETE FROM test USING i WHERE test.a = i.a;",
+			wantErr:   `data-modifying WITH query "i";`,
+		},
+		{
+			name:      "update CTE beside read-only CTE",
+			statement: "WITH s AS (SELECT a FROM test2), u AS (UPDATE test2 SET a = a + 1 RETURNING a) UPDATE test SET c = 1 FROM s WHERE test.a = s.a;",
+			wantErr:   `data-modifying WITH query "u";`,
+		},
+		{
+			name:      "merge CTE",
+			statement: "WITH m AS (MERGE INTO test2 USING test ON test2.a = test.a WHEN MATCHED THEN DELETE RETURNING test2.a) DELETE FROM test WHERE a IN (SELECT a FROM m);",
+			wantErr:   `data-modifying WITH query "m";`,
+		},
+		{
+			name:      "rejected after an earlier statement transforms",
+			statement: "UPDATE test2 SET a = 1;\nWITH d AS (DELETE FROM test2 RETURNING a) DELETE FROM test WHERE a IN (SELECT a FROM d);",
+			wantErr:   `data-modifying WITH query "d";`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := TransformDMLToSelect(context.Background(), base.TransformContext{
+				GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
+			}, tc.statement, "", "backupSchema", "rollback")
+			require.ErrorContains(t, err, tc.wantErr)
+			require.Nil(t, result)
+		})
+	}
+}
+
+func TestBackupAllowsReadOnlyCTE(t *testing.T) {
+	for _, statement := range []string{
+		"WITH v(a) AS (VALUES (1)) UPDATE test SET c = 1 FROM v WHERE test.a = v.a;",
+		"WITH s AS (TABLE test2) DELETE FROM test USING s WHERE test.a = s.a;",
+		"WITH s AS ((SELECT a FROM test2) UNION SELECT 1) UPDATE test SET c = 1 FROM s WHERE test.a = s.a;",
+	} {
+		result, err := TransformDMLToSelect(context.Background(), base.TransformContext{
+			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
+		}, statement, "", "backupSchema", "rollback")
+		require.NoError(t, err, statement)
+		require.Len(t, result, 1, statement)
+	}
+}
