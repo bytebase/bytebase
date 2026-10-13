@@ -5,6 +5,7 @@ export type ProjectHomeNextStep =
   | "transferDatabases"
   | "createDatabase"
   | "changeDatabase"
+  | "queryDatabase"
   | "members";
 
 export type ProjectHomeNextStepInput = {
@@ -18,6 +19,7 @@ export type ProjectHomeNextStepInput = {
   canTransferDatabases: boolean;
   canCreateDatabase: boolean;
   canCreateChange: boolean;
+  canQueryDatabase: boolean;
   canManageMembers: boolean;
 };
 
@@ -61,6 +63,9 @@ export function getProjectHomeNextSteps(
     input.canCreateChange
   ) {
     steps.push("changeDatabase");
+    if (input.canQueryDatabase) {
+      steps.push("queryDatabase");
+    }
   }
 
   if (input.membership === "solo" && input.canManageMembers) {

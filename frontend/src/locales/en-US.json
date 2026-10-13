@@ -2031,6 +2031,8 @@
       "no-databases-description": "Connect an instance to bring databases into this project.",
       "no-databases-prerequisite": "An instance must be connected before databases appear here.",
       "no-databases-transfer-description": "Transfer an unassigned database into this project, or create a new one.",
+      "query-database": "Query a database",
+      "query-database-description": "Explore this project's databases in SQL Editor.",
       "transfer-databases": "Transfer databases",
       "transfer-databases-description": "Move an unassigned database into this project.",
       "view-all": "View all",

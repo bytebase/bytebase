@@ -163,6 +163,12 @@ describe("ProjectHomePage", () => {
 
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
     expect(await within(next).findByRole("link", { name: "project.home.change-database" })).toBeTruthy();
+    const query = within(next).getByRole("link", { name: "project.home.query-database" });
+    expect(JSON.parse(query.getAttribute("data-to") ?? "")).toEqual({
+      name: "sql-editor.project",
+      params: { project: "orders" },
+    });
+    expect(query.className).not.toContain("bg-accent");
     expect(mocks.state.listPlans).not.toHaveBeenCalled();
   });
 
@@ -172,6 +178,7 @@ describe("ProjectHomePage", () => {
 
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
     expect(await within(next).findByRole("link", { name: "project.home.change-database" })).toBeTruthy();
+    expect(within(next).queryByRole("link", { name: "project.home.query-database" })).toBeNull();
     expect(mocks.state.fetchDatabases).toHaveBeenCalledWith(
       expect.objectContaining({ parent: "projects/orders" })
     );

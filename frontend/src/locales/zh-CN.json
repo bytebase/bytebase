@@ -2031,6 +2031,8 @@
       "no-databases-description": "连接实例，将数据库加入此项目。",
       "no-databases-prerequisite": "连接实例后，数据库才会显示在这里。",
       "no-databases-transfer-description": "将未分配的数据库转入此项目，或创建新数据库。",
+      "query-database": "查询数据库",
+      "query-database-description": "在 SQL 编辑器中浏览此项目的数据库。",
       "transfer-databases": "转移数据库",
       "transfer-databases-description": "将未分配的数据库转入此项目。",
       "view-all": "查看全部",

@@ -12,6 +12,7 @@ const input = {
   canTransferDatabases: true,
   canCreateDatabase: true,
   canCreateChange: true,
+  canQueryDatabase: true,
   canManageMembers: true,
 };
 
@@ -92,7 +93,7 @@ describe("getProjectHomeNextSteps", () => {
         database: "present",
         change: "unknown",
       })
-    ).toEqual(["changeDatabase", "members"]);
+    ).toEqual(["changeDatabase", "queryDatabase", "members"]);
   });
 
   test("waits for initial discovery before showing membership setup", () => {
@@ -111,6 +112,7 @@ describe("getProjectHomeNextSteps", () => {
   test("offers a first database change and optional membership setup", () => {
     expect(getProjectHomeNextSteps({ ...input, database: "present" })).toEqual([
       "changeDatabase",
+      "queryDatabase",
       "members",
     ]);
     expect(
@@ -119,7 +121,24 @@ describe("getProjectHomeNextSteps", () => {
         database: "present",
         membership: "has-collaborators",
       })
-    ).toEqual(["changeDatabase"]);
+    ).toEqual(["changeDatabase", "queryDatabase"]);
+  });
+
+  test("only offers querying alongside a database change when SQL Editor is available", () => {
+    expect(
+      getProjectHomeNextSteps({
+        ...input,
+        database: "present",
+        canQueryDatabase: false,
+      })
+    ).toEqual(["changeDatabase", "members"]);
+    expect(
+      getProjectHomeNextSteps({
+        ...input,
+        database: "present",
+        canCreateChange: false,
+      })
+    ).toEqual(["members"]);
   });
 
   test("hides setup after the first submitted database change", () => {

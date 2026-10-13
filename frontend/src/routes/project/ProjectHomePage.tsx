@@ -4,6 +4,7 @@ import {
   Database,
   PlugZap,
   Send,
+  SquareTerminal,
   UsersRound,
   Workflow,
 } from "lucide-react";
@@ -15,6 +16,7 @@ import {
   PROJECT_V1_ROUTE_INSTANCE_CREATE,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_MEMBERS,
+  SQL_EDITOR_PROJECT_MODULE,
 } from "@/app/router/handles";
 import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import { useComponentPermissionState } from "@/components/ComponentPermissionGuard";
@@ -103,6 +105,11 @@ function nextStepTarget(step: ProjectHomeNextStep, projectId: string) {
       };
     case "changeDatabase":
       return buildPlanCreateRoute(projectId, {});
+    case "queryDatabase":
+      return {
+        name: SQL_EDITOR_PROJECT_MODULE,
+        params: { project: projectId },
+      };
     case "members":
       return { name: PROJECT_V1_ROUTE_MEMBERS, params };
   }
@@ -184,6 +191,8 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     !missedPermissions.includes("bb.issues.create") &&
     !missedPermissions.includes("bb.sheets.create") &&
     canGetPlanDetail;
+  const canQueryDatabase =
+    canListDatabases && !missedPermissions.includes("bb.projects.getIamPolicy");
   const membership =
     !projectPolicy || !member || !canManageMembers
       ? "unknown"
@@ -516,6 +525,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     canTransferDatabases,
     canCreateDatabase,
     canCreateChange,
+    canQueryDatabase,
     canManageMembers,
   });
 
@@ -541,6 +551,11 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
           t("project.home.change-database"),
           t("project.home.change-database-description"),
         ];
+      case "queryDatabase":
+        return [
+          t("project.home.query-database"),
+          t("project.home.query-database-description"),
+        ];
       case "members":
         return [
           t("project.home.members"),
@@ -559,6 +574,8 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
         return Database;
       case "changeDatabase":
         return Workflow;
+      case "queryDatabase":
+        return SquareTerminal;
       case "members":
         return UsersRound;
     }

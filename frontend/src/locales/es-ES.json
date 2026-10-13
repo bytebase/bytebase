@@ -2031,6 +2031,8 @@
       "no-databases-description": "Conecta una instancia para incorporar bases de datos a este proyecto.",
       "no-databases-prerequisite": "Se debe conectar una instancia antes de que aparezcan bases de datos aquí.",
       "no-databases-transfer-description": "Transfiere una base de datos sin asignar a este proyecto o crea una nueva.",
+      "query-database": "Consultar una base de datos",
+      "query-database-description": "Explora las bases de datos de este proyecto en el Editor SQL.",
       "transfer-databases": "Transferir bases de datos",
       "transfer-databases-description": "Mueve una base de datos sin asignar a este proyecto.",
       "view-all": "Ver todas",
