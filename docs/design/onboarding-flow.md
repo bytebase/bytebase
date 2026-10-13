@@ -129,9 +129,11 @@ checkbox, and a skip.
 
 **D6 · Finish is the one commit, so Back works on every screen.** Continue on screens 1 to 3 only
 records answers; nothing exists on the server until Finish on screen 4. Finish saves the name and
-workspace name, creates the project, prepares the sample when it was chosen, and sends the
-invites, and its button shows progress until the last call returns. The sample request returns
-with the database ready (Given), so invitees arrive to a project that has one. A failure stays on
+workspace name, creates the project, prepares the sample when it was chosen, and adds the invitees
+to the workspace and the project, and its button shows progress until the last call returns. The
+sample request returns with the database ready (Given), so invitees arrive to a project that has
+one. Adding them is the part Finish can verify; the server then sends their invitation emails in
+the background, as it does from the Members page. A failure stays on
 screen 4 naming the step that failed, with "Try again", which continues from that step; when the
 sample is what failed it also offers "Finish without the sample", which takes the own-instance
 hand-off instead. Today the wizard reports a finish even when the sample request fails and offers
@@ -180,16 +182,16 @@ illustration stays on sign-in and sign-up. Rejected for now: a constant stage (t
 nothing) and a live preview of the product being configured (strongest teaching, highest drift;
 planned for screen 3 later).
 
-**D10 · Instrumentation.** Each Continue emits `workspace setup screen continued` on the click,
-with the screen number and the answers so far (goal, project named, source, team size, invite
-count). No event carries a name, an email address or a project name. `workspace setup submitted`
-still fires when Finish succeeds, and gains `result=failed` with `failure_stage` (names, project,
-sample, invites) and the source. Finish then emits `first action opened` with its target (new
-change, SQL Editor, or connect instance). No client event can be the record, though: the 17 lost
-finishes lost every custom event after the wizard mounted, and 13 accounts since Sep 11 were never
-tracked at all. The record stays with the backend, as the Cloud usage dashboard's exporter already
-reads it: "finished setup" from the workspace's first project, and "connected an instance" from
-its first instance, sample or own. An account that defers its instance therefore shows up as
+**D10 · Instrumentation.** Each Continue emits `workspace setup screen continued` on the click, with
+the screen number and the answers so far (goal, project named, source). No event carries a name, an
+email address or a project name. `workspace setup submitted` still fires when Finish succeeds, now
+carrying the goal, the source, the team size and the invite count, and gains `result=failed` with
+`failure_stage` (names, project, sample, invitees). Finish then emits `first action opened` with its
+target (new change, SQL Editor, or connect instance). No client event can be the record, though: the
+17 lost finishes lost every custom event after the wizard mounted, and 13 accounts since Sep 11 were
+never tracked at all. The record stays with the backend, as the Cloud usage dashboard's exporter
+already reads it: "finished setup" from the workspace's first project, and "connected an instance"
+from its first instance, sample or own. An account that defers its instance therefore shows up as
 finished but not yet connected, with no new backend work.
 
 **D11 · Gate, draft and resume.** The gate is unchanged: first login, sole admin, mandatory on
