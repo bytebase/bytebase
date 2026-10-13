@@ -146,30 +146,33 @@ records answers; nothing exists on the server until Finish on screen 4. Finish s
 workspace name, creates the project, prepares the sample when it was chosen, and adds the invitees
 to the project and then to the workspace, and its button shows progress until the last call returns.
 The sample request returns with the database ready (Given), so invitees arrive to a project that has
-one. Adding them is the part Finish can verify; the server then sends their invitation emails in the
-background, as it does from the Members page. The workspace write is what triggers those emails, so
-it goes last: nobody is invited to a project they cannot open. A failure stays on screen 4 naming
-the step that failed, with "Try again", which continues from that step; when the sample is what
-failed it also offers "Finish without the sample", which finishes as the own-instance choice does.
-Today the wizard reports a finish even when the sample request fails and offers no retry. Rejected:
-committing on screen 3, as an earlier draft had it. It made the team screen a point of no return
-with no Back, and needed a resume rule for an account that reloaded after the commit.
+one; on the own-instance path they arrive before the instance is connected (D7). Adding them is the
+part Finish can verify; the server then sends their invitation emails in the background, as it does
+from the Members page. The workspace write is what triggers those emails, so it goes last: nobody is
+invited to a project they cannot open. A failure stays on screen 4 naming the step that failed, with
+"Try again", which runs Finish again without creating the project twice (D11); when the sample is
+what failed it also offers "Finish without the sample", which finishes as the own-instance choice
+does. Today the wizard reports a finish even when the sample request fails and offers no retry.
+Rejected: committing on screen 3, as an earlier draft had it. It made the team screen a point of no
+return with no Back, and needed a resume rule for an account that reloaded after the commit.
 
-**D7 · Team: size required, invites optional, no role.** "How many people will use Bytebase?"
-with five options (Just me, 2–10, 11–50, 51–200, 200+) is one required click, the flow's only
+**D7 · Team: size required, invites optional, no role.** "How many people will use Bytebase?" with
+five options (Just me, 2–10, 11–50, 51–200, 200+) is one required click, the flow's only
 qualification question. It keys the guide's team step (only above "Just me"), the plan hint, and
 lead scoring; team accounts do first work at 34% against 22%. The invite field appears once a size
-above "Just me" is chosen, so the two answers cannot disagree and a solo account, the majority,
-sees one question and Finish. Emails are chips: type one, press Enter, type the next; a pasted list
-splits; an invalid entry is shown struck through and not sent.
-There is no role picker. An earlier draft offered a "Role in <project>" selector, which names
-Bytebase's project roles to a user ten seconds into the product. Invitees are added as Workspace
-Member, and on the new project as Project Developer and SQL Editor Read User, which together let
-them propose changes and run read-only queries. One sentence says so, and roles are changed later
-in Members, where the names mean something. Greptile asks a default role (Admin or Member);
-Linear, Neon and Metabase ask for emails only. Rejected: the "Just me / My team" question (it only
-decided whether this screen appears, and the screen is now always offered and one click to pass),
-the role selector, and the free-text email box.
+above "Just me" is chosen, so the two answers cannot disagree and a solo account, the majority, sees
+one question and Finish. Emails are chips: type one, press Enter, type the next; a pasted list
+splits; an invalid entry is shown struck through and not sent. There is no role picker. An earlier
+draft offered a "Role in <project>" selector, which names Bytebase's project roles to a user ten
+seconds into the product. Invitees are added as Workspace Member, and on the new project as Project
+Developer and SQL Editor Read User, which together let them propose changes and run read-only
+queries. One sentence says so, and roles are changed later in Members, where the names mean
+something. On the own-instance path that sentence also says the project's databases appear once the
+instance is connected, because those invitees arrive first. Holding their invitations until then
+would need somewhere to hold them, which the 7 of 100 finishers on that path do not justify.
+Greptile asks a default role (Admin or Member); Linear, Neon and Metabase ask for emails only.
+Rejected: the "Just me / My team" question (it only decided whether this screen appears, and the
+screen is now always offered and one click to pass), the role selector, and the free-text email box.
 
 **D8 · Finish lands on the project home, on both paths.** The project home ([#21572]) makes the
 project root a page of its own: a next-step band chosen from the project's state, the user's open
@@ -215,9 +218,15 @@ finished but not yet connected, with no new backend work.
 **D11 · Gate, draft and resume.** The gate is unchanged: first login, sole admin, mandatory on
 Cloud, and the flag that sends an unfinished Cloud account back to the wizard clears when Finish
 succeeds, as it does on submit today. Until then the answers live in a local draft, so Back, a
-reload and a re-login in the same browser return to the same screen with nothing retyped. The
-draft also records which steps of Finish have succeeded, so a retry after a reload continues from
-the step that failed instead of creating the project a second time. The wizard collects no
+reload and a re-login in the same browser return to the same screen with nothing retyped. The draft
+also records that the project was created, the one step of Finish that cannot be repeated, so a
+retry, after a reload too, goes past it instead of failing on a project that already exists. From
+then on screen 3 shows the project's name and ID read-only, and the database choice too once the
+sample has been prepared: both exist, and are changed in the product, not in the wizard. Every other
+step is an overwrite or safe to repeat (saving the names, preparing the sample for the same project,
+writing the invitees to the project and then the workspace), so each retry runs them again from the
+answers on screen. A checkpoint therefore never outlives the answers it was made with: an invitee
+removed after a failed attempt is removed from the project as well. The wizard collects no
 credentials, so the draft holds none. Every disabled button says why, in words, beside it; two of
 the 42 leavers stalled on a disabled button with no explanation.
 
@@ -243,6 +252,7 @@ finish".
 | 3 Own | named, own instance chosen | one line on what happens after setup; diagram of the user's instance joining the project later | Continue enabled |
 | 3 · no sample | the server reports the sample unavailable or used | only the own-instance choice, with the reason | Continue enabled once named |
 | 3 · skipped | "I'll do this later", self-hosted only | leaves for the workspace landing; nothing is created | n/a |
+| 3 · project exists | Back after a Finish attempt that created the project | project name and ID read-only, with a line saying the project exists and is renamed in its settings; the database choice read-only once the sample is prepared | Continue enabled |
 | 4 Team | size unset | five size options, nothing else | Finish disabled, "Pick a team size to finish"; Back enabled |
 | 4 Team | "Just me" | the size options only; no invite field | Finish enabled |
 | 4 Team | a size above "Just me" | the chips input appears with one line about membership; the button reads "Finish" or "Send N invites and finish" | Finish enabled |
@@ -268,9 +278,9 @@ No backend, proto or instance-form change.
 Tests to write: vitest for each screen's validation and gating message, for the chips parser, and
 for the draft restoring every screen; an e2e spec under `frontend/tests/e2e` that walks the sample
 path onto the project home with "Change a database" as its next step, the own-instance path onto it
-with "Connect an instance", Back from the team screen keeping every answer, a failed Finish retried,
-and the self-hosted skip with its sample and invite wording; and event tests that each Continue and
-the submitted result carry the properties in D10.
+with "Connect an instance", Back from the team screen keeping every answer, a failed Finish retried
+after the invite list changed, and the self-hosted skip with its sample and invite wording; and
+event tests that each Continue and the submitted result carry the properties in D10.
 
 ## Not in this PR
 
