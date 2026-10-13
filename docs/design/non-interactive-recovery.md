@@ -191,6 +191,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: bytebase-recovery
+  namespace: <the server's namespace>
 spec:
   backoffLimit: 0
   template:
@@ -200,7 +201,7 @@ spec:
       # Copy the server pod's volumes, init containers and imagePullSecrets, if it has any.
       containers:
         - name: recovery
-          image: bytebase/bytebase@sha256:<the running pod's digest>
+          image: <the running pod's imageID: its registry, repository and digest>
           args: ["recovery", "reset-password", "--email", "<email>", "--password", "$(NEW_PASSWORD)"]
           # The server container's env and volumeMounts, plus the new password.
           env:
