@@ -103,9 +103,9 @@ first because it is known and cheap, and every later screen names the workspace 
 before database because it is what the user came for, and it decides which step the project home and
 the guide put first. Database before team because invitees should find something when they click the
 invite; Linear and Neon invite early because their product works before any setup, ours works after
-a database. Team last, always offered, skippable. Rejected: today's order (goal and team first, then
-everything else on one screen), and team as the second screen, which invites people into an empty
-workspace.
+a database. Team last and always offered: one required click for its size, invitations optional.
+Rejected: today's order (goal and team first, then everything else on one screen), and team as the
+second screen, which invites people into an empty workspace.
 
 **D2 · Screen 1 is a confirmation, not a form.** Your name (optional, prefilled from the identity
 provider or the email local part, left empty for alias-like local parts such as admin or info) and
@@ -166,21 +166,28 @@ return with no Back, and needed a resume rule for an account that reloaded after
 
 **D7 · Team: size required, invites optional, no role.** "How many people will use Bytebase?" with
 five options (Just me, 2–10, 11–50, 51–200, 200+) is one required click, the flow's only
-qualification question. It keys the guide's team step (only above "Just me"), the plan hint, and
-lead scoring; team accounts do first work at 34% against 22%. The invite field appears once a size
-above "Just me" is chosen, so the two answers cannot disagree and a solo account, the majority, sees
-one question and Finish. Emails are chips: type one, press Enter, type the next; a pasted list
-splits; an invalid entry is shown struck through and not sent. There is no role picker. An earlier
-draft offered a "Role in <project>" selector, which names Bytebase's project roles to a user ten
-seconds into the product. Invitees are added as Workspace Member, and on the new project as Project
-Developer and SQL Editor Read User, which together let them propose changes and run read-only
-queries. One sentence says so, and roles are changed later in Members, where the names mean
-something. On the own-instance path that sentence also says the project's databases appear once the
-instance is connected, because those invitees arrive first. Holding their invitations until then
-would need somewhere to hold them, which the 7 of 100 finishers on that path do not justify.
-Greptile asks a default role (Admin or Member); Linear, Neon and Metabase ask for emails only.
-Rejected: the "Just me / My team" question (it only decided whether this screen appears, and the
-screen is now always offered and one click to pass), the role selector, and the free-text email box.
+qualification question. It is a radio group laid out in one row, not a segmented control, which the
+UX contract keeps for view switches. It keys the guide's team step (only above "Just me"), the plan
+hint, and lead scoring; team accounts do first work at 34% against 22%. The invite field appears
+once a size above "Just me" is chosen, so the two answers cannot disagree and a solo account, the
+majority, sees one question and Finish. Emails are chips: type one, press Enter, type the next; a
+pasted list splits; an invalid entry is shown struck through and not sent. Inviting is Cloud's: an
+invitation is an email, and only Cloud has an email service at first run (Given). On Cloud the field
+reads "Invite teammates" and the button "Send N invites and finish". On self-hosted the same field
+reads "Add members": Finish adds those addresses as workspace members with the same roles and sends
+nothing, the line under the field says so and that each person gets access once they have an account
+with that address, and the button reads "Add N members and finish". Calling it an invitation there
+would promise an email that never arrives. There is no role picker. An earlier draft offered a "Role
+in <project>" selector, which names Bytebase's project roles to a user ten seconds into the product.
+Invitees are added as Workspace Member, and on the new project as Project Developer and SQL Editor
+Read User, which together let them propose changes and run read-only queries. One sentence says so,
+and roles are changed later in Members, where the names mean something. On the own-instance path
+that sentence also says the project's databases appear once the instance is connected, because those
+invitees arrive first. Holding their invitations until then would need somewhere to hold them, which
+the 7 of 100 finishers on that path do not justify. Greptile asks a default role (Admin or Member);
+Linear, Neon and Metabase ask for emails only. Rejected: the "Just me / My team" question (it only
+decided whether this screen appears, and the screen is now always offered and one click to pass),
+the role selector, and the free-text email box.
 
 **D8 · Finish lands on the project home, and the home puts the goal's step first.** The project home
 ([#21572], on main since Oct 13) makes the project root a page of its own: a "Next step" band chosen
@@ -240,8 +247,11 @@ step is an overwrite or safe to repeat (saving the names, preparing the sample f
 writing the invitees to the project and then the workspace), so each retry runs them again from the
 answers on screen. A checkpoint therefore never outlives the answers it was made with: an invitee
 removed after a failed attempt is removed from the project as well. The wizard collects no
-credentials, so the draft holds none. Every disabled button says why, in words, beside it; two of
-the 42 leavers stalled on a disabled button with no explanation.
+credentials, so the draft holds none. No Continue or Finish is disabled without its reason on
+screen, and the reason sits with the field or question it is about, as the UX contract requires
+(`docs/agents/frontend-ux.md`): under the workspace name, under the goal choices, under the project
+name, under the team-size question. Two of the 42 leavers stalled on a disabled button with no
+explanation.
 
 **D12 · Self-hosted keeps its differences.** The same four screens serve self-hosted, where setup is
 offered once and screen 3 keeps "I'll do this later". That action saves the two names from screen 1
@@ -249,27 +259,26 @@ and leaves for the workspace landing as it does today. No project is created, so
 left behind. The skip is offered only while that holds: once a Finish attempt has created the
 project, screen 3 no longer shows it, and the way out is Finish. Two lines of copy follow the
 deployment (Given) instead of repeating Cloud's. The sample choice says the database runs on this
-server and names no expiry, as the product's existing self-hosted sample strings do. And where the
-workspace has no mail setting, screen 4 says teammates are added without an email being sent, and
-its button reads "Add N teammates and finish".
+server and names no expiry, as the product's existing self-hosted sample strings do. And screen 4
+adds members where Cloud invites them (D7).
 
 ## States
 
 | Screen | State | What is on screen | Button |
 |---|---|---|---|
-| 1 Workspace | default | name and workspace name prefilled; hero animation | Continue enabled; "Continue needs a workspace name" if cleared |
-| 2 Goal | none chosen | two cards and the lighter "Not sure yet, just exploring"; hero animation | Continue disabled |
+| 1 Workspace | default | name and workspace name prefilled; hero animation | Continue enabled; disabled if the workspace name is cleared, with "Enter a workspace name" under the field |
+| 2 Goal | none chosen | two cards and the lighter "Not sure yet, just exploring"; hero animation | Continue disabled, with "Pick one to continue" under the choices |
 | 2 Goal | a card chosen | card pressed, panel swaps to the goal's animation | Continue enabled |
 | 2 Goal | just exploring | the third answer pressed, panel stays on the hero | Continue enabled |
-| 3 Project | no name | project field empty; the sample choice preselected | Continue disabled, "Continue needs a project name" |
+| 3 Project | no name | project field empty; the sample choice preselected | Continue disabled, with "Enter a project name" under the field |
 | 3 Sample | named, sample chosen | diagram of the sample instance, its database, the project | Continue enabled |
 | 3 Own | named, own instance chosen | one line on what happens after setup; diagram of the user's instance joining the project later | Continue enabled |
 | 3 · no sample | the server reports the sample unavailable or used | only the own-instance choice, with the reason | Continue enabled once named |
 | 3 · skipped | "I'll do this later", self-hosted only | saves the screen-1 names and leaves for the workspace landing; no project is created | n/a |
 | 3 · project exists | Back after a Finish attempt that created the project | project name and ID read-only, with a line saying the project exists and is renamed in its settings; the database choice read-only once the sample is prepared; no "I'll do this later" on self-hosted | Continue enabled |
-| 4 Team | size unset | five size options, nothing else | Finish disabled, "Pick a team size to finish"; Back enabled |
+| 4 Team | size unset | five size options, nothing else | Finish disabled, with "Pick a team size to finish" under the question; Back enabled |
 | 4 Team | "Just me" | the size options only; no invite field | Finish enabled |
-| 4 Team | a size above "Just me" | the chips input appears with one line about membership; the button reads "Finish" or "Send N invites and finish" | Finish enabled |
+| 4 Team | a size above "Just me" | the chips input appears with one line about membership, titled "Invite teammates" on Cloud and "Add members" on self-hosted; the button reads "Finish", or with addresses entered "Send N invites and finish" on Cloud and "Add N members and finish" on self-hosted | Finish enabled |
 | 4 · finishing | Finish pressed | the button shows progress; the form is read-only | n/a |
 | 4 · finish failed | a step of the commit failed | the error naming the step, Try again; "Finish without the sample" when the sample failed | Try again enabled |
 
@@ -280,10 +289,10 @@ returns to the same screen with the draft.
 
 | File | Change |
 |---|---|
-| `frontend/src/routes/auth/WorkspaceSetupPage.tsx` | Rewrite as four screens with the local draft, per-screen gating messages, and the single commit at Finish. Finish navigates to the project home, as the wizard has since [#21572]. |
+| `frontend/src/routes/auth/WorkspaceSetupPage.tsx` | Rewrite as four screens with the local draft, validation under each field, and the single commit at Finish. Finish navigates to the project home, as the wizard has since [#21572]. |
 | `frontend/src/routes/auth/WorkspaceSetupQuestionnaireStep.tsx` | Retire; the goal moves to screen 2 and the team question is removed. |
 | `frontend/src/app/layouts/SplashLayout.tsx` | Setup variant: a panel slot instead of the fixed illustration. |
-| `frontend/src/routes/auth/workspace-setup/` (new) | Beside the route that is their only consumer: screen components, the Rive panel (port of bytebase.com `RivePlayer.tsx` with self-hosted `rive.wasm` and the four files), the diagram panel, the chips input. |
+| `frontend/src/routes/auth/workspace-setup/` (new) | Beside the route that is their only consumer: screen components, the Rive panel (port of bytebase.com `RivePlayer.tsx` with self-hosted `rive.wasm` and the four files), the diagram panel, the chips input. The screens use the shared `StepIndicator`, `RadioGroup` and form primitives, with each validation message under its field. |
 | `frontend/src/modules/workspace-setup-guide/` | Take goal, team size and source from the wizard; store "just exploring" as a goal of its own, which uses the query journey; mark "explore database" done on arrival with the sample; start at "Connect instance" on the own-instance path; show the team step only above "Just me". |
 | `frontend/src/routes/project/projectHomeNextSteps.ts` | Take the goal as an input. With a database present, "Query a database" comes before "Change a database" for the query goal and for "just exploring"; the order is unchanged otherwise. |
 | `frontend/src/routes/project/ProjectHomePage.tsx` | Read the stored goal through the guide module and pass it to the next-step function. |
@@ -291,14 +300,14 @@ returns to the same screen with the draft.
 
 No backend, proto or instance-form change.
 
-Tests to write: vitest for each screen's validation and gating message, for the chips parser, for
-the draft restoring every screen, and for the project home's step order under each goal and with
-none stored; an e2e spec under `frontend/tests/e2e` that walks the sample path onto the project home
-with the goal's step first ("Change a database" for the change goal, "Query a database" for the
-query goal and for "just exploring"), the own-instance path onto it with "Connect an instance", Back
-from the team screen keeping every answer, a failed Finish retried after the invite list changed,
-and the self-hosted skip with its sample and invite wording; and event tests that each Continue and
-the submitted result carry the properties in D10.
+Tests to write: vitest for each screen's validation message and its place under the field, for the
+chips parser, for the draft restoring every screen, and for the project home's step order under each
+goal and with none stored; an e2e spec under `frontend/tests/e2e` that walks the sample path onto
+the project home with the goal's step first ("Change a database" for the change goal, "Query a
+database" for the query goal and for "just exploring"), the own-instance path onto it with "Connect
+an instance", Back from the team screen keeping every answer, a failed Finish retried after the
+invite list changed, and the self-hosted skip, sample wording and "Add members" field; and event
+tests that each Continue and the submitted result carry the properties in D10.
 
 ## Not in this PR
 
