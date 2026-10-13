@@ -180,7 +180,6 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     !missedPermissions.includes("bb.databases.update") &&
     Boolean(defaultProject && workspaceName);
   const canCreateChange =
-    canListDatabases &&
     !missedPermissions.includes("bb.plans.create") &&
     !missedPermissions.includes("bb.issues.create") &&
     !missedPermissions.includes("bb.sheets.create") &&

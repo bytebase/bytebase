@@ -162,8 +162,19 @@ describe("ProjectHomePage", () => {
     render(<ProjectHomePage projectId="orders" />);
 
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
-    expect(within(next).getByRole("link", { name: "project.home.change-database" })).toBeTruthy();
+    expect(await within(next).findByRole("link", { name: "project.home.change-database" })).toBeTruthy();
     expect(mocks.state.listPlans).not.toHaveBeenCalled();
+  });
+
+  test("offers database change creation without database-list permission", async () => {
+    mocks.missedPermissions = ["bb.databases.list"];
+    render(<ProjectHomePage projectId="orders" />);
+
+    const next = await screen.findByRole("region", { name: "project.home.next-step" });
+    expect(await within(next).findByRole("link", { name: "project.home.change-database" })).toBeTruthy();
+    expect(mocks.state.fetchDatabases).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: "projects/orders" })
+    );
   });
 
   test("starts a project-bound Agent chat from the composer", async () => {
@@ -228,18 +239,21 @@ describe("ProjectHomePage", () => {
       .queryByRole("link", { name: "project.home.connect" })).toBeNull();
   });
 
-  test("suggests managing members for a new project only with write permission", async () => {
+  test("suggests managing members for a new project", async () => {
     mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
     expect(within(next).getByRole("link", { name: "project.home.members" })).toBeTruthy();
     expect(within(next).getByRole("link", { name: "project.home.members" }).getAttribute("href"))
       .toBe("workspace.project.members");
+  });
 
+  test("does not suggest managing members without write permission", async () => {
     mocks.missedPermissions = ["bb.projects.setIamPolicy"];
-    render(<ProjectHomePage projectId="second" />);
-    await waitFor(() => expect(mocks.state.fetchDatabases).toHaveBeenCalled());
-    expect(screen.getAllByRole("link", { name: "project.home.members" })).toHaveLength(1);
+    mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
+    render(<ProjectHomePage projectId="orders" />);
+    await screen.findByRole("region", { name: "project.home.next-step" });
+    expect(screen.queryByRole("link", { name: "project.home.members" })).toBeNull();
   });
 
   test("suggests creating a database when an instance exists but no database does", async () => {
@@ -249,7 +263,7 @@ describe("ProjectHomePage", () => {
     });
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
-    const createLink = within(next).getByRole("link", {
+    const createLink = await within(next).findByRole("link", {
       name: "project.home.create-database",
     });
     expect(JSON.parse(createLink.getAttribute("data-to")!)).toEqual({
@@ -334,7 +348,7 @@ describe("ProjectHomePage", () => {
     render(<ProjectHomePage projectId="orders" />);
 
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
-    expect(within(next).getByRole("link", {
+    expect(await within(next).findByRole("link", {
       name: "project.home.transfer-databases",
     })).toBeTruthy();
     expect(mocks.state.fetchInstanceList).not.toHaveBeenCalled();
@@ -421,7 +435,7 @@ describe("ProjectHomePage", () => {
     });
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
-    expect(within(next).getByRole("link", { name: "project.home.create-database" })).toBeTruthy();
+    expect(await within(next).findByRole("link", { name: "project.home.create-database" })).toBeTruthy();
     expect(mocks.state.fetchInstanceList).toHaveBeenCalledWith(
       expect.objectContaining({ parent: "projects/orders", pageToken: "next" })
     );
@@ -705,7 +719,7 @@ describe("ProjectHomePage", () => {
     mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
-    expect(within(next).getByRole("link", { name: "project.home.connect" }).getAttribute("href")).toBe(
+    expect((await within(next).findByRole("link", { name: "project.home.connect" })).getAttribute("href")).toBe(
       "workspace.project.instance.create"
     );
     expect(within(next).getByRole("link", { name: "project.home.members" })).toBeTruthy();
