@@ -1,18 +1,18 @@
 # Onboarding flow, the first four screens
 
-Status: proposal · 2026-10-12 (revised 2026-10-13)
+Status: proposal · 2026-10-12 (revised 2026-10-13) · lands after the project home, [#21572]
 
-A new Cloud workspace opens on a setup wizard that asks for a goal and "who will use Bytebase
-with you", then for your name, a workspace name, a first project and a sample-database checkbox,
-and lands on the project's databases page. Since setup became mandatory on Sep 20, 89% of
-signups see it and 70% of those finish, so 70% of all signups end with a database. Only 24% go on
-to do first work. The wizard collects six things and explains none of them. The rule this doc
-lands on: **a screen asks only for what a later step uses and explains it where it asks, and setup
-always ends with a project and a decision about its database.** Four screens: workspace, goal,
-project with its database, team. The project is explained where its database is chosen, everything
-is created in one step at Finish, and connecting your own instance happens after setup, not inside
-the wizard. Where the account lands after Finish is not changed here; that is the project home's
-job. Frontend only.
+A new Cloud workspace opens on a setup wizard that asks for a goal and "who will use Bytebase with
+you", then for your name, a workspace name, a first project and a sample-database checkbox, and
+lands on the project's databases page. Since setup became mandatory on Sep 20, 89% of signups see it
+and 70% of those finish, so 70% of all signups end with a database. Only 24% go on to do first work.
+The wizard collects six things, explains none of them, and ends on a page with nothing to do. The
+rule this doc lands on: **a screen asks only for what a later step uses and explains it where it
+asks, and setup always ends with a project, a decision about its database, and one next step.** Four
+screens: workspace, goal, project with its database, team. The project is explained where its
+database is chosen, everything is created in one step at Finish, and connecting your own instance
+happens after setup, not inside the wizard. Finish lands on the project home on both paths, so this
+design depends on the project home ([#21572]) and merges after it. Frontend only.
 
 The interactive mockups, the alternatives this was chosen from, and the funnel evidence are in the
 design page kept outside the repo
@@ -25,8 +25,7 @@ Aug 25 to Oct 10 joined to the metadata database, plus 318 first-session analyst
 The wizard is `frontend/src/routes/auth/WorkspaceSetupPage.tsx` with
 `WorkspaceSetupQuestionnaireStep.tsx` as its first step, shown by the router guard while
 `isFirstLogin` holds and the account is the sole IAM member, and mandatory on Cloud since Sep 20.
-Three things are wrong with what it asks and in what order. A fourth, where it lands, is the
-project home's to fix and is described under "Not in this PR".
+Three things are wrong with what it asks and in what order, and a fourth with where it lands.
 
 **Information in the wrong order, or not needed.** Step 1 asks the goal and "who will use
 Bytebase with you". Step 2 asks your name, the workspace name, a project name with a resource id,
@@ -46,6 +45,12 @@ the instance step (24% to 70% of signups with a database), but the choice that p
 result is one unexplained checkbox, and the wizard reports a finish even when the sample request
 fails. The 7 of 100 finishers who turn the sample off go to the instance form, where 62
 connection tests failed and 21 passed since Sep 20.
+
+**The landing is a dead end.** Of 100 finishers in the mandatory state, 73 did nothing afterwards;
+their median time in the product is under two minutes. The analysts' recurring description: wizard
+finished in about twenty seconds with the sample on, the sample opened, then idling on a page with
+three prompts and no dominant one, Issues opening on "No data", the SQL Editor opening blank. The
+wizard does not fix this by itself. The project home does, and this design lands on it (D8).
 
 Two measurement defects shape the design too. Step 1 to step 2 has never emitted an event, so
 leavers cannot be placed on a screen. And 17 finishes produced no finish event because the
@@ -76,23 +81,23 @@ promises can depend on either.
 ## Principle
 
 > **A screen asks only for what a later step uses and explains it where it asks, and setup always
-> ends with a project and a decision about its database.** Every answer is spent downstream: the
-> workspace name is what invitees join, the goal tells the guide and the landing what to suggest
+> ends with a project, a decision about its database, and one next step.** Every answer is spent
+> downstream: the workspace name is what invitees join, the goal tells the guide what to suggest
 > first, the project is the container the database goes into, and the team size keys the guide.
 > Nothing is collected for its own sake except one qualification question, labeled as such. The
 > wizard does not carry the connection form: connecting an instance is a task with its own page,
-> its own failure modes and its own recovery. And it does not decide where the account lands:
-> that belongs to the project home.
+> its own failure modes and its own recovery. And it does not build a landing of its own: it ends
+> on the project home, which shows the next step for the project as setup left it.
 
 ## Decisions
 
 **D1 · Four screens, in this order: workspace, goal, project with its database, team.** Identity
-first because it is known and cheap, and every later screen names the workspace it confirms.
-Goal before database because it is what the user came for, and it tells the guide and the landing
-what to suggest first. Database before team because invitees should find something when they click
-the invite; Linear and Neon invite early because their product works before any setup, ours works
-after a database. Team last, always offered, skippable. Rejected: today's order (goal and team first, then everything else on one
-screen), and team as the second screen, which invites people into an empty workspace.
+first because it is known and cheap, and every later screen names the workspace it confirms. Goal
+before database because it is what the user came for, and it tells the guide what to suggest first.
+Database before team because invitees should find something when they click the invite; Linear and
+Neon invite early because their product works before any setup, ours works after a database. Team
+last, always offered, skippable. Rejected: today's order (goal and team first, then everything else
+on one screen), and team as the second screen, which invites people into an empty workspace.
 
 **D2 · Screen 1 is a confirmation, not a form.** Your name (optional, prefilled from the identity
 provider or the email local part, left empty for alias-like local parts such as admin or info) and
@@ -128,7 +133,7 @@ preselected choice: the Sample Project Instance, one PostgreSQL database with th
 hosted by Bytebase Cloud, assigned to the project, available for seven days (Cloud's wording; D12
 has self-hosted's). It is offered when the server reports the sample available and unused; otherwise
 the other choice is the only one. "Connect my own instance after setup" defers the connection: setup
-finishes with an empty project, and the instance is connected from the project afterwards (D8). One
+finishes with an empty project, and the project home's next step is to connect an instance (D8). One
 sentence under it says what an instance is. The wizard holds no connection form, no test and no
 credentials. 93 of 100 finishers keep the sample on, and it has not failed in 143 attempts since Sep
 8. Rejected: the instance form inside the wizard, as an earlier draft had it. It made screen 3 the
@@ -166,18 +171,20 @@ Linear, Neon and Metabase ask for emails only. Rejected: the "Just me / My team"
 decided whether this screen appears, and the screen is now always offered and one click to pass),
 the role selector, and the free-text email box.
 
-**D8 · Finish lands where setup lands today; the project home takes over from there.** This doc
-does not change the landing. Both paths end on the new project's databases page, with the prompt
-that page already shows: the next actions on the sample database when the sample was chosen, and
-"Connect instance" when it was not, which is what an account that turns the sample off sees today.
-Nothing is built for either. The instance form that prompt leads to still offers the sample, so a
-connection that will not work is one step from a working database. The wizard hands on what it
-learned, goal, source and team size, so the guide starts at the right step and the project home
-can read the same answers. When the project home ships it becomes the destination for both paths,
-and what to put first on it (the goal's first action, or connecting an instance) is its design to
-make. Not taken here: opening the goal's first action straight from Finish, and a highlighted
-"Connect instance" hand-off. Both are landing decisions, and making them in the wizard would
-settle the project home's first screen ahead of its own design.
+**D8 · Finish lands on the project home, on both paths.** The project home ([#21572]) makes the
+project root a page of its own: a next-step band chosen from the project's state, the user's open
+issues, and the project's databases. Finish navigates there whichever database choice was made. With
+the sample, the project has a database and no change yet, so the next step shown is "Change a
+database". With "Connect my own instance after setup", the project is empty, so the next step is
+"Connect an instance", which opens the instance form for that project; the form still offers the
+sample, so a connection that will not work is one step from a working database. An account that
+invited nobody also sees "Manage members" as an optional step. The wizard builds no landing of its
+own. An earlier draft opened the goal's first action straight from Finish and highlighted "Connect
+instance" on the databases page; both are withdrawn, because the project home is where the next step
+is chosen. It chooses from the project's state and does not read the goal, so the goal reaches the
+guide bar only, as it does today; making the home's next step follow the goal would be a change to
+that page. This design merges after [#21572]: 73 of 100 finishers idle on the project's databases
+page, and a new wizard should not ship pointing at it.
 
 **D9 · The left panel is a story per screen, from bytebase.com's Rive files.** Screen 1 plays the
 homepage hero (requests flowing into review); screen 2 swaps to the chosen goal's feature animation
@@ -242,14 +249,14 @@ finish".
 | 4 · finishing | Finish pressed | the button shows progress; the form is read-only | n/a |
 | 4 · finish failed | a step of the commit failed | the error naming the step, Try again; "Finish without the sample" when the sample failed | Try again enabled |
 
-After Finish the wizard is gone and the account is on the project's databases page, as today (D8).
-A reload before Finish returns to the same screen with the draft.
+After Finish the wizard is gone and the account is on the project home (D8). A reload before Finish
+returns to the same screen with the draft.
 
 ## Scope
 
 | File | Change |
 |---|---|
-| `frontend/src/routes/auth/WorkspaceSetupPage.tsx` | Rewrite as four screens with the local draft, per-screen gating messages, and the single commit at Finish; the landing after Finish is unchanged. |
+| `frontend/src/routes/auth/WorkspaceSetupPage.tsx` | Rewrite as four screens with the local draft, per-screen gating messages, and the single commit at Finish. Finish navigates to the project home, the redirect [#21572] introduces. |
 | `frontend/src/routes/auth/WorkspaceSetupQuestionnaireStep.tsx` | Retire; the goal moves to screen 2 and the team question is removed. |
 | `frontend/src/app/layouts/SplashLayout.tsx` | Setup variant: a panel slot instead of the fixed illustration. |
 | `frontend/src/routes/auth/workspace-setup/` (new) | Beside the route that is their only consumer: screen components, the Rive panel (port of bytebase.com `RivePlayer.tsx` with self-hosted `rive.wasm` and the four files), the diagram panel, the chips input. |
@@ -260,21 +267,23 @@ No backend, proto or instance-form change.
 
 Tests to write: vitest for each screen's validation and gating message, for the chips parser, and
 for the draft restoring every screen; an e2e spec under `frontend/tests/e2e` that walks the sample
-path and the own-instance path onto the project's databases page, each with the prompt that page
-shows today, Back from the team screen keeping every answer, a failed Finish retried, and the
-self-hosted skip with its sample and invite wording; and event tests that each Continue and the
-submitted result carry the properties in D10.
+path onto the project home with "Change a database" as its next step, the own-instance path onto it
+with "Connect an instance", Back from the team screen keeping every answer, a failed Finish retried,
+and the self-hosted skip with its sample and invite wording; and event tests that each Continue and
+the submitted result carry the properties in D10.
 
 ## Not in this PR
 
-The implementation, which follows separately. The landing: 73 of 100 finishers idle on the project's
-databases page, so where setup ends matters as much as what it asks, but that is the project home's
-design, and it becomes the destination for both paths when it ships (D8). The guide bar beyond the
-answers the wizard hands it. Connection-failure recovery on the instance page (naming a private
-address before the test, showing the Cloud egress address, cause-specific fixes): that is where the
-62 failed tests happen, and it is separate work on that page. The live-preview panel for screen 3.
-Persisting team size on the workspace; it travels as an event property and in the guide's local
-state until a consumer needs it server-side. Any change to the sample itself, such as a test and
-prod pair, which would reopen ADR-0004. Making setup mandatory on self-hosted. Enforcing mandatory
-setup across browsers: the flag is per-browser today, so an unfinished account can still enter from
-another one, as 3 accounts have since Sep 20, and closing that needs server-side state.
+The implementation, which follows separately, after the project home ([#21572]) is on main. The
+project home itself, including whether its next step should follow the goal the wizard collected.
+The guide bar beyond the answers the wizard hands it. Connection-failure recovery on the instance
+page (naming a private address before the test, showing the Cloud egress address, cause-specific
+fixes): that is where the 62 failed tests happen, and it is separate work on that page. The
+live-preview panel for screen 3. Persisting team size on the workspace; it travels as an event
+property and in the guide's local state until a consumer needs it server-side. Any change to the
+sample itself, such as a test and prod pair, which would reopen ADR-0004. Making setup mandatory on
+self-hosted. Enforcing mandatory setup across browsers: the flag is per-browser today, so an
+unfinished account can still enter from another one, as 3 accounts have since Sep 20, and closing
+that needs server-side state.
+
+[#21572]: https://github.com/bytebase/bytebase/pull/21572
