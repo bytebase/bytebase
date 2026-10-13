@@ -101,11 +101,20 @@ domains). Continue is enabled on arrival, so the first click is the only click. 
 mandatory-state leavers never clicked anything, consistent with an OAuth redirect returning to a
 tab nobody is looking at; a screen with nothing to decide is the cheapest first screen.
 
-**D3 · Two goals.** "Review and roll out a schema change" and "Query data with guardrails", each
-with a one-line finish line under the card: a change that passed SQL review and rolled out to the
-database, and a query result from it. "Mark sensitive data" is removed as a goal: masking guards
-querying rather than being a destination, and as an Enterprise feature it led its choosers into a
-gate (1 of 9 acted). Both remaining finish lines are reachable on the free plan.
+**D3 · Two goals, and a quieter third answer.** "Review and roll out a schema change" and "Query
+data with guardrails" are the two cards, each with a one-line finish line under it: a change that
+passed SQL review and rolled out to the database, and a query result from it. Under them sits a
+lighter third answer, "Not sure yet, just exploring", which starts the account in the SQL Editor
+with the sample data. Every product in the study that asks an intent question lets the user decline
+it: PostHog has "Continue without choosing a goal", Metabase "I'm not sure yet", and n8n and
+Greptile make the question optional. Here, 3 of 20 finishers left the goal blank while it was
+optional, 2 of the leavers since it became required stalled on it with Continue disabled, and the
+forced answer predicts the first action only weakly. An honest "not sure" also makes the other two
+answers worth more as signals. It is drawn lighter than the cards so it does not read as their
+peer, and its share is a number to watch. "Mark sensitive data" is removed as a goal: masking
+guards querying rather than being a destination, and as an Enterprise feature it led its choosers
+into a gate (1 of 9 acted). Every finish line is reachable on the free plan. Rejected: a third
+equal card, and keeping the forced choice between two.
 
 **D4 · The project is named where its database is chosen.** Screen 3 opens with the project name
 (required, empty with example placeholder; the resource id derived from it, editable, collapsed)
@@ -157,8 +166,9 @@ the role selector, and the free-text email box.
 
 **D8 · Finish lands on the next thing to do, never on a generic page.** With the sample, Finish
 navigates straight to the goal's first action, with no screen in between: for the schema-change
-goal, the new-change dialog targeting the sample database; for the query goal, the SQL Editor on it
-with a generated SELECT. With "Connect my own instance after setup", it lands on the project's
+goal, the new-change dialog targeting the sample database; for the query goal, and for an account
+that is just exploring, the SQL Editor on it with a generated SELECT, which is the quickest first
+result. With "Connect my own instance after setup", it lands on the project's
 databases page with "Connect instance" as the one highlighted action, and the goal is kept for the
 guide. That is the page and the product intro today's wizard already uses for an account that
 turned the sample off, so nothing new is built for it. The instance form it leads to still offers
@@ -171,7 +181,8 @@ landing sample users on the project databases page, where 73 of 100 finishers id
 **D9 · The left panel is a story per screen, from bytebase.com's Rive files.** Screen 1 plays the
 homepage hero (requests flowing into review); screen 2 swaps to the chosen goal's feature animation
 (Change Review, or Dynamic Data Masking as the picture of a guardrail; the card's finish line does
-not depend on it) the moment a card is pressed; screen 3 draws a diagram from what the user typed
+not depend on it) the moment a card is pressed, and stays on the hero for "just exploring"; screen 3
+draws a diagram from what the user typed
 (the sample instance and its database flowing into the project name, or the user's own instance
 joining after setup); screen 4 plays Access Controls, which is why no role is asked. The files
 (`masthead`, `dcm-review`, `data-masking`, `iam`) and the `RivePlayer` wrapper exist in the
@@ -213,8 +224,9 @@ behind.
 | Screen | State | What is on screen | Button |
 |---|---|---|---|
 | 1 Workspace | default | name and workspace name prefilled; hero animation | Continue enabled; "Continue needs a workspace name" if cleared |
-| 2 Goal | none chosen | two cards, hero animation | Continue disabled |
-| 2 Goal | chosen | card pressed, panel swaps to the goal's animation | Continue enabled |
+| 2 Goal | none chosen | two cards and the lighter "Not sure yet, just exploring"; hero animation | Continue disabled |
+| 2 Goal | a card chosen | card pressed, panel swaps to the goal's animation | Continue enabled |
+| 2 Goal | just exploring | the third answer pressed, panel stays on the hero | Continue enabled |
 | 3 Project | no name | project field empty; the sample choice preselected | Continue disabled, "Continue needs a project name" |
 | 3 Sample | named, sample chosen | diagram of the sample instance, its database, the project | Continue enabled |
 | 3 Own | named, own instance chosen | one line on what happens after setup; diagram of the user's instance joining the project later | Continue enabled |
@@ -237,7 +249,7 @@ before Finish returns to the same screen with the draft.
 | `frontend/src/routes/auth/WorkspaceSetupQuestionnaireStep.tsx` | Retire; the goal moves to screen 2 and the team question is removed. |
 | `frontend/src/app/layouts/SplashLayout.tsx` | Setup variant: a panel slot instead of the fixed illustration. |
 | `frontend/src/components/workspace-setup/` (new) | Screen components, the Rive panel (port of bytebase.com `RivePlayer.tsx` with self-hosted `rive.wasm` and the four files), the diagram panel, the chips input. |
-| `frontend/src/modules/workspace-setup-guide/` | Take goal, team size and source from the wizard; mark "explore database" done on arrival with the sample; start at "Connect instance" on the own-instance path; show the team step only above "Just me". |
+| `frontend/src/modules/workspace-setup-guide/` | Take goal, team size and source from the wizard; mark "explore database" done on arrival with the sample; start at "Connect instance" on the own-instance path; use the query journey for "just exploring"; show the team step only above "Just me". |
 | `frontend/src/locales/en-US.json` (and the other locales) | New strings for the four screens; retire `setup-scenario.mark-sensitive-data` and `setup-scenario.workspace-usage`. |
 
 No backend, proto or instance-form change.
