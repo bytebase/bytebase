@@ -15,13 +15,14 @@ import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/useAppState";
+import { principalLabel, usePrincipal } from "@/hooks/usePrincipal";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { collectPlanUpdateSpecs } from "@/lib/plan/diffPlanSpecs";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { isThreadReply } from "@/stores/app/issueComment";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type IssueComment,
   IssueSchema,
@@ -336,10 +337,7 @@ function IssueDescriptionCommentRow({
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useProjectByName(projectName);
   void projectsByName;
-  const creatorUser = useAppStore((state) =>
-    state.getUserByIdentifier(page.issue?.creator || "")
-  );
-  const creator = creatorUser ?? unknownUser(page.issue?.creator || "");
+  const creator = usePrincipal(page.issue?.creator);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(page.issue?.description || "");
   const [isSaving, setIsSaving] = useState(false);
@@ -407,7 +405,7 @@ function IssueDescriptionCommentRow({
             <UserAvatar
               className="h-7 w-7 text-xs font-medium"
               size="sm"
-              title={creator.title || creator.email}
+              title={principalLabel(creator)}
             />
             <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-control-bg ring-2 ring-background">
               <Plus className="h-4 w-4 text-control" />
@@ -419,7 +417,7 @@ function IssueDescriptionCommentRow({
               <div className="bg-control-bg/50 px-3 py-2">
                 <div className="flex items-center justify-between">
                   <div className="flex min-w-0 flex-wrap items-center gap-x-2 text-sm">
-                    <CommentCreator creator={creator} />
+                    <CommentCreator creator={page.issue?.creator ?? ""} />
                     <span className="wrap-break-word min-w-0 text-control">
                       {t("activity.sentence.created-issue")}
                     </span>

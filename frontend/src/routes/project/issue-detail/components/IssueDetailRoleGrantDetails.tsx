@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useEnvironmentList, usePlanFeature } from "@/hooks/useAppState";
+import { usePrincipal } from "@/hooks/usePrincipal";
 import { directExecutionOf } from "@/lib/project-member/directExecution";
 import { displayRoleTitleFromList } from "@/lib/role";
 import { useAppStore } from "@/stores/app";
@@ -26,7 +27,6 @@ import {
 } from "@/utils/issue/cel";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
-import { usePrincipal } from "./usePrincipal";
 
 export function IssueDetailRoleGrantDetails() {
   const { t } = useTranslation();

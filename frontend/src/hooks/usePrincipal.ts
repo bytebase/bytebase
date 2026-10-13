@@ -6,10 +6,14 @@ import { extractUserEmail } from "@/stores/modules/v1/common";
 import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 import { ensureUserFullName } from "@/utils/v1/user";
 
-interface Principal {
+export interface Principal {
   email: string;
   title: string;
 }
+
+/** A principal's title, or its email's local part until a record arrives. */
+export const principalLabel = (principal: Principal | undefined): string =>
+  principal ? principal.title || principal.email.split("@")[0] : "";
 
 type AppState = ReturnType<typeof useAppStore.getState>;
 
