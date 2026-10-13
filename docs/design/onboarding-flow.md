@@ -237,22 +237,27 @@ finished but not yet connected, with no new backend work.
 
 **D11 · Gate, draft and resume.** The gate is unchanged: first login, sole admin, mandatory on
 Cloud, and the flag that sends an unfinished Cloud account back to the wizard clears when Finish
-succeeds, as it does on submit today. Until then the answers live in a local draft, so Back and a
+succeeds, as it does on submit today. Until then the answers live in a local draft, keyed by
+workspace and user as the guide's stored answers are and removed when Finish succeeds, so Back and a
 reload return to the same screen with nothing retyped. On Cloud so does a new login in the same
 browser, because that flag sends the account back; on self-hosted, where setup is offered on the
 first login only, a new login opens the workspace as it does today. The draft also records that the
 project was created, the one step of Finish that cannot be repeated, so a retry, after a reload too,
-goes past it instead of failing on a project that already exists. From then on screen 3 shows the
-project's name and ID read-only, and the database choice too once the sample has been prepared: both
-exist, and are changed in the product, not in the wizard. Every other step is an overwrite or safe
-to repeat (saving the names, preparing the sample for the same project, writing the invitees to the
-project and then the workspace), so each retry runs them again from the answers on screen. A
-checkpoint therefore never outlives the answers it was made with: an invitee removed after a failed
-attempt is removed from the project as well. The wizard collects no credentials, so the draft holds
-none. No Continue or Finish is disabled without its reason on screen, and the reason sits with the
-field or question it is about, as the UX contract requires (`docs/agents/frontend-ux.md`): under the
-workspace name, under the goal choices, under the project name, under the team-size question. Two of
-the 42 leavers stalled on a disabled button with no explanation.
+goes past it instead of failing on a project that already exists. The same has to hold when the
+answer to that call was lost: if creating the project reports that its ID already exists, the wizard
+reads that project and treats it as created when it is the one this draft describes. A clash with
+any other project, the built-in default one included, asks for a different ID under the field. From
+then on screen 3 shows the project's name and ID read-only, and the database choice too once the
+sample has been prepared: both exist, and are changed in the product, not in the wizard. Every other
+step is an overwrite or safe to repeat (saving the names, preparing the sample for the same project,
+writing the invitees to the project and then the workspace), so each retry runs them again from the
+answers on screen. A checkpoint therefore never outlives the answers it was made with: an invitee
+removed after a failed attempt is removed from the project as well. The wizard collects no
+credentials, so the draft holds none. No Continue or Finish is disabled without its reason on
+screen, and the reason sits with the field or question it is about, as the UX contract requires
+(`docs/agents/frontend-ux.md`): under the workspace name, under the goal choices, under the project
+name, under the team-size question. Two of the 42 leavers stalled on a disabled button with no
+explanation.
 
 **D12 · Self-hosted keeps its differences.** The same four screens serve self-hosted, where setup is
 offered once and screen 3 keeps "I'll do this later". That action saves the two names from screen 1
@@ -303,13 +308,14 @@ returns to the same screen with the draft.
 No backend, proto or instance-form change.
 
 Tests to write: vitest for each screen's validation message and its place under the field, for the
-chips parser, for the draft restoring every screen, and for the project home's step order under each
-goal and with none stored; an e2e spec under `frontend/tests/e2e` that walks the sample path onto
-the project home with the goal's step first ("Change a database" for the change goal, "Query a
-database" for the query goal and for "just exploring"), the own-instance path onto it with "Connect
-an instance", Back from the team screen keeping every answer, a failed Finish retried after the
-invite list changed, and the self-hosted skip, sample wording and "Add members" field; and event
-tests that each Continue and the submitted result carry the properties in D10.
+chips parser, for the draft restoring every screen and staying with its workspace and user, and for
+the project home's step order under each goal and with none stored; an e2e spec under
+`frontend/tests/e2e` that walks the sample path onto the project home with the goal's step first
+("Change a database" for the change goal, "Query a database" for the query goal and for "just
+exploring"), the own-instance path onto it with "Connect an instance", Back from the team screen
+keeping every answer, a failed Finish retried after the invite list changed, and the self-hosted
+skip, sample wording and "Add members" field; and event tests that each Continue and the submitted
+result carry the properties in D10.
 
 ## Not in this PR
 
