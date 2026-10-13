@@ -55,11 +55,6 @@ export const storageKeyRecentProjects = (scope: string, email: string) =>
   withScope("bb.recent-projects", scope, email);
 export const storageKeyQuickAccess = (email: string) =>
   `bb.quick-access.${email}`;
-export const storageKeyProjectHomeShortcuts = (
-  workspace: string,
-  email: string,
-  project: string
-) => withScope("bb.project-home.shortcuts", workspace, project, email);
 export const storageKeyLastActivity = (email: string) =>
   `bb.last-activity.${email}`;
 export const storageKeyCollapseState = (email: string) =>

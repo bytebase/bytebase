@@ -1,46 +1,40 @@
 import {
-  ArrowUpRight,
+  ArrowRightLeft,
   ChevronRight,
-  CircleDot,
   Database,
-  GitBranch,
-  GripVertical,
   PlugZap,
-  ShieldCheck,
-  SquareTerminal,
+  Send,
   UsersRound,
   Workflow,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  PROJECT_V1_ROUTE_ACCESS_GRANTS,
+  DATABASE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DATABASES,
-  PROJECT_V1_ROUTE_GITOPS,
   PROJECT_V1_ROUTE_INSTANCE_CREATE,
-  PROJECT_V1_ROUTE_INSTANCES,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_MEMBERS,
-  PROJECT_V1_ROUTE_PLANS,
-  SQL_EDITOR_PROJECT_MODULE,
 } from "@/app/router/handles";
+import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import { useComponentPermissionState } from "@/components/ComponentPermissionGuard";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { IssueStatusIcon } from "@/components/IssueStatusIcon";
 import { ProjectPageLayout } from "@/components/ProjectPageLayout";
 import { RouterLink } from "@/components/RouterLink";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Sheet,
-  SheetBody,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  PREPARE_DATABASE_PRODUCT_INTRO,
+  PREPARE_DATABASE_TRANSFER_TIP,
+  PRODUCT_INTRO_QUERY_KEY,
+  PRODUCT_INTRO_TIP_QUERY_KEY,
+} from "@/lib/productIntro";
+import {
+  selectHasRunningChat,
+  useAgentStore,
+} from "@/modules/agent/store/agent";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types/iam";
 import {
@@ -49,29 +43,24 @@ import {
   State,
 } from "@/types/proto-es/v1/common_pb";
 import type { Database as DatabaseResource } from "@/types/proto-es/v1/database_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { getUserEmailInBinding } from "@/types/v1/user";
 import { autoDatabaseRoute } from "@/utils/auto-route";
-import { storageKeyProjectHomeShortcuts } from "@/utils/storage-keys";
+import { isBindingPolicyExpired } from "@/utils/v1/iam";
 import { getIssueRoute } from "@/utils/v1/issue/issue";
-import {
-  type DatabaseAvailability,
-  getProjectHomeActions,
-  getProjectHomeAvailableActions,
-  type ProjectHomeAction,
-} from "./projectHomeActions";
 import {
   type ActiveProjectIssue,
   selectActiveProjectIssues,
 } from "./projectHomeActiveIssues";
 import {
-  getVisibleProjectHomeShortcuts,
-  readProjectHomeShortcuts,
-  reorderProjectHomeShortcuts,
-} from "./projectHomeShortcuts";
+  getProjectHomeNextSteps,
+  type ProjectHomeNextStep,
+  type ResourceAvailability,
+} from "./projectHomeNextSteps";
 
 const HOME_PERMISSIONS: Permission[] = [
   "bb.databases.list",
   "bb.databases.get",
+  "bb.databases.update",
   "bb.plans.list",
   "bb.plans.get",
   "bb.planCheckRuns.get",
@@ -84,10 +73,8 @@ const HOME_PERMISSIONS: Permission[] = [
   "bb.issues.create",
   "bb.sheets.create",
   "bb.sql.select",
-  "bb.workloadIdentities.list",
   "bb.projects.getIamPolicy",
   "bb.projects.setIamPolicy",
-  "bb.accessGrants.list",
 ];
 const PLAN_DETAIL_PERMISSIONS: Permission[] = [
   "bb.plans.get",
@@ -95,38 +82,19 @@ const PLAN_DETAIL_PERMISSIONS: Permission[] = [
   "bb.taskRuns.list",
 ];
 
-const workIcons = {
-  plans: Workflow,
-  query: SquareTerminal,
-  createDatabase: Database,
-  access: ShieldCheck,
-  issues: CircleDot,
-  instances: Database,
-  databases: Database,
-  members: UsersRound,
-  gitops: GitBranch,
-} as const;
-
-function actionTarget(
-  action: ProjectHomeAction,
-  projectId: string,
-  connectInstance: boolean
-) {
+function nextStepTarget(step: ProjectHomeNextStep, projectId: string) {
   const params = { projectId };
-  switch (action) {
-    case "instances":
+  switch (step) {
+    case "connect":
+      return { name: PROJECT_V1_ROUTE_INSTANCE_CREATE, params };
+    case "transferDatabases":
       return {
-        name: connectInstance
-          ? PROJECT_V1_ROUTE_INSTANCE_CREATE
-          : PROJECT_V1_ROUTE_INSTANCES,
-        params,
-      };
-    case "plans":
-      return { name: PROJECT_V1_ROUTE_PLANS, params };
-    case "query":
-      return {
-        name: SQL_EDITOR_PROJECT_MODULE,
-        params: { project: projectId },
+        name: DATABASE_ROUTE_DASHBOARD,
+        query: {
+          [PRODUCT_INTRO_QUERY_KEY]: PREPARE_DATABASE_PRODUCT_INTRO,
+          [PRODUCT_INTRO_TIP_QUERY_KEY]: PREPARE_DATABASE_TRANSFER_TIP,
+          targetProject: `projects/${projectId}`,
+        },
       };
     case "createDatabase":
       return {
@@ -134,27 +102,12 @@ function actionTarget(
         params,
         query: { createDatabase: "1" },
       };
-    case "access":
-      return { name: PROJECT_V1_ROUTE_ACCESS_GRANTS, params };
-    case "issues":
-      return { name: PROJECT_V1_ROUTE_ISSUES, params };
-    case "databases":
-      return { name: PROJECT_V1_ROUTE_DATABASES, params };
+    case "changeDatabase":
+      return buildPlanCreateRoute(projectId, {});
     case "members":
       return { name: PROJECT_V1_ROUTE_MEMBERS, params };
-    case "gitops":
-      return { name: PROJECT_V1_ROUTE_GITOPS, params };
   }
 }
-
-const readShortcuts = (key: string) => {
-  if (typeof window === "undefined") return null;
-  try {
-    return readProjectHomeShortcuts(window.localStorage, key);
-  } catch {
-    return null;
-  }
-};
 
 export function ProjectHomePage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
@@ -166,33 +119,32 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const aiEnabled = useAppStore(
     (state) => state.serverInfo?.aiEnabled === true
   );
-  const accessGrantsAvailable = useAppStore((state) =>
-    state.hasInstanceFeature(PlanFeature.FEATURE_JIT)
+  const hasRunningChat = useAgentStore(selectHasRunningChat);
+  const hasQueuedMessage = useAgentStore(
+    (state) => state.queuedUserMessage !== null
   );
+  const [aiPrompt, setAiPrompt] = useState("");
   const fetchDatabases = useAppStore((state) => state.fetchDatabases);
+  const fetchIssueByName = useAppStore((state) => state.fetchIssueByName);
   const fetchInstanceList = useAppStore((state) => state.fetchInstanceList);
   const listIssues = useAppStore((state) => state.listIssues);
-  const workspace = useAppStore(
-    (state) => state.currentUser?.workspace ?? state.serverInfo?.workspace ?? ""
+  const listPlans = useAppStore((state) => state.listPlans);
+  const canListWorkspaceInstances = useAppStore((state) =>
+    state.hasWorkspacePermission("bb.instances.list")
+  );
+  const canListWorkspaceDatabases = useAppStore((state) =>
+    state.hasWorkspacePermission("bb.databases.list")
+  );
+  const canUpdateWorkspaceDatabases = useAppStore((state) =>
+    state.hasWorkspacePermission("bb.databases.update")
+  );
+  const workspaceName = useAppStore((state) => state.workspaceResourceName());
+  const projectPolicy = useAppStore(
+    (state) => state.projectPoliciesByName[projectName]
   );
   const member = useAppStore((state) => state.currentUser?.email ?? "");
   const memberName = useAppStore((state) => state.currentUser?.name ?? "");
-  const storageKey =
-    workspace && member
-      ? storageKeyProjectHomeShortcuts(workspace, member, projectName)
-      : "";
-  const [shortcutState, setShortcutState] = useState(() => ({
-    key: storageKey,
-    ids: readShortcuts(storageKey),
-  }));
-  const savedShortcuts =
-    shortcutState.key === storageKey
-      ? shortcutState.ids
-      : readShortcuts(storageKey);
-  const [customizeOpen, setCustomizeOpen] = useState(false);
-  const [saveError, setSaveError] = useState(false);
-  const draggedAction = useRef<ProjectHomeAction | null>(null);
-  const dragOverAction = useRef<ProjectHomeAction | null>(null);
+  useEffect(() => setAiPrompt(""), [projectName]);
   const { missedPermissions } = useComponentPermissionState({
     permissions: HOME_PERMISSIONS,
     project,
@@ -211,9 +163,44 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const canConnectInstance =
     projectName !== defaultProject &&
     !missedPermissions.includes("bb.instances.create");
+  const canManageMembers =
+    !missedPermissions.includes("bb.projects.getIamPolicy") &&
+    !missedPermissions.includes("bb.projects.setIamPolicy");
+  const canCreateDatabase =
+    canListDatabases &&
+    !missedPermissions.includes("bb.instances.list") &&
+    !missedPermissions.includes("bb.issues.create") &&
+    !missedPermissions.includes("bb.plans.create") &&
+    !missedPermissions.includes("bb.sheets.create");
+  const canTransferDatabases =
+    canListWorkspaceDatabases &&
+    canUpdateWorkspaceDatabases &&
+    !missedPermissions.includes("bb.databases.update") &&
+    Boolean(defaultProject && workspaceName);
+  const canCreateChange =
+    canListDatabases &&
+    !missedPermissions.includes("bb.plans.list") &&
+    !missedPermissions.includes("bb.plans.create") &&
+    !missedPermissions.includes("bb.issues.create") &&
+    !missedPermissions.includes("bb.sheets.create") &&
+    canGetPlanDetail;
+  const membership =
+    !projectPolicy || !member || !canManageMembers
+      ? "unknown"
+      : projectPolicy.bindings
+            .filter((binding) => !isBindingPolicyExpired(binding))
+            .some((binding) =>
+              binding.members.some(
+                (principal) =>
+                  principal.toLowerCase() !==
+                  getUserEmailInBinding(member).toLowerCase()
+              )
+            )
+        ? "has-collaborators"
+        : "solo";
   const [databaseState, setDatabaseState] = useState<{
     projectName: string;
-    availability: DatabaseAvailability;
+    availability: ResourceAvailability;
     databases: DatabaseResource[];
   }>({ projectName, availability: "loading", databases: [] });
   const availability = !canPreviewDatabases
@@ -225,11 +212,20 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     databaseState.projectName === projectName ? databaseState.databases : [];
   const [instanceState, setInstanceState] = useState<{
     projectName: string;
-    availability: DatabaseAvailability;
+    availability: ResourceAvailability | "syncing";
   }>({ projectName, availability: "loading" });
   const instanceAvailability =
     instanceState.projectName === projectName
       ? instanceState.availability
+      : "loading";
+  const [transferState, setTransferState] = useState<{
+    projectName: string;
+    availability: ResourceAvailability;
+  }>({ projectName, availability: "loading" });
+  const transferableDatabaseAvailability = !canTransferDatabases
+    ? "empty"
+    : transferState.projectName === projectName
+      ? transferState.availability
       : "loading";
   const activeIssueKey = `${projectName}:${memberName}:${canReadIssues}`;
   const [activeIssueState, setActiveIssueState] = useState<{
@@ -243,11 +239,12 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     activeIssueState.key === activeIssueKey
       ? activeIssueState.status
       : "loading";
-
-  useEffect(() => {
-    setShortcutState({ key: storageKey, ids: readShortcuts(storageKey) });
-    setSaveError(false);
-  }, [storageKey]);
+  const [changeState, setChangeState] = useState<{
+    projectName: string;
+    status: "loading" | "not-started" | "submitted" | "unknown";
+  }>({ projectName, status: "loading" });
+  const changeStatus =
+    changeState.projectName === projectName ? changeState.status : "loading";
 
   useEffect(() => {
     if (!canPreviewDatabases) return;
@@ -280,34 +277,165 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (availability !== "empty") return;
     let active = true;
-    setInstanceState({
-      projectName,
-      availability: canListProjectInstances ? "loading" : "unknown",
+    if (!canListProjectInstances && !canListWorkspaceInstances) {
+      setInstanceState({ projectName, availability: "unknown" });
+      return;
+    }
+    const inspectInstances = async (parent?: string) => {
+      let pageToken = "";
+      let foundInstance = false;
+      const seenTokens = new Set<string>();
+      do {
+        const result = await fetchInstanceList({
+          parent,
+          pageSize: 100,
+          pageToken,
+          filter: { state: State.ACTIVE },
+          silent: true,
+        });
+        foundInstance ||= result.instances.length > 0;
+        if (result.instances.some((instance) => instance.lastSyncTime)) {
+          return "present" as const;
+        }
+        pageToken = result.nextPageToken;
+        if (pageToken && seenTokens.has(pageToken)) {
+          return "unknown" as const;
+        }
+        seenTokens.add(pageToken);
+      } while (pageToken);
+      return foundInstance ? ("syncing" as const) : ("empty" as const);
+    };
+    const requests = [
+      ...(canListProjectInstances ? [inspectInstances(projectName)] : []),
+      ...(canListWorkspaceInstances ? [inspectInstances()] : []),
+    ];
+    setInstanceState({ projectName, availability: "loading" });
+    void Promise.allSettled(requests).then((results) => {
+      if (!active) return;
+      const states = results.map((result) =>
+        result.status === "fulfilled" ? result.value : "unknown"
+      );
+      setInstanceState({
+        projectName,
+        availability: states.includes("present")
+          ? "present"
+          : states.includes("unknown")
+            ? "unknown"
+            : states.includes("syncing")
+              ? "syncing"
+              : "empty",
+      });
     });
-    if (!canListProjectInstances) return;
-    void fetchInstanceList({
-      parent: projectName,
+    return () => {
+      active = false;
+    };
+  }, [
+    availability,
+    canListProjectInstances,
+    canListWorkspaceInstances,
+    fetchInstanceList,
+    projectName,
+  ]);
+
+  useEffect(() => {
+    if (availability !== "empty" || instanceAvailability !== "present") return;
+    if (!canTransferDatabases) {
+      setTransferState({ projectName, availability: "empty" });
+      return;
+    }
+    let active = true;
+    setTransferState({ projectName, availability: "loading" });
+    void fetchDatabases({
+      parent: workspaceName,
       pageSize: 1,
-      filter: { state: State.ACTIVE },
+      filter: { project: defaultProject },
       silent: true,
     })
-      .then(({ instances }) => {
+      .then(({ databases }) => {
         if (active) {
-          setInstanceState({
+          setTransferState({
             projectName,
-            availability: instances.length ? "present" : "empty",
+            availability: databases.length ? "present" : "empty",
           });
         }
       })
       .catch(() => {
-        if (active) {
-          setInstanceState({ projectName, availability: "unknown" });
-        }
+        if (active) setTransferState({ projectName, availability: "unknown" });
       });
     return () => {
       active = false;
     };
-  }, [availability, canListProjectInstances, fetchInstanceList, projectName]);
+  }, [
+    availability,
+    canTransferDatabases,
+    defaultProject,
+    fetchDatabases,
+    instanceAvailability,
+    projectName,
+    workspaceName,
+  ]);
+
+  useEffect(() => {
+    if (availability !== "present") return;
+    let active = true;
+    if (
+      missedPermissions.includes("bb.plans.list") ||
+      !canListDatabases ||
+      !canReadIssues
+    ) {
+      setChangeState({ projectName, status: "unknown" });
+      return;
+    }
+    setChangeState({ projectName, status: "loading" });
+    const load = async () => {
+      let pageToken = "";
+      const seenTokens = new Set<string>();
+      try {
+        do {
+          const result = await listPlans({
+            find: {
+              project: projectName,
+              specType: "change_database_config",
+              state: "ACTIVE",
+            },
+            pageSize: 20,
+            pageToken,
+          });
+          if (!active) return;
+          for (const plan of result.plans) {
+            if (!plan.issue) continue;
+            const issue = await fetchIssueByName(plan.issue, true);
+            if (!active) return;
+            if (!issue.draft) {
+              setChangeState({ projectName, status: "submitted" });
+              return;
+            }
+          }
+          pageToken = result.nextPageToken;
+          if (pageToken && seenTokens.has(pageToken)) {
+            setChangeState({ projectName, status: "unknown" });
+            return;
+          }
+          seenTokens.add(pageToken);
+        } while (pageToken);
+        setChangeState({ projectName, status: "not-started" });
+      } catch {
+        if (active) setChangeState({ projectName, status: "unknown" });
+      }
+    };
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [
+    availability,
+    canListDatabases,
+    canReadIssues,
+    fetchIssueByName,
+    listPlans,
+    missedPermissions,
+    projectName,
+  ]);
 
   useEffect(() => {
     let active = true;
@@ -380,175 +508,165 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     };
   }, [canReadIssues, listIssues, memberName, projectName, activeIssueKey]);
 
-  const actionInput = useMemo(
-    () => ({
-      availability,
-      instanceAvailability,
-      isDefault: projectName === defaultProject,
-      accessGrantsAvailable,
-      hasPermission: (permission: Permission) =>
-        !missedPermissions.includes(permission),
-    }),
-    [
-      accessGrantsAvailable,
-      availability,
-      instanceAvailability,
-      defaultProject,
-      missedPermissions,
-      projectName,
-    ]
-  );
-  const suggestedActions = useMemo(
-    () => getProjectHomeActions(actionInput),
-    [actionInput]
-  );
-  const availableActions = useMemo(
-    () => getProjectHomeAvailableActions(actionInput),
-    [actionInput]
-  );
-  const actions = getVisibleProjectHomeShortcuts(
-    savedShortcuts,
-    suggestedActions,
-    availableActions
-  );
+  const nextSteps = getProjectHomeNextSteps({
+    database: availability,
+    instance: instanceAvailability,
+    transferableDatabase: transferableDatabaseAvailability,
+    change: changeStatus,
+    membership,
+    isDefault: projectName === defaultProject,
+    canConnectInstance,
+    canTransferDatabases,
+    canCreateDatabase,
+    canCreateChange,
+    canManageMembers,
+  });
 
-  const saveShortcuts = (next: ProjectHomeAction[]) => {
-    setShortcutState({ key: storageKey, ids: next });
-    try {
-      if (!storageKey) throw new Error("Member identity unavailable");
-      window.localStorage.setItem(storageKey, JSON.stringify(next));
-      setSaveError(false);
-    } catch {
-      setSaveError(true);
-    }
-  };
-
-  const resetShortcuts = () => {
-    setShortcutState({ key: storageKey, ids: null });
-    try {
-      window.localStorage.removeItem(storageKey);
-      setSaveError(false);
-    } catch {
-      setSaveError(true);
-    }
-  };
-
-  const toggleShortcut = (action: ProjectHomeAction, checked: boolean) => {
-    const current = savedShortcuts ?? suggestedActions;
-    saveShortcuts(
-      checked
-        ? current.includes(action)
-          ? current
-          : [...current, action]
-        : current.filter((id) => id !== action)
-    );
-  };
-
-  const moveShortcut = (
-    source: ProjectHomeAction,
-    target: ProjectHomeAction
-  ) => {
-    saveShortcuts(
-      reorderProjectHomeShortcuts(
-        savedShortcuts ?? suggestedActions,
-        actions,
-        source,
-        target
-      )
-    );
-  };
-
-  const shouldOfferInstanceConnection =
-    availability === "empty" &&
-    canConnectInstance &&
-    (instanceAvailability === "empty" || !canListProjectInstances);
-
-  const actionIcon = (action: ProjectHomeAction) =>
-    action === "instances" && shouldOfferInstanceConnection
-      ? PlugZap
-      : workIcons[action];
-
-  const actionCopy = (action: ProjectHomeAction) => {
-    switch (action) {
-      case "instances":
-        return availability === "empty" &&
-          (instanceAvailability === "empty" || !canListProjectInstances)
-          ? canConnectInstance
-            ? [t("project.home.connect"), t("project.home.connect-description")]
-            : [
-                t("project.home.browse-instances"),
-                t("project.home.browse-instances-description"),
-              ]
-          : [
-              t("project.home.instances"),
-              t("project.home.instances-description"),
-            ];
-      case "plans":
-        return availability === "present" &&
-          !missedPermissions.includes("bb.plans.create") &&
-          !missedPermissions.includes("bb.issues.create")
-          ? [t("project.home.prepare"), t("project.home.prepare-description")]
-          : [
-              t("project.home.review-plans"),
-              t("project.home.review-plans-description"),
-            ];
-      case "query":
-        return [t("project.home.query"), t("project.home.query-description")];
+  const nextStepCopy = (step: ProjectHomeNextStep) => {
+    switch (step) {
+      case "connect":
+        return [
+          t("project.home.connect"),
+          t("project.home.connect-description"),
+        ];
+      case "transferDatabases":
+        return [
+          t("project.home.transfer-databases"),
+          t("project.home.transfer-databases-description"),
+        ];
       case "createDatabase":
         return [
           t("project.home.create-database"),
           t("project.home.create-database-description"),
         ];
-      case "access":
-        return [t("project.home.access"), t("project.home.access-description")];
-      case "issues":
-        return [t("project.home.issues"), t("project.home.issues-description")];
-      case "databases":
+      case "changeDatabase":
         return [
-          t("project.home.databases"),
-          t("project.home.databases-description"),
+          t("project.home.change-database"),
+          t("project.home.change-database-description"),
         ];
       case "members":
-        return missedPermissions.includes("bb.projects.setIamPolicy")
-          ? [
-              t("project.home.view-members"),
-              t("project.home.view-members-description"),
-            ]
-          : [t("project.home.members"), t("project.home.members-description")];
-      case "gitops":
-        return [t("gitops.self"), t("project.home.gitops-description")];
+        return [
+          t("project.home.members"),
+          t("project.home.members-optional-description"),
+        ];
+    }
+  };
+
+  const nextStepIcon = (step: ProjectHomeNextStep) => {
+    switch (step) {
+      case "connect":
+        return PlugZap;
+      case "transferDatabases":
+        return ArrowRightLeft;
+      case "createDatabase":
+        return Database;
+      case "changeDatabase":
+        return Workflow;
+      case "members":
+        return UsersRound;
     }
   };
 
   if (!project) return null;
 
+  const sendAIMessage = () => {
+    const text = aiPrompt.trim();
+    if (!text || !aiEnabled) return;
+    const store = useAgentStore.getState();
+    if (selectHasRunningChat(store) || store.queuedUserMessage) return;
+    const page = {
+      path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+      title: document.title,
+    };
+    const chat = store.createChat({ context: project.name, page });
+    store.queueUserMessage({ chatId: chat.id, text, page });
+    store.open();
+    setAiPrompt("");
+  };
+
   return (
     <ProjectPageLayout>
       <header className="min-w-0">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className="max-w-full flex-none break-words text-2xl font-bold text-main">
-            {project.title}
-          </h1>
-          {aiEnabled && (
-            <Button
-              type="button"
-              size="sm"
-              className="shrink-0"
-              onClick={async () => {
-                const { useAgentStore } = await import(
-                  "@/modules/agent/store/agent"
-                );
-                useAgentStore.getState().open();
-              }}
-            >
-              {t("project.home.ask-ai")}
-            </Button>
-          )}
-        </div>
+        <h1 className="max-w-full break-words text-2xl font-bold text-main">
+          {project.title}
+        </h1>
         <p className="mt-1 break-all text-sm text-control-light">
           {project.name}
         </p>
       </header>
+
+      {aiEnabled && (
+        <form
+          className="min-w-0 rounded-sm border border-accent/60 bg-background focus-within:border-accent focus-within:ring-1 focus-within:ring-accent"
+          onSubmit={(event) => {
+            event.preventDefault();
+            sendAIMessage();
+          }}
+        >
+          <Textarea
+            size="md"
+            rows={2}
+            value={aiPrompt}
+            aria-label={t("project.home.ai-placeholder")}
+            placeholder={t("project.home.ai-placeholder")}
+            className="min-h-20 resize-none border-0 focus:border-0 focus:ring-0"
+            onChange={(event) => setAiPrompt(event.target.value)}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-3">
+            <span className="min-w-0 flex-1 truncate text-xs text-control-light">
+              {t("agent.context")}: {project.title}
+            </span>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!aiPrompt.trim() || hasRunningChat || hasQueuedMessage}
+            >
+              <Send className="size-4" />
+              {t("agent.send")}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {nextSteps.length > 0 && (
+        <section className="min-w-0" aria-labelledby="project-home-next-step">
+          <h2
+            id="project-home-next-step"
+            className="border-b border-block-border pb-3 text-base font-semibold text-main"
+          >
+            {t("project.home.next-step")}
+          </h2>
+          {nextSteps.map((step, index) => {
+            const Icon = nextStepIcon(step);
+            const [title, description] = nextStepCopy(step);
+            return (
+              <div
+                key={step}
+                className="flex min-w-0 flex-wrap items-center gap-3 border-b border-block-border py-4"
+              >
+                <Icon
+                  className="size-4 shrink-0 text-control"
+                  aria-hidden="true"
+                />
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-medium text-main">{title}</h3>
+                  <p className="text-xs text-control-light">{description}</p>
+                </div>
+                <RouterLink
+                  to={nextStepTarget(step, projectId)}
+                  className={buttonVariants({
+                    size: "sm",
+                    appearance:
+                      index === 0 && step !== "members" ? "solid" : "outline",
+                  })}
+                >
+                  {title}
+                </RouterLink>
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       <div className="mt-4 grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-5">
         <section
@@ -696,262 +814,29 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
               </p>
               {availability === "empty" && (
                 <>
-                  {(instanceAvailability === "empty" ||
-                    shouldOfferInstanceConnection) && (
+                  {instanceAvailability === "empty" && (
                     <p className="mt-1">
                       {canConnectInstance
                         ? t("project.home.no-databases-description")
                         : t("project.home.no-databases-prerequisite")}
                     </p>
                   )}
-                  {instanceAvailability === "present" &&
-                    availableActions.includes("createDatabase") && (
-                      <p className="mt-1">
-                        {t("project.home.no-databases-create-description")}
-                      </p>
-                    )}
-                  {shouldOfferInstanceConnection && (
-                    <RouterLink
-                      to={{
-                        name: PROJECT_V1_ROUTE_INSTANCE_CREATE,
-                        params: { projectId },
-                      }}
-                      className="mt-3 inline-flex items-center py-1 text-sm font-medium text-control no-underline hover:text-main hover:underline focus-visible:underline"
-                    >
-                      {t("project.home.connect")}
-                      <ArrowUpRight
-                        className="ml-1 size-4"
-                        aria-hidden="true"
-                      />
-                    </RouterLink>
+                  {instanceAvailability === "present" && (
+                    <p className="mt-1">
+                      {transferableDatabaseAvailability === "present"
+                        ? t("project.home.no-databases-transfer-description")
+                        : t("project.home.no-databases-create-description")}
+                    </p>
                   )}
-                  {instanceAvailability === "present" &&
-                    availableActions.includes("createDatabase") && (
-                      <RouterLink
-                        to={actionTarget("createDatabase", projectId, false)}
-                        className="mt-3 inline-flex items-center py-1 text-sm font-medium text-control no-underline hover:text-main hover:underline focus-visible:underline"
-                      >
-                        {t("project.home.create-database")}
-                        <ArrowUpRight
-                          className="ml-1 size-4"
-                          aria-hidden="true"
-                        />
-                      </RouterLink>
-                    )}
+                  {instanceAvailability === "syncing" && (
+                    <p className="mt-1">{t("project.home.syncing-instance")}</p>
+                  )}
                 </>
               )}
             </div>
           )}
         </section>
       </div>
-
-      <section
-        className="mt-4 min-w-0"
-        aria-labelledby="project-home-shortcuts"
-      >
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h2
-            id="project-home-shortcuts"
-            className="text-base font-semibold text-main"
-          >
-            {t("project.home.shortcuts")}
-          </h2>
-          <Button
-            type="button"
-            size="sm"
-            appearance="outline"
-            disabled={!storageKey}
-            onClick={() => setCustomizeOpen(true)}
-          >
-            {t("project.home.customize")}
-          </Button>
-        </div>
-        {actions.length ? (
-          <div className="border-t border-block-border">
-            {actions.map((action) => {
-              const Icon = actionIcon(action);
-              const [title, description] = actionCopy(action);
-              return (
-                <div key={action}>
-                  <RouterLink
-                    to={actionTarget(
-                      action,
-                      projectId,
-                      shouldOfferInstanceConnection
-                    )}
-                    className="group flex min-w-0 items-start gap-3 rounded-xs px-1 py-4 text-main no-underline outline-item hover:bg-control-bg"
-                  >
-                    <Icon
-                      className="mt-0.5 size-4 shrink-0 text-control"
-                      aria-hidden="true"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium">{title}</span>
-                      <span className="mt-1 block text-xs text-control-light">
-                        {description}
-                      </span>
-                    </span>
-                    <ArrowUpRight
-                      className="size-4 shrink-0 text-control-light"
-                      aria-hidden="true"
-                    />
-                  </RouterLink>
-                  <Separator />
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-sm text-control-light">
-            {availableActions.length
-              ? t("project.home.no-shortcuts")
-              : t("project.home.no-actions")}
-          </p>
-        )}
-      </section>
-
-      <Sheet open={customizeOpen} onOpenChange={setCustomizeOpen}>
-        <SheetContent width="narrow">
-          <SheetHeader>
-            <SheetTitle>{t("project.home.customize-title")}</SheetTitle>
-          </SheetHeader>
-          <SheetBody className="gap-4">
-            {saveError && (
-              <p role="alert" className="text-sm text-error">
-                {t("project.home.save-error")}
-              </p>
-            )}
-            <div className="flex flex-col gap-1">
-              <h3 className="px-2 text-xs font-semibold text-control-light">
-                {t("project.home.selected-shortcuts")}
-              </h3>
-              {actions.map((action) => {
-                const [title, description] = actionCopy(action);
-                const Icon = actionIcon(action);
-                return (
-                  <div
-                    key={action}
-                    draggable
-                    className="flex min-w-0 cursor-grab items-start gap-3 rounded-xs p-2 hover:bg-control-bg active:cursor-grabbing"
-                    onDragStart={() => {
-                      draggedAction.current = action;
-                      dragOverAction.current = null;
-                    }}
-                    onDragEnter={() => {
-                      dragOverAction.current = action;
-                    }}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDragEnd={() => {
-                      if (draggedAction.current && dragOverAction.current) {
-                        moveShortcut(
-                          draggedAction.current,
-                          dragOverAction.current
-                        );
-                      }
-                      draggedAction.current = null;
-                      dragOverAction.current = null;
-                    }}
-                  >
-                    <Checkbox
-                      id={`project-shortcut-${action}`}
-                      checked
-                      aria-label={title}
-                      onCheckedChange={(checked) =>
-                        toggleShortcut(action, checked)
-                      }
-                      className="mt-0.5"
-                    />
-                    <Icon
-                      className="mt-0.5 size-5 shrink-0 text-control-light"
-                      aria-hidden="true"
-                    />
-                    <label
-                      htmlFor={`project-shortcut-${action}`}
-                      className="min-w-0 flex-1 cursor-pointer"
-                    >
-                      <span className="block text-sm font-medium text-main">
-                        {title}
-                      </span>
-                      <span className="block text-xs text-control-light">
-                        {description}
-                      </span>
-                    </label>
-                    <GripVertical
-                      className="mt-0.5 size-5 shrink-0 text-control-light"
-                      aria-hidden="true"
-                    />
-                  </div>
-                );
-              })}
-            </div>
-
-            {availableActions.some((action) => !actions.includes(action)) && (
-              <>
-                <Separator />
-                <div className="flex flex-col gap-1">
-                  <h3 className="px-2 text-xs font-semibold text-control-light">
-                    {t("project.home.more-shortcuts")}
-                  </h3>
-                  {availableActions
-                    .filter((action) => !actions.includes(action))
-                    .map((action) => {
-                      const [title, description] = actionCopy(action);
-                      const Icon = actionIcon(action);
-                      return (
-                        <div
-                          key={action}
-                          className="flex min-w-0 items-start gap-3 rounded-xs p-2 hover:bg-control-bg"
-                        >
-                          <Checkbox
-                            id={`project-shortcut-${action}`}
-                            checked={false}
-                            aria-label={title}
-                            onCheckedChange={(checked) =>
-                              toggleShortcut(action, checked)
-                            }
-                            className="mt-0.5"
-                          />
-                          <Icon
-                            className="mt-0.5 size-5 shrink-0 text-control-light"
-                            aria-hidden="true"
-                          />
-                          <label
-                            htmlFor={`project-shortcut-${action}`}
-                            className="min-w-0 flex-1 cursor-pointer"
-                          >
-                            <span className="block text-sm font-medium text-main">
-                              {title}
-                            </span>
-                            <span className="block text-xs text-control-light">
-                              {description}
-                            </span>
-                          </label>
-                        </div>
-                      );
-                    })}
-                </div>
-              </>
-            )}
-          </SheetBody>
-          <SheetFooter className="justify-between">
-            <Button
-              type="button"
-              appearance="secondary"
-              size="sm"
-              onClick={resetShortcuts}
-            >
-              {t("project.home.reset")}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setCustomizeOpen(false)}
-            >
-              {t("common.done")}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
     </ProjectPageLayout>
   );
 }

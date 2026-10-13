@@ -40,6 +40,12 @@ interface AddMessageOptions extends Message {
   metadata?: AgentMessage["metadata"];
 }
 
+interface QueuedUserMessage {
+  chatId: string;
+  text: string;
+  page: AgentChatSnapshot;
+}
+
 const DEFAULT_CHAT_STATUS: AgentChatStatus = "idle";
 
 // --- Pure helper functions ---
@@ -348,6 +354,7 @@ export interface AgentState {
   pendingAskByChatId: Record<string, AgentPendingAsk>;
   currentChatId: string | null;
   abortControllersByChatId: Record<string, AbortController>;
+  queuedUserMessage: QueuedUserMessage | null;
 
   // UI actions
   open: () => void;
@@ -360,6 +367,8 @@ export interface AgentState {
 
   // Chat CRUD
   createChat: (options?: CreateChatOptions) => AgentChat;
+  queueUserMessage: (message: QueuedUserMessage) => void;
+  takeQueuedUserMessage: (chatId: string) => QueuedUserMessage | null;
   ensureCurrentChat: (page?: AgentChatSnapshot, context?: string) => AgentChat;
   selectChatContext: (
     context: string,
@@ -620,6 +629,7 @@ export const createAgentStore = () => {
         pendingAskByChatId: initial.pendingAskByChatId,
         currentChatId: initial.currentChatId,
         abortControllersByChatId: {},
+        queuedUserMessage: null,
 
         // UI actions
         open: () =>
@@ -742,6 +752,20 @@ export const createAgentStore = () => {
             }
           });
           return chat;
+        },
+
+        queueUserMessage: (message) =>
+          set((state) => {
+            state.queuedUserMessage = message;
+          }),
+
+        takeQueuedUserMessage: (chatId) => {
+          const message = get().queuedUserMessage;
+          if (message?.chatId !== chatId) return null;
+          set((state) => {
+            state.queuedUserMessage = null;
+          });
+          return message;
         },
 
         ensureCurrentChat: (page, context) => {

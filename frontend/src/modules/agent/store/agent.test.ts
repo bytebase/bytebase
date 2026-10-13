@@ -91,6 +91,21 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).chats[0].totalTokensUsed).toBe(0);
   });
 
+  test("takes a queued user message only for its chat and only once", () => {
+    const store = createAgentStore();
+    const chat = s(store).createChat({ context: "projects/orders" });
+    const message = {
+      chatId: chat.id,
+      text: "List databases",
+      page: { path: "/projects/orders", title: "Order service" },
+    };
+    s(store).queueUserMessage(message);
+
+    expect(s(store).takeQueuedUserMessage("other-chat")).toBeNull();
+    expect(s(store).takeQueuedUserMessage(chat.id)).toEqual(message);
+    expect(s(store).takeQueuedUserMessage(chat.id)).toBeNull();
+  });
+
   test("keeps a chat's resource context when its page changes and after reload", () => {
     const store = createAgentStore();
     const chat = s(store).createChat({ context: "projects/orders" });

@@ -204,6 +204,7 @@ beforeEach(async () => {
     chats: initialState.chats,
     messagesByChatId: initialState.messagesByChatId,
     pendingAskByChatId: initialState.pendingAskByChatId,
+    queuedUserMessage: null,
     currentChatId: initialState.currentChatId,
     abortControllersByChatId: {},
   });
@@ -250,6 +251,29 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test("sends a queued Project Home message in its bound chat once", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const page = { path: "/projects/billing", title: "Billing" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/billing", page });
+    store.queueUserMessage({ chatId: chat.id, text: "List billing databases", page });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(useAgentStore.getState().getMessages(chat.id)[0]).toEqual(
+      expect.objectContaining({ role: "user", content: "List billing databases" })
+    );
+    expect(mocks.buildSystemPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({ context: "projects/billing" })
+    );
+    expect(useAgentStore.getState().queuedUserMessage).toBeNull();
+    view.unmount();
+  });
+
   test("binds an initial empty chat and uses its context for every run", async () => {
     mocks.runAgentLoop.mockResolvedValue({
       kind: "completed",
