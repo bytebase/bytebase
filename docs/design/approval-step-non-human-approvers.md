@@ -99,8 +99,14 @@ is a service account to the frontend alone. D2 routes fetches on this classifier
 tightened to the server's rule. The badge gains a `compact` form with the geometry of the "Current"
 badge (`px-1.5 py-0 text-xs`): it sits after the title and never shrinks, and the title truncates.
 The legacy issue page's sidebar is too narrow for both on one line, so there the badge sits
-beneath the name. Rejected: a distinct robot avatar glyph. The Members page sets
-the precedent of initials avatar plus badge, and reviewers scan the badge text, not the avatar.
+beneath the name. The name identifies the principal and the mark only qualifies it, so the mark
+never outweighs the name: it is drawn in the neutral control colors, as the Users and Service
+Accounts pages already draw the account type, and at regular weight in the compact form, because
+the names in the step, the reviewer list and the sidebar are regular weight. Rejected: the accent
+pill the badge had on the Members page. Accent is for primary action and selected state, and in a
+dense review row it read as more important than the name. Rejected: a distinct robot avatar
+glyph. The Members page sets the precedent of initials avatar plus badge, and reviewers scan the
+badge text, not the avatar.
 
 **D4 · A candidate of any type carries the attribution name `users/<email>`.** `issue.creator` and
 `plan.lastPlanEditor` are `users/<email>` for every actor, SAs included. A service account or
@@ -199,7 +205,7 @@ fallback until they upgrade; no data changes.
 | --- | --- |
 | `frontend/src/routes/project/useApprovalCandidates.ts` (moved from `plan-detail/components/review/`) | keep SA/WI names; resolve by prefix; list each as a `users/<email>` user; filter resolved records by state; people first |
 | `frontend/src/hooks/usePrincipal.ts` (moved from `issue-detail/components/`) | shared; `principalLabel` names a principal by title, or by its email until a record arrives |
-| `frontend/src/components/AccountTypeBadge.tsx` | `compact` form |
+| `frontend/src/components/AccountTypeBadge.tsx` | `compact` form; neutral colors in place of accent, on every surface that uses it |
 | `frontend/src/routes/project/plan-detail/components/review/ReviewApprovalFlow.tsx` | badge in `CandidateRow`, `FlowNode` subtitle, `ApprovedPopoverRow`; chip avatars through the hook; popover width; the BYT-9711 comment |
 | `frontend/src/components/issue-activity/IssueCommentActivity.tsx` | `CommentCreator` and `ActivityUserIcon` take the principal and resolve it through the hook, badge after the name |
 | `PlanStatusAction.tsx`, `ReviewRejectionBanner.tsx`, `ReviewActivityTimeline.tsx` | whoever rejected or acted, through the hook |
@@ -217,6 +223,7 @@ Tests:
 | `useApprovalCandidates.test.tsx` | SA-only role; people before machines; nobody; deleted SA dropped, unresolved SA kept; SA creator held to self-approval; SA bound as `user:` not listed |
 | `ReviewApprovalFlow.test.tsx` | SA-held step shows its reviewer; no holder says "No reviewers"; a step decided by an SA shows title and badge; a person without a record falls back to the email name, unmarked |
 | `IssueCommentActivity.test.tsx` | an SA's approval names it with the badge; a person's does not |
+| `AccountTypeBadge.test.tsx` | nothing for a person; the type named for an SA and a WI; neither form is drawn in accent |
 | `stores/app/user.test.ts` | a batch that contains an SA email still resolves the people in it and sends nothing for the SA; a lone SA is never asked of the user service |
 | `types/v1/user.test.ts` | the classifier against the server's rule, including `x@myservice.bytebase.com` |
 | `tests/e2e/plan-detail/plan-detail-review.spec.ts` | in a browser: an SA-held step lists the account with its badge; after the SA approves through the API the step and the activity name it |

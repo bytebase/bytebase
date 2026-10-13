@@ -5,7 +5,9 @@ import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 
 /**
  * Marks a service account or a workload identity; nothing for a person.
- * `compact` fits a one-line row beside a name that truncates.
+ * Secondary metadata beside the name that identifies the principal, so it is
+ * never drawn in the accent role. `compact` fits a one-line row beside a name
+ * that truncates.
  */
 export function AccountTypeBadge({
   compact = false,
@@ -30,10 +32,9 @@ function AccountTypeLabel({
   const { t } = useTranslation();
   return (
     <Badge
-      variant="secondary"
       className={cn(
         "text-xs",
-        compact && "shrink-0 whitespace-nowrap px-1.5 py-0"
+        compact && "shrink-0 whitespace-nowrap px-1.5 py-0 font-normal"
       )}
     >
       {type === AccountType.SERVICE_ACCOUNT
