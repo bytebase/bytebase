@@ -2030,7 +2030,6 @@
       "no-databases-description": "インスタンスを接続して、このプロジェクトにデータベースを追加します。",
       "no-databases-prerequisite": "ここにデータベースを表示するには、インスタンスの接続が必要です。",
       "no-databases-transfer-description": "未割り当てのデータベースをこのプロジェクトに移管するか、新しく作成します。",
-      "syncing-instance": "接続したインスタンスのデータベースを検出しています。",
       "transfer-databases": "データベースを移管",
       "transfer-databases-description": "未割り当てのデータベースをこのプロジェクトに移管します。",
       "view-all": "すべて表示",

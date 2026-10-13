@@ -9,7 +9,7 @@ export type ProjectHomeNextStep =
 
 export type ProjectHomeNextStepInput = {
   database: ResourceAvailability;
-  instance: ResourceAvailability | "syncing";
+  instance: ResourceAvailability;
   transferableDatabase: ResourceAvailability;
   change: "loading" | "not-started" | "submitted" | "unknown";
   membership: "unknown" | "solo" | "has-collaborators";
@@ -31,21 +31,16 @@ export function getProjectHomeNextSteps(
   if (
     input.isDefault ||
     input.change === "submitted" ||
-    (input.database !== "empty" && input.database !== "present") ||
-    (input.database === "present" && input.change !== "not-started") ||
-    (input.database === "empty" &&
-      input.canTransferDatabases &&
-      input.transferableDatabase === "loading") ||
-    (input.database === "empty" &&
-      !canOfferTransfer &&
-      input.instance !== "empty" &&
-      input.instance !== "present")
+    input.database === "loading" ||
+    (input.database === "present" && input.change === "loading")
   ) {
     return [];
   }
 
   const steps: ProjectHomeNextStep[] = [];
-  if (input.database === "empty") {
+  const transferIsLoading =
+    input.canTransferDatabases && input.transferableDatabase === "loading";
+  if (input.database === "empty" && !transferIsLoading) {
     if (canOfferTransfer) {
       steps.push("transferDatabases");
     }
@@ -60,7 +55,11 @@ export function getProjectHomeNextSteps(
         steps.push("createDatabase");
       }
     }
-  } else if (input.change === "not-started" && input.canCreateChange) {
+  } else if (
+    input.database === "present" &&
+    input.change === "not-started" &&
+    input.canCreateChange
+  ) {
     steps.push("changeDatabase");
   }
 

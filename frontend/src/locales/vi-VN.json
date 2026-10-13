@@ -2030,7 +2030,6 @@
       "no-databases-description": "Kết nối một phiên bản để đưa cơ sở dữ liệu vào dự án này.",
       "no-databases-prerequisite": "Cần kết nối một phiên bản trước khi cơ sở dữ liệu xuất hiện ở đây.",
       "no-databases-transfer-description": "Chuyển cơ sở dữ liệu chưa được gán vào dự án này hoặc tạo cơ sở dữ liệu mới.",
-      "syncing-instance": "Đang tìm cơ sở dữ liệu trên phiên bản đã kết nối.",
       "transfer-databases": "Chuyển cơ sở dữ liệu",
       "transfer-databases-description": "Chuyển một cơ sở dữ liệu chưa được gán vào dự án này.",
       "view-all": "Xem tất cả",

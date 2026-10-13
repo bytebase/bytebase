@@ -55,7 +55,7 @@ describe("getProjectHomeNextSteps", () => {
         instance: "present",
         transferableDatabase: "loading",
       })
-    ).toEqual([]);
+    ).toEqual(["members"]);
   });
 
   test("falls back to creation when transfer is unavailable", () => {
@@ -76,16 +76,25 @@ describe("getProjectHomeNextSteps", () => {
     ).toEqual(["createDatabase", "members"]);
   });
 
-  test("waits for sync or uncertain resource state", () => {
-    expect(getProjectHomeNextSteps({ ...input, instance: "syncing" })).toEqual(
-      []
-    );
+  test("keeps membership setup available while resource state is uncertain", () => {
     expect(getProjectHomeNextSteps({ ...input, instance: "unknown" })).toEqual(
-      []
+      ["members"]
     );
     expect(getProjectHomeNextSteps({ ...input, database: "unknown" })).toEqual(
+      ["members"]
+    );
+    expect(
+      getProjectHomeNextSteps({ ...input, database: "present", change: "unknown" })
+    ).toEqual(["members"]);
+  });
+
+  test("waits for initial discovery before showing membership setup", () => {
+    expect(getProjectHomeNextSteps({ ...input, database: "loading" })).toEqual(
       []
     );
+    expect(
+      getProjectHomeNextSteps({ ...input, database: "present", change: "loading" })
+    ).toEqual([]);
   });
 
   test("offers a first database change and optional membership setup", () => {

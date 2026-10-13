@@ -43,6 +43,7 @@ import {
   State,
 } from "@/types/proto-es/v1/common_pb";
 import type { Database as DatabaseResource } from "@/types/proto-es/v1/database_service_pb";
+import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { getUserEmailInBinding } from "@/types/v1/user";
 import { autoDatabaseRoute } from "@/utils/auto-route";
 import { isBindingPolicyExpired } from "@/utils/v1/iam";
@@ -72,7 +73,6 @@ const HOME_PERMISSIONS: Permission[] = [
   "bb.instances.create",
   "bb.issues.create",
   "bb.sheets.create",
-  "bb.sql.select",
   "bb.projects.getIamPolicy",
   "bb.projects.setIamPolicy",
 ];
@@ -126,10 +126,8 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const [aiPrompt, setAiPrompt] = useState("");
   const [discoveryRefreshToken, setDiscoveryRefreshToken] = useState(0);
   const fetchDatabases = useAppStore((state) => state.fetchDatabases);
-  const fetchIssueByName = useAppStore((state) => state.fetchIssueByName);
   const fetchInstanceList = useAppStore((state) => state.fetchInstanceList);
   const listIssues = useAppStore((state) => state.listIssues);
-  const listPlans = useAppStore((state) => state.listPlans);
   const canListWorkspaceInstances = useAppStore((state) =>
     state.hasWorkspacePermission("bb.instances.list")
   );
@@ -213,7 +211,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     databaseState.projectName === projectName ? databaseState.databases : [];
   const [instanceState, setInstanceState] = useState<{
     projectName: string;
-    availability: ResourceAvailability | "syncing";
+    availability: ResourceAvailability;
   }>({ projectName, availability: "loading" });
   const instanceAvailability =
     instanceState.projectName === projectName
@@ -284,7 +282,6 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     }
     const inspectInstances = async (parent?: string) => {
       let pageToken = "";
-      let foundInstance = false;
       const seenTokens = new Set<string>();
       do {
         const result = await fetchInstanceList({
@@ -294,8 +291,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
           filter: { state: State.ACTIVE },
           silent: true,
         });
-        foundInstance ||= result.instances.length > 0;
-        if (result.instances.some((instance) => instance.lastSyncTime)) {
+        if (result.instances.length > 0) {
           return "present" as const;
         }
         pageToken = result.nextPageToken;
@@ -304,7 +300,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
         }
         seenTokens.add(pageToken);
       } while (pageToken);
-      return foundInstance ? ("syncing" as const) : ("empty" as const);
+      return "empty" as const;
     };
     const requests = [
       ...(canListProjectInstances ? [inspectInstances(projectName)] : []),
@@ -322,9 +318,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
           ? "present"
           : states.includes("unknown")
             ? "unknown"
-            : states.includes("syncing")
-              ? "syncing"
-              : "empty",
+            : "empty",
       });
     });
     return () => {
@@ -338,15 +332,6 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     projectName,
     discoveryRefreshToken,
   ]);
-
-  useEffect(() => {
-    if (availability !== "empty" || instanceAvailability !== "syncing") return;
-    const timer = window.setTimeout(
-      () => setDiscoveryRefreshToken((value) => value + 1),
-      5000
-    );
-    return () => window.clearTimeout(timer);
-  }, [availability, discoveryRefreshToken, instanceAvailability]);
 
   useEffect(() => {
     if (availability !== "empty") return;
@@ -388,64 +373,34 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (availability !== "present") return;
     let active = true;
-    if (
-      missedPermissions.includes("bb.plans.list") ||
-      !canListDatabases ||
-      !canReadIssues
-    ) {
+    if (!canListIssues) {
       setChangeState({ projectName, status: "unknown" });
       return;
     }
     setChangeState({ projectName, status: "loading" });
-    const load = async () => {
-      let pageToken = "";
-      const seenTokens = new Set<string>();
-      try {
-        do {
-          const result = await listPlans({
-            find: {
-              project: projectName,
-              specType: "change_database_config",
-              state: "ACTIVE",
-            },
-            pageSize: 20,
-            pageToken,
+    void listIssues({
+      find: {
+        project: projectName,
+        query: "",
+        typeList: [Issue_Type.DATABASE_CHANGE],
+      },
+      pageSize: 1,
+    })
+      .then(({ issues }) => {
+        if (active) {
+          setChangeState({
+            projectName,
+            status: issues.length ? "submitted" : "not-started",
           });
-          if (!active) return;
-          for (const plan of result.plans) {
-            if (!plan.issue) continue;
-            const issue = await fetchIssueByName(plan.issue, true);
-            if (!active) return;
-            if (!issue.draft) {
-              setChangeState({ projectName, status: "submitted" });
-              return;
-            }
-          }
-          pageToken = result.nextPageToken;
-          if (pageToken && seenTokens.has(pageToken)) {
-            setChangeState({ projectName, status: "unknown" });
-            return;
-          }
-          seenTokens.add(pageToken);
-        } while (pageToken);
-        setChangeState({ projectName, status: "not-started" });
-      } catch {
+        }
+      })
+      .catch(() => {
         if (active) setChangeState({ projectName, status: "unknown" });
-      }
-    };
-    void load();
+      });
     return () => {
       active = false;
     };
-  }, [
-    availability,
-    canListDatabases,
-    canReadIssues,
-    fetchIssueByName,
-    listPlans,
-    missedPermissions,
-    projectName,
-  ]);
+  }, [availability, canListIssues, listIssues, projectName]);
 
   useEffect(() => {
     let active = true;
@@ -844,9 +799,6 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
                         {t("project.home.no-databases-create-description")}
                       </p>
                     )}
-                  {instanceAvailability === "syncing" && (
-                    <p className="mt-1">{t("project.home.syncing-instance")}</p>
-                  )}
                 </>
               )}
               {availability === "unknown" && canPreviewDatabases && (
