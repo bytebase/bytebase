@@ -43,7 +43,6 @@ import {
   State,
 } from "@/types/proto-es/v1/common_pb";
 import type { Database as DatabaseResource } from "@/types/proto-es/v1/database_service_pb";
-import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { getUserEmailInBinding } from "@/types/v1/user";
 import { autoDatabaseRoute } from "@/utils/auto-route";
 import { isBindingPolicyExpired } from "@/utils/v1/iam";
@@ -126,8 +125,10 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const [aiPrompt, setAiPrompt] = useState("");
   const [discoveryRefreshToken, setDiscoveryRefreshToken] = useState(0);
   const fetchDatabases = useAppStore((state) => state.fetchDatabases);
+  const fetchIssueByName = useAppStore((state) => state.fetchIssueByName);
   const fetchInstanceList = useAppStore((state) => state.fetchInstanceList);
   const listIssues = useAppStore((state) => state.listIssues);
+  const listPlans = useAppStore((state) => state.listPlans);
   const canListWorkspaceInstances = useAppStore((state) =>
     state.hasWorkspacePermission("bb.instances.list")
   );
@@ -154,6 +155,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const canGetPlanDetail = PLAN_DETAIL_PERMISSIONS.every(
     (permission) => !missedPermissions.includes(permission)
   );
+  const canListPlans = !missedPermissions.includes("bb.plans.list");
   const canReadIssues = !missedPermissions.includes("bb.issues.get");
   const canListIssues = !missedPermissions.includes("bb.issues.list");
   const canListProjectInstances =
@@ -178,7 +180,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     Boolean(defaultProject && workspaceName);
   const canCreateChange =
     canListDatabases &&
-    !missedPermissions.includes("bb.plans.list") &&
+    canListPlans &&
     !missedPermissions.includes("bb.plans.create") &&
     !missedPermissions.includes("bb.issues.create") &&
     !missedPermissions.includes("bb.sheets.create") &&
@@ -282,7 +284,6 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     }
     const inspectInstances = async (parent?: string) => {
       let pageToken = "";
-      const seenTokens = new Set<string>();
       do {
         const result = await fetchInstanceList({
           parent,
@@ -295,10 +296,6 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
           return "present" as const;
         }
         pageToken = result.nextPageToken;
-        if (pageToken && seenTokens.has(pageToken)) {
-          return "unknown" as const;
-        }
-        seenTokens.add(pageToken);
       } while (pageToken);
       return "empty" as const;
     };
@@ -373,34 +370,53 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (availability !== "present") return;
     let active = true;
-    if (!canListIssues) {
+    if (!canReadIssues || !canListPlans) {
       setChangeState({ projectName, status: "unknown" });
       return;
     }
     setChangeState({ projectName, status: "loading" });
-    void listIssues({
-      find: {
-        project: projectName,
-        query: "",
-        typeList: [Issue_Type.DATABASE_CHANGE],
-      },
-      pageSize: 1,
-    })
-      .then(({ issues }) => {
-        if (active) {
-          setChangeState({
-            projectName,
-            status: issues.length ? "submitted" : "not-started",
+    const load = async () => {
+      let pageToken = "";
+      try {
+        do {
+          const result = await listPlans({
+            find: {
+              project: projectName,
+              specType: "change_database_config",
+              state: "ACTIVE",
+            },
+            pageSize: 20,
+            pageToken,
           });
-        }
-      })
-      .catch(() => {
+          if (!active) return;
+          for (const plan of result.plans) {
+            if (!plan.issue) continue;
+            const issue = await fetchIssueByName(plan.issue, true);
+            if (!active) return;
+            if (!issue.draft) {
+              setChangeState({ projectName, status: "submitted" });
+              return;
+            }
+          }
+          pageToken = result.nextPageToken;
+        } while (pageToken);
+        setChangeState({ projectName, status: "not-started" });
+      } catch {
         if (active) setChangeState({ projectName, status: "unknown" });
-      });
+      }
+    };
+    void load();
     return () => {
       active = false;
     };
-  }, [availability, canListIssues, listIssues, projectName]);
+  }, [
+    availability,
+    canListPlans,
+    canReadIssues,
+    fetchIssueByName,
+    listPlans,
+    projectName,
+  ]);
 
   useEffect(() => {
     let active = true;

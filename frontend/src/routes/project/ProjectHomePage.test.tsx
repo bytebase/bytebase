@@ -8,6 +8,7 @@ import { ApprovalStatus, Engine, IssueStatus } from "@/types/proto-es/v1/common_
 import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 
 const mocks = vi.hoisted(() => ({
   state: {
@@ -28,8 +29,10 @@ const mocks = vi.hoisted(() => ({
     },
     currentUser: { name: "users/alice", email: "alice@example.com", workspace: "workspaces/demo" },
     fetchDatabases: vi.fn(),
+    fetchIssueByName: vi.fn(),
     fetchInstanceList: vi.fn(),
     listIssues: vi.fn(),
+    listPlans: vi.fn(),
     hasWorkspacePermission: vi.fn((_permission: Permission) => true),
     workspaceResourceName: vi.fn(() => "workspaces/demo"),
     projectPoliciesByName: {
@@ -127,7 +130,13 @@ beforeEach(() => {
     ],
   });
   mocks.state.fetchInstanceList.mockResolvedValue({ instances: [] });
+  mocks.state.fetchIssueByName.mockReset();
+  mocks.state.fetchIssueByName.mockResolvedValue(
+    create(IssueSchema, { draft: false })
+  );
   mocks.state.listIssues.mockResolvedValue({ issues: [] });
+  mocks.state.listPlans.mockReset();
+  mocks.state.listPlans.mockResolvedValue({ plans: [], nextPageToken: "" });
 });
 
 describe("ProjectHomePage", () => {
@@ -546,10 +555,9 @@ describe("ProjectHomePage", () => {
         }),
       })
     );
-    expect(mocks.state.listIssues).toHaveBeenCalledWith(
+    expect(mocks.state.listPlans).toHaveBeenCalledWith(
       expect.objectContaining({
-        find: expect.objectContaining({ typeList: [Issue_Type.DATABASE_CHANGE] }),
-        pageSize: 1,
+        find: expect.objectContaining({ specType: "change_database_config" }),
       })
     );
   });
@@ -690,69 +698,89 @@ describe("ProjectHomePage", () => {
       title: "Access request",
       status: IssueStatus.OPEN,
     });
-    mocks.state.listIssues.mockImplementation(async ({ find }) => ({
-      issues: find.typeList ? [] : [accessIssue],
-    }));
+    mocks.state.listIssues.mockResolvedValue({ issues: [accessIssue] });
     const view = render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
     expect((await within(next).findByRole("link", { name: "project.home.change-database" })).getAttribute("href"))
       .toBe("workspace.project.plan.detail");
-    expect(mocks.state.listIssues).toHaveBeenCalledWith(
+    expect(mocks.state.listPlans).toHaveBeenCalledWith(
       expect.objectContaining({
-        find: expect.objectContaining({ typeList: [Issue_Type.DATABASE_CHANGE] }),
-        pageSize: 1,
+        find: expect.objectContaining({ specType: "change_database_config" }),
       })
     );
     expect(screen.getByRole("region", { name: "project.home.next-step" })).toBeTruthy();
     view.unmount();
 
-    mocks.state.listIssues.mockImplementation(async ({ find }) => ({
-      issues: find.typeList
-        ? [create(IssueSchema, { type: Issue_Type.DATABASE_CHANGE })]
-        : [],
-    }));
+    mocks.state.listPlans.mockResolvedValue({
+      plans: [create(PlanSchema, { issue: "projects/orders/issues/change" })],
+      nextPageToken: "",
+    });
     render(<ProjectHomePage projectId="orders" />);
     await waitFor(() =>
-      expect(mocks.state.listIssues).toHaveBeenCalledWith(
-        expect.objectContaining({
-          find: expect.objectContaining({ typeList: [Issue_Type.DATABASE_CHANGE] }),
-          pageSize: 1,
-        })
+      expect(mocks.state.fetchIssueByName).toHaveBeenCalledWith(
+        "projects/orders/issues/change",
+        true
       )
     );
     await waitFor(() => expect(screen.queryByRole("region", { name: "project.home.next-step" })).toBeNull());
   });
 
-  test("checks submitted database changes with one issue-list request", async () => {
-    mocks.state.listIssues.mockImplementation(async ({ find }) => ({
-      issues: find.typeList
-        ? [create(IssueSchema, { type: Issue_Type.DATABASE_CHANGE })]
-        : [],
-    }));
+  test("finds a submitted database change after unlinked plans on an earlier page", async () => {
+    mocks.state.listPlans.mockImplementation(async ({ pageToken }) =>
+      pageToken
+        ? {
+            plans: [create(PlanSchema, { issue: "projects/orders/issues/change" })],
+            nextPageToken: "",
+          }
+        : {
+            plans: [create(PlanSchema, { name: "projects/orders/plans/draft" })],
+            nextPageToken: "next",
+          }
+    );
     render(<ProjectHomePage projectId="orders" />);
     await waitFor(() =>
-      expect(mocks.state.listIssues).toHaveBeenCalledWith(
-        expect.objectContaining({
-          find: expect.objectContaining({ typeList: [Issue_Type.DATABASE_CHANGE] }),
-          pageSize: 1,
-        })
+      expect(mocks.state.listPlans).toHaveBeenCalledWith(
+        expect.objectContaining({ pageToken: "next" })
       )
     );
-    expect(
-      mocks.state.listIssues.mock.calls.filter(([request]) => request.find.typeList)
-    ).toHaveLength(1);
-    expect(screen.queryByRole("region", { name: "project.home.next-step" })).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("region", { name: "project.home.next-step" })).toBeNull());
   });
 
-  test("keeps setup visible when no submitted database-change issue exists", async () => {
+  test("keeps setup visible when only create-database issues exist", async () => {
+    mocks.state.listIssues.mockResolvedValue({
+      issues: [
+        create(IssueSchema, {
+          type: Issue_Type.DATABASE_CHANGE,
+          plan: "projects/orders/plans/create-database",
+        }),
+      ],
+    });
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
     expect(await within(next).findByRole("link", { name: "project.home.change-database" })).toBeTruthy();
-    expect(mocks.state.listIssues).toHaveBeenCalledWith(
+    expect(mocks.state.listPlans).toHaveBeenCalledWith(
       expect.objectContaining({
-        find: expect.objectContaining({ typeList: [Issue_Type.DATABASE_CHANGE] }),
-        pageSize: 1,
+        find: expect.objectContaining({ specType: "change_database_config" }),
       })
     );
+  });
+
+  test("keeps setup visible when the linked database-change issue is a draft", async () => {
+    mocks.state.listPlans.mockResolvedValue({
+      plans: [create(PlanSchema, { issue: "projects/orders/issues/draft" })],
+      nextPageToken: "",
+    });
+    mocks.state.fetchIssueByName.mockResolvedValue(create(IssueSchema, { draft: true }));
+    render(<ProjectHomePage projectId="orders" />);
+    const next = await screen.findByRole("region", { name: "project.home.next-step" });
+    expect(await within(next).findByRole("link", { name: "project.home.change-database" })).toBeTruthy();
+  });
+
+  test("discovers changes with issue-read permission without issue-list permission", async () => {
+    mocks.missedPermissions = ["bb.issues.list"];
+    render(<ProjectHomePage projectId="orders" />);
+    const next = await screen.findByRole("region", { name: "project.home.next-step" });
+    expect(await within(next).findByRole("link", { name: "project.home.change-database" })).toBeTruthy();
+    expect(mocks.state.listPlans).toHaveBeenCalled();
   });
 });
