@@ -3369,7 +3369,7 @@ Unlike SENSITIVE it says nothing about the API contract.</p></td>
         </table>
       
         <h3 id="bytebase.v1.MCPDenialReason">MCPDenialReason</h3>
-        <p>Why an MCP session may not call an RPC. The mechanism, not the wording: each</p><p>value names what its methods actually do, and the serving side turns that</p><p>into a sentence. A denial whose stated reason has drifted from the mechanism</p><p>is worse than a bare refusal, because it is the thing the next reader trusts</p><p>— so a method changing what it does changes its reason here.</p><p>One enum covers both refused classes, and every value belongs to exactly one</p><p>of them: values 1-8 name a mechanism that breaks the MCP boundary, which is</p><p>what FORBIDDEN means, and values 9-13 name a scope decision this phase took,</p><p>which is what EXCLUDED means. The distinction is real and lives on the class</p><p>annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope</p><p>decision is what a future admin-capable ceiling would argue with, one</p><p>population at a time. Splitting it across two enums as well only made the</p><p>nonsense states representable: a method could carry both, or carry the kind</p><p>that contradicts its class. Neither is expressible now, and the one check</p><p>left — the reason belongs to the class it is used on — is a table the gate</p><p>already keeps for the wording.</p>
+        <p>Why an MCP session may not call an RPC. The mechanism, not the wording: each</p><p>value names what its methods actually do, and the serving side turns that</p><p>into a sentence. A denial whose stated reason has drifted from the mechanism</p><p>is worse than a bare refusal, because it is the thing the next reader trusts</p><p>— so a method changing what it does changes its reason here.</p><p>One enum covers both refused classes, and every value belongs to exactly one</p><p>of them: values 1-8 name a mechanism that breaks the MCP boundary, which is</p><p>what FORBIDDEN means, and values 9-14 name a scope decision this phase took,</p><p>which is what EXCLUDED means. The distinction is real and lives on the class</p><p>annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope</p><p>decision is what a future admin-capable ceiling would argue with, one</p><p>population at a time. Splitting it across two enums as well only made the</p><p>nonsense states representable: a method could carry both, or carry the kind</p><p>that contradicts its class. Neither is expressible now, and the one check</p><p>left — the reason belongs to the class it is used on — is a table the gate</p><p>already keeps for the wording.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -3499,6 +3499,19 @@ found leaking should carry it rather than an invented one, and because
 retiring an enum value costs a reserved number for nothing.</p></td>
               </tr>
             
+              <tr>
+                <td>REDRAWS_GOVERNANCE_BOUNDARY</td>
+                <td>14</td>
+                <td><p>Changes which rules govern a database, or which databases a change that
+targets a database group runs on. Approval, SQL review and access rules
+key on a database&#39;s project and environment, and so do the masking rules
+that decide what a query returns. A database group selects databases by
+an expression that can read their environment and labels, and a change
+that targets a group runs on whichever databases the group selects when
+its rollout tasks are created. An agent that could redraw these would
+choose the checks on its own changes.</p></td>
+              </tr>
+            
           </tbody>
         </table>
       
@@ -3547,9 +3560,9 @@ console; an agent acting for them does not get to.</p></td>
                 <td>EXCLUDED</td>
                 <td>4</td>
                 <td><p>Served by no MCP capability ceiling this phase ships, and not a durable
-never. These are workspace administration, plus the handful of methods
-that do something materially worse than the plain read permission they
-share suggests.
+never. These are workspace administration, the writes that change which
+rules govern a database, and the handful of methods that do something
+materially worse than the plain read permission they share suggests.
 
 The line against FORBIDDEN is reversibility. An admin-capable ceiling, if
 one is ever built, could legitimately serve an EXCLUDED method — that is a
