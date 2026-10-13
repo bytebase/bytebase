@@ -243,3 +243,98 @@ served by no ceiling.
 | WorkspaceService/RotateDirectorySyncToken | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.workspaces.rotateDirectorySyncToken |
 | WorkspaceService/SetIamPolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workspaces.setIamPolicy |
 | WorkspaceService/UpdateWorkspace | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workspaces.update |
+
+## What a refused method tells the agent
+
+Rendered by the gate's own code. Each denial must be true of every method listed
+under it: the whole method, for every caller, argument and resource owner.
+
+### FORBIDDEN · MINTS_CREDENTIAL
+
+AuthService/ExchangeToken
+
+> `<method>` is not available to MCP sessions, whatever the workspace's MCP access policy, because it returns a sign-in credential (a session token, an MFA secret, or recovery codes) that would keep working after this MCP connection is revoked. Exchange workload identity tokens from your CI/CD pipeline instead.
+
+### FORBIDDEN · MINTS_CREDENTIAL
+
+AuthService/Login, AuthService/Refresh, AuthService/Signup, UserService/RegenerateRecoveryCodes, UserService/StartMFAEnrollment
+
+> `<method>` is not available to MCP sessions, whatever the workspace's MCP access policy, because it returns a sign-in credential (a session token, an MFA secret, or recovery codes) that would keep working after this MCP connection is revoked. If you need this, do it yourself in the Bytebase console.
+
+### FORBIDDEN · MINTS_CREDENTIAL
+
+AuthService/SwitchWorkspace
+
+> `<method>` is not available to MCP sessions, whatever the workspace's MCP access policy, because it returns a sign-in credential (a session token, an MFA secret, or recovery codes) that would keep working after this MCP connection is revoked. To use this MCP connection with another workspace, run the reauthorize tool and choose that workspace when you approve access again.
+
+### FORBIDDEN · RESETS_CREDENTIAL
+
+AuthService/RequestPasswordReset, AuthService/ResetPassword, AuthService/SendEmailLoginCode, UserService/RequestReauthCode
+
+> `<method>` is not available to MCP sessions, whatever the workspace's MCP access policy, because it sends or redeems a one-time code or reset link that can sign in to an account or change its credentials. If you need this, do it yourself in the Bytebase console.
+
+### FORBIDDEN · TAKES_OVER_ACCOUNT
+
+UserService/ChangePassword, UserService/ConfirmRecoveryCodes, UserService/DisableMFA, UserService/EnableMFA, UserService/UpdateUser
+
+> `<method>` is not available to MCP sessions, whatever the workspace's MCP access policy, because it can rewrite an account's credentials, which would let the session take that account over. If you need this, do it yourself in the Bytebase console.
+
+### FORBIDDEN · ENDS_SESSION
+
+AuthService/Logout
+
+> `<method>` is not available to MCP sessions, whatever the workspace's MCP access policy, because it signs the user out of their Bytebase web session. To end this MCP connection instead, run the reauthorize tool or remove Bytebase from your MCP client.
+
+### FORBIDDEN · ENDS_MEMBERSHIP
+
+WorkspaceService/DeleteWorkspace, WorkspaceService/LeaveWorkspace
+
+> `<method>` is not available to MCP sessions, whatever the workspace's MCP access policy, because it deletes the workspace or removes the user from it, and can return a sign-in token for another workspace that this MCP connection's limits would not cover. If you need this, do it yourself in the Bytebase console.
+
+### FORBIDDEN · MINTS_CREDENTIAL_FOR_OTHERS
+
+IdentityProviderService/CreateIdentityProvider, IdentityProviderService/TestIdentityProvider, IdentityProviderService/UpdateIdentityProvider, InstanceService/UpdateDataSource, ServiceAccountService/CreateServiceAccount, ServiceAccountService/UpdateServiceAccount, SettingService/TestEmailSetting, UserService/CreateUser, UserService/UpdateEmail, WorkloadIdentityService/CreateWorkloadIdentity, WorkloadIdentityService/UpdateWorkloadIdentity, WorkspaceService/RotateDirectorySyncToken
+
+> `<method>` is not available to MCP sessions, whatever the workspace's MCP access policy, because it can create, reveal, or redirect a credential for another account, service, or database (a key, token, password, or sign-in trust), and revoking this MCP connection would not take that credential back. If your role allows it, do this in the Bytebase console.
+
+### FORBIDDEN · REWRITES_SESSION_BOUNDARY
+
+SettingService/UpdateSetting
+
+> `<method>` is not available to MCP sessions, whatever the workspace's MCP access policy, because it changes workspace settings, and some of them (the MCP access policy, sign-in and SSO, the mail server, the AI provider) control what this session can do, so AI agents may not change any workspace setting. If your role allows it, do this in the Bytebase console.
+
+### FORBIDDEN · DRIVES_THE_APPROVAL_DECISION
+
+IssueService/ApproveIssue, IssueService/RejectIssue
+
+> `<method>` is not available to MCP sessions, whatever the workspace's MCP access policy, because it approves, rejects, or re-checks an issue's approval, and AI agents may not make approval decisions on any issue, whoever created it. If you are an approver for this issue, approve or reject it in the Bytebase console.
+
+### FORBIDDEN · DRIVES_THE_APPROVAL_DECISION
+
+IssueService/RetryIssueApproval
+
+> `<method>` is not available to MCP sessions, whatever the workspace's MCP access policy, because it approves, rejects, or re-checks an issue's approval, and AI agents may not make approval decisions on any issue, whoever created it. The issue's creator can re-run its approval check in the Bytebase console.
+
+### EXCLUDED · ADMINISTERS_THE_WORKSPACE
+
+AccessGrantService/ActivateAccessGrant, AccessGrantService/CreateAccessGrant, AccessGrantService/GetAccessGrant, AccessGrantService/ListAccessGrants, AccessGrantService/RevokeAccessGrant, AuditLogService/ExportAuditLogs, AuditLogService/SearchAuditLogs, DatabaseCatalogService/UpdateDatabaseCatalog, GroupService/BatchGetGroups, GroupService/CreateGroup, GroupService/DeleteGroup, GroupService/GetGroup, GroupService/ListGroups, GroupService/UpdateGroup, IdentityProviderService/DeleteIdentityProvider, IdentityProviderService/GetIdentityProvider, IdentityProviderService/ListIdentityProviders, InstanceService/AddDataSource, InstanceService/BatchUpdateInstances, InstanceService/CreateInstance, InstanceService/DeleteInstance, InstanceService/ListInstanceDatabase, InstanceService/PrepareSampleProjectInstance, InstanceService/RemoveDataSource, InstanceService/UndeleteInstance, InstanceService/UpdateInstance, OrgPolicyService/CreatePolicy, OrgPolicyService/DeletePolicy, OrgPolicyService/GetPolicy, OrgPolicyService/ListPolicies, OrgPolicyService/UpdatePolicy, ProjectService/AddWebhook, ProjectService/BatchDeleteProjects, ProjectService/CreateProject, ProjectService/DeleteProject, ProjectService/GetIamPolicy, ProjectService/RemoveWebhook, ProjectService/SetIamPolicy, ProjectService/UndeleteProject, ProjectService/UpdateProject, ProjectService/UpdateWebhook, ReviewConfigService/CreateReviewConfig, ReviewConfigService/DeleteReviewConfig, ReviewConfigService/UpdateReviewConfig, RoleService/CreateRole, RoleService/DeleteRole, RoleService/GetRole, RoleService/ListRoles, RoleService/UpdateRole, SavedQueryService/GetSavedQueryPolicy, SavedQueryService/SetSavedQueryPolicy, ServiceAccountService/DeleteServiceAccount, ServiceAccountService/GetServiceAccount, ServiceAccountService/ListServiceAccounts, ServiceAccountService/UndeleteServiceAccount, SettingService/GetSetting, SettingService/ListSettings, SubscriptionService/CancelPurchase, SubscriptionService/CreatePurchase, SubscriptionService/ExportVCSProviderUsers, SubscriptionService/GetPaymentInfo, SubscriptionService/GetSubscription, SubscriptionService/ListPurchasePlans, SubscriptionService/StartTrial, SubscriptionService/UpdatePurchase, SubscriptionService/UploadLicense, SubscriptionService/VerifyCheckoutSession, UserService/BatchGetUsers, UserService/DeleteUser, UserService/GetUser, UserService/ListUsers, UserService/UndeleteUser, WorkloadIdentityService/DeleteWorkloadIdentity, WorkloadIdentityService/GetWorkloadIdentity, WorkloadIdentityService/ListWorkloadIdentities, WorkloadIdentityService/UndeleteWorkloadIdentity, WorkspaceService/GetIamPolicy, WorkspaceService/SetIamPolicy, WorkspaceService/UpdateWorkspace
+
+> `<method>` is not available to MCP sessions under any MCP access policy because it belongs to workspace administration: members, roles and access, sign-in, instances and projects, policies and data classification, audit logs, settings, and billing. If your role allows it, do this in the Bytebase console.
+
+### EXCLUDED · READS_OTHER_USERS_SQL
+
+QueryHistoryService/ListQueryHistories, SQLService/ListQueryHistories, SavedQueryService/ListSavedQueries
+
+> `<method>` is not available to MCP sessions under any MCP access policy because it returns SQL that other people wrote, across the workspace or past the sharing that keeps a saved query private. To read your own query history, call QueryHistoryService/SearchQueryHistories; to find saved queries you can open, call SavedQueryService/SearchSavedQueries.
+
+### EXCLUDED · OPENS_AN_ADMIN_CONNECTION
+
+RolloutService/GetTaskRunSession, SQLService/AdminExecute
+
+> `<method>` is not available to MCP sessions under any MCP access policy because it opens an admin-credentialed connection to the database and returns other sessions' live, unmasked SQL. If your role allows it, do this in the Bytebase console.
+
+### EXCLUDED · SENDS_DATA_TO_A_THIRD_PARTY
+
+AIService/Chat, ProjectService/TestWebhook
+
+> `<method>` is not available to MCP sessions under any MCP access policy because it contacts an outside service (the configured AI provider or a webhook endpoint) on the workspace's behalf. If your role allows it, do this in the Bytebase console.

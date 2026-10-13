@@ -34,14 +34,14 @@ func TestConsentRefusal(t *testing.T) {
 		{
 			name:       "MCP turned off",
 			capability: storepb.MCPSetting_DISABLED,
-			message:    "turned MCP access off",
-			page:       []string{"<title>MCP access is turned off</title>", "turned MCP access off for this workspace", "in the workspace settings"},
+			message:    "turned off MCP access",
+			page:       []string{"<title>MCP access is turned off</title>", "turned off MCP access for this workspace", "Integration &gt; MCP &gt; Access policy"},
 		},
 		{
 			name:       "a ceiling this build does not serve",
 			capability: storepb.MCPSetting_Capability(2),
-			message:    "not one this build serves",
-			page:       []string{"not one this build serves", "not one this version supports"},
+			message:    "does not support",
+			page:       []string{"this version of Bytebase does not support", "supported by this version of Bytebase"},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

@@ -626,9 +626,7 @@ func rejectMCPOriginatedGrantIssue(ctx context.Context, issueType v1pb.Issue_Typ
 		return nil
 	}
 	return permissionDeniedError(ctx, errors.Errorf(
-		"an MCP session may not create a %v issue: that issue type completes on creation whenever the "+
-			"workspace approval rule produces no template, which grants access with no human step. "+
-			"Create it signed in to the Bytebase console instead", issueType))
+		"An MCP session may not create this issue because %s. %s", grantIssueRefusal, grantIssueNextStep))
 }
 
 func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.ProjectMessage, userEmail string, request *v1pb.CreateIssueRequest, labels []string) (*store.IssueMessage, error) {

@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -99,7 +100,7 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			engine:    storepb.Engine_POSTGRES,
 			statement: "SELECT FROM WHERE (((",
 			refused:   true,
-			reason:    "could not be parsed",
+			reason:    "Bytebase could not parse the statement",
 		},
 		{
 			name:      "DDL is refused",
@@ -146,7 +147,7 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			engine:    storepb.Engine_POSTGRES,
 			statement: "SET default_transaction_read_only = off",
 			refused:   true,
-			reason:    "rewrites the session it runs on",
+			reason:    "can change the session the rest of the request runs on",
 		},
 		{
 			// The disarm this rule exists for. Both statements classify as
@@ -164,7 +165,7 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			engine:    storepb.Engine_MYSQL,
 			statement: "SET SESSION TRANSACTION READ WRITE; SELECT 1",
 			refused:   true,
-			reason:    "rewrites the session it runs on",
+			reason:    "can change the session the rest of the request runs on",
 		},
 		{
 			// A single well-formed statement the server executes as a
@@ -376,10 +377,10 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err),
 				"a clamp refusal is a policy denial, the same kind the ceiling gate returns")
 			require.Contains(t, err.Error(), row.reason)
-			require.Contains(t, err.Error(), "READ_ONLY",
-				"the denial must name the ceiling that refused")
-			require.Contains(t, err.Error(), "raise the MCP ceiling",
-				"the denial must name the way out")
+			require.Contains(t, err.Error(), "MCP access policy is Read-only",
+				"the denial must name the policy that refused")
+			require.Contains(t, err.Error(), "switch the policy to Read-write under "+auth.MCPAccessPolicyLocation,
+				"the denial must name the way out, where an admin finds it")
 			require.Contains(t, err.Error(), "Bytebase console",
 				"the denial must name where the human can do it instead")
 		})
@@ -457,7 +458,7 @@ func TestMCPClampRefusesEngineItCannotClassify(t *testing.T) {
 			err = refuseNonReadOnlyStatement(engine, statement)
 			require.Error(t, err, "the wrapper must refuse an engine it cannot classify")
 			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
-			require.Contains(t, err.Error(), "has no read-only classifier")
+			require.Contains(t, err.Error(), "cannot check statements on this database engine")
 
 			require.Error(t, refuseNonReadOnlyStatement(engine, "SELECT 1"),
 				"a statement that looks like a read is refused too: the engine, not the statement, is what cannot be shown")

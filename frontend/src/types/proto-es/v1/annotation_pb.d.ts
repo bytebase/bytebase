@@ -190,22 +190,23 @@ export enum MCPDenialReason {
   MCP_DENIAL_REASON_UNSPECIFIED = 0,
 
   /**
-   * Puts a token for the caller's own principal in the response body.
+   * Returns a sign-in credential in the response body: a session token, an
+   * MFA secret, or recovery codes.
    *
    * @generated from enum value: MINTS_CREDENTIAL = 1;
    */
   MINTS_CREDENTIAL = 1,
 
   /**
-   * Drives the out-of-band reset flow that sets or delivers the secret a
-   * login or a credential change accepts.
+   * Sends or redeems a one-time code or reset link that can sign in to an
+   * account or change its credentials.
    *
    * @generated from enum value: RESETS_CREDENTIAL = 2;
    */
   RESETS_CREDENTIAL = 2,
 
   /**
-   * Rewrites an account's own credentials, which would let the session log in
+   * Can rewrite an account's credentials, which would let the session log in
    * as that account.
    *
    * @generated from enum value: TAKES_OVER_ACCOUNT = 3;
@@ -213,46 +214,46 @@ export enum MCPDenialReason {
   TAKES_OVER_ACCOUNT = 3,
 
   /**
-   * Destroys the human's own login session.
+   * Signs the user out of their web session.
    *
    * @generated from enum value: ENDS_SESSION = 4;
    */
   ENDS_SESSION = 4,
 
   /**
-   * Destroys the caller's own workspace membership and mints a plain
-   * workspace token on the way out.
+   * Deletes the workspace or removes the caller from it, and can return a
+   * workspace token for another workspace on the way out.
    *
    * @generated from enum value: ENDS_MEMBERSHIP = 5;
    */
   ENDS_MEMBERSHIP = 5,
 
   /**
-   * Leaves someone holding a principal the caller is not — by issuing its
-   * credential, carrying an existing one out to a host the caller named,
-   * choosing what will later be trusted to mint one, or redirecting where one
-   * gets delivered.
+   * Can create, reveal, or redirect a credential for an account, service, or
+   * database other than the caller: by issuing it, carrying a stored one out
+   * to a host the caller named, choosing what will later be trusted to mint
+   * one, or redirecting where one gets delivered.
    *
    * @generated from enum value: MINTS_CREDENTIAL_FOR_OTHERS = 6;
    */
   MINTS_CREDENTIAL_FOR_OTHERS = 6,
 
   /**
-   * Rewrites the workspace configuration that governs the session making the
-   * call — the MCP switch itself, the sign-in and SSO settings, the mail
-   * relay that carries credential resets, and the AI endpoint the stored API
-   * key is sent to. A session that can widen its own ceiling is not bounded
-   * by it.
+   * Changes workspace settings, some of which govern the session making the
+   * call: the MCP switch itself, the sign-in and SSO settings, the mail relay
+   * that carries credential resets, and the AI endpoint the stored API key is
+   * sent to. The method is refused whole, settings unrelated to the session
+   * included. A session that can widen its own ceiling is not bounded by it.
    *
    * @generated from enum value: REWRITES_SESSION_BOUNDARY = 7;
    */
   REWRITES_SESSION_BOUNDARY = 7,
 
   /**
-   * Works the human approval step that gates the change: recording the review
-   * decision, or re-running the finding that sets it and can clear the issue
-   * outright. An agent composes a change; it does not move its own change
-   * through the gate.
+   * Makes or re-runs the human approval decision on an issue: recording an
+   * approval or rejection, or re-running the finding that sets it and can
+   * clear the issue outright. An agent composes a change; it makes no
+   * approval decision on any issue, whoever created it.
    *
    * @generated from enum value: DRIVES_THE_APPROVAL_DECISION = 8;
    */
@@ -290,8 +291,9 @@ export enum MCPDenialReason {
   OPENS_AN_ADMIN_CONNECTION = 11,
 
   /**
-   * Spends a stored workspace credential on an outbound call to a third
-   * party, which puts whatever the caller passes outside the product.
+   * Contacts an outside service, such as the configured AI provider or a
+   * webhook endpoint, on the workspace's behalf, which can carry a stored
+   * credential or caller-supplied content outside the product.
    *
    * @generated from enum value: SENDS_DATA_TO_A_THIRD_PARTY = 12;
    */

@@ -5,7 +5,6 @@ import (
 	"html"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/labstack/echo/v5"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -124,24 +123,14 @@ func consentRefusedHTML(verdict auth.MCPCeilingVerdict, redirectURI, state strin
 </head>
 <body style="font-family: system-ui, sans-serif; max-width: 32rem; margin: 4rem auto; padding: 0 1rem; line-height: 1.5;">
 <h1 style="font-size: 1.25rem;">` + heading + `</h1>
-<p>` + html.EscapeString(asSentence(verdict.Refusal())) + `</p>
+<p>` + html.EscapeString(verdict.Refusal()) + `</p>
 <p>Nothing was connected.</p>`
 	if back, err := oauth2ErrorRedirectURL(redirectURI, state, "access_denied",
-		"the workspace MCP policy refused this authorization"); err == nil {
+		"the workspace's MCP access policy refused this authorization"); err == nil {
 		page += `
 <p><a href="` + html.EscapeString(back) + `">Return to the application</a></p>`
 	}
 	return page + `
 </body>
 </html>`
-}
-
-// asSentence renders a shared refusal as page prose. The shared form is
-// lowercase and unterminated so every other door can compose it into a larger
-// error; this is the one door that shows it on its own.
-func asSentence(refusal string) string {
-	if refusal == "" {
-		return ""
-	}
-	return strings.ToUpper(refusal[:1]) + refusal[1:] + "."
 }

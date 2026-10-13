@@ -3387,62 +3387,63 @@ on a method classified FORBIDDEN or EXCLUDED.</p></td>
               <tr>
                 <td>MINTS_CREDENTIAL</td>
                 <td>1</td>
-                <td><p>Puts a token for the caller&#39;s own principal in the response body.</p></td>
+                <td><p>Returns a sign-in credential in the response body: a session token, an
+MFA secret, or recovery codes.</p></td>
               </tr>
             
               <tr>
                 <td>RESETS_CREDENTIAL</td>
                 <td>2</td>
-                <td><p>Drives the out-of-band reset flow that sets or delivers the secret a
-login or a credential change accepts.</p></td>
+                <td><p>Sends or redeems a one-time code or reset link that can sign in to an
+account or change its credentials.</p></td>
               </tr>
             
               <tr>
                 <td>TAKES_OVER_ACCOUNT</td>
                 <td>3</td>
-                <td><p>Rewrites an account&#39;s own credentials, which would let the session log in
+                <td><p>Can rewrite an account&#39;s credentials, which would let the session log in
 as that account.</p></td>
               </tr>
             
               <tr>
                 <td>ENDS_SESSION</td>
                 <td>4</td>
-                <td><p>Destroys the human&#39;s own login session.</p></td>
+                <td><p>Signs the user out of their web session.</p></td>
               </tr>
             
               <tr>
                 <td>ENDS_MEMBERSHIP</td>
                 <td>5</td>
-                <td><p>Destroys the caller&#39;s own workspace membership and mints a plain
-workspace token on the way out.</p></td>
+                <td><p>Deletes the workspace or removes the caller from it, and can return a
+workspace token for another workspace on the way out.</p></td>
               </tr>
             
               <tr>
                 <td>MINTS_CREDENTIAL_FOR_OTHERS</td>
                 <td>6</td>
-                <td><p>Leaves someone holding a principal the caller is not — by issuing its
-credential, carrying an existing one out to a host the caller named,
-choosing what will later be trusted to mint one, or redirecting where one
-gets delivered.</p></td>
+                <td><p>Can create, reveal, or redirect a credential for an account, service, or
+database other than the caller: by issuing it, carrying a stored one out
+to a host the caller named, choosing what will later be trusted to mint
+one, or redirecting where one gets delivered.</p></td>
               </tr>
             
               <tr>
                 <td>REWRITES_SESSION_BOUNDARY</td>
                 <td>7</td>
-                <td><p>Rewrites the workspace configuration that governs the session making the
-call — the MCP switch itself, the sign-in and SSO settings, the mail
-relay that carries credential resets, and the AI endpoint the stored API
-key is sent to. A session that can widen its own ceiling is not bounded
-by it.</p></td>
+                <td><p>Changes workspace settings, some of which govern the session making the
+call: the MCP switch itself, the sign-in and SSO settings, the mail relay
+that carries credential resets, and the AI endpoint the stored API key is
+sent to. The method is refused whole, settings unrelated to the session
+included. A session that can widen its own ceiling is not bounded by it.</p></td>
               </tr>
             
               <tr>
                 <td>DRIVES_THE_APPROVAL_DECISION</td>
                 <td>8</td>
-                <td><p>Works the human approval step that gates the change: recording the review
-decision, or re-running the finding that sets it and can clear the issue
-outright. An agent composes a change; it does not move its own change
-through the gate.</p></td>
+                <td><p>Makes or re-runs the human approval decision on an issue: recording an
+approval or rejection, or re-running the finding that sets it and can
+clear the issue outright. An agent composes a change; it makes no
+approval decision on any issue, whoever created it.</p></td>
               </tr>
             
               <tr>
@@ -3476,8 +3477,9 @@ only read Bytebase&#39;s own store.</p></td>
               <tr>
                 <td>SENDS_DATA_TO_A_THIRD_PARTY</td>
                 <td>12</td>
-                <td><p>Spends a stored workspace credential on an outbound call to a third
-party, which puts whatever the caller passes outside the product.</p></td>
+                <td><p>Contacts an outside service, such as the configured AI provider or a
+webhook endpoint, on the workspace&#39;s behalf, which can carry a stored
+credential or caller-supplied content outside the product.</p></td>
               </tr>
             
               <tr>

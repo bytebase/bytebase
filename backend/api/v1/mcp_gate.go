@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -18,14 +17,15 @@ import (
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
-// mcpDenialWording is one reason's sentence plus the class it belongs to. The
-// class is carried here because a reason implies one — a mechanism that breaks
-// the MCP boundary is what FORBIDDEN means, a scope decision is what EXCLUDED
-// means — and one table saying so is what lets the lint check the pairing and
-// the gate refuse to print the wrong half of it.
+// mcpDenialWording is one reason's sentence and next step, plus the class it
+// belongs to. The class is carried here because a reason implies one — a
+// mechanism that breaks the MCP boundary is what FORBIDDEN means, a scope
+// decision is what EXCLUDED means — and one table saying so is what lets the
+// lint check the pairing and the gate refuse to print the wrong half of it.
 type mcpDenialWording struct {
 	class    v1pb.MCPMethodClass
 	sentence string
+	nextStep string
 }
 
 // mcpDenialReasons is UX copy, NOT the classification and NOT the mapping.
@@ -37,10 +37,21 @@ type mcpDenialWording struct {
 // per mechanism rather than one per method, and a missing row costs wording,
 // never enforcement.
 //
-// Each sentence completes "<procedure> is not available to MCP sessions because
-// ___", so it states what the method does rather than merely that it is
-// refused: a denial whose stated reason has drifted from the mechanism is worse
-// than a bare refusal, because it is the thing the next reader trusts.
+// An agent reads a denial and relays it to the person it acts for, who trusts
+// it over the mechanism, so every row keeps three rules. TestMCPDenialWording
+// renders every row through its template and checks what it can:
+//
+//   - The sentence completes "<procedure> is ... because ___" with what the
+//     method can do, at the gate's grain: the whole method, for every caller,
+//     argument and resource owner. It says "own" or "the caller's" only where
+//     enforcement checks ownership, since a reason naming the worst case reads
+//     as permission for the rest.
+//   - The next step is one that works for the person reading it: the console
+//     runs a masked write unguarded, switching workspace means reauthorizing,
+//     and only an approver can approve. mcpDenialNextSteps overrides a row for
+//     a method its step would misdirect.
+//   - Both use the words of the Access policy page ("MCP access policy",
+//     Read-only, Read-write) and never "ceiling", "principal" or an enum name.
 var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	// The method hands a token back to the caller. For a non-web caller — and
 	// an MCP session is always one — finalizeLogin and switchWorkspaceInternal
@@ -48,13 +59,17 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	// audience-bound to the MCP resource, survives revocation of the OAuth
 	// grant, and ignores the workspace MCP kill switch, so obtaining one ends
 	// the MCP boundary for good.
-	v1pb.MCPDenialReason_MINTS_CREDENTIAL: {v1pb.MCPMethodClass_FORBIDDEN, "it hands back a login token that would outlive the MCP grant"},
+	v1pb.MCPDenialReason_MINTS_CREDENTIAL: {v1pb.MCPMethodClass_FORBIDDEN,
+		"it returns a sign-in credential (a session token, an MFA secret, or recovery codes) that would keep working after this MCP connection is revoked",
+		nextStepYourself},
 
 	// The method drives the out-of-band reset flow — mailing a reset or login
 	// code, or consuming one — that sets or delivers the very secret Login
 	// accepts. Denying Login alone would leave the agent holding the credential
 	// for the next human login.
-	v1pb.MCPDenialReason_RESETS_CREDENTIAL: {v1pb.MCPMethodClass_FORBIDDEN, "it drives the credential-reset flow that sets or delivers the secret a login accepts"},
+	v1pb.MCPDenialReason_RESETS_CREDENTIAL: {v1pb.MCPMethodClass_FORBIDDEN,
+		"it sends or redeems a one-time code or reset link that can sign in to an account or change its credentials",
+		nextStepYourself},
 
 	// UpdateUser's password and MFA branches take no proof of the old password.
 	// A caller updating itself needs no permission at all, and on self-hosted a
@@ -63,18 +78,25 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	// nothing further). Either way the session ends up holding credentials it
 	// can log in with. The whole method is refused, not just those branches —
 	// the classification is per method.
-	v1pb.MCPDenialReason_TAKES_OVER_ACCOUNT: {v1pb.MCPMethodClass_FORBIDDEN, "it can rewrite an account's credentials, which would let the session take that account over"},
+	v1pb.MCPDenialReason_TAKES_OVER_ACCOUNT: {v1pb.MCPMethodClass_FORBIDDEN,
+		"it can rewrite an account's credentials, which would let the session take that account over",
+		nextStepYourself},
 
 	// Logout deletes the web refresh token and expires the session cookies. It
 	// mints nothing; it destroys the human's own login session, which an agent
-	// acting on their behalf has no business doing.
-	v1pb.MCPDenialReason_ENDS_SESSION: {v1pb.MCPMethodClass_FORBIDDEN, "it ends the human's own login session"},
+	// acting on their behalf has no business doing. An agent reaching for it
+	// most likely wants to disconnect, which is what reauthorize does.
+	v1pb.MCPDenialReason_ENDS_SESSION: {v1pb.MCPMethodClass_FORBIDDEN,
+		"it signs the user out of their Bytebase web session",
+		"To end this MCP connection instead, run the reauthorize tool or remove Bytebase from your MCP client."},
 
 	// The workspace-lifecycle pair. Both end in
 	// AuthService.switchWorkspaceInternal, which mints a plain workspace token
 	// whenever the caller has no refresh cookie — and an MCP session never has
 	// one — after having already destroyed the caller's membership.
-	v1pb.MCPDenialReason_ENDS_MEMBERSHIP: {v1pb.MCPMethodClass_FORBIDDEN, "it destroys the caller's own workspace membership and mints a plain workspace token"},
+	v1pb.MCPDenialReason_ENDS_MEMBERSHIP: {v1pb.MCPMethodClass_FORBIDDEN,
+		"it deletes the workspace or removes the user from it, and can return a sign-in token for another workspace that this MCP connection's limits would not cover",
+		nextStepYourself},
 
 	// The method leaves someone holding a principal the caller is not. Four
 	// ways, all of them annotated:
@@ -131,7 +153,9 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	// caller learns and chooses nothing: the credential goes back to whoever
 	// already had it, and a second delete takes it away again. Issuing beats
 	// re-arming, and this mechanism is about issuing. BOT-54.
-	v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS: {v1pb.MCPMethodClass_FORBIDDEN, "it hands someone control of a principal other than the caller, which revoking this session would not take back"},
+	v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS: {v1pb.MCPMethodClass_FORBIDDEN,
+		"it can create, reveal, or redirect a credential for another account, service, or database (a key, token, password, or sign-in trust), and revoking this MCP connection would not take that credential back",
+		nextStepConsole},
 
 	// SettingService/UpdateSetting, refused for the boundary it rewrites
 	// rather than for any credential it hands out. Three mask paths carry it:
@@ -154,15 +178,17 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	// the settings that have nothing to do with any of them. Splitting the
 	// handler so ordinary configuration stays reachable to an agent is the
 	// follow-up (BOT-53); disallowing first is the deliberate order.
-	v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY: {v1pb.MCPMethodClass_FORBIDDEN, "it rewrites the workspace settings that bound this session, including the switch meant to contain it"},
+	v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY: {v1pb.MCPMethodClass_FORBIDDEN,
+		"it changes workspace settings, and some of them (the MCP access policy, sign-in and SSO, the mail server, the AI provider) control what this session can do, so AI agents may not change any workspace setting",
+		nextStepConsole},
 
 	// The four approval methods. ApproveIssue and RejectIssue are two actions of
 	// one handler (issue_review.go reviewIssue), and that handler records the
 	// review decision itself: applyReviewAction requires an approver role via
 	// canReview, enforces the self-approval guard, and appends an APPROVED or
 	// REJECTED approver (component/review/workflow.go). An agent composes a
-	// change; it does not move its own change through the gate. That is the
-	// whole claim,
+	// change; it makes no approval decision on any issue, whoever created it.
+	// That is the whole claim,
 	// and it is deliberately narrower than "an agent only executes approved work",
 	// which this classification does NOT deliver: CreatePlan, CreateRollout and
 	// BatchRunTasks are all WRITE, and both approval checks on the execution
@@ -198,46 +224,104 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	// stay WRITE. That is the intended line — editing a proposal is the agent's
 	// job, and re-review after an edit is the system working — not an oversight.
 	// Refusing RetryIssueApproval costs an agent the self-service recovery for
-	// its own stuck issue; the operator retries from the console.
-	v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION: {v1pb.MCPMethodClass_FORBIDDEN, "it works the approval step meant to gate the change, and an agent does not move its own change through that gate"},
+	// its own stuck issue; the issue's creator retries from the console.
+	v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION: {v1pb.MCPMethodClass_FORBIDDEN,
+		"it approves, rejects, or re-checks an issue's approval, and AI agents may not make approval decisions on any issue, whoever created it",
+		"If you are an approver for this issue, approve or reject it in the Bytebase console."},
 
 	// The other refused class. An EXCLUDED method is out of scope for the modes
 	// this release ships and an admin-capable ceiling could legitimately serve
 	// it one day, while a FORBIDDEN method never becomes servable — so a denial
 	// that blurred the two would tell an operator the wrong thing about whether
 	// asking is worth it. The class on each row is what keeps them apart.
-	v1pb.MCPDenialReason_ADMINISTERS_THE_WORKSPACE:   {v1pb.MCPMethodClass_EXCLUDED, "it administers the workspace rather than doing database work, and no MCP mode this release ships covers workspace administration"},
-	v1pb.MCPDenialReason_READS_OTHER_USERS_SQL:       {v1pb.MCPMethodClass_EXCLUDED, "it returns SQL that other people wrote, across the workspace or past the sharing that keeps a saved query private"},
-	v1pb.MCPDenialReason_OPENS_AN_ADMIN_CONNECTION:   {v1pb.MCPMethodClass_EXCLUDED, "it opens an admin-credentialed connection to the database and returns other sessions' live, unmasked SQL"},
-	v1pb.MCPDenialReason_SENDS_DATA_TO_A_THIRD_PARTY: {v1pb.MCPMethodClass_EXCLUDED, "it spends a stored workspace credential to send whatever the caller passes to a third party"},
+	v1pb.MCPDenialReason_ADMINISTERS_THE_WORKSPACE: {v1pb.MCPMethodClass_EXCLUDED,
+		"it belongs to workspace administration: members, roles and access, sign-in, instances and projects, policies and data classification, audit logs, settings, and billing",
+		nextStepConsole},
+	v1pb.MCPDenialReason_READS_OTHER_USERS_SQL: {v1pb.MCPMethodClass_EXCLUDED,
+		"it returns SQL that other people wrote, across the workspace or past the sharing that keeps a saved query private",
+		"To read your own query history, call QueryHistoryService/SearchQueryHistories; to find saved queries you can open, call SavedQueryService/SearchSavedQueries."},
+	v1pb.MCPDenialReason_OPENS_AN_ADMIN_CONNECTION: {v1pb.MCPMethodClass_EXCLUDED,
+		"it opens an admin-credentialed connection to the database and returns other sessions' live, unmasked SQL",
+		nextStepConsole},
+	v1pb.MCPDenialReason_SENDS_DATA_TO_A_THIRD_PARTY: {v1pb.MCPMethodClass_EXCLUDED,
+		"it contacts an outside service (the configured AI provider or a webhook endpoint) on the workspace's behalf",
+		nextStepConsole},
 	// No method carries this one: the three leaks it was written for are
 	// redacted on the read path and their eight methods are READ. The row
 	// stays so the next read found leaking is one annotation away from a
 	// denial that explains itself, rather than two edits away.
-	v1pb.MCPDenialReason_RETURNS_A_STORED_SECRET: {v1pb.MCPMethodClass_EXCLUDED, "its response carries a stored secret that the product redacts everywhere else"},
+	v1pb.MCPDenialReason_RETURNS_A_STORED_SECRET: {v1pb.MCPMethodClass_EXCLUDED,
+		"its response carries a stored secret that the product redacts everywhere else",
+		nextStepConsole},
+}
+
+// The two next steps most rows share. Neither promises the console will do it:
+// a person may lack the role there too.
+const (
+	nextStepConsole  = "If your role allows it, do this in the Bytebase console."
+	nextStepYourself = "If you need this, do it yourself in the Bytebase console."
+)
+
+// mcpDenialNextSteps replaces a row's next step for a method the row's step
+// would misdirect: one with a way through MCP, or one only some people can do.
+var mcpDenialNextSteps = map[string]string{
+	// The MCP connection is bound to the workspace chosen at consent, so a
+	// console switch would not move it; reauthorize runs consent again.
+	v1connect.AuthServiceSwitchWorkspaceProcedure: "To use this MCP connection with another workspace, run the reauthorize tool and choose that workspace when you approve access again.",
+	// Workload identity is exchanged by a pipeline, not in the console.
+	v1connect.AuthServiceExchangeTokenProcedure: "Exchange workload identity tokens from your CI/CD pipeline instead.",
+	// Only the issue's creator may retry (canRequestIssue), not an approver.
+	v1connect.IssueServiceRetryIssueApprovalProcedure: "The issue's creator can re-run its approval check in the Bytebase console.",
 }
 
 // The fallback wording, per class, for a method whose reason is unset, unknown
 // to this build, or recorded for the other refused class. The class annotation
 // is what denies; the table only supplies a better sentence.
-const (
-	reasonForbiddenClass = "it is not reachable by an AI agent session"
-	reasonExcludedClass  = "no MCP mode this release ships serves it"
+var (
+	reasonForbiddenClass = mcpDenialWording{
+		class:    v1pb.MCPMethodClass_FORBIDDEN,
+		sentence: "it is kept out of reach of AI agents",
+		nextStep: nextStepConsole,
+	}
+	reasonExcludedClass = mcpDenialWording{
+		class:    v1pb.MCPMethodClass_EXCLUDED,
+		sentence: "it is outside what MCP access covers",
+		nextStep: nextStepConsole,
+	}
 )
 
-// denialReason is the sentence for this method's recorded reason, or the
-// class's fallback.
+// denialWording is the wording for this method's recorded reason, or the
+// class's fallback, with any per-method next step applied.
 //
 // The class is checked here as well as in the lint, and that is the point of
 // carrying it on the row. One enum means a reason recorded for the wrong class
 // is a value, not a parse error, so the runtime has to decline it: a FORBIDDEN
 // method must never explain itself with an exclusion's sentence. A mismatch
 // costs wording, the way a missing row does — never enforcement.
-func denialReason(class v1pb.MCPMethodClass, reason v1pb.MCPDenialReason, fallback string) string {
-	if wording, ok := mcpDenialReasons[reason]; ok && wording.class == class {
-		return wording.sentence
+func denialWording(procedure string, class v1pb.MCPMethodClass, reason v1pb.MCPDenialReason, fallback mcpDenialWording) mcpDenialWording {
+	wording := fallback
+	if row, ok := mcpDenialReasons[reason]; ok && row.class == class {
+		wording = row
 	}
-	return fallback
+	if nextStep, ok := mcpDenialNextSteps[procedure]; ok {
+		wording.nextStep = nextStep
+	}
+	return wording
+}
+
+// classDenial is the refusal for a method no MCP access policy serves. Both
+// templates say that no policy helps, so the reader does not ask an admin for
+// one, and both keep "not available to MCP sessions", the phrase every gate
+// refusal shares.
+func classDenial(procedure string, class v1pb.MCPMethodClass, reason v1pb.MCPDenialReason) string {
+	if class == v1pb.MCPMethodClass_FORBIDDEN {
+		wording := denialWording(procedure, class, reason, reasonForbiddenClass)
+		return fmt.Sprintf("%s is not available to MCP sessions, whatever the workspace's MCP access policy, because %s. %s",
+			procedure, wording.sentence, wording.nextStep)
+	}
+	wording := denialWording(procedure, class, reason, reasonExcludedClass)
+	return fmt.Sprintf("%s is not available to MCP sessions under any MCP access policy because %s. %s",
+		procedure, wording.sentence, wording.nextStep)
 }
 
 // mcpServingClasses is the ceiling: which method classes each stored capability
@@ -385,8 +469,8 @@ func (*internalMCPGateInterceptor) WrapStreamingClient(next connect.StreamingCli
 func (*internalMCPGateInterceptor) WrapStreamingHandler(connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
 	return func(_ context.Context, conn connect.StreamingHandlerConn) error {
 		return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-			"%s is not available to MCP sessions: no streaming RPC is served on the MCP transport",
-			conn.Spec().Procedure))
+			"%s is not available to MCP sessions because MCP does not carry streaming calls. %s",
+			conn.Spec().Procedure, nextStepConsole))
 	}
 }
 
@@ -409,18 +493,14 @@ func (in *internalMCPGateInterceptor) refuse(ctx context.Context, req connect.An
 	}
 
 	switch authCtx.MCPMethodClass {
-	case v1pb.MCPMethodClass_FORBIDDEN:
-		return ctx, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-			"%s is not available to MCP sessions because %s. Perform this action signed in to the Bytebase console instead",
-			procedure, denialReason(authCtx.MCPMethodClass, authCtx.MCPDenialReason, reasonForbiddenClass)))
-	case v1pb.MCPMethodClass_EXCLUDED:
-		return ctx, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-			"%s is served by no MCP capability ceiling because %s. Perform this action signed in to the Bytebase console instead",
-			procedure, denialReason(authCtx.MCPMethodClass, authCtx.MCPDenialReason, reasonExcludedClass)))
+	case v1pb.MCPMethodClass_FORBIDDEN, v1pb.MCPMethodClass_EXCLUDED:
+		return ctx, true, connect.NewError(connect.CodePermissionDenied,
+			errors.New(classDenial(procedure, authCtx.MCPMethodClass, authCtx.MCPDenialReason)))
 	case v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE:
 	default:
 		return ctx, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-			"%s carries no MCP classification, so no MCP session may call it", procedure))
+			"%s is not available to MCP sessions because this version of Bytebase has not classified it for MCP access. %s",
+			procedure, nextStepConsole))
 	}
 
 	settings, policyDenial, err := in.refuseByCeiling(ctx, procedure, authCtx.MCPMethodClass)
@@ -447,7 +527,7 @@ func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, proce
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	if workspaceID == "" {
 		return nil, false, connect.NewError(connect.CodeInternal, errors.Errorf(
-			"%s cannot be checked against the MCP capability ceiling: no workspace on the request", procedure))
+			"%s cannot be checked against the workspace's MCP access policy: no workspace on the request", procedure))
 	}
 	settings, err := in.store.GetMCPSettingsUncached(ctx, workspaceID)
 
@@ -466,20 +546,20 @@ func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, proce
 	//
 	// DISABLED is deliberately NOT decided here. It reaches the serving table
 	// below, which holds an explicit empty list for it, so a mode that serves
-	// nothing reads as an ordinary per-method denial naming the class — the
-	// more useful answer at a per-method door than a workspace-level sentence.
+	// nothing is refused on the same path as a method the mode leaves out, and
+	// servingDenial words both.
 	switch verdict := auth.ClassifyMCPCeiling(settings, err); verdict {
 	case auth.MCPCeilingServes, auth.MCPCeilingDisabled:
 	case auth.MCPCeilingUnavailable:
 		slog.Warn("failed to resolve the MCP capability ceiling; refusing the request",
 			slog.String("method", procedure), slog.String("workspace", workspaceID), log.BBError(err))
 		return nil, false, connect.NewError(connect.CodeUnavailable, errors.Errorf(
-			"%s is refused: %s", procedure, verdict.Refusal()))
+			"%s is not available to MCP sessions right now. %s", procedure, verdict.Refusal()))
 	default:
 		slog.Warn("the MCP capability ceiling refuses this request",
 			slog.String("method", procedure), slog.String("workspace", workspaceID), log.BBError(err))
 		return nil, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-			"%s is refused: %s", procedure, verdict.Refusal()))
+			"%s is not available to MCP sessions. %s", procedure, verdict.Refusal()))
 	}
 
 	served, known := mcpServingClasses[settings.Capability]
@@ -489,28 +569,32 @@ func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, proce
 		// the classifier are two statements of one rule, and this is what a
 		// caller gets if they ever part company.
 		return nil, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-			"%s is refused: %s", procedure, auth.MCPCeilingUnserved.Refusal()))
+			"%s is not available to MCP sessions. %s", procedure, auth.MCPCeilingUnserved.Refusal()))
 	}
 	if slices.Contains(served, class) {
 		return settings, false, nil
 	}
-	return nil, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-		"%s is a %v method and this workspace's MCP capability ceiling is %v, which serves %s. "+
-			"Ask a workspace admin to raise the MCP ceiling in the workspace settings, "+
-			"or perform this action signed in to the Bytebase console instead",
-		procedure, class, settings.Capability, describeServedClasses(served)))
+	return nil, true, connect.NewError(connect.CodePermissionDenied,
+		errors.New(servingDenial(procedure, class, settings.Capability)))
 }
 
-// describeServedClasses renders a mode's serving list for a denial message.
-func describeServedClasses(served []v1pb.MCPMethodClass) string {
-	if len(served) == 0 {
-		return "no method"
+// servingDenial is the refusal for a method the workspace's policy could serve
+// but does not. Unlike classDenial, asking an admin can help here, so it names
+// the policy that would serve the method, in the Access policy page's words.
+func servingDenial(procedure string, class v1pb.MCPMethodClass, capability storepb.MCPSetting_Capability) string {
+	if capability == storepb.MCPSetting_DISABLED {
+		return fmt.Sprintf("%s is not available to MCP sessions. %s", procedure, auth.MCPCeilingDisabled.Refusal())
 	}
-	names := make([]string, 0, len(served))
-	for _, class := range served {
-		names = append(names, class.String())
+	if class == v1pb.MCPMethodClass_WRITE && capability == storepb.MCPSetting_READ_ONLY {
+		return fmt.Sprintf("%s is not available to MCP sessions in this workspace because it needs Read-write MCP access, "+
+			"and the workspace's MCP access policy is Read-only. Ask a workspace admin to switch the policy to Read-write "+
+			"under %s, or, if your role allows it, do this in the Bytebase console.", procedure, auth.MCPAccessPolicyLocation)
 	}
-	return strings.Join(names, " and ") + " methods"
+	// Unreachable while the serving table nests READ inside READ_WRITE; kept
+	// well-formed for the table that changes that.
+	return fmt.Sprintf("%s is not available to MCP sessions in this workspace because the workspace's MCP access policy "+
+		"does not include it. Ask a workspace admin to change the policy under %s, or, if your role allows it, "+
+		"do this in the Bytebase console.", procedure, auth.MCPAccessPolicyLocation)
 }
 
 // mcpRequestShapeRefusals holds the refusals a per-method class cannot express,
@@ -529,32 +613,38 @@ func describeServedClasses(served []v1pb.MCPMethodClass) string {
 // The table is deliberately small and expected to stay that way. A method that
 // needs one is a method whose class annotation is not the whole truth, and the
 // better fix is usually to split the RPC.
-var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) string{
-	v1connect.IssueServiceCreateIssueProcedure:       refuseGrantIssueCreation,
-	v1connect.SheetServiceCreateSheetProcedure:       refuseMaskedWriteSheet,
-	v1connect.SheetServiceBatchCreateSheetsProcedure: refuseMaskedWriteSheetBatch,
-	v1connect.ReleaseServiceCreateReleaseProcedure:   refuseMaskedWriteRelease,
-	v1connect.SQLServiceQueryProcedure:               refuseMaskedWriteQuery,
-	v1connect.SQLServiceExportProcedure:              refuseMaskedWriteExport,
+var mcpRequestShapeRefusals = map[string]requestShapeRule{
+	v1connect.IssueServiceCreateIssueProcedure:       {refuseGrantIssueCreation, grantIssueNextStep},
+	v1connect.SheetServiceCreateSheetProcedure:       {refuseMaskedWriteSheet, maskedWriteNextStep},
+	v1connect.SheetServiceBatchCreateSheetsProcedure: {refuseMaskedWriteSheetBatch, maskedWriteNextStep},
+	v1connect.ReleaseServiceCreateReleaseProcedure:   {refuseMaskedWriteRelease, maskedWriteNextStep},
+	v1connect.SQLServiceQueryProcedure:               {refuseMaskedWriteQuery, maskedWriteNextStep},
+	v1connect.SQLServiceExportProcedure:              {refuseMaskedWriteExport, maskedWriteNextStep},
 
-	v1connect.SavedQueryServiceCreateSavedQueryProcedure: refuseMaskedWriteSavedQuery,
-	v1connect.SavedQueryServiceUpdateSavedQueryProcedure: refuseMaskedWriteSavedQueryUpdate,
+	v1connect.SavedQueryServiceCreateSavedQueryProcedure: {refuseMaskedWriteSavedQuery, maskedWriteNextStep},
+	v1connect.SavedQueryServiceUpdateSavedQueryProcedure: {refuseMaskedWriteSavedQueryUpdate, maskedWriteNextStep},
+}
+
+// requestShapeRule is one entry of that table: refuse returns the reason to
+// refuse for, or "" to allow, and nextStep is what the refusal offers instead.
+type requestShapeRule struct {
+	refuse   func(ctx context.Context, msg any) string
+	nextStep string
 }
 
 // refuseByRequestShape applies the table above. The context carries what the
 // gate resolved, so an entry can key on more than the request; none does today.
 func refuseByRequestShape(ctx context.Context, procedure string, msg any) error {
-	refuse, ok := mcpRequestShapeRefusals[procedure]
+	rule, ok := mcpRequestShapeRefusals[procedure]
 	if !ok {
 		return nil
 	}
-	reason := refuse(ctx, msg)
+	reason := rule.refuse(ctx, msg)
 	if reason == "" {
 		return nil
 	}
 	return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-		"%s is not available to MCP sessions for this request because %s. "+
-			"Perform this action signed in to the Bytebase console instead", procedure, reason))
+		"%s is not available to MCP sessions for this request because %s. %s", procedure, reason, rule.nextStep))
 }
 
 // refuseGrantIssueCreation is the CreateIssue carve-out. CreateIssue is WRITE
@@ -599,8 +689,15 @@ func refuseGrantIssueCreation(_ context.Context, msg any) string {
 	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_TYPE_UNSPECIFIED:
 		return ""
 	default:
-		return fmt.Sprintf(
-			"a %v issue completes on creation whenever the workspace approval rule produces no template, "+
-				"which grants access with no human step", request.GetIssue().GetType())
+		return grantIssueRefusal
 	}
 }
+
+// The grant-issue refusal, shared with rejectMCPOriginatedGrantIssue so the
+// gate and the handler state one rule. It names the allow-list rather than the
+// type refused, because the allow-list is what is enforced.
+const (
+	grantIssueRefusal = "AI agents may only create database-change issues: a role or access request grants " +
+		"a permission, and it can be granted with no human approval when no approval rule applies"
+	grantIssueNextStep = "Request the role or access in the Bytebase console."
+)

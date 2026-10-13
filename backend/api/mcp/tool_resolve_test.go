@@ -100,8 +100,9 @@ func TestResolve_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"message": "/bytebase.v1.DatabaseService/ListDatabases is refused: this workspace's " +
-					"stored MCP capability ceiling is not one this build serves",
+				"message": "/bytebase.v1.DatabaseService/ListDatabases is not available to MCP sessions. This workspace's " +
+					"MCP access policy is set to a value this version of Bytebase does not support. " +
+					"Ask a workspace admin to choose a policy under Integration > MCP > Access policy.",
 			})
 			return
 		}
@@ -113,7 +114,7 @@ func TestResolve_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
 	require.Error(t, err)
 	var te *toolError
 	require.ErrorAs(t, err, &te)
-	require.Contains(t, te.Message, "MCP capability ceiling")
+	require.Contains(t, te.Message, "MCP access policy")
 	require.Empty(t, te.Suggestion, "no grant fixes a stored ceiling this build does not serve")
 }
 

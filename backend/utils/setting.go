@@ -10,7 +10,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-const setupExternalURLError = "external URL isn't setup yet, see https://docs.bytebase.com/get-started/self-host/external-url"
+const setupExternalURLError = "external URL isn't set up yet, see https://docs.bytebase.com/get-started/self-host/external-url"
 
 type externalURLStore interface {
 	GetWorkspaceProfileSetting(context.Context, string) (*storepb.WorkspaceProfileSetting, error)

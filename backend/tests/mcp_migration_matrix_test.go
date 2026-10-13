@@ -337,8 +337,8 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	status, body = postMCP(t, ctl, mcpToken)
 	a.Equal(http.StatusServiceUnavailable, status,
 		"a ceiling that cannot be read must fail closed, not fall back to permitting MCP; %s", body)
-	a.Contains(body, "could not be read")
-	a.NotContains(body, "turned MCP access off")
+	a.Contains(body, "could not read")
+	a.NotContains(body, "turned off MCP access")
 
 	// The same row must not take the bootstrap response down with it (BOT-106):
 	// actuator info still answers, with the setting absent rather than guessed,
@@ -406,7 +406,7 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 	status, body := postMCP(t, ctl, mcpToken)
 	a.Equal(http.StatusForbidden, status,
 		"the same bearer must be refused on its next request after the ceiling tightens; %s", body)
-	a.Contains(body, "turned MCP access off")
+	a.Contains(body, "turned off MCP access")
 
 	_, err := session.CallTool(ctx, &mcp.CallToolParams{
 		Name:      "call_api",

@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -276,7 +278,8 @@ func TestQueryDatabase_NotFound(t *testing.T) {
 	var te *toolError
 	require.ErrorAs(t, err, &te)
 	require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
-	require.Contains(t, te.Suggestion, "search_api")
+	require.Contains(t, te.Suggestion, "DatabaseService/ListDatabases",
+		"search_api lists API operations, not databases, so the hint names the call that does")
 }
 
 func TestQueryDatabase_NotFoundWithFilters(t *testing.T) {
@@ -780,4 +783,23 @@ func TestQueryDatabase_Timeout(t *testing.T) {
 	_, err := s.executeQuery(ctx, resolved, "SELECT 1", 100)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "QUERY_ERROR")
+
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Contains(t, te.Message, "within 30 seconds", "a timeout is named as one")
+	require.Contains(t, te.Suggestion, "LIMIT", "and gets the step that shortens a query")
+	require.NotContains(t, te.Error(), "network", "the call never leaves the process")
+	require.NotContains(t, te.Error(), internalAPIBaseURL, "the nominal internal URL is not the agent's to see")
+}
+
+func TestInternalRequestErrorDropsTheInternalURL(t *testing.T) {
+	failure := errors.Wrap(&url.Error{
+		Op:  "Post",
+		URL: internalAPIBaseURL + "/bytebase.v1.SQLService/Query",
+		Err: errors.New("internal MCP API transport is not configured"),
+	}, "failed to execute API request")
+
+	te := internalRequestError("QUERY_ERROR", "run the query", failure, "narrow the query")
+	require.Equal(t, "Bytebase could not run the query: internal MCP API transport is not configured", te.Message)
+	require.Empty(t, te.Suggestion, "only a timeout has a step the agent can take")
 }

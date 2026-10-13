@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
@@ -228,6 +229,25 @@ func (e *toolError) Error() string {
 		return fmt.Sprintf("%s: %s (%s)", e.Code, e.Message, e.Suggestion)
 	}
 	return fmt.Sprintf("%s: %s", e.Code, e.Message)
+}
+
+// internalRequestError words an apiRequest failure for the agent. The request
+// never leaves the process, so it names no network and drops the nominal URL a
+// url.Error carries. The deadline is the one failure an agent can act on, and
+// onTimeout says how.
+func internalRequestError(code, action string, err error, onTimeout string) *toolError {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return &toolError{
+			Code:       code,
+			Message:    fmt.Sprintf("Bytebase could not %s within %d seconds", action, int(internalAPITimeout.Seconds())),
+			Suggestion: onTimeout,
+		}
+	}
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) {
+		err = urlErr.Err
+	}
+	return &toolError{Code: code, Message: fmt.Sprintf("Bytebase could not %s: %v", action, err)}
 }
 
 // Context key for storing the access token.
