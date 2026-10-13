@@ -237,21 +237,22 @@ finished but not yet connected, with no new backend work.
 
 **D11 · Gate, draft and resume.** The gate is unchanged: first login, sole admin, mandatory on
 Cloud, and the flag that sends an unfinished Cloud account back to the wizard clears when Finish
-succeeds, as it does on submit today. Until then the answers live in a local draft, so Back, a
-reload and a re-login in the same browser return to the same screen with nothing retyped. The draft
-also records that the project was created, the one step of Finish that cannot be repeated, so a
-retry, after a reload too, goes past it instead of failing on a project that already exists. From
-then on screen 3 shows the project's name and ID read-only, and the database choice too once the
-sample has been prepared: both exist, and are changed in the product, not in the wizard. Every other
-step is an overwrite or safe to repeat (saving the names, preparing the sample for the same project,
-writing the invitees to the project and then the workspace), so each retry runs them again from the
-answers on screen. A checkpoint therefore never outlives the answers it was made with: an invitee
-removed after a failed attempt is removed from the project as well. The wizard collects no
-credentials, so the draft holds none. No Continue or Finish is disabled without its reason on
-screen, and the reason sits with the field or question it is about, as the UX contract requires
-(`docs/agents/frontend-ux.md`): under the workspace name, under the goal choices, under the project
-name, under the team-size question. Two of the 42 leavers stalled on a disabled button with no
-explanation.
+succeeds, as it does on submit today. Until then the answers live in a local draft, so Back and a
+reload return to the same screen with nothing retyped. On Cloud so does a new login in the same
+browser, because that flag sends the account back; on self-hosted, where setup is offered on the
+first login only, a new login opens the workspace as it does today. The draft also records that the
+project was created, the one step of Finish that cannot be repeated, so a retry, after a reload too,
+goes past it instead of failing on a project that already exists. From then on screen 3 shows the
+project's name and ID read-only, and the database choice too once the sample has been prepared: both
+exist, and are changed in the product, not in the wizard. Every other step is an overwrite or safe
+to repeat (saving the names, preparing the sample for the same project, writing the invitees to the
+project and then the workspace), so each retry runs them again from the answers on screen. A
+checkpoint therefore never outlives the answers it was made with: an invitee removed after a failed
+attempt is removed from the project as well. The wizard collects no credentials, so the draft holds
+none. No Continue or Finish is disabled without its reason on screen, and the reason sits with the
+field or question it is about, as the UX contract requires (`docs/agents/frontend-ux.md`): under the
+workspace name, under the goal choices, under the project name, under the team-size question. Two of
+the 42 leavers stalled on a disabled button with no explanation.
 
 **D12 · Self-hosted keeps its differences.** The same four screens serve self-hosted, where setup is
 offered once and screen 3 keeps "I'll do this later". That action saves the two names from screen 1
