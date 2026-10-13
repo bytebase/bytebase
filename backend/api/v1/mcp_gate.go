@@ -156,11 +156,9 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	// follow-up (BOT-53); disallowing first is the deliberate order.
 	v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY: {v1pb.MCPMethodClass_FORBIDDEN, "it rewrites the workspace settings that bound this session, including the switch meant to contain it"},
 
-	// The approval methods. ApproveIssue and RejectIssue record the review
-	// decision (applyReviewAction). RetryIssueApproval re-runs the finding and, on
-	// an auto-approved result, completes the issue itself. ActivateAccessGrant
-	// activates a pending grant without reading its approval. RequestIssue stays
-	// WRITE: it records no decision, only returning a rejected issue to review.
+	// RetryIssueApproval and ActivateAccessGrant record no decision but carry this
+	// reason: on an auto-approved result Retry completes the issue itself, and
+	// Activate activates a pending grant without reading its approval.
 	v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION: {v1pb.MCPMethodClass_FORBIDDEN, "it decides whether a change or an access request passes its human approval, and an agent does not decide that for its own work"},
 
 	// The other refused class. An EXCLUDED method is out of scope for the modes
@@ -288,10 +286,9 @@ func mcpSettingsForCurrentWorkspace(ctx context.Context, reader mcpSettingsReade
 // cannot resolve the token audience. Both refuse — an unknown policy never
 // permits — and neither is allowed to describe itself as the other.
 //
-// Some MCP refusals turn on a fact the request does not carry, such as whether
-// an issue exists or what the approval rules decide. Those are taken in the
-// handler where the fact is loaded, keyed on mcpSession so the console is
-// untouched, and TestMCPRefusalsNameThemselvesToTheQueryTool checks each one.
+// A refusal that turns on a fact the request does not carry, such as whether an
+// issue exists, is taken in the handler that loads the fact, keyed on mcpSession;
+// TestMCPRefusalsNameThemselvesToTheQueryTool checks each one.
 type internalMCPGateInterceptor struct {
 	store mcpSettingsReader
 }
@@ -468,9 +465,8 @@ const mcpConsoleWayOut = "Perform this action signed in to the Bytebase console 
 
 // mcpRequestShapeRefusals holds the refusals a per-method class cannot express,
 // because what the call does depends on a request field. Each entry returns the
-// reason and the way out, or an empty reason to allow. The table lives in the
-// gate so a refusal is audited and worded like a class refusal and lands before
-// the handler runs. A method that needs an entry usually wants splitting instead.
+// reason and the way out, or an empty reason to allow. It lives in the gate so a
+// refusal is audited and worded like a class refusal, before the handler runs.
 var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (reason, wayOut string){
 	v1connect.IssueServiceCreateIssueProcedure:       refuseGrantIssueCreation,
 	v1connect.SheetServiceCreateSheetProcedure:       inTheConsole(refuseMaskedWriteSheet),
@@ -517,10 +513,9 @@ func refuseGrantIssueCreation(_ context.Context, msg any) (string, string) {
 	return grantIssueRefusal(request.GetIssue().GetType())
 }
 
-// grantIssueRefusal is the issue-type allow-list both MCP creation guards share;
-// an empty reason allows the type, and a type added later is refused until
-// someone decides otherwise. An unset type is left to buildIssueMessage, which
-// rejects it as invalid.
+// grantIssueRefusal is the issue-type allow-list both MCP creation guards share,
+// so a type added later is refused until someone decides otherwise. An unset
+// type is left to buildIssueMessage, which rejects it as invalid.
 func grantIssueRefusal(issueType v1pb.Issue_Type) (reason, wayOut string) {
 	switch issueType {
 	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_TYPE_UNSPECIFIED:

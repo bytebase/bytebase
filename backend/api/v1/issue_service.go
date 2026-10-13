@@ -592,9 +592,8 @@ func linkedIssueForCreate(planUID int64, existing, issue *store.IssueMessage) (*
 }
 
 // rejectMCPOriginatedGrantIssue applies grantIssueRefusal where the issue is
-// created. It is the only guard for UpdateIssue with allow_missing: that call
-// creates only when the issue is missing, which its request cannot show, and an
-// upsert of an existing issue never reaches here.
+// created, so it also covers UpdateIssue with allow_missing, which creates only
+// when the issue is missing and so cannot be refused at the gate.
 func rejectMCPOriginatedGrantIssue(ctx context.Context, issueType v1pb.Issue_Type) error {
 	if !mcpSession(ctx) {
 		return nil

@@ -886,10 +886,9 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 }
 
 // EvaluateAccessGrantApproval returns the approval finding an access grant
-// request receives, computed as the issue workflow computes it but from the
-// request itself, so the caller can decide before any row is written. It skips
-// the workflow's FEATURE_APPROVAL_WORKFLOW check: its caller requires FEATURE_JIT,
-// which plan.yaml grants only with the approval workflow.
+// request gets, from the request itself, so the caller can decide before any row
+// is written. Unlike the workflow, it skips the FEATURE_APPROVAL_WORKFLOW check:
+// its caller requires FEATURE_JIT, which plan.yaml grants only with that feature.
 func EvaluateAccessGrantApproval(ctx context.Context, stores *store.Store, project *store.ProjectMessage, grant *storepb.AccessGrantPayload) (*storepb.IssuePayloadApproval, storepb.RiskLevel, error) {
 	finding := &storepb.IssuePayloadApproval{ApprovalFindingDone: true}
 	approvalSetting, err := stores.GetWorkspaceApprovalSetting(ctx, project.Workspace)
@@ -908,9 +907,9 @@ func EvaluateAccessGrantApproval(ctx context.Context, stores *store.Store, proje
 }
 
 // buildCELVariablesForAccessGrantPayload emits one CEL variable map per target
-// database, schema and table the grant's query reads, for REQUEST_ACCESS rules.
-// A statement that does not parse yields one map per target, so rules on the
-// engine, database or environment still evaluate.
+// database, schema and table the query reads. A statement that does not parse
+// yields one map per target, so rules on its engine, database or environment
+// still evaluate.
 func buildCELVariablesForAccessGrantPayload(ctx context.Context, stores *store.Store, projectID string, grant *storepb.AccessGrantPayload) ([]map[string]any, error) {
 	baseVars := map[string]any{
 		common.CELAttributeResourceProjectID: projectID,
