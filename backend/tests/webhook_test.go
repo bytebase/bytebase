@@ -16,6 +16,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -678,6 +679,48 @@ func TestWebhookIntegration(t *testing.T) {
 		// absence assertion is no longer racing the runner.
 		waitForApprovalFindingDone(ctx, t, ctl, issue)
 		requireWebhookCount(t, collector, project.Name, "Approval required", 0)
+	})
+
+	t.Run("IssueApprovalRequested_FiresOnceForAnAccessGrant", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "access-grant-approval")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "access_grant_approval_db", ""))
+
+		clearWorkspaceApprovalRules(ctx, t, ctl)
+		disableSelfApproval(ctx, t, ctl, project)
+		installWorkspaceApprovalRule(ctx, t, ctl, project, []string{"roles/projectOwner"})
+		appr := provisionApprover(ctx, t, ctl, project, "access-grant", "roles/projectOwner")
+
+		collector.reset()
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
+			v1pb.Activity_ISSUE_APPROVAL_REQUESTED,
+			v1pb.Activity_ISSUE_APPROVED,
+		})
+
+		grant, err := ctl.accessGrantServiceClient.CreateAccessGrant(ctx, connect.NewRequest(&v1pb.CreateAccessGrantRequest{
+			Parent: project.Name,
+			AccessGrant: &v1pb.AccessGrant{
+				Targets:    []string{dbTargetName(instance, "access_grant_approval_db")},
+				Query:      "SELECT 1",
+				Reason:     "one read",
+				Expiration: &v1pb.AccessGrant_Ttl{Ttl: durationpb.New(time.Hour)},
+			},
+		}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.AccessGrant_PENDING, grant.Msg.Status)
+		waitForWebhookCount(t, collector, project.Name, "Approval required", 1)
+
+		issue, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: grant.Msg.Issue}))
+		require.NoError(t, err)
+		approveIssueAs(ctx, t, ctl, issue.Msg, appr)
+		// The approval's webhook is sent after CreateAccessGrant returned, so
+		// waiting for it gives a second "Approval required" time to arrive.
+		waitForWebhookCount(t, collector, project.Name, "Issue approved", 1)
+		requireWebhookCount(t, collector, project.Name, "Approval required", 1)
+
+		active, err := ctl.accessGrantServiceClient.GetAccessGrant(ctx, connect.NewRequest(&v1pb.GetAccessGrantRequest{Name: grant.Msg.Name}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.AccessGrant_ACTIVE, active.Msg.Status)
 	})
 
 	t.Run("IssueApproved_SingleStep", func(t *testing.T) {

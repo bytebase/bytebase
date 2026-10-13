@@ -2785,6 +2785,10 @@
             "details": "Issue và bình luận · Plan và kiểm tra plan · Triển khai, lần chạy tác vụ và nhật ký · Bản phát hành · Xem trước khôi phục",
             "title": "Đọc quy trình thay đổi"
           },
+          "request-access": {
+            "details": "Xin cấp quyền truy cập có thời hạn để chạy một câu lệnh cụ thể, có thể kèm xem kết quả chưa che hoặc xuất kết quả; câu lệnh phải là lệnh đọc trong phạm vi engine kiểm tra được · Quyền chỉ bắt đầu sau khi một người phê duyệt, và yêu cầu không cần ai phê duyệt sẽ bị từ chối · Quyền chỉ áp dụng khi dự án cho phép cấp quyền truy cập",
+            "title": "Yêu cầu cấp quyền truy cập"
+          },
           "run-rollouts": {
             "details": "Tạo một triển khai · Chạy, bỏ qua hoặc hủy các tác vụ của nó, theo chính sách phê duyệt của dự án",
             "title": "Chạy triển khai và tác vụ"
@@ -2801,7 +2805,7 @@
         },
         "summary": {
           "read-only": "Đọc lược đồ, dữ liệu và quy trình thay đổi; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
-          "read-write": "Đọc lược đồ, dữ liệu và quy trình thay đổi; đề xuất, chạy, xuất và quản lý"
+          "read-write": "Đọc lược đồ, dữ liệu và quy trình thay đổi; đề xuất, yêu cầu truy cập, chạy, xuất và quản lý"
         },
         "tier": {
           "read": "đọc",

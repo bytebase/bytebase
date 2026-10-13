@@ -162,6 +162,7 @@ func TestMaskedWriteGuardIsWiredIntoTheGate(t *testing.T) {
 			require.False(t, got.dispatched, "the refusal must land before anything is written")
 			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
 			require.Contains(t, got.err.Error(), masker.DefaultFullMaskSubstitution)
+			require.Contains(t, got.err.Error(), mcpConsoleWayOut)
 			require.True(t, got.auditMarked, "every policy denial is an audited outcome")
 		})
 	}
@@ -279,6 +280,10 @@ func TestMCPRefusalsNameThemselvesToTheQueryTool(t *testing.T) {
 	issueless := rejectMCPOriginatedIssuelessRollout(mcpCtx, approvalProject, nil, "create a rollout")
 	require.Error(t, issueless)
 	require.True(t, mcp.IsPolicyRefusal(issueless.Error()))
+
+	unattended := refuseUnattendedMCPAccessGrant(mcpCtx, &storepb.IssuePayloadApproval{ApprovalFindingDone: true})
+	require.Error(t, unattended)
+	require.True(t, mcp.IsPolicyRefusal(unattended.Error()))
 }
 
 // TestMaskPlaceholderMatchIsDeliberatelyBroad records which side of the trade

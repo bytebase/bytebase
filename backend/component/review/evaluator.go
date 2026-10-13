@@ -864,15 +864,6 @@ func buildCELVariablesForRoleGrant(ctx context.Context, stores *store.Store, iss
 }
 
 // buildCELVariablesForAccessGrant builds CEL variables for ACCESS_GRANT issues.
-//
-// Emits one CEL variable map per (target database, schema, table) referenced
-// by the grant's query, so REQUEST_ACCESS rules can key on
-// `resource.db_engine / resource.database_name / resource.schema_name /
-// resource.table_name` attributes.
-//
-// Statement parsing failures fall back to per-target vars without
-// schema/table info — rules keyed on db_engine / database_name / env
-// still evaluate.
 func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	payload := issue.Payload
 	if payload.AccessGrantId == "" {
@@ -887,16 +878,48 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 	if accessGrant == nil {
 		return nil, false, errors.Errorf("access grant %s not found", accessGrantID)
 	}
+	celVarsList, err := buildCELVariablesForAccessGrantPayload(ctx, stores, issue.ProjectID, accessGrant.Payload)
+	if err != nil {
+		return nil, false, err
+	}
+	return celVarsList, true, nil
+}
 
+// EvaluateAccessGrantApproval returns the approval finding an access grant
+// request gets, from the request itself, so the caller can decide before any row
+// is written. Unlike the workflow, it skips the FEATURE_APPROVAL_WORKFLOW check:
+// its caller requires FEATURE_JIT, which plan.yaml grants only with that feature.
+func EvaluateAccessGrantApproval(ctx context.Context, stores *store.Store, project *store.ProjectMessage, grant *storepb.AccessGrantPayload) (*storepb.IssuePayloadApproval, storepb.RiskLevel, error) {
+	finding := &storepb.IssuePayloadApproval{ApprovalFindingDone: true}
+	approvalSetting, err := stores.GetWorkspaceApprovalSetting(ctx, project.Workspace)
+	if err != nil {
+		return nil, storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrap(err, "failed to get workspace approval setting")
+	}
+	celVarsList, err := buildCELVariablesForAccessGrantPayload(ctx, stores, project.ResourceID, grant)
+	if err != nil {
+		return nil, storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrap(err, "failed to build CEL variables for access grant")
+	}
+	finding.ApprovalTemplate, err = getApprovalTemplate(approvalSetting, storepb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS, celVarsList)
+	if err != nil {
+		return nil, storepb.RiskLevel_RISK_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to get approval template for source: %v", storepb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS)
+	}
+	return finding, calculateRiskLevelFromCELVars(celVarsList), nil
+}
+
+// buildCELVariablesForAccessGrantPayload emits one CEL variable map per target
+// database, schema and table the query reads. A statement that does not parse
+// yields one map per target, so rules on its engine, database or environment
+// still evaluate.
+func buildCELVariablesForAccessGrantPayload(ctx context.Context, stores *store.Store, projectID string, grant *storepb.AccessGrantPayload) ([]map[string]any, error) {
 	baseVars := map[string]any{
-		common.CELAttributeResourceProjectID: issue.ProjectID,
-		common.CELAttributeRequestUnmask:     accessGrant.Payload.Unmask,
-		common.CELAttributeRequestExport:     accessGrant.Payload.Export,
+		common.CELAttributeResourceProjectID: projectID,
+		common.CELAttributeRequestUnmask:     grant.Unmask,
+		common.CELAttributeRequestExport:     grant.Export,
 	}
 
-	targets := accessGrant.Payload.Targets
+	targets := grant.Targets
 	if len(targets) == 0 {
-		return []map[string]any{baseVars}, true, nil
+		return []map[string]any{baseVars}, nil
 	}
 
 	type databaseKey struct {
@@ -913,10 +936,10 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 	for _, target := range targets {
 		targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target)
 		if err != nil {
-			return nil, false, errors.Wrapf(err, "failed to parse target %q", target)
+			return nil, errors.Wrapf(err, "failed to parse target %q", target)
 		}
-		if targetProjectID != nil && *targetProjectID != issue.ProjectID {
-			return nil, false, errors.Errorf("target %q does not belong to project %q", target, issue.ProjectID)
+		if targetProjectID != nil && *targetProjectID != projectID {
+			return nil, errors.Errorf("target %q does not belong to project %q", target, projectID)
 		}
 		key := databaseKey{instanceID: instanceID, databaseName: databaseName}
 		parsedTargets = append(parsedTargets, parsedTarget{name: target, key: key})
@@ -926,16 +949,16 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 
 	instanceByID, err := getActiveTargetInstances(ctx, stores, instanceTargets)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
 		Workspace: workspaceID,
-		ProjectID: &issue.ProjectID,
+		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to list databases for project %q", issue.ProjectID)
+		return nil, errors.Wrapf(err, "failed to list databases for project %q", projectID)
 	}
 	databaseByKey := make(map[databaseKey]*store.DatabaseMessage, len(requestedDatabases))
 	for _, database := range databases {
@@ -955,7 +978,7 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 			continue
 		}
 		if database.ResourceName() != target.name {
-			return nil, false, errors.Errorf("database target %q is not canonical for its instance", target.name)
+			return nil, errors.Errorf("database target %q is not canonical for its instance", target.name)
 		}
 		resolvedTargets = append(resolvedTargets, struct {
 			name     string
@@ -963,7 +986,7 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 		}{name: target.name, database: database})
 	}
 
-	statement := accessGrant.Payload.Query
+	statement := grant.Query
 	var celVarsList []map[string]any
 
 	for _, target := range resolvedTargets {
@@ -1027,7 +1050,7 @@ func buildCELVariablesForAccessGrant(ctx context.Context, stores *store.Store, i
 		celVarsList = append(celVarsList, baseVars)
 	}
 
-	return celVarsList, true, nil
+	return celVarsList, nil
 }
 
 // getDatabasesForRoleGrant fetches database messages for the given database identifiers.
