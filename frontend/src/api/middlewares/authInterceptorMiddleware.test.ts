@@ -1,7 +1,11 @@
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Permission } from "@/types";
-import { ignoredCodesContextKey, silentContextKey } from "../context-key";
+import {
+  ignoredCodesContextKey,
+  silentContextKey,
+  skipErrorNotificationContextKey,
+} from "../context-key";
 
 const mocks = vi.hoisted(() => ({
   authStore: {
@@ -56,15 +60,18 @@ import { authInterceptor } from "./authInterceptorMiddleware";
 const createRequest = ({
   methodName = "Chat",
   silent = false,
+  skipErrorNotification = false,
   ignoredCodes = [],
 }: {
   methodName?: string;
   silent?: boolean;
+  skipErrorNotification?: boolean;
   ignoredCodes?: Code[];
 } = {}) =>
   ({
     contextValues: createContextValues()
       .set(silentContextKey, silent)
+      .set(skipErrorNotificationContextKey, skipErrorNotification)
       .set(ignoredCodesContextKey, ignoredCodes),
     method: { name: methodName },
     service: { name: "TestService", typeName: "bytebase.v1.TestService" },
@@ -179,6 +186,33 @@ describe("authInterceptor", () => {
         resources: "",
       },
     });
+  });
+
+  test("keeps redirects and session notices when the caller reports the error", async () => {
+    const request = createRequest({ skipErrorNotification: true });
+
+    const denied = vi
+      .fn()
+      .mockRejectedValue(new ConnectError("forbidden", Code.PermissionDenied));
+    await expect(authInterceptor(denied)(request)).rejects.toMatchObject({
+      code: Code.PermissionDenied,
+    });
+    expect(mocks.routerPush).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "error.403" })
+    );
+
+    const expired = vi
+      .fn()
+      .mockRejectedValue(
+        new ConnectError("access token not found", Code.Unauthenticated)
+      );
+    mocks.refreshTokens.mockRejectedValue(new Error("refresh failed"));
+    await expect(authInterceptor(expired)(request)).rejects.toMatchObject({
+      code: Code.Unauthenticated,
+    });
+    expect(mocks.pushNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "auth.token-expired-title" })
+    );
   });
 
   test("does not leave sign-in for a rejected web login", async () => {
