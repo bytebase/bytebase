@@ -246,10 +246,12 @@ the 42 leavers stalled on a disabled button with no explanation.
 **D12 · Self-hosted keeps its differences.** The same four screens serve self-hosted, where setup is
 offered once and screen 3 keeps "I'll do this later". That action saves the two names from screen 1
 and leaves for the workspace landing as it does today. No project is created, so nothing else is
-left behind. Two lines of copy follow the deployment (Given) instead of repeating Cloud's. The
-sample choice says the database runs on this server and names no expiry, as the product's existing
-self-hosted sample strings do. And where the workspace has no mail setting, screen 4 says teammates
-are added without an email being sent, and its button reads "Add N teammates and finish".
+left behind. The skip is offered only while that holds: once a Finish attempt has created the
+project, screen 3 no longer shows it, and the way out is Finish. Two lines of copy follow the
+deployment (Given) instead of repeating Cloud's. The sample choice says the database runs on this
+server and names no expiry, as the product's existing self-hosted sample strings do. And where the
+workspace has no mail setting, screen 4 says teammates are added without an email being sent, and
+its button reads "Add N teammates and finish".
 
 ## States
 
@@ -264,7 +266,7 @@ are added without an email being sent, and its button reads "Add N teammates and
 | 3 Own | named, own instance chosen | one line on what happens after setup; diagram of the user's instance joining the project later | Continue enabled |
 | 3 · no sample | the server reports the sample unavailable or used | only the own-instance choice, with the reason | Continue enabled once named |
 | 3 · skipped | "I'll do this later", self-hosted only | saves the screen-1 names and leaves for the workspace landing; no project is created | n/a |
-| 3 · project exists | Back after a Finish attempt that created the project | project name and ID read-only, with a line saying the project exists and is renamed in its settings; the database choice read-only once the sample is prepared | Continue enabled |
+| 3 · project exists | Back after a Finish attempt that created the project | project name and ID read-only, with a line saying the project exists and is renamed in its settings; the database choice read-only once the sample is prepared; no "I'll do this later" on self-hosted | Continue enabled |
 | 4 Team | size unset | five size options, nothing else | Finish disabled, "Pick a team size to finish"; Back enabled |
 | 4 Team | "Just me" | the size options only; no invite field | Finish enabled |
 | 4 Team | a size above "Just me" | the chips input appears with one line about membership; the button reads "Finish" or "Send N invites and finish" | Finish enabled |
