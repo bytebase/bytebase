@@ -40,6 +40,12 @@ interface AddMessageOptions extends Message {
   metadata?: AgentMessage["metadata"];
 }
 
+interface QueuedUserMessage {
+  chatId: string;
+  text: string;
+  page: AgentChatSnapshot;
+}
+
 const DEFAULT_CHAT_STATUS: AgentChatStatus = "idle";
 
 // --- Pure helper functions ---
@@ -348,8 +354,11 @@ export interface AgentState {
   pendingAskByChatId: Record<string, AgentPendingAsk>;
   currentChatId: string | null;
   abortControllersByChatId: Record<string, AbortController>;
+  queuedUserMessage: QueuedUserMessage | null;
+  queuedUserMessageInFlight: boolean;
 
   // UI actions
+  open: () => void;
   toggle: () => void;
   minimize: () => void;
   restore: () => void;
@@ -359,6 +368,9 @@ export interface AgentState {
 
   // Chat CRUD
   createChat: (options?: CreateChatOptions) => AgentChat;
+  queueUserMessage: (message: QueuedUserMessage) => void;
+  takeQueuedUserMessage: (chatId: string) => QueuedUserMessage | null;
+  finishQueuedUserMessage: (chatId: string) => void;
   ensureCurrentChat: (page?: AgentChatSnapshot, context?: string) => AgentChat;
   selectChatContext: (
     context: string,
@@ -619,8 +631,24 @@ export const createAgentStore = () => {
         pendingAskByChatId: initial.pendingAskByChatId,
         currentChatId: initial.currentChatId,
         abortControllersByChatId: {},
+        queuedUserMessage: null,
+        queuedUserMessageInFlight: false,
 
         // UI actions
+        open: () =>
+          set((state) => {
+            state.visible = true;
+            state.minimized = false;
+            if (typeof window !== "undefined") {
+              state.position = clampAgentWindowPosition(
+                window.innerWidth,
+                window.innerHeight,
+                state.size.width,
+                state.size.height,
+                state.position
+              );
+            }
+          }),
         toggle: () =>
           set((state) => {
             state.visible = !state.visible;
@@ -728,6 +756,30 @@ export const createAgentStore = () => {
           });
           return chat;
         },
+
+        queueUserMessage: (message) =>
+          set((state) => {
+            state.queuedUserMessage = message;
+            state.queuedUserMessageInFlight = false;
+          }),
+
+        takeQueuedUserMessage: (chatId) => {
+          const message = get().queuedUserMessage;
+          if (message?.chatId !== chatId || get().queuedUserMessageInFlight) {
+            return null;
+          }
+          set((state) => {
+            state.queuedUserMessageInFlight = true;
+          });
+          return message;
+        },
+
+        finishQueuedUserMessage: (chatId) =>
+          set((state) => {
+            if (state.queuedUserMessage?.chatId !== chatId) return;
+            state.queuedUserMessage = null;
+            state.queuedUserMessageInFlight = false;
+          }),
 
         ensureCurrentChat: (page, context) => {
           const existing = _getChat(get().currentChatId);

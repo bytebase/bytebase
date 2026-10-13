@@ -210,7 +210,11 @@ function currentRouteSnapshot(): ReactRoute {
     string,
     string | string[] | undefined
   >;
-  const next = assembleRoute(location, matches, leafParams);
+  const next = assembleRoute(
+    location,
+    matches.map((match) => ({ handle: match.route.handle })),
+    leafParams
+  );
   if (
     !currentRouteCache ||
     currentRouteCache.fullPath !== next.fullPath ||

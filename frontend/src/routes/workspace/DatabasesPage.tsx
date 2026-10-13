@@ -50,6 +50,7 @@ import {
 } from "@/stores/modules/v1/common";
 import {
   isValidDatabaseName,
+  isValidProjectName,
   UNKNOWN_ENVIRONMENT_NAME,
   unknownEnvironment,
 } from "@/types";
@@ -562,6 +563,12 @@ export function DatabasesPage() {
       <TransferProjectSheet
         open={showTransferDrawer}
         databases={selectedDatabases}
+        initialProjectName={
+          typeof currentRoute.query.targetProject === "string" &&
+          isValidProjectName(currentRoute.query.targetProject)
+            ? currentRoute.query.targetProject
+            : undefined
+        }
         onClose={() => setShowTransferDrawer(false)}
         onTransfer={handleTransferProject}
       />

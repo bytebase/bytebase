@@ -152,7 +152,9 @@ type ActuatorInfo struct {
 	// Sample setup availability and provisioned resources.
 	Sample *SampleInfo `protobuf:"bytes,29,opt,name=sample,proto3" json:"sample,omitempty"`
 	// The MCP (Model Context Protocol) setting in the current workspace.
-	McpSetting    *MCPSetting `protobuf:"bytes,30,opt,name=mcp_setting,json=mcpSetting,proto3" json:"mcp_setting,omitempty"`
+	McpSetting *MCPSetting `protobuf:"bytes,30,opt,name=mcp_setting,json=mcpSetting,proto3" json:"mcp_setting,omitempty"`
+	// Whether the workspace AI setting enables the AI agent.
+	AiEnabled     bool `protobuf:"varint,31,opt,name=ai_enabled,json=aiEnabled,proto3" json:"ai_enabled,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -299,6 +301,13 @@ func (x *ActuatorInfo) GetMcpSetting() *MCPSetting {
 	return nil
 }
 
+func (x *ActuatorInfo) GetAiEnabled() bool {
+	if x != nil {
+		return x.AiEnabled
+	}
+	return false
+}
+
 // Instance describes one provisioned sample instance.
 type SampleInfo_Instance struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -369,7 +378,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\binstance\x18\x01 \x01(\tB\x1d\xe0A\x03\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\binstance\x12@\n" +
 	"\vexpire_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"expireTime\"\xd1\x06\n" +
+	"expireTime\"\xf5\x06\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
@@ -388,7 +397,9 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x15active_vcs_user_count\x18\x1c \x01(\x05B\x03\xe0A\x03R\x12activeVcsUserCount\x124\n" +
 	"\x06sample\x18\x1d \x01(\v2\x17.bytebase.v1.SampleInfoB\x03\xe0A\x03R\x06sample\x12=\n" +
 	"\vmcp_setting\x18\x1e \x01(\v2\x17.bytebase.v1.MCPSettingB\x03\xe0A\x03R\n" +
-	"mcpSettingJ\x04\b\x03\x10\x04J\x04\b\x05\x10\bJ\x04\b\t\x10\n" +
+	"mcpSetting\x12\"\n" +
+	"\n" +
+	"ai_enabled\x18\x1f \x01(\bB\x03\xe0A\x03R\taiEnabledJ\x04\b\x03\x10\x04J\x04\b\x05\x10\bJ\x04\b\t\x10\n" +
 	"J\x04\b\n" +
 	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x0e\x10\x0fJ\x04\b\x10\x10\x14J\x04\b\x16\x10\x17J\x04\b\x19\x10\x1a2\x86\x01\n" +
 	"\x0fActuatorService\x12s\n" +

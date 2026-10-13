@@ -114,7 +114,6 @@ interface DomRefMentionOption {
 
 export function AgentInput() {
   const { t } = useTranslation();
-
   // Zustand selectors
   const currentChat = useAgentStore(selectCurrentChat);
   const currentPendingAsk = useAgentStore(selectCurrentPendingAsk);
@@ -127,6 +126,7 @@ export function AgentInput() {
     selectCurrentChatRequiresAIConfiguration
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const queuedUserMessage = useAgentStore((s) => s.queuedUserMessage);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   const context = currentChat?.context;
   const projectContext = context?.startsWith(projectNamePrefix)
@@ -580,6 +580,37 @@ export function AgentInput() {
     },
     [runChat]
   );
+
+  useEffect(() => {
+    if (!currentChatId || queuedUserMessage?.chatId !== currentChatId) return;
+    const store = useAgentStore.getState();
+    const message = store.takeQueuedUserMessage(currentChatId);
+    if (!message) return;
+
+    void (async () => {
+      try {
+        if (await blockWhenAIIsNotConfigured(message.chatId)) {
+          setInput(message.text);
+          return;
+        }
+        store.clearError(message.chatId);
+        store.addMessage({
+          chatId: message.chatId,
+          role: "user",
+          content: message.text,
+          metadata: { route: message.page.path },
+        });
+        await startChatRun(message.chatId, message.page);
+      } finally {
+        store.finishQueuedUserMessage(message.chatId);
+      }
+    })();
+  }, [
+    blockWhenAIIsNotConfigured,
+    currentChatId,
+    queuedUserMessage,
+    startChatRun,
+  ]);
 
   const send = useCallback(async () => {
     const store = useAgentStore.getState();

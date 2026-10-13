@@ -2006,6 +2006,38 @@
       "success-prompt": "{{name}} が正常に作成されました。"
     },
     "filter-projects": "プロジェクトをフィルタリング",
+    "home": {
+      "active-issues": "あなたの対応中の課題",
+      "active-issues-unavailable": "このプロジェクトの課題は表示できません。",
+      "ai-placeholder": "このプロジェクトの検索、変更、設定について AI に質問",
+      "archived-description": "このプロジェクトはアーカイブされており、読み取り専用です。",
+      "change-database": "データベースを変更",
+      "change-database-description": "このプロジェクトで管理されたデータベース変更を計画します。",
+      "connect": "インスタンスを接続",
+      "connect-description": "データベースサーバーをこのプロジェクトに接続します。",
+      "create-database": "データベースを作成",
+      "create-database-description": "接続済みインスタンスに最初のデータベースを作成します。",
+      "created-by-you": "あなたが作成",
+      "databases": "データベース",
+      "databases-load-error": "データベースを読み込めませんでした。",
+      "databases-unavailable": "このプロジェクトのデータベースは利用できません。",
+      "members": "メンバーを管理",
+      "members-optional-description": "任意: チームメンバーに共同作業とレビューのためのアクセス権を付与します。",
+      "needs-review": "あなたのレビュー待ち",
+      "next-step": "次のステップ",
+      "no-active-issues": "このプロジェクトには、あなたが作成した、またはレビュー待ちの未完了の課題はありません。",
+      "no-databases": "アクセスできるデータベースはまだありません。",
+      "no-databases-create-description": "接続済みインスタンスにデータベースを作成して始めましょう。",
+      "no-databases-description": "インスタンスを接続して、このプロジェクトにデータベースを追加します。",
+      "no-databases-prerequisite": "ここにデータベースを表示するには、インスタンスの接続が必要です。",
+      "no-databases-transfer-description": "未割り当てのデータベースをこのプロジェクトに移管するか、新しく作成します。",
+      "query-database": "データベースをクエリ",
+      "query-database-description": "SQL エディターでこのプロジェクトのデータベースを参照します。",
+      "transfer-databases": "データベースを移管",
+      "transfer-databases-description": "未割り当てのデータベースをこのプロジェクトに移管します。",
+      "view-all": "すべて表示",
+      "view-issues": "課題を見る"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {

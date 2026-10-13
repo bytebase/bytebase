@@ -2006,6 +2006,38 @@
       "success-prompt": "成功创建 {{name}}."
     },
     "filter-projects": "过滤项目",
+    "home": {
+      "active-issues": "你的待处理工单",
+      "active-issues-unavailable": "你无法查看此项目的工单。",
+      "ai-placeholder": "询问 AI 如何查询、更改或设置此项目",
+      "archived-description": "此项目已归档，处于只读状态。",
+      "change-database": "变更数据库",
+      "change-database-description": "在此项目中规划受管控的数据库变更。",
+      "connect": "连接实例",
+      "connect-description": "将数据库服务器连接到此项目。",
+      "create-database": "创建数据库",
+      "create-database-description": "在已连接的实例中创建首个数据库。",
+      "created-by-you": "由你创建",
+      "databases": "数据库",
+      "databases-load-error": "无法加载数据库。",
+      "databases-unavailable": "你无法查看此项目的数据库。",
+      "members": "管理成员",
+      "members-optional-description": "可选：授予团队成员访问权限，以便协作和审核。",
+      "needs-review": "等待你审核",
+      "next-step": "下一步",
+      "no-active-issues": "此项目中没有你创建或等待你审核的未完成工单。",
+      "no-databases": "暂无可访问的数据库。",
+      "no-databases-create-description": "在已连接的实例中创建数据库以开始使用。",
+      "no-databases-description": "连接实例，将数据库加入此项目。",
+      "no-databases-prerequisite": "连接实例后，数据库才会显示在这里。",
+      "no-databases-transfer-description": "将未分配的数据库转入此项目，或创建新数据库。",
+      "query-database": "查询数据库",
+      "query-database-description": "在 SQL 编辑器中浏览此项目的数据库。",
+      "transfer-databases": "转移数据库",
+      "transfer-databases-description": "将未分配的数据库转入此项目。",
+      "view-all": "查看全部",
+      "view-issues": "查看工单"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {

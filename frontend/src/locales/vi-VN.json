@@ -2006,6 +2006,38 @@
       "success-prompt": "Đã tạo thành công dự án {{name}}."
     },
     "filter-projects": "Lọc dự án",
+    "home": {
+      "active-issues": "Yêu cầu đang xử lý của bạn",
+      "active-issues-unavailable": "Bạn không thể xem các yêu cầu trong dự án này.",
+      "ai-placeholder": "Hỏi AI để truy vấn, thay đổi hoặc thiết lập dự án này",
+      "archived-description": "Dự án này đã được lưu trữ và ở chế độ chỉ đọc.",
+      "change-database": "Thay đổi cơ sở dữ liệu",
+      "change-database-description": "Lập kế hoạch thay đổi cơ sở dữ liệu có kiểm soát trong dự án này.",
+      "connect": "Kết nối phiên bản",
+      "connect-description": "Kết nối máy chủ cơ sở dữ liệu với dự án này.",
+      "create-database": "Tạo cơ sở dữ liệu",
+      "create-database-description": "Tạo cơ sở dữ liệu đầu tiên trên một phiên bản đã kết nối.",
+      "created-by-you": "Bạn đã tạo",
+      "databases": "Cơ sở dữ liệu",
+      "databases-load-error": "Không thể tải cơ sở dữ liệu.",
+      "databases-unavailable": "Bạn không thể xem cơ sở dữ liệu trong dự án này.",
+      "members": "Quản lý thành viên",
+      "members-optional-description": "Tùy chọn: cấp quyền truy cập để đồng đội cộng tác và đánh giá.",
+      "needs-review": "Cần bạn xem xét",
+      "next-step": "Bước tiếp theo",
+      "no-active-issues": "Không có yêu cầu đang mở nào do bạn tạo hoặc đang chờ bạn xem xét trong dự án này.",
+      "no-databases": "Chưa có cơ sở dữ liệu nào có thể truy cập.",
+      "no-databases-create-description": "Tạo cơ sở dữ liệu trên một phiên bản đã kết nối để bắt đầu.",
+      "no-databases-description": "Kết nối một phiên bản để đưa cơ sở dữ liệu vào dự án này.",
+      "no-databases-prerequisite": "Cần kết nối một phiên bản trước khi cơ sở dữ liệu xuất hiện ở đây.",
+      "no-databases-transfer-description": "Chuyển cơ sở dữ liệu chưa được gán vào dự án này hoặc tạo cơ sở dữ liệu mới.",
+      "query-database": "Truy vấn cơ sở dữ liệu",
+      "query-database-description": "Khám phá cơ sở dữ liệu của dự án này trong Trình soạn thảo SQL.",
+      "transfer-databases": "Chuyển cơ sở dữ liệu",
+      "transfer-databases-description": "Chuyển một cơ sở dữ liệu chưa được gán vào dự án này.",
+      "view-all": "Xem tất cả",
+      "view-issues": "Xem yêu cầu"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {

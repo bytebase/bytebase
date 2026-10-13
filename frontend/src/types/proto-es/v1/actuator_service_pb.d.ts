@@ -201,6 +201,13 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: bytebase.v1.MCPSetting mcp_setting = 30;
    */
   mcpSetting?: MCPSetting | undefined;
+
+  /**
+   * Whether the workspace AI setting enables the AI agent.
+   *
+   * @generated from field: bool ai_enabled = 31;
+   */
+  aiEnabled: boolean;
 };
 
 /**

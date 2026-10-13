@@ -119,7 +119,16 @@ vi.mock("@/components/database", () => ({
     />
   ),
   LabelEditorSheet: () => null,
-  TransferProjectSheet: () => null,
+  TransferProjectSheet: ({
+    initialProjectName,
+  }: {
+    initialProjectName?: string;
+  }) => (
+    <div
+      data-testid="transfer-project-sheet"
+      data-initial-project={initialProjectName ?? ""}
+    />
+  ),
 }));
 
 const DatabaseTableMock = ({
@@ -212,6 +221,31 @@ beforeEach(async () => {
 });
 
 describe("DatabasesPage", () => {
+  test("carries the Project Home transfer target into the transfer sheet", async () => {
+    mocks.currentRoute = {
+      query: { targetProject: "projects/orders" },
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <DatabasesPage />
+        </MemoryRouter>
+      );
+      await Promise.resolve();
+    });
+
+    expect(
+      container
+        .querySelector("[data-testid='transfer-project-sheet']")
+        ?.getAttribute("data-initial-project")
+    ).toBe("projects/orders");
+
+    act(() => root.unmount());
+  });
+
   test("passes selected project-instance databases to batch operations", async () => {
     const databaseName =
       "projects/app/instances/bound/databases/project-database";

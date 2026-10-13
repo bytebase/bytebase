@@ -2006,6 +2006,38 @@
       "success-prompt": "Proyecto {{name}} creado exitosamente."
     },
     "filter-projects": "Filtrar proyectos",
+    "home": {
+      "active-issues": "Tus solicitudes activas",
+      "active-issues-unavailable": "No puedes ver las solicitudes de este proyecto.",
+      "ai-placeholder": "Pide a la IA que consulte, cambie o configure este proyecto",
+      "archived-description": "Este proyecto está archivado y es de solo lectura.",
+      "change-database": "Cambiar una base de datos",
+      "change-database-description": "Planifica un cambio de base de datos controlado en este proyecto.",
+      "connect": "Conectar una instancia",
+      "connect-description": "Conecta un servidor de bases de datos a este proyecto.",
+      "create-database": "Crear una base de datos",
+      "create-database-description": "Crea la primera base de datos en una instancia conectada.",
+      "created-by-you": "Creado por ti",
+      "databases": "Bases de datos",
+      "databases-load-error": "No se pudieron cargar las bases de datos.",
+      "databases-unavailable": "Las bases de datos de este proyecto no están disponibles para ti.",
+      "members": "Administrar miembros",
+      "members-optional-description": "Opcional: concede acceso a tus compañeros para colaborar y revisar.",
+      "needs-review": "Necesita tu revisión",
+      "next-step": "Siguiente paso",
+      "no-active-issues": "No hay solicitudes abiertas creadas por ti ni pendientes de tu revisión en este proyecto.",
+      "no-databases": "Aún no hay bases de datos accesibles.",
+      "no-databases-create-description": "Crea una base de datos en una instancia conectada para comenzar.",
+      "no-databases-description": "Conecta una instancia para incorporar bases de datos a este proyecto.",
+      "no-databases-prerequisite": "Se debe conectar una instancia antes de que aparezcan bases de datos aquí.",
+      "no-databases-transfer-description": "Transfiere una base de datos sin asignar a este proyecto o crea una nueva.",
+      "query-database": "Consultar una base de datos",
+      "query-database-description": "Explora las bases de datos de este proyecto en el Editor SQL.",
+      "transfer-databases": "Transferir bases de datos",
+      "transfer-databases-description": "Mueve una base de datos sin asignar a este proyecto.",
+      "view-all": "Ver todas",
+      "view-issues": "Ver solicitudes"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {

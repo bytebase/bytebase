@@ -2006,6 +2006,38 @@
       "success-prompt": "Successfully created project {{name}}."
     },
     "filter-projects": "Filter projects",
+    "home": {
+      "active-issues": "Your active issues",
+      "active-issues-unavailable": "Issues are not available to you in this project.",
+      "ai-placeholder": "Ask AI to query, change, or set up this project",
+      "archived-description": "This project is archived and read-only.",
+      "change-database": "Change a database",
+      "change-database-description": "Plan a governed database change in this project.",
+      "connect": "Connect an instance",
+      "connect-description": "Connect a database server to this project.",
+      "create-database": "Create a database",
+      "create-database-description": "Create the first database on a connected instance.",
+      "created-by-you": "You created",
+      "databases": "Databases",
+      "databases-load-error": "Databases could not be loaded.",
+      "databases-unavailable": "Databases are not available to you in this project.",
+      "members": "Manage members",
+      "members-optional-description": "Optional: grant teammates access to collaborate and review.",
+      "needs-review": "Needs your review",
+      "next-step": "Next step",
+      "no-active-issues": "No open issues created by you or awaiting your review in this project.",
+      "no-databases": "No accessible databases yet.",
+      "no-databases-create-description": "Create a database on a connected instance to get started.",
+      "no-databases-description": "Connect an instance to bring databases into this project.",
+      "no-databases-prerequisite": "An instance must be connected before databases appear here.",
+      "no-databases-transfer-description": "Transfer an unassigned database into this project, or create a new one.",
+      "query-database": "Query a database",
+      "query-database-description": "Explore this project's databases in SQL Editor.",
+      "transfer-databases": "Transfer databases",
+      "transfer-databases-description": "Move an unassigned database into this project.",
+      "view-all": "View all",
+      "view-issues": "View issues"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {

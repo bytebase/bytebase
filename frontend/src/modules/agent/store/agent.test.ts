@@ -62,6 +62,26 @@ afterEach(() => {
 const s = (store: StoreApi<AgentState>) => store.getState();
 
 describe("useAgentStore (Zustand)", () => {
+  test("opens the selected chat without toggling or interrupting it", () => {
+    const store = createAgentStore();
+    const chatId = s(store).currentChatId;
+    expect(chatId).not.toBeNull();
+    s(store).startChatRun(
+      chatId!,
+      { path: "/projects/orders", title: "Order service" },
+      { runId: "run-1" }
+    );
+    s(store).open();
+    s(store).minimize();
+    s(store).open();
+    s(store).open();
+    expect(s(store).visible).toBe(true);
+    expect(s(store).minimized).toBe(false);
+    expect(s(store).currentChatId).toBe(chatId);
+    expect(s(store).getChat(chatId)?.status).toBe("running");
+    expect(s(store).chats).toHaveLength(1);
+  });
+
   test("creates a default chat when no persisted state exists", () => {
     const store = createAgentStore();
 
@@ -69,6 +89,24 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).currentChatId).toBe(s(store).chats[0].id);
     expect(s(store).getMessages(s(store).currentChatId)).toEqual([]);
     expect(s(store).chats[0].totalTokensUsed).toBe(0);
+  });
+
+  test("takes a queued user message only for its chat and only once", () => {
+    const store = createAgentStore();
+    const chat = s(store).createChat({ context: "projects/orders" });
+    const message = {
+      chatId: chat.id,
+      text: "List databases",
+      page: { path: "/projects/orders", title: "Order service" },
+    };
+    s(store).queueUserMessage(message);
+
+    expect(s(store).takeQueuedUserMessage("other-chat")).toBeNull();
+    expect(s(store).takeQueuedUserMessage(chat.id)).toEqual(message);
+    expect(s(store).takeQueuedUserMessage(chat.id)).toBeNull();
+    expect(s(store).queuedUserMessage).toEqual(message);
+    s(store).finishQueuedUserMessage(chat.id);
+    expect(s(store).queuedUserMessage).toBeNull();
   });
 
   test("keeps a chat's resource context when its page changes and after reload", () => {
