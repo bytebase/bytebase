@@ -81,8 +81,11 @@ custom role's ID), which nobody has to hand during an outage. `reset-password` r
 user has no workspace role and points at the menu. Rejected: `--add-role <role>`.
 
 **D4 · Recovery runs beside the running server.** The runbook and the command stop telling the
-operator to stop and restart Bytebase. On Kubernetes, recovery is a Job next to the running pod,
-with the running pod's image and `PG_URL`. Two conditions stay:
+operator to stop and restart Bytebase. Recovery reaches the metadata database exactly as the server
+does: the same image, flags, environment, network and mounted files. On Kubernetes that is a Job
+whose pod is the server's pod template with only the command replaced. `PG_URL` alone is not
+enough: it can be a file path, and the connection can rely on the pod's service account (AWS RDS
+and Cloud SQL IAM authentication), an init container or mounted TLS files. Two conditions stay:
 
 - **The same build as the running server.** Recovery does not migrate the schema, and an older
   build drops setting fields it does not know (`ProtojsonUnmarshaler` discards unknown fields).
@@ -178,7 +181,7 @@ What the operator does:
 | From a pipeline | Not supported | A Job |
 | A leaked password | Works until the restart | Works for up to one more minute |
 
-On Kubernetes:
+On Kubernetes, for a server that reads `PG_URL` from a Secret:
 
 ```yaml
 apiVersion: batch/v1
@@ -190,10 +193,13 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      serviceAccountName: <the server pod's service account>
+      # Copy the server pod's volumes, init containers and imagePullSecrets, if it has any.
       containers:
         - name: recovery
           image: bytebase/bytebase@sha256:<the running pod's digest>
           args: ["recovery", "reset-password", "--email", "<email>", "--password", "$(NEW_PASSWORD)"]
+          # The server container's env and volumeMounts, plus the new password.
           env:
             - name: PG_URL
               valueFrom:
