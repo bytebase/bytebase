@@ -198,8 +198,10 @@ finished but not yet connected, with no new backend work.
 Cloud, and the flag that sends an unfinished Cloud account back to the wizard clears when Finish
 succeeds, as it does on submit today. Until then the answers live in a local draft, so Back, a
 reload and a re-login in the same browser return to the same screen with nothing retyped. The
-wizard collects no credentials, so the draft holds none. Every disabled button says why, in words,
-beside it; two of the 42 leavers stalled on a disabled button with no explanation.
+draft also records which steps of Finish have succeeded, so a retry after a reload continues from
+the step that failed instead of creating the project a second time. The wizard collects no
+credentials, so the draft holds none. Every disabled button says why, in words, beside it; two of
+the 42 leavers stalled on a disabled button with no explanation.
 
 **D12 · Self-hosted keeps its differences.** The same four screens serve self-hosted, where setup
 is offered once and screen 3 keeps "I'll do this later". That action leaves the wizard for the
