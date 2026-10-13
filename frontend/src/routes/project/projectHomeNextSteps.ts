@@ -24,16 +24,20 @@ export type ProjectHomeNextStepInput = {
 export function getProjectHomeNextSteps(
   input: ProjectHomeNextStepInput
 ): ProjectHomeNextStep[] {
+  const canOfferTransfer =
+    input.database === "empty" &&
+    input.canTransferDatabases &&
+    input.transferableDatabase === "present";
   if (
     input.isDefault ||
     input.change === "submitted" ||
     (input.database !== "empty" && input.database !== "present") ||
     (input.database === "present" && input.change !== "not-started") ||
     (input.database === "empty" &&
-      input.instance === "present" &&
       input.canTransferDatabases &&
       input.transferableDatabase === "loading") ||
     (input.database === "empty" &&
+      !canOfferTransfer &&
       input.instance !== "empty" &&
       input.instance !== "present")
   ) {
@@ -42,15 +46,16 @@ export function getProjectHomeNextSteps(
 
   const steps: ProjectHomeNextStep[] = [];
   if (input.database === "empty") {
-    if (input.instance === "empty" && input.canConnectInstance) {
+    if (canOfferTransfer) {
+      steps.push("transferDatabases");
+    }
+    if (
+      input.instance === "empty" &&
+      !canOfferTransfer &&
+      input.canConnectInstance
+    ) {
       steps.push("connect");
     } else if (input.instance === "present") {
-      if (
-        input.canTransferDatabases &&
-        input.transferableDatabase === "present"
-      ) {
-        steps.push("transferDatabases");
-      }
       if (input.canCreateDatabase) {
         steps.push("createDatabase");
       }

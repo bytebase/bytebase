@@ -205,6 +205,7 @@ beforeEach(async () => {
     messagesByChatId: initialState.messagesByChatId,
     pendingAskByChatId: initialState.pendingAskByChatId,
     queuedUserMessage: null,
+    queuedUserMessageInFlight: false,
     currentChatId: initialState.currentChatId,
     abortControllersByChatId: {},
   });
@@ -270,6 +271,36 @@ describe("AgentInput", () => {
     expect(mocks.buildSystemPrompt).toHaveBeenCalledWith(
       expect.objectContaining({ context: "projects/billing" })
     );
+    expect(useAgentStore.getState().queuedUserMessage).toBeNull();
+    view.unmount();
+  });
+
+  test("keeps the queued message busy while AI configuration loads", async () => {
+    let resolveSetting!: (value: undefined) => void;
+    mocks.getOrFetchSettingByName.mockReturnValue(
+      new Promise<undefined>((resolve) => { resolveSetting = resolve; })
+    );
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const page = { path: "/projects/billing", title: "Billing" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/billing", page });
+    store.queueUserMessage({ chatId: chat.id, text: "List billing databases", page });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => { await Promise.resolve(); });
+
+    expect(mocks.getOrFetchSettingByName).toHaveBeenCalledWith(
+      Setting_SettingName.AI,
+      true
+    );
+    expect(useAgentStore.getState().queuedUserMessage).not.toBeNull();
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+
+    await act(async () => { resolveSetting(undefined); });
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
     expect(useAgentStore.getState().queuedUserMessage).toBeNull();
     view.unmount();
   });

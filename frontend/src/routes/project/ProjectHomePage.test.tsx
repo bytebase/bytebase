@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { act, type ReactNode } from "react";
 import { create } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
@@ -113,6 +113,7 @@ import { ProjectHomePage } from "./ProjectHomePage";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.state.fetchDatabases.mockReset();
   localStorage.clear();
   mocks.missedPermissions = [];
   mocks.probedPermissions = [];
@@ -284,6 +285,79 @@ describe("ProjectHomePage", () => {
         filter: { project: "projects/default" },
       })
     );
+  });
+
+  test("offers transfer without permission to list instances", async () => {
+    mocks.missedPermissions = ["bb.instances.list"];
+    mocks.state.hasWorkspacePermission.mockImplementation(
+      (permission) => permission !== "bb.instances.list"
+    );
+    mocks.state.fetchDatabases.mockImplementation(async ({ parent }) => ({
+      databases: parent === "workspaces/demo"
+        ? [create(DatabaseSchema$, {
+            name: "instances/shared/databases/existing",
+            project: "projects/default",
+          })]
+        : [],
+    }));
+
+    render(<ProjectHomePage projectId="orders" />);
+
+    const next = await screen.findByRole("region", { name: "project.home.next-step" });
+    expect(within(next).getByRole("link", {
+      name: "project.home.transfer-databases",
+    })).toBeTruthy();
+    expect(mocks.state.fetchInstanceList).not.toHaveBeenCalled();
+    expect(mocks.state.fetchDatabases).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: "workspaces/demo" })
+    );
+  });
+
+  test("refreshes the database preview after an instance finishes its first sync", async () => {
+    const setTimeoutSpy = vi.spyOn(window, "setTimeout");
+    mocks.state.fetchDatabases.mockResolvedValueOnce({ databases: [] }).mockResolvedValue({
+      databases: [create(DatabaseSchema$, {
+        name: "instances/primary/databases/orders",
+        project: "projects/orders",
+      })],
+    });
+    mocks.state.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/primary" }],
+    });
+    const view = render(<ProjectHomePage projectId="orders" />);
+    await waitFor(() => expect(screen.getByText("project.home.syncing-instance")).toBeTruthy());
+    const poll = setTimeoutSpy.mock.calls.find(([, delay]) => delay === 5000)?.[0];
+    expect(poll).toBeDefined();
+
+    await act(async () => {
+      poll?.();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(screen.getByText("orders")).toBeTruthy());
+    expect(mocks.state.fetchDatabases.mock.calls.filter(
+      ([request]) => request.parent === "projects/orders"
+    )).toHaveLength(2);
+    view.unmount();
+    setTimeoutSpy.mockRestore();
+  });
+
+  test("retries a failed database preview without leaving Project Home", async () => {
+    mocks.state.fetchDatabases.mockRejectedValueOnce(new Error("unavailable"));
+    mocks.state.fetchDatabases.mockResolvedValueOnce({
+      databases: [create(DatabaseSchema$, {
+        name: "instances/primary/databases/orders",
+        project: "projects/orders",
+      })],
+    });
+    render(<ProjectHomePage projectId="orders" />);
+
+    const databases = screen.getByRole("region", { name: "project.home.databases" });
+    await within(databases).findByText("project.home.databases-load-error");
+    fireEvent.click(within(databases).getByRole("button", { name: "common.refresh" }));
+
+    await within(databases).findByText("orders");
+    expect(mocks.state.fetchDatabases).toHaveBeenCalledTimes(2);
   });
 
   test("does not suggest transfer without workspace update permission", async () => {

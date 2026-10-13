@@ -124,6 +124,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     (state) => state.queuedUserMessage !== null
   );
   const [aiPrompt, setAiPrompt] = useState("");
+  const [discoveryRefreshToken, setDiscoveryRefreshToken] = useState(0);
   const fetchDatabases = useAppStore((state) => state.fetchDatabases);
   const fetchIssueByName = useAppStore((state) => state.fetchIssueByName);
   const fetchInstanceList = useAppStore((state) => state.fetchInstanceList);
@@ -272,7 +273,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     return () => {
       active = false;
     };
-  }, [canPreviewDatabases, fetchDatabases, projectName]);
+  }, [canPreviewDatabases, discoveryRefreshToken, fetchDatabases, projectName]);
 
   useEffect(() => {
     if (availability !== "empty") return;
@@ -335,10 +336,20 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     canListWorkspaceInstances,
     fetchInstanceList,
     projectName,
+    discoveryRefreshToken,
   ]);
 
   useEffect(() => {
-    if (availability !== "empty" || instanceAvailability !== "present") return;
+    if (availability !== "empty" || instanceAvailability !== "syncing") return;
+    const timer = window.setTimeout(
+      () => setDiscoveryRefreshToken((value) => value + 1),
+      5000
+    );
+    return () => window.clearTimeout(timer);
+  }, [availability, discoveryRefreshToken, instanceAvailability]);
+
+  useEffect(() => {
+    if (availability !== "empty") return;
     if (!canTransferDatabases) {
       setTransferState({ projectName, availability: "empty" });
       return;
@@ -370,7 +381,6 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     canTransferDatabases,
     defaultProject,
     fetchDatabases,
-    instanceAvailability,
     projectName,
     workspaceName,
   ]);
@@ -814,24 +824,41 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
               </p>
               {availability === "empty" && (
                 <>
-                  {instanceAvailability === "empty" && (
-                    <p className="mt-1">
-                      {canConnectInstance
-                        ? t("project.home.no-databases-description")
-                        : t("project.home.no-databases-prerequisite")}
-                    </p>
-                  )}
-                  {instanceAvailability === "present" && (
-                    <p className="mt-1">
-                      {transferableDatabaseAvailability === "present"
-                        ? t("project.home.no-databases-transfer-description")
-                        : t("project.home.no-databases-create-description")}
-                    </p>
-                  )}
+                  {transferableDatabaseAvailability === "present" &&
+                    canTransferDatabases && (
+                      <p className="mt-1">
+                        {t("project.home.no-databases-transfer-description")}
+                      </p>
+                    )}
+                  {transferableDatabaseAvailability !== "present" &&
+                    instanceAvailability === "empty" && (
+                      <p className="mt-1">
+                        {canConnectInstance
+                          ? t("project.home.no-databases-description")
+                          : t("project.home.no-databases-prerequisite")}
+                      </p>
+                    )}
+                  {transferableDatabaseAvailability !== "present" &&
+                    instanceAvailability === "present" && (
+                      <p className="mt-1">
+                        {t("project.home.no-databases-create-description")}
+                      </p>
+                    )}
                   {instanceAvailability === "syncing" && (
                     <p className="mt-1">{t("project.home.syncing-instance")}</p>
                   )}
                 </>
+              )}
+              {availability === "unknown" && canPreviewDatabases && (
+                <Button
+                  type="button"
+                  size="sm"
+                  appearance="outline"
+                  className="mt-2"
+                  onClick={() => setDiscoveryRefreshToken((value) => value + 1)}
+                >
+                  {t("common.refresh")}
+                </Button>
               )}
             </div>
           )}

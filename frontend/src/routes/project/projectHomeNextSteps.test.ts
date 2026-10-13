@@ -37,6 +37,17 @@ describe("getProjectHomeNextSteps", () => {
     ).toEqual(["transferDatabases", "createDatabase", "members"]);
   });
 
+  test("offers transfer without instance-list access when unassigned databases exist", () => {
+    expect(
+      getProjectHomeNextSteps({
+        ...input,
+        instance: "unknown",
+        transferableDatabase: "present",
+        canCreateDatabase: false,
+      })
+    ).toEqual(["transferDatabases", "members"]);
+  });
+
   test("waits for transfer discovery before choosing the primary action", () => {
     expect(
       getProjectHomeNextSteps({

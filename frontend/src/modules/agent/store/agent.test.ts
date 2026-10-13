@@ -104,6 +104,9 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).takeQueuedUserMessage("other-chat")).toBeNull();
     expect(s(store).takeQueuedUserMessage(chat.id)).toEqual(message);
     expect(s(store).takeQueuedUserMessage(chat.id)).toBeNull();
+    expect(s(store).queuedUserMessage).toEqual(message);
+    s(store).finishQueuedUserMessage(chat.id);
+    expect(s(store).queuedUserMessage).toBeNull();
   });
 
   test("keeps a chat's resource context when its page changes and after reload", () => {

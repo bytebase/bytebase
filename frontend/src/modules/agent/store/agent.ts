@@ -355,6 +355,7 @@ export interface AgentState {
   currentChatId: string | null;
   abortControllersByChatId: Record<string, AbortController>;
   queuedUserMessage: QueuedUserMessage | null;
+  queuedUserMessageInFlight: boolean;
 
   // UI actions
   open: () => void;
@@ -369,6 +370,7 @@ export interface AgentState {
   createChat: (options?: CreateChatOptions) => AgentChat;
   queueUserMessage: (message: QueuedUserMessage) => void;
   takeQueuedUserMessage: (chatId: string) => QueuedUserMessage | null;
+  finishQueuedUserMessage: (chatId: string) => void;
   ensureCurrentChat: (page?: AgentChatSnapshot, context?: string) => AgentChat;
   selectChatContext: (
     context: string,
@@ -630,6 +632,7 @@ export const createAgentStore = () => {
         currentChatId: initial.currentChatId,
         abortControllersByChatId: {},
         queuedUserMessage: null,
+        queuedUserMessageInFlight: false,
 
         // UI actions
         open: () =>
@@ -757,16 +760,26 @@ export const createAgentStore = () => {
         queueUserMessage: (message) =>
           set((state) => {
             state.queuedUserMessage = message;
+            state.queuedUserMessageInFlight = false;
           }),
 
         takeQueuedUserMessage: (chatId) => {
           const message = get().queuedUserMessage;
-          if (message?.chatId !== chatId) return null;
+          if (message?.chatId !== chatId || get().queuedUserMessageInFlight) {
+            return null;
+          }
           set((state) => {
-            state.queuedUserMessage = null;
+            state.queuedUserMessageInFlight = true;
           });
           return message;
         },
+
+        finishQueuedUserMessage: (chatId) =>
+          set((state) => {
+            if (state.queuedUserMessage?.chatId !== chatId) return;
+            state.queuedUserMessage = null;
+            state.queuedUserMessageInFlight = false;
+          }),
 
         ensureCurrentChat: (page, context) => {
           const existing = _getChat(get().currentChatId);

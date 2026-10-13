@@ -588,18 +588,22 @@ export function AgentInput() {
     if (!message) return;
 
     void (async () => {
-      if (await blockWhenAIIsNotConfigured(message.chatId)) {
-        setInput(message.text);
-        return;
+      try {
+        if (await blockWhenAIIsNotConfigured(message.chatId)) {
+          setInput(message.text);
+          return;
+        }
+        store.clearError(message.chatId);
+        store.addMessage({
+          chatId: message.chatId,
+          role: "user",
+          content: message.text,
+          metadata: { route: message.page.path },
+        });
+        await startChatRun(message.chatId, message.page);
+      } finally {
+        store.finishQueuedUserMessage(message.chatId);
       }
-      store.clearError(message.chatId);
-      store.addMessage({
-        chatId: message.chatId,
-        role: "user",
-        content: message.text,
-        metadata: { route: message.page.path },
-      });
-      await startChatRun(message.chatId, message.page);
     })();
   }, [
     blockWhenAIIsNotConfigured,
