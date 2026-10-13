@@ -247,10 +247,11 @@ describe("DatabaseTargetDisplay", () => {
     expect(environment?.className).toContain("max-w-24");
     expect(instance?.className).toContain("max-w-40");
     expect(database?.className).toContain("flex-1");
-    expect(database?.className).toContain("min-w-12");
+    expect(database?.className).toContain("min-w-0");
+    expect(database?.className).toContain("basis-12");
   });
 
-  it("uses overflow-aware tooltips for truncated identity names", () => {
+  it("uses overflow-aware identity tooltips and exposes the full environment name", async () => {
     act(() => {
       root.render(
         <DatabaseTargetDisplay
@@ -264,11 +265,20 @@ describe("DatabaseTargetDisplay", () => {
       container.querySelector('[data-testid="ellipsis-prod-instance"]')
     ).toBeTruthy();
     expect(
-      container.querySelector('[data-testid="ellipsis-Production"]')
-    ).toBeTruthy();
-    expect(
       container.querySelector('[data-testid="ellipsis-app"]')
     ).toBeTruthy();
+
+    const environment = container.querySelector(
+      '[data-testid="environment-label"]'
+    );
+    await act(async () => {
+      environment?.parentElement?.dispatchEvent(
+        new FocusEvent("focusin", { bubbles: true })
+      );
+    });
+    expect(
+      document.getElementById("bb-react-layer-overlay")?.textContent
+    ).toBe("Production");
   });
 
   it("can hide optional database metadata", () => {
@@ -308,7 +318,8 @@ describe("DatabaseTargetDisplay", () => {
 
     expect(rootElement?.className).toContain("text-base");
     expect(engineIcon?.className).toContain("h-5");
-    expect(database?.className).toContain("min-w-16");
+    expect(database?.className).toContain("min-w-0");
+    expect(database?.className).toContain("basis-16");
   });
 
   it("falls back to the raw target when the target is not a database", () => {
