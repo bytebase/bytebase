@@ -27,7 +27,6 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -254,14 +253,7 @@ func (f *mcpMaskingFixture) exemptFromMasking(t *testing.T, member string) strin
 func (f *mcpMaskingFixture) grantUnmask(t *testing.T, export bool) {
 	t.Helper()
 	a := require.New(t)
-
-	// preCheckAccess returns early unless the project allows JIT access, so
-	// without this the grant would exist and never be consulted.
-	_, err := f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
-		Project:    &v1pb.Project{Name: f.ctl.project.Name, AllowJustInTimeAccess: true},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_just_in_time_access"}},
-	}))
-	a.NoError(err)
+	a.NoError(f.ctl.allowJustInTimeAccess(f.ctx, f.ctl.project))
 
 	created, err := f.ctl.accessGrantServiceClient.CreateAccessGrant(f.ctx, connect.NewRequest(&v1pb.CreateAccessGrantRequest{
 		Parent: f.ctl.project.Name,
