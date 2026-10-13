@@ -4,9 +4,10 @@ Status: proposal · 2026-10-13 · [BYT-10271](https://linear.app/bytebase/issue/
 
 `bytebase recovery` restores password sign-in for a self-hosted workspace nobody can sign in to.
 Today it runs only as an interactive menu, and its runbook stops every Bytebase server first and
-restarts them after. Teams that operate only through Kubernetes jobs cannot use it, and edit the
-metadata database by hand instead. **Recovery runs as one command with arguments beside a running
-Bytebase, and its change is live within one minute, with no stop and no restart.**
+restarts them after. Teams that operate only through Kubernetes jobs have no supported way to run
+it, and edit the metadata database by hand instead. **Recovery runs as one command with arguments
+beside a running Bytebase, and its change is live within one minute, with no stop and no
+restart.**
 
 ## Problem
 
@@ -16,7 +17,7 @@ Checked on `main` at `ca70649de6`, and on a throwaway server on 2026-09-29 and 2
   returns `recovery requires terminal input and output` unless input and output are both
   terminals. `TestRecoveryCommandContract` fails if the command gains a subcommand or an email,
   password, workspace or yes flag.
-- **A running server never sees the change.** Unless it runs with `--ha`, the server caches users,
+- **A running server does not see the change.** Unless it runs with `--ha`, the server caches users,
   settings and policies with no expiry (`store.New(ctx, pgURL, !profile.HA)` in
   `backend/server/server.go`). Recovery opens its own store, so it cannot refresh them. After a
   password reset beside a running server, the new password was rejected and the old one still
@@ -35,11 +36,11 @@ What recovery changes, and where a running server reads it:
 
 The lockout counter that a reset also clears is read from the database on every attempt.
 
-Running beside a server is already safe for the data. Recovery starts no server, runs no migration
-and writes no replica heartbeat. Its setting and IAM writes lock the row and merge inside the
-transaction (`UpdateSettingAtomic`, `PatchIamPolicy`), as the server's own writes to those rows do,
-and the password change updates one column. The stop-first rule guarded an IAM lost-update race
-that #21285 has since fixed. What remains is the cache.
+Running beside a server is already safe for the data, under the two conditions in D4. Recovery
+starts no server, runs no migration and writes no replica heartbeat. Its setting and IAM writes
+lock the row and merge inside the transaction (`UpdateSettingAtomic`, `PatchIamPolicy`), as the
+server's own writes to those rows do, and the password change updates one column. The stop-first
+rule guarded an IAM lost-update race that #21285 has since fixed. What remains is the cache.
 
 ## Principle
 
@@ -81,13 +82,16 @@ user has no workspace role and points at the menu. Rejected: `--add-role <role>`
 
 **D4 · Recovery runs beside the running server.** The runbook and the command stop telling the
 operator to stop and restart Bytebase. On Kubernetes, recovery is a Job next to the running pod,
-with the server's image and `PG_URL`. Two conditions stay:
+with the running pod's image and `PG_URL`. Two conditions stay:
 
-- **The same Bytebase version.** Recovery does not migrate the schema, and an older build drops
-  setting fields it does not know (`ProtojsonUnmarshaler` discards unknown fields).
+- **The same build as the running server.** Recovery does not migrate the schema, and an older
+  build drops setting fields it does not know (`ProtojsonUnmarshaler` discards unknown fields).
+  The Job takes the image the running pod reports in its status (`imageID`, a digest), not the
+  tag from the manifest. A tag can move: the Helm chart defaults to `latest` and always pulls, so
+  a Job started later can get a newer build than the server runs.
 - **With the embedded database, run the command inside the server's container.** A second
-  container cannot reach the embedded PostgreSQL, and would start its own on the same data
-  directory.
+  container cannot reach the embedded PostgreSQL. If it mounts the same data directory, it starts
+  its own PostgreSQL on it.
 
 **D5 · The user, setting and policy caches expire after one minute.** `userEmailCache`,
 `settingCache` and `policyCache` become `expirable.LRU` with a one-minute lifetime, the type and
@@ -171,7 +175,7 @@ What the operator does:
 |---|---|---|
 | Steps | Stop every server, run the menu from a terminal, start every server | Run one command beside the running server |
 | Downtime | The whole recovery | None |
-| From a pipeline | Not possible | A Job |
+| From a pipeline | Not supported | A Job |
 | A leaked password | Works until the restart | Works for up to one more minute |
 
 On Kubernetes:
@@ -188,7 +192,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: recovery
-          image: bytebase/bytebase:<the running server's tag>
+          image: bytebase/bytebase@sha256:<the running pod's digest>
           args: ["recovery", "reset-password", "--email", "<email>", "--password", "$(NEW_PASSWORD)"]
           env:
             - name: PG_URL
@@ -199,17 +203,21 @@ spec:
                 secretKeyRef: { name: <secret>, key: <password_key> }
 ```
 
-The command exits when it is done, and a Job does not restart a pod that finished, so the action
-runs once. A Deployment or StatefulSet would restart the container and repeat it.
+The command exits when it is done, and the Job does not start it again after it succeeds. A pod
+deleted before the Job records the result can be replaced, so an action can run twice. Both
+actions are safe to repeat: the second run changes nothing and writes one more audit record. With
+`backoffLimit: 0` a failed run is not retried. A Deployment or StatefulSet would restart the
+container every time it exits and repeat the action without end.
 
 ## What changes outside recovery
 
 - **Every server with the caches on reads each cached entry again once a minute.** Settings and
   policies are single-row reads. The user list is one query a minute (D7).
 - **A change made directly in the metadata database is live within a minute.** Today it waits for
-  a restart. The same limit now bounds any stale cache entry, including the policies that
-  permission checks read.
-- **Nothing breaks.** The menu, its prompts and its checks are unchanged.
+  a restart. The same limit now bounds a stale entry in any of these three caches, including the
+  policies that permission checks read.
+- **The menu keeps its prompts and its checks.** It loses only the lines that say to stop and
+  restart Bytebase.
 
 ## Scope
 
