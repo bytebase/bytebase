@@ -137,9 +137,9 @@ export enum MCPMethodClass {
 
   /**
    * Served by no MCP capability ceiling this phase ships, and not a durable
-   * never. These are workspace administration, plus the handful of methods
-   * that do something materially worse than the plain read permission they
-   * share suggests.
+   * never. These are workspace administration, the writes that change which
+   * rules govern a database, and the handful of methods that do something
+   * materially worse than the plain read permission they share suggests.
    *
    * The line against FORBIDDEN is reversibility. An admin-capable ceiling, if
    * one is ever built, could legitimately serve an EXCLUDED method — that is a
@@ -167,7 +167,7 @@ export declare const MCPMethodClassSchema: GenEnum<MCPMethodClass>;
  *
  * One enum covers both refused classes, and every value belongs to exactly one
  * of them: values 1-8 name a mechanism that breaks the MCP boundary, which is
- * what FORBIDDEN means, and values 9-13 name a scope decision this phase took,
+ * what FORBIDDEN means, and values 9-14 name a scope decision this phase took,
  * which is what EXCLUDED means. The distinction is real and lives on the class
  * annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope
  * decision is what a future admin-capable ceiling would argue with, one
@@ -316,6 +316,20 @@ export enum MCPDenialReason {
    * @generated from enum value: RETURNS_A_STORED_SECRET = 13;
    */
   RETURNS_A_STORED_SECRET = 13,
+
+  /**
+   * Changes which rules govern a database, or which databases a change that
+   * targets a database group runs on. Approval, SQL review and access rules
+   * key on a database's project and environment, and so do the masking rules
+   * that decide what a query returns. A database group selects databases by
+   * an expression that can read their environment and labels, and a change
+   * that targets a group runs on whichever databases the group selects when
+   * its rollout tasks are created. An agent that could redraw these would
+   * choose the checks on its own changes.
+   *
+   * @generated from enum value: REDRAWS_GOVERNANCE_BOUNDARY = 14;
+   */
+  REDRAWS_GOVERNANCE_BOUNDARY = 14,
 }
 
 /**
