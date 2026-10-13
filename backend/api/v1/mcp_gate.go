@@ -156,9 +156,6 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	// follow-up (BOT-53); disallowing first is the deliberate order.
 	v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY: {v1pb.MCPMethodClass_FORBIDDEN, "it rewrites the workspace settings that bound this session, including the switch meant to contain it"},
 
-	// RetryIssueApproval and ActivateAccessGrant record no decision but carry this
-	// reason: on an auto-approved result Retry completes the issue itself, and
-	// Activate activates a pending grant without reading its approval.
 	v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION: {v1pb.MCPMethodClass_FORBIDDEN, "it decides whether a change or an access request passes its human approval, and an agent does not decide that for its own work"},
 
 	// The other refused class. An EXCLUDED method is out of scope for the modes
