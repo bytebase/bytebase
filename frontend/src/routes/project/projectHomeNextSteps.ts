@@ -57,7 +57,7 @@ export function getProjectHomeNextSteps(
     }
   } else if (
     input.database === "present" &&
-    input.change === "not-started" &&
+    (input.change === "not-started" || input.change === "unknown") &&
     input.canCreateChange
   ) {
     steps.push("changeDatabase");

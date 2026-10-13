@@ -112,6 +112,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const projectName = `projects/${projectId}`;
   const project = useAppStore((state) => state.projectsByName[projectName]);
+  const isArchived = project?.state === State.DELETED;
   const defaultProject = useAppStore(
     (state) => state.serverInfo?.defaultProject ?? ""
   );
@@ -180,7 +181,6 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     Boolean(defaultProject && workspaceName);
   const canCreateChange =
     canListDatabases &&
-    canListPlans &&
     !missedPermissions.includes("bb.plans.create") &&
     !missedPermissions.includes("bb.issues.create") &&
     !missedPermissions.includes("bb.sheets.create") &&
@@ -248,7 +248,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     changeState.projectName === projectName ? changeState.status : "loading";
 
   useEffect(() => {
-    if (!canPreviewDatabases) return;
+    if (isArchived || !canPreviewDatabases) return;
     let active = true;
     setDatabaseState({ projectName, availability: "loading", databases: [] });
     void fetchDatabases({ parent: projectName, pageSize: 3, silent: true })
@@ -273,10 +273,16 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     return () => {
       active = false;
     };
-  }, [canPreviewDatabases, discoveryRefreshToken, fetchDatabases, projectName]);
+  }, [
+    canPreviewDatabases,
+    discoveryRefreshToken,
+    fetchDatabases,
+    isArchived,
+    projectName,
+  ]);
 
   useEffect(() => {
-    if (availability !== "empty") return;
+    if (isArchived || availability !== "empty") return;
     let active = true;
     if (!canListProjectInstances && !canListWorkspaceInstances) {
       setInstanceState({ projectName, availability: "unknown" });
@@ -326,12 +332,13 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     canListProjectInstances,
     canListWorkspaceInstances,
     fetchInstanceList,
+    isArchived,
     projectName,
     discoveryRefreshToken,
   ]);
 
   useEffect(() => {
-    if (availability !== "empty") return;
+    if (isArchived || availability !== "empty") return;
     if (!canTransferDatabases) {
       setTransferState({ projectName, availability: "empty" });
       return;
@@ -363,12 +370,13 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     canTransferDatabases,
     defaultProject,
     fetchDatabases,
+    isArchived,
     projectName,
     workspaceName,
   ]);
 
   useEffect(() => {
-    if (availability !== "present") return;
+    if (isArchived || availability !== "present") return;
     let active = true;
     if (!canReadIssues || !canListPlans) {
       setChangeState({ projectName, status: "unknown" });
@@ -414,11 +422,13 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     canListPlans,
     canReadIssues,
     fetchIssueByName,
+    isArchived,
     listPlans,
     projectName,
   ]);
 
   useEffect(() => {
+    if (isArchived) return;
     let active = true;
     if (!memberName || !canReadIssues) {
       setActiveIssueState({
@@ -487,7 +497,14 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     return () => {
       active = false;
     };
-  }, [canReadIssues, listIssues, memberName, projectName, activeIssueKey]);
+  }, [
+    canReadIssues,
+    listIssues,
+    memberName,
+    projectName,
+    activeIssueKey,
+    isArchived,
+  ]);
 
   const nextSteps = getProjectHomeNextSteps({
     database: availability,
@@ -549,6 +566,24 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   };
 
   if (!project) return null;
+
+  if (isArchived) {
+    return (
+      <ProjectPageLayout>
+        <header className="min-w-0">
+          <h1 className="max-w-full break-words text-2xl font-bold text-main">
+            {project.title}
+          </h1>
+          <p className="mt-1 break-all text-sm text-control-light">
+            {project.name}
+          </p>
+        </header>
+        <p className="text-sm text-control-light">
+          {t("project.home.archived-description")}
+        </p>
+      </ProjectPageLayout>
+    );
+  }
 
   const sendAIMessage = () => {
     const text = aiPrompt.trim();

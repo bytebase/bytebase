@@ -77,15 +77,22 @@ describe("getProjectHomeNextSteps", () => {
   });
 
   test("keeps membership setup available while resource state is uncertain", () => {
-    expect(getProjectHomeNextSteps({ ...input, instance: "unknown" })).toEqual(
-      ["members"]
-    );
-    expect(getProjectHomeNextSteps({ ...input, database: "unknown" })).toEqual(
-      ["members"]
-    );
+    expect(getProjectHomeNextSteps({ ...input, instance: "unknown" })).toEqual([
+      "members",
+    ]);
+    expect(getProjectHomeNextSteps({ ...input, database: "unknown" })).toEqual([
+      "members",
+    ]);
+  });
+
+  test("offers database change creation when plan history is unavailable", () => {
     expect(
-      getProjectHomeNextSteps({ ...input, database: "present", change: "unknown" })
-    ).toEqual(["members"]);
+      getProjectHomeNextSteps({
+        ...input,
+        database: "present",
+        change: "unknown",
+      })
+    ).toEqual(["changeDatabase", "members"]);
   });
 
   test("waits for initial discovery before showing membership setup", () => {
@@ -93,7 +100,11 @@ describe("getProjectHomeNextSteps", () => {
       []
     );
     expect(
-      getProjectHomeNextSteps({ ...input, database: "present", change: "loading" })
+      getProjectHomeNextSteps({
+        ...input,
+        database: "present",
+        change: "loading",
+      })
     ).toEqual([]);
   });
 

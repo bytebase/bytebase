@@ -4,7 +4,7 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Permission } from "@/types/iam";
-import { ApprovalStatus, Engine, IssueStatus } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, Engine, IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
@@ -16,10 +16,12 @@ const mocks = vi.hoisted(() => ({
       "projects/orders": {
         name: "projects/orders",
         title: "Order service",
+        state: 0,
       },
       "projects/second": {
         name: "projects/second",
         title: "Second project",
+        state: 0,
       },
     },
     serverInfo: {
@@ -119,6 +121,8 @@ beforeEach(() => {
   mocks.probedPermissions = [];
   mocks.state.serverInfo.aiEnabled = true;
   mocks.state.serverInfo.defaultProject = "projects/default";
+  mocks.state.projectsByName["projects/orders"].state = State.ACTIVE;
+  mocks.state.projectsByName["projects/second"].state = State.ACTIVE;
   mocks.state.hasInstanceFeature.mockReturnValue(true);
   mocks.state.hasWorkspacePermission.mockReturnValue(true);
   mocks.state.fetchDatabases.mockResolvedValue({
@@ -140,6 +144,28 @@ beforeEach(() => {
 });
 
 describe("ProjectHomePage", () => {
+  test("shows archived status without loading active project data", () => {
+    mocks.state.projectsByName["projects/orders"].state = State.DELETED;
+    render(<ProjectHomePage projectId="orders" />);
+
+    expect(screen.getByText("project.home.archived-description")).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "project.home.next-step" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "project.home.ai-placeholder" })).toBeNull();
+    expect(mocks.state.fetchDatabases).not.toHaveBeenCalled();
+    expect(mocks.state.fetchInstanceList).not.toHaveBeenCalled();
+    expect(mocks.state.listIssues).not.toHaveBeenCalled();
+    expect(mocks.state.listPlans).not.toHaveBeenCalled();
+  });
+
+  test("offers database change creation without plan-list permission", async () => {
+    mocks.missedPermissions = ["bb.plans.list"];
+    render(<ProjectHomePage projectId="orders" />);
+
+    const next = await screen.findByRole("region", { name: "project.home.next-step" });
+    expect(within(next).getByRole("link", { name: "project.home.change-database" })).toBeTruthy();
+    expect(mocks.state.listPlans).not.toHaveBeenCalled();
+  });
+
   test("starts a project-bound Agent chat from the composer", async () => {
     render(<ProjectHomePage projectId="orders" />);
     expect(screen.getByText("Order service")).toBeTruthy();
@@ -384,7 +410,7 @@ describe("ProjectHomePage", () => {
       if (!parent) return { instances: [], nextPageToken: "" };
       if (!pageToken) {
         return {
-          instances: [{ name: "instances/first" }],
+          instances: [],
           nextPageToken: "next",
         };
       }
