@@ -201,6 +201,18 @@ func TestConvertToAccessGrantNilPayloadIsSafe(t *testing.T) {
 	require.Empty(t, ag.Container)
 }
 
+func TestRefuseAccessGrantWithoutJIT(t *testing.T) {
+	t.Parallel()
+	project := &store.ProjectMessage{ResourceID: "grant-project", Setting: &storepb.Project{}}
+	err := refuseAccessGrantWithoutJIT(project)
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	require.Contains(t, err.Error(), `just-in-time access is off for project "grant-project"`)
+	require.Contains(t, err.Error(), `turn on "Allow access grants" in the project settings`)
+
+	project.Setting.AllowJustInTimeAccess = true
+	require.NoError(t, refuseAccessGrantWithoutJIT(project))
+}
+
 func TestRefuseUnattendedMCPAccessGrant(t *testing.T) {
 	t.Parallel()
 	mcpCtx := context.WithValue(context.Background(), common.AuthContextKey,
