@@ -139,22 +139,24 @@ checkbox, and a skip.
 **D6 · Finish is the one commit, so Back works on every screen.** Continue on screens 1 to 3 only
 records answers; nothing exists on the server until Finish on screen 4. Finish saves the name and
 workspace name, creates the project, prepares the sample when it was chosen, and adds the invitees
-to the workspace and the project, and its button shows progress until the last call returns. The
-sample request returns with the database ready (Given), so invitees arrive to a project that has
-one. Adding them is the part Finish can verify; the server then sends their invitation emails in
-the background, as it does from the Members page. A failure stays on
-screen 4 naming the step that failed, with "Try again", which continues from that step; when the
-sample is what failed it also offers "Finish without the sample", which takes the own-instance
-hand-off instead. Today the wizard reports a finish even when the sample request fails and offers
-no retry. Rejected: committing on screen 3, as an earlier draft had it. It made the team screen a
-point of no return with no Back, and needed a resume rule for an account that reloaded after the
-commit.
+to the project and then to the workspace, and its button shows progress until the last call returns.
+The sample request returns with the database ready (Given), so invitees arrive to a project that has
+one. Adding them is the part Finish can verify; the server then sends their invitation emails in the
+background, as it does from the Members page. The workspace write is what triggers those emails, so
+it goes last: nobody is invited to a project they cannot open. A failure stays on screen 4 naming
+the step that failed, with "Try again", which continues from that step; when the sample is what
+failed it also offers "Finish without the sample", which takes the own-instance hand-off instead.
+Today the wizard reports a finish even when the sample request fails and offers no retry. Rejected:
+committing on screen 3, as an earlier draft had it. It made the team screen a point of no return
+with no Back, and needed a resume rule for an account that reloaded after the commit.
 
 **D7 · Team: size required, invites optional, no role.** "How many people will use Bytebase?"
 with five options (Just me, 2–10, 11–50, 51–200, 200+) is one required click, the flow's only
 qualification question. It keys the guide's team step (only above "Just me"), the plan hint, and
-lead scoring; team accounts do first work at 34% against 22%. Emails are chips: type one, press
-Enter, type the next; a pasted list splits; an invalid entry is shown struck through and not sent.
+lead scoring; team accounts do first work at 34% against 22%. The invite field appears once a size
+above "Just me" is chosen, so the two answers cannot disagree and a solo account, the majority,
+sees one question and Finish. Emails are chips: type one, press Enter, type the next; a pasted list
+splits; an invalid entry is shown struck through and not sent.
 There is no role picker. An earlier draft offered a "Role in <project>" selector, which names
 Bytebase's project roles to a user ten seconds into the product. Invitees are added as Workspace
 Member, and on the new project as Project Developer and SQL Editor Read User, which together let
@@ -232,8 +234,9 @@ behind.
 | 3 Own | named, own instance chosen | one line on what happens after setup; diagram of the user's instance joining the project later | Continue enabled |
 | 3 · no sample | the server reports the sample unavailable or used | only the own-instance choice, with the reason | Continue enabled once named |
 | 3 · skipped | "I'll do this later", self-hosted only | leaves for the workspace landing; nothing is created | n/a |
-| 4 Team | size unset | five size options, chips input, one line about membership | Finish disabled, "Pick a team size to finish"; Back enabled |
-| 4 Team | size set | same; the button reads "Finish" or "Send N invites and finish" | Finish enabled |
+| 4 Team | size unset | five size options, nothing else | Finish disabled, "Pick a team size to finish"; Back enabled |
+| 4 Team | "Just me" | the size options only; no invite field | Finish enabled |
+| 4 Team | a size above "Just me" | the chips input appears with one line about membership; the button reads "Finish" or "Send N invites and finish" | Finish enabled |
 | 4 · finishing | Finish pressed | the button shows progress; the form is read-only | n/a |
 | 4 · finish failed | a step of the commit failed | the error naming the step, Try again; "Finish without the sample" when the sample failed | Try again enabled |
 
@@ -248,7 +251,7 @@ before Finish returns to the same screen with the draft.
 | `frontend/src/routes/auth/WorkspaceSetupPage.tsx` | Rewrite as four screens with the local draft, per-screen gating messages, the single commit at Finish, and the two hand-offs. |
 | `frontend/src/routes/auth/WorkspaceSetupQuestionnaireStep.tsx` | Retire; the goal moves to screen 2 and the team question is removed. |
 | `frontend/src/app/layouts/SplashLayout.tsx` | Setup variant: a panel slot instead of the fixed illustration. |
-| `frontend/src/components/workspace-setup/` (new) | Screen components, the Rive panel (port of bytebase.com `RivePlayer.tsx` with self-hosted `rive.wasm` and the four files), the diagram panel, the chips input. |
+| `frontend/src/routes/auth/workspace-setup/` (new) | Beside the route that is their only consumer: screen components, the Rive panel (port of bytebase.com `RivePlayer.tsx` with self-hosted `rive.wasm` and the four files), the diagram panel, the chips input. |
 | `frontend/src/modules/workspace-setup-guide/` | Take goal, team size and source from the wizard; mark "explore database" done on arrival with the sample; start at "Connect instance" on the own-instance path; use the query journey for "just exploring"; show the team step only above "Just me". |
 | `frontend/src/locales/en-US.json` (and the other locales) | New strings for the four screens; retire `setup-scenario.mark-sensitive-data` and `setup-scenario.workspace-usage`. |
 
