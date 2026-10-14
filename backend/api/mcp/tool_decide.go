@@ -8,8 +8,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
@@ -151,7 +153,7 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 		}
 	}
 
-	message, err := s.describeIssueDecision(ctx, decision, view, link)
+	message, err := s.describeIssueDecision(ctx, decision, view)
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
@@ -396,11 +398,11 @@ type planView struct {
 }
 
 type sheetView struct {
-	Content string `json:"content"`
+	Content     string `json:"content"`
+	ContentSize int64  `json:"contentSize,string"`
 }
 
 type accessGrantView struct {
-	Creator    string   `json:"creator"`
 	Targets    []string `json:"targets"`
 	Query      string   `json:"query"`
 	Unmask     bool     `json:"unmask"`
@@ -449,12 +451,14 @@ func (v *confirmationView) digest() ([]byte, error) {
 }
 
 // describeIssueDecision builds the confirmation message: the decision, the
-// issue, what approving it would let happen, and the step it decides. Free
-// text from the issue is quoted or folded to one line, so it cannot pose as
-// one of the message's own lines.
+// issue, what approving it would let happen, the step it decides, and the
+// comment it records. Every value taken from the issue or from the agent enters
+// through %q, which escapes line breaks, so no value can pose as a line of the
+// message. The message carries no link: the MCP specification asks servers not
+// to put clickable URLs in a form.
 //
 // It fails closed: if any part cannot be read, nothing is asked.
-func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecision, view *confirmationView, link string) (string, error) {
+func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecision, view *confirmationView) (string, error) {
 	issue := view.Issue
 	question := fmt.Sprintf("%s issue %q", capitalize(decision.verb()), issue.Title)
 	if email := getUserEmail(ctx); email != "" {
@@ -463,7 +467,7 @@ func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecis
 	lines := []string{
 		question + "?",
 		"",
-		fmt.Sprintf("Issue: %s (%s, requested by %s)", issue.Name, issue.Type, strings.TrimPrefix(issue.Creator, common.UserNamePrefix)),
+		fmt.Sprintf("Issue: %q, type %q, requested by %q", issue.Name, issue.Type, strings.TrimPrefix(issue.Creator, common.UserNamePrefix)),
 	}
 	switch {
 	case view.Grant != nil:
@@ -476,7 +480,11 @@ func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecis
 		lines = append(lines, details...)
 	default:
 	}
-	lines = append(lines, "Approval: "+describeApprovalStep(issue), "Details: "+link)
+	lines = append(lines, "Approval: "+describeApprovalStep(issue))
+	if view.Comment != "" {
+		lines = append(lines, fmt.Sprintf("Comment: %q", view.Comment))
+	}
+	lines = append(lines, "The full issue is in the Bytebase console.")
 	return strings.Join(lines, "\n"), nil
 }
 
@@ -484,13 +492,13 @@ func (s *Server) describePlan(ctx context.Context, plan *planView) ([]string, er
 	var lines []string
 	for i, spec := range plan.Specs {
 		if i == maxDescribedSpecs {
-			lines = append(lines, fmt.Sprintf("...and %d more changes", len(plan.Specs)-maxDescribedSpecs))
+			lines = append(lines, fmt.Sprintf("(%d of %d changes shown)", maxDescribedSpecs, len(plan.Specs)))
 			break
 		}
 		switch {
 		case spec.ChangeDatabaseConfig != nil:
 			config := spec.ChangeDatabaseConfig
-			change := "release " + config.Release
+			change := fmt.Sprintf("release %q (statements not shown)", config.Release)
 			if config.Sheet != "" {
 				statement, err := s.statementPreview(ctx, config.Sheet)
 				if err != nil {
@@ -498,15 +506,18 @@ func (s *Server) describePlan(ctx context.Context, plan *planView) ([]string, er
 				}
 				change = statement
 			}
-			lines = append(lines, fmt.Sprintf("Change on %s: %s", strings.Join(config.Targets, ", "), change))
+			lines = append(lines, fmt.Sprintf("Change on %s: %s", quoteAll(config.Targets), change))
 		case spec.CreateDatabaseConfig != nil:
-			lines = append(lines, fmt.Sprintf("Create database %s on %s", spec.CreateDatabaseConfig.Database, spec.CreateDatabaseConfig.Target))
+			lines = append(lines, fmt.Sprintf("Create database %q on %q", spec.CreateDatabaseConfig.Database, spec.CreateDatabaseConfig.Target))
 		default:
 		}
 	}
 	return lines, nil
 }
 
+// statementPreview quotes the start of a change's statement and, when it
+// leaves the rest out, the statement's full size. GetSheet cuts content it
+// returns at common.MaxSheetSize, so the size comes from contentSize.
 func (s *Server) statementPreview(ctx context.Context, sheet string) (string, error) {
 	var view sheetView
 	if err := s.readResource(ctx, "/bytebase.v1.SheetService/GetSheet", sheet, "get sheets", "bb.sheets.get", &view); err != nil {
@@ -516,19 +527,28 @@ func (s *Server) statementPreview(ctx context.Context, sheet string) (string, er
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to decode sheet %s", sheet)
 	}
-	return oneLine(string(content), maxStatementPreview), nil
+	shown, cut := common.TruncateString(string(content), maxStatementPreview)
+	if !cut {
+		return strconv.Quote(shown), nil
+	}
+	return fmt.Sprintf("%q (first %d characters of %d bytes)", shown, maxStatementPreview, view.ContentSize), nil
 }
 
 func describeAccessGrant(grant *accessGrantView) []string {
+	query, cut := common.TruncateString(grant.Query, maxStatementPreview)
+	access := fmt.Sprintf("Access: run %q", query)
+	if cut {
+		access += fmt.Sprintf(" (first %d of %d characters)", maxStatementPreview, utf8.RuneCountInString(grant.Query))
+	}
 	lines := []string{
-		fmt.Sprintf("Access: run %s on %s", oneLine(grant.Query, maxStatementPreview), strings.Join(grant.Targets, ", ")),
-		fmt.Sprintf("Unmasked: %s. Export: %s. Requested by %s", yesNo(grant.Unmask), yesNo(grant.Export), strings.TrimPrefix(grant.Creator, common.UserNamePrefix)),
+		access + " on " + quoteAll(grant.Targets),
+		fmt.Sprintf("Unmasked: %s. Export: %s.", yesNo(grant.Unmask), yesNo(grant.Export)),
 	}
 	switch {
 	case grant.ExpireTime != "":
-		lines = append(lines, "Expires: "+grant.ExpireTime)
+		lines = append(lines, fmt.Sprintf("Expires: %q", grant.ExpireTime))
 	case grant.TTL != "":
-		lines = append(lines, fmt.Sprintf("Expires: %s after approval", readableDuration(grant.TTL)))
+		lines = append(lines, fmt.Sprintf("Expires: %q after approval", readableDuration(grant.TTL)))
 	default:
 	}
 	return lines
@@ -559,22 +579,20 @@ func (s *Server) issueLink(ctx context.Context, issue string) string {
 func describeApprovalStep(issue issueView) string {
 	roles := issue.ApprovalTemplate.Flow.Roles
 	if issue.ApprovalStatus == "PENDING" && len(issue.Approvers) < len(roles) {
-		return fmt.Sprintf("step %d of %d, role %s", len(issue.Approvers)+1, len(roles), roles[len(issue.Approvers)])
+		return fmt.Sprintf("step %d of %d, role %q", len(issue.Approvers)+1, len(roles), roles[len(issue.Approvers)])
 	}
 	if issue.ApprovalStatus == "" {
 		return "not started"
 	}
-	return issue.ApprovalStatus
+	return strconv.Quote(issue.ApprovalStatus)
 }
 
-// oneLine folds whitespace, newlines included, to single spaces and cuts the
-// result to limit runes.
-func oneLine(text string, limit int) string {
-	folded := strings.Join(strings.Fields(text), " ")
-	if runes := []rune(folded); len(runes) > limit {
-		return string(runes[:limit]) + "..."
+func quoteAll(values []string) string {
+	quoted := make([]string, len(values))
+	for i, value := range values {
+		quoted[i] = strconv.Quote(value)
 	}
-	return folded
+	return strings.Join(quoted, ", ")
 }
 
 // readableDuration renders a protojson duration such as "3600s" as "1h0m0s".

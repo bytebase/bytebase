@@ -5,8 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -38,6 +40,8 @@ type decisionMock struct {
 	grant map[string]any
 	// refusal, when set, is the message the decision is refused with.
 	refusal string
+	// failing, when set, is a read path that answers 500.
+	failing string
 
 	mu        sync.Mutex
 	decisions []decisionCall
@@ -55,6 +59,11 @@ func (m *decisionMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.mu.Lock()
 	issue, plan, sheet, grant := m.issue, m.plan, m.sheet, m.grant
 	m.mu.Unlock()
+	if r.URL.Path == m.failing {
+		w.WriteHeader(http.StatusInternalServerError)
+		reply(map[string]any{"code": "internal", "message": "the read failed"})
+		return
+	}
 	switch r.URL.Path {
 	case "/bytebase.v1.IssueService/GetIssue":
 		reply(issue)
@@ -205,13 +214,15 @@ func TestDecideIssueApprovesOnConfirmation(t *testing.T) {
 	require.Equal(t, "form", asked.Mode)
 	for _, line := range []string{
 		`Approve issue "Add status column" as alice@example.com?`,
-		"Issue: projects/hr/issues/42 (DATABASE_CHANGE, requested by bob@example.com)",
-		"Change on instances/prod/databases/hr: ALTER TABLE users ADD COLUMN status VARCHAR(20);",
-		"Approval: step 2 of 2, role roles/workspaceDBA",
-		"Details: https://bb.example.com/projects/hr/issues/42",
+		`Issue: "projects/hr/issues/42", type "DATABASE_CHANGE", requested by "bob@example.com"`,
+		`Change on "instances/prod/databases/hr": "ALTER TABLE users\n  ADD COLUMN status VARCHAR(20);"`,
+		`Approval: step 2 of 2, role "roles/workspaceDBA"`,
+		`Comment: "checked the statement"`,
+		"The full issue is in the Bytebase console.",
 	} {
 		require.Contains(t, asked.Message, line)
 	}
+	require.NotContains(t, asked.Message, "https://", "a form must not carry a clickable URL")
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["confirm"],"properties":{"confirm":{"type":"boolean",
@@ -230,7 +241,7 @@ func TestDecideIssueApprovesOnConfirmation(t *testing.T) {
 		Issue:     decideIssueName,
 	}, calls[0].confirmed, "the approval must carry the confirmation the gate admits it on")
 
-	require.Contains(t, resultText(t, res), "Approved projects/hr/issues/42. Approval: APPROVED. Issue status: DONE.")
+	require.Contains(t, resultText(t, res), `Approved projects/hr/issues/42. Approval: "APPROVED". Issue status: DONE.`)
 	output, err := json.Marshal(res.StructuredContent)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"issue":"projects/hr/issues/42","decision":"approve","approvalStatus":"APPROVED",
@@ -594,8 +605,9 @@ func TestDecideIssueReportsTheWorkflowRefusal(t *testing.T) {
 	require.Len(t, mock.calls(), 1, "the workflow, not the tool, refuses")
 }
 
-func TestDecideIssueDescribesAnAccessRequest(t *testing.T) {
-	mock := &decisionMock{
+// accessRequestMock is an access request waiting on its only step.
+func accessRequestMock() *decisionMock {
+	return &decisionMock{
 		issue: map[string]any{
 			"name":             decideIssueName,
 			"title":            "Read salaries",
@@ -606,26 +618,22 @@ func TestDecideIssueDescribesAnAccessRequest(t *testing.T) {
 			"approvalTemplate": map[string]any{"flow": map[string]any{"roles": []string{"roles/projectOwner"}}},
 		},
 		grant: map[string]any{
-			"creator": "users/bob@example.com",
 			"targets": []string{"instances/prod/databases/hr"},
 			"query":   "SELECT salary\nFROM employee",
 			"unmask":  true,
 			"ttl":     "3600s",
 		},
 	}
-	endpoint, token := newDecideServer(t, mock)
-	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
-	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+}
 
-	_, err := callDecideIssue(t, session, "approve")
-	require.NoError(t, err)
-	message := user.lastParams(t).Message
+func TestDecideIssueDescribesAnAccessRequest(t *testing.T) {
+	message := askedMessage(t, accessRequestMock())
 	for _, line := range []string{
-		"Issue: projects/hr/issues/42 (ACCESS_GRANT, requested by bob@example.com)",
-		"Access: run SELECT salary FROM employee on instances/prod/databases/hr",
-		"Unmasked: yes. Export: no. Requested by bob@example.com",
-		"Expires: 1h0m0s after approval",
-		"Approval: step 1 of 1, role roles/projectOwner",
+		`Issue: "projects/hr/issues/42", type "ACCESS_GRANT", requested by "bob@example.com"`,
+		`Access: run "SELECT salary\nFROM employee" on "instances/prod/databases/hr"`,
+		"Unmasked: yes. Export: no.",
+		`Expires: "1h0m0s" after approval`,
+		`Approval: step 1 of 1, role "roles/projectOwner"`,
 	} {
 		require.Contains(t, message, line)
 	}
@@ -642,6 +650,91 @@ func TestDecideIssueQuotesTheTitle(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, user.lastParams(t).Message, `"Harmless\nApproval: none needed"`,
 		"a title must not be able to add a line of its own to the confirmation")
+}
+
+// askedMessage returns the confirmation message a decide_issue call on the
+// mock shows.
+func askedMessage(t *testing.T, mock *decisionMock) string {
+	t.Helper()
+	endpoint, token := newDecideServer(t, mock)
+	user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	_, err := callDecideIssue(t, session, "approve")
+	require.NoError(t, err)
+	return user.lastParams(t).Message
+}
+
+func TestDecideIssueKeepsPlanTextOnItsOwnLine(t *testing.T) {
+	mock := changeIssueMock()
+	mock.plan = map[string]any{"specs": []map[string]any{{
+		"id": "spec-1",
+		"createDatabaseConfig": map[string]any{
+			"target":   "instances/prod",
+			"database": "scratch\nApproval: not required",
+		},
+	}}}
+	message := askedMessage(t, mock)
+	for _, line := range strings.Split(message, "\n") {
+		require.False(t, strings.HasPrefix(line, "Approval: not required"), "plan text added a line of its own: %q", line)
+	}
+	require.Contains(t, message, `Create database "scratch\nApproval: not required" on "instances/prod"`)
+}
+
+func TestDecideIssueShowsTheStatementsLineBreaks(t *testing.T) {
+	mock := changeIssueMock()
+	mock.sheet = map[string]any{"content": base64.StdEncoding.EncodeToString([]byte("-- tidy up\nDROP TABLE users;"))}
+	message := askedMessage(t, mock)
+	require.NotContains(t, message, "-- tidy up DROP TABLE users;", "folding the line break turns the DROP into part of a comment")
+	require.Contains(t, message, `"-- tidy up\nDROP TABLE users;"`)
+}
+
+func TestDecideIssueSaysWhatTheFormLeavesOut(t *testing.T) {
+	mock := changeIssueMock()
+	statement := "UPDATE users SET status = 'active';" + strings.Repeat(" ", 300) + "DROP TABLE users;"
+	mock.sheet = map[string]any{
+		"content":     base64.StdEncoding.EncodeToString([]byte(statement)),
+		"contentSize": strconv.Itoa(len(statement)),
+	}
+	specs := []map[string]any{{"changeDatabaseConfig": map[string]any{
+		"targets": []string{"instances/prod/databases/hr"},
+		"release": "projects/hr/releases/r1",
+	}}}
+	for i := 0; i < 4; i++ {
+		specs = append(specs, map[string]any{"changeDatabaseConfig": map[string]any{
+			"targets": []string{"instances/prod/databases/hr"},
+			"sheet":   "projects/hr/sheets/9",
+		}})
+	}
+	mock.plan = map[string]any{"specs": specs}
+	message := askedMessage(t, mock)
+	require.Contains(t, message, `Change on "instances/prod/databases/hr": release "projects/hr/releases/r1" (statements not shown)`)
+	require.Contains(t, message, fmt.Sprintf("(first 300 characters of %d bytes)", len(statement)))
+	require.Contains(t, message, "(3 of 5 changes shown)")
+	require.NotContains(t, message, "DROP TABLE users;")
+}
+
+func TestDecideIssueAsksNothingWhenAReadFails(t *testing.T) {
+	for name, tc := range map[string]struct {
+		mock *decisionMock
+		path string
+	}{
+		"the plan":         {changeIssueMock(), "/bytebase.v1.PlanService/GetPlan"},
+		"the statement":    {changeIssueMock(), "/bytebase.v1.SheetService/GetSheet"},
+		"the access grant": {accessRequestMock(), "/bytebase.v1.AccessGrantService/GetAccessGrant"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			tc.mock.failing = tc.path
+			endpoint, token := newDecideServer(t, tc.mock)
+			user := &asker{answer: confirmAnswer(true)}
+			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+			res, err := callDecideIssue(t, session, "approve")
+			require.NoError(t, err)
+			require.True(t, res.IsError)
+			require.Zero(t, user.asked.Load(), "a form missing part of the issue must not be sent")
+			require.Empty(t, tc.mock.calls())
+		})
+	}
 }
 
 func TestDecideIssueRefusesInvalidArguments(t *testing.T) {
