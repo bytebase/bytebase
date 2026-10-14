@@ -440,27 +440,22 @@ describe("ProjectHomePage", () => {
     );
   });
 
-  test("finds a synced instance on a later page", async () => {
+  test("checks only the first instance in each permitted scope", async () => {
     mocks.state.fetchDatabases.mockResolvedValue({ databases: [] });
-    mocks.state.fetchInstanceList.mockImplementation(async ({ parent, pageToken }) => {
-      if (!parent) return { instances: [], nextPageToken: "" };
-      if (!pageToken) {
-        return {
-          instances: [],
-          nextPageToken: "next",
-        };
-      }
-      return {
-        instances: [{ name: "instances/second" }],
-        nextPageToken: "",
-      };
+    mocks.state.fetchInstanceList.mockImplementation(async ({ parent }) => {
+      if (parent) return { instances: [], nextPageToken: "" };
+      return { instances: [{ name: "instances/shared" }], nextPageToken: "next" };
     });
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
     expect(await within(next).findByRole("link", { name: "project.home.create-database" })).toBeTruthy();
     expect(mocks.state.fetchInstanceList).toHaveBeenCalledWith(
-      expect.objectContaining({ parent: "projects/orders", pageToken: "next" })
+      expect.objectContaining({ parent: "projects/orders", pageSize: 1 })
     );
+    expect(mocks.state.fetchInstanceList).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: undefined, pageSize: 1 })
+    );
+    expect(mocks.state.fetchInstanceList).toHaveBeenCalledTimes(2);
   });
 
   test("does not claim a connection is needed when instance discovery fails", async () => {

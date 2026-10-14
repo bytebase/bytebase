@@ -296,21 +296,13 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
       return;
     }
     const inspectInstances = async (parent?: string) => {
-      let pageToken = "";
-      do {
-        const result = await fetchInstanceList({
-          parent,
-          pageSize: 100,
-          pageToken,
-          filter: { state: State.ACTIVE },
-          silent: true,
-        });
-        if (result.instances.length > 0) {
-          return "present" as const;
-        }
-        pageToken = result.nextPageToken;
-      } while (pageToken);
-      return "empty" as const;
+      const { instances } = await fetchInstanceList({
+        parent,
+        pageSize: 1,
+        filter: { state: State.ACTIVE },
+        silent: true,
+      });
+      return instances.length > 0 ? ("present" as const) : ("empty" as const);
     };
     const requests = [
       ...(canListProjectInstances ? [inspectInstances(projectName)] : []),
