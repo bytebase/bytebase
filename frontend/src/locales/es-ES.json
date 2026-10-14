@@ -3851,9 +3851,9 @@
     },
     "goal": {
       "change": {
-        "description": "Escriba un cambio de esquema, deje que la revisión de SQL lo compruebe y despliéguelo en la base de datos.",
+        "description": "Escriba un cambio de esquema o una corrección de datos, deje que la revisión de SQL lo compruebe y despliéguelo en la base de datos.",
         "finish-line": "Meta: un cambio que superó la revisión de SQL y se desplegó",
-        "title": "Revisar y desplegar un cambio de esquema"
+        "title": "Planificar, revisar y desplegar un cambio de base de datos"
       },
       "description": "Elija lo que le trajo aquí. Se lo sugeriremos primero al terminar la configuración.",
       "explore": {

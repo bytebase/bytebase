@@ -176,7 +176,7 @@ const holdNextCall = (call: ReturnType<typeof vi.fn>) => {
 const settle = () =>
   act(() => new Promise((resolve) => setTimeout(resolve, 0)));
 
-const CHANGE_GOAL = "Review and roll out a schema change";
+const CHANGE_GOAL = "Plan, review and roll out a database change";
 const QUERY_GOAL = "Query data with guardrails";
 const EXPLORING = "Not sure yet, just exploring";
 const SAMPLE = "Start with the sample database";
@@ -1417,8 +1417,19 @@ describe("WorkspaceSetupPage", () => {
     const panel = () => within(screen.getByTestId("left-column"));
     const still = () => panel().getByRole("presentation").dataset.still;
 
-    test("shows the hero, the query goal's own picture, then access controls", async () => {
+    test("previews the workspace as it is named, then shows each goal's own picture and access controls", async () => {
       render(<WithLeftColumn />);
+      expect(panel().getAllByText("Workspace One")).not.toHaveLength(0);
+      expect(panel().getByText("Ed")).toBeInTheDocument();
+      expect(panel().getByText("Workspace Admin")).toBeInTheDocument();
+      type(screen.getByLabelText(/^Your name/), "Ada Park");
+      type(screen.getByLabelText("Workspace name"), "Acme");
+      expect(panel().getAllByText("Acme")).not.toHaveLength(0);
+      expect(panel().getByText("Ada Park")).toBeInTheDocument();
+
+      goToGoal();
+      expect(panel().getAllByText("Acme")).not.toHaveLength(0);
+      fireEvent.click(screen.getByText(CHANGE_GOAL));
       expect(still()).toBe("hero");
       // Its size is known before the file loads, so the panel does not start
       // out collapsed.
@@ -1430,15 +1441,10 @@ describe("WorkspaceSetupPage", () => {
         "height",
         "829"
       );
-
-      goToGoal();
-      expect(still()).toBe("hero");
-      fireEvent.click(screen.getByText(CHANGE_GOAL));
-      expect(still()).toBe("hero");
       fireEvent.click(screen.getByText(QUERY_GOAL));
-      expect(still()).toBe("data-masking");
+      expect(still()).toBe("query");
       fireEvent.click(screen.getByText(EXPLORING));
-      expect(still()).toBe("hero");
+      expect(still()).toBe("explore");
 
       fireEvent.click(continueButton());
       await nameProject();

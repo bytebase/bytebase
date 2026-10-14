@@ -116,20 +116,21 @@ hotmail.co.uk). Continue is enabled on arrival, so the first click is the only c
 mandatory-state leavers never clicked anything, consistent with an OAuth redirect returning to a
 tab nobody is looking at; a screen with nothing to decide is the cheapest first screen.
 
-**D3 · Two goals, and a quieter third answer.** "Review and roll out a schema change" and "Query
-data with guardrails" are the two cards, each with a one-line finish line under it: a change that
-passed SQL review and rolled out to the database, and a query result from it. Under them sits a
-lighter third answer, "Not sure yet, just exploring", which commits to neither; the project home and
-the guide then put a query first, the quickest first result. Every product in the study that asks an
-intent question lets the user decline it: PostHog has "Continue without choosing a goal", Metabase
-"I'm not sure yet", and n8n and Greptile make the question optional. Here, 3 of 20 finishers left
-the goal blank while it was optional, 2 of the leavers since it became required stalled on it with
-Continue disabled, and the forced answer predicts the first action only weakly. An honest "not sure"
-also makes the other two answers worth more as signals. It is drawn lighter than the cards so it
-does not read as their peer, and its share is a number to watch. "Mark sensitive data" is removed as
-a goal: masking guards querying rather than being a destination, and as an Enterprise feature it led
-its choosers into a gate (1 of 9 acted). Every finish line is reachable on the free plan. Rejected:
-a third equal card, and keeping the forced choice between two.
+**D3 · Two goals, and a quieter third answer.** "Plan, review and roll out a database change" (a
+schema change or a data fix) and "Query data with guardrails" are the two cards, each with a
+one-line finish line under it: a change that passed SQL review and rolled out to the database, and a
+query result from it. Under them sits a lighter third answer, "Not sure yet, just exploring", which
+commits to neither; the project home and the guide then put a query first, the quickest first
+result. Every product in the study that asks an intent question lets the user decline it: PostHog
+has "Continue without choosing a goal", Metabase "I'm not sure yet", and n8n and Greptile make the
+question optional. Here, 3 of 20 finishers left the goal blank while it was optional, 2 of the
+leavers since it became required stalled on it with Continue disabled, and the forced answer
+predicts the first action only weakly. An honest "not sure" also makes the other two answers worth
+more as signals. It is drawn lighter than the cards so it does not read as their peer, and its share
+is a number to watch. "Mark sensitive data" is removed as a goal: masking guards querying rather
+than being a destination, and as an Enterprise feature it led its choosers into a gate (1 of 9
+acted). Every finish line is reachable on the free plan. Rejected: a third equal card, and keeping
+the forced choice between two.
 
 **D4 · The project is named where its database is chosen.** Screen 3 opens with the project name
 (required, empty with example placeholder; the resource id derived from it, editable, collapsed)
@@ -221,25 +222,28 @@ no landing of its own. An earlier draft opened the goal's first action straight 
 highlighted "Connect instance" on the databases page; both are withdrawn, because the project home
 is where the next step is chosen.
 
-**D9 · The left panel is a story per screen, from bytebase.com's Rive files.** Screen 1 plays the
-homepage hero (requests flowing into review). Screen 2 keeps the hero for the change goal, whose
-story it already tells (a change through SQL lint, agent review and a reviewer), and swaps to
-Dynamic Data Masking for the query goal as the picture of a guardrail, the moment its card is
-pressed; the card's finish line does not depend on it, and "just exploring" stays on the hero.
-Screen 3 draws a diagram from what the user typed (the sample instance and its database flowing into
-the project name, or the user's own instance joining after setup); screen 4 plays Access Controls,
-which is why no role is asked. Dynamic Data Masking and Access Controls play over the green stage
-the homepage draws behind them (`green-animated-684x596.svg`): their files are made for it. The
-files (`masthead`, `data-masking`, `iam`) and the `RivePlayer` wrapper exist in the bytebase.com
-repository; the frontend is React, so the wrapper ports as is, with `rive.wasm` self-hosted and the
-files lazy-loaded on the setup route only. The files have no state-machine inputs and play
-autonomously; under reduced-motion the panel shows one frame. The rocket illustration stays on
-sign-in and sign-up. Rejected for now: a constant stage (the panel teaches nothing), the homepage's
-Change Review file for the change goal (its dark parts are made for the blue stage and the hero
-tells the same story), and a live preview of the product being configured (strongest teaching,
-highest drift; planned for screen 3 later). The player is a follow-up: until it lands, screens 1, 2
-and 4 show one still frame from each file where its animation will play, and screen 3's diagram is
-as described.
+**D9 · The left panel shows what each screen's answer is for.** Screen 1 previews the workspace
+being named: a small Bytebase window with the workspace name in its header and the person setting it
+up as its Workspace Admin, drawn from the answers as they are typed, so both names have a visible
+use. Screen 2 keeps that preview until a goal is chosen, then shows the goal the moment its card is
+pressed: the homepage hero (requests flowing through SQL lint, agent review and a reviewer) for the
+change goal, a SQL statement above its result for the query goal, and for "just exploring" the
+homepage's after-Bytebase diagram (people and agents reaching the databases through Bytebase),
+redrawn narrower to fit the panel. The card's finish line does not depend on the picture. Screen 3
+draws a diagram from what the user typed (the sample instance and its database flowing into the
+project name, or the user's own instance joining after setup); screen 4 shows Access Controls on the
+homepage's green stage, which is why no role is asked. The goal pictures sit on the hero's light
+background, and the query picture is a frame of bytebase.com's Dynamic Data Masking file with its
+masking rows replaced by the statement, so it shows a query rather than masking. The hero and Access
+Controls are still frames of bytebase.com's Rive files (`masthead`, `iam`), which a follow-up may
+play with the site's `RivePlayer` (`rive.wasm` self-hosted, the files lazy-loaded on the setup route
+only, one frame under reduced motion); the query and exploring pictures are composed for the panel
+and stay still. The rocket illustration stays on sign-in and sign-up. Rejected: a constant stage
+(the panel teaches nothing); the website's closing slogan, or its brand art alone, on screen 1
+(decoration beside a form that already has its heading); the homepage's Change Review file for the
+change goal (its dark parts are made for the blue stage, and the hero tells the same story); and a
+live preview of the whole product being configured (highest drift; screen 1's preview draws only the
+two names it shows).
 
 **D10 · Instrumentation.** Each Continue emits `workspace setup screen continued` on the click, with
 the screen number and the answers so far (goal, project named, source). No event carries a name, an
@@ -364,10 +368,10 @@ strings do. And screen 4 adds members where Cloud invites them (D7).
 
 | Screen | State | What is on screen | Button |
 |---|---|---|---|
-| 1 Workspace | default | name and workspace name prefilled; hero animation | Continue enabled; disabled if the workspace name is cleared, with "Enter a workspace name" under the field |
-| 2 Goal | none chosen | two cards and the lighter "Not sure yet, just exploring"; hero animation | Continue disabled, with "Pick one to continue" under the choices |
-| 2 Goal | a card chosen | card pressed; the panel swaps to Dynamic Data Masking for the query goal and stays on the hero for the change goal | Continue enabled |
-| 2 Goal | just exploring | the third answer pressed, panel stays on the hero | Continue enabled |
+| 1 Workspace | default | name and workspace name prefilled; the panel previews the workspace with both, updating as they are typed | Continue enabled; disabled if the workspace name is cleared, with "Enter a workspace name" under the field |
+| 2 Goal | none chosen | two cards and the lighter "Not sure yet, just exploring"; the workspace preview stays | Continue disabled, with "Pick one to continue" under the choices |
+| 2 Goal | a card chosen | card pressed; the panel shows the hero for the change goal, and a statement above its result for the query goal | Continue enabled |
+| 2 Goal | just exploring | the third answer pressed; the panel shows people and agents reaching the databases through Bytebase | Continue enabled |
 | 3 Project | no name | project field empty; the sample choice preselected | Continue disabled, with "Enter a project name" under the field |
 | 3 Sample | named, sample chosen | diagram of the sample instance, its database, the project | Continue enabled |
 | 3 Own | named, own instance chosen | one line on what happens after setup; diagram of the user's instance joining the project later | Continue enabled |
@@ -392,11 +396,12 @@ returns to the same screen with the draft.
 | `frontend/src/routes/auth/WorkspaceSetupPage.tsx` | Rewrite as four screens with the local draft, validation under each field, and the single commit at Finish. Finish navigates to the project home, as the wizard has since [#21572]. |
 | `frontend/src/routes/auth/WorkspaceSetupQuestionnaireStep.tsx` | Retire; the goal moves to screen 2 and the team question is removed. |
 | `frontend/src/app/layouts/SplashLayout.tsx` | Setup variant: a panel slot instead of the fixed illustration. |
-| `frontend/src/routes/auth/workspace-setup/` (new) | Beside the route that is their only consumer: screen components, the left panel (for now a still frame from each of the three Rive files; the port of bytebase.com `RivePlayer.tsx` with self-hosted `rive.wasm` follows), the diagram panel, the chips input. The screens use the shared `StepIndicator`, `RadioGroup` and form primitives, with each validation message under its field. |
+| `frontend/src/routes/auth/workspace-setup/` (new) | Beside the route that is their only consumer: screen components, the left panel (the workspace preview, still frames from two of bytebase.com's Rive files and two pictures composed for the panel), the diagram panel, the chips input. The screens use the shared `StepIndicator`, `RadioGroup` and form primitives, with each validation message under its field. |
 | `frontend/src/modules/workspace-setup-guide/` | Take the goal and the team size from the wizard; store "just exploring" as a goal of its own, which uses the query journey; mark "explore database" done on arrival with the sample; start at "Connect instance" on the own-instance path; show the team step only above "Just me". |
 | `frontend/src/routes/project/projectHomeNextSteps.ts` | Take the goal as an input. With a database present, "Query a database" comes before "Change a database" for the query goal and for "just exploring"; the order is unchanged otherwise. |
 | `frontend/src/routes/project/ProjectHomePage.tsx`, `ProjectDatabasesPage.tsx` | Read the stored goal through the guide module: the home passes it to the next-step function, and the databases page leads with a query for the same two goals. |
 | `frontend/src/app/router/guard.ts` | The setup route also admits a workspace admin whose unfinished draft is in this browser, after the wizard's own invitees have joined (D11). |
+| `frontend/src/components/ui/step-indicator.tsx` | Shared step indicator: an opt-in `fitOneRow`, so when the titles do not fit one row (a narrow screen, or a long locale such as Spanish) only the current step keeps its title in sight and the others stay for screen readers. Without the prop it behaves as before. |
 | `frontend/src/components/ResourceIdField.tsx` | Shared ID field: an opt-in `keepInitialValue`, so the wizard's field keeps a settled ID when screen 3 is shown again. Without the prop it behaves as before. |
 | `frontend/src/stores/app/` | An optional argument on five writes (`updateUser`, `updateWorkspace`, `createProject`, `updateProjectIamPolicy`, `patchWorkspaceIamPolicy`) and on `fetchWorkspaceIamPolicy` for a caller that reports the failure itself, so Finish's errors are not also raised as the product's toast. Other callers are unchanged. |
 | `frontend/src/utils/storage-keys.ts`, `frontend/src/app/analytics/behavior.ts`, `frontend/scripts/check-i18n.mjs` | The draft's and the team size's storage keys, the per-screen event's name, and the retired string prefixes. |

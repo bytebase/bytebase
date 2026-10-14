@@ -1,32 +1,126 @@
 import { ArrowDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import accessControlsImage from "@/assets/illustration/setup-access-controls.webp";
-import dataMaskingImage from "@/assets/illustration/setup-data-masking.webp";
+import exploreImage from "@/assets/illustration/setup-explore.webp";
 import heroImage from "@/assets/illustration/setup-hero.webp";
+import queryImage from "@/assets/illustration/setup-query.webp";
+import logoFull from "@/assets/logo-full.svg";
+import { UserAvatar } from "@/components/UserAvatar";
 import { cn } from "@/lib/utils";
+import { PresetRoleType } from "@/types/iam/role";
+import { displayRoleTitle } from "@/utils/role";
 import type { SetupGoal, SetupScreen, SetupSource } from "./draft";
 
 // Each still with its pixel size, which holds the picture's place in the
 // panel until the file has loaded.
 const STILLS = {
   hero: { src: heroImage, width: 1222, height: 829 },
-  "data-masking": { src: dataMaskingImage, width: 1368, height: 1192 },
+  query: { src: queryImage, width: 1280, height: 887 },
+  explore: { src: exploreImage, width: 1280, height: 782 },
   "access-controls": { src: accessControlsImage, width: 1368, height: 1192 },
 } as const;
 
 type Still = keyof typeof STILLS;
 
-// One picture per screen: what Bytebase does, then the chosen goal, then who
-// gets access. The hero is a change on its way through review, so it is also
-// the change goal's picture; "just exploring" commits to no goal and keeps it.
+// The chosen goal's picture, then who gets access. Until a goal is chosen the
+// workspace preview stays.
 const stillFor = (
-  screen: Exclude<SetupScreen, "project">,
+  screen: "goal" | "team",
   goal: SetupGoal | undefined
-): Still => {
+): Still | undefined => {
   if (screen === "team") return "access-controls";
-  if (screen === "goal" && goal === "query-data") return "data-masking";
-  return "hero";
+  switch (goal) {
+    case "create-database-change":
+      return "hero";
+    case "query-data":
+      return "query";
+    case "just-exploring":
+      return "explore";
+    case undefined:
+      return undefined;
+  }
 };
+
+const FRAME =
+  "w-full max-w-lg overflow-hidden rounded-sm border border-block-border";
+
+// The workspace as screen 1 names it, with its first member: what the two
+// names are for.
+function WorkspacePreview({
+  workspaceTitle,
+  memberName,
+  memberEmail,
+}: {
+  readonly workspaceTitle: string;
+  readonly memberName: string;
+  readonly memberEmail: string;
+}) {
+  return (
+    <div className={cn(FRAME, "bg-background")} aria-hidden="true">
+      <div className="bg-accent/5 p-7">
+        <div className="overflow-hidden rounded-sm border border-block-border bg-background">
+          <div className="flex h-11 items-center gap-x-2 border-b border-block-border px-3.5 text-sm text-main">
+            <img src={logoFull} className="h-4 shrink-0" alt="" />
+            <span className="text-control-placeholder">/</span>
+            <span className="truncate">{workspaceTitle}</span>
+            <UserAvatar
+              title={memberName}
+              colorSeed={memberEmail}
+              size="sm"
+              className="ml-auto"
+            />
+          </div>
+          <div className="flex h-64">
+            <div className="flex w-28 shrink-0 flex-col gap-y-3 border-r border-block-border p-3">
+              {[70, 55, 80, 60, 75, 50, 65].map((width, index) => (
+                <div
+                  key={index}
+                  className="h-2 rounded-full bg-control-bg"
+                  style={{ width: `${width}%` }}
+                />
+              ))}
+            </div>
+            <div className="min-w-0 flex-1 p-4">
+              <div className="truncate font-medium text-main">
+                {workspaceTitle}
+              </div>
+              <div className="mt-3 divide-y divide-block-border border-t border-block-border">
+                <div className="flex items-center gap-x-2 py-2.5 text-sm text-main">
+                  <UserAvatar
+                    title={memberName}
+                    colorSeed={memberEmail}
+                    size="sm"
+                  />
+                  <span className="max-w-[60%] shrink-0 truncate">
+                    {memberName}
+                  </span>
+                  <span className="ml-auto min-w-0 truncate text-xs text-control-light">
+                    {displayRoleTitle(PresetRoleType.WORKSPACE_ADMIN)}
+                  </span>
+                </div>
+                {[24, 18].map((width, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-x-2 py-2.5 opacity-40"
+                  >
+                    <div className="size-7 shrink-0 rounded-full bg-control-bg-hover" />
+                    <div
+                      className="h-2 rounded-full bg-control-bg-hover"
+                      style={{ width: `${width}%` }}
+                    />
+                    <span className="ml-auto min-w-0 truncate text-xs text-control-light">
+                      {displayRoleTitle(PresetRoleType.WORKSPACE_MEMBER)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function DiagramBox({
   title,
@@ -66,22 +160,38 @@ function DiagramArrow({ label }: { readonly label: string }) {
 export function SetupPanel({
   screen,
   goal,
+  workspaceTitle,
+  memberName,
+  memberEmail,
   projectTitle,
   source,
   isSaaS,
 }: {
   readonly screen: SetupScreen;
   readonly goal: SetupGoal | undefined;
+  readonly workspaceTitle: string;
+  readonly memberName: string;
+  readonly memberEmail: string;
   readonly projectTitle: string;
   readonly source: SetupSource;
   readonly isSaaS: boolean;
 }) {
   const { t } = useTranslation();
 
-  if (screen !== "project") {
-    const still = stillFor(screen, goal);
+  const still =
+    screen === "goal" || screen === "team" ? stillFor(screen, goal) : undefined;
+  if (screen === "workspace" || (screen === "goal" && !still)) {
     return (
-      <div className="w-full max-w-lg overflow-hidden rounded-sm border border-block-border bg-background">
+      <WorkspacePreview
+        workspaceTitle={workspaceTitle}
+        memberName={memberName}
+        memberEmail={memberEmail}
+      />
+    );
+  }
+  if (still) {
+    return (
+      <div className={cn(FRAME, "bg-background")}>
         {/* No taller than the window, so changing pictures does not move the
             form beside it. */}
         <img

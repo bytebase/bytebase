@@ -3851,9 +3851,9 @@
     },
     "goal": {
       "change": {
-        "description": "编写一个 Schema 变更，由 SQL 审核检查后部署到数据库。",
+        "description": "编写一个 Schema 变更或数据修复，由 SQL 审核检查后部署到数据库。",
         "finish-line": "终点：一个通过 SQL 审核并完成部署的变更",
-        "title": "审核并部署 Schema 变更"
+        "title": "规划、审核并部署数据库变更"
       },
       "description": "选择您来这里想做的事。设置完成后，我们会优先推荐它。",
       "explore": {

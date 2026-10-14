@@ -522,6 +522,11 @@ function WorkspaceSetupWizard() {
         <SetupPanel
           screen={draft.screen}
           goal={draft.goal}
+          workspaceTitle={
+            canRenameWorkspace ? workspaceTitle : (workspace?.title ?? "")
+          }
+          memberName={name.trim() || currentUser.title || currentUser.email}
+          memberEmail={currentUser.email}
           projectTitle={draft.projectTitle.trim()}
           source={source}
           isSaaS={isSaaSMode}

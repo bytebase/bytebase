@@ -3851,9 +3851,9 @@
     },
     "goal": {
       "change": {
-        "description": "Write a schema change, let SQL review check it, and roll it out to the database.",
+        "description": "Write a schema change or a data fix, let SQL review check it, and roll it out to the database.",
         "finish-line": "Finish line: a change that passed SQL review and rolled out",
-        "title": "Review and roll out a schema change"
+        "title": "Plan, review and roll out a database change"
       },
       "description": "Pick what brought you here. We suggest it first once setup ends.",
       "explore": {

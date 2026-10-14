@@ -3851,9 +3851,9 @@
     },
     "goal": {
       "change": {
-        "description": "Viết một thay đổi schema, để SQL review kiểm tra, rồi triển khai lên cơ sở dữ liệu.",
+        "description": "Viết một thay đổi schema hoặc một bản sửa dữ liệu, để SQL review kiểm tra, rồi triển khai lên cơ sở dữ liệu.",
         "finish-line": "Đích đến: một thay đổi đã qua SQL review và được triển khai",
-        "title": "Review và triển khai một thay đổi schema"
+        "title": "Lập kế hoạch, review và triển khai một thay đổi cơ sở dữ liệu"
       },
       "description": "Chọn điều đã đưa bạn đến đây. Chúng tôi sẽ gợi ý nó đầu tiên khi thiết lập xong.",
       "explore": {

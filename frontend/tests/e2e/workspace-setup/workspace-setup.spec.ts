@@ -128,7 +128,7 @@ test("first-run setup: skip, own instance, then the sample with members", async 
     // A name only the draft holds, so Back cannot show it from the server.
     await page.getByLabel("Workspace name").fill("Acme Data");
     await continueButton(page).click();
-    await page.getByText("Review and roll out a schema change").click();
+    await page.getByText("Plan, review and roll out a database change").click();
     await continueButton(page).click();
 
     await page.getByLabel("Project name").fill("Payments");
@@ -154,7 +154,7 @@ test("first-run setup: skip, own instance, then the sample with members", async 
     ).toHaveAttribute("aria-checked", "true");
     await backButton(page).click();
     await expect(
-      choice(page, "Review and roll out a schema change")
+      choice(page, "Plan, review and roll out a database change")
     ).toHaveAttribute("aria-checked", "true");
     await backButton(page).click();
     await expect(page.getByLabel("Workspace name")).toHaveValue("Acme Data");

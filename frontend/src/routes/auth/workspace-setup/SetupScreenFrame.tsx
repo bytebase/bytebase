@@ -55,7 +55,7 @@ export function SetupScreenFrame({
         onSubmit();
       }}
     >
-      <StepIndicator steps={steps} currentKey={screen} />
+      <StepIndicator steps={steps} currentKey={screen} fitOneRow />
       <div className="flex flex-col gap-y-1">
         <h1 className="text-xl font-semibold text-main">{title}</h1>
         <p className="text-sm text-control-light">{description}</p>
