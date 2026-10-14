@@ -137,6 +137,14 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	// created, claimed, and fails honestly with the model's error.
 	setting = setAISetting(ctx, t, ctl, brokenModel.URL, true)
 	a.True(setting.GetValue().GetAi().GetSqlReviewEnabled())
+
+	// The server info follows a switch written outside the server too.
+	a.True(actuatorAISQLReviewEnabled(ctx, t, ctl))
+	setStoredAISQLReviewEnabled(ctx, t, ctl, false)
+	a.False(actuatorAISQLReviewEnabled(ctx, t, ctl))
+	setStoredAISQLReviewEnabled(ctx, t, ctl, true)
+	a.True(actuatorAISQLReviewEnabled(ctx, t, ctl))
+
 	aiRun, err := runReview(ctx, ctl, issueA.Name, "ai")
 	a.NoError(err)
 	a.Equal(v1pb.ReviewRun_AI, aiRun.Type)
@@ -280,4 +288,30 @@ func setAISetting(ctx context.Context, t *testing.T, ctl *controller, endpoint s
 	}))
 	require.NoError(t, err)
 	return resp.Msg
+}
+
+func actuatorAISQLReviewEnabled(ctx context.Context, t *testing.T, ctl *controller) bool {
+	t.Helper()
+	info, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	require.NoError(t, err)
+	return info.Msg.AiSqlReviewEnabled
+}
+
+// setStoredAISQLReviewEnabled writes the switch straight into the metadata
+// database, past the server and its setting cache.
+func setStoredAISQLReviewEnabled(ctx context.Context, t *testing.T, ctl *controller, enabled bool) {
+	t.Helper()
+	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{Name: "workspaces/-"}))
+	require.NoError(t, err)
+	db, err := sql.Open("pgx", ctl.profile.PgURL)
+	require.NoError(t, err)
+	defer db.Close()
+	result, err := db.ExecContext(ctx, `
+		UPDATE setting SET value = jsonb_set(value, '{sqlReviewEnabled}', to_jsonb($2::boolean))
+		WHERE workspace = $1 AND name = 'AI'
+	`, strings.TrimPrefix(workspace.Msg.Name, "workspaces/"), enabled)
+	require.NoError(t, err)
+	affected, err := result.RowsAffected()
+	require.NoError(t, err)
+	require.Equal(t, int64(1), affected)
 }

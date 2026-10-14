@@ -119,7 +119,9 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 	if workspaceID != "" {
 		serverInfo.Workspace = common.FormatWorkspace(workspaceID)
 		serverInfo.McpSetting = actuatorMCPSetting(ctx, s.store, workspaceID)
-		aiSetting, err := s.store.GetAISetting(ctx, workspaceID)
+		// Read past the setting cache like the review gates, so the switch shown
+		// to users without bb.settings.get matches what the review enforces.
+		aiSetting, err := s.store.GetAISettingUncached(ctx, workspaceID)
 		if err != nil {
 			slog.Error("failed to read the AI setting", slog.String("workspace", workspaceID), log.BBError(err))
 		}
