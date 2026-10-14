@@ -44,14 +44,14 @@ vi.mock("@/hooks/useAppState", () => ({
         : false,
 }));
 vi.mock("@/stores/app", () => {
-  const state = {
+  const storeState = {
     workspaceSetupGuideEnabled: () => mocks.enabled,
     saveIntroStateByKey: mocks.saveIntroStateByKey,
   };
   return {
     useAppStore: Object.assign(
-      (selector: (state: typeof state) => unknown) => selector(state),
-      { getState: () => state }
+      (selector: (state: typeof storeState) => unknown) => selector(storeState),
+      { getState: () => storeState }
     ),
   };
 });
