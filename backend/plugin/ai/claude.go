@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -87,14 +89,54 @@ func readClaudeFailure(httpErr *HTTPError) {
 // defaultClaudeMaxTokens is the output limit of a call that asks for none.
 const defaultClaudeMaxTokens = 4096
 
-func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest, options ...ChatOption) (*v1pb.AIChatResponse, error) {
-	maxTokens := defaultClaudeMaxTokens
-	if limit := newChatOptions(options).maxOutputTokens; limit > 0 {
-		maxTokens = limit
+// claudeOutputCeilings are the documented output maximums of older models, and
+// Anthropic rejects a larger max_tokens with a 400. A model id matches the
+// first family it contains, ignoring case, so dated, aliased, Bedrock, and
+// Vertex ids all match.
+var claudeOutputCeilings = []struct {
+	family    *regexp.Regexp
+	maxTokens int
+}{
+	{family: claudeFamily("claude-3-5-sonnet"), maxTokens: 8192},
+	{family: claudeFamily("claude-3-5-haiku"), maxTokens: 8192},
+	{family: claudeFamily("claude-3-opus"), maxTokens: 4096},
+	{family: claudeFamily("claude-3-sonnet"), maxTokens: 4096},
+	{family: claudeFamily("claude-3-haiku"), maxTokens: 4096},
+	{family: claudeFamily("claude-2"), maxTokens: 4096},
+	{family: claudeFamily("claude-v2"), maxTokens: 4096},
+	{family: claudeFamily("claude-instant"), maxTokens: 4096},
+}
+
+// claudeFamily matches the name anywhere in a model id. A name that ends in a
+// version number must not run on into another digit, so claude-2 matches
+// claude-2.1 but not claude-20.
+func claudeFamily(name string) *regexp.Regexp {
+	pattern := regexp.QuoteMeta(name)
+	if last := name[len(name)-1]; last >= '0' && last <= '9' {
+		pattern += `($|[^0-9])`
 	}
+	return regexp.MustCompile(pattern)
+}
+
+// claudeMaxTokens caps the requested output limit at the model's ceiling. A
+// model missing from the table keeps the request.
+func claudeMaxTokens(model string, requested int) int {
+	if requested <= 0 {
+		return defaultClaudeMaxTokens
+	}
+	model = strings.ToLower(model)
+	for _, ceiling := range claudeOutputCeilings {
+		if ceiling.family.MatchString(model) {
+			return min(requested, ceiling.maxTokens)
+		}
+	}
+	return requested
+}
+
+func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest, options ...ChatOption) (*v1pb.AIChatResponse, error) {
 	payload := chatClaudeRequest{
 		Model:     aiSetting.Model,
-		MaxTokens: maxTokens,
+		MaxTokens: claudeMaxTokens(aiSetting.Model, newChatOptions(options).maxOutputTokens),
 	}
 
 	for _, m := range request.Messages {

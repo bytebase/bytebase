@@ -7,8 +7,9 @@ type chatOptions struct {
 	maxOutputTokens int
 }
 
-// WithMaxOutputTokens sets the output token limit of an adapter whose API
-// requires one. Only Claude does; the OpenAI and Gemini adapters send no limit.
+// WithMaxOutputTokens asks for an output limit of up to tokens. Only the Claude
+// adapter sends a limit, lowered to the model's documented maximum; the OpenAI
+// and Gemini adapters send none.
 func WithMaxOutputTokens(tokens int) ChatOption {
 	return func(o *chatOptions) {
 		o.maxOutputTokens = tokens

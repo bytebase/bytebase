@@ -21,7 +21,8 @@ const (
 	firstRetryBackoff = time.Second
 	// maxOutputTokens holds Claude's thinking, which counts against the limit,
 	// and a long findings list. claude-sonnet-5 allows 128K, but Anthropic
-	// advises streaming above about 16K and ai.Chat does not stream.
+	// advises streaming above about 16K and ai.Chat does not stream. The Claude
+	// adapter lowers it for an older model whose maximum is smaller.
 	maxOutputTokens = 16000
 )
 

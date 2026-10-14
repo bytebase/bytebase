@@ -44,19 +44,20 @@ func TestChatClaudeOutputLimit(t *testing.T) {
 
 	tests := []struct {
 		name    string
+		model   string
 		options []ChatOption
 		want    int
 	}{
-		{name: "the SQL editor asks for no limit", want: 4096},
-		{name: "a caller asks for a larger limit", options: []ChatOption{WithMaxOutputTokens(16000)}, want: 16000},
-		{name: "a zero limit keeps the default", options: []ChatOption{WithMaxOutputTokens(0)}, want: 4096},
+		{name: "the SQL editor asks for no limit", model: "claude-sonnet-5", want: 4096},
+		{name: "a caller asks for a larger limit", model: "claude-sonnet-5", options: []ChatOption{WithMaxOutputTokens(16000)}, want: 16000},
+		{name: "an older model caps the larger limit", model: "claude-3-5-haiku-20241022", options: []ChatOption{WithMaxOutputTokens(16000)}, want: 8192},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			var requests []claudeRequest
 			server := newClaudeServer(t, `{"content": [{"type": "text", "text": "ok"}]}`, &requests)
-			setting := &storepb.AISetting{Provider: storepb.AISetting_CLAUDE, Endpoint: server.URL, Model: "claude-sonnet-5", ApiKey: "test-key"}
+			setting := &storepb.AISetting{Provider: storepb.AISetting_CLAUDE, Endpoint: server.URL, Model: tc.model, ApiKey: "test-key"}
 			userContent := "Explain the query."
 			_, err := Chat(context.Background(), setting, &v1pb.AIChatRequest{
 				Messages: []*v1pb.AIChatMessage{{Role: v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER, Content: &userContent}},
@@ -65,6 +66,59 @@ func TestChatClaudeOutputLimit(t *testing.T) {
 			require.Len(t, requests, 1)
 			require.Equal(t, tc.want, requests[0].MaxTokens)
 		})
+	}
+}
+
+func TestClaudeMaxTokens(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		model     string
+		requested int
+		want      int
+	}{
+		// Callers that ask for no limit get the default whatever the model.
+		{model: "claude-sonnet-5", requested: 0, want: 4096},
+		{model: "claude-3-haiku-20240307", requested: 0, want: 4096},
+
+		// Models at or above the request keep it.
+		{model: "claude-sonnet-5", requested: 16000, want: 16000},
+		{model: "claude-haiku-4-5", requested: 16000, want: 16000},
+		{model: "claude-3-7-sonnet-20250219", requested: 16000, want: 16000},
+		{model: "claude-3-7-sonnet-latest", requested: 16000, want: 16000},
+		{model: "anthropic.claude-sonnet-4-20250514-v1:0", requested: 16000, want: 16000},
+		{model: "a-custom-model", requested: 16000, want: 16000},
+		{model: "claude-20-sonnet", requested: 16000, want: 16000},
+		{model: "anthropic.claude-v20-test", requested: 16000, want: 16000},
+
+		{model: "claude-3-5-sonnet-20241022", requested: 16000, want: 8192},
+		{model: "claude-3-5-sonnet-20240620", requested: 16000, want: 8192},
+		{model: "claude-3-5-sonnet-latest", requested: 16000, want: 8192},
+		{model: "anthropic.claude-3-5-sonnet-20241022-v2:0", requested: 16000, want: 8192},
+		{model: "claude-3-5-sonnet-v2@20241022", requested: 16000, want: 8192},
+		{model: "claude-3-5-haiku-20241022", requested: 16000, want: 8192},
+		{model: "anthropic.claude-3-5-haiku-20241022-v1:0", requested: 16000, want: 8192},
+		{model: "us.anthropic.claude-3-5-haiku-20241022-v1:0", requested: 16000, want: 8192},
+		{model: "myclaude-3-5-sonnet-20240620", requested: 16000, want: 8192},
+		{model: "proxy/claude-3-5-sonnet20240620", requested: 16000, want: 8192},
+		{model: "claude-3-opus-20240229", requested: 16000, want: 4096},
+		{model: "CLAUDE-3-OPUS-LATEST", requested: 16000, want: 4096},
+		{model: "claude-3-sonnet-20240229", requested: 16000, want: 4096},
+		{model: "claude-3-haiku-20240307", requested: 16000, want: 4096},
+		{model: "claude-3-haiku@20240307", requested: 16000, want: 4096},
+		{model: "claude-2", requested: 16000, want: 4096},
+		{model: "claude-2.1", requested: 16000, want: 4096},
+		{model: "claude-2.0", requested: 16000, want: 4096},
+		{model: "anthropic.claude-v2:1", requested: 16000, want: 4096},
+		{model: "claude-instant-1.2", requested: 16000, want: 4096},
+		{model: "anthropic.claude-instant-v1", requested: 16000, want: 4096},
+
+		// A request below the ceiling is sent as asked.
+		{model: "claude-3-5-haiku-20241022", requested: 2000, want: 2000},
+		{model: "claude-3-opus-20240229", requested: 1024, want: 1024},
+	}
+	for _, tc := range tests {
+		require.Equal(t, tc.want, claudeMaxTokens(tc.model, tc.requested), "%s asking for %d", tc.model, tc.requested)
 	}
 }
 
