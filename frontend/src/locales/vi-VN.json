@@ -2762,7 +2762,7 @@
         },
         "row": {
           "approve": {
-            "details": "Mỗi quyết định được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Các quy tắc phê duyệt và thiết lập tự phê duyệt của dự án vẫn áp dụng, như trên bảng điều khiển",
+            "details": "Mỗi quyết định được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Yêu cầu vai trò được quyết định trên bảng điều khiển · Các quy tắc phê duyệt và thiết lập tự phê duyệt của dự án vẫn áp dụng, như trên bảng điều khiển",
             "title": "Phê duyệt hoặc từ chối Issue"
           },
           "export": {

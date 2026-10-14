@@ -43,6 +43,8 @@ const decideIssueDescription = `Approve or reject a Bytebase issue at its curren
 
 The tool shows the user what the issue changes and asks them to confirm in a form. It decides only when they accept; declining or cancelling changes nothing. A client that cannot show the form gets the issue's link, to decide it in the Bytebase console instead. Do not ask in chat first: the form is the question.
 
+It decides database changes and access requests. Role requests stay in the Bytebase console, because approving one grants a project role.
+
 The approval rules decide who may approve, as in the console: the user must hold the role of the current step, and approving their own issue, or a plan they last changed, is refused unless the project allows it.
 
 This is the only way to decide an issue over MCP; call_api refuses IssueService/ApproveIssue and RejectIssue.`
@@ -113,6 +115,16 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 		}), nil, nil
 	}
 
+	// Read on both rounds, so a type this tool does not decide is refused before
+	// any answer is acted on, an unasked one included.
+	var issue issueView
+	if err := s.readResource(ctx, "/bytebase.v1.IssueService/GetIssue", decision.issue, "get issues", "bb.issues.get", &issue); err != nil {
+		return formatToolError(err), nil, nil
+	}
+	if refusal := refuseIssueType(issue, decision, link); refusal != nil {
+		return refusal, nil, nil
+	}
+
 	if req.Params != nil {
 		if response, answered := req.Params.InputResponses[confirmDecisionRequestID]; answered {
 			result, output := s.applyIssueDecision(ctx, decision, response, link)
@@ -120,7 +132,7 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 		}
 	}
 
-	message, err := s.describeIssueDecision(ctx, decision, link)
+	message, err := s.describeIssueDecision(ctx, decision, issue, link)
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
@@ -170,6 +182,30 @@ func parseIssueDecision(input DecideIssueInput) (*issueDecision, error) {
 		}
 	}
 	return decision, nil
+}
+
+// refuseIssueType serves the issue types this tool decides. It is an
+// allow-list, so a type added later is refused until someone decides about it.
+// A role request stays in the console: approving one grants a project role.
+func refuseIssueType(issue issueView, decision *issueDecision, link string) *mcp.CallToolResult {
+	switch issue.Type {
+	case "DATABASE_CHANGE", "ACCESS_GRANT":
+		return nil
+	case "ROLE_GRANT":
+		return formatToolError(&toolError{
+			Code: "ROLE_GRANT_NOT_SUPPORTED",
+			Message: fmt.Sprintf("approving a role request grants a project role, which MCP does not do yet, so %s was not %s and nothing changed",
+				decision.issue, decision.pastTense()),
+			Suggestion: "decide it signed in to the Bytebase console: " + link,
+		})
+	default:
+		return formatToolError(&toolError{
+			Code: "ISSUE_TYPE_NOT_SUPPORTED",
+			Message: fmt.Sprintf("decide_issue does not decide %q issues, so %s was not %s and nothing changed",
+				issue.Type, decision.issue, decision.pastTense()),
+			Suggestion: "decide it signed in to the Bytebase console: " + link,
+		})
+	}
 }
 
 // applyIssueDecision acts on the user's answer. Only an accepted form with the
@@ -260,14 +296,6 @@ type issueView struct {
 	Approvers []struct {
 		Status string `json:"status"`
 	} `json:"approvers"`
-	RoleGrant *struct {
-		Role      string `json:"role"`
-		User      string `json:"user"`
-		Condition *struct {
-			Expression string `json:"expression"`
-		} `json:"condition"`
-		Expiration string `json:"expiration"`
-	} `json:"roleGrant"`
 }
 
 type planView struct {
@@ -304,11 +332,7 @@ type accessGrantView struct {
 // one of the message's own lines.
 //
 // It fails closed: if any part cannot be read, nothing is asked.
-func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecision, link string) (string, error) {
-	var issue issueView
-	if err := s.readResource(ctx, "/bytebase.v1.IssueService/GetIssue", decision.issue, "get issues", "bb.issues.get", &issue); err != nil {
-		return "", err
-	}
+func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecision, issue issueView, link string) (string, error) {
 	question := fmt.Sprintf("%s issue %q", capitalize(decision.verb()), issue.Title)
 	if email := getUserEmail(ctx); email != "" {
 		question += " as " + email
@@ -325,8 +349,6 @@ func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecis
 		details, err = s.describeAccessGrant(ctx, issue.AccessGrant)
 	case issue.Plan != "":
 		details, err = s.describePlan(ctx, issue.Plan)
-	case issue.RoleGrant != nil:
-		details = []string{describeRoleGrant(issue)}
 	default:
 	}
 	if err != nil {
@@ -397,18 +419,6 @@ func (s *Server) describeAccessGrant(ctx context.Context, name string) ([]string
 	default:
 	}
 	return lines, nil
-}
-
-func describeRoleGrant(issue issueView) string {
-	grant := issue.RoleGrant
-	line := fmt.Sprintf("Grants %s to %s", grant.Role, strings.TrimPrefix(grant.User, common.UserNamePrefix))
-	if grant.Condition != nil && grant.Condition.Expression != "" {
-		line += " when " + oneLine(grant.Condition.Expression, maxStatementPreview)
-	}
-	if grant.Expiration != "" {
-		line += ", for " + readableDuration(grant.Expiration)
-	}
-	return line
 }
 
 // readResource reads one resource by name from the internal API.

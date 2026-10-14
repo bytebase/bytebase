@@ -354,6 +354,53 @@ func TestDecideIssueRefusesAnUnaskedAnswerFromAClientThatCannotConfirm(t *testin
 	require.Empty(t, mock.calls())
 }
 
+// callDecideIssueWith calls decide_issue on an issue of the given type,
+// optionally carrying an answer the client sends without being asked.
+func callDecideIssueWith(t *testing.T, issueType string, unasked mcp.InputResponseMap) (*decisionMock, *asker, *mcp.CallToolResult) {
+	t.Helper()
+	mock := changeIssueMock()
+	mock.issue["type"] = issueType
+	endpoint, token := newDecideServer(t, mock)
+	user := &asker{answer: confirmAnswer(true)}
+	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	res, err := session.CallTool(ctx, &mcp.CallToolParams{
+		Name:           "decide_issue",
+		Arguments:      map[string]any{"issue": decideIssueName, "decision": "approve"},
+		InputResponses: unasked,
+	})
+	require.NoError(t, err)
+	return mock, user, res
+}
+
+func TestDecideIssueRefusesARoleRequest(t *testing.T) {
+	for name, unasked := range map[string]mcp.InputResponseMap{
+		"asked as usual":              nil,
+		"with an answer sent unasked": {confirmDecisionRequestID: confirmAnswer(true)},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock, user, res := callDecideIssueWith(t, "ROLE_GRANT", unasked)
+			require.True(t, res.IsError)
+			text := resultText(t, res)
+			require.Contains(t, text, "ROLE_GRANT_NOT_SUPPORTED")
+			require.Contains(t, text, "approving a role request grants a project role, which MCP does not do yet")
+			require.Contains(t, text, "decide it signed in to the Bytebase console: https://bb.example.com/projects/hr/issues/42")
+			require.Zero(t, user.asked.Load(), "no form may be sent for a role request")
+			require.Empty(t, mock.calls(), "no decision, and so no confirmation, may reach the API")
+		})
+	}
+}
+
+func TestDecideIssueRefusesAnIssueTypeItDoesNotKnow(t *testing.T) {
+	mock, user, res := callDecideIssueWith(t, "SOMETHING_NEW", nil)
+	require.True(t, res.IsError)
+	require.Contains(t, resultText(t, res), "ISSUE_TYPE_NOT_SUPPORTED")
+	require.Zero(t, user.asked.Load())
+	require.Empty(t, mock.calls())
+}
+
 func TestDecideIssueReportsTheWorkflowRefusal(t *testing.T) {
 	mock := changeIssueMock()
 	mock.refusal = "cannot approve because self-approval is not allowed for this project"

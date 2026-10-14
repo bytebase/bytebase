@@ -73,7 +73,7 @@ the product.
 | — | *Read-only stops here* | | 67 methods |
 | write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. The project's approval policy decides whether a change needs approval | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
 | write | Request access grants | Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants | 1 WRITE method: `AccessGrantService/CreateAccessGrant` |
-| write | Approve or reject issues | Each decision is confirmed in the user's MCP client before it is made · The approval rules and the project's self-approval setting apply, as in the console | 2 WRITE methods: `ApproveIssue`, `RejectIssue`, served only through the `decide_issue` tool, which asks the user to confirm each decision |
+| write | Approve or reject issues | Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console | 2 WRITE methods: `ApproveIssue`, `RejectIssue`, served only through the `decide_issue` tool, which asks the user to confirm each decision and refuses role requests |
 | write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
 | write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
 | write | Export query results | Download results as a file. Data leaves Bytebase | 1 WRITE method: `SQLService/Export` |
@@ -197,17 +197,18 @@ that said "of an approved change" would therefore promise more than the gate enf
 wording an admin reads while choosing Read-write is the wrong place to be generous. What holds
 unconditionally is that no approval decision is made over MCP without a confirmation in the client.
 A Read-write session approves or rejects an issue only through the `decide_issue` tool. The tool
-asks the user through MCP form elicitation, inside the same tool call, and acts only on an accepted
-form with the box checked. A client that cannot show the form gets the issue's console link. The
-gate serves `ApproveIssue` and `RejectIssue` only to a request that carries the confirmation, so
+decides database changes and access requests. It refuses role requests, because approving one grants
+a project role, and role grants stay in the console with the rest of access administration. It asks
+the user through MCP form elicitation, inside the same tool call, and acts only on an accepted form
+with the box checked. A client that cannot show the form gets the issue's console link. The gate
+serves `ApproveIssue` and `RejectIssue` only to a request that carries the confirmation, so
 `call_api` is refused. The workflow then decides as it does for a person: the step's role, and the
 project's self-approval and last-editor settings. Bytebase records the decision as confirmed in the
-client, not as proof that a person clicked: a hook in the user's own client can answer the form,
-and that is the user's choice. Re-checking an issue's approval and activating an access grant
-directly stay FORBIDDEN, because each can let a request pass with no approver deciding it. That is
-the half the rows state. Whether MCP-originated rollouts should require
-approval regardless of the project flag is a product question tracked separately (BOT-71), not one
-this doc decides.
+client, not as proof that a person clicked: a hook in the user's own client can answer the form, and
+that is the user's choice. Re-checking an issue's approval and activating an access grant directly
+stay FORBIDDEN, because each can let a request pass with no approver deciding it. That is the half
+the rows state. Whether MCP-originated rollouts should require approval regardless of the project
+flag is a product question tracked separately (BOT-71), not one this doc decides.
 
 Access requests are the exception, and the request row states the approval unconditionally. An
 approved access grant is active at once, so an MCP session's request that would count as approved
@@ -242,7 +243,8 @@ pinning the creator, which this row does not touch.
 The verb names the row's effect on the customer's databases. *Read*: none. *Propose*: none until it
 is approved. *Request*: none until it is approved, and then access to one statement's results,
 unmasked or exported if asked for. *Approve*: none directly; the issue proceeds: a change rolls out
-as the project's rollout policy allows, and an access or role request takes effect. *Run*: direct. *Export*: data leaves the product. *Manage*:
+as the project's rollout policy allows, and an access request takes effect. Role requests stay in
+the console. *Run*: direct. *Export*: data leaves the product. *Manage*:
 configuration only, no data path. Within a tier the verb repeats; it changes only where the effect
 changes.
 
@@ -445,11 +447,13 @@ under
 - Row titles and sub-items: the table above, verbatim.
 - Dividers: "Read-only stops here", "Read-write stops here".
 - Floor: "Never, in any mode: administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."
-  "Approve issues" left the floor when approving and rejecting moved to the confirmed tool. The
-  verbs cover every denial reason except three: `SENDS_DATA_TO_A_THIRD_PARTY` for the reason below,
-  `REDRAWS_GOVERNANCE_BOUNDARY`, and `DRIVES_THE_APPROVAL_DECISION`, whose two remaining methods
-  re-check an issue's approval and activate an access grant directly. The verbs claim only what is
-  refused **whatever the caller's permissions** and by **whatever effect** a served method has.
+  "Approve issues" left the floor when approving and rejecting moved to the confirmed tool.
+  "Administer the workspace" still holds for role grants, because that tool refuses role requests.
+  The verbs cover every denial reason except three: `SENDS_DATA_TO_A_THIRD_PARTY` for the reason
+  below, `REDRAWS_GOVERNANCE_BOUNDARY`, and `DRIVES_THE_APPROVAL_DECISION`, whose two remaining
+  methods re-check an issue's approval and activate an access grant directly. The verbs claim only
+  what is refused **whatever the caller's permissions** and by **whatever effect** a served method
+  has.
   That second rule cost three drafts. MCP's ceiling removes methods by class; it never adds
   per-row privacy, so an ownership claim — "never read other people's SQL", then
   "never browse everyone's saved SQL" — is false at whatever permission level makes it true in the

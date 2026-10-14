@@ -2762,7 +2762,7 @@
         },
         "row": {
           "approve": {
-            "details": "Cada decisión se confirma en el cliente MCP del usuario antes de tomarse · Se aplican las reglas de aprobación y la configuración de autoaprobación del proyecto, como en la consola",
+            "details": "Cada decisión se confirma en el cliente MCP del usuario antes de tomarse · Las solicitudes de rol se deciden en la consola · Se aplican las reglas de aprobación y la configuración de autoaprobación del proyecto, como en la consola",
             "title": "Aprobar o rechazar issues"
           },
           "export": {
