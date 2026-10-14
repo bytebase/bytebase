@@ -589,20 +589,32 @@ func TestDecideIssueRefusesAnIssueTypeItDoesNotKnow(t *testing.T) {
 	require.Empty(t, mock.calls())
 }
 
-func TestDecideIssueReportsTheWorkflowRefusal(t *testing.T) {
-	mock := changeIssueMock()
-	mock.refusal = "cannot approve because self-approval is not allowed for this project"
-	endpoint, token := newDecideServer(t, mock)
-	user := &asker{answer: confirmAnswer(true)}
-	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+// The tool passes a refusal on in the server's words: the workflow's and the
+// ceiling's messages each name their own remedy.
+func TestDecideIssueReportsTheRefusalInTheServersWords(t *testing.T) {
+	for name, refusal := range map[string]string{
+		"the workflow": "cannot approve because self-approval is not allowed for this project",
+		"the ceiling": "/bytebase.v1.IssueService/ApproveIssue is a WRITE method and this workspace's MCP capability ceiling is READ_ONLY, " +
+			"which serves READ methods. Ask a workspace admin to raise the MCP ceiling in the workspace settings, " +
+			"or perform this action signed in to the Bytebase console instead",
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := changeIssueMock()
+			mock.refusal = refusal
+			endpoint, token := newDecideServer(t, mock)
+			user := &asker{answer: confirmAnswer(true)}
+			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
-	res, err := callDecideIssue(t, session, "approve")
-	require.NoError(t, err)
-	require.True(t, res.IsError)
-	text := resultText(t, res)
-	require.Contains(t, text, "DECISION_REFUSED")
-	require.Contains(t, text, "nothing changed: cannot approve because self-approval is not allowed for this project")
-	require.Len(t, mock.calls(), 1, "the workflow, not the tool, refuses")
+			res, err := callDecideIssue(t, session, "approve")
+			require.NoError(t, err)
+			require.True(t, res.IsError)
+			text := resultText(t, res)
+			require.Contains(t, text, "failed to approve projects/hr/issues/42: HTTP 403: "+refusal)
+			require.Contains(t, text, "check the issue's current state: https://bb.example.com/projects/hr/issues/42")
+			require.NotContains(t, text, "approval rules", "the tool must not put its own cause on the server's refusal")
+			require.Len(t, mock.calls(), 1, "the server, not the tool, refuses")
+		})
+	}
 }
 
 // accessRequestMock is an access request waiting on its only step.

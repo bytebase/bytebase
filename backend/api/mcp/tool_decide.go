@@ -318,11 +318,8 @@ func (s *Server) applyIssueDecision(ctx context.Context, decision *issueDecision
 		return formatToolError(errors.Wrapf(err, "failed to %s %s", decision.verb(), decision.issue)), nil
 	}
 	if resp.Status >= 400 {
-		return formatToolError(&toolError{
-			Code:       "DECISION_REFUSED",
-			Message:    fmt.Sprintf("Bytebase refused to %s %s, so nothing changed: %s", decision.verb(), decision.issue, parseError(resp.Body)),
-			Suggestion: "the approval rules decide who may decide this issue; an approver can decide it in the Bytebase console: " + link,
-		}), nil
+		return formatToolError(errors.Errorf("failed to %s %s: HTTP %d: %s; check the issue's current state: %s",
+			decision.verb(), decision.issue, resp.Status, parseError(resp.Body), link)), nil
 	}
 
 	var decided issueView
