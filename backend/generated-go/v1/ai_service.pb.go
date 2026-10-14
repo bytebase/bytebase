@@ -83,6 +83,71 @@ func (AIChatMessageRole) EnumDescriptor() ([]byte, []int) {
 	return file_v1_ai_service_proto_rawDescGZIP(), []int{0}
 }
 
+// Why the model stopped generating a response.
+type AIChatResponse_StopReason int32
+
+const (
+	// The provider did not report why the model stopped.
+	AIChatResponse_STOP_REASON_UNSPECIFIED AIChatResponse_StopReason = 0
+	// The model completed its turn with an answer or with tool calls.
+	AIChatResponse_TURN_COMPLETED AIChatResponse_StopReason = 1
+	// The response was truncated at a token limit and is incomplete.
+	AIChatResponse_TOKEN_LIMIT AIChatResponse_StopReason = 2
+	// The provider blocked the request or the response, or the model refused to answer.
+	AIChatResponse_BLOCKED AIChatResponse_StopReason = 3
+	// The model generated a tool call that the provider could not parse.
+	AIChatResponse_MALFORMED_TOOL_CALL AIChatResponse_StopReason = 4
+	// The model stopped for a reason that no other value names.
+	AIChatResponse_OTHER AIChatResponse_StopReason = 5
+)
+
+// Enum value maps for AIChatResponse_StopReason.
+var (
+	AIChatResponse_StopReason_name = map[int32]string{
+		0: "STOP_REASON_UNSPECIFIED",
+		1: "TURN_COMPLETED",
+		2: "TOKEN_LIMIT",
+		3: "BLOCKED",
+		4: "MALFORMED_TOOL_CALL",
+		5: "OTHER",
+	}
+	AIChatResponse_StopReason_value = map[string]int32{
+		"STOP_REASON_UNSPECIFIED": 0,
+		"TURN_COMPLETED":          1,
+		"TOKEN_LIMIT":             2,
+		"BLOCKED":                 3,
+		"MALFORMED_TOOL_CALL":     4,
+		"OTHER":                   5,
+	}
+)
+
+func (x AIChatResponse_StopReason) Enum() *AIChatResponse_StopReason {
+	p := new(AIChatResponse_StopReason)
+	*p = x
+	return p
+}
+
+func (x AIChatResponse_StopReason) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AIChatResponse_StopReason) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_ai_service_proto_enumTypes[1].Descriptor()
+}
+
+func (AIChatResponse_StopReason) Type() protoreflect.EnumType {
+	return &file_v1_ai_service_proto_enumTypes[1]
+}
+
+func (x AIChatResponse_StopReason) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AIChatResponse_StopReason.Descriptor instead.
+func (AIChatResponse_StopReason) EnumDescriptor() ([]byte, []int) {
+	return file_v1_ai_service_proto_rawDescGZIP(), []int{5, 0}
+}
+
 // A single message in the conversation.
 type AIChatMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -403,7 +468,9 @@ type AIChatResponse struct {
 	// Tool calls the AI wants to make.
 	ToolCalls []*AIChatToolCall `protobuf:"bytes,2,rep,name=tool_calls,json=toolCalls,proto3" json:"tool_calls,omitempty"`
 	// Token usage for this provider call, when available.
-	Usage         *AIChatUsage `protobuf:"bytes,3,opt,name=usage,proto3,oneof" json:"usage,omitempty"`
+	Usage *AIChatUsage `protobuf:"bytes,3,opt,name=usage,proto3,oneof" json:"usage,omitempty"`
+	// Why the model stopped. A truncated or blocked response can still carry content.
+	StopReason    AIChatResponse_StopReason `protobuf:"varint,4,opt,name=stop_reason,json=stopReason,proto3,enum=bytebase.v1.AIChatResponse_StopReason" json:"stop_reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -459,6 +526,13 @@ func (x *AIChatResponse) GetUsage() *AIChatUsage {
 	return nil
 }
 
+func (x *AIChatResponse) GetStopReason() AIChatResponse_StopReason {
+	if x != nil {
+		return x.StopReason
+	}
+	return AIChatResponse_STOP_REASON_UNSPECIFIED
+}
+
 var File_v1_ai_service_proto protoreflect.FileDescriptor
 
 const file_v1_ai_service_proto_rawDesc = "" +
@@ -488,12 +562,22 @@ const file_v1_ai_service_proto_rawDesc = "" +
 	"\bmessages\x18\x01 \x03(\v2\x1a.bytebase.v1.AIChatMessageB\x04\xd0\xea0\x02R\bmessages\x12R\n" +
 	"\x10tool_definitions\x18\x02 \x03(\v2!.bytebase.v1.AIChatToolDefinitionB\x04\xd0\xea0\x02R\x0ftoolDefinitions\"0\n" +
 	"\vAIChatUsage\x12!\n" +
-	"\ftotal_tokens\x18\x01 \x01(\x05R\vtotalTokens\"\xb6\x01\n" +
+	"\ftotal_tokens\x18\x01 \x01(\x05R\vtotalTokens\"\x80\x03\n" +
 	"\x0eAIChatResponse\x12\x1d\n" +
 	"\acontent\x18\x01 \x01(\tH\x00R\acontent\x88\x01\x01\x12:\n" +
 	"\n" +
 	"tool_calls\x18\x02 \x03(\v2\x1b.bytebase.v1.AIChatToolCallR\ttoolCalls\x123\n" +
-	"\x05usage\x18\x03 \x01(\v2\x18.bytebase.v1.AIChatUsageH\x01R\x05usage\x88\x01\x01B\n" +
+	"\x05usage\x18\x03 \x01(\v2\x18.bytebase.v1.AIChatUsageH\x01R\x05usage\x88\x01\x01\x12G\n" +
+	"\vstop_reason\x18\x04 \x01(\x0e2&.bytebase.v1.AIChatResponse.StopReasonR\n" +
+	"stopReason\"\x7f\n" +
+	"\n" +
+	"StopReason\x12\x1b\n" +
+	"\x17STOP_REASON_UNSPECIFIED\x10\x00\x12\x12\n" +
+	"\x0eTURN_COMPLETED\x10\x01\x12\x0f\n" +
+	"\vTOKEN_LIMIT\x10\x02\x12\v\n" +
+	"\aBLOCKED\x10\x03\x12\x17\n" +
+	"\x13MALFORMED_TOOL_CALL\x10\x04\x12\t\n" +
+	"\x05OTHER\x10\x05B\n" +
 	"\n" +
 	"\b_contentB\b\n" +
 	"\x06_usage*\xbc\x01\n" +
@@ -519,31 +603,33 @@ func file_v1_ai_service_proto_rawDescGZIP() []byte {
 	return file_v1_ai_service_proto_rawDescData
 }
 
-var file_v1_ai_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_v1_ai_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_v1_ai_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_v1_ai_service_proto_goTypes = []any{
-	(AIChatMessageRole)(0),       // 0: bytebase.v1.AIChatMessageRole
-	(*AIChatMessage)(nil),        // 1: bytebase.v1.AIChatMessage
-	(*AIChatToolDefinition)(nil), // 2: bytebase.v1.AIChatToolDefinition
-	(*AIChatToolCall)(nil),       // 3: bytebase.v1.AIChatToolCall
-	(*AIChatRequest)(nil),        // 4: bytebase.v1.AIChatRequest
-	(*AIChatUsage)(nil),          // 5: bytebase.v1.AIChatUsage
-	(*AIChatResponse)(nil),       // 6: bytebase.v1.AIChatResponse
+	(AIChatMessageRole)(0),         // 0: bytebase.v1.AIChatMessageRole
+	(AIChatResponse_StopReason)(0), // 1: bytebase.v1.AIChatResponse.StopReason
+	(*AIChatMessage)(nil),          // 2: bytebase.v1.AIChatMessage
+	(*AIChatToolDefinition)(nil),   // 3: bytebase.v1.AIChatToolDefinition
+	(*AIChatToolCall)(nil),         // 4: bytebase.v1.AIChatToolCall
+	(*AIChatRequest)(nil),          // 5: bytebase.v1.AIChatRequest
+	(*AIChatUsage)(nil),            // 6: bytebase.v1.AIChatUsage
+	(*AIChatResponse)(nil),         // 7: bytebase.v1.AIChatResponse
 }
 var file_v1_ai_service_proto_depIdxs = []int32{
 	0, // 0: bytebase.v1.AIChatMessage.role:type_name -> bytebase.v1.AIChatMessageRole
-	3, // 1: bytebase.v1.AIChatMessage.tool_calls:type_name -> bytebase.v1.AIChatToolCall
-	1, // 2: bytebase.v1.AIChatRequest.messages:type_name -> bytebase.v1.AIChatMessage
-	2, // 3: bytebase.v1.AIChatRequest.tool_definitions:type_name -> bytebase.v1.AIChatToolDefinition
-	3, // 4: bytebase.v1.AIChatResponse.tool_calls:type_name -> bytebase.v1.AIChatToolCall
-	5, // 5: bytebase.v1.AIChatResponse.usage:type_name -> bytebase.v1.AIChatUsage
-	4, // 6: bytebase.v1.AIService.Chat:input_type -> bytebase.v1.AIChatRequest
-	6, // 7: bytebase.v1.AIService.Chat:output_type -> bytebase.v1.AIChatResponse
-	7, // [7:8] is the sub-list for method output_type
-	6, // [6:7] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	4, // 1: bytebase.v1.AIChatMessage.tool_calls:type_name -> bytebase.v1.AIChatToolCall
+	2, // 2: bytebase.v1.AIChatRequest.messages:type_name -> bytebase.v1.AIChatMessage
+	3, // 3: bytebase.v1.AIChatRequest.tool_definitions:type_name -> bytebase.v1.AIChatToolDefinition
+	4, // 4: bytebase.v1.AIChatResponse.tool_calls:type_name -> bytebase.v1.AIChatToolCall
+	6, // 5: bytebase.v1.AIChatResponse.usage:type_name -> bytebase.v1.AIChatUsage
+	1, // 6: bytebase.v1.AIChatResponse.stop_reason:type_name -> bytebase.v1.AIChatResponse.StopReason
+	5, // 7: bytebase.v1.AIService.Chat:input_type -> bytebase.v1.AIChatRequest
+	7, // 8: bytebase.v1.AIService.Chat:output_type -> bytebase.v1.AIChatResponse
+	8, // [8:9] is the sub-list for method output_type
+	7, // [7:8] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_v1_ai_service_proto_init() }
@@ -560,7 +646,7 @@ func file_v1_ai_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_ai_service_proto_rawDesc), len(file_v1_ai_service_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,

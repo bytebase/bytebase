@@ -62,8 +62,10 @@ type chatOpenAIResponse struct {
 		Message struct {
 			Role      string            `json:"role"`
 			Content   *string           `json:"content"`
+			Refusal   string            `json:"refusal"`
 			ToolCalls []json.RawMessage `json:"tool_calls"`
 		} `json:"message"`
+		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
 	Usage *chatOpenAIUsage `json:"usage,omitempty"`
 }
@@ -318,6 +320,7 @@ func chatOpenAIChatCompletions(ctx context.Context, aiSetting *storepb.AISetting
 	}
 	if len(resp.Choices) > 0 {
 		msg := resp.Choices[0].Message
+		result.StopReason = openAIChatCompletionsStopReason(resp.Choices[0].FinishReason, msg.Refusal)
 		result.Content = msg.Content
 		for _, rawTC := range msg.ToolCalls {
 			var parsed chatOpenAIToolCallParsed
@@ -442,7 +445,7 @@ func chatOpenAIResponses(ctx context.Context, aiSetting *storepb.AISetting, requ
 		return nil, errors.Errorf("OpenAI Responses API returned an incomplete response: %s", reason)
 	}
 
-	result := &v1pb.AIChatResponse{}
+	result := &v1pb.AIChatResponse{StopReason: openAIResponsesStopReason(response.Status)}
 	if response.Usage != nil {
 		result.Usage = newAIChatUsage(response.Usage.TotalTokens)
 	}
@@ -460,6 +463,7 @@ func chatOpenAIResponses(ctx context.Context, aiSetting *storepb.AISetting, requ
 					_, _ = content.WriteString(part.Text)
 				case "refusal":
 					_, _ = content.WriteString(part.Refusal)
+					result.StopReason = v1pb.AIChatResponse_BLOCKED
 				default:
 					continue
 				}

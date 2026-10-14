@@ -19,9 +19,14 @@ import (
 const (
 	defaultMaxModelCalls = 20
 	defaultTimeout       = 10 * time.Minute
-	// maxInvalidReplies is how many times the model is asked to correct a
-	// final reply before the review fails.
+	// maxInvalidReplies is how many times the model is asked to try again, after
+	// an invalid final reply or a tool call the vendor could not parse, before
+	// the review fails.
 	maxInvalidReplies = 1
+	// malformedToolCallMessage answers a turn that held only a tool call the
+	// vendor could not parse. That turn is not in the history, so the message
+	// has to say what happened.
+	malformedToolCallMessage = "Your last turn held a tool call that could not be parsed, so no tool ran. Call the tool again, or reply with only the JSON object from the answer format."
 )
 
 var (
@@ -33,6 +38,10 @@ var (
 	ErrInvalidReply = errors.New("the model did not return a valid review result")
 	// ErrEmptyReply means the vendor returned neither text nor tool calls.
 	ErrEmptyReply = errors.New("the model returned an empty reply")
+	// ErrTruncatedReply means the reply was truncated at a token limit, so findings may be missing.
+	ErrTruncatedReply = errors.New("the model's reply was truncated at a token limit")
+	// ErrBlockedReply means the vendor blocked the request or the reply, or the model refused to review.
+	ErrBlockedReply = errors.New("the vendor blocked the review or the model refused it")
 )
 
 // Request is one review: one sheet against one target database.
@@ -124,11 +133,30 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 
 		content := response.GetContent()
 		toolCalls := response.GetToolCalls()
-		// An empty reply is a safety block, a refusal, or a garbled tool call.
-		// ai.Chat carries no stop reason yet, so the loop cannot tell them apart,
-		// and asking again could let a blocked review pass on the second try.
+		stopReason := response.GetStopReason()
+		// A truncated reply can parse as a whole answer with findings or tool
+		// arguments missing, and a blocked change was never judged. Neither gets
+		// a correction round, which could pass a change the model did not finish
+		// judging.
+		switch stopReason {
+		case v1pb.AIChatResponse_TOKEN_LIMIT:
+			return nil, ErrTruncatedReply
+		case v1pb.AIChatResponse_BLOCKED:
+			return nil, ErrBlockedReply
+		default:
+		}
 		if strings.TrimSpace(content) == "" && len(toolCalls) == 0 {
-			return nil, ErrEmptyReply
+			// An empty reply can be a block the vendor did not name, so only the
+			// one cause known to be the model's own slip gets a second try.
+			if stopReason != v1pb.AIChatResponse_MALFORMED_TOOL_CALL {
+				return nil, ErrEmptyReply
+			}
+			if invalidReplies >= maxInvalidReplies || result.Calls >= r.maxModelCalls {
+				return nil, errors.Wrap(ErrEmptyReply, "the vendor could not parse the model's tool call")
+			}
+			invalidReplies++
+			messages = append(messages, textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER, malformedToolCallMessage))
+			continue
 		}
 		messages = append(messages, &v1pb.AIChatMessage{
 			Role:      v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT,

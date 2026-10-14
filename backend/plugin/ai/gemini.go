@@ -70,7 +70,11 @@ type chatGeminiResponse struct {
 		Content struct {
 			Parts []chatGeminiResponsePart `json:"parts"`
 		} `json:"content"`
+		FinishReason string `json:"finishReason"`
 	} `json:"candidates"`
+	PromptFeedback struct {
+		BlockReason string `json:"blockReason"`
+	} `json:"promptFeedback"`
 	UsageMetadata *chatGeminiUsage `json:"usageMetadata,omitempty"`
 }
 
@@ -243,6 +247,7 @@ func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 		result.Usage = newAIChatUsage(resp.UsageMetadata.TotalTokenCount)
 	}
 	if len(resp.Candidates) > 0 {
+		result.StopReason = geminiStopReason(resp.Candidates[0].FinishReason)
 		var textContent string
 		for _, part := range resp.Candidates[0].Content.Parts {
 			if part.Text != "" {
@@ -271,6 +276,8 @@ func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 		if textContent != "" {
 			result.Content = &textContent
 		}
+	} else {
+		result.StopReason = geminiPromptBlockStopReason(resp.PromptFeedback.BlockReason)
 	}
 	return result, nil
 }

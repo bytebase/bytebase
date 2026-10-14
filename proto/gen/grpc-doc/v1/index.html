@@ -1292,6 +1292,10 @@
                   <a href="#bytebase.v1.AIChatMessageRole"><span class="badge">E</span>AIChatMessageRole</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.AIChatResponse.StopReason"><span class="badge">E</span>AIChatResponse.StopReason</a>
+                </li>
+              
               
               
                 <li>
@@ -15097,6 +15101,13 @@ Permissions required: None (authentication required)</p></td>
                   <td><p>Token usage for this provider call, when available. </p></td>
                 </tr>
               
+                <tr>
+                  <td>stop_reason</td>
+                  <td><a href="#bytebase.v1.AIChatResponse.StopReason">AIChatResponse.StopReason</a></td>
+                  <td></td>
+                  <td><p>Why the model stopped. A truncated or blocked response can still carry content. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15250,6 +15261,53 @@ Frontend must echo this back unchanged when sending tool results. </p></td>
                 <td>AI_CHAT_MESSAGE_ROLE_TOOL</td>
                 <td>4</td>
                 <td><p>Tool result message.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.AIChatResponse.StopReason">AIChatResponse.StopReason</h3>
+        <p>Why the model stopped generating a response.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STOP_REASON_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>The provider did not report why the model stopped.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TURN_COMPLETED</td>
+                <td>1</td>
+                <td><p>The model completed its turn with an answer or with tool calls.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TOKEN_LIMIT</td>
+                <td>2</td>
+                <td><p>The response was truncated at a token limit and is incomplete.</p></td>
+              </tr>
+            
+              <tr>
+                <td>BLOCKED</td>
+                <td>3</td>
+                <td><p>The provider blocked the request or the response, or the model refused to answer.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MALFORMED_TOOL_CALL</td>
+                <td>4</td>
+                <td><p>The model generated a tool call that the provider could not parse.</p></td>
+              </tr>
+            
+              <tr>
+                <td>OTHER</td>
+                <td>5</td>
+                <td><p>The model stopped for a reason that no other value names.</p></td>
               </tr>
             
           </tbody>
