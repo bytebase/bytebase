@@ -1,4 +1,5 @@
 import i18n from "@/lib/i18n";
+import type { DatabaseResource } from "@/types/member";
 import { celString } from "@/utils/v1/celLiteral";
 import type {
   AccessUser,
@@ -178,16 +179,39 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
 }
 
 // The part of the condition that `databaseResources` and the classification
-// level do not represent, so the page can still show it.
+// level do not represent, so the page can still show it. Grouped or `||`
+// conditions are returned whole because they cannot be split safely.
 export function getUnconvertedCondition(grant: ExemptionGrant): string {
   if (grant.databaseResources && grant.databaseResources.length > 0) {
     return "";
   }
-  return grant.conditionExpression
+  const condition = grant.conditionExpression.trim();
+  if (/[()]|\|\|/.test(condition)) {
+    return condition;
+  }
+  return condition
     .split(" && ")
     .filter((part) => !classificationLevelRegex.test(part))
     .join(" && ")
     .trim();
+}
+
+// A resource without a database name can still be limited to an instance or a
+// database name by `resource.instance_id` / `resource.database_name`.
+export function resourceCoversDatabase(
+  resource: DatabaseResource,
+  databaseFullName: string
+): boolean {
+  if (resource.databaseFullName !== "") {
+    return resource.databaseFullName === databaseFullName;
+  }
+  const target = databaseFullName.match(databaseResourcePattern)?.groups;
+  return (
+    (!resource.instanceResourceId ||
+      resource.instanceResourceId === target?.instanceName) &&
+    (!resource.databaseResourceId ||
+      resource.databaseResourceId === target?.databaseName)
+  );
 }
 
 // Rewrite `resource.database == "instances/X/databases/Y"` to

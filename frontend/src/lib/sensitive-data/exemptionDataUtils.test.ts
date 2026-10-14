@@ -26,6 +26,7 @@ import {
   groupByMember,
   parseClassificationLevel,
   parseExpirationTimestamp,
+  resourceCoversDatabase,
   rewriteResourceDatabase,
 } from "./exemptionDataUtils";
 import type { AccessUser, ExemptionGrant } from "./types";
@@ -1153,6 +1154,22 @@ describe("getUnconvertedCondition", () => {
     ).toBe('resource.environment_id == "prod"');
   });
 
+  test("keeps a grouped condition whole", () => {
+    const condition =
+      '(resource.table_name in ["audit"] && resource.classification_level <= 3)';
+    expect(
+      getUnconvertedCondition(makeGrant({ conditionExpression: condition }))
+    ).toBe(condition);
+  });
+
+  test("keeps an || condition whole", () => {
+    const condition =
+      'resource.table_name == "a" || resource.classification_level <= 3';
+    expect(
+      getUnconvertedCondition(makeGrant({ conditionExpression: condition }))
+    ).toBe(condition);
+  });
+
   test("is empty when database resources represent the condition", () => {
     expect(
       getUnconvertedCondition(
@@ -1162,5 +1179,41 @@ describe("getUnconvertedCondition", () => {
         })
       )
     ).toBe("");
+  });
+});
+
+describe("resourceCoversDatabase", () => {
+  const db = "instances/prod/databases/hr";
+
+  test("matches a full database name exactly", () => {
+    expect(resourceCoversDatabase({ databaseFullName: db }, db)).toBe(true);
+    expect(
+      resourceCoversDatabase(
+        { databaseFullName: "instances/prod/databases/other" },
+        db
+      )
+    ).toBe(false);
+  });
+
+  test("a resource without any scope covers every database", () => {
+    expect(
+      resourceCoversDatabase({ databaseFullName: "", columns: ["email"] }, db)
+    ).toBe(true);
+  });
+
+  test("an instance-only resource covers that instance's databases only", () => {
+    const resource = { databaseFullName: "", instanceResourceId: "prod" };
+    expect(resourceCoversDatabase(resource, db)).toBe(true);
+    expect(resourceCoversDatabase(resource, "instances/dev/databases/hr")).toBe(
+      false
+    );
+  });
+
+  test("a database-name-only resource covers that name in any instance", () => {
+    const resource = { databaseFullName: "", databaseResourceId: "hr" };
+    expect(resourceCoversDatabase(resource, db)).toBe(true);
+    expect(
+      resourceCoversDatabase(resource, "instances/prod/databases/other")
+    ).toBe(false);
   });
 });

@@ -39,6 +39,7 @@ import {
   getUnconvertedCondition,
   groupByMember,
   parseExpirationTimestamp,
+  resourceCoversDatabase,
 } from "@/lib/sensitive-data/exemptionDataUtils";
 import type {
   AccessUser,
@@ -210,9 +211,7 @@ export function ProjectMaskingExemptionPage({
       const matchesDb = (g: ExemptionGrant) =>
         !g.databaseResources ||
         g.databaseResources.length === 0 ||
-        g.databaseResources.some(
-          (r) => r.databaseFullName === "" || r.databaseFullName === dbScope
-        );
+        g.databaseResources.some((r) => resourceCoversDatabase(r, dbScope));
       result = result
         .map((m) => withFilteredGrants(m, m.grants.filter(matchesDb)))
         .filter((m) => m.grants.length > 0);
