@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { rolloutServiceClientConnect } from "@/api";
 import {
   DATABASE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DATABASES,
@@ -63,7 +64,7 @@ const HOME_PERMISSIONS: Permission[] = [
   "bb.databases.list",
   "bb.databases.get",
   "bb.databases.update",
-  "bb.plans.list",
+  "bb.rollouts.list",
   "bb.plans.get",
   "bb.planCheckRuns.get",
   "bb.taskRuns.list",
@@ -133,10 +134,8 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const [aiPrompt, setAiPrompt] = useState("");
   const [discoveryRefreshToken, setDiscoveryRefreshToken] = useState(0);
   const fetchDatabases = useAppStore((state) => state.fetchDatabases);
-  const fetchIssueByName = useAppStore((state) => state.fetchIssueByName);
   const fetchInstanceList = useAppStore((state) => state.fetchInstanceList);
   const listIssues = useAppStore((state) => state.listIssues);
-  const listPlans = useAppStore((state) => state.listPlans);
   const canListWorkspaceInstances = useAppStore((state) =>
     state.hasWorkspacePermission("bb.instances.list")
   );
@@ -163,7 +162,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const canGetPlanDetail = PLAN_DETAIL_PERMISSIONS.every(
     (permission) => !missedPermissions.includes(permission)
   );
-  const canListPlans = !missedPermissions.includes("bb.plans.list");
+  const canListRollouts = !missedPermissions.includes("bb.rollouts.list");
   const canReadIssues = !missedPermissions.includes("bb.issues.get");
   const canListIssues = !missedPermissions.includes("bb.issues.list");
   const canListProjectInstances =
@@ -250,7 +249,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
       : "loading";
   const [changeState, setChangeState] = useState<{
     projectName: string;
-    status: "loading" | "not-started" | "submitted" | "unknown";
+    status: "loading" | "not-started" | "rolled-out" | "unknown";
   }>({ projectName, status: "loading" });
   const changeStatus =
     changeState.projectName === projectName ? changeState.status : "loading";
@@ -386,54 +385,32 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (isArchived || availability !== "present") return;
     let active = true;
-    if (!canReadIssues || !canListPlans) {
+    if (!canListRollouts) {
       setChangeState({ projectName, status: "unknown" });
       return;
     }
     setChangeState({ projectName, status: "loading" });
-    const load = async () => {
-      let pageToken = "";
-      try {
-        do {
-          const result = await listPlans({
-            find: {
-              project: projectName,
-              specType: "change_database_config",
-              state: "ACTIVE",
-            },
-            pageSize: 20,
-            pageToken,
+    void rolloutServiceClientConnect
+      .listRollouts({
+        parent: projectName,
+        pageSize: 1,
+        filter: 'task_type in ["DATABASE_MIGRATE"]',
+      })
+      .then(({ rollouts }) => {
+        if (active) {
+          setChangeState({
+            projectName,
+            status: rollouts.length ? "rolled-out" : "not-started",
           });
-          if (!active) return;
-          for (const plan of result.plans) {
-            if (!plan.issue) continue;
-            const issue = await fetchIssueByName(plan.issue, true);
-            if (!active) return;
-            if (!issue.draft) {
-              setChangeState({ projectName, status: "submitted" });
-              return;
-            }
-          }
-          pageToken = result.nextPageToken;
-        } while (pageToken);
-        setChangeState({ projectName, status: "not-started" });
-      } catch {
+        }
+      })
+      .catch(() => {
         if (active) setChangeState({ projectName, status: "unknown" });
-      }
-    };
-    void load();
+      });
     return () => {
       active = false;
     };
-  }, [
-    availability,
-    canListPlans,
-    canReadIssues,
-    fetchIssueByName,
-    isArchived,
-    listPlans,
-    projectName,
-  ]);
+  }, [availability, canListRollouts, isArchived, projectName]);
 
   useEffect(() => {
     if (isArchived) return;
@@ -640,14 +617,29 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
             rows={2}
             value={aiPrompt}
             aria-label={t("project.home.ai-placeholder")}
-            placeholder={t("project.home.ai-placeholder")}
+            placeholder={`${t("project.home.ai-placeholder")} · ${t("agent.input-keyboard-hint")}`}
             className="min-h-20 resize-none border-0 focus:border-0 focus:ring-0"
             onChange={(event) => setAiPrompt(event.target.value)}
+            onKeyDown={(event) => {
+              if (
+                event.key === "Enter" &&
+                !event.shiftKey &&
+                !event.altKey &&
+                !event.ctrlKey &&
+                !event.metaKey &&
+                !event.nativeEvent.isComposing
+              ) {
+                event.preventDefault();
+                sendAIMessage();
+              }
+            }}
           />
-          <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-3">
-            <span className="min-w-0 flex-1 truncate text-xs text-control-light">
-              {t("agent.context")}: {project.title}
-            </span>
+          <div className="flex flex-wrap items-end justify-between gap-2 px-3 pb-3">
+            <div className="flex min-w-0 flex-1 items-center text-xs text-control-light">
+              <span className="min-w-0 max-w-full truncate">
+                {t("agent.context")}: {project.title}
+              </span>
+            </div>
             <Button
               type="submit"
               size="sm"

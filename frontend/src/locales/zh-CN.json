@@ -50,6 +50,7 @@
     "delete-all-chats-confirmation": "确定要删除所有已归档对话吗？此操作无法撤销。",
     "delete-chat": "删除对话",
     "delete-chat-confirmation": "确定要删除此对话吗？此操作无法撤销。",
+    "input-keyboard-hint": "按 Enter 发送 · 按 Shift+Enter 换行",
     "input-placeholder": "向 AI 提问...",
     "interrupted": "已中断",
     "interrupted-retry-hint": "对话已中断。您可以重试或发送新消息。",
@@ -1604,14 +1605,26 @@
     }
   },
   "landing": {
+    "ai-placeholder": "向 AI 询问工作区设置、项目或访问权限",
+    "ai-setup": {
+      "action": "配置 AI",
+      "description": "配置服务提供方和模型，以在此工作区使用 AI。",
+      "title": "设置 AI 助手"
+    },
     "changelog-for-version": "{{version}} 的更新日志",
     "last-visit": "上次访问",
+    "onboarding": {
+      "completed-progress": "已完成 {{completed}} / {{total}} 项",
+      "connect-action": "连接实例",
+      "connect-description": "将数据库服务器连接到 {{project}}。"
+    },
     "quick-link": {
       "manage": "管理快捷访问",
-      "self": "快捷访问",
       "visit-issues": "访问工单",
-      "visit-prjects": "访问项目"
-    }
+      "visit-prjects": "访问项目",
+      "yours": "你的快捷链接"
+    },
+    "workspace": "工作空间"
   },
   "masking": {
     "reason": {
@@ -2018,6 +2031,7 @@
       "create-database": "创建数据库",
       "create-database-description": "在已连接的实例中创建首个数据库。",
       "created-by-you": "由你创建",
+      "customize": "自定义",
       "databases": "数据库",
       "databases-load-error": "无法加载数据库。",
       "databases-unavailable": "你无法查看此项目的数据库。",
@@ -2508,9 +2522,9 @@
             "placeholder": "API Key 通常以 sk-***** 开头",
             "self": "API Key"
           },
+          "available-in-saas": "AI 助手已在此工作空间中启用，并由 Bytebase 管理。",
           "description": "使用 AI 来辅助数据库开发任务。",
           "enable-ai-assistant": "启用 AI 助手",
-          "enabled-in-saas": "Gemini AI 在 SaaS 模式下自动启用。",
           "endpoint": {
             "description": "请输入自定义模型的 API 端点。",
             "openai-description": "Responses API 使用 /responses 端点，Chat Completions API 使用 /chat/completions 端点。",
@@ -2531,7 +2545,8 @@
             "open_ai": "OpenAI",
             "self": "AI 提供方"
           },
-          "self": "AI 助手"
+          "self": "AI 助手",
+          "unavailable-in-saas": "此工作空间尚未启用 AI 助手。请联系 Bytebase 管理员。"
         },
         "allow-admin-data-source": {
           "description": "启用时，用户可以在主数据源和只读数据源之间进行选择。禁用时，如果配置了只读数据源，则强制用户使用只读数据源，否则回退到使用主数据源。",

@@ -50,6 +50,7 @@
     "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
     "delete-chat": "Eliminar chat",
     "delete-chat-confirmation": "¿Está seguro de que desea eliminar este chat? Esta acción no se puede deshacer.",
+    "input-keyboard-hint": "Enter para enviar · Shift+Enter para un salto de línea",
     "input-placeholder": "Pregunta algo a la IA...",
     "interrupted": "Interrumpido",
     "interrupted-retry-hint": "La conversación fue interrumpida. Puede reintentar o enviar un nuevo mensaje.",
@@ -1604,14 +1605,26 @@
     }
   },
   "landing": {
+    "ai-placeholder": "Pregunta a la IA sobre la configuración del espacio de trabajo, los proyectos o el acceso",
+    "ai-setup": {
+      "action": "Configurar IA",
+      "description": "Configura un proveedor y un modelo para usar la IA en este espacio de trabajo.",
+      "title": "Configurar el asistente de IA"
+    },
     "changelog-for-version": "Registro de cambios para {{version}}",
     "last-visit": "Última visita",
+    "onboarding": {
+      "completed-progress": "{{completed}} de {{total}} completados",
+      "connect-action": "Conectar una instancia",
+      "connect-description": "Conecta un servidor de bases de datos a {{project}}."
+    },
     "quick-link": {
       "manage": "Administrar enlace rápido",
-      "self": "Enlace rápido",
       "visit-issues": "Problemas de visita",
-      "visit-prjects": "Visitar Proyectos"
-    }
+      "visit-prjects": "Visitar Proyectos",
+      "yours": "Tus enlaces rápidos"
+    },
+    "workspace": "Espacio de trabajo"
   },
   "masking": {
     "reason": {
@@ -2018,6 +2031,7 @@
       "create-database": "Crear una base de datos",
       "create-database-description": "Crea la primera base de datos en una instancia conectada.",
       "created-by-you": "Creado por ti",
+      "customize": "Personalizar",
       "databases": "Bases de datos",
       "databases-load-error": "No se pudieron cargar las bases de datos.",
       "databases-unavailable": "Las bases de datos de este proyecto no están disponibles para ti.",
@@ -2508,9 +2522,9 @@
             "placeholder": "Una clave de API generalmente comienza con sk-*****",
             "self": "Clave de API"
           },
+          "available-in-saas": "El Asistente de IA está disponible en este espacio de trabajo y lo administra Bytebase.",
           "description": "Utilice AI para ayudar en las tareas de desarrollo de bases de datos.",
           "enable-ai-assistant": "Habilitar el Asistente de IA",
-          "enabled-in-saas": "Gemini AI se habilita automáticamente en el modo SaaS.",
           "endpoint": {
             "description": "Introduzca el endpoint de API para el modelo personalizado.",
             "openai-description": "Use un endpoint /responses para la API Responses o /chat/completions para la API Chat Completions.",
@@ -2531,7 +2545,8 @@
             "open_ai": "OpenAI",
             "self": "Proveedor de IA"
           },
-          "self": "Asistente de AI"
+          "self": "Asistente de AI",
+          "unavailable-in-saas": "El Asistente de IA no está disponible en este espacio de trabajo. Contacte con su administrador de Bytebase."
         },
         "allow-admin-data-source": {
           "description": "Cuando está habilitado, los usuarios pueden elegir entre fuentes de datos de administración y de solo lectura. Cuando está deshabilitado, los usuarios se ven obligados a usar fuentes de datos de solo lectura si están configuradas; de lo contrario, vuelven a usar fuentes de datos de administración.",

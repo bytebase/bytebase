@@ -252,6 +252,22 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test("shows the send and newline keyboard hint only in the empty input placeholder", () => {
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    expect(view.container.querySelector("[data-agent-input-placeholder]")?.textContent).toContain(
+      "agent.input-keyboard-hint"
+    );
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    act(() => {
+      setTextareaValue(textarea, "List databases");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(view.container.querySelector("[data-agent-input-placeholder]")).toBeNull();
+    expect(view.container.textContent).not.toContain("agent.input-keyboard-hint");
+    view.unmount();
+  });
+
   test("sends a queued Project Home message in its bound chat once", async () => {
     mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
     const page = { path: "/projects/billing", title: "Billing" };
@@ -741,7 +757,9 @@ describe("AgentInput", () => {
     const placeholder = container.querySelector(
       "[data-agent-input-placeholder]"
     );
-    expect(placeholder?.textContent).toBe("agent.input-placeholder");
+    expect(placeholder?.textContent).toBe(
+      "agent.input-placeholder · agent.input-keyboard-hint"
+    );
     expect(placeholder?.className).toContain("truncate");
     expect(placeholder?.className).toContain("pointer-events-none");
     expect(placeholder?.className).toContain("inset-y-0");

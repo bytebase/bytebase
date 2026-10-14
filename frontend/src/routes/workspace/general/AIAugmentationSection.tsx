@@ -80,9 +80,9 @@ export const AIAugmentationSection = forwardRef<
   AIAugmentationSectionProps
 >(function AIAugmentationSection({ title, onDirtyChange }, ref) {
   const { t } = useTranslation();
-  const containerRef = useRef<HTMLElement>(null);
 
   const { isSaaSMode } = useServerState();
+  const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
   const canEdit = hasWorkspacePermissionV2("bb.settings.set") && !isSaaSMode;
 
   const settingsByName = useAppStore((s) => s.settingsByName);
@@ -126,13 +126,6 @@ export const AIAugmentationSection = forwardRef<
     useAppStore
       .getState()
       .getOrFetchSettingByName(Setting_SettingName.AI, true);
-  }, []);
-
-  // Scroll into view on mount.
-  useEffect(() => {
-    if (location.hash === "#ai-assistant" && containerRef.current) {
-      containerRef.current.scrollIntoView({ block: "nearest" });
-    }
   }, []);
 
   useProductIntro({
@@ -275,8 +268,7 @@ export const AIAugmentationSection = forwardRef<
 
   return (
     <FormSection
-      id="ai"
-      ref={containerRef}
+      id={AI_ASSISTANT_PRODUCT_INTRO}
       title={title}
       data-product-intro-target={AI_ASSISTANT_PRODUCT_INTRO}
     >
@@ -284,12 +276,20 @@ export const AIAugmentationSection = forwardRef<
         <PermissionGuard permissions={["bb.settings.set"]} display="block">
           <FormFieldGroup>
             {isSaaSMode ? (
-              <Alert
-                variant="info"
-                description={t(
-                  "settings.general.workspace.ai-assistant.enabled-in-saas"
-                )}
-              />
+              aiEnabled !== undefined && (
+                <Alert
+                  variant="info"
+                  description={
+                    aiEnabled
+                      ? t(
+                          "settings.general.workspace.ai-assistant.available-in-saas"
+                        )
+                      : t(
+                          "settings.general.workspace.ai-assistant.unavailable-in-saas"
+                        )
+                  }
+                />
+              )
             ) : (
               <>
                 {/* Enable toggle */}

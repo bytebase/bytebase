@@ -7,8 +7,7 @@ import type { Permission } from "@/types/iam";
 import { ApprovalStatus, Engine, IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
-import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
-import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 
 const mocks = vi.hoisted(() => ({
   state: {
@@ -31,10 +30,8 @@ const mocks = vi.hoisted(() => ({
     },
     currentUser: { name: "users/alice", email: "alice@example.com", workspace: "workspaces/demo" },
     fetchDatabases: vi.fn(),
-    fetchIssueByName: vi.fn(),
     fetchInstanceList: vi.fn(),
     listIssues: vi.fn(),
-    listPlans: vi.fn(),
     hasWorkspacePermission: vi.fn((_permission: Permission) => true),
     workspaceResourceName: vi.fn(() => "workspaces/demo"),
     projectPoliciesByName: {
@@ -57,8 +54,12 @@ const mocks = vi.hoisted(() => ({
   open: vi.fn(),
   createChat: vi.fn(() => ({ id: "new-chat" })),
   queueUserMessage: vi.fn(),
+  listRollouts: vi.fn(),
 }));
 
+vi.mock("@/api", () => ({
+  rolloutServiceClientConnect: { listRollouts: mocks.listRollouts },
+}));
 vi.mock("react-i18next", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react-i18next")>()),
   useTranslation: () => ({ t: (key: string) => key }),
@@ -134,16 +135,22 @@ beforeEach(() => {
     ],
   });
   mocks.state.fetchInstanceList.mockResolvedValue({ instances: [] });
-  mocks.state.fetchIssueByName.mockReset();
-  mocks.state.fetchIssueByName.mockResolvedValue(
-    create(IssueSchema, { draft: false })
-  );
   mocks.state.listIssues.mockResolvedValue({ issues: [] });
-  mocks.state.listPlans.mockReset();
-  mocks.state.listPlans.mockResolvedValue({ plans: [], nextPageToken: "" });
+  mocks.listRollouts.mockReset();
+  mocks.listRollouts.mockResolvedValue({ rollouts: [] });
 });
 
 describe("ProjectHomePage", () => {
+  test("checks migration rollouts with one project-scoped request", async () => {
+    render(<ProjectHomePage projectId="orders" />);
+    await waitFor(() => expect(mocks.listRollouts).toHaveBeenCalledWith({
+      parent: "projects/orders",
+      pageSize: 1,
+      filter: 'task_type in ["DATABASE_MIGRATE"]',
+    }));
+    expect(mocks.listRollouts).toHaveBeenCalledOnce();
+  });
+
   test("shows archived status without loading active project data", () => {
     mocks.state.projectsByName["projects/orders"].state = State.DELETED;
     render(<ProjectHomePage projectId="orders" />);
@@ -154,7 +161,7 @@ describe("ProjectHomePage", () => {
     expect(mocks.state.fetchDatabases).not.toHaveBeenCalled();
     expect(mocks.state.fetchInstanceList).not.toHaveBeenCalled();
     expect(mocks.state.listIssues).not.toHaveBeenCalled();
-    expect(mocks.state.listPlans).not.toHaveBeenCalled();
+    expect(mocks.listRollouts).not.toHaveBeenCalled();
   });
 
   test("offers database change creation without plan-list permission", async () => {
@@ -169,7 +176,7 @@ describe("ProjectHomePage", () => {
       params: { project: "orders" },
     });
     expect(query.className).not.toContain("bg-accent");
-    expect(mocks.state.listPlans).not.toHaveBeenCalled();
+    expect(mocks.probedPermissions).not.toContain("bb.plans.list");
   });
 
   test("offers database change creation without database-list permission", async () => {
@@ -204,18 +211,26 @@ describe("ProjectHomePage", () => {
     expect((prompt as HTMLTextAreaElement).value).toBe("");
   });
 
-  test("keeps Enter for a new line and submits a multiline prompt with Send", async () => {
+  test("sends on Enter and keeps Shift+Enter for a new line", async () => {
     render(<ProjectHomePage projectId="orders" />);
     await waitFor(() => expect(screen.getByRole("region", { name: "project.home.next-step" })).toBeTruthy());
     const prompt = screen.getByRole("textbox", { name: "project.home.ai-placeholder" });
     fireEvent.change(prompt, { target: { value: "Explain this project" } });
 
-    const enterWasNotCanceled = fireEvent.keyDown(prompt, { key: "Enter" });
-    expect(enterWasNotCanceled).toBe(true);
+    expect(prompt.getAttribute("placeholder")).toBe(
+      "project.home.ai-placeholder · agent.input-keyboard-hint"
+    );
+    expect(screen.queryByText("agent.input-keyboard-hint")).toBeNull();
+    expect(
+      screen.getByText("agent.context: Order service").parentElement?.parentElement?.className
+    ).toContain("items-end");
+    const shiftEnterWasNotCanceled = fireEvent.keyDown(prompt, { key: "Enter", shiftKey: true });
+    expect(shiftEnterWasNotCanceled).toBe(true);
     expect(mocks.createChat).not.toHaveBeenCalled();
 
     fireEvent.change(prompt, { target: { value: "Explain this\nproject" } });
-    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+    const enterWasCanceled = fireEvent.keyDown(prompt, { key: "Enter" });
+    expect(enterWasCanceled).toBe(false);
     expect(mocks.createChat).toHaveBeenCalledOnce();
     expect(mocks.queueUserMessage).toHaveBeenCalledWith(
       expect.objectContaining({ text: "Explain this\nproject" })
@@ -602,11 +617,7 @@ describe("ProjectHomePage", () => {
         }),
       })
     );
-    expect(mocks.state.listPlans).toHaveBeenCalledWith(
-      expect.objectContaining({
-        find: expect.objectContaining({ specType: "change_database_config" }),
-      })
-    );
+    expect(mocks.listRollouts).toHaveBeenCalledOnce();
   });
 
   test("shows distinct borderless destination links beside both preview headings", async () => {
@@ -739,7 +750,7 @@ describe("ProjectHomePage", () => {
     ).toBeNull();
   });
 
-  test("shows database change after database creation, but hides setup after a submitted change", async () => {
+  test("shows database change after database creation, but hides setup after a migration rollout", async () => {
     const accessIssue = create(IssueSchema, {
       name: "projects/orders/issues/access",
       title: "Access request",
@@ -750,84 +761,44 @@ describe("ProjectHomePage", () => {
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
     expect((await within(next).findByRole("link", { name: "project.home.change-database" })).getAttribute("href"))
       .toBe("workspace.project.plan.detail");
-    expect(mocks.state.listPlans).toHaveBeenCalledWith(
-      expect.objectContaining({
-        find: expect.objectContaining({ specType: "change_database_config" }),
-      })
-    );
+    expect(mocks.listRollouts).toHaveBeenCalledOnce();
     expect(screen.getByRole("region", { name: "project.home.next-step" })).toBeTruthy();
     view.unmount();
 
-    mocks.state.listPlans.mockResolvedValue({
-      plans: [create(PlanSchema, { issue: "projects/orders/issues/change" })],
-      nextPageToken: "",
+    mocks.listRollouts.mockResolvedValue({
+      rollouts: [{ name: "projects/orders/rollouts/change" }],
     });
     render(<ProjectHomePage projectId="orders" />);
-    await waitFor(() =>
-      expect(mocks.state.fetchIssueByName).toHaveBeenCalledWith(
-        "projects/orders/issues/change",
-        true
-      )
-    );
     await waitFor(() => expect(screen.queryByRole("region", { name: "project.home.next-step" })).toBeNull());
   });
 
-  test("finds a submitted database change after unlinked plans on an earlier page", async () => {
-    mocks.state.listPlans.mockImplementation(async ({ pageToken }) =>
-      pageToken
-        ? {
-            plans: [create(PlanSchema, { issue: "projects/orders/issues/change" })],
-            nextPageToken: "",
-          }
-        : {
-            plans: [create(PlanSchema, { name: "projects/orders/plans/draft" })],
-            nextPageToken: "next",
-          }
-    );
-    render(<ProjectHomePage projectId="orders" />);
-    await waitFor(() =>
-      expect(mocks.state.listPlans).toHaveBeenCalledWith(
-        expect.objectContaining({ pageToken: "next" })
-      )
-    );
-    await waitFor(() => expect(screen.queryByRole("region", { name: "project.home.next-step" })).toBeNull());
-  });
-
-  test("keeps setup visible when only create-database issues exist", async () => {
+  test("keeps setup visible for an issue without a migration rollout", async () => {
     mocks.state.listIssues.mockResolvedValue({
       issues: [
         create(IssueSchema, {
-          type: Issue_Type.DATABASE_CHANGE,
-          plan: "projects/orders/plans/create-database",
+          name: "projects/orders/issues/change",
+          status: IssueStatus.OPEN,
         }),
       ],
     });
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
     expect(await within(next).findByRole("link", { name: "project.home.change-database" })).toBeTruthy();
-    expect(mocks.state.listPlans).toHaveBeenCalledWith(
-      expect.objectContaining({
-        find: expect.objectContaining({ specType: "change_database_config" }),
-      })
-    );
+    expect(mocks.listRollouts).toHaveBeenCalledOnce();
   });
 
-  test("keeps setup visible when the linked database-change issue is a draft", async () => {
-    mocks.state.listPlans.mockResolvedValue({
-      plans: [create(PlanSchema, { issue: "projects/orders/issues/draft" })],
-      nextPageToken: "",
-    });
-    mocks.state.fetchIssueByName.mockResolvedValue(create(IssueSchema, { draft: true }));
+  test("keeps setup available when rollout discovery is unavailable", async () => {
+    mocks.listRollouts.mockRejectedValue(new Error("Unavailable"));
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
     expect(await within(next).findByRole("link", { name: "project.home.change-database" })).toBeTruthy();
   });
 
-  test("discovers changes with issue-read permission without issue-list permission", async () => {
-    mocks.missedPermissions = ["bb.issues.list"];
+  test("keeps creation available without rollout-list permission", async () => {
+    mocks.missedPermissions = ["bb.rollouts.list"];
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
     expect(await within(next).findByRole("link", { name: "project.home.change-database" })).toBeTruthy();
-    expect(mocks.state.listPlans).toHaveBeenCalled();
+    expect(mocks.listRollouts).not.toHaveBeenCalled();
   });
 });

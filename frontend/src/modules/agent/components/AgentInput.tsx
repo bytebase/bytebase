@@ -905,7 +905,6 @@ export function AgentInput() {
           ))}
         </div>
       ) : (
-        /* Input row with @-mention autocomplete */
         <div className="relative flex items-end gap-x-2" data-agent-input-row>
           <div className="relative w-full">
             {!input && (
@@ -913,7 +912,7 @@ export function AgentInput() {
                 className="pointer-events-none absolute inset-x-3 inset-y-0 z-10 flex items-center truncate text-sm leading-5 text-control-light"
                 data-agent-input-placeholder
               >
-                {inputPlaceholder}
+                {inputPlaceholder} · {t("agent.input-keyboard-hint")}
               </div>
             )}
             <Textarea
