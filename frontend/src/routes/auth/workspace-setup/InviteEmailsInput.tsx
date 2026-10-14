@@ -38,7 +38,7 @@ export function InviteEmailsInput({
   };
 
   return (
-    <div className="flex min-h-9 w-full min-w-0 flex-wrap items-center gap-1 rounded-xs border border-control-border bg-background px-3 py-1 text-sm leading-5 focus-within:border-accent">
+    <div className="flex min-h-9 w-full min-w-0 flex-wrap items-center gap-1 rounded-xs border border-control-border bg-background px-3 py-1 focus-within:border-accent">
       {entries.map((entry) => {
         const problem =
           entry.problem === "invalid"
@@ -95,7 +95,7 @@ export function InviteEmailsInput({
             ? t("workspace-setup.team.address-placeholder-more")
             : t("workspace-setup.team.address-placeholder")
         }
-        className="h-5 min-w-40 flex-1 border-0 bg-transparent p-0 text-sm leading-5 shadow-none outline-none placeholder:text-control-placeholder focus:border-0 focus:ring-0"
+        className="min-w-40 flex-1 border-0 bg-transparent"
         onChange={(event) => {
           const value = event.target.value;
           if (endsAnAddress(value)) add(value);
