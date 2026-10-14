@@ -40,9 +40,10 @@ const (
 
 // providerReply is one scripted HTTP reply.
 type providerReply struct {
-	status     int
-	retryAfter string
-	body       string
+	status       int
+	retryAfter   string
+	retryAfterMs string
+	body         string
 	// hangUp drops the connection without a reply.
 	hangUp bool
 	// handle replaces the reply. It runs on the server's goroutine.
@@ -76,6 +77,9 @@ func newScriptedProvider(t *testing.T, replies ...providerReply) *scriptedProvid
 			}
 			_ = conn.Close()
 		default:
+			if reply.retryAfterMs != "" {
+				w.Header().Set("Retry-After-Ms", reply.retryAfterMs)
+			}
 			if reply.retryAfter != "" {
 				w.Header().Set("Retry-After", reply.retryAfter)
 			}
@@ -142,6 +146,13 @@ func TestSettingModelWaitsAsLongAsTheProviderAsks(t *testing.T) {
 			failure:  providerReply{status: http.StatusTooManyRequests, retryAfter: "7", body: claudeRateLimit},
 			success:  claudeOK,
 			want:     7 * time.Second,
+		},
+		{
+			name:     "Claude rate limit with Retry-After-Ms, which wins over Retry-After",
+			provider: storepb.AISetting_CLAUDE,
+			failure:  providerReply{status: http.StatusTooManyRequests, retryAfterMs: "4500", retryAfter: "5", body: claudeRateLimit},
+			success:  claudeOK,
+			want:     4500 * time.Millisecond,
 		},
 		{
 			name:     "OpenAI rate limit with Retry-After",

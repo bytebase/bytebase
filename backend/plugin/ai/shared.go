@@ -39,7 +39,7 @@ func doHTTPRequest(_ context.Context, httpReq *http.Request, provider string, re
 		httpErr := &HTTPError{
 			Provider:   provider,
 			StatusCode: httpResp.StatusCode,
-			RetryAfter: parseRetryAfter(httpResp.Header.Get("Retry-After"), time.Now()),
+			RetryAfter: providerWait(httpResp.Header, time.Now()),
 			Body:       string(body),
 		}
 		readFailure(httpErr)

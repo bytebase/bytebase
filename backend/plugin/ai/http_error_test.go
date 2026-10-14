@@ -56,6 +56,41 @@ func TestParseRetryAfter(t *testing.T) {
 	}
 }
 
+func TestProviderWait(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 10, 14, 8, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name   string
+		header map[string]string
+		want   time.Duration
+	}{
+		{name: "no header", want: 0},
+		{name: "milliseconds", header: map[string]string{"Retry-After-Ms": "1500"}, want: 1500 * time.Millisecond},
+		{name: "fraction of a millisecond", header: map[string]string{"Retry-After-Ms": "250.5"}, want: 250*time.Millisecond + 500*time.Microsecond},
+		{name: "digits past the nanosecond", header: map[string]string{"Retry-After-Ms": "1.0000019"}, want: time.Millisecond + time.Nanosecond},
+		{name: "milliseconds win over seconds", header: map[string]string{"Retry-After-Ms": "200", "Retry-After": "20"}, want: 200 * time.Millisecond},
+		{name: "zero milliseconds win over seconds", header: map[string]string{"Retry-After-Ms": "0", "Retry-After": "20"}, want: 0},
+		{name: "seconds when the milliseconds do not parse", header: map[string]string{"Retry-After-Ms": "soon", "Retry-After": "3"}, want: 3 * time.Second},
+		{name: "seconds when the milliseconds are negative", header: map[string]string{"Retry-After-Ms": "-200", "Retry-After": "3"}, want: 3 * time.Second},
+		{name: "seconds when the milliseconds end in a point", header: map[string]string{"Retry-After-Ms": "200.", "Retry-After": "3"}, want: 3 * time.Second},
+		{name: "seconds alone", header: map[string]string{"Retry-After": "3"}, want: 3 * time.Second},
+		{name: "milliseconds too long for a duration", header: map[string]string{"Retry-After-Ms": strings.Repeat("9", 40)}, want: math.MaxInt64},
+		{name: "longest count of whole milliseconds", header: map[string]string{"Retry-After-Ms": "9223372036854"}, want: 9223372036854 * time.Millisecond},
+		{name: "one millisecond too long for a duration", header: map[string]string{"Retry-After-Ms": "9223372036855"}, want: math.MaxInt64},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			header := http.Header{}
+			for name, value := range test.header {
+				header.Set(name, value)
+			}
+			require.Equal(t, test.want, providerWait(header, now))
+		})
+	}
+}
+
 // failingProvider serves one reply to every request.
 func failingProvider(t *testing.T, status int, header map[string]string, body string) *httptest.Server {
 	t.Helper()
@@ -112,6 +147,15 @@ func TestChatReturnsAnHTTPErrorForAFailedReply(t *testing.T) {
 			header:   map[string]string{"Retry-After": "20"},
 			body:     openAIRateLimit,
 			want:     HTTPError{Provider: "OpenAI", RetryAfter: 20 * time.Second},
+		},
+		{
+			name:     "OpenAI rate limit with the wait in milliseconds",
+			provider: storepb.AISetting_OPEN_AI,
+			path:     "/v1/chat/completions",
+			status:   http.StatusTooManyRequests,
+			header:   map[string]string{"Retry-After-Ms": "1500", "Retry-After": "2"},
+			body:     openAIRateLimit,
+			want:     HTTPError{Provider: "OpenAI", RetryAfter: 1500 * time.Millisecond},
 		},
 		{
 			name:     "OpenAI used-up quota",

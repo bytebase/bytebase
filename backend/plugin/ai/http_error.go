@@ -42,12 +42,22 @@ func (e *TransportError) Error() string {
 	return e.message
 }
 
+// providerWait reads the wait a provider asked for in its reply headers.
+// Retry-After-Ms, in milliseconds, wins over Retry-After, as it does in the
+// official OpenAI and Anthropic Go SDKs.
+func providerWait(header http.Header, now time.Time) time.Duration {
+	if wait, ok := parseDecimal(strings.TrimSpace(header.Get("Retry-After-Ms")), time.Millisecond); ok {
+		return wait
+	}
+	return parseRetryAfter(header.Get("Retry-After"), now)
+}
+
 // parseRetryAfter reads a Retry-After header value, which is a number of
 // seconds or an HTTP date. It returns zero for a value that is absent,
 // malformed, or not in the future.
 func parseRetryAfter(value string, now time.Time) time.Duration {
 	value = strings.TrimSpace(value)
-	if wait, ok := parseDecimalSeconds(value); ok {
+	if wait, ok := parseDecimal(value, time.Second); ok {
 		return wait
 	}
 	if date, err := http.ParseTime(value); err == nil {
@@ -56,23 +66,26 @@ func parseRetryAfter(value string, now time.Time) time.Duration {
 	return 0
 }
 
-var decimalSeconds = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?$`)
+var decimalNumber = regexp.MustCompile(`^[0-9]+(\.[0-9]+)?$`)
 
-// parseDecimalSeconds reads a count of seconds written as digits with an
-// optional fraction, to the nanosecond. It saturates instead of overflowing: a
-// wait too long for a Duration must not come out short or negative.
-func parseDecimalSeconds(value string) (time.Duration, bool) {
-	if !decimalSeconds.MatchString(value) {
+// parseDecimal reads a count of units written as digits with an optional
+// fraction, to the nanosecond. The unit is a power of ten nanoseconds, such as
+// time.Second or time.Millisecond. It saturates instead of overflowing: a wait
+// too long for a Duration must not come out short or negative.
+func parseDecimal(value string, unit time.Duration) (time.Duration, bool) {
+	if !decimalNumber.MatchString(value) {
 		return 0, false
 	}
 	whole, fraction, _ := strings.Cut(value, ".")
-	seconds, err := strconv.ParseInt(whole, 10, 64)
-	if err != nil || seconds > math.MaxInt64/int64(time.Second) {
+	count, err := strconv.ParseInt(whole, 10, 64)
+	if err != nil || count > math.MaxInt64/int64(unit) {
 		return math.MaxInt64, true
 	}
-	// Nine digits always parse.
-	nanoseconds, _ := strconv.Atoi((fraction + "000000000")[:9])
-	wait := time.Duration(seconds) * time.Second
+	// Padded or cut to as many digits as the unit has zeros, the fraction
+	// counts nanoseconds.
+	digits := len(strconv.FormatInt(int64(unit), 10)) - 1
+	nanoseconds, _ := strconv.ParseInt((fraction + strings.Repeat("0", digits))[:digits], 10, 64)
+	wait := time.Duration(count) * unit
 	if wait > math.MaxInt64-time.Duration(nanoseconds) {
 		return math.MaxInt64, true
 	}

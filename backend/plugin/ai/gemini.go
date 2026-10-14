@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -121,7 +122,7 @@ func readGeminiFailure(httpErr *HTTPError) {
 		if !ok {
 			continue
 		}
-		if delay, ok := parseDecimalSeconds(seconds); ok {
+		if delay, ok := parseDecimal(seconds, time.Second); ok {
 			httpErr.RetryAfter = max(httpErr.RetryAfter, delay)
 		}
 	}
