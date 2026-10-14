@@ -100,6 +100,10 @@ func actuatorAIEnabled(setting *storepb.AISetting, err error) bool {
 	return err == nil && setting != nil && setting.Enabled
 }
 
+func actuatorAISQLReviewEnabled(setting *storepb.AISetting, err error) bool {
+	return err == nil && setting != nil && setting.SqlReviewEnabled
+}
+
 func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string) (*v1pb.ActuatorInfo, error) {
 	serverInfo := v1pb.ActuatorInfo{
 		Version:             s.profile.Version,
@@ -120,6 +124,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 			slog.Error("failed to read the AI setting", slog.String("workspace", workspaceID), log.BBError(err))
 		}
 		serverInfo.AiEnabled = actuatorAIEnabled(aiSetting, err)
+		serverInfo.AiSqlReviewEnabled = actuatorAISQLReviewEnabled(aiSetting, err)
 		if s.sampleManager != nil {
 			serverInfo.Sample.Available = s.sampleManager.CheckAvailable(ctx) == nil
 			instances, err := s.sampleManager.ListInstances(ctx, workspaceID)

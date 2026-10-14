@@ -181,3 +181,45 @@ func createReviewRunIssue(ctx context.Context, t *testing.T, stores *store.Store
 	require.NoError(t, err)
 	return issue
 }
+
+func TestRunReviewRefusesAIReviewWhileItsSwitchIsOff(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	service := newIssueServiceForTest(t, stores)
+
+	setAISetting := func(setting *storepb.AISetting) {
+		t.Helper()
+		_, err := stores.UpsertSetting(ctx, &store.SettingMessage{
+			Name:      storepb.SettingName_AI,
+			Workspace: "default",
+			Value:     setting,
+		})
+		require.NoError(t, err)
+	}
+	runAIReview := func() (*connect.Response[v1pb.ReviewRun], error) {
+		return service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
+			Name: fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/ai", issue.UID),
+		}))
+	}
+
+	setAISetting(&storepb.AISetting{Enabled: true})
+	_, err := runAIReview()
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	require.ErrorContains(t, err, "AI SQL review is not enabled")
+	claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
+	require.NoError(t, err)
+	require.Empty(t, claimed, "a refused review creates no run")
+
+	setAISetting(&storepb.AISetting{Enabled: true, SqlReviewEnabled: true})
+	resp, err := runAIReview()
+	require.NoError(t, err)
+	require.Equal(t, v1pb.ReviewRun_AI, resp.Msg.Type)
+	require.Equal(t, v1pb.ReviewRun_AVAILABLE, resp.Msg.Status)
+
+	setAISetting(&storepb.AISetting{SqlReviewEnabled: true})
+	_, err = runAIReview()
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	require.ErrorContains(t, err, "AI is not enabled")
+}

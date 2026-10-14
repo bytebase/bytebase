@@ -1,6 +1,19 @@
 {
   "add-or-remove-rules": "Thêm hoặc xóa quy tắc",
   "add-rules": "Thêm quy tắc",
+  "ai-review": {
+    "ai-off": "AI đang tắt trong không gian làm việc nên không có lần đánh giá bằng AI nào được chạy.",
+    "description": "Một mô hình AI đánh giá SQL của issue để tìm các rủi ro mà quy tắc tiêu chuẩn không phát hiện được. Áp dụng cho mọi dự án trong không gian làm việc.",
+    "enable": {
+      "description": "Mỗi lần đánh giá sẽ gửi nguyên văn các câu lệnh tới nhà cung cấp AI, và có thể gửi lược đồ của các cơ sở dữ liệu đích cùng số liệu thống kê bảng của chúng. Tính năng này không đọc bất kỳ hàng dữ liệu nào trong cơ sở dữ liệu.",
+      "self": "Đánh giá thay đổi bằng AI"
+    },
+    "project-description": "Một mô hình AI đánh giá SQL của issue để tìm các rủi ro mà quy tắc tiêu chuẩn không phát hiện được.",
+    "self": "Đánh giá bằng AI",
+    "set-for-workspace": "Được thiết lập cho toàn bộ không gian làm việc.",
+    "turn-on-ai": "Bật AI",
+    "view-workspace-setting": "Xem thiết lập của không gian làm việc"
+  },
   "attach-resource": {
     "change-resources": "Thay đổi tài nguyên đính kèm",
     "label": "Bạn có thể áp dụng chính sách đánh giá SQL cho môi trường hoặc dự án. Cơ sở dữ liệu sẽ sử dụng chính sách cấp dự án nếu có, hoặc quay lại chính sách cấp môi trường.",

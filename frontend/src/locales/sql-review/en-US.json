@@ -1,6 +1,19 @@
 {
   "add-or-remove-rules": "Add or remove rules",
   "add-rules": "Add rules",
+  "ai-review": {
+    "ai-off": "AI is off for the workspace, so no AI review runs.",
+    "description": "An AI model that reviews the SQL of an issue for risks the standard rules cannot see. It applies to every project in the workspace.",
+    "enable": {
+      "description": "Each review sends the statements as written to the AI provider, and can send the schema of the target databases and their table statistics. It reads no rows from the databases.",
+      "self": "Review changes with AI"
+    },
+    "project-description": "An AI model that reviews the SQL of an issue for risks the standard rules cannot see.",
+    "self": "AI review",
+    "set-for-workspace": "Set for the whole workspace.",
+    "turn-on-ai": "Turn on AI",
+    "view-workspace-setting": "View workspace setting"
+  },
   "attach-resource": {
     "change-resources": "Change attached resources",
     "label": "You can apply the SQL review policy to environments or projects. The database will use the project-level policy if it exists, or fallback to the environment-level policy.",

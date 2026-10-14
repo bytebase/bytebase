@@ -445,6 +445,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
           serverInfo: state.serverInfo && {
             ...state.serverInfo,
             aiEnabled: settingValue.value.enabled,
+            aiSqlReviewEnabled: settingValue.value.sqlReviewEnabled,
           },
         }));
       }

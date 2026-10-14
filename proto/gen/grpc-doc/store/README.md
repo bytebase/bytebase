@@ -3654,6 +3654,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | api_key | [string](#string) |  |  |
 | model | [string](#string) |  |  |
 | version | [string](#string) |  |  |
+| sql_review_enabled | [bool](#bool) |  | Whether the AI SQL review may run. It is a consent of its own beside `enabled`, because a review sends the statements of a change to the provider and can send the schema of its target databases. |
 
 
 

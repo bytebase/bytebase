@@ -343,6 +343,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				oldAISetting.ApiKey = payload.ApiKey
 			case "value.ai.model":
 				oldAISetting.Model = payload.Model
+			case "value.ai.sql_review_enabled":
+				oldAISetting.SqlReviewEnabled = payload.SqlReviewEnabled
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}

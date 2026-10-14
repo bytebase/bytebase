@@ -9,6 +9,7 @@ import (
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/review"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/semaphore"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -130,7 +131,7 @@ func setupReviewFixture(ctx context.Context, t *testing.T, issueCount int) (*sto
 		INSERT INTO project (resource_id, workspace, name) VALUES ('p', 'ws', 'P');
 	`)
 	require.NoError(t, err)
-	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{Name: storepb.SettingName_AI, Workspace: "ws", Value: &storepb.AISetting{Enabled: true}})
+	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{Name: storepb.SettingName_AI, Workspace: "ws", Value: &storepb.AISetting{Enabled: true, SqlReviewEnabled: true}})
 	require.NoError(t, err)
 	rules, err := protojson.Marshal(&storepb.ReviewRulePolicy{Rules: []storepb.ReviewRuleType{storepb.ReviewRuleType_SYNTAX}})
 	require.NoError(t, err)
@@ -289,4 +290,92 @@ func send(t *testing.T, ch chan<- struct{}) {
 	case <-time.After(testWaitLimit):
 		t.Fatal("timed out waiting for a model call to release")
 	}
+}
+
+type modelFunc func(ctx context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error)
+
+func (f modelFunc) Chat(ctx context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
+	return f(ctx, request)
+}
+
+func TestSettingGatedModelStopsAtTheSwitch(t *testing.T) {
+	t.Parallel()
+
+	calls := 0
+	var refusal error
+	model := &settingGatedModel{
+		model: modelFunc(func(context.Context, *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
+			calls++
+			return &v1pb.AIChatResponse{}, nil
+		}),
+		check: func(context.Context) error { return refusal },
+	}
+
+	_, err := model.Chat(context.Background(), &v1pb.AIChatRequest{})
+	require.NoError(t, err)
+	require.Equal(t, 1, calls)
+
+	refusal = errors.New("AI SQL review is not enabled in the workspace AI setting")
+	_, err = model.Chat(context.Background(), &v1pb.AIChatRequest{})
+	require.ErrorIs(t, err, refusal)
+	require.Equal(t, 1, calls, "no call reaches the provider once the review is off")
+}
+
+func TestAIReviewExecutorChecksTheSettingAgain(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('ws');
+		INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('p', 'ws', 'P');
+	`)
+	require.NoError(t, err)
+
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "p",
+		Name:      "plan",
+		Config: &storepb.PlanConfig{
+			Specs: []*storepb.PlanConfig_Spec{{
+				Id: "spec-1",
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+						Targets: []string{"instances/missing/databases/app"},
+					},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "p",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload:      &storepb.Issue{},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	setAISetting := func(setting *storepb.AISetting) {
+		t.Helper()
+		_, err := stores.UpsertSetting(ctx, &store.SettingMessage{
+			Name:      storepb.SettingName_AI,
+			Workspace: "ws",
+			Value:     setting,
+		})
+		require.NoError(t, err)
+	}
+	executor := NewAIReviewExecutor(stores)
+
+	setAISetting(&storepb.AISetting{Enabled: true})
+	_, err = executor.RunOnce(ctx, "p", issue.UID)
+	require.ErrorContains(t, err, "AI SQL review is not enabled")
+
+	// With the switch on the executor goes on to the target, which does not
+	// exist in this fixture.
+	setAISetting(&storepb.AISetting{Enabled: true, SqlReviewEnabled: true})
+	_, err = executor.RunOnce(ctx, "p", issue.UID)
+	require.Error(t, err)
+	require.NotContains(t, err.Error(), "is not enabled")
 }

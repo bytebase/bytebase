@@ -222,6 +222,13 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
     : !standardRules.storedCustomized && !canSave;
   // The V2 workspace route needs only the policy read.
   const canViewWorkspaceRules = hasWorkspacePermissionV2("bb.policies.get");
+  // The AI review is switched for the whole workspace, and it runs only
+  // while AI itself is on.
+  const aiReviewOn = useAppStore(
+    (state) =>
+      state.serverInfo?.aiEnabled === true &&
+      state.serverInfo?.aiSqlReviewEnabled === true
+  );
 
   return (
     <ProjectPageLayout>
@@ -295,6 +302,37 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
             )}
           </>
         )}
+        <div className="flex flex-col gap-y-2 pt-8">
+          <h1 className="text-2xl font-bold text-main">
+            {t("sql-review.ai-review.self")}
+          </h1>
+          <p className="text-sm text-control-light">
+            {t("sql-review.ai-review.project-description")}
+          </p>
+        </div>
+        <SwitchRow
+          className="rounded-sm border border-block-border px-4 py-3"
+          title={t("sql-review.ai-review.enable.self")}
+          description={
+            <>
+              {t("sql-review.ai-review.set-for-workspace")}
+              {canViewWorkspaceRules && (
+                <>
+                  {" "}
+                  <RouterLink
+                    to={{ name: WORKSPACE_ROUTE_SQL_REVIEW }}
+                    className="text-accent hover:underline"
+                  >
+                    {t("sql-review.ai-review.view-workspace-setting")}
+                  </RouterLink>
+                </>
+              )}
+            </>
+          }
+          checked={aiReviewOn}
+          onCheckedChange={() => {}}
+          readOnly
+        />
       </div>
 
       {standardRules.isDirty && (

@@ -1,5 +1,11 @@
 import { create } from "@bufbuild/protobuf";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
@@ -71,6 +77,7 @@ vi.mock("@/stores/app", async () => {
   type StorePolicy = import("@/types/proto-es/v1/org_policy_service_pb").Policy;
   const useAppStore = createStore<{
     policies: Record<string, StorePolicy>;
+    serverInfo?: { aiEnabled: boolean; aiSqlReviewEnabled: boolean };
     getPolicyByParentAndType: (params: {
       parentPath: string;
     }) => StorePolicy | undefined;
@@ -141,6 +148,15 @@ const seedPolicies = (policies: Record<string, Policy>) =>
       setState: (state: { policies: Record<string, Policy> }) => void;
     }
   ).setState({ policies });
+const seedServerInfo = (serverInfo?: {
+  aiEnabled: boolean;
+  aiSqlReviewEnabled: boolean;
+}) =>
+  (
+    useAppStore as unknown as {
+      setState: (state: { serverInfo: typeof serverInfo }) => void;
+    }
+  ).setState({ serverInfo });
 const { ProjectSQLReviewPage } = await import("./ProjectSQLReviewPage");
 
 const reviewRulePolicy = (
@@ -200,6 +216,53 @@ describe("ProjectSQLReviewPage", () => {
     mocks.fetchPolicy.mockReset();
     mocks.pushNotification.mockReset();
     seedPolicies({ [WORKSPACE]: workspacePolicy() });
+    seedServerInfo(undefined);
+  });
+
+  // The row of the AI review: its title, its description, and its state.
+  const aiReviewRow = () =>
+    within(
+      screen.getByText("sql-review.ai-review.enable.self").parentElement!
+        .parentElement!
+    );
+
+  test("shows the AI review as on when the workspace has it on and AI is on", async () => {
+    seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
+    await renderLoaded();
+
+    expect(
+      aiReviewRow().getByText("sql-review.standard-rules.on")
+    ).toBeInTheDocument();
+    expect(
+      aiReviewRow().getByText("sql-review.ai-review.set-for-workspace", {
+        exact: false,
+      })
+    ).toBeInTheDocument();
+    expect(
+      aiReviewRow().getByRole("link", {
+        name: "sql-review.ai-review.view-workspace-setting",
+      })
+    ).toBeInTheDocument();
+    expect(aiReviewRow().queryByRole("switch")).not.toBeInTheDocument();
+  });
+
+  test.each([
+    ["the workspace has it off", { aiEnabled: true, aiSqlReviewEnabled: false }],
+    ["AI is off for the workspace", { aiEnabled: false, aiSqlReviewEnabled: true }],
+  ])("shows the AI review as off when %s", async (_name, serverInfo) => {
+    seedServerInfo(serverInfo);
+    await renderLoaded();
+
+    expect(
+      aiReviewRow().getByText("sql-review.standard-rules.off")
+    ).toBeInTheDocument();
+  });
+
+  test("the workspace setting link of the AI review needs the workspace policy read", async () => {
+    mocks.workspacePermissions["bb.policies.get"] = false;
+    await renderLoaded();
+
+    expect(aiReviewRow().queryByRole("link")).not.toBeInTheDocument();
   });
 
   test("a project without its own policy shows the workspace rules as text", async () => {
@@ -209,8 +272,9 @@ describe("ProjectSQLReviewPage", () => {
     // Only the customize control is a switch; the rules are read-only.
     expect(screen.getAllByRole("switch")).toHaveLength(1);
     expect(screen.getAllByText("sql-review.standard-rules.on")).toHaveLength(2);
+    // Nine rules, and the AI review row below them.
     expect(screen.getAllByText("sql-review.standard-rules.off")).toHaveLength(
-      9
+      10
     );
     expect(
       screen.getByText("sql-review.standard-rules.running")
