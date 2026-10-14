@@ -266,8 +266,12 @@ func (s *Store) GetSetting(ctx context.Context, workspace string, name storepb.S
 	if !s.enableCache {
 		return s.GetSettingUncached(ctx, workspace, name)
 	}
-	if v, ok := s.settingCache.Get(getSettingCacheKey(workspace, name)); ok {
+	key := getSettingCacheKey(workspace, name)
+	if v, ok := s.settingCache.Get(key); ok {
 		return v, nil
+	}
+	if s.settingMissHookForTest != nil {
+		s.settingMissHookForTest()
 	}
 	// Fill the cache under the publish mutex so the fill's content is current
 	// at publish time: an unordered fill could read a pre-commit snapshot and
@@ -275,19 +279,26 @@ func (s *Store) GetSetting(ctx context.Context, workspace string, name storepb.S
 	// row lock is held here, so the row-lock -> publish-lock order is kept.
 	s.settingPublishMu.Lock()
 	defer s.settingPublishMu.Unlock()
+	// A fill that waited for the lock can find what the fill before it stored.
+	if v, ok := s.settingCache.Get(key); ok {
+		return v, nil
+	}
+	if s.settingFillHookForTest != nil {
+		s.settingFillHookForTest()
+	}
 	setting, err := s.GetSettingUncached(ctx, workspace, name)
 	if err != nil || setting == nil {
 		return setting, err
 	}
-	s.settingCache.Add(getSettingCacheKey(workspace, name), setting)
+	s.settingCache.Add(key, setting)
 	return setting, nil
 }
 
 // GetSettingUncached reads the setting directly from the database, bypassing
-// the setting cache. The cache has no TTL and only in-process writes refresh
-// it, so callers that must observe out-of-band writes (enforcement gates) or
-// that merge-and-write the value back (read-modify-write updates) use this to
-// avoid acting on a stale cached copy.
+// the setting cache. An out-of-band write reaches the cache only when the
+// entry expires (OutOfBandCacheLifetime), so callers that must observe it at
+// once (enforcement gates) or that merge-and-write the value back
+// (read-modify-write updates) use this to avoid acting on a stale cached copy.
 func (s *Store) GetSettingUncached(ctx context.Context, workspace string, name storepb.SettingName) (*SettingMessage, error) {
 	settings, err := s.ListSettings(ctx, &FindSettingMessage{Workspace: workspace, Name: &name})
 	if err != nil {
@@ -573,9 +584,9 @@ func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storep
 }
 
 // GetMCPSettingsUncached reads the workspace's stored MCP setting straight from
-// the database, bypassing the setting cache. The cache has no TTL and only
-// in-process writes refresh it, so a setting flipped out of band — direct SQL,
-// another replica — must still bite on the next request.
+// the database, bypassing the setting cache, so a setting flipped out of band —
+// direct SQL, another replica — bites on the next request, not when the cached
+// entry expires.
 //
 // Returns nil with any error; no caller may act on partially resolved settings.
 //

@@ -104,6 +104,12 @@ func ValidatePhone(phone string) error {
 // Modified to only allow lowercase letters since Bytebase requires lowercase emails.
 var emailRegex = regexp.MustCompile(`^[a-z0-9.!#$%&'*+/=?^_` + "`" + `{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$`)
 
+// NormalizeEmail canonicalizes a submitted email for lookups, lockout
+// identities, and audit resources — these must all key the same string.
+func NormalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
+}
+
 // ValidateEmail validates the email address using WHATWG HTML spec.
 // Only lowercase ASCII letters, digits, and standard email symbols are allowed.
 func ValidateEmail(email string) error {
