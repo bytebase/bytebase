@@ -95,9 +95,17 @@ func formatProjectFilter(project string) string {
 	return common.FormatProject(project)
 }
 
-// listDatabases lists databases matching the filter in the user's workspace.
-// Uses the workspace ID from the JWT token stored in context.
-func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEntry, error) {
+// errListRefused reports that the caller's own permissions refuse a listing
+// parent, as opposed to the MCP policy refusing the method.
+var errListRefused = errors.New("listing refused by the caller's permissions")
+
+// listDatabases lists the databases matching filter that the caller can list.
+//
+// A named project is listed under that project, which checks bb.projects.get
+// there. Otherwise the workspace parent is tried first. It needs
+// bb.databases.list at the workspace, which project roles don't grant, so a
+// caller refused there is listed through each project SearchProjects returns.
+func (s *Server) listDatabases(ctx context.Context, filter, project string) ([]databaseEntry, error) {
 	workspaceID := getWorkspaceID(ctx)
 	if workspaceID == "" {
 		return nil, &toolError{
@@ -107,11 +115,54 @@ func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEn
 		}
 	}
 
+	if project != "" {
+		parent := formatProjectFilter(project)
+		databases, err := s.listDatabasesUnder(ctx, parent, filter)
+		if errors.Is(err, errListRefused) {
+			return nil, &toolError{
+				Code:       "PERMISSION_DENIED",
+				Message:    fmt.Sprintf("you don't have permission to list databases in %s", parent),
+				Suggestion: "ask for a role in that project, or leave out project to search the projects you can read",
+			}
+		}
+		return databases, err
+	}
+
+	databases, err := s.listDatabasesUnder(ctx, common.FormatWorkspace(workspaceID), filter)
+	if !errors.Is(err, errListRefused) {
+		return databases, err
+	}
+	parents, err := s.searchProjects(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(parents) == 0 {
+		return nil, &toolError{
+			Code:       "PERMISSION_DENIED",
+			Message:    "you can list no databases in this workspace",
+			Suggestion: "ask a workspace admin for a role in the project that holds the database",
+		}
+	}
+	for _, parent := range parents {
+		found, err := s.listDatabasesUnder(ctx, parent, filter)
+		// A project refused after the search holds nothing the caller can list.
+		if err != nil && !errors.Is(err, errListRefused) {
+			return nil, err
+		}
+		databases = append(databases, found...)
+	}
+	return databases, nil
+}
+
+// listDatabasesUnder lists the databases matching filter under one parent. A
+// parent the server can't find holds none: a project named but never created,
+// or one deleted after the search.
+func (s *Server) listDatabasesUnder(ctx context.Context, parent, filter string) ([]databaseEntry, error) {
 	var databases []databaseEntry
 	pageToken := ""
 	for {
 		body := map[string]any{
-			"parent":   fmt.Sprintf("workspaces/%s", workspaceID),
+			"parent":   parent,
 			"filter":   filter,
 			"pageSize": 1000,
 		}
@@ -122,15 +173,14 @@ func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEn
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to list databases")
 		}
+		if resp.Status == http.StatusNotFound {
+			return nil, nil
+		}
 		if resp.Status == http.StatusForbidden {
 			if message := parseError(resp.Body); IsPolicyRefusal(message) {
 				return nil, &toolError{Code: "PERMISSION_DENIED", Message: message}
 			}
-			return nil, &toolError{
-				Code:       "PERMISSION_DENIED",
-				Message:    "you don't have permission to list databases in this workspace",
-				Suggestion: "ask your workspace admin to grant you the bb.databases.list permission",
-			}
+			return nil, errListRefused
 		}
 		if resp.Status >= 400 {
 			return nil, errors.Errorf("failed to list databases: HTTP %d: %s", resp.Status, parseError(resp.Body))
@@ -143,11 +193,52 @@ func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEn
 		databases = append(databases, listResp.Databases...)
 
 		if listResp.NextPageToken == "" {
-			break
+			return databases, nil
 		}
 		pageToken = listResp.NextPageToken
 	}
-	return databases, nil
+}
+
+// searchProjects returns the names of the projects the caller can read.
+// SearchProjects filters each page after reading it, so an empty page can
+// still carry a next page token.
+func (s *Server) searchProjects(ctx context.Context) ([]string, error) {
+	var projects []string
+	pageToken := ""
+	for {
+		body := map[string]any{"pageSize": 1000}
+		if pageToken != "" {
+			body["pageToken"] = pageToken
+		}
+		resp, err := s.apiRequest(ctx, "/bytebase.v1.ProjectService/SearchProjects", body)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to search projects")
+		}
+		if resp.Status == http.StatusForbidden {
+			return nil, &toolError{Code: "PERMISSION_DENIED", Message: parseError(resp.Body)}
+		}
+		if resp.Status >= 400 {
+			return nil, errors.Errorf("failed to search projects: HTTP %d: %s", resp.Status, parseError(resp.Body))
+		}
+
+		var searchResp struct {
+			Projects []struct {
+				Name string `json:"name"`
+			} `json:"projects"`
+			NextPageToken string `json:"nextPageToken,omitempty"`
+		}
+		if err := json.Unmarshal(resp.Body, &searchResp); err != nil {
+			return nil, errors.Wrap(err, "failed to parse project search")
+		}
+		for _, project := range searchResp.Projects {
+			projects = append(projects, project.Name)
+		}
+
+		if searchResp.NextPageToken == "" {
+			return projects, nil
+		}
+		pageToken = searchResp.NextPageToken
+	}
 }
 
 // matchDatabases applies tiered matching (exact > case-insensitive > substring) and
@@ -217,7 +308,7 @@ func candidateView(matches []databaseEntry) *resolvedDatabase {
 
 // resolveDatabase resolves a database name to a unique resource using tiered matching.
 func (s *Server) resolveDatabase(ctx context.Context, database, instance, project string) (*resolvedDatabase, error) {
-	databases, err := s.listDatabases(ctx, buildDatabaseFilter(database, instance, project))
+	databases, err := s.listDatabases(ctx, buildDatabaseFilter(database, instance, project), project)
 	if err != nil {
 		return nil, err
 	}
