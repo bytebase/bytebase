@@ -728,7 +728,7 @@ func TestTheApprovalReadsAreServed(t *testing.T) {
 		v1connect.AccessGrantServiceListAccessGrantsProcedure,
 	} {
 		require.Equal(t, v1pb.MCPMethodClass_READ, class[procedure],
-			"%s must be READ: an agent working for a user has to name who approves, see the masking rules and exemptions, and see pending access requests (journey 1)", procedure)
+			"%s must be READ: an agent working for a user has to name who approves, see the masking rules and exemptions, and see pending access requests (BYT-9292)", procedure)
 	}
 }
 
