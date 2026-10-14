@@ -19,9 +19,6 @@ const (
 	maxChatRetries = 3
 	// firstRetryBackoff is the middle of the first backoff. Each retry doubles it.
 	firstRetryBackoff = time.Second
-	// statusOverloaded is not a registered status. A provider answers it when
-	// it is overloaded.
-	statusOverloaded = 529
 )
 
 type settingModel struct {
@@ -70,21 +67,22 @@ func (m *settingModel) Chat(ctx context.Context, request *v1pb.AIChatRequest) (*
 	}
 }
 
-// isTransientFailure reports whether the same call can succeed on a later attempt.
+// isTransientFailure reports whether the failed call should be sent again.
 func isTransientFailure(err error) bool {
 	var httpErr *ai.HTTPError
 	if errors.As(err, &httpErr) {
+		if httpErr.StatusCode == http.StatusTooManyRequests && httpErr.QuotaExhausted {
+			return false
+		}
+		// The rest follows the official OpenAI and Anthropic Go SDKs.
+		if httpErr.ShouldRetry != nil {
+			return *httpErr.ShouldRetry
+		}
 		switch httpErr.StatusCode {
-		case http.StatusTooManyRequests:
-			return !httpErr.QuotaExhausted
-		case http.StatusInternalServerError,
-			http.StatusBadGateway,
-			http.StatusServiceUnavailable,
-			http.StatusGatewayTimeout,
-			statusOverloaded:
+		case http.StatusRequestTimeout, http.StatusConflict, http.StatusTooManyRequests:
 			return true
 		default:
-			return false
+			return httpErr.StatusCode >= http.StatusInternalServerError
 		}
 	}
 	var transportErr *ai.TransportError

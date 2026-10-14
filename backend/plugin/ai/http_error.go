@@ -21,7 +21,11 @@ type HTTPError struct {
 	// QuotaExhausted means the provider refused the call for a quota that a
 	// wait does not restore, such as a spend limit. The same call keeps failing.
 	QuotaExhausted bool
-	Body           string
+	// ShouldRetry is the provider's x-should-retry header: whether the provider
+	// says the same call can succeed later. It is nil when the provider sent
+	// none, or a value other than "true" or "false".
+	ShouldRetry *bool
+	Body        string
 }
 
 // Error keeps a text that callers read: the frontend agent loop looks for the
@@ -40,6 +44,19 @@ type TransportError struct {
 
 func (e *TransportError) Error() string {
 	return e.message
+}
+
+// readShouldRetry reads the x-should-retry header the way the official OpenAI
+// and Anthropic Go SDKs do: only "true" and "false" count.
+func readShouldRetry(header http.Header) *bool {
+	switch header.Get("X-Should-Retry") {
+	case "true":
+		return new(true)
+	case "false":
+		return new(false)
+	default:
+		return nil
+	}
 }
 
 // providerWait reads the wait a provider asked for in its reply headers.

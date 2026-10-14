@@ -43,6 +43,7 @@ type providerReply struct {
 	status       int
 	retryAfter   string
 	retryAfterMs string
+	shouldRetry  string
 	body         string
 	// hangUp drops the connection without a reply.
 	hangUp bool
@@ -79,6 +80,9 @@ func newScriptedProvider(t *testing.T, replies ...providerReply) *scriptedProvid
 		default:
 			if reply.retryAfterMs != "" {
 				w.Header().Set("Retry-After-Ms", reply.retryAfterMs)
+			}
+			if reply.shouldRetry != "" {
+				w.Header().Set("X-Should-Retry", reply.shouldRetry)
 			}
 			if reply.retryAfter != "" {
 				w.Header().Set("Retry-After", reply.retryAfter)
@@ -197,8 +201,11 @@ func TestSettingModelBacksOffWhenTheProviderNamesNoWait(t *testing.T) {
 	// The 429 here has neither a Retry-After nor the spend cap code, so nothing
 	// says it will repeat and it is retried like the other statuses.
 	for _, status := range []int{
+		http.StatusRequestTimeout,
+		http.StatusConflict,
 		http.StatusTooManyRequests,
 		http.StatusInternalServerError,
+		http.StatusNotImplemented,
 		http.StatusBadGateway,
 		http.StatusServiceUnavailable,
 		http.StatusGatewayTimeout,
@@ -218,6 +225,19 @@ func TestSettingModelBacksOffWhenTheProviderNamesNoWait(t *testing.T) {
 			requireBackoff(t, recorder.waits, 1)
 		})
 	}
+
+	t.Run("x-should-retry true on a 400", func(t *testing.T) {
+		t.Parallel()
+
+		provider := newScriptedProvider(t,
+			providerReply{status: http.StatusBadRequest, shouldRetry: "true", body: `{"error": {"message": "try again", "type": "invalid_request_error"}}`},
+			providerReply{status: http.StatusOK, body: openAIOK})
+		model, recorder := newRetryModel(storepb.AISetting_OPEN_AI, provider.url)
+		_, err := model.Chat(context.Background(), chatRequest())
+		require.NoError(t, err)
+		require.Equal(t, int32(2), provider.requests.Load())
+		requireBackoff(t, recorder.waits, 1)
+	})
 
 	t.Run("a Retry-After of zero", func(t *testing.T) {
 		t.Parallel()
@@ -297,13 +317,25 @@ func TestSettingModelDoesNotRetryAFailureThatWillRepeat(t *testing.T) {
 		{
 			name:     "a status outside the retry list, even with Retry-After",
 			provider: storepb.AISetting_CLAUDE,
-			reply:    providerReply{status: http.StatusNotImplemented, retryAfter: "1", body: `{}`},
-			wantText: "Claude API returned status 501",
+			reply:    providerReply{status: http.StatusUnprocessableEntity, retryAfter: "1", body: `{}`},
+			wantText: "Claude API returned status 422",
+		},
+		{
+			name:     "x-should-retry false on a 503",
+			provider: storepb.AISetting_CLAUDE,
+			reply:    providerReply{status: http.StatusServiceUnavailable, shouldRetry: "false", body: `{"type": "error", "error": {"type": "api_error"}}`},
+			wantText: "Claude API returned status 503",
 		},
 		{
 			name:     "OpenAI used-up quota",
 			provider: storepb.AISetting_OPEN_AI,
 			reply:    providerReply{status: http.StatusTooManyRequests, body: openAIQuota},
+			wantText: "OpenAI API returned status 429",
+		},
+		{
+			name:     "OpenAI used-up quota, even with x-should-retry true",
+			provider: storepb.AISetting_OPEN_AI,
+			reply:    providerReply{status: http.StatusTooManyRequests, shouldRetry: "true", body: openAIQuota},
 			wantText: "OpenAI API returned status 429",
 		},
 		{

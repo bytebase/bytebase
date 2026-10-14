@@ -37,10 +37,11 @@ func doHTTPRequest(_ context.Context, httpReq *http.Request, provider string, re
 
 	if httpResp.StatusCode != http.StatusOK {
 		httpErr := &HTTPError{
-			Provider:   provider,
-			StatusCode: httpResp.StatusCode,
-			RetryAfter: providerWait(httpResp.Header, time.Now()),
-			Body:       string(body),
+			Provider:    provider,
+			StatusCode:  httpResp.StatusCode,
+			RetryAfter:  providerWait(httpResp.Header, time.Now()),
+			ShouldRetry: readShouldRetry(httpResp.Header),
+			Body:        string(body),
 		}
 		readFailure(httpErr)
 		return nil, httpErr
