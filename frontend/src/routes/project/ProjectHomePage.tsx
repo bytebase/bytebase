@@ -37,6 +37,7 @@ import {
   selectHasRunningChat,
   useAgentStore,
 } from "@/modules/agent/store/agent";
+import { readSelectedGuideScenarioId } from "@/modules/workspace-setup-guide/selection";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types/iam";
 import {
@@ -527,6 +528,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     canCreateChange,
     canQueryDatabase,
     canManageMembers,
+    goal: readSelectedGuideScenarioId(),
   });
 
   const nextStepCopy = (step: ProjectHomeNextStep) => {

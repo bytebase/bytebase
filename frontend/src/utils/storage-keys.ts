@@ -71,8 +71,14 @@ export const storageKeyWorkspaceSetupGuideWorkspaceUsage = (
   scope: string,
   email: string
 ) => withScope("bb.workspace-setup-guide.workspace-usage", scope, email);
+export const storageKeyWorkspaceSetupGuideTeamSize = (
+  scope: string,
+  email: string
+) => withScope("bb.workspace-setup-guide.team-size", scope, email);
 export const storageKeyWorkspaceSetupFinished = (workspace: string) =>
   withScope("bb.workspace-setup.finished", workspace);
+export const storageKeyWorkspaceSetupDraft = (scope: string, email: string) =>
+  withScope("bb.workspace-setup.draft", scope, email);
 // Workspace-scoped: value keys embed project resource names.
 export const storageKeyIamRemind = (scope: string, email: string) =>
   withScope("bb.iam-remind", scope, email);

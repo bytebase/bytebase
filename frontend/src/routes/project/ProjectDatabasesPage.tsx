@@ -52,6 +52,7 @@ import {
   useProductIntro,
 } from "@/lib/productIntro";
 import { normalizeInstanceName } from "@/lib/resourceName";
+import { leadsWithQuery } from "@/modules/workspace-setup-guide/scenarios";
 import { readSelectedGuideScenarioId } from "@/modules/workspace-setup-guide/selection";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -578,7 +579,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
           showSqlEditor: false,
           showMarkSensitiveData: false,
         }
-      : selectedGuideScenarioId === "query-data"
+      : leadsWithQuery(selectedGuideScenarioId)
         ? {
             title: t("db.project-instance-synced-query-data-title"),
             description: t("db.project-instance-synced-query-data-description"),
