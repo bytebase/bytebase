@@ -175,19 +175,11 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
-    // WRITE with no confirmation step, unlike its two siblings, because it is
-    // structurally the opposite of them. ApproveIssue and RejectIssue record the
-    // review decision — an approver role via canReview, the self-approval
-    // guard, an APPROVED or REJECTED approver appended. This action requires the
-    // issue to be ALREADY rejected, requires the actor to be the issue CREATOR,
-    // never calls canReview, and records no decision: it strips the REJECTED
-    // approvers and returns the issue to PENDING for a fresh human decision
-    // (component/review/workflow.go applyReviewAction, ActionRequest).
-    //
-    // It approves nothing, so a confirmation would protect nothing, and it is
-    // the loop propose_database_change exists for: while a rejection stands
-    // Approve and Reject both hard-fail, so this is the ONLY exit from the
-    // rejected state. An agent that fixes the SQL a human asked it to fix
+    // WRITE with no confirmation step: unlike ApproveIssue and RejectIssue, it
+    // records no decision. Only the issue's creator can call it, on a rejected
+    // issue, and it returns the issue to PENDING for a fresh decision
+    // (component/review/workflow.go applyReviewAction, ActionRequest). It is the
+    // only way out of the rejected state, so an agent that fixed the SQL
     // resubmits through it.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }

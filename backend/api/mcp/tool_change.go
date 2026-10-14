@@ -29,9 +29,6 @@ const (
 
 // nextAction enum constants.
 const (
-	// The issue waits for its approvers. If the user is one, decide_issue
-	// decides it after they confirm in the MCP client; call_api cannot, because
-	// the gate refuses an approval that carries no confirmation.
 	nextActionAwaitApproval  = "AWAIT_HUMAN_APPROVAL"
 	nextActionCreateRollout  = "CREATE_ROLLOUT"
 	nextActionMonitorRollout = "MONITOR_ROLLOUT"

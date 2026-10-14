@@ -20,6 +20,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
@@ -139,8 +140,13 @@ func changeIssueMock() *decisionMock {
 // endpoint and a bearer for alice.
 func newDecideServer(t *testing.T, mock *decisionMock) (string, string) {
 	t.Helper()
+	return newDecideServerOn(t, mock, newTestServerStore())
+}
+
+func newDecideServerOn(t *testing.T, mock *decisionMock, stores *testServerStore) (string, string) {
+	t.Helper()
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
-	s, err := newServerWithStore(newTestServerStore(), profile, revalidationSecret, mock)
+	s, err := newServerWithStore(stores, profile, revalidationSecret, mock)
 	require.NoError(t, err)
 	e := echo.New()
 	s.RegisterRoutes(e)
@@ -416,7 +422,7 @@ func TestConfirmationStateIsBoundToTheCallerAndTheDecision(t *testing.T) {
 		return withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), workspace), email), client)
 	}
 	alice := caller("ws-test", "alice@example.com", "client-A")
-	approve := &issueDecision{issue: decideIssueName, approve: true, procedure: v1connect.IssueServiceApproveIssueProcedure}
+	approve := &issueDecision{issue: decideIssueName, procedure: v1connect.IssueServiceApproveIssueProcedure}
 	digest := sha256.Sum256([]byte("what the form was built from"))
 	state := s.signConfirmationState(alice, approve, digest[:])
 
@@ -435,7 +441,7 @@ func TestConfirmationStateIsBoundToTheCallerAndTheDecision(t *testing.T) {
 		"another client":     {caller("ws-test", "alice@example.com", "client-B"), approve, state},
 		"another workspace":  {caller("ws-other", "alice@example.com", "client-A"), approve, state},
 		"the other decision": {alice, &issueDecision{issue: decideIssueName, procedure: v1connect.IssueServiceRejectIssueProcedure}, state},
-		"another issue":      {alice, &issueDecision{issue: "projects/hr/issues/43", approve: true, procedure: v1connect.IssueServiceApproveIssueProcedure}, state},
+		"another issue":      {alice, &issueDecision{issue: "projects/hr/issues/43", procedure: v1connect.IssueServiceApproveIssueProcedure}, state},
 		"another digest":     {alice, approve, base64.RawURLEncoding.EncodeToString(otherDigest[:]) + "." + mac},
 		"no signature":       {alice, approve, base64.RawURLEncoding.EncodeToString(digest[:])},
 	} {
@@ -544,11 +550,12 @@ func TestDecideIssueUnderMRTRClient(t *testing.T) {
 
 // callDecideIssueWith calls decide_issue on an issue of the given type,
 // optionally carrying an answer the client sends without being asked.
-func callDecideIssueWith(t *testing.T, issueType string, unasked mcp.InputResponseMap) (*decisionMock, *asker, *mcp.CallToolResult) {
+func callDecideIssueWith(t *testing.T, issueType string, unasked mcp.InputResponseMap) (*decisionMock, *asker, *mcp.CallToolResult, *testServerStore) {
 	t.Helper()
 	mock := changeIssueMock()
 	mock.issue["type"] = issueType
-	endpoint, token := newDecideServer(t, mock)
+	stores := newTestServerStore()
+	endpoint, token := newDecideServerOn(t, mock, stores)
 	user := &asker{answer: confirmAnswer(true)}
 	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
@@ -560,7 +567,7 @@ func callDecideIssueWith(t *testing.T, issueType string, unasked mcp.InputRespon
 		InputResponses: unasked,
 	})
 	require.NoError(t, err)
-	return mock, user, res
+	return mock, user, res, stores
 }
 
 func TestDecideIssueRefusesARoleRequest(t *testing.T) {
@@ -569,7 +576,7 @@ func TestDecideIssueRefusesARoleRequest(t *testing.T) {
 		"with an answer sent unasked": {confirmDecisionRequestID: confirmAnswer(true)},
 	} {
 		t.Run(name, func(t *testing.T) {
-			mock, user, res := callDecideIssueWith(t, "ROLE_GRANT", unasked)
+			mock, user, res, stores := callDecideIssueWith(t, "ROLE_GRANT", unasked)
 			require.True(t, res.IsError)
 			text := resultText(t, res)
 			require.Contains(t, text, "ROLE_GRANT_NOT_SUPPORTED")
@@ -577,16 +584,27 @@ func TestDecideIssueRefusesARoleRequest(t *testing.T) {
 			require.Contains(t, text, "decide it signed in to the Bytebase console: https://bb.example.com/projects/hr/issues/42")
 			require.Zero(t, user.asked.Load(), "no form may be sent for a role request")
 			require.Empty(t, mock.calls(), "no decision, and so no confirmation, may reach the API")
+
+			require.Len(t, stores.auditRows, 1, "the refusal must be recorded, as its creation-side twin is")
+			row := stores.auditRows[0]
+			require.Equal(t, "projects/hr", row.Parent)
+			require.Equal(t, v1connect.IssueServiceApproveIssueProcedure, row.Method)
+			require.Equal(t, decideIssueName, row.Resource)
+			require.Equal(t, "users/alice@example.com", row.User)
+			require.Equal(t, int32(codes.PermissionDenied), row.Status.GetCode())
+			require.Contains(t, row.Status.GetMessage(), "approving a role request grants a project role")
+			require.Equal(t, "client-A", row.McpDelegation.GetClientId())
 		})
 	}
 }
 
 func TestDecideIssueRefusesAnIssueTypeItDoesNotKnow(t *testing.T) {
-	mock, user, res := callDecideIssueWith(t, "SOMETHING_NEW", nil)
+	mock, user, res, stores := callDecideIssueWith(t, "SOMETHING_NEW", nil)
 	require.True(t, res.IsError)
 	require.Contains(t, resultText(t, res), "ISSUE_TYPE_NOT_SUPPORTED")
 	require.Zero(t, user.asked.Load())
 	require.Empty(t, mock.calls())
+	require.Len(t, stores.auditRows, 1)
 }
 
 // The tool passes a refusal on in the server's words: the workflow's and the
@@ -775,9 +793,6 @@ func TestDecideIssueRefusesInvalidArguments(t *testing.T) {
 	}
 }
 
-// TestCallAPICarriesNoConfirmation is the other half of the provenance rule:
-// call_api reaches the decision procedures with no confirmation on the
-// context, which is what the gate refuses.
 func TestCallAPICarriesNoConfirmation(t *testing.T) {
 	mock := changeIssueMock()
 	endpoint, token := newDecideServer(t, mock)
@@ -798,8 +813,7 @@ func TestCallAPICarriesNoConfirmation(t *testing.T) {
 	require.Nil(t, calls[0].confirmed)
 }
 
-// confirmationProbe is an IssueService whose only method records the
-// confirmation its interceptor saw.
+// confirmationProbe is an IssueService that answers ApproveIssue.
 type confirmationProbe struct {
 	v1connect.UnimplementedIssueServiceHandler
 }

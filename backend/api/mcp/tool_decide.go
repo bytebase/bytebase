@@ -15,9 +15,13 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
+	spb "google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/grpc/codes"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/audit"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -86,21 +90,21 @@ func (s *Server) registerDecideIssueTool() {
 
 // issueDecision is a validated decide_issue request.
 type issueDecision struct {
+	project   string
 	issue     string
-	approve   bool
 	procedure string
 	comment   string
 }
 
 func (d *issueDecision) verb() string {
-	if d.approve {
+	if d.procedure == v1connect.IssueServiceApproveIssueProcedure {
 		return "approve"
 	}
 	return "reject"
 }
 
 func (d *issueDecision) pastTense() string {
-	if d.approve {
+	if d.procedure == v1connect.IssueServiceApproveIssueProcedure {
 		return "approved"
 	}
 	return "rejected"
@@ -132,7 +136,8 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 		return formatToolError(err), nil, nil
 	}
 	if refusal := refuseIssueType(issue, decision, link); refusal != nil {
-		return refusal, nil, nil
+		s.recordRefusedDecision(ctx, decision, refusal.Message)
+		return formatToolError(refusal), nil, nil
 	}
 	view, err := s.readConfirmationView(ctx, decision, issue)
 	if err != nil {
@@ -184,17 +189,17 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 }
 
 func parseIssueDecision(input DecideIssueInput) (*issueDecision, error) {
-	if _, _, err := common.GetProjectIDIssueUID(input.Issue); err != nil {
+	project, _, err := common.GetProjectIDIssueUID(input.Issue)
+	if err != nil {
 		return nil, &toolError{
 			Code:       "INVALID_ARGUMENT",
 			Message:    fmt.Sprintf("invalid issue %q", input.Issue),
 			Suggestion: "pass the issue name, e.g. projects/hr/issues/42",
 		}
 	}
-	decision := &issueDecision{issue: input.Issue, comment: strings.TrimSpace(input.Comment)}
+	decision := &issueDecision{project: project, issue: input.Issue, comment: strings.TrimSpace(input.Comment)}
 	switch strings.ToLower(strings.TrimSpace(input.Decision)) {
 	case "approve":
-		decision.approve = true
 		decision.procedure = v1connect.IssueServiceApproveIssueProcedure
 	case "reject":
 		decision.procedure = v1connect.IssueServiceRejectIssueProcedure
@@ -211,25 +216,47 @@ func parseIssueDecision(input DecideIssueInput) (*issueDecision, error) {
 // refuseIssueType serves the issue types this tool decides. It is an
 // allow-list, so a type added later is refused until someone decides about it.
 // A role request stays in the console: approving one grants a project role.
-func refuseIssueType(issue issueView, decision *issueDecision, link string) *mcp.CallToolResult {
+func refuseIssueType(issue issueView, decision *issueDecision, link string) *toolError {
 	switch issue.Type {
 	case "DATABASE_CHANGE", "ACCESS_GRANT":
 		return nil
 	case "ROLE_GRANT":
-		return formatToolError(&toolError{
+		return &toolError{
 			Code: "ROLE_GRANT_NOT_SUPPORTED",
 			Message: fmt.Sprintf("approving a role request grants a project role, which MCP does not do yet, so %s was not %s and nothing changed",
 				decision.issue, decision.pastTense()),
 			Suggestion: "decide it signed in to the Bytebase console: " + link,
-		})
+		}
 	default:
-		return formatToolError(&toolError{
+		return &toolError{
 			Code: "ISSUE_TYPE_NOT_SUPPORTED",
 			Message: fmt.Sprintf("decide_issue does not decide %q issues, so %s was not %s and nothing changed",
 				issue.Type, decision.issue, decision.pastTense()),
 			Suggestion: "decide it signed in to the Bytebase console: " + link,
-		})
+		}
 	}
+}
+
+// recordRefusedDecision writes the audit row for a decision this tool refuses
+// itself. The refusal comes before any decision request, so no connect
+// interceptor sees it.
+func (s *Server) recordRefusedDecision(ctx context.Context, decision *issueDecision, reason string) {
+	delegated, _ := getDelegatedIdentity(ctx)
+	row := &storepb.AuditLog{
+		Parent:          common.FormatProject(decision.project),
+		Method:          decision.procedure,
+		Resource:        decision.issue,
+		User:            common.FormatUserEmail(getUserEmail(ctx)),
+		Status:          &spb.Status{Code: int32(codes.PermissionDenied), Message: reason},
+		RequestMetadata: &storepb.RequestMetadata{CallerIp: getCallerIP(ctx)},
+		McpDelegation: &storepb.MCPDelegation{
+			Scope:         delegated.Scope,
+			Resource:      delegated.Resource,
+			ClientId:      delegated.ClientID,
+			CorrelationId: delegated.CorrelationID,
+		},
+	}
+	audit.RecordOutOfBandAudit(ctx, s.store, s.profile.RuntimeEnableAuditLogStdout.Load(), getWorkspaceID(ctx), row)
 }
 
 // confirmationAnswer returns the answer and the request state this call
@@ -290,13 +317,10 @@ func (s *Server) verifyConfirmationState(ctx context.Context, decision *issueDec
 
 func (s *Server) confirmationMAC(ctx context.Context, decision *issueDecision, digest []byte) []byte {
 	key := hmac.New(sha256.New, []byte(s.secret))
-	key.Write([]byte(confirmationStatePurpose))
+	_, _ = key.Write([]byte(confirmationStatePurpose))
+	signed := strings.Join([]string{getWorkspaceID(ctx), getUserEmail(ctx), getOAuth2ClientID(ctx), decision.procedure, decision.issue, ""}, "\x00")
 	mac := hmac.New(sha256.New, key.Sum(nil))
-	for _, field := range []string{getWorkspaceID(ctx), getUserEmail(ctx), getOAuth2ClientID(ctx), decision.procedure, decision.issue} {
-		mac.Write([]byte(field))
-		mac.Write([]byte{0})
-	}
-	mac.Write(digest)
+	_, _ = mac.Write(append([]byte(signed), digest...))
 	return mac.Sum(nil)
 }
 

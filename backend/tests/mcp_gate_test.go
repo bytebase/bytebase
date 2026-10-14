@@ -87,10 +87,10 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 		"a served, audited MCP call is stored")
 }
 
-// TestMCPGateRefusesGrantIssues covers, over one live MCP session, the grant
-// issues a session may not create, the access request it may file instead,
-// and deciding that request through decide_issue.
-func TestMCPGateRefusesGrantIssues(t *testing.T) {
+// TestMCPGrantIssuesAndAccessRequests covers, over one live MCP session, the
+// grant issues a session may not create, the access request it may file
+// instead, and deciding that request through decide_issue.
+func TestMCPGrantIssuesAndAccessRequests(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()

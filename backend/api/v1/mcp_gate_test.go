@@ -1206,11 +1206,6 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	})
 }
 
-// TestMCPGateServesAnIssueDecisionOnlyWithItsConfirmation pins the provenance
-// rule for ApproveIssue and RejectIssue. They are WRITE, and the gate serves
-// one only when the request context carries the confirmation decide_issue
-// attaches, naming the same procedure and issue. call_api reaches the same
-// procedures with no way to attach it.
 func TestMCPGateServesAnIssueDecisionOnlyWithItsConfirmation(t *testing.T) {
 	const issue = "projects/p/issues/1"
 	write := classContext(v1pb.MCPMethodClass_WRITE)
