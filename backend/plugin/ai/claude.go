@@ -84,10 +84,17 @@ func readClaudeFailure(httpErr *HTTPError) {
 	httpErr.QuotaExhausted = reply.Error.Details.ErrorCode == "enforced_spend_limit_reached"
 }
 
-func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
+// defaultClaudeMaxTokens is the output limit of a call that asks for none.
+const defaultClaudeMaxTokens = 4096
+
+func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest, options ...ChatOption) (*v1pb.AIChatResponse, error) {
+	maxTokens := defaultClaudeMaxTokens
+	if limit := newChatOptions(options).maxOutputTokens; limit > 0 {
+		maxTokens = limit
+	}
 	payload := chatClaudeRequest{
 		Model:     aiSetting.Model,
-		MaxTokens: 4096,
+		MaxTokens: maxTokens,
 	}
 
 	for _, m := range request.Messages {
@@ -132,16 +139,24 @@ func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 				Content: contentBlocks,
 			})
 		case v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_TOOL:
-			// Claude uses "user" role with tool_result content block.
+			result := chatClaudeContentBlock{
+				Type:      "tool_result",
+				ToolUseID: m.GetToolCallId(),
+				Content:   m.GetContent(),
+			}
+			// Anthropic asks for the results of one turn's tool calls in a single
+			// user message, since separate messages teach Claude to stop calling
+			// tools in parallel. A user message holds blocks only for tool results.
+			if last := len(payload.Messages) - 1; last >= 0 && payload.Messages[last].Role == "user" {
+				if results, ok := payload.Messages[last].Content.([]chatClaudeContentBlock); ok {
+					results = append(results, result)
+					payload.Messages[last].Content = results
+					continue
+				}
+			}
 			payload.Messages = append(payload.Messages, chatClaudeMsg{
-				Role: "user",
-				Content: []chatClaudeContentBlock{
-					{
-						Type:      "tool_result",
-						ToolUseID: m.GetToolCallId(),
-						Content:   m.GetContent(),
-					},
-				},
+				Role:    "user",
+				Content: []chatClaudeContentBlock{result},
 			})
 		default:
 			continue
