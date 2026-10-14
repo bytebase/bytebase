@@ -1,7 +1,10 @@
 package mcp
 
 import (
+	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -61,6 +64,10 @@ const (
 // client confirmed, not that a person did: a hook in the client can answer.
 const decisionNote = "Decided over MCP; the decision was confirmed in the MCP client."
 
+// confirmationStatePurpose names this use of the server secret, so the key
+// that signs a confirmation's request state signs nothing else.
+const confirmationStatePurpose = "bb.mcp.decide_issue.request_state"
+
 const (
 	// maxDescribedSpecs bounds how many plan specs the confirmation lists.
 	maxDescribedSpecs = 3
@@ -116,7 +123,8 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 	}
 
 	// Read on both rounds, so a type this tool does not decide is refused before
-	// any answer is acted on, an unasked one included.
+	// any answer is acted on, and an answer is acted on only while the issue
+	// reads as it did when the user was asked.
 	var issue issueView
 	if err := s.readResource(ctx, "/bytebase.v1.IssueService/GetIssue", decision.issue, "get issues", "bb.issues.get", &issue); err != nil {
 		return formatToolError(err), nil, nil
@@ -124,21 +132,35 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 	if refusal := refuseIssueType(issue, decision, link); refusal != nil {
 		return refusal, nil, nil
 	}
+	view, err := s.readConfirmationView(ctx, decision, issue)
+	if err != nil {
+		return formatToolError(err), nil, nil
+	}
+	digest, err := view.digest()
+	if err != nil {
+		return formatToolError(err), nil, nil
+	}
 
-	if req.Params != nil {
-		if response, answered := req.Params.InputResponses[confirmDecisionRequestID]; answered {
-			result, output := s.applyIssueDecision(ctx, decision, response, link)
+	// An answer counts only with the request state this server signed when it
+	// asked. A client can send an answer on a call that was never asked, so
+	// without that state the call is asked like a first one.
+	if response, state, answered := confirmationAnswer(req); answered {
+		if asked, signed := s.verifyConfirmationState(ctx, decision, state); signed {
+			result, output := s.decideOnAnswer(ctx, decision, response, bytes.Equal(asked, digest), link)
 			return result, output, nil
 		}
 	}
 
-	message, err := s.describeIssueDecision(ctx, decision, issue, link)
+	message, err := s.describeIssueDecision(ctx, decision, view, link)
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
 	// The same multi round-trip shape as elicitDatabaseChoice: the SDK elicits
-	// within this tools/call and re-invokes the handler with the answer.
+	// within this tools/call and re-invokes the handler with the answer and the
+	// request state. A client on the 2026-07-28 protocol answers and echoes the
+	// state itself.
 	return &mcp.CallToolResult{
+		RequestState: s.signConfirmationState(ctx, decision, digest),
 		InputRequests: mcp.InputRequestMap{
 			confirmDecisionRequestID: &mcp.ElicitParams{
 				Mode:    "form",
@@ -208,15 +230,76 @@ func refuseIssueType(issue issueView, decision *issueDecision, link string) *mcp
 	}
 }
 
-// applyIssueDecision acts on the user's answer. Only an accepted form with the
-// box checked decides; every other answer changes nothing.
-func (s *Server) applyIssueDecision(ctx context.Context, decision *issueDecision, response mcp.InputResponse, link string) (*mcp.CallToolResult, any) {
+// confirmationAnswer returns the answer and the request state this call
+// carries, if it carries an answer.
+func confirmationAnswer(req *mcp.CallToolRequest) (mcp.InputResponse, string, bool) {
+	if req.Params == nil {
+		return nil, "", false
+	}
+	response, answered := req.Params.InputResponses[confirmDecisionRequestID]
+	return response, req.Params.RequestState, answered
+}
+
+// decideOnAnswer acts on the answer to a form this server sent. Only an
+// accepted form with the box checked decides, and only while what the user
+// was asked about still matches the issue.
+func (s *Server) decideOnAnswer(ctx context.Context, decision *issueDecision, response mcp.InputResponse, unchanged bool, link string) (*mcp.CallToolResult, any) {
 	if confirmed, why := confirmationOutcome(response); !confirmed {
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf(
 			"Not %s: %s, so nothing changed. Do not retry unless the user asks.\nIssue: %s",
 			decision.pastTense(), why, link)}}}, nil
 	}
+	if !unchanged {
+		return formatToolError(&toolError{
+			Code: "STALE_CONFIRMATION",
+			Message: fmt.Sprintf("what the user confirmed no longer matches %s as it is now, so it was not %s and nothing changed",
+				decision.issue, decision.pastTense()),
+			Suggestion: "call decide_issue again to ask the user about the issue as it is now",
+		}), nil
+	}
+	return s.applyIssueDecision(ctx, decision, link)
+}
 
+// signConfirmationState returns the request state the form is sent with: a
+// digest of what the user is asked about, signed together with who asks,
+// through which client, and which decision on which issue.
+func (s *Server) signConfirmationState(ctx context.Context, decision *issueDecision, digest []byte) string {
+	return base64.RawURLEncoding.EncodeToString(digest) + "." +
+		base64.RawURLEncoding.EncodeToString(s.confirmationMAC(ctx, decision, digest))
+}
+
+// verifyConfirmationState returns the digest a request state carries, and
+// whether this server signed it for this caller and this decision.
+func (s *Server) verifyConfirmationState(ctx context.Context, decision *issueDecision, state string) ([]byte, bool) {
+	encodedDigest, encodedMAC, found := strings.Cut(state, ".")
+	if !found {
+		return nil, false
+	}
+	digest, err := base64.RawURLEncoding.DecodeString(encodedDigest)
+	if err != nil {
+		return nil, false
+	}
+	mac, err := base64.RawURLEncoding.DecodeString(encodedMAC)
+	if err != nil {
+		return nil, false
+	}
+	return digest, hmac.Equal(mac, s.confirmationMAC(ctx, decision, digest))
+}
+
+func (s *Server) confirmationMAC(ctx context.Context, decision *issueDecision, digest []byte) []byte {
+	key := hmac.New(sha256.New, []byte(s.secret))
+	key.Write([]byte(confirmationStatePurpose))
+	mac := hmac.New(sha256.New, key.Sum(nil))
+	for _, field := range []string{getWorkspaceID(ctx), getUserEmail(ctx), getOAuth2ClientID(ctx), decision.procedure, decision.issue} {
+		mac.Write([]byte(field))
+		mac.Write([]byte{0})
+	}
+	mac.Write(digest)
+	return mac.Sum(nil)
+}
+
+// applyIssueDecision records the confirmed decision.
+func (s *Server) applyIssueDecision(ctx context.Context, decision *issueDecision, link string) (*mcp.CallToolResult, any) {
 	comment := decisionNote
 	if decision.comment != "" {
 		comment += "\n\n" + decision.comment
@@ -326,13 +409,53 @@ type accessGrantView struct {
 	TTL        string   `json:"ttl"`
 }
 
+// confirmationView is what the user is asked to confirm: the issue, the plan or
+// access grant behind it, and the comment the decision records. The request
+// state carries a digest of all of it. Statements are left out: a sheet's name
+// is its content hash (GetProjectResourceIDSheetSha256), so the plan's specs
+// already pin every statement, shown or not.
+type confirmationView struct {
+	Issue   issueView        `json:"issue"`
+	Plan    *planView        `json:"plan,omitempty"`
+	Grant   *accessGrantView `json:"grant,omitempty"`
+	Comment string           `json:"comment,omitempty"`
+}
+
+func (s *Server) readConfirmationView(ctx context.Context, decision *issueDecision, issue issueView) (*confirmationView, error) {
+	view := &confirmationView{Issue: issue, Comment: decision.comment}
+	switch {
+	case issue.AccessGrant != "":
+		view.Grant = &accessGrantView{}
+		if err := s.readResource(ctx, "/bytebase.v1.AccessGrantService/GetAccessGrant", issue.AccessGrant, "get access grants", "bb.accessGrants.get", view.Grant); err != nil {
+			return nil, err
+		}
+	case issue.Plan != "":
+		view.Plan = &planView{}
+		if err := s.readResource(ctx, "/bytebase.v1.PlanService/GetPlan", issue.Plan, "get plans", "bb.plans.get", view.Plan); err != nil {
+			return nil, err
+		}
+	default:
+	}
+	return view, nil
+}
+
+func (v *confirmationView) digest() ([]byte, error) {
+	payload, err := json.Marshal(v)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to digest the confirmation")
+	}
+	sum := sha256.Sum256(payload)
+	return sum[:], nil
+}
+
 // describeIssueDecision builds the confirmation message: the decision, the
 // issue, what approving it would let happen, and the step it decides. Free
 // text from the issue is quoted or folded to one line, so it cannot pose as
 // one of the message's own lines.
 //
 // It fails closed: if any part cannot be read, nothing is asked.
-func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecision, issue issueView, link string) (string, error) {
+func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecision, view *confirmationView, link string) (string, error) {
+	issue := view.Issue
 	question := fmt.Sprintf("%s issue %q", capitalize(decision.verb()), issue.Title)
 	if email := getUserEmail(ctx); email != "" {
 		question += " as " + email
@@ -342,32 +465,26 @@ func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecis
 		"",
 		fmt.Sprintf("Issue: %s (%s, requested by %s)", issue.Name, issue.Type, strings.TrimPrefix(issue.Creator, common.UserNamePrefix)),
 	}
-	var details []string
-	var err error
 	switch {
-	case issue.AccessGrant != "":
-		details, err = s.describeAccessGrant(ctx, issue.AccessGrant)
-	case issue.Plan != "":
-		details, err = s.describePlan(ctx, issue.Plan)
+	case view.Grant != nil:
+		lines = append(lines, describeAccessGrant(view.Grant)...)
+	case view.Plan != nil:
+		details, err := s.describePlan(ctx, view.Plan)
+		if err != nil {
+			return "", err
+		}
+		lines = append(lines, details...)
 	default:
 	}
-	if err != nil {
-		return "", err
-	}
-	lines = append(lines, details...)
 	lines = append(lines, "Approval: "+describeApprovalStep(issue), "Details: "+link)
 	return strings.Join(lines, "\n"), nil
 }
 
-func (s *Server) describePlan(ctx context.Context, plan string) ([]string, error) {
-	var view planView
-	if err := s.readResource(ctx, "/bytebase.v1.PlanService/GetPlan", plan, "get plans", "bb.plans.get", &view); err != nil {
-		return nil, err
-	}
+func (s *Server) describePlan(ctx context.Context, plan *planView) ([]string, error) {
 	var lines []string
-	for i, spec := range view.Specs {
+	for i, spec := range plan.Specs {
 		if i == maxDescribedSpecs {
-			lines = append(lines, fmt.Sprintf("...and %d more changes", len(view.Specs)-maxDescribedSpecs))
+			lines = append(lines, fmt.Sprintf("...and %d more changes", len(plan.Specs)-maxDescribedSpecs))
 			break
 		}
 		switch {
@@ -402,11 +519,7 @@ func (s *Server) statementPreview(ctx context.Context, sheet string) (string, er
 	return oneLine(string(content), maxStatementPreview), nil
 }
 
-func (s *Server) describeAccessGrant(ctx context.Context, name string) ([]string, error) {
-	var grant accessGrantView
-	if err := s.readResource(ctx, "/bytebase.v1.AccessGrantService/GetAccessGrant", name, "get access grants", "bb.accessGrants.get", &grant); err != nil {
-		return nil, err
-	}
+func describeAccessGrant(grant *accessGrantView) []string {
 	lines := []string{
 		fmt.Sprintf("Access: run %s on %s", oneLine(grant.Query, maxStatementPreview), strings.Join(grant.Targets, ", ")),
 		fmt.Sprintf("Unmasked: %s. Export: %s. Requested by %s", yesNo(grant.Unmask), yesNo(grant.Export), strings.TrimPrefix(grant.Creator, common.UserNamePrefix)),
@@ -418,7 +531,7 @@ func (s *Server) describeAccessGrant(ctx context.Context, name string) ([]string
 		lines = append(lines, fmt.Sprintf("Expires: %s after approval", readableDuration(grant.TTL)))
 	default:
 	}
-	return lines, nil
+	return lines
 }
 
 // readResource reads one resource by name from the internal API.

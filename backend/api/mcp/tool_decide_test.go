@@ -2,10 +2,12 @@ package mcp
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -50,15 +52,18 @@ type decisionCall struct {
 func (m *decisionMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	reply := func(v any) { _ = json.NewEncoder(w).Encode(v) }
+	m.mu.Lock()
+	issue, plan, sheet, grant := m.issue, m.plan, m.sheet, m.grant
+	m.mu.Unlock()
 	switch r.URL.Path {
 	case "/bytebase.v1.IssueService/GetIssue":
-		reply(m.issue)
+		reply(issue)
 	case "/bytebase.v1.PlanService/GetPlan":
-		reply(m.plan)
+		reply(plan)
 	case "/bytebase.v1.SheetService/GetSheet":
-		reply(m.sheet)
+		reply(sheet)
 	case "/bytebase.v1.AccessGrantService/GetAccessGrant":
-		reply(m.grant)
+		reply(grant)
 	case v1connect.IssueServiceApproveIssueProcedure, v1connect.IssueServiceRejectIssueProcedure:
 		call := decisionCall{path: r.URL.Path}
 		_ = json.NewDecoder(r.Body).Decode(&call.body)
@@ -83,6 +88,13 @@ func (m *decisionMock) calls() []decisionCall {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return append([]decisionCall(nil), m.decisions...)
+}
+
+// update changes what the reads return while a call is under way.
+func (m *decisionMock) update(change func(*decisionMock)) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	change(m)
 }
 
 // changeIssueMock is a database change waiting on the second of two steps.
@@ -133,6 +145,8 @@ func newDecideServer(t *testing.T, mock *decisionMock) (string, string) {
 type asker struct {
 	answer *mcp.ElicitResult
 	err    error
+	// whileAsked, when set, runs while the form is open.
+	whileAsked func()
 
 	asked atomic.Int32
 	mu    sync.Mutex
@@ -144,6 +158,9 @@ func (a *asker) handle(_ context.Context, req *mcp.ElicitRequest) (*mcp.ElicitRe
 	a.mu.Lock()
 	a.last = req.Params
 	a.mu.Unlock()
+	if a.whileAsked != nil {
+		a.whileAsked()
+	}
 	return a.answer, a.err
 }
 
@@ -276,7 +293,7 @@ func TestDecideIssueMalformedAnswerChangesNothing(t *testing.T) {
 	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
 
 	_, err := callDecideIssue(t, session, "approve")
-	require.Error(t, err)
+	require.ErrorContains(t, err, "elicitation result content does not match requested schema")
 	require.Empty(t, mock.calls())
 
 	for name, response := range map[string]mcp.InputResponse{
@@ -352,6 +369,166 @@ func TestDecideIssueRefusesAnUnaskedAnswerFromAClientThatCannotConfirm(t *testin
 	require.True(t, res.IsError)
 	require.Contains(t, resultText(t, res), "CONFIRMATION_UNAVAILABLE")
 	require.Empty(t, mock.calls())
+}
+
+func TestDecideIssueAsksDespiteAnUnaskedAnswer(t *testing.T) {
+	for name, state := range map[string]string{
+		"no request state":       "",
+		"a forged request state": "AAAA.BBBB",
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := changeIssueMock()
+			endpoint, token := newDecideServer(t, mock)
+			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+			defer cancel()
+			res, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name:           "decide_issue",
+				Arguments:      map[string]any{"issue": decideIssueName, "decision": "approve"},
+				InputResponses: mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(true)},
+				RequestState:   state,
+			})
+			require.NoError(t, err)
+			require.Equal(t, int32(1), user.asked.Load(), "an answer nobody asked for must not stand in for asking")
+			require.Contains(t, resultText(t, res), "Not approved: the user declined, so nothing changed.")
+			require.Empty(t, mock.calls())
+		})
+	}
+}
+
+func TestConfirmationStateIsBoundToTheCallerAndTheDecision(t *testing.T) {
+	s, err := newServerWithStore(newTestServerStore(), &config.Profile{Mode: common.ReleaseModeDev}, revalidationSecret, http.NotFoundHandler())
+	require.NoError(t, err)
+	caller := func(workspace, email, client string) context.Context {
+		return withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), workspace), email), client)
+	}
+	alice := caller("ws-test", "alice@example.com", "client-A")
+	approve := &issueDecision{issue: decideIssueName, approve: true, procedure: v1connect.IssueServiceApproveIssueProcedure}
+	digest := sha256.Sum256([]byte("what the form was built from"))
+	state := s.signConfirmationState(alice, approve, digest[:])
+
+	signedDigest, signed := s.verifyConfirmationState(alice, approve, state)
+	require.True(t, signed)
+	require.Equal(t, digest[:], signedDigest)
+
+	otherDigest := sha256.Sum256([]byte("something else"))
+	_, mac, _ := strings.Cut(state, ".")
+	for name, tc := range map[string]struct {
+		ctx      context.Context
+		decision *issueDecision
+		state    string
+	}{
+		"another user":       {caller("ws-test", "bob@example.com", "client-A"), approve, state},
+		"another client":     {caller("ws-test", "alice@example.com", "client-B"), approve, state},
+		"another workspace":  {caller("ws-other", "alice@example.com", "client-A"), approve, state},
+		"the other decision": {alice, &issueDecision{issue: decideIssueName, procedure: v1connect.IssueServiceRejectIssueProcedure}, state},
+		"another issue":      {alice, &issueDecision{issue: "projects/hr/issues/43", approve: true, procedure: v1connect.IssueServiceApproveIssueProcedure}, state},
+		"another digest":     {alice, approve, base64.RawURLEncoding.EncodeToString(otherDigest[:]) + "." + mac},
+		"no signature":       {alice, approve, base64.RawURLEncoding.EncodeToString(digest[:])},
+	} {
+		_, signed := s.verifyConfirmationState(tc.ctx, tc.decision, tc.state)
+		require.False(t, signed, name)
+	}
+}
+
+// threeStepIssueMock is a database change waiting on the second of three steps.
+func threeStepIssueMock() *decisionMock {
+	mock := changeIssueMock()
+	mock.issue["approvalTemplate"] = map[string]any{"flow": map[string]any{
+		"roles": []string{"roles/projectOwner", "roles/workspaceDBA", "roles/workspaceAdmin"},
+	}}
+	return mock
+}
+
+func TestDecideIssueRefusesWhenTheIssueChangesWhileAsking(t *testing.T) {
+	for name, change := range map[string]func(*decisionMock){
+		"the plan's statement replaced": func(m *decisionMock) {
+			m.plan = map[string]any{"specs": []map[string]any{{
+				"id": "spec-1",
+				"changeDatabaseConfig": map[string]any{
+					"targets": []string{"instances/prod/databases/hr"},
+					"sheet":   "projects/hr/sheets/10",
+				},
+			}}}
+			m.sheet = map[string]any{"content": base64.StdEncoding.EncodeToString([]byte("DROP TABLE users;"))}
+		},
+		"the step decided by another approver": func(m *decisionMock) {
+			m.issue["approvers"] = []map[string]any{{"status": "APPROVED"}, {"status": "APPROVED"}}
+		},
+		"the title changed": func(m *decisionMock) {
+			m.issue["title"] = "Drop users"
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := threeStepIssueMock()
+			endpoint, token := newDecideServer(t, mock)
+			user := &asker{answer: confirmAnswer(true), whileAsked: func() { mock.update(change) }}
+			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+			res, err := callDecideIssue(t, session, "approve")
+			require.NoError(t, err)
+			require.Equal(t, int32(1), user.asked.Load())
+			require.True(t, res.IsError)
+			text := resultText(t, res)
+			require.Contains(t, text, "STALE_CONFIRMATION")
+			require.Contains(t, text, "call decide_issue again")
+			require.Empty(t, mock.calls(), "an answer about the issue as it was must not decide the issue as it is")
+		})
+	}
+}
+
+// newDecideMRTRServer returns a decide_issue call for a client on the
+// 2026-07-28 protocol, which answers the form and echoes the request state
+// itself.
+func newDecideMRTRServer(t *testing.T, mock *decisionMock) func(mcp.InputResponseMap, string, string) *mcp.CallToolResult {
+	t.Helper()
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
+	s, err := newServerWithStore(newTestServerStore(), profile, revalidationSecret, mock)
+	require.NoError(t, err)
+	token := mintMCPToken(t, "alice@example.com", "client-A", "ws-test", "mcp:read-write", time.Hour)
+	session := connectMRTR(t, mrtrEndpoint(t, s), token)
+	return func(responses mcp.InputResponseMap, state, comment string) *mcp.CallToolResult {
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		res, err := session.CallTool(ctx, &mcp.CallToolParams{
+			Name:           "decide_issue",
+			Arguments:      map[string]any{"issue": decideIssueName, "decision": "approve", "comment": comment},
+			InputResponses: responses,
+			RequestState:   state,
+		})
+		require.NoError(t, err)
+		return res
+	}
+}
+
+func TestDecideIssueUnderMRTRClient(t *testing.T) {
+	mock := changeIssueMock()
+	call := newDecideMRTRServer(t, mock)
+	accept := mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(true)}
+
+	first := call(nil, "", "checked the statement")
+	require.True(t, first.NeedsInput())
+	require.NotEmpty(t, first.RequestState)
+	asked, ok := first.InputRequests[confirmDecisionRequestID].(*mcp.ElicitParams)
+	require.True(t, ok)
+	require.Contains(t, asked.Message, `Approve issue "Add status column"`)
+
+	unsigned := call(accept, "", "checked the statement")
+	require.True(t, unsigned.NeedsInput(), "an answer without the request state must be asked again")
+	require.Empty(t, mock.calls())
+
+	swapped := call(accept, first.RequestState, "a comment the user never saw")
+	require.True(t, swapped.IsError)
+	require.Contains(t, resultText(t, swapped), "STALE_CONFIRMATION")
+	require.Empty(t, mock.calls())
+
+	decided := call(accept, first.RequestState, "checked the statement")
+	require.False(t, decided.IsError, resultText(t, decided))
+	calls := mock.calls()
+	require.Len(t, calls, 1)
+	require.Equal(t, decisionNote+"\n\nchecked the statement", calls[0].body["comment"])
 }
 
 // callDecideIssueWith calls decide_issue on an issue of the given type,
