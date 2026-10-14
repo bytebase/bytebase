@@ -5,11 +5,14 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -85,7 +88,8 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 }
 
 // TestMCPGateRefusesGrantIssues covers, over one live MCP session, the grant
-// issues a session may not create and the access request it may file instead.
+// issues a session may not create, the access request it may file instead,
+// and deciding that request through decide_issue.
 func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -103,7 +107,14 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	// depend on the resolved default.
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 
-	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
+	// The client confirms every decision it is asked about.
+	var asked atomic.Int32
+	session := openMCPSessionWithOptions(ctx, t, ctl, ctl.authInterceptor.token, &mcp.ClientOptions{
+		ElicitationHandler: func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
+			asked.Add(1)
+			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"confirm": true}}, nil
+		},
+	})
 	defer session.Close()
 
 	grant := callAPIOnSession(ctx, t, session, "IssueService/CreateIssue", map[string]any{
@@ -231,6 +242,37 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.NoError(err)
 	a.Equal(v1pb.AccessGrant_PENDING, still.Msg.Status)
 
+	// call_api cannot carry a confirmation, so the gate refuses its approval.
+	unconfirmed := callAPIOnSession(ctx, t, session, "IssueService/ApproveIssue", map[string]any{"name": pending.Issue})
+	a.Equal(http.StatusForbidden, unconfirmed.Status)
+	a.Contains(unconfirmed.Error, "decide_issue", "the refusal must name the path that asks the user")
+
+	// The requester approves its own request. The project leaves self-approval
+	// off, so the workflow refuses it after the user confirms, as it would in
+	// the console, and the tool reports why.
+	refused, refusedText := decideIssueOnSession(ctx, t, session, pending.Issue, "approve")
+	a.True(refused, refusedText)
+	a.Contains(refusedText, "self-approval is not allowed")
+	still, err = ctl.accessGrantServiceClient.GetAccessGrant(ctx, connect.NewRequest(&v1pb.GetAccessGrantRequest{Name: pending.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.AccessGrant_PENDING, still.Msg.Status)
+
+	// With self-approval on, the same confirmed approval goes through: the
+	// requester holds the step's role as the project's creator, and the grant
+	// starts.
+	_, err = ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project:    &v1pb.Project{Name: projectName, AllowSelfApproval: true},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_self_approval"}},
+	}))
+	a.NoError(err)
+	failed, approvedText := decideIssueOnSession(ctx, t, session, pending.Issue, "approve")
+	a.False(failed, approvedText)
+	a.Contains(approvedText, "Approved "+pending.Issue)
+	approved, err := ctl.accessGrantServiceClient.GetAccessGrant(ctx, connect.NewRequest(&v1pb.GetAccessGrantRequest{Name: pending.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.AccessGrant_ACTIVE, approved.Msg.Status)
+	a.Equal(int32(2), asked.Load(), "each decision asks the user once")
+
 	consoleRequest := func() *v1pb.AccessGrant {
 		granted, err := ctl.accessGrantServiceClient.CreateAccessGrant(ctx, connect.NewRequest(&v1pb.CreateAccessGrantRequest{
 			Parent: projectName,
@@ -288,6 +330,24 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		a.Equal(issuesBefore, issuesAfter, "%s: a refused request leaves no issue", tc.name)
 		a.Equal(v1pb.AccessGrant_ACTIVE, consoleRequest().Status, "%s: a console request is granted at once, as before", tc.name)
 	}
+}
+
+// decideIssueOnSession runs the decide_issue tool and returns whether it
+// reported an error, with the text an agent would read.
+func decideIssueOnSession(ctx context.Context, t *testing.T, session *mcp.ClientSession, issue, decision string) (bool, string) {
+	t.Helper()
+	result, err := session.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "decide_issue",
+		Arguments: map[string]any{"issue": issue, "decision": decision},
+	})
+	require.NoError(t, err)
+	var texts []string
+	for _, content := range result.Content {
+		if text, ok := content.(*mcp.TextContent); ok {
+			texts = append(texts, text.Text)
+		}
+	}
+	return result.IsError, strings.Join(texts, "")
 }
 
 // TestMCPCannotRunAnIssuelessRollout pins rejectMCPOriginatedIssuelessRollout
