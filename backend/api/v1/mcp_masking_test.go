@@ -143,9 +143,10 @@ func TestMaskedWriteGuardIsWiredIntoTheGate(t *testing.T) {
 	}
 
 	// A door added to the table but not exercised here ships wired to nothing,
-	// and the unit test above would still pass. CreateIssue is the one entry in
-	// mcpRequestShapeRefusals that is not a masked-write door.
-	require.Len(t, doors, len(mcpRequestShapeRefusals)-1,
+	// and the unit test above would still pass. CreateIssue, ApproveIssue and
+	// RejectIssue are the entries in mcpRequestShapeRefusals that are not
+	// masked-write doors.
+	require.Len(t, doors, len(mcpRequestShapeRefusals)-3,
 		"every masked-write door in the refusal table needs a row here")
 
 	for _, door := range doors {
