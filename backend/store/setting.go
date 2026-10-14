@@ -225,6 +225,20 @@ func (s *Store) GetAISetting(ctx context.Context, workspaceID string) (*storepb.
 	if err != nil {
 		return nil, err
 	}
+	return aiSettingValue(setting)
+}
+
+// GetAISettingUncached is GetAISetting past the setting cache, for a gate that
+// must see a write from outside this process.
+func (s *Store) GetAISettingUncached(ctx context.Context, workspaceID string) (*storepb.AISetting, error) {
+	setting, err := s.GetSettingUncached(ctx, workspaceID, storepb.SettingName_AI)
+	if err != nil {
+		return nil, err
+	}
+	return aiSettingValue(setting)
+}
+
+func aiSettingValue(setting *SettingMessage) (*storepb.AISetting, error) {
 	if setting == nil {
 		return &storepb.AISetting{}, nil
 	}

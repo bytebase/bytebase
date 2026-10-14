@@ -43,13 +43,10 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err != nil {
 		return nil, err
 	}
-	aiSetting, err := e.store.GetAISetting(ctx, project.Workspace)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get AI setting")
-	}
 	// A run created while the review was allowed must not reach the provider
 	// after it is switched off.
-	if err := aireview.CheckSetting(aiSetting); err != nil {
+	aiSetting, err := e.checkAISetting(ctx, project.Workspace)
+	if err != nil {
 		return nil, err
 	}
 	policy, err := e.store.GetEffectiveReviewAIPolicy(ctx, project.Workspace, projectID)
@@ -88,11 +85,8 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	// The setting is read again before every provider call, retries included,
 	// so switching the review off stops a run in flight at its next call.
 	reviewer := aireview.NewReviewer(e.newModel(aiSetting, aireview.CheckBeforeEachCall(func(ctx context.Context) error {
-		setting, err := e.store.GetAISetting(ctx, project.Workspace)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get AI setting")
-		}
-		return aireview.CheckSetting(setting)
+		_, err := e.checkAISetting(ctx, project.Workspace)
+		return err
 	})))
 	results, reviewErrs := reviewUnits(ctx, e.slots, units, func(ctx context.Context, unit *aiReviewUnit) (*aireview.Result, error) {
 		// The schema is loaded once the unit holds its slot and dropped when
@@ -139,6 +133,20 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 		return nil, err
 	}
 	return aiReviewComments(projectID, issueUID, results), nil
+}
+
+// checkAISetting returns the workspace AI setting if it allows the review. It
+// reads past the setting cache, which only this process's writes refresh, so
+// a switch-off written anywhere else stops the review too.
+func (e *AIReviewExecutor) checkAISetting(ctx context.Context, workspace string) (*storepb.AISetting, error) {
+	setting, err := e.store.GetAISettingUncached(ctx, workspace)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get AI setting")
+	}
+	if err := aireview.CheckSetting(setting); err != nil {
+		return nil, err
+	}
+	return setting, nil
 }
 
 // sheetStatement returns the sheet text, loaded once per run, and refuses a

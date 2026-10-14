@@ -478,7 +478,7 @@ func (s *SettingService) updateAISetting(ctx context.Context, request *connect.R
 	paths := request.Msg.UpdateMask.Paths
 
 	if request.Msg.ValidateOnly {
-		stored, err := s.store.GetAISetting(ctx, workspaceID)
+		stored, err := s.store.GetAISettingUncached(ctx, workspaceID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find AI setting: %v", err))
 		}

@@ -294,7 +294,7 @@ func send(t *testing.T, ch chan<- struct{}) {
 func TestAIReviewExecutorChecksTheSettingAgain(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	db, stores, _ := testcontainer.NewMetadataDB(t)
+	db, stores, _ := testcontainer.NewMetadataDBWithCache(t, true)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws');
 		INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused');
@@ -348,4 +348,13 @@ func TestAIReviewExecutorChecksTheSettingAgain(t *testing.T) {
 	_, err = executor.RunOnce(ctx, "p", issue.UID)
 	require.Error(t, err)
 	require.NotContains(t, err.Error(), "is not enabled")
+
+	// A switch-off written outside this process leaves the cached copy on.
+	_, err = db.ExecContext(ctx, `UPDATE setting SET value = '{"enabled": true}' WHERE workspace = 'ws' AND name = 'AI'`)
+	require.NoError(t, err)
+	cached, err := stores.GetAISetting(ctx, "ws")
+	require.NoError(t, err)
+	require.True(t, cached.SqlReviewEnabled)
+	_, err = executor.RunOnce(ctx, "p", issue.UID)
+	require.ErrorContains(t, err, "AI SQL review is not enabled")
 }

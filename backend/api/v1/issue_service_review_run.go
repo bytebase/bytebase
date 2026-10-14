@@ -105,7 +105,7 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("the plan has no reviewable SQL"))
 	}
 	if reviewType == store.ReviewRunTypeAI {
-		aiSetting, err := s.store.GetAISetting(ctx, common.GetWorkspaceIDFromContext(ctx))
+		aiSetting, err := s.store.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get AI setting"))
 		}
