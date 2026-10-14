@@ -81,9 +81,15 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
     return dbName !== "";
   });
 
-  // No specific databases
   if (realResources.length === 0) {
-    return `${i18n.t("database.all")}${levelSuffix}`;
+    const columns = [
+      ...new Set(resources.flatMap((r) => r.columns ?? []).filter(Boolean)),
+    ];
+    const columnSuffix =
+      columns.length > 0
+        ? ` (${i18n.t("database.columns").toLowerCase()}: ${listItems(columns)})`
+        : "";
+    return `${i18n.t("database.all")}${columnSuffix}${levelSuffix}`;
   }
 
   // Collect unique database names
@@ -169,6 +175,19 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
     return `${dbName} (${table}.${columns[0]})${levelSuffix}`;
   }
   return `${dbName} (${table}: ${listItems(columns)})${levelSuffix}`;
+}
+
+// The part of the condition that `databaseResources` and the classification
+// level do not represent, so the page can still show it.
+export function getUnconvertedCondition(grant: ExemptionGrant): string {
+  if (grant.databaseResources && grant.databaseResources.length > 0) {
+    return "";
+  }
+  return grant.conditionExpression
+    .split(" && ")
+    .filter((part) => !classificationLevelRegex.test(part))
+    .join(" && ")
+    .trim();
 }
 
 // Rewrite `resource.database == "instances/X/databases/Y"` to

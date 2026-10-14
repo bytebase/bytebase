@@ -2047,6 +2047,7 @@
         }
       },
       "all-levels": "All levels",
+      "condition": "Condition",
       "expires-in-days_one": "Expires in {{days}} day",
       "expires-in-days_other": "Expires in {{days}} days",
       "expires-today": "Expires today",

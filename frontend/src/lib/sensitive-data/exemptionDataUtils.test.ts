@@ -7,6 +7,7 @@ vi.mock("@/lib/i18n", () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       const map: Record<string, string> = {
         "database.all": "All databases",
+        "database.columns": "Columns",
         "common.schema": "Schema",
         "common.table": "Table",
         "project.masking-exemption.level": "level",
@@ -21,6 +22,7 @@ vi.mock("@/lib/i18n", () => ({
 import {
   generateGrantTitle,
   getConditionExpression,
+  getUnconvertedCondition,
   groupByMember,
   parseClassificationLevel,
   parseExpirationTimestamp,
@@ -589,6 +591,29 @@ describe("generateGrantTitle", () => {
     ).toBe("All databases, level ≤ 3");
   });
 
+  test("no database, with columns", () => {
+    expect(
+      generateGrantTitle(
+        makeGrant({
+          databaseResources: [
+            { databaseFullName: "", columns: ["email", "phone"] },
+          ],
+        })
+      )
+    ).toBe("All databases (columns: email, phone)");
+  });
+
+  test("no database, with columns and level", () => {
+    expect(
+      generateGrantTitle(
+        makeGrant({
+          databaseResources: [{ databaseFullName: "", columns: ["email"] }],
+          classificationLevel: { operator: "<=", value: 3 },
+        })
+      )
+    ).toBe("All databases (columns: email), level ≤ 3");
+  });
+
   // --- Multiple databases ---
 
   test("2 databases", () => {
@@ -1097,5 +1122,45 @@ describe("composite exemption precedence (BYT-9788)", () => {
         '(resource.database_name == "a" || resource.database_name == "b")'
       );
     });
+  });
+});
+
+describe("getUnconvertedCondition", () => {
+  const makeGrant = (overrides: Partial<ExemptionGrant>): ExemptionGrant => ({
+    id: "test",
+    description: "",
+    rawExpression: "",
+    conditionExpression: "",
+    ...overrides,
+  });
+
+  test("is empty when only the classification level is set", () => {
+    expect(
+      getUnconvertedCondition(
+        makeGrant({ conditionExpression: "resource.classification_level <= 3" })
+      )
+    ).toBe("");
+  });
+
+  test("returns the condition that has no database resources", () => {
+    expect(
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression:
+            'resource.environment_id == "prod" && resource.classification_level <= 3',
+        })
+      )
+    ).toBe('resource.environment_id == "prod"');
+  });
+
+  test("is empty when database resources represent the condition", () => {
+    expect(
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression: 'resource.column_name in ["email"]',
+          databaseResources: [{ databaseFullName: "", columns: ["email"] }],
+        })
+      )
+    ).toBe("");
   });
 });

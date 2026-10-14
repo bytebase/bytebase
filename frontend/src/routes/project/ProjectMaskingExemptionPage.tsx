@@ -36,6 +36,7 @@ import {
   buildMemberSummary,
   generateGrantTitle,
   getConditionExpression,
+  getUnconvertedCondition,
   groupByMember,
   parseExpirationTimestamp,
 } from "@/lib/sensitive-data/exemptionDataUtils";
@@ -209,7 +210,9 @@ export function ProjectMaskingExemptionPage({
       const matchesDb = (g: ExemptionGrant) =>
         !g.databaseResources ||
         g.databaseResources.length === 0 ||
-        g.databaseResources.some((r) => r.databaseFullName === dbScope);
+        g.databaseResources.some(
+          (r) => r.databaseFullName === "" || r.databaseFullName === dbScope
+        );
       result = result
         .map((m) => withFilteredGrants(m, m.grants.filter(matchesDb)))
         .filter((m) => m.grants.length > 0);
@@ -1086,6 +1089,10 @@ function ExemptionGrantSection({
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   const title = useMemo(() => generateGrantTitle(grant), [grant]);
+  const unconvertedCondition = useMemo(
+    () => getUnconvertedCondition(grant),
+    [grant]
+  );
 
   const daysLeft = useTimeReading(
     daysLeftReading,
@@ -1180,6 +1187,17 @@ function ExemptionGrantSection({
             <ExemptionLevelCard
               classificationLevel={grant.classificationLevel}
             />
+          )}
+
+          {unconvertedCondition && (
+            <div className="mt-3 text-sm">
+              <span className="font-medium text-control-light">
+                {t("project.masking-exemption.condition")}:
+              </span>
+              <pre className="mt-1 whitespace-pre-wrap break-all rounded-xs border border-block-border bg-control-bg px-3 py-2 font-mono text-xs">
+                {unconvertedCondition}
+              </pre>
+            </div>
           )}
         </div>
       )}

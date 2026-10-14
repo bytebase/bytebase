@@ -2047,6 +2047,7 @@
         }
       },
       "all-levels": "全レベル",
+      "condition": "条件",
       "expires-in-days_one": "{{days}} 日後に期限切れ",
       "expires-in-days_other": "{{days}} 日後に期限切れ",
       "expires-today": "本日期限切れ",

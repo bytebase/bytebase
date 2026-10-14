@@ -2047,6 +2047,7 @@
         }
       },
       "all-levels": "所有等级",
+      "condition": "条件",
       "expires-in-days_one": "{{days}} 天后到期",
       "expires-in-days_other": "{{days}} 天后到期",
       "expires-today": "今天到期",

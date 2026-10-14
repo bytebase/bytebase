@@ -509,16 +509,16 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
           }
           case CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME: {
             const databaseResource =
-              conditionExpression.databaseResources?.pop();
-            if (databaseResource) {
-              databaseResource.columns = [];
-              for (const value of values) {
-                if (value) {
-                  databaseResource.columns.push(value as string);
-                }
+              conditionExpression.databaseResources?.pop() ?? {
+                databaseFullName: "",
+              };
+            databaseResource.columns = [];
+            for (const value of values) {
+              if (value) {
+                databaseResource.columns.push(value as string);
               }
-              conditionExpression.databaseResources!.push(databaseResource);
             }
+            conditionExpression.databaseResources!.push(databaseResource);
             break;
           }
         }
@@ -576,8 +576,11 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
               break;
             }
             case CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME: {
-              if (right) {
-                databaseResource.columns = [right];
+              if (right && !databaseResource.columns?.includes(right)) {
+                databaseResource.columns = [
+                  ...(databaseResource.columns ?? []),
+                  right,
+                ];
               }
               break;
             }

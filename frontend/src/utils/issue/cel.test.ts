@@ -123,3 +123,30 @@ describe("readableCondition proves the environments and keeps the rest best-effo
     ]);
   });
 });
+
+describe("convertFromExpr with a column condition", () => {
+  const columnIn = (...names: string[]) =>
+    call("@in", resource("column_name"), list(...names.map(str)));
+  const databaseResources = (expr: Expr) =>
+    convertFromExpr(expr).databaseResources;
+
+  test("keeps the columns of a column-only `in` condition", () => {
+    expect(databaseResources(columnIn("email", "phone"))).toEqual([
+      { databaseFullName: "", columns: ["email", "phone"] },
+    ]);
+  });
+
+  test("collects the columns of `==` joined by ||", () => {
+    expect(
+      databaseResources(
+        or(eq("column_name", "email"), eq("column_name", "phone"))
+      )
+    ).toEqual([{ databaseFullName: "", columns: ["email", "phone"] }]);
+  });
+
+  test("still attaches the columns to the preceding database", () => {
+    expect(
+      databaseResources(and(eq("database", A), columnIn("email")))
+    ).toEqual([{ databaseFullName: A, columns: ["email"] }]);
+  });
+});
