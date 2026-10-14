@@ -8,7 +8,6 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
@@ -21,7 +20,7 @@ import (
 // concurrently under aiReviewRunConcurrency.
 type AIReviewExecutor struct {
 	store    *store.Store
-	newModel func(*storepb.AISetting) aireview.Model
+	newModel func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model
 	// slots bounds the reviews in flight across every run of the executor.
 	slots reviewSlots
 }
@@ -86,16 +85,15 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 		units = append(units, &aiReviewUnit{Check: checkTarget, Statement: statement})
 	}
 
-	reviewer := aireview.NewReviewer(&settingGatedModel{
-		model: e.newModel(aiSetting),
-		check: func(ctx context.Context) error {
-			setting, err := e.store.GetAISetting(ctx, project.Workspace)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get AI setting")
-			}
-			return aireview.CheckSetting(setting)
-		},
-	})
+	// The setting is read again before every provider call, retries included,
+	// so switching the review off stops a run in flight at its next call.
+	reviewer := aireview.NewReviewer(e.newModel(aiSetting, aireview.CheckBeforeEachCall(func(ctx context.Context) error {
+		setting, err := e.store.GetAISetting(ctx, project.Workspace)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get AI setting")
+		}
+		return aireview.CheckSetting(setting)
+	})))
 	results, reviewErrs := reviewUnits(ctx, e.slots, units, func(ctx context.Context, unit *aiReviewUnit) (*aireview.Result, error) {
 		// The schema is loaded once the unit holds its slot and dropped when
 		// the review ends, so the runs together hold at most one schema per
@@ -141,20 +139,6 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 		return nil, err
 	}
 	return aiReviewComments(projectID, issueUID, results), nil
-}
-
-// settingGatedModel checks the workspace AI setting before every model call,
-// so switching the review off stops a run in flight at its next call.
-type settingGatedModel struct {
-	model aireview.Model
-	check func(ctx context.Context) error
-}
-
-func (m *settingGatedModel) Chat(ctx context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
-	if err := m.check(ctx); err != nil {
-		return nil, err
-	}
-	return m.model.Chat(ctx, request)
 }
 
 // sheetStatement returns the sheet text, loaded once per run, and refuses a

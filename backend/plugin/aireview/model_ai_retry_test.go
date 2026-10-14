@@ -16,6 +16,7 @@ import (
 	"testing/synctest"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -660,5 +661,47 @@ func TestSleepContext(t *testing.T) {
 			require.ErrorIs(t, sleepContext(ctx, time.Hour), context.Canceled)
 			require.Equal(t, time.Minute, time.Since(start))
 		})
+	})
+}
+
+func TestSettingModelChecksBeforeEveryAttempt(t *testing.T) {
+	t.Parallel()
+
+	refusal := errors.New("AI SQL review is not enabled in the workspace AI setting")
+
+	t.Run("a refusal before the first call", func(t *testing.T) {
+		t.Parallel()
+		provider := newScriptedProvider(t, providerReply{status: http.StatusOK, body: geminiOK})
+		model := NewModel(
+			&storepb.AISetting{Provider: storepb.AISetting_GEMINI, Endpoint: provider.url, Model: "test-model", ApiKey: testAPIKey},
+			CheckBeforeEachCall(func(context.Context) error { return refusal }),
+		)
+		_, err := model.Chat(context.Background(), chatRequest())
+		require.ErrorIs(t, err, refusal)
+		require.Zero(t, provider.requests.Load())
+	})
+
+	t.Run("a refusal while a failed call waits to retry", func(t *testing.T) {
+		t.Parallel()
+		provider := newScriptedProvider(t,
+			providerReply{status: http.StatusServiceUnavailable, body: geminiUnavailable},
+			providerReply{status: http.StatusOK, body: geminiOK},
+		)
+		model, recorder := newRetryModel(storepb.AISetting_GEMINI, provider.url)
+		var refused atomic.Bool
+		CheckBeforeEachCall(func(context.Context) error {
+			if refused.Load() {
+				return refusal
+			}
+			return nil
+		})(model)
+		model.sleep = func(ctx context.Context, wait time.Duration) error {
+			refused.Store(true)
+			return recorder.sleep(ctx, wait)
+		}
+
+		_, err := model.Chat(context.Background(), chatRequest())
+		require.ErrorIs(t, err, refusal)
+		require.Equal(t, int32(1), provider.requests.Load(), "no retry reaches the provider after the check refuses")
 	})
 }

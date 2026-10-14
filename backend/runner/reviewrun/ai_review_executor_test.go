@@ -9,7 +9,6 @@ import (
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/review"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/semaphore"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -38,7 +37,7 @@ func TestCISampleBoundsOnlyTheAIReview(t *testing.T) {
 	model := &findingModel{}
 	executor := &AIReviewExecutor{
 		store:    stores,
-		newModel: func(*storepb.AISetting) aireview.Model { return model },
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
 	}
 	reviewedDatabases := func() []string {
@@ -80,7 +79,7 @@ func TestAIReviewRunsShareTheServerLimit(t *testing.T) {
 	slots := &observedSlots{Weighted: semaphore.NewWeighted(limit), waiting: make(chan struct{}, total)}
 	executor := &AIReviewExecutor{
 		store:    stores,
-		newModel: func(*storepb.AISetting) aireview.Model { return model },
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    slots,
 	}
 
@@ -290,35 +289,6 @@ func send(t *testing.T, ch chan<- struct{}) {
 	case <-time.After(testWaitLimit):
 		t.Fatal("timed out waiting for a model call to release")
 	}
-}
-
-type modelFunc func(ctx context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error)
-
-func (f modelFunc) Chat(ctx context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
-	return f(ctx, request)
-}
-
-func TestSettingGatedModelStopsAtTheSwitch(t *testing.T) {
-	t.Parallel()
-
-	calls := 0
-	var refusal error
-	model := &settingGatedModel{
-		model: modelFunc(func(context.Context, *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
-			calls++
-			return &v1pb.AIChatResponse{}, nil
-		}),
-		check: func(context.Context) error { return refusal },
-	}
-
-	_, err := model.Chat(context.Background(), &v1pb.AIChatRequest{})
-	require.NoError(t, err)
-	require.Equal(t, 1, calls)
-
-	refusal = errors.New("AI SQL review is not enabled in the workspace AI setting")
-	_, err = model.Chat(context.Background(), &v1pb.AIChatRequest{})
-	require.ErrorIs(t, err, refusal)
-	require.Equal(t, 1, calls, "no call reaches the provider once the review is off")
 }
 
 func TestAIReviewExecutorChecksTheSettingAgain(t *testing.T) {
