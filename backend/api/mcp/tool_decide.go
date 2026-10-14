@@ -271,7 +271,8 @@ func confirmationAnswer(req *mcp.CallToolRequest) (mcp.InputResponse, string, bo
 
 // decideOnAnswer acts on the answer to a form this server sent. Only an
 // accepted form with the box checked decides, and only while what the user
-// was asked about still matches the issue.
+// was asked about still matches the issue. A decline is reported before a
+// change, so a user who said no is not asked again.
 func (s *Server) decideOnAnswer(ctx context.Context, decision *issueDecision, response mcp.InputResponse, unchanged bool, link string) (*mcp.CallToolResult, any) {
 	if confirmed, why := confirmationOutcome(response); !confirmed {
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf(

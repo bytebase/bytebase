@@ -55,9 +55,8 @@ service RolloutService {
     //    rejectMCPOriginatedIssuelessRollout (rollout_service.go), which
     //    states why.
     //
-    // 2. The gate PR owes NOTHING here, and must not pretend otherwise. An
-    //    approval binds the plan's specs and its approval_input_version, not
-    //    the set of databases a group target resolves to. This method
+    // 2. An approval binds the plan's specs and its approval_input_version,
+    //    not the set of databases a group target resolves to. This method
     //    re-resolves the group live (rollout_service_task.go), and nothing in
     //    UpdateDatabaseGroup, UpdateDatabase or background schema sync bumps
     //    that version, so databases that join the group after approval execute

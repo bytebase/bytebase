@@ -496,6 +496,23 @@ func TestDecideIssueRefusesWhenTheIssueChangesWhileAsking(t *testing.T) {
 	}
 }
 
+func TestDecideIssueReportsADeclineEvenWhenTheIssueChanged(t *testing.T) {
+	mock := threeStepIssueMock()
+	endpoint, token := newDecideServer(t, mock)
+	user := &asker{
+		answer:     &mcp.ElicitResult{Action: "decline"},
+		whileAsked: func() { mock.update(func(m *decisionMock) { m.issue["title"] = "Drop users" }) },
+	}
+	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	res, err := callDecideIssue(t, session, "approve")
+	require.NoError(t, err)
+	text := resultText(t, res)
+	require.Contains(t, text, "Not approved: the user declined, so nothing changed. Do not retry unless the user asks.")
+	require.NotContains(t, text, "STALE_CONFIRMATION", "a stale result would send the agent back to a user who said no")
+	require.Empty(t, mock.calls())
+}
+
 // newDecideMRTRServer returns a decide_issue call for a client on the
 // 2026-07-28 protocol, which answers the form and echoes the request state
 // itself.
