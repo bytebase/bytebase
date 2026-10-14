@@ -65,6 +65,25 @@ func claudeContentFromToolCalls(toolCalls []*v1pb.AIChatToolCall) []json.RawMess
 	return nil
 }
 
+type claudeErrorReply struct {
+	Error struct {
+		Details struct {
+			ErrorCode string `json:"error_code"`
+		} `json:"details"`
+	} `json:"error"`
+}
+
+// readClaudeFailure marks the reply for a reached monthly spend cap. Anthropic
+// answers it with 429 and the type rate_limit_error, like a rate limit, and
+// tells the two apart by details.error_code.
+func readClaudeFailure(httpErr *HTTPError) {
+	var reply claudeErrorReply
+	if err := json.Unmarshal([]byte(httpErr.Body), &reply); err != nil {
+		return
+	}
+	httpErr.QuotaExhausted = reply.Error.Details.ErrorCode == "enforced_spend_limit_reached"
+}
+
 func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	payload := chatClaudeRequest{
 		Model:     aiSetting.Model,
@@ -158,7 +177,7 @@ func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 		httpReq.Header.Set("anthropic-version", "2023-06-01")
 	}
 
-	body, err := doHTTPRequest(ctx, httpReq, "Claude")
+	body, err := doHTTPRequest(ctx, httpReq, "Claude", readClaudeFailure)
 	if err != nil {
 		return nil, err
 	}

@@ -193,6 +193,25 @@ func extractGeminiThoughtSignatureFromOpenAIToolCall(raw json.RawMessage) string
 	return providerFields.ExtraContent.Google.ThoughtSignature
 }
 
+type openAIErrorReply struct {
+	Error struct {
+		Type string `json:"type"`
+		// Code is any so that a numeric code from a compatible service still decodes.
+		Code any `json:"code"`
+	} `json:"error"`
+}
+
+// readOpenAIFailure marks the reply for a used-up quota. OpenAI answers it
+// with 429, like a rate limit, and tells the two apart by the error code.
+func readOpenAIFailure(httpErr *HTTPError) {
+	var reply openAIErrorReply
+	if err := json.Unmarshal([]byte(httpErr.Body), &reply); err != nil {
+		return
+	}
+	const insufficientQuota = "insufficient_quota"
+	httpErr.QuotaExhausted = reply.Error.Code == insufficientQuota || reply.Error.Type == insufficientQuota
+}
+
 func chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	if isOpenAIResponsesEndpoint(aiSetting.Endpoint) {
 		return chatOpenAIResponses(ctx, aiSetting, request)
@@ -274,7 +293,7 @@ func chatOpenAIChatCompletions(ctx context.Context, aiSetting *storepb.AISetting
 		httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", aiSetting.ApiKey))
 	}
 
-	body, err := doHTTPRequest(ctx, httpReq, "OpenAI")
+	body, err := doHTTPRequest(ctx, httpReq, "OpenAI", readOpenAIFailure)
 	if err != nil {
 		return nil, err
 	}
@@ -395,7 +414,7 @@ func chatOpenAIResponses(ctx context.Context, aiSetting *storepb.AISetting, requ
 		httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", aiSetting.ApiKey))
 	}
 
-	body, err := doHTTPRequest(ctx, httpReq, "OpenAI")
+	body, err := doHTTPRequest(ctx, httpReq, "OpenAI", readOpenAIFailure)
 	if err != nil {
 		return nil, err
 	}
@@ -429,9 +448,9 @@ func chatOpenAIResponses(ctx context.Context, aiSetting *storepb.AISetting, requ
 			for _, part := range output.Content {
 				switch part.Type {
 				case "output_text":
-					content.WriteString(part.Text)
+					_, _ = content.WriteString(part.Text)
 				case "refusal":
-					content.WriteString(part.Refusal)
+					_, _ = content.WriteString(part.Refusal)
 				default:
 					continue
 				}
