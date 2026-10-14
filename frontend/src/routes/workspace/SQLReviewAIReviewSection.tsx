@@ -7,7 +7,6 @@ import { RouterLink } from "@/components/RouterLink";
 import { SwitchRow } from "@/components/sql-review/SwitchRow";
 import { Alert } from "@/components/ui/alert";
 import { useServerState } from "@/hooks/useAppState";
-import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
   AISettingSchema,
@@ -28,15 +27,14 @@ export interface WorkspaceAIReview {
   isDirty: boolean;
   saving: boolean;
   revert: () => void;
-  // Silent when another part of the page saves in the same click and reports
-  // the update itself.
-  save: (options?: { silent?: boolean }) => Promise<void>;
+  // Resolves whether the switch saved. The page reports the update; a failure
+  // is reported by the response middleware and keeps the draft.
+  save: () => Promise<boolean>;
 }
 
 // The page owns the draft so the switch saves with the standard rules, from
 // the one sticky footer.
 export function useWorkspaceAIReview(): WorkspaceAIReview {
-  const { t } = useTranslation();
   const { isSaaSMode } = useServerState();
   // The server info carries both flags, so a user who cannot read the AI
   // setting still sees whether the review is on.
@@ -50,8 +48,8 @@ export function useWorkspaceAIReview(): WorkspaceAIReview {
   const [saving, setSaving] = useState(false);
   const isDirty = draft !== undefined && draft !== stored;
 
-  const save = async (options?: { silent?: boolean }) => {
-    if (draft === undefined) return;
+  const save = async () => {
+    if (draft === undefined) return true;
     setSaving(true);
     try {
       await useAppStore.getState().upsertSetting({
@@ -68,16 +66,9 @@ export function useWorkspaceAIReview(): WorkspaceAIReview {
         }),
       });
       setDraft(undefined);
-      if (!options?.silent) {
-        pushNotification({
-          module: "bytebase",
-          style: "SUCCESS",
-          title: t("common.updated"),
-        });
-      }
+      return true;
     } catch {
-      // The response middleware reports the failure; the draft stays for a
-      // retry.
+      return false;
     } finally {
       setSaving(false);
     }

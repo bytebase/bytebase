@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
     save: vi.fn(),
   },
   aiReview: { isDirty: false, saving: false, revert: vi.fn(), save: vi.fn() },
+  pushNotification: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -54,13 +55,18 @@ vi.mock("@/components/LearnMoreLink", () => ({
 vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
   useUnsavedChangesGuard: vi.fn(),
 }));
-vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
+vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
 vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: () => true,
   sqlReviewPolicySlug: () => "slug",
 }));
 
 const { SQLReviewPage } = await import("./SQLReviewPage");
+
+const update = () =>
+  act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "common.update" }));
+  });
 
 describe("SQLReviewPage", () => {
   beforeEach(() => {
@@ -69,8 +75,9 @@ describe("SQLReviewPage", () => {
       part.isDirty = false;
       part.saving = false;
       part.revert.mockReset();
-      part.save.mockReset();
+      part.save.mockReset().mockResolvedValue(true);
     }
+    mocks.pushNotification.mockReset();
   });
 
   test("shows the standard rules and the AI review under SQL Review V2", () => {
@@ -100,31 +107,46 @@ describe("SQLReviewPage", () => {
     expect(mocks.fetchReviewPolicyList).toHaveBeenCalledTimes(1);
   });
 
-  test("the footer saves only the part that changed", () => {
+  test("the footer saves only the part that changed", async () => {
     mocks.sqlReviewV2.value = true;
     mocks.aiReview.isDirty = true;
     render(<SQLReviewPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "common.update" }));
+    await update();
 
-    expect(mocks.aiReview.save).toHaveBeenCalledExactlyOnceWith({
-      silent: false,
-    });
+    expect(mocks.aiReview.save).toHaveBeenCalledOnce();
     expect(mocks.standardRules.save).not.toHaveBeenCalled();
+    expect(mocks.pushNotification).toHaveBeenCalledOnce();
   });
 
-  test("the footer saves both parts when both changed, and reports one update", () => {
+  test("the footer saves both parts when both changed, and reports one update", async () => {
     mocks.sqlReviewV2.value = true;
     mocks.aiReview.isDirty = true;
     mocks.standardRules.isDirty = true;
     render(<SQLReviewPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "common.update" }));
+    await update();
 
-    expect(mocks.aiReview.save).toHaveBeenCalledExactlyOnceWith({
-      silent: true,
-    });
+    expect(mocks.aiReview.save).toHaveBeenCalledOnce();
     expect(mocks.standardRules.save).toHaveBeenCalledOnce();
+    expect(mocks.pushNotification).toHaveBeenCalledOnce();
+  });
+
+  test.each([
+    ["the AI review", mocks.aiReview],
+    ["the standard rules", mocks.standardRules],
+  ])("reports no update when %s fails to save", async (_, failing) => {
+    mocks.sqlReviewV2.value = true;
+    mocks.aiReview.isDirty = true;
+    mocks.standardRules.isDirty = true;
+    render(<SQLReviewPage />);
+    failing.save.mockResolvedValue(false);
+
+    await update();
+
+    expect(mocks.aiReview.save).toHaveBeenCalledOnce();
+    expect(mocks.standardRules.save).toHaveBeenCalledOnce();
+    expect(mocks.pushNotification).not.toHaveBeenCalled();
   });
 
   test("cancel reverts both parts", () => {

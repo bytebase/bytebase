@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 
@@ -75,18 +75,17 @@ const { SQLReviewAIReviewSection, useWorkspaceAIReview } = await import(
 
 function Harness() {
   const aiReview = useWorkspaceAIReview();
+  const [saved, setSaved] = useState<boolean>();
   return (
     <>
       <SQLReviewAIReviewSection aiReview={aiReview} />
       <output>{aiReview.isDirty ? "dirty" : "clean"}</output>
-      <button type="button" onClick={() => void aiReview.save()}>
-        save
-      </button>
+      <output>{`saved: ${saved}`}</output>
       <button
         type="button"
-        onClick={() => void aiReview.save({ silent: true })}
+        onClick={() => void aiReview.save().then(setSaved)}
       >
-        save silently
+        save
       </button>
       <button type="button" onClick={aiReview.revert}>
         revert
@@ -131,19 +130,8 @@ describe("SQLReviewAIReviewSection", () => {
       "true"
     );
     expect(screen.getByText("clean")).toBeInTheDocument();
-    expect(mocks.pushNotification).toHaveBeenCalledOnce();
-  });
-
-  test("a silent save reports nothing", async () => {
-    render(<Harness />);
-
-    fireEvent.click(screen.getByRole("switch", SWITCH));
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "save silently" }));
-    });
-
-    expect(mocks.upsertSetting).toHaveBeenCalledOnce();
-    expect(screen.getByText("clean")).toBeInTheDocument();
+    expect(screen.getByText("saved: true")).toBeInTheDocument();
+    // The page reports the update, once for everything the click saved.
     expect(mocks.pushNotification).not.toHaveBeenCalled();
   });
 
@@ -177,6 +165,7 @@ describe("SQLReviewAIReviewSection", () => {
       "true"
     );
     expect(screen.getByText("dirty")).toBeInTheDocument();
+    expect(screen.getByText("saved: false")).toBeInTheDocument();
     expect(mocks.pushNotification).not.toHaveBeenCalled();
   });
 

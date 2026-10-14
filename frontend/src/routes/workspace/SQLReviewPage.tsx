@@ -372,13 +372,19 @@ export function SQLReviewPage() {
           right={
             <Button
               disabled={saving}
-              onClick={() => {
-                // One click reports one update: the standard rules do when
-                // they save too.
-                if (aiReview.isDirty) {
-                  void aiReview.save({ silent: standardRules.isDirty });
+              onClick={async () => {
+                const saves: Promise<boolean>[] = [];
+                if (standardRules.isDirty) saves.push(standardRules.save());
+                if (aiReview.isDirty) saves.push(aiReview.save());
+                // One click reports one update, and only when every changed
+                // part saved.
+                if ((await Promise.all(saves)).every(Boolean)) {
+                  pushNotification({
+                    module: "bytebase",
+                    style: "SUCCESS",
+                    title: t("common.updated"),
+                  });
                 }
-                if (standardRules.isDirty) void standardRules.save();
               }}
             >
               {t("common.update")}
