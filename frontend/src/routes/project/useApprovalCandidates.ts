@@ -3,7 +3,20 @@ import { useCurrentUser } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useAppStore } from "@/stores/app";
 import { ensureGroupIdentifier } from "@/stores/app/group";
-import { projectNamePrefix, userNamePrefix } from "@/stores/modules/v1/common";
+import {
+  extractServiceAccountId,
+  serviceAccountToUser,
+} from "@/stores/app/serviceAccount";
+import {
+  extractWorkloadIdentityId,
+  workloadIdentityToUser,
+} from "@/stores/app/workloadIdentity";
+import {
+  projectNamePrefix,
+  serviceAccountNamePrefix,
+  userNamePrefix,
+  workloadIdentityNamePrefix,
+} from "@/stores/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
@@ -11,6 +24,7 @@ import {
   AccountType,
   getAccountTypeByEmail,
   groupBindingPrefix,
+  unknownUser,
 } from "@/types/v1/user";
 import {
   ensureUserFullName,
@@ -20,7 +34,7 @@ import {
 import {
   type ApprovalIneligibility,
   getApprovalEligibility,
-} from "../../../approvalEligibility";
+} from "./approvalEligibility";
 
 export interface ApprovalCandidate {
   canApprove: boolean;
@@ -30,8 +44,9 @@ export interface ApprovalCandidate {
 }
 
 export interface ApprovalCandidates {
-  // Active human users holding the role. They stay visible even when a project
-  // policy means they cannot approve.
+  // Every active principal holding the role: people, service accounts and
+  // workload identities, each as a `users/{email}` User. They stay visible even
+  // when a project policy means they cannot approve.
   candidates: ApprovalCandidate[];
   // Role membership remains distinct from review and approval eligibility.
   canCurrentUserApprove: boolean;
@@ -54,6 +69,10 @@ export function useApprovalCandidates(
   );
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
+  );
+  const fetchServiceAccount = useAppStore((state) => state.fetchServiceAccount);
+  const fetchWorkloadIdentity = useAppStore(
+    (state) => state.fetchWorkloadIdentity
   );
   const batchGetOrFetchGroups = useAppStore(
     (state) => state.batchGetOrFetchGroups
@@ -86,7 +105,7 @@ export function useApprovalCandidates(
     void batchGetOrFetchGroups(names).catch(() => undefined);
   }, [groupNamesKey, batchGetOrFetchGroups]);
 
-  const candidateEmailsKey = useMemo(() => {
+  const holderNamesKey = useMemo(() => {
     // An empty role would make memberMapToRolesInProjectIAM skip its role
     // filter and return every project member — guard so callers that pass a
     // placeholder role (e.g. when no step is current) get no candidates.
@@ -96,40 +115,58 @@ export function useApprovalCandidates(
       role,
       getGroupByIdentifier
     );
-    const names: string[] = [];
-    for (const fullname of memberMap.keys()) {
-      if (fullname.startsWith(userNamePrefix)) {
-        names.push(fullname);
-      }
-    }
-    return JSON.stringify([...new Set(names)].sort());
+    return JSON.stringify([...memberMap.keys()].sort());
   }, [projectIamPolicy, role, getGroupByIdentifier]);
 
   useEffect(() => {
     let canceled = false;
     const load = async () => {
-      const emails = candidateEmailsKey
-        ? (JSON.parse(candidateEmailsKey) as string[])
+      const names = holderNamesKey
+        ? (JSON.parse(holderNamesKey) as string[])
         : [];
-      if (emails.length === 0) {
-        setUsers([]);
-        return;
-      }
-      const nextUsers = await batchGetOrFetchUsers(
-        emails.map(ensureUserFullName)
-      );
+      const withPrefix = (prefix: string) =>
+        names.filter((name) => name.startsWith(prefix));
+      // Each kind of principal is served by its own service. A record that
+      // does not resolve keeps a placeholder named from its email.
+      const [people, serviceAccounts, workloadIdentities] = await Promise.all([
+        batchGetOrFetchUsers(withPrefix(userNamePrefix)),
+        Promise.all(
+          withPrefix(serviceAccountNamePrefix).map(async (name) => {
+            const serviceAccount = await fetchServiceAccount(name, true);
+            return serviceAccount
+              ? serviceAccountToUser(serviceAccount)
+              : unknownUser(ensureUserFullName(extractServiceAccountId(name)));
+          })
+        ),
+        Promise.all(
+          withPrefix(workloadIdentityNamePrefix).map(async (name) => {
+            const workloadIdentity = await fetchWorkloadIdentity(name, true);
+            return workloadIdentity
+              ? workloadIdentityToUser(workloadIdentity)
+              : unknownUser(
+                  ensureUserFullName(extractWorkloadIdentityId(name))
+                );
+          })
+        ),
+      ]);
       if (canceled) return;
+      const isPerson = (user: User) =>
+        getAccountTypeByEmail(user.email) === AccountType.USER;
       setUsers(
-        nextUsers
-          .filter(
-            (user) =>
-              user &&
-              user.state === State.ACTIVE &&
-              getAccountTypeByEmail(user.email) === AccountType.USER
-          )
+        [
+          // A machine's email bound as `user:` matches no policy member on the
+          // server, so it holds nothing.
+          ...people.filter(isPerson),
+          ...serviceAccounts,
+          ...workloadIdentities,
+        ]
+          .filter((user) => user.state === State.ACTIVE)
           .sort((left, right) => {
             if (left.email === currentUserEmail) return -1;
             if (right.email === currentUserEmail) return 1;
+            if (isPerson(left) !== isPerson(right)) {
+              return isPerson(left) ? -1 : 1;
+            }
             return left.title.localeCompare(right.title);
           })
       );
@@ -138,7 +175,13 @@ export function useApprovalCandidates(
     return () => {
       canceled = true;
     };
-  }, [batchGetOrFetchUsers, candidateEmailsKey, currentUserEmail]);
+  }, [
+    batchGetOrFetchUsers,
+    currentUserEmail,
+    fetchServiceAccount,
+    fetchWorkloadIdentity,
+    holderNamesKey,
+  ]);
 
   const candidates = useMemo(
     () =>

@@ -51,7 +51,7 @@ vi.mock("@/hooks/useAppState", () => ({
   usePlanFeature: () => true,
 }));
 
-vi.mock("./usePrincipal", () => ({
+vi.mock("@/hooks/usePrincipal", () => ({
   usePrincipal: (identifier?: string) =>
     identifier ? PRINCIPALS[identifier] : undefined,
 }));

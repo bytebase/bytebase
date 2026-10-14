@@ -168,7 +168,7 @@ describe("MCPCapabilityLadder", () => {
     unmount();
   });
 
-  // One second-level control rather than eight: the toggle reveals the
+  // One second-level control rather than one per row: the toggle reveals the
   // sub-item line on every row at once.
   test("the details toggle reveals sub-items on every row at once", () => {
     const { container, rerender, unmount } = renderIntoContainer(ladder({}));
@@ -252,7 +252,7 @@ describe("MCPCapabilityLadder", () => {
       );
       expect(divider).toBeDefined();
       // Its own item, and presentational: not content inside the row it closes,
-      // and not an item of the eight.
+      // and not one of the rows.
       expect(divider?.getAttribute("role")).toBe("presentation");
       expect(divider?.textContent).not.toContain("settings.mcp.ladder.row.");
     }

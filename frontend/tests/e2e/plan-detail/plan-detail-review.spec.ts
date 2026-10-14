@@ -16,6 +16,8 @@
 //   - Comment composer: draft survives collapse, post appends + re-collapses (CUJ E)
 //   - Long-history timeline fold (torn separator + Show all) (CUJ J)
 //   - Non-candidate sees no Review action but can still comment (permission boundary)
+//   - A step whose role only a service account holds lists it as the reviewer,
+//     and names it once it approves through the API
 //   - BYT-9746 guard: "(edited)" marker shows in place after an inline edit
 //   - Inline comment threads: seeded thread in editor + timeline, gutter
 //     creation, reply / resolve / reopen, View in Statement (CUJ K)
@@ -48,7 +50,7 @@ import {
   type BrowserContext,
 } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
-import { BytebaseApiClient } from "../framework/api-client";
+import { BytebaseApiClient, type IamPolicy } from "../framework/api-client";
 import { signInBrowserAs } from "../framework/sign-in";
 import { PlanDetailPage } from "./plan-detail.page";
 import { seedReviewPlan, waitForApprovalStatus } from "./plan-helpers";
@@ -422,6 +424,107 @@ test.describe("Permission boundary: non-candidate cannot review but can comment"
     });
     await expect(dbaPlanPage.reviewButton).not.toBeVisible();
     await expect(dbaPlanPage.composerTrigger).toBeVisible();
+  });
+});
+
+// An integration approves through the API as a service account that holds a
+// custom role (design doc: docs/design/approval-step-non-human-approvers.md).
+// The step used to read "No reviewers".
+test.describe("A step held only by a service account", () => {
+  test.describe.configure({ mode: "serial" });
+  const suffix = Date.now();
+  const role = `roles/e2e-integration-approver-${suffix}`;
+  const serviceAccountTitle = `E2E Integration ${suffix}`;
+  let serviceAccount: { email: string; serviceKey: string };
+  let originalProjectPolicy: IamPolicy;
+  let planId: string;
+  let issueName: string;
+
+  test.beforeAll(async () => {
+    await env.api.createRole(role.split("/")[1], "E2E Integration Approver", [
+      "bb.projects.get",
+      "bb.issues.get",
+      "bb.plans.get",
+    ]);
+    const { workspace } = await env.api.getActuatorInfo();
+    serviceAccount = await env.api.createServiceAccount(
+      workspace,
+      `e2e-integration-${suffix}`,
+      serviceAccountTitle,
+    );
+    originalProjectPolicy = await env.api.getProjectIamPolicy(env.project);
+    await env.api.appendProjectBinding(env.project, role, [
+      `serviceAccount:${serviceAccount.email}`,
+    ]);
+    await setupApproval({
+      source: "CHANGE_DATABASE",
+      condition: { expression: "true" },
+      template: {
+        flow: { roles: [role] },
+        title: "E2E Integration Approval",
+        description: "One step, held only by a service account",
+      },
+    });
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review SA",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_sa_${suffix} TEXT;`,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    issueName = seeded.issueName;
+    await goReview(planId);
+  });
+
+  test.afterAll(async () => {
+    const current = await env.api.getProjectIamPolicy(env.project);
+    await env.api
+      .setProjectIamPolicy(env.project, {
+        ...originalProjectPolicy,
+        etag: current.etag,
+      })
+      .catch(() => {});
+    await env.api.deleteServiceAccount(serviceAccount.email);
+    await env.api.deleteRole(role);
+  });
+
+  test("the step lists the service account as its reviewer, marked as one", async () => {
+    await expect(planPage.reviewBadge("Under review")).toBeVisible({
+      timeout: 15_000,
+    });
+    const reviewers = page.getByText("1 reviewer", { exact: true });
+    await expect(reviewers).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("No reviewers")).toHaveCount(0);
+    // The signed-in admin does not hold the role, so there is nothing to review.
+    await expect(planPage.reviewButton).not.toBeVisible();
+
+    await reviewers.hover();
+    await expect(page.getByText(serviceAccountTitle)).toBeVisible();
+    await expect(page.getByText(serviceAccount.email)).toBeVisible();
+    await expect(
+      page.getByText("Service Account", { exact: true }),
+    ).toBeVisible();
+  });
+
+  test("once it approves through the API, the step and the activity name it", async () => {
+    const integration = new BytebaseApiClient({ baseURL: env.baseURL });
+    await integration.login(serviceAccount.email, serviceAccount.serviceKey);
+    await integration.approveIssue(issueName);
+    await waitForApprovalStatus(env.api, issueName, ["APPROVED"]);
+
+    await goReview(planId);
+    await expect(planPage.reviewBadge("Approved")).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(
+      page.getByText(`Approved by ${serviceAccountTitle}`),
+    ).toBeVisible({ timeout: 15_000 });
+    // One mark beside the step, one beside the approval in the activity.
+    await expect(
+      page.getByText("Service Account", { exact: true }),
+    ).toHaveCount(2);
+    await expect(
+      page.getByText(serviceAccountTitle, { exact: true }),
+    ).toBeVisible();
   });
 });
 

@@ -9,6 +9,7 @@ import {
   buildPlanRolloutRouteFromPlanName,
   buildSpecDetailRouteFromPlanName,
 } from "@/app/router/routeHelpers";
+import { AccountTypeBadge } from "@/components/AccountTypeBadge";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import {
   type ActivityIconSpec,
@@ -23,7 +24,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { useUserByIdentifier } from "@/hooks/useAppState";
+import { principalLabel, usePrincipal } from "@/hooks/usePrincipal";
 import {
   diffEntryKey,
   diffPlanSpecsForEvent,
@@ -35,7 +36,7 @@ import {
   getIssueCommentType,
   IssueCommentType,
 } from "@/stores/app/issueComment";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -43,7 +44,6 @@ import {
   IssueComment_Approval_Status,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { extractPlanUID, getSpecDisplayInfo } from "@/utils";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import {
@@ -204,11 +204,15 @@ export function ActivityRowShell({
   );
 }
 
-export function CommentCreator({ creator }: { creator: User }) {
+// Who acted, by `users/{email}`: a person, a service account, or a workload
+// identity, the last two marked as such.
+export function CommentCreator({ creator }: { creator: string }) {
+  const principal = usePrincipal(creator);
   return (
-    <span className="font-medium text-main">
-      {creator.title || creator.email}
-    </span>
+    <>
+      <span className="font-medium text-main">{principalLabel(principal)}</span>
+      <AccountTypeBadge compact email={principal?.email} />
+    </>
   );
 }
 
@@ -223,8 +227,6 @@ function IssueCommentHeader({
   similarCount,
 }: ActivityProps & { similarCount?: number }) {
   const { t } = useTranslation();
-  const creator =
-    useUserByIdentifier(comment.creator) ?? unknownUser(comment.creator);
   const createdTs = getTimeForPbTimestampProtoEs(comment.createTime);
   const updatedTs = getTimeForPbTimestampProtoEs(comment.updateTime);
   const isEdited =
@@ -233,7 +235,7 @@ function IssueCommentHeader({
 
   return (
     <>
-      <CommentCreator creator={creator} />
+      <CommentCreator creator={comment.creator} />
       <IssueCommentActionSentence
         comment={comment}
         issue={issue}
@@ -368,15 +370,15 @@ function IssueCommentActionIcon({ issue, plan, comment }: ActivityProps) {
 
 // The avatar badge of a user-authored activity row.
 export function ActivityUserIcon({ principal }: { principal: string }) {
-  const user = useUserByIdentifier(principal) ?? unknownUser(principal);
+  const actor = usePrincipal(principal);
   return (
     <div className="relative pl-0.5">
       <div className="flex size-7 items-center justify-center rounded-full bg-background ring-4 ring-background">
         <UserAvatar
-          colorSeed={user.email}
+          colorSeed={actor?.email}
           className="font-medium"
           size="sm"
-          title={user.title || user.email}
+          title={principalLabel(actor)}
         />
       </div>
     </div>

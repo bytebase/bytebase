@@ -94,6 +94,14 @@ vi.mock("@/hooks/useProjectByName", () => ({
   useProjectByName: () => undefined,
 }));
 
+vi.mock("@/hooks/usePrincipal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/usePrincipal")>()),
+  usePrincipal: (identifier?: string) =>
+    identifier
+      ? { email: "submitter@example.com", title: "Submitter" }
+      : undefined,
+}));
+
 vi.mock("@/stores/app", () => ({
   useAppStore: Object.assign(
     (selector: (state: unknown) => unknown) =>

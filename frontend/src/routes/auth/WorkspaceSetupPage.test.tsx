@@ -1014,12 +1014,14 @@ describe("WorkspaceSetupPage", () => {
       await Promise.resolve();
     });
 
-    expect(mocks.pushNotification).toHaveBeenCalledWith(
+    const errorNotifications = mocks.pushNotification.mock.calls
+      .map(([notification]) => notification)
+      .filter((notification) => notification.style === "CRITICAL");
+    expect(errorNotifications).toEqual([
       expect.objectContaining({
-        style: "CRITICAL",
         title: "Failed to prepare Sample Project Instance.",
-      })
-    );
+      }),
+    ]);
     expect(mocks.routerReplace).toHaveBeenCalledWith({
       name: "workspace.project.detail",
       params: { projectId: "new-project" },

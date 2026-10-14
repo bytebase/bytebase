@@ -536,6 +536,7 @@ describe("CreateInstanceView", () => {
       button.click();
     });
 
+    expect(mocks.pushNotification).toHaveBeenCalledTimes(1);
     expect(mocks.pushNotification).toHaveBeenCalledWith({
       module: "bytebase",
       style: "CRITICAL",

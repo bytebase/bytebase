@@ -6,7 +6,9 @@ import { silentContextKey } from "@/api/context-key";
 import { userNamePrefix } from "@/lib/resourceName";
 import { extractUserEmail } from "@/stores/modules/v1/common";
 import {
+  AccountType,
   allUsersUser,
+  getAccountTypeByEmail,
   isValidProjectName,
   isValidUserName,
   unknownUser,
@@ -29,6 +31,12 @@ import type { AppSliceCreator, UserFilter, UserSlice } from "./types";
 import { isMissingOrForbidden } from "./utils";
 
 const UNKNOWN_PROJECT_NAME_LEGACY = "projects/-";
+
+// The user service refuses a service account's or workload identity's email,
+// and one refused name fails a whole batch. Creators and approvers carry such
+// emails under `users/`.
+const isServedByUserService = (name: string) =>
+  getAccountTypeByEmail(extractUserEmail(name)) === AccountType.USER;
 
 export const buildUserFilter = (params: UserFilter) => {
   const filter = [];
@@ -82,6 +90,7 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
       const validName = ensureUserFullName(name);
       const existing = get().usersByName[validName];
       if (existing) return existing;
+      if (!isServedByUserService(validName)) return undefined;
       const pending = get().userRequests[validName];
       if (pending) return pending;
 
@@ -120,7 +129,11 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
             name.startsWith(userBindingPrefix))
       );
       const missing = validNames
-        .filter((name) => get().getUserByIdentifier(name) === undefined)
+        .filter(
+          (name) =>
+            isServedByUserService(name) &&
+            get().getUserByIdentifier(name) === undefined
+        )
         .map((name) => ensureUserFullName(name));
 
       if (missing.length > 0) {
