@@ -59,8 +59,8 @@ vi.mock("@/modules/workspace-setup-guide/selection", () => ({
   readGuideWorkspaceUsage: () => undefined,
   readSelectedGuideScenarioId: () => undefined,
 }));
-vi.mock("@/modules/workspace-setup-guide/useGuideContext", () => ({
-  useGuideContext: () => ({
+vi.mock("@/modules/workspace-setup-guide/GuideContextProvider", () => ({
+  useSharedGuideContext: () => ({
     context: {
       hasProject: mocks.hasProject,
       hasInstance: mocks.hasInstance,

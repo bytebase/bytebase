@@ -26,6 +26,7 @@ import { PRODUCT_INTRO_QUERY_KEY } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { getGuideAnalyticsProperties } from "./analytics";
+import { useSharedGuideContext } from "./GuideContextProvider";
 import {
   GUIDE_PROGRESS_KEYS,
   guideCompletionAcknowledgedKey,
@@ -39,7 +40,6 @@ import {
 } from "./selection";
 import { GUIDE_STEP_DEFINITIONS } from "./steps";
 import type { GuideAction, GuideStepId, ResolvedGuideStep } from "./types";
-import { useGuideContext } from "./useGuideContext";
 
 export function WorkspaceSetupGuide() {
   const { i18n, t } = useTranslation();
@@ -64,13 +64,7 @@ export function WorkspaceSetupGuide() {
   const productModelAvailable = !!getHowBytebaseWorksGuideContent(
     i18n.resolvedLanguage ?? "en-US"
   );
-  const { context, contextReady } = useGuideContext({
-    enabled: guideEnabled,
-    dismissed,
-    route: currentRoute,
-    scenarioId,
-    workspaceUsage,
-  });
+  const { context, contextReady } = useSharedGuideContext();
   const hasContextualProductIntro =
     typeof currentRoute.query?.[PRODUCT_INTRO_QUERY_KEY] === "string";
   const [productModelOpen, setProductModelOpen] = useState(false);

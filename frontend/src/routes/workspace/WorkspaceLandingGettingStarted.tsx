@@ -4,10 +4,11 @@ import {
   createBehaviorMetric,
 } from "@/app/analytics/behavior";
 import { behaviorAnalytics } from "@/app/analytics/provider";
-import { router, useCurrentRoute } from "@/app/router";
+import { router } from "@/app/router";
 import { useIntroStateByKey } from "@/hooks/useAppState";
 import { preCreateIssue } from "@/lib/plan/issue";
 import { getGuideAnalyticsProperties } from "@/modules/workspace-setup-guide/analytics";
+import { useSharedGuideContext } from "@/modules/workspace-setup-guide/GuideContextProvider";
 import {
   GUIDE_PROGRESS_KEYS,
   guideCompletionAcknowledgedKey,
@@ -23,12 +24,10 @@ import type {
   GuideAction,
   ResolvedGuideStep,
 } from "@/modules/workspace-setup-guide/types";
-import { useGuideContext } from "@/modules/workspace-setup-guide/useGuideContext";
 import { WorkspaceHomeGettingStarted } from "@/modules/workspace-setup-guide/WorkspaceHomeGettingStarted";
 import { useAppStore } from "@/stores/app";
 
 export function WorkspaceLandingGettingStarted() {
-  const route = useCurrentRoute();
   const scenarioId = readSelectedGuideScenarioId();
   const workspaceUsage = readGuideWorkspaceUsage();
   const journey = useMemo(
@@ -44,13 +43,7 @@ export function WorkspaceLandingGettingStarted() {
   const enabled = useAppStore((state) =>
     state.workspaceSetupGuideEnabled(allowMultipleMembers)
   );
-  const { context, contextReady } = useGuideContext({
-    enabled,
-    dismissed,
-    route,
-    scenarioId,
-    workspaceUsage,
-  });
+  const { context, contextReady } = useSharedGuideContext();
   const guide = useMemo(
     () =>
       resolveGuide({
