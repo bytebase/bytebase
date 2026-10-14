@@ -19,6 +19,11 @@ const (
 	maxChatRetries = 3
 	// firstRetryBackoff is the middle of the first backoff. Each retry doubles it.
 	firstRetryBackoff = time.Second
+	// maxOutputTokens holds Claude's thinking, which counts against the limit,
+	// and a long findings list. claude-sonnet-5 allows 128K, but Anthropic
+	// advises streaming above about 16K and ai.Chat does not stream. The Claude
+	// adapter lowers it for an older model whose maximum is smaller.
+	maxOutputTokens = 16000
 )
 
 type settingModel struct {
@@ -37,7 +42,7 @@ func NewModel(setting *storepb.AISetting) Model {
 // review loop sees one model call however many attempts it takes.
 func (m *settingModel) Chat(ctx context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	for retry := 0; ; retry++ {
-		response, err := ai.Chat(ctx, m.setting, request)
+		response, err := ai.Chat(ctx, m.setting, request, ai.WithMaxOutputTokens(maxOutputTokens))
 		if err == nil {
 			return response, nil
 		}
