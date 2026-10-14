@@ -380,7 +380,7 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 	// mutex (GetSettingUncached callers hit it on every read), and an
 	// unordered fill could pin a pre-commit snapshot over a newer published
 	// value. Publication happens only in GetSetting's fill, UpsertSetting,
-	// and UpdateSettingAtomic — all ordered by settingPublishMu.
+	// and the atomic updates — all ordered by settingPublishMu.
 	return settingMessages, nil
 }
 
@@ -405,26 +405,50 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 // caller that sets one field on current and returns it (RotateDirectorySyncToken)
 // would erase everything else the row held.
 func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, apply func(current proto.Message) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
-	return s.writeSettingAtomic(ctx, workspace, name, func(raw string) (proto.Message, error) {
-		current, err := getSettingMessage(name)
-		if err != nil {
-			return nil, err
-		}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), current); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal setting %s", name)
-		}
+	return s.writeSettingAtomic(ctx, workspace, name, false, func(current proto.Message, _ bool) (proto.Message, error) {
 		return apply(current)
 	}, postCommit)
 }
 
-// writeSettingAtomic locks the row, asks next for the value to store, and
-// writes it in the same transaction.
-func (s *Store) writeSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, next func(raw string) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
+// UpsertSettingAtomic is UpdateSettingAtomic for a setting that workspace
+// creation does not seed: a missing row is inserted with the zero value in the
+// same transaction, so apply always merges onto the locked row. existed is
+// false only when this call inserted the row; a caller that raced the insert
+// waits for it to commit and gets the committed row with existed true.
+func (s *Store) UpsertSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, apply func(current proto.Message, existed bool) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
+	return s.writeSettingAtomic(ctx, workspace, name, true, apply, postCommit)
+}
+
+// writeSettingAtomic locks the row, asks apply for the value to store, and
+// writes it in the same transaction. With insertMissing, a missing row is
+// inserted first.
+func (s *Store) writeSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, insertMissing bool, apply func(current proto.Message, existed bool) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
+
+	existed := true
+	if insertMissing {
+		q := qb.Q().Space(`
+			INSERT INTO setting (name, workspace, value) VALUES (?, ?, '{}')
+			ON CONFLICT (workspace, name) DO NOTHING
+		`, name.String(), workspace)
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to build sql")
+		}
+		result, err := tx.ExecContext(ctx, query, args...)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to insert setting %s", name)
+		}
+		inserted, err := result.RowsAffected()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to insert setting %s", name)
+		}
+		existed = inserted == 0
+	}
 
 	q := qb.Q().Space(`
 		SELECT value FROM setting WHERE workspace = ? AND name = ? FOR UPDATE
@@ -440,7 +464,14 @@ func (s *Store) writeSettingAtomic(ctx context.Context, workspace string, name s
 		}
 		return nil, errors.Wrapf(err, "failed to lock setting %s", name)
 	}
-	value, err := next(valueString)
+	current, err := getSettingMessage(name)
+	if err != nil {
+		return nil, err
+	}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), current); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal setting %s", name)
+	}
+	value, err := apply(current, existed)
 	if err != nil {
 		return nil, err
 	}

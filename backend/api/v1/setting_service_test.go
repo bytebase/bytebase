@@ -348,3 +348,44 @@ func TestMergeAppIMSetting(t *testing.T) {
 		require.Equal(t, "feishu-secret", feishuSecret(before))
 	})
 }
+
+func TestMergeAISetting(t *testing.T) {
+	stored := func() *storepb.AISetting {
+		return &storepb.AISetting{
+			Enabled:  true,
+			Provider: storepb.AISetting_OPEN_AI,
+			Endpoint: "https://api.openai.com/v1",
+			ApiKey:   "stored-key",
+			Model:    "gpt-4o",
+		}
+	}
+
+	t.Run("a masked field changes and the rest stay", func(t *testing.T) {
+		before := stored()
+		merged, err := mergeAISetting(before, &storepb.AISetting{SqlReviewEnabled: true}, []string{"value.ai.sql_review_enabled"})
+		require.NoError(t, err)
+		want := stored()
+		want.SqlReviewEnabled = true
+		require.Equal(t, want.String(), merged.String())
+		require.False(t, before.SqlReviewEnabled)
+	})
+
+	t.Run("an enabled setting needs its endpoint, model and key", func(t *testing.T) {
+		_, err := mergeAISetting(stored(), &storepb.AISetting{}, []string{"value.ai.api_key"})
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		_, err = mergeAISetting(&storepb.AISetting{}, &storepb.AISetting{Enabled: true}, []string{"value.ai.enabled"})
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	})
+
+	t.Run("an unknown path is refused", func(t *testing.T) {
+		_, err := mergeAISetting(stored(), &storepb.AISetting{}, []string{"value.ai.version"})
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	})
+
+	t.Run("a missing payload clears the masked fields", func(t *testing.T) {
+		merged, err := mergeAISetting(stored(), nil, []string{"value.ai.enabled", "value.ai.sql_review_enabled"})
+		require.NoError(t, err)
+		require.False(t, merged.Enabled)
+		require.Equal(t, "stored-key", merged.ApiKey)
+	})
+}
