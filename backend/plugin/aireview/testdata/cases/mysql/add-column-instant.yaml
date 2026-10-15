@@ -1,0 +1,58 @@
+description: >-
+  MySQL 8.0 adds a column at the end of a table with the INSTANT algorithm by
+  default: only the data dictionary changes, so the size of the table does not
+  matter. The table has no FULLTEXT index and is not ROW_FORMAT=COMPRESSED,
+  either of which would rule INSTANT out. The one thing the sync cannot show
+  is whether the table has used up its 64 instant row versions, and the
+  prompt asks for a fact it cannot get to go into notes rather than a finding.
+  A reviewer that treats every ALTER TABLE on 61 million rows as a rebuild
+  flags it. modify-column-large-table is a change to the same table that does
+  copy it.
+engine: MYSQL
+version: "8.0.36"
+environment: prod
+statement: |
+  -- Record which warehouse packed each order.
+  ALTER TABLE orders ADD COLUMN warehouse_id INT NULL;
+schema:
+  name: shop
+  character_set: utf8mb4
+  collation: utf8mb4_0900_ai_ci
+  schemas:
+    - name: ""
+      tables:
+        - name: orders
+          engine: InnoDB
+          charset: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          row_count: 61000000
+          data_size: 25769803776
+          index_size: 6442450944
+          data_free: 7340032
+          columns:
+            - {name: id, position: 1, type: bigint, default: AUTO_INCREMENT}
+            - {name: customer_id, position: 2, type: bigint}
+            - {name: status, position: 3, type: varchar(32), default: "'pending'", character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: total, position: 4, type: "decimal(10,2)", default: "'0.00'"}
+            - {name: created_at, position: 5, type: datetime, default: CURRENT_TIMESTAMP}
+          indexes:
+            - {name: PRIMARY, expressions: [id], key_length: [-1], descending: [false], type: BTREE, unique: true, primary: true, visible: true}
+            - {name: idx_orders_customer_id, expressions: [customer_id], key_length: [-1], descending: [false], type: BTREE, visible: true}
+            - {name: idx_orders_created_at, expressions: [created_at], key_length: [-1], descending: [false], type: BTREE, visible: true}
+        - name: customers
+          engine: InnoDB
+          charset: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          row_count: 1300000
+          data_size: 216006656
+          index_size: 89128960
+          columns:
+            - {name: id, position: 1, type: bigint, default: AUTO_INCREMENT}
+            - {name: email, position: 2, type: varchar(255), character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: created_at, position: 3, type: datetime, default: CURRENT_TIMESTAMP}
+          indexes:
+            - {name: PRIMARY, expressions: [id], key_length: [-1], descending: [false], type: BTREE, unique: true, primary: true, visible: true}
+            - {name: uk_customers_email, expressions: [email], key_length: [-1], descending: [false], type: BTREE, unique: true, visible: true}
+expect:
+  not_flag:
+    - line: 2

@@ -1,0 +1,51 @@
+description: >-
+  The view vip_customers filters on customers.loyalty_tier. MySQL drops the
+  column without complaint, and from then on every query of the view fails
+  with ERROR 1356. Only the view's definition shows the dependency, and
+  active_customers is a view on the same table that does not read the column.
+engine: MYSQL
+version: "8.0.36"
+environment: prod
+statement: |
+  -- Loyalty tiers moved to the rewards service.
+  ALTER TABLE customers DROP COLUMN loyalty_tier;
+schema:
+  name: shop
+  character_set: utf8mb4
+  collation: utf8mb4_0900_ai_ci
+  schemas:
+    - name: ""
+      tables:
+        - name: customers
+          engine: InnoDB
+          charset: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          row_count: 1300000
+          data_size: 249561088
+          index_size: 104857600
+          columns:
+            - {name: id, position: 1, type: bigint, default: AUTO_INCREMENT}
+            - {name: email, position: 2, type: varchar(255), character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: loyalty_tier, position: 3, type: varchar(16), nullable: true, default: "NULL", character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: last_login_at, position: 4, type: datetime, nullable: true, default: "NULL"}
+            - {name: created_at, position: 5, type: datetime, default: CURRENT_TIMESTAMP}
+          indexes:
+            - {name: PRIMARY, expressions: [id], key_length: [-1], descending: [false], type: BTREE, unique: true, primary: true, visible: true}
+            - {name: uk_customers_email, expressions: [email], key_length: [-1], descending: [false], type: BTREE, unique: true, visible: true}
+            - {name: idx_customers_last_login_at, expressions: [last_login_at], key_length: [-1], descending: [false], type: BTREE, visible: true}
+      views:
+        - name: active_customers
+          definition: select `customers`.`id` AS `id`,`customers`.`email` AS `email`,`customers`.`last_login_at` AS `last_login_at` from `customers` where (`customers`.`last_login_at` > (now() - interval 90 day))
+          columns:
+            - {name: id, position: 1, type: bigint, default: "0"}
+            - {name: email, position: 2, type: varchar(255), character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+            - {name: last_login_at, position: 3, type: datetime, nullable: true, default: "NULL"}
+        - name: vip_customers
+          definition: select `customers`.`id` AS `id`,`customers`.`email` AS `email` from `customers` where (`customers`.`loyalty_tier` in ('gold','platinum'))
+          columns:
+            - {name: id, position: 1, type: bigint, default: "0"}
+            - {name: email, position: 2, type: varchar(255), character_set: utf8mb4, collation: utf8mb4_0900_ai_ci}
+expect:
+  find:
+    - line: 2
+      keywords: [vip_customers]
