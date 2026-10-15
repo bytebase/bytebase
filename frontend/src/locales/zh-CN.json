@@ -647,7 +647,9 @@
     "direct-connection": "直接连接",
     "extra-params": {
       "description": "数据库连接字符串的其他参数",
-      "self": "额外的参数"
+      "overridden-by-tls": "已被 TLS 部分的设置覆盖。",
+      "self": "额外的参数",
+      "wallet-overridden-by-tls": "仅使用其中保存的密码，证书由 TLS 部分提供。"
     },
     "no-read-only-data-source": "没有只读数据源",
     "private-key-passphrase": "私钥密码",

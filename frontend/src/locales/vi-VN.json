@@ -647,7 +647,9 @@
     "direct-connection": "Kết nối trực tiếp",
     "extra-params": {
       "description": "Các tham số bổ sung cho chuỗi kết nối cơ sở dữ liệu",
-      "self": "Thông số bổ sung"
+      "overridden-by-tls": "Bị ghi đè bởi phần TLS.",
+      "self": "Thông số bổ sung",
+      "wallet-overridden-by-tls": "Chỉ mật khẩu đã lưu của nó được sử dụng. Phần TLS cung cấp các chứng chỉ."
     },
     "no-read-only-data-source": "Không có nguồn dữ liệu chỉ đọc",
     "private-key-passphrase": "Mật khẩu khóa riêng",

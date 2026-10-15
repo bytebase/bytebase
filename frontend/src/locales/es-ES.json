@@ -647,7 +647,9 @@
     "direct-connection": "Conexión directa",
     "extra-params": {
       "description": "Parámetros adicionales para la cadena de conexión de la base de datos",
-      "self": "Parámetros adicionales"
+      "overridden-by-tls": "Anulado por la sección TLS.",
+      "self": "Parámetros adicionales",
+      "wallet-overridden-by-tls": "Solo se usa su contraseña almacenada. La sección TLS proporciona los certificados."
     },
     "no-read-only-data-source": "Sin fuente de datos de solo lectura",
     "private-key-passphrase": "Frase de contraseña de clave privada",
