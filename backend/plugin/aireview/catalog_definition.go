@@ -47,7 +47,7 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	// extension owns it.
 	if schemaName != "" && (s.GetOwner() != "" || s.GetComment() != "" || s.GetSkipDump()) {
 		c.objects = append(c.objects, &catalogObject{kind: kindSchema, name: schemaName, render: func() string {
-			definition := "SCHEMA " + schemaName
+			definition := "SCHEMA " + ident(schemaName)
 			if owner := s.GetOwner(); owner != "" {
 				definition += " OWNER " + owner
 			}
@@ -192,7 +192,7 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 					text += " COLLATE " + collation
 				}
 				attributes = append(attributes, text)
-				comments = append(comments, plainComment("ATTRIBUTE "+attribute.GetName(), attribute.GetComment()))
+				comments = append(comments, plainComment("ATTRIBUTE "+ident(attribute.GetName()), attribute.GetComment()))
 			}
 			definition := fmt.Sprintf("COMPOSITE TYPE %s (%s)", qualify(schemaName, composite.GetName()), strings.Join(attributes, ", "))
 			return join(definition, lines(comments))
@@ -382,7 +382,7 @@ func partitionParts(partitions []*metadatapb.TablePartitionMetadata) []extra[*me
 		var all []string
 		eachPartition(partitions, func(partition *partitionpb) {
 			if text := field.text(partition); text != "" {
-				all = append(all, fmt.Sprintf("ON PARTITION %s:\n  %s", partition.GetName(), strings.ReplaceAll(text, "\n", "\n  ")))
+				all = append(all, fmt.Sprintf("ON PARTITION %s:\n  %s", ident(partition.GetName()), strings.ReplaceAll(text, "\n", "\n  ")))
 			}
 		})
 		parts = append(parts, extra[*metadatapb.TableMetadata]{
@@ -418,7 +418,7 @@ func triggerParts[T triggered](on string, object T, set func(T, []*metadatapb.Tr
 		for _, trigger := range object.GetTriggers() {
 			if trigger.GetSkipDump() == skipped {
 				kept = append(kept, trigger)
-				comments = append(comments, plainComment("TRIGGER "+trigger.GetName(), trigger.GetComment()))
+				comments = append(comments, plainComment("TRIGGER "+ident(trigger.GetName()), trigger.GetComment()))
 			}
 		}
 		parts = append(parts,
@@ -465,7 +465,7 @@ func plainComment(on string, comment string) string {
 func columnComments(columns []*metadatapb.ColumnMetadata) string {
 	comments := make([]string, 0, len(columns))
 	for _, column := range columns {
-		comments = append(comments, plainComment("COLUMN "+column.GetName(), column.GetComment()))
+		comments = append(comments, plainComment("COLUMN "+ident(column.GetName()), column.GetComment()))
 	}
 	return lines(comments)
 }
@@ -479,7 +479,7 @@ func stripColumnComments(columns []*metadatapb.ColumnMetadata) {
 func indexComments(indexes []*metadatapb.IndexMetadata) string {
 	comments := make([]string, 0, len(indexes))
 	for _, index := range indexes {
-		comments = append(comments, plainComment("INDEX "+index.GetName(), index.GetComment()))
+		comments = append(comments, plainComment("INDEX "+ident(index.GetName()), index.GetComment()))
 	}
 	return lines(comments)
 }
@@ -523,7 +523,7 @@ func plainTriggers(on string, triggers []*metadatapb.TriggerMetadata) string {
 			// PostgreSQL syncs the whole statement as the body.
 			parts = append(parts, join(body, context, extensionMember(trigger.GetSkipDump())))
 		default:
-			parts = append(parts, join(fmt.Sprintf("TRIGGER %s %s %s ON %s\n%s", trigger.GetName(), trigger.GetTiming(), trigger.GetEvent(), on, body), context, extensionMember(trigger.GetSkipDump())))
+			parts = append(parts, join(fmt.Sprintf("TRIGGER %s %s %s ON %s\n%s", ident(trigger.GetName()), trigger.GetTiming(), trigger.GetEvent(), on, body), context, extensionMember(trigger.GetSkipDump())))
 		}
 	}
 	return strings.Join(parts, "\n\n")
@@ -618,7 +618,7 @@ func plainFact(label string, value string) string {
 func plainEventTrigger(trigger *metadatapb.EventTriggerMetadata) string {
 	definition := trigger.GetDefinition()
 	if definition == "" {
-		definition = fmt.Sprintf("EVENT TRIGGER %s ON %s", trigger.GetName(), trigger.GetEvent())
+		definition = fmt.Sprintf("EVENT TRIGGER %s ON %s", ident(trigger.GetName()), trigger.GetEvent())
 		if tags := trigger.GetTags(); len(tags) > 0 {
 			definition += fmt.Sprintf(" WHEN TAG IN (%s)", sqlStrings(tags))
 		}
@@ -670,7 +670,7 @@ func plainIndexes(indexes []*metadatapb.IndexMetadata) string {
 func plainForeignKeys(keys []*metadatapb.ForeignKeyMetadata) string {
 	all := make([]string, 0, len(keys))
 	for _, key := range keys {
-		definition := fmt.Sprintf("FOREIGN KEY %s (%s) REFERENCES %s (%s)", key.GetName(), idents(key.GetColumns()), qualify(key.GetReferencedSchema(), key.GetReferencedTable()), idents(key.GetReferencedColumns()))
+		definition := fmt.Sprintf("FOREIGN KEY %s (%s) REFERENCES %s (%s)", ident(key.GetName()), idents(key.GetColumns()), qualify(key.GetReferencedSchema(), key.GetReferencedTable()), idents(key.GetReferencedColumns()))
 		matchType := key.GetMatchType()
 		// MySQL and MariaDB report NONE, for a key declared with no MATCH.
 		if strings.EqualFold(matchType, "NONE") {
@@ -693,7 +693,7 @@ func plainForeignKeys(keys []*metadatapb.ForeignKeyMetadata) string {
 func plainCheckConstraints(checks []*metadatapb.CheckConstraintMetadata) string {
 	all := make([]string, 0, len(checks))
 	for _, check := range checks {
-		all = append(all, fmt.Sprintf("CHECK %s %s", check.GetName(), check.GetExpression()))
+		all = append(all, fmt.Sprintf("CHECK %s %s", ident(check.GetName()), check.GetExpression()))
 	}
 	return lines(all)
 }
@@ -701,7 +701,7 @@ func plainCheckConstraints(checks []*metadatapb.CheckConstraintMetadata) string 
 func plainExcludeConstraints(excludes []*metadatapb.ExcludeConstraintMetadata) string {
 	all := make([]string, 0, len(excludes))
 	for _, exclude := range excludes {
-		all = append(all, fmt.Sprintf("EXCLUDE %s %s", exclude.GetName(), exclude.GetExpression()))
+		all = append(all, fmt.Sprintf("EXCLUDE %s %s", ident(exclude.GetName()), exclude.GetExpression()))
 	}
 	return lines(all)
 }
@@ -711,7 +711,7 @@ func plainExcludeConstraints(excludes []*metadatapb.ExcludeConstraintMetadata) s
 func plainPartitions(partitions []*metadatapb.TablePartitionMetadata) string {
 	var all []string
 	for _, partition := range partitions {
-		definition := "PARTITION " + partition.GetName()
+		definition := "PARTITION " + ident(partition.GetName())
 		if kind := partition.GetType(); kind != metadatapb.TablePartitionMetadata_TYPE_UNSPECIFIED {
 			definition += " BY " + strings.ReplaceAll(kind.String(), "_", " ")
 		}
@@ -738,7 +738,7 @@ func plainRules(rules []*metadatapb.RuleMetadata) string {
 	for _, rule := range rules {
 		definition := rule.GetDefinition()
 		if definition == "" {
-			definition = fmt.Sprintf("RULE %s ON %s WHERE %s DO %s", rule.GetName(), rule.GetEvent(), rule.GetCondition(), rule.GetAction())
+			definition = fmt.Sprintf("RULE %s ON %s WHERE %s DO %s", ident(rule.GetName()), rule.GetEvent(), rule.GetCondition(), rule.GetAction())
 		}
 		all = append(all, definition)
 	}
@@ -756,7 +756,7 @@ func invisibleIndexes(engine storepb.Engine, indexes []*metadatapb.IndexMetadata
 	var all []string
 	for _, index := range indexes {
 		if !index.GetVisible() {
-			all = append(all, fmt.Sprintf("INDEX %s INVISIBLE", index.GetName()))
+			all = append(all, fmt.Sprintf("INDEX %s INVISIBLE", ident(index.GetName())))
 		}
 	}
 	return lines(all)
@@ -774,7 +774,7 @@ func defaultConstraintNames(columns []*metadatapb.ColumnMetadata) string {
 	var all []string
 	for _, column := range columns {
 		if name := column.GetDefaultConstraintName(); name != "" {
-			all = append(all, fmt.Sprintf("DEFAULT CONSTRAINT %s ON COLUMN %s", name, column.GetName()))
+			all = append(all, fmt.Sprintf("DEFAULT CONSTRAINT %s ON COLUMN %s", ident(name), ident(column.GetName())))
 		}
 	}
 	return lines(all)
@@ -792,7 +792,7 @@ func disabledRules(rules []*metadatapb.RuleMetadata) string {
 	var all []string
 	for _, rule := range rules {
 		if !rule.GetIsEnabled() {
-			all = append(all, fmt.Sprintf("RULE %s DISABLED", rule.GetName()))
+			all = append(all, fmt.Sprintf("RULE %s DISABLED", ident(rule.GetName())))
 		}
 	}
 	return lines(all)
@@ -808,10 +808,10 @@ func plainExternalTable(engine storepb.Engine, schemaName string, table *metadat
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "EXTERNAL TABLE %s", qualify(schemaName, table.GetName()))
 	if server := table.GetExternalServerName(); server != "" {
-		_, _ = fmt.Fprintf(&b, " ON SERVER %s", server)
+		_, _ = fmt.Fprintf(&b, " ON SERVER %s", ident(server))
 	}
 	if database := table.GetExternalDatabaseName(); database != "" {
-		_, _ = fmt.Fprintf(&b, " DATABASE %s", database)
+		_, _ = fmt.Fprintf(&b, " DATABASE %s", ident(database))
 	}
 	_, _ = b.WriteString(" (\n")
 	for _, column := range table.GetColumns() {
@@ -835,7 +835,7 @@ func syncsNullability(engine storepb.Engine) bool {
 
 func plainColumn(engine storepb.Engine, column *metadatapb.ColumnMetadata) string {
 	var b strings.Builder
-	_, _ = fmt.Fprintf(&b, "%s %s", column.GetName(), column.GetType())
+	_, _ = fmt.Fprintf(&b, "%s %s", ident(column.GetName()), column.GetType())
 	if value := column.GetCharacterSet(); value != "" {
 		_, _ = fmt.Fprintf(&b, " CHARACTER SET %s", value)
 	}
@@ -907,7 +907,7 @@ func plainIndex(index *metadatapb.IndexMetadata) string {
 	if definition := index.GetDefinition(); definition != "" {
 		// Cassandra keeps the options of a secondary index here, as JSON.
 		if strings.HasPrefix(strings.TrimSpace(definition), "{") {
-			named := fmt.Sprintf("%s %s", kind, index.GetName())
+			named := fmt.Sprintf("%s %s", kind, ident(index.GetName()))
 			if method != "" {
 				named += " USING " + method
 			}
@@ -925,7 +925,7 @@ func plainIndex(index *metadatapb.IndexMetadata) string {
 		}
 		expressions = append(expressions, expression)
 	}
-	definition := fmt.Sprintf("%s %s", kind, index.GetName())
+	definition := fmt.Sprintf("%s %s", kind, ident(index.GetName()))
 	if method != "" {
 		definition += fmt.Sprintf(" USING %s", method)
 	}
@@ -971,7 +971,7 @@ func plainSequence(schemaName string, sequence *metadatapb.SequenceMetadata) str
 
 func qualify(schemaName string, name string) string {
 	if schemaName == "" {
-		return name
+		return ident(name)
 	}
-	return schemaName + "." + name
+	return ident(schemaName) + "." + ident(name)
 }

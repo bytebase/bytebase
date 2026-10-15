@@ -1173,7 +1173,7 @@ func TestCatalogReadClaimsNothingAHiveSyncDoesNotRead(t *testing.T) {
 	}}})
 
 	_, text := readAll(t, tools, `[{"name": "events"}, {"name": "raw_events"}]`)
-	require.Equal(t, "TABLE events (\n  id bigint\n)\n\nPARTITION day=2026-10-15", text[".events"])
+	require.Equal(t, "TABLE events (\n  id bigint\n)\n\nPARTITION \"day=2026-10-15\"", text[".events"])
 	require.Equal(t, "EXTERNAL TABLE raw_events (\n  payload string\n)", text[".raw_events"])
 }
 
@@ -1501,5 +1501,6 @@ func TestCatalogKeepsEachNameInAListWhole(t *testing.T) {
 		}},
 	}}})
 	_, text := readAll(t, tools, `[{"name": "t"}]`)
+	require.Contains(t, text[".t"], "TABLE t (\n  \"a, b\" int NOT NULL\n)")
 	require.Contains(t, text[".t"], `FOREIGN KEY fk ("a, b") REFERENCES u (id, "x, y")`)
 }
