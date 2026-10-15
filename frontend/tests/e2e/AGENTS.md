@@ -72,6 +72,8 @@ Use `ControlOrMeta+a` (portable), not `Meta+a` (Mac-only) or `Control+a` (Linux/
 
 Tailwind class substrings like `[class*='border border-gray']` break on any CSS refactor. If you need a new locator, add a `data-testid` attribute to the component. Existing class-based selectors are technical debt.
 
+Utility classes (`rounded-*`, `border-*`, `overflow-*`, `gap-*`) are presentation, and UI-guideline refactors rewrite them across the codebase at once. Before adding a `data-testid`, prefer role plus accessible name, or visible text scoped to fixture names the test owns. Product hook classes (`bb-*`) and third-party internals such as Monaco's `.view-lines` identify structure and may be used when no user-facing handle exists.
+
 ## Directory Layout
 
 ```
@@ -130,6 +132,7 @@ Get the correct port from `getInstance(env.instance)` rather than hardcoding the
 - **Unix-like OS only**: the sample Postgres uses Unix sockets in `/tmp`.
 - **Admin credentials**: hardcoded `demo@example.com` / `12345678`. The first user created via `/v1/auth/signup` becomes workspace admin, so e2e signs up this fixture.
 - **DBA fixture**: `dba1@example.com` / `12345678` is created during `globalSetup` and granted `roles/workspaceDBA`. Used as the second approver by plan-detail approval specs. If a spec needs additional users (developer, QA, etc.), provision them the same way in `mode-start-new-bytebase.ts` — don't assume they exist.
+- **Approval by the plan author**: the admin creates, edits, and approves its own plans, so it is both the issue creator and the last plan editor. A new project denies approval to both, through two separate settings. Enable both with `authorMayApprove(true)` from `plan-detail/plan-helpers.ts`, and snapshot and restore both fields.
 
 ## Assertions and regression coverage
 
