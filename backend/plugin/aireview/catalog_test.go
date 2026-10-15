@@ -1504,3 +1504,40 @@ func TestCatalogKeepsEachNameInAListWhole(t *testing.T) {
 	require.Contains(t, text[".t"], "TABLE t (\n  \"a, b\" int NOT NULL\n)")
 	require.Contains(t, text[".t"], `FOREIGN KEY fk ("a, b") REFERENCES u (id, "x, y")`)
 }
+
+func TestCatalogQuotesAnIndexedColumnButNotAnExpression(t *testing.T) {
+	t.Parallel()
+
+	tools := NewCatalogTools(storepb.Engine_MARIADB, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Tables: []*metadatapb.TableMetadata{{
+			Name:    "t",
+			Columns: []*metadatapb.ColumnMetadata{{Name: "a, b", Type: "int"}, {Name: "email", Type: "varchar(64)"}},
+			Indexes: []*metadatapb.IndexMetadata{
+				{Name: "by_ab", Expressions: []string{"a, b"}, KeyLength: []int64{-1}, Type: "BTREE", Visible: true},
+				{Name: "by_email", Expressions: []string{"lower(email)"}, KeyLength: []int64{-1}, Type: "BTREE", Visible: true},
+			},
+		}},
+	}}})
+	_, text := readAll(t, tools, `[{"name": "t"}]`)
+	require.Contains(t, text[".t"], `INDEX by_ab USING BTREE ("a, b")`)
+	require.Contains(t, text[".t"], "INDEX by_email USING BTREE (lower(email))")
+}
+
+func TestCatalogListsTheColumnsOfAViewWithAHiddenDefinition(t *testing.T) {
+	t.Parallel()
+
+	columns := func() []*metadatapb.ColumnMetadata {
+		return []*metadatapb.ColumnMetadata{{Name: "order_id", Type: "int"}, {Name: "total", Type: "decimal(10,2)"}}
+	}
+	for engine, definition := range map[storepb.Engine]string{
+		storepb.Engine_MSSQL:     "-- The definition of this view is encrypted.",
+		storepb.Engine_SNOWFLAKE: "",
+	} {
+		tools := NewCatalogTools(engine, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:  "app",
+			Views: []*metadatapb.ViewMetadata{{Name: "order_totals", Definition: definition, Columns: columns()}},
+		}}})
+		_, text := readAll(t, tools, `[{"name": "order_totals"}]`)
+		require.Equal(t, 1, strings.Count(text["app.order_totals"], "COLUMNS:\n  order_id int\n  total decimal(10,2)"), "%s:\n%s", engine, text["app.order_totals"])
+	}
+}

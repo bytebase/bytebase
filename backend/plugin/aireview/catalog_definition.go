@@ -294,7 +294,7 @@ func (c *catalogTools) tableDefinition(schemaName string, table *metadatapb.Tabl
 	}
 	plain := func() string { return plainTable(c.engine, schemaName, table) }
 	parts := []extra[*tablepb]{
-		{strip: func(table *tablepb) { table.Indexes = nil }, text: plainIndexes(table.GetIndexes())},
+		{strip: func(table *tablepb) { table.Indexes = nil }, text: plainIndexes(table.GetIndexes(), table.GetColumns())},
 		{strip: func(table *tablepb) { table.ForeignKeys = nil }, text: plainForeignKeys(table.GetForeignKeys())},
 		{strip: func(table *tablepb) { table.CheckConstraints = nil }, text: plainCheckConstraints(table.GetCheckConstraints())},
 		{strip: func(table *tablepb) { table.ExcludeConstraints = nil }, text: plainExcludeConstraints(table.GetExcludeConstraints())},
@@ -311,7 +311,7 @@ func (c *catalogTools) tableDefinition(schemaName string, table *metadatapb.Tabl
 		{strip: func(table *tablepb) { stripColumnComments(table.GetColumns()) }, text: columnComments(table.GetColumns())},
 		{strip: func(table *tablepb) { stripIndexComments(table.GetIndexes()) }, text: indexComments(table.GetIndexes())},
 	}
-	parts = append(parts, partitionParts(table.GetPartitions())...)
+	parts = append(parts, partitionParts(table.GetPartitions(), table.GetColumns())...)
 	parts = append(parts, triggerParts(qualify(schemaName, table.GetName()), table,
 		func(table *tablepb, triggers []*metadatapb.TriggerMetadata) { table.Triggers = triggers })...)
 	return complete(table, render, plain, parts...)
@@ -328,6 +328,9 @@ func (c *catalogTools) viewDefinition(schemaName string, view *metadatapb.ViewMe
 		{strip: func(view *viewpb) { view.Rules = nil }, text: plainRules(view.GetRules())},
 		{strip: func(view *viewpb) { enableRules(view.GetRules()) }, text: disabledRules(view.GetRules())},
 		{strip: func(view *viewpb) { view.Comment = "" }, text: plainComment("", view.GetComment())},
+		// The columns are the only schema left of a view whose definition is
+		// hidden, such as an encrypted SQL Server view.
+		{strip: func(view *viewpb) { view.Columns = nil }, text: viewColumns(view.GetColumns())},
 		{strip: func(view *viewpb) { stripColumnComments(view.GetColumns()) }, text: columnComments(view.GetColumns())},
 	}
 	parts = append(parts, triggerParts(on, view,
@@ -343,7 +346,7 @@ func (c *catalogTools) materializedViewDefinition(schemaName string, view *metad
 	on := qualify(schemaName, view.GetName())
 	plain := func() string { return fmt.Sprintf("MATERIALIZED VIEW %s AS\n%s", on, view.GetDefinition()) }
 	parts := []extra[*viewpb]{
-		{strip: func(view *viewpb) { view.Indexes = nil }, text: plainIndexes(view.GetIndexes())},
+		{strip: func(view *viewpb) { view.Indexes = nil }, text: plainIndexes(view.GetIndexes(), nil)},
 		{strip: func(view *viewpb) { view.Comment = "" }, text: plainComment("", view.GetComment())},
 		{strip: func(view *viewpb) { stripIndexComments(view.GetIndexes()) }, text: indexComments(view.GetIndexes())},
 	}
@@ -354,14 +357,14 @@ func (c *catalogTools) materializedViewDefinition(schemaName string, view *metad
 
 // partitionParts returns what hangs on the partitions of a table as extras:
 // their indexes, the comments of those, and their constraints.
-func partitionParts(partitions []*metadatapb.TablePartitionMetadata) []extra[*metadatapb.TableMetadata] {
+func partitionParts(partitions []*metadatapb.TablePartitionMetadata, columns []*metadatapb.ColumnMetadata) []extra[*metadatapb.TableMetadata] {
 	type partitionpb = metadatapb.TablePartitionMetadata
 	fields := []struct {
 		text  func(*partitionpb) string
 		strip func(*partitionpb)
 	}{
 		{
-			text:  func(partition *partitionpb) string { return plainIndexes(partition.GetIndexes()) },
+			text:  func(partition *partitionpb) string { return plainIndexes(partition.GetIndexes(), columns) },
 			strip: func(partition *partitionpb) { partition.Indexes = nil },
 		},
 		{
@@ -607,6 +610,18 @@ func sqlStrings(values []string) string {
 	return strings.Join(literals, ", ")
 }
 
+// viewColumns lists the synced columns of a view by name and type.
+func viewColumns(columns []*metadatapb.ColumnMetadata) string {
+	if len(columns) == 0 {
+		return ""
+	}
+	all := make([]string, 0, len(columns))
+	for _, column := range columns {
+		all = append(all, fmt.Sprintf("  %s %s", ident(column.GetName()), column.GetType()))
+	}
+	return "COLUMNS:\n" + strings.Join(all, "\n")
+}
+
 // plainFact writes a fact the definition does not carry, such as an owner.
 func plainFact(label string, value string) string {
 	if value == "" {
@@ -655,14 +670,21 @@ func plainTable(engine storepb.Engine, schemaName string, table *metadatapb.Tabl
 	return b.String()
 }
 
-func plainIndexes(indexes []*metadatapb.IndexMetadata) string {
+// plainIndexes writes the indexes of an object whose columns are given. An
+// expression that is one of those columns is a name and is quoted like one;
+// any other expression is SQL and is written as synced.
+func plainIndexes(indexes []*metadatapb.IndexMetadata, columns []*metadatapb.ColumnMetadata) string {
+	columnNames := make(map[string]bool, len(columns))
+	for _, column := range columns {
+		columnNames[column.GetName()] = true
+	}
 	all := make([]string, 0, len(indexes))
 	for _, index := range indexes {
 		// DynamoDB syncs an empty range index for a table with no range key.
 		if index.GetDefinition() == "" && len(index.GetExpressions()) == 0 {
 			continue
 		}
-		all = append(all, plainIndex(index))
+		all = append(all, plainIndex(index, columnNames))
 	}
 	return lines(all)
 }
@@ -886,7 +908,7 @@ func plainColumn(engine storepb.Engine, column *metadatapb.ColumnMetadata) strin
 
 // plainIndex leaves visibility out: an engine whose sync never reads it would
 // show every index as invisible.
-func plainIndex(index *metadatapb.IndexMetadata) string {
+func plainIndex(index *metadatapb.IndexMetadata, columnNames map[string]bool) string {
 	kind := "INDEX"
 	method := index.GetType()
 	// The MySQL-family syncs keep FULLTEXT and SPATIAL as the type. They are
@@ -917,6 +939,9 @@ func plainIndex(index *metadatapb.IndexMetadata) string {
 	}
 	expressions := make([]string, 0, len(index.GetExpressions()))
 	for i, expression := range index.GetExpressions() {
+		if columnNames[expression] {
+			expression = ident(expression)
+		}
 		if i < len(keyLength) && keyLength[i] > 0 {
 			expression += fmt.Sprintf("(%d)", keyLength[i])
 		}
