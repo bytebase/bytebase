@@ -2,6 +2,7 @@ package aireview
 
 import (
 	"context"
+	"crypto/rand"
 	jsonv2 "encoding/json/v2"
 	"fmt"
 	"math"
@@ -1592,11 +1593,31 @@ func TestCatalogSizesTheBudgetToThePrompt(t *testing.T) {
 	require.Equal(t, -1, budget(withPromptBytes(400<<10)), "a prompt that takes the whole share leaves no catalog text")
 	require.Equal(t, -1, budget(withPromptBytes(reviewTextBytes)), "a budget of exactly zero is none, not the default")
 
-	// The statement counts as the prompt writes it, every line with its number.
-	shortLines := strings.Repeat("x\n", 100<<10)
-	numbered, _ := numberLines(shortLines)
-	require.Greater(t, len(numbered), 3*len(shortLines))
-	require.Equal(t, budget(withPromptBytes(len(numbered)+len("policy"))), budget(WithPromptOf(&Request{Statement: shortLines, WorkspacePolicy: "policy"})))
+	// The whole prompt counts, the statement as numbered and the target facts included.
+	promptOf := func(request *Request) int {
+		numbered, _ := numberLines(request.Statement)
+		total := 0
+		for _, message := range buildMessages(request, numbered, rand.Text(), true) {
+			total += len(message.GetContent())
+		}
+		return total
+	}
+	// Short lines, so the numbered statement is several times the raw one and
+	// the budget lands under its cap.
+	shortLines := &Request{Statement: strings.Repeat("x\n", 40<<10), WorkspacePolicy: "policy"}
+	numbered, _ := numberLines(shortLines.Statement)
+	require.Greater(t, len(numbered), 3*len(shortLines.Statement))
+	require.Greater(t, promptOf(shortLines), len(numbered))
+	require.Less(t, reviewTextBytes-promptOf(shortLines), maxReviewToolBytes)
+	require.Equal(t, reviewTextBytes-promptOf(shortLines), budget(WithPromptOf(shortLines)))
+
+	var schemas []SchemaSummary
+	for i := range 10000 {
+		schemas = append(schemas, SchemaSummary{Name: fmt.Sprintf("tenant_%04d", i), ObjectCount: 12})
+	}
+	manySchemas := &Request{Statement: "SELECT 1;", Target: Target{Engine: "POSTGRES", Schemas: schemas}}
+	require.Less(t, budget(WithPromptOf(manySchemas)), maxReviewToolBytes, "a long schema list leaves less")
+	require.Equal(t, reviewTextBytes-promptOf(manySchemas), budget(WithPromptOf(manySchemas)))
 }
 
 func TestCatalogFitsAnEscapedDefinitionInItsLimit(t *testing.T) {
@@ -1659,4 +1680,29 @@ func TestRuneStartKeepsEveryByteThatIsNoCharacter(t *testing.T) {
 	require.Equal(t, 4, runeStart(text, 2), "inside a character, skip to its end")
 	require.Equal(t, 4, runeStart(text, 3))
 	require.Equal(t, 4, runeStart(text, 4))
+}
+
+func TestCatalogReadsOnlyTheSyncedDatabaseOfASchemalessEngine(t *testing.T) {
+	t.Parallel()
+
+	tools := mysqlShop()
+	require.Len(t, read(t, tools, `{"objects": [{"name": "orders"}]}`).Objects, 1)
+	require.Len(t, read(t, tools, `{"objects": [{"schema": "SHOP", "name": "orders"}]}`).Objects, 1, "the synced database's own name")
+	other := read(t, tools, `{"objects": [{"schema": "other_db", "name": "orders"}]}`)
+	require.Empty(t, other.Objects, "another database's table is not this one")
+	require.Equal(t, []objectName{{Schema: "other_db", Name: "orders"}}, other.NotFound)
+	require.Zero(t, search(t, tools, `{"text": "orders", "schema": "other_db"}`).Total)
+}
+
+func TestCatalogReadsTheDatabaseLinks(t *testing.T) {
+	t.Parallel()
+
+	tools := NewCatalogTools(storepb.Engine_ORACLE, &metadatapb.DatabaseSchemaMetadata{
+		Name:            "ORCL",
+		LinkedDatabases: []*metadatapb.LinkedDatabaseMetadata{{Name: "REPORTING.EXAMPLE.COM", Username: "REPORTER", Host: "reporting-db:1521/RPT"}},
+		Schemas:         []*metadatapb.SchemaMetadata{{Name: "APP"}},
+	})
+	_, text := readAll(t, tools, `[{"name": "REPORTING.EXAMPLE.COM"}]`)
+	require.Equal(t, `DATABASE LINK "REPORTING.EXAMPLE.COM" CONNECT TO REPORTER USING 'reporting-db:1521/RPT'`, text[".REPORTING.EXAMPLE.COM"])
+	require.Equal(t, []searchMatch{{Kind: kindDatabaseLink, Name: "REPORTING.EXAMPLE.COM", Matched: "definition"}}, search(t, tools, `{"text": "reporting-db"}`).Matches)
 }

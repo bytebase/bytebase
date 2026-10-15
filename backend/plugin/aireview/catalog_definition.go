@@ -32,6 +32,18 @@ func (c *catalogTools) indexDatabase() {
 			return join(plainEventTrigger(trigger), extensionMember(trigger.GetSkipDump()), plainComment("", trigger.GetComment()))
 		}})
 	}
+	for _, link := range c.schema.GetLinkedDatabases() {
+		c.objects = append(c.objects, &catalogObject{kind: kindDatabaseLink, name: link.GetName(), render: func() string {
+			definition := "DATABASE LINK " + ident(link.GetName())
+			if username := link.GetUsername(); username != "" {
+				definition += " CONNECT TO " + ident(username)
+			}
+			if host := link.GetHost(); host != "" {
+				definition += " USING " + sqlStrings([]string{host})
+			}
+			return definition
+		}})
+	}
 	for _, extension := range c.schema.GetExtensions() {
 		c.objects = append(c.objects, &catalogObject{kind: kindExtension, schema: extension.GetSchema(), name: extension.GetName(), render: func() string {
 			definition := fmt.Sprintf("EXTENSION %s VERSION %s", qualify(extension.GetSchema(), extension.GetName()), extension.GetVersion())

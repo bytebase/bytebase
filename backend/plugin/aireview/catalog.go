@@ -2,6 +2,7 @@ package aireview
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json/jsontext"
 	jsonv2 "encoding/json/v2"
 	"fmt"
@@ -29,12 +30,12 @@ const (
 	// cannot fill the model's context. A cut definition is measured as sent,
 	// its escaping included.
 	maxToolResultBytes = 32 << 10
-	// reviewTextBytes is what the prompt's statement and policies and the tool
-	// output of a review share. Every result stays in the conversation the
+	// reviewTextBytes is what the prompt and the tool output of a review
+	// share. Every result stays in the conversation the
 	// model is sent, so results that each fit could still overflow its context
 	// window together. At about four bytes a token it is 96K tokens, which
-	// leaves a 128K-token window room for the base prompt, the model's own
-	// turns, and its answer.
+	// leaves a 128K-token window room for the model's own turns and its
+	// answer.
 	reviewTextBytes = 384 << 10
 	// The tool output of a review is what the prompt leaves of
 	// reviewTextBytes, at most maxReviewToolBytes. A prompt that takes the
@@ -65,6 +66,7 @@ const (
 	kindEventTrigger     = "event trigger"
 	kindExtension        = "extension"
 	kindSchema           = "schema"
+	kindDatabaseLink     = "database link"
 )
 
 // catalogTools answers search and read from the synced schema of one
@@ -108,12 +110,18 @@ func NewCatalogTools(engine storepb.Engine, schema *metadatapb.DatabaseSchemaMet
 // CatalogOption configures the tools NewCatalogTools returns.
 type CatalogOption func(*catalogTools)
 
-// WithPromptOf sizes the review's tool output to what the request's
-// statements, numbered as the prompt writes them, and policies leave of
-// reviewTextBytes.
+// WithPromptOf sizes the review's tool output to what the request's whole
+// prompt leaves of reviewTextBytes: the base prompt, the policies, the target
+// facts, and the statements numbered as the prompt writes them. The request's
+// target must be set.
 func WithPromptOf(request *Request) CatalogOption {
 	numbered, _ := numberLines(request.Statement)
-	return withPromptBytes(len(numbered) + len(request.WorkspacePolicy) + len(request.ProjectPolicy))
+	promptBytes := 0
+	// The nonce is random, and one of the same length sizes the tags right.
+	for _, message := range buildMessages(request, numbered, rand.Text(), true) {
+		promptBytes += len(message.GetContent())
+	}
+	return withPromptBytes(promptBytes)
 }
 
 func withPromptBytes(promptBytes int) CatalogOption {
@@ -553,7 +561,15 @@ func (c *catalogTools) lookup(want objectName) []*catalogObject {
 // schemaFilter returns the test for the schema the model asked for. A schema
 // of exactly that name wins over the ones that differ in case.
 func (c *catalogTools) schemaFilter(schemaName string) func(*catalogObject) bool {
-	if schemaName == "" || c.schemaless() {
+	if c.schemaless() {
+		// The schema argument is usually the database name. Another
+		// database's name finds nothing, since only this one is synced.
+		if schemaName == "" || c.schema.GetName() == "" || strings.EqualFold(schemaName, c.schema.GetName()) {
+			return func(*catalogObject) bool { return true }
+		}
+		return func(*catalogObject) bool { return false }
+	}
+	if schemaName == "" {
 		return func(*catalogObject) bool { return true }
 	}
 	for _, s := range c.schema.GetSchemas() {
@@ -573,7 +589,7 @@ func (o *catalogObject) schemaName() string {
 }
 
 // schemaless reports an engine without schemas. It syncs one schema with no
-// name, and a schema argument there, usually the database name, is ignored.
+// name, and a schema argument there names the database.
 func (c *catalogTools) schemaless() bool {
 	schemas := c.schema.GetSchemas()
 	return len(schemas) == 1 && schemas[0].GetName() == ""
