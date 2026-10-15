@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"strings"
 	"time"
 
@@ -111,10 +110,9 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 			}
 			// Some deployments refuse tool definitions, such as an Azure GPT-5.6
 			// deployment on chat completions. The review then runs without
-			// tools. The warning keeps the refusal for an operator, since
-			// dropping the tools can also hide a refusal they did not cause; a
-			// later failure is reported as usual.
-			if result.Calls == 1 && len(definitions) > 0 && isBadRequest(err) {
+			// tools. Any other refusal, a content filter above all, fails the
+			// review, so a blocked review cannot pass on a second try.
+			if result.Calls == 1 && len(definitions) > 0 && refusesTools(err) {
 				slog.Warn("AI review model refused the request with tools, reviewing without them", slog.String("error", err.Error()))
 				definitions, toolNames = nil, nil
 				messages = buildMessages(request, numberedStatement, nonce, false)
@@ -212,7 +210,7 @@ func correctionMessage(problems []string) string {
 	return b.String()
 }
 
-func isBadRequest(err error) bool {
+func refusesTools(err error) bool {
 	var httpErr *ai.HTTPError
-	return errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusBadRequest
+	return errors.As(err, &httpErr) && httpErr.RefusesTools
 }

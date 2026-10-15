@@ -341,8 +341,9 @@ func requireToolMessage(t *testing.T, message *v1pb.AIChatMessage, toolCallID st
 func TestReviewRunsWithoutToolsWhenTheEndpointRefusesThem(t *testing.T) {
 	t.Parallel()
 
-	refused := modelStep{err: &ai.HTTPError{Provider: "Azure OpenAI", StatusCode: 400, Body: "tools are not supported"}}
-	unauthorized := modelStep{err: &ai.HTTPError{Provider: "Azure OpenAI", StatusCode: 401}}
+	refused := modelStep{err: &ai.HTTPError{Provider: "OpenAI", StatusCode: 400, RefusesTools: true}}
+	blocked := modelStep{err: &ai.HTTPError{Provider: "OpenAI", StatusCode: 400, Body: `{"error": {"code": "content_filter"}}`}}
+	unauthorized := modelStep{err: &ai.HTTPError{Provider: "OpenAI", StatusCode: 401}}
 	search := toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "search", Arguments: `{"text": "orders"}`})
 
 	t.Run("the first call refuses tools", func(t *testing.T) {
@@ -369,6 +370,13 @@ func TestReviewRunsWithoutToolsWhenTheEndpointRefusesThem(t *testing.T) {
 		_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
 		require.ErrorContains(t, err, "model call 2 failed")
 		require.Len(t, model.requests, 2)
+	})
+	t.Run("a content filter is reported at once, never retried without tools", func(t *testing.T) {
+		t.Parallel()
+		model := &scriptedModel{steps: []modelStep{blocked, finalReply(`{"findings": []}`)}}
+		_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+		require.ErrorContains(t, err, "model call 1 failed")
+		require.Len(t, model.requests, 1)
 	})
 	t.Run("another failure is reported at once", func(t *testing.T) {
 		t.Parallel()
