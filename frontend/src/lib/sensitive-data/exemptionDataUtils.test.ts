@@ -1237,6 +1237,42 @@ describe("getUnconvertedCondition", () => {
     ).toBe(condition);
   });
 
+  test.each([
+    [
+      "repeated column clauses joined by &&",
+      'resource.column_name in ["email", "phone"] && resource.column_name in ["email"]',
+    ],
+    [
+      "an || and && without parentheses and a level",
+      'resource.column_name in ["email"] || resource.table_name == "audit" && resource.classification_level <= 3',
+    ],
+    [
+      "an || branch that does not start at a database",
+      'resource.column_name in ["email"] || resource.table_name == "audit"',
+    ],
+  ])("keeps %s visible even when resources were parsed", (_name, condition) => {
+    expect(
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression: condition,
+          databaseResources: [{ databaseFullName: "", columns: ["email"] }],
+        })
+      )
+    ).toBe(condition);
+  });
+
+  test("is empty for the shape the grant form writes", () => {
+    expect(
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression:
+            '((resource.instance_id == "i" && resource.database_name == "a") || (resource.instance_id == "i" && resource.database_name == "b" && resource.table_name == "t" && resource.column_name in ["x", "y"]))',
+          databaseResources: [{ databaseFullName: "instances/i/databases/a" }],
+        })
+      )
+    ).toBe("");
+  });
+
   test("keeps a != clause even when resources were parsed", () => {
     const condition =
       'resource.column_name == "email" && resource.table_name != "audit"';

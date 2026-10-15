@@ -200,6 +200,7 @@ const standaloneLevelRegex = /^resource\.classification_level\s*\S+\s*\d+$/;
 
 function splitTopLevelAnd(expression: string): string[] {
   const parts: string[] = [];
+  let hasTopLevelOr = false;
   let depth = 0;
   let quoted = false;
   let start = 0;
@@ -218,41 +219,111 @@ function splitTopLevelAnd(expression: string): string[] {
       parts.push(expression.slice(start, i).trim());
       start = i + 2;
       i++;
+    } else if (depth === 0 && ch === "|" && expression[i + 1] === "|") {
+      hasTopLevelOr = true;
+      i++;
     }
   }
+  // `&&` binds tighter than `||`, so a top-level `||` makes the whole
+  // expression one disjunction rather than a conjunction of its parts.
+  if (hasTopLevelOr) return [expression.trim()];
   parts.push(expression.slice(start).trim());
   return parts;
 }
 
-// `convertFromExpr` only turns `==` and `in` on these attributes into
-// `databaseResources`; anything else in the condition is lost.
-const representedAtoms = [
-  /resource\.(?:instance_id|database_name|database|schema_name|table_name|column_name)\s*==\s*""/g,
-  /resource\.(?:instance_id|database_name|database|schema_name|table_name|column_name)\s+in\s*\[(?:\s*""\s*,?)*\s*\]/g,
-];
+type ConditionNode =
+  | { attribute: string }
+  | { op: "and" | "or"; items: ConditionNode[] };
 
-function isFullyRepresented(expression: string): boolean {
-  let rest = expression.replace(/"(?:[^"\\]|\\.)*"/g, '""');
-  for (const atom of representedAtoms) {
-    rest = rest.replace(atom, "");
+const resourceAtomRegex =
+  /resource\.(instance_id|database_name|database|schema_name|table_name|column_name)(?:\s*==\s*""|\s+in\s*\[(?:\s*""\s*,?)*\s*\])/y;
+
+function parseCondition(expression: string): ConditionNode | undefined {
+  const source = expression.replace(/"(?:[^"\\]|\\.)*"/g, '""');
+  let pos = 0;
+  const peek = (token: string) => {
+    while (/\s/.test(source[pos] ?? "")) pos++;
+    return source.startsWith(token, pos);
+  };
+  const join = (
+    op: "and" | "or",
+    token: string,
+    parseItem: () => ConditionNode
+  ): ConditionNode => {
+    const items = [parseItem()];
+    while (peek(token)) {
+      pos += token.length;
+      items.push(parseItem());
+    }
+    return items.length === 1 ? items[0] : { op, items };
+  };
+  const parsePrimary = (): ConditionNode => {
+    if (peek("(")) {
+      pos++;
+      const inner = parseOr();
+      if (!peek(")")) throw new Error("unbalanced");
+      pos++;
+      return inner;
+    }
+    resourceAtomRegex.lastIndex = pos;
+    const match = resourceAtomRegex.exec(source);
+    if (!match) throw new Error("unsupported clause");
+    pos = resourceAtomRegex.lastIndex;
+    return { attribute: match[1] };
+  };
+  const parseAnd = () => join("and", "&&", parsePrimary);
+  const parseOr = (): ConditionNode => join("or", "||", parseAnd);
+  try {
+    const node = parseOr();
+    peek("");
+    return pos === source.length ? node : undefined;
+  } catch {
+    return undefined;
   }
-  return /^[\s()&|]*$/.test(rest);
+}
+
+function attributesOfChain(node: ConditionNode): string[] | undefined {
+  if ("attribute" in node) return [node.attribute];
+  if (node.op === "or") return undefined;
+  const parts = node.items.map(attributesOfChain);
+  return parts.every((part) => part !== undefined) ? parts.flat() : undefined;
+}
+
+const resourceStartAttributes = new Set([
+  "instance_id",
+  "database_name",
+  "database",
+]);
+
+// `convertFromExpr` models a condition as a stack of resources, which is
+// exact only for what the grant form writes: one `&&` chain per resource, each
+// starting at its instance or database, joined by `||`. For any other shape
+// (repeated attributes, mixed `||`, functions, a level inside a group) the
+// resources can disagree with the expression.
+function isFaithfullyRepresented(expression: string): boolean {
+  if (expression.trim() === "") return true;
+  const node = parseCondition(expression);
+  if (!node) return false;
+  const isChain = (attributes: string[] | undefined) =>
+    attributes !== undefined && new Set(attributes).size === attributes.length;
+  const chain = attributesOfChain(node);
+  if (chain) return isChain(chain);
+  if ("attribute" in node || node.op !== "or") return false;
+  return node.items.every((item) => {
+    const attributes = attributesOfChain(item);
+    return isChain(attributes) && resourceStartAttributes.has(attributes![0]);
+  });
 }
 
 // The part of the condition that `databaseResources` and the classification
-// level badge do not represent, so the page can still show it. A level inside
-// a group or an `||`, or a clause `databaseResources` cannot hold, keeps the
-// condition visible even when resources were parsed.
+// level badge do not represent, so the page can still show it. The condition
+// stays visible whenever the resources are not a faithful reading of it.
 export function getUnconvertedCondition(grant: ExemptionGrant): string {
   const remainder = splitTopLevelAnd(grant.conditionExpression)
     .filter((part) => part !== "" && !standaloneLevelRegex.test(part))
     .join(" && ");
   const hasResources = (grant.databaseResources?.length ?? 0) > 0;
-  if (
-    hasResources &&
-    !classificationLevelRegex.test(remainder) &&
-    isFullyRepresented(remainder)
-  ) {
+  if (hasResources && isFaithfullyRepresented(remainder)) {
     return "";
   }
   return remainder;
