@@ -149,6 +149,7 @@ describe("ThreadComment", () => {
       container.querySelector("a[href='https://attacker.example/leak.png?q=secret']")
         ?.textContent
     ).toBe("chart");
+    expect(container.textContent).not.toContain("!chart");
     expect(container.textContent).toContain(
       '<img src="https://attacker.example/raw.png">'
     );

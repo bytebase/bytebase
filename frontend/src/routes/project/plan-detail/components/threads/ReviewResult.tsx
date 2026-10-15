@@ -115,13 +115,13 @@ export function ReviewTargets({ targets }: { targets: string[] }) {
   const visible = folded ? targets.slice(0, VISIBLE_TARGETS) : targets;
   return (
     <div
-      className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs"
+      className="flex min-w-0 items-baseline gap-x-2 text-xs"
       data-testid="review-targets"
     >
       <span className="shrink-0 text-control-light">
         {t("plan.review.thread.applies-to")}
       </span>
-      <ul className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+      <ul className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
         {visible.map((target) => (
           <li
             className={cn(badgeVariants(), "max-w-full min-w-0")}
@@ -130,12 +130,18 @@ export function ReviewTargets({ targets }: { targets: string[] }) {
             <PlanTargetDisplay className="text-xs" target={target} />
           </li>
         ))}
+        {folded && (
+          <li>
+            <Button
+              appearance="link"
+              onClick={() => setShowAll(true)}
+              size="xs"
+            >
+              {t("common.n-more", { n: targets.length - VISIBLE_TARGETS })}
+            </Button>
+          </li>
+        )}
       </ul>
-      {folded && (
-        <Button appearance="link" onClick={() => setShowAll(true)} size="xs">
-          {t("common.n-more", { n: targets.length - VISIBLE_TARGETS })}
-        </Button>
-      )}
     </div>
   );
 }
