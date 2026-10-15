@@ -131,6 +131,38 @@ describe("ReviewTargets", () => {
     expect(targetsOf(container)).toEqual(databases(2));
   });
 
+  test("hides the row when project-instance targets equal the spec's as a set", () => {
+    const projectDatabases = [
+      "projects/p/instances/i/databases/app",
+      "projects/p/instances/i/databases/billing",
+    ];
+    const { container } = render(
+      <ReviewTargets
+        spec={changeSpec([...projectDatabases].reverse())}
+        targets={projectDatabases}
+      />
+    );
+    expect(container.innerHTML).toBe("");
+  });
+
+  test("shows the row when the spec names a project-instance database and the result a workspace-instance one", () => {
+    const { container } = render(
+      <ReviewTargets
+        spec={changeSpec(["projects/p/instances/i/databases/d"])}
+        targets={["instances/i/databases/d"]}
+      />
+    );
+    expect(targetsOf(container)).toEqual(["instances/i/databases/d"]);
+  });
+
+  test("shows the row when a target carries a trailing segment", () => {
+    const withSchema = ["instances/i/databases/d/schemas/public"];
+    const { container } = render(
+      <ReviewTargets spec={changeSpec(withSchema)} targets={withSchema} />
+    );
+    expect(targetsOf(container)).toEqual(withSchema);
+  });
+
   test("shows the row when the spec is release-backed", () => {
     const { container } = render(
       <ReviewTargets

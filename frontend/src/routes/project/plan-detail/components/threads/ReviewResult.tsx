@@ -7,21 +7,19 @@ import { Badge, type BadgeProps, badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useUserByIdentifier } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
-import { unknownUser } from "@/types";
+import { isValidDatabaseName, unknownUser } from "@/types";
 import {
   type IssueComment,
   IssueComment_ReviewMetadata_Priority,
   ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { PlanTargetDisplay } from "../PlanTargetDisplay";
 
 // A long target list keeps its head visible and folds the rest behind a count.
 const VISIBLE_TARGETS = 3;
 const FOLD_TARGETS_ABOVE = 4;
-
-// A plain database target, in the form review results name theirs.
-const DATABASE_NAME = /^instances\/[^/]+\/databases\/[^/]+$/;
 
 // The avatar and name of a comment's author. A review result has no creator,
 // so the reviewer its review metadata names stands in for a person.
@@ -164,6 +162,8 @@ export function ReviewTargets({
 // Whether targets, as a set, are exactly the databases the spec lists. Only
 // a sheet-backed change spec naming plain databases is compared; an unknown
 // spec, a release-backed one, or one naming a database group never matches.
+// Names compare as exact strings, since a project instance's database and a
+// workspace instance's database of the same names are different databases.
 function equalsSpecDatabases(
   targets: readonly string[],
   spec: Plan_Spec | undefined
@@ -176,10 +176,7 @@ function equalsSpecDatabases(
     return false;
   }
   const specTargets = spec.config.value.targets;
-  if (
-    specTargets.length === 0 ||
-    !specTargets.every((target) => DATABASE_NAME.test(target))
-  ) {
+  if (specTargets.length === 0 || !specTargets.every(isPlainDatabaseName)) {
     return false;
   }
   const expected = new Set(specTargets);
@@ -187,5 +184,16 @@ function equalsSpecDatabases(
   return (
     actual.size === expected.size &&
     [...actual].every((target) => expected.has(target))
+  );
+}
+
+// A target shaped as one database name, under a workspace instance or a
+// project instance, with nothing before or after it. A database group or any
+// longer resource name fails. Equality of such names is what the caller
+// proves; whether the project, instance, or database exists is not asked.
+function isPlainDatabaseName(target: string): boolean {
+  return (
+    isValidDatabaseName(target) &&
+    extractDatabaseResourceName(target).database === target
   );
 }
