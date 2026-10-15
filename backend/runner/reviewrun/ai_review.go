@@ -25,11 +25,10 @@ const (
 	aiReviewConcurrency = 8
 )
 
-// aiReviewUnit is one AI review: a spec's sheet against one database, with
-// the facts the prompt states about that database.
+// aiReviewUnit is one AI review: a spec's sheet against one database. It
+// holds no schema, which the review loads when it starts.
 type aiReviewUnit struct {
 	Check     *plancheck.CheckTarget
-	Target    aireview.Target
 	Statement string
 }
 
@@ -40,11 +39,16 @@ type aiReviewResult struct {
 }
 
 // aiReviewTarget states what the prompt says about a database: the engine,
-// its version, the environment, and every schema with its object count.
+// its version, the environment, the database's defaults and owner, and every
+// schema with its object count.
 func aiReviewTarget(instance *store.InstanceMessage, database *store.DatabaseMessage, schema *metadatapb.DatabaseSchemaMetadata) aireview.Target {
 	target := aireview.Target{
-		Engine:  instance.Metadata.GetEngine().String(),
-		Version: instance.Metadata.GetVersion(),
+		Engine:       instance.Metadata.GetEngine().String(),
+		Version:      instance.Metadata.GetVersion(),
+		CharacterSet: schema.GetCharacterSet(),
+		Collation:    schema.GetCollation(),
+		SearchPath:   schema.GetSearchPath(),
+		Owner:        schema.GetOwner(),
 	}
 	if database.EffectiveEnvironmentID != nil {
 		target.Environment = *database.EffectiveEnvironmentID
