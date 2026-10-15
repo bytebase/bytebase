@@ -8,6 +8,7 @@ vi.mock("@/lib/i18n", () => ({
       const map: Record<string, string> = {
         "database.all": "All databases",
         "database.columns": "Columns",
+        "common.instance": "Instance",
         "common.schema": "Schema",
         "common.table": "Table",
         "project.masking-exemption.level": "level",
@@ -615,6 +616,34 @@ describe("generateGrantTitle", () => {
     ).toBe("All databases (columns: email), level ≤ 3");
   });
 
+  test("instance-limited resource with columns", () => {
+    expect(
+      generateGrantTitle(
+        makeGrant({
+          databaseResources: [
+            {
+              databaseFullName: "",
+              instanceResourceId: "prod",
+              columns: ["email"],
+            },
+          ],
+        })
+      )
+    ).toBe("instance prod (columns: email)");
+  });
+
+  test("database-name-limited resource", () => {
+    expect(
+      generateGrantTitle(
+        makeGrant({
+          databaseResources: [
+            { databaseFullName: "", databaseResourceId: "hr" },
+          ],
+        })
+      )
+    ).toBe("hr");
+  });
+
   // --- Multiple databases ---
 
   test("2 databases", () => {
@@ -1190,6 +1219,44 @@ describe("getUnconvertedCondition", () => {
           conditionExpression:
             '((resource.database_name == "a") || (resource.database_name == "b")) && resource.classification_level <= 3',
           databaseResources: [{ databaseFullName: "instances/i/databases/a" }],
+        })
+      )
+    ).toBe("");
+  });
+
+  test("keeps a clause that database resources cannot represent", () => {
+    const condition =
+      'resource.database_name == "a" && resource.column_name.startsWith("pii")';
+    expect(
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression: condition,
+          databaseResources: [{ databaseFullName: "", columns: ["a"] }],
+        })
+      )
+    ).toBe(condition);
+  });
+
+  test("keeps a != clause even when resources were parsed", () => {
+    const condition =
+      'resource.column_name == "email" && resource.table_name != "audit"';
+    expect(
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression: condition,
+          databaseResources: [{ databaseFullName: "", columns: ["email"] }],
+        })
+      )
+    ).toBe(condition);
+  });
+
+  test("ignores an attribute name or operator inside a string", () => {
+    expect(
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression:
+            'resource.column_name == "resource.environment_id"',
+          databaseResources: [{ databaseFullName: "", columns: ["x"] }],
         })
       )
     ).toBe("");

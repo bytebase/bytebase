@@ -69,6 +69,17 @@ function listItems(items: string[]): string {
   return rest > 0 ? `${shown} ${i18n.t("common.n-more", { n: rest })}` : shown;
 }
 
+// Label for a resource without a database name, which `resource.instance_id`
+// or `resource.database_name` may still limit.
+function unnamedScopeLabel(resource: DatabaseResource): string {
+  const { instanceResourceId: instance, databaseResourceId: database } =
+    resource;
+  if (instance && database) return `${instance}/${database}`;
+  if (database) return database;
+  if (instance) return `${i18n.t("common.instance").toLowerCase()} ${instance}`;
+  return i18n.t("database.all");
+}
+
 export function generateGrantTitle(grant: ExemptionGrant): string {
   const resources = grant.databaseResources ?? [];
   const level = grant.classificationLevel;
@@ -90,7 +101,14 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
       columns.length > 0
         ? ` (${i18n.t("database.columns").toLowerCase()}: ${listItems(columns)})`
         : "";
-    return `${i18n.t("database.all")}${columnSuffix}${levelSuffix}`;
+    const scopes = [
+      ...new Set(
+        resources.length > 0
+          ? resources.map(unnamedScopeLabel)
+          : [i18n.t("database.all")]
+      ),
+    ];
+    return `${listItems(scopes)}${columnSuffix}${levelSuffix}`;
   }
 
   // Collect unique database names
@@ -206,16 +224,35 @@ function splitTopLevelAnd(expression: string): string[] {
   return parts;
 }
 
+// `convertFromExpr` only turns `==` and `in` on these attributes into
+// `databaseResources`; anything else in the condition is lost.
+const representedAtoms = [
+  /resource\.(?:instance_id|database_name|database|schema_name|table_name|column_name)\s*==\s*""/g,
+  /resource\.(?:instance_id|database_name|database|schema_name|table_name|column_name)\s+in\s*\[(?:\s*""\s*,?)*\s*\]/g,
+];
+
+function isFullyRepresented(expression: string): boolean {
+  let rest = expression.replace(/"(?:[^"\\]|\\.)*"/g, '""');
+  for (const atom of representedAtoms) {
+    rest = rest.replace(atom, "");
+  }
+  return /^[\s()&|]*$/.test(rest);
+}
+
 // The part of the condition that `databaseResources` and the classification
 // level badge do not represent, so the page can still show it. A level inside
-// a group or an `||` is not a standalone restriction, so it stays in the result
-// even when resources were parsed.
+// a group or an `||`, or a clause `databaseResources` cannot hold, keeps the
+// condition visible even when resources were parsed.
 export function getUnconvertedCondition(grant: ExemptionGrant): string {
   const remainder = splitTopLevelAnd(grant.conditionExpression)
     .filter((part) => part !== "" && !standaloneLevelRegex.test(part))
     .join(" && ");
   const hasResources = (grant.databaseResources?.length ?? 0) > 0;
-  if (hasResources && !classificationLevelRegex.test(remainder)) {
+  if (
+    hasResources &&
+    !classificationLevelRegex.test(remainder) &&
+    isFullyRepresented(remainder)
+  ) {
     return "";
   }
   return remainder;

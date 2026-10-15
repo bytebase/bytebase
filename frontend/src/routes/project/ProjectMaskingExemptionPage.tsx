@@ -1248,9 +1248,15 @@ function ExemptionResourceTable({
         </TableHeader>
         <TableBody striped={false}>
           {databaseResources.map((resource, idx) => {
-            const { instanceName, databaseName } = extractDatabaseResourceName(
+            const extracted = extractDatabaseResourceName(
               resource.databaseFullName
             );
+            const instanceName = isSentinel(extracted.instanceName)
+              ? (resource.instanceResourceId ?? "")
+              : extracted.instanceName;
+            const databaseName = isSentinel(extracted.databaseName)
+              ? (resource.databaseResourceId ?? "")
+              : extracted.databaseName;
             return (
               <TableRow key={idx}>
                 <TableCell className="text-control-light whitespace-nowrap">
@@ -1261,7 +1267,7 @@ function ExemptionResourceTable({
                     <span className="text-control-placeholder">
                       {t("database.all")}
                     </span>
-                  ) : showDatabaseLink ? (
+                  ) : showDatabaseLink && resource.databaseFullName !== "" ? (
                     <RouterLink
                       to={
                         resource.databaseFullName.startsWith("/")
