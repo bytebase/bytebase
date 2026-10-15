@@ -4,13 +4,13 @@
 // single-use, so the shared e2e server (two members, sample used) cannot show
 // it. This spec boots a server of its own in first-run state and walks one
 // journey on it, in the only order that keeps the wizard reachable: the skip
-// and the own-instance path add no member and use no sample; the sample path
-// with added members goes last.
+// and the own-instance path use no sample; the sample path goes last.
 //
 // That server is self-hosted, so the journey sees self-hosted wording: the
-// skip, a sample that runs on this server, and "Add members". Cloud wording is
-// covered by the wizard's unit tests, and each goal's step order by the
-// project home's.
+// skip, a sample that runs on this server, and a team screen with no list of
+// people. Cloud's invitations, and retries whose member writes lost their
+// answers, are covered by the wizard's unit tests, and each goal's step order
+// by the project home's.
 
 import { expect, type Page, test } from "@playwright/test";
 import {
@@ -86,7 +86,7 @@ const loseAnswerOnce = async (page: Page, method: string, act: () => Promise<voi
   await lost;
 };
 
-test("first-run setup: skip, own instance, then the sample with members", async ({
+test("first-run setup: skip, own instance, then the sample", async ({
   page,
   context,
 }) => {
@@ -139,12 +139,7 @@ test("first-run setup: skip, own instance, then the sample with members", async 
     await continueButton(page).click();
 
     await page.getByText("2–10", { exact: true }).click();
-    const members = page.getByRole("textbox", { name: /^Add members/ });
-    await members.fill("ann@example.com");
-    await members.press("Enter");
-    await expect(
-      page.getByRole("button", { name: "Add 1 member and finish" })
-    ).toBeVisible();
+    await expect(page.getByRole("textbox")).toHaveCount(0);
 
     await backButton(page).click();
     await expect(page.getByLabel("Project name")).toHaveValue("Payments");
@@ -161,23 +156,17 @@ test("first-run setup: skip, own instance, then the sample with members", async 
     await continueButton(page).click();
     await continueButton(page).click();
     await continueButton(page).click();
-    await expect(page.getByText("ann@example.com")).toBeVisible();
+    await expect(choice(page, "2–10")).toHaveAttribute("aria-checked", "true");
 
-    // Alone after all: the invitee is dropped, so the wizard stays reachable.
-    await page.getByText("Just me", { exact: true }).click();
     await page.getByRole("button", { name: "Finish", exact: true }).click();
 
     await page.waitForURL(new RegExp(`/projects/${chosenId}$`));
     await expect(
       nextStep(page).getByRole("link", { name: "Connect an instance" })
     ).toBeVisible();
-    const policy = await server.api.getProjectIamPolicy(
-      `projects/${chosenId}`
-    );
-    expect(JSON.stringify(policy)).not.toContain("ann@example.com");
   });
 
-  await test.step("the sample path recovers from three attempts whose answers were lost and leads with the goal", async () => {
+  await test.step("the sample path recovers from a create whose answer was lost and leads with the goal", async () => {
     const projectsBefore = await projectNames();
     await openWizard(page);
     await continueButton(page).click();
@@ -194,47 +183,15 @@ test("first-run setup: skip, own instance, then the sample with members", async 
     await continueButton(page).click();
 
     await page.getByText("2–10", { exact: true }).click();
-    await expect(page.getByText("Invite teammates")).toHaveCount(0);
-    await expect(page.getByText(/No email is sent\./)).toBeVisible();
-    const members = page.getByRole("textbox", { name: /^Add members/ });
-    await members.fill("ann@example.com");
-    await members.press("Enter");
-    await members.fill("bob@example.com");
-    await members.press("Enter");
 
-    const tryAgain = () =>
-      page.getByRole("button", { name: "Try again" }).click();
-    const projectPolicy = async () =>
-      JSON.stringify(
-        await server.api.getProjectIamPolicy(`projects/${chosenId}`)
-      );
-
-    // First attempt: the project is created and the answer is lost.
+    // The project is created and the answer is lost.
     await loseAnswerOnce(page, "ProjectService/CreateProject", () =>
-      page.getByRole("button", { name: "Add 2 members and finish" }).click()
+      page.getByRole("button", { name: "Finish", exact: true }).click()
     );
     await expect(page.getByText("Could not create Orders.")).toBeVisible();
 
-    // Second attempt: it takes that project as its own and prepares the
-    // sample, then the write of the project's members is applied and its
-    // answer is lost too.
-    await loseAnswerOnce(page, "ProjectService/SetIamPolicy", tryAgain);
-    await expect(
-      page.getByText("Could not add the people you listed.")
-    ).toBeVisible();
-    expect(await projectPolicy()).toContain("bob@example.com");
-
-    // Third attempt, with one member taken off the list: he leaves the
-    // project, and the workspace write is applied with its answer lost.
-    await page.getByRole("button", { name: "Remove bob@example.com" }).click();
-    await loseAnswerOnce(page, "WorkspaceService/SetIamPolicy", tryAgain);
-    await expect(
-      page.getByText("Could not add the people you listed.")
-    ).toBeVisible();
-    expect(await projectPolicy()).not.toContain("bob@example.com");
-
-    // Fourth attempt: its writes change nothing, and it lands.
-    await tryAgain();
+    // The retry takes that project as its own and prepares the sample.
+    await page.getByRole("button", { name: "Try again" }).click();
 
     await page.waitForURL(new RegExp(`/projects/${chosenId}$`));
     await expect(nextStep(page).getByRole("link").first()).toHaveText(
@@ -243,16 +200,8 @@ test("first-run setup: skip, own instance, then the sample with members", async 
     await expect(
       nextStep(page).getByRole("link", { name: "Change a database" })
     ).toBeVisible();
-
     expect((await projectNames()).sort()).toEqual(
       [...projectsBefore, `projects/${chosenId}`].sort()
     );
-    expect(await projectPolicy()).toContain("ann@example.com");
-    const { workspace } = await server.api.getActuatorInfo();
-    const workspacePolicy = JSON.stringify(
-      await server.api.getWorkspaceIamPolicy(workspace)
-    );
-    expect(workspacePolicy).toContain("ann@example.com");
-    expect(workspacePolicy).not.toContain("bob@example.com");
   });
 });

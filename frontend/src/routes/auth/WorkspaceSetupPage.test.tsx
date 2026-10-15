@@ -1311,23 +1311,39 @@ describe("WorkspaceSetupPage", () => {
       ]);
     });
 
-    test("adds members on self-hosted, where no invitation can be sent", async () => {
+    test("asks only the team size on self-hosted, where a member added would have no password", async () => {
       mocks.isSaaSMode = false;
       await startAtTeam();
       fireEvent.click(screen.getByText("2–10"));
 
-      expect(screen.queryByText("Invite teammates")).not.toBeInTheDocument();
-      expect(
-        screen.getByText(
-          /No email is sent\. Each person gets access once they have an account with that address\./
-        )
-      ).toBeInTheDocument();
+      expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+      fireEvent.click(finishButton());
+      await landed();
+      expect(mocks.updateProjectIamPolicy).not.toHaveBeenCalled();
+      expect(mocks.patchWorkspaceIamPolicy).not.toHaveBeenCalled();
+    });
 
-      enterAddress("ann@example.com", "Add members");
+    test("adds no one on self-hosted from addresses a draft holds", async () => {
+      mocks.isSaaSMode = false;
+      storeDraft({
+        screen: "team",
+        goal: "query-data",
+        projectTitle: "Payments",
+        projectId: "payments-ab12",
+        source: "own",
+        teamSize: "2-10",
+        emails: ["ann@example.com"],
+      });
+      render(<WorkspaceSetupPage />);
 
-      expect(
-        screen.getByRole("button", { name: "Add 1 member and finish" })
-      ).toBeEnabled();
+      expect(screen.queryByText("ann@example.com")).not.toBeInTheDocument();
+      fireEvent.click(finishButton());
+      await landed();
+      expect(mocks.updateProjectIamPolicy).not.toHaveBeenCalled();
+      expect(mocks.patchWorkspaceIamPolicy).not.toHaveBeenCalled();
+      expect(eventsNamed("workspace setup submitted")).toEqual([
+        expect.objectContaining({ result: "finished", invite_count: 0 }),
+      ]);
     });
 
     test.each([

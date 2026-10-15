@@ -3914,7 +3914,6 @@
       "workspace": "Espacio de trabajo"
     },
     "team": {
-      "add-members": "Añadir miembros",
       "address-invalid": "No es una dirección de correo",
       "address-own": "Su propia dirección",
       "address-placeholder": "nombre@empresa.com",
@@ -3927,15 +3926,12 @@
         "sample": "No se pudo preparar la base de datos de ejemplo."
       },
       "finish": "Finalizar",
-      "finish-add_one": "Añadir {{count}} miembro y finalizar",
-      "finish-add_other": "Añadir {{count}} miembros y finalizar",
       "finish-invite_one": "Enviar {{count}} invitación y finalizar",
       "finish-invite_other": "Enviar {{count}} invitaciones y finalizar",
       "finish-without-sample": "Finalizar sin la base de datos de ejemplo",
       "finishing": "Configurando…",
       "invite-teammates": "Invitar a compañeros",
       "members-enter": "Pulse Intro después de cada dirección.",
-      "members-no-email": "No se envía ningún correo. Cada persona obtiene acceso cuando tenga una cuenta con esa dirección.",
       "members-own": "Sus bases de datos aparecerán cuando conecte su instancia.",
       "members-role": "Se unen como miembros que pueden consultar y proponer cambios en {{project}}.",
       "members-roles-later": "Cambie los roles cuando quiera en Miembros.",

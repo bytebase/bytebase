@@ -3914,7 +3914,6 @@
       "workspace": "Không gian làm việc"
     },
     "team": {
-      "add-members": "Thêm thành viên",
       "address-invalid": "Không phải địa chỉ email",
       "address-own": "Địa chỉ của chính bạn",
       "address-placeholder": "name@company.com",
@@ -3927,15 +3926,12 @@
         "sample": "Không thể chuẩn bị cơ sở dữ liệu mẫu."
       },
       "finish": "Hoàn tất",
-      "finish-add_one": "Thêm {{count}} thành viên và hoàn tất",
-      "finish-add_other": "Thêm {{count}} thành viên và hoàn tất",
       "finish-invite_one": "Gửi {{count}} lời mời và hoàn tất",
       "finish-invite_other": "Gửi {{count}} lời mời và hoàn tất",
       "finish-without-sample": "Hoàn tất mà không dùng mẫu",
       "finishing": "Đang thiết lập…",
       "invite-teammates": "Mời đồng đội",
       "members-enter": "Nhấn Enter sau mỗi địa chỉ.",
-      "members-no-email": "Không có email nào được gửi. Mỗi người có quyền truy cập khi họ có tài khoản với địa chỉ đó.",
       "members-own": "Các cơ sở dữ liệu sẽ xuất hiện khi phiên bản của bạn được kết nối.",
       "members-role": "Họ tham gia với tư cách thành viên có thể truy vấn và đề xuất thay đổi trong {{project}}.",
       "members-roles-later": "Đổi vai trò bất cứ lúc nào trong Thành viên.",

@@ -3914,7 +3914,6 @@
       "workspace": "ワークスペース"
     },
     "team": {
-      "add-members": "メンバーを追加",
       "address-invalid": "メールアドレスではありません",
       "address-own": "あなた自身のアドレスです",
       "address-placeholder": "name@company.com",
@@ -3927,15 +3926,12 @@
         "sample": "サンプルデータベースを準備できませんでした。"
       },
       "finish": "完了",
-      "finish-add_one": "{{count}} 人のメンバーを追加して完了",
-      "finish-add_other": "{{count}} 人のメンバーを追加して完了",
       "finish-invite_one": "{{count}} 件の招待を送信して完了",
       "finish-invite_other": "{{count}} 件の招待を送信して完了",
       "finish-without-sample": "サンプルなしで完了",
       "finishing": "セットアップ中…",
       "invite-teammates": "チームメンバーを招待",
       "members-enter": "アドレスごとに Enter キーを押してください。",
-      "members-no-email": "メールは送信されません。そのアドレスのアカウントを持った時点でアクセスできるようになります。",
       "members-own": "データベースはインスタンスの接続後に表示されます。",
       "members-role": "{{project}} でクエリと変更の提案ができるメンバーとして参加します。",
       "members-roles-later": "ロールは「メンバー」でいつでも変更できます。",

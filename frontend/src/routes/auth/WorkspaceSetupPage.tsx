@@ -344,8 +344,9 @@ function WorkspaceSetupWizard() {
     setFinishing(true);
     setFailure(undefined);
     const finishSource: SetupSource = withoutSample ? "own" : source;
+    // Self-hosted lists no one (D7), whatever an earlier draft holds.
     const invitees =
-      draft.teamSize === "just-me"
+      !isSaaSMode || draft.teamSize === "just-me"
         ? []
         : validInviteAddresses(draft.emails, currentUser.email);
     const answers = {

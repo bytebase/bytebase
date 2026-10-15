@@ -3914,7 +3914,6 @@
       "workspace": "工作空间"
     },
     "team": {
-      "add-members": "添加成员",
       "address-invalid": "不是邮箱地址",
       "address-own": "这是您自己的地址",
       "address-placeholder": "name@company.com",
@@ -3927,15 +3926,12 @@
         "sample": "无法准备示例数据库。"
       },
       "finish": "完成",
-      "finish-add_one": "添加 {{count}} 位成员并完成",
-      "finish-add_other": "添加 {{count}} 位成员并完成",
       "finish-invite_one": "发送 {{count}} 份邀请并完成",
       "finish-invite_other": "发送 {{count}} 份邀请并完成",
       "finish-without-sample": "不使用示例数据库并完成",
       "finishing": "正在设置…",
       "invite-teammates": "邀请团队成员",
       "members-enter": "每输入一个地址后按回车。",
-      "members-no-email": "不会发送邮件。对方拥有使用该地址的账号后即可获得访问权限。",
       "members-own": "连接实例后，其中的数据库才会出现。",
       "members-role": "他们将作为成员加入，可在 {{project}} 中查询并提交变更。",
       "members-roles-later": "可随时在“成员”中更改角色。",

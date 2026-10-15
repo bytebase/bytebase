@@ -46,6 +46,7 @@ export function TeamScreen({
   readonly projectTitle: string;
   readonly source: SetupSource;
   // An invitation is an email, and only Cloud can send one at first run.
+  // Self-hosted lists no one: a member added there would have no password.
   readonly isSaaS: boolean;
   readonly finishing: boolean;
   readonly failure: SetupFinishFailure | undefined;
@@ -71,8 +72,8 @@ export function TeamScreen({
       ownerEmail
     ).some(({ problem }) => problem === "invalid");
   };
-  const isTeam = !!teamSize && teamSize !== "just-me";
-  const inviteeCount = isTeam
+  const invites = isSaaS && !!teamSize && teamSize !== "just-me";
+  const inviteeCount = invites
     ? validInviteAddresses(addresses, ownerEmail).length
     : 0;
 
@@ -110,9 +111,7 @@ export function TeamScreen({
       ? t("workspace-setup.team.try-again")
       : inviteeCount === 0
         ? t("workspace-setup.team.finish")
-        : isSaaS
-          ? t("workspace-setup.team.finish-invite", { count: inviteeCount })
-          : t("workspace-setup.team.finish-add", { count: inviteeCount });
+        : t("workspace-setup.team.finish-invite", { count: inviteeCount });
 
   return (
     <SetupScreenFrame
@@ -184,12 +183,10 @@ export function TeamScreen({
             </SetupNote>
           )}
         </FormField>
-        {isTeam && (
+        {invites && (
           <FormField>
             <FormLabel htmlFor="workspace-setup-invitees">
-              {isSaaS
-                ? t("workspace-setup.team.invite-teammates")
-                : t("workspace-setup.team.add-members")}
+              {t("workspace-setup.team.invite-teammates")}
               <span className="ml-1 font-normal text-control-light">
                 {t("workspace-setup.optional")}
               </span>
@@ -205,7 +202,6 @@ export function TeamScreen({
             <SetupNote id="workspace-setup-invitees-note">
               {[
                 t("workspace-setup.team.members-enter"),
-                !isSaaS && t("workspace-setup.team.members-no-email"),
                 t("workspace-setup.team.members-role", {
                   project: projectTitle,
                 }),

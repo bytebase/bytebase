@@ -186,11 +186,11 @@ its own; an invalid entry, or the owner's own address, is shown struck through, 
 not counted on the button. Text still in the field when the button is pressed is entered first, and
 if it is not an address that press stops there, so the struck entry is seen before anything is sent.
 Inviting is Cloud's: an invitation is an email, and only Cloud has an email service at first run
-(Given). On Cloud the field reads "Invite teammates" and the button "Send N invites and finish". On
-self-hosted the same field reads "Add members": Finish adds those addresses as workspace members
-with the same roles and sends nothing, the line under the field says so and that each person gets
-access once they have an account with that address, and the button reads "Add N members and finish".
-Calling it an invitation there would promise an email that never arrives. There is no role picker.
+(Given). On Cloud the field reads "Invite teammates" and the button "Send N invites and finish".
+Self-hosted asks the team size only. There, adding an address creates a member, and a member needs a
+password the wizard has no place to set, so people are added afterwards where their account is
+created. Calling it an invitation there would promise an email that never arrives. There is no role
+picker.
 An earlier draft offered a "Role in <project>" selector, which names Bytebase's project roles to a
 user ten seconds into the product. Invitees are added as Workspace Member, and on the new project as
 Project Developer and SQL Editor Read User, which together let them propose changes and run
@@ -366,7 +366,7 @@ skip is offered only while that holds: once a Finish attempt has created the pro
 create whose outcome is unknown (D11), screen 3 no longer shows it, and the way out is Finish. Two
 lines of copy follow the deployment (Given) instead of repeating Cloud's. The sample choice says the
 database runs on this server and names no expiry, as the product's existing self-hosted sample
-strings do. And screen 4 adds members where Cloud invites them (D7).
+strings do. And screen 4 asks only the team size, where Cloud also invites (D7).
 
 ## States
 
@@ -384,7 +384,7 @@ strings do. And screen 4 adds members where Cloud invites them (D7).
 | 3 · project exists | Back after a Finish attempt that created the project, its answer lost included | project name and ID read-only, with a line saying the project exists and is renamed in its settings; the database choice read-only once the sample is prepared; no "I'll do this later" on self-hosted | Continue enabled |
 | 4 Team | size unset | five size options, nothing else | Finish disabled, with "Pick a team size to finish" under the question; Back enabled |
 | 4 Team | "Just me" | the size options only; no invite field | Finish enabled |
-| 4 Team | a size above "Just me" | the chips input appears with one line about membership, titled "Invite teammates" on Cloud and "Add members" on self-hosted; the button reads "Finish", or with addresses entered "Send N invites and finish" on Cloud and "Add N members and finish" on self-hosted | Finish enabled |
+| 4 Team | a size above "Just me" | on Cloud the chips input appears, titled "Invite teammates", with one line about membership, and the button reads "Finish", or with addresses entered "Send N invites and finish"; on self-hosted the size options only | Finish enabled |
 | 4 · finishing | Finish pressed | the button shows progress; the form is read-only | n/a |
 | 4 · finish failed | a step of the commit failed | the error naming the step, Try again; "Finish without the sample" when the sample failed | Try again enabled |
 | any · another tab | another tab saved the draft, or ended setup | in place of the screen: "This setup continued in another tab" with Continue here, or "This setup ended in another tab" with Go to the workspace; a running Finish shows its progress until the request it waits on returns, then sends nothing more | Continue here, or Go to the workspace |
@@ -421,8 +421,9 @@ the change goal, "Query a database" first for the query goal and for "just explo
 under `frontend/tests/e2e`, on a server of its own because the sample is single-use, that walks the
 own-instance path onto the project home with "Connect an instance", Back from the team screen
 keeping every answer, the sample path once, with the query goal, onto the project home with "Query a
-database" first, a Finish retried after answers of the server were lost and after the invite list
-changed, and the self-hosted skip, sample wording and "Add members" field; vitest for a second tab
+database" first, a Finish retried after the create's answer was lost, and the self-hosted skip,
+sample wording and screen 4 without a list of people; vitest for the invite list changing between
+retries whose answers were lost, which the self-hosted e2e server cannot reach; vitest for a second tab
 taking setup up while a Finish step, an ID check or a skip is out, which then writes nothing more,
 for a roles write still on its way, after a lost answer or from a stopped tab, which cannot land
 after the next attempt's write, and for a create still on its way when screen 3 finds no project,

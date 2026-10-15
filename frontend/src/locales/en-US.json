@@ -3914,7 +3914,6 @@
       "workspace": "Workspace"
     },
     "team": {
-      "add-members": "Add members",
       "address-invalid": "Not an email address",
       "address-own": "Your own address",
       "address-placeholder": "name@company.com",
@@ -3927,15 +3926,12 @@
         "sample": "Could not prepare the sample database."
       },
       "finish": "Finish",
-      "finish-add_one": "Add {{count}} member and finish",
-      "finish-add_other": "Add {{count}} members and finish",
       "finish-invite_one": "Send {{count}} invite and finish",
       "finish-invite_other": "Send {{count}} invites and finish",
       "finish-without-sample": "Finish without the sample",
       "finishing": "Setting up…",
       "invite-teammates": "Invite teammates",
       "members-enter": "Press Enter after each address.",
-      "members-no-email": "No email is sent. Each person gets access once they have an account with that address.",
       "members-own": "Its databases appear once your instance is connected.",
       "members-role": "They join as members who can query and propose changes in {{project}}.",
       "members-roles-later": "Change roles any time in Members.",
