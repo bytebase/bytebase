@@ -1620,3 +1620,43 @@ func TestCatalogFitsAnEscapedDefinitionInItsLimit(t *testing.T) {
 	require.NoError(t, err)
 	require.Less(t, len(later), len(`{"name": "read", "arguments": "{}"}`), "a later note is shorter than any call that asks for it")
 }
+
+func TestCatalogReadPagesThroughInvalidUTF8(t *testing.T) {
+	t.Parallel()
+
+	definition := "a" + strings.Repeat("\x80", 2*maxToolResultBytes) + "z"
+	tools := unbounded(NewCatalogTools(storepb.Engine_SNOWFLAKE, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "PUBLIC", Functions: []*metadatapb.FunctionMetadata{{Name: "f", Definition: definition}},
+	}}}))
+
+	covered, from := 0, 0
+	for pages := 0; ; pages++ {
+		require.Less(t, pages, 50, "the pages must end")
+		result := read(t, tools, fmt.Sprintf(`{"objects": [{"name": "f"}], "from": %d}`, from))
+		require.Len(t, result.Objects, 1)
+		var begin, stop, size int
+		_, err := fmt.Sscanf(result.Objects[0].Part, "bytes %d to %d of %d", &begin, &stop, &size)
+		require.NoError(t, err, result.Objects[0].Part)
+		require.Equal(t, covered, begin, "each page starts where the last one stopped")
+		covered = stop
+		if result.NextFrom == nil {
+			break
+		}
+		from = *result.NextFrom
+	}
+	require.Equal(t, len(definition), covered, "every byte is read")
+}
+
+func TestRuneStartKeepsEveryByteThatIsNoCharacter(t *testing.T) {
+	t.Parallel()
+
+	invalid := strings.Repeat("\x80", 100)
+	require.Equal(t, 98, runeStart(invalid, 98), "a stray byte near the end is not skipped")
+	require.Equal(t, 100, runeStart(invalid, 100))
+
+	text := "a世b" // 世 is three bytes, at offsets 1 to 3.
+	require.Equal(t, 1, runeStart(text, 1))
+	require.Equal(t, 4, runeStart(text, 2), "inside a character, skip to its end")
+	require.Equal(t, 4, runeStart(text, 3))
+	require.Equal(t, 4, runeStart(text, 4))
+}

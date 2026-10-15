@@ -419,11 +419,13 @@ func (c *catalogTools) read(ctx context.Context, arguments string, limit int) (s
 			if err != nil {
 				return "", err
 			}
-			over := len(encoded) - limit
-			if over <= 0 {
+			if len(encoded) <= limit {
 				break
 			}
-			shorter := cutText(definition, begin, max(stop-begin-over, 1))
+			// Scale the cut by how much the encoding grew the text: three
+			// times for a byte that is not UTF-8, six for an escaped control
+			// byte.
+			shorter := cutText(definition, begin, max((stop-begin)*limit/len(encoded), 1))
 			if shorter >= stop {
 				break
 			}
@@ -485,8 +487,21 @@ func cutText(text string, begin int, budget int) int {
 // runeStart moves an offset forward to the start of a character, since a
 // model can pass a from of its own making.
 func runeStart(text string, offset int) int {
-	for offset < len(text) && !utf8.RuneStart(text[offset]) {
-		offset++
+	if offset >= len(text) {
+		return len(text)
+	}
+	// Skip only the rest of a valid character that started before offset. A
+	// byte that belongs to no character is read where it was cut, so none is
+	// lost.
+	for start := offset - 1; start >= 0 && start > offset-utf8.UTFMax; start-- {
+		if !utf8.RuneStart(text[start]) {
+			continue
+		}
+		r, size := utf8.DecodeRuneInString(text[start:])
+		if (r != utf8.RuneError || size > 1) && start+size > offset {
+			return start + size
+		}
+		return offset
 	}
 	return offset
 }
