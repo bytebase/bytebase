@@ -6,8 +6,9 @@ import { createBehaviorMetric } from "@/app/analytics/behavior";
 import { behaviorAnalytics } from "@/app/analytics/provider";
 import { router } from "@/app/router";
 import {
-  PROJECT_V1_ROUTE_DASHBOARD,
-  PROJECT_V1_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_INSTANCES,
+  WORKSPACE_ROUTE_LANDING,
 } from "@/app/router/handles";
 import { ResourceIdField } from "@/components/ResourceIdField";
 import { Button } from "@/components/ui/button";
@@ -23,8 +24,9 @@ import {
   useWorkspacePermission,
 } from "@/hooks/useAppState";
 import {
-  CREATE_PROJECT_PRODUCT_INTRO,
+  CREATE_INSTANCE_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
 import {
@@ -44,7 +46,10 @@ import { projectNamePrefix } from "@/stores/modules/v1/common";
 import type { ValidatedMessage } from "@/types";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
-import { extractProjectResourceName } from "@/utils";
+import {
+  extractInstanceResourceName,
+  extractProjectResourceName,
+} from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import { WorkspaceSetupQuestionnaireStep } from "./WorkspaceSetupQuestionnaireStep";
 
@@ -192,6 +197,7 @@ export function WorkspaceSetupPage() {
         );
       }
       let createdProjectName = "";
+      let sampleInstanceName = "";
       if (shouldCreateProject) {
         const createdProject = await createProject(
           projectTitle.trim(),
@@ -206,7 +212,10 @@ export function WorkspaceSetupPage() {
             })
           );
           try {
-            await prepareSampleProjectInstance(createdProject.name);
+            const sampleInstance = await prepareSampleProjectInstance(
+              createdProject.name
+            );
+            sampleInstanceName = sampleInstance.name;
           } catch (error) {
             pushNotification({
               module: "bytebase",
@@ -239,14 +248,23 @@ export function WorkspaceSetupPage() {
         })
       );
       if (createdProjectName) {
+        const projectId = extractProjectResourceName(createdProjectName);
         router.replace({
-          name: PROJECT_V1_ROUTE_DETAIL,
-          params: {
-            projectId: extractProjectResourceName(createdProjectName),
-          },
+          name: sampleInstanceName
+            ? PROJECT_V1_ROUTE_DATABASES
+            : PROJECT_V1_ROUTE_INSTANCES,
+          params: { projectId },
+          query: sampleInstanceName
+            ? {
+                syncingInstance:
+                  extractInstanceResourceName(sampleInstanceName),
+                [PRODUCT_INTRO_QUERY_KEY]:
+                  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+              }
+            : { [PRODUCT_INTRO_QUERY_KEY]: CREATE_INSTANCE_PRODUCT_INTRO },
         });
       } else {
-        goToDashboard();
+        goToWorkspaceLanding();
       }
     } catch {
       pushNotification({
@@ -259,10 +277,9 @@ export function WorkspaceSetupPage() {
     }
   };
 
-  const goToDashboard = () => {
+  const goToWorkspaceLanding = () => {
     router.replace({
-      name: PROJECT_V1_ROUTE_DASHBOARD,
-      query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
+      name: WORKSPACE_ROUTE_LANDING,
     });
   };
 
@@ -277,7 +294,7 @@ export function WorkspaceSetupPage() {
         },
       })
     );
-    goToDashboard();
+    goToWorkspaceLanding();
   };
 
   const setupSteps = [

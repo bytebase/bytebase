@@ -779,7 +779,7 @@ describe("WorkspaceSetupPage", () => {
     page.unmount();
   });
 
-  test("can optionally create a project and continue to its Home", async () => {
+  test("opens the project databases with the sample sync highlighted", async () => {
     const page = renderWorkspaceForm();
 
     expect(page.container.textContent).toContain("Setup 1st project");
@@ -852,8 +852,12 @@ describe("WorkspaceSetupPage", () => {
       mocks.prepareSampleProjectInstance.mock.invocationCallOrder[0]
     );
     expect(mocks.routerReplace).toHaveBeenCalledWith({
-      name: "workspace.project.detail",
+      name: "workspace.project.database",
       params: { projectId: "new-project" },
+      query: {
+        syncingInstance: "sample",
+        intro: "project-instance-synced",
+      },
     });
 
     page.unmount();
@@ -910,8 +914,7 @@ describe("WorkspaceSetupPage", () => {
     });
     expect(mocks.setRecentProject).not.toHaveBeenCalled();
     expect(mocks.routerReplace).toHaveBeenCalledWith({
-      name: "workspace.project",
-      query: { intro: "create-project" },
+      name: "workspace.landing",
     });
 
     page.unmount();
@@ -983,8 +986,9 @@ describe("WorkspaceSetupPage", () => {
     expect(mocks.createProject).toHaveBeenCalled();
     expect(mocks.prepareSampleProjectInstance).not.toHaveBeenCalled();
     expect(mocks.routerReplace).toHaveBeenCalledWith({
-      name: "workspace.project.detail",
+      name: "workspace.project.instance",
       params: { projectId: "new-project" },
+      query: { intro: "create-instance" },
     });
     expect(mocks.captureMetric).toHaveBeenCalledWith({
       event: "workspace setup submitted",
@@ -1023,8 +1027,9 @@ describe("WorkspaceSetupPage", () => {
       }),
     ]);
     expect(mocks.routerReplace).toHaveBeenCalledWith({
-      name: "workspace.project.detail",
+      name: "workspace.project.instance",
       params: { projectId: "new-project" },
+      query: { intro: "create-instance" },
     });
     expect(mocks.captureMetric).toHaveBeenCalledWith({
       event: "workspace setup submitted",
@@ -1065,7 +1070,7 @@ describe("WorkspaceSetupPage", () => {
     page.unmount();
   });
 
-  test("skips workspace setup to the projects page with create project highlighted", async () => {
+  test("skips workspace setup to the workspace landing", async () => {
     const page = renderWorkspaceForm();
 
     const skip = Array.from(page.container.querySelectorAll("button")).find(
@@ -1078,8 +1083,7 @@ describe("WorkspaceSetupPage", () => {
 
     expect(mocks.createProject).not.toHaveBeenCalled();
     expect(mocks.routerReplace).toHaveBeenCalledWith({
-      name: "workspace.project",
-      query: { intro: "create-project" },
+      name: "workspace.landing",
     });
     expect(mocks.captureMetric).toHaveBeenCalledWith({
       event: "workspace setup submitted",
