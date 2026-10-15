@@ -1,6 +1,9 @@
 package auth
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // MCPConfirmedDecision is one issue decision the user confirmed in their MCP
 // client. The MCP gate serves IssueService/ApproveIssue and RejectIssue only to
@@ -11,6 +14,9 @@ type MCPConfirmedDecision struct {
 	Procedure string
 	// Issue is the issue's resource name: projects/{project}/issues/{issue}.
 	Issue string
+	// IssueUpdateTime is the issue's update time when the user confirmed. The
+	// review workflow refuses the decision when it no longer matches.
+	IssueUpdateTime time.Time
 }
 
 // mcpConfirmedDecisionKey is unexported so that only code in this process can

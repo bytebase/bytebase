@@ -153,7 +153,7 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 	// without that state the call is asked like a first one.
 	if response, state, answered := confirmationAnswer(req); answered {
 		if asked, signed := s.verifyConfirmationState(ctx, decision, state); signed {
-			result, output := s.decideOnAnswer(ctx, decision, response, bytes.Equal(asked, digest), link)
+			result, output := s.decideOnAnswer(ctx, decision, response, bytes.Equal(asked, digest), issue.UpdateTime, link)
 			return result, output, nil
 		}
 	}
@@ -273,7 +273,7 @@ func confirmationAnswer(req *mcp.CallToolRequest) (mcp.InputResponse, string, bo
 // accepted form with the box checked decides, and only while what the user
 // was asked about still matches the issue. A decline is reported before a
 // change, so a user who said no is not asked again.
-func (s *Server) decideOnAnswer(ctx context.Context, decision *issueDecision, response mcp.InputResponse, unchanged bool, link string) (*mcp.CallToolResult, any) {
+func (s *Server) decideOnAnswer(ctx context.Context, decision *issueDecision, response mcp.InputResponse, unchanged bool, issueUpdateTime, link string) (*mcp.CallToolResult, any) {
 	if confirmed, why := confirmationOutcome(response); !confirmed {
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf(
 			"Not %s: %s, so nothing changed. Do not retry unless the user asks.\nIssue: %s",
@@ -287,7 +287,7 @@ func (s *Server) decideOnAnswer(ctx context.Context, decision *issueDecision, re
 			Suggestion: "call decide_issue again to ask the user about the issue as it is now",
 		}), nil
 	}
-	return s.applyIssueDecision(ctx, decision, link)
+	return s.applyIssueDecision(ctx, decision, issueUpdateTime, link)
 }
 
 // signConfirmationState returns the request state the form is sent with: a
@@ -326,14 +326,19 @@ func (s *Server) confirmationMAC(ctx context.Context, decision *issueDecision, d
 }
 
 // applyIssueDecision records the confirmed decision.
-func (s *Server) applyIssueDecision(ctx context.Context, decision *issueDecision, link string) (*mcp.CallToolResult, any) {
+func (s *Server) applyIssueDecision(ctx context.Context, decision *issueDecision, issueUpdateTime, link string) (*mcp.CallToolResult, any) {
+	confirmedAt, err := time.Parse(time.RFC3339Nano, issueUpdateTime)
+	if err != nil {
+		return formatToolError(errors.Wrapf(err, "failed to read the update time of %s, so it was not %s", decision.issue, decision.pastTense())), nil
+	}
 	comment := decisionNote
 	if decision.comment != "" {
 		comment += "\n\n" + decision.comment
 	}
 	confirmedCtx := auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
-		Procedure: decision.procedure,
-		Issue:     decision.issue,
+		Procedure:       decision.procedure,
+		Issue:           decision.issue,
+		IssueUpdateTime: confirmedAt,
 	})
 	resp, err := s.apiRequest(confirmedCtx, decision.procedure, map[string]any{
 		"name":    decision.issue,
@@ -403,10 +408,12 @@ type issueView struct {
 	Approvers []struct {
 		Status string `json:"status"`
 	} `json:"approvers"`
+	UpdateTime string `json:"updateTime"`
 }
 
 type planView struct {
-	Specs []struct {
+	UpdateTime string `json:"updateTime"`
+	Specs      []struct {
 		ChangeDatabaseConfig *struct {
 			Targets []string `json:"targets"`
 			Sheet   string   `json:"sheet"`
@@ -426,18 +433,23 @@ type sheetView struct {
 
 type accessGrantView struct {
 	Targets    []string `json:"targets"`
+	Schema     string   `json:"schema"`
+	Container  string   `json:"container"`
 	Query      string   `json:"query"`
 	Unmask     bool     `json:"unmask"`
 	Export     bool     `json:"export"`
 	ExpireTime string   `json:"expireTime"`
 	TTL        string   `json:"ttl"`
+	UpdateTime string   `json:"updateTime"`
 }
 
 // confirmationView is what the user is asked to confirm: the issue, the plan or
 // access grant behind it, and the comment the decision records. The request
-// state carries a digest of all of it. Statements are left out: a sheet's name
-// is its content hash (GetProjectResourceIDSheetSha256), so the plan's specs
-// already pin every statement, shown or not.
+// state carries a digest of all of it. A change to the issue's approval, the
+// plan's specs or the grant also changes that resource's update time, so the
+// digest changes even when the changed field is not shown. Statements are left
+// out: a sheet's name is its content hash (GetProjectResourceIDSheetSha256), so
+// the plan's specs already pin every statement, shown or not.
 type confirmationView struct {
 	Issue   issueView        `json:"issue"`
 	Plan    *planView        `json:"plan,omitempty"`
@@ -479,18 +491,18 @@ func (v *confirmationView) digest() ([]byte, error) {
 // message. The message carries no link: the MCP specification asks servers not
 // to put clickable URLs in a form.
 //
+// Claude Code 2.1.300 shows four lines of a message, or three and "… (+N more
+// lines)", and cuts each line at the terminal width; so the decision and the
+// change come first, and a cut note comes before the text it cuts.
+//
 // It fails closed: if any part cannot be read, nothing is asked.
 func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecision, view *confirmationView) (string, error) {
 	issue := view.Issue
-	question := fmt.Sprintf("%s issue %q", capitalize(decision.verb()), issue.Title)
+	question := fmt.Sprintf("%s issue %q titled %q", capitalize(decision.verb()), issue.Name, issue.Title)
 	if email := getUserEmail(ctx); email != "" {
 		question += " as " + email
 	}
-	lines := []string{
-		question + "?",
-		"",
-		fmt.Sprintf("Issue: %q, type %q, requested by %q", issue.Name, issue.Type, strings.TrimPrefix(issue.Creator, common.UserNamePrefix)),
-	}
+	lines := []string{question + "?"}
 	switch {
 	case view.Grant != nil:
 		lines = append(lines, describeAccessGrant(view.Grant)...)
@@ -502,11 +514,11 @@ func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecis
 		lines = append(lines, details...)
 	default:
 	}
-	lines = append(lines, "Approval: "+describeApprovalStep(issue))
+	lines = append(lines, fmt.Sprintf("Approval: %s. Requested by %q.",
+		describeApprovalStep(issue), strings.TrimPrefix(issue.Creator, common.UserNamePrefix)))
 	if view.Comment != "" {
 		lines = append(lines, fmt.Sprintf("Comment: %q", view.Comment))
 	}
-	lines = append(lines, "The full issue is in the Bytebase console.")
 	return strings.Join(lines, "\n"), nil
 }
 
@@ -553,27 +565,31 @@ func (s *Server) statementPreview(ctx context.Context, sheet string) (string, er
 	if !cut {
 		return strconv.Quote(shown), nil
 	}
-	return fmt.Sprintf("%q (first %d characters of %d bytes)", shown, maxStatementPreview, view.ContentSize), nil
+	return fmt.Sprintf("(first %d characters of %d bytes) %q", maxStatementPreview, view.ContentSize, shown), nil
 }
 
 func describeAccessGrant(grant *accessGrantView) []string {
+	scope := quoteAll(grant.Targets)
+	if grant.Schema != "" {
+		scope += fmt.Sprintf(", schema %q", grant.Schema)
+	}
+	if grant.Container != "" {
+		scope += fmt.Sprintf(", container %q", grant.Container)
+	}
 	query, cut := common.TruncateString(grant.Query, maxStatementPreview)
-	access := fmt.Sprintf("Access: run %q", query)
+	access := fmt.Sprintf("Access on %s: run %q", scope, query)
 	if cut {
-		access += fmt.Sprintf(" (first %d of %d characters)", maxStatementPreview, utf8.RuneCountInString(grant.Query))
+		access = fmt.Sprintf("Access on %s: run (first %d of %d characters) %q", scope, maxStatementPreview, utf8.RuneCountInString(grant.Query), query)
 	}
-	lines := []string{
-		access + " on " + quoteAll(grant.Targets),
-		fmt.Sprintf("Unmasked: %s. Export: %s.", yesNo(grant.Unmask), yesNo(grant.Export)),
-	}
+	terms := fmt.Sprintf("Unmasked: %s. Export: %s.", yesNo(grant.Unmask), yesNo(grant.Export))
 	switch {
 	case grant.ExpireTime != "":
-		lines = append(lines, fmt.Sprintf("Expires: %q", grant.ExpireTime))
+		terms += fmt.Sprintf(" Expires: %q.", grant.ExpireTime)
 	case grant.TTL != "":
-		lines = append(lines, fmt.Sprintf("Expires: %q after approval", readableDuration(grant.TTL)))
+		terms += fmt.Sprintf(" Expires: %q after approval.", readableDuration(grant.TTL))
 	default:
 	}
-	return lines
+	return []string{access, terms}
 }
 
 // readResource reads one resource by name from the internal API.

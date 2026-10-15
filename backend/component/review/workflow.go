@@ -40,6 +40,9 @@ const (
 	// is an IAM verdict about the caller from the project and ownership rules
 	// that answer the same code: only the verdict is marked for the audit log.
 	ReasonApproverRoleRequired
+	// ReasonChangedSinceConfirmed is an ErrorConflict for an action confirmed
+	// against an earlier version of the issue.
+	ReasonChangedSinceConfirmed
 )
 
 // Error is a typed review transition error.
@@ -150,6 +153,9 @@ type IssueInput struct {
 	Actor     *store.UserMessage
 	Action    Action
 	Comment   string
+	// ConfirmedUpdateTime, when set, is the issue version the actor confirmed
+	// the action against, as in an MCP client; it is refused on any other.
+	ConfirmedUpdateTime *time.Time
 }
 
 // IssueResult is the committed state and its post-commit effects.
@@ -254,6 +260,11 @@ func (w *Workflow) ReviewIssue(ctx context.Context, input IssueInput) (*IssueRes
 	}
 	if lockedIssue == nil {
 		return nil, workflowError(ErrorNotFound, "issue %d not found in project %s", input.IssueUID, input.ProjectID)
+	}
+	// Checked on the locked row: the action above was computed from an unlocked
+	// read, which can already be newer than what the actor confirmed.
+	if input.ConfirmedUpdateTime != nil && !lockedIssue.UpdatedAt.Equal(*input.ConfirmedUpdateTime) {
+		return nil, workflowReasonError(ErrorConflict, ReasonChangedSinceConfirmed, "the issue changed after the action was confirmed")
 	}
 	plan, err := lockIssuePlan(ctx, tx, lockedIssue)
 	if err != nil {

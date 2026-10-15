@@ -31,6 +31,9 @@ import (
 
 const decideIssueName = "projects/hr/issues/42"
 
+// issueUpdateTime is the mock issue's update time, as protojson writes it.
+const issueUpdateTime = "2026-10-13T08:00:00.123456Z"
+
 // decisionMock is the internal API behind decide_issue: the reads the
 // confirmation is built from, and the two decisions, recorded with the
 // confirmation each request's context carried.
@@ -121,9 +124,10 @@ func changeIssueMock() *decisionMock {
 			"approvalTemplate": map[string]any{"flow": map[string]any{
 				"roles": []string{"roles/projectOwner", "roles/workspaceDBA"},
 			}},
-			"approvers": []map[string]any{{"status": "APPROVED", "principal": "users/carol@example.com"}},
+			"approvers":  []map[string]any{{"status": "APPROVED", "principal": "users/carol@example.com"}},
+			"updateTime": issueUpdateTime,
 		},
-		plan: map[string]any{"specs": []map[string]any{{
+		plan: map[string]any{"updateTime": "2026-10-13T07:00:00Z", "specs": []map[string]any{{
 			"id": "spec-1",
 			"changeDatabaseConfig": map[string]any{
 				"targets": []string{"instances/prod/databases/hr"},
@@ -218,16 +222,12 @@ func TestDecideIssueApprovesOnConfirmation(t *testing.T) {
 
 	asked := user.lastParams(t)
 	require.Equal(t, "form", asked.Mode)
-	for _, line := range []string{
-		`Approve issue "Add status column" as alice@example.com?`,
-		`Issue: "projects/hr/issues/42", type "DATABASE_CHANGE", requested by "bob@example.com"`,
+	require.Equal(t, strings.Join([]string{
+		`Approve issue "projects/hr/issues/42" titled "Add status column" as alice@example.com?`,
 		`Change on "instances/prod/databases/hr": "ALTER TABLE users\n  ADD COLUMN status VARCHAR(20);"`,
-		`Approval: step 2 of 2, role "roles/workspaceDBA"`,
+		`Approval: step 2 of 2, role "roles/workspaceDBA". Requested by "bob@example.com".`,
 		`Comment: "checked the statement"`,
-		"The full issue is in the Bytebase console.",
-	} {
-		require.Contains(t, asked.Message, line)
-	}
+	}, "\n"), asked.Message, "Claude Code shows four lines of a form whole, and only three of a longer one")
 	require.NotContains(t, asked.Message, "https://", "a form must not carry a clickable URL")
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
@@ -243,9 +243,10 @@ func TestDecideIssueApprovesOnConfirmation(t *testing.T) {
 	require.Equal(t, decisionNote+"\n\nchecked the statement", calls[0].body["comment"],
 		"the comment must record that the decision was confirmed in the client")
 	require.Equal(t, &auth.MCPConfirmedDecision{
-		Procedure: v1connect.IssueServiceApproveIssueProcedure,
-		Issue:     decideIssueName,
-	}, calls[0].confirmed, "the approval must carry the confirmation the gate admits it on")
+		Procedure:       v1connect.IssueServiceApproveIssueProcedure,
+		Issue:           decideIssueName,
+		IssueUpdateTime: time.Date(2026, 10, 13, 8, 0, 0, 123456000, time.UTC),
+	}, calls[0].confirmed, "the approval must carry the confirmation the gate admits it on, and the issue version it applies to")
 
 	require.Contains(t, resultText(t, res), `Approved projects/hr/issues/42. Approval: "APPROVED". Issue status: DONE.`)
 	output, err := json.Marshal(res.StructuredContent)
@@ -263,14 +264,15 @@ func TestDecideIssueRejectsOnConfirmation(t *testing.T) {
 	res, err := callDecideIssue(t, session, "REJECT")
 	require.NoError(t, err)
 	require.False(t, res.IsError, resultText(t, res))
-	require.Contains(t, user.lastParams(t).Message, `Reject issue "Add status column"`)
+	require.Contains(t, user.lastParams(t).Message, `Reject issue "projects/hr/issues/42" titled "Add status column"`)
 
 	calls := mock.calls()
 	require.Len(t, calls, 1)
 	require.Equal(t, v1connect.IssueServiceRejectIssueProcedure, calls[0].path)
 	require.Equal(t, &auth.MCPConfirmedDecision{
-		Procedure: v1connect.IssueServiceRejectIssueProcedure,
-		Issue:     decideIssueName,
+		Procedure:       v1connect.IssueServiceRejectIssueProcedure,
+		Issue:           decideIssueName,
+		IssueUpdateTime: time.Date(2026, 10, 13, 8, 0, 0, 123456000, time.UTC),
 	}, calls[0].confirmed)
 }
 
@@ -477,6 +479,12 @@ func TestDecideIssueRefusesWhenTheIssueChangesWhileAsking(t *testing.T) {
 		"the title changed": func(m *decisionMock) {
 			m.issue["title"] = "Drop users"
 		},
+		"the plan edited where the form does not show it, such as prior backup": func(m *decisionMock) {
+			m.plan["updateTime"] = "2026-10-13T09:00:00Z"
+		},
+		"the issue rejected and requested again, back at the same step": func(m *decisionMock) {
+			m.issue["updateTime"] = "2026-10-13T09:00:00Z"
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := threeStepIssueMock()
@@ -547,7 +555,7 @@ func TestDecideIssueUnderMRTRClient(t *testing.T) {
 	require.NotEmpty(t, first.RequestState)
 	asked, ok := first.InputRequests[confirmDecisionRequestID].(*mcp.ElicitParams)
 	require.True(t, ok)
-	require.Contains(t, asked.Message, `Approve issue "Add status column"`)
+	require.Contains(t, asked.Message, `Approve issue "projects/hr/issues/42" titled "Add status column"`)
 
 	unsigned := call(accept, "", "checked the statement")
 	require.True(t, unsigned.NeedsInput(), "an answer without the request state must be asked again")
@@ -663,27 +671,37 @@ func accessRequestMock() *decisionMock {
 			"accessGrant":      "projects/hr/accessGrants/5",
 			"approvalStatus":   "PENDING",
 			"approvalTemplate": map[string]any{"flow": map[string]any{"roles": []string{"roles/projectOwner"}}},
+			"updateTime":       issueUpdateTime,
 		},
 		grant: map[string]any{
-			"targets": []string{"instances/prod/databases/hr"},
-			"query":   "SELECT salary\nFROM employee",
-			"unmask":  true,
-			"ttl":     "3600s",
+			"targets":    []string{"instances/prod/databases/hr"},
+			"query":      "SELECT salary\nFROM employee",
+			"unmask":     true,
+			"ttl":        "3600s",
+			"updateTime": "2026-10-13T07:00:00Z",
 		},
 	}
 }
 
 func TestDecideIssueDescribesAnAccessRequest(t *testing.T) {
-	message := askedMessage(t, accessRequestMock())
-	for _, line := range []string{
-		`Issue: "projects/hr/issues/42", type "ACCESS_GRANT", requested by "bob@example.com"`,
-		`Access: run "SELECT salary\nFROM employee" on "instances/prod/databases/hr"`,
-		"Unmasked: yes. Export: no.",
-		`Expires: "1h0m0s" after approval`,
-		`Approval: step 1 of 1, role "roles/projectOwner"`,
-	} {
-		require.Contains(t, message, line)
-	}
+	require.Equal(t, strings.Join([]string{
+		`Approve issue "projects/hr/issues/42" titled "Read salaries" as alice@example.com?`,
+		`Access on "instances/prod/databases/hr": run "SELECT salary\nFROM employee"`,
+		`Unmasked: yes. Export: no. Expires: "1h0m0s" after approval.`,
+		`Approval: step 1 of 1, role "roles/projectOwner". Requested by "bob@example.com".`,
+		`Comment: "checked the statement"`,
+	}, "\n"), askedMessage(t, accessRequestMock()))
+}
+
+func TestDecideIssueShowsTheAccessGrantsScope(t *testing.T) {
+	mock := accessRequestMock()
+	mock.grant["schema"] = "payroll"
+	mock.grant["container"] = "employees"
+	mock.grant["query"] = "SELECT salary FROM employee" + strings.Repeat(" ", 300) + "UNION SELECT ssn FROM employee"
+	message := askedMessage(t, mock)
+	require.Contains(t, message, `Access on "instances/prod/databases/hr", schema "payroll", container "employees": run (first 300 of 357 characters) "SELECT salary FROM employee`,
+		"the schema decides which tables an unqualified query reads, and the container is the data a Cosmos DB grant opens")
+	require.NotContains(t, message, "UNION SELECT ssn")
 }
 
 func TestDecideIssueQuotesTheTitle(t *testing.T) {
@@ -755,7 +773,8 @@ func TestDecideIssueSaysWhatTheFormLeavesOut(t *testing.T) {
 	mock.plan = map[string]any{"specs": specs}
 	message := askedMessage(t, mock)
 	require.Contains(t, message, `Change on "instances/prod/databases/hr": release "projects/hr/releases/r1" (statements not shown)`)
-	require.Contains(t, message, fmt.Sprintf("(first 300 characters of %d bytes)", len(statement)))
+	require.Contains(t, message, fmt.Sprintf(`Change on "instances/prod/databases/hr": (first 300 characters of %d bytes) "UPDATE users`, len(statement)),
+		"a client that cuts the line at the terminal width drops its end first, so the note comes before the statement")
 	require.Contains(t, message, "(3 of 5 changes shown)")
 	require.NotContains(t, message, "DROP TABLE users;")
 }
@@ -857,7 +876,11 @@ func TestConfirmationReachesTheConnectInterceptors(t *testing.T) {
 	mux.Handle(v1connect.NewIssueServiceHandler(&confirmationProbe{}, connect.WithInterceptors(recorder)))
 	s := newTestServerWithMock(t, mux)
 
-	want := auth.MCPConfirmedDecision{Procedure: v1connect.IssueServiceApproveIssueProcedure, Issue: decideIssueName}
+	want := auth.MCPConfirmedDecision{
+		Procedure:       v1connect.IssueServiceApproveIssueProcedure,
+		Issue:           decideIssueName,
+		IssueUpdateTime: time.Date(2026, 10, 13, 8, 0, 0, 123456000, time.UTC),
+	}
 	resp, err := s.apiRequest(auth.WithMCPConfirmedDecision(context.Background(), want),
 		v1connect.IssueServiceApproveIssueProcedure, map[string]any{"name": decideIssueName})
 	require.NoError(t, err)

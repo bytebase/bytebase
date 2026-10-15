@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -1218,8 +1219,11 @@ func TestMCPGateServesAnIssueDecisionOnlyWithItsConfirmation(t *testing.T) {
 		},
 	}
 	confirmed := func(procedure, name string) context.Context {
-		return auth.WithMCPConfirmedDecision(context.Background(),
-			auth.MCPConfirmedDecision{Procedure: procedure, Issue: name})
+		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{
+			Procedure:       procedure,
+			Issue:           name,
+			IssueUpdateTime: time.Date(2026, 10, 13, 8, 0, 0, 123456000, time.UTC),
+		})
 	}
 	other := map[string]string{
 		v1connect.IssueServiceApproveIssueProcedure: v1connect.IssueServiceRejectIssueProcedure,

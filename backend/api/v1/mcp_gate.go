@@ -518,7 +518,7 @@ func refuseUnconfirmedIssueDecision(ctx context.Context, msg any) (string, strin
 	default:
 		return fmt.Sprintf("its request could not be read as an issue decision (%T)", msg), mcpDecideIssueWayOut
 	}
-	if confirmed, ok := auth.MCPConfirmedDecisionFromContext(ctx); ok && confirmed == want {
+	if confirmed, ok := auth.MCPConfirmedDecisionFromContext(ctx); ok && confirmed.Procedure == want.Procedure && confirmed.Issue == want.Issue {
 		return "", ""
 	}
 	return "an issue is approved or rejected over MCP only after the user confirms that decision in the MCP client, " +
