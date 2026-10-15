@@ -8,6 +8,17 @@
       "description": "每次审核会将语句原文发送给 AI 提供方，并可能发送目标数据库的 Schema 及其表的统计信息，但不会读取数据库中的任何数据行。",
       "self": "使用 AI 审核变更"
     },
+    "policy": {
+      "cannot-clear": "你的角色无法删除策略，因此不能清空此策略。",
+      "description": "用自然语言写下 AI 审核检查每个数据库变更时依据的规则。对所有项目生效，项目也可以添加自己的策略。",
+      "load-failed": "审核策略加载失败。",
+      "none": "未设置审核策略。",
+      "paused": "此策略已暂停，AI 审核不会读取它。",
+      "placeholder": "例如：\n标记任何删除或重写 orders 表或 payments 表中列的语句。\n将对超过 1000 万行的表执行的 ALTER TABLE 视为高风险。\n新建的表必须包含 created_at 列和 updated_at 列。",
+      "project-description": "用自然语言写下 AI 审核检查此项目数据库变更时依据的规则。它是对工作空间策略的补充，两者冲突时以此策略为准。",
+      "self": "审核策略",
+      "too-large": "策略大小为 {{size}} 字节，超过了 {{limit}} 字节的上限。请缩短后再保存。"
+    },
     "project-description": "由 AI 模型审核工单中的 SQL，发现标准规则无法识别的风险。",
     "self": "AI 审核",
     "set-for-workspace": "由工作空间统一设置。",

@@ -4,6 +4,10 @@ import { useTranslation } from "react-i18next";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/app/router/handles";
 import { ProjectPageLayout } from "@/components/ProjectPageLayout";
 import { RouterLink } from "@/components/RouterLink";
+import {
+  ReviewAIPolicyField,
+  useReviewAIPolicyDraft,
+} from "@/components/sql-review/ReviewAIPolicyField";
 import { StandardRuleSwitches } from "@/components/sql-review/StandardRuleSwitches";
 import { SwitchRow } from "@/components/sql-review/SwitchRow";
 import {
@@ -53,7 +57,9 @@ interface ProjectStandardRules {
   isDirty: boolean;
   saving: boolean;
   revert: () => void;
-  save: () => Promise<void>;
+  // Resolves whether the rules saved. The page reports the update; a failure
+  // is reported by the response middleware and keeps the draft.
+  save: () => Promise<boolean>;
 }
 
 interface Draft {
@@ -64,7 +70,6 @@ interface Draft {
 export function useProjectStandardRules(
   projectName: string
 ): ProjectStandardRules {
-  const { t } = useTranslation();
   const workspace = useWorkspaceResourceName();
   const projectPolicy = useAppStore((state) =>
     state.getPolicyByParentAndType({
@@ -141,7 +146,7 @@ export function useProjectStandardRules(
   };
 
   const save = async () => {
-    if (!draft || !isDirty) return;
+    if (!draft || !isDirty) return true;
     setSaving(true);
     try {
       const store = useAppStore.getState();
@@ -167,14 +172,9 @@ export function useProjectStandardRules(
         });
       }
       setDraft(undefined);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
-      });
+      return true;
     } catch {
-      // The response middleware reports the failure; the draft stays for a
-      // retry.
+      return false;
     } finally {
       setSaving(false);
     }
@@ -205,11 +205,19 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useProjectByName(projectName);
-  const standardRules = useProjectStandardRules(projectName);
-  useUnsavedChangesGuard(standardRules.isDirty);
-
   const can = (permission: Permission) =>
     hasProjectPermissionV2(project, permission);
+  const standardRules = useProjectStandardRules(projectName);
+  const aiReviewPolicy = useReviewAIPolicyDraft({
+    parentPath: projectName,
+    resourceType: PolicyResourceType.PROJECT,
+    can,
+  });
+  const parts = [standardRules, aiReviewPolicy];
+  const isDirty = parts.some((part) => part.isDirty);
+  const saving = parts.some((part) => part.saving);
+  useUnsavedChangesGuard(isDirty);
+
   // Switching customization on and editing the project's own rules save the
   // project policy: a create when the project has no row, else an update.
   // Switching customization off deletes the row. Undoing an unsaved switch
@@ -333,25 +341,44 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
           onCheckedChange={() => {}}
           readOnly
         />
+        <ReviewAIPolicyField
+          policy={aiReviewPolicy}
+          description={t("sql-review.ai-review.policy.project-description")}
+        />
       </div>
 
-      {standardRules.isDirty && (
+      {isDirty && (
         <StickyActionFooter
           contentPadding={false}
           contentClassName={STANDARD_RULES_COLUMN}
           left={
             <Button
               appearance="outline"
-              disabled={standardRules.saving}
-              onClick={standardRules.revert}
+              disabled={saving}
+              onClick={() => {
+                for (const part of parts) part.revert();
+              }}
             >
               {t("common.cancel")}
             </Button>
           }
           right={
             <Button
-              disabled={standardRules.saving}
-              onClick={() => void standardRules.save()}
+              disabled={saving || aiReviewPolicy.error !== undefined}
+              onClick={async () => {
+                const saves = parts
+                  .filter((part) => part.isDirty)
+                  .map((part) => part.save());
+                // One click reports one update, and only when every changed
+                // part saved.
+                if ((await Promise.all(saves)).every(Boolean)) {
+                  pushNotification({
+                    module: "bytebase",
+                    style: "SUCCESS",
+                    title: t("common.updated"),
+                  });
+                }
+              }}
             >
               {t("common.update")}
             </Button>

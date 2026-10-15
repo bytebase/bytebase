@@ -6,6 +6,7 @@ import {
   PolicyResourceType,
   PolicySchema,
   PolicyType,
+  ReviewAIPolicySchema,
   ReviewRulePolicySchema,
   type UpdatePolicyRequest,
 } from "@/types/proto-es/v1/org_policy_service_pb";
@@ -82,6 +83,39 @@ describe("policy store", () => {
         policyType: PolicyType.REVIEW_RULE,
       })?.policy.value
     ).toEqual(expect.objectContaining({ rules: [ReviewRuleType.SYNTAX] }));
+  });
+
+  test("upserts an AI review policy under policies/review_ai, leaving enforce as stored", async () => {
+    const store = createStore();
+
+    await store.upsertPolicy({
+      parentPath: "workspaces/ws",
+      policy: {
+        type: PolicyType.REVIEW_AI,
+        resourceType: PolicyResourceType.WORKSPACE,
+        enforce: true,
+        policy: {
+          case: "reviewAiPolicy",
+          value: create(ReviewAIPolicySchema, { content: "No DROP." }),
+        },
+      },
+    });
+
+    const request = mocks.updatePolicy.mock.calls[0][0] as UpdatePolicyRequest;
+    expect(request.policy?.name).toBe("workspaces/ws/policies/review_ai");
+    expect(request.policy?.type).toBe(PolicyType.REVIEW_AI);
+    expect(request.policy?.policy.case).toBe("reviewAiPolicy");
+    expect(request.policy?.policy.value).toEqual(
+      expect.objectContaining({ content: "No DROP." })
+    );
+    expect(request.updateMask?.paths).toEqual(["review_ai_policy"]);
+    expect(request.allowMissing).toBe(true);
+    expect(
+      store.getPolicyByParentAndType({
+        parentPath: "workspaces/ws",
+        policyType: PolicyType.REVIEW_AI,
+      })?.policy.value
+    ).toEqual(expect.objectContaining({ content: "No DROP." }));
   });
 
   test("fetches a policy, and tells an absent one from a failed read", async () => {

@@ -8,6 +8,17 @@
       "description": "Each review sends the statements as written to the AI provider, and can send the schema of the target databases and their table statistics. It reads no rows from the databases.",
       "self": "Review changes with AI"
     },
+    "policy": {
+      "cannot-clear": "Your role cannot delete policies, so this policy cannot be emptied.",
+      "description": "Plain-language rules the AI review checks every database change against. They apply to every project, and a project can add its own.",
+      "load-failed": "The review policy could not be loaded.",
+      "none": "No review policy.",
+      "paused": "This policy is paused, so the AI review does not read it.",
+      "placeholder": "For example:\nFlag any statement that drops or rewrites a column in the orders or payments tables.\nTreat an ALTER TABLE on a table with more than 10 million rows as high risk.\nRequire created_at and updated_at columns on new tables.",
+      "project-description": "Plain-language rules the AI review checks this project's database changes against. They add to the workspace policy and win where the two conflict.",
+      "self": "Review policy",
+      "too-large": "The policy is {{size}} bytes, over the {{limit}}-byte limit. Shorten it to save."
+    },
     "project-description": "An AI model that reviews the SQL of an issue for risks the standard rules cannot see.",
     "self": "AI review",
     "set-for-workspace": "Set for the whole workspace.",
