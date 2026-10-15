@@ -1183,12 +1183,15 @@ describe("getUnconvertedCondition", () => {
     ).toBe('resource.environment_id == "prod"');
   });
 
-  test("keeps a grouped condition whole", () => {
-    const condition =
-      '(resource.table_name in ["audit"] && resource.classification_level <= 3)';
+  test("drops the level of a wrapped condition", () => {
     expect(
-      getUnconvertedCondition(makeGrant({ conditionExpression: condition }))
-    ).toBe(condition);
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression:
+            '(resource.table_name in ["audit"] && resource.classification_level <= 3)',
+        })
+      )
+    ).toBe('resource.table_name in ["audit"]');
   });
 
   test("keeps an || condition whole", () => {
@@ -1200,16 +1203,17 @@ describe("getUnconvertedCondition", () => {
   });
 
   test("keeps a level inside an || visible even when resources were parsed", () => {
-    const condition =
-      '(resource.column_name in ["email"] || resource.classification_level <= 3)';
     expect(
       getUnconvertedCondition(
         makeGrant({
-          conditionExpression: condition,
+          conditionExpression:
+            '(resource.column_name in ["email"] || resource.classification_level <= 3)',
           databaseResources: [{ databaseFullName: "", columns: ["email"] }],
         })
       )
-    ).toBe(condition);
+    ).toBe(
+      'resource.column_name in ["email"] || resource.classification_level <= 3'
+    );
   });
 
   test("is empty for a grouped resource condition with a standalone level", () => {
@@ -1217,7 +1221,7 @@ describe("getUnconvertedCondition", () => {
       getUnconvertedCondition(
         makeGrant({
           conditionExpression:
-            '((resource.database_name == "a") || (resource.database_name == "b")) && resource.classification_level <= 3',
+            '((resource.instance_id == "i" && resource.database_name == "a") || (resource.instance_id == "i" && resource.database_name == "b")) && resource.classification_level <= 3',
           databaseResources: [{ databaseFullName: "instances/i/databases/a" }],
         })
       )
@@ -1247,6 +1251,18 @@ describe("getUnconvertedCondition", () => {
       'resource.column_name in ["email"] || resource.table_name == "audit" && resource.classification_level <= 3',
     ],
     [
+      "|| branches that are only a database name",
+      'resource.database_name == "a" || resource.database_name == "b"',
+    ],
+    [
+      "a table list followed by another clause",
+      'resource.table_name in ["a", "b"] && resource.column_name == "x"',
+    ],
+    [
+      "an instance_id list",
+      'resource.instance_id in ["a", "b"] && resource.table_name == "t"',
+    ],
+    [
       "an || branch that does not start at a database",
       'resource.column_name in ["email"] || resource.table_name == "audit"',
     ],
@@ -1259,6 +1275,42 @@ describe("getUnconvertedCondition", () => {
         })
       )
     ).toBe(condition);
+  });
+
+  test("keeps the level clause the badge does not show", () => {
+    expect(
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression:
+            'resource.column_name == "x" && resource.classification_level >= 1 && resource.classification_level <= 3',
+          databaseResources: [{ databaseFullName: "", columns: ["x"] }],
+        })
+      )
+    ).toBe('resource.column_name == "x" && resource.classification_level <= 3');
+  });
+
+  test("is empty for the normalized form the server stores", () => {
+    expect(
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression:
+            '((resource.instance_id == "i" && resource.database_name == "a" || resource.instance_id == "i" && resource.database_name == "b" && resource.table_name == "t") && resource.classification_level <= 3)',
+          databaseResources: [{ databaseFullName: "instances/i/databases/a" }],
+        })
+      )
+    ).toBe("");
+  });
+
+  test("is empty for a normalized form without a level", () => {
+    expect(
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression:
+            '(resource.instance_id == "i" && resource.database_name == "a" || resource.instance_id == "i" && resource.database_name == "b")',
+          databaseResources: [{ databaseFullName: "instances/i/databases/a" }],
+        })
+      )
+    ).toBe("");
   });
 
   test("is empty for the shape the grant form writes", () => {

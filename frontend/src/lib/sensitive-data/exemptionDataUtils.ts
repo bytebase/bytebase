@@ -198,6 +198,38 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
 
 const standaloneLevelRegex = /^resource\.classification_level\s*\S+\s*\d+$/;
 
+// The server stores a normalized expression, which can wrap the whole
+// condition in parentheses.
+function stripOuterParentheses(expression: string): string {
+  let result = expression.trim();
+  while (
+    result.startsWith("(") &&
+    closingParenthesisIndex(result) === result.length - 1
+  ) {
+    result = result.slice(1, -1).trim();
+  }
+  return result;
+}
+
+function closingParenthesisIndex(expression: string): number {
+  let depth = 0;
+  let quoted = false;
+  for (let i = 0; i < expression.length; i++) {
+    const ch = expression[i];
+    if (quoted) {
+      if (ch === "\\") i++;
+      else if (ch === '"') quoted = false;
+    } else if (ch === '"') {
+      quoted = true;
+    } else if (ch === "(") {
+      depth++;
+    } else if (ch === ")" && --depth === 0) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 function splitTopLevelAnd(expression: string): string[] {
   const parts: string[] = [];
   let hasTopLevelOr = false;
@@ -231,12 +263,17 @@ function splitTopLevelAnd(expression: string): string[] {
   return parts;
 }
 
+interface ConditionAtom {
+  attribute: string;
+  list: boolean;
+}
+
 type ConditionNode =
-  | { attribute: string }
+  | ConditionAtom
   | { op: "and" | "or"; items: ConditionNode[] };
 
 const resourceAtomRegex =
-  /resource\.(instance_id|database_name|database|schema_name|table_name|column_name)(?:\s*==\s*""|\s+in\s*\[(?:\s*""\s*,?)*\s*\])/y;
+  /resource\.(instance_id|database_name|database|schema_name|table_name|column_name)(\s*==\s*""|\s+in\s*\[(?:\s*""\s*,?)*\s*\])/y;
 
 function parseCondition(expression: string): ConditionNode | undefined {
   const source = expression.replace(/"(?:[^"\\]|\\.)*"/g, '""');
@@ -269,7 +306,7 @@ function parseCondition(expression: string): ConditionNode | undefined {
     const match = resourceAtomRegex.exec(source);
     if (!match) throw new Error("unsupported clause");
     pos = resourceAtomRegex.lastIndex;
-    return { attribute: match[1] };
+    return { attribute: match[1], list: !match[2].includes("==") };
   };
   const parseAnd = () => join("and", "&&", parsePrimary);
   const parseOr = (): ConditionNode => join("or", "||", parseAnd);
@@ -282,10 +319,10 @@ function parseCondition(expression: string): ConditionNode | undefined {
   }
 }
 
-function attributesOfChain(node: ConditionNode): string[] | undefined {
-  if ("attribute" in node) return [node.attribute];
+function atomsOfChain(node: ConditionNode): ConditionAtom[] | undefined {
+  if ("attribute" in node) return [node];
   if (node.op === "or") return undefined;
-  const parts = node.items.map(attributesOfChain);
+  const parts = node.items.map(atomsOfChain);
   return parts.every((part) => part !== undefined) ? parts.flat() : undefined;
 }
 
@@ -294,6 +331,41 @@ const resourceStartAttributes = new Set([
   "database_name",
   "database",
 ]);
+
+// `convertFromExpr` expands these lists into one resource per value and applies
+// later attributes only to the last of them.
+const expandingListAttributes = new Set([
+  "database",
+  "schema_name",
+  "table_name",
+]);
+
+// `convertFromExpr` reads `in` only on these attributes.
+const listAttributes = new Set([...expandingListAttributes, "column_name"]);
+
+function isFaithfulChain(atoms: ConditionAtom[]): boolean {
+  const attributes = atoms.map((atom) => atom.attribute);
+  return (
+    new Set(attributes).size === attributes.length &&
+    atoms.every(
+      (atom, i) =>
+        !atom.list ||
+        (listAttributes.has(atom.attribute) &&
+          (!expandingListAttributes.has(atom.attribute) ||
+            i === atoms.length - 1))
+    )
+  );
+}
+
+// Whether a `||` branch names a database, so the next branch starts a new
+// resource instead of overwriting this one.
+function namesDatabase(atoms: ConditionAtom[]): boolean {
+  const attributes = new Set(atoms.map((atom) => atom.attribute));
+  return (
+    attributes.has("database") ||
+    (attributes.has("instance_id") && attributes.has("database_name"))
+  );
+}
 
 // `convertFromExpr` models a condition as a stack of resources, which is
 // exact only for what the grant form writes: one `&&` chain per resource, each
@@ -304,14 +376,17 @@ function isFaithfullyRepresented(expression: string): boolean {
   if (expression.trim() === "") return true;
   const node = parseCondition(expression);
   if (!node) return false;
-  const isChain = (attributes: string[] | undefined) =>
-    attributes !== undefined && new Set(attributes).size === attributes.length;
-  const chain = attributesOfChain(node);
-  if (chain) return isChain(chain);
+  const chain = atomsOfChain(node);
+  if (chain) return isFaithfulChain(chain);
   if ("attribute" in node || node.op !== "or") return false;
-  return node.items.every((item) => {
-    const attributes = attributesOfChain(item);
-    return isChain(attributes) && resourceStartAttributes.has(attributes![0]);
+  return node.items.every((item, i) => {
+    const atoms = atomsOfChain(item);
+    return (
+      atoms !== undefined &&
+      isFaithfulChain(atoms) &&
+      resourceStartAttributes.has(atoms[0].attribute) &&
+      (i === node.items.length - 1 || namesDatabase(atoms))
+    );
   });
 }
 
@@ -319,8 +394,19 @@ function isFaithfullyRepresented(expression: string): boolean {
 // level badge do not represent, so the page can still show it. The condition
 // stays visible whenever the resources are not a faithful reading of it.
 export function getUnconvertedCondition(grant: ExemptionGrant): string {
-  const remainder = splitTopLevelAnd(grant.conditionExpression)
-    .filter((part) => part !== "" && !standaloneLevelRegex.test(part))
+  // The badge reads one level clause; any further one stays in the result.
+  let levelShown = false;
+  const remainder = splitTopLevelAnd(
+    stripOuterParentheses(grant.conditionExpression)
+  )
+    .filter((part) => {
+      if (part === "") return false;
+      if (!levelShown && standaloneLevelRegex.test(part)) {
+        levelShown = true;
+        return false;
+      }
+      return true;
+    })
     .join(" && ");
   const hasResources = (grant.databaseResources?.length ?? 0) > 0;
   if (hasResources && isFaithfullyRepresented(remainder)) {
