@@ -420,12 +420,12 @@ function PlanTable({
               <span className="opacity-60 italic">{t("common.untitled")}</span>
             )}
             {ctx.isDeleted && (
-              <span className="inline-flex items-center rounded-full bg-warning/10 text-warning px-2 py-0.5 text-xs shrink-0">
+              <span className="inline-flex items-center rounded-xs border border-transparent bg-warning/10 px-1.5 py-0.5 text-xs text-warning shrink-0">
                 {t("common.closed")}
               </span>
             )}
             {ctx.draftState === "draft" && !ctx.isDeleted && (
-              <span className="inline-flex items-center rounded-full bg-control-bg text-control-light px-2 py-0.5 text-xs shrink-0">
+              <span className="inline-flex items-center rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs text-control-light shrink-0">
                 {t("common.draft")}
               </span>
             )}

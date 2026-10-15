@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -93,6 +95,37 @@ func geminiFunctionResponse(content string) map[string]any {
 		return object
 	}
 	return map[string]any{"result": parsed}
+}
+
+type geminiErrorReply struct {
+	Error struct {
+		Details []struct {
+			Type       string `json:"@type"`
+			RetryDelay string `json:"retryDelay"`
+		} `json:"details"`
+	} `json:"error"`
+}
+
+// readGeminiFailure reads the wait Gemini asks for, which it can put in a
+// google.rpc.RetryInfo detail of the error body. The delay is a protobuf
+// Duration in JSON: decimal seconds with an "s" suffix, such as "34.074824224s".
+func readGeminiFailure(httpErr *HTTPError) {
+	var reply geminiErrorReply
+	if err := json.Unmarshal([]byte(httpErr.Body), &reply); err != nil {
+		return
+	}
+	for _, detail := range reply.Error.Details {
+		if detail.Type != "type.googleapis.com/google.rpc.RetryInfo" {
+			continue
+		}
+		seconds, ok := strings.CutSuffix(detail.RetryDelay, "s")
+		if !ok {
+			continue
+		}
+		if delay, ok := parseDecimal(seconds, time.Second); ok {
+			httpErr.RetryAfter = max(httpErr.RetryAfter, delay)
+		}
+	}
 }
 
 func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
@@ -195,7 +228,7 @@ func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("x-goog-api-key", aiSetting.ApiKey)
 
-	body, err := doHTTPRequest(ctx, httpReq, "Gemini")
+	body, err := doHTTPRequest(ctx, httpReq, "Gemini", readGeminiFailure)
 	if err != nil {
 		return nil, err
 	}

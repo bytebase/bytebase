@@ -328,10 +328,7 @@ export function SubscriptionPage({
             description={
               <>
                 {t("subscription.description")} {t("subscription.plan-compare")}{" "}
-                <LearnMoreLink
-                  href="https://www.bytebase.com/pricing?source=console"
-                  className="text-accent"
-                />
+                <LearnMoreLink href="https://www.bytebase.com/pricing?source=console" />
                 {showTrial && allowManage && (
                   <Button
                     appearance="link"

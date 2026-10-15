@@ -370,7 +370,7 @@ function InstanceEngineRadioGrid({
           <EngineIcon engine={eng} className="size-5" />
           <span className="truncate">{engineNameV1(eng)}</span>
           {isEngineBeta(eng) && (
-            <span className="ml-auto shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+            <span className="ml-auto shrink-0 rounded-xs border border-transparent bg-accent/10 px-1.5 py-0.5 text-xs text-accent">
               Beta
             </span>
           )}
@@ -675,6 +675,7 @@ export function SyncDatabases({
   const visibleDatabases = filteredDatabases.slice(0, visibleDatabaseCount);
   const hasMore = filteredDatabases.length > visibleDatabaseCount;
   const hasProjectContext = !!projectName && isCreatingProp;
+  const showDisabledReason = !!disabledReason && !syncAll;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.nativeEvent.isComposing) return;
@@ -741,7 +742,7 @@ export function SyncDatabases({
                 ? t("instance.sync-databases.project-sync-all")
                 : t("instance.sync-databases.self")
             }
-            aria-describedby={disabledReason ? disabledReasonId : undefined}
+            aria-describedby={showDisabledReason ? disabledReasonId : undefined}
           />
           <span
             className={cn("text-sm", disabledReason && "text-control-light")}
@@ -751,7 +752,7 @@ export function SyncDatabases({
               : t("instance.sync-databases.selected-databases")}
           </span>
         </FormControlRow>
-        {disabledReason && (
+        {showDisabledReason && (
           <p
             id={disabledReasonId}
             className="text-xs leading-4 text-control-light"
@@ -1669,10 +1670,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         <span className="text-control-light">
                           {t("instance.account-locator-description")}
                         </span>
-                        <LearnMoreLink
-                          href="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier"
-                          className="text-sm text-accent"
-                        />
+                        <LearnMoreLink href="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier" />
                       </div>
                     )}
                   </FormField>
@@ -1705,7 +1703,11 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                       ))}
                     </RadioGroup>
                     {!connectionDataSource.srv && (
-                      <ResponsiveFormLayout className="mt-2">
+                      <ResponsiveFormLayout
+                        layout="inherit"
+                        density="compact"
+                        className="mt-2"
+                      >
                         <fieldset
                           aria-label={t("data-source.connection-string-schema")}
                           className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
@@ -1805,7 +1807,11 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                       </SelectContent>
                     </Select>
                     {showAdditionalAddresses && (
-                      <ResponsiveFormLayout className="mt-2">
+                      <ResponsiveFormLayout
+                        layout="inherit"
+                        density="compact"
+                        className="mt-2"
+                      >
                         <fieldset
                           aria-label={currentRedisConnectionType}
                           className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
@@ -1825,7 +1831,11 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     )}
                     {editingDataSource?.redisType ===
                       DataSource_RedisType.SENTINEL && (
-                      <ResponsiveFormLayout className="mt-2">
+                      <ResponsiveFormLayout
+                        layout="inherit"
+                        density="compact"
+                        className="mt-2"
+                      >
                         <RedisSentinelFields
                           dataSource={editingDataSource}
                           isCreating={isCreating}
