@@ -13,11 +13,15 @@ import {
   IssueComment_ReviewMetadata_Priority,
   ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { PlanTargetDisplay } from "../PlanTargetDisplay";
 
 // A long target list keeps its head visible and folds the rest behind a count.
 const VISIBLE_TARGETS = 3;
 const FOLD_TARGETS_ABOVE = 4;
+
+// A plain database target, in the form review results name theirs.
+const DATABASE_NAME = /^instances\/[^/]+\/databases\/[^/]+$/;
 
 // The avatar and name of a comment's author. A review result has no creator,
 // so the reviewer its review metadata names stands in for a person.
@@ -107,10 +111,21 @@ function priorityStyle(
   }
 }
 
-export function ReviewTargets({ targets }: { targets: string[] }) {
+// The databases a review result applies to. A result without targets has
+// nothing to list. A result for exactly the databases of its spec says
+// nothing the spec does not, so the row is left out then too, but only when
+// that equality is proven.
+export function ReviewTargets({
+  spec,
+  targets,
+}: {
+  // The spec the result is anchored to, when known.
+  spec: Plan_Spec | undefined;
+  targets: string[];
+}) {
   const { t } = useTranslation();
   const [showAll, setShowAll] = useState(false);
-  if (targets.length === 0) return null;
+  if (targets.length === 0 || equalsSpecDatabases(targets, spec)) return null;
   const folded = !showAll && targets.length > FOLD_TARGETS_ABOVE;
   const visible = folded ? targets.slice(0, VISIBLE_TARGETS) : targets;
   return (
@@ -143,5 +158,34 @@ export function ReviewTargets({ targets }: { targets: string[] }) {
         )}
       </ul>
     </div>
+  );
+}
+
+// Whether targets, as a set, are exactly the databases the spec lists. Only
+// a sheet-backed change spec naming plain databases is compared; an unknown
+// spec, a release-backed one, or one naming a database group never matches.
+function equalsSpecDatabases(
+  targets: readonly string[],
+  spec: Plan_Spec | undefined
+): boolean {
+  if (
+    spec?.config.case !== "changeDatabaseConfig" ||
+    !spec.config.value.sheet ||
+    spec.config.value.release
+  ) {
+    return false;
+  }
+  const specTargets = spec.config.value.targets;
+  if (
+    specTargets.length === 0 ||
+    !specTargets.every((target) => DATABASE_NAME.test(target))
+  ) {
+    return false;
+  }
+  const expected = new Set(specTargets);
+  const actual = new Set(targets);
+  return (
+    actual.size === expected.size &&
+    [...actual].every((target) => expected.has(target))
   );
 }

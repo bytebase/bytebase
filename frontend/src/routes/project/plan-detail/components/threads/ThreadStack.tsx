@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { CommentThreadCard } from "./CommentThreadCard";
 import { ReviewPriorityBadge, useCommentAuthor } from "./ReviewResult";
@@ -60,6 +61,7 @@ export function ThreadStack({
   onReplyDraftChange,
   project,
   revealRoot,
+  spec,
   threads,
 }: {
   expandedRoots: ReadonlySet<string>;
@@ -74,6 +76,8 @@ export function ThreadStack({
   onReplyDraftChange: (rootName: string, draft: SetStateAction<string>) => void;
   project: Project | undefined;
   revealRoot?: string;
+  // The spec whose statement the stack sits on.
+  spec: Plan_Spec;
   threads: EditorThread[];
 }) {
   const { t } = useTranslation();
@@ -136,6 +140,7 @@ export function ThreadStack({
                 onReplyDraftChange(entry.thread.root.name, draft)
               }
               project={project}
+              spec={spec}
               thread={entry.thread}
             />
           ) : (

@@ -8,7 +8,12 @@ import {
   IssueComment_ThreadState,
   IssueCommentSchema,
   ReviewRun_Type,
+  StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  Plan_ChangeDatabaseConfigSchema,
+  Plan_SpecSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 vi.mock("react-i18next", () => ({
@@ -86,7 +91,43 @@ const renderComment = (comment: ReturnType<typeof userComment>) =>
     <ThreadComment comment={comment} onEdit={vi.fn()} project={project} />
   );
 
+const specOf = (id: string) =>
+  create(Plan_SpecSchema, {
+    id,
+    config: {
+      case: "changeDatabaseConfig",
+      value: create(Plan_ChangeDatabaseConfigSchema, {
+        sheet: "projects/p/sheets/abc",
+        targets: [...TARGETS].reverse(),
+      }),
+    },
+  });
+
 describe("ThreadComment", () => {
+  test.each([
+    { anchoredTo: "spec-1", shown: false },
+    { anchoredTo: "spec-2", shown: true },
+  ])(
+    "uses the spec's databases only for a result anchored to it: anchored to $anchoredTo, targets shown=$shown",
+    ({ anchoredTo, shown }) => {
+      const comment = reviewResult("Missing WHERE clause.");
+      comment.statementAnchor = create(StatementAnchorSchema, {
+        spec: anchoredTo,
+      });
+      const { container } = render(
+        <ThreadComment
+          comment={comment}
+          onEdit={vi.fn()}
+          project={project}
+          spec={specOf("spec-1")}
+        />
+      );
+      expect(
+        container.querySelector("[data-testid='review-targets']") !== null
+      ).toBe(shown);
+    }
+  );
+
   test.each([
     {
       runType: ReviewRun_Type.AI,

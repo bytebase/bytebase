@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   ReviewPriorityBadge,
@@ -23,6 +24,7 @@ export function ThreadComment({
   comment,
   onEdit,
   project,
+  spec,
   status,
 }: {
   // Header actions after the edit button (thread collapse or close).
@@ -31,6 +33,8 @@ export function ThreadComment({
   comment: IssueComment;
   onEdit: (issueCommentName: string, comment: string) => Promise<unknown>;
   project: Project | undefined;
+  // The plan spec the thread sits on, when the owner knows it.
+  spec?: Plan_Spec;
   // Thread status shown after the timestamp (resolved).
   status?: ReactNode;
 }) {
@@ -115,7 +119,16 @@ export function ThreadComment({
             {actions}
           </div>
         </div>
-        {review && <ReviewTargets targets={review.targets} />}
+        {review && (
+          <ReviewTargets
+            spec={
+              spec && comment.statementAnchor?.spec === spec.id
+                ? spec
+                : undefined
+            }
+            targets={review.targets}
+          />
+        )}
         {isEditing ? (
           <div className="flex flex-col gap-y-2">
             <MarkdownEditor
