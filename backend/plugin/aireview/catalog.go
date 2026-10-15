@@ -171,20 +171,25 @@ func (*catalogTools) Definitions() []*v1pb.AIChatToolDefinition {
 
 // Call implements Tools. Arguments the model got wrong come back as text it
 // can correct. Only a failure of the tool itself is an error.
-func (c *catalogTools) Call(_ context.Context, name string, arguments string) (string, error) {
+func (c *catalogTools) Call(ctx context.Context, name string, arguments string) (string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	// The context may end while the call waits for the lock, and a cached
+	// search would answer without looking at it.
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	switch name {
 	case toolSearch:
-		return c.search(arguments)
+		return c.search(ctx, arguments)
 	case toolRead:
-		return c.read(arguments)
+		return c.read(ctx, arguments)
 	default:
 		return "", errors.Errorf("tool %q does not exist", name)
 	}
 }
 
-func (c *catalogTools) search(arguments string) (string, error) {
+func (c *catalogTools) search(ctx context.Context, arguments string) (string, error) {
 	var args searchArguments
 	if err := jsonv2.Unmarshal([]byte(arguments), &args); err != nil {
 		return fmt.Sprintf(`invalid arguments: %v; pass {"text": "orders", "schema": "public", "from": 0}, where schema and from are optional`, err), nil
@@ -193,7 +198,10 @@ func (c *catalogTools) search(arguments string) (string, error) {
 		return "from must be 0 or greater", nil
 	}
 
-	matches := c.match(args.Text, args.Schema)
+	matches, err := c.match(ctx, args.Text, args.Schema)
+	if err != nil {
+		return "", err
+	}
 	result := &searchResult{Matches: []searchMatch{}, Total: len(matches)}
 	size := 0
 	for i := args.From; i < len(matches); i++ {
@@ -214,14 +222,19 @@ func (c *catalogTools) search(arguments string) (string, error) {
 }
 
 // match returns every object that matches the text, in the order of the index.
-func (c *catalogTools) match(text string, schemaName string) []searchMatch {
+// match renders definitions as it goes, which over a large schema takes long
+// enough that it stops when the review's context ends.
+func (c *catalogTools) match(ctx context.Context, text string, schemaName string) ([]searchMatch, error) {
 	if c.searched != nil && c.searched.Text == text && c.searched.Schema == schemaName {
-		return c.matches
+		return c.matches, nil
 	}
 	needle := fold(text)
 	inSchema := c.schemaFilter(schemaName)
 	var matches []searchMatch
 	for _, object := range c.index() {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if !inSchema(object) {
 			continue
 		}
@@ -236,11 +249,16 @@ func (c *catalogTools) match(text string, schemaName string) []searchMatch {
 		}
 		matches = append(matches, searchMatch{Kind: object.kind, Schema: object.schema, Name: object.name, Signature: object.signature, Matched: matched})
 	}
+	// A context that ended during the last render keeps the partial list out
+	// of the cache.
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	c.searched, c.matches = &searchArguments{Text: text, Schema: schemaName}, matches
-	return matches
+	return matches, nil
 }
 
-func (c *catalogTools) read(arguments string) (string, error) {
+func (c *catalogTools) read(ctx context.Context, arguments string) (string, error) {
 	var args readArguments
 	if err := jsonv2.Unmarshal([]byte(arguments), &args); err != nil {
 		return fmt.Sprintf(`invalid arguments: %v; pass {"objects": [{"schema": "public", "name": "orders"}], "from": 0}, where schema and from are optional`, err), nil
@@ -278,6 +296,9 @@ func (c *catalogTools) read(arguments string) (string, error) {
 	// of its own and a cursor behind it has moved.
 	size, end := 0, 0
 	for _, object := range found {
+		if err := ctx.Err(); err != nil {
+			return "", err
+		}
 		definition := object.text()
 		start := end
 		end += len(definition) + 1
@@ -325,6 +346,9 @@ func (c *catalogTools) read(arguments string) (string, error) {
 			result.NextFrom = &next
 			break
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
 	}
 	switch {
 	case result.NextFrom != nil:

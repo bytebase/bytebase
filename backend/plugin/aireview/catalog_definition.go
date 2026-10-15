@@ -115,10 +115,18 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 				return schema.GetSequenceDefinition(c.engine, schemaName, sequence)
 			}
 			plain := func() string { return plainSequence(schemaName, sequence) }
-			return complete(sequence, render, plain, extra[*metadatapb.SequenceMetadata]{
-				strip: func(sequence *metadatapb.SequenceMetadata) { sequence.Comment = "" },
-				text:  plainComment("", sequence.GetComment()),
-			})
+			return complete(sequence, render, plain,
+				extra[*metadatapb.SequenceMetadata]{
+					strip: func(sequence *metadatapb.SequenceMetadata) { sequence.Comment = "" },
+					text:  plainComment("", sequence.GetComment()),
+				},
+				// The position as of the sync, which the definition does not
+				// carry.
+				extra[*metadatapb.SequenceMetadata]{
+					strip: func(sequence *metadatapb.SequenceMetadata) { sequence.LastValue = "" },
+					text:  plainFact("LAST VALUE AT SYNC", sequence.GetLastValue()),
+				},
+			)
 		})
 	}
 	for _, pkg := range s.GetPackages() {

@@ -1370,3 +1370,35 @@ func TestCatalogReadsTheFactsARendererLeavesOut(t *testing.T) {
 	require.Contains(t, clickhouse, "CREATE TABLE", "rendered by the ClickHouse renderer")
 	require.Contains(t, clickhouse, "INDEX url_bloom USING bloom_filter (url) GRANULARITY 4")
 }
+
+func TestCatalogStopsWhenTheReviewEnds(t *testing.T) {
+	t.Parallel()
+
+	tools := ordersCatalog()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := tools.Call(ctx, toolSearch, `{"text": "legacy_status"}`)
+	require.ErrorIs(t, err, context.Canceled)
+	_, err = tools.Call(ctx, toolRead, `{"objects": [{"name": "orders"}]}`)
+	require.ErrorIs(t, err, context.Canceled)
+
+	// The canceled search kept nothing, so the next one is whole.
+	result := search(t, tools, `{"text": "legacy_status"}`)
+	require.Equal(t, 2, result.Total)
+	// A search answered from the cache stops too.
+	_, err = tools.Call(ctx, toolSearch, `{"text": "legacy_status"}`)
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+func TestCatalogReadsTheSequencePositionAtSync(t *testing.T) {
+	t.Parallel()
+
+	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_ORACLE} {
+		tools := NewCatalogTools(engine, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:      "app",
+			Sequences: []*metadatapb.SequenceMetadata{{Name: "order_id_seq", DataType: "integer", Start: "1", Increment: "1", MaxValue: "2147483647", LastValue: "2147483000"}},
+		}}})
+		_, text := readAll(t, tools, `[{"name": "order_id_seq"}]`)
+		require.Equal(t, 1, strings.Count(text["app.order_id_seq"], "LAST VALUE AT SYNC: 2147483000"), "%s: %s", engine, text["app.order_id_seq"])
+	}
+}
