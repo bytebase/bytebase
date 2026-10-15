@@ -106,7 +106,7 @@ describe("CredentialSourceForm", () => {
     }
   );
 
-  test("keeps default credential help below the control in a compact dependent group", () => {
+  test("keeps default credential help below the title in a compact dependent group", () => {
     const { container, unmount } = render(
       <ResponsiveFormLayout layout="horizontal">
         <FormField title="Authentication">
@@ -134,7 +134,10 @@ describe("CredentialSourceForm", () => {
     expect(
       credentialSource?.querySelector('[data-slot="form-field-control"]')
     ).toBeNull();
-    expect(credentialSource?.lastElementChild).toBe(description);
+    expect(
+      credentialSource?.querySelector('[data-slot="form-field-header"]')
+        ?.lastElementChild
+    ).toBe(description);
 
     unmount();
   });

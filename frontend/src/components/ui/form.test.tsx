@@ -252,6 +252,9 @@ describe("responsive form fields", () => {
     const description = dependentField?.querySelector(
       '[data-slot="form-field-description"]'
     );
+    const header = dependentField?.querySelector(
+      '[data-slot="form-field-header"]'
+    );
 
     expect(
       dependentField?.querySelector('[data-slot="form-field-control"]')
@@ -259,7 +262,8 @@ describe("responsive form fields", () => {
     expect(title?.className).toContain(
       stylex.props(formLabelStyle()).className ?? ""
     );
-    expect(input?.nextElementSibling).toBe(description);
+    expect(header?.lastElementChild).toBe(description);
+    expect(input?.nextElementSibling).not.toBe(description);
 
     unmount();
   });

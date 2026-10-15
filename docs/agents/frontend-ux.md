@@ -244,8 +244,8 @@ third column for section titles.
   field's resolved layout instead of measuring its own container or
   introducing another label column. Render it as a vertical group within its
   fieldset boundary, with compact label typography.
-- Keep concise operational descriptions directly under the control they
-  explain. Longer secondary guidance that would make a dense form harder to
+- Keep concise operational descriptions directly below the field title.
+  Longer secondary guidance that would make a dense form harder to
   scan MAY use a focusable info tooltip beside the field title; validation and
   essential status remain visible beside the control. Associate labels and
   choice controls with accessible names in both layouts.

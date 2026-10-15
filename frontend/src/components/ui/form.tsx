@@ -174,8 +174,6 @@ function FormField({
   const headerStylexProps = stylex.props(formFieldHeaderStyle());
   const descriptionStylexProps = stylex.props(formFieldDescriptionStyle());
   const controlStylexProps = stylex.props(formFieldControlStyle());
-  const descriptionAfterControl =
-    inherited.density === "compact" && layout === "vertical";
   const childArray = layout === "horizontal" ? Children.toArray(children) : [];
   const firstChild = childArray[0];
   const label =
@@ -188,10 +186,7 @@ function FormField({
       ? firstChild
       : undefined;
   const controlChildren = label ? childArray.slice(1) : childArray;
-  const hasHeader =
-    title !== undefined ||
-    (description !== undefined && !descriptionAfterControl) ||
-    label;
+  const hasHeader = title !== undefined || description !== undefined || label;
 
   return (
     <div
@@ -208,7 +203,7 @@ function FormField({
           style={headerStylexProps.style}
         >
           {title !== undefined ? <FormTitle>{title}</FormTitle> : label}
-          {description !== undefined && !descriptionAfterControl && (
+          {description !== undefined && (
             <div
               data-slot="form-field-description"
               className={descriptionStylexProps.className}
@@ -232,18 +227,7 @@ function FormField({
           </FormLayoutContext.Provider>
         </div>
       ) : (
-        <>
-          {children}
-          {descriptionAfterControl && description !== undefined && (
-            <div
-              data-slot="form-field-description"
-              className={descriptionStylexProps.className}
-              style={descriptionStylexProps.style}
-            >
-              {description}
-            </div>
-          )}
-        </>
+        children
       )}
     </div>
   );
