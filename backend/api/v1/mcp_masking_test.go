@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -142,9 +143,10 @@ func TestMaskedWriteGuardIsWiredIntoTheGate(t *testing.T) {
 	}
 
 	// A door added to the table but not exercised here ships wired to nothing,
-	// and the unit test above would still pass. CreateIssue is the one entry in
-	// mcpRequestShapeRefusals that is not a masked-write door.
-	require.Len(t, doors, len(mcpRequestShapeRefusals)-1,
+	// and the unit test above would still pass. CreateIssue, ApproveIssue and
+	// RejectIssue are the entries in mcpRequestShapeRefusals that are not
+	// masked-write doors.
+	require.Len(t, doors, len(mcpRequestShapeRefusals)-3,
 		"every masked-write door in the refusal table needs a row here")
 
 	for _, door := range doors {
@@ -284,6 +286,13 @@ func TestMCPRefusalsNameThemselvesToTheQueryTool(t *testing.T) {
 	unattended := refuseUnattendedMCPAccessGrant(mcpCtx, &storepb.IssuePayloadApproval{ApprovalFindingDone: true})
 	require.Error(t, unattended)
 	require.True(t, mcp.IsPolicyRefusal(unattended.Error()))
+
+	unconfirmed := invokeMCPGate(t, readWrite, &common.AuthContext{
+		MCPMethodClass: v1pb.MCPMethodClass_WRITE,
+		DelegatedGrant: &common.DelegatedGrant{},
+	}, v1connect.IssueServiceApproveIssueProcedure, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: "projects/p/issues/1"}))
+	require.Error(t, unconfirmed.err)
+	require.True(t, mcp.IsPolicyRefusal(unconfirmed.err.Error()))
 }
 
 // TestMaskPlaceholderMatchIsDeliberatelyBroad records which side of the trade

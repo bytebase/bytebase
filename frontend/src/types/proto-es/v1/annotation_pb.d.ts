@@ -249,11 +249,9 @@ export enum MCPDenialReason {
   REWRITES_SESSION_BOUNDARY = 7,
 
   /**
-   * Decides whether a change or an access request passes its human approval:
-   * recording the review decision, re-running the finding that sets it and can
-   * clear the issue outright, or activating an access grant without it. An
-   * agent composes a change or files a request; it does not decide that for its
-   * own work.
+   * Can let a change or an access request pass its approval without an
+   * approver deciding it: re-running the finding that sets the approval, which
+   * can clear the issue outright, or activating an access grant directly.
    *
    * @generated from enum value: DRIVES_THE_APPROVAL_DECISION = 8;
    */
