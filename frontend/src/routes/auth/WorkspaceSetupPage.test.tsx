@@ -1520,11 +1520,11 @@ describe("WorkspaceSetupPage", () => {
       // out collapsed.
       expect(panel().getByRole("presentation")).toHaveAttribute(
         "width",
-        "1222"
+        "1638"
       );
       expect(panel().getByRole("presentation")).toHaveAttribute(
         "height",
-        "829"
+        "1111"
       );
       fireEvent.click(screen.getByText(QUERY_GOAL));
       expect(still()).toBe("query");

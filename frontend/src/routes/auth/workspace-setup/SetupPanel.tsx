@@ -17,9 +17,9 @@ import type { SetupGoal, SetupScreen, SetupSource } from "./draft";
 // Each still with its pixel size, which holds the picture's place in the
 // panel until the file has loaded.
 const STILLS = {
-  hero: { src: heroImage, width: 1222, height: 829 },
-  query: { src: queryImage, width: 1280, height: 887 },
-  explore: { src: exploreImage, width: 1280, height: 782 },
+  hero: { src: heroImage, width: 1638, height: 1111 },
+  query: { src: queryImage, width: 1638, height: 1136 },
+  explore: { src: exploreImage, width: 1638, height: 1002 },
 } as const;
 
 type Still = keyof typeof STILLS;
