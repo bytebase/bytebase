@@ -2979,59 +2979,16 @@
       "workload-identity-tag-hint": "すべてのタグを許可する場合は空欄にしてください"
     },
     "profile": {
-      "default-project-name": "新しいプロジェクト",
       "display-name": "あなたの名前",
       "display-name-placeholder": "名前を入力してください",
       "email": "メールアドレス",
-      "enable-sample-databases": "サンプルデータベースを有効にする",
-      "enable-sample-databases-create-change": "安全な変更対象としてサンプルデータベースを有効にする",
-      "enable-sample-databases-mark-sensitive-data": "データマスキングをすぐに試せるようサンプルデータベースを有効にする",
-      "enable-sample-databases-query-data": "すぐにクエリを試せるようサンプルデータベースを有効にする",
       "password": "パスワード",
       "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認します",
       "password-hint": "パスワードは制限設定に従う必要があります",
       "password-mismatch": "新しいパスワードが一致しません",
       "phone": "電話番号",
-      "phone-tips": "国コードを必ず含めてください +81xxxxxx",
-      "setup-failed": "プロフィールの更新に失敗しました。",
-      "setup-first-project": "最初のプロジェクトを設定",
-      "setup-scenario": {
-        "continue": "続行",
-        "create-database-change": {
-          "description": "変更を定義し、追跡可能なイシューを作成します。",
-          "title": "データベース変更を作成"
-        },
-        "mark-sensitive-data": {
-          "description": "機密カラムを特定してデータマスキングを適用します。",
-          "title": "機密データをマーク"
-        },
-        "outcome-title": "Bytebase で何をしたいですか？",
-        "query-data": {
-          "description": "SQL Editor を開き、データベースでステートメントを実行します。",
-          "title": "データをクエリ"
-        },
-        "workspace-usage": {
-          "solo": {
-            "description": "自分だけで Bytebase を使用します。",
-            "title": "自分だけ"
-          },
-          "team": {
-            "description": "他のメンバーと一緒に使用します。",
-            "title": "チームで使用"
-          },
-          "title": "Bytebase を誰と使用しますか？"
-        }
-      },
-      "setup-skip": "後で設定する",
-      "setup-steps": {
-        "scenario": "目標を選択",
-        "workspace": "ワークスペースを設定"
-      },
-      "setup-submit": "ワークスペースをセットアップ",
-      "setup-success": "プロフィールが更新されました。",
-      "workspace-name": "ワークスペース名",
-      "workspace-name-placeholder": "ワークスペース名を入力"
+      "phone-tips": "国コードを必ず含めてください +81xxxxxx"
     },
     "sensitive-data": {
       "algorithms": {
@@ -3882,6 +3839,123 @@
       "copy-succeed": "正常にコピーされました。申請書に入力してください。",
       "description": "キーをコピーし、アプリケーションに手動で入力します。",
       "self": "二要素認証キー"
+    }
+  },
+  "workspace-setup": {
+    "continue": "続行",
+    "elsewhere": {
+      "continue": "ここで続行",
+      "ended": "このセットアップは別のタブで終了しました",
+      "saved": "このセットアップは別のタブで続行されました",
+      "workspace": "ワークスペースへ移動"
+    },
+    "goal": {
+      "change": {
+        "description": "スキーマ変更またはデータ修正を作成し、SQLレビューでチェックしてからデータベースにロールアウトします。",
+        "finish-line": "ゴール：SQLレビューを通過してロールアウトされた変更",
+        "title": "データベース変更を計画・レビューしてロールアウトする"
+      },
+      "description": "ここに来た目的を選択してください。セットアップ完了後、最初にそれを提案します。",
+      "explore": {
+        "description": "まず簡単なクエリを提案します。方向は後で選べます。",
+        "title": "まだ決めていない、試してみたい"
+      },
+      "query": {
+        "description": "エディタからデータベースに対してSQLを実行します。すべてのステートメントがクエリ履歴に記録されます。",
+        "finish-line": "ゴール：データベースからのクエリ結果",
+        "title": "ガードレール付きでデータをクエリする"
+      },
+      "required": "続行するには1つ選択してください",
+      "title": "最初に何をしますか？"
+    },
+    "optional": "任意",
+    "panel": {
+      "connected-after-setup": "セットアップ後に接続",
+      "own-databases": "そのデータベース",
+      "own-instance": "あなたのインスタンス",
+      "sample-database": "サンプルデータベース",
+      "sample-instance": "サンプルプロジェクトインスタンス",
+      "workspace": "ワークスペース"
+    },
+    "project": {
+      "database-title": "{{project}} のデータベース",
+      "description": "Bytebase を使うにはデータベースが必要です。それを保持するプロジェクトに名前を付け、最初のデータベースの入手元を選択してください。",
+      "exists": "このプロジェクトはすでに存在します。名前はプロジェクト設定で変更できます。",
+      "name": "プロジェクト名",
+      "name-hint": "プロジェクトは、チームが扱うデータベースをメンバーやポリシーとともにまとめます。すべての変更とクエリはプロジェクト内で行われます。",
+      "name-optional-note": "空欄のままにすると、プロジェクトは後で作成できます。",
+      "name-placeholder": "決済、データ基盤、社内ツール",
+      "name-required": "プロジェクト名を入力してください",
+      "own": {
+        "description": "インスタンスとはお使いのデータベースサーバーです。先にセットアップを完了し、その後 {{project}} から接続します。",
+        "title": "セットアップ後に自分のインスタンスを接続する"
+      },
+      "sample": {
+        "description": "従業員のサンプルデータを含む PostgreSQL データベース1つ。Bytebase Cloud がホストします。インストール不要、7日間利用可能です。",
+        "description-self-host": "従業員のサンプルデータを含む PostgreSQL データベース1つ。このサーバー上で動作します。インストール不要です。",
+        "prepared": "サンプルデータベースはこのプロジェクトで利用できます。",
+        "recommended": "おすすめ",
+        "title": "サンプルデータベースで始める",
+        "unavailable": "このサーバーではサンプルデータベースを利用できません。",
+        "used": "このワークスペースはすでにサンプルデータベースを使用しています。"
+      },
+      "skip": "後で設定する",
+      "title": "プロジェクトを作成してデータベースを選択",
+      "your-project": "あなたのプロジェクト"
+    },
+    "steps": {
+      "goal": "目的",
+      "project": "プロジェクト",
+      "team": "チーム",
+      "workspace": "ワークスペース"
+    },
+    "team": {
+      "address-invalid": "メールアドレスではありません",
+      "address-own": "あなた自身のアドレスです",
+      "address-placeholder": "name@company.com",
+      "address-placeholder-more": "別のアドレス",
+      "description": "完了前の最後の質問です。",
+      "failed": {
+        "invitees": "指定したメンバーを追加できませんでした。",
+        "names": "名前とワークスペース名を保存できませんでした。",
+        "project": "{{project}} を作成できませんでした。",
+        "sample": "サンプルデータベースを準備できませんでした。"
+      },
+      "finish": "完了",
+      "finish-invite_one": "{{count}} 件の招待を送信して完了",
+      "finish-invite_other": "{{count}} 件の招待を送信して完了",
+      "finish-without-sample": "サンプルなしで完了",
+      "finishing": "セットアップ中…",
+      "invite-teammates": "チームメンバーを招待",
+      "members-enter": "アドレスごとに Enter キーを押してください。",
+      "members-own": "データベースはインスタンスの接続後に表示されます。",
+      "members-role": "{{project}} でクエリと変更の提案ができるメンバーとして参加します。",
+      "members-roles-later": "ロールは「メンバー」でいつでも変更できます。",
+      "progress": "{{project}} を作成中…",
+      "progress-sample": "{{project}} とサンプルデータベースを作成中…",
+      "remove-address": "{{email}} を削除",
+      "size": "Bytebase を何人で使いますか？",
+      "size-required": "完了するにはチームの人数を選択してください",
+      "sizes": {
+        "11-50": "11–50",
+        "2-10": "2–10",
+        "200-plus": "200+",
+        "51-200": "51–200",
+        "just-me": "自分だけ"
+      },
+      "title": "あなたのチーム",
+      "try-again": "再試行"
+    },
+    "workspace": {
+      "default-name": "{{name}} のワークスペース",
+      "default-name-anonymous": "マイワークスペース",
+      "description": "ワークスペース、プロジェクト、データベースがそろえば Bytebase を使い始められます。",
+      "name-placeholder": "名前を入力",
+      "title": "ワークスペースをセットアップ",
+      "workspace-name": "ワークスペース名",
+      "workspace-name-hint": "追加したメンバーは全員このワークスペースに参加します。",
+      "workspace-name-placeholder": "通常は会社名",
+      "workspace-name-required": "ワークスペース名を入力してください"
     }
   },
   "workspace-setup-guide": {

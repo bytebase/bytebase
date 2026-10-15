@@ -28,7 +28,7 @@ import {
 import { celString } from "@/utils/v1/celLiteral";
 import { ensureUserFullName } from "@/utils/v1/user";
 import type { AppSliceCreator, UserFilter, UserSlice } from "./types";
-import { isMissingOrForbidden } from "./utils";
+import { callOptions, isMissingOrForbidden } from "./utils";
 
 const UNKNOWN_PROJECT_NAME_LEGACY = "projects/-";
 
@@ -212,7 +212,7 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
       return response;
     },
 
-    updateUser: async (request) => {
+    updateUser: async (request, report) => {
       const name = request.user?.name || "";
       if (!request.allowMissing) {
         const originData = await get().getOrFetchUserByIdentifier({
@@ -229,7 +229,8 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
           user: request.user,
           updateMask: request.updateMask,
           allowMissing: request.allowMissing,
-        })
+        }),
+        callOptions(report)
       );
       set((state) => ({
         usersByName: { ...state.usersByName, [response.name]: response },

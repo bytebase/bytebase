@@ -1,22 +1,16 @@
-import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ConnectError } from "@connectrpc/connect";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createBehaviorMetric } from "@/app/analytics/behavior";
 import { behaviorAnalytics } from "@/app/analytics/provider";
+import { SplashPanel } from "@/app/layouts/SplashLayout";
 import { router } from "@/app/router";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DETAIL,
 } from "@/app/router/handles";
-import { ResourceIdField } from "@/components/ResourceIdField";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { FormField } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { StepIndicator } from "@/components/ui/step-indicator";
 import {
-  useCreateProject,
   useCurrentUser,
   useIntroStateByKey,
   useWorkspace,
@@ -26,99 +20,210 @@ import {
   CREATE_PROJECT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
 } from "@/lib/productIntro";
-import { cn } from "@/lib/utils";
 import {
-  clearGuideWorkspaceUsage,
-  clearSelectedGuideScenarioId,
-  saveGuideWorkspaceUsage,
+  saveGuideTeamSize,
   saveSelectedGuideScenarioId,
 } from "@/modules/workspace-setup-guide/selection";
 import { saveWorkspaceSetupFinished } from "@/modules/workspace-setup-guide/setup";
-import type {
-  GuideScenarioId,
-  GuideWorkspaceUsage,
-} from "@/modules/workspace-setup-guide/types";
-import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import type { ValidatedMessage } from "@/types";
-import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
-import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
-import { extractProjectResourceName } from "@/utils";
-import { extractGrpcErrorMessage } from "@/utils/connect";
-import { WorkspaceSetupQuestionnaireStep } from "./WorkspaceSetupQuestionnaireStep";
+import { extractProjectResourceName } from "@/utils/v1/project";
+import {
+  clearSetupDraft,
+  projectOptional,
+  readSetupDraft,
+  type SetupDraft,
+  type SetupSource,
+  saveSetupDraft,
+  watchSetupDraft,
+} from "./workspace-setup/draft";
+import {
+  findLostCreate,
+  runSetupFinish,
+  type SetupNames,
+  saveSetupNames,
+} from "./workspace-setup/finish";
+import { GoalScreen } from "./workspace-setup/GoalScreen";
+import { validInviteAddresses } from "./workspace-setup/inviteEmails";
+import {
+  ProjectScreen,
+  type SampleOffer,
+} from "./workspace-setup/ProjectScreen";
+import {
+  guessDisplayName,
+  guessWorkspaceTitle,
+} from "./workspace-setup/prefill";
+import { SetupPanel } from "./workspace-setup/SetupPanel";
+import {
+  type SetupFinishFailure,
+  TeamScreen,
+} from "./workspace-setup/TeamScreen";
+import { WorkspaceScreen } from "./workspace-setup/WorkspaceScreen";
 
 const WORKSPACE_SETUP_PAGE_ENTERED_KEY = "workspace-setup.page-entered.v1";
-const WORKSPACE_SETUP_VERSION = "v1";
+const WORKSPACE_SETUP_VERSION = "v2";
+
+// The server's own words for a failure, when it gave any.
+const serverReason = (error: unknown) =>
+  error instanceof ConnectError ? error.rawMessage : undefined;
 
 export function WorkspaceSetupPage() {
+  const currentUser = useCurrentUser();
+  // The draft is kept per account, which is known only once the user loads.
+  if (!currentUser.email) return null;
+  return <WorkspaceSetupWizard key={currentUser.email} />;
+}
+
+function WorkspaceSetupWizard() {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const updateUser = useAppStore((state) => state.updateUser);
-  const updateWorkspace = useAppStore((state) => state.updateWorkspace);
-  const prepareSampleProjectInstance = useAppStore(
-    (state) => state.prepareSampleProjectInstance
-  );
-  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
-  const sampleAvailable = useAppStore(
-    (state) => state.serverInfo?.sample?.available ?? false
-  );
-  const sampleProvisioned = useAppStore(
-    (state) => (state.serverInfo?.sample?.instances.length ?? 0) > 0
-  );
-  const canPrepareSample = sampleAvailable && !sampleProvisioned;
-  const { createProject, setRecentProject } = useCreateProject();
   const workspace = useWorkspace();
   const workspacePolicy = useAppStore((state) => state.workspacePolicy);
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
+  const sample = useAppStore((state) => state.serverInfo?.sample);
   const canUpdateWorkspace = useWorkspacePermission("bb.workspaces.update");
-  const canCreateProject = useWorkspacePermission("bb.projects.create");
   const setupPageEntered = useIntroStateByKey(WORKSPACE_SETUP_PAGE_ENTERED_KEY);
   const setupPageEnteredRef = useRef(false);
+  const [draft, setDraft] = useState<SetupDraft>(() =>
+    readSetupDraft(isSaaSMode)
+  );
+  // One tab works on setup at a time: the one that saved the draft last. When
+  // another tab saves it or ends setup, this one shows a notice in place of
+  // its screen. Then, or once setup ends here or the wizard is left, what it
+  // had started writes nothing more (D11).
+  const [elsewhere, setElsewhere] = useState<"saved" | "ended">();
+  const lostHolds = useRef(0);
+  useEffect(() => {
+    const stopWatching = watchSetupDraft((ended) => {
+      lostHolds.current += 1;
+      setElsewhere(ended ? "ended" : "saved");
+    });
+    return () => {
+      stopWatching();
+      lostHolds.current += 1;
+    };
+  }, []);
+  // For work starting now: true once this tab no longer holds setup.
+  const supersededFromNow = () => {
+    const at = lostHolds.current;
+    return () => lostHolds.current !== at;
+  };
+  const endSetup = () => {
+    lostHolds.current += 1;
+    clearSetupDraft();
+  };
+  // Written through on every answer, so a reload, or a tab closed while Finish
+  // runs, loses nothing: least of all that the project was created.
+  const draftRef = useRef(draft);
+  const update = (patch: Partial<SetupDraft>) => {
+    const next = { ...draftRef.current, ...patch };
+    draftRef.current = next;
+    setDraft(next);
+    saveSetupDraft(next);
+    setElsewhere(undefined);
+  };
+  // False only while the ID field shows why. Its checks answer after each
+  // change, and Finish has the server's word on an ID that got past them.
+  const [projectIdValid, setProjectIdValid] = useState(true);
+  const [finishing, setFinishing] = useState(false);
+  const [failure, setFailure] = useState<SetupFinishFailure>();
+  const [skipping, setSkipping] = useState(false);
+  const [skipFailure, setSkipFailure] = useState<{ detail?: string }>();
 
-  // Show workspace name field only if the user is the sole member of the
-  // workspace (i.e. they just created it), not when they were invited.
+  const idTaken = t("resource-id.validation.duplicated", {
+    resource: t("common.project"),
+  });
+  const validateProjectId = async (id: string): Promise<ValidatedMessage[]> => {
+    const taken: ValidatedMessage[] = [{ type: "error", message: idTaken }];
+    const { attemptedProjectId, projectTitle } = draftRef.current;
+    if (attemptedProjectId !== id) {
+      const existing = await useAppStore
+        .getState()
+        .fetchProject(`${projectNamePrefix}${id}`, true);
+      return existing ? taken : [];
+    }
+    // A create for this ID got no answer. A project that holds the ID settles
+    // it: the draft's own exists from here on, and another's leaves nothing of
+    // the draft's behind. No project settles nothing, as the create may still
+    // be on its way.
+    const superseded = supersededFromNow();
+    try {
+      const found = await findLostCreate(
+        id,
+        projectTitle.trim(),
+        currentUser.email
+      );
+      // The answer is about the name and ID it was asked with; one typed
+      // while it was out is not that project's, and a draft this tab no longer
+      // holds is not its to settle.
+      const now = draftRef.current;
+      if (
+        found.kind === "absent" ||
+        superseded() ||
+        now.projectId !== id ||
+        now.projectTitle !== projectTitle
+      ) {
+        return [];
+      }
+      update({
+        attemptedProjectId: undefined,
+        ...(found.kind === "own" ? { createdProject: found.project } : {}),
+      });
+      return found.kind === "other" ? taken : [];
+    } catch {
+      // Still unknown; Finish asks the server again.
+      return [];
+    }
+  };
+
+  // Only the sole member, who just created the workspace, names it; an
+  // invited account joins a workspace that already has its name.
   const canRenameWorkspace =
     canUpdateWorkspace &&
     (workspacePolicy?.bindings ?? []).reduce(
-      (count, b) => count + b.members.length,
+      (count, binding) => count + binding.members.length,
       0
     ) === 1;
-  const [setupStep, setSetupStep] = useState<"scenario" | "workspace">(
-    "scenario"
-  );
-  const [selectedScenarioId, setSelectedScenarioId] =
-    useState<GuideScenarioId>();
-  const [workspaceUsage, setWorkspaceUsage] = useState<GuideWorkspaceUsage>();
-
-  // `currentUser` loads asynchronously (unknownUser with an empty email until
-  // then), so seed the name field once the real user is known rather than
-  // freezing on the placeholder title. The ref keeps it a one-shot seed so
-  // later edits aren't clobbered.
-  const [name, setName] = useState(
-    currentUser.email ? (currentUser.title ?? "") : ""
-  );
-  const nameSeededRef = useRef(Boolean(currentUser.email));
-  useEffect(() => {
-    if (!nameSeededRef.current && currentUser.email) {
-      nameSeededRef.current = true;
-      setName(currentUser.title ?? "");
+  const guessedName = guessDisplayName(currentUser.email, currentUser.title);
+  const guessedWorkspaceTitle = () => {
+    const guess = guessWorkspaceTitle(
+      currentUser.email,
+      guessedName,
+      workspace?.title
+    );
+    switch (guess.kind) {
+      case "title":
+        return guess.title;
+      case "personal":
+        return t("workspace-setup.workspace.default-name", {
+          name: guess.firstName,
+        });
+      case "anonymous":
+        return t("workspace-setup.workspace.default-name-anonymous");
     }
-  }, [currentUser.email, currentUser.title]);
-  const [workspaceTitle, setWorkspaceTitle] = useState(workspace?.title ?? "");
-  const [projectTitle, setProjectTitle] = useState(() =>
-    t("settings.profile.default-project-name")
+  };
+  // A sample the server lists under this draft's own project is not one
+  // another project used: a reload cut its request short, and the stored
+  // choice still decides whether to ask for it again.
+  const sampleUsedElsewhere = !!sample?.instances.some(
+    ({ instance }) =>
+      !draft.createdProject || !instance.startsWith(`${draft.createdProject}/`)
   );
-  const [projectResourceId, setProjectResourceId] = useState("");
-  const [isProjectResourceIdValid, setIsProjectResourceIdValid] =
-    useState(false);
-  const [enableSampleDatabases, setEnableSampleDatabases] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const shouldCreateProject = canCreateProject && !!projectTitle.trim();
-  const projectIsReady =
-    shouldCreateProject && !!projectResourceId && isProjectResourceIdValid;
-  const sampleRequested =
-    shouldCreateProject && enableSampleDatabases && canPrepareSample;
-  const canEnableSample = !!projectTitle.trim() && !!projectResourceId;
+  const sampleOffer: SampleOffer = !sample?.available
+    ? "unavailable"
+    : sampleUsedElsewhere
+      ? "used"
+      : "offered";
+  // Once its request has returned, the sample is the project's database
+  // whatever the server offers now.
+  const source: SetupSource = draft.samplePrepared
+    ? "sample"
+    : sampleOffer === "offered"
+      ? draft.source
+      : "own";
+  const name = draft.name ?? guessedName;
+  const workspaceTitle = draft.workspaceTitle ?? guessedWorkspaceTitle();
 
   useEffect(() => {
     if (
@@ -145,319 +250,332 @@ export function WorkspaceSetupPage() {
     );
   }, [currentUser.name, setupPageEntered, workspace?.name]);
 
-  const validateProjectResourceId = useCallback(
-    async (id: string): Promise<ValidatedMessage[]> => {
-      try {
-        const existing = await useAppStore
-          .getState()
-          .fetchProject(`${projectNamePrefix}${id}`, true);
-        if (!existing) return [];
-        return [
-          {
-            type: "error",
-            message: t("resource-id.validation.duplicated", {
-              resource: t("common.project"),
-            }),
-          },
-        ];
-      } catch {
-        return [];
-      }
-    },
-    [t]
-  );
-
-  const canSave =
-    !!name.trim() &&
-    !saving &&
-    (isSaaSMode ? projectIsReady : !shouldCreateProject || projectIsReady);
-
-  const handleSave = async () => {
-    if (!currentUser?.name || !canSave) return;
-    setSaving(true);
-    try {
-      await updateUser(
-        create(UpdateUserRequestSchema, {
-          user: { name: currentUser.name, title: name.trim() },
-          updateMask: create(FieldMaskSchema, { paths: ["title"] }),
-        })
-      );
-      if (canRenameWorkspace && workspaceTitle.trim() && workspace?.name) {
-        await updateWorkspace(
-          create(WorkspaceSchema, {
-            name: workspace.name,
-            title: workspaceTitle.trim(),
-          }),
-          ["title"]
-        );
-      }
-      let createdProjectName = "";
-      if (shouldCreateProject) {
-        const createdProject = await createProject(
-          projectTitle.trim(),
-          projectResourceId
-        );
-        setRecentProject(createdProject.name);
-        createdProjectName = createdProject.name;
-        if (sampleRequested && createdProject.name) {
-          behaviorAnalytics.captureMetric(
-            createBehaviorMetric("sample instance requested", {
-              properties: { source: "workspace_setup" },
-            })
-          );
-          try {
-            await prepareSampleProjectInstance(createdProject.name);
-          } catch (error) {
-            pushNotification({
-              module: "bytebase",
-              style: "CRITICAL",
-              title: t("instance.prepare-sample-instance-failed"),
-              description: extractGrpcErrorMessage(error),
-            });
-          }
-        }
-      }
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("settings.profile.setup-success"),
-      });
-      if (isSaaSMode) {
-        saveWorkspaceSetupFinished(
-          workspace?.name ?? currentUser.workspace,
-          true
-        );
-      }
-      behaviorAnalytics.captureMetric(
-        createBehaviorMetric("workspace setup submitted", {
-          properties: {
-            scenario: selectedScenarioId ?? "unselected",
-            collaboration_type: workspaceUsage ?? "unselected",
-            result: "finished",
-            sample_enabled: sampleRequested,
-          },
-        })
-      );
-      if (createdProjectName) {
-        router.replace({
-          name: PROJECT_V1_ROUTE_DETAIL,
-          params: {
-            projectId: extractProjectResourceName(createdProjectName),
-          },
-        });
-      } else {
-        goToDashboard();
-      }
-    } catch {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("settings.profile.setup-failed"),
-      });
-    } finally {
-      setSaving(false);
-    }
+  // A failed attempt is reported for the answers it ran with, so the report
+  // goes when its screen is left, and a failure adding the people listed goes
+  // when the team answers change. Any other step's failure still stands then.
+  const show = (screen: SetupDraft["screen"]) => {
+    setFailure(undefined);
+    setSkipFailure(undefined);
+    update({ screen });
+  };
+  const answerTeam = (
+    patch: Partial<Pick<SetupDraft, "teamSize" | "emails">>
+  ) => {
+    if (failure?.stage === "invitees") setFailure(undefined);
+    update(patch);
   };
 
-  const goToDashboard = () => {
+  // Takes the stored draft up only when asked: a screen's fields and a failure
+  // report hold state that a draft taken in underneath them would not match.
+  const continueHere = () => {
+    draftRef.current = readSetupDraft(isSaaSMode);
+    // Saved at once, so a tab still working on the draft stops there.
+    show(draftRef.current.screen);
+    setProjectIdValid(true);
+  };
+
+  // Emitted on the click, so a leaver can be placed on a screen. No event
+  // carries a name, an address or a project name.
+  const continueFrom = (screen: 1 | 2 | 3, next: SetupDraft["screen"]) => {
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("workspace setup screen continued", {
+        properties: {
+          setup_version: WORKSPACE_SETUP_VERSION,
+          screen,
+          goal: draft.goal ?? "unselected",
+          project_named: !!draft.projectTitle.trim(),
+          ...(screen === 3 ? { source } : {}),
+        },
+      })
+    );
+    show(next);
+  };
+
+  const captureSubmitted = (properties: Record<string, unknown>) =>
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("workspace setup submitted", {
+        properties: {
+          setup_version: WORKSPACE_SETUP_VERSION,
+          scenario: draft.goal ?? "unselected",
+          ...properties,
+        },
+      })
+    );
+
+  const names: SetupNames = {
+    userName: currentUser.name,
+    displayName: name.trim(),
+    workspaceName: canRenameWorkspace ? workspace?.name : undefined,
+    workspaceTitle: workspaceTitle.trim(),
+  };
+
+  // The projects page, which offers to create the first one.
+  const leaveWithoutProject = () =>
     router.replace({
       name: PROJECT_V1_ROUTE_DASHBOARD,
       query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
     });
+
+  // Self-hosted only: setup is offered once there and may be left for later.
+  const skip = async () => {
+    const superseded = supersededFromNow();
+    setSkipping(true);
+    setSkipFailure(undefined);
+    try {
+      await saveSetupNames(names, superseded);
+    } catch (error) {
+      if (!superseded()) setSkipFailure({ detail: serverReason(error) });
+      setSkipping(false);
+      return;
+    }
+    if (superseded()) {
+      setSkipping(false);
+      return;
+    }
+    endSetup();
+    if (draft.goal) saveSelectedGuideScenarioId(draft.goal);
+    captureSubmitted({ result: "skipped", sample_enabled: false });
+    leaveWithoutProject();
   };
 
-  const handleSkip = () => {
-    behaviorAnalytics.captureMetric(
-      createBehaviorMetric("workspace setup submitted", {
-        properties: {
-          scenario: selectedScenarioId ?? "unselected",
-          collaboration_type: workspaceUsage ?? "unselected",
-          result: "skipped",
-          sample_enabled: false,
-        },
-      })
+  const mayLeaveProject = projectOptional(draft, isSaaSMode);
+  const withoutProject = mayLeaveProject && !draft.projectTitle.trim();
+  // The addresses Finish adds. Self-hosted lists no one (D7), whatever an
+  // earlier draft holds.
+  const invitees =
+    !isSaaSMode || draft.teamSize === "just-me"
+      ? []
+      : validInviteAddresses(draft.emails, currentUser.email);
+
+  const finish = async ({ withoutSample = false } = {}) => {
+    if (!draft.teamSize) return;
+    // Saved first, so another tab on the draft stops before this attempt
+    // writes.
+    update(withoutSample ? { source: "own" } : {});
+    const superseded = supersededFromNow();
+    // What the attempt learns is saved only while this tab holds setup.
+    const save = (patch: Partial<SetupDraft>) => {
+      if (!superseded()) update(patch);
+    };
+    setFinishing(true);
+    setFailure(undefined);
+    const finishSource: SetupSource = withoutSample ? "own" : source;
+    const answers = {
+      source: withoutProject ? "none" : finishSource,
+      team_size: draft.teamSize,
+      invite_count: invitees.length,
+      // Kept beside `team_size` for the dashboards built on the earlier
+      // wizard's team-or-solo answer.
+      collaboration_type: draft.teamSize === "just-me" ? "solo" : "team",
+      sample_enabled: !withoutProject && finishSource === "sample",
+    };
+    const result = await runSetupFinish(
+      {
+        ...names,
+        withoutProject,
+        projectTitle: draft.projectTitle.trim(),
+        projectId: draft.projectId,
+        createdProject: draft.createdProject,
+        ownerEmail: currentUser.email,
+        createAttempted: draft.attemptedProjectId === draft.projectId,
+        // Asked again until the request has returned once: a self-hosted
+        // server lists the instance before it is ready, and a repeated
+        // request answers with the same one.
+        prepareSample:
+          !withoutProject && finishSource === "sample" && !draft.samplePrepared,
+        invitees,
+        projectGrants: draft.projectGrants ?? {},
+        superseded,
+      },
+      {
+        projectCreateSent: () => save({ attemptedProjectId: draft.projectId }),
+        projectCreated: (createdProject) => save({ createdProject }),
+        samplePrepared: () => save({ samplePrepared: true }),
+        projectGrants: (projectGrants) => save({ projectGrants }),
+      }
     );
-    goToDashboard();
+    if ("superseded" in result) {
+      // The notice that took the screen's place shows from here.
+      setFinishing(false);
+      return;
+    }
+    if (!result.ok) {
+      captureSubmitted({
+        ...answers,
+        result: "failed",
+        failure_stage: result.stage,
+      });
+      if (result.refusal) {
+        // The server settled that create: nothing of this draft's holds the ID.
+        update({
+          attemptedProjectId: undefined,
+          refusedProjectId: { id: draft.projectId, ...result.refusal },
+        });
+        show("project");
+      } else {
+        setFailure({
+          stage: result.stage,
+          detail: serverReason(result.error),
+        });
+      }
+      setFinishing(false);
+      return;
+    }
+    captureSubmitted({ ...answers, result: "finished" });
+    endSetup();
+    if (draft.goal) saveSelectedGuideScenarioId(draft.goal);
+    saveGuideTeamSize(draft.teamSize);
+    if (isSaaSMode) {
+      saveWorkspaceSetupFinished(
+        workspace?.name ?? currentUser.workspace,
+        true
+      );
+    }
+    if (!result.project) {
+      leaveWithoutProject();
+      return;
+    }
+    try {
+      useAppStore.getState().setRecentProject(result.project);
+    } catch {
+      // Everything exists on the server; a browser that cannot store the
+      // recent project must still leave the wizard.
+    }
+    router.replace({
+      name: PROJECT_V1_ROUTE_DETAIL,
+      params: { projectId: extractProjectResourceName(result.project) },
+    });
   };
 
-  const setupSteps = [
-    {
-      key: "scenario",
-      title: t("settings.profile.setup-steps.scenario"),
-    },
-    {
-      key: "workspace",
-      title: t("settings.profile.setup-steps.workspace"),
-    },
-  ];
-
-  if (setupStep === "scenario") {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="flex w-full max-w-lg flex-col gap-y-6">
-          <StepIndicator steps={setupSteps} currentKey={setupStep} />
-          <WorkspaceSetupQuestionnaireStep
-            scenarioValue={selectedScenarioId}
-            workspaceUsageValue={workspaceUsage}
-            required={isSaaSMode}
-            onScenarioChange={setSelectedScenarioId}
-            onWorkspaceUsageChange={setWorkspaceUsage}
-            onContinue={() => {
-              if (selectedScenarioId) {
-                saveSelectedGuideScenarioId(selectedScenarioId);
-              } else {
-                clearSelectedGuideScenarioId();
-              }
-              if (workspaceUsage) {
-                saveGuideWorkspaceUsage(workspaceUsage);
-              } else {
-                clearGuideWorkspaceUsage();
-              }
-              setSetupStep("workspace");
-            }}
+  const renderScreen = () => {
+    switch (draft.screen) {
+      case "workspace":
+        return (
+          <WorkspaceScreen
+            name={name}
+            workspaceTitle={workspaceTitle}
+            showWorkspaceTitle={canRenameWorkspace}
+            onNameChange={(value) => update({ name: value })}
+            onWorkspaceTitleChange={(value) =>
+              update({ workspaceTitle: value })
+            }
+            onContinue={() => continueFrom(1, "goal")}
           />
-        </div>
-      </div>
-    );
-  }
+        );
+      case "goal":
+        return (
+          <GoalScreen
+            goal={draft.goal}
+            onGoalChange={(goal) => update({ goal })}
+            onBack={() => show("workspace")}
+            onContinue={() => continueFrom(2, "project")}
+          />
+        );
+      case "team":
+        return (
+          <TeamScreen
+            teamSize={draft.teamSize}
+            addresses={draft.emails}
+            ownerEmail={currentUser.email}
+            projectTitle={draft.projectTitle.trim()}
+            source={source}
+            isSaaS={isSaaSMode}
+            onTeamSizeChange={(teamSize) => answerTeam({ teamSize })}
+            onAddressesChange={(emails) => answerTeam({ emails })}
+            finishing={finishing}
+            failure={failure}
+            onBack={() => show("project")}
+            onFinish={() => void finish()}
+            onFinishWithoutSample={() => void finish({ withoutSample: true })}
+          />
+        );
+      case "project":
+        return (
+          <ProjectScreen
+            projectTitle={draft.projectTitle}
+            projectId={draft.projectId}
+            projectIdValid={projectIdValid}
+            projectIdRefusal={
+              draft.refusedProjectId?.id === draft.projectId
+                ? (draft.refusedProjectId.reason ?? idTaken)
+                : undefined
+            }
+            projectExists={!!draft.createdProject}
+            source={source}
+            sample={sampleOffer}
+            samplePrepared={!!draft.samplePrepared}
+            isSaaS={isSaaSMode}
+            projectOptional={mayLeaveProject}
+            skipping={skipping}
+            skipFailure={skipFailure}
+            onSkip={mayLeaveProject ? () => void skip() : undefined}
+            validateProjectId={validateProjectId}
+            onProjectTitleChange={(projectTitle) => {
+              if (projectTitle.trim()) {
+                update({ projectTitle });
+              } else {
+                // An unnamed project has no ID, and so no verdict on one; the
+                // next name derives a new ID.
+                update({ projectTitle, projectId: "" });
+                setProjectIdValid(true);
+              }
+            }}
+            onProjectIdChange={(projectId) => {
+              if (draftRef.current.projectId !== projectId) {
+                update({ projectId });
+              }
+            }}
+            onProjectIdValidChange={setProjectIdValid}
+            onSourceChange={(source) => update({ source })}
+            onBack={() => show("goal")}
+            onContinue={() => continueFrom(3, "team")}
+          />
+        );
+    }
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4">
-      <div className="w-full max-w-lg mx-4 flex flex-col items-center gap-y-6">
-        <StepIndicator
-          className="w-full"
-          steps={setupSteps}
-          currentKey={setupStep}
+    <>
+      <SplashPanel>
+        <SetupPanel
+          screen={draft.screen}
+          goal={draft.goal}
+          workspaceTitle={
+            canRenameWorkspace ? workspaceTitle : (workspace?.title ?? "")
+          }
+          memberName={name.trim() || currentUser.title || currentUser.email}
+          memberEmail={currentUser.email}
+          projectTitle={draft.projectTitle.trim()}
+          source={source}
+          noProject={withoutProject}
+          teamSize={draft.teamSize}
+          invitees={invitees}
         />
-        <h1 className="sr-only">
-          {t("settings.profile.setup-steps.workspace")}
-        </h1>
-
-        <div className="w-full flex flex-col gap-y-4">
-          <FormField title={t("settings.profile.display-name")}>
-            <Input
-              data-testid="profile-display-name"
-              value={name}
-              autoComplete="off"
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t("settings.profile.display-name-placeholder")}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && name.trim()) {
-                  void handleSave();
-                }
-              }}
-            />
-          </FormField>
-
-          {canRenameWorkspace && (
-            <FormField title={t("settings.profile.workspace-name")}>
-              <Input
-                data-testid="profile-workspace-title"
-                value={workspaceTitle}
-                autoComplete="off"
-                onChange={(event) => setWorkspaceTitle(event.target.value)}
-                placeholder={t("settings.profile.workspace-name-placeholder")}
-              />
-            </FormField>
-          )}
-
-          {canCreateProject && (
-            <FormField
-              title={
-                <>
-                  {t("settings.profile.setup-first-project")}
-                  {isSaaSMode && (
-                    <span
-                      aria-hidden="true"
-                      className="ml-1 text-error"
-                      data-testid="project-required-indicator"
-                    >
-                      *
-                    </span>
-                  )}
-                </>
+      </SplashPanel>
+      {elsewhere && !finishing ? (
+        <div className="mx-auto flex w-full max-w-lg flex-col items-start gap-y-4">
+          <h1 className="text-xl font-semibold text-main">
+            {elsewhere === "ended"
+              ? t("workspace-setup.elsewhere.ended")
+              : t("workspace-setup.elsewhere.saved")}
+          </h1>
+          {elsewhere === "ended" ? (
+            <Button
+              onClick={() =>
+                router.replace({ name: PROJECT_V1_ROUTE_DASHBOARD })
               }
             >
-              <Input
-                data-testid="profile-project-title"
-                value={projectTitle}
-                autoComplete="off"
-                required={isSaaSMode}
-                onChange={(event) => {
-                  const title = event.target.value;
-                  setProjectTitle(title);
-                  if (!title.trim()) {
-                    setProjectResourceId("");
-                    setIsProjectResourceIdValid(false);
-                  }
-                }}
-                placeholder={t("project.create-modal.project-name")}
-              />
-              {!!projectTitle.trim() && (
-                <ResourceIdField
-                  suffix
-                  value={projectResourceId}
-                  autoComplete="off"
-                  resourceName={t("common.project")}
-                  resourceTitle={projectTitle}
-                  validate={validateProjectResourceId}
-                  onChange={setProjectResourceId}
-                  onValidationChange={setIsProjectResourceIdValid}
-                />
-              )}
-              {canPrepareSample && (
-                <div className="flex items-center gap-x-2 pt-1">
-                  <Checkbox
-                    id="enable-sample-databases"
-                    data-testid="enable-sample-databases"
-                    checked={canEnableSample && enableSampleDatabases}
-                    disabled={!canEnableSample}
-                    onCheckedChange={setEnableSampleDatabases}
-                  />
-                  <label
-                    htmlFor="enable-sample-databases"
-                    className={cn(
-                      "cursor-pointer",
-                      !canEnableSample &&
-                        "cursor-not-allowed text-control-placeholder"
-                    )}
-                  >
-                    {t(
-                      selectedScenarioId === "query-data"
-                        ? "settings.profile.enable-sample-databases-query-data"
-                        : selectedScenarioId === "create-database-change"
-                          ? "settings.profile.enable-sample-databases-create-change"
-                          : selectedScenarioId === "mark-sensitive-data"
-                            ? "settings.profile.enable-sample-databases-mark-sensitive-data"
-                            : "settings.profile.enable-sample-databases"
-                    )}
-                  </label>
-                </div>
-              )}
-            </FormField>
-          )}
-
-          <div className="mt-2 flex items-center justify-between gap-x-2 border-t border-block-border pt-4">
-            <Button
-              appearance="secondary"
-              onClick={() => setSetupStep("scenario")}
-            >
-              {t("common.back")}
+              {t("workspace-setup.elsewhere.workspace")}
             </Button>
-            <div className="flex flex-col items-end gap-y-2 sm:flex-row sm:items-center sm:gap-x-2 sm:gap-y-0">
-              {!isSaaSMode && (
-                <Button appearance="secondary" onClick={handleSkip}>
-                  {t("settings.profile.setup-skip")}
-                </Button>
-              )}
-              <Button onClick={() => void handleSave()} disabled={!canSave}>
-                {t("settings.profile.setup-submit")}
-              </Button>
-            </div>
-          </div>
+          ) : (
+            <Button onClick={continueHere}>
+              {t("workspace-setup.elsewhere.continue")}
+            </Button>
+          )}
         </div>
-      </div>
-    </div>
+      ) : (
+        renderScreen()
+      )}
+    </>
   );
 }

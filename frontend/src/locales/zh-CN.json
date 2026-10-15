@@ -2979,59 +2979,16 @@
       "workload-identity-tag-hint": "留空则允许所有标签"
     },
     "profile": {
-      "default-project-name": "新项目",
       "display-name": "您的姓名",
       "display-name-placeholder": "输入您的姓名",
       "email": "邮箱",
-      "enable-sample-databases": "启用示例数据库",
-      "enable-sample-databases-create-change": "启用示例数据库作为安全的变更目标",
-      "enable-sample-databases-mark-sensitive-data": "启用示例数据库以立即试用数据脱敏",
-      "enable-sample-databases-query-data": "启用示例数据库以立即开始查询",
       "password": "密码",
       "password-confirm": "确认密码",
       "password-confirm-placeholder": "确认新密码",
       "password-hint": "密码应遵循限制设置",
       "password-mismatch": "新密码不匹配",
       "phone": "手机号",
-      "phone-tips": "请包含国家代码前缀 +86xxxxxx",
-      "setup-failed": "更新个人资料失败。",
-      "setup-first-project": "设置第一个项目",
-      "setup-scenario": {
-        "continue": "继续",
-        "create-database-change": {
-          "description": "定义变更并创建可追踪的工单。",
-          "title": "创建数据库变更"
-        },
-        "mark-sensitive-data": {
-          "description": "识别敏感列并应用数据脱敏。",
-          "title": "标记敏感数据"
-        },
-        "outcome-title": "您想使用 Bytebase 做什么？",
-        "query-data": {
-          "description": "打开 SQL Editor 并对数据库运行一条语句。",
-          "title": "查询数据"
-        },
-        "workspace-usage": {
-          "solo": {
-            "description": "我会独自使用 Bytebase。",
-            "title": "仅我自己"
-          },
-          "team": {
-            "description": "我会和其他成员一起使用。",
-            "title": "我的团队"
-          },
-          "title": "谁会和您一起使用 Bytebase？"
-        }
-      },
-      "setup-skip": "稍后再说",
-      "setup-steps": {
-        "scenario": "选择目标",
-        "workspace": "设置工作空间"
-      },
-      "setup-submit": "设置我的工作空间",
-      "setup-success": "个人资料已更新。",
-      "workspace-name": "工作空间名称",
-      "workspace-name-placeholder": "输入工作空间名称"
+      "phone-tips": "请包含国家代码前缀 +86xxxxxx"
     },
     "sensitive-data": {
       "algorithms": {
@@ -3882,6 +3839,123 @@
       "copy-succeed": "复制成功。请输入到您的应用程序中。",
       "description": "复制密钥并在您的应用程序中手动输入。",
       "self": "双重认证密钥"
+    }
+  },
+  "workspace-setup": {
+    "continue": "继续",
+    "elsewhere": {
+      "continue": "在此继续",
+      "ended": "此设置已在另一个标签页中结束",
+      "saved": "此设置已在另一个标签页中继续",
+      "workspace": "前往工作空间"
+    },
+    "goal": {
+      "change": {
+        "description": "编写一个 Schema 变更或数据修复，由 SQL 审核检查后部署到数据库。",
+        "finish-line": "终点：一个通过 SQL 审核并完成部署的变更",
+        "title": "规划、审核并部署数据库变更"
+      },
+      "description": "选择您来这里想做的事。设置完成后，我们会优先推荐它。",
+      "explore": {
+        "description": "我们会先推荐一条简单的查询，方向可以之后再选。",
+        "title": "还不确定，先看看"
+      },
+      "query": {
+        "description": "在编辑器中对数据库执行 SQL，每条语句都会记录在查询历史中。",
+        "finish-line": "终点：一条来自数据库的查询结果",
+        "title": "在安全防护下查询数据"
+      },
+      "required": "请选择一项以继续",
+      "title": "您想先做什么？"
+    },
+    "optional": "可选",
+    "panel": {
+      "connected-after-setup": "设置完成后连接",
+      "own-databases": "其中的数据库",
+      "own-instance": "您的实例",
+      "sample-database": "示例数据库",
+      "sample-instance": "示例项目实例",
+      "workspace": "工作空间"
+    },
+    "project": {
+      "database-title": "{{project}} 的数据库",
+      "description": "Bytebase 需要数据库才能工作。请先为承载它的项目命名，再选择第一个数据库的来源。",
+      "exists": "该项目已存在，可在项目设置中重命名。",
+      "name": "项目名称",
+      "name-hint": "项目把一个团队使用的数据库与其成员和策略组织在一起。每次变更和查询都发生在某个项目中。",
+      "name-optional-note": "留空则稍后再创建项目。",
+      "name-placeholder": "支付、数据平台、内部工具",
+      "name-required": "请输入项目名称",
+      "own": {
+        "description": "实例即您的数据库服务器。设置会先完成，之后您在 {{project}} 中连接它。",
+        "title": "设置完成后连接我自己的实例"
+      },
+      "sample": {
+        "description": "一个包含员工示例数据的 PostgreSQL 数据库，由 Bytebase Cloud 托管。无需安装，可用 7 天。",
+        "description-self-host": "一个包含员工示例数据的 PostgreSQL 数据库，运行在本服务器上。无需安装。",
+        "prepared": "示例数据库已在该项目中就绪。",
+        "recommended": "推荐",
+        "title": "从示例数据库开始",
+        "unavailable": "本服务器不提供示例数据库。",
+        "used": "该工作空间已使用过示例数据库。"
+      },
+      "skip": "稍后再说",
+      "title": "创建项目并选择其数据库",
+      "your-project": "您的项目"
+    },
+    "steps": {
+      "goal": "目标",
+      "project": "项目",
+      "team": "团队",
+      "workspace": "工作空间"
+    },
+    "team": {
+      "address-invalid": "不是邮箱地址",
+      "address-own": "这是您自己的地址",
+      "address-placeholder": "name@company.com",
+      "address-placeholder-more": "再添加一个地址",
+      "description": "完成前的最后一个问题。",
+      "failed": {
+        "invitees": "无法添加您列出的人员。",
+        "names": "无法保存您的姓名和工作空间名称。",
+        "project": "无法创建 {{project}}。",
+        "sample": "无法准备示例数据库。"
+      },
+      "finish": "完成",
+      "finish-invite_one": "发送 {{count}} 份邀请并完成",
+      "finish-invite_other": "发送 {{count}} 份邀请并完成",
+      "finish-without-sample": "不使用示例数据库并完成",
+      "finishing": "正在设置…",
+      "invite-teammates": "邀请团队成员",
+      "members-enter": "每输入一个地址后按回车。",
+      "members-own": "连接实例后，其中的数据库才会出现。",
+      "members-role": "他们将作为成员加入，可在 {{project}} 中查询并提交变更。",
+      "members-roles-later": "可随时在“成员”中更改角色。",
+      "progress": "正在创建 {{project}}…",
+      "progress-sample": "正在创建 {{project}} 及其示例数据库…",
+      "remove-address": "移除 {{email}}",
+      "size": "有多少人会使用 Bytebase？",
+      "size-required": "请选择团队规模以完成",
+      "sizes": {
+        "11-50": "11–50",
+        "2-10": "2–10",
+        "200-plus": "200+",
+        "51-200": "51–200",
+        "just-me": "仅我自己"
+      },
+      "title": "您的团队",
+      "try-again": "重试"
+    },
+    "workspace": {
+      "default-name": "{{name}} 的工作空间",
+      "default-name-anonymous": "我的工作空间",
+      "description": "有了工作空间、项目和数据库，Bytebase 即可使用。",
+      "name-placeholder": "输入您的姓名",
+      "title": "设置您的工作空间",
+      "workspace-name": "工作空间名称",
+      "workspace-name-hint": "您添加的所有人都会加入该工作空间。",
+      "workspace-name-placeholder": "通常是您的公司名称",
+      "workspace-name-required": "请输入工作空间名称"
     }
   },
   "workspace-setup-guide": {

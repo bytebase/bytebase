@@ -2979,59 +2979,16 @@
       "workload-identity-tag-hint": "Để trống để cho phép tất cả tag"
     },
     "profile": {
-      "default-project-name": "Dự án mới",
       "display-name": "Tên của bạn",
       "display-name-placeholder": "Nhập tên của bạn",
       "email": "Email",
-      "enable-sample-databases": "Bật cơ sở dữ liệu mẫu",
-      "enable-sample-databases-create-change": "Bật cơ sở dữ liệu mẫu làm đích thay đổi an toàn",
-      "enable-sample-databases-mark-sensitive-data": "Bật cơ sở dữ liệu mẫu để thử che dữ liệu ngay",
-      "enable-sample-databases-query-data": "Bật cơ sở dữ liệu mẫu để bắt đầu truy vấn ngay",
       "password": "Mật khẩu",
       "password-confirm": "Xác nhận mật khẩu",
       "password-confirm-placeholder": "Xác nhận mật khẩu mới",
       "password-hint": "Mật khẩu phải theo quy định hạn chế",
       "password-mismatch": "Mật khẩu mới không khớp",
       "phone": "Điện thoại",
-      "phone-tips": "Nhớ bao gồm mã quốc gia +1xxxxxx",
-      "setup-failed": "Cập nhật hồ sơ thất bại.",
-      "setup-first-project": "Thiết lập dự án đầu tiên",
-      "setup-scenario": {
-        "continue": "Tiếp tục",
-        "create-database-change": {
-          "description": "Xác định thay đổi và tạo issue có thể theo dõi.",
-          "title": "Tạo thay đổi cơ sở dữ liệu"
-        },
-        "mark-sensitive-data": {
-          "description": "Xác định các cột nhạy cảm và áp dụng che dữ liệu.",
-          "title": "Đánh dấu dữ liệu nhạy cảm"
-        },
-        "outcome-title": "Bạn muốn làm gì với Bytebase?",
-        "query-data": {
-          "description": "Mở SQL Editor và chạy một câu lệnh trên cơ sở dữ liệu.",
-          "title": "Truy vấn dữ liệu"
-        },
-        "workspace-usage": {
-          "solo": {
-            "description": "Tôi sẽ tự sử dụng Bytebase.",
-            "title": "Chỉ mình tôi"
-          },
-          "team": {
-            "description": "Tôi sẽ làm việc cùng những người khác.",
-            "title": "Nhóm của tôi"
-          },
-          "title": "Ai sẽ sử dụng Bytebase cùng bạn?"
-        }
-      },
-      "setup-skip": "Để sau",
-      "setup-steps": {
-        "scenario": "Chọn mục tiêu",
-        "workspace": "Thiết lập không gian làm việc"
-      },
-      "setup-submit": "Thiết lập không gian làm việc của tôi",
-      "setup-success": "Hồ sơ đã được cập nhật.",
-      "workspace-name": "Tên không gian làm việc",
-      "workspace-name-placeholder": "Nhập tên không gian làm việc"
+      "phone-tips": "Nhớ bao gồm mã quốc gia +1xxxxxx"
     },
     "sensitive-data": {
       "algorithms": {
@@ -3882,6 +3839,123 @@
       "copy-succeed": "Bí mật đã được sao chép vào khay nhớ tạm. Dán nó vào ứng dụng của bạn.",
       "description": "Sao chép mã và nhập nó vào ứng dụng TOTP của bạn theo cách thủ công.",
       "self": "Bí mật hai yếu tố của bạn"
+    }
+  },
+  "workspace-setup": {
+    "continue": "Tiếp tục",
+    "elsewhere": {
+      "continue": "Tiếp tục tại đây",
+      "ended": "Thiết lập này đã kết thúc ở một tab khác",
+      "saved": "Thiết lập này đã được tiếp tục ở một tab khác",
+      "workspace": "Đi tới không gian làm việc"
+    },
+    "goal": {
+      "change": {
+        "description": "Viết một thay đổi schema hoặc một bản sửa dữ liệu, để SQL review kiểm tra, rồi triển khai lên cơ sở dữ liệu.",
+        "finish-line": "Đích đến: một thay đổi đã qua SQL review và được triển khai",
+        "title": "Lập kế hoạch, review và triển khai một thay đổi cơ sở dữ liệu"
+      },
+      "description": "Chọn điều đã đưa bạn đến đây. Chúng tôi sẽ gợi ý nó đầu tiên khi thiết lập xong.",
+      "explore": {
+        "description": "Chúng tôi sẽ gợi ý một truy vấn nhanh để bắt đầu. Bạn có thể chọn hướng đi sau.",
+        "title": "Chưa chắc, chỉ đang khám phá"
+      },
+      "query": {
+        "description": "Chạy SQL trên cơ sở dữ liệu từ trình soạn thảo, mọi câu lệnh đều được ghi vào lịch sử truy vấn.",
+        "finish-line": "Đích đến: một kết quả truy vấn từ cơ sở dữ liệu",
+        "title": "Truy vấn dữ liệu có kiểm soát"
+      },
+      "required": "Chọn một mục để tiếp tục",
+      "title": "Bạn muốn làm gì trước?"
+    },
+    "optional": "tùy chọn",
+    "panel": {
+      "connected-after-setup": "Kết nối sau khi thiết lập",
+      "own-databases": "Các cơ sở dữ liệu của nó",
+      "own-instance": "Phiên bản của bạn",
+      "sample-database": "Cơ sở dữ liệu mẫu",
+      "sample-instance": "Phiên bản dự án mẫu",
+      "workspace": "Không gian làm việc"
+    },
+    "project": {
+      "database-title": "Cơ sở dữ liệu cho {{project}}",
+      "description": "Bytebase cần một cơ sở dữ liệu để hoạt động. Đặt tên cho dự án sẽ chứa nó, rồi chọn nguồn của cơ sở dữ liệu đầu tiên.",
+      "exists": "Dự án này đã tồn tại. Đổi tên trong phần cài đặt của dự án.",
+      "name": "Tên dự án",
+      "name-hint": "Dự án nhóm các cơ sở dữ liệu mà một nhóm làm việc cùng, kèm thành viên và chính sách. Mọi thay đổi và truy vấn đều diễn ra trong một dự án.",
+      "name-optional-note": "Để trống để tạo dự án sau.",
+      "name-placeholder": "Thanh toán, Nền tảng dữ liệu, Công cụ nội bộ",
+      "name-required": "Nhập tên dự án",
+      "own": {
+        "description": "Phiên bản là máy chủ cơ sở dữ liệu của bạn. Thiết lập hoàn tất trước; sau đó bạn kết nối nó từ {{project}}.",
+        "title": "Kết nối phiên bản của tôi sau khi thiết lập"
+      },
+      "sample": {
+        "description": "Một cơ sở dữ liệu PostgreSQL với dữ liệu mẫu về nhân viên, do Bytebase Cloud lưu trữ. Không cần cài đặt; có sẵn trong 7 ngày.",
+        "description-self-host": "Một cơ sở dữ liệu PostgreSQL với dữ liệu mẫu về nhân viên, chạy trên máy chủ này. Không cần cài đặt.",
+        "prepared": "Cơ sở dữ liệu mẫu đã sẵn sàng trong dự án này.",
+        "recommended": "Khuyến nghị",
+        "title": "Bắt đầu với cơ sở dữ liệu mẫu",
+        "unavailable": "Cơ sở dữ liệu mẫu không có sẵn trên máy chủ này.",
+        "used": "Không gian làm việc này đã dùng cơ sở dữ liệu mẫu của mình."
+      },
+      "skip": "Để sau",
+      "title": "Tạo dự án và chọn cơ sở dữ liệu",
+      "your-project": "dự án của bạn"
+    },
+    "steps": {
+      "goal": "Mục tiêu",
+      "project": "Dự án",
+      "team": "Nhóm",
+      "workspace": "Không gian làm việc"
+    },
+    "team": {
+      "address-invalid": "Không phải địa chỉ email",
+      "address-own": "Địa chỉ của chính bạn",
+      "address-placeholder": "name@company.com",
+      "address-placeholder-more": "Địa chỉ khác",
+      "description": "Một câu hỏi trước khi hoàn tất.",
+      "failed": {
+        "invitees": "Không thể thêm những người bạn đã liệt kê.",
+        "names": "Không thể lưu tên của bạn và tên không gian làm việc.",
+        "project": "Không thể tạo {{project}}.",
+        "sample": "Không thể chuẩn bị cơ sở dữ liệu mẫu."
+      },
+      "finish": "Hoàn tất",
+      "finish-invite_one": "Gửi {{count}} lời mời và hoàn tất",
+      "finish-invite_other": "Gửi {{count}} lời mời và hoàn tất",
+      "finish-without-sample": "Hoàn tất mà không dùng mẫu",
+      "finishing": "Đang thiết lập…",
+      "invite-teammates": "Mời đồng đội",
+      "members-enter": "Nhấn Enter sau mỗi địa chỉ.",
+      "members-own": "Các cơ sở dữ liệu sẽ xuất hiện khi phiên bản của bạn được kết nối.",
+      "members-role": "Họ tham gia với tư cách thành viên có thể truy vấn và đề xuất thay đổi trong {{project}}.",
+      "members-roles-later": "Đổi vai trò bất cứ lúc nào trong Thành viên.",
+      "progress": "Đang tạo {{project}}…",
+      "progress-sample": "Đang tạo {{project}} và cơ sở dữ liệu mẫu…",
+      "remove-address": "Xóa {{email}}",
+      "size": "Bao nhiêu người sẽ dùng Bytebase?",
+      "size-required": "Chọn quy mô nhóm để hoàn tất",
+      "sizes": {
+        "11-50": "11–50",
+        "2-10": "2–10",
+        "200-plus": "200+",
+        "51-200": "51–200",
+        "just-me": "Chỉ mình tôi"
+      },
+      "title": "Nhóm của bạn",
+      "try-again": "Thử lại"
+    },
+    "workspace": {
+      "default-name": "Không gian làm việc của {{name}}",
+      "default-name-anonymous": "Không gian làm việc của tôi",
+      "description": "Bytebase sẵn sàng khi có một không gian làm việc, một dự án và một cơ sở dữ liệu.",
+      "name-placeholder": "Nhập tên của bạn",
+      "title": "Thiết lập không gian làm việc",
+      "workspace-name": "Tên không gian làm việc",
+      "workspace-name-hint": "Mọi người bạn thêm đều tham gia không gian làm việc này.",
+      "workspace-name-placeholder": "Thường là công ty của bạn",
+      "workspace-name-required": "Nhập tên không gian làm việc"
     }
   },
   "workspace-setup-guide": {

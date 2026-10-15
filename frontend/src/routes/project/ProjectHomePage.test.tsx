@@ -9,6 +9,7 @@ import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { IssueSchema, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
+import { storageKeyWorkspaceSetupGuideScenario } from "@/utils/storage-keys";
 
 const mocks = vi.hoisted(() => ({
   state: {
@@ -737,6 +738,21 @@ describe("ProjectHomePage", () => {
         name: "project.home.connect",
       })
     ).toBeNull();
+  });
+
+  test("leads with querying when this browser's setup goal was to query data", async () => {
+    localStorage.setItem(
+      storageKeyWorkspaceSetupGuideScenario("workspaces/demo", "alice@example.com"),
+      JSON.stringify("query-data")
+    );
+    render(<ProjectHomePage projectId="orders" />);
+    const next = await screen.findByRole("region", { name: "project.home.next-step" });
+    await within(next).findByRole("link", { name: "project.home.query-database" });
+    expect(within(next).getAllByRole("link").map((link) => link.textContent)).toEqual([
+      "project.home.query-database",
+      "project.home.change-database",
+      "project.home.members",
+    ]);
   });
 
   test("shows database change after database creation, but hides setup after a submitted change", async () => {
