@@ -28,7 +28,7 @@ func (c *catalogTools) index() []*catalogObject {
 func (c *catalogTools) indexDatabase() {
 	for _, trigger := range c.schema.GetEventTriggers() {
 		c.objects = append(c.objects, &catalogObject{kind: kindEventTrigger, name: trigger.GetName(), render: func() string {
-			return join(plainEventTrigger(trigger), plainComment("", trigger.GetComment()))
+			return join(plainEventTrigger(trigger), extensionMember(trigger.GetSkipDump()), plainComment("", trigger.GetComment()))
 		}})
 	}
 	for _, extension := range c.schema.GetExtensions() {
@@ -42,27 +42,27 @@ func (c *catalogTools) indexDatabase() {
 func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	schemaName := s.GetName()
 	// The prompt names every schema already, so a schema is an object of its
-	// own only when the sync holds its owner or comment.
-	if schemaName != "" && (s.GetOwner() != "" || s.GetComment() != "") {
+	// own only when the sync holds its owner, its comment, or that an
+	// extension owns it.
+	if schemaName != "" && (s.GetOwner() != "" || s.GetComment() != "" || s.GetSkipDump()) {
 		c.objects = append(c.objects, &catalogObject{kind: kindSchema, name: schemaName, render: func() string {
 			definition := "SCHEMA " + schemaName
 			if owner := s.GetOwner(); owner != "" {
 				definition += " OWNER " + owner
 			}
-			return join(definition, plainComment("", s.GetComment()))
+			return join(definition, extensionMember(s.GetSkipDump()), plainComment("", s.GetComment()))
 		}})
 	}
 	add := func(kind string, name string, signature string, statistics *tableStatistics, render func() string) {
 		c.objects = append(c.objects, &catalogObject{kind: kind, schema: schemaName, name: name, signature: signature, statistics: statistics, render: render})
 	}
 	// addMember is add for a kind PostgreSQL marks when an extension owns the
-	// object. No renderer writes the mark, so it follows the definition.
+	// object. The schema renderers do not write the mark, so it follows the
+	// definition.
 	addMember := func(kind string, name string, signature string, statistics *tableStatistics, skipDump bool, render func() string) {
 		if skipDump {
 			definition := render
-			render = func() string {
-				return join(definition(), "MEMBER OF AN EXTENSION: the extension creates and upgrades it")
-			}
+			render = func() string { return join(definition(), extensionMember(true)) }
 		}
 		add(kind, name, signature, statistics, render)
 	}
@@ -520,9 +520,9 @@ func plainTriggers(on string, triggers []*metadatapb.TriggerMetadata) string {
 		case body == "":
 		case len(body) >= 6 && strings.EqualFold(body[:6], "CREATE"):
 			// PostgreSQL syncs the whole statement as the body.
-			parts = append(parts, join(body, context))
+			parts = append(parts, join(body, context, extensionMember(trigger.GetSkipDump())))
 		default:
-			parts = append(parts, join(fmt.Sprintf("TRIGGER %s %s %s ON %s\n%s", trigger.GetName(), trigger.GetTiming(), trigger.GetEvent(), on, body), context))
+			parts = append(parts, join(fmt.Sprintf("TRIGGER %s %s %s ON %s\n%s", trigger.GetName(), trigger.GetTiming(), trigger.GetEvent(), on, body), context, extensionMember(trigger.GetSkipDump())))
 		}
 	}
 	return strings.Join(parts, "\n\n")
@@ -562,6 +562,14 @@ func contextLine(name string, value string) string {
 		return ""
 	}
 	return fmt.Sprintf("-- created with %s=%s", name, value)
+}
+
+// extensionMember marks an object PostgreSQL says an extension owns.
+func extensionMember(skipDump bool) string {
+	if !skipDump {
+		return ""
+	}
+	return "MEMBER OF AN EXTENSION: the extension creates and upgrades it"
 }
 
 // plainFact writes a fact the definition does not carry, such as an owner.

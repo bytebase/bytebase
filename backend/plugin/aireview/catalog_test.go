@@ -1451,4 +1451,22 @@ func TestCatalogMarksTheObjectsAnExtensionOwns(t *testing.T) {
 		require.Equal(t, 1, strings.Count(text[name], mark), "%s:\n%s", name, text[name])
 	}
 	require.NotContains(t, text["public.orders"], mark)
+
+	// The database-level and table-level objects an extension owns are marked too.
+	database := NewCatalogTools(storepb.Engine_POSTGRES, &metadatapb.DatabaseSchemaMetadata{
+		EventTriggers: []*metadatapb.EventTriggerMetadata{{Name: "ddl_guard", Event: "ddl_command_end", FunctionSchema: "public", FunctionName: "guard", Enabled: true, SkipDump: true}},
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:     "topology",
+			SkipDump: true,
+			Tables: []*metadatapb.TableMetadata{{
+				Name:     "layer",
+				Columns:  []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
+				Triggers: []*metadatapb.TriggerMetadata{{Name: "layer_integrity", Body: "CREATE TRIGGER layer_integrity BEFORE UPDATE ON topology.layer FOR EACH ROW EXECUTE FUNCTION topology.check()", SkipDump: true}},
+			}},
+		}},
+	})
+	_, text = readAll(t, database, `[{"name": "ddl_guard"}, {"name": "topology"}, {"name": "layer"}]`)
+	for _, name := range []string{".ddl_guard", ".topology", "topology.layer"} {
+		require.Equal(t, 1, strings.Count(text[name], mark), "%s:\n%s", name, text[name])
+	}
 }
