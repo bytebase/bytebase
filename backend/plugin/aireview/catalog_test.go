@@ -4,6 +4,7 @@ import (
 	"context"
 	jsonv2 "encoding/json/v2"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -344,7 +345,7 @@ func TestCatalogSearchPages(t *testing.T) {
 			Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "bigint"}},
 		})
 	}
-	tools := NewCatalogTools(storepb.Engine_POSTGRES, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{schema}})
+	tools := unbounded(NewCatalogTools(storepb.Engine_POSTGRES, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{schema}}))
 
 	var names []string
 	from, pages := 0, 0
@@ -455,11 +456,11 @@ func TestCatalogReadPagesOneDefinition(t *testing.T) {
 	}
 	lines = append(lines, "END $$")
 	definition := strings.Join(lines, "\n")
-	tools := NewCatalogTools(storepb.Engine_SNOWFLAKE, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+	tools := unbounded(NewCatalogTools(storepb.Engine_SNOWFLAKE, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
 		Name:      "PUBLIC",
 		Functions: []*metadatapb.FunctionMetadata{{Name: "settle", Definition: definition}},
 		Views:     []*metadatapb.ViewMetadata{{Name: "settled", Definition: "SELECT 1"}},
-	}}})
+	}}}))
 
 	first := read(t, tools, `{"objects": [{"name": "settle"}, {"name": "settled"}]}`)
 	require.Len(t, first.Objects, 1, "the large definition takes the whole first result")
@@ -687,10 +688,10 @@ func TestCatalogReadPagesALineOverTheLimit(t *testing.T) {
 
 	// A character of three bytes puts the limit inside a character.
 	definition := "SELECT '" + strings.Repeat("数", 100000) + "'"
-	tools := NewCatalogTools(storepb.Engine_SNOWFLAKE, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+	tools := unbounded(NewCatalogTools(storepb.Engine_SNOWFLAKE, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
 		Name:      "PUBLIC",
 		Functions: []*metadatapb.FunctionMetadata{{Name: "minified", Definition: definition}},
-	}}})
+	}}}))
 
 	order, text := readAll(t, tools, `[{"name": "minified"}]`)
 	require.Equal(t, []string{"PUBLIC.minified"}, order)
@@ -746,7 +747,7 @@ func TestCatalogReadOfANameInManySchemas(t *testing.T) {
 			Tables: []*metadatapb.TableMetadata{{Name: "orders", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "bigint"}}}},
 		})
 	}
-	tools := NewCatalogTools(storepb.Engine_SNOWFLAKE, database)
+	tools := unbounded(NewCatalogTools(storepb.Engine_SNOWFLAKE, database))
 
 	order, text := readAll(t, tools, `[{"name": "orders"}]`)
 	require.Len(t, order, schemaCount)
@@ -1540,4 +1541,82 @@ func TestCatalogListsTheColumnsOfAViewWithAHiddenDefinition(t *testing.T) {
 		_, text := readAll(t, tools, `[{"name": "order_totals"}]`)
 		require.Equal(t, 1, strings.Count(text["app.order_totals"], "COLUMNS:\n  order_id int\n  total decimal(10,2)"), "%s:\n%s", engine, text["app.order_totals"])
 	}
+}
+
+// unbounded lifts the tool output budget of a review, for a test of paging
+// that reads more than one review may.
+func unbounded(tools Tools) Tools {
+	catalog, ok := tools.(*catalogTools)
+	if !ok {
+		panic("not the catalog tools")
+	}
+	catalog.budget = math.MaxInt
+	return catalog
+}
+
+func TestCatalogBoundsTheOutputOfAWholeReview(t *testing.T) {
+	t.Parallel()
+
+	// Definitions with nothing to escape, so the output measures exactly.
+	large := strings.Repeat("x", maxToolResultBytes)
+	var functions []*metadatapb.FunctionMetadata
+	for i := range 8 {
+		functions = append(functions, &metadatapb.FunctionMetadata{Name: fmt.Sprintf("f%d", i), Definition: large})
+	}
+	tools := NewCatalogTools(storepb.Engine_SNOWFLAKE, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{Name: "PUBLIC", Functions: functions}}})
+
+	total, notes := 0, 0
+	for i := range 8 {
+		output, err := tools.Call(context.Background(), toolRead, fmt.Sprintf(`{"objects": [{"name": "f%d"}]}`, i))
+		require.NoError(t, err)
+		total += len(output)
+		if output == "budget spent" || strings.HasPrefix(output, "the catalog budget of this review is spent") {
+			notes += len(output)
+		}
+	}
+	require.Positive(t, notes, "the budget runs out before the eighth read")
+	// Each call past the budget gets one short line, which is not catalog text.
+	require.LessOrEqual(t, total-notes, maxReviewToolBytes, "the catalog text stays within the budget")
+}
+
+func TestCatalogSizesTheBudgetToThePrompt(t *testing.T) {
+	t.Parallel()
+
+	budget := func(option CatalogOption) int {
+		tools, ok := NewCatalogTools(storepb.Engine_POSTGRES, &metadatapb.DatabaseSchemaMetadata{}, option).(*catalogTools)
+		require.True(t, ok)
+		return tools.budget
+	}
+	require.Equal(t, maxReviewToolBytes, budget(withPromptBytes(1<<10)), "a small prompt leaves the most")
+	require.Equal(t, reviewTextBytes-(300<<10), budget(withPromptBytes(300<<10)))
+	require.Equal(t, -1, budget(withPromptBytes(400<<10)), "a prompt that takes the whole share leaves no catalog text")
+	require.Equal(t, -1, budget(withPromptBytes(reviewTextBytes)), "a budget of exactly zero is none, not the default")
+
+	// The statement counts as the prompt writes it, every line with its number.
+	shortLines := strings.Repeat("x\n", 100<<10)
+	numbered, _ := numberLines(shortLines)
+	require.Greater(t, len(numbered), 3*len(shortLines))
+	require.Equal(t, budget(withPromptBytes(len(numbered)+len("policy"))), budget(WithPromptOf(&Request{Statement: shortLines, WorkspacePolicy: "policy"})))
+}
+
+func TestCatalogFitsAnEscapedDefinitionInItsLimit(t *testing.T) {
+	t.Parallel()
+
+	// Every quote and backslash doubles when encoded.
+	escaped := strings.Repeat(`"\`, maxToolResultBytes)
+	tools := NewCatalogTools(storepb.Engine_SNOWFLAKE, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "PUBLIC", Functions: []*metadatapb.FunctionMetadata{{Name: "f", Definition: escaped}},
+	}}})
+	output, err := tools.Call(context.Background(), toolRead, `{"objects": [{"name": "f"}]}`)
+	require.NoError(t, err)
+	require.LessOrEqual(t, len(output), maxToolResultBytes+resultEnvelopeBytes)
+	require.Contains(t, output, "next_from")
+
+	spent := NewCatalogTools(storepb.Engine_SNOWFLAKE, &metadatapb.DatabaseSchemaMetadata{}, withPromptBytes(reviewTextBytes))
+	first, err := spent.Call(context.Background(), toolRead, `{"objects": [{"name": "f"}]}`)
+	require.NoError(t, err)
+	require.Contains(t, first, "list in notes")
+	later, err := spent.Call(context.Background(), toolSearch, `{}`)
+	require.NoError(t, err)
+	require.Less(t, len(later), len(`{"name": "read", "arguments": "{}"}`), "a later note is shorter than any call that asks for it")
 }

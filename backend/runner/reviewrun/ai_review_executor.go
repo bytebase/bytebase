@@ -78,16 +78,16 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 		// when the review ends, so the run itself holds at most
 		// aiReviewConcurrency schemas however many databases it reviews. The
 		// store's schema cache keeps its own bounded copies.
-		target, tools, err := e.resolveAIReviewTarget(ctx, unit.Check)
+		request := &aireview.Request{
+			WorkspacePolicy: policy.Workspace,
+			ProjectPolicy:   policy.Project,
+			Statement:       unit.Statement,
+		}
+		tools, err := e.resolveAIReviewTarget(ctx, unit.Check, request)
 		if err != nil {
 			return nil, err
 		}
-		result, err := reviewer.Review(ctx, &aireview.Request{
-			WorkspacePolicy: policy.Workspace,
-			ProjectPolicy:   policy.Project,
-			Target:          target,
-			Statement:       unit.Statement,
-		}, tools)
+		result, err := reviewer.Review(ctx, request, tools)
 		if err != nil {
 			return nil, err
 		}
@@ -140,13 +140,14 @@ func (e *AIReviewExecutor) sheetStatement(ctx context.Context, sheets map[string
 	return sheet.Statement, nil
 }
 
-// resolveAIReviewTarget gathers what one review needs of a database: the facts
-// the prompt states and the tools over its synced schema. A database whose
+// resolveAIReviewTarget gathers what one review needs of a database: it sets
+// the facts the prompt states as the request's target and returns the tools
+// over the synced schema, sized to the request's prompt. A database whose
 // schema is not synced cannot be reviewed.
-func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarget *plancheck.CheckTarget) (aireview.Target, aireview.Tools, error) {
+func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarget *plancheck.CheckTarget, request *aireview.Request) (aireview.Tools, error) {
 	instance, database, err := plancheck.ResolveDatabaseTarget(ctx, e.store, checkTarget.Target)
 	if err != nil {
-		return aireview.Target{}, nil, err
+		return nil, err
 	}
 	dbSchema, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		Workspace:    instance.Workspace,
@@ -154,11 +155,12 @@ func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarge
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
-		return aireview.Target{}, nil, errors.Wrapf(err, "failed to get database schema")
+		return nil, errors.Wrapf(err, "failed to get database schema")
 	}
 	if dbSchema == nil || dbSchema.GetProto() == nil {
-		return aireview.Target{}, nil, errors.New("metadata not synced")
+		return nil, errors.New("metadata not synced")
 	}
 	schema := dbSchema.GetProto()
-	return aiReviewTarget(instance, database, schema), aireview.NewCatalogTools(instance.Metadata.GetEngine(), schema), nil
+	request.Target = aiReviewTarget(instance, database, schema)
+	return aireview.NewCatalogTools(instance.Metadata.GetEngine(), schema, aireview.WithPromptOf(request)), nil
 }

@@ -26,9 +26,26 @@ const (
 	// object per call would cost one model call per object.
 	maxReadObjects = 20
 	// maxToolResultBytes is where a result is cut and paged, so that one call
-	// cannot fill the model's context. A definition cut in the middle is
-	// measured before JSON escaping, so that result can run somewhat over it.
+	// cannot fill the model's context. A cut definition is measured as sent,
+	// its escaping included.
 	maxToolResultBytes = 32 << 10
+	// reviewTextBytes is what the prompt's statement and policies and the tool
+	// output of a review share. Every result stays in the conversation the
+	// model is sent, so results that each fit could still overflow its context
+	// window together. At about four bytes a token it is 96K tokens, which
+	// leaves a 128K-token window room for the base prompt, the model's own
+	// turns, and its answer.
+	reviewTextBytes = 384 << 10
+	// The tool output of a review is what the prompt leaves of
+	// reviewTextBytes, at most maxReviewToolBytes. A prompt that takes the
+	// whole share leaves none.
+	maxReviewToolBytes = 128 << 10
+	// minToolResultBytes is the least a call is given; a smaller remainder is
+	// not worth a call.
+	minToolResultBytes = 1 << 10
+	// resultEnvelopeBytes is room for the JSON around a result's text, which
+	// a cut measures without, so the last result stays within the budget.
+	resultEnvelopeBytes = 1 << 10
 )
 
 const (
@@ -65,12 +82,48 @@ type catalogTools struct {
 	// asks for again.
 	searched *searchArguments
 	matches  []searchMatch
+	// budget is the catalog text a review may be given, maxReviewToolBytes
+	// when zero, and spent is what it has been given so far. Every result is
+	// charged in full as sent, so the review stays near its budget: the last
+	// result can pass it by its envelope and the names the call echoes back.
+	// Once the budget is spent, the first further call gets a note on what to
+	// do and every later one a line shorter than any call that can ask for
+	// it, so the notes never grow the conversation by more than the model's
+	// own calls do.
+	budget    int
+	spent     int
+	exhausted bool
 }
 
 // NewCatalogTools returns the search and read tools over a database's synced
 // schema.
-func NewCatalogTools(engine storepb.Engine, schema *metadatapb.DatabaseSchemaMetadata) Tools {
-	return &catalogTools{engine: engine, schema: schema}
+func NewCatalogTools(engine storepb.Engine, schema *metadatapb.DatabaseSchemaMetadata, options ...CatalogOption) Tools {
+	tools := &catalogTools{engine: engine, schema: schema}
+	for _, option := range options {
+		option(tools)
+	}
+	return tools
+}
+
+// CatalogOption configures the tools NewCatalogTools returns.
+type CatalogOption func(*catalogTools)
+
+// WithPromptOf sizes the review's tool output to what the request's
+// statements, numbered as the prompt writes them, and policies leave of
+// reviewTextBytes.
+func WithPromptOf(request *Request) CatalogOption {
+	numbered, _ := numberLines(request.Statement)
+	return withPromptBytes(len(numbered) + len(request.WorkspacePolicy) + len(request.ProjectPolicy))
+}
+
+func withPromptBytes(promptBytes int) CatalogOption {
+	return func(c *catalogTools) {
+		// A budget of zero would read as the default, so none is -1.
+		c.budget = min(max(reviewTextBytes-promptBytes, -1), maxReviewToolBytes)
+		if c.budget == 0 {
+			c.budget = -1
+		}
+	}
 }
 
 // catalogObject is anything in the database that has a definition of its own.
@@ -182,17 +235,33 @@ func (c *catalogTools) Call(ctx context.Context, name string, arguments string) 
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
+	budget := c.budget
+	if budget == 0 {
+		budget = maxReviewToolBytes
+	}
+	limit := min(maxToolResultBytes, budget-c.spent-resultEnvelopeBytes)
+	if limit < minToolResultBytes {
+		if !c.exhausted {
+			c.exhausted = true
+			return "the catalog budget of this review is spent; judge from what you have read and list in notes what you could not get", nil
+		}
+		return "budget spent", nil
+	}
+	var output string
+	var err error
 	switch name {
 	case toolSearch:
-		return c.search(ctx, arguments)
+		output, err = c.search(ctx, arguments, limit)
 	case toolRead:
-		return c.read(ctx, arguments)
+		output, err = c.read(ctx, arguments, limit)
 	default:
 		return "", errors.Errorf("tool %q does not exist", name)
 	}
+	c.spent += len(output)
+	return output, err
 }
 
-func (c *catalogTools) search(ctx context.Context, arguments string) (string, error) {
+func (c *catalogTools) search(ctx context.Context, arguments string, limit int) (string, error) {
 	var args searchArguments
 	if err := jsonv2.Unmarshal([]byte(arguments), &args); err != nil {
 		return fmt.Sprintf(`invalid arguments: %v; pass {"text": "orders", "schema": "public", "from": 0}, where schema and from are optional`, err), nil
@@ -212,7 +281,7 @@ func (c *catalogTools) search(ctx context.Context, arguments string) (string, er
 		if err != nil {
 			return "", err
 		}
-		if size+len(row) > maxToolResultBytes && len(result.Matches) > 0 {
+		if size+len(row) > limit && len(result.Matches) > 0 {
 			next := i
 			result.NextFrom = &next
 			result.Note = fmt.Sprintf("cut at match %d of %d; call search again with the same arguments and from set to %d", i, len(matches), i)
@@ -261,7 +330,7 @@ func (c *catalogTools) match(ctx context.Context, text string, schemaName string
 	return matches, nil
 }
 
-func (c *catalogTools) read(ctx context.Context, arguments string) (string, error) {
+func (c *catalogTools) read(ctx context.Context, arguments string, limit int) (string, error) {
 	var args readArguments
 	if err := jsonv2.Unmarshal([]byte(arguments), &args); err != nil {
 		return fmt.Sprintf(`invalid arguments: %v; pass {"objects": [{"schema": "public", "name": "orders"}], "from": 0}, where schema and from are optional`, err), nil
@@ -323,13 +392,13 @@ func (c *catalogTools) read(ctx context.Context, arguments string) (string, erro
 		}
 		// The encoding is never shorter than the text, so a text over the
 		// limit is not encoded to find that out.
-		if len(entry.Definition) <= maxToolResultBytes {
+		if len(entry.Definition) <= limit {
 			encoded, err := encode(entry)
 			if err != nil {
 				return "", err
 			}
 			size += len(encoded)
-			if size <= maxToolResultBytes {
+			if size <= limit {
 				result.Objects = append(result.Objects, entry)
 				continue
 			}
@@ -340,9 +409,26 @@ func (c *catalogTools) read(ctx context.Context, arguments string) (string, erro
 			result.NextFrom = &next
 			break
 		}
-		stop := cutText(definition, begin, maxToolResultBytes)
-		entry.Definition = definition[begin:stop]
-		entry.Part = part(begin, stop, len(definition))
+		// The limit counts the result as sent, and escaping makes the text
+		// longer, so a cut that does not fit is cut shorter.
+		stop := cutText(definition, begin, limit)
+		for {
+			entry.Definition = definition[begin:stop]
+			entry.Part = part(begin, stop, len(definition))
+			encoded, err := encode(entry)
+			if err != nil {
+				return "", err
+			}
+			over := len(encoded) - limit
+			if over <= 0 {
+				break
+			}
+			shorter := cutText(definition, begin, max(stop-begin-over, 1))
+			if shorter >= stop {
+				break
+			}
+			stop = shorter
+		}
 		result.Objects = append(result.Objects, entry)
 		if stop < len(definition) {
 			next := start + stop
