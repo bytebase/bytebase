@@ -322,7 +322,7 @@ func TestCatalogReadWithoutARenderer(t *testing.T) {
 		"COMMENT ON COLUMN legacy_status: replaced by status",
 	}, "\n"), result.Objects[0].Definition)
 	require.Equal(t, "VIEW PUBLIC.revenue_by_status AS\nSELECT legacy_status, count(*) AS order_count FROM orders GROUP BY legacy_status", result.Objects[1].Definition)
-	require.Equal(t, "SEQUENCE PUBLIC.orders_id_seq AS bigint START 1 INCREMENT 1 OWNED BY orders.id", result.Objects[2].Definition)
+	require.Equal(t, "SEQUENCE PUBLIC.orders_id_seq AS bigint START 1 INCREMENT 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 OWNED BY orders.id", result.Objects[2].Definition)
 	require.Equal(t, "ENUM TYPE PUBLIC.payment_state: pending, paid", result.Objects[3].Definition)
 }
 
@@ -956,5 +956,49 @@ func TestCatalogOfAnEmptyDatabase(t *testing.T) {
 		result := read(t, tools, `{"objects": [{"name": "orders"}]}`)
 		require.Empty(t, result.Objects)
 		require.Equal(t, []objectName{{Name: "orders"}}, result.NotFound)
+	}
+}
+
+func TestCatalogReadWritesOnlyTheSequenceAttributesSynced(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		engine   storepb.Engine
+		schema   string
+		sequence *metadatapb.SequenceMetadata
+		want     string
+	}{
+		{
+			name:     "a sync that holds no attribute",
+			engine:   storepb.Engine_ORACLE,
+			schema:   "SHOP",
+			sequence: &metadatapb.SequenceMetadata{Name: "ORDER_SEQ"},
+			want:     "SEQUENCE SHOP.ORDER_SEQ\n-- not synced: start, increment",
+		},
+		{
+			name:     "a sync that holds some",
+			engine:   storepb.Engine_ORACLE,
+			schema:   "SHOP",
+			sequence: &metadatapb.SequenceMetadata{Name: "INVOICE_SEQ", Increment: "10"},
+			want:     "SEQUENCE SHOP.INVOICE_SEQ INCREMENT 10\n-- not synced: start",
+		},
+		{
+			name:     "a sync that holds bounds and cycling",
+			engine:   storepb.Engine_TIDB,
+			sequence: &metadatapb.SequenceMetadata{Name: "ticket_seq", Start: "1", Increment: "1", MinValue: "1", MaxValue: "1000", CacheSize: "20", Cycle: true},
+			want:     "SEQUENCE ticket_seq START 1 INCREMENT 1 MINVALUE 1 MAXVALUE 1000 CACHE 20 CYCLE",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tools := NewCatalogTools(tc.engine, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+				Name:      tc.schema,
+				Sequences: []*metadatapb.SequenceMetadata{tc.sequence},
+			}}})
+			_, text := readAll(t, tools, fmt.Sprintf(`[{"name": %q}]`, tc.sequence.GetName()))
+			require.Equal(t, map[string]string{tc.schema + "." + tc.sequence.GetName(): tc.want}, text)
+		})
 	}
 }

@@ -537,12 +537,40 @@ func plainIndex(index *metadatapb.IndexMetadata) string {
 	return fmt.Sprintf("%s %s (%s)", kind, index.GetName(), strings.Join(index.GetExpressions(), ", "))
 }
 
+// plainSequence writes the attributes the sync holds and only those, so a
+// fact the sync never read cannot pass for part of the definition. Every
+// engine's sequence has a start and an increment, so a missing one is named;
+// the other attributes vary by engine and are left out when absent.
 func plainSequence(schemaName string, sequence *metadatapb.SequenceMetadata) string {
-	definition := fmt.Sprintf("SEQUENCE %s AS %s START %s INCREMENT %s", qualify(schemaName, sequence.GetName()), sequence.GetDataType(), sequence.GetStart(), sequence.GetIncrement())
-	if table := sequence.GetOwnerTable(); table != "" {
-		definition += fmt.Sprintf(" OWNED BY %s.%s", table, sequence.GetOwnerColumn())
+	var b strings.Builder
+	_, _ = fmt.Fprintf(&b, "SEQUENCE %s", qualify(schemaName, sequence.GetName()))
+	var missing []string
+	for _, attribute := range []struct{ keyword, value, required string }{
+		{keyword: "AS", value: sequence.GetDataType()},
+		{keyword: "START", value: sequence.GetStart(), required: "start"},
+		{keyword: "INCREMENT", value: sequence.GetIncrement(), required: "increment"},
+		{keyword: "MINVALUE", value: sequence.GetMinValue()},
+		{keyword: "MAXVALUE", value: sequence.GetMaxValue()},
+		{keyword: "CACHE", value: sequence.GetCacheSize()},
+	} {
+		switch {
+		case attribute.value != "":
+			_, _ = fmt.Fprintf(&b, " %s %s", attribute.keyword, attribute.value)
+		case attribute.required != "":
+			missing = append(missing, attribute.required)
+		default:
+		}
 	}
-	return definition
+	if sequence.GetCycle() {
+		_, _ = b.WriteString(" CYCLE")
+	}
+	if table := sequence.GetOwnerTable(); table != "" {
+		_, _ = fmt.Fprintf(&b, " OWNED BY %s.%s", table, sequence.GetOwnerColumn())
+	}
+	if len(missing) > 0 {
+		_, _ = fmt.Fprintf(&b, "\n-- not synced: %s", strings.Join(missing, ", "))
+	}
+	return b.String()
 }
 
 func qualify(schemaName string, name string) string {

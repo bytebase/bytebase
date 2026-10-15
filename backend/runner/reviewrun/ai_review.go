@@ -25,14 +25,10 @@ const (
 	aiReviewConcurrency = 8
 )
 
-// aiReviewUnit is one AI review: a spec's sheet against one database, with
-// the facts the prompt states about that database and the synced schema the
-// tools read.
+// aiReviewUnit is one AI review: a spec's sheet against one database. It
+// holds no schema, which the review loads when it starts.
 type aiReviewUnit struct {
 	Check     *plancheck.CheckTarget
-	Target    aireview.Target
-	Engine    storepb.Engine
-	Schema    *metadatapb.DatabaseSchemaMetadata
 	Statement string
 }
 
