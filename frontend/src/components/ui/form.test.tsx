@@ -19,6 +19,7 @@ import {
   formErrorStyle,
   formFieldGroupStyle,
   formFieldTitleStyle,
+  formLabelStyle,
   formSectionStyle,
 } from "./styles.stylex";
 
@@ -225,6 +226,44 @@ describe("Form section layouts", () => {
 });
 
 describe("responsive form fields", () => {
+  test("keeps dependent fields compact and vertical inside a horizontal form", () => {
+    const { container, unmount } = renderIntoContainer(
+      <ResponsiveFormLayout layout="horizontal">
+        <FormField title="Authentication">
+          <ResponsiveFormLayout layout="inherit" density="compact">
+            <FormField
+              title="Vault URL"
+              description="Use the public endpoint."
+            >
+              <input aria-label="Vault URL" />
+            </FormField>
+          </ResponsiveFormLayout>
+        </FormField>
+      </ResponsiveFormLayout>
+    );
+
+    const dependentField = container.querySelectorAll(
+      '[data-slot="form-field"]'
+    )[1];
+    const title = dependentField?.querySelector(
+      '[data-slot="form-field-title"]'
+    );
+    const input = dependentField?.querySelector("input");
+    const description = dependentField?.querySelector(
+      '[data-slot="form-field-description"]'
+    );
+
+    expect(
+      dependentField?.querySelector('[data-slot="form-field-control"]')
+    ).toBeNull();
+    expect(title?.className).toContain(
+      stylex.props(formLabelStyle()).className ?? ""
+    );
+    expect(input?.nextElementSibling).toBe(description);
+
+    unmount();
+  });
+
   test("preserves vertical consumers and associates labels after horizontal reflow", () => {
     const container = document.createElement("div");
     document.body.append(container);

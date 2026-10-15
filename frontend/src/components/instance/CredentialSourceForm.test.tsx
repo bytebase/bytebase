@@ -10,6 +10,7 @@ import {
   DataSource_GCPCredentialSchema,
   DataSourceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
+import { FormField, ResponsiveFormLayout } from "../ui/form";
 import {
   CredentialSourceForm,
   offeredCloudSQLIPTypes,
@@ -104,6 +105,39 @@ describe("CredentialSourceForm", () => {
       unmount();
     }
   );
+
+  test("keeps default credential help below the control in a compact dependent group", () => {
+    const { container, unmount } = render(
+      <ResponsiveFormLayout layout="horizontal">
+        <FormField title="Authentication">
+          <ResponsiveFormLayout layout="inherit" density="compact">
+            <CredentialSourceForm
+              dataSource={makeDataSource(
+                DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+              )}
+              engine={Engine.POSTGRES}
+              allowEdit={true}
+              onDataSourceChange={vi.fn()}
+            />
+          </ResponsiveFormLayout>
+        </FormField>
+      </ResponsiveFormLayout>
+    );
+
+    const credentialSource = container.querySelectorAll(
+      '[data-slot="form-field"]'
+    )[1];
+    const description = credentialSource?.querySelector(
+      '[data-slot="form-field-description"]'
+    );
+
+    expect(
+      credentialSource?.querySelector('[data-slot="form-field-control"]')
+    ).toBeNull();
+    expect(credentialSource?.lastElementChild).toBe(description);
+
+    unmount();
+  });
 
   test("shows the Cloud SQL IP selector only for Cloud SQL MySQL/Postgres IAM", () => {
     const { GOOGLE_CLOUD_SQL_IAM, PASSWORD } = DataSource_AuthenticationType;

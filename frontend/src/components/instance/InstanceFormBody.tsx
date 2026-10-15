@@ -1703,7 +1703,11 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                       ))}
                     </RadioGroup>
                     {!connectionDataSource.srv && (
-                      <ResponsiveFormLayout className="mt-2">
+                      <ResponsiveFormLayout
+                        layout="inherit"
+                        density="compact"
+                        className="mt-2"
+                      >
                         <fieldset
                           aria-label={t("data-source.connection-string-schema")}
                           className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
@@ -1803,7 +1807,11 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                       </SelectContent>
                     </Select>
                     {showAdditionalAddresses && (
-                      <ResponsiveFormLayout className="mt-2">
+                      <ResponsiveFormLayout
+                        layout="inherit"
+                        density="compact"
+                        className="mt-2"
+                      >
                         <fieldset
                           aria-label={currentRedisConnectionType}
                           className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
@@ -1823,7 +1831,11 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     )}
                     {editingDataSource?.redisType ===
                       DataSource_RedisType.SENTINEL && (
-                      <ResponsiveFormLayout className="mt-2">
+                      <ResponsiveFormLayout
+                        layout="inherit"
+                        density="compact"
+                        className="mt-2"
+                      >
                         <RedisSentinelFields
                           dataSource={editingDataSource}
                           isCreating={isCreating}

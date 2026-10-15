@@ -1,13 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { Info, Plus } from "lucide-react";
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Button } from "@/components/ui/button";
@@ -114,10 +107,6 @@ const mergeTlsUpdateState = (
     clientCert: current.clientCert || next.clientCert,
   };
 };
-
-function SecretManagerFieldTitle({ children }: { children: ReactNode }) {
-  return <span className="textlabel">{children}</span>;
-}
 
 export function RedisSentinelFields({
   dataSource,
@@ -813,7 +802,10 @@ export function DataSourceForm({
                     {/* Kerberos config */}
                     {dataSource.saslConfig?.mechanism?.case === "krbConfig" && (
                       <FormField title="Kerberos">
-                        <ResponsiveFormLayout>
+                        <ResponsiveFormLayout
+                          layout="inherit"
+                          density="compact"
+                        >
                           <fieldset
                             aria-label="Kerberos"
                             className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
@@ -1112,7 +1104,10 @@ export function DataSourceForm({
                           )?.label
                         }
                       >
-                        <ResponsiveFormLayout layout="vertical">
+                        <ResponsiveFormLayout
+                          layout="inherit"
+                          density="compact"
+                        >
                           <fieldset
                             aria-label={t(
                               "instance.iam-extension.credential-source"
@@ -1199,7 +1194,8 @@ export function DataSourceForm({
                                   }
                                 >
                                   <ResponsiveFormLayout
-                                    layout="vertical"
+                                    layout="inherit"
+                                    density="compact"
                                     className="mt-2"
                                   >
                                     <fieldset
@@ -1215,14 +1211,14 @@ export function DataSourceForm({
                                           <FormField
                                             validationField="externalSecret.url"
                                             title={
-                                              <SecretManagerFieldTitle>
+                                              <>
                                                 {t(
                                                   "instance.external-secret-vault.vault-url"
                                                 )}{" "}
                                                 <span className="text-error">
                                                   *
                                                 </span>
-                                              </SecretManagerFieldTitle>
+                                              </>
                                             }
                                           >
                                             <Input
@@ -1248,11 +1244,11 @@ export function DataSourceForm({
                                           </FormField>
                                           <FormField
                                             title={
-                                              <SecretManagerFieldTitle>
+                                              <>
                                                 {t(
                                                   "instance.external-secret-vault.vault-auth-type.self"
                                                 )}
-                                              </SecretManagerFieldTitle>
+                                              </>
                                             }
                                           >
                                             <RadioGroup
@@ -1342,12 +1338,12 @@ export function DataSourceForm({
                                                 <FormField
                                                   validationField="externalSecret.token"
                                                   title={
-                                                    <SecretManagerFieldTitle>
+                                                    <>
                                                       {tokenLabel}{" "}
                                                       <span className="text-error">
                                                         *
                                                       </span>
-                                                    </SecretManagerFieldTitle>
+                                                    </>
                                                   }
                                                 >
                                                   {/* Token source is host-backed for env/file,
@@ -1457,14 +1453,14 @@ export function DataSourceForm({
                                               <FormField
                                                 validationField="externalSecret.roleId"
                                                 title={
-                                                  <SecretManagerFieldTitle>
+                                                  <>
                                                     {t(
                                                       "instance.external-secret-vault.vault-auth-type.approle.role-id"
                                                     )}{" "}
                                                     <span className="text-error">
                                                       *
                                                     </span>
-                                                  </SecretManagerFieldTitle>
+                                                  </>
                                                 }
                                               >
                                                 <Input
@@ -1506,14 +1502,14 @@ export function DataSourceForm({
                                               <FormField
                                                 validationField="externalSecret.secretId"
                                                 title={
-                                                  <SecretManagerFieldTitle>
+                                                  <>
                                                     {t(
                                                       "instance.external-secret-vault.vault-auth-type.approle.secret-id"
                                                     )}{" "}
                                                     <span className="text-error">
                                                       *
                                                     </span>
-                                                  </SecretManagerFieldTitle>
+                                                  </>
                                                 }
                                               >
                                                 {/* Environment secret id reads from the host,
@@ -1613,15 +1609,15 @@ export function DataSourceForm({
                                           {/* Vault TLS config */}
                                           <FormField
                                             title={
-                                              <SecretManagerFieldTitle>
+                                              <>
                                                 {t(
                                                   "instance.external-secret-vault.vault-tls-config"
                                                 )}
-                                              </SecretManagerFieldTitle>
+                                              </>
                                             }
                                           >
                                             <SslCertificateForm
-                                              layout="vertical"
+                                              layout="inherit"
                                               verifyControlLayout="inline"
                                               verify={
                                                 !dataSource.externalSecret
@@ -1680,14 +1676,14 @@ export function DataSourceForm({
                                           <FormField
                                             validationField="externalSecret.engineName"
                                             title={
-                                              <SecretManagerFieldTitle>
+                                              <>
                                                 {t(
                                                   "instance.external-secret-vault.vault-secret-engine-name"
                                                 )}{" "}
                                                 <span className="text-error">
                                                   *
                                                 </span>
-                                              </SecretManagerFieldTitle>
+                                              </>
                                             }
                                             description={
                                               <>
@@ -1727,14 +1723,14 @@ export function DataSourceForm({
                                         <FormField
                                           validationField="externalSecret.url"
                                           title={
-                                            <SecretManagerFieldTitle>
+                                            <>
                                               {t(
                                                 "instance.external-secret-azure.vault-url"
                                               )}{" "}
                                               <span className="text-error">
                                                 *
                                               </span>
-                                            </SecretManagerFieldTitle>
+                                            </>
                                           }
                                           description={
                                             <>
@@ -1771,12 +1767,12 @@ export function DataSourceForm({
                                       <FormField
                                         validationField="externalSecret.secretName"
                                         title={
-                                          <SecretManagerFieldTitle>
+                                          <>
                                             {secretNameLabel}{" "}
                                             <span className="text-error">
                                               *
                                             </span>
-                                          </SecretManagerFieldTitle>
+                                          </>
                                         }
                                         description={secretNameDescription}
                                       >
@@ -1808,12 +1804,12 @@ export function DataSourceForm({
                                           <FormField
                                             validationField="externalSecret.passwordKeyName"
                                             title={
-                                              <SecretManagerFieldTitle>
+                                              <>
                                                 {secretKeyLabel}{" "}
                                                 <span className="text-error">
                                                   *
                                                 </span>
-                                              </SecretManagerFieldTitle>
+                                              </>
                                             }
                                           >
                                             <Input

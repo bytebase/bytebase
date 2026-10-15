@@ -37,7 +37,7 @@ import {
 } from "./ValidationField";
 
 interface SslCertificateFormProps {
-  layout?: "responsive" | "vertical" | "horizontal";
+  layout?: "responsive" | "inherit" | "vertical" | "horizontal";
   useSsl?: boolean;
   onUseSslChange?: (val: boolean) => void;
   caSource?: LocalTlsCaSource;

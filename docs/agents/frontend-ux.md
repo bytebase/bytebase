@@ -239,11 +239,16 @@ third column for section titles.
 - Stack labels based on available form width, independently of the navigation
   sidebar breakpoint. Compound controls MAY wrap within the control column
   before the field itself stacks.
-- Keep concise descriptions and validation beside the control they explain.
-  Long secondary guidance that would make a dense form harder to scan MAY use
-  a focusable info tooltip beside the field title; validation and essential
-  status remain visible beside the control. Associate labels and choice controls
-  with accessible names in both layouts.
+- Decide responsive breakpoints once at the form root. A dependent
+  configuration group inside a field's control area MUST inherit the parent
+  field's resolved layout instead of measuring its own container or
+  introducing another label column. Render it as a vertical group within its
+  fieldset boundary, with compact label typography.
+- Keep concise operational descriptions directly under the control they
+  explain. Longer secondary guidance that would make a dense form harder to
+  scan MAY use a focusable info tooltip beside the field title; validation and
+  essential status remain visible beside the control. Associate labels and
+  choice controls with accessible names in both layouts.
 - Put choices that determine subsequent fields first. Use one `Select` dropdown
   combining authentication methods and password sources. Do not add a separate
   password-source selector. Use a `Switch` for binary choices such as syncing
@@ -252,7 +257,8 @@ third column for section titles.
   External sources reveal their configuration there. Preserve separate drafts
   while switching sources, and submit only the active source. Reveal dependent
   TLS, SSH, IAM, and external-source configuration below its controlling
-  choice, using nested flow rather than a framed surface inside another frame.
+  choice, using nested flow and at most one fieldset boundary rather than a
+  framed surface inside another frame.
 - Keep security modes visible; reveal their dependent fields when selected.
   Switches, select triggers, and radio groups align to the start of their
   control column. Keep ordinary connection rows on the 16px rhythm using
