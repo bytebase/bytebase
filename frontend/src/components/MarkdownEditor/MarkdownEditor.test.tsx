@@ -144,11 +144,58 @@ describe("MarkdownEditor", () => {
       ["inline", "https://attacker.example/inline.png?q=secret", "_blank"],
       ["reference", "https://attacker.example/reference.png", "_blank"],
     ]);
+    expect(container.textContent).not.toContain("!inline");
     expect(container.textContent).toContain(
       '<img src="https://attacker.example/raw.png">'
     );
     expect(container.querySelector("td")?.textContent).toBe("b");
     expect(container.querySelector("pre code")?.textContent).toBe("SELECT 1;\n");
+    unmount();
+  });
+
+  test("labels an untrusted image link with its alt text, entities and code spans included, or else its source", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MarkdownEditor
+        content={[
+          "![R&amp;D \\*draft\\*](https://attacker.example/a.png)",
+          "![`build` log](https://attacker.example/b.png)",
+          "![](https://attacker.example/c.png)",
+          "[![](https://attacker.example/d.png)](https://example.com/ci)",
+        ].join("\n\n")}
+        mode="preview"
+        untrusted
+      />
+    );
+    render();
+
+    const links = Array.from(container.querySelectorAll("a")).map((link) => [
+      link.textContent,
+      link.getAttribute("href"),
+    ]);
+    expect(links).toEqual([
+      ["R&D *draft*", "https://attacker.example/a.png"],
+      ["build log", "https://attacker.example/b.png"],
+      ["https://attacker.example/c.png", "https://attacker.example/c.png"],
+      ["https://attacker.example/d.png", "https://example.com/ci"],
+    ]);
+    unmount();
+  });
+
+  test("keeps only the alt text of an untrusted image inside a link", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MarkdownEditor
+        content="[![build badge](https://attacker.example/badge.png)](https://example.com/ci)"
+        mode="preview"
+        untrusted
+      />
+    );
+    render();
+
+    const links = Array.from(container.querySelectorAll("a")).map((link) => [
+      link.textContent,
+      link.getAttribute("href"),
+    ]);
+    expect(links).toEqual([["build badge", "https://example.com/ci"]]);
     unmount();
   });
 

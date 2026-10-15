@@ -1,6 +1,7 @@
 import DOMPurify from "dompurify";
 import { Bold, Code2, Hash, Heading1, Link2 } from "lucide-react";
 import MarkdownIt from "markdown-it";
+import type Token from "markdown-it/lib/token.mjs";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -16,12 +17,52 @@ const markdown = new MarkdownIt({
 
 // Displaying untrusted text must not request a remote URL: an image URL
 // derived from SQL or schema text would carry that text to another server
-// when someone merely opens the page. So it renders no raw HTML and no
-// images; `![alt](url)` falls back to a link the reader may choose to follow.
+// when someone merely opens the page. So it renders no raw HTML, and an image
+// becomes a link to its source, labeled with its alt text or else the source,
+// that the reader may choose to follow. Without a source, or inside a link
+// where anchors cannot nest, the label stays plain text.
 const untrustedMarkdown = new MarkdownIt({
   html: false,
   linkify: true,
-}).disable("image");
+});
+untrustedMarkdown.renderer.rules.image = (tokens, idx) => {
+  const { escapeHtml } = untrustedMarkdown.utils;
+  const src = tokens[idx].attrGet("src") ?? "";
+  const alt = labelText(tokens[idx].children ?? []);
+  const linkDepth = tokens
+    .slice(0, idx)
+    .reduce(
+      (depth, token) =>
+        depth +
+        (token.type === "link_open" ? 1 : token.type === "link_close" ? -1 : 0),
+      0
+    );
+  const label = escapeHtml(alt || src);
+  if (!src || linkDepth > 0) return label;
+  return `<a href="${escapeHtml(src)}">${label}</a>`;
+};
+
+// An image label as plain text. Unlike renderInlineAsText, it keeps code
+// spans and the decoded entities and escapes that a label's tokens carry.
+function labelText(tokens: Token[]): string {
+  return tokens
+    .map((token) => {
+      switch (token.type) {
+        case "text":
+        case "text_special":
+        case "code_inline":
+          return token.content;
+        case "image":
+          return labelText(token.children ?? []);
+        case "softbreak":
+        case "hardbreak":
+          return " ";
+        default:
+          return "";
+      }
+    })
+    .join("");
+}
 
 // Every tag and attribute untrustedMarkdown emits, minus code-language
 // classes and table alignment styles, so the sanitizer holds the same line.
