@@ -422,6 +422,8 @@ type planView struct {
 		CreateDatabaseConfig *struct {
 			Target   string `json:"target"`
 			Database string `json:"database"`
+			Cluster  string `json:"cluster"`
+			Owner    string `json:"owner"`
 		} `json:"createDatabaseConfig"`
 	} `json:"specs"`
 }
@@ -461,10 +463,11 @@ func (s *Server) readConfirmationView(ctx context.Context, decision *issueDecisi
 	view := &confirmationView{Issue: issue, Comment: decision.comment}
 	switch {
 	case issue.AccessGrant != "":
-		view.Grant = &accessGrantView{}
-		if err := s.readResource(ctx, "/bytebase.v1.AccessGrantService/GetAccessGrant", issue.AccessGrant, "get access grants", "bb.accessGrants.get", view.Grant); err != nil {
+		grant, err := s.readAccessGrant(ctx, decision, issue)
+		if err != nil {
 			return nil, err
 		}
+		view.Grant = grant
 	case issue.Plan != "":
 		view.Plan = &planView{}
 		if err := s.readResource(ctx, "/bytebase.v1.PlanService/GetPlan", issue.Plan, "get plans", "bb.plans.get", view.Plan); err != nil {
@@ -473,6 +476,40 @@ func (s *Server) readConfirmationView(ctx context.Context, decision *issueDecisi
 	default:
 	}
 	return view, nil
+}
+
+// readAccessGrant reads the grant behind an access request. A requester may
+// lack bb.accessGrants.get, as project developers do, so the caller's own
+// request is read through SearchMyAccessGrants, as the console's issue page
+// reads it. The grant and its issue share a creator (CreateAccessGrant).
+func (s *Server) readAccessGrant(ctx context.Context, decision *issueDecision, issue issueView) (*accessGrantView, error) {
+	if issue.Creator != common.FormatUserEmail(getUserEmail(ctx)) {
+		grant := &accessGrantView{}
+		if err := s.readResource(ctx, "/bytebase.v1.AccessGrantService/GetAccessGrant", issue.AccessGrant, "get access grants", "bb.accessGrants.get", grant); err != nil {
+			return nil, err
+		}
+		return grant, nil
+	}
+	resp, err := s.apiRequest(ctx, "/bytebase.v1.AccessGrantService/SearchMyAccessGrants", map[string]any{
+		"parent": common.FormatProject(decision.project),
+		"filter": fmt.Sprintf("name == %q", issue.AccessGrant),
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read %s", issue.AccessGrant)
+	}
+	if err := checkAPIResponse(resp, "search your access grants", "bb.accessGrants.get"); err != nil {
+		return nil, err
+	}
+	var mine struct {
+		AccessGrants []accessGrantView `json:"accessGrants"`
+	}
+	if err := json.Unmarshal(resp.Body, &mine); err != nil {
+		return nil, errors.Wrapf(err, "failed to parse %s", issue.AccessGrant)
+	}
+	if len(mine.AccessGrants) != 1 {
+		return nil, errors.Errorf("%s is not among the access grants you requested", issue.AccessGrant)
+	}
+	return &mine.AccessGrants[0], nil
 }
 
 func (v *confirmationView) digest() ([]byte, error) {
@@ -548,7 +585,15 @@ func (s *Server) describePlan(ctx context.Context, plan *planView) ([]string, er
 			}
 			lines = append(lines, fmt.Sprintf("%s on %s: %s", change, quoteAll(config.Targets), what))
 		case spec.CreateDatabaseConfig != nil:
-			lines = append(lines, fmt.Sprintf("%s %q on %q", create, spec.CreateDatabaseConfig.Database, spec.CreateDatabaseConfig.Target))
+			config := spec.CreateDatabaseConfig
+			line := fmt.Sprintf("%s %q on %q", create, config.Database, config.Target)
+			if config.Cluster != "" {
+				line += fmt.Sprintf(", cluster %q", config.Cluster)
+			}
+			if config.Owner != "" {
+				line += fmt.Sprintf(", owner %q", config.Owner)
+			}
+			lines = append(lines, line)
 		default:
 		}
 	}

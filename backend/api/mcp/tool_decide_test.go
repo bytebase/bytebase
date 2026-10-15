@@ -77,6 +77,14 @@ func (m *decisionMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		reply(sheet)
 	case "/bytebase.v1.AccessGrantService/GetAccessGrant":
 		reply(grant)
+	case "/bytebase.v1.AccessGrantService/SearchMyAccessGrants":
+		var search struct{ Parent, Filter string }
+		_ = json.NewDecoder(r.Body).Decode(&search)
+		mine := []map[string]any{}
+		if grant != nil && search.Parent == "projects/hr" && search.Filter == fmt.Sprintf("name == %q", issue["accessGrant"]) {
+			mine = append(mine, grant)
+		}
+		reply(map[string]any{"accessGrants": mine})
 	case v1connect.IssueServiceApproveIssueProcedure, v1connect.IssueServiceRejectIssueProcedure:
 		call := decisionCall{path: r.URL.Path}
 		_ = json.NewDecoder(r.Body).Decode(&call.body)
@@ -691,6 +699,54 @@ func TestDecideIssueDescribesAnAccessRequest(t *testing.T) {
 		`Approval: step 1 of 1, role "roles/projectOwner". Requested by "bob@example.com".`,
 		`Comment: "checked the statement"`,
 	}, "\n"), askedMessage(t, accessRequestMock()))
+}
+
+func TestDecideIssueReadsTheCallersOwnAccessRequestAsTheConsoleDoes(t *testing.T) {
+	mock := accessRequestMock()
+	mock.issue["creator"] = "users/alice@example.com"
+	mock.failing = "/bytebase.v1.AccessGrantService/GetAccessGrant"
+	endpoint, token := newDecideServer(t, mock)
+	user := &asker{answer: confirmAnswer(true)}
+	session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	res, err := callDecideIssue(t, session, "approve")
+	require.NoError(t, err)
+	require.False(t, res.IsError, "a requester without bb.accessGrants.get reads their own grant: %s", resultText(t, res))
+	require.Contains(t, user.lastParams(t).Message, `Access on "instances/prod/databases/hr": run "SELECT salary\nFROM employee"`)
+	require.Len(t, mock.calls(), 1)
+
+	mock.update(func(m *decisionMock) { m.grant = nil })
+	user = &asker{answer: confirmAnswer(true)}
+	session = connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+	res, err = callDecideIssue(t, session, "approve")
+	require.NoError(t, err)
+	require.True(t, res.IsError)
+	require.Contains(t, resultText(t, res), "is not among the access grants you requested")
+	require.Zero(t, user.asked.Load(), "a form missing the grant must not be sent")
+	require.Len(t, mock.calls(), 1)
+}
+
+func TestDecideIssueShowsANewDatabasesClusterAndOwner(t *testing.T) {
+	for name, tc := range map[string]struct {
+		config map[string]any
+		want   string
+	}{
+		"a ClickHouse cluster": {
+			map[string]any{"target": "instances/ch", "database": "events", "cluster": "ch-main"},
+			`Create database "events" on "instances/ch", cluster "ch-main"`,
+		},
+		"a PostgreSQL owner": {
+			map[string]any{"target": "instances/prod", "database": "billing", "owner": "billing_admin"},
+			`Create database "billing" on "instances/prod", owner "billing_admin"`,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := changeIssueMock()
+			mock.plan = map[string]any{"specs": []map[string]any{{"createDatabaseConfig": tc.config}}}
+			require.Equal(t, tc.want, strings.Split(askedMessage(t, mock), "\n")[1],
+				"ON CLUSTER and WITH OWNER change what the statement does")
+		})
+	}
 }
 
 func TestDecideIssueShowsTheAccessGrantsScope(t *testing.T) {
