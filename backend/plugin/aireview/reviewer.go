@@ -34,7 +34,7 @@ var (
 	ErrCallLimit = errors.New("the review reached the model call limit")
 	// ErrDeadline means the review ran longer than its time limit.
 	ErrDeadline = errors.New("the review ran out of time")
-	// ErrInvalidReply means the final reply was still invalid after the model was asked to correct it.
+	// ErrInvalidReply means an invalid final reply, or a tool call the vendor could not parse, came when no correction round or call was left.
 	ErrInvalidReply = errors.New("the model did not return a valid review result")
 	// ErrEmptyReply means the vendor returned neither text nor tool calls.
 	ErrEmptyReply = errors.New("the model returned an empty reply")
@@ -42,6 +42,8 @@ var (
 	ErrTruncatedReply = errors.New("the model's reply was truncated at a token limit")
 	// ErrBlockedReply means the vendor blocked the request or the reply, or the model refused to review.
 	ErrBlockedReply = errors.New("the vendor blocked the review or the model refused it")
+	// ErrUnfinishedReply means the stop reason was OTHER, such as Gemini's OTHER, or a value the loop does not know.
+	ErrUnfinishedReply = errors.New("the vendor ended the turn for a reason the review does not accept")
 )
 
 // Request is one review: one sheet against one target database.
@@ -134,10 +136,12 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 		content := response.GetContent()
 		toolCalls := response.GetToolCalls()
 		// A truncated reply can parse as a whole answer with findings or tool
-		// arguments missing, and a blocked change was never judged. Neither gets
-		// a correction round, which could pass a change the model did not finish
-		// judging.
+		// arguments missing, a blocked change was never judged, and OTHER can be
+		// a block the vendor does not name. None of the three gets a correction
+		// round, which could pass a change the model did not finish judging.
 		switch response.GetStopReason() {
+		case v1pb.AIChatResponse_TURN_COMPLETED, v1pb.AIChatResponse_STOP_REASON_UNSPECIFIED:
+			// A vendor that sends no reason, such as a compatible server without finish_reason, is judged by its reply.
 		case v1pb.AIChatResponse_TOKEN_LIMIT:
 			return nil, ErrTruncatedReply
 		case v1pb.AIChatResponse_BLOCKED:
@@ -154,6 +158,8 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 			messages = append(messages, textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER, malformedToolCallMessage))
 			continue
 		default:
+			// OTHER lands here, and so does any value added later.
+			return nil, ErrUnfinishedReply
 		}
 		// An empty reply that no stop reason explains can be a block the vendor
 		// did not name, and asking again could let a blocked review pass.

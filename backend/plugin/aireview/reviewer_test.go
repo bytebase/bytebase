@@ -211,7 +211,7 @@ func TestReviewExitPaths(t *testing.T) {
 		{
 			name:         "empty reply with another stop reason fails without a correction round",
 			steps:        []modelStep{finalReply("").stoppedFor(stopOther), finalReply(validReply)},
-			wantErr:      ErrEmptyReply,
+			wantErr:      ErrUnfinishedReply,
 			wantRequests: 1,
 		},
 		{
@@ -221,10 +221,28 @@ func TestReviewExitPaths(t *testing.T) {
 			wantCalls:    1,
 		},
 		{
-			name:         "reply with another stop reason is parsed",
-			steps:        []modelStep{finalReply(validReply).stoppedFor(stopOther)},
+			name:         "reply without a stop reason is parsed",
+			steps:        []modelStep{finalReply(validReply).stoppedFor(v1pb.AIChatResponse_STOP_REASON_UNSPECIFIED)},
 			wantFindings: 1,
 			wantCalls:    1,
+		},
+		{
+			name:         "reply with another stop reason fails even when it passes",
+			steps:        []modelStep{finalReply(`{"findings": []}`).stoppedFor(stopOther), finalReply(validReply)},
+			wantErr:      ErrUnfinishedReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "turn with another stop reason runs no tool",
+			steps:        []modelStep{toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "read"}).stoppedFor(stopOther), finalReply(validReply)},
+			wantErr:      ErrUnfinishedReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "reply with a stop reason added later fails",
+			steps:        []modelStep{finalReply(`{"findings": []}`).stoppedFor(v1pb.AIChatResponse_StopReason(99)), finalReply(validReply)},
+			wantErr:      ErrUnfinishedReply,
+			wantRequests: 1,
 		},
 		{
 			name:         "truncated reply fails even when it parses",
@@ -427,6 +445,7 @@ func TestReviewStopReasonFailureOfAnEmptyReplyIsNotErrEmptyReply(t *testing.T) {
 	}{
 		{name: "truncated", reason: stopTokenLimit, wantErr: ErrTruncatedReply},
 		{name: "blocked", reason: stopBlocked, wantErr: ErrBlockedReply},
+		{name: "another stop reason", reason: stopOther, wantErr: ErrUnfinishedReply},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
