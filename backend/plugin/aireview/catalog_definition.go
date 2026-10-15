@@ -3,6 +3,7 @@ package aireview
 import (
 	"fmt"
 	"strings"
+	"unicode"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"google.golang.org/protobuf/proto"
@@ -177,7 +178,7 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	}
 	for _, enum := range s.GetEnumTypes() {
 		addMember(kindEnumType, enum.GetName(), "", nil, enum.GetSkipDump(), func() string {
-			definition := fmt.Sprintf("ENUM TYPE %s: %s", qualify(schemaName, enum.GetName()), strings.Join(enum.GetValues(), ", "))
+			definition := fmt.Sprintf("ENUM TYPE %s: %s", qualify(schemaName, enum.GetName()), sqlStrings(enum.GetValues()))
 			return join(definition, plainComment("", enum.GetComment()))
 		})
 	}
@@ -186,7 +187,7 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 			attributes := make([]string, 0, len(composite.GetAttributes()))
 			comments := []string{plainComment("", composite.GetComment())}
 			for _, attribute := range composite.GetAttributes() {
-				text := attribute.GetName() + " " + attribute.GetType()
+				text := ident(attribute.GetName()) + " " + attribute.GetType()
 				if collation := attribute.GetCollation(); collation != "" {
 					text += " COLLATE " + collation
 				}
@@ -572,6 +573,40 @@ func extensionMember(skipDump bool) string {
 	return "MEMBER OF AN EXTENSION: the extension creates and upgrades it"
 }
 
+// ident writes a name as it is when it is a plain identifier, and quoted
+// otherwise, so a name holding a comma or a space stays one name in a list.
+func ident(name string) string {
+	plain := name != ""
+	for i, r := range name {
+		if r != '_' && !unicode.IsLetter(r) && (i == 0 || (!unicode.IsDigit(r) && r != '$')) {
+			plain = false
+			break
+		}
+	}
+	if plain {
+		return name
+	}
+	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+}
+
+func idents(names []string) string {
+	quoted := make([]string, 0, len(names))
+	for _, name := range names {
+		quoted = append(quoted, ident(name))
+	}
+	return strings.Join(quoted, ", ")
+}
+
+// sqlStrings writes values as SQL string literals, so a value holding a
+// comma or a quote stays one value.
+func sqlStrings(values []string) string {
+	literals := make([]string, 0, len(values))
+	for _, value := range values {
+		literals = append(literals, "'"+strings.ReplaceAll(value, "'", "''")+"'")
+	}
+	return strings.Join(literals, ", ")
+}
+
 // plainFact writes a fact the definition does not carry, such as an owner.
 func plainFact(label string, value string) string {
 	if value == "" {
@@ -585,7 +620,7 @@ func plainEventTrigger(trigger *metadatapb.EventTriggerMetadata) string {
 	if definition == "" {
 		definition = fmt.Sprintf("EVENT TRIGGER %s ON %s", trigger.GetName(), trigger.GetEvent())
 		if tags := trigger.GetTags(); len(tags) > 0 {
-			definition += fmt.Sprintf(" WHEN TAG IN (%s)", strings.Join(tags, ", "))
+			definition += fmt.Sprintf(" WHEN TAG IN (%s)", sqlStrings(tags))
 		}
 		definition += fmt.Sprintf(" EXECUTE FUNCTION %s()", qualify(trigger.GetFunctionSchema(), trigger.GetFunctionName()))
 	}
@@ -635,7 +670,7 @@ func plainIndexes(indexes []*metadatapb.IndexMetadata) string {
 func plainForeignKeys(keys []*metadatapb.ForeignKeyMetadata) string {
 	all := make([]string, 0, len(keys))
 	for _, key := range keys {
-		definition := fmt.Sprintf("FOREIGN KEY %s (%s) REFERENCES %s (%s)", key.GetName(), strings.Join(key.GetColumns(), ", "), qualify(key.GetReferencedSchema(), key.GetReferencedTable()), strings.Join(key.GetReferencedColumns(), ", "))
+		definition := fmt.Sprintf("FOREIGN KEY %s (%s) REFERENCES %s (%s)", key.GetName(), idents(key.GetColumns()), qualify(key.GetReferencedSchema(), key.GetReferencedTable()), idents(key.GetReferencedColumns()))
 		matchType := key.GetMatchType()
 		// MySQL and MariaDB report NONE, for a key declared with no MATCH.
 		if strings.EqualFold(matchType, "NONE") {
@@ -926,7 +961,7 @@ func plainSequence(schemaName string, sequence *metadatapb.SequenceMetadata) str
 		_, _ = b.WriteString(" CYCLE")
 	}
 	if table := sequence.GetOwnerTable(); table != "" {
-		_, _ = fmt.Fprintf(&b, " OWNED BY %s.%s", table, sequence.GetOwnerColumn())
+		_, _ = fmt.Fprintf(&b, " OWNED BY %s.%s", ident(table), ident(sequence.GetOwnerColumn()))
 	}
 	if len(missing) > 0 {
 		_, _ = fmt.Fprintf(&b, "\n-- not synced: %s", strings.Join(missing, ", "))

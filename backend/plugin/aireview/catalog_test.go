@@ -330,7 +330,7 @@ func TestCatalogReadWithoutARenderer(t *testing.T) {
 	}, "\n"), result.Objects[0].Definition)
 	require.Equal(t, "VIEW PUBLIC.revenue_by_status AS\nSELECT legacy_status, count(*) AS order_count FROM orders GROUP BY legacy_status", result.Objects[1].Definition)
 	require.Equal(t, "SEQUENCE PUBLIC.orders_id_seq AS bigint START 1 INCREMENT 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 OWNED BY orders.id", result.Objects[2].Definition)
-	require.Equal(t, "ENUM TYPE PUBLIC.payment_state: pending, paid", result.Objects[3].Definition)
+	require.Equal(t, "ENUM TYPE PUBLIC.payment_state: 'pending', 'paid'", result.Objects[3].Definition)
 }
 
 func TestCatalogSearchPages(t *testing.T) {
@@ -848,7 +848,7 @@ func TestCatalogHoldsTheObjectsOfTheDatabase(t *testing.T) {
 	result := read(t, tools, `{"objects": [{"name": "block_drop"}, {"name": "log_ddl"}, {"schema": "partman", "name": "pg_partman"}]}`)
 	require.Len(t, result.Objects, 3)
 	require.Equal(t, "CREATE EVENT TRIGGER block_drop ON sql_drop EXECUTE FUNCTION public.refuse_drop()", result.Objects[0].Definition)
-	require.Equal(t, "EVENT TRIGGER log_ddl ON ddl_command_end WHEN TAG IN (CREATE TABLE, ALTER TABLE) EXECUTE FUNCTION public.log_ddl()\nDISABLED", result.Objects[1].Definition)
+	require.Equal(t, "EVENT TRIGGER log_ddl ON ddl_command_end WHEN TAG IN ('CREATE TABLE', 'ALTER TABLE') EXECUTE FUNCTION public.log_ddl()\nDISABLED", result.Objects[1].Definition)
 	require.Equal(t, kindExtension, result.Objects[2].Kind)
 	require.Equal(t, "EXTENSION partman.pg_partman VERSION 5.0.1\n\nCOMMENT: Manage partitioned tables by time or ID", result.Objects[2].Definition)
 }
@@ -1469,4 +1469,37 @@ func TestCatalogMarksTheObjectsAnExtensionOwns(t *testing.T) {
 	for _, name := range []string{".ddl_guard", ".topology", "topology.layer"} {
 		require.Equal(t, 1, strings.Count(text[name], mark), "%s:\n%s", name, text[name])
 	}
+}
+
+func TestCatalogKeepsEachEnumLabelWhole(t *testing.T) {
+	t.Parallel()
+
+	tools := NewCatalogTools(storepb.Engine_POSTGRES, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name:      "public",
+		EnumTypes: []*metadatapb.EnumTypeMetadata{{Name: "state", Values: []string{"pending,review", "done", "it's done"}}},
+	}}})
+	_, text := readAll(t, tools, `[{"name": "state"}]`)
+	require.Equal(t, "ENUM TYPE public.state: 'pending,review', 'done', 'it''s done'", text["public.state"])
+}
+
+func TestCatalogKeepsEachNameInAListWhole(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, "order_id", ident("order_id"))
+	require.Equal(t, "订单", ident("订单"))
+	require.Equal(t, `"a, b"`, ident("a, b"))
+	require.Equal(t, `"say ""hi"""`, ident(`say "hi"`))
+	require.Equal(t, `"2fa"`, ident("2fa"))
+
+	tools := NewCatalogTools(storepb.Engine_SNOWFLAKE, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Tables: []*metadatapb.TableMetadata{{
+			Name:    "t",
+			Columns: []*metadatapb.ColumnMetadata{{Name: "a, b", Type: "int"}},
+			ForeignKeys: []*metadatapb.ForeignKeyMetadata{{
+				Name: "fk", Columns: []string{"a, b"}, ReferencedTable: "u", ReferencedColumns: []string{"id", "x, y"},
+			}},
+		}},
+	}}})
+	_, text := readAll(t, tools, `[{"name": "t"}]`)
+	require.Contains(t, text[".t"], `FOREIGN KEY fk ("a, b") REFERENCES u (id, "x, y")`)
 }
