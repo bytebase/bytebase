@@ -3,12 +3,13 @@
 // The wizard is offered only to a workspace's sole member, and its sample is
 // single-use, so the shared e2e server (two members, sample used) cannot show
 // it. This spec boots a server of its own in first-run state and walks one
-// journey on it, in the only order that keeps the wizard reachable: the skip
-// and the own-instance path use no sample; the sample path goes last.
+// journey on it, in the only order that keeps the wizard reachable: the skip,
+// a finish without a project and the own-instance path use no sample; the
+// sample path goes last.
 //
 // That server is self-hosted, so the journey sees self-hosted wording: the
-// skip, a sample that runs on this server, and a team screen with no list of
-// people. Cloud's invitations, and retries whose member writes lost their
+// skip, an optional project name, a sample that runs on this server, and a
+// team screen with no list of people. Cloud's invitations, and retries whose member writes lost their
 // answers, are covered by the wizard's unit tests, and each goal's step order
 // by the project home's.
 
@@ -86,7 +87,7 @@ const loseAnswerOnce = async (page: Page, method: string, act: () => Promise<voi
   await lost;
 };
 
-test("first-run setup: skip, own instance, then the sample", async ({
+test("first-run setup: skip, no project, own instance, then the sample", async ({
   page,
   context,
 }) => {
@@ -110,8 +111,9 @@ test("first-run setup: skip, own instance, then the sample", async ({
     await page.getByText("Not sure yet, just exploring").click();
     await continueButton(page).click();
 
+    // A name shows the database choice; the skip still makes no project.
+    await page.getByLabel(/^Project name/).fill("Drafts");
     await expect(page.getByText(/running on this server/)).toBeVisible();
-    await expect(page.getByText("PostgreSQL, on this server")).toBeVisible();
     await expect(page.getByText(/7 days/)).toHaveCount(0);
     await expect(page.getByText(/Bytebase Cloud/)).toHaveCount(0);
     await page.getByRole("button", { name: "I'll do this later" }).click();
@@ -120,9 +122,28 @@ test("first-run setup: skip, own instance, then the sample", async ({
     expect(await projectNames()).toEqual(projectsBefore);
   });
 
+  await test.step("Finish without a project name saves the answers and creates no project", async () => {
+    const projectsBefore = await projectNames();
+    await openWizard(page);
+    await continueButton(page).click();
+    await page.getByText("Not sure yet, just exploring").click();
+    await continueButton(page).click();
+
+    await expect(
+      page.getByText("Leave it empty to create a project later.")
+    ).toBeVisible();
+    await expect(page.getByText("Start with the sample database")).toHaveCount(0);
+    await continueButton(page).click();
+    await page.getByText("2–10", { exact: true }).click();
+    await page.getByRole("button", { name: "Finish", exact: true }).click();
+
+    await page.waitForURL(/\/projects\?/);
+    expect(await projectNames()).toEqual(projectsBefore);
+  });
+
   await test.step("the own-instance path keeps every answer on Back and lands on Connect an instance", async () => {
     await openWizard(page);
-    // The skip cleared the draft, so these names are the ones it saved.
+    // Setup ended each time before, so these names are the ones it saved.
     await expect(page.getByLabel(/^Your name/)).toHaveValue("Dana");
     await expect(page.getByLabel("Workspace name")).toHaveValue("Acme");
     // A name only the draft holds, so Back cannot show it from the server.

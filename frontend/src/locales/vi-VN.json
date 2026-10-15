@@ -3870,17 +3870,12 @@
     },
     "optional": "tùy chọn",
     "panel": {
-      "assigned-to": "gán cho",
-      "holds": "chứa",
+      "connected-after-setup": "Kết nối sau khi thiết lập",
       "own-databases": "Các cơ sở dữ liệu của nó",
-      "own-databases-detail": "Được phát hiện khi phiên bản kết nối",
       "own-instance": "Phiên bản của bạn",
-      "own-instance-detail": "Máy chủ cơ sở dữ liệu của bạn, kết nối sau khi thiết lập",
       "sample-database": "Cơ sở dữ liệu mẫu",
-      "sample-database-detail": "Dữ liệu mẫu về nhân viên",
       "sample-instance": "Phiên bản dự án mẫu",
-      "sample-instance-detail": "PostgreSQL, do Bytebase Cloud lưu trữ",
-      "sample-instance-detail-self-host": "PostgreSQL, trên máy chủ này"
+      "workspace": "Không gian làm việc"
     },
     "project": {
       "database-title": "Cơ sở dữ liệu cho {{project}}",
@@ -3888,6 +3883,7 @@
       "exists": "Dự án này đã tồn tại. Đổi tên trong phần cài đặt của dự án.",
       "name": "Tên dự án",
       "name-hint": "Dự án nhóm các cơ sở dữ liệu mà một nhóm làm việc cùng, kèm thành viên và chính sách. Mọi thay đổi và truy vấn đều diễn ra trong một dự án.",
+      "name-optional-note": "Để trống để tạo dự án sau.",
       "name-placeholder": "Thanh toán, Nền tảng dữ liệu, Công cụ nội bộ",
       "name-required": "Nhập tên dự án",
       "own": {

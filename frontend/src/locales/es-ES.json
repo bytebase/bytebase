@@ -3870,17 +3870,12 @@
     },
     "optional": "opcional",
     "panel": {
-      "assigned-to": "asignada a",
-      "holds": "contiene",
+      "connected-after-setup": "Se conecta tras la configuración",
       "own-databases": "Sus bases de datos",
-      "own-databases-detail": "Se detectan al conectar la instancia",
       "own-instance": "Su instancia",
-      "own-instance-detail": "Su servidor de base de datos, conectado tras la configuración",
       "sample-database": "Base de datos de ejemplo",
-      "sample-database-detail": "Datos de ejemplo de empleados",
       "sample-instance": "Instancia de proyecto de muestra",
-      "sample-instance-detail": "PostgreSQL, alojada por Bytebase Cloud",
-      "sample-instance-detail-self-host": "PostgreSQL, en este servidor"
+      "workspace": "Espacio de trabajo"
     },
     "project": {
       "database-title": "Base de datos para {{project}}",
@@ -3888,6 +3883,7 @@
       "exists": "Este proyecto ya existe. Cámbiele el nombre en su configuración.",
       "name": "Nombre del proyecto",
       "name-hint": "Un proyecto agrupa las bases de datos en las que trabaja un equipo, con sus miembros y políticas. Cada cambio y cada consulta ocurre dentro de uno.",
+      "name-optional-note": "Déjelo vacío para crear un proyecto más tarde.",
       "name-placeholder": "Pagos, Plataforma de datos, Herramientas internas",
       "name-required": "Introduzca un nombre de proyecto",
       "own": {

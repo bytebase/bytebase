@@ -261,7 +261,7 @@ const eventsNamed = (event: string) =>
     .map((metric) => metric.properties);
 
 const nameProject = async (name = "Payments") => {
-  type(screen.getByLabelText("Project name"), name);
+  type(screen.getByLabelText(/^Project name/), name);
   await waitFor(() => expect(continueButton()).toBeEnabled());
 };
 const editProjectId = (id: string) => {
@@ -605,7 +605,7 @@ describe("WorkspaceSetupPage", () => {
 
       fireEvent.click(screen.getByText(QUERY_GOAL));
       fireEvent.click(continueButton());
-      expect(screen.getByLabelText("Project name")).toHaveFocus();
+      expect(screen.getByLabelText(/^Project name/)).toHaveFocus();
 
       await nameProject();
       fireEvent.click(continueButton());
@@ -709,7 +709,7 @@ describe("WorkspaceSetupPage", () => {
   describe("screen 3, project", () => {
     test("asks for a project name before Continue, with the sample database preselected", async () => {
       startAtProject();
-      const projectName = screen.getByLabelText("Project name");
+      const projectName = screen.getByLabelText(/^Project name/);
 
       expect(projectName).toHaveValue("");
       expect(continueButton()).toBeDisabled();
@@ -728,6 +728,67 @@ describe("WorkspaceSetupPage", () => {
       expect(
         screen.getByRole("radiogroup", { name: "Database for Payments" })
       ).toBeInTheDocument();
+    });
+
+    test("lets self-hosted leave the project for later, offering no database and making no project", async () => {
+      mocks.isSaaSMode = false;
+      startAtProject(CHANGE_GOAL);
+      const projectName = screen.getByLabelText(/^Project name/);
+
+      expect(projectName).toHaveAccessibleName(
+        expect.stringContaining("optional")
+      );
+      expect(projectName).toHaveAccessibleDescription(
+        expect.stringContaining("Leave it empty to create a project later.")
+      );
+      expect(screen.queryByText(SAMPLE)).not.toBeInTheDocument();
+      expect(screen.queryByText(OWN_INSTANCE)).not.toBeInTheDocument();
+
+      fireEvent.click(continueButton());
+      fireEvent.click(screen.getByText("2–10"));
+      fireEvent.click(finishButton());
+
+      await landed();
+      expect(mocks.routerReplace).toHaveBeenCalledWith({
+        name: PROJECT_V1_ROUTE_DASHBOARD,
+        query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
+      });
+      expect(writes()).toEqual(["updateUser", "updateWorkspace"]);
+      expect(readSelectedGuideScenarioId()).toBe("create-database-change");
+      expect(eventsNamed("workspace setup submitted")).toEqual([
+        expect.objectContaining({
+          result: "finished",
+          source: "none",
+          sample_enabled: false,
+        }),
+      ]);
+    });
+
+    test("offers the database again once a self-hosted project is named", async () => {
+      mocks.isSaaSMode = false;
+      startAtProject();
+
+      await nameProject();
+
+      expect(choice(SAMPLE)).toBeChecked();
+      expect(choice(OWN_INSTANCE)).not.toBeChecked();
+    });
+
+    test("needs the project name on self-hosted once a create has been sent", () => {
+      mocks.isSaaSMode = false;
+      storeDraft({
+        screen: "project",
+        goal: "query-data",
+        projectTitle: "",
+        projectId: "",
+        attemptedProjectId: "payments-ab12",
+      });
+      render(<WorkspaceSetupPage />);
+
+      expect(screen.getByLabelText(/^Project name/)).toHaveAccessibleDescription(
+        expect.stringContaining("Enter a project name")
+      );
+      expect(continueButton()).toBeDisabled();
     });
 
     test("blocks Continue on an emptied project ID, with the field's reason", async () => {
@@ -760,7 +821,7 @@ describe("WorkspaceSetupPage", () => {
       mocks.fetchProject.mockReturnValue(new Promise(() => {}));
       startAtProject();
 
-      type(screen.getByLabelText("Project name"), "Payments");
+      type(screen.getByLabelText(/^Project name/), "Payments");
 
       await waitFor(() => expect(continueButton()).toBeEnabled());
       expect(mocks.fetchProject).toHaveBeenCalledWith(
@@ -773,7 +834,7 @@ describe("WorkspaceSetupPage", () => {
       startAtProject();
       await nameProject("Payments");
 
-      type(screen.getByLabelText("Project name"), "");
+      type(screen.getByLabelText(/^Project name/), "");
       expect(continueButton()).toBeDisabled();
       expect(screen.getByText("Enter a project name")).toBeInTheDocument();
 
@@ -828,9 +889,14 @@ describe("WorkspaceSetupPage", () => {
         says: /running on this server/,
         omits: /7 days/,
       },
-    ])("says the sample runs on $deployment", ({ isSaaSMode, says, omits }) => {
+    ])("says the sample runs on $deployment", async ({
+      isSaaSMode,
+      says,
+      omits,
+    }) => {
       mocks.isSaaSMode = isSaaSMode;
       startAtProject();
+      await nameProject();
 
       expect(screen.getByText(says)).toBeInTheDocument();
       expect(screen.queryByText(omits)).not.toBeInTheDocument();
@@ -852,8 +918,8 @@ describe("WorkspaceSetupPage", () => {
       mocks.sample = { available: false, instances: [] };
       fireEvent.click(backButton());
 
-      expect(screen.getByLabelText("Project name")).toBeDisabled();
-      expect(screen.getByLabelText("Project name")).toHaveValue("Payments");
+      expect(screen.getByLabelText(/^Project name/)).toBeDisabled();
+      expect(screen.getByLabelText(/^Project name/)).toHaveValue("Payments");
       expect(screen.getByText("payments-ab12")).toBeInTheDocument();
       expect(
         screen.queryByRole("button", { name: "Edit" })
@@ -876,7 +942,7 @@ describe("WorkspaceSetupPage", () => {
       await failFinish();
       fireEvent.click(backButton());
 
-      expect(screen.getByLabelText("Project name")).toBeDisabled();
+      expect(screen.getByLabelText(/^Project name/)).toBeDisabled();
       fireEvent.click(screen.getByText(OWN_INSTANCE));
 
       expect(choice(OWN_INSTANCE)).toBeChecked();
@@ -937,7 +1003,7 @@ describe("WorkspaceSetupPage", () => {
         "Could not save your name and the workspace name."
       );
       expect(alert).toHaveTextContent("database is down");
-      expect(screen.getByLabelText("Project name")).toBeInTheDocument();
+      expect(screen.getByLabelText(/^Project name/)).toBeInTheDocument();
       expect(mocks.routerReplace).not.toHaveBeenCalled();
 
       fireEvent.click(skipButton());
@@ -955,7 +1021,7 @@ describe("WorkspaceSetupPage", () => {
       fireEvent.click(backButton());
       fireEvent.click(continueButton());
 
-      expect(screen.getByLabelText("Project name")).toBeInTheDocument();
+      expect(screen.getByLabelText(/^Project name/)).toBeInTheDocument();
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     });
 
@@ -971,7 +1037,7 @@ describe("WorkspaceSetupPage", () => {
 
       await waitFor(() => expect(mocks.getProject).toHaveBeenCalledTimes(1));
       expect(skipOffered()).toBe(false);
-      expect(screen.getByLabelText("Project name")).toBeEnabled();
+      expect(screen.getByLabelText(/^Project name/)).toBeEnabled();
     });
 
     test("is withdrawn once a Finish attempt has created the project", async () => {
@@ -983,7 +1049,7 @@ describe("WorkspaceSetupPage", () => {
 
       fireEvent.click(backButton());
 
-      expect(screen.getByLabelText("Project name")).toBeDisabled();
+      expect(screen.getByLabelText(/^Project name/)).toBeDisabled();
       expect(skipOffered()).toBe(false);
     });
   });
@@ -1382,7 +1448,7 @@ describe("WorkspaceSetupPage", () => {
       expect(screen.getByText("ann@example.com")).toBeInTheDocument();
 
       fireEvent.click(backButton());
-      expect(screen.getByLabelText("Project name")).toHaveValue("Payments");
+      expect(screen.getByLabelText(/^Project name/)).toHaveValue("Payments");
       expect(screen.getByText("pay")).toBeInTheDocument();
       expect(choice(OWN_INSTANCE)).toBeChecked();
       await waitFor(() => expect(continueButton()).toBeEnabled());
@@ -1435,11 +1501,12 @@ describe("WorkspaceSetupPage", () => {
     const panel = () => within(screen.getByTestId("left-column"));
     const still = () => panel().getByRole("presentation").dataset.still;
 
-    test("previews the workspace as it is named, then shows each goal's own picture and access controls", async () => {
+    test("previews the workspace as it is named, then shows each goal's own picture", async () => {
       render(<WithLeftColumn />);
       expect(panel().getAllByText("Workspace One")).not.toHaveLength(0);
       expect(panel().getByText("Ed")).toBeInTheDocument();
       expect(panel().getByText("Workspace Admin")).toBeInTheDocument();
+      expect(panel().getAllByText("Workspace Member")).toHaveLength(2);
       type(screen.getByLabelText(/^Your name/), "Ada Park");
       type(screen.getByLabelText("Workspace name"), "Acme");
       expect(panel().getAllByText("Acme")).not.toHaveLength(0);
@@ -1463,40 +1530,82 @@ describe("WorkspaceSetupPage", () => {
       expect(still()).toBe("query");
       fireEvent.click(screen.getByText(EXPLORING));
       expect(still()).toBe("explore");
-
-      fireEvent.click(continueButton());
-      await nameProject();
-      fireEvent.click(continueButton());
-      expect(still()).toBe("access-controls");
     });
 
-    test("says on self-hosted that the sample instance runs on this server", () => {
-      mocks.isSaaSMode = false;
+    test("draws the workspace, the project and its instance as they are answered", async () => {
       render(<WithLeftColumn />);
       goToProject();
 
-      expect(panel().getByText("PostgreSQL, on this server")).toBeInTheDocument();
-      expect(panel().queryByText(/Bytebase Cloud/)).not.toBeInTheDocument();
-    });
-
-    test("draws the project and where its database comes from as they are answered", async () => {
-      render(<WithLeftColumn />);
-      goToProject();
-
-      expect(panel().getByText("Sample Project Instance")).toBeInTheDocument();
-      expect(
-        panel().getByText("PostgreSQL, hosted by Bytebase Cloud")
-      ).toBeInTheDocument();
+      expect(panel().getByText("Workspace One")).toBeInTheDocument();
       expect(panel().getByText("your project")).toBeInTheDocument();
+      expect(panel().getByText("Sample Project Instance")).toBeInTheDocument();
+      expect(panel().getByText("Sample database")).toBeInTheDocument();
 
       await nameProject();
       expect(panel().getByText("Payments")).toBeInTheDocument();
 
       fireEvent.click(screen.getByText(OWN_INSTANCE));
       expect(panel().getByText("Your instance")).toBeInTheDocument();
+      expect(panel().getByText("Connected after setup")).toBeInTheDocument();
+      expect(panel().getByText("Its databases")).toBeInTheDocument();
       expect(
         panel().queryByText("Sample Project Instance")
       ).not.toBeInTheDocument();
+    });
+
+    test("draws no instances for a project self-hosted leaves for later", async () => {
+      mocks.isSaaSMode = false;
+      render(<WithLeftColumn />);
+      goToProject();
+
+      expect(panel().getByText("your project")).toBeInTheDocument();
+      expect(
+        panel().queryByText("Sample Project Instance")
+      ).not.toBeInTheDocument();
+
+      await nameProject();
+      expect(panel().getByText("Sample Project Instance")).toBeInTheDocument();
+    });
+
+    test("lists the team in the workspace as it is answered, five rows at most", async () => {
+      render(<WithLeftColumn />);
+      await goToTeam();
+
+      expect(panel().getAllByText("Workspace One")).not.toHaveLength(0);
+      expect(panel().getByText("Ed")).toBeInTheDocument();
+      expect(panel().getByText("Workspace Admin")).toBeInTheDocument();
+      expect(panel().queryByText("Workspace Member")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("2–10"));
+      enterAddress("ann@example.com");
+      enterAddress("not-an-address");
+      expect(panel().getByText("ann@example.com")).toBeInTheDocument();
+      expect(panel().getAllByText("Workspace Member")).toHaveLength(4);
+      expect(panel().queryByText("not-an-address")).not.toBeInTheDocument();
+
+      for (const name of ["bob", "cy", "dee", "eve", "fay"]) {
+        enterAddress(`${name}@example.com`);
+      }
+      expect(panel().getByText("dee@example.com")).toBeInTheDocument();
+      expect(panel().queryByText("eve@example.com")).not.toBeInTheDocument();
+      expect(panel().getByText("+2 more")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Just me"));
+      expect(panel().queryByText("ann@example.com")).not.toBeInTheDocument();
+      expect(panel().getByText("Ed")).toBeInTheDocument();
+    });
+
+    test("draws a wider column's picture larger, as one", () => {
+      const width = vi
+        .spyOn(HTMLElement.prototype, "clientWidth", "get")
+        .mockReturnValue(1024);
+      render(<WithLeftColumn />);
+
+      const picture = screen.getByTestId("left-column").firstElementChild;
+      expect(picture?.firstElementChild).toHaveStyle({
+        transform: "scale(2)",
+      });
+      width.mockRestore();
     });
   });
 
@@ -1829,7 +1938,7 @@ describe("WorkspaceSetupPage", () => {
 
       render(<WorkspaceSetupPage />);
 
-      expect(screen.getByLabelText("Project name")).toBeDisabled();
+      expect(screen.getByLabelText(/^Project name/)).toBeDisabled();
       expect(choice(OWN_INSTANCE)).toBeChecked();
       expect(screen.queryByText(SAMPLE)).not.toBeInTheDocument();
       expect(
@@ -2946,7 +3055,7 @@ describe("WorkspaceSetupPage", () => {
           fail(unavailable());
           await settle();
 
-          expect(screen.getByLabelText("Project name")).toHaveValue("Orders");
+          expect(screen.getByLabelText(/^Project name/)).toHaveValue("Orders");
           expect(screen.queryByRole("alert")).not.toBeInTheDocument();
         });
 
@@ -3221,7 +3330,7 @@ describe("WorkspaceSetupPage", () => {
         fireEvent.click(backButton());
 
         await waitFor(() =>
-          expect(screen.getByLabelText("Project name")).toBeDisabled()
+          expect(screen.getByLabelText(/^Project name/)).toBeDisabled()
         );
         expect(
           screen.getByText(
@@ -3246,7 +3355,7 @@ describe("WorkspaceSetupPage", () => {
         fireEvent.click(backButton());
 
         expect(await screen.findByText(ID_EXISTS)).toBeInTheDocument();
-        expect(screen.getByLabelText("Project name")).toBeEnabled();
+        expect(screen.getByLabelText(/^Project name/)).toBeEnabled();
         expect(continueButton()).toBeDisabled();
       });
 
@@ -3262,8 +3371,8 @@ describe("WorkspaceSetupPage", () => {
         await waitFor(() =>
           expect(mocks.getProjectIamPolicy).toHaveBeenCalled()
         );
-        expect(screen.getByLabelText("Project name")).toBeEnabled();
-        expect(screen.getByLabelText("Project name")).toHaveValue("Orders");
+        expect(screen.getByLabelText(/^Project name/)).toBeEnabled();
+        expect(screen.getByLabelText(/^Project name/)).toHaveValue("Orders");
         fireEvent.click(continueButton());
         fireEvent.click(finishButton());
         await landed();
@@ -3278,7 +3387,7 @@ describe("WorkspaceSetupPage", () => {
           edit: "a new name with the ID kept",
           change: async () => {
             fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-            type(screen.getByLabelText("Project name"), "Orders");
+            type(screen.getByLabelText(/^Project name/), "Orders");
           },
         },
         {
@@ -3299,7 +3408,7 @@ describe("WorkspaceSetupPage", () => {
         await waitFor(() =>
           expect(mocks.getProjectIamPolicy).toHaveBeenCalled()
         );
-        expect(screen.getByLabelText("Project name")).toBeEnabled();
+        expect(screen.getByLabelText(/^Project name/)).toBeEnabled();
         expect(
           screen.queryByText(
             "This project already exists. Rename it in its settings."
@@ -3356,7 +3465,7 @@ describe("WorkspaceSetupPage", () => {
         fireEvent.click(backButton());
 
         await waitFor(() => expect(mocks.getProject).toHaveBeenCalled());
-        expect(screen.getByLabelText("Project name")).toBeEnabled();
+        expect(screen.getByLabelText(/^Project name/)).toBeEnabled();
         expect(screen.queryByText(ID_EXISTS)).not.toBeInTheDocument();
         expect(continueButton()).toBeEnabled();
       });
@@ -3367,7 +3476,7 @@ describe("WorkspaceSetupPage", () => {
         fireEvent.click(backButton());
 
         await waitFor(() => expect(mocks.getProject).toHaveBeenCalled());
-        expect(screen.getByLabelText("Project name")).toBeEnabled();
+        expect(screen.getByLabelText(/^Project name/)).toBeEnabled();
         expect(screen.queryByText(ID_EXISTS)).not.toBeInTheDocument();
         expect(continueButton()).toBeEnabled();
       });
@@ -3523,7 +3632,7 @@ describe("WorkspaceSetupPage", () => {
       expect(await failed()).toHaveTextContent(
         'project ID "payments-ab12" is reserved'
       );
-      expect(screen.getByLabelText("Project name")).toHaveValue("Payments");
+      expect(screen.getByLabelText(/^Project name/)).toHaveValue("Payments");
       expect(continueButton()).toBeDisabled();
       expect(mocks.routerReplace).not.toHaveBeenCalled();
 

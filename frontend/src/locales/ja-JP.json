@@ -3870,17 +3870,12 @@
     },
     "optional": "任意",
     "panel": {
-      "assigned-to": "割り当て先",
-      "holds": "含む",
+      "connected-after-setup": "セットアップ後に接続",
       "own-databases": "そのデータベース",
-      "own-databases-detail": "インスタンスの接続時に検出されます",
       "own-instance": "あなたのインスタンス",
-      "own-instance-detail": "セットアップ後に接続するデータベースサーバー",
       "sample-database": "サンプルデータベース",
-      "sample-database-detail": "従業員のサンプルデータ",
       "sample-instance": "サンプルプロジェクトインスタンス",
-      "sample-instance-detail": "PostgreSQL、Bytebase Cloud がホスト",
-      "sample-instance-detail-self-host": "PostgreSQL、このサーバー上"
+      "workspace": "ワークスペース"
     },
     "project": {
       "database-title": "{{project}} のデータベース",
@@ -3888,6 +3883,7 @@
       "exists": "このプロジェクトはすでに存在します。名前はプロジェクト設定で変更できます。",
       "name": "プロジェクト名",
       "name-hint": "プロジェクトは、チームが扱うデータベースをメンバーやポリシーとともにまとめます。すべての変更とクエリはプロジェクト内で行われます。",
+      "name-optional-note": "空欄のままにすると、プロジェクトは後で作成できます。",
       "name-placeholder": "決済、データ基盤、社内ツール",
       "name-required": "プロジェクト名を入力してください",
       "own": {

@@ -306,6 +306,13 @@ function WorkspaceSetupWizard() {
     workspaceTitle: workspaceTitle.trim(),
   };
 
+  // The projects page, which offers to create the first one.
+  const leaveWithoutProject = () =>
+    router.replace({
+      name: PROJECT_V1_ROUTE_DASHBOARD,
+      query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
+    });
+
   // Self-hosted only: setup is offered once there and may be left for later.
   const skip = async () => {
     const superseded = supersededFromNow();
@@ -325,11 +332,20 @@ function WorkspaceSetupWizard() {
     endSetup();
     if (draft.goal) saveSelectedGuideScenarioId(draft.goal);
     captureSubmitted({ result: "skipped", sample_enabled: false });
-    router.replace({
-      name: PROJECT_V1_ROUTE_DASHBOARD,
-      query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
-    });
+    leaveWithoutProject();
   };
+
+  // Self-hosted may leave the project for later while no create has been sent,
+  // as with the skip (D12).
+  const projectOptional =
+    !isSaaSMode && !draft.createdProject && !draft.attemptedProjectId;
+  const withoutProject = projectOptional && !draft.projectTitle.trim();
+  // The addresses Finish adds. Self-hosted lists no one (D7), whatever an
+  // earlier draft holds.
+  const invitees =
+    !isSaaSMode || draft.teamSize === "just-me"
+      ? []
+      : validInviteAddresses(draft.emails, currentUser.email);
 
   const finish = async ({ withoutSample = false } = {}) => {
     if (!draft.teamSize) return;
@@ -344,23 +360,19 @@ function WorkspaceSetupWizard() {
     setFinishing(true);
     setFailure(undefined);
     const finishSource: SetupSource = withoutSample ? "own" : source;
-    // Self-hosted lists no one (D7), whatever an earlier draft holds.
-    const invitees =
-      !isSaaSMode || draft.teamSize === "just-me"
-        ? []
-        : validInviteAddresses(draft.emails, currentUser.email);
     const answers = {
-      source: finishSource,
+      source: withoutProject ? "none" : finishSource,
       team_size: draft.teamSize,
       invite_count: invitees.length,
       // Kept beside `team_size` for the dashboards built on the earlier
       // wizard's team-or-solo answer.
       collaboration_type: draft.teamSize === "just-me" ? "solo" : "team",
-      sample_enabled: finishSource === "sample",
+      sample_enabled: !withoutProject && finishSource === "sample",
     };
     const result = await runSetupFinish(
       {
         ...names,
+        withoutProject,
         projectTitle: draft.projectTitle.trim(),
         projectId: draft.projectId,
         createdProject: draft.createdProject,
@@ -369,7 +381,8 @@ function WorkspaceSetupWizard() {
         // Asked again until the request has returned once: a self-hosted
         // server lists the instance before it is ready, and a repeated
         // request answers with the same one.
-        prepareSample: finishSource === "sample" && !draft.samplePrepared,
+        prepareSample:
+          !withoutProject && finishSource === "sample" && !draft.samplePrepared,
         invitees,
         projectGrants: draft.projectGrants ?? {},
         superseded,
@@ -417,6 +430,10 @@ function WorkspaceSetupWizard() {
         workspace?.name ?? currentUser.workspace,
         true
       );
+    }
+    if (!result.project) {
+      leaveWithoutProject();
+      return;
     }
     try {
       useAppStore.getState().setRecentProject(result.project);
@@ -488,13 +505,10 @@ function WorkspaceSetupWizard() {
             sample={sampleOffer}
             samplePrepared={!!draft.samplePrepared}
             isSaaS={isSaaSMode}
+            projectOptional={projectOptional}
             skipping={skipping}
             skipFailure={skipFailure}
-            onSkip={
-              isSaaSMode || draft.createdProject || draft.attemptedProjectId
-                ? undefined
-                : () => void skip()
-            }
+            onSkip={projectOptional ? () => void skip() : undefined}
             validateProjectId={validateProjectId}
             onProjectTitleChange={(projectTitle) => {
               if (projectTitle.trim()) {
@@ -533,7 +547,9 @@ function WorkspaceSetupWizard() {
           memberEmail={currentUser.email}
           projectTitle={draft.projectTitle.trim()}
           source={source}
-          isSaaS={isSaaSMode}
+          noProject={withoutProject}
+          teamSize={draft.teamSize}
+          invitees={invitees}
         />
       </SplashPanel>
       {elsewhere && !finishing ? (

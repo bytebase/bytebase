@@ -53,6 +53,9 @@ type Superseded = () => boolean;
 
 type SetupFinishInput = SetupNames & {
   ownerEmail: string;
+  // Self-hosted may leave the project for later (D12): nothing past the names
+  // is written then.
+  withoutProject: boolean;
   projectTitle: string;
   projectId: string;
   // The project an earlier attempt created.
@@ -67,7 +70,7 @@ type SetupFinishInput = SetupNames & {
 };
 
 type SetupFinishResult =
-  | { ok: true; project: string }
+  | { ok: true; project: string | undefined }
   | {
       ok: false;
       stage: SetupFinishStage;
@@ -329,6 +332,7 @@ const commitSetup = async (
   } catch (error) {
     return { ok: false, stage: "names", error };
   }
+  if (input.withoutProject) return { ok: true, project: undefined };
 
   let project = input.createdProject;
   if (!project) {

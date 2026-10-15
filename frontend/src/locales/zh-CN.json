@@ -3870,17 +3870,12 @@
     },
     "optional": "可选",
     "panel": {
-      "assigned-to": "分配给",
-      "holds": "包含",
+      "connected-after-setup": "设置完成后连接",
       "own-databases": "其中的数据库",
-      "own-databases-detail": "实例连接后发现",
       "own-instance": "您的实例",
-      "own-instance-detail": "您的数据库服务器，设置完成后连接",
       "sample-database": "示例数据库",
-      "sample-database-detail": "员工示例数据",
       "sample-instance": "示例项目实例",
-      "sample-instance-detail": "PostgreSQL，由 Bytebase Cloud 托管",
-      "sample-instance-detail-self-host": "PostgreSQL，运行在本服务器上"
+      "workspace": "工作空间"
     },
     "project": {
       "database-title": "{{project}} 的数据库",
@@ -3888,6 +3883,7 @@
       "exists": "该项目已存在，可在项目设置中重命名。",
       "name": "项目名称",
       "name-hint": "项目把一个团队使用的数据库与其成员和策略组织在一起。每次变更和查询都发生在某个项目中。",
+      "name-optional-note": "留空则稍后再创建项目。",
       "name-placeholder": "支付、数据平台、内部工具",
       "name-required": "请输入项目名称",
       "own": {

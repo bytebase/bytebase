@@ -133,7 +133,8 @@ acted). Every finish line is reachable on the free plan. Rejected: a third equal
 the forced choice between two.
 
 **D4 · The project is named where its database is chosen.** Screen 3 opens with the project name
-(required, empty with example placeholder; the resource id derived from it, editable, collapsed)
+(required on Cloud, optional on self-hosted (D12); empty with example placeholder; the resource id
+derived from it, editable, collapsed)
 and one line of explanation, then "Database for <project>" with the two choices. The project exists
 to hold databases, so naming it beside them teaches by adjacency and removes the forward reference
 ("the databases you add next...") that the workspace screen needed. Rejected: prefilling the name,
@@ -202,7 +203,8 @@ Greptile asks a default role (Admin or Member); Linear, Neon and Metabase ask fo
 Rejected: the "Just me / My team" question (it only decided whether this screen appears, and the
 screen is now always offered and one click to pass), the role selector, and the free-text email box.
 
-**D8 · Finish lands on the project home, and the home puts the goal's step first.** The project home
+**D8 · Finish lands on the project home, and the home puts the goal's step first.** A self-hosted
+Finish without a project lands where the skip does (D12). The project home
 ([#21572], on main since Oct 13) makes the project root a page of its own: a "Next step" band chosen
 from the project's state, above the user's open issues and the project's databases. Finish navigates
 there whichever database choice was made, as today's wizard already does. With "Connect my own
@@ -230,17 +232,29 @@ pressed: the homepage hero (requests flowing through SQL lint, agent review and 
 change goal, a SQL statement above its result for the query goal, and for "just exploring" the
 homepage's after-Bytebase diagram (people and agents reaching the databases through Bytebase),
 redrawn narrower to fit the panel. The card's finish line does not depend on the picture. Screen 3
-draws a diagram from what the user typed (the sample instance and its database flowing into the
-project name, or the user's own instance joining after setup); screen 4 shows Access Controls on the
-homepage's green stage, which is why no role is asked. The goal pictures sit on the hero's light
-background, and the query picture is a frame of bytebase.com's Dynamic Data Masking file with its
-masking rows replaced by the statement, so it shows a query rather than masking. The hero and Access
-Controls are still frames of bytebase.com's Rive files (`masthead`, `iam`), which a follow-up may
-play with the site's `RivePlayer` (`rive.wasm` self-hosted, the files lazy-loaded on the setup route
-only, one frame under reduced motion); the query and exploring pictures are composed for the panel
-and stay still. The rocket illustration stays on sign-in and sign-up. Rejected: a constant stage
+draws the workspace by its name holding the project as it is named, beside a dimmed second project,
+with lines from the project to its instances: the first is the sample instance holding its database,
+or the user's own instance, dashed, connected after setup; two more are dimmed. The sample is one
+instance with one database on both deployments, so only one instance is drawn as real. A
+self-hosted screen 3 left without a name draws the project dashed and no instances. Screen 4 returns
+to screen 1's workspace window, since the team uses the whole workspace and an invitation is to the
+workspace: the person setting it up, then each address listed as a Workspace Member, at most five
+rows and "+N more"; while the team is bigger than "Just me", dimmed rows fill the rest. The access
+the invitees get in the project is the line under the field. Workspace, project and instances are
+the three words a new user meets next, and nothing else is drawn. The goal pictures sit on the hero's light background, and the query picture is a
+frame of bytebase.com's Dynamic Data Masking file with its masking rows replaced by the statement, so
+it shows a query rather than masking. The hero is a still frame of bytebase.com's Rive `masthead`
+file, which a follow-up may play with the site's `RivePlayer` (`rive.wasm` self-hosted, the file
+lazy-loaded on the setup route only, one frame under reduced motion); the query and exploring
+pictures are composed for the panel and stay still. Every picture takes 70% of the panel's column,
+never under 512px or over 800px, and never taller than the window; the drawn ones scale as one, so a
+wide screen gets the same picture larger. The rocket illustration stays on sign-in and sign-up. Rejected: a constant stage
 (the panel teaches nothing); the website's closing slogan, or its brand art alone, on screen 1
-(decoration beside a form that already has its heading); the homepage's Change Review file for the
+(decoration beside a form that already has its heading); for screen 3, a diagram of instance,
+database and project as labelled boxes (it read as a lesson in three words at once); for screen 4,
+the homepage's Access Controls (per-database access the wizard never sets) and the project's members
+(the team spans every project, and self-hosted adds no one to it); the homepage's Change Review
+file for the
 change goal (its dark parts are made for the blue stage, and the hero tells the same story); and a
 live preview of the whole product being configured (highest drift; screen 1's preview draws only the
 two names it shows).
@@ -250,7 +264,7 @@ the screen number and the answers so far (goal, project named, source). No event
 email address or a project name. `workspace setup submitted` still fires when Finish succeeds, now
 carrying the goal, the source, the team size and the invite count, and gains `result=failed` with
 `failure_stage` (names, project, sample, invitees). `sample_enabled` says whether the attempt asked
-for the sample, whatever its result. An attempt that stops (D11) sends neither; the
+for the sample, whatever its result, and the source is `none` when no project is made. An attempt that stops (D11) sends neither; the
 Finish that completes setup reports. No client event can be the record, though: the 17 lost finishes
 lost every custom event after the wizard mounted, and 13 accounts since Sep 11 were never tracked at
 all. The record stays with the backend, as the Cloud usage dashboard's exporter already reads it:
@@ -366,7 +380,11 @@ skip is offered only while that holds: once a Finish attempt has created the pro
 create whose outcome is unknown (D11), screen 3 no longer shows it, and the way out is Finish. Two
 lines of copy follow the deployment (Given) instead of repeating Cloud's. The sample choice says the
 database runs on this server and names no expiry, as the product's existing self-hosted sample
-strings do. And screen 4 asks only the team size, where Cloud also invites (D7).
+strings do. The project name is optional there, as in today's wizard, while the skip would be
+offered: once a create has been sent, the name is needed to finish what it started. Left empty, no
+project is made, so no database is offered either: a database belongs to a project, and the sample is bound to
+one. Finish then saves the names and the team size and lands where "I'll do this later" leaves for.
+And screen 4 asks only the team size, where Cloud also invites (D7).
 
 ## States
 
@@ -376,9 +394,10 @@ strings do. And screen 4 asks only the team size, where Cloud also invites (D7).
 | 2 Goal | none chosen | two cards and the lighter "Not sure yet, just exploring"; the workspace preview stays | Continue disabled, with "Pick one to continue" under the choices |
 | 2 Goal | a card chosen | card pressed; the panel shows the hero for the change goal, and a statement above its result for the query goal | Continue enabled |
 | 2 Goal | just exploring | the third answer pressed; the panel shows people and agents reaching the databases through Bytebase | Continue enabled |
-| 3 Project | no name | project field empty; the sample choice preselected | Continue disabled, with "Enter a project name" under the field |
-| 3 Sample | named, sample chosen | diagram of the sample instance, its database, the project | Continue enabled |
-| 3 Own | named, own instance chosen | one line on what happens after setup; diagram of the user's instance joining the project later | Continue enabled |
+| 3 Project | no name | project field empty; the sample choice preselected | on Cloud Continue disabled, with "Enter a project name" under the field |
+| 3 · no project | self-hosted, no name | the database choice hidden, with a line that the project can be made later; the panel's project dashed, with no instances | Continue enabled; Finish makes no project |
+| 3 Sample | named, sample chosen | the panel's project with the sample instance and its database | Continue enabled |
+| 3 Own | named, own instance chosen | one line on what happens after setup; the panel's project with the user's instance, dashed | Continue enabled |
 | 3 · no sample | the server reports the sample unavailable, or used by another project | only the own-instance choice, with the reason | Continue enabled once named |
 | 3 · skipped | "I'll do this later", self-hosted only | saves the screen-1 names and leaves for the workspace landing; no project is created; a failed save stays here with the error | n/a |
 | 3 · project exists | Back after a Finish attempt that created the project, its answer lost included | project name and ID read-only, with a line saying the project exists and is renamed in its settings; the database choice read-only once the sample is prepared; no "I'll do this later" on self-hosted | Continue enabled |
@@ -400,7 +419,7 @@ returns to the same screen with the draft.
 | `frontend/src/routes/auth/WorkspaceSetupPage.tsx` | Rewrite as four screens with the local draft, validation under each field, and the single commit at Finish. Finish navigates to the project home, as the wizard has since [#21572]. |
 | `frontend/src/routes/auth/WorkspaceSetupQuestionnaireStep.tsx` | Retire; the goal moves to screen 2 and the team question is removed. |
 | `frontend/src/app/layouts/SplashLayout.tsx` | Setup variant: a panel slot instead of the fixed illustration. |
-| `frontend/src/routes/auth/workspace-setup/` (new) | Beside the route that is their only consumer: screen components, the left panel (the workspace preview, still frames from two of bytebase.com's Rive files and two pictures composed for the panel), the diagram panel, the chips input, whose text field keeps the shared `Input`'s `xs` size, the chips' text size, and only drops its border. The screens use the shared `StepIndicator`, `RadioGroup` and form primitives, with each validation message under its field. |
+| `frontend/src/routes/auth/workspace-setup/` (new) | Beside the route that is their only consumer: screen components, the left panel (the workspace preview, the project with its instances, the project's members, a still frame from bytebase.com's hero Rive file and two pictures composed for the panel), the chips input, whose text field keeps the shared `Input`'s `xs` size, the chips' text size, and only drops its border. The screens use the shared `StepIndicator`, `RadioGroup` and form primitives, with each validation message under its field. |
 | `frontend/src/modules/workspace-setup-guide/` | Take the goal and the team size from the wizard; store "just exploring" as a goal of its own, which uses the query journey; mark "explore database" done on arrival with the sample; start at "Connect instance" on the own-instance path; show the team step only above "Just me". |
 | `frontend/src/routes/project/projectHomeNextSteps.ts` | Take the goal as an input. With a database present, "Query a database" comes before "Change a database" for the query goal and for "just exploring"; the order is unchanged otherwise. |
 | `frontend/src/routes/project/ProjectHomePage.tsx`, `ProjectDatabasesPage.tsx` | Read the stored goal through the guide module: the home passes it to the next-step function, and the databases page leads with a query for the same two goals. |

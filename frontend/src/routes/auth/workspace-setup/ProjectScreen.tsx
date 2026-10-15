@@ -34,6 +34,7 @@ export function ProjectScreen({
   sample,
   samplePrepared,
   isSaaS,
+  projectOptional,
   skipping,
   skipFailure,
   validateProjectId,
@@ -55,6 +56,8 @@ export function ProjectScreen({
   readonly sample: SampleOffer;
   readonly samplePrepared: boolean;
   readonly isSaaS: boolean;
+  // Left empty, no project is made, and so no database is offered (D12).
+  readonly projectOptional: boolean;
   readonly skipping: boolean;
   readonly skipFailure: { detail?: string } | undefined;
   readonly validateProjectId: (id: string) => Promise<ValidatedMessage[]>;
@@ -71,7 +74,9 @@ export function ProjectScreen({
   const named = !!projectTitle.trim();
   const ready =
     projectExists ||
-    (named && !!projectId && projectIdValid && !projectIdRefusal);
+    (named
+      ? !!projectId && projectIdValid && !projectIdRefusal
+      : projectOptional);
   const showSample = samplePrepared || sample === "offered";
   const projectLabel = named
     ? projectTitle.trim()
@@ -120,6 +125,11 @@ export function ProjectScreen({
         <FormField>
           <FormLabel htmlFor="workspace-setup-project-title">
             {t("workspace-setup.project.name")}
+            {projectOptional && (
+              <span className="ml-1 font-normal text-control-light">
+                {t("workspace-setup.optional")}
+              </span>
+            )}
           </FormLabel>
           <Input
             id="workspace-setup-project-title"
@@ -153,7 +163,9 @@ export function ProjectScreen({
             />
           ) : (
             <SetupNote id="workspace-setup-project-title-note">
-              {t("workspace-setup.project.name-required")}
+              {projectOptional
+                ? t("workspace-setup.project.name-optional-note")
+                : t("workspace-setup.project.name-required")}
             </SetupNote>
           )}
           {/* The field shows its own reason when its checks fail. */}
@@ -161,67 +173,72 @@ export function ProjectScreen({
             <FormError>{projectIdRefusal}</FormError>
           )}
         </FormField>
-        <FormField>
-          <FormTitle>{databaseTitle}</FormTitle>
-          <RadioGroup
-            aria-label={databaseTitle}
-            value={source}
-            disabled={samplePrepared}
-            onValueChange={(value) => {
-              if (value === "sample" || value === "own") onSourceChange(value);
-            }}
-            className="flex-col items-stretch gap-y-2"
-          >
-            {showSample && (
+        {(named || !projectOptional) && (
+          <FormField>
+            <FormTitle>{databaseTitle}</FormTitle>
+            <RadioGroup
+              aria-label={databaseTitle}
+              value={source}
+              disabled={samplePrepared}
+              onValueChange={(value) => {
+                if (value === "sample" || value === "own")
+                  onSourceChange(value);
+              }}
+              className="flex-col items-stretch gap-y-2"
+            >
+              {showSample && (
+                <RadioGroupItem
+                  value="sample"
+                  className={choiceCardClassName(source === "sample")}
+                  radioClassName="mt-0.5"
+                  contentClassName="min-w-0"
+                >
+                  <div className="flex flex-wrap items-center gap-x-2 font-medium text-main">
+                    {t("workspace-setup.project.sample.title")}
+                    <Badge variant="secondary">
+                      {t("workspace-setup.project.sample.recommended")}
+                    </Badge>
+                  </div>
+                  <div className="mt-1 text-control-light">
+                    {isSaaS
+                      ? t("workspace-setup.project.sample.description")
+                      : t(
+                          "workspace-setup.project.sample.description-self-host"
+                        )}
+                  </div>
+                </RadioGroupItem>
+              )}
               <RadioGroupItem
-                value="sample"
-                className={choiceCardClassName(source === "sample")}
+                value="own"
+                className={choiceCardClassName(source === "own")}
                 radioClassName="mt-0.5"
                 contentClassName="min-w-0"
               >
-                <div className="flex flex-wrap items-center gap-x-2 font-medium text-main">
-                  {t("workspace-setup.project.sample.title")}
-                  <Badge variant="secondary">
-                    {t("workspace-setup.project.sample.recommended")}
-                  </Badge>
+                <div className="font-medium text-main">
+                  {t("workspace-setup.project.own.title")}
                 </div>
                 <div className="mt-1 text-control-light">
-                  {isSaaS
-                    ? t("workspace-setup.project.sample.description")
-                    : t("workspace-setup.project.sample.description-self-host")}
+                  {t("workspace-setup.project.own.description", {
+                    project: projectLabel,
+                  })}
                 </div>
               </RadioGroupItem>
-            )}
-            <RadioGroupItem
-              value="own"
-              className={choiceCardClassName(source === "own")}
-              radioClassName="mt-0.5"
-              contentClassName="min-w-0"
-            >
-              <div className="font-medium text-main">
-                {t("workspace-setup.project.own.title")}
-              </div>
-              <div className="mt-1 text-control-light">
-                {t("workspace-setup.project.own.description", {
-                  project: projectLabel,
-                })}
-              </div>
-            </RadioGroupItem>
-          </RadioGroup>
-          {samplePrepared ? (
-            <SetupNote>
-              {t("workspace-setup.project.sample.prepared")}
-            </SetupNote>
-          ) : (
-            sample !== "offered" && (
+            </RadioGroup>
+            {samplePrepared ? (
               <SetupNote>
-                {sample === "used"
-                  ? t("workspace-setup.project.sample.used")
-                  : t("workspace-setup.project.sample.unavailable")}
+                {t("workspace-setup.project.sample.prepared")}
               </SetupNote>
-            )
-          )}
-        </FormField>
+            ) : (
+              sample !== "offered" && (
+                <SetupNote>
+                  {sample === "used"
+                    ? t("workspace-setup.project.sample.used")
+                    : t("workspace-setup.project.sample.unavailable")}
+                </SetupNote>
+              )
+            )}
+          </FormField>
+        )}
       </FormFieldGroup>
       {skipFailure && (
         <Alert

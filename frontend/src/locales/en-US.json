@@ -3870,17 +3870,12 @@
     },
     "optional": "optional",
     "panel": {
-      "assigned-to": "assigned to",
-      "holds": "holds",
+      "connected-after-setup": "Connected after setup",
       "own-databases": "Its databases",
-      "own-databases-detail": "Found when the instance connects",
       "own-instance": "Your instance",
-      "own-instance-detail": "Your database server, connected after setup",
       "sample-database": "Sample database",
-      "sample-database-detail": "Employee sample data",
       "sample-instance": "Sample Project Instance",
-      "sample-instance-detail": "PostgreSQL, hosted by Bytebase Cloud",
-      "sample-instance-detail-self-host": "PostgreSQL, on this server"
+      "workspace": "Workspace"
     },
     "project": {
       "database-title": "Database for {{project}}",
@@ -3888,6 +3883,7 @@
       "exists": "This project already exists. Rename it in its settings.",
       "name": "Project name",
       "name-hint": "A project groups the databases a team works on, with its members and policies. Every change and query happens inside one.",
+      "name-optional-note": "Leave it empty to create a project later.",
       "name-placeholder": "Payments, Data platform, Internal tools",
       "name-required": "Enter a project name",
       "own": {
