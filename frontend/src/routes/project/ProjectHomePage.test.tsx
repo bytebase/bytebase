@@ -3,6 +3,7 @@ import { create } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { silentContextKey } from "@/api/context-key";
 import type { Permission } from "@/types/iam";
 import { ApprovalStatus, Engine, IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
@@ -147,7 +148,8 @@ describe("ProjectHomePage", () => {
       parent: "projects/orders",
       pageSize: 1,
       filter: 'task_type in ["DATABASE_MIGRATE"]',
-    }));
+    }, expect.objectContaining({ contextValues: expect.anything() })));
+    expect(mocks.listRollouts.mock.calls[0][1].contextValues.get(silentContextKey)).toBe(true);
     expect(mocks.listRollouts).toHaveBeenCalledOnce();
   });
 

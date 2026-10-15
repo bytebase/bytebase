@@ -1,3 +1,4 @@
+import { createContextValues } from "@connectrpc/connect";
 import {
   ArrowRightLeft,
   ChevronRight,
@@ -11,6 +12,7 @@ import {
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import {
   DATABASE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DATABASES,
@@ -383,11 +385,14 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     }
     setChangeState({ projectName, status: "loading" });
     void rolloutServiceClientConnect
-      .listRollouts({
-        parent: projectName,
-        pageSize: 1,
-        filter: 'task_type in ["DATABASE_MIGRATE"]',
-      })
+      .listRollouts(
+        {
+          parent: projectName,
+          pageSize: 1,
+          filter: 'task_type in ["DATABASE_MIGRATE"]',
+        },
+        { contextValues: createContextValues().set(silentContextKey, true) }
+      )
       .then(({ rollouts }) => {
         if (active) {
           setChangeState({
