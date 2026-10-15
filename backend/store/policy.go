@@ -191,9 +191,9 @@ func writeIamPolicyImpl(ctx context.Context, tx *sql.Tx, workspace string, resou
 // evictIamPolicyCache drops this process's cached copies of one IAM policy. A
 // write evicts rather than publishing what it just wrote: the advisory lock ends
 // with the commit, so two writers can commit in one order and reach the cache in
-// the other, leaving the older policy cached with no expiry -- and permission
-// checks read this cache. Eviction is safe under every interleaving, because it
-// never installs a value; the next read repopulates it from the row.
+// the other, leaving the older policy cached until the entry expires -- and
+// permission checks read this cache. Eviction is safe under every interleaving,
+// because it never installs a value; the next read repopulates it from the row.
 func (s *Store) evictIamPolicyCache(workspace string, resourceType storepb.Policy_Resource, resource string) {
 	s.policyCache.Remove(getPolicyCacheKey(workspace, resourceType, resource, storepb.Policy_IAM))
 	s.iamPolicyCache.Remove(getIamPolicyCacheKey(workspace, resourceType, resource))

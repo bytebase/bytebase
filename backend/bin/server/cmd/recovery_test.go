@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,8 +15,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/recovery"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestResolveProfileUsesServerDataConfiguration(t *testing.T) {
@@ -46,6 +49,24 @@ func TestResolveProfileUsesServerDataConfiguration(t *testing.T) {
 	require.True(t, profile.HA)
 	require.True(t, profile.MetricsRemoteAccess)
 	require.Equal(t, "postgres://bytebase.example/metadata", profile.PgURL)
+}
+
+func TestRecoveryRefusesToStartPostgresOnADataDirectoryInUse(t *testing.T) {
+	pgDataDir := t.TempDir()
+	connectErr := errors.New("the database system is starting up")
+	require.NoError(t, refuseRunningEmbeddedPostgres(pgDataDir, connectErr))
+
+	require.NoError(t, os.WriteFile(filepath.Join(pgDataDir, "postmaster.pid"), []byte("12345\n"), 0o600))
+	err := refuseRunningEmbeddedPostgres(pgDataDir, connectErr)
+
+	require.ErrorContains(t, err, "the database system is starting up")
+	require.ErrorContains(t, err, "may be in use")
+	require.ErrorContains(t, err, "inside the Bytebase server's container")
+}
+
+// The result lines promise "Live within one minute."
+func TestRecoveryPromisesTheStoreCacheLifetime(t *testing.T) {
+	require.Equal(t, time.Minute, store.OutOfBandCacheLifetime)
 }
 
 func TestReadRecoveryPasswordInputInterrupt(t *testing.T) {
@@ -83,11 +104,13 @@ type fakeRecoveryRunner struct {
 	listWorkspaces         []string
 	addRequests            []recovery.AddUserToWorkspaceRequest
 	roles                  []*recovery.Role
+	enableResult           *recovery.EnablePasswordSigninResult
 	enableErr              error
 	resetResult            *recovery.ResetUserPasswordResult
 	resetErr               error
 	resetErrs              []error
 	listErr                error
+	addResult              *recovery.AddUserToWorkspaceResult
 	addErr                 error
 	passwordRestriction    *storepb.WorkspaceProfileSetting_PasswordRestriction
 	passwordRestrictionErr error
@@ -113,7 +136,7 @@ func (f *fakeRecoveryRunner) GetWorkspaceID(context.Context) (string, error) {
 func (f *fakeRecoveryRunner) EnablePasswordSignin(_ context.Context, workspaceID string) (*recovery.EnablePasswordSigninResult, error) {
 	f.enableWorkspaces = append(f.enableWorkspaces, workspaceID)
 	if f.enableErr != nil {
-		return nil, f.enableErr
+		return f.enableResult, f.enableErr
 	}
 	return &recovery.EnablePasswordSigninResult{WorkspaceID: workspaceID}, nil
 }
@@ -153,7 +176,7 @@ func (f *fakeRecoveryRunner) ResetUserPassword(_ context.Context, request recove
 	if f.resetResult != nil {
 		return f.resetResult, nil
 	}
-	return &recovery.ResetUserPasswordResult{WorkspaceID: request.WorkspaceID, Email: request.Email}, nil
+	return &recovery.ResetUserPasswordResult{WorkspaceID: request.WorkspaceID, Email: common.NormalizeEmail(request.Email)}, nil
 }
 
 func (f *fakeRecoveryRunner) ListRoles(_ context.Context, workspaceID string) ([]*recovery.Role, error) {
@@ -167,7 +190,10 @@ func (f *fakeRecoveryRunner) ListRoles(_ context.Context, workspaceID string) ([
 func (f *fakeRecoveryRunner) AddUserToWorkspace(_ context.Context, request recovery.AddUserToWorkspaceRequest) (*recovery.AddUserToWorkspaceResult, error) {
 	f.addRequests = append(f.addRequests, request)
 	if f.addErr != nil {
-		return nil, f.addErr
+		return f.addResult, f.addErr
+	}
+	if f.addResult != nil {
+		return f.addResult, nil
 	}
 	return &recovery.AddUserToWorkspaceResult{
 		WorkspaceID: request.WorkspaceID,
@@ -178,35 +204,31 @@ func (f *fakeRecoveryRunner) AddUserToWorkspace(_ context.Context, request recov
 }
 
 func TestRecoveryCommandContract(t *testing.T) {
-	t.Run("help exposes no workspace or action inputs", func(t *testing.T) {
-		command, output, _, _ := newTestRecoveryCommand(t, &fakeRecoveryRunner{}, "", nil)
-		command.SetArgs([]string{"--help"})
+	t.Run("help lists the subcommands and no workspace or confirmation flag", func(t *testing.T) {
+		help := recoveryHelp(t)
 
-		require.NoError(t, command.Execute())
-		require.NotContains(t, output.String(), "--workspace")
-		require.NotContains(t, output.String(), "--email")
-		require.NotContains(t, output.String(), "--password")
-		require.NotContains(t, output.String(), "--yes")
-		require.Empty(t, command.Commands())
+		require.Contains(t, help[""], "enable-password-signin")
+		require.Contains(t, help[""], "reset-password")
+		for _, text := range help {
+			for _, rejected := range []string{"--workspace", "--yes", "--add-role", "--wait", "--password-file"} {
+				require.NotContains(t, text, rejected)
+			}
+		}
+		require.NotContains(t, help["enable-password-signin"], "--email")
+		require.NotContains(t, help["enable-password-signin"], "--password")
+		require.Contains(t, help["reset-password"], "--email string")
+		require.Contains(t, help["reset-password"], "--password string")
 	})
 
-	t.Run("rejects a non-terminal before opening metadata", func(t *testing.T) {
-		openCount := 0
-		command := newRecoveryCommand(recoveryCommandDependencies{
-			open: func(context.Context) (*recoveryBackend, error) {
-				openCount++
-				return nil, nil
-			},
-			isTerminal: func(io.Reader, io.Writer) bool { return false },
-		})
-		command.SetArgs(nil)
-		command.SilenceUsage = true
-		command.SilenceErrors = true
+	t.Run("rejects a non-terminal before opening metadata and names the subcommands", func(t *testing.T) {
+		command, _, openCount, _ := newTestRecoveryCommandWithTerminal(t, &fakeRecoveryRunner{}, false, "", nil)
 
 		err := command.Execute()
 
 		require.ErrorContains(t, err, "terminal input and output")
-		require.Zero(t, openCount)
+		require.ErrorContains(t, err, `"bytebase recovery enable-password-signin"`)
+		require.ErrorContains(t, err, `"bytebase recovery reset-password --email <email> --password <password>"`)
+		require.Zero(t, *openCount)
 	})
 
 	t.Run("opens and closes metadata once for the session", func(t *testing.T) {
@@ -215,8 +237,7 @@ func TestRecoveryCommandContract(t *testing.T) {
 		require.NoError(t, command.Execute())
 		require.Equal(t, 1, *openCount)
 		require.Equal(t, 1, *closeCount)
-		require.Contains(t, output.String(), "Stop all Bytebase servers that use this metadata database before continuing.")
-		require.Contains(t, output.String(), "Restart all Bytebase servers after recovery")
+		requireNoStopOrRestart(t, output.String())
 	})
 
 	t.Run("rejects metadata with multiple workspaces", func(t *testing.T) {
@@ -264,12 +285,12 @@ func TestRecoveryCommandContract(t *testing.T) {
 		require.NoError(t, command.Execute())
 		require.Equal(t, []string{"resolved-workspace"}, runner.enableWorkspaces)
 		require.Contains(t, output.String(), "Enabling password sign-in...")
-		require.Contains(t, output.String(), "Password sign-in is enabled.")
+		require.Contains(t, output.String(), "Password sign-in is enabled. Live within one minute.")
 		require.NotContains(t, output.String(), "resolved-workspace")
-		require.Contains(t, output.String(), "Restart all Bytebase servers after exiting recovery.")
-		require.Contains(t, output.String(), "After restarting, sign in at /auth with an existing user account.")
+		require.Contains(t, output.String(), "Sign in at /auth with an existing user account.")
 		require.NotContains(t, output.String(), "existing administrator account")
-		require.Less(t, strings.Index(output.String(), "Restart all Bytebase servers"), strings.Index(output.String(), "After restarting, sign in at /auth"))
+		require.Less(t, strings.Index(output.String(), "Live within one minute."), strings.Index(output.String(), "Sign in at /auth"))
+		requireNoStopOrRestart(t, output.String())
 		require.Equal(t, 2, strings.Count(output.String(), "Select a recovery action:"))
 	})
 
@@ -279,6 +300,20 @@ func TestRecoveryCommandContract(t *testing.T) {
 
 		require.NoError(t, command.Execute())
 		require.Contains(t, output.String(), "no usable workspace administrator")
+		require.Equal(t, 2, strings.Count(output.String(), "Select a recovery action:"))
+	})
+
+	t.Run("enable reports a saved setting with a warning when the audit record fails", func(t *testing.T) {
+		runner := &fakeRecoveryRunner{
+			enableResult: &recovery.EnablePasswordSigninResult{WorkspaceID: "acme", UsableAdminCount: 1},
+			enableErr:    errors.New("password sign-in was enabled, but failed to create the recovery audit log: audit write failed"),
+		}
+		command, output, _, _ := newTestRecoveryCommand(t, runner, "1\ny\nq\n", nil)
+
+		require.NoError(t, command.Execute())
+		require.Contains(t, output.String(), "Password sign-in is enabled. Live within one minute.\n"+
+			"Warning: password sign-in was enabled, but failed to create the recovery audit log: audit write failed\n")
+		require.NotContains(t, output.String(), "Failed to enable password sign-in")
 		require.Equal(t, 2, strings.Count(output.String(), "Select a recovery action:"))
 	})
 
@@ -414,8 +449,9 @@ func TestRecoveryCommandContract(t *testing.T) {
 		require.Equal(t, make([]byte, len(firstPassword)), firstPassword)
 		require.Equal(t, make([]byte, len(secondPassword)), secondPassword)
 		require.Contains(t, output.String(), "Resetting user password...")
-		require.Contains(t, output.String(), "Password updated for user user@example.com.")
+		require.Contains(t, output.String(), "Password updated for user user@example.com. Live within one minute.")
 		require.NotContains(t, output.String(), "NewPassword1!")
+		requireNoStopOrRestart(t, output.String())
 	})
 
 	t.Run("missing member can decline the IAM grant", func(t *testing.T) {
@@ -473,9 +509,10 @@ func TestRecoveryCommandContract(t *testing.T) {
 		require.Contains(t, output.String(), "Invalid role selection")
 		require.Contains(t, output.String(), "Add user@example.com as Workspace admin (roles/workspaceAdmin)? [y/N]")
 		require.Contains(t, output.String(), "Adding user to workspace...")
-		require.Contains(t, output.String(), "Restart all Bytebase servers after exiting recovery so they reload the updated IAM policy.")
+		require.Contains(t, output.String(), "User user@example.com was added as Workspace admin (roles/workspaceAdmin). Live within one minute.")
 		require.Contains(t, output.String(), "Password updated for user user@example.com.")
 		require.NotContains(t, output.String(), "NewPassword1!")
+		requireNoStopOrRestart(t, output.String())
 		require.Equal(t, make([]byte, len(firstPassword)), firstPassword)
 		require.Equal(t, make([]byte, len(secondPassword)), secondPassword)
 	})
@@ -499,6 +536,45 @@ func TestRecoveryCommandContract(t *testing.T) {
 		require.Len(t, runner.resetRequests, 1)
 		require.Contains(t, output.String(), "Failed to add user to workspace: IAM write failed")
 	})
+
+	for _, tc := range []struct {
+		name     string
+		runner   *fakeRecoveryRunner
+		wantLine string
+	}{
+		{
+			name: "role grant reports a stored role with a warning when its audit record fails",
+			runner: &fakeRecoveryRunner{
+				addResult: &recovery.AddUserToWorkspaceResult{WorkspaceID: "acme", Email: "user@example.com", Role: "roles/workspaceAdmin", Changed: true},
+				addErr:    errors.New("user was added to the workspace, but failed to create the recovery audit log: audit write failed"),
+			},
+			wantLine: "User user@example.com was added as Workspace admin (roles/workspaceAdmin). Live within one minute.\n" +
+				"Warning: user was added to the workspace, but failed to create the recovery audit log: audit write failed\n",
+		},
+		{
+			name: "role grant says the user already has a role another server granted meanwhile",
+			runner: &fakeRecoveryRunner{
+				addResult: &recovery.AddUserToWorkspaceResult{WorkspaceID: "acme", Email: "user@example.com", Role: "roles/workspaceAdmin"},
+			},
+			wantLine: "User user@example.com already has Workspace admin (roles/workspaceAdmin). Live within one minute.\n",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.runner.notInWorkspace = true
+			tc.runner.roles = []*recovery.Role{{Name: "roles/workspaceAdmin", Title: "Workspace admin"}}
+			passwords := [][]byte{[]byte("NewPassword1!"), []byte("NewPassword1!")}
+			readCount := 0
+			command, output, _, _ := newTestRecoveryCommand(t, tc.runner, "2\nuser@example.com\ny\n1\ny\nq\n", func(io.Reader) ([]byte, error) {
+				password := passwords[readCount]
+				readCount++
+				return password, nil
+			})
+
+			require.NoError(t, command.Execute())
+			require.Contains(t, output.String(), "Adding user to workspace...\n"+tc.wantLine)
+			require.NotContains(t, output.String(), "Failed to add user to workspace")
+		})
+	}
 
 	t.Run("audit failure preserves the reset and continues membership recovery", func(t *testing.T) {
 		runner := &fakeRecoveryRunner{
@@ -596,9 +672,423 @@ func TestRecoveryCommandContract(t *testing.T) {
 	})
 }
 
+func TestRecoverySubcommands(t *testing.T) {
+	resetArgs := []string{"reset-password", "--email", "user@example.com", "--password", "NewPassword1!"}
+	const resetResult = "Password updated for user user@example.com. Live within one minute.\n"
+
+	t.Run("enable-password-signin enables sign-in without a terminal", func(t *testing.T) {
+		runner := &fakeRecoveryRunner{}
+		command, output, openCount, closeCount := newTestRecoverySubcommand(t, runner, "enable-password-signin")
+
+		require.NoError(t, command.Execute())
+		require.Equal(t, []string{"acme"}, runner.enableWorkspaces)
+		require.Equal(t, "Password sign-in is enabled. Live within one minute.\n", output.String())
+		require.Equal(t, 1, *openCount)
+		require.Equal(t, 1, *closeCount)
+	})
+
+	t.Run("reset-password sets the password without a terminal or a prompt", func(t *testing.T) {
+		runner := &fakeRecoveryRunner{}
+		command, output, openCount, closeCount := newTestRecoverySubcommand(t, runner, resetArgs...)
+
+		require.NoError(t, command.Execute())
+		require.Equal(t, []recovery.ResetUserPasswordRequest{{
+			WorkspaceID: "acme",
+			Email:       "user@example.com",
+			Password:    []byte("NewPassword1!"),
+		}}, runner.resetRequests)
+		require.Equal(t, resetResult, output.String())
+		require.Equal(t, 1, *openCount)
+		require.Equal(t, 1, *closeCount)
+	})
+
+	for _, password := range []string{"می\u200cخواهمPw1!", "Dev👩\u200d💻Password1!"} {
+		t.Run(fmt.Sprintf("reset-password accepts the typeable password %q", password), func(t *testing.T) {
+			runner := &fakeRecoveryRunner{}
+			command, _, _, _ := newTestRecoverySubcommand(t, runner,
+				"reset-password", "--email", "user@example.com", "--password", password)
+
+			require.NoError(t, command.Execute())
+			require.Len(t, runner.resetRequests, 1)
+		})
+	}
+
+	t.Run("reset-password accepts a password that only looks partly like a reference", func(t *testing.T) {
+		runner := &fakeRecoveryRunner{}
+		command, _, _, _ := newTestRecoverySubcommand(t, runner,
+			"reset-password", "--email", "user@example.com", "--password", "$(Str0ng!)")
+
+		require.NoError(t, command.Execute())
+		require.Len(t, runner.resetRequests, 1)
+		require.Equal(t, []byte("$(Str0ng!)"), runner.resetRequests[0].Password)
+	})
+
+	for _, email := range []string{"User@Example.com", "user@example.com\n", " user@example.com "} {
+		t.Run(fmt.Sprintf("reset-password reads the email %q as sign-in does", email), func(t *testing.T) {
+			runner := &fakeRecoveryRunner{}
+			command, output, _, _ := newTestRecoverySubcommand(t, runner,
+				"reset-password", "--email", email, "--password", "NewPassword1!")
+
+			require.NoError(t, command.Execute())
+			require.Len(t, runner.resetRequests, 1)
+			require.Equal(t, resetResult, output.String())
+		})
+	}
+
+	t.Run("reset-password succeeds with a warning when the workspace role check fails", func(t *testing.T) {
+		runner := &fakeRecoveryRunner{membershipErr: errors.New("membership read failed")}
+		command, output, _, _ := newTestRecoverySubcommand(t, runner, resetArgs...)
+
+		require.NoError(t, command.Execute())
+		require.Equal(t, resetResult+
+			"Warning: could not check whether user user@example.com has a workspace role: membership read failed\n", output.String())
+	})
+
+	t.Run("reset-password points a user with no workspace role at the menu", func(t *testing.T) {
+		runner := &fakeRecoveryRunner{notInWorkspace: true}
+		command, output, _, _ := newTestRecoverySubcommand(t, runner, resetArgs...)
+
+		require.NoError(t, command.Execute())
+		require.Equal(t, resetResult+
+			"User user@example.com has no workspace role. Before they try to sign in, run \"bytebase recovery\" to add one.\n", output.String())
+		require.Len(t, runner.resetRequests, 1)
+		require.Empty(t, runner.listWorkspaces)
+		require.Empty(t, runner.addRequests)
+	})
+
+	for _, tc := range []struct {
+		name       string
+		args       []string
+		runner     *fakeRecoveryRunner
+		wantErr    string
+		wantResult string
+	}{
+		{
+			name:    "enable-password-signin when no administrator has a password",
+			args:    []string{"enable-password-signin"},
+			runner:  &fakeRecoveryRunner{enableErr: errors.New("no usable workspace administrator has an active end-user identity with a password credential")},
+			wantErr: "no usable workspace administrator has an active end-user identity with a password credential",
+		},
+		{
+			name: "enable-password-signin when the audit record fails after the save",
+			args: []string{"enable-password-signin"},
+			runner: &fakeRecoveryRunner{
+				enableResult: &recovery.EnablePasswordSigninResult{WorkspaceID: "acme", UsableAdminCount: 1},
+				enableErr:    errors.New("password sign-in was enabled, but failed to create the recovery audit log: audit write failed"),
+			},
+			wantErr:    "password sign-in was enabled, but failed to create the recovery audit log: audit write failed",
+			wantResult: "Password sign-in is enabled. Live within one minute.\n",
+		},
+		{
+			name:    "reset-password for an unknown user",
+			args:    resetArgs,
+			runner:  &fakeRecoveryRunner{resetErr: errors.New("the user does not exist")},
+			wantErr: "the user does not exist",
+		},
+		{
+			name:    "reset-password for a deactivated or non-user account",
+			args:    resetArgs,
+			runner:  &fakeRecoveryRunner{resetErr: errors.New(`user "user@example.com" is not an active end user`)},
+			wantErr: `user "user@example.com" is not an active end user`,
+		},
+		{
+			name:    "reset-password with a password the workspace restriction refuses",
+			args:    resetArgs,
+			runner:  &fakeRecoveryRunner{resetErr: errors.New("password does not satisfy the workspace restriction: password length should no less than 16 characters")},
+			wantErr: "password does not satisfy the workspace restriction: password length should no less than 16 characters",
+		},
+		{
+			name:    "reset-password for an email outside the allowed domains",
+			args:    resetArgs,
+			runner:  &fakeRecoveryRunner{resetErr: errors.New("the email does not belong to the workspace's allowed domains")},
+			wantErr: "the email does not belong to the workspace's allowed domains",
+		},
+		{
+			name: "reset-password when the audit record fails after the save",
+			args: resetArgs,
+			runner: &fakeRecoveryRunner{
+				resetResult: &recovery.ResetUserPasswordResult{WorkspaceID: "acme", Email: "user@example.com", Changed: true},
+				resetErr:    errors.New("user password reset completed, but failed to create the recovery audit log: audit write failed"),
+			},
+			wantErr:    "user password reset completed, but failed to create the recovery audit log: audit write failed",
+			wantResult: resetResult,
+		},
+		{
+			name: "reset-password names a missing workspace role before a later step's error",
+			args: resetArgs,
+			runner: &fakeRecoveryRunner{
+				resetResult:    &recovery.ResetUserPasswordResult{WorkspaceID: "acme", Email: "user@example.com", Changed: true},
+				resetErr:       errors.New("user password reset completed, but failed to create the recovery audit log: audit write failed"),
+				notInWorkspace: true,
+			},
+			wantErr:    "user password reset completed, but failed to create the recovery audit log: audit write failed",
+			wantResult: resetResult + "User user@example.com has no workspace role. Before they try to sign in, run \"bytebase recovery\" to add one.\n",
+		},
+		{
+			name: "reset-password with the password already set when clearing the lockout fails",
+			args: resetArgs,
+			runner: &fakeRecoveryRunner{
+				resetResult: &recovery.ResetUserPasswordResult{WorkspaceID: "acme", Email: "user@example.com"},
+				resetErr:    errors.New("failed to clear the login attempt counter: database unavailable"),
+			},
+			wantErr:    "failed to clear the login attempt counter: database unavailable",
+			wantResult: resetResult,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			command, output, _, closeCount := newTestRecoverySubcommand(t, tc.runner, tc.args...)
+
+			err := command.Execute()
+
+			require.EqualError(t, err, tc.wantErr)
+			require.Equal(t, tc.wantResult+"Error: "+tc.wantErr+"\n", output.String())
+			require.Equal(t, 1, *closeCount)
+		})
+	}
+
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "reset-password without flags",
+			args:    []string{"reset-password"},
+			wantErr: "--email and --password need a value",
+		},
+		{
+			name:    "reset-password without a password",
+			args:    []string{"reset-password", "--email", "user@example.com"},
+			wantErr: "--password needs a value",
+		},
+		{
+			name:    "reset-password without an email",
+			args:    []string{"reset-password", "--password", "NewPassword1!"},
+			wantErr: "--email needs a value",
+		},
+		{
+			name:    "reset-password with an empty password",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password", ""},
+			wantErr: "--password needs a value",
+		},
+		{
+			name:    "reset-password with an empty email",
+			args:    []string{"reset-password", "--email", "", "--password", "NewPassword1!"},
+			wantErr: "--email needs a value",
+		},
+		{
+			name:    "reset-password with a value that is not an email address",
+			args:    []string{"reset-password", "--email", "not-an-email", "--password", "NewPassword1!"},
+			wantErr: "--email is not an email address",
+		},
+		{
+			name:    "reset-password with an unresolved Kubernetes reference as the password",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password", "$(NEW_PASSWORD)"},
+			wantErr: "--password looks like a variable reference that was not expanded ($NAME, ${NAME} or $(NAME)); in a Job's args, Kubernetes expands only $(NAME), and only for a variable the container defines",
+		},
+		{
+			name:    "reset-password with an unresolved Kubernetes reference to a dashed name as the password",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password", "$(new-password)"},
+			wantErr: "--password looks like a variable reference that was not expanded ($NAME, ${NAME} or $(NAME)); in a Job's args, Kubernetes expands only $(NAME), and only for a variable the container defines",
+		},
+		{
+			name:    "reset-password with an unresolved Kubernetes reference to a dotted name as the password",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password", "$(db.password)"},
+			wantErr: "--password looks like a variable reference that was not expanded ($NAME, ${NAME} or $(NAME)); in a Job's args, Kubernetes expands only $(NAME), and only for a variable the container defines",
+		},
+		{
+			name:    "reset-password with an unresolved Kubernetes reference to a name starting with a digit as the password",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password", "$(1PASSWORD)"},
+			wantErr: "--password looks like a variable reference that was not expanded ($NAME, ${NAME} or $(NAME)); in a Job's args, Kubernetes expands only $(NAME), and only for a variable the container defines",
+		},
+		{
+			name:    "reset-password with an unexpanded braced shell reference as the password",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password", "${NEW_PASSWORD}"},
+			wantErr: "--password looks like a variable reference that was not expanded ($NAME, ${NAME} or $(NAME)); in a Job's args, Kubernetes expands only $(NAME), and only for a variable the container defines",
+		},
+		{
+			name:    "reset-password with an unexpanded shell reference as the password",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password", "$NEW_PASSWORD"},
+			wantErr: "--password looks like a variable reference that was not expanded ($NAME, ${NAME} or $(NAME)); in a Job's args, Kubernetes expands only $(NAME), and only for a variable the container defines",
+		},
+		{
+			name:    "reset-password with a trailing newline in the password",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password", "NewPassword1!\n"},
+			wantErr: "--password contains a character that cannot be typed at sign-in, such as a trailing newline, a byte-order mark or bytes from a file in another encoding",
+		},
+		{
+			name:    "reset-password with a byte-order mark in the password",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password", "\ufeffNewPassword1!"},
+			wantErr: "--password contains a character that cannot be typed at sign-in, such as a trailing newline, a byte-order mark or bytes from a file in another encoding",
+		},
+		{
+			name:    "reset-password with a zero-width space in the password",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password", "NewPassword1!\u200b"},
+			wantErr: "--password contains a character that cannot be typed at sign-in, such as a trailing newline, a byte-order mark or bytes from a file in another encoding",
+		},
+		{
+			name:    "reset-password with a replacement character in the password",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password", "NewPassw\ufffdrd1!"},
+			wantErr: "--password contains a character that cannot be typed at sign-in, such as a trailing newline, a byte-order mark or bytes from a file in another encoding",
+		},
+		{
+			name:    "reset-password with a password that is not valid UTF-8",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password", "NewPassw\xf6rd1!"},
+			wantErr: "--password contains a character that cannot be typed at sign-in, such as a trailing newline, a byte-order mark or bytes from a file in another encoding",
+		},
+		{
+			name:    "reset-password with positional arguments",
+			args:    []string{"reset-password", "user@example.com", "NewPassword1!"},
+			wantErr: "bytebase recovery reset-password takes no arguments",
+		},
+		{
+			name:    "enable-password-signin with an argument",
+			args:    []string{"enable-password-signin", "now"},
+			wantErr: "bytebase recovery enable-password-signin takes no arguments",
+		},
+		{
+			name:    "reset-password with an unknown flag",
+			args:    []string{"reset-password", "--emial", "user@example.com", "--password", "NewPassword1!"},
+			wantErr: "bytebase recovery reset-password was given a flag it does not know or a flag without a valid value; the usage lists its flags",
+		},
+		{
+			name:    "reset-password with a flag that has no value",
+			args:    []string{"reset-password", "--email", "user@example.com", "--password"},
+			wantErr: "bytebase recovery reset-password was given a flag it does not know or a flag without a valid value; the usage lists its flags",
+		},
+		{
+			name:    "a misspelled subcommand",
+			args:    []string{"enable-password-sign-in"},
+			wantErr: `bytebase recovery was given an argument or a flag it does not take; to run one action, use "bytebase recovery enable-password-signin" or "bytebase recovery reset-password --email <email> --password <password>"`,
+		},
+		{
+			name:    "a misspelled subcommand with flags",
+			args:    []string{"reset-passwd", "--email", "user@example.com", "--password", "NewPassword1!"},
+			wantErr: `bytebase recovery was given an argument or a flag it does not take; to run one action, use "bytebase recovery enable-password-signin" or "bytebase recovery reset-password --email <email> --password <password>"`,
+		},
+	} {
+		t.Run(tc.name+" is a usage error that reads nothing", func(t *testing.T) {
+			runner := &fakeRecoveryRunner{}
+			command, output, openCount, _ := newTestRecoverySubcommand(t, runner, tc.args...)
+
+			err := command.Execute()
+
+			require.EqualError(t, err, tc.wantErr)
+			require.Zero(t, *openCount)
+			require.True(t, strings.HasPrefix(output.String(), "Error: "+tc.wantErr+"\nUsage:\n"), output.String())
+		})
+	}
+
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{name: "a password given without --password", args: []string{"reset-password", "--email", "user@example.com", "S3cretPassword1!"}},
+		{name: "a password given as --email", args: []string{"reset-password", "--email", "S3cretPassword1!", "--password", "user@example.com"}},
+		{name: "a password that starts with a dash given without --password", args: []string{"reset-password", "--email", "user@example.com", "-S3cretPassword1!"}},
+		{name: "a password that starts with two dashes given without --password", args: []string{"reset-password", "--email", "user@example.com", "--S3cretPassword1!"}},
+		{name: "--password and its value in one argument", args: []string{"reset-password", "--email", "user@example.com", "--password S3cretPassword1!"}},
+		{name: "a single-dash --password", args: []string{"reset-password", "--email", "user@example.com", "-password=S3cretPassword1!"}},
+		{name: "a whole command in one argument", args: []string{"reset-password --email user@example.com --password S3cretPassword1!"}},
+	} {
+		t.Run(tc.name+" is not repeated in the error", func(t *testing.T) {
+			command, output, openCount, _ := newTestRecoverySubcommand(t, &fakeRecoveryRunner{}, tc.args...)
+
+			err := command.Execute()
+
+			require.Error(t, err)
+			require.NotContains(t, err.Error(), "S3cretPassword1!")
+			require.NotContains(t, output.String(), "S3cretPassword1!")
+			require.Zero(t, *openCount)
+		})
+	}
+
+	for _, args := range [][]string{{"enable-password-signin"}, resetArgs} {
+		for _, tc := range []struct {
+			name    string
+			runner  *fakeRecoveryRunner
+			wantErr string
+		}{
+			{
+				name:    "no workspace",
+				runner:  &fakeRecoveryRunner{noWorkspace: true},
+				wantErr: "no active workspace was found in the metadata database",
+			},
+			{
+				name:    "more than one workspace",
+				runner:  &fakeRecoveryRunner{workspaceErr: errors.New("found 2 workspaces; recovery requires exactly one workspace")},
+				wantErr: "failed to find the recovery workspace: found 2 workspaces; recovery requires exactly one workspace",
+			},
+		} {
+			t.Run(args[0]+" refuses metadata with "+tc.name, func(t *testing.T) {
+				command, output, _, closeCount := newTestRecoverySubcommand(t, tc.runner, args...)
+
+				err := command.Execute()
+
+				require.EqualError(t, err, tc.wantErr)
+				require.Equal(t, "Error: "+tc.wantErr+"\n", output.String())
+				require.Empty(t, tc.runner.enableWorkspaces)
+				require.Empty(t, tc.runner.resetRequests)
+				require.Equal(t, 1, *closeCount)
+			})
+		}
+	}
+}
+
+func requireNoStopOrRestart(t *testing.T, output string) {
+	t.Helper()
+	require.NotContains(t, strings.ToLower(output), "stop all")
+	require.NotContains(t, strings.ToLower(output), "restart")
+}
+
+// recoveryHelp returns the help of the recovery command, keyed "", and of each
+// of its subcommands, keyed by name.
+func recoveryHelp(t *testing.T) map[string]string {
+	t.Helper()
+	help := map[string]string{}
+	for _, name := range []string{"", "enable-password-signin", "reset-password"} {
+		args := []string{"--help"}
+		if name != "" {
+			args = []string{name, "--help"}
+		}
+		command, output, openCount, _ := newTestRecoverySubcommand(t, &fakeRecoveryRunner{}, args...)
+		require.NoError(t, command.Execute())
+		require.Zero(t, *openCount)
+		help[name] = output.String()
+	}
+	return help
+}
+
+// newTestRecoverySubcommand returns a root command that runs
+// `bytebase recovery <args>` the way a Kubernetes Job does: no terminal and
+// nothing on standard input. The output is what the operator sees, including
+// the errors and usage the root prints.
+func newTestRecoverySubcommand(t *testing.T, runner recoveryRunner, args ...string) (*cobra.Command, *bytes.Buffer, *int, *int) {
+	t.Helper()
+	recoveryCommand, output, openCount, closeCount := newTestRecoveryCommandWithTerminal(t, runner, false, "", nil)
+	recoveryCommand.SilenceErrors = false
+	root := &cobra.Command{Use: "bytebase"}
+	root.AddCommand(recoveryCommand)
+	root.SetOut(output)
+	root.SetErr(output)
+	root.SetArgs(append([]string{"recovery"}, args...))
+	return root, output, openCount, closeCount
+}
+
 func newTestRecoveryCommand(
 	t *testing.T,
 	runner recoveryRunner,
+	input string,
+	readPassword func(io.Reader) ([]byte, error),
+) (*cobra.Command, *bytes.Buffer, *int, *int) {
+	t.Helper()
+	return newTestRecoveryCommandWithTerminal(t, runner, true, input, readPassword)
+}
+
+func newTestRecoveryCommandWithTerminal(
+	t *testing.T,
+	runner recoveryRunner,
+	terminal bool,
 	input string,
 	readPassword func(io.Reader) ([]byte, error),
 ) (*cobra.Command, *bytes.Buffer, *int, *int) {
@@ -621,7 +1111,7 @@ func newTestRecoveryCommand(
 				},
 			}, nil
 		},
-		isTerminal:   func(io.Reader, io.Writer) bool { return true },
+		isTerminal:   func(io.Reader, io.Writer) bool { return terminal },
 		readPassword: readPassword,
 	})
 	output := &bytes.Buffer{}
@@ -629,7 +1119,6 @@ func newTestRecoveryCommand(
 	command.SetOut(output)
 	command.SetErr(output)
 	command.SetArgs(nil)
-	command.SilenceUsage = true
 	command.SilenceErrors = true
 	return command, output, &openCount, &closeCount
 }

@@ -546,3 +546,91 @@ func TestUpdateSettingAtomicRefusesAnUnparsedRow(t *testing.T) {
 		`SELECT value::text FROM setting WHERE name = 'WORKSPACE_PROFILE' AND workspace = 'default'`).Scan(&stored))
 	require.Contains(t, stored, "externalUrl", "the refused write must leave the row as it found it")
 }
+
+// The first fill is held inside the lock until every other read has missed
+// the cache, so each of them waits for the lock and then looks again.
+func TestSimultaneousSettingMissesReadTheDatabaseOnce(t *testing.T) {
+	t.Parallel()
+	ctx, _, s := newSettingAtomicFixture(t)
+	s.DeleteCache()
+	var misses, fills atomic.Int32
+	firstFillStarted := make(chan struct{})
+	releaseFirstFill := make(chan struct{})
+	s.SetSettingMissHookForTest(func() { misses.Add(1) })
+	s.SetSettingFillHookForTest(func() {
+		if fills.Add(1) == 1 {
+			close(firstFillStarted)
+			<-releaseFirstFill
+		}
+	})
+	results := make(chan error, 5)
+	read := func() {
+		_, err := s.GetSetting(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+		results <- err
+	}
+
+	go read()
+	<-firstFillStarted
+	for range 4 {
+		go read()
+	}
+	require.Eventually(t, func() bool { return misses.Load() == 5 }, 10*time.Second, time.Millisecond)
+	close(releaseFirstFill)
+	for range 5 {
+		require.NoError(t, <-results)
+	}
+
+	require.Equal(t, int32(1), fills.Load())
+}
+
+// Colliding keys: WORKSPACE_PROFILE in two workspaces, with the second read
+// waiting behind the first workspace's fill.
+func TestSettingFillWaitingBehindAnotherWorkspaceReadsItsOwnRow(t *testing.T) {
+	t.Parallel()
+	ctx, db, s := newSettingAtomicFixture(t)
+	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('other');`)
+	require.NoError(t, err)
+	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_WORKSPACE_PROFILE,
+		Workspace: "other",
+		Value:     &storepb.WorkspaceProfileSetting{DisallowPasswordSignin: true},
+	})
+	require.NoError(t, err)
+	s.DeleteCache()
+	var misses, fills atomic.Int32
+	firstFillStarted := make(chan struct{})
+	releaseFirstFill := make(chan struct{})
+	s.SetSettingMissHookForTest(func() { misses.Add(1) })
+	s.SetSettingFillHookForTest(func() {
+		if fills.Add(1) == 1 {
+			close(firstFillStarted)
+			<-releaseFirstFill
+		}
+	})
+	type readResult struct {
+		setting *store.SettingMessage
+		err     error
+	}
+	read := func(workspace string, results chan<- readResult) {
+		setting, err := s.GetSetting(ctx, workspace, storepb.SettingName_WORKSPACE_PROFILE)
+		results <- readResult{setting: setting, err: err}
+	}
+
+	defaultResult, otherResult := make(chan readResult, 1), make(chan readResult, 1)
+	go read("default", defaultResult)
+	<-firstFillStarted
+	go read("other", otherResult)
+	require.Eventually(t, func() bool { return misses.Load() == 2 }, 10*time.Second, time.Millisecond)
+	close(releaseFirstFill)
+
+	other := <-otherResult
+	require.NoError(t, other.err)
+	require.True(t, mustProfile(t, other.setting).DisallowPasswordSignin)
+	first := <-defaultResult
+	require.NoError(t, first.err)
+	require.False(t, mustProfile(t, first.setting).DisallowPasswordSignin)
+	require.Equal(t, int32(2), fills.Load())
+	cached, err := s.GetSetting(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+	require.NoError(t, err)
+	require.False(t, mustProfile(t, cached).DisallowPasswordSignin)
+}
