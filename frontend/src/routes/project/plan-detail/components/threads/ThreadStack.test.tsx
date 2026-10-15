@@ -10,6 +10,7 @@ import {
   IssueSchema,
   ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
+import { Plan_SpecSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { EditorThread } from "./threadModel";
 import { ThreadStack } from "./ThreadStack";
 
@@ -25,13 +26,14 @@ vi.mock("@/stores/app", () => ({
     selector({ getUserByIdentifier: () => ({ email: "a@example.com", title: "Aurora" }) }),
 }));
 vi.mock("./CommentThreadCard", () => ({
-  CommentThreadCard: ({ thread, onClose, replyDraft, onReplyDraftChange }: {
+  CommentThreadCard: ({ thread, onClose, replyDraft, onReplyDraftChange, spec }: {
     thread: EditorThread["thread"];
     onClose: () => void;
     replyDraft: string;
     onReplyDraftChange: (draft: string) => void;
+    spec?: { id: string };
   }) => (
-    <div data-thread-name={thread.root.name} data-resolved={String(thread.resolved)}>
+    <div data-thread-name={thread.root.name} data-resolved={String(thread.resolved)} data-spec={spec?.id}>
       <input aria-label="Reply draft" value={replyDraft} onChange={(e) => onReplyDraftChange(e.target.value)} />
       <button onClick={onClose}>Close</button>
     </div>
@@ -61,6 +63,7 @@ const props = {
   expandedRoots: new Set<string>(),
   replyDrafts: {},
   onReplyDraftChange: vi.fn(),
+  spec: create(Plan_SpecSchema, { id: "spec-1" }),
 };
 const order = (container: HTMLElement) =>
   Array.from(container.querySelectorAll("[data-thread-name]")).map((el) => el.getAttribute("data-thread-name"));
@@ -152,6 +155,12 @@ test("shows a collapsed review result as its reviewer with its priority", () => 
   expect(rows[0].textContent).not.toContain("Aurora");
   expect(rows[1].textContent).toContain("Aurora");
   expect(rows[1].querySelector("[data-testid='review-priority']")).toBeNull();
+});
+
+test("hands each expanded card the spec of the statement it sits on", () => {
+  const { container } = render(<ThreadStack {...props} expandedRoots={new Set(["a", "b"])} threads={[entry("a", false, 1), entry("b", true, 2)]} />);
+  const cards = Array.from(container.querySelectorAll("[data-thread-name]"));
+  expect(cards.map((card) => card.getAttribute("data-spec"))).toEqual(["spec-1", "spec-1"]);
 });
 
 test("exposes the expanded card for editor reveal", () => {

@@ -29,6 +29,7 @@ import { useCurrentUser } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import "./CommentThreadCard.css";
 import { ReviewPriorityBadge, useCommentAuthor } from "./ReviewResult";
@@ -60,6 +61,7 @@ export function CommentThreadCard({
   replyDraft: savedReplyDraft,
   onReplyDraftChange,
   project,
+  spec,
   thread,
 }: {
   className?: string;
@@ -77,6 +79,8 @@ export function CommentThreadCard({
   replyDraft?: string;
   onReplyDraftChange?: (draft: SetStateAction<string>) => void;
   project: Project | undefined;
+  // The plan spec the thread sits on, when the owner knows it.
+  spec?: Plan_Spec;
   thread: CommentThread;
 }) {
   const { t } = useTranslation();
@@ -249,6 +253,7 @@ export function CommentThreadCard({
         comment={thread.root}
         onEdit={actions.edit}
         project={project}
+        spec={spec}
         status={
           <>
             {label}

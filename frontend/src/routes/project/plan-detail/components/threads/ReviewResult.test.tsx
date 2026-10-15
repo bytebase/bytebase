@@ -1,6 +1,11 @@
+import { create } from "@bufbuild/protobuf";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { IssueComment_ReviewMetadata_Priority } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  Plan_ChangeDatabaseConfigSchema,
+  Plan_SpecSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
@@ -32,6 +37,20 @@ const targetsOf = (container: HTMLElement) =>
 const databases = (count: number) =>
   Array.from({ length: count }, (_, i) => `instances/i/databases/db${i}`);
 
+const changeSpec = (
+  targets: string[],
+  source: { sheet: string } | { release: string } = {
+    sheet: "projects/p/sheets/abc",
+  }
+) =>
+  create(Plan_SpecSchema, {
+    id: "spec-1",
+    config: {
+      case: "changeDatabaseConfig",
+      value: create(Plan_ChangeDatabaseConfigSchema, { targets, ...source }),
+    },
+  });
+
 describe("ReviewPriorityBadge", () => {
   test.each([
     [IssueComment_ReviewMetadata_Priority.P0, "P0", "plan.review.thread.priority.p0"],
@@ -56,7 +75,7 @@ describe("ReviewPriorityBadge", () => {
 describe("ReviewTargets", () => {
   test("shows a short list whole", () => {
     const { container, queryByRole } = render(
-      <ReviewTargets targets={databases(4)} />
+      <ReviewTargets spec={undefined} targets={databases(4)} />
     );
     expect(targetsOf(container)).toEqual(databases(4));
     expect(queryByRole("button")).toBeNull();
@@ -64,7 +83,7 @@ describe("ReviewTargets", () => {
 
   test("folds a long list behind a count until expanded", () => {
     const { container, getByRole } = render(
-      <ReviewTargets targets={databases(6)} />
+      <ReviewTargets spec={undefined} targets={databases(6)} />
     );
     expect(targetsOf(container)).toEqual(databases(3));
     fireEvent.click(getByRole("button", { name: "common.n-more:3" }));
@@ -72,7 +91,53 @@ describe("ReviewTargets", () => {
   });
 
   test("shows nothing without targets", () => {
-    const { container } = render(<ReviewTargets targets={[]} />);
+    const { container } = render(
+      <ReviewTargets spec={undefined} targets={[]} />
+    );
     expect(container.innerHTML).toBe("");
+  });
+
+  test("hides the row when the targets equal the spec's databases in another order", () => {
+    const { container } = render(
+      <ReviewTargets
+        spec={changeSpec([...databases(3)].reverse())}
+        targets={databases(3)}
+      />
+    );
+    expect(container.innerHTML).toBe("");
+  });
+
+  test("shows the row when the targets are a strict subset of the spec's databases", () => {
+    const { container } = render(
+      <ReviewTargets spec={changeSpec(databases(3))} targets={databases(2)} />
+    );
+    expect(targetsOf(container)).toEqual(databases(2));
+  });
+
+  test("shows the row when the spec is unknown", () => {
+    const { container } = render(
+      <ReviewTargets spec={undefined} targets={databases(2)} />
+    );
+    expect(targetsOf(container)).toEqual(databases(2));
+  });
+
+  test("shows the row when the spec targets a database group", () => {
+    const { container } = render(
+      <ReviewTargets
+        spec={changeSpec(["projects/p/databaseGroups/all"])}
+        targets={databases(2)}
+      />
+    );
+    expect(targetsOf(container)).toEqual(databases(2));
+  });
+
+  test("shows the row when the spec is release-backed", () => {
+    const { container } = render(
+      <ReviewTargets
+        spec={changeSpec(databases(2), { release: "projects/p/releases/r1" })}
+        targets={databases(2)}
+      />
+    );
+    expect(targetsOf(container)).toEqual(databases(2));
   });
 });
