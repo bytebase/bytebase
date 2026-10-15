@@ -7,8 +7,19 @@ import (
 	metadatapb "github.com/bytebase/omni/metadata"
 	"google.golang.org/protobuf/proto"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
+
+// renderEngine is the engine whose renderers write the definitions. MariaDB
+// has none of its own and shares the MySQL driver and sync, so it takes the
+// MySQL renderers, as OceanBase does.
+func (c *catalogTools) renderEngine() storepb.Engine {
+	if c.engine == storepb.Engine_MARIADB {
+		return storepb.Engine_MYSQL
+	}
+	return c.engine
+}
 
 // index lists every object of the database on the first call.
 func (c *catalogTools) index() []*catalogObject {
@@ -56,7 +67,7 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	}
 	for _, table := range s.GetExternalTables() {
 		add(kindExternalTable, table.GetName(), "", nil, func() string {
-			return join(plainExternalTable(schemaName, table), columnComments(table.GetColumns()))
+			return join(plainExternalTable(c.engine, schemaName, table), columnComments(table.GetColumns()))
 		})
 	}
 	for _, view := range s.GetViews() {
@@ -68,9 +79,12 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	for _, function := range s.GetFunctions() {
 		add(kindFunction, function.GetName(), function.GetSignature(), nil, func() string {
 			render := func(function *metadatapb.FunctionMetadata) (string, error) {
-				return schema.GetFunctionDefinition(c.engine, schemaName, function)
+				return schema.GetFunctionDefinition(c.renderEngine(), schemaName, function)
 			}
-			return complete(function, render, function.GetDefinition, extra[*metadatapb.FunctionMetadata]{
+			plain := func() string {
+				return join(function.GetDefinition(), plainSessionContext(function.GetSqlMode(), function.GetCharacterSetClient(), function.GetCollationConnection()))
+			}
+			return complete(function, render, plain, extra[*metadatapb.FunctionMetadata]{
 				strip: func(function *metadatapb.FunctionMetadata) { function.Comment = "" },
 				text:  plainComment("", function.GetComment()),
 			})
@@ -79,9 +93,12 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	for _, procedure := range s.GetProcedures() {
 		add(kindProcedure, procedure.GetName(), procedure.GetSignature(), nil, func() string {
 			render := func(procedure *metadatapb.ProcedureMetadata) (string, error) {
-				return schema.GetProcedureDefinition(c.engine, schemaName, procedure)
+				return schema.GetProcedureDefinition(c.renderEngine(), schemaName, procedure)
 			}
-			return complete(procedure, render, procedure.GetDefinition, extra[*metadatapb.ProcedureMetadata]{
+			plain := func() string {
+				return join(procedure.GetDefinition(), plainSessionContext(procedure.GetSqlMode(), procedure.GetCharacterSetClient(), procedure.GetCollationConnection()))
+			}
+			return complete(procedure, render, plain, extra[*metadatapb.ProcedureMetadata]{
 				strip: func(procedure *metadatapb.ProcedureMetadata) { procedure.Comment = "" },
 				text:  plainComment("", procedure.GetComment()),
 			})
@@ -90,7 +107,7 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	for _, sequence := range s.GetSequences() {
 		add(kindSequence, sequence.GetName(), "", nil, func() string {
 			render := func(sequence *metadatapb.SequenceMetadata) (string, error) {
-				return schema.GetSequenceDefinition(c.engine, schemaName, sequence)
+				return schema.GetSequenceDefinition(c.renderEngine(), schemaName, sequence)
 			}
 			plain := func() string { return plainSequence(schemaName, sequence) }
 			return complete(sequence, render, plain, extra[*metadatapb.SequenceMetadata]{
@@ -190,9 +207,9 @@ func (c *catalogTools) tableDefinition(schemaName string, table *metadatapb.Tabl
 	// The renderer writes the ownership of every sequence it is given, so it
 	// gets the ones this table owns.
 	render := func(table *tablepb) (string, error) {
-		return schema.GetTableDefinition(c.engine, schemaName, table, owned)
+		return schema.GetTableDefinition(c.renderEngine(), schemaName, table, owned)
 	}
-	plain := func() string { return plainTable(schemaName, table) }
+	plain := func() string { return plainTable(c.engine, schemaName, table) }
 	parts := []extra[*tablepb]{
 		{strip: func(table *tablepb) { table.Indexes = nil }, text: plainIndexes(table.GetIndexes())},
 		{strip: func(table *tablepb) { table.ForeignKeys = nil }, text: plainForeignKeys(table.GetForeignKeys())},
@@ -200,6 +217,7 @@ func (c *catalogTools) tableDefinition(schemaName string, table *metadatapb.Tabl
 		{strip: func(table *tablepb) { table.ExcludeConstraints = nil }, text: plainExcludeConstraints(table.GetExcludeConstraints())},
 		{strip: func(table *tablepb) { table.Partitions = nil }, text: plainPartitions(table.GetPartitions())},
 		{strip: func(table *tablepb) { table.Rules = nil }, text: plainRules(table.GetRules())},
+		{strip: func(table *tablepb) { enableRules(table.GetRules()) }, text: disabledRules(table.GetRules())},
 		{strip: func(table *tablepb) { table.Comment = "" }, text: plainComment("", table.GetComment())},
 		{strip: func(table *tablepb) { stripColumnComments(table.GetColumns()) }, text: columnComments(table.GetColumns())},
 		{strip: func(table *tablepb) { stripIndexComments(table.GetIndexes()) }, text: indexComments(table.GetIndexes())},
@@ -213,12 +231,13 @@ func (c *catalogTools) tableDefinition(schemaName string, table *metadatapb.Tabl
 func (c *catalogTools) viewDefinition(schemaName string, view *metadatapb.ViewMetadata) string {
 	type viewpb = metadatapb.ViewMetadata
 	render := func(view *viewpb) (string, error) {
-		return schema.GetViewDefinition(c.engine, schemaName, view)
+		return schema.GetViewDefinition(c.renderEngine(), schemaName, view)
 	}
 	on := qualify(schemaName, view.GetName())
 	plain := func() string { return fmt.Sprintf("VIEW %s AS\n%s", on, view.GetDefinition()) }
 	parts := []extra[*viewpb]{
 		{strip: func(view *viewpb) { view.Rules = nil }, text: plainRules(view.GetRules())},
+		{strip: func(view *viewpb) { enableRules(view.GetRules()) }, text: disabledRules(view.GetRules())},
 		{strip: func(view *viewpb) { view.Comment = "" }, text: plainComment("", view.GetComment())},
 		{strip: func(view *viewpb) { stripColumnComments(view.GetColumns()) }, text: columnComments(view.GetColumns())},
 	}
@@ -230,7 +249,7 @@ func (c *catalogTools) viewDefinition(schemaName string, view *metadatapb.ViewMe
 func (c *catalogTools) materializedViewDefinition(schemaName string, view *metadatapb.MaterializedViewMetadata) string {
 	type viewpb = metadatapb.MaterializedViewMetadata
 	render := func(view *viewpb) (string, error) {
-		return schema.GetMaterializedViewDefinition(c.engine, schemaName, view)
+		return schema.GetMaterializedViewDefinition(c.renderEngine(), schemaName, view)
 	}
 	on := qualify(schemaName, view.GetName())
 	plain := func() string { return fmt.Sprintf("MATERIALIZED VIEW %s AS\n%s", on, view.GetDefinition()) }
@@ -408,16 +427,36 @@ func plainTriggers(on string, triggers []*metadatapb.TriggerMetadata) string {
 	parts := make([]string, 0, len(triggers))
 	for _, trigger := range triggers {
 		body := strings.TrimSpace(trigger.GetBody())
+		context := plainSessionContext(trigger.GetSqlMode(), trigger.GetCharacterSetClient(), trigger.GetCollationConnection())
 		switch {
 		case body == "":
 		case len(body) >= 6 && strings.EqualFold(body[:6], "CREATE"):
 			// PostgreSQL syncs the whole statement as the body.
-			parts = append(parts, body)
+			parts = append(parts, join(body, context))
 		default:
-			parts = append(parts, fmt.Sprintf("TRIGGER %s %s %s ON %s\n%s", trigger.GetName(), trigger.GetTiming(), trigger.GetEvent(), on, body))
+			parts = append(parts, join(fmt.Sprintf("TRIGGER %s %s %s ON %s\n%s", trigger.GetName(), trigger.GetTiming(), trigger.GetEvent(), on, body), context))
 		}
 	}
 	return strings.Join(parts, "\n\n")
+}
+
+// plainSessionContext names the session settings a MySQL-family routine or
+// trigger was created under, which change how its body parses and compares.
+func plainSessionContext(sqlMode string, characterSetClient string, collationConnection string) string {
+	var settings []string
+	for _, setting := range []struct{ name, value string }{
+		{name: "sql_mode", value: sqlMode},
+		{name: "character_set_client", value: characterSetClient},
+		{name: "collation_connection", value: collationConnection},
+	} {
+		if setting.value != "" {
+			settings = append(settings, fmt.Sprintf("%s=%s", setting.name, setting.value))
+		}
+	}
+	if len(settings) == 0 {
+		return ""
+	}
+	return "-- created with " + strings.Join(settings, ", ")
 }
 
 func plainEventTrigger(trigger *metadatapb.EventTriggerMetadata) string {
@@ -435,19 +474,38 @@ func plainEventTrigger(trigger *metadatapb.EventTriggerMetadata) string {
 	return definition
 }
 
-func plainTable(schemaName string, table *metadatapb.TableMetadata) string {
+func plainTable(engine storepb.Engine, schemaName string, table *metadatapb.TableMetadata) string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "TABLE %s (\n", qualify(schemaName, table.GetName()))
 	for _, column := range table.GetColumns() {
-		_, _ = fmt.Fprintf(&b, "  %s\n", plainColumn(column))
+		_, _ = fmt.Fprintf(&b, "  %s\n", plainColumn(engine, column))
 	}
 	_, _ = b.WriteString(")")
+	storage := table.GetEngine()
+	// Hive's sync writes HDFS for every table without reading its storage.
+	if engine == storepb.Engine_HIVE {
+		storage = ""
+	}
+	for _, option := range []struct{ keyword, value string }{
+		{keyword: "ENGINE=", value: storage},
+		{keyword: "DEFAULT CHARSET=", value: table.GetCharset()},
+		{keyword: "COLLATE=", value: table.GetCollation()},
+		{keyword: "", value: table.GetCreateOptions()},
+	} {
+		if option.value != "" {
+			_, _ = fmt.Fprintf(&b, " %s%s", option.keyword, option.value)
+		}
+	}
 	return b.String()
 }
 
 func plainIndexes(indexes []*metadatapb.IndexMetadata) string {
 	all := make([]string, 0, len(indexes))
 	for _, index := range indexes {
+		// DynamoDB syncs an empty range index for a table with no range key.
+		if index.GetDefinition() == "" && len(index.GetExpressions()) == 0 {
+			continue
+		}
 		all = append(all, plainIndex(index))
 	}
 	return lines(all)
@@ -456,7 +514,17 @@ func plainIndexes(indexes []*metadatapb.IndexMetadata) string {
 func plainForeignKeys(keys []*metadatapb.ForeignKeyMetadata) string {
 	all := make([]string, 0, len(keys))
 	for _, key := range keys {
-		all = append(all, fmt.Sprintf("FOREIGN KEY %s (%s) REFERENCES %s (%s)", key.GetName(), strings.Join(key.GetColumns(), ", "), qualify(key.GetReferencedSchema(), key.GetReferencedTable()), strings.Join(key.GetReferencedColumns(), ", ")))
+		definition := fmt.Sprintf("FOREIGN KEY %s (%s) REFERENCES %s (%s)", key.GetName(), strings.Join(key.GetColumns(), ", "), qualify(key.GetReferencedSchema(), key.GetReferencedTable()), strings.Join(key.GetReferencedColumns(), ", "))
+		for _, clause := range []struct{ keyword, value string }{
+			{keyword: "MATCH", value: key.GetMatchType()},
+			{keyword: "ON DELETE", value: key.GetOnDelete()},
+			{keyword: "ON UPDATE", value: key.GetOnUpdate()},
+		} {
+			if clause.value != "" {
+				definition += fmt.Sprintf(" %s %s", clause.keyword, clause.value)
+			}
+		}
+		all = append(all, definition)
 	}
 	return lines(all)
 }
@@ -477,10 +545,26 @@ func plainExcludeConstraints(excludes []*metadatapb.ExcludeConstraintMetadata) s
 	return lines(all)
 }
 
+// plainPartitions writes only the parts of a partition the sync holds. Hive
+// syncs the names alone.
 func plainPartitions(partitions []*metadatapb.TablePartitionMetadata) string {
 	var all []string
 	for _, partition := range partitions {
-		all = append(all, fmt.Sprintf("PARTITION %s BY %s (%s) VALUES %s", partition.GetName(), partition.GetType(), partition.GetExpression(), partition.GetValue()))
+		definition := "PARTITION " + partition.GetName()
+		if kind := partition.GetType(); kind != metadatapb.TablePartitionMetadata_TYPE_UNSPECIFIED {
+			definition += " BY " + strings.ReplaceAll(kind.String(), "_", " ")
+		}
+		if expression := partition.GetExpression(); expression != "" {
+			definition += fmt.Sprintf(" (%s)", expression)
+		}
+		if value := partition.GetValue(); value != "" {
+			definition += " VALUES " + value
+		}
+		// MySQL keeps the n of a PARTITIONS n clause here.
+		if count := partition.GetUseDefault(); count != "" && count != "0" {
+			definition += " PARTITIONS " + count
+		}
+		all = append(all, definition)
 		if subpartitions := plainPartitions(partition.GetSubpartitions()); subpartitions != "" {
 			all = append(all, "  "+strings.ReplaceAll(subpartitions, "\n", "\n  "))
 		}
@@ -500,32 +584,104 @@ func plainRules(rules []*metadatapb.RuleMetadata) string {
 	return lines(all)
 }
 
-func plainExternalTable(schemaName string, table *metadatapb.ExternalTableMetadata) string {
+// disabledRules names the rules that are switched off. Only PostgreSQL syncs
+// rules, and it reads whether each one is enabled.
+func disabledRules(rules []*metadatapb.RuleMetadata) string {
+	var all []string
+	for _, rule := range rules {
+		if !rule.GetIsEnabled() {
+			all = append(all, fmt.Sprintf("RULE %s DISABLED", rule.GetName()))
+		}
+	}
+	return lines(all)
+}
+
+func enableRules(rules []*metadatapb.RuleMetadata) {
+	for _, rule := range rules {
+		rule.IsEnabled = true
+	}
+}
+
+func plainExternalTable(engine storepb.Engine, schemaName string, table *metadatapb.ExternalTableMetadata) string {
 	var b strings.Builder
-	_, _ = fmt.Fprintf(&b, "EXTERNAL TABLE %s ON SERVER %s (\n", qualify(schemaName, table.GetName()), table.GetExternalServerName())
+	_, _ = fmt.Fprintf(&b, "EXTERNAL TABLE %s", qualify(schemaName, table.GetName()))
+	if server := table.GetExternalServerName(); server != "" {
+		_, _ = fmt.Fprintf(&b, " ON SERVER %s", server)
+	}
+	_, _ = b.WriteString(" (\n")
 	for _, column := range table.GetColumns() {
-		_, _ = fmt.Fprintf(&b, "  %s\n", plainColumn(column))
+		_, _ = fmt.Fprintf(&b, "  %s\n", plainColumn(engine, column))
 	}
 	_, _ = b.WriteString(")")
 	return b.String()
 }
 
-func plainColumn(column *metadatapb.ColumnMetadata) string {
+// syncsNullability reports whether the engine's sync reads column
+// nullability. Where it does not, every column would read as NOT NULL, so the
+// fallback writes no nullability at all.
+func syncsNullability(engine storepb.Engine) bool {
+	switch engine {
+	case storepb.Engine_HIVE, storepb.Engine_DYNAMODB:
+		return false
+	default:
+		return true
+	}
+}
+
+func plainColumn(engine storepb.Engine, column *metadatapb.ColumnMetadata) string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "%s %s", column.GetName(), column.GetType())
-	if !column.GetNullable() {
+	if value := column.GetCharacterSet(); value != "" {
+		_, _ = fmt.Fprintf(&b, " CHARACTER SET %s", value)
+	}
+	if value := column.GetCollation(); value != "" {
+		_, _ = fmt.Fprintf(&b, " COLLATE %s", value)
+	}
+	if generation := column.GetGeneration(); generation.GetExpression() != "" {
+		_, _ = fmt.Fprintf(&b, " GENERATED ALWAYS AS (%s)", generation.GetExpression())
+		switch generation.GetType() {
+		case metadatapb.GenerationMetadata_TYPE_STORED:
+			_, _ = b.WriteString(" STORED")
+		case metadatapb.GenerationMetadata_TYPE_VIRTUAL:
+			_, _ = b.WriteString(" VIRTUAL")
+		default:
+		}
+	}
+	if column.GetIsIdentity() {
+		switch column.GetIdentityGeneration() {
+		case metadatapb.ColumnMetadata_ALWAYS:
+			_, _ = b.WriteString(" GENERATED ALWAYS AS IDENTITY")
+		case metadatapb.ColumnMetadata_BY_DEFAULT:
+			_, _ = b.WriteString(" GENERATED BY DEFAULT AS IDENTITY")
+		default:
+			_, _ = b.WriteString(" IDENTITY")
+		}
+	}
+	if !column.GetNullable() && syncsNullability(engine) {
 		_, _ = b.WriteString(" NOT NULL")
 	}
-	if value := column.GetDefault(); value != "" {
+	// The MySQL-family syncs keep AUTO_INCREMENT in the default. NULL is not
+	// written: BigQuery stores it for a column with no default, and the
+	// MySQL-family syncs cannot tell an explicit DEFAULT NULL from none.
+	switch value := column.GetDefault(); {
+	case value == "" || strings.EqualFold(value, "NULL"):
+	case strings.EqualFold(value, "AUTO_INCREMENT"):
+		_, _ = b.WriteString(" AUTO_INCREMENT")
+	default:
 		_, _ = fmt.Fprintf(&b, " DEFAULT %s", value)
+	}
+	if value := column.GetOnUpdate(); value != "" {
+		_, _ = fmt.Fprintf(&b, " ON UPDATE %s", value)
+	}
+	if column.GetIsInvisible() {
+		_, _ = b.WriteString(" INVISIBLE")
 	}
 	return b.String()
 }
 
+// plainIndex leaves visibility out: an engine whose sync never reads it would
+// show every index as invisible.
 func plainIndex(index *metadatapb.IndexMetadata) string {
-	if definition := index.GetDefinition(); definition != "" {
-		return definition
-	}
 	kind := "INDEX"
 	switch {
 	case index.GetPrimary():
@@ -534,13 +690,34 @@ func plainIndex(index *metadatapb.IndexMetadata) string {
 		kind = "UNIQUE INDEX"
 	default:
 	}
-	return fmt.Sprintf("%s %s (%s)", kind, index.GetName(), strings.Join(index.GetExpressions(), ", "))
+	if definition := index.GetDefinition(); definition != "" {
+		// Cassandra keeps the options of a secondary index here, as JSON.
+		if strings.HasPrefix(strings.TrimSpace(definition), "{") {
+			named := fmt.Sprintf("%s %s", kind, index.GetName())
+			if value := index.GetType(); value != "" {
+				named += " USING " + value
+			}
+			return named + " OPTIONS " + definition
+		}
+		return definition
+	}
+	expressions := make([]string, 0, len(index.GetExpressions()))
+	for i, expression := range index.GetExpressions() {
+		if i < len(index.GetKeyLength()) && index.GetKeyLength()[i] > 0 {
+			expression += fmt.Sprintf("(%d)", index.GetKeyLength()[i])
+		}
+		if i < len(index.GetDescending()) && index.GetDescending()[i] {
+			expression += " DESC"
+		}
+		expressions = append(expressions, expression)
+	}
+	definition := fmt.Sprintf("%s %s", kind, index.GetName())
+	if value := index.GetType(); value != "" {
+		definition += fmt.Sprintf(" USING %s", value)
+	}
+	return fmt.Sprintf("%s (%s)", definition, strings.Join(expressions, ", "))
 }
 
-// plainSequence writes the attributes the sync holds and only those, so a
-// fact the sync never read cannot pass for part of the definition. Every
-// engine's sequence has a start and an increment, so a missing one is named;
-// the other attributes vary by engine and are left out when absent.
 func plainSequence(schemaName string, sequence *metadatapb.SequenceMetadata) string {
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "SEQUENCE %s", qualify(schemaName, sequence.GetName()))

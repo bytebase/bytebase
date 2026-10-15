@@ -312,8 +312,8 @@ func TestCatalogReadWithoutARenderer(t *testing.T) {
 		"  legacy_status text",
 		")",
 		"",
-		"PRIMARY KEY orders_pkey (id)",
-		"INDEX idx_orders_customer (customer_id)",
+		"PRIMARY KEY orders_pkey USING btree (id)",
+		"INDEX idx_orders_customer USING btree (customer_id)",
 		"",
 		"FOREIGN KEY orders_customer_fk (customer_id) REFERENCES PUBLIC.customers (id)",
 		"",
@@ -652,7 +652,7 @@ func TestCatalogAddsWhatADumpLeavesOut(t *testing.T) {
 		"comment of audit_payments",
 		"PARTITION payments_2026 BY RANGE (paid_at) VALUES FOR VALUES FROM ('2026-01-01') TO ('2027-01-01')",
 		"  PARTITION payments_2026_eu BY LIST (region) VALUES FOR VALUES IN ('eu')",
-		"ON PARTITION payments_2026:\n  INDEX payments_2026_order_idx (order_id)",
+		"ON PARTITION payments_2026:\n  INDEX payments_2026_order_idx USING btree (order_id)",
 		"ON PARTITION payments_2026:\n  COMMENT ON INDEX payments_2026_order_idx: comment of the partition index",
 		"ON PARTITION payments_2026_eu:\n  CHECK payments_2026_eu_check (region = 'eu')",
 	} {
@@ -809,7 +809,7 @@ func TestCatalogAddsTheTriggersARendererLeavesOut(t *testing.T) {
 	}
 	for engine, want := range map[storepb.Engine]string{
 		storepb.Engine_POSTGRES:  "CREATE INDEX \"day\" ON \"public\".\"orders_daily\" (day);",
-		storepb.Engine_SNOWFLAKE: "SELECT 1 AS day\n\nINDEX day (day)",
+		storepb.Engine_SNOWFLAKE: "SELECT 1 AS day\n\nINDEX day USING btree (day)",
 	} {
 		tools := NewCatalogTools(engine, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
 			Name:              "public",
@@ -999,6 +999,195 @@ func TestCatalogReadWritesOnlyTheSequenceAttributesSynced(t *testing.T) {
 			}}})
 			_, text := readAll(t, tools, fmt.Sprintf(`[{"name": %q}]`, tc.sequence.GetName()))
 			require.Equal(t, map[string]string{tc.schema + "." + tc.sequence.GetName(): tc.want}, text)
+		})
+	}
+}
+
+func TestCatalogReadWritesTheTableFactsSyncedWithoutARenderer(t *testing.T) {
+	t.Parallel()
+
+	tools := NewCatalogTools(storepb.Engine_SNOWFLAKE, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Tables: []*metadatapb.TableMetadata{{
+			Name:      "orders",
+			Engine:    "Aria",
+			Charset:   "utf8mb4",
+			Collation: "utf8mb4_bin",
+			Columns: []*metadatapb.ColumnMetadata{
+				{Name: "id", Type: "bigint", IsIdentity: true},
+				{Name: "note", Type: "varchar(64)", Nullable: true, CharacterSet: "utf8mb4", Collation: "utf8mb4_bin"},
+				{Name: "total_cents", Type: "bigint", Generation: &metadatapb.GenerationMetadata{Type: metadatapb.GenerationMetadata_TYPE_STORED, Expression: "total * 100"}},
+				{Name: "updated_at", Type: "timestamp", Default: "CURRENT_TIMESTAMP", OnUpdate: "CURRENT_TIMESTAMP"},
+				{Name: "shard", Type: "int", Nullable: true, IsInvisible: true},
+			},
+			Indexes: []*metadatapb.IndexMetadata{
+				{Name: "idx_orders_recent", Expressions: []string{"updated_at", "id"}, Descending: []bool{true, false}, Type: "BTREE"},
+				{Name: "idx_orders_note", Expressions: []string{"note"}, KeyLength: []int64{10}, Type: "BTREE"},
+			},
+			ForeignKeys: []*metadatapb.ForeignKeyMetadata{{
+				Name: "orders_customer_fk", Columns: []string{"customer_id"},
+				ReferencedTable: "customers", ReferencedColumns: []string{"id"},
+				MatchType: "SIMPLE", OnDelete: "CASCADE", OnUpdate: "RESTRICT",
+			}},
+		}},
+	}}})
+
+	_, text := readAll(t, tools, `[{"name": "orders"}]`)
+	require.Equal(t, strings.Join([]string{
+		"TABLE orders (",
+		"  id bigint IDENTITY NOT NULL",
+		"  note varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin",
+		"  total_cents bigint GENERATED ALWAYS AS (total * 100) STORED NOT NULL",
+		"  updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+		"  shard int INVISIBLE",
+		") ENGINE=Aria DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin",
+		"",
+		"INDEX idx_orders_recent USING BTREE (updated_at DESC, id)",
+		"INDEX idx_orders_note USING BTREE (note(10))",
+		"",
+		"FOREIGN KEY orders_customer_fk (customer_id) REFERENCES customers (id) MATCH SIMPLE ON DELETE CASCADE ON UPDATE RESTRICT",
+	}, "\n"), text[".orders"])
+}
+
+func TestCatalogReadsMariaDBWithTheMySQLRenderers(t *testing.T) {
+	t.Parallel()
+
+	// The shape the MySQL-family sync gives a MariaDB table: AUTO_INCREMENT in
+	// the default and every index visible.
+	tools := NewCatalogTools(storepb.Engine_MARIADB, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Tables: []*metadatapb.TableMetadata{{
+			Name:   "orders",
+			Engine: "InnoDB",
+			Columns: []*metadatapb.ColumnMetadata{
+				{Name: "id", Type: "bigint", Default: "AUTO_INCREMENT"},
+				{Name: "customer_id", Type: "bigint"},
+			},
+			Indexes: []*metadatapb.IndexMetadata{
+				{Name: "PRIMARY", Expressions: []string{"id"}, Type: "BTREE", Unique: true, Primary: true, Visible: true},
+			},
+			ForeignKeys: []*metadatapb.ForeignKeyMetadata{{
+				Name: "orders_customer_fk", Columns: []string{"customer_id"},
+				ReferencedTable: "customers", ReferencedColumns: []string{"id"},
+				OnDelete: "CASCADE", OnUpdate: "RESTRICT",
+			}},
+			Triggers: []*metadatapb.TriggerMetadata{{Name: "stamp", Timing: "BEFORE", Event: "INSERT", Body: "SET NEW.id = NEW.id", SqlMode: "PIPES_AS_CONCAT"}},
+		}},
+	}}})
+
+	_, text := readAll(t, tools, `[{"name": "orders"}]`)
+	definition := text[".orders"]
+	require.Contains(t, definition, "CREATE TABLE `orders`")
+	require.Contains(t, definition, "`id` bigint NOT NULL AUTO_INCREMENT")
+	require.Contains(t, definition, "ON DELETE CASCADE ON UPDATE RESTRICT")
+	require.Contains(t, definition, "TRIGGER stamp BEFORE INSERT ON orders\nSET NEW.id = NEW.id\n\n-- created with sql_mode=PIPES_AS_CONCAT")
+	require.NotContains(t, definition, "INVISIBLE")
+	require.NotContains(t, definition, "DEFAULT AUTO_INCREMENT")
+}
+
+func TestCatalogReadSkipsWhatASyncLeavesEmpty(t *testing.T) {
+	t.Parallel()
+
+	// DynamoDB syncs an empty range index for a table with no range key.
+	tools := NewCatalogTools(storepb.Engine_DYNAMODB, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Tables: []*metadatapb.TableMetadata{{
+			Name:    "sessions",
+			Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "S"}},
+			Indexes: []*metadatapb.IndexMetadata{{Name: "id", Expressions: []string{"id"}, Type: "HASH"}, {Type: "RANGE"}},
+		}},
+	}}})
+
+	_, text := readAll(t, tools, `[{"name": "sessions"}]`)
+	require.Equal(t, "TABLE sessions (\n  id S\n)\n\nINDEX id USING HASH (id)", text[".sessions"])
+}
+
+func TestCatalogReadNamesTheDisabledRules(t *testing.T) {
+	t.Parallel()
+
+	rules := func() []*metadatapb.RuleMetadata {
+		return []*metadatapb.RuleMetadata{
+			{Name: "keep", Event: "DELETE", Action: "NOTHING", IsInstead: true, IsEnabled: true, Definition: "CREATE RULE keep AS ON DELETE TO public.t DO INSTEAD NOTHING"},
+			{Name: "paused", Event: "UPDATE", Action: "NOTHING", IsInstead: true, Definition: "CREATE RULE paused AS ON UPDATE TO public.t DO INSTEAD NOTHING"},
+		}
+	}
+	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_SNOWFLAKE} {
+		tools := NewCatalogTools(engine, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}}, Rules: rules()}},
+			Views:  []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT 1 AS one", Rules: rules()}},
+		}}})
+		_, text := readAll(t, tools, `[{"name": "t"}, {"name": "v"}]`)
+		for _, name := range []string{"public.t", "public.v"} {
+			require.Equal(t, 1, strings.Count(text[name], "RULE paused DISABLED"), "%s on %s:\n%s", name, engine, text[name])
+			require.NotContains(t, text[name], "RULE keep DISABLED", "%s on %s", name, engine)
+		}
+	}
+}
+
+func TestCatalogReadClaimsNothingAHiveSyncDoesNotRead(t *testing.T) {
+	t.Parallel()
+
+	tools := NewCatalogTools(storepb.Engine_HIVE, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Tables: []*metadatapb.TableMetadata{{
+			Name:       "events",
+			Columns:    []*metadatapb.ColumnMetadata{{Name: "id", Type: "bigint"}},
+			Partitions: []*metadatapb.TablePartitionMetadata{{Name: "day=2026-10-15"}},
+		}},
+		ExternalTables: []*metadatapb.ExternalTableMetadata{{
+			Name:    "raw_events",
+			Columns: []*metadatapb.ColumnMetadata{{Name: "payload", Type: "string"}},
+		}},
+	}}})
+
+	_, text := readAll(t, tools, `[{"name": "events"}, {"name": "raw_events"}]`)
+	require.Equal(t, "TABLE events (\n  id bigint\n)\n\nPARTITION day=2026-10-15", text[".events"])
+	require.Equal(t, "EXTERNAL TABLE raw_events (\n  payload string\n)", text[".raw_events"])
+}
+
+func TestCatalogReadReadsHowEachSyncStoresAFact(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		engine storepb.Engine
+		table  *metadatapb.TableMetadata
+		want   string
+	}{
+		{
+			name:   "AUTO_INCREMENT kept in the default",
+			engine: storepb.Engine_STARROCKS,
+			table:  &metadatapb.TableMetadata{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "bigint", Default: "AUTO_INCREMENT"}}},
+			want:   "TABLE t (\n  id bigint NOT NULL AUTO_INCREMENT\n)",
+		},
+		{
+			name:   "NULL stored for a column without a default",
+			engine: storepb.Engine_BIGQUERY,
+			table:  &metadatapb.TableMetadata{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "note", Type: "STRING", Nullable: true, Default: "NULL"}}},
+			want:   "TABLE t (\n  note STRING\n)",
+		},
+		{
+			name:   "a storage engine Hive never reads",
+			engine: storepb.Engine_HIVE,
+			table:  &metadatapb.TableMetadata{Name: "t", Engine: "HDFS", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "bigint"}}},
+			want:   "TABLE t (\n  id bigint\n)",
+		},
+		{
+			name:   "index options kept as the definition",
+			engine: storepb.Engine_CASSANDRA,
+			table: &metadatapb.TableMetadata{
+				Name:    "t",
+				Columns: []*metadatapb.ColumnMetadata{{Name: "email", Type: "text", Nullable: true}},
+				Indexes: []*metadatapb.IndexMetadata{{Name: "t_email_idx", Type: "COMPOSITES", Definition: `{"target": "email"}`}},
+			},
+			want: "TABLE t (\n  email text\n)\n\nINDEX t_email_idx USING COMPOSITES OPTIONS {\"target\": \"email\"}",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tools := NewCatalogTools(tc.engine, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+				Tables: []*metadatapb.TableMetadata{tc.table},
+			}}})
+			_, text := readAll(t, tools, `[{"name": "t"}]`)
+			require.Equal(t, tc.want, text[".t"])
 		})
 	}
 }
