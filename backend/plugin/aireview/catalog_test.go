@@ -1048,39 +1048,67 @@ func TestCatalogReadWritesTheTableFactsSyncedWithoutARenderer(t *testing.T) {
 	}, "\n"), text[".orders"])
 }
 
-func TestCatalogReadsMariaDBWithTheMySQLRenderers(t *testing.T) {
+func TestCatalogReadsAMariaDBTableAsItsSyncStoresIt(t *testing.T) {
 	t.Parallel()
 
-	// The shape the MySQL-family sync gives a MariaDB table: AUTO_INCREMENT in
-	// the default and every index visible.
+	// The shape the MySQL-family sync gives a MariaDB table: AUTO_INCREMENT
+	// and a NULL default kept in the default, FULLTEXT and SPATIAL as the
+	// index type, -1 for a part with no prefix, and NONE for the match type.
 	tools := NewCatalogTools(storepb.Engine_MARIADB, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
 		Tables: []*metadatapb.TableMetadata{{
-			Name:   "orders",
-			Engine: "InnoDB",
+			Name:      "orders",
+			Engine:    "InnoDB",
+			Charset:   "utf8mb4",
+			Collation: "utf8mb4_general_ci",
 			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "bigint", Default: "AUTO_INCREMENT"},
+				{Name: "note", Type: "text", Nullable: true, Default: "NULL"},
+				{Name: "spot", Type: "point"},
 				{Name: "customer_id", Type: "bigint"},
 			},
 			Indexes: []*metadatapb.IndexMetadata{
-				{Name: "PRIMARY", Expressions: []string{"id"}, Type: "BTREE", Unique: true, Primary: true, Visible: true},
+				{Name: "PRIMARY", Expressions: []string{"id"}, KeyLength: []int64{-1}, Type: "BTREE", Unique: true, Primary: true, Visible: true},
+				{Name: "ft_note", Expressions: []string{"note"}, KeyLength: []int64{-1}, Type: "FULLTEXT", Visible: true},
+				{Name: "sp_spot", Expressions: []string{"spot"}, KeyLength: []int64{32}, Type: "SPATIAL", Visible: true},
+				{Name: "idx_note", Expressions: []string{"note"}, KeyLength: []int64{10}, Type: "BTREE", Visible: true},
 			},
 			ForeignKeys: []*metadatapb.ForeignKeyMetadata{{
 				Name: "orders_customer_fk", Columns: []string{"customer_id"},
 				ReferencedTable: "customers", ReferencedColumns: []string{"id"},
-				OnDelete: "CASCADE", OnUpdate: "RESTRICT",
+				OnDelete: "CASCADE", OnUpdate: "RESTRICT", MatchType: "NONE",
 			}},
-			Triggers: []*metadatapb.TriggerMetadata{{Name: "stamp", Timing: "BEFORE", Event: "INSERT", Body: "SET NEW.id = NEW.id", SqlMode: "PIPES_AS_CONCAT"}},
+			Triggers: []*metadatapb.TriggerMetadata{{Name: "stamp", Timing: "BEFORE", Event: "INSERT", Body: "SET NEW.note = 'new'", SqlMode: "PIPES_AS_CONCAT"}},
+		}},
+		Functions: []*metadatapb.FunctionMetadata{{
+			Name:              "order_total",
+			Definition:        "CREATE FUNCTION order_total(id bigint) RETURNS bigint RETURN id || 0",
+			SqlMode:           "PIPES_AS_CONCAT",
+			DatabaseCollation: "utf8mb4_general_ci",
 		}},
 	}}})
 
-	_, text := readAll(t, tools, `[{"name": "orders"}]`)
-	definition := text[".orders"]
-	require.Contains(t, definition, "CREATE TABLE `orders`")
-	require.Contains(t, definition, "`id` bigint NOT NULL AUTO_INCREMENT")
-	require.Contains(t, definition, "ON DELETE CASCADE ON UPDATE RESTRICT")
-	require.Contains(t, definition, "TRIGGER stamp BEFORE INSERT ON orders\nSET NEW.id = NEW.id\n\n-- created with sql_mode=PIPES_AS_CONCAT")
-	require.NotContains(t, definition, "INVISIBLE")
-	require.NotContains(t, definition, "DEFAULT AUTO_INCREMENT")
+	_, text := readAll(t, tools, `[{"name": "orders"}, {"name": "order_total"}]`)
+	require.Equal(t, strings.Join([]string{
+		"TABLE orders (",
+		"  id bigint NOT NULL AUTO_INCREMENT",
+		"  note text",
+		"  spot point NOT NULL",
+		"  customer_id bigint NOT NULL",
+		") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
+		"",
+		"PRIMARY KEY PRIMARY USING BTREE (id)",
+		"FULLTEXT INDEX ft_note (note)",
+		"SPATIAL INDEX sp_spot (spot)",
+		"INDEX idx_note USING BTREE (note(10))",
+		"",
+		"FOREIGN KEY orders_customer_fk (customer_id) REFERENCES customers (id) ON DELETE CASCADE ON UPDATE RESTRICT",
+		"",
+		"TRIGGER stamp BEFORE INSERT ON orders",
+		"SET NEW.note = 'new'",
+		"",
+		"-- created with sql_mode=PIPES_AS_CONCAT",
+	}, "\n"), text[".orders"])
+	require.Equal(t, "CREATE FUNCTION order_total(id bigint) RETURNS bigint RETURN id || 0\n\n-- created with sql_mode=PIPES_AS_CONCAT, database_collation=utf8mb4_general_ci", text[".order_total"])
 }
 
 func TestCatalogReadSkipsWhatASyncLeavesEmpty(t *testing.T) {
@@ -1190,4 +1218,43 @@ func TestCatalogReadReadsHowEachSyncStoresAFact(t *testing.T) {
 			require.Equal(t, tc.want, text[".t"])
 		})
 	}
+}
+
+func TestCatalogReadsTheSchemaTaskAndAttributeFactsSynced(t *testing.T) {
+	t.Parallel()
+
+	tools := NewCatalogTools(storepb.Engine_POSTGRES, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+		{
+			Name:    "billing",
+			Owner:   "billing_owner",
+			Comment: "invoices and payments",
+			CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+				Name:       "address",
+				Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "city", Type: "text", Collation: `"C"`}, {Name: "zip", Type: "text"}},
+			}},
+		},
+		{Name: "plain"},
+	}})
+
+	_, text := readAll(t, tools, `[{"name": "billing"}, {"name": "address"}]`)
+	require.Equal(t, "SCHEMA billing OWNER billing_owner\n\nCOMMENT: invoices and payments", text[".billing"])
+	require.Contains(t, text["billing.address"], `city text COLLATE "C", zip text`)
+
+	matches := search(t, tools, `{"text": "invoices"}`).Matches
+	require.Equal(t, []searchMatch{{Kind: kindSchema, Name: "billing", Matched: "definition"}}, matches)
+	require.Empty(t, read(t, tools, `{"objects": [{"name": "plain"}]}`).Objects, "a schema with no owner or comment is not an object")
+	inBilling := search(t, tools, `{"text": "", "schema": "billing"}`).Matches
+	require.Equal(t, []string{kindSchema, kindCompositeType}, []string{inBilling[0].Kind, inBilling[1].Kind})
+	require.Len(t, read(t, tools, `{"objects": [{"schema": "billing", "name": "billing"}]}`).Objects, 1)
+
+	tasks := NewCatalogTools(storepb.Engine_SNOWFLAKE, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "PUBLIC",
+		Tasks: []*metadatapb.TaskMetadata{
+			{Name: "refresh", Definition: "CREATE TASK refresh SCHEDULE = '5 MINUTE' AS CALL refresh()", State: metadatapb.TaskMetadata_STATE_SUSPENDED},
+			{Name: "unknown", Definition: "CREATE TASK unknown AS SELECT 1"},
+		},
+	}}})
+	_, text = readAll(t, tasks, `[{"name": "refresh"}, {"name": "unknown"}]`)
+	require.Equal(t, "CREATE TASK refresh SCHEDULE = '5 MINUTE' AS CALL refresh()\n\nSTATE: suspended", text["PUBLIC.refresh"])
+	require.Equal(t, "CREATE TASK unknown AS SELECT 1", text["PUBLIC.unknown"])
 }

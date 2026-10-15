@@ -47,6 +47,7 @@ const (
 	kindCompositeType    = "composite type"
 	kindEventTrigger     = "event trigger"
 	kindExtension        = "extension"
+	kindSchema           = "schema"
 )
 
 // catalogTools answers search and read from the synced schema of one
@@ -429,10 +430,18 @@ func (c *catalogTools) schemaFilter(schemaName string) func(*catalogObject) bool
 	}
 	for _, s := range c.schema.GetSchemas() {
 		if s.GetName() == schemaName {
-			return func(object *catalogObject) bool { return object.schema == schemaName }
+			return func(object *catalogObject) bool { return object.schemaName() == schemaName }
 		}
 	}
-	return func(object *catalogObject) bool { return strings.EqualFold(object.schema, schemaName) }
+	return func(object *catalogObject) bool { return strings.EqualFold(object.schemaName(), schemaName) }
+}
+
+// schemaName is the schema an object is in, and a schema is in itself.
+func (o *catalogObject) schemaName() string {
+	if o.kind == kindSchema {
+		return o.name
+	}
+	return o.schema
 }
 
 // schemaless reports an engine without schemas. It syncs one schema with no

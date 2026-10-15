@@ -11,16 +11,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
-// renderEngine is the engine whose renderers write the definitions. MariaDB
-// has none of its own and shares the MySQL driver and sync, so it takes the
-// MySQL renderers, as OceanBase does.
-func (c *catalogTools) renderEngine() storepb.Engine {
-	if c.engine == storepb.Engine_MARIADB {
-		return storepb.Engine_MYSQL
-	}
-	return c.engine
-}
-
 // index lists every object of the database on the first call.
 func (c *catalogTools) index() []*catalogObject {
 	if !c.indexed {
@@ -51,6 +41,17 @@ func (c *catalogTools) indexDatabase() {
 
 func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	schemaName := s.GetName()
+	// The prompt names every schema already, so a schema is an object of its
+	// own only when the sync holds its owner or comment.
+	if schemaName != "" && (s.GetOwner() != "" || s.GetComment() != "") {
+		c.objects = append(c.objects, &catalogObject{kind: kindSchema, name: schemaName, render: func() string {
+			definition := "SCHEMA " + schemaName
+			if owner := s.GetOwner(); owner != "" {
+				definition += " OWNER " + owner
+			}
+			return join(definition, plainComment("", s.GetComment()))
+		}})
+	}
 	add := func(kind string, name string, signature string, statistics *tableStatistics, render func() string) {
 		c.objects = append(c.objects, &catalogObject{kind: kind, schema: schemaName, name: name, signature: signature, statistics: statistics, render: render})
 	}
@@ -79,10 +80,10 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	for _, function := range s.GetFunctions() {
 		add(kindFunction, function.GetName(), function.GetSignature(), nil, func() string {
 			render := func(function *metadatapb.FunctionMetadata) (string, error) {
-				return schema.GetFunctionDefinition(c.renderEngine(), schemaName, function)
+				return schema.GetFunctionDefinition(c.engine, schemaName, function)
 			}
 			plain := func() string {
-				return join(function.GetDefinition(), plainSessionContext(function.GetSqlMode(), function.GetCharacterSetClient(), function.GetCollationConnection()))
+				return join(function.GetDefinition(), plainSessionContext(function.GetSqlMode(), function.GetCharacterSetClient(), function.GetCollationConnection(), function.GetDatabaseCollation()))
 			}
 			return complete(function, render, plain, extra[*metadatapb.FunctionMetadata]{
 				strip: func(function *metadatapb.FunctionMetadata) { function.Comment = "" },
@@ -93,10 +94,10 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	for _, procedure := range s.GetProcedures() {
 		add(kindProcedure, procedure.GetName(), procedure.GetSignature(), nil, func() string {
 			render := func(procedure *metadatapb.ProcedureMetadata) (string, error) {
-				return schema.GetProcedureDefinition(c.renderEngine(), schemaName, procedure)
+				return schema.GetProcedureDefinition(c.engine, schemaName, procedure)
 			}
 			plain := func() string {
-				return join(procedure.GetDefinition(), plainSessionContext(procedure.GetSqlMode(), procedure.GetCharacterSetClient(), procedure.GetCollationConnection()))
+				return join(procedure.GetDefinition(), plainSessionContext(procedure.GetSqlMode(), procedure.GetCharacterSetClient(), procedure.GetCollationConnection(), procedure.GetDatabaseCollation()))
 			}
 			return complete(procedure, render, plain, extra[*metadatapb.ProcedureMetadata]{
 				strip: func(procedure *metadatapb.ProcedureMetadata) { procedure.Comment = "" },
@@ -107,7 +108,7 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	for _, sequence := range s.GetSequences() {
 		add(kindSequence, sequence.GetName(), "", nil, func() string {
 			render := func(sequence *metadatapb.SequenceMetadata) (string, error) {
-				return schema.GetSequenceDefinition(c.renderEngine(), schemaName, sequence)
+				return schema.GetSequenceDefinition(c.engine, schemaName, sequence)
 			}
 			plain := func() string { return plainSequence(schemaName, sequence) }
 			return complete(sequence, render, plain, extra[*metadatapb.SequenceMetadata]{
@@ -131,7 +132,17 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	}
 	for _, task := range s.GetTasks() {
 		add(kindTask, task.GetName(), "", nil, func() string {
-			return join(task.GetDefinition(), plainComment("", task.GetComment()))
+			// The definition is the task's DDL, which does not say whether
+			// it is running.
+			var state string
+			switch task.GetState() {
+			case metadatapb.TaskMetadata_STATE_STARTED:
+				state = "STATE: started"
+			case metadatapb.TaskMetadata_STATE_SUSPENDED:
+				state = "STATE: suspended"
+			default:
+			}
+			return join(task.GetDefinition(), state, plainComment("", task.GetComment()))
 		})
 	}
 	for _, enum := range s.GetEnumTypes() {
@@ -145,7 +156,11 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 			attributes := make([]string, 0, len(composite.GetAttributes()))
 			comments := []string{plainComment("", composite.GetComment())}
 			for _, attribute := range composite.GetAttributes() {
-				attributes = append(attributes, attribute.GetName()+" "+attribute.GetType())
+				text := attribute.GetName() + " " + attribute.GetType()
+				if collation := attribute.GetCollation(); collation != "" {
+					text += " COLLATE " + collation
+				}
+				attributes = append(attributes, text)
 				comments = append(comments, plainComment("ATTRIBUTE "+attribute.GetName(), attribute.GetComment()))
 			}
 			definition := fmt.Sprintf("COMPOSITE TYPE %s (%s)", qualify(schemaName, composite.GetName()), strings.Join(attributes, ", "))
@@ -207,7 +222,7 @@ func (c *catalogTools) tableDefinition(schemaName string, table *metadatapb.Tabl
 	// The renderer writes the ownership of every sequence it is given, so it
 	// gets the ones this table owns.
 	render := func(table *tablepb) (string, error) {
-		return schema.GetTableDefinition(c.renderEngine(), schemaName, table, owned)
+		return schema.GetTableDefinition(c.engine, schemaName, table, owned)
 	}
 	plain := func() string { return plainTable(c.engine, schemaName, table) }
 	parts := []extra[*tablepb]{
@@ -231,7 +246,7 @@ func (c *catalogTools) tableDefinition(schemaName string, table *metadatapb.Tabl
 func (c *catalogTools) viewDefinition(schemaName string, view *metadatapb.ViewMetadata) string {
 	type viewpb = metadatapb.ViewMetadata
 	render := func(view *viewpb) (string, error) {
-		return schema.GetViewDefinition(c.renderEngine(), schemaName, view)
+		return schema.GetViewDefinition(c.engine, schemaName, view)
 	}
 	on := qualify(schemaName, view.GetName())
 	plain := func() string { return fmt.Sprintf("VIEW %s AS\n%s", on, view.GetDefinition()) }
@@ -249,7 +264,7 @@ func (c *catalogTools) viewDefinition(schemaName string, view *metadatapb.ViewMe
 func (c *catalogTools) materializedViewDefinition(schemaName string, view *metadatapb.MaterializedViewMetadata) string {
 	type viewpb = metadatapb.MaterializedViewMetadata
 	render := func(view *viewpb) (string, error) {
-		return schema.GetMaterializedViewDefinition(c.renderEngine(), schemaName, view)
+		return schema.GetMaterializedViewDefinition(c.engine, schemaName, view)
 	}
 	on := qualify(schemaName, view.GetName())
 	plain := func() string { return fmt.Sprintf("MATERIALIZED VIEW %s AS\n%s", on, view.GetDefinition()) }
@@ -427,7 +442,7 @@ func plainTriggers(on string, triggers []*metadatapb.TriggerMetadata) string {
 	parts := make([]string, 0, len(triggers))
 	for _, trigger := range triggers {
 		body := strings.TrimSpace(trigger.GetBody())
-		context := plainSessionContext(trigger.GetSqlMode(), trigger.GetCharacterSetClient(), trigger.GetCollationConnection())
+		context := plainSessionContext(trigger.GetSqlMode(), trigger.GetCharacterSetClient(), trigger.GetCollationConnection(), "")
 		switch {
 		case body == "":
 		case len(body) >= 6 && strings.EqualFold(body[:6], "CREATE"):
@@ -440,14 +455,17 @@ func plainTriggers(on string, triggers []*metadatapb.TriggerMetadata) string {
 	return strings.Join(parts, "\n\n")
 }
 
-// plainSessionContext names the session settings a MySQL-family routine or
-// trigger was created under, which change how its body parses and compares.
-func plainSessionContext(sqlMode string, characterSetClient string, collationConnection string) string {
+// plainSessionContext names the context a MySQL-family routine or trigger was
+// created in: the session's SQL mode, client character set, and connection
+// collation, and for a routine the database's default collation. They change
+// how its body parses and compares.
+func plainSessionContext(sqlMode string, characterSetClient string, collationConnection string, databaseCollation string) string {
 	var settings []string
 	for _, setting := range []struct{ name, value string }{
 		{name: "sql_mode", value: sqlMode},
 		{name: "character_set_client", value: characterSetClient},
 		{name: "collation_connection", value: collationConnection},
+		{name: "database_collation", value: databaseCollation},
 	} {
 		if setting.value != "" {
 			settings = append(settings, fmt.Sprintf("%s=%s", setting.name, setting.value))
@@ -515,8 +533,13 @@ func plainForeignKeys(keys []*metadatapb.ForeignKeyMetadata) string {
 	all := make([]string, 0, len(keys))
 	for _, key := range keys {
 		definition := fmt.Sprintf("FOREIGN KEY %s (%s) REFERENCES %s (%s)", key.GetName(), strings.Join(key.GetColumns(), ", "), qualify(key.GetReferencedSchema(), key.GetReferencedTable()), strings.Join(key.GetReferencedColumns(), ", "))
+		matchType := key.GetMatchType()
+		// MySQL and MariaDB report NONE, for a key declared with no MATCH.
+		if strings.EqualFold(matchType, "NONE") {
+			matchType = ""
+		}
 		for _, clause := range []struct{ keyword, value string }{
-			{keyword: "MATCH", value: key.GetMatchType()},
+			{keyword: "MATCH", value: matchType},
 			{keyword: "ON DELETE", value: key.GetOnDelete()},
 			{keyword: "ON UPDATE", value: key.GetOnUpdate()},
 		} {
@@ -683,9 +706,18 @@ func plainColumn(engine storepb.Engine, column *metadatapb.ColumnMetadata) strin
 // show every index as invisible.
 func plainIndex(index *metadatapb.IndexMetadata) string {
 	kind := "INDEX"
+	method := index.GetType()
+	// The MySQL-family syncs keep FULLTEXT and SPATIAL as the type. They are
+	// kinds of index, and their parts take no prefix length, though the sync
+	// records one for a spatial part.
+	keyLength := index.GetKeyLength()
 	switch {
 	case index.GetPrimary():
 		kind = "PRIMARY KEY"
+	case strings.EqualFold(method, "FULLTEXT"), strings.EqualFold(method, "SPATIAL"):
+		kind = strings.ToUpper(method) + " INDEX"
+		method = ""
+		keyLength = nil
 	case index.GetUnique():
 		kind = "UNIQUE INDEX"
 	default:
@@ -694,8 +726,8 @@ func plainIndex(index *metadatapb.IndexMetadata) string {
 		// Cassandra keeps the options of a secondary index here, as JSON.
 		if strings.HasPrefix(strings.TrimSpace(definition), "{") {
 			named := fmt.Sprintf("%s %s", kind, index.GetName())
-			if value := index.GetType(); value != "" {
-				named += " USING " + value
+			if method != "" {
+				named += " USING " + method
 			}
 			return named + " OPTIONS " + definition
 		}
@@ -703,8 +735,8 @@ func plainIndex(index *metadatapb.IndexMetadata) string {
 	}
 	expressions := make([]string, 0, len(index.GetExpressions()))
 	for i, expression := range index.GetExpressions() {
-		if i < len(index.GetKeyLength()) && index.GetKeyLength()[i] > 0 {
-			expression += fmt.Sprintf("(%d)", index.GetKeyLength()[i])
+		if i < len(keyLength) && keyLength[i] > 0 {
+			expression += fmt.Sprintf("(%d)", keyLength[i])
 		}
 		if i < len(index.GetDescending()) && index.GetDescending()[i] {
 			expression += " DESC"
@@ -712,8 +744,8 @@ func plainIndex(index *metadatapb.IndexMetadata) string {
 		expressions = append(expressions, expression)
 	}
 	definition := fmt.Sprintf("%s %s", kind, index.GetName())
-	if value := index.GetType(); value != "" {
-		definition += fmt.Sprintf(" USING %s", value)
+	if method != "" {
+		definition += fmt.Sprintf(" USING %s", method)
 	}
 	return fmt.Sprintf("%s (%s)", definition, strings.Join(expressions, ", "))
 }
