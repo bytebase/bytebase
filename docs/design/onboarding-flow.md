@@ -380,11 +380,13 @@ skip is offered only while that holds: once a Finish attempt has created the pro
 create whose outcome is unknown (D11), screen 3 no longer shows it, and the way out is Finish. Two
 lines of copy follow the deployment (Given) instead of repeating Cloud's. The sample choice says the
 database runs on this server and names no expiry, as the product's existing self-hosted sample
-strings do. The project name is optional there, as in today's wizard, while the skip would be
-offered: once a create has been sent, the name is needed to finish what it started. Left empty, no
-project is made, so no database is offered either: a database belongs to a project, and the sample is bound to
-one. Finish then saves the names and the team size and lands where "I'll do this later" leaves for.
-And screen 4 asks only the team size, where Cloud also invites (D7).
+strings do. The project name is optional there, as in today's wizard: an enterprise server is
+often configured through Terraform, and its admin may not want a placeholder project made during
+setup. It stays optional while the skip would be offered; once a create has been sent, the name is
+needed to finish what it started. Left empty, no project is made, so no database is offered either:
+a database belongs to a project, and the sample is bound to one. Finish then saves the names and the
+team size and lands where "I'll do this later" leaves for. And screen 4 asks only the team size,
+where Cloud also invites (D7).
 
 ## States
 
