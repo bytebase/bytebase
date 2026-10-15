@@ -13,8 +13,15 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	// The tools render definitions with the engines' renderers.
+	// The renderers the server registers, so every case runs on what production uses.
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/clickhouse"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/oracle"
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/redshift"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/tidb"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/trino"
 )
 
 // shopSchema is a database with a large table, the objects that depend on it,
@@ -1108,7 +1115,7 @@ func TestCatalogReadsAMariaDBTableAsItsSyncStoresIt(t *testing.T) {
 		"",
 		"-- created with sql_mode=PIPES_AS_CONCAT",
 	}, "\n"), text[".orders"])
-	require.Equal(t, "CREATE FUNCTION order_total(id bigint) RETURNS bigint RETURN id || 0\n\n-- created with sql_mode=PIPES_AS_CONCAT, database_collation=utf8mb4_general_ci", text[".order_total"])
+	require.Equal(t, "CREATE FUNCTION order_total(id bigint) RETURNS bigint RETURN id || 0\n\n-- created with sql_mode=PIPES_AS_CONCAT\n\n-- created with database_collation=utf8mb4_general_ci", text[".order_total"])
 }
 
 func TestCatalogReadSkipsWhatASyncLeavesEmpty(t *testing.T) {
@@ -1257,4 +1264,109 @@ func TestCatalogReadsTheSchemaTaskAndAttributeFactsSynced(t *testing.T) {
 	_, text = readAll(t, tasks, `[{"name": "refresh"}, {"name": "unknown"}]`)
 	require.Equal(t, "CREATE TASK refresh SCHEDULE = '5 MINUTE' AS CALL refresh()\n\nSTATE: suspended", text["PUBLIC.refresh"])
 	require.Equal(t, "CREATE TASK unknown AS SELECT 1", text["PUBLIC.unknown"])
+}
+
+func TestCatalogReadsTheFactsOutsideTheDefinition(t *testing.T) {
+	t.Parallel()
+
+	owned := func() *metadatapb.TableMetadata {
+		return &metadatapb.TableMetadata{
+			Name:           "orders",
+			Owner:          "app_owner",
+			SortingKeys:    []string{"created_at", "id"},
+			ShardingInfo:   "SHARD_ROW_ID_BITS=4",
+			PrimaryKeyType: "CLUSTERED",
+			Columns:        []*metadatapb.ColumnMetadata{{Name: "id", Type: "bigint"}},
+		}
+	}
+	// A renderer that writes the owner writes it once; otherwise it is a line of its own.
+	postgres := NewCatalogTools(storepb.Engine_POSTGRES, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{Name: "public", Tables: []*metadatapb.TableMetadata{owned()}}}})
+	_, text := readAll(t, postgres, `[{"name": "orders"}]`)
+	require.Equal(t, 1, strings.Count(text["public.orders"], "app_owner"), text["public.orders"])
+
+	snowflake := NewCatalogTools(storepb.Engine_SNOWFLAKE, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name:   "PUBLIC",
+		Tables: []*metadatapb.TableMetadata{owned()},
+		Streams: []*metadatapb.StreamMetadata{
+			{Name: "order_changes", Definition: "CREATE STREAM order_changes ON TABLE orders", Owner: "etl", Stale: true},
+			{Name: "fresh_changes", Definition: "CREATE STREAM fresh_changes ON TABLE orders"},
+		},
+		Tasks:          []*metadatapb.TaskMetadata{{Name: "refresh", Definition: "CREATE TASK refresh AS SELECT 1", Owner: "etl"}},
+		ExternalTables: []*metadatapb.ExternalTableMetadata{{Name: "raw", ExternalServerName: "lake", ExternalDatabaseName: "landing", Columns: []*metadatapb.ColumnMetadata{{Name: "payload", Type: "variant", Nullable: true}}}},
+	}}})
+	_, text = readAll(t, snowflake, `[{"name": "orders"}, {"name": "order_changes"}, {"name": "fresh_changes"}, {"name": "refresh"}, {"name": "raw"}]`)
+	for _, want := range []string{"OWNER: app_owner", "SORTING KEY: created_at, id", "SHARDING: SHARD_ROW_ID_BITS=4", "PRIMARY KEY TYPE: CLUSTERED"} {
+		require.Contains(t, text["PUBLIC.orders"], want)
+	}
+	require.Equal(t, "CREATE STREAM order_changes ON TABLE orders\n\nOWNER: etl\n\nSTALE: the stream can no longer return the changes since its offset", text["PUBLIC.order_changes"])
+	require.Equal(t, "CREATE STREAM fresh_changes ON TABLE orders", text["PUBLIC.fresh_changes"])
+	require.Equal(t, "CREATE TASK refresh AS SELECT 1\n\nOWNER: etl", text["PUBLIC.refresh"])
+	require.Equal(t, "EXTERNAL TABLE PUBLIC.raw ON SERVER lake DATABASE landing (\n  payload variant\n)", text["PUBLIC.raw"])
+
+	mysql := NewCatalogTools(storepb.Engine_MYSQL, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Events: []*metadatapb.EventMetadata{{
+			Name:       "purge",
+			Definition: "CREATE EVENT purge ON SCHEDULE EVERY 1 DAY STARTS '2026-10-15 00:00:00' DO DELETE FROM logs",
+			TimeZone:   "+08:00",
+			SqlMode:    "ANSI_QUOTES",
+		}},
+	}}})
+	_, text = readAll(t, mysql, `[{"name": "purge"}]`)
+	require.Equal(t, "CREATE EVENT purge ON SCHEDULE EVERY 1 DAY STARTS '2026-10-15 00:00:00' DO DELETE FROM logs\n\n-- created with sql_mode=ANSI_QUOTES, time_zone=+08:00", text[".purge"])
+}
+
+func TestCatalogReadsTheFactsARendererLeavesOut(t *testing.T) {
+	t.Parallel()
+
+	read := func(engine storepb.Engine, schema *metadatapb.SchemaMetadata, name string) string {
+		t.Helper()
+		tools := NewCatalogTools(engine, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{schema}})
+		_, text := readAll(t, tools, fmt.Sprintf(`[{"name": %q}]`, name))
+		require.Len(t, text, 1)
+		for _, definition := range text {
+			return definition
+		}
+		return ""
+	}
+
+	// MySQL's routine renderer writes the session settings but not the database collation.
+	routine := read(storepb.Engine_MYSQL, &metadatapb.SchemaMetadata{Functions: []*metadatapb.FunctionMetadata{{
+		Name: "total", Definition: "CREATE FUNCTION total() RETURNS int RETURN 1", SqlMode: "ANSI_QUOTES", DatabaseCollation: "utf8mb4_bin",
+	}}}, "total")
+	require.Equal(t, 1, strings.Count(routine, "utf8mb4_bin"), routine)
+	require.Equal(t, 1, strings.Count(routine, "ANSI_QUOTES"), routine)
+
+	// An invisible index is named where the sync reads visibility, and never elsewhere.
+	indexed := func() *metadatapb.SchemaMetadata {
+		return &metadatapb.SchemaMetadata{Name: "APP", Tables: []*metadatapb.TableMetadata{{
+			Name:    "ORDERS",
+			Columns: []*metadatapb.ColumnMetadata{{Name: "ID", Type: "NUMBER"}},
+			Indexes: []*metadatapb.IndexMetadata{
+				{Name: "ORDERS_ID", Expressions: []string{"ID"}, Type: "NORMAL", Visible: true},
+				{Name: "ORDERS_HIDDEN", Expressions: []string{"ID"}, Type: "NORMAL"},
+			},
+		}}}
+	}
+	oracle := read(storepb.Engine_ORACLE, indexed(), "ORDERS")
+	require.Contains(t, oracle, "CREATE TABLE", "rendered by the Oracle renderer")
+	require.Equal(t, 1, strings.Count(oracle, "INDEX ORDERS_HIDDEN INVISIBLE"), oracle)
+	require.NotContains(t, oracle, "INDEX ORDERS_ID INVISIBLE")
+	require.NotContains(t, read(storepb.Engine_POSTGRES, indexed(), "ORDERS"), "INVISIBLE")
+
+	// SQL Server holds a column default in a constraint a change drops by name.
+	mssql := read(storepb.Engine_MSSQL, &metadatapb.SchemaMetadata{Name: "dbo", Tables: []*metadatapb.TableMetadata{{
+		Name:    "orders",
+		Columns: []*metadatapb.ColumnMetadata{{Name: "status", Type: "int", Default: "((0))", DefaultConstraintName: "DF_orders_status"}},
+	}}}, "orders")
+	require.Contains(t, mssql, "CREATE TABLE", "rendered by the SQL Server renderer")
+	require.Equal(t, 1, strings.Count(mssql, "DF_orders_status"), mssql)
+
+	// ClickHouse's renderer leaves data-skipping indexes out, and they come back with their granularity.
+	clickhouse := read(storepb.Engine_CLICKHOUSE, &metadatapb.SchemaMetadata{Tables: []*metadatapb.TableMetadata{{
+		Name:    "events",
+		Columns: []*metadatapb.ColumnMetadata{{Name: "url", Type: "String"}},
+		Indexes: []*metadatapb.IndexMetadata{{Name: "url_bloom", Expressions: []string{"url"}, Type: "bloom_filter", Granularity: 4}},
+	}}}, "events")
+	require.Contains(t, clickhouse, "CREATE TABLE", "rendered by the ClickHouse renderer")
+	require.Contains(t, clickhouse, "INDEX url_bloom USING bloom_filter (url) GRANULARITY 4")
 }

@@ -82,13 +82,16 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 			render := func(function *metadatapb.FunctionMetadata) (string, error) {
 				return schema.GetFunctionDefinition(c.engine, schemaName, function)
 			}
-			plain := func() string {
-				return join(function.GetDefinition(), plainSessionContext(function.GetSqlMode(), function.GetCharacterSetClient(), function.GetCollationConnection(), function.GetDatabaseCollation()))
-			}
-			return complete(function, render, plain, extra[*metadatapb.FunctionMetadata]{
-				strip: func(function *metadatapb.FunctionMetadata) { function.Comment = "" },
-				text:  plainComment("", function.GetComment()),
-			})
+			type functionpb = metadatapb.FunctionMetadata
+			// Each creation setting is its own part, so one a renderer
+			// leaves out, such as MySQL's database collation, is still shown.
+			return complete(function, render, function.GetDefinition,
+				extra[*functionpb]{strip: func(f *functionpb) { f.SqlMode = "" }, text: contextLine("sql_mode", function.GetSqlMode())},
+				extra[*functionpb]{strip: func(f *functionpb) { f.CharacterSetClient = "" }, text: contextLine("character_set_client", function.GetCharacterSetClient())},
+				extra[*functionpb]{strip: func(f *functionpb) { f.CollationConnection = "" }, text: contextLine("collation_connection", function.GetCollationConnection())},
+				extra[*functionpb]{strip: func(f *functionpb) { f.DatabaseCollation = "" }, text: contextLine("database_collation", function.GetDatabaseCollation())},
+				extra[*functionpb]{strip: func(f *functionpb) { f.Comment = "" }, text: plainComment("", function.GetComment())},
+			)
 		})
 	}
 	for _, procedure := range s.GetProcedures() {
@@ -96,13 +99,14 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 			render := func(procedure *metadatapb.ProcedureMetadata) (string, error) {
 				return schema.GetProcedureDefinition(c.engine, schemaName, procedure)
 			}
-			plain := func() string {
-				return join(procedure.GetDefinition(), plainSessionContext(procedure.GetSqlMode(), procedure.GetCharacterSetClient(), procedure.GetCollationConnection(), procedure.GetDatabaseCollation()))
-			}
-			return complete(procedure, render, plain, extra[*metadatapb.ProcedureMetadata]{
-				strip: func(procedure *metadatapb.ProcedureMetadata) { procedure.Comment = "" },
-				text:  plainComment("", procedure.GetComment()),
-			})
+			type procedurepb = metadatapb.ProcedureMetadata
+			return complete(procedure, render, procedure.GetDefinition,
+				extra[*procedurepb]{strip: func(p *procedurepb) { p.SqlMode = "" }, text: contextLine("sql_mode", procedure.GetSqlMode())},
+				extra[*procedurepb]{strip: func(p *procedurepb) { p.CharacterSetClient = "" }, text: contextLine("character_set_client", procedure.GetCharacterSetClient())},
+				extra[*procedurepb]{strip: func(p *procedurepb) { p.CollationConnection = "" }, text: contextLine("collation_connection", procedure.GetCollationConnection())},
+				extra[*procedurepb]{strip: func(p *procedurepb) { p.DatabaseCollation = "" }, text: contextLine("database_collation", procedure.GetDatabaseCollation())},
+				extra[*procedurepb]{strip: func(p *procedurepb) { p.Comment = "" }, text: plainComment("", procedure.GetComment())},
+			)
 		})
 	}
 	for _, sequence := range s.GetSequences() {
@@ -122,18 +126,25 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	}
 	for _, event := range s.GetEvents() {
 		add(kindEvent, event.GetName(), "", nil, func() string {
-			return join(event.GetDefinition(), plainComment("", event.GetComment()))
+			context := creationContext{sqlMode: event.GetSqlMode(), characterSetClient: event.GetCharacterSetClient(), collationConnection: event.GetCollationConnection(), timeZone: event.GetTimeZone()}
+			return join(event.GetDefinition(), context.text(), plainComment("", event.GetComment()))
 		})
 	}
 	for _, stream := range s.GetStreams() {
 		add(kindStream, stream.GetName(), "", nil, func() string {
-			return join(stream.GetDefinition(), plainComment("", stream.GetComment()))
+			// The definition is the stream's DDL, which says neither who owns
+			// it nor whether it went stale.
+			var stale string
+			if stream.GetStale() {
+				stale = "STALE: the stream can no longer return the changes since its offset"
+			}
+			return join(stream.GetDefinition(), plainFact("OWNER", stream.GetOwner()), stale, plainComment("", stream.GetComment()))
 		})
 	}
 	for _, task := range s.GetTasks() {
 		add(kindTask, task.GetName(), "", nil, func() string {
-			// The definition is the task's DDL, which does not say whether
-			// it is running.
+			// The definition is the task's DDL, which says neither who owns
+			// it nor whether it is running.
 			var state string
 			switch task.GetState() {
 			case metadatapb.TaskMetadata_STATE_STARTED:
@@ -142,7 +153,7 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 				state = "STATE: suspended"
 			default:
 			}
-			return join(task.GetDefinition(), state, plainComment("", task.GetComment()))
+			return join(task.GetDefinition(), plainFact("OWNER", task.GetOwner()), state, plainComment("", task.GetComment()))
 		})
 	}
 	for _, enum := range s.GetEnumTypes() {
@@ -234,6 +245,12 @@ func (c *catalogTools) tableDefinition(schemaName string, table *metadatapb.Tabl
 		{strip: func(table *tablepb) { table.Rules = nil }, text: plainRules(table.GetRules())},
 		{strip: func(table *tablepb) { enableRules(table.GetRules()) }, text: disabledRules(table.GetRules())},
 		{strip: func(table *tablepb) { table.Comment = "" }, text: plainComment("", table.GetComment())},
+		{strip: func(table *tablepb) { table.Owner = "" }, text: plainFact("OWNER", table.GetOwner())},
+		{strip: func(table *tablepb) { showIndexes(table.GetIndexes()) }, text: invisibleIndexes(c.engine, table.GetIndexes())},
+		{strip: func(table *tablepb) { stripDefaultConstraintNames(table.GetColumns()) }, text: defaultConstraintNames(table.GetColumns())},
+		{strip: func(table *tablepb) { table.SortingKeys = nil }, text: plainFact("SORTING KEY", strings.Join(table.GetSortingKeys(), ", "))},
+		{strip: func(table *tablepb) { table.ShardingInfo = "" }, text: plainFact("SHARDING", table.GetShardingInfo())},
+		{strip: func(table *tablepb) { table.PrimaryKeyType = "" }, text: plainFact("PRIMARY KEY TYPE", table.GetPrimaryKeyType())},
 		{strip: func(table *tablepb) { stripColumnComments(table.GetColumns()) }, text: columnComments(table.GetColumns())},
 		{strip: func(table *tablepb) { stripIndexComments(table.GetIndexes()) }, text: indexComments(table.GetIndexes())},
 	}
@@ -442,7 +459,7 @@ func plainTriggers(on string, triggers []*metadatapb.TriggerMetadata) string {
 	parts := make([]string, 0, len(triggers))
 	for _, trigger := range triggers {
 		body := strings.TrimSpace(trigger.GetBody())
-		context := plainSessionContext(trigger.GetSqlMode(), trigger.GetCharacterSetClient(), trigger.GetCollationConnection(), "")
+		context := creationContext{sqlMode: trigger.GetSqlMode(), characterSetClient: trigger.GetCharacterSetClient(), collationConnection: trigger.GetCollationConnection()}.text()
 		switch {
 		case body == "":
 		case len(body) >= 6 && strings.EqualFold(body[:6], "CREATE"):
@@ -455,17 +472,23 @@ func plainTriggers(on string, triggers []*metadatapb.TriggerMetadata) string {
 	return strings.Join(parts, "\n\n")
 }
 
-// plainSessionContext names the context a MySQL-family routine or trigger was
-// created in: the session's SQL mode, client character set, and connection
-// collation, and for a routine the database's default collation. They change
-// how its body parses and compares.
-func plainSessionContext(sqlMode string, characterSetClient string, collationConnection string, databaseCollation string) string {
+// creationContext is what a MySQL-family trigger or event was created under:
+// the session's SQL mode, client character set, connection collation, and
+// time zone. They change how its body parses, compares, and schedules.
+type creationContext struct {
+	sqlMode             string
+	characterSetClient  string
+	collationConnection string
+	timeZone            string
+}
+
+func (c creationContext) text() string {
 	var settings []string
 	for _, setting := range []struct{ name, value string }{
-		{name: "sql_mode", value: sqlMode},
-		{name: "character_set_client", value: characterSetClient},
-		{name: "collation_connection", value: collationConnection},
-		{name: "database_collation", value: databaseCollation},
+		{name: "sql_mode", value: c.sqlMode},
+		{name: "character_set_client", value: c.characterSetClient},
+		{name: "collation_connection", value: c.collationConnection},
+		{name: "time_zone", value: c.timeZone},
 	} {
 		if setting.value != "" {
 			settings = append(settings, fmt.Sprintf("%s=%s", setting.name, setting.value))
@@ -475,6 +498,22 @@ func plainSessionContext(sqlMode string, characterSetClient string, collationCon
 		return ""
 	}
 	return "-- created with " + strings.Join(settings, ", ")
+}
+
+// contextLine names one setting a MySQL-family routine was created under.
+func contextLine(name string, value string) string {
+	if value == "" {
+		return ""
+	}
+	return fmt.Sprintf("-- created with %s=%s", name, value)
+}
+
+// plainFact writes a fact the definition does not carry, such as an owner.
+func plainFact(label string, value string) string {
+	if value == "" {
+		return ""
+	}
+	return label + ": " + value
 }
 
 func plainEventTrigger(trigger *metadatapb.EventTriggerMetadata) string {
@@ -607,6 +646,47 @@ func plainRules(rules []*metadatapb.RuleMetadata) string {
 	return lines(all)
 }
 
+// invisibleIndexes names the indexes the optimizer ignores. Only the syncs
+// below read visibility; another engine's index reads as invisible by default.
+func invisibleIndexes(engine storepb.Engine, indexes []*metadatapb.IndexMetadata) string {
+	switch engine {
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_ORACLE, storepb.Engine_TIDB:
+	default:
+		return ""
+	}
+	var all []string
+	for _, index := range indexes {
+		if !index.GetVisible() {
+			all = append(all, fmt.Sprintf("INDEX %s INVISIBLE", index.GetName()))
+		}
+	}
+	return lines(all)
+}
+
+func showIndexes(indexes []*metadatapb.IndexMetadata) {
+	for _, index := range indexes {
+		index.Visible = true
+	}
+}
+
+// defaultConstraintNames names the constraints that hold column defaults,
+// which SQL Server syncs and a change to a default has to drop by name.
+func defaultConstraintNames(columns []*metadatapb.ColumnMetadata) string {
+	var all []string
+	for _, column := range columns {
+		if name := column.GetDefaultConstraintName(); name != "" {
+			all = append(all, fmt.Sprintf("DEFAULT CONSTRAINT %s ON COLUMN %s", name, column.GetName()))
+		}
+	}
+	return lines(all)
+}
+
+func stripDefaultConstraintNames(columns []*metadatapb.ColumnMetadata) {
+	for _, column := range columns {
+		column.DefaultConstraintName = ""
+	}
+}
+
 // disabledRules names the rules that are switched off. Only PostgreSQL syncs
 // rules, and it reads whether each one is enabled.
 func disabledRules(rules []*metadatapb.RuleMetadata) string {
@@ -630,6 +710,9 @@ func plainExternalTable(engine storepb.Engine, schemaName string, table *metadat
 	_, _ = fmt.Fprintf(&b, "EXTERNAL TABLE %s", qualify(schemaName, table.GetName()))
 	if server := table.GetExternalServerName(); server != "" {
 		_, _ = fmt.Fprintf(&b, " ON SERVER %s", server)
+	}
+	if database := table.GetExternalDatabaseName(); database != "" {
+		_, _ = fmt.Fprintf(&b, " DATABASE %s", database)
 	}
 	_, _ = b.WriteString(" (\n")
 	for _, column := range table.GetColumns() {
@@ -747,7 +830,12 @@ func plainIndex(index *metadatapb.IndexMetadata) string {
 	if method != "" {
 		definition += fmt.Sprintf(" USING %s", method)
 	}
-	return fmt.Sprintf("%s (%s)", definition, strings.Join(expressions, ", "))
+	definition = fmt.Sprintf("%s (%s)", definition, strings.Join(expressions, ", "))
+	// Only ClickHouse syncs the granularity of a data-skipping index.
+	if granularity := index.GetGranularity(); granularity > 0 {
+		definition += fmt.Sprintf(" GRANULARITY %d", granularity)
+	}
+	return definition
 }
 
 func plainSequence(schemaName string, sequence *metadatapb.SequenceMetadata) string {
