@@ -54,7 +54,7 @@ func TestReviewLiveAzureOpenAI(t *testing.T) {
 				Model:    deployment,
 				ApiKey:   apiKey,
 			})
-			tools := &catalogTools{}
+			tools := &recordingTools{Tools: ordersCatalog()}
 
 			result, err := NewReviewer(model).Review(context.Background(), request, tools)
 			require.NoError(t, err)

@@ -568,7 +568,7 @@ func TestReviewCountsARetriedModelCallOnce(t *testing.T) {
 			providerReply{status: http.StatusServiceUnavailable, body: geminiUnavailable},
 			providerReply{status: http.StatusOK, body: emptyFindings})
 		model, recorder := newRetryModel(storepb.AISetting_GEMINI, provider.url)
-		result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, NoTools{})
+		result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, ordersCatalog())
 		require.NoError(t, err)
 		require.Equal(t, 1, result.Calls)
 		require.Equal(t, 60, result.TotalTokens)
@@ -581,7 +581,7 @@ func TestReviewCountsARetriedModelCallOnce(t *testing.T) {
 
 		provider := newScriptedProvider(t, providerReply{status: http.StatusServiceUnavailable, body: geminiUnavailable})
 		model, recorder := newRetryModel(storepb.AISetting_GEMINI, provider.url)
-		_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, NoTools{})
+		_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, ordersCatalog())
 		require.ErrorContains(t, err, "model call 1 failed: Gemini API returned status 503")
 		require.Equal(t, int32(4), provider.requests.Load())
 		requireBackoff(t, recorder.waits, 3)

@@ -76,7 +76,7 @@ func TestSettingModelRoundTripsThroughAzureOpenAI(t *testing.T) {
 			defer server.Close()
 
 			model := NewModel(azureOpenAISetting(server.URL + endpoint.path))
-			tools := &catalogTools{}
+			tools := &recordingTools{Tools: ordersCatalog()}
 			result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DROP TABLE orders;"}, tools)
 			require.NoError(t, err)
 			require.Empty(t, result.Findings)
@@ -84,7 +84,7 @@ func TestSettingModelRoundTripsThroughAzureOpenAI(t *testing.T) {
 			require.Equal(t, 100, result.TotalTokens)
 			require.Equal(t, []string{`search({"text":"orders"})`}, tools.calls)
 
-			searchOutput, err := (&catalogTools{}).Call(context.Background(), "search", `{"text":"orders"}`)
+			searchOutput, err := ordersCatalog().Call(context.Background(), "search", `{"text":"orders"}`)
 			require.NoError(t, err)
 			require.Len(t, requests, 2)
 			for _, request := range requests {
@@ -170,7 +170,7 @@ func TestReviewFailsOnAnAzureOpenAIReplyThatWasCutShort(t *testing.T) {
 
 			provider := newScriptedProvider(t, providerReply{status: http.StatusOK, body: test.reply})
 			model := NewModel(azureOpenAISetting(provider.url + test.path))
-			result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DROP TABLE orders;"}, &catalogTools{})
+			result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DROP TABLE orders;"}, ordersCatalog())
 			require.Error(t, err)
 			require.Nil(t, result)
 		})

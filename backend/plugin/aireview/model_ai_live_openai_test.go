@@ -59,7 +59,7 @@ func TestReviewLiveOpenAI(t *testing.T) {
 				Model:    tc.model,
 				ApiKey:   apiKey,
 			})
-			tools := &catalogTools{}
+			tools := &recordingTools{Tools: ordersCatalog()}
 
 			result, err := NewReviewer(model).Review(context.Background(), request, tools)
 			require.NoError(t, err)
