@@ -869,6 +869,10 @@ export class BytebaseApiClient {
     return this.request("GET", `/v1/${project}`);
   }
 
+  async listProjects() {
+    return this.request<{ projects?: { name: string; title: string }[] }>("GET", "/v1/projects?pageSize=100&showDeleted=false");
+  }
+
   // Access grants (just-in-time). The body is the AccessGrant proto directly
   // (CreateAccessGrant binds `body: "access_grant"`). `creator` is derived from
   // the client's own credentials so SearchMyAccessGrants (which filters to the

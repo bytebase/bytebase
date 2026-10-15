@@ -54,10 +54,7 @@ import {
   UploadLicenseRequestSchema,
   VerifyCheckoutSessionRequestSchema,
 } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  UpdateWorkspaceRequestSchema,
-  type Workspace,
-} from "@/types/proto-es/v1/workspace_service_pb";
+import { UpdateWorkspaceRequestSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import {
   getDateForPbTimestampProtoEs,
   getTimeForPbTimestampProtoEs,
@@ -72,6 +69,7 @@ import {
 import { colorToHex, hexToColor } from "@/utils";
 import { formatAbsoluteDateTime } from "@/utils/datetime";
 import type { AppSliceCreator, WorkspaceSlice } from "./types";
+import { callOptions } from "./utils";
 
 let workspaceSwitchListenerRegistered = false;
 
@@ -270,12 +268,13 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       return resp.workspaces;
     },
 
-    updateWorkspace: async (workspace: Workspace, updateMask: string[]) => {
+    updateWorkspace: async (workspace, updateMask, report) => {
       const updated = await workspaceServiceClientConnect.updateWorkspace(
         createProto(UpdateWorkspaceRequestSchema, {
           workspace,
           updateMask: createProto(FieldMaskSchema, { paths: updateMask }),
-        })
+        }),
+        callOptions(report)
       );
       set((state) => ({
         workspace:

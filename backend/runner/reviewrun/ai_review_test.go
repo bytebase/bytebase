@@ -38,6 +38,9 @@ func TestAIReviewTarget(t *testing.T) {
 	}, aiReviewTarget(instance, &store.DatabaseMessage{EffectiveEnvironmentID: &prod}, schema))
 
 	require.Equal(t, aireview.Target{Engine: "POSTGRES", Version: "16.2"}, aiReviewTarget(instance, &store.DatabaseMessage{}, &metadatapb.DatabaseSchemaMetadata{}))
+
+	defaults := &metadatapb.DatabaseSchemaMetadata{CharacterSet: "utf8mb4", Collation: "utf8mb4_bin", SearchPath: "app, public", Owner: "app_owner"}
+	require.Equal(t, aireview.Target{Engine: "POSTGRES", Version: "16.2", CharacterSet: "utf8mb4", Collation: "utf8mb4_bin", SearchPath: "app, public", Owner: "app_owner"}, aiReviewTarget(instance, &store.DatabaseMessage{}, defaults))
 }
 
 func TestAIReviewComments(t *testing.T) {

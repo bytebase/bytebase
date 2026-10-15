@@ -24,6 +24,7 @@ import { setProjectAccess } from "./projectAccess";
 import type { AppSliceCreator, ProjectFilter, ProjectSlice } from "./types";
 import {
   buildProjectFilter,
+  callOptions,
   defaultProjectName,
   getLabelFilter,
   isMissingOrForbidden,
@@ -271,7 +272,7 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
       };
     },
 
-    createProject: async (title, resourceId) => {
+    createProject: async (title, resourceId, report) => {
       const project = createProto(ProjectSchema, {
         title,
         state: State.ACTIVE,
@@ -285,7 +286,8 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
         createProto(CreateProjectRequestSchema, {
           project,
           projectId: resourceId,
-        })
+        }),
+        callOptions(report)
       );
       upsertProjects([created]);
       return created;

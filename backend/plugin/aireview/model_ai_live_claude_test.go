@@ -47,7 +47,7 @@ func TestReviewLiveClaude(t *testing.T) {
 		Model:    modelName,
 		ApiKey:   apiKey,
 	})
-	tools := &catalogTools{}
+	tools := &recordingTools{Tools: ordersCatalog()}
 
 	result, err := NewReviewer(model).Review(context.Background(), request, tools)
 	require.NoError(t, err)

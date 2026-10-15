@@ -25,7 +25,12 @@ type HTTPError struct {
 	// says the same call can succeed later. It is nil when the provider sent
 	// none, or a value other than "true" or "false".
 	ShouldRetry *bool
-	Body        string
+	// RefusesTools means the provider rejected the request with a 400 whose
+	// parameter validation code names the tool definitions, as a deployment
+	// that does not take tools does. A content filter or other safety block
+	// carries another code and never sets it.
+	RefusesTools bool
+	Body         string
 }
 
 // Error keeps a text that callers read: the frontend agent loop looks for the

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -197,12 +198,16 @@ type openAIErrorReply struct {
 	Error struct {
 		Type string `json:"type"`
 		// Code is any so that a numeric code from a compatible service still decodes.
-		Code any `json:"code"`
+		Code  any    `json:"code"`
+		Param string `json:"param"`
 	} `json:"error"`
 }
 
-// readOpenAIFailure marks the reply for a used-up quota. OpenAI answers it
-// with 429, like a rate limit, and tells the two apart by the error code.
+// readOpenAIFailure marks the reply for a used-up quota, which OpenAI answers
+// with 429 like a rate limit and tells apart by the error code, and for a
+// request refused for its tools: a parameter validation code with the tools
+// as the parameter. A safety block carries another code, so it never counts,
+// and the message is not read because free text cannot tell the two apart.
 func readOpenAIFailure(httpErr *HTTPError) {
 	var reply openAIErrorReply
 	if err := json.Unmarshal([]byte(httpErr.Body), &reply); err != nil {
@@ -210,6 +215,10 @@ func readOpenAIFailure(httpErr *HTTPError) {
 	}
 	const insufficientQuota = "insufficient_quota"
 	httpErr.QuotaExhausted = reply.Error.Code == insufficientQuota || reply.Error.Type == insufficientQuota
+	code, isString := reply.Error.Code.(string)
+	httpErr.RefusesTools = httpErr.StatusCode == http.StatusBadRequest && isString &&
+		slices.Contains([]string{"unsupported_parameter", "unsupported_value", "invalid_value"}, code) &&
+		(reply.Error.Param == "tools" || strings.HasPrefix(reply.Error.Param, "tools["))
 }
 
 func chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {

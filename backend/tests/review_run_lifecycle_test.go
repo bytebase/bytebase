@@ -2,9 +2,13 @@ package tests
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -135,12 +139,46 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a.Equal(int64(1), rowA3.Attempt)
 	a.Equal("FAILED", rowA3.Status)
 
-	// With a model that answers, the run completes and posts the finding as
-	// an open thread on the sheet, named as the AI reviewer's result and
-	// listing the database it applies to.
-	model := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	// A table in A's database for the model to read through the tools.
+	pgContainer, err := pgContainerOf(fixture.Instance)
+	a.NoError(err)
+	_, databaseAName, err := common.GetInstanceDatabaseID(fixture.DatabaseA.Name)
+	a.NoError(err)
+	databaseA, err := sql.Open("pgx", fmt.Sprintf("postgresql://postgres:root-password@%s:%s/%s?sslmode=disable", pgContainer.GetHost(), pgContainer.GetPort(), databaseAName))
+	a.NoError(err)
+	defer databaseA.Close()
+	_, err = databaseA.ExecContext(ctx, "CREATE TABLE review_target (id bigint PRIMARY KEY, note text)")
+	a.NoError(err)
+	_, err = ctl.databaseServiceClient.SyncDatabase(ctx, connect.NewRequest(&v1pb.SyncDatabaseRequest{Name: fixture.DatabaseA.Name}))
+	a.NoError(err)
+
+	// With a model that reads the table and then answers, the run completes
+	// and posts the finding as an open thread on the sheet, named as the AI
+	// reviewer's result and listing the database it applies to.
+	var toolResults sync.Map
+	model := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var request struct {
+			Contents []struct {
+				Parts []struct {
+					FunctionResponse *struct {
+						Name     string          `json:"name"`
+						Response json.RawMessage `json:"response"`
+					} `json:"functionResponse"`
+				} `json:"parts"`
+			} `json:"contents"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&request)
+		reply := `{"candidates": [{"content": {"parts": [{"functionCall": {"name": "read", "args": {"objects": [{"schema": "public", "name": "review_target"}]}}}]}}], "usageMetadata": {"totalTokenCount": 10}}`
+		for _, content := range request.Contents {
+			for _, part := range content.Parts {
+				if part.FunctionResponse != nil {
+					toolResults.Store(part.FunctionResponse.Name, string(part.FunctionResponse.Response))
+					reply = `{"candidates": [{"content": {"parts": [{"text": "{\"findings\": [{\"title\": \"Remove the placeholder statement\", \"severity\": \"P2\", \"line\": 1, \"rule\": \"Anything the policy below asks for.\", \"evidence\": \"SELECT 1 changes nothing.\", \"fix\": \"Delete the statement.\"}], \"notes\": []}"}]}}], "usageMetadata": {"totalTokenCount": 10}}`
+				}
+			}
+		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"candidates": [{"content": {"parts": [{"text": "{\"findings\": [{\"title\": \"Remove the placeholder statement\", \"severity\": \"P2\", \"line\": 1, \"rule\": \"Anything the policy below asks for.\", \"evidence\": \"SELECT 1 changes nothing.\", \"fix\": \"Delete the statement.\"}], \"notes\": []}"}]}}], "usageMetadata": {"totalTokenCount": 10}}`))
+		_, _ = w.Write([]byte(reply))
 	}))
 	defer model.Close()
 	setAISetting(ctx, t, ctl, model.URL)
@@ -150,6 +188,10 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	aiRow = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "AI")
 	a.Equal("DONE", aiRow.Status, "payload %s", aiRow.Payload)
 	a.Equal(int64(1), aiRow.Attempt)
+	readResult, ok := toolResults.Load("read")
+	a.True(ok, "the model read the table")
+	a.Contains(readResult, `CREATE TABLE \"public\".\"review_target\"`, "the tools read the synced schema of the database under review")
+	a.Contains(readResult, `\"note\" text`)
 	comments, err := ctl.issueServiceClient.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{Parent: issueA.Name}))
 	a.NoError(err)
 	var results []*v1pb.IssueComment

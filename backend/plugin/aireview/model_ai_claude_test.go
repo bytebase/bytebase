@@ -51,7 +51,7 @@ func TestSettingModelRoundTripsThroughClaude(t *testing.T) {
 	defer server.Close()
 
 	model := NewModel(&storepb.AISetting{Provider: storepb.AISetting_CLAUDE, Endpoint: server.URL, Model: "claude-sonnet-5", ApiKey: "test-key"})
-	tools := &catalogTools{}
+	tools := &recordingTools{Tools: ordersCatalog()}
 	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DROP TABLE orders;"}, tools)
 	require.NoError(t, err)
 	require.Empty(t, result.Findings)

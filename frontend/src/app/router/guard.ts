@@ -1,6 +1,8 @@
 import { redirect } from "react-router";
+import { hasWorkspaceSetupDraft } from "@/modules/workspace-setup-guide/selection";
 import { readWorkspaceSetupFinished } from "@/modules/workspace-setup-guide/setup";
 import { useAppStore } from "@/stores/app";
+import { PresetRoleType } from "@/types/iam/role";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
@@ -96,9 +98,19 @@ export async function workspaceSetupGuard(url: URL): Promise<Response | null> {
   if (store.isSaaSMode() && setupFinished === false) {
     return null;
   }
+  // Finish adds its invitees before it ends, so an admin whose setup is
+  // still in this browser comes back to it though others have joined.
+  const resumesSetup = () => {
+    const name = store.currentUser?.name;
+    return (
+      !!name &&
+      store.getWorkspaceRolesByName(name).has(PresetRoleType.WORKSPACE_ADMIN) &&
+      hasWorkspaceSetupDraft()
+    );
+  };
   if (
     (!store.isSaaSMode() || setupFinished === undefined) &&
-    store.enableOnboarding()
+    (store.enableOnboarding() || resumesSetup())
   ) {
     return null;
   }

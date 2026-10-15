@@ -1,6 +1,6 @@
 # Non-interactive recovery beside a running Bytebase
 
-Status: proposal · 2026-10-13 · [BYT-10271](https://linear.app/bytebase/issue/BYT-10271)
+Status: implemented in this PR · 2026-10-14 · [BYT-10271](https://linear.app/bytebase/issue/BYT-10271)
 
 `bytebase recovery` restores password sign-in for a self-hosted workspace nobody can sign in to.
 Today it runs only as an interactive menu, and its runbook stops every Bytebase server first and
@@ -36,11 +36,16 @@ What recovery changes, and where a running server reads it:
 
 The lockout counter that a reset also clears is read from the database on every attempt.
 
-Running beside a server is already safe for the data, under the two conditions in D4. Recovery
-starts no server, runs no migration and writes no replica heartbeat. Its setting and IAM writes
-lock the row and merge inside the transaction (`UpdateSettingAtomic`, `PatchIamPolicy`), as the
-server's own writes to those rows do, and the password change updates one column. The stop-first
-rule guarded an IAM lost-update race that #21285 has since fixed. What remains is the cache.
+Running beside a server is safe for the data, under the two conditions in D4. Recovery starts no
+server, runs no migration and writes no replica heartbeat. Each of its setting and IAM writes
+locks the row and computes the change from the locked row (`UpdateSettingAtomic`,
+`PatchIamPolicy`). The menu's role grant did not: it set the user's roles to a list read before
+the lock, so a role another server granted in between was lost. It now adds the one role inside
+the lock, and only an unconditional binding counts as already holding it, because a conditional
+one can expire. The password change also rewrites the profile's last-change time from the row it
+read just before, so a sign-in by the same user at that moment can lose its last-sign-in time;
+that is accepted. The stop-first rule guarded an IAM lost-update race that #21285 has since fixed.
+What remains is the cache.
 
 ## Principle
 
@@ -61,9 +66,10 @@ bytebase recovery reset-password --email <email> --password <password>
 A subcommand runs one action, prints the result and exits. It needs no terminal and asks for no
 confirmation: naming the action is the confirmation. It keeps every check the menu runs (exactly
 one workspace, a usable administrator for `enable-password-signin`, the domain and password
-restrictions for `reset-password`) and writes the same audit record. The menu stays and still needs
-a terminal. Rejected: one flat flag set on `bytebase recovery` with an `--action` flag, where which
-flags are required would depend on another flag's value.
+restrictions for `reset-password`) and writes the same audit record. It reads the email as sign-in
+does, trimmed and lowercased, so a reset clears the lockout that sign-in counted. The menu stays and
+still needs a terminal. Rejected: one flat flag set on `bytebase recovery` with an `--action` flag,
+where which flags are required would depend on another flag's value.
 
 **D2 · The password is a flag.** `--password` takes the new password on the command line, as
 `redis-cli -a`, `docker login --password`, `grafana cli admin reset-admin-password` and
@@ -73,12 +79,26 @@ value on the command line is visible in the process list and the shell history, 
 tells the user to change the password after signing in. Rejected: a password file or standard
 input only, as `psql` and `docker login --password-stdin` do. It is safer, but it adds a step to
 every use, and it can be added beside the flag later. This replaces the original recovery design's
-rule that the password never comes from an argument.
+rule that the password never comes from an argument. No error repeats the password, so a
+mistyped `bytebase recovery` command cannot print it into a Job's log:
+
+- A usage error names at most the command and a flag, never a value or an argument from the
+  command line. The flag parser's own errors quote the token, so recovery replaces them.
+- An error names the email only after it matched an account. Until then the value in `--email`
+  can be a password given in the wrong flag, and a password can look like an email address
+  (`Welcome@2024`).
+
+A whole command given as one argument fails in `bytebase` or in the container runtime before
+recovery runs, and that error repeats it, so the runbook says to give each word as its own item.
 
 **D3 · The subcommands do not add a workspace role.** After a reset, the menu offers a role from a
 numbered list to a user who has none. A flag would need the role's ID (`roles/workspaceAdmin`, or a
 custom role's ID), which nobody has to hand during an outage. `reset-password` reports that the
-user has no workspace role and points at the menu. Rejected: `--add-role <role>`.
+user has no workspace role and points at the menu, to use before the user tries to sign in. On a
+self-hosted deployment, a sign-in attempt with the right password adds a user with no role as a
+workspace member before it checks whether the attempt is allowed, so even a refused attempt (while
+password sign-in is disabled, say) does it, and the menu then offers no role. Rejected:
+`--add-role <role>`.
 
 **D4 · Recovery runs beside the running server.** The runbook and the command stop telling the
 operator to stop and restart Bytebase. Recovery reaches the metadata database exactly as the server
@@ -96,8 +116,13 @@ one. Two conditions stay:
   tag from the manifest. A tag can move: the Helm chart defaults to `latest` and always pulls, so
   a Job started later can get a newer build than the server runs.
 - **With the embedded database, run the command inside the server's container.** A second
-  container cannot reach the embedded PostgreSQL. If it mounts the same data directory, it starts
-  its own PostgreSQL on it.
+  container cannot reach the embedded PostgreSQL through the server's socket. If it mounts the
+  same data directory, it would start its own PostgreSQL there, and PostgreSQL's lock cannot see a
+  postmaster in another container, so two would write the same files. Recovery therefore refuses
+  to start PostgreSQL on a data directory that has a `postmaster.pid`, with the connection error
+  it got and a note that the directory may be in use (the file can be left over from a crash).
+  When no server runs and recovery starts PostgreSQL itself, do not start Bytebase until recovery
+  exits: a server in another container cannot see recovery's PostgreSQL either.
 
 **D5 · The user, setting and policy caches expire after one minute.** `userEmailCache`,
 `settingCache` and `policyCache` become `expirable.LRU` with a one-minute lifetime, the type and
@@ -142,13 +167,30 @@ saved. Recovery cannot confirm that a server applied the change; the limit holds
 Rejected: a `--wait` flag that sleeps for a minute so that a finished Job means the change is live.
 The caller can wait.
 
+The result line is how a failure says what was saved. It is printed whenever what was asked for is
+stored, including when a second run finds it already stored, and before the error of any later
+step: the audit record, or clearing the lockout. The service marks this by returning its result
+together with the error, and the subcommands and the menu's three actions all read it that way. A
+failed lockout clear does not skip the audit record.
+
+Waiting matters for a reset password. A server that has not read it yet rejects the new password,
+and each rejected sign-in counts toward the password lockout: five within 10 minutes lock the
+user's password sign-in for 10 minutes. The runbook says to wait the minute before signing in.
+Running the same `reset-password` again clears a lock and changes nothing else. Rejected: reading
+the user's password hash from the database again when the cached one does not match, so that a new
+password works at once. Every rejected sign-in, including each guess in a password-guessing attack,
+would then cost a database read.
+
 **D7 · Simultaneous misses each reload.** A `userEmailCache` miss reloads every user
-(`listAndCacheAllUsers`). With expiry that reload runs about once a minute, and requests that miss
-at the same moment each run their own. `settingCache` serializes its fills, so simultaneous misses
-on one setting read one after another. That is accepted for now: a server with `--ha` already
-reloads the user list on every request. Rejected for now: sharing one reload between simultaneous
-misses, as `LicenseService` does with `singleflight`. It is the first thing to add if a large
-workspace shows a spike.
+(`listAndCacheAllUsers`). With expiry that reload runs about once a minute for the users that
+exist, and requests that miss at the same moment each run their own. An email with no user is never
+cached, so each sign-in with one reloads the list; that is so today, and this design does not
+change it. `settingCache` serializes its fills, and a fill that waited for the lock looks at the
+cache again, so simultaneous misses on one stored setting cost one read. A setting with no row is
+not cached, and the fills of all settings wait on the same lock. The user-list reloads are
+accepted for now: a server with `--ha` already reloads the user list on every request. Rejected
+for now: sharing one reload between simultaneous misses, as `LicenseService` does with
+`singleflight`. It is the first thing to add if a large workspace shows a spike.
 
 ## States
 
@@ -160,13 +202,17 @@ What each command prints and returns:
 | `enable-password-signin`, already enabled | The same | 0 |
 | `enable-password-signin`, no administrator has a password | The existing error | 1 |
 | `reset-password`, an active user with a workspace role | `Password updated for user <email>. Live within one minute.` | 0 |
-| `reset-password`, an active user with no workspace role | The same, then `User <email> has no workspace role. Run "bytebase recovery" to add one.` | 0 |
-| `reset-password`, an unknown, deactivated or non-user account | The existing error | 1 |
-| `reset-password`, the password breaks the workspace restriction, or the email is outside the allowed domains | The existing error | 1 |
-| Either, a required flag is missing | A usage error. Nothing is read or written. | 1 |
-| Either, the change is saved but the audit record fails | The result line, then the error | 1 |
+| `reset-password`, the password is already the one given | The same | 0 |
+| `reset-password`, an active user with no workspace role | The same, then `User <email> has no workspace role. Before they try to sign in, run "bytebase recovery" to add one.` | 0 |
+| `reset-password`, the password is saved but the lookup of the user's workspace role fails | The same, then `Warning: could not check whether user <email> has a workspace role: <reason>`. The lookup only informs the operator. | 0 |
+| `reset-password`, a deactivated or non-user account | The existing error | 1 |
+| `reset-password`, no account has the email, or the email is outside the allowed domains | `the user does not exist`, or `the email does not belong to the workspace's allowed domains`: the email has matched no account, so the error does not repeat it | 1 |
+| `reset-password`, the password breaks the workspace restriction | The existing error | 1 |
+| Either, a flag is unknown or has no valid value, a required flag is missing or empty, `--email` is not an email address, `--password` looks like a variable reference that a shell or Kubernetes did not expand (`$NAME` or `${NAME}` with a shell name, or `$(NAME)` with any name a Secret or ConfigMap key can hold, since `envFrom` turns keys into variables and Kubernetes leaves an undefined one in place; `$(Str0ng!)` is taken as a password) or holds a character that cannot be typed (a control character such as a trailing newline, a line or paragraph separator, a byte-order mark, a zero-width space or word joiner, the replacement character U+FFFD, or invalid UTF-8), or an argument is unexpected | A usage error that repeats no value or argument from the command line. Nothing is read or written. | 1 |
+| Either, what was asked for is stored but a later step fails: the audit record, or clearing the lockout | The result line, then, for `reset-password`, the note about a missing workspace role, then the error | 1 |
 | Either, the metadata database has no workspace, or more than one | The existing error | 1 |
 | `bytebase recovery` without a terminal | The existing error, now naming the two subcommands | 1 |
+| `bytebase recovery` with an argument or a flag it does not take, most often a misspelled subcommand | A usage error that names the two subcommands, then the usage. It repeats nothing from the command line. | 1 |
 
 When a recovery change is live on a running server:
 
@@ -222,7 +268,8 @@ container every time it exits and repeat the action without end.
 ## What changes outside recovery
 
 - **Every server with the caches on reads each cached entry again once a minute.** Settings and
-  policies are single-row reads. The user list is one query a minute (D7).
+  policies are single-row reads. The user list is reloaded about once a minute, once by each
+  request that misses while a reload runs (D7).
 - **What these three caches hold is live within a minute after a direct change to the metadata
   database.** Today it waits for a restart. That bounds a stale entry in any of them, including
   the policies that permission checks read. It does not reach what the server copies out of the
@@ -230,7 +277,9 @@ container every time it exits and repeat the action without end.
   the caches that still have no expiry (projects, instances, databases). Recovery changes none of
   those.
 - **The menu keeps its prompts and its checks.** It loses only the lines that say to stop and
-  restart Bytebase.
+  restart Bytebase. Where it said to restart, its result lines end with `Live within one minute.`,
+  as the subcommands' do. Its enable action reports a setting saved before a failed audit record as
+  saved, with a warning, as its reset already did; it used to report it as a failure.
 
 ## Scope
 
@@ -238,7 +287,8 @@ container every time it exits and repeat the action without end.
 |---|---|
 | `backend/bin/server/cmd/recovery.go` | The two subcommands (D1 to D3), the result lines and exit status (D6), and no stop or restart lines (D4) |
 | `backend/store/store.go` | `userEmailCache`, `settingCache` and `policyCache` as `expirable.LRU` with a one-minute lifetime that tests can shorten (D5) |
-| `backend/store/setting.go` | The comments that say the setting cache has no TTL |
+| `backend/store/setting.go`, `backend/store/policy.go` | The comments that say the setting cache has no TTL, or that a stale policy stays cached with no expiry; a setting fill that waited for the lock looks at the cache again (D7) |
+| `backend/component/recovery/service.go` | The menu's role grant computed inside the IAM lock; one email normalization shared with the subcommands |
 | `docs/operations/admin-recovery.md`, `docs/operations/high-availability.md` | The runbook without the stop and the restart, with the one-minute wait, the subcommands, and the Job for each way a deployment supplies `PG_URL` |
 
 Tests:
@@ -246,6 +296,15 @@ Tests:
 - `TestRecoveryCommandContract` changes. The menu still refuses a non-terminal, and the help lists
   the two subcommands and their flags. New cases cover every row of the first States table through
   the existing `fakeRecoveryRunner`.
+- Contract tests on the real recovery service for what the fake models: a result returned with the
+  error when the audit record or the lockout clear fails after the save, for each of the three
+  actions; a role grant that keeps a role another writer granted in between; and a role grant that
+  does not count an expired binding as the role.
+- On the real recovery service, the errors that come before the email matched an account (no such
+  user, outside the allowed domains) do not repeat it, including for a password given as the
+  email.
+- A collision test for the setting fill: the same setting name in two workspaces, one read waiting
+  behind the other's fill.
 - A store test with the caches on and a short lifetime. It warms the three caches, changes the rows
   through a second store as recovery does, waits past the lifetime, and reads the new values. A
   second case reads before the lifetime ends and gets the cached value.
@@ -254,8 +313,11 @@ Tests:
 
 ## Not in this PR
 
-- The implementation.
 - The public recovery page (bytebase/bytebase.com, `docs/administration/admin-recovery.mdx`), which
   needs the same changes as the runbook.
 - A message or a counter that makes the change instant or confirmed (D5).
 - A role flag, a password file, a wait flag and a shared user reload (D2, D3, D6, D7).
+- A menu role for a user who already holds one. Since recovery was added (#21182), the menu has
+  offered a role only to a user with none. With no usable administrator left, recovery therefore
+  cannot promote a user who holds another role, such as Member after directory sync deactivated
+  the only administrator, or after the user tried to sign in (D3). The runbook states the limit.

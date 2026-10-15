@@ -124,6 +124,27 @@ describe("getProjectHomeNextSteps", () => {
     ).toEqual(["changeDatabase", "queryDatabase"]);
   });
 
+  test.each([
+    ["query-data", ["queryDatabase", "changeDatabase", "members"]],
+    ["just-exploring", ["queryDatabase", "changeDatabase", "members"]],
+    ["create-database-change", ["changeDatabase", "queryDatabase", "members"]],
+  ] as const)("orders the next steps for the goal %s", (goal, steps) => {
+    expect(
+      getProjectHomeNextSteps({ ...input, database: "present", goal })
+    ).toEqual(steps);
+  });
+
+  test("does not lead with a query the member cannot run, whatever their goal", () => {
+    expect(
+      getProjectHomeNextSteps({
+        ...input,
+        database: "present",
+        goal: "query-data",
+        canQueryDatabase: false,
+      })
+    ).toEqual(["changeDatabase", "members"]);
+  });
+
   test("only offers querying alongside a database change when SQL Editor is available", () => {
     expect(
       getProjectHomeNextSteps({

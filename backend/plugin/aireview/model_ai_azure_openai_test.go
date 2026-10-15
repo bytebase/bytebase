@@ -76,7 +76,7 @@ func TestSettingModelRoundTripsThroughAzureOpenAI(t *testing.T) {
 			defer server.Close()
 
 			model := NewModel(azureOpenAISetting(server.URL + endpoint.path))
-			tools := &catalogTools{}
+			tools := &recordingTools{Tools: ordersCatalog()}
 			result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DROP TABLE orders;"}, tools)
 			require.NoError(t, err)
 			require.Empty(t, result.Findings)
@@ -84,7 +84,7 @@ func TestSettingModelRoundTripsThroughAzureOpenAI(t *testing.T) {
 			require.Equal(t, 100, result.TotalTokens)
 			require.Equal(t, []string{`search({"text":"orders"})`}, tools.calls)
 
-			searchOutput, err := (&catalogTools{}).Call(context.Background(), "search", `{"text":"orders"}`)
+			searchOutput, err := ordersCatalog().Call(context.Background(), "search", `{"text":"orders"}`)
 			require.NoError(t, err)
 			require.Len(t, requests, 2)
 			for _, request := range requests {
@@ -170,9 +170,32 @@ func TestReviewFailsOnAnAzureOpenAIReplyThatWasCutShort(t *testing.T) {
 
 			provider := newScriptedProvider(t, providerReply{status: http.StatusOK, body: test.reply})
 			model := NewModel(azureOpenAISetting(provider.url + test.path))
-			result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DROP TABLE orders;"}, &catalogTools{})
+			result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DROP TABLE orders;"}, ordersCatalog())
 			require.Error(t, err)
 			require.Nil(t, result)
 		})
 	}
+}
+
+func TestReviewOnAzureOpenAIDropsToolsOnlyWhenTheyAreRefused(t *testing.T) {
+	t.Parallel()
+
+	const toolsRefused = `{"error": {"message": "Function tools with reasoning_effort are not supported for gpt-5.6 in /v1/chat/completions.", "type": "invalid_request_error", "param": "tools", "code": "unsupported_parameter"}}`
+	path := "/openai/v1/chat/completions"
+
+	t.Run("a deployment that refuses tools is reviewed without them", func(t *testing.T) {
+		t.Parallel()
+		provider := newScriptedProvider(t, providerReply{status: http.StatusBadRequest, body: toolsRefused}, providerReply{status: http.StatusOK, body: azureChatPass})
+		result, err := NewReviewer(NewModel(azureOpenAISetting(provider.url+path))).Review(context.Background(), &Request{Statement: "DROP TABLE orders;"}, ordersCatalog())
+		require.NoError(t, err)
+		require.Empty(t, result.Findings)
+		require.Equal(t, int32(2), provider.requests.Load())
+	})
+	t.Run("a guardrail block fails the review", func(t *testing.T) {
+		t.Parallel()
+		provider := newScriptedProvider(t, providerReply{status: http.StatusBadRequest, body: azureContentFilter}, providerReply{status: http.StatusOK, body: azureChatPass})
+		_, err := NewReviewer(NewModel(azureOpenAISetting(provider.url+path))).Review(context.Background(), &Request{Statement: "DROP TABLE orders;"}, ordersCatalog())
+		require.ErrorContains(t, err, "model call 1 failed")
+		require.Equal(t, int32(1), provider.requests.Load(), "a blocked review must not pass on a second try")
+	})
 }

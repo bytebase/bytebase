@@ -25,6 +25,9 @@ const (
 )
 
 // Service performs self-hosted recovery operations against the metadata store.
+// An action that stored what was asked for and then failed a later step, such
+// as the audit record or clearing the lockout, returns its result together
+// with the error.
 type Service struct {
 	store *store.Store
 }
@@ -175,9 +178,9 @@ func (s *Service) IsUserInWorkspace(ctx context.Context, workspaceID, email stri
 	if err := s.requireWorkspace(ctx, workspaceID); err != nil {
 		return false, err
 	}
-	email = strings.ToLower(email)
-	if err := common.ValidateEmail(email); err != nil {
-		return false, errors.Wrap(err, "invalid user email")
+	email, err := ParseEmail(email)
+	if err != nil {
+		return false, err
 	}
 	workspace, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
 		WorkspaceID:    &workspaceID,
@@ -237,16 +240,16 @@ func (s *Service) AddUserToWorkspace(ctx context.Context, request AddUserToWorks
 		return nil, err
 	}
 
-	email := strings.ToLower(request.Email)
-	if err := common.ValidateEmail(email); err != nil {
-		return nil, errors.Wrap(err, "invalid user email")
+	email, err := ParseEmail(request.Email)
+	if err != nil {
+		return nil, err
 	}
 	profile, err := s.store.GetWorkspaceProfileSetting(ctx, request.WorkspaceID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get workspace profile setting")
 	}
 	if profile.EnforceIdentityDomain && !emailBelongsToDomains(email, profile.Domains) {
-		return nil, errors.Errorf("email %q does not belong to the workspace's allowed domains", email)
+		return nil, errDomainNotAllowed
 	}
 	if _, err := s.getActiveEndUser(ctx, email); err != nil {
 		return nil, err
@@ -264,35 +267,25 @@ func (s *Service) AddUserToWorkspace(ctx context.Context, request AddUserToWorks
 		return nil, errors.Errorf("role %q does not exist", request.Role)
 	}
 
-	policy, err := s.store.GetWorkspaceIamPolicy(ctx, request.WorkspaceID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get workspace IAM policy")
-	}
 	member := common.FormatUserEmail(email)
-	directRoles := make([]string, 0)
-	selected := false
-	for _, binding := range policy.Policy.Bindings {
-		if slices.Contains(binding.Members, member) {
-			directRoles = append(directRoles, binding.Role)
-			selected = selected || binding.Role == request.Role
-		}
+	// Deciding on the locked policy keeps a role that a running server grants
+	// this user while recovery runs.
+	granted := false
+	_, err = s.store.PatchIamPolicy(ctx, request.WorkspaceID, storepb.Policy_WORKSPACE, common.FormatWorkspace(request.WorkspaceID),
+		func(policy *storepb.IamPolicy) error {
+			if granted = addRoleMember(policy, request.Role, member); !granted {
+				return errRoleAlreadyGranted
+			}
+			return nil
+		})
+	if err != nil && !errors.Is(err, errRoleAlreadyGranted) {
+		return nil, errors.Wrap(err, "failed to add user to workspace IAM policy")
 	}
-
 	result := &AddUserToWorkspaceResult{
 		WorkspaceID: request.WorkspaceID,
 		Email:       email,
 		Role:        request.Role,
-	}
-	if !selected {
-		directRoles = append(directRoles, request.Role)
-		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
-			Workspace: request.WorkspaceID,
-			Member:    member,
-			Roles:     directRoles,
-		}); err != nil {
-			return nil, errors.Wrap(err, "failed to add user to workspace IAM policy")
-		}
-		result.Changed = true
+		Changed:     granted,
 	}
 
 	auditRequest, err := json.Marshal(struct {
@@ -325,9 +318,9 @@ func (s *Service) ResetUserPassword(ctx context.Context, request ResetUserPasswo
 		return nil, err
 	}
 
-	email := strings.ToLower(request.Email)
-	if err := common.ValidateEmail(email); err != nil {
-		return nil, errors.Wrap(err, "invalid user email")
+	email, err := ParseEmail(request.Email)
+	if err != nil {
+		return nil, err
 	}
 
 	profile, err := s.store.GetWorkspaceProfileSetting(ctx, request.WorkspaceID)
@@ -335,7 +328,7 @@ func (s *Service) ResetUserPassword(ctx context.Context, request ResetUserPasswo
 		return nil, errors.Wrap(err, "failed to get workspace profile setting")
 	}
 	if profile.EnforceIdentityDomain && !emailBelongsToDomains(email, profile.Domains) {
-		return nil, errors.Errorf("email %q does not belong to the workspace's allowed domains", email)
+		return nil, errDomainNotAllowed
 	}
 	if err := common.ValidatePassword(string(request.Password), profile.PasswordRestriction); err != nil {
 		return nil, errors.Wrap(err, "password does not satisfy the workspace restriction")
@@ -372,15 +365,17 @@ func (s *Service) ResetUserPassword(ctx context.Context, request ResetUserPasswo
 	// A lockout the user guessed themselves into must not outlive the reset:
 	// without this, the operator hands over a password that Login keeps
 	// refusing with ResourceExhausted until the window lapses.
-	if err := s.store.ClearLoginAttempt(ctx, email, storepb.LoginAttemptKind_PASSWORD); err != nil {
+	clearErr := s.store.ClearLoginAttempt(ctx, email, storepb.LoginAttemptKind_PASSWORD)
+	// The stored password is audited even when clearing the lockout failed.
+	auditErr := s.createAuditLog(ctx, request.WorkspaceID, resetUserPasswordAuditMethod, string(auditRequest))
+	if clearErr != nil {
 		if result.Changed {
-			return result, errors.Wrap(err, "password was reset, but failed to clear the login attempt counter")
+			return result, errors.Wrap(clearErr, "password was reset, but failed to clear the login attempt counter")
 		}
-		return result, errors.Wrap(err, "failed to clear the login attempt counter")
+		return result, errors.Wrap(clearErr, "failed to clear the login attempt counter")
 	}
-
-	if err := s.createAuditLog(ctx, request.WorkspaceID, resetUserPasswordAuditMethod, string(auditRequest)); err != nil {
-		return result, errors.Wrap(err, "user password reset completed, but failed to create the recovery audit log")
+	if auditErr != nil {
+		return result, errors.Wrap(auditErr, "user password reset completed, but failed to create the recovery audit log")
 	}
 	return result, nil
 }
@@ -391,7 +386,7 @@ func (s *Service) getActiveEndUser(ctx context.Context, email string) (*store.Us
 		return nil, errors.Wrap(err, "failed to find user identity")
 	}
 	if account == nil {
-		return nil, errors.Errorf("user %q does not exist", email)
+		return nil, errors.New("the user does not exist")
 	}
 	if account.Type != storepb.PrincipalType_END_USER || account.MemberDeleted {
 		return nil, errors.Errorf("user %q is not an active end user", email)
@@ -415,6 +410,49 @@ func (s *Service) requireWorkspace(ctx context.Context, workspaceID string) erro
 		return errors.Errorf("workspace %q was not found", workspaceID)
 	}
 	return nil
+}
+
+// ParseEmail returns email canonicalized as sign-in does, so that a reset
+// clears the lockout sign-in counted, or an error when it is not an email
+// address.
+func ParseEmail(email string) (string, error) {
+	email = common.NormalizeEmail(email)
+	if err := common.ValidateEmail(email); err != nil {
+		return "", errors.Wrap(err, "invalid user email")
+	}
+	return email, nil
+}
+
+// errRoleAlreadyGranted ends the IAM write without a change.
+var errRoleAlreadyGranted = errors.New("the user already has the role")
+
+// An error names the email only after it matched an account. Until then the
+// value can be a password given as the email by mistake, and a password can
+// look like an email address, so the checks before the match do not repeat it.
+var errDomainNotAllowed = errors.New("the email does not belong to the workspace's allowed domains")
+
+// addRoleMember adds member to the unconditional binding for role, creating
+// it when there is none. It reports false when member is already there; a
+// conditional binding does not count, because its condition can expire.
+func addRoleMember(policy *storepb.IamPolicy, role, member string) bool {
+	var target *storepb.Binding
+	for _, binding := range policy.Bindings {
+		if binding.Role != role || binding.GetCondition().GetExpression() != "" {
+			continue
+		}
+		if slices.Contains(binding.Members, member) {
+			return false
+		}
+		if target == nil {
+			target = binding
+		}
+	}
+	if target == nil {
+		policy.Bindings = append(policy.Bindings, &storepb.Binding{Role: role, Members: []string{member}})
+		return true
+	}
+	target.Members = append(target.Members, member)
+	return true
 }
 
 func emailBelongsToDomains(email string, domains []string) bool {
