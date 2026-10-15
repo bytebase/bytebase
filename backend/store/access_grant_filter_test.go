@@ -12,7 +12,7 @@ func TestGetActiveAccessGrantFilter(t *testing.T) {
 	expireTime := time.Date(2026, time.September, 3, 0, 0, 0, 0, time.UTC)
 	q := getActiveAccessGrantFilter(&FindActiveAccessGrantMessage{
 		Target:     "instances/prod/databases/app",
-		Statement:  "SELECT 1",
+		Statement:  " \t\n\r\v\fSELECT 1\r\n",
 		Schema:     "public",
 		Container:  "orders",
 		ExpireTime: expireTime,
@@ -21,10 +21,10 @@ func TestGetActiveAccessGrantFilter(t *testing.T) {
 	sql, args, err := q.ToSQL()
 	require.NoError(t, err)
 	require.Contains(t, sql, "access_grant.payload->'targets' @> jsonb_build_array(to_jsonb($3::text))")
-	require.Contains(t, sql, "btrim(access_grant.payload->>'query', E' \\t\\n\\r\\v\\f') = $4")
+	require.Contains(t, sql, "access_grant.payload->>'queryHash' = $4")
 	require.Contains(t, sql, "COALESCE(access_grant.payload->>'schema', '') = $5")
 	require.Contains(t, sql, "COALESCE(access_grant.payload->>'container', '') = $6")
-	require.Equal(t, []any{"ACTIVE", expireTime, "instances/prod/databases/app", "SELECT 1", "public", "orders"}, args)
+	require.Equal(t, []any{"ACTIVE", expireTime, "instances/prod/databases/app", "e004ebd5b5532a4b85984a62f8ad48a81aa3460c1ca07701f386135d72cdecf5", "public", "orders"}, args)
 }
 
 func TestGetListAccessGrantFilter(t *testing.T) {
@@ -79,28 +79,28 @@ func TestGetListAccessGrantFilter(t *testing.T) {
 		{
 			name:     "query equality strips trailing newline",
 			filter:   `query == "SELECT 1\n"`,
-			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\v\\f') = $1)",
+			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\x0b\\f') = $1)",
 			wantArgs: []any{"SELECT 1"},
 			wantErr:  false,
 		},
 		{
 			name:     "query equality strips leading whitespace",
 			filter:   `query == "\n\tSELECT 1"`,
-			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\v\\f') = $1)",
+			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\x0b\\f') = $1)",
 			wantArgs: []any{"SELECT 1"},
 			wantErr:  false,
 		},
 		{
 			name:     "query equality strips trailing CRLF",
 			filter:   `query == "SELECT 1\r\n"`,
-			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\v\\f') = $1)",
+			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\x0b\\f') = $1)",
 			wantArgs: []any{"SELECT 1"},
 			wantErr:  false,
 		},
 		{
 			name:     "query equality preserves internal whitespace byte-for-byte",
 			filter:   `query == "SELECT  *\n  FROM   t"`,
-			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\v\\f') = $1)",
+			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\x0b\\f') = $1)",
 			wantArgs: []any{"SELECT  *\n  FROM   t"},
 			wantErr:  false,
 		},
@@ -110,21 +110,21 @@ func TestGetListAccessGrantFilter(t *testing.T) {
 		{
 			name:     "query equality preserves -- comment newline (no privilege escalation)",
 			filter:   `query == "SELECT * FROM t --\nWHERE tenant=1"`,
-			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\v\\f') = $1)",
+			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\x0b\\f') = $1)",
 			wantArgs: []any{"SELECT * FROM t --\nWHERE tenant=1"},
 			wantErr:  false,
 		},
 		{
 			name:     "query equality preserves whitespace inside string literals",
 			filter:   `query == "SELECT 'a  b'"`,
-			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\v\\f') = $1)",
+			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\x0b\\f') = $1)",
 			wantArgs: []any{"SELECT 'a  b'"},
 			wantErr:  false,
 		},
 		{
 			name:     "query equality preserves single spaces between tokens",
 			filter:   `query == "SELECT 1 FROM t"`,
-			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\v\\f') = $1)",
+			wantSQL:  "(btrim(access_grant.payload->>'query', E' \\t\\n\\r\\x0b\\f') = $1)",
 			wantArgs: []any{"SELECT 1 FROM t"},
 			wantErr:  false,
 		},
@@ -231,6 +231,26 @@ func TestGetListAccessGrantFilter(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tt.wantSQL, sql)
 			require.Equal(t, tt.wantArgs, args)
+		})
+	}
+}
+
+func TestAccessGrantDiscoveryFilterValidation(t *testing.T) {
+	t.Parallel()
+	for _, filter := range []string{
+		`query_hash == ""`,
+		`query_hash == "0123"`,
+		`query_hash == "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"`,
+		`query_hash == "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg"`,
+		`query_hash == 1`,
+		`query_hash.contains("abc")`,
+		`schema == 1`,
+		`container == false`,
+	} {
+		t.Run(filter, func(t *testing.T) {
+			t.Parallel()
+			_, err := GetListAccessGrantFilter(filter)
+			require.Error(t, err)
 		})
 	}
 }

@@ -3,6 +3,7 @@ import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { isValidDatabaseName } from "@/types";
@@ -22,14 +23,14 @@ const sizeClasses: Record<
   }
 > = {
   sm: {
-    database: "min-w-12",
+    database: "min-w-0 basis-12",
     environment: "max-w-24",
     icon: "h-4 w-4",
     instance: "max-w-40",
     root: "text-sm",
   },
   md: {
-    database: "min-w-16",
+    database: "min-w-0 basis-16",
     environment: "max-w-28",
     icon: "h-5 w-5",
     instance: "max-w-48",
@@ -132,12 +133,19 @@ export function DatabaseTargetDisplay({
         </span>
       )}
       {showEnvironment && environment?.title && (
-        <EllipsisText
-          text={environment.title}
-          className={cn("mr-1 min-w-0 shrink", classes.environment)}
+        <Tooltip
+          content={environment.title}
+          render={
+            <span
+              className={cn(
+                "mr-1 inline-flex min-w-8 shrink",
+                classes.environment
+              )}
+            />
+          }
         >
-          <EnvironmentLabel environment={environment} />
-        </EllipsisText>
+          <EnvironmentLabel environment={environment} className="max-w-full" />
+        </Tooltip>
       )}
       <EllipsisText
         text={databaseName}

@@ -41,6 +41,11 @@
     "chat-total-tokens": "Tokens totales: {{count}}",
     "close": "Cerrar",
     "confirm": "Confirmar",
+    "context": "Contexto",
+    "context-no-projects": "No hay proyectos accesibles",
+    "context-select": "Seleccionar contexto",
+    "context-start-new-chat": "Iniciar un chat nuevo en {{name}}",
+    "context-workspace": "Espacio de trabajo",
     "delete-all-chats": "Eliminar todos los chats",
     "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
     "delete-chat": "Eliminar chat",
@@ -1307,7 +1312,11 @@
           "template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} y otorgar al usuario los privilegios necesarios. Primero debe habilitar el flujo de trabajo impulsado por SQL de ClickHouse {{link}} y luego ejecutar la siguiente consulta para crear el usuario."
         },
         "mysql": {
-          "template": "A continuación se muestra un ejemplo para crear el usuario {{user}}@% con la contraseña {{password}} y otorgarle al usuario los privilegios necesarios."
+          "template": "A continuación se muestra un ejemplo para crear el usuario {{user}}@% con la contraseña {{password}} y otorgarle al usuario los privilegios necesarios.",
+          "warn": "Para que Bytebase pueda ejecutar cambios que asignan DEFINER a otra cuenta, otorga también SET_USER_ID en MySQL 8.0 o SET_ANY_DEFINER en MySQL 8.4 y versiones posteriores. Algunos proveedores de nube restringen estos privilegios."
+        },
+        "oracle": {
+          "warn": "GRANT ALL PRIVILEGES no funciona en Amazon RDS for Oracle."
         },
         "postgresql": {
           "template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} y otorgar al usuario los privilegios necesarios. Si la instancia de conexión está alojada por ti mismo, puedes otorgar SUPERUSER.",
@@ -1533,8 +1542,11 @@
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "details": "Detalles de la concesión de rol",
+      "direct-execution-suffix": "{{kind}} sin aprobación en {{environments}}",
       "expired-at": "Expiró el",
+      "grantee": "Beneficiario",
       "manually-select": "selección manual",
+      "requested-by": "Solicitado por {{creator}}",
       "use-cel": "Usar expresión CEL"
     },
     "sort": {
@@ -1994,6 +2006,38 @@
       "success-prompt": "Proyecto {{name}} creado exitosamente."
     },
     "filter-projects": "Filtrar proyectos",
+    "home": {
+      "active-issues": "Tus solicitudes activas",
+      "active-issues-unavailable": "No puedes ver las solicitudes de este proyecto.",
+      "ai-placeholder": "Pide a la IA que consulte, cambie o configure este proyecto",
+      "archived-description": "Este proyecto está archivado y es de solo lectura.",
+      "change-database": "Cambiar una base de datos",
+      "change-database-description": "Planifica un cambio de base de datos controlado en este proyecto.",
+      "connect": "Conectar una instancia",
+      "connect-description": "Conecta un servidor de bases de datos a este proyecto.",
+      "create-database": "Crear una base de datos",
+      "create-database-description": "Crea la primera base de datos en una instancia conectada.",
+      "created-by-you": "Creado por ti",
+      "databases": "Bases de datos",
+      "databases-load-error": "No se pudieron cargar las bases de datos.",
+      "databases-unavailable": "Las bases de datos de este proyecto no están disponibles para ti.",
+      "members": "Administrar miembros",
+      "members-optional-description": "Opcional: concede acceso a tus compañeros para colaborar y revisar.",
+      "needs-review": "Necesita tu revisión",
+      "next-step": "Siguiente paso",
+      "no-active-issues": "No hay solicitudes abiertas creadas por ti ni pendientes de tu revisión en este proyecto.",
+      "no-databases": "Aún no hay bases de datos accesibles.",
+      "no-databases-create-description": "Crea una base de datos en una instancia conectada para comenzar.",
+      "no-databases-description": "Conecta una instancia para incorporar bases de datos a este proyecto.",
+      "no-databases-prerequisite": "Se debe conectar una instancia antes de que aparezcan bases de datos aquí.",
+      "no-databases-transfer-description": "Transfiere una base de datos sin asignar a este proyecto o crea una nueva.",
+      "query-database": "Consultar una base de datos",
+      "query-database-description": "Explora las bases de datos de este proyecto en el Editor SQL.",
+      "transfer-databases": "Transferir bases de datos",
+      "transfer-databases-description": "Mueve una base de datos sin asignar a este proyecto.",
+      "view-all": "Ver todas",
+      "view-issues": "Ver solicitudes"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {
@@ -2016,11 +2060,23 @@
       "self": "Exenciones de Enmascaramiento"
     },
     "members": {
-      "ddl-current-all": "Las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL en TODOS los entornos sin aprobación.",
-      "ddl-current-none": "Las sentencias {{kind}} requieren aprobación antes de ejecutarse en el editor SQL.",
-      "ddl-current-some": "Las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL en los entornos listados sin aprobación.",
-      "ddl-warning": "En los entornos seleccionados, las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL sin aprobación.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
+      "direct-execution": {
+        "all": "Puede ejecutar {{kind}} en el editor SQL en todos los entornos sin aprobación.",
+        "environment-required": "Se requiere al menos un entorno.",
+        "in-environments": "En estos entornos",
+        "lead-approver": "Al aprobar, {{grantee}} podrá ejecutar {{kind}} en el editor SQL sin aprobación en:",
+        "lead-binding": "Puede ejecutar {{kind}} en el editor SQL sin aprobación en:",
+        "lead-grant": "Los miembros con este rol pueden ejecutar {{kind}} en el editor SQL sin aprobación en:",
+        "lead-request": "Una vez aprobado, podrás ejecutar {{kind}} en el editor SQL sin aprobación en:",
+        "none": "{{kind}} no puede ejecutarse en el editor SQL sin aprobación.",
+        "protected-tag": "Entorno de producción",
+        "protected_one": "{{environments}} es un entorno de producción.",
+        "protected_other": "{{environments}} son entornos de producción.",
+        "select-environments": "Seleccionar entornos",
+        "switch-label": "Permitir ejecutar {{kind}} en el editor SQL sin aprobación",
+        "title": "Ejecución directa de {{kind}}"
+      },
       "edit-member": "Editar miembro - {{member}}",
       "expiration-presets": {
         "one-month": "1 mes",
@@ -2278,7 +2334,7 @@
       "self": "Usuario de solo lectura del editor SQL"
     },
     "sql-editor-user": {
-      "description": "El consultor del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto.",
+      "description": "Consulta datos y ejecuta DDL/DML en los entornos permitidos.",
       "self": "Usuario del editor SQL"
     },
     "title": "Título",
@@ -2710,7 +2766,7 @@
             "title": "Exportar resultados de consulta"
           },
           "manage": {
-            "details": "Sincronizar instancias y bases de datos · Configuración y etiquetas de bases de datos · Mover bases de datos entre proyectos · Grupos de bases de datos · Consultas guardadas",
+            "details": "Sincronizar instancias y bases de datos · Consultas guardadas",
             "title": "Gestionar el mantenimiento de bases de datos"
           },
           "propose": {
@@ -2729,6 +2785,10 @@
             "details": "Issues y comentarios · Plans y comprobaciones de plan · Despliegues, ejecuciones de tareas y registros · Versiones · Vistas previas de reversión",
             "title": "Leer el flujo de cambios"
           },
+          "request-access": {
+            "details": "Pedir una concesión con límite de tiempo para ejecutar una sentencia concreta, opcionalmente con resultados sin enmascarar o exportados; la sentencia debe ser una lectura hasta donde el motor pueda comprobarlo · La concesión solo empieza después de que una persona la apruebe, y se rechaza una solicitud que no necesitaría la aprobación de nadie · Una concesión solo se aplica donde el proyecto permite concesiones de acceso",
+            "title": "Solicitar concesiones de acceso"
+          },
           "run-rollouts": {
             "details": "Crear un despliegue · Ejecutar, omitir o cancelar sus tareas, bajo la política de aprobación del proyecto",
             "title": "Ejecutar despliegues y tareas"
@@ -2745,7 +2805,7 @@
         },
         "summary": {
           "read-only": "Leer esquemas, datos y el flujo de cambios; una solicitud que lleve algo que no pueda demostrarse que es una lectura se rechaza, y no se exporta nada",
-          "read-write": "Leer esquemas, datos y el flujo de cambios; proponer, ejecutar, exportar y gestionar"
+          "read-write": "Leer esquemas, datos y el flujo de cambios; proponer, solicitar acceso, ejecutar, exportar y gestionar"
         },
         "tier": {
           "read": "lectura",
@@ -3282,6 +3342,9 @@
     "export-available-via-issue": "Exportación disponible vía issue \"{{title}}\"",
     "export-available-via-n-grants": "Exportación disponible vía {{count}} concesiones de acceso:",
     "export-enabled-by-grant": "Exportación habilitada por la concesión de acceso",
+    "export-grant-lookup-failed": "No se pudo comprobar el acceso de exportación.",
+    "export-grant-lookup-loading": "Comprobando el acceso de exportación…",
+    "export-grant-lookup-retry": "Reintentar",
     "format": "Formato",
     "format-default": "Predeterminado",
     "format-sql": "Formatear SQL",
@@ -3537,6 +3600,7 @@
       "manage-license": "Administrar licencia",
       "missing-license-attention": "Debe asignar una licencia a la instancia para habilitar esta función.",
       "n-license-remain": "permanecer {{n}}",
+      "project-instance-hint": "Esta lista solo incluye instancias del espacio de trabajo. Para administrar la licencia de una instancia de proyecto, abra su página de detalles.",
       "require-license": "Requerir licencia de instancia",
       "success-notification": "Actualizar correctamente la asignación de licencia",
       "used-and-total-instance": "Límite de instancias activas/totales",

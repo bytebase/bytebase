@@ -436,6 +436,19 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
         })
       );
       get().setSettingByName(response);
+      const settingValue = response.value?.value;
+      if (
+        !validateOnly &&
+        name === Setting_SettingName.AI &&
+        settingValue?.case === "ai"
+      ) {
+        set((state) => ({
+          serverInfo: state.serverInfo && {
+            ...state.serverInfo,
+            aiEnabled: settingValue.value.enabled,
+          },
+        }));
+      }
       return response;
     },
 

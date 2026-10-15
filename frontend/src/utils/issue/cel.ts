@@ -1,8 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
-import { cloneDeep, head } from "lodash-es";
+import { cloneDeep, head, uniq } from "lodash-es";
 import type { SimpleExpr } from "@/modules/cel";
-import { isRawStringExpr, resolveCELExpr } from "@/modules/cel";
+import {
+  constantStringOf,
+  factorNameOf,
+  isRawStringExpr,
+  resolveCELExpr,
+} from "@/modules/cel";
 import {
   databaseNamePrefix,
   environmentNamePrefix,
@@ -353,21 +358,6 @@ const convertToCELString = (
   return `(${topLevelCondition})`;
 };
 
-export const convertFromCELString = async (
-  cel: string
-): Promise<ConditionExpression> => {
-  let expr: Expr | undefined;
-  if (cel) {
-    const celExpr = await batchConvertCELStringToParsedExpr([cel]);
-    expr = celExpr[0];
-  }
-  if (!expr) {
-    return {};
-  }
-
-  return convertFromExpr(expr);
-};
-
 export const batchConvertFromCELString = async (
   cels: string[]
 ): Promise<ConditionExpression[]> => {
@@ -381,6 +371,76 @@ export const batchConvertFromCELString = async (
     }
   }
   return resp;
+};
+
+/**
+ * A condition as the member drawer and the approver's card show it. The
+ * environments decide the direct-execution row, whose *none* sentence is an
+ * assurance, so they count only as the condition proves them: a literal
+ * `resource.environment_id in […]` at the root of the `&&` chain of the
+ * server's syntax tree, since a conjunct only narrows (two intersect). Any
+ * other clause reads as every environment; `convertFromExpr` also finds one
+ * under `||` or `!` and would read `in [] || true` as the switch off. The
+ * databases and the expiry are `convertFromExpr`'s.
+ */
+export const readableCondition = (
+  expr: Expr | undefined
+): ConditionExpression =>
+  expr
+    ? { ...convertFromExpr(expr), environments: provenEnvironments(expr) }
+    : { databaseResources: [] };
+
+export const readableConditionFromCELString = async (
+  cel: string
+): Promise<ConditionExpression> =>
+  readableCondition(
+    cel ? (await batchConvertCELStringToParsedExpr([cel]))[0] : undefined
+  );
+
+const provenEnvironments = (expr: Expr): string[] | undefined => {
+  let environments: string[] | undefined;
+  for (const member of conjuncts(expr)) {
+    const clause = environmentClauseOf(member);
+    if (clause) {
+      const allowed = new Set(clause);
+      environments =
+        environments === undefined
+          ? clause
+          : environments.filter((name) => allowed.has(name));
+    }
+  }
+  return environments;
+};
+
+const callOf = (expr: Expr | undefined) =>
+  expr?.exprKind?.case === "callExpr" ? expr.exprKind.value : undefined;
+
+const conjuncts = (expr: Expr): Expr[] => {
+  const call = callOf(expr);
+  return call?.function === "_&&_" ? call.args.flatMap(conjuncts) : [expr];
+};
+
+const stringList = (expr: Expr | undefined): string[] | undefined => {
+  if (expr?.exprKind?.case !== "listExpr") {
+    return undefined;
+  }
+  const values = expr.exprKind.value.elements.map(constantStringOf);
+  return values.every((value): value is string => value !== undefined)
+    ? values
+    : undefined;
+};
+
+// `resource.environment_id in [literal strings]`, as environment names.
+const environmentClauseOf = (expr: Expr): string[] | undefined => {
+  const call = callOf(expr);
+  if (
+    call?.function !== "@in" ||
+    factorNameOf(call.args[0]) !== CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID
+  ) {
+    return undefined;
+  }
+  const ids = stringList(call.args[1]);
+  return ids && uniq(ids).map((id) => `${environmentNamePrefix}${id}`);
 };
 
 export const convertFromExpr = (expr: Expr): ConditionExpression => {

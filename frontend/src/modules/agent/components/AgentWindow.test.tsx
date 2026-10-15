@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
 (
@@ -13,6 +14,8 @@ const mocks = vi.hoisted(() => ({
     t: (key: string) => key,
     i18n: { language: "en-US" },
   })),
+  getOrFetchSettingByName: vi.fn(),
+  currentContext: "projects/orders" as string | undefined,
 }));
 
 function createMockStorage(): Storage {
@@ -42,6 +45,20 @@ function createMockStorage(): Storage {
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
+}));
+
+vi.mock("@/stores/app", () => {
+  const state = {
+    getOrFetchSettingByName: mocks.getOrFetchSettingByName,
+  };
+  const useAppStore = <T,>(selector: (value: typeof state) => T) =>
+    selector(state);
+  useAppStore.getState = () => state;
+  return { useAppStore };
+});
+
+vi.mock("../logic/chatContext", () => ({
+  getCurrentChatContext: () => mocks.currentContext,
 }));
 
 vi.mock("./AgentChat", () => ({
@@ -124,6 +141,9 @@ beforeEach(async () => {
     t: (key: string) => key,
     i18n: { language: "en-US" },
   });
+  mocks.getOrFetchSettingByName.mockReset();
+  mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
+  mocks.currentContext = "projects/orders";
 
   ({ AgentWindow } = await import("./AgentWindow"));
 });
@@ -135,6 +155,67 @@ afterEach(() => {
 });
 
 describe("AgentWindow", () => {
+  test("binds the initial empty chat when opened under a project", () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    expect(useAgentStore.getState().getChat(chatId)?.context).toBeUndefined();
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    expect(useAgentStore.getState().getChat(chatId)?.context).toBe(
+      "projects/orders"
+    );
+    unmount();
+  });
+
+  test("binds a new empty chat to the current resource context", async () => {
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const trigger = document.body.querySelector(
+      "[aria-label='agent.new-chat']"
+    ) as HTMLButtonElement | null;
+    await act(async () => trigger?.click());
+
+    const chatId = useAgentStore.getState().currentChatId!;
+    expect(useAgentStore.getState().getChat(chatId)?.context).toBe(
+      "projects/orders"
+    );
+    expect(useAgentStore.getState().getMessages(chatId)).toEqual([]);
+    unmount();
+  });
+
+  test("checks AI configuration when opening an existing chat", async () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    mocks.getOrFetchSettingByName.mockResolvedValue({
+      value: {
+        value: {
+          case: "ai",
+          value: { enabled: false },
+        },
+      },
+    });
+    useAgentStore.setState({ visible: false });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+
+    render();
+    await act(async () => {
+      useAgentStore.getState().toggle();
+      await Promise.resolve();
+    });
+
+    expect(mocks.getOrFetchSettingByName).toHaveBeenCalledWith(
+      Setting_SettingName.AI,
+      true
+    );
+    expect(useAgentStore.getState().getChat(chatId)).toMatchObject({
+      requiresAIConfiguration: true,
+    });
+
+    unmount();
+  });
+
   test("uses an accessible panel separator for the chat sidebar", () => {
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
 

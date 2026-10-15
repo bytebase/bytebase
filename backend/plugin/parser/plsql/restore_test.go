@@ -178,6 +178,15 @@ INSERT INTO "DB"."TEST" ("A", "B", "C") SELECT "A", "B", "C" FROM "bbarchive"."p
 	})
 }
 
+func TestRestoreUnsyncedDatabase(t *testing.T) {
+	_, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+		GetDatabaseMetadataFunc: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
+			return "", nil, nil
+		},
+	}, `UPDATE test SET a = 1 WHERE c1 = 1;`, restoreBackupItem(0, math.MaxInt32))
+	require.ErrorContains(t, err, `database metadata for database "DB" not found (database not synced)`)
+}
+
 func restoreBackupItem(startLine, endLine int32) *store.PriorBackupDetail_Item {
 	return &store.PriorBackupDetail_Item{
 		SourceTable: &store.PriorBackupDetail_Item_Table{

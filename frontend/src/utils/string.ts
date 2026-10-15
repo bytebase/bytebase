@@ -40,3 +40,11 @@ export function hashCode(s: string): number {
   }
   return hash;
 }
+
+// Joins display names the way the reader's locale does ("a, b, and c").
+// Always the conjunction style: "unit" renders zh-CN with no separator. The
+// build still targets browsers without Intl.ListFormat, which get commas.
+export const formatList = (items: string[], language: string): string =>
+  typeof Intl.ListFormat === "function"
+    ? new Intl.ListFormat(language, { type: "conjunction" }).format(items)
+    : items.join(", ");

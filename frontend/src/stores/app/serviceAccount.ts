@@ -13,6 +13,7 @@ import {
   UndeleteServiceAccountRequestSchema,
   UpdateServiceAccountRequestSchema,
 } from "@/types/proto-es/v1/service_account_service_pb";
+import { type User, UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { celString } from "@/utils/v1/celLiteral";
 import type {
   AccountFilter,
@@ -32,6 +33,17 @@ export const extractServiceAccountId = (identifier: string) => {
 export const ensureServiceAccountFullName = (identifier: string) => {
   const id = extractServiceAccountId(identifier);
   return `${serviceAccountNamePrefix}${id}`;
+};
+
+// A service account as a `User`, for display. Named `users/{email}`, as creator
+// and approver fields name every actor.
+export const serviceAccountToUser = (sa: ServiceAccount): User => {
+  return createProto(UserSchema, {
+    name: `users/${sa.email}`,
+    email: sa.email,
+    title: sa.title,
+    state: sa.state,
+  });
 };
 
 export const buildAccountListFilter = (params: AccountFilter) => {

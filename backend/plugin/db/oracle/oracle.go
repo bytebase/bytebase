@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	// Import go-ora Oracle driver.
@@ -58,14 +59,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.DataSource.Port)
 	}
-	options := make(map[string]string)
-	options["CONNECTION TIMEOUT"] = "0"
-	if config.DataSource.GetSid() != "" {
-		options["SID"] = config.DataSource.GetSid()
-	}
-	for key, value := range config.DataSource.GetExtraConnectionParameters() {
-		options[key] = value
-	}
+	options := connectionOptions(config.DataSource.GetSid(), config.DataSource.GetExtraConnectionParameters())
 	dsn := goora.BuildUrl(config.DataSource.Host, port, config.DataSource.GetServiceName(), config.DataSource.Username, config.Password, options)
 	db, err := sql.Open("oracle", dsn)
 	if err != nil {
@@ -81,6 +75,39 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	d.serviceName = config.DataSource.GetServiceName()
 	d.connectionCtx = config.ConnectionContext
 	return d, nil
+}
+
+const (
+	sidOption              = "SID"
+	dialTimeoutOption      = "CONNECTION TIMEOUT"
+	dialTimeoutOptionAlias = "CONNECT TIMEOUT"
+	// defaultDialTimeoutSeconds bounds the wait for one address to accept a connection, DNS
+	// lookup included, so an unreachable address fails over in seconds. It does not limit
+	// how long a statement runs.
+	defaultDialTimeoutSeconds = "10"
+)
+
+// connectionOptions returns the go-ora URL options for a data source: the extra connection
+// parameters as typed, plus the SID field and the default dial timeout unless an extra
+// parameter sets the same option.
+//
+// go-ora upper-cases option keys and reads CONNECT TIMEOUT as CONNECTION TIMEOUT. A Bytebase
+// key sent next to a user key for the same option would leave the winner to go-ora's map
+// iteration order, so the user's key replaces it in any spelling.
+func connectionOptions(sid string, extraParameters map[string]string) map[string]string {
+	options := make(map[string]string, len(extraParameters)+2)
+	userOptions := make(map[string]bool, len(extraParameters))
+	for key, value := range extraParameters {
+		options[key] = value
+		userOptions[strings.ToUpper(key)] = true
+	}
+	if sid != "" && !userOptions[sidOption] {
+		options[sidOption] = sid
+	}
+	if !userOptions[dialTimeoutOption] && !userOptions[dialTimeoutOptionAlias] {
+		options[dialTimeoutOption] = defaultDialTimeoutSeconds
+	}
+	return options
 }
 
 // Close closes the driver.

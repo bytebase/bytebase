@@ -779,7 +779,7 @@ describe("WorkspaceSetupPage", () => {
     page.unmount();
   });
 
-  test("can optionally create a project and continue to its databases page", async () => {
+  test("can optionally create a project and continue to its Home", async () => {
     const page = renderWorkspaceForm();
 
     expect(page.container.textContent).toContain("Setup 1st project");
@@ -852,12 +852,8 @@ describe("WorkspaceSetupPage", () => {
       mocks.prepareSampleProjectInstance.mock.invocationCallOrder[0]
     );
     expect(mocks.routerReplace).toHaveBeenCalledWith({
-      name: "workspace.project.database",
+      name: "workspace.project.detail",
       params: { projectId: "new-project" },
-      query: {
-        syncingInstance: "sample",
-        intro: "project-instance-synced",
-      },
     });
 
     page.unmount();
@@ -987,9 +983,8 @@ describe("WorkspaceSetupPage", () => {
     expect(mocks.createProject).toHaveBeenCalled();
     expect(mocks.prepareSampleProjectInstance).not.toHaveBeenCalled();
     expect(mocks.routerReplace).toHaveBeenCalledWith({
-      name: "workspace.project.database",
+      name: "workspace.project.detail",
       params: { projectId: "new-project" },
-      query: { intro: "connect-database" },
     });
     expect(mocks.captureMetric).toHaveBeenCalledWith({
       event: "workspace setup submitted",
@@ -1019,16 +1014,17 @@ describe("WorkspaceSetupPage", () => {
       await Promise.resolve();
     });
 
-    expect(mocks.pushNotification).toHaveBeenCalledWith(
+    const errorNotifications = mocks.pushNotification.mock.calls
+      .map(([notification]) => notification)
+      .filter((notification) => notification.style === "CRITICAL");
+    expect(errorNotifications).toEqual([
       expect.objectContaining({
-        style: "CRITICAL",
         title: "Failed to prepare Sample Project Instance.",
-      })
-    );
+      }),
+    ]);
     expect(mocks.routerReplace).toHaveBeenCalledWith({
-      name: "workspace.project.database",
+      name: "workspace.project.detail",
       params: { projectId: "new-project" },
-      query: { intro: "connect-database" },
     });
     expect(mocks.captureMetric).toHaveBeenCalledWith({
       event: "workspace setup submitted",

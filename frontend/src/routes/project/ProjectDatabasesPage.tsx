@@ -141,6 +141,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     availableInstanceCount === undefined
       ? undefined
       : availableInstanceCount > 0;
+  const createDatabaseRequested = currentRoute.query.createDatabase === "1";
   const [syncingRefreshExhausted, setSyncingRefreshExhausted] = useState(false);
   const autoRefreshCountRef = useRef(0);
 
@@ -358,6 +359,17 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       cancelled = true;
     };
   }, [canListProjectInstances, isDefault, projectName]);
+
+  useEffect(() => {
+    if (
+      createDatabaseRequested &&
+      hasAvailableInstance &&
+      hasProjectPermission("bb.instances.list") &&
+      PERMISSIONS_FOR_DATABASE_CREATE_ISSUE.every(hasProjectPermission)
+    ) {
+      setShowCreateDrawer(true);
+    }
+  }, [createDatabaseRequested, hasAvailableInstance, hasProjectPermission]);
 
   // Batch operation handlers
   const handleSyncSchema = useCallback(async () => {

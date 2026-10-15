@@ -139,6 +139,15 @@ vi.mock("@/hooks/useAppState", () => ({
   useCurrentUser: () => mocks.currentUser,
 }));
 
+// No record has arrived for anyone: a principal is named from its email.
+vi.mock("@/hooks/usePrincipal", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/usePrincipal")>()),
+  usePrincipal: (identifier?: string) =>
+    identifier
+      ? { email: identifier.replace(/^users\//, ""), title: "" }
+      : undefined,
+}));
+
 vi.mock("@/hooks/useProjectByName", () => ({
   useProjectByName: () => ({
     name: "projects/p1",

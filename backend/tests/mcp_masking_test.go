@@ -426,13 +426,21 @@ func TestMCPMaskingFollowsTheCallersProvisioning(t *testing.T) {
 		Name: exemption,
 	}))
 	a.NoError(err)
-	a.Equal(maskPlaceholder, f.agentReadsSecret(t, f.session),
+	masked := queryDatabaseOnSession(f.ctx, t, f.session, f.name, secretQuery)
+	a.False(masked.isError, masked.text)
+	a.Equal([][]any{{maskPlaceholder}}, masked.output.Rows,
 		"precondition: without the exemption the column masks again")
+	a.Len(masked.output.MaskedColumns, 1)
+	a.Equal("secret", masked.output.MaskedColumns[0].Column, "the agent is told which column is masked")
 
 	f.grantUnmask(t, true /* export */)
 	a.Equal(maskedSecret, f.consoleReadsSecret(t), "the grant unmasks in the console")
-	a.Equal(maskedSecret, f.agentReadsSecret(t, f.session),
+	granted := queryDatabaseOnSession(f.ctx, t, f.session, f.name, secretQuery)
+	a.False(granted.isError, granted.text)
+	a.Equal([][]any{{maskedSecret}}, granted.output.Rows,
 		"and the same grant unmasks the caller's MCP session")
+	a.Empty(granted.output.MaskedColumns)
+	a.NotEmpty(granted.output.AppliedAccessGrant, "the agent can tell a grant applied")
 	a.Contains(f.consoleExportsCSV(t), maskedSecret,
 		"the grant exports in the clear from the console")
 	a.Contains(f.agentExportsCSV(t, f.session), maskedSecret,

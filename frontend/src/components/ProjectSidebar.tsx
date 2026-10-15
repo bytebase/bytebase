@@ -3,6 +3,7 @@ import {
   ChevronRight,
   CircleDot,
   Database,
+  House,
   Settings,
   ShieldCheck,
   Users,
@@ -17,6 +18,7 @@ import {
   PROJECT_V1_ROUTE_AUDIT_LOGS,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_GITOPS,
   PROJECT_V1_ROUTE_INSTANCES,
   PROJECT_V1_ROUTE_ISSUES,
@@ -83,6 +85,12 @@ function useSidebarItems(): SidebarItem[] {
 
   return useMemo(
     (): SidebarItem[] => [
+      {
+        title: t("common.home"),
+        path: PROJECT_V1_ROUTE_DETAIL,
+        icon: House,
+        type: "div",
+      },
       {
         title: t("common.issues"),
         path: PROJECT_V1_ROUTE_ISSUES,

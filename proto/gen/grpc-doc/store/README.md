@@ -382,6 +382,7 @@
 | export | [bool](#bool) |  | Whether export the query result. |
 | schema | [string](#string) |  | The default schema to execute the query. |
 | container | [string](#string) |  | The container name to execute the query against, used for CosmosDB only. |
+| query_hash | [string](#string) |  | Lowercase hex SHA-256 of query after trimming boundary space, tab, LF, CR, vertical tab, and form feed. Derived by the store for grant matching. |
 
 
 

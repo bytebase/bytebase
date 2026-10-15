@@ -382,6 +382,9 @@ type GetQuerySpanContext struct {
 }
 
 // GetDatabaseMetadataFunc is the function to get database metadata.
+// It may return nil metadata and a nil error when Bytebase has not synced the
+// database's schema, as in the window after an instance is added; callers must
+// check for nil before use.
 type GetDatabaseMetadataFunc func(context.Context, string, string) (string, *model.DatabaseMetadata, error)
 
 // ListDatabaseNamesFunc is the function to list database names.

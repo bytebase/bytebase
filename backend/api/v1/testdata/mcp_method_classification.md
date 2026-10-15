@@ -17,17 +17,17 @@ served by no ceiling.
 | Class | Methods | Meaning |
 |---|---|---|
 | READ | 56 | served to a read-only session and above |
-| WRITE | 41 | served to a read-write session only |
-| EXCLUDED | 86 | served by no ceiling this phase ships |
-| FORBIDDEN | 35 | never served, whatever the ceiling |
+| WRITE | 37 | served to a read-write session only |
+| EXCLUDED | 89 | served by no ceiling this phase ships |
+| FORBIDDEN | 36 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **218** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
 | AIService/Chat | EXCLUDED | SENDS_DATA_TO_A_THIRD_PARTY | — |
-| AccessGrantService/ActivateAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.activate |
-| AccessGrantService/CreateAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.create |
+| AccessGrantService/ActivateAccessGrant | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | bb.accessGrants.activate |
+| AccessGrantService/CreateAccessGrant | WRITE | — | bb.accessGrants.create |
 | AccessGrantService/GetAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.get |
 | AccessGrantService/ListAccessGrants | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.list |
 | AccessGrantService/RevokeAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.revoke |
@@ -51,14 +51,14 @@ served by no ceiling.
 | ChangelogService/ListChangelogs | READ | — | bb.changelogs.list |
 | DatabaseCatalogService/GetDatabaseCatalog | READ | — | bb.databaseCatalogs.get |
 | DatabaseCatalogService/UpdateDatabaseCatalog | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.databaseCatalogs.update |
-| DatabaseGroupService/CreateDatabaseGroup | WRITE | — | bb.databaseGroups.create |
-| DatabaseGroupService/DeleteDatabaseGroup | WRITE | — | bb.databaseGroups.delete |
+| DatabaseGroupService/CreateDatabaseGroup | EXCLUDED | REDRAWS_GOVERNANCE_BOUNDARY | bb.databaseGroups.create |
+| DatabaseGroupService/DeleteDatabaseGroup | EXCLUDED | REDRAWS_GOVERNANCE_BOUNDARY | bb.databaseGroups.delete |
 | DatabaseGroupService/GetDatabaseGroup | READ | — | bb.databaseGroups.get |
 | DatabaseGroupService/ListDatabaseGroups | READ | — | bb.databaseGroups.list |
-| DatabaseGroupService/UpdateDatabaseGroup | WRITE | — | bb.databaseGroups.update |
+| DatabaseGroupService/UpdateDatabaseGroup | EXCLUDED | REDRAWS_GOVERNANCE_BOUNDARY | bb.databaseGroups.update |
 | DatabaseService/BatchGetDatabases | READ | — | bb.databases.get |
 | DatabaseService/BatchSyncDatabases | WRITE | — | bb.databases.sync |
-| DatabaseService/BatchUpdateDatabases | WRITE | — | bb.databases.update |
+| DatabaseService/BatchUpdateDatabases | EXCLUDED | REDRAWS_GOVERNANCE_BOUNDARY | bb.databases.update |
 | DatabaseService/DiffMetadata | WRITE | — | bb.databases.diffMetadata |
 | DatabaseService/DiffSchema | WRITE | — | bb.databases.get |
 | DatabaseService/GetDatabase | READ | — | bb.databases.get |
@@ -68,7 +68,7 @@ served by no ceiling.
 | DatabaseService/GetSchemaString | READ | — | bb.databases.getSchema |
 | DatabaseService/ListDatabases | READ | — | bb.databases.list |
 | DatabaseService/SyncDatabase | WRITE | — | bb.databases.sync |
-| DatabaseService/UpdateDatabase | WRITE | — | bb.databases.update |
+| DatabaseService/UpdateDatabase | EXCLUDED | REDRAWS_GOVERNANCE_BOUNDARY | bb.databases.update |
 | GroupService/BatchGetGroups | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.groups.get |
 | GroupService/CreateGroup | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.groups.create |
 | GroupService/DeleteGroup | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.groups.delete |

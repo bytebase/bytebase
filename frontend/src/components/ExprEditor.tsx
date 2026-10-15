@@ -288,19 +288,28 @@ function SearchableSelect({
     return value || "";
   }, [options, value, optionConfig]);
 
+  const searchControllerRef = useRef<AbortController | null>(null);
+  useEffect(() => () => searchControllerRef.current?.abort(), []);
   const doSearch = useCallback(
     async (q: string) => {
       if (!optionConfig.search) return;
+      searchControllerRef.current?.abort();
+      const controller = new AbortController();
+      searchControllerRef.current = controller;
       setLoading(true);
       try {
         const resp = await optionConfig.search({
+          signal: controller.signal,
           search: q,
           pageToken: "",
           pageSize: getDefaultPagination(),
         });
-        setOptions(resp.options as SearchableSelectOption[]);
+        if (!controller.signal.aborted)
+          setOptions(resp.options as SearchableSelectOption[]);
+      } catch (error) {
+        if (!controller.signal.aborted) throw error;
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     },
     [optionConfig]
@@ -308,7 +317,8 @@ function SearchableSelect({
 
   const initializedRef = useRef(false);
   useEffect(() => {
-    if (initializedRef.current) return;
+    if (initializedRef.current && !searchControllerRef.current?.signal.aborted)
+      return;
     initializedRef.current = true;
     if (!value) return;
     if (optionConfig.fetch) {
@@ -474,19 +484,28 @@ function MultiSearchableSelect({
     [allOptions, optionConfig]
   );
 
+  const searchControllerRef = useRef<AbortController | null>(null);
+  useEffect(() => () => searchControllerRef.current?.abort(), []);
   const doSearch = useCallback(
     async (q: string) => {
       if (!optionConfig.search) return;
+      searchControllerRef.current?.abort();
+      const controller = new AbortController();
+      searchControllerRef.current = controller;
       setLoading(true);
       try {
         const resp = await optionConfig.search({
+          signal: controller.signal,
           search: q,
           pageToken: "",
           pageSize: getDefaultPagination(),
         });
-        setSearchOptions(resp.options as SearchableSelectOption[]);
+        if (!controller.signal.aborted)
+          setSearchOptions(resp.options as SearchableSelectOption[]);
+      } catch (error) {
+        if (!controller.signal.aborted) throw error;
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     },
     [optionConfig]
@@ -494,7 +513,8 @@ function MultiSearchableSelect({
 
   const multiInitRef = useRef(false);
   useEffect(() => {
-    if (multiInitRef.current) return;
+    if (multiInitRef.current && !searchControllerRef.current?.signal.aborted)
+      return;
     multiInitRef.current = true;
     if (value.length === 0) return;
     if (optionConfig.fetch) {

@@ -41,6 +41,11 @@
     "chat-total-tokens": "Tổng số token: {{count}}",
     "close": "Đóng",
     "confirm": "Xác nhận",
+    "context": "Ngữ cảnh",
+    "context-no-projects": "Không có dự án nào có thể truy cập",
+    "context-select": "Chọn ngữ cảnh",
+    "context-start-new-chat": "Bắt đầu cuộc trò chuyện mới trong {{name}}",
+    "context-workspace": "Không gian làm việc",
     "delete-all-chats": "Xóa tất cả cuộc trò chuyện",
     "delete-all-chats-confirmation": "Bạn có chắc chắn muốn xóa tất cả cuộc trò chuyện đã lưu trữ không? Hành động này không thể hoàn tác.",
     "delete-chat": "Xóa cuộc trò chuyện",
@@ -1307,7 +1312,11 @@
           "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết. Đầu tiên, bạn cần bật {{link}} quy trình công việc dựa trên SQL và sau đó chạy truy vấn sau để tạo người dùng."
         },
         "mysql": {
-          "template": "Dưới đây là ví dụ để tạo người dùng {{user}}@% với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết."
+          "template": "Dưới đây là ví dụ để tạo người dùng {{user}}@% với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết.",
+          "warn": "Để Bytebase chạy các thay đổi đặt DEFINER thành một tài khoản khác, hãy cấp thêm SET_USER_ID trên MySQL 8.0 hoặc SET_ANY_DEFINER trên MySQL 8.4 trở lên. Một số nhà cung cấp đám mây hạn chế các đặc quyền này."
+        },
+        "oracle": {
+          "warn": "GRANT ALL PRIVILEGES không hoạt động trên Amazon RDS for Oracle."
         },
         "postgresql": {
           "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết. Nếu phiên bản kết nối được tự lưu trữ, thì bạn có thể cấp SUPERUSER.",
@@ -1533,8 +1542,11 @@
       "all-databases": "Tất cả cơ sở dữ liệu",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
       "details": "Chi tiết cấp vai trò",
+      "direct-execution-suffix": "{{kind}} không cần phê duyệt tại {{environments}}",
       "expired-at": "Hết hạn lúc",
+      "grantee": "Người được cấp",
       "manually-select": "Chọn thủ công",
+      "requested-by": "Được yêu cầu bởi {{creator}}",
       "use-cel": "Sử dụng biểu thức CEL"
     },
     "sort": {
@@ -1994,6 +2006,38 @@
       "success-prompt": "Đã tạo thành công dự án {{name}}."
     },
     "filter-projects": "Lọc dự án",
+    "home": {
+      "active-issues": "Yêu cầu đang xử lý của bạn",
+      "active-issues-unavailable": "Bạn không thể xem các yêu cầu trong dự án này.",
+      "ai-placeholder": "Hỏi AI để truy vấn, thay đổi hoặc thiết lập dự án này",
+      "archived-description": "Dự án này đã được lưu trữ và ở chế độ chỉ đọc.",
+      "change-database": "Thay đổi cơ sở dữ liệu",
+      "change-database-description": "Lập kế hoạch thay đổi cơ sở dữ liệu có kiểm soát trong dự án này.",
+      "connect": "Kết nối phiên bản",
+      "connect-description": "Kết nối máy chủ cơ sở dữ liệu với dự án này.",
+      "create-database": "Tạo cơ sở dữ liệu",
+      "create-database-description": "Tạo cơ sở dữ liệu đầu tiên trên một phiên bản đã kết nối.",
+      "created-by-you": "Bạn đã tạo",
+      "databases": "Cơ sở dữ liệu",
+      "databases-load-error": "Không thể tải cơ sở dữ liệu.",
+      "databases-unavailable": "Bạn không thể xem cơ sở dữ liệu trong dự án này.",
+      "members": "Quản lý thành viên",
+      "members-optional-description": "Tùy chọn: cấp quyền truy cập để đồng đội cộng tác và đánh giá.",
+      "needs-review": "Cần bạn xem xét",
+      "next-step": "Bước tiếp theo",
+      "no-active-issues": "Không có yêu cầu đang mở nào do bạn tạo hoặc đang chờ bạn xem xét trong dự án này.",
+      "no-databases": "Chưa có cơ sở dữ liệu nào có thể truy cập.",
+      "no-databases-create-description": "Tạo cơ sở dữ liệu trên một phiên bản đã kết nối để bắt đầu.",
+      "no-databases-description": "Kết nối một phiên bản để đưa cơ sở dữ liệu vào dự án này.",
+      "no-databases-prerequisite": "Cần kết nối một phiên bản trước khi cơ sở dữ liệu xuất hiện ở đây.",
+      "no-databases-transfer-description": "Chuyển cơ sở dữ liệu chưa được gán vào dự án này hoặc tạo cơ sở dữ liệu mới.",
+      "query-database": "Truy vấn cơ sở dữ liệu",
+      "query-database-description": "Khám phá cơ sở dữ liệu của dự án này trong Trình soạn thảo SQL.",
+      "transfer-databases": "Chuyển cơ sở dữ liệu",
+      "transfer-databases-description": "Chuyển một cơ sở dữ liệu chưa được gán vào dự án này.",
+      "view-all": "Xem tất cả",
+      "view-issues": "Xem yêu cầu"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {
@@ -2016,11 +2060,23 @@
       "self": "Miễn trừ Che giấu"
     },
     "members": {
-      "ddl-current-all": "Câu lệnh {{kind}} có thể được chạy trực tiếp trong SQL Editor ở TẤT CẢ các môi trường mà không cần phê duyệt.",
-      "ddl-current-none": "Câu lệnh {{kind}} cần được phê duyệt trước khi chạy trong SQL Editor.",
-      "ddl-current-some": "Câu lệnh {{kind}} có thể được chạy trực tiếp trong SQL Editor ở các môi trường được liệt kê mà không cần phê duyệt.",
-      "ddl-warning": "Trong các môi trường đã chọn, câu lệnh {{kind}} có thể được chạy trực tiếp trong SQL Editor mà không cần phê duyệt.",
       "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
+      "direct-execution": {
+        "all": "Có thể chạy {{kind}} trong SQL Editor ở mọi môi trường mà không cần phê duyệt.",
+        "environment-required": "Cần chọn ít nhất một môi trường.",
+        "in-environments": "Trong các môi trường sau",
+        "lead-approver": "Khi phê duyệt, {{grantee}} có thể chạy {{kind}} trong SQL Editor mà không cần phê duyệt tại:",
+        "lead-binding": "Có thể chạy {{kind}} trong SQL Editor mà không cần phê duyệt tại:",
+        "lead-grant": "Thành viên có vai trò này có thể chạy {{kind}} trong SQL Editor mà không cần phê duyệt tại:",
+        "lead-request": "Sau khi được phê duyệt, bạn có thể chạy {{kind}} trong SQL Editor mà không cần phê duyệt tại:",
+        "none": "{{kind}} không thể chạy trong SQL Editor nếu không được phê duyệt.",
+        "protected-tag": "Môi trường sản xuất",
+        "protected_one": "{{environments}} là môi trường sản xuất.",
+        "protected_other": "{{environments}} là môi trường sản xuất.",
+        "select-environments": "Chọn môi trường",
+        "switch-label": "Cho phép chạy {{kind}} trong SQL Editor mà không cần phê duyệt",
+        "title": "Chạy trực tiếp {{kind}}"
+      },
       "edit-member": "Chỉnh sửa thành viên - {{member}}",
       "expiration-presets": {
         "one-month": "1 tháng",
@@ -2278,7 +2334,7 @@
       "self": "Người dùng Trình soạn thảo SQL chỉ đọc"
     },
     "sql-editor-user": {
-      "description": "Quyền truy vấn dữ liệu cơ sở dữ liệu.",
+      "description": "Truy vấn dữ liệu và chạy DDL/DML trong các môi trường được phép.",
       "self": "Người dùng Trình soạn thảo SQL"
     },
     "title": "Tiêu đề",
@@ -2710,7 +2766,7 @@
             "title": "Xuất kết quả truy vấn"
           },
           "manage": {
-            "details": "Đồng bộ phiên bản và cơ sở dữ liệu · Cài đặt và nhãn cơ sở dữ liệu · Chuyển cơ sở dữ liệu giữa các dự án · Nhóm cơ sở dữ liệu · Truy vấn đã lưu",
+            "details": "Đồng bộ phiên bản và cơ sở dữ liệu · Truy vấn đã lưu",
             "title": "Quản lý vận hành cơ sở dữ liệu"
           },
           "propose": {
@@ -2729,6 +2785,10 @@
             "details": "Issue và bình luận · Plan và kiểm tra plan · Triển khai, lần chạy tác vụ và nhật ký · Bản phát hành · Xem trước khôi phục",
             "title": "Đọc quy trình thay đổi"
           },
+          "request-access": {
+            "details": "Xin cấp quyền truy cập có thời hạn để chạy một câu lệnh cụ thể, có thể kèm xem kết quả chưa che hoặc xuất kết quả; câu lệnh phải là lệnh đọc trong phạm vi engine kiểm tra được · Quyền chỉ bắt đầu sau khi một người phê duyệt, và yêu cầu không cần ai phê duyệt sẽ bị từ chối · Quyền chỉ áp dụng khi dự án cho phép cấp quyền truy cập",
+            "title": "Yêu cầu cấp quyền truy cập"
+          },
           "run-rollouts": {
             "details": "Tạo một triển khai · Chạy, bỏ qua hoặc hủy các tác vụ của nó, theo chính sách phê duyệt của dự án",
             "title": "Chạy triển khai và tác vụ"
@@ -2745,7 +2805,7 @@
         },
         "summary": {
           "read-only": "Đọc lược đồ, dữ liệu và quy trình thay đổi; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
-          "read-write": "Đọc lược đồ, dữ liệu và quy trình thay đổi; đề xuất, chạy, xuất và quản lý"
+          "read-write": "Đọc lược đồ, dữ liệu và quy trình thay đổi; đề xuất, yêu cầu truy cập, chạy, xuất và quản lý"
         },
         "tier": {
           "read": "đọc",
@@ -3282,6 +3342,9 @@
     "export-available-via-issue": "Xuất khả dụng qua issue \"{{title}}\"",
     "export-available-via-n-grants": "Xuất khả dụng qua {{count}} cấp quyền truy cập:",
     "export-enabled-by-grant": "Xuất được kích hoạt bởi cấp quyền truy cập",
+    "export-grant-lookup-failed": "Không thể kiểm tra quyền xuất.",
+    "export-grant-lookup-loading": "Đang kiểm tra quyền xuất…",
+    "export-grant-lookup-retry": "Thử lại",
     "format": "Định dạng",
     "format-default": "Mặc định",
     "format-sql": "Định dạng SQL",
@@ -3537,6 +3600,7 @@
       "manage-license": "Quản lý giấy phép phiên bản",
       "missing-license-attention": "Bạn cần gán giấy phép cho phiên bản để bật tính năng này.",
       "n-license-remain": "còn lại {{n}}",
+      "project-instance-hint": "Danh sách này chỉ bao gồm các phiên bản trong không gian làm việc. Để quản lý giấy phép của một phiên bản dự án, hãy mở trang chi tiết của phiên bản đó.",
       "require-license": "Yêu cầu giấy phép phiên bản",
       "success-notification": "Đã cập nhật thành công gán giấy phép",
       "used-and-total-instance": "Giới hạn phiên bản đang hoạt động / Tổng số",

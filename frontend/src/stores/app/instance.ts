@@ -1,7 +1,10 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { instanceServiceClientConnect } from "@/api";
-import { silentContextKey } from "@/api/context-key";
+import {
+  silentContextKey,
+  skipErrorNotificationContextKey,
+} from "@/api/context-key";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
@@ -209,9 +212,17 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
     },
 
     prepareSampleProjectInstance: async (parent) => {
+      // Every caller reports the failure itself, so the global error toast
+      // would show it a second time.
       const response =
         await instanceServiceClientConnect.prepareSampleProjectInstance(
-          createProto(PrepareSampleProjectInstanceRequestSchema, { parent })
+          createProto(PrepareSampleProjectInstanceRequestSchema, { parent }),
+          {
+            contextValues: createContextValues().set(
+              skipErrorNotificationContextKey,
+              true
+            ),
+          }
         );
       const instance = upsertInstances([response])[0];
       await get()

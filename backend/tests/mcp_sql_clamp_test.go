@@ -30,8 +30,12 @@ type queryToolResult struct {
 // QueryToolOutput mirrors the tool's structured output. Only the fields these
 // tests assert on are named.
 type QueryToolOutput struct {
-	Rows     [][]any `json:"rows"`
-	RowCount int     `json:"rowCount"`
+	Rows          [][]any `json:"rows"`
+	RowCount      int     `json:"rowCount"`
+	MaskedColumns []struct {
+		Column string `json:"column"`
+	} `json:"maskedColumns"`
+	AppliedAccessGrant string `json:"appliedAccessGrant"`
 }
 
 // queryDatabaseOnSession runs the query_database tool the way a client would.

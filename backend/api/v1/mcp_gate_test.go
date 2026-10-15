@@ -126,6 +126,7 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.IssueServiceApproveIssueProcedure,
 		v1connect.IssueServiceRejectIssueProcedure,
 		v1connect.IssueServiceRetryIssueApprovalProcedure,
+		v1connect.AccessGrantServiceActivateAccessGrantProcedure,
 		v1connect.UserServiceChangePasswordProcedure,
 		v1connect.UserServiceStartMFAEnrollmentProcedure,
 		v1connect.UserServiceEnableMFAProcedure,
@@ -184,6 +185,7 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.IssueServiceApproveIssueProcedure:                      v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
 		v1connect.IssueServiceRejectIssueProcedure:                       v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
 		v1connect.IssueServiceRetryIssueApprovalProcedure:                v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
+		v1connect.AccessGrantServiceActivateAccessGrantProcedure:         v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
 	}
 	// Wording for every mechanism in use is checkReasonsMatchTheClass's job, over
 	// every class rather than only the ones enumerated here.
@@ -522,10 +524,10 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 				v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE, v1pb.MCPMethodClass_EXCLUDED,
 			},
 		}
-		// The real rows are passed deliberately: 85 of them carry EXCLUDED, and
-		// the diagnosis worth reading is the one about the table, not eighty-five
-		// about methods whose annotation is fine. Two modes, so the mode list in
-		// the message is only stable because servedBy is sorted.
+		// The real rows are passed deliberately: dozens of them carry EXCLUDED,
+		// and the diagnosis worth reading is the one about the table, not one per
+		// method whose annotation is fine. Two modes, so the mode list in the
+		// message is only stable because servedBy is sorted.
 		require.Equal(t, []string{"EXCLUDED is denied and served by [READ_ONLY READ_WRITE]"},
 			checkEveryClassHasAServingDecision(mcpClassificationsFromDescriptors(t), widened, mcpDeniedClasses, classes, modes))
 	})
@@ -862,9 +864,7 @@ func classContext(class v1pb.MCPMethodClass) *common.AuthContext {
 
 // TestMCPGateRefusesTheDeniedClasses walks every method the annotations refuse
 // outright and proves the gate refuses it under the most permissive ceiling
-// there is. FORBIDDEN was already enforced; EXCLUDED is what this PR turns from
-// a recorded classification into a denial, and it is the larger population by
-// far — 85 methods the console and the public API serve today.
+// there is.
 func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		if row.class != v1pb.MCPMethodClass_FORBIDDEN && row.class != v1pb.MCPMethodClass_EXCLUDED {
@@ -886,6 +886,27 @@ func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
 			require.True(t, got.auditMarked, "every denial is an audited outcome")
 		})
 	}
+}
+
+// TestExcludedForRedrawingAGovernanceBoundary pins which methods carry
+// REDRAWS_GOVERNANCE_BOUNDARY: membership is a decision, recorded here as well as
+// on the annotation. TestMCPGateRefusesTheDeniedClasses proves the gate refuses
+// each of them.
+func TestExcludedForRedrawingAGovernanceBoundary(t *testing.T) {
+	t.Parallel()
+	var got []string
+	for _, row := range mcpClassificationsFromDescriptors(t) {
+		if row.reason == v1pb.MCPDenialReason_REDRAWS_GOVERNANCE_BOUNDARY {
+			got = append(got, row.procedure)
+		}
+	}
+	require.ElementsMatch(t, []string{
+		v1connect.DatabaseServiceUpdateDatabaseProcedure,
+		v1connect.DatabaseServiceBatchUpdateDatabasesProcedure,
+		v1connect.DatabaseGroupServiceCreateDatabaseGroupProcedure,
+		v1connect.DatabaseGroupServiceUpdateDatabaseGroupProcedure,
+		v1connect.DatabaseGroupServiceDeleteDatabaseGroupProcedure,
+	}, got, "the methods refused for redrawing a governance boundary must be exactly these")
 }
 
 // TestMCPGateServesTheAdmittedClasses is the other half: under a read-write
@@ -1060,11 +1081,8 @@ func TestMCPGateFailsClosedWithoutAnAuthContext(t *testing.T) {
 	require.Equal(t, connect.CodeInternal, connect.CodeOf(got.err))
 }
 
-// TestMCPGateRefusesGrantIssues pins the one refusal a per-method class cannot
-// express. CreateIssue is WRITE for the database-change issue an agent exists
-// to compose; the grant types complete on creation and hand out access with no
-// human step. UpdateIssue is the same method under another name whenever
-// allow_missing is set.
+// TestMCPGateRefusesGrantIssues pins the gate's issue-type allow-list for
+// CreateIssue and the way out each refusal names.
 func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	write := classContext(v1pb.MCPMethodClass_WRITE)
 
@@ -1078,9 +1096,9 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		require.True(t, got.dispatched)
 	})
 
-	for _, issueType := range []v1pb.Issue_Type{
-		v1pb.Issue_ROLE_GRANT,
-		v1pb.Issue_ACCESS_GRANT,
+	for issueType, tt := range map[v1pb.Issue_Type]struct{ wayOut, notWayOut string }{
+		v1pb.Issue_ROLE_GRANT:   {mcpConsoleWayOut, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
+		v1pb.Issue_ACCESS_GRANT: {v1connect.AccessGrantServiceCreateAccessGrantProcedure, mcpConsoleWayOut},
 	} {
 		t.Run("CreateIssue refuses "+issueType.String(), func(t *testing.T) {
 			got := invokeMCPGate(t, readWriteCeiling(), write, v1connect.IssueServiceCreateIssueProcedure,
@@ -1092,6 +1110,8 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 			require.False(t, got.dispatched)
 			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
 			require.Contains(t, got.err.Error(), issueType.String())
+			require.Contains(t, got.err.Error(), tt.wayOut)
+			require.NotContains(t, got.err.Error(), tt.notWayOut)
 			require.True(t, got.auditMarked)
 		})
 	}
@@ -1124,14 +1144,8 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		require.True(t, got.dispatched)
 	})
 
-	// UpdateIssue reaches the gate unrefused whatever its body says, including
-	// allow_missing with a grant type. The gate cannot tell an upsert that
-	// creates from one that edits — "the issue does not exist" is not a field
-	// of the request — and an AIP upsert sends the complete resource, so a
-	// caller PATCHing an existing ROLE_GRANT issue carries that type in a body
-	// the handler ignores. rejectMCPOriginatedGrantIssue guards the creation
-	// where the creation happens; TestMCPGateRefusesGrantIssues (backend/tests)
-	// is the end-to-end proof that the bypass stays closed.
+	// UpdateIssue passes the gate whatever its body says;
+	// rejectMCPOriginatedGrantIssue guards its allow_missing creation.
 	for name, request := range map[string]*v1pb.UpdateIssueRequest{
 		"allow_missing with a grant type": {
 			Issue:        &v1pb.Issue{Name: "projects/p/issues/1", Type: v1pb.Issue_ROLE_GRANT},
@@ -1579,43 +1593,36 @@ func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
 	require.Empty(t, stale, "these no longer need a redaction decision; drop them so the list keeps meaning something")
 }
 
-// TestRejectMCPOriginatedGrantIssue pins the guard that sits at the creation
-// rather than at the gate, and in particular pins the half that makes putting
-// MCP policy inside a service handler safe: a human in the console is a request
-// with no delegated grant, and must be untouched by it.
-//
-// The gate cannot take this decision. UpdateIssue creates only when the issue is
-// missing, which is not a field of the request, and an AIP upsert sends the
-// complete resource — so a caller PATCHing an existing ROLE_GRANT issue carries
-// that type in a body the handler ignores. Refusing on the request shape there
-// would refuse an ordinary edit for a mechanism that is not running.
 func TestRejectMCPOriginatedGrantIssue(t *testing.T) {
-	mcpSession := context.WithValue(context.Background(), common.AuthContextKey,
+	mcpCtx := context.WithValue(context.Background(), common.AuthContextKey,
 		&common.AuthContext{DelegatedGrant: &common.DelegatedGrant{CorrelationID: "corr-issue"}})
 	console := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{})
 
 	for name, tt := range map[string]struct {
 		ctx       context.Context
 		issueType v1pb.Issue_Type
-		refused   bool
+		// wayOut is empty for a creation the guard allows.
+		wayOut, notWayOut string
 	}{
-		"an MCP session may not create a role grant":    {mcpSession, v1pb.Issue_ROLE_GRANT, true},
-		"an MCP session may not create an access grant": {mcpSession, v1pb.Issue_ACCESS_GRANT, true},
-		"an MCP session may not create an unknown type": {mcpSession, v1pb.Issue_Type(9999), true},
-		"an MCP session composes database changes":      {mcpSession, v1pb.Issue_DATABASE_CHANGE, false},
-		"an unset type is left to buildIssueMessage":    {mcpSession, v1pb.Issue_TYPE_UNSPECIFIED, false},
-		"the console creates a role grant":              {console, v1pb.Issue_ROLE_GRANT, false},
-		"a request with no auth context at all":         {context.Background(), v1pb.Issue_ROLE_GRANT, false},
+		"an MCP session may not create a role grant":    {mcpCtx, v1pb.Issue_ROLE_GRANT, mcpConsoleWayOut, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
+		"an MCP session may not create an access grant": {mcpCtx, v1pb.Issue_ACCESS_GRANT, v1connect.AccessGrantServiceCreateAccessGrantProcedure, mcpConsoleWayOut},
+		"an MCP session may not create an unknown type": {mcpCtx, v1pb.Issue_Type(9999), mcpConsoleWayOut, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
+		"an MCP session composes database changes":      {mcpCtx, v1pb.Issue_DATABASE_CHANGE, "", ""},
+		"an unset type is left to buildIssueMessage":    {mcpCtx, v1pb.Issue_TYPE_UNSPECIFIED, "", ""},
+		"the console creates a role grant":              {console, v1pb.Issue_ROLE_GRANT, "", ""},
+		"a request with no auth context at all":         {context.Background(), v1pb.Issue_ROLE_GRANT, "", ""},
 	} {
 		t.Run(name, func(t *testing.T) {
 			err := rejectMCPOriginatedGrantIssue(tt.ctx, tt.issueType)
-			if !tt.refused {
+			if tt.wayOut == "" {
 				require.NoError(t, err, "this guard binds MCP sessions and nothing else")
 				return
 			}
 			require.Error(t, err)
 			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
 			require.Contains(t, err.Error(), tt.issueType.String(), "the denial must name the type it refused")
+			require.Contains(t, err.Error(), tt.wayOut)
+			require.NotContains(t, err.Error(), tt.notWayOut)
 		})
 	}
 }

@@ -7,26 +7,23 @@ import {
   User,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
+import { AccountTypeBadge } from "@/components/AccountTypeBadge";
 import { FeatureBadge } from "@/components/FeatureBadge";
 import { getAvatarColor, getInitials } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
+import { principalLabel, usePrincipal } from "@/hooks/usePrincipal";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { displayRoleTitleFromList } from "@/lib/role";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import { ensureGroupIdentifier } from "@/stores/app/group";
 import { projectNamePrefix, userNamePrefix } from "@/stores/modules/v1/common";
-import {
-  ApprovalStatus,
-  RiskLevel,
-  State,
-} from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Issue_Approver_Status,
@@ -34,29 +31,15 @@ import {
   RetryIssueApprovalRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import type { User as UserMessage } from "@/types/proto-es/v1/user_service_pb";
 import {
-  AccountType,
-  getAccountTypeByEmail,
-  groupBindingPrefix,
-} from "@/types/v1/user";
-import {
-  ensureUserFullName,
-  isBindingPolicyExpired,
-  memberMapToRolesInProjectIAM,
-} from "@/utils";
-import {
-  type ApprovalIneligibility,
-  getApprovalEligibility,
-} from "../../approvalEligibility";
+  type ApprovalCandidate,
+  useApprovalCandidates,
+} from "../../useApprovalCandidates";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 
 type ApprovalStepStatus = "approved" | "rejected" | "current" | "pending";
 
-type PotentialApprover = {
-  ineligibilities: ApprovalIneligibility[];
-  user: UserMessage;
-};
+type PotentialApprover = Pick<ApprovalCandidate, "ineligibilities" | "user">;
 
 export function IssueDetailApprovalFlow() {
   const { t } = useTranslation();
@@ -246,8 +229,8 @@ function ApprovalStepItem({
         <div className="text-sm font-medium text-main">{roleName}</div>
         <div className="mt-1 text-sm text-control-light">
           {status === "approved" && (
-            <div className="flex flex-row items-center gap-1">
-              <span className="text-xs">
+            <div className="flex flex-row flex-wrap items-start gap-x-1">
+              <span className="shrink-0 text-xs leading-5">
                 {t("custom-approval.issue-review.approved-by")}
               </span>
               {stepApprover?.principal && (
@@ -258,8 +241,8 @@ function ApprovalStepItem({
 
           {status === "rejected" && (
             <div className="flex flex-col gap-1">
-              <div className="flex flex-row items-center gap-1">
-                <span className="text-xs">
+              <div className="flex flex-row flex-wrap items-start gap-x-1">
+                <span className="shrink-0 text-xs leading-5">
                   {t("custom-approval.issue-review.rejected-by")}
                 </span>
                 {stepApprover?.principal && (
@@ -302,52 +285,36 @@ function ApprovalStepItem({
 }
 
 function ApprovalUserText({ candidate }: { candidate: string }) {
-  const getOrFetchUserByIdentifier = useAppStore(
-    (state) => state.getOrFetchUserByIdentifier
-  );
-  const [user, setUser] = useState<UserMessage>();
-
-  useEffect(() => {
-    let canceled = false;
-
-    const load = async () => {
-      const next = await getOrFetchUserByIdentifier({
-        identifier: candidate,
-      });
-      if (canceled || !next) {
-        return;
-      }
-      if (
-        getAccountTypeByEmail(next.email) !== AccountType.USER ||
-        next.state !== State.ACTIVE
-      ) {
-        setUser(undefined);
-        return;
-      }
-      setUser(next);
-    };
-
-    void load();
-
-    return () => {
-      canceled = true;
-    };
-  }, [candidate, getOrFetchUserByIdentifier]);
-
-  if (!user) {
-    return null;
-  }
-
-  const displayName = user.title || user.email.split("@")[0];
+  const principal = usePrincipal(candidate);
   return (
-    <span className="inline-flex items-center gap-1">
+    <ApproverIdentity
+      email={principal?.email}
+      name={principalLabel(principal)}
+    />
+  );
+}
+
+// Avatar and name, with the account-type mark beneath the name: the sidebar is
+// too narrow to hold both on one line.
+function ApproverIdentity({
+  email,
+  name,
+}: {
+  email: string | undefined;
+  name: string;
+}) {
+  return (
+    <span className="inline-flex min-w-0 max-w-full items-start gap-1.5">
       <span
         className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-medium text-accent-text"
-        style={{ backgroundColor: getAvatarColor(displayName) }}
+        style={{ backgroundColor: getAvatarColor(name) }}
       >
-        {getInitials(displayName)}
+        {getInitials(name)}
       </span>
-      <span className="text-xs text-control">{displayName}</span>
+      <span className="flex min-w-0 flex-col items-start">
+        <span className="text-xs leading-5 text-control">{name}</span>
+        <AccountTypeBadge compact email={email} />
+      </span>
     </span>
   );
 }
@@ -413,28 +380,23 @@ function ApprovalCandidateRow({
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
   const { user } = candidate;
-  const displayName = user.title || user.email.split("@")[0];
   const isCurrentUser = currentUser?.name === user.name;
 
   return (
-    <div className="inline-flex items-center gap-1.5">
-      <span
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-medium text-accent-text"
-        style={{ backgroundColor: getAvatarColor(displayName) }}
-      >
-        {getInitials(displayName)}
-      </span>
-      <span className="text-xs text-control">{displayName}</span>
+    <div className="inline-flex items-start gap-1.5">
+      <ApproverIdentity email={user.email} name={principalLabel(user)} />
       {isCurrentUser && (
         <span className="rounded-xs border border-transparent bg-success/10 px-1.5 py-0.5 text-xs text-success">
           {t("common.you")}
         </span>
       )}
       {showEmail && (
-        <span className="text-xs text-control-light">{user.email}</span>
+        <span className="text-xs leading-5 text-control-light">
+          {user.email}
+        </span>
       )}
       {candidate.ineligibilities.includes("last-plan-editor") && (
-        <span className="text-xs text-warning">
+        <span className="text-xs leading-5 text-warning">
           {t("plan.review.candidate-last-changed-plan")}
         </span>
       )}
@@ -523,23 +485,6 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const currentUser = useCurrentUser();
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
-  const batchGetOrFetchUsers = useAppStore(
-    (state) => state.batchGetOrFetchUsers
-  );
-  const batchGetOrFetchGroups = useAppStore(
-    (state) => state.batchGetOrFetchGroups
-  );
-  const groupsByName = useAppStore((state) => state.groupsByName);
-  // Resolve groups from the app store cache the prefetch above populates.
-  // Depending on `groupsByName` makes candidate computation recompute once
-  // the prefetched groups arrive.
-  const getGroupByIdentifier = useCallback(
-    (identifier: string) => groupsByName[ensureGroupIdentifier(identifier)],
-    [groupsByName]
-  );
-  const [potentialApprovers, setPotentialApprovers] = useState<
-    PotentialApprover[]
-  >([]);
   const [reRequesting, setReRequesting] = useState(false);
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const currentUserEmail = currentUser?.email ?? "";
@@ -583,122 +528,19 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
     );
   }, [currentUserEmail, issue.creator, stepApprover?.status]);
 
-  // Subscribe directly to the Zustand project IAM cache so groupNames /
-  // candidateEmails recompute the moment loadProjectIamPolicy() resolves.
-  const projectIamPolicy = useAppStore(
-    (state) => state.projectPoliciesByName[projectName]
-  );
-
-  const groupNames = useMemo(() => {
-    if (!projectIamPolicy) return [];
-    const names: string[] = [];
-    for (const binding of projectIamPolicy.bindings) {
-      if (binding.role !== step || isBindingPolicyExpired(binding)) {
-        continue;
-      }
-      for (const member of binding.members) {
-        if (member.startsWith(groupBindingPrefix)) {
-          names.push(member);
-        }
-      }
-    }
-    return [...new Set(names)].sort();
-  }, [projectIamPolicy, step]);
-
-  useEffect(() => {
-    void batchGetOrFetchGroups(groupNames).catch(() => undefined);
-  }, [groupNames, batchGetOrFetchGroups]);
-
-  const candidateEmails = useMemo(() => {
-    if (!projectIamPolicy) return [];
-    const memberMap = memberMapToRolesInProjectIAM(
-      projectIamPolicy,
-      step,
-      getGroupByIdentifier
+  const { candidates: potentialApprovers, isCurrentUserRoleMember } =
+    useApprovalCandidates(
+      issue,
+      page.projectId,
+      status === "current" ? step : "",
+      page.plan?.lastPlanEditor ?? ""
     );
-    const candidates: string[] = [];
-    for (const fullname of memberMap.keys()) {
-      if (fullname.startsWith(userNamePrefix)) {
-        candidates.push(fullname);
-      }
-    }
-    return [...new Set(candidates)].sort();
-  }, [projectIamPolicy, step, getGroupByIdentifier]);
 
-  const isCurrentUserInCandidates = useMemo(() => {
-    return candidateEmails.includes(`${userNamePrefix}${currentUserEmail}`);
-  }, [candidateEmails, currentUserEmail]);
-
-  const showSelfApprovalTip = useMemo(() => {
-    return (
-      status === "current" &&
-      !project.allowSelfApproval &&
-      issue.creator === `${userNamePrefix}${currentUserEmail}` &&
-      isCurrentUserInCandidates
-    );
-  }, [
-    currentUserEmail,
-    isCurrentUserInCandidates,
-    issue.creator,
-    project.allowSelfApproval,
-    status,
-  ]);
-
-  useEffect(() => {
-    let canceled = false;
-
-    const load = async () => {
-      if (status !== "current" || candidateEmails.length === 0) {
-        setPotentialApprovers([]);
-        return;
-      }
-
-      const users = await batchGetOrFetchUsers(
-        candidateEmails.map(ensureUserFullName)
-      );
-      if (canceled) {
-        return;
-      }
-
-      const next = users
-        .filter((user) => {
-          return (
-            user &&
-            user.state === State.ACTIVE &&
-            getAccountTypeByEmail(user.email) === AccountType.USER
-          );
-        })
-        .sort((left, right) => {
-          if (left.email === currentUserEmail) return -1;
-          if (right.email === currentUserEmail) return 1;
-          return left.title.localeCompare(right.title);
-        })
-        .map((user) => ({
-          ineligibilities: getApprovalEligibility({
-            actor: user.name,
-            issueCreator: issue.creator,
-            lastPlanEditor: page.plan?.lastPlanEditor ?? "",
-            project,
-          }).ineligibilities,
-          user,
-        }));
-      setPotentialApprovers(next);
-    };
-
-    void load();
-
-    return () => {
-      canceled = true;
-    };
-  }, [
-    batchGetOrFetchUsers,
-    candidateEmails,
-    currentUserEmail,
-    issue.creator,
-    page.plan?.lastPlanEditor,
-    project,
-    status,
-  ]);
+  const showSelfApprovalTip =
+    status === "current" &&
+    !project.allowSelfApproval &&
+    issue.creator === `${userNamePrefix}${currentUserEmail}` &&
+    isCurrentUserRoleMember;
 
   const handleReRequestReview = async () => {
     if (reRequesting) {

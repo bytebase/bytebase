@@ -3,6 +3,28 @@ import { describe, expect, test } from "vitest";
 import { buildSystemPrompt } from "./prompt";
 
 describe("buildSystemPrompt", () => {
+  test("names the chat context separately from the live page", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/other/issues",
+      title: "Other project",
+      context: "projects/orders",
+    });
+
+    expect(prompt).toContain("Chat context: projects/orders");
+    expect(prompt).toContain("Current page: /projects/other/issues");
+    expect(prompt).toContain("Navigation does not change the chat context");
+  });
+
+  test("accepts a workspace resource as the chat context", () => {
+    expect(
+      buildSystemPrompt({
+        path: "/landing",
+        title: "Workspace",
+        context: "workspaces/demo",
+      })
+    ).toContain("Chat context: workspaces/demo");
+  });
+
   test("teaches the ref-based DOM workflow", () => {
     const prompt = buildSystemPrompt({
       path: "/issues/123",

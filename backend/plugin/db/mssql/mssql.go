@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"net/url"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +20,7 @@ import (
 	"github.com/golang-sql/sqlexp"
 	gomssqldb "github.com/microsoft/go-mssqldb"
 	"github.com/microsoft/go-mssqldb/azuread"
+	"github.com/microsoft/go-mssqldb/msdsn"
 
 	// Kerberos Active Directory authentication outside Windows.
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
@@ -58,89 +61,123 @@ func newDriver() db.Driver {
 
 // Open opens a MSSQL driver.
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	query := url.Values{}
-	query.Add("app name", "bytebase")
-	if config.ConnectionContext.DatabaseName != "" {
-		query.Add("database", config.ConnectionContext.DatabaseName)
-	} else if config.DataSource.Database != "" {
-		query.Add("database", config.DataSource.Database)
+	database := config.ConnectionContext.DatabaseName
+	if database == "" {
+		database = config.DataSource.Database
 	}
-
-	// In order to be compatible with db servers that only support old versions of tls.
-	// See: https://github.com/microsoft/go-mssqldb/issues/33
-	query.Add("tlsmin", "1.0")
-
-	// Add extra connection parameters if specified in the DataSource
-	for key, value := range config.DataSource.GetExtraConnectionParameters() {
-		query.Add(key, value)
-	}
-
-	var err error
-	if config.DataSource.GetUseSsl() && config.DataSource.GetSslCa() != "" {
-		// Due to Golang runtime limitation, x509 package will throw the error of 'certificate relies on legacy Common Name field, use SANs instead.
-		// Driver reads the certificate from file instead of regarding it as certificate content.
-		// https://github.com/microsoft/go-mssqldb/blob/main/msdsn/conn_str.go#L159
-		// TODO(zp): Driver supports .der format also.
-		const pattern string = "cert-*.pem"
-		file, err := os.CreateTemp(os.TempDir(), pattern)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create temporary file with pattern %s", pattern)
-		}
-		fName := file.Name()
-		defer func(err error) {
-			if err != nil {
-				_ = os.Remove(fName)
-			} else {
-				d.certFilePath = fName
-			}
-		}(err)
-		_, err = file.WriteString(config.DataSource.GetSslCa())
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to write certificate to file %s", fName)
-		}
-		if err = file.Close(); err != nil {
-			return nil, errors.Wrapf(err, "failed to close file %s", fName)
-		}
-		query.Add("certificate", fName)
-	}
-	query.Add("TrustServerCertificate", "true")
-
-	driverName := "sqlserver"
-	password := config.Password
-	if config.DataSource.GetAuthenticationType() == storepb.DataSource_AZURE_IAM {
-		driverName = azuread.DriverName
-		if azureCredential := config.DataSource.GetAzureCredential(); azureCredential != nil {
-			query.Add("fedauth", azuread.ActiveDirectoryServicePrincipal)
-			query.Add("user id", fmt.Sprintf("%s@%s", azureCredential.ClientId, azureCredential.TenantId))
-			query.Add("password", azureCredential.ClientSecret)
-			password = ""
-		} else {
-			query.Add("fedauth", azuread.ActiveDirectoryDefault)
-		}
-	}
-	u := &url.URL{
-		Scheme:   "sqlserver",
-		User:     url.UserPassword(config.DataSource.Username, password),
-		Host:     fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port),
-		RawQuery: query.Encode(),
-	}
-	var db *sql.DB
-	db, err = sql.Open(driverName, u.String())
+	caFile, err := writeCAFile(config.DataSource)
 	if err != nil {
+		return nil, err
+	}
+	driverName, dsn := connectionDSN(config.DataSource, config.Password, database, caFile)
+	db, err := sql.Open(driverName, dsn)
+	if err != nil {
+		removeCAFile(caFile)
 		return nil, err
 	}
 	d.db = db
 	d.databaseName = config.ConnectionContext.DatabaseName
+	d.certFilePath = caFile
 	return d, nil
+}
+
+// connectionDSN returns the go-mssqldb driver name and DSN. caFile is the data source's CA
+// written to disk, or empty.
+//
+// go-mssqldb matches parameter keys case-insensitively and accepts each key once, so Extra
+// Parameters merge by lowercased key. They override the app name and tlsmin defaults, never the
+// database or the Azure credential. With TLS mode TLS, the TLS section sets a floor that Extra
+// Parameters may raise but not lower: encrypt=true unless they ask for encrypt=strict, and
+// TrustServerCertificate=false when Verify server certificate is on or they ask for it. The
+// section's CA replaces a certificate parameter. With TLS mode Disabled, Extra Parameters apply as
+// given over a TrustServerCertificate=true default.
+func connectionDSN(ds *storepb.DataSource, password, database, caFile string) (string, string) {
+	params := map[string]string{
+		msdsn.AppName: "bytebase",
+		// Older SQL Server versions offer only TLS 1.0: https://github.com/microsoft/go-mssqldb/issues/33.
+		msdsn.TLSMin: "1.0",
+	}
+	extra := ds.GetExtraConnectionParameters()
+	// Sorted, so keys that differ only in case resolve the same way every time.
+	for _, key := range slices.Sorted(maps.Keys(extra)) {
+		params[strings.ToLower(key)] = extra[key]
+	}
+	if database != "" {
+		params[msdsn.Database] = database
+	}
+	if ds.GetUseSsl() {
+		if !strings.EqualFold(params[msdsn.Encrypt], "strict") {
+			params[msdsn.Encrypt] = "true"
+		}
+		trust, err := strconv.ParseBool(params[msdsn.TrustServerCertificate])
+		verify := ds.GetVerifyTlsCertificate() || (err == nil && !trust)
+		params[msdsn.TrustServerCertificate] = strconv.FormatBool(!verify)
+		if caFile != "" {
+			params[msdsn.Certificate] = caFile
+		}
+	} else if _, ok := params[msdsn.TrustServerCertificate]; !ok {
+		params[msdsn.TrustServerCertificate] = "true"
+	}
+
+	driverName := "sqlserver"
+	if ds.GetAuthenticationType() == storepb.DataSource_AZURE_IAM {
+		driverName = azuread.DriverName
+		if credential := ds.GetAzureCredential(); credential != nil {
+			params["fedauth"] = azuread.ActiveDirectoryServicePrincipal
+			params[msdsn.UserID] = fmt.Sprintf("%s@%s", credential.ClientId, credential.TenantId)
+			params[msdsn.Password] = credential.ClientSecret
+			password = ""
+		} else {
+			params["fedauth"] = azuread.ActiveDirectoryDefault
+		}
+	}
+
+	query := url.Values{}
+	for key, value := range params {
+		query.Set(key, value)
+	}
+	u := &url.URL{
+		Scheme:   "sqlserver",
+		User:     url.UserPassword(ds.Username, password),
+		Host:     fmt.Sprintf("%s:%s", ds.Host, ds.Port),
+		RawQuery: query.Encode(),
+	}
+	return driverName, u.String()
+}
+
+// writeCAFile writes the data source's CA to a temporary file, because go-mssqldb reads a CA only
+// from a .pem or .der path. It returns "" when TLS is off or no CA is set.
+func writeCAFile(ds *storepb.DataSource) (string, error) {
+	if !ds.GetUseSsl() || ds.GetSslCa() == "" {
+		return "", nil
+	}
+	file, err := os.CreateTemp("", "cert-*.pem")
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create the CA certificate file")
+	}
+	_, err = file.WriteString(ds.GetSslCa())
+	if closeErr := file.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		removeCAFile(file.Name())
+		return "", errors.Wrap(err, "failed to write the CA certificate file")
+	}
+	return file.Name(), nil
+}
+
+func removeCAFile(path string) {
+	if path == "" {
+		return
+	}
+	if err := os.Remove(path); err != nil {
+		slog.Warn("failed to delete temporary file", slog.String("path", path), log.BBError(err))
+	}
 }
 
 // Close closes the driver.
 func (d *Driver) Close(_ context.Context) error {
-	if d.certFilePath != "" {
-		if err := os.Remove(d.certFilePath); err != nil {
-			slog.Warn("failed to delete temporary file", slog.String("path", d.certFilePath), log.BBError(err))
-		}
-	}
+	removeCAFile(d.certFilePath)
 	if d.db != nil {
 		return d.db.Close()
 	}

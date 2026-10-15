@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -11,6 +12,10 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/bytebase/bytebase/backend/common"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // makeDatabase builds a database entry with an ADMIN datasource for mock responses.
@@ -777,7 +782,259 @@ func TestQueryDatabase_Timeout(t *testing.T) {
 		resourceName: "instances/prod-pg/databases/employee_db",
 		dataSourceID: "ds-admin-1",
 	}
-	_, err := s.executeQuery(ctx, resolved, "SELECT 1", 100)
+	_, err := s.executeQuery(ctx, resolved, QueryInput{Statement: "SELECT 1"}, 100)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "QUERY_ERROR")
+}
+
+// protoQueryResponse encodes resp with protojson.MarshalOptions{}, the options
+// connect-go's JSON codec uses for the Query response.
+func protoQueryResponse(t *testing.T, resp *v1pb.QueryResponse) map[string]any {
+	t.Helper()
+	raw, err := protojson.MarshalOptions{}.Marshal(resp)
+	require.NoError(t, err)
+	var body map[string]any
+	require.NoError(t, json.Unmarshal(raw, &body))
+	return body
+}
+
+func TestMaskedColumns(t *testing.T) {
+	tests := []struct {
+		name   string
+		result string
+		want   []MaskedColumn
+	}{
+		{
+			name:   "unmasked column entry is empty",
+			result: `{"columnNames":["id","ssn"],"masked":[{},{"semanticTypeId":"ssn","semanticTypeTitle":"SSN","algorithm":"Full mask","context":"Global masking rule: PII"}]}`,
+			want:   []MaskedColumn{{Column: "ssn", Index: 1, SemanticType: "SSN", Algorithm: "Full mask", Context: "Global masking rule: PII"}},
+		},
+		{
+			name:   "column from several source columns has no semantic type",
+			result: `{"columnNames":["contact"],"masked":[{"algorithm":"Full mask","context":"Multiple source columns"}]}`,
+			want:   []MaskedColumn{{Column: "contact", Index: 0, Algorithm: "Full mask", Context: "Multiple source columns"}},
+		},
+		{
+			name:   "list shorter than the columns",
+			result: `{"columnNames":["ssn","id"],"masked":[{"semanticTypeId":"ssn","semanticTypeTitle":"SSN","algorithm":"Full mask"}]}`,
+			want:   []MaskedColumn{{Column: "ssn", Index: 0, SemanticType: "SSN", Algorithm: "Full mask"}},
+		},
+		{
+			name:   "list longer than the columns",
+			result: `{"columnNames":["id"],"masked":[{},{"semanticTypeId":"ssn","algorithm":"Full mask"}]}`,
+		},
+		{
+			name:   "columns sharing a name",
+			result: `{"columnNames":["email","email"],"masked":[{},{"semanticTypeId":"email","semanticTypeTitle":"Email","algorithm":"Partial mask"}]}`,
+			want:   []MaskedColumn{{Column: "email", Index: 1, SemanticType: "Email", Algorithm: "Partial mask"}},
+		},
+		{
+			name:   "no masked field",
+			result: `{"columnNames":["id"]}`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var result queryResult
+			require.NoError(t, json.Unmarshal([]byte(tc.result), &result))
+			require.Equal(t, tc.want, maskedColumns(result.ColumnNames, result.Masked))
+		})
+	}
+}
+
+func TestQueryDatabase_MaskedColumnsNameTheirReasons(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	qr := protoQueryResponse(t, &v1pb.QueryResponse{
+		Results: []*v1pb.QueryResult{{
+			ColumnNames:     []string{"id", "ssn", "email"},
+			ColumnTypeNames: []string{"int4", "varchar", "varchar"},
+			Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{
+				{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
+				{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}},
+				{Kind: &v1pb.RowValue_StringValue{StringValue: "j***@example.com"}},
+			}}},
+			Masked: []*v1pb.MaskingReason{
+				nil,
+				{SemanticTypeId: "ssn", SemanticTypeTitle: "SSN", Algorithm: "Full mask", Context: "Global masking rule: PII"},
+				{SemanticTypeId: "email", SemanticTypeTitle: "Email", Algorithm: "Partial mask", Context: "Column-level semantic type: Email"},
+			},
+		}},
+	})
+	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+	result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELECT id, ssn, email FROM users",
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+
+	output, ok := structured.(*QueryOutput)
+	require.True(t, ok)
+	require.Equal(t, []MaskedColumn{
+		{Column: "ssn", Index: 1, SemanticType: "SSN", Algorithm: "Full mask", Context: "Global masking rule: PII"},
+		{Column: "email", Index: 2, SemanticType: "Email", Algorithm: "Partial mask", Context: "Column-level semantic type: Email"},
+	}, output.MaskedColumns)
+	require.Empty(t, output.AppliedAccessGrant)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "Masked columns: ssn, email.\n")
+	require.Contains(t, text, `"maskedColumns":[{"column":"ssn","index":1,`)
+}
+
+func TestQueryDatabase_UnmaskedResultNamesNoMaskedColumns(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	tests := []struct {
+		name       string
+		masked     []*v1pb.MaskingReason
+		wantOnWire any
+	}{
+		{
+			name:       "masking ran and masked nothing",
+			masked:     []*v1pb.MaskingReason{nil, nil},
+			wantOnWire: []any{map[string]any{}, map[string]any{}},
+		},
+		{
+			name:       "masking did not run",
+			wantOnWire: nil,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			qr := protoQueryResponse(t, &v1pb.QueryResponse{
+				Results: []*v1pb.QueryResult{{
+					ColumnNames:     []string{"id", "name"},
+					ColumnTypeNames: []string{"int4", "varchar"},
+					Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{
+						{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
+						{Kind: &v1pb.RowValue_StringValue{StringValue: "John"}},
+					}}},
+					Masked: tc.masked,
+				}},
+			})
+			results, ok := qr["results"].([]any)
+			require.True(t, ok)
+			wire, ok := results[0].(map[string]any)
+			require.True(t, ok)
+			require.Equal(t, tc.wantOnWire, wire["masked"])
+			s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+			result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+				Database:  "employee_db",
+				Statement: "SELECT id, name FROM users",
+			})
+			require.NoError(t, err)
+			require.False(t, result.IsError)
+
+			output, ok := structured.(*QueryOutput)
+			require.True(t, ok)
+			require.Empty(t, output.MaskedColumns)
+
+			text := result.Content[0].(*mcpsdk.TextContent).Text
+			require.NotContains(t, text, "Masked columns")
+			require.NotContains(t, text, "maskedColumns")
+			require.NotContains(t, text, "appliedAccessGrant")
+		})
+	}
+}
+
+func TestQueryDatabase_AppliedAccessGrantPassesThrough(t *testing.T) {
+	const grant = "projects/hr-system/accessGrants/g1"
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	qr := protoQueryResponse(t, &v1pb.QueryResponse{
+		Results: []*v1pb.QueryResult{{
+			ColumnNames:     []string{"ssn"},
+			ColumnTypeNames: []string{"varchar"},
+			Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{
+				{Kind: &v1pb.RowValue_StringValue{StringValue: "123-45-6789"}},
+			}}},
+		}},
+		AppliedAccessGrant: grant,
+	})
+	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+	result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELECT ssn FROM users",
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+
+	output, ok := structured.(*QueryOutput)
+	require.True(t, ok)
+	require.Equal(t, grant, output.AppliedAccessGrant)
+	require.Empty(t, output.MaskedColumns)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, `"appliedAccessGrant":"`+grant+`"`)
+	require.NotContains(t, text, "Masked columns")
+}
+
+func TestQueryDatabase_ForwardsSchemaAndContainerOnlyWhenSet(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	tests := []struct {
+		name      string
+		schema    string
+		container string
+	}{
+		{name: "neither"},
+		{name: "schema", schema: "public"},
+		{name: "container", container: "employee"},
+		{name: "both", schema: "public", container: "employee"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// require must not run on the transport's goroutine, so the handler
+			// only records the body.
+			var queryBody []byte
+			listHandler := mockListDatabases(databases)
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.Contains(r.URL.Path, "SQLService/Query") {
+					queryBody, _ = io.ReadAll(r.Body)
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(makeQueryResponse([]string{"id"}, []string{"int4"}, [][]any{{"1"}}, "0.001s"))
+					return
+				}
+				listHandler.ServeHTTP(w, r)
+			})
+			s := newTestServerWithMock(t, handler)
+
+			result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+				Database:  "employee_db",
+				Statement: "SELECT id FROM users",
+				Schema:    tc.schema,
+				Container: tc.container,
+			})
+			require.NoError(t, err)
+			require.False(t, result.IsError)
+
+			// The server decodes the body with DiscardUnknown too, so a misnamed
+			// key would lose the value without an error.
+			var request v1pb.QueryRequest
+			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal(queryBody, &request))
+			for _, field := range []struct {
+				name string
+				want string
+				got  *string
+			}{
+				{name: "schema", want: tc.schema, got: request.Schema},
+				{name: "container", want: tc.container, got: request.Container},
+			} {
+				if field.want == "" {
+					require.Nil(t, field.got, "%s must be left out when unset, not sent empty", field.name)
+					continue
+				}
+				require.NotNil(t, field.got, "%s must reach QueryRequest.%s", field.name, field.name)
+				require.Equal(t, field.want, *field.got)
+			}
+		})
+	}
 }

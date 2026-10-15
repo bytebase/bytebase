@@ -41,6 +41,11 @@
     "chat-total-tokens": "合計トークン数: {{count}}",
     "close": "閉じる",
     "confirm": "確認",
+    "context": "コンテキスト",
+    "context-no-projects": "アクセス可能なプロジェクトがありません",
+    "context-select": "コンテキストを選択",
+    "context-start-new-chat": "{{name}} で新しいチャットを開始",
+    "context-workspace": "ワークスペース",
     "delete-all-chats": "すべてのチャットを削除",
     "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",
     "delete-chat": "チャットを削除",
@@ -1307,7 +1312,11 @@
           "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。次のコマンドを実行してユーザーを作成する前に、{{link}} を有効にする必要があります。"
         },
         "mysql": {
-          "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。"
+          "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。",
+          "warn": "DEFINER を別のアカウントに設定する変更を Bytebase で実行するには、MySQL 8.0 では SET_USER_ID、MySQL 8.4 以降では SET_ANY_DEFINER も付与してください。一部のクラウドプロバイダーはこれらの権限を制限しています。"
+        },
+        "oracle": {
+          "warn": "Amazon RDS for Oracle では GRANT ALL PRIVILEGES を実行できません。"
         },
         "postgresql": {
           "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。接続しているインスタンスが自己ホスト型の場合は、SUPERUSER を付与できます。",
@@ -1533,8 +1542,11 @@
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
       "details": "ロール付与の詳細",
+      "direct-execution-suffix": "{{environments}} で承認なしに {{kind}} を実行",
       "expired-at": "有効期限",
+      "grantee": "付与先",
       "manually-select": "手動選択",
+      "requested-by": "{{creator}} による申請",
       "use-cel": "CEL式を使用"
     },
     "sort": {
@@ -1994,6 +2006,38 @@
       "success-prompt": "{{name}} が正常に作成されました。"
     },
     "filter-projects": "プロジェクトをフィルタリング",
+    "home": {
+      "active-issues": "あなたの対応中の課題",
+      "active-issues-unavailable": "このプロジェクトの課題は表示できません。",
+      "ai-placeholder": "このプロジェクトの検索、変更、設定について AI に質問",
+      "archived-description": "このプロジェクトはアーカイブされており、読み取り専用です。",
+      "change-database": "データベースを変更",
+      "change-database-description": "このプロジェクトで管理されたデータベース変更を計画します。",
+      "connect": "インスタンスを接続",
+      "connect-description": "データベースサーバーをこのプロジェクトに接続します。",
+      "create-database": "データベースを作成",
+      "create-database-description": "接続済みインスタンスに最初のデータベースを作成します。",
+      "created-by-you": "あなたが作成",
+      "databases": "データベース",
+      "databases-load-error": "データベースを読み込めませんでした。",
+      "databases-unavailable": "このプロジェクトのデータベースは利用できません。",
+      "members": "メンバーを管理",
+      "members-optional-description": "任意: チームメンバーに共同作業とレビューのためのアクセス権を付与します。",
+      "needs-review": "あなたのレビュー待ち",
+      "next-step": "次のステップ",
+      "no-active-issues": "このプロジェクトには、あなたが作成した、またはレビュー待ちの未完了の課題はありません。",
+      "no-databases": "アクセスできるデータベースはまだありません。",
+      "no-databases-create-description": "接続済みインスタンスにデータベースを作成して始めましょう。",
+      "no-databases-description": "インスタンスを接続して、このプロジェクトにデータベースを追加します。",
+      "no-databases-prerequisite": "ここにデータベースを表示するには、インスタンスの接続が必要です。",
+      "no-databases-transfer-description": "未割り当てのデータベースをこのプロジェクトに移管するか、新しく作成します。",
+      "query-database": "データベースをクエリ",
+      "query-database-description": "SQL エディターでこのプロジェクトのデータベースを参照します。",
+      "transfer-databases": "データベースを移管",
+      "transfer-databases-description": "未割り当てのデータベースをこのプロジェクトに移管します。",
+      "view-all": "すべて表示",
+      "view-issues": "課題を見る"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {
@@ -2016,11 +2060,23 @@
       "self": "マスキング免除"
     },
     "members": {
-      "ddl-current-all": "すべての（ALL）環境で {{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
-      "ddl-current-none": "{{kind}} ステートメントを SQL エディターで実行するには承認が必要です。",
-      "ddl-current-some": "リストされた環境で {{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
-      "ddl-warning": "選択した環境では、{{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
+      "direct-execution": {
+        "all": "すべての環境で SQL エディターから承認なしに {{kind}} を実行できます。",
+        "environment-required": "環境を 1 つ以上選択してください。",
+        "in-environments": "対象の環境",
+        "lead-approver": "承認すると、{{grantee}} は SQL エディターで承認なしに {{kind}} を実行できます。対象：",
+        "lead-binding": "SQL エディターで承認なしに {{kind}} を実行できます。対象：",
+        "lead-grant": "このロールを持つメンバーは SQL エディターで承認なしに {{kind}} を実行できます。対象：",
+        "lead-request": "承認されると、SQL エディターで承認なしに {{kind}} を実行できます。対象：",
+        "none": "{{kind}} は承認なしには SQL エディターで実行できません。",
+        "protected-tag": "本番環境",
+        "protected_one": "{{environments}} は本番環境です。",
+        "protected_other": "{{environments}} は本番環境です。",
+        "select-environments": "環境を選択",
+        "switch-label": "SQL エディターで承認なしに {{kind}} を実行することを許可する",
+        "title": "{{kind}} の直接実行"
+      },
       "edit-member": "メンバー編集 - {{member}}",
       "expiration-presets": {
         "one-month": "1か月",
@@ -2278,7 +2334,7 @@
       "self": "SQLエディタ読み取り専用ユーザー"
     },
     "sql-editor-user": {
-      "description": "指定した範囲内のデータをクエリできます。",
+      "description": "データを照会し、許可された環境で DDL/DML を実行できます。",
       "self": "SQLエディタのユーザー"
     },
     "title": "タイトル",
@@ -2710,7 +2766,7 @@
             "title": "クエリ結果をエクスポートする"
           },
           "manage": {
-            "details": "インスタンスとデータベースの同期 · データベースの設定とラベル · データベースをプロジェクト間で移動 · データベースグループ · 保存済みクエリ",
+            "details": "インスタンスとデータベースの同期 · 保存済みクエリ",
             "title": "データベースの運用設定を管理する"
           },
           "propose": {
@@ -2729,6 +2785,10 @@
             "details": "Issue とコメント · Plan とプランチェック · ロールアウト・タスク実行・ログ · リリース · ロールバックのプレビュー",
             "title": "変更ワークフローの読み取り"
           },
+          "request-access": {
+            "details": "特定のステートメントを実行するための期限付きアクセス付与をリクエストします。結果のマスク解除やエクスポートも含められます。エンジンが確認できる範囲で、ステートメントは読み取りでなければなりません · 付与は人が承認した後にのみ有効になり、誰の承認も必要としないリクエストは拒否されます · 付与は、プロジェクトがアクセス付与を許可している場合にのみ適用されます",
+            "title": "アクセス付与をリクエストする"
+          },
           "run-rollouts": {
             "details": "ロールアウトの作成 · プロジェクトの承認ポリシーのもとでタスクを実行・スキップ・キャンセル",
             "title": "ロールアウトとタスクを実行する"
@@ -2745,7 +2805,7 @@
         },
         "summary": {
           "read-only": "スキーマ・データ・変更ワークフローの読み取り。読み取りだと確認できないものを含むリクエストは拒否され、エクスポートもできません",
-          "read-write": "スキーマ・データ・変更ワークフローの読み取り。提案・実行・エクスポート・管理"
+          "read-write": "スキーマ・データ・変更ワークフローの読み取り。提案・アクセスのリクエスト・実行・エクスポート・管理"
         },
         "tier": {
           "read": "読み取り",
@@ -3282,6 +3342,9 @@
     "export-available-via-issue": "Issue「{{title}}」によりエクスポート可能",
     "export-available-via-n-grants": "{{count}} 件のアクセス付与によりエクスポート可能:",
     "export-enabled-by-grant": "アクセス付与により有効になっています",
+    "export-grant-lookup-failed": "エクスポート権限を確認できませんでした。",
+    "export-grant-lookup-loading": "エクスポート権限を確認中…",
+    "export-grant-lookup-retry": "再試行",
     "format": "フォーマット",
     "format-default": "デフォルト",
     "format-sql": "SQL を整形",
@@ -3537,6 +3600,7 @@
       "manage-license": "ライセンスの管理",
       "missing-license-attention": "この機能のロックを解除するには、インスタンスにライセンスを割り当ててください。",
       "n-license-remain": "残り {{n}}",
+      "project-instance-hint": "この一覧にはワークスペースのインスタンスのみが表示されます。プロジェクトのインスタンスのライセンスを管理するには、そのインスタンスの詳細ページを開いてください。",
       "require-license": "インスタンスライセンスが必要です",
       "success-notification": "ライセンスの割り当てが正常に更新されました",
       "used-and-total-instance": "アクティブ/合計インスタンス制限",

@@ -314,14 +314,17 @@ export const useGuideContext = ({
       return;
     }
 
+    const controller = new AbortController();
     void (async () => {
       const store = useAppStore.getState();
       try {
         const projectResponse = await store.fetchProjectList({
+          signal: controller.signal,
           pageSize: 1,
           silent: true,
           filter: { excludeDefault: true, state: State.ACTIVE },
         });
+        if (controller.signal.aborted) return;
         const project = projectResponse.projects.find(
           ({ name }) => !!name && name !== defaultProject
         );
@@ -389,6 +392,7 @@ export const useGuideContext = ({
                 : undefined,
             ])
           : [];
+        if (controller.signal.aborted) return;
         const eventTarget = eventTargetRef.current;
 
         setFacts((state) => ({
@@ -416,6 +420,7 @@ export const useGuideContext = ({
           ),
         }));
       } catch {
+        if (controller.signal.aborted) return;
         setFacts((state) => ({
           ...state,
           hasExploredDatabase: databaseExplored || state.hasExploredDatabase,
@@ -426,6 +431,7 @@ export const useGuideContext = ({
       }
       setContextReady(true);
     })();
+    return () => controller.abort();
   }, [
     changeIssueCreated,
     databaseCacheSize,

@@ -38,7 +38,14 @@ export const buildAccessGrantFilter = (
     parts.push(`query.contains(${celString(filter.statement.trim())})`);
   }
   if (filter.statementExact !== undefined) {
-    parts.push(`query == ${celString(filter.statementExact.trim())}`);
+    parts.push(`query == ${celString(filter.statementExact)}`);
+  }
+  for (const [field, value] of [
+    ["query_hash", filter.queryHash],
+    ["schema", filter.schema],
+    ["container", filter.container],
+  ] as const) {
+    if (value !== undefined) parts.push(`${field} == ${celString(value)}`);
   }
   if (filter.creator) {
     parts.push(`creator == ${celString(filter.creator)}`);

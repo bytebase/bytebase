@@ -109,6 +109,9 @@ func (q *querySpanExtractor) tsqlFindTableSchemaByParts(linkedServer, rawDatabas
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database %s metadata", databaseName)
 		}
+		if databaseMeta == nil {
+			return nil, errors.Errorf("database metadata for database %q not found (database not synced)", databaseName)
+		}
 
 		for _, schemaName := range databaseMeta.ListSchemaNames() {
 			if schema != "" && !q.isIdentifierEqual(schema, schemaName) {

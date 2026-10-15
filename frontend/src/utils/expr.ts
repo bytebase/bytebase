@@ -22,6 +22,7 @@ type LabeledOption = { value: string; label: string };
 
 export type OptionConfig = {
   search?: (params: {
+    signal?: AbortSignal;
     search: string;
     pageToken: string;
     pageSize: number;
@@ -85,6 +86,7 @@ export const getProjectIdOptionConfig = (): OptionConfig => {
     },
     search: async (params) => {
       return fetchProjectList({
+        signal: params.signal,
         pageSize: params.pageSize,
         pageToken: params.pageToken,
         filter: {

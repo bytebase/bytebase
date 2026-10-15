@@ -591,44 +591,18 @@ func linkedIssueForCreate(planUID int64, existing, issue *store.IssueMessage) (*
 	return existing, nil
 }
 
-// rejectMCPOriginatedGrantIssue refuses an MCP session creating an issue of any
-// type but the database change an agent exists to compose (an unset type is
-// left to the handler, as the gate leaves it). A ROLE_GRANT issue
-// completes on creation whenever the workspace approval rule produces no
-// template, and completing it writes the project IAM binding for whichever
-// grantee the request named — which is ProjectService/SetIamPolicy, a method
-// the MCP ceiling refuses outright. The session would end up granting access
-// with no human step.
-//
-// It lives here rather than only in the ceiling gate because CREATION is the
-// fact it turns on, and the gate cannot see that fact. UpdateIssue with
-// allow_missing is the same creation under another name, but only when the
-// issue does not exist: the handler reaches this function through that branch
-// alone, so an ordinary AIP upsert of an issue that DOES exist never arrives
-// here — and it must not be refused, since the type in a full-resource PATCH
-// says nothing about whether the call creates anything. The gate keeps its own
-// refusal for CreateIssue, where the request shape IS the whole story and the
-// denial can land before dispatch; this one covers the delegation the gate
-// cannot follow, the same way rejectMCPOriginatedTokenMint sits at the mint
-// rather than only at its callers.
-//
-// Presence of the delegated grant is the MCP-origin marker, never a field
-// value (common.DelegatedGrant).
+// rejectMCPOriginatedGrantIssue applies grantIssueRefusal where the issue is
+// created, so it also covers UpdateIssue with allow_missing, which creates only
+// when the issue is missing and so cannot be refused at the gate.
 func rejectMCPOriginatedGrantIssue(ctx context.Context, issueType v1pb.Issue_Type) error {
-	authCtx, ok := common.GetAuthContextFromContext(ctx)
-	if !ok || authCtx.DelegatedGrant == nil {
+	if !mcpSession(ctx) {
 		return nil
 	}
-	if issueType == v1pb.Issue_DATABASE_CHANGE || issueType == v1pb.Issue_TYPE_UNSPECIFIED {
-		// An unset type is the handler's invalid argument, not a policy
-		// verdict: buildIssueMessage refuses it, and the gate admits it for the
-		// same reason (refuseGrantIssueCreation).
+	reason, wayOut := grantIssueRefusal(issueType)
+	if reason == "" {
 		return nil
 	}
-	return permissionDeniedError(ctx, errors.Errorf(
-		"an MCP session may not create a %v issue: that issue type completes on creation whenever the "+
-			"workspace approval rule produces no template, which grants access with no human step. "+
-			"Create it signed in to the Bytebase console instead", issueType))
+	return permissionDeniedError(ctx, errors.Errorf("an MCP session may not create this issue: %s. %s", reason, wayOut))
 }
 
 func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.ProjectMessage, userEmail string, request *v1pb.CreateIssueRequest, labels []string) (*store.IssueMessage, error) {

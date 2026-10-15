@@ -231,7 +231,7 @@ func (s *SQLService) preCheckAccess(ctx context.Context, statement string, insta
 		ProjectID:     database.ProjectID,
 		Creator:       user.Email,
 		Target:        formatDatabaseResourceName(instance, database),
-		Statement:     strings.Trim(statement, " \t\n\r\v\f"),
+		Statement:     statement,
 		Schema:        requestSchema,
 		Container:     container,
 		RequireExport: requireExport,
