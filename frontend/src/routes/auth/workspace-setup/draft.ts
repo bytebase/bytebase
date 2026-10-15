@@ -80,9 +80,14 @@ const refusedId = (value: unknown): SetupDraft["refusedProjectId"] => {
     : undefined;
 };
 
+// Self-hosted may leave the project for later while no create has been sent,
+// as with the skip (D12).
+export const projectOptional = (draft: SetupDraft, isSaaS: boolean) =>
+  !isSaaS && !draft.createdProject && !draft.attemptedProjectId;
+
 // Storage is outside the type system, so every field is read defensively and
 // the screen falls back to the first one whose answer is missing.
-export const readSetupDraft = (): SetupDraft => {
+export const readSetupDraft = (isSaaS: boolean): SetupDraft => {
   const key = draftStorageKey();
   if (!key) return emptySetupDraft();
   const stored = readJson<Record<string, unknown> | undefined>(key, undefined);
@@ -104,9 +109,12 @@ export const readSetupDraft = (): SetupDraft => {
     samplePrepared: stored.samplePrepared === true,
     projectGrants: grants(stored.projectGrants),
   };
+  const projectAnswered = draft.projectTitle.trim()
+    ? !!draft.projectId
+    : projectOptional(draft, isSaaS);
   const reachable: SetupScreen = !draft.goal
     ? "goal"
-    : !draft.projectTitle.trim() || !draft.projectId
+    : !projectAnswered
       ? "project"
       : "team";
   const storedScreen = SETUP_SCREENS.find((screen) => screen === stored.screen);

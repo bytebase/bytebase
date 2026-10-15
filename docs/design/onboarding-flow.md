@@ -278,7 +278,8 @@ succeeds, as it does on submit today. One addition: a workspace admin whose draf
 may come back to it, as Finish adds the invitees before it ends and the workspace then has other
 members. Until then the answers live in a local draft, keyed by workspace and user as the guide's
 stored answers are and removed when Finish succeeds, so Back and a reload return to the same screen
-with nothing retyped. On Cloud so does a new login in the same browser, because that flag sends the
+with nothing retyped; screen 3 counts as answered without a project name where the name is optional
+(D12). On Cloud so does a new login in the same browser, because that flag sends the
 account back; on self-hosted, where setup is offered on the first login only, a new login opens the
 workspace as it does today. The draft also records that the project was created, the one step of
 Finish that cannot be repeated, so a retry, after a reload too, goes past it instead of failing on a

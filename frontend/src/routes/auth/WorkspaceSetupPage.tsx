@@ -31,6 +31,7 @@ import type { ValidatedMessage } from "@/types";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import {
   clearSetupDraft,
+  projectOptional,
   readSetupDraft,
   type SetupDraft,
   type SetupSource,
@@ -84,7 +85,9 @@ function WorkspaceSetupWizard() {
   const canUpdateWorkspace = useWorkspacePermission("bb.workspaces.update");
   const setupPageEntered = useIntroStateByKey(WORKSPACE_SETUP_PAGE_ENTERED_KEY);
   const setupPageEnteredRef = useRef(false);
-  const [draft, setDraft] = useState<SetupDraft>(readSetupDraft);
+  const [draft, setDraft] = useState<SetupDraft>(() =>
+    readSetupDraft(isSaaSMode)
+  );
   // One tab works on setup at a time: the one that saved the draft last. When
   // another tab saves it or ends setup, this one shows a notice in place of
   // its screen. Then, or once setup ends here or the wizard is left, what it
@@ -265,7 +268,7 @@ function WorkspaceSetupWizard() {
   // Takes the stored draft up only when asked: a screen's fields and a failure
   // report hold state that a draft taken in underneath them would not match.
   const continueHere = () => {
-    draftRef.current = readSetupDraft();
+    draftRef.current = readSetupDraft(isSaaSMode);
     // Saved at once, so a tab still working on the draft stops there.
     show(draftRef.current.screen);
     setProjectIdValid(true);
@@ -335,11 +338,8 @@ function WorkspaceSetupWizard() {
     leaveWithoutProject();
   };
 
-  // Self-hosted may leave the project for later while no create has been sent,
-  // as with the skip (D12).
-  const projectOptional =
-    !isSaaSMode && !draft.createdProject && !draft.attemptedProjectId;
-  const withoutProject = projectOptional && !draft.projectTitle.trim();
+  const mayLeaveProject = projectOptional(draft, isSaaSMode);
+  const withoutProject = mayLeaveProject && !draft.projectTitle.trim();
   // The addresses Finish adds. Self-hosted lists no one (D7), whatever an
   // earlier draft holds.
   const invitees =
@@ -505,10 +505,10 @@ function WorkspaceSetupWizard() {
             sample={sampleOffer}
             samplePrepared={!!draft.samplePrepared}
             isSaaS={isSaaSMode}
-            projectOptional={projectOptional}
+            projectOptional={mayLeaveProject}
             skipping={skipping}
             skipFailure={skipFailure}
-            onSkip={projectOptional ? () => void skip() : undefined}
+            onSkip={mayLeaveProject ? () => void skip() : undefined}
             validateProjectId={validateProjectId}
             onProjectTitleChange={(projectTitle) => {
               if (projectTitle.trim()) {

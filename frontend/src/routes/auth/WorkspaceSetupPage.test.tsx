@@ -1766,6 +1766,50 @@ describe("WorkspaceSetupPage", () => {
   });
 
   describe("draft", () => {
+    test.each([
+      { deployment: "self-hosted", isSaaSMode: false, heading: "Your team" },
+      {
+        deployment: "Cloud",
+        isSaaSMode: true,
+        heading: "Create a project and choose its database",
+      },
+    ])("resumes a draft with no project name where $deployment allows it", ({
+      isSaaSMode,
+      heading,
+    }) => {
+      mocks.isSaaSMode = isSaaSMode;
+      storeDraft({
+        screen: "team",
+        goal: "query-data",
+        projectTitle: "",
+        projectId: "",
+        teamSize: "2-10",
+      });
+
+      render(<WorkspaceSetupPage />);
+
+      expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
+    });
+
+    test("resumes on screen 3 a self-hosted draft whose create was sent before its name was cleared", () => {
+      mocks.isSaaSMode = false;
+      storeDraft({
+        screen: "team",
+        goal: "query-data",
+        projectTitle: "",
+        projectId: "",
+        teamSize: "2-10",
+        attemptedProjectId: "payments-ab12",
+      });
+
+      render(<WorkspaceSetupPage />);
+
+      expect(
+        screen.getByRole("heading", {
+          name: "Create a project and choose its database",
+        })
+      ).toBeInTheDocument();
+    });
 
     test.each([
       {
