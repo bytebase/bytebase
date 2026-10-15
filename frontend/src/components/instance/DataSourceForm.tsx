@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { Info } from "lucide-react";
+import { Info, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
@@ -704,7 +704,7 @@ export function DataSourceForm({
         {item.value !==
           DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED &&
           currentPlan === PlanType.FREE && (
-            <span className="rounded-full border border-current px-1.5 py-0.5 text-xs">
+            <span className="rounded-xs border border-current px-1.5 py-0.5 text-xs">
               Pro
             </span>
           )}
@@ -802,7 +802,10 @@ export function DataSourceForm({
                     {/* Kerberos config */}
                     {dataSource.saslConfig?.mechanism?.case === "krbConfig" && (
                       <FormField title="Kerberos">
-                        <ResponsiveFormLayout>
+                        <ResponsiveFormLayout
+                          layout="inherit"
+                          density="compact"
+                        >
                           <fieldset
                             aria-label="Kerberos"
                             className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
@@ -1101,7 +1104,10 @@ export function DataSourceForm({
                           )?.label
                         }
                       >
-                        <ResponsiveFormLayout>
+                        <ResponsiveFormLayout
+                          layout="inherit"
+                          density="compact"
+                        >
                           <fieldset
                             aria-label={t(
                               "instance.iam-extension.credential-source"
@@ -1184,13 +1190,14 @@ export function DataSourceForm({
                                     )?.label
                                   }
                                   description={
-                                    <LearnMoreLink
-                                      href="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration"
-                                      className="text-sm text-accent"
-                                    />
+                                    <LearnMoreLink href="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration" />
                                   }
                                 >
-                                  <ResponsiveFormLayout className="mt-2">
+                                  <ResponsiveFormLayout
+                                    layout="inherit"
+                                    density="compact"
+                                    className="mt-2"
+                                  >
                                     <fieldset
                                       className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
                                       aria-label={t(
@@ -1610,6 +1617,8 @@ export function DataSourceForm({
                                             }
                                           >
                                             <SslCertificateForm
+                                              layout="inherit"
+                                              verifyControlLayout="inline"
                                               verify={
                                                 !dataSource.externalSecret
                                                   .skipVaultTlsVerification
@@ -1912,10 +1921,7 @@ export function DataSourceForm({
                         <span className="text-control-light">
                           {t("data-source.snowflake-keypair-tip")}
                         </span>
-                        <LearnMoreLink
-                          href="https://docs.snowflake.com/en/user-guide/key-pair-auth"
-                          className="text-sm text-accent"
-                        />
+                        <LearnMoreLink href="https://docs.snowflake.com/en/user-guide/key-pair-auth" />
                       </div>
                     </FormField>
                     <FormField
@@ -2319,12 +2325,13 @@ export function DataSourceForm({
                   </>
                 ) : (
                   <Button
-                    appearance="link"
+                    appearance="outline"
                     size="sm"
                     className="self-start"
                     onClick={() => setShowExtraParameters(true)}
                     disabled={!allowEdit}
                   >
+                    <Plus className="h-4 w-4" />
                     {t("instance.add-parameter")}
                   </Button>
                 )}
@@ -2353,10 +2360,10 @@ function AwsRegionField({
     <FormField
       validationField="region"
       title={
-        <>
+        <span className="textlabel">
           {t("instance.database-region")}
           {required && <span className="text-error"> *</span>}
-        </>
+        </span>
       }
     >
       <Input

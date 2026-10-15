@@ -79,7 +79,7 @@ export function IssueDetailApprovalFlow() {
         {statusTag && (
           <span
             className={cn(
-              "inline-flex items-center rounded-full px-2 py-0.5 text-xs",
+              "inline-flex items-center rounded-xs border border-transparent px-1.5 py-0.5 text-xs",
               statusTag.className
             )}
           >
@@ -386,7 +386,7 @@ function ApprovalCandidateRow({
     <div className="inline-flex items-start gap-1.5">
       <ApproverIdentity email={user.email} name={principalLabel(user)} />
       {isCurrentUser && (
-        <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-xs text-success">
+        <span className="rounded-xs border border-transparent bg-success/10 px-1.5 py-0.5 text-xs text-success">
           {t("common.you")}
         </span>
       )}

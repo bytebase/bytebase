@@ -101,6 +101,21 @@ describe("EnvironmentBadge", () => {
     expect(badge?.style.color).toBe("rgb(129, 140, 248)");
   });
 
+  test("uses the shared compact label geometry", async () => {
+    const rendered = await render(
+      <EnvironmentBadge
+        environment={environment}
+        hasEnvTierFeature={false}
+      />
+    );
+    root = rendered.root;
+
+    const badge = rendered.container.querySelector("span");
+    expect(badge?.className).toContain("py-0.5");
+    expect(badge?.className).toContain("text-xs");
+    expect(badge?.className).toContain("font-medium");
+  });
+
   test("highlights the environment title", async () => {
     const rendered = await render(
       <EnvironmentBadge

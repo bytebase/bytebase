@@ -34,16 +34,31 @@ import {
 } from "./styles.stylex";
 
 type FormLayout = "vertical" | "horizontal";
+type FormDensity = "default" | "compact";
 
-const FormLayoutContext = createContext<FormLayout>("vertical");
+interface FormLayoutContextValue {
+  layout: FormLayout;
+  density: FormDensity;
+}
+
+const FormLayoutContext = createContext<FormLayoutContextValue>({
+  layout: "vertical",
+  density: "default",
+});
 
 interface ResponsiveFormLayoutProps extends Omit<ComponentProps<"div">, "ref"> {
   /**
    * Uses label/control rows when this layout region has enough room. This is
    * intentionally based on the region width, so a docked side panel does not
    * leave fields stranded in a viewport-sized two-column layout.
+   * Dependent groups use `inherit` to avoid making another breakpoint decision.
    */
-  layout?: "responsive" | FormLayout;
+  layout?: "responsive" | "inherit" | FormLayout;
+  /**
+   * Keeps dependent fields at label hierarchy when they stack inside a dense
+   * form control area.
+   */
+  density?: FormDensity;
   horizontalMinWidth?: number;
 }
 
@@ -51,13 +66,28 @@ const ResponsiveFormLayout = forwardRef<
   HTMLDivElement,
   ResponsiveFormLayoutProps
 >(function ResponsiveFormLayout(
-  { children, horizontalMinWidth = 560, layout = "responsive", ...props },
+  {
+    children,
+    density: densityOverride,
+    horizontalMinWidth = 560,
+    layout = "responsive",
+    ...props
+  },
   ref
 ) {
+  const inherited = useContext(FormLayoutContext);
+  const density = densityOverride ?? inherited.density;
   const layoutRef = useRef<HTMLDivElement>(null);
-  const [isHorizontal, setIsHorizontal] = useState(layout === "horizontal");
+  const [isHorizontal, setIsHorizontal] = useState(
+    layout === "horizontal" ||
+      (layout === "inherit" && inherited.layout === "horizontal")
+  );
 
   useEffect(() => {
+    if (layout === "inherit") {
+      setIsHorizontal(inherited.layout === "horizontal");
+      return;
+    }
     if (layout !== "responsive") {
       setIsHorizontal(layout === "horizontal");
       return;
@@ -72,11 +102,14 @@ const ResponsiveFormLayout = forwardRef<
     });
     observer.observe(element);
     return () => observer.disconnect();
-  }, [horizontalMinWidth, layout]);
+  }, [horizontalMinWidth, inherited.layout, layout]);
 
   return (
     <FormLayoutContext.Provider
-      value={isHorizontal ? "horizontal" : "vertical"}
+      value={{
+        layout: isHorizontal ? "horizontal" : "vertical",
+        density,
+      }}
     >
       <div
         ref={(element) => {
@@ -123,8 +156,8 @@ function FormField({
   layout: layoutOverride,
   ...props
 }: FormFieldProps) {
-  const inheritedLayout = useContext(FormLayoutContext);
-  const layout = layoutOverride ?? inheritedLayout;
+  const inherited = useContext(FormLayoutContext);
+  const layout = layoutOverride ?? inherited.layout;
   const fieldStylexProps = stylex.props(
     formFieldStyle(),
     (title !== undefined ||
@@ -187,7 +220,9 @@ function FormField({
           className={controlStylexProps.className}
           style={controlStylexProps.style}
         >
-          <FormLayoutContext.Provider value="vertical">
+          <FormLayoutContext.Provider
+            value={{ ...inherited, layout: "vertical" }}
+          >
             {controlChildren}
           </FormLayoutContext.Provider>
         </div>
@@ -212,9 +247,11 @@ function FormField({
  * ```
  */
 function FormTitle({ className, ref, style, ...props }: ComponentProps<"div">) {
-  const layout = useContext(FormLayoutContext);
+  const { density, layout } = useContext(FormLayoutContext);
   const stylexProps = stylex.props(
-    layout === "horizontal" ? formLabelStyle() : formFieldTitleStyle()
+    layout === "horizontal" || density === "compact"
+      ? formLabelStyle()
+      : formFieldTitleStyle()
   );
   return (
     <div

@@ -298,10 +298,7 @@ export function DataClassificationPage() {
         description={
           <>
             {t("database.classification.description")}{" "}
-            <LearnMoreLink
-              href="https://docs.bytebase.com/security/data-masking/data-classification?source=console"
-              className="text-accent"
-            />
+            <LearnMoreLink href="https://docs.bytebase.com/security/data-masking/data-classification?source=console" />
           </>
         }
       />

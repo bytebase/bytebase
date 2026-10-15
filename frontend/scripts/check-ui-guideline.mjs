@@ -239,6 +239,23 @@ const scanButtonDimensions = (node, path, counts) => {
   }
 };
 
+const scanTextPill = (node, path, counts) => {
+  const tagName = getTagName(node.tagName);
+  if (tagName !== "Badge" && tagName !== "span") return;
+  const tokens = attributeTokens(node, new Set(["className"])).map(
+    tailwindUtility
+  );
+  if (
+    tokens.includes("rounded-full") &&
+    tokens.some((token) => /^(?:px|py)-/.test(token)) &&
+    tokens.some((token) => /^text-(?:xs|sm)$/.test(token)) &&
+    (tagName === "Badge" ||
+      tokens.some((token) => /^(?:bg|border)(?:-|$)/.test(token)))
+  ) {
+    addViolation(counts, path, "no-text-pill", "rounded-full");
+  }
+};
+
 const scanLiteralColor = (node, path, counts) => {
   if (!ts.isPropertyAssignment(node)) return;
   const propertyName = ts.isIdentifier(node.name) || ts.isStringLiteral(node.name)
@@ -310,6 +327,7 @@ export function scanSource(source, path) {
       }
       scanSheetWidth(node, path, counts);
       scanButtonDimensions(node, path, counts);
+      scanTextPill(node, path, counts);
     }
     scanLiteralColor(node, path, counts);
     scanInlineRadius(node, path, counts);
