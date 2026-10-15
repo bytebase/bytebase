@@ -1170,6 +1170,38 @@ describe("getUnconvertedCondition", () => {
     ).toBe(condition);
   });
 
+  test("keeps a level inside an || visible even when resources were parsed", () => {
+    const condition =
+      '(resource.column_name in ["email"] || resource.classification_level <= 3)';
+    expect(
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression: condition,
+          databaseResources: [{ databaseFullName: "", columns: ["email"] }],
+        })
+      )
+    ).toBe(condition);
+  });
+
+  test("is empty for a grouped resource condition with a standalone level", () => {
+    expect(
+      getUnconvertedCondition(
+        makeGrant({
+          conditionExpression:
+            '((resource.database_name == "a") || (resource.database_name == "b")) && resource.classification_level <= 3',
+          databaseResources: [{ databaseFullName: "instances/i/databases/a" }],
+        })
+      )
+    ).toBe("");
+  });
+
+  test("does not split on && inside a string", () => {
+    const condition = 'resource.table_name == "a && b"';
+    expect(
+      getUnconvertedCondition(makeGrant({ conditionExpression: condition }))
+    ).toBe(condition);
+  });
+
   test("is empty when database resources represent the condition", () => {
     expect(
       getUnconvertedCondition(

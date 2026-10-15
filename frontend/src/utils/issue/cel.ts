@@ -512,12 +512,10 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
               conditionExpression.databaseResources?.pop() ?? {
                 databaseFullName: "",
               };
-            databaseResource.columns = [];
-            for (const value of values) {
-              if (value) {
-                databaseResource.columns.push(value as string);
-              }
-            }
+            databaseResource.columns = uniq([
+              ...(databaseResource.columns ?? []),
+              ...values.filter(Boolean).map(String),
+            ]);
             conditionExpression.databaseResources!.push(databaseResource);
             break;
           }

@@ -178,22 +178,47 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
   return `${dbName} (${table}: ${listItems(columns)})${levelSuffix}`;
 }
 
+const standaloneLevelRegex = /^resource\.classification_level\s*\S+\s*\d+$/;
+
+function splitTopLevelAnd(expression: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let quoted = false;
+  let start = 0;
+  for (let i = 0; i < expression.length; i++) {
+    const ch = expression[i];
+    if (quoted) {
+      if (ch === "\\") i++;
+      else if (ch === '"') quoted = false;
+    } else if (ch === '"') {
+      quoted = true;
+    } else if (ch === "(" || ch === "[") {
+      depth++;
+    } else if (ch === ")" || ch === "]") {
+      depth--;
+    } else if (depth === 0 && ch === "&" && expression[i + 1] === "&") {
+      parts.push(expression.slice(start, i).trim());
+      start = i + 2;
+      i++;
+    }
+  }
+  parts.push(expression.slice(start).trim());
+  return parts;
+}
+
 // The part of the condition that `databaseResources` and the classification
-// level do not represent, so the page can still show it. Grouped or `||`
-// conditions are returned whole because they cannot be split safely.
+// level badge do not represent, so the page can still show it. A level inside
+// a group or an `||` is not a standalone restriction, so it stays in the result
+// even when resources were parsed.
 export function getUnconvertedCondition(grant: ExemptionGrant): string {
-  if (grant.databaseResources && grant.databaseResources.length > 0) {
+  const remainder = splitTopLevelAnd(grant.conditionExpression)
+    .filter((part) => part !== "" && !standaloneLevelRegex.test(part))
+    .join(" && ");
+  const hasResources = (grant.databaseResources?.length ?? 0) > 0;
+  if (hasResources && !classificationLevelRegex.test(remainder)) {
     return "";
   }
-  const condition = grant.conditionExpression.trim();
-  if (/[()]|\|\|/.test(condition)) {
-    return condition;
-  }
-  return condition
-    .split(" && ")
-    .filter((part) => !classificationLevelRegex.test(part))
-    .join(" && ")
-    .trim();
+  return remainder;
 }
 
 // A resource without a database name can still be limited to an instance or a

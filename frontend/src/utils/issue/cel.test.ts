@@ -136,6 +136,12 @@ describe("convertFromExpr with a column condition", () => {
     ]);
   });
 
+  test("collects the columns of several `in` clauses joined by ||", () => {
+    expect(
+      databaseResources(or(columnIn("email"), columnIn("phone", "email")))
+    ).toEqual([{ databaseFullName: "", columns: ["email", "phone"] }]);
+  });
+
   test("collects the columns of `==` joined by ||", () => {
     expect(
       databaseResources(
