@@ -249,7 +249,8 @@ two names it shows).
 the screen number and the answers so far (goal, project named, source). No event carries a name, an
 email address or a project name. `workspace setup submitted` still fires when Finish succeeds, now
 carrying the goal, the source, the team size and the invite count, and gains `result=failed` with
-`failure_stage` (names, project, sample, invitees). An attempt that stops (D11) sends neither; the
+`failure_stage` (names, project, sample, invitees). `sample_enabled` says whether the attempt asked
+for the sample, whatever its result. An attempt that stops (D11) sends neither; the
 Finish that completes setup reports. No client event can be the record, though: the 17 lost finishes
 lost every custom event after the wizard mounted, and 13 accounts since Sep 11 were never tracked at
 all. The record stays with the backend, as the Cloud usage dashboard's exporter already reads it:
@@ -345,7 +346,10 @@ workspace write was applied, but whose answer was lost or was still out when its
 remove workspace members, which it never does.
 
 A failed attempt is reported for the answers it ran with, so its report goes when its screen is
-left: Back from screen 4 and a changed answer do not return to the earlier attempt's error. The
+left, and a failure adding the people listed goes when the team size or the addresses change: Back
+from screen 4 and a changed answer do not return to the earlier attempt's error. Any other step's
+failure still stands after a team answer changes, with "Finish without the sample" when the sample
+is what failed. The
 wizard collects no credentials, so the draft holds none. No Continue or Finish is disabled without
 its reason on screen, and the reason sits with the field or question it is about, as the UX
 contract requires (`docs/agents/frontend-ux.md`): under the workspace name, under the goal choices,

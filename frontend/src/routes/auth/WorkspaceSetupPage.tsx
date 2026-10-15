@@ -248,11 +248,18 @@ function WorkspaceSetupWizard() {
   }, [currentUser.name, setupPageEntered, workspace?.name]);
 
   // A failed attempt is reported for the answers it ran with, so the report
-  // goes when its screen is left.
+  // goes when its screen is left, and a failure adding the people listed goes
+  // when the team answers change. Any other step's failure still stands then.
   const show = (screen: SetupDraft["screen"]) => {
     setFailure(undefined);
     setSkipFailure(undefined);
     update({ screen });
+  };
+  const answerTeam = (
+    patch: Partial<Pick<SetupDraft, "teamSize" | "emails">>
+  ) => {
+    if (failure?.stage === "invitees") setFailure(undefined);
+    update(patch);
   };
 
   // Takes the stored draft up only when asked: a screen's fields and a failure
@@ -348,6 +355,7 @@ function WorkspaceSetupWizard() {
       // Kept beside `team_size` for the dashboards built on the earlier
       // wizard's team-or-solo answer.
       collaboration_type: draft.teamSize === "just-me" ? "solo" : "team",
+      sample_enabled: finishSource === "sample",
     };
     const result = await runSetupFinish(
       {
@@ -382,7 +390,6 @@ function WorkspaceSetupWizard() {
         ...answers,
         result: "failed",
         failure_stage: result.stage,
-        sample_enabled: false,
       });
       if (result.refusal) {
         // The server settled that create: nothing of this draft's holds the ID.
@@ -400,11 +407,7 @@ function WorkspaceSetupWizard() {
       setFinishing(false);
       return;
     }
-    captureSubmitted({
-      ...answers,
-      result: "finished",
-      sample_enabled: finishSource === "sample",
-    });
+    captureSubmitted({ ...answers, result: "finished" });
     endSetup();
     if (draft.goal) saveSelectedGuideScenarioId(draft.goal);
     saveGuideTeamSize(draft.teamSize);
@@ -459,8 +462,8 @@ function WorkspaceSetupWizard() {
             projectTitle={draft.projectTitle.trim()}
             source={source}
             isSaaS={isSaaSMode}
-            onTeamSizeChange={(teamSize) => update({ teamSize })}
-            onAddressesChange={(emails) => update({ emails })}
+            onTeamSizeChange={(teamSize) => answerTeam({ teamSize })}
+            onAddressesChange={(emails) => answerTeam({ emails })}
             finishing={finishing}
             failure={failure}
             onBack={() => show("project")}

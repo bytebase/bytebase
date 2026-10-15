@@ -320,6 +320,8 @@ const landed = () =>
 const failed = () => screen.findByRole("alert");
 const tryAgain = () =>
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+const finishAgain = () =>
+  fireEvent.click(screen.getByRole("button", { name: /^Finish$|and finish$/ }));
 function unavailable(message = "offline") {
   return new ConnectError(message, Code.Unavailable);
 }
@@ -1607,23 +1609,33 @@ describe("WorkspaceSetupPage", () => {
         scenario: "just-exploring",
         team_size: "just-me",
         invite_count: 0,
-        sample_enabled: false,
         collaboration_type: "solo",
       };
       expect(eventsNamed("workspace setup submitted")).toEqual([
-        { ...answers, result: "failed", failure_stage: "sample", source: "sample" },
-        { ...answers, result: "finished", source: "own" },
+        {
+          ...answers,
+          result: "failed",
+          failure_stage: "sample",
+          source: "sample",
+          sample_enabled: true,
+        },
+        { ...answers, result: "finished", source: "own", sample_enabled: false },
       ]);
     });
 
     test("records a project ID the server refused as a failed project stage", async () => {
       mocks.createProject.mockRejectedValueOnce(alreadyExists());
-      await startAtTeam();
+      await startAtTeam({ database: OWN_INSTANCE });
       finishAlone();
       await screen.findByText(ID_EXISTS);
 
       expect(eventsNamed("workspace setup submitted")).toEqual([
-        expect.objectContaining({ result: "failed", failure_stage: "project" }),
+        expect.objectContaining({
+          result: "failed",
+          failure_stage: "project",
+          source: "own",
+          sample_enabled: false,
+        }),
       ]);
     });
   });
@@ -2074,7 +2086,7 @@ describe("WorkspaceSetupPage", () => {
       expect(server.projectPolicy.bindings).toHaveLength(3);
 
       fireEvent.click(screen.getByText("Just me"));
-      tryAgain();
+      finishAgain();
 
       await landed();
       expect(projectBindings()).toEqual([OWNER_BINDING]);
@@ -2127,6 +2139,54 @@ describe("WorkspaceSetupPage", () => {
       expect(mocks.routerReplace).not.toHaveBeenCalled();
       expect(readWorkspaceSetupFinished("workspaces/ws1")).toBeUndefined();
       expect(readSelectedGuideScenarioId()).toBeUndefined();
+    });
+
+    test.each([
+      {
+        answer: "the team size",
+        change: () => fireEvent.click(screen.getByText("Just me")),
+        button: "Finish",
+      },
+      {
+        answer: "the addresses",
+        change: () =>
+          fireEvent.click(
+            screen.getByRole("button", { name: "Remove bob@example.com" })
+          ),
+        button: "Send 1 invite and finish",
+      },
+    ])("drops a failed attempt's error once $answer change", async ({
+      change,
+      button,
+    }) => {
+      mocks.patchWorkspaceIamPolicy.mockRejectedValueOnce(unavailable());
+      await startAtTeam();
+      finishInviting("ann@example.com", "bob@example.com");
+      await failed();
+
+      change();
+
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: button })).toBeEnabled();
+    });
+
+    test("keeps another step's failure, and Finish without the sample, when the team answers change", async () => {
+      mocks.prepareSampleProjectInstance.mockRejectedValueOnce(unavailable());
+      await startAtTeam();
+      finishInviting("ann@example.com", "bob@example.com");
+      await failed();
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Remove bob@example.com" })
+      );
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Could not prepare the sample database."
+      );
+      expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled();
+      expect(
+        screen.getByRole("button", { name: "Finish without the sample" })
+      ).toBeEnabled();
     });
 
     test("has no members step for an account finishing alone on its first attempt", async () => {
@@ -2199,7 +2259,7 @@ describe("WorkspaceSetupPage", () => {
       fireEvent.click(
         screen.getByRole("button", { name: "Remove bob@example.com" })
       );
-      tryAgain();
+      finishAgain();
 
       await landed();
       expect(projectBindings()).toEqual([
@@ -2220,7 +2280,7 @@ describe("WorkspaceSetupPage", () => {
       await failed();
 
       fireEvent.click(screen.getByText("Just me"));
-      tryAgain();
+      finishAgain();
 
       await landed();
       expect(projectBindings()).toEqual([OWNER_BINDING]);
@@ -2254,7 +2314,7 @@ describe("WorkspaceSetupPage", () => {
       fireEvent.click(
         screen.getByRole("button", { name: "Remove bob@example.com" })
       );
-      tryAgain();
+      finishAgain();
 
       await landed();
       expect(
@@ -2318,7 +2378,7 @@ describe("WorkspaceSetupPage", () => {
       await failed();
 
       fireEvent.click(screen.getByText("Just me"));
-      tryAgain();
+      finishAgain();
 
       await landed();
       expect(serverBindings()).toEqual([
@@ -2337,7 +2397,7 @@ describe("WorkspaceSetupPage", () => {
         screen.getByRole("button", { name: "Remove bob@example.com" })
       );
       mocks.updateProjectIamPolicy.mockRejectedValueOnce(unavailable());
-      tryAgain();
+      finishAgain();
       await failed();
 
       tryAgain();
@@ -2360,7 +2420,7 @@ describe("WorkspaceSetupPage", () => {
       fireEvent.click(
         screen.getByRole("button", { name: "Remove bob@example.com" })
       );
-      tryAgain();
+      finishAgain();
       await failed();
       // From somewhere else, bob is made a developer again.
       grantElsewhere("roles/projectDeveloper", "user:bob@example.com");
@@ -2398,7 +2458,7 @@ describe("WorkspaceSetupPage", () => {
       expect(await failed()).toHaveTextContent("concurrent update");
 
       fireEvent.click(screen.getByText("Just me"));
-      tryAgain();
+      finishAgain();
 
       await landed();
       expect(serverBindings()).toEqual([
@@ -2420,7 +2480,7 @@ describe("WorkspaceSetupPage", () => {
       );
       // The write that takes bob away is made, and its answer lost.
       loseAnswerOf(mocks.updateProjectIamPolicy);
-      tryAgain();
+      finishAgain();
       await failed();
       // The next attempt writes the policy again, as it already is, then fails
       // at the workspace.
@@ -2454,7 +2514,7 @@ describe("WorkspaceSetupPage", () => {
         screen.getByRole("button", { name: "Remove bob@example.com" })
       );
 
-      tryAgain();
+      finishAgain();
       await landed();
       land();
       await settle();
@@ -2471,14 +2531,14 @@ describe("WorkspaceSetupPage", () => {
         screen.getByRole("button", { name: "Remove bob@example.com" })
       );
       const land = delayLostWrite(mocks.updateProjectIamPolicy);
-      tryAgain();
+      finishAgain();
       await waitFor(() =>
         expect(mocks.updateProjectIamPolicy).toHaveBeenCalledTimes(2)
       );
       await failed();
       enterAddress("bob@example.com");
 
-      tryAgain();
+      finishAgain();
       await landed();
       land();
       await settle();
