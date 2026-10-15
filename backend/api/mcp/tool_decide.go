@@ -493,7 +493,8 @@ func (v *confirmationView) digest() ([]byte, error) {
 //
 // Claude Code 2.1.300 shows four lines of a message, or three and "… (+N more
 // lines)", and cuts each line at the terminal width; so the decision and the
-// change come first, and a cut note comes before the text it cuts.
+// change come first, each change line of a plan with several says how many it
+// has, and a cut note comes before the text it cuts.
 //
 // It fails closed: if any part cannot be read, nothing is asked.
 func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecision, view *confirmationView) (string, error) {
@@ -529,20 +530,25 @@ func (s *Server) describePlan(ctx context.Context, plan *planView) ([]string, er
 			lines = append(lines, fmt.Sprintf("(%d of %d changes shown)", maxDescribedSpecs, len(plan.Specs)))
 			break
 		}
+		change, create := "Change", "Create database"
+		if len(plan.Specs) > 1 {
+			change = fmt.Sprintf("Change %d of %d", i+1, len(plan.Specs))
+			create = change + ": create database"
+		}
 		switch {
 		case spec.ChangeDatabaseConfig != nil:
 			config := spec.ChangeDatabaseConfig
-			change := fmt.Sprintf("release %q (statements not shown)", config.Release)
+			what := fmt.Sprintf("release %q (statements not shown)", config.Release)
 			if config.Sheet != "" {
 				statement, err := s.statementPreview(ctx, config.Sheet)
 				if err != nil {
 					return nil, err
 				}
-				change = statement
+				what = statement
 			}
-			lines = append(lines, fmt.Sprintf("Change on %s: %s", quoteAll(config.Targets), change))
+			lines = append(lines, fmt.Sprintf("%s on %s: %s", change, quoteAll(config.Targets), what))
 		case spec.CreateDatabaseConfig != nil:
-			lines = append(lines, fmt.Sprintf("Create database %q on %q", spec.CreateDatabaseConfig.Database, spec.CreateDatabaseConfig.Target))
+			lines = append(lines, fmt.Sprintf("%s %q on %q", create, spec.CreateDatabaseConfig.Database, spec.CreateDatabaseConfig.Target))
 		default:
 		}
 	}

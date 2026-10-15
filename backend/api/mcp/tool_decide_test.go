@@ -760,23 +760,28 @@ func TestDecideIssueSaysWhatTheFormLeavesOut(t *testing.T) {
 		"content":     base64.StdEncoding.EncodeToString([]byte(statement)),
 		"contentSize": strconv.Itoa(len(statement)),
 	}
-	specs := []map[string]any{{"changeDatabaseConfig": map[string]any{
+	sheetSpec := map[string]any{"changeDatabaseConfig": map[string]any{
 		"targets": []string{"instances/prod/databases/hr"},
-		"release": "projects/hr/releases/r1",
-	}}}
-	for i := 0; i < 4; i++ {
-		specs = append(specs, map[string]any{"changeDatabaseConfig": map[string]any{
+		"sheet":   "projects/hr/sheets/9",
+	}}
+	mock.plan = map[string]any{"specs": []map[string]any{
+		{"changeDatabaseConfig": map[string]any{
 			"targets": []string{"instances/prod/databases/hr"},
-			"sheet":   "projects/hr/sheets/9",
-		}})
-	}
-	mock.plan = map[string]any{"specs": specs}
-	message := askedMessage(t, mock)
-	require.Contains(t, message, `Change on "instances/prod/databases/hr": release "projects/hr/releases/r1" (statements not shown)`)
-	require.Contains(t, message, fmt.Sprintf(`Change on "instances/prod/databases/hr": (first 300 characters of %d bytes) "UPDATE users`, len(statement)),
-		"a client that cuts the line at the terminal width drops its end first, so the note comes before the statement")
-	require.Contains(t, message, "(3 of 5 changes shown)")
-	require.NotContains(t, message, "DROP TABLE users;")
+			"release": "projects/hr/releases/r1",
+		}},
+		sheetSpec,
+		{"createDatabaseConfig": map[string]any{"target": "instances/prod", "database": "scratch"}},
+		sheetSpec,
+		sheetSpec,
+	}}
+	lines := strings.Split(askedMessage(t, mock), "\n")
+	require.Equal(t, `Change 1 of 5 on "instances/prod/databases/hr": release "projects/hr/releases/r1" (statements not shown)`, lines[1],
+		"Claude Code shows the first lines only, so the first change already says how many there are")
+	require.True(t, strings.HasPrefix(lines[2], fmt.Sprintf(`Change 2 of 5 on "instances/prod/databases/hr": (first 300 characters of %d bytes) "UPDATE users`, len(statement))),
+		"a client that cuts the line at the terminal width drops its end first, so the note comes before the statement: %q", lines[2])
+	require.NotContains(t, lines[2], "DROP TABLE users;")
+	require.Equal(t, `Change 3 of 5: create database "scratch" on "instances/prod"`, lines[3])
+	require.Equal(t, "(3 of 5 changes shown)", lines[4])
 }
 
 func TestDecideIssueAsksNothingWhenAReadFails(t *testing.T) {
