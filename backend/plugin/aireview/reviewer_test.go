@@ -287,36 +287,61 @@ func TestReviewExitPaths(t *testing.T) {
 			wantToolCalls: []string{"read"},
 		},
 		{
+			name:             "passing text beside an unparsed tool call gets a correction round, not a pass",
+			steps:            []modelStep{finalReply(`{"findings": []}`).stoppedFor(stopMalformedToolCall), finalReply(validReply)},
+			wantFindings:     1,
+			wantCalls:        2,
+			wantLastUserText: "Call the tool again, or reply with only the JSON object",
+		},
+		{
+			name:          "tool calls beside an unparsed tool call do not run",
+			steps:         []modelStep{toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "read"}).stoppedFor(stopMalformedToolCall), finalReply(validReply)},
+			wantFindings:  1,
+			wantCalls:     2,
+			wantToolCalls: nil,
+		},
+		{
 			name:         "second tool call the vendor could not parse fails",
 			steps:        []modelStep{finalReply("").stoppedFor(stopMalformedToolCall)},
-			wantErr:      ErrEmptyReply,
+			wantErr:      ErrInvalidReply,
+			wantErrText:  "the vendor could not parse the model's tool call",
+			wantRequests: 2,
+		},
+		{
+			name:         "second unparsed tool call with passing text fails",
+			steps:        []modelStep{finalReply(`{"findings": []}`).stoppedFor(stopMalformedToolCall)},
+			wantErr:      ErrInvalidReply,
 			wantErrText:  "the vendor could not parse the model's tool call",
 			wantRequests: 2,
 		},
 		{
 			name:         "unparsed tool call after an invalid reply has no correction round left",
 			steps:        []modelStep{finalReply("not json"), finalReply("").stoppedFor(stopMalformedToolCall), finalReply(validReply)},
-			wantErr:      ErrEmptyReply,
+			wantErr:      ErrInvalidReply,
+			wantErrText:  "the vendor could not parse the model's tool call",
+			wantRequests: 2,
+		},
+		{
+			name:         "unparsed tool call with passing text after an invalid reply has no correction round left",
+			steps:        []modelStep{finalReply("not json"), finalReply(`{"findings": []}`).stoppedFor(stopMalformedToolCall), finalReply(validReply)},
+			wantErr:      ErrInvalidReply,
+			wantErrText:  "the vendor could not parse the model's tool call",
 			wantRequests: 2,
 		},
 		{
 			name:         "invalid reply after an unparsed tool call has no correction round left",
 			steps:        []modelStep{finalReply("").stoppedFor(stopMalformedToolCall), finalReply("not json"), finalReply(validReply)},
 			wantErr:      ErrInvalidReply,
+			wantErrText:  "the reply is not a JSON object",
 			wantRequests: 2,
 		},
 		{
 			name:          "unparsed tool call on the last permitted call fails",
-			steps:         []modelStep{finalReply("").stoppedFor(stopMalformedToolCall)},
+			steps:         []modelStep{finalReply(`{"findings": []}`).stoppedFor(stopMalformedToolCall)},
 			maxModelCalls: 1,
-			wantErr:       ErrEmptyReply,
+			wantErr:       ErrInvalidReply,
+			wantErrText:   "the vendor could not parse the model's tool call",
 			wantRequests:  1,
-		},
-		{
-			name:         "text beside an unparsed tool call is read as the reply",
-			steps:        []modelStep{finalReply(validReply).stoppedFor(stopMalformedToolCall)},
-			wantFindings: 1,
-			wantCalls:    1,
 		},
 		{
 			name:        "model error fails",
@@ -415,13 +440,29 @@ func TestReviewStopReasonFailureOfAnEmptyReplyIsNotErrEmptyReply(t *testing.T) {
 	}
 }
 
-func TestReviewUnparsedToolCallCorrectionAddsNoAssistantTurn(t *testing.T) {
+func TestReviewKeepsAnUnparsedToolCallTurnOutOfTheHistory(t *testing.T) {
 	t.Parallel()
 
-	model := &scriptedModel{steps: []modelStep{finalReply("").stoppedFor(stopMalformedToolCall), finalReply(validReply)}}
-	_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
-	require.NoError(t, err)
-	require.Equal(t, []v1pb.AIChatMessageRole{roleSystem, roleUser, roleUser}, roles(model.requests[1].Messages), "vendors reject an assistant turn with neither text nor tool calls")
+	tests := []struct {
+		name string
+		step modelStep
+	}{
+		{name: "empty", step: finalReply("")},
+		{name: "with text", step: finalReply(`{"findings": []}`)},
+		{name: "with tool calls", step: toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "read"})},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			model := &scriptedModel{steps: []modelStep{tc.step.stoppedFor(stopMalformedToolCall), finalReply(validReply)}}
+			_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+			require.NoError(t, err)
+			history := model.requests[1].Messages
+			require.Equal(t, []v1pb.AIChatMessageRole{roleSystem, roleUser, roleUser}, roles(history))
+			require.Equal(t, malformedToolCallMessage, history[2].GetContent())
+		})
+	}
 }
 
 func TestReviewUnknownToolNamesTheRealTools(t *testing.T) {

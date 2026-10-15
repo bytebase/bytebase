@@ -23,9 +23,9 @@ const (
 	// an invalid final reply or a tool call the vendor could not parse, before
 	// the review fails.
 	maxInvalidReplies = 1
-	// malformedToolCallMessage answers a turn that held only a tool call the
-	// vendor could not parse. That turn is not in the history, so the message
-	// has to say what happened.
+	// malformedToolCallMessage answers a turn that held a tool call the vendor
+	// could not parse. That turn is not in the history, so the message has to
+	// say what happened.
 	malformedToolCallMessage = "Your last turn held a tool call that could not be parsed, so no tool ran. Call the tool again, or reply with only the JSON object from the answer format."
 )
 
@@ -133,30 +133,32 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 
 		content := response.GetContent()
 		toolCalls := response.GetToolCalls()
-		stopReason := response.GetStopReason()
 		// A truncated reply can parse as a whole answer with findings or tool
 		// arguments missing, and a blocked change was never judged. Neither gets
 		// a correction round, which could pass a change the model did not finish
 		// judging.
-		switch stopReason {
+		switch response.GetStopReason() {
 		case v1pb.AIChatResponse_TOKEN_LIMIT:
 			return nil, ErrTruncatedReply
 		case v1pb.AIChatResponse_BLOCKED:
 			return nil, ErrBlockedReply
-		default:
-		}
-		if strings.TrimSpace(content) == "" && len(toolCalls) == 0 {
-			// An empty reply can be a block the vendor did not name, so only the
-			// one cause known to be the model's own slip gets a second try.
-			if stopReason != v1pb.AIChatResponse_MALFORMED_TOOL_CALL {
-				return nil, ErrEmptyReply
-			}
+		case v1pb.AIChatResponse_MALFORMED_TOOL_CALL:
+			// The model meant to call a tool, so the turn is not final whatever
+			// text or tool calls came with it. None of it runs or enters the
+			// history. The turn takes a correction round from the budget of an
+			// invalid reply, and fails the review when no round or call is left.
 			if invalidReplies >= maxInvalidReplies || result.Calls >= r.maxModelCalls {
-				return nil, errors.Wrap(ErrEmptyReply, "the vendor could not parse the model's tool call")
+				return nil, errors.Wrap(ErrInvalidReply, "the vendor could not parse the model's tool call")
 			}
 			invalidReplies++
 			messages = append(messages, textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER, malformedToolCallMessage))
 			continue
+		default:
+		}
+		// An empty reply that no stop reason explains can be a block the vendor
+		// did not name, and asking again could let a blocked review pass.
+		if strings.TrimSpace(content) == "" && len(toolCalls) == 0 {
+			return nil, ErrEmptyReply
 		}
 		messages = append(messages, &v1pb.AIChatMessage{
 			Role:      v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT,

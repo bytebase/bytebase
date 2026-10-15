@@ -46,11 +46,10 @@ func TestOpenAIChatCompletionsStopReason(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
-		provider storepb.AISetting_Provider
-		reply    string
-		want     v1pb.AIChatResponse_StopReason
-		// wantContent is checked when it is not empty.
+		name        string
+		provider    storepb.AISetting_Provider
+		reply       string
+		want        v1pb.AIChatResponse_StopReason
 		wantContent string
 	}{
 		{
@@ -150,10 +149,9 @@ func TestOpenAIResponsesStopReason(t *testing.T) {
 	const textOutput = `"output": [{"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "{\"findings\": ["}]}]`
 	const refusalOutput = `"output": [{"type": "message", "role": "assistant", "content": [{"type": "refusal", "refusal": "I can't help with that request."}]}]`
 	tests := []struct {
-		name  string
-		reply string
-		want  v1pb.AIChatResponse_StopReason
-		// wantContent is checked when it is not empty.
+		name        string
+		reply       string
+		want        v1pb.AIChatResponse_StopReason
 		wantContent string
 		wantErrText string
 	}{
@@ -262,10 +260,9 @@ func TestClaudeStopReason(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name  string
-		reply string
-		want  v1pb.AIChatResponse_StopReason
-		// wantContent is checked when it is not empty.
+		name        string
+		reply       string
+		want        v1pb.AIChatResponse_StopReason
 		wantContent string
 	}{
 		{
