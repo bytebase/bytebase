@@ -1,6 +1,9 @@
 {
   "add-or-remove-rules": "Add or remove rules",
   "add-rules": "Add rules",
+  "ai-review": {
+    "self": "AI review"
+  },
   "attach-resource": {
     "change-resources": "Change attached resources",
     "label": "You can apply the SQL review policy to environments or projects. The database will use the project-level policy if it exists, or fallback to the environment-level policy.",

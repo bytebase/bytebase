@@ -1,6 +1,9 @@
 {
   "add-or-remove-rules": "Agregar o eliminar reglas",
   "add-rules": "Agregar reglas",
+  "ai-review": {
+    "self": "Revisión con IA"
+  },
   "attach-resource": {
     "change-resources": "Cambiar recursos adjuntos",
     "label": "Puede aplicar la política de revisión a entornos o proyectos. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",

