@@ -214,7 +214,7 @@ func TestCatalogReadPostgres(t *testing.T) {
 
 	orders := result.Objects[0]
 	require.Equal(t, kindTable, orders.Kind)
-	require.Equal(t, &tableStatistics{Rows: 52000000, DataBytes: 9 << 30, IndexBytes: 1 << 30}, orders.Statistics)
+	require.Equal(t, statistics(52000000, 9<<30, 1<<30), orders.Statistics)
 	for _, part := range []string{
 		`CREATE TABLE "public"."orders"`,
 		`"legacy_status" text`,
@@ -229,9 +229,9 @@ func TestCatalogReadPostgres(t *testing.T) {
 	require.Equal(t, 1, strings.Count(orders.Definition, "CREATE TRIGGER orders_audit"), "the renderer wrote the trigger, so it is not added again")
 
 	customers := result.Objects[1]
-	require.Equal(t, &tableStatistics{Rows: 1200}, customers.Statistics)
+	require.Equal(t, statistics(1200, 0, 0), customers.Statistics)
 	archived := read(t, pgShop(), `{"objects": [{"schema": "archive", "name": "orders"}]}`).Objects[0]
-	require.Nil(t, archived.Statistics, "a table with no statistics synced shows none, zeros would say it is empty")
+	require.Equal(t, statistics(0, 0, 0), archived.Statistics, "PostgreSQL syncs every statistic, so the zeros it read are shown")
 	require.NotContains(t, customers.Definition, "orders_id_seq", "a table shows only the sequences it owns")
 
 	view := result.Objects[2]
@@ -286,7 +286,7 @@ func TestCatalogReadMySQL(t *testing.T) {
 	require.Len(t, result.Objects, 1)
 	orders := result.Objects[0]
 	require.Empty(t, orders.Schema)
-	require.Equal(t, &tableStatistics{Rows: 52000000, DataBytes: 9 << 30, IndexBytes: 1 << 30}, orders.Statistics)
+	require.Equal(t, statistics(52000000, 9<<30, 1<<30), orders.Statistics)
 	for _, part := range []string{
 		"CREATE TABLE `orders`",
 		"`legacy_status` text COMMENT 'replaced by status'",
@@ -1401,4 +1401,54 @@ func TestCatalogReadsTheSequencePositionAtSync(t *testing.T) {
 		_, text := readAll(t, tools, `[{"name": "order_id_seq"}]`)
 		require.Equal(t, 1, strings.Count(text["app.order_id_seq"], "LAST VALUE AT SYNC: 2147483000"), "%s: %s", engine, text["app.order_id_seq"])
 	}
+}
+
+func statistics(rows int64, data int64, index int64) *tableStatistics {
+	return &tableStatistics{Rows: &rows, DataBytes: &data, IndexBytes: &index}
+}
+
+func TestCatalogShowsOnlyTheStatisticsTheSyncReads(t *testing.T) {
+	t.Parallel()
+
+	table := func(rows int64) *metadatapb.TableMetadata {
+		return &metadatapb.TableMetadata{Name: "t", RowCount: rows, Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}}}
+	}
+	statisticsOn := func(engine storepb.Engine, rows int64) *tableStatistics {
+		t.Helper()
+		tools := NewCatalogTools(engine, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{Name: "s", Tables: []*metadatapb.TableMetadata{table(rows)}}}})
+		return read(t, tools, `{"objects": [{"name": "t"}]}`).Objects[0].Statistics
+	}
+	rows := int64(100)
+	// SQL Server syncs the row count alone, so its sizes are not shown as 0.
+	require.Equal(t, &tableStatistics{Rows: &rows}, statisticsOn(storepb.Engine_MSSQL, 100))
+	// An engine whose sync reads no statistics shows a value only when it is not 0.
+	require.Nil(t, statisticsOn(storepb.Engine_CASSANDRA, 0))
+	require.Equal(t, &tableStatistics{Rows: &rows}, statisticsOn(storepb.Engine_CASSANDRA, 100))
+	// Hive syncs the row count and the data size.
+	zero := int64(0)
+	require.Equal(t, &tableStatistics{Rows: &zero, DataBytes: &zero}, statisticsOn(storepb.Engine_HIVE, 0))
+	// Redshift writes 0 for the sizes, and a datashare database reads nothing.
+	require.Equal(t, &tableStatistics{Rows: &zero}, statisticsOn(storepb.Engine_REDSHIFT, 0))
+	datashare := NewCatalogTools(storepb.Engine_REDSHIFT, &metadatapb.DatabaseSchemaMetadata{Datashare: true, Schemas: []*metadatapb.SchemaMetadata{{Name: "s", Tables: []*metadatapb.TableMetadata{table(0)}}}})
+	require.Nil(t, read(t, datashare, `{"objects": [{"name": "t"}]}`).Objects[0].Statistics)
+}
+
+func TestCatalogMarksTheObjectsAnExtensionOwns(t *testing.T) {
+	t.Parallel()
+
+	tools := NewCatalogTools(storepb.Engine_POSTGRES, &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "public",
+		Tables: []*metadatapb.TableMetadata{
+			{Name: "spatial_ref_sys", SkipDump: true, Columns: []*metadatapb.ColumnMetadata{{Name: "srid", Type: "integer"}}},
+			{Name: "orders", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}}},
+		},
+		Views:     []*metadatapb.ViewMetadata{{Name: "geometry_columns", Definition: "SELECT 1", SkipDump: true}},
+		Functions: []*metadatapb.FunctionMetadata{{Name: "postgis_version", Signature: "postgis_version()", Definition: "CREATE FUNCTION public.postgis_version() RETURNS text LANGUAGE c AS '$libdir/postgis'", SkipDump: true}},
+	}}})
+	_, text := readAll(t, tools, `[{"name": "spatial_ref_sys"}, {"name": "orders"}, {"name": "geometry_columns"}, {"name": "postgis_version"}]`)
+	const mark = "MEMBER OF AN EXTENSION"
+	for _, name := range []string{"public.spatial_ref_sys", "public.geometry_columns", "public.postgis_versionpostgis_version()"} {
+		require.Equal(t, 1, strings.Count(text[name], mark), "%s:\n%s", name, text[name])
+	}
+	require.NotContains(t, text["public.orders"], mark)
 }

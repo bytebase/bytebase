@@ -97,10 +97,13 @@ func (o *catalogObject) text() string {
 	return *o.definition
 }
 
+// tableStatistics holds a table's statistics. A statistic that the engine's
+// sync does not read is absent rather than zero, unless the metadata holds a
+// value for it.
 type tableStatistics struct {
-	Rows       int64 `json:"rows"`
-	DataBytes  int64 `json:"data_bytes"`
-	IndexBytes int64 `json:"index_bytes"`
+	Rows       *int64 `json:"rows,omitempty"`
+	DataBytes  *int64 `json:"data_bytes,omitempty"`
+	IndexBytes *int64 `json:"index_bytes,omitempty"`
 }
 
 type objectName struct {
@@ -163,7 +166,7 @@ func (*catalogTools) Definitions() []*v1pb.AIChatToolDefinition {
 		},
 		{
 			Name:             toolRead,
-			Description:      fmt.Sprintf("Return the definition and statistics of the objects of up to %d names. A table comes with its columns, indexes, constraints, and triggers. Its statistics are the row count, which is the engine's estimate, and the sizes in bytes. A table without statistics has none synced, which does not say it is empty. A name returns every object of that name, such as every overload of a function, and without a schema it returns them from every schema. When the result is cut it carries next_from; call read again with the same objects and from set to it.", maxReadObjects),
+			Description:      fmt.Sprintf("Return the definition and statistics of the objects of up to %d names. A table comes with its columns, indexes, constraints, and triggers. Its statistics are the row count, which is the engine's estimate and can read 0 before the engine has counted, and the sizes in bytes. A statistic the sync does not hold is left out, which does not say it is zero. A name returns every object of that name, such as every overload of a function, and without a schema it returns them from every schema. When the result is cut it carries next_from; call read again with the same objects and from set to it.", maxReadObjects),
 			ParametersSchema: `{"type": "object", "properties": {"objects": {"type": "array", "description": "The names to read.", "items": {"type": "object", "properties": {"schema": {"type": "string"}, "name": {"type": "string"}}, "required": ["name"]}}, "from": {"type": "integer", "description": "Where to continue a cut result, taken from next_from."}}, "required": ["objects"]}`,
 		},
 	}

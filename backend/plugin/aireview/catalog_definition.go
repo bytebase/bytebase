@@ -55,6 +55,17 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	add := func(kind string, name string, signature string, statistics *tableStatistics, render func() string) {
 		c.objects = append(c.objects, &catalogObject{kind: kind, schema: schemaName, name: name, signature: signature, statistics: statistics, render: render})
 	}
+	// addMember is add for a kind PostgreSQL marks when an extension owns the
+	// object. No renderer writes the mark, so it follows the definition.
+	addMember := func(kind string, name string, signature string, statistics *tableStatistics, skipDump bool, render func() string) {
+		if skipDump {
+			definition := render
+			render = func() string {
+				return join(definition(), "MEMBER OF AN EXTENSION: the extension creates and upgrades it")
+			}
+		}
+		add(kind, name, signature, statistics, render)
+	}
 	owned := make(map[string][]*metadatapb.SequenceMetadata)
 	for _, sequence := range s.GetSequences() {
 		if table := sequence.GetOwnerTable(); table != "" {
@@ -62,7 +73,7 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 		}
 	}
 	for _, table := range s.GetTables() {
-		add(kindTable, table.GetName(), "", statisticsOf(table), func() string {
+		addMember(kindTable, table.GetName(), "", statisticsOf(c.syncedStatistics(), table), table.GetSkipDump(), func() string {
 			return c.tableDefinition(schemaName, table, owned[table.GetName()])
 		})
 	}
@@ -72,13 +83,13 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 		})
 	}
 	for _, view := range s.GetViews() {
-		add(kindView, view.GetName(), "", nil, func() string { return c.viewDefinition(schemaName, view) })
+		addMember(kindView, view.GetName(), "", nil, view.GetSkipDump(), func() string { return c.viewDefinition(schemaName, view) })
 	}
 	for _, view := range s.GetMaterializedViews() {
-		add(kindMaterializedView, view.GetName(), "", nil, func() string { return c.materializedViewDefinition(schemaName, view) })
+		addMember(kindMaterializedView, view.GetName(), "", nil, view.GetSkipDump(), func() string { return c.materializedViewDefinition(schemaName, view) })
 	}
 	for _, function := range s.GetFunctions() {
-		add(kindFunction, function.GetName(), function.GetSignature(), nil, func() string {
+		addMember(kindFunction, function.GetName(), function.GetSignature(), nil, function.GetSkipDump(), func() string {
 			render := func(function *metadatapb.FunctionMetadata) (string, error) {
 				return schema.GetFunctionDefinition(c.engine, schemaName, function)
 			}
@@ -95,7 +106,7 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 		})
 	}
 	for _, procedure := range s.GetProcedures() {
-		add(kindProcedure, procedure.GetName(), procedure.GetSignature(), nil, func() string {
+		addMember(kindProcedure, procedure.GetName(), procedure.GetSignature(), nil, procedure.GetSkipDump(), func() string {
 			render := func(procedure *metadatapb.ProcedureMetadata) (string, error) {
 				return schema.GetProcedureDefinition(c.engine, schemaName, procedure)
 			}
@@ -110,7 +121,7 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 		})
 	}
 	for _, sequence := range s.GetSequences() {
-		add(kindSequence, sequence.GetName(), "", nil, func() string {
+		addMember(kindSequence, sequence.GetName(), "", nil, sequence.GetSkipDump(), func() string {
 			render := func(sequence *metadatapb.SequenceMetadata) (string, error) {
 				return schema.GetSequenceDefinition(c.engine, schemaName, sequence)
 			}
@@ -165,13 +176,13 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 		})
 	}
 	for _, enum := range s.GetEnumTypes() {
-		add(kindEnumType, enum.GetName(), "", nil, func() string {
+		addMember(kindEnumType, enum.GetName(), "", nil, enum.GetSkipDump(), func() string {
 			definition := fmt.Sprintf("ENUM TYPE %s: %s", qualify(schemaName, enum.GetName()), strings.Join(enum.GetValues(), ", "))
 			return join(definition, plainComment("", enum.GetComment()))
 		})
 	}
 	for _, composite := range s.GetCompositeTypes() {
-		add(kindCompositeType, composite.GetName(), "", nil, func() string {
+		addMember(kindCompositeType, composite.GetName(), "", nil, composite.GetSkipDump(), func() string {
 			attributes := make([]string, 0, len(composite.GetAttributes()))
 			comments := []string{plainComment("", composite.GetComment())}
 			for _, attribute := range composite.GetAttributes() {
@@ -188,14 +199,51 @@ func (c *catalogTools) indexSchema(s *metadatapb.SchemaMetadata) {
 	}
 }
 
-// statisticsOf returns the statistics the sync holds of a table. Not every
-// engine syncs them, and then there are none to show: zeros would say the
-// table is empty.
-func statisticsOf(table *metadatapb.TableMetadata) *tableStatistics {
-	if table.GetRowCount() == 0 && table.GetDataSize() == 0 && table.GetIndexSize() == 0 {
+// statisticsOf returns the statistics the sync holds of a table. A value the
+// engine's sync reads is shown even when it reads 0. Another value is shown
+// only when it is not 0, because 0 is also what an unread value holds.
+func statisticsOf(synced statisticsSynced, table *metadatapb.TableMetadata) *tableStatistics {
+	rows, data, index := synced.rows, synced.data, synced.index
+	value := func(synced bool, v int64) *int64 {
+		if !synced && v == 0 {
+			return nil
+		}
+		return &v
+	}
+	statistics := &tableStatistics{
+		Rows:       value(rows, table.GetRowCount()),
+		DataBytes:  value(data, table.GetDataSize()),
+		IndexBytes: value(index, table.GetIndexSize()),
+	}
+	if statistics.Rows == nil && statistics.DataBytes == nil && statistics.IndexBytes == nil {
 		return nil
 	}
-	return &tableStatistics{Rows: table.GetRowCount(), DataBytes: table.GetDataSize(), IndexBytes: table.GetIndexSize()}
+	return statistics
+}
+
+// statisticsSynced says which table statistics a sync reads.
+type statisticsSynced struct{ rows, data, index bool }
+
+// syncedStatistics reports which table statistics the sync of this database
+// reads. Redshift reads the row count and writes 0 for the sizes, and reads
+// nothing for a datashare database.
+func (c *catalogTools) syncedStatistics() statisticsSynced {
+	switch c.engine {
+	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE,
+		storepb.Engine_TIDB, storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_MONGODB:
+		return statisticsSynced{rows: true, data: true, index: true}
+	case storepb.Engine_SNOWFLAKE, storepb.Engine_CLICKHOUSE, storepb.Engine_BIGQUERY, storepb.Engine_HIVE, storepb.Engine_ELASTICSEARCH:
+		return statisticsSynced{rows: true, data: true}
+	case storepb.Engine_REDSHIFT:
+		if c.schema.GetDatashare() {
+			return statisticsSynced{}
+		}
+		return statisticsSynced{rows: true}
+	case storepb.Engine_MSSQL, storepb.Engine_ORACLE, storepb.Engine_COCKROACHDB, storepb.Engine_DYNAMODB:
+		return statisticsSynced{rows: true}
+	default:
+		return statisticsSynced{}
+	}
 }
 
 // extra is a part of an object that a renderer can leave out, such as its

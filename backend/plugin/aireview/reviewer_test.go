@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/ai"
 )
 
 const (
@@ -335,4 +336,45 @@ func requireToolMessage(t *testing.T, message *v1pb.AIChatMessage, toolCallID st
 	require.Equal(t, toolCallID, message.GetToolCallId())
 	require.Equal(t, content, message.GetContent())
 	require.Empty(t, message.GetToolCalls())
+}
+
+func TestReviewRunsWithoutToolsWhenTheEndpointRefusesThem(t *testing.T) {
+	t.Parallel()
+
+	refused := modelStep{err: &ai.HTTPError{Provider: "Azure OpenAI", StatusCode: 400, Body: "tools are not supported"}}
+	unauthorized := modelStep{err: &ai.HTTPError{Provider: "Azure OpenAI", StatusCode: 401}}
+	search := toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "search", Arguments: `{"text": "orders"}`})
+
+	t.Run("the first call refuses tools", func(t *testing.T) {
+		t.Parallel()
+		model := &scriptedModel{steps: []modelStep{refused, finalReply(validReply)}}
+		result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+		require.NoError(t, err)
+		require.Len(t, result.Findings, 1)
+		require.Equal(t, 2, result.Calls)
+		require.Len(t, model.requests[0].ToolDefinitions, 2)
+		require.Empty(t, model.requests[1].ToolDefinitions)
+		require.Contains(t, model.requests[1].Messages[1].GetContent(), "No tools are available in this review.")
+	})
+	t.Run("a refusal without tools is reported", func(t *testing.T) {
+		t.Parallel()
+		model := &scriptedModel{steps: []modelStep{refused}}
+		_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+		require.ErrorContains(t, err, "model call 2 failed")
+		require.Len(t, model.requests, 2)
+	})
+	t.Run("a refusal after the tools worked is reported", func(t *testing.T) {
+		t.Parallel()
+		model := &scriptedModel{steps: []modelStep{search, refused}}
+		_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+		require.ErrorContains(t, err, "model call 2 failed")
+		require.Len(t, model.requests, 2)
+	})
+	t.Run("another failure is reported at once", func(t *testing.T) {
+		t.Parallel()
+		model := &scriptedModel{steps: []modelStep{unauthorized}}
+		_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+		require.ErrorContains(t, err, "model call 1 failed")
+		require.Len(t, model.requests, 1)
+	})
 }

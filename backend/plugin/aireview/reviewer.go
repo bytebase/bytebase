@@ -6,12 +6,15 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"log/slog"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/ai"
 )
 
 const (
@@ -91,7 +94,8 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 	}
 
 	numberedStatement, lineCount := numberLines(request.Statement)
-	messages := buildMessages(request, numberedStatement, rand.Text(), len(definitions) > 0)
+	nonce := rand.Text()
+	messages := buildMessages(request, numberedStatement, nonce, len(definitions) > 0)
 	result := &Result{}
 	invalidReplies := 0
 
@@ -104,6 +108,17 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 		if err != nil {
 			if ctxErr := r.contextError(parent, ctx, result.Calls); ctxErr != nil {
 				return nil, ctxErr
+			}
+			// Some deployments refuse tool definitions, such as an Azure GPT-5.6
+			// deployment on chat completions. The review then runs without
+			// tools. The warning keeps the refusal for an operator, since
+			// dropping the tools can also hide a refusal they did not cause; a
+			// later failure is reported as usual.
+			if result.Calls == 1 && len(definitions) > 0 && isBadRequest(err) {
+				slog.Warn("AI review model refused the request with tools, reviewing without them", slog.String("error", err.Error()))
+				definitions, toolNames = nil, nil
+				messages = buildMessages(request, numberedStatement, nonce, false)
+				continue
 			}
 			return nil, errors.Wrapf(err, "model call %d failed", result.Calls)
 		}
@@ -195,4 +210,9 @@ func correctionMessage(problems []string) string {
 	}
 	_, _ = b.WriteString("If the review is not complete, call a tool now. Otherwise reply with only the JSON object from the answer format.")
 	return b.String()
+}
+
+func isBadRequest(err error) bool {
+	var httpErr *ai.HTTPError
+	return errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusBadRequest
 }
