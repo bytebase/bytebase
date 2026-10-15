@@ -35,7 +35,7 @@ export interface ReviewAIPolicyDraft {
   // A policy paused through the API is kept but not read by the AI review.
   paused: boolean;
   canEdit: boolean;
-  error: "too-large" | "cannot-clear" | undefined;
+  error: "too-large" | "cannot-clear" | "remove-only" | undefined;
   size: number;
   isDirty: boolean;
   saving: boolean;
@@ -109,12 +109,16 @@ export function useReviewAIPolicyDraft({
     (isBlank(draft) ? stored !== undefined : draft !== storedContent);
   const clearing = isDirty && isBlank(content);
   const size = utf8Bytes(content);
+  // Clearing an existing policy deletes it and any other edit updates it, so
+  // a role with only one of the two may make only that change.
   const error =
-    isDirty && size > MAX_REVIEW_AI_POLICY_BYTES
-      ? "too-large"
-      : clearing && !can("bb.policies.delete")
-        ? "cannot-clear"
-        : undefined;
+    isDirty && stored && !clearing && !can("bb.policies.update")
+      ? "remove-only"
+      : isDirty && size > MAX_REVIEW_AI_POLICY_BYTES
+        ? "too-large"
+        : clearing && !can("bb.policies.delete")
+          ? "cannot-clear"
+          : undefined;
 
   const save = async () => {
     if (!isDirty) return true;
@@ -156,7 +160,9 @@ export function useReviewAIPolicyDraft({
     content,
     setContent: setDraft,
     paused: stored !== undefined && !stored.enforce,
-    canEdit: can(stored ? "bb.policies.update" : "bb.policies.create"),
+    canEdit: stored
+      ? can("bb.policies.update") || can("bb.policies.delete")
+      : can("bb.policies.create"),
     error,
     size,
     isDirty,
@@ -241,6 +247,11 @@ export function ReviewAIPolicyField({
       {policy.error === "cannot-clear" && (
         <FormError id={errorId}>
           {t("sql-review.ai-review.policy.cannot-clear")}
+        </FormError>
+      )}
+      {policy.error === "remove-only" && (
+        <FormError id={errorId}>
+          {t("sql-review.ai-review.policy.remove-only")}
         </FormError>
       )}
     </FormField>

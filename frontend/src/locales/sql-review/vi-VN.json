@@ -16,6 +16,7 @@
       "paused": "Chính sách này đang tạm dừng nên tính năng đánh giá bằng AI không đọc nó.",
       "placeholder": "Ví dụ:\nĐánh dấu mọi câu lệnh xóa hoặc viết lại một cột trong bảng orders hoặc payments.\nCoi ALTER TABLE trên bảng có hơn 10 triệu hàng là rủi ro cao.\nBảng mới phải có cột created_at và updated_at.",
       "project-description": "Các quy tắc bằng ngôn ngữ tự nhiên mà tính năng đánh giá bằng AI dùng để kiểm tra các thay đổi cơ sở dữ liệu của dự án này. Chúng bổ sung cho chính sách của không gian làm việc và được ưu tiên khi hai bên mâu thuẫn.",
+      "remove-only": "Bạn có thể xóa chính sách này nhưng không thể thay đổi nó. Hãy xóa hết nội dung để xóa chính sách.",
       "self": "Chính sách đánh giá",
       "too-large": "Chính sách có dung lượng {{size}} byte, vượt quá giới hạn {{limit}} byte. Hãy rút gọn để lưu."
     },

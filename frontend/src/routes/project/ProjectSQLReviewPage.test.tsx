@@ -690,8 +690,11 @@ describe("ProjectSQLReviewPage", () => {
     expect(updateButton()).toBeDisabled();
   });
 
-  test("the project AI review policy shows as text without bb.policies.update", async () => {
-    mocks.permissions = { "bb.policies.update": false };
+  test("the project AI review policy shows as text without bb.policies.update or bb.policies.delete", async () => {
+    mocks.permissions = {
+      "bb.policies.update": false,
+      "bb.policies.delete": false,
+    };
     seedPolicies({
       [WORKSPACE]: workspacePolicy(),
       ai: reviewAIPolicy(PROJECT, "No DROP in this project."),
@@ -702,6 +705,41 @@ describe("ProjectSQLReviewPage", () => {
       await screen.findByText("No DROP in this project.")
     ).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  test("a project role with bb.policies.delete but not bb.policies.update removes the AI review policy from the footer", async () => {
+    mocks.permissions = { "bb.policies.update": false };
+    seedPolicies({
+      [WORKSPACE]: workspacePolicy(),
+      ai: reviewAIPolicy(PROJECT, "No DROP in this project."),
+    });
+    render(<ProjectSQLReviewPage projectId="p" />);
+
+    fireEvent.change(await policyEditor(), { target: { value: "" } });
+    await update();
+
+    expect(mocks.deletePolicy).toHaveBeenCalledWith(aiName(PROJECT));
+    expect(mocks.upsertPolicy).not.toHaveBeenCalled();
+    expect(updateButton()).not.toBeInTheDocument();
+    expect(mocks.pushNotification).toHaveBeenCalledOnce();
+  });
+
+  test("a project role with bb.policies.delete but not bb.policies.update cannot update changed text", async () => {
+    mocks.permissions = { "bb.policies.update": false };
+    seedPolicies({
+      [WORKSPACE]: workspacePolicy(),
+      ai: reviewAIPolicy(PROJECT, "No DROP in this project."),
+    });
+    render(<ProjectSQLReviewPage projectId="p" />);
+
+    fireEvent.change(await policyEditor(), {
+      target: { value: "No DROP or TRUNCATE in this project." },
+    });
+
+    expect(
+      screen.getByText("sql-review.ai-review.policy.remove-only")
+    ).toBeInTheDocument();
+    expect(updateButton()).toBeDisabled();
   });
 
   test("a project without an AI review policy needs bb.policies.create to add one", async () => {

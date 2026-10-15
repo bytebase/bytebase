@@ -16,6 +16,7 @@
       "paused": "Esta política está en pausa, por lo que la revisión con IA no la lee.",
       "placeholder": "Por ejemplo:\nSeñala cualquier sentencia que elimine o reescriba una columna de las tablas orders o payments.\nTrata un ALTER TABLE sobre una tabla de más de 10 millones de filas como de alto riesgo.\nExige las columnas created_at y updated_at en las tablas nuevas.",
       "project-description": "Reglas en lenguaje natural con las que la revisión con IA comprueba los cambios de base de datos de este proyecto. Se suman a la política del espacio de trabajo y prevalecen cuando ambas entran en conflicto.",
+      "remove-only": "Puedes eliminar esta política, pero no cambiarla. Vacía el texto para eliminarla.",
       "self": "Política de revisión",
       "too-large": "La política ocupa {{size}} bytes, más que el límite de {{limit}} bytes. Acórtala para guardarla."
     },

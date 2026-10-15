@@ -16,6 +16,7 @@
       "paused": "This policy is paused, so the AI review does not read it.",
       "placeholder": "For example:\nFlag any statement that drops or rewrites a column in the orders or payments tables.\nTreat an ALTER TABLE on a table with more than 10 million rows as high risk.\nRequire created_at and updated_at columns on new tables.",
       "project-description": "Plain-language rules the AI review checks this project's database changes against. They add to the workspace policy and win where the two conflict.",
+      "remove-only": "You can remove this policy but not change it. Clear the text to remove it.",
       "self": "Review policy",
       "too-large": "The policy is {{size}} bytes, over the {{limit}}-byte limit. Shorten it to save."
     },

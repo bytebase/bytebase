@@ -345,13 +345,65 @@ describe("ReviewAIPolicyField", () => {
     expect(screen.queryByText("common.loading")).not.toBeInTheDocument();
   });
 
-  test("shows the policy as text without bb.policies.update", async () => {
-    mocks.permissions = { "bb.policies.update": false };
+  test("shows the policy as text without bb.policies.update or bb.policies.delete", async () => {
+    mocks.permissions = {
+      "bb.policies.update": false,
+      "bb.policies.delete": false,
+    };
     seedPolicies({ [POLICY_NAME]: reviewAIPolicy(PARENT, "No DROP on prod.") });
     render(<Harness />);
 
     expect(await screen.findByText("No DROP on prod.")).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  test("a role with bb.policies.delete but not bb.policies.update can clear the policy", async () => {
+    mocks.permissions = { "bb.policies.update": false };
+    seedPolicies({ [POLICY_NAME]: reviewAIPolicy(PARENT, "Stored.") });
+    render(<Harness />);
+
+    await type("");
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await save();
+    expect(mocks.deletePolicy).toHaveBeenCalledWith(POLICY_NAME);
+    expect(mocks.upsertPolicy).not.toHaveBeenCalled();
+    expect(screen.getByText("saved: true")).toBeInTheDocument();
+  });
+
+  test("a role with bb.policies.delete but not bb.policies.update cannot change the text", async () => {
+    mocks.permissions = { "bb.policies.update": false };
+    seedPolicies({ [POLICY_NAME]: reviewAIPolicy(PARENT, "Stored.") });
+    render(<Harness />);
+
+    await type("Edited.");
+
+    expect(await editor()).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "sql-review.ai-review.policy.remove-only"
+    );
+    await save();
+    expect(mocks.upsertPolicy).not.toHaveBeenCalled();
+    expect(mocks.deletePolicy).not.toHaveBeenCalled();
+    expect(screen.getByText("saved: false")).toBeInTheDocument();
+  });
+
+  test.each([
+    ["bb.policies.update alone", { "bb.policies.delete": false }],
+    ["bb.policies.update and bb.policies.delete", {}],
+  ])("a role with %s changes the text", async (_name, permissions) => {
+    mocks.permissions = permissions;
+    seedPolicies({ [POLICY_NAME]: reviewAIPolicy(PARENT, "Stored.") });
+    render(<Harness />);
+
+    await type("Edited.");
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await save();
+    expect(mocks.upsertPolicy).toHaveBeenCalledOnce();
+    expect(mocks.upsertPolicy.mock.calls[0][0].policy.policy.value.content).toBe(
+      "Edited."
+    );
   });
 
   test("shows that there is no policy without bb.policies.create", async () => {

@@ -237,8 +237,9 @@ describe("SQLReviewAIReviewSection", () => {
     expect(screen.getByText("policy saved: false")).toBeInTheDocument();
   });
 
-  test("shows the workspace policy as text without bb.policies.update", async () => {
+  test("shows the workspace policy as text without bb.policies.update or bb.policies.delete", async () => {
     mocks.permissions["bb.policies.update"] = false;
+    mocks.permissions["bb.policies.delete"] = false;
     seedPolicies({
       [`${WORKSPACE}/policies/review_ai`]: workspacePolicy("No DROP."),
     });

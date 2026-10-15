@@ -16,6 +16,7 @@
       "paused": "此策略已暂停，AI 审核不会读取它。",
       "placeholder": "例如：\n标记任何删除或重写 orders 表或 payments 表中列的语句。\n将对超过 1000 万行的表执行的 ALTER TABLE 视为高风险。\n新建的表必须包含 created_at 列和 updated_at 列。",
       "project-description": "用自然语言写下 AI 审核检查此项目数据库变更时依据的规则。它是对工作空间策略的补充，两者冲突时以此策略为准。",
+      "remove-only": "你可以删除此策略，但不能修改它。清空文本即可删除。",
       "self": "审核策略",
       "too-large": "策略大小为 {{size}} 字节，超过了 {{limit}} 字节的上限。请缩短后再保存。"
     },
