@@ -1871,11 +1871,17 @@
           "unavailable-change": "Deleted change",
           "view-in-statement": "View in Statement"
         },
+        "applies-to": "Applies to",
         "comment-on-lines": "Comment on lines",
         "n-replies-hidden_one": "{{count}} reply hidden",
         "n-replies-hidden_other": "{{count}} replies hidden",
         "n-replies_one": "{{count}} reply",
         "n-replies_other": "{{count}} replies",
+        "priority": {
+          "p0": "The SQL is wrong and must change.",
+          "p1": "Dangerous but legitimate. A person must accept it.",
+          "p2": "Advisory only."
+        },
         "publish": "Publish",
         "reopen-thread": "Reopen thread",
         "reply": "Reply",

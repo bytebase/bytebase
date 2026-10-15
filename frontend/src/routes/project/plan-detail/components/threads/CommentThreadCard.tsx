@@ -25,12 +25,13 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCurrentUser, useUserByIdentifier } from "@/hooks/useAppState";
+import { useCurrentUser } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import "./CommentThreadCard.css";
+import { ReviewPriorityBadge, useCommentAuthor } from "./ReviewResult";
 import { ThreadComment } from "./ThreadComment";
 import type { CommentThread } from "./threadModel";
 import {
@@ -404,9 +405,8 @@ function ThreadSummary({
   onExpand: () => void;
 }) {
   const { t } = useTranslation();
-  const creator =
-    useUserByIdentifier(thread.root.creator) ??
-    unknownUser(thread.root.creator);
+  const author = useCommentAuthor(thread.root);
+  const review = thread.root.reviewMetadata;
   const summary = thread.root.comment.split("\n")[0] ?? "";
   return (
     <Button
@@ -415,14 +415,11 @@ function ThreadSummary({
       onClick={onExpand}
       size="md"
     >
-      <UserAvatar
-        colorSeed={creator.email}
-        size="xs"
-        title={creator.title || creator.email}
-      />
+      {author.avatar}
       <span className="max-w-24 truncate font-medium text-main">
-        {creator.title || creator.email}
+        {author.name}
       </span>
+      {review && <ReviewPriorityBadge priority={review.priority} />}
       <span className="min-w-0 flex-1 truncate text-control" title={summary}>
         {summary}
       </span>

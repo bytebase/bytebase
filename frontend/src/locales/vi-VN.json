@@ -1871,11 +1871,17 @@
           "unavailable-change": "Thay đổi đã xóa",
           "view-in-statement": "Xem trong câu lệnh"
         },
+        "applies-to": "Áp dụng cho",
         "comment-on-lines": "Bình luận các dòng đã chọn",
         "n-replies-hidden_one": "{{count}} phản hồi bị ẩn",
         "n-replies-hidden_other": "{{count}} phản hồi bị ẩn",
         "n-replies_one": "{{count}} phản hồi",
         "n-replies_other": "{{count}} phản hồi",
+        "priority": {
+          "p0": "SQL sai và phải được sửa.",
+          "p1": "Nguy hiểm nhưng hợp lệ. Cần có người chấp nhận.",
+          "p2": "Chỉ mang tính tham khảo."
+        },
         "publish": "Đăng",
         "reopen-thread": "Mở lại luồng",
         "reply": "Trả lời",

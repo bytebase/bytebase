@@ -1871,11 +1871,17 @@
           "unavailable-change": "已删除的变更",
           "view-in-statement": "在语句中查看"
         },
+        "applies-to": "适用于",
         "comment-on-lines": "评论所选行",
         "n-replies-hidden_one": "已隐藏 {{count}} 条回复",
         "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
         "n-replies_one": "{{count}} 条回复",
         "n-replies_other": "{{count}} 条回复",
+        "priority": {
+          "p0": "SQL 有误，必须修改。",
+          "p1": "有风险但合理，需要有人确认接受。",
+          "p2": "仅供参考。"
+        },
         "publish": "发布",
         "reopen-thread": "重新打开线程",
         "reply": "回复",

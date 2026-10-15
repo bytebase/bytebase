@@ -3,7 +3,13 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { createRef, useState } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { IssueCommentSchema, IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueComment_ReviewMetadata_Priority,
+  IssueComment_ReviewMetadataSchema,
+  IssueCommentSchema,
+  IssueSchema,
+  ReviewRun_Type,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { EditorThread } from "./threadModel";
 import { ThreadStack } from "./ThreadStack";
 
@@ -131,6 +137,22 @@ describe("ThreadStack", () => {
   });
 });
 
+
+test("shows a collapsed review result as its reviewer with its priority", () => {
+  const review = entry("finding", false, 1);
+  review.thread.root.creator = "";
+  review.thread.root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+    runType: ReviewRun_Type.RULE,
+    priority: IssueComment_ReviewMetadata_Priority.P0,
+  });
+  const { container } = render(<ThreadStack {...props} threads={[review, entry("person", false, 2)]} />);
+  const rows = container.querySelectorAll("[data-testid='thread-row']");
+  expect(rows[0].textContent).toContain("sql-review.standard-rules.self");
+  expect(rows[0].querySelector("[data-testid='review-priority']")?.textContent).toBe("P0");
+  expect(rows[0].textContent).not.toContain("Aurora");
+  expect(rows[1].textContent).toContain("Aurora");
+  expect(rows[1].querySelector("[data-testid='review-priority']")).toBeNull();
+});
 
 test("exposes the expanded card for editor reveal", () => {
   const ref = createRef<HTMLDivElement>();

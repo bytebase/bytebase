@@ -14,6 +14,48 @@ const markdown = new MarkdownIt({
   linkify: true,
 });
 
+// Displaying untrusted text must not request a remote URL: an image URL
+// derived from SQL or schema text would carry that text to another server
+// when someone merely opens the page. So it renders no raw HTML and no
+// images; `![alt](url)` falls back to a link the reader may choose to follow.
+const untrustedMarkdown = new MarkdownIt({
+  html: false,
+  linkify: true,
+}).disable("image");
+
+// Every tag and attribute untrustedMarkdown emits, minus code-language
+// classes and table alignment styles, so the sanitizer holds the same line.
+const UNTRUSTED_SANITIZE_CONFIG = {
+  ALLOWED_TAGS: [
+    "a",
+    "blockquote",
+    "br",
+    "code",
+    "em",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "hr",
+    "li",
+    "ol",
+    "p",
+    "pre",
+    "s",
+    "strong",
+    "table",
+    "tbody",
+    "td",
+    "th",
+    "thead",
+    "tr",
+    "ul",
+  ],
+  ALLOWED_ATTR: ["href", "start", "title"],
+};
+
 const editorBoxClassName =
   "w-full rounded-xs border border-control-border bg-transparent px-3 py-2 text-sm";
 
@@ -26,6 +68,11 @@ type CommonProps = {
   maxLength?: number;
   transform?: (raw: string) => string;
   maxHeight?: number;
+  /**
+   * The text is not a workspace member's own writing, such as a review
+   * result. It renders without raw HTML or images.
+   */
+  untrusted?: boolean;
 };
 
 type EditorProps = CommonProps & {
@@ -53,6 +100,7 @@ export function MarkdownEditor({
   mode = "editor",
   transform,
   maxHeight,
+  untrusted = false,
 }: Props) {
   const { t } = useTranslation();
   const boxClassName = cn(
@@ -68,9 +116,9 @@ export function MarkdownEditor({
       return "";
     }
     const source = transform ? transform(content) : content;
-    const rendered = markdown.render(source);
-    return sanitizePreviewHtml(rendered);
-  }, [content, transform]);
+    const rendered = (untrusted ? untrustedMarkdown : markdown).render(source);
+    return sanitizePreviewHtml(rendered, untrusted);
+  }, [content, transform, untrusted]);
 
   useEffect(() => {
     setTab(mode === "preview" ? "preview" : "write");
@@ -237,8 +285,10 @@ export function MarkdownEditor({
   );
 }
 
-function sanitizePreviewHtml(html: string) {
-  const sanitized = DOMPurify.sanitize(html);
+function sanitizePreviewHtml(html: string, untrusted: boolean) {
+  const sanitized = untrusted
+    ? DOMPurify.sanitize(html, UNTRUSTED_SANITIZE_CONFIG)
+    : DOMPurify.sanitize(html);
   const template = document.createElement("template");
   template.innerHTML = sanitized;
   for (const link of template.content.querySelectorAll("a")) {
