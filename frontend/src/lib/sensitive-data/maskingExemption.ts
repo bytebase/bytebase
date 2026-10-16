@@ -1,7 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import { useMemo } from "react";
-import type { ConditionGroupExpr, Factor, Operator } from "@/modules/cel";
-import { buildCELExpr } from "@/modules/cel";
+import type {
+  ConditionExpr,
+  ConditionGroupExpr,
+  Factor,
+  Operator,
+  SimpleExpr,
+} from "@/modules/cel";
+import { buildCELExpr, ExprType } from "@/modules/cel";
 import { useAppStore } from "@/stores/app";
 import type { DatabaseResource } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
@@ -11,18 +17,20 @@ import {
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   batchConvertParsedExprToCELString,
+  extractDatabaseResourceName,
   getDatabaseNameOptionConfig,
 } from "@/utils";
 import {
   CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
   CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
   CEL_ATTRIBUTE_RESOURCE_DATABASE,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
 } from "@/utils/cel-attributes";
 import type { OptionConfig } from "@/utils/expr";
 import { getClassificationLevelOptions } from "./components-utils";
-import { rewriteResourceDatabase } from "./exemptionDataUtils";
 import { getExpressionsForDatabaseResource } from "./utils";
 
 export type MaskingExemptionResourceMode = "ALL" | "EXPRESSION" | "SELECT";
@@ -52,13 +60,14 @@ export const buildMaskingExemption = async ({
   }
 
   if (radioValue === "EXPRESSION") {
-    const parsedExpr = await buildCELExpr(expr);
+    const parsedExpr = await buildCELExpr(
+      rewriteMaskingExemptionDatabaseConditions(expr)
+    );
     if (!parsedExpr) {
       throw new Error("Invalid masking exemption expression");
     }
 
-    let [celString] = await batchConvertParsedExprToCELString([parsedExpr]);
-    celString = rewriteResourceDatabase(celString);
+    const [celString] = await batchConvertParsedExprToCELString([parsedExpr]);
     if (celString) {
       extraExpressions.push(`(${celString})`);
     }
@@ -91,6 +100,88 @@ export const buildMaskingExemption = async ({
     }),
   });
 };
+
+const createDatabaseScopeExpr = (
+  databaseFullName: string
+): ConditionGroupExpr | undefined => {
+  const { database, instanceName, databaseName } =
+    extractDatabaseResourceName(databaseFullName);
+  if (database !== databaseFullName) {
+    return undefined;
+  }
+
+  return {
+    type: ExprType.ConditionGroup,
+    operator: "_&&_",
+    args: [
+      {
+        type: ExprType.Condition,
+        operator: "_==_",
+        args: [CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID, instanceName],
+      },
+      {
+        type: ExprType.Condition,
+        operator: "_==_",
+        args: [CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME, databaseName],
+      },
+    ],
+  };
+};
+
+const rewriteDatabaseCondition = (condition: ConditionExpr): SimpleExpr => {
+  if (condition.args[0] !== CEL_ATTRIBUTE_RESOURCE_DATABASE) {
+    return condition;
+  }
+
+  const value = condition.args[1];
+  let databaseFullNames: string[] | undefined;
+  if (condition.operator === "_==_" && typeof value === "string") {
+    databaseFullNames = [value];
+  } else if (
+    condition.operator === "@in" &&
+    Array.isArray(value) &&
+    value.every((database) => typeof database === "string")
+  ) {
+    databaseFullNames = value;
+  }
+  if (!databaseFullNames) {
+    return condition;
+  }
+
+  const databaseScopes = databaseFullNames.map(createDatabaseScopeExpr);
+  if (
+    !databaseScopes.every(
+      (scope): scope is ConditionGroupExpr => scope !== undefined
+    )
+  ) {
+    return condition;
+  }
+
+  return {
+    type: ExprType.ConditionGroup,
+    operator: "_||_",
+    args: databaseScopes,
+  };
+};
+
+const rewriteDatabaseExpr = (expr: SimpleExpr): SimpleExpr => {
+  if (expr.type === ExprType.ConditionGroup) {
+    return {
+      ...expr,
+      args: expr.args.map(rewriteDatabaseExpr),
+    };
+  }
+  if (expr.type === ExprType.Condition) {
+    return rewriteDatabaseCondition(expr);
+  }
+  return expr;
+};
+
+// The editor's database picker uses a canonical database resource name, while
+// masking-exemption CEL accepts the instance and database-name attributes.
+export const rewriteMaskingExemptionDatabaseConditions = (
+  expr: ConditionGroupExpr
+): ConditionGroupExpr => rewriteDatabaseExpr(expr) as ConditionGroupExpr;
 
 export const useMaskingExemptionExprConfig = (
   projectName: string

@@ -1,8 +1,22 @@
 // @vitest-environment node
 import { describe, expect, test } from "vitest";
-import { emptySimpleExpr, wrapAsGroup } from "@/modules/cel";
+import {
+  type ConditionGroupExpr,
+  ExprType,
+  emptySimpleExpr,
+  wrapAsGroup,
+} from "@/modules/cel";
 import type { DatabaseResource } from "@/types";
-import { buildMaskingExemption } from "./maskingExemption";
+import {
+  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+} from "@/utils/cel-attributes";
+import {
+  buildMaskingExemption,
+  rewriteMaskingExemptionDatabaseConditions,
+} from "./maskingExemption";
 
 const expr = wrapAsGroup(emptySimpleExpr());
 
@@ -76,5 +90,77 @@ describe("buildMaskingExemption", () => {
     expect(exemption.condition?.expression).toBe(
       '((resource.instance_id == "prod" && resource.database_name == "hr") || (resource.instance_id == "test" && resource.database_name == "finance"))'
     );
+  });
+
+  test("rewrites a database picker membership condition for the backend", () => {
+    const expression: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "@in",
+          args: [
+            CEL_ATTRIBUTE_RESOURCE_DATABASE,
+            ["instances/prod/databases/hr", "instances/test/databases/finance"],
+          ],
+        },
+        {
+          type: ExprType.Condition,
+          operator: "@in",
+          args: [CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME, ["email", "phone"]],
+        },
+      ],
+    };
+
+    expect(rewriteMaskingExemptionDatabaseConditions(expression)).toEqual({
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.ConditionGroup,
+          operator: "_||_",
+          args: [
+            {
+              type: ExprType.ConditionGroup,
+              operator: "_&&_",
+              args: [
+                {
+                  type: ExprType.Condition,
+                  operator: "_==_",
+                  args: [CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID, "prod"],
+                },
+                {
+                  type: ExprType.Condition,
+                  operator: "_==_",
+                  args: [CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME, "hr"],
+                },
+              ],
+            },
+            {
+              type: ExprType.ConditionGroup,
+              operator: "_&&_",
+              args: [
+                {
+                  type: ExprType.Condition,
+                  operator: "_==_",
+                  args: [CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID, "test"],
+                },
+                {
+                  type: ExprType.Condition,
+                  operator: "_==_",
+                  args: [CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME, "finance"],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: ExprType.Condition,
+          operator: "@in",
+          args: [CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME, ["email", "phone"]],
+        },
+      ],
+    });
   });
 });

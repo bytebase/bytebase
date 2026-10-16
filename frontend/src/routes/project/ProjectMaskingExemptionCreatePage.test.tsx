@@ -43,6 +43,10 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/modules/cel", () => ({
+  ExprType: {
+    Condition: "Condition",
+    ConditionGroup: "ConditionGroup",
+  },
   buildCELExpr: mocks.buildCELExpr,
   emptySimpleExpr: vi.fn(() => ({ type: "ConditionGroup", args: [] })),
   validateSimpleExpr: vi.fn(() => true),
@@ -203,12 +207,15 @@ vi.mock("@/stores/app", () => ({
 
 vi.mock("@/utils", () => ({
   batchConvertParsedExprToCELString: mocks.batchConvertParsedExprToCELString,
+  extractDatabaseResourceName: vi.fn(),
   getDatabaseNameOptionConfig: vi.fn(() => ({ options: [] })),
 }));
 
 vi.mock("@/utils/cel-attributes", () => ({
   CEL_ATTRIBUTE_RESOURCE_DATABASE: "resource.database",
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME: "resource.database_name",
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME: "resource.table_name",
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID: "resource.instance_id",
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME: "resource.schema_name",
   CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME: "resource.column_name",
   CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL: "resource.classification_level",

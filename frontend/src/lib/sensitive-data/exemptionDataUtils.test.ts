@@ -39,7 +39,6 @@ import {
   parseClassificationLevel,
   parseExpirationTimestamp,
   resourceCoversDatabase,
-  rewriteResourceDatabase,
 } from "./exemptionDataUtils";
 import type { AccessUser, ExemptionGrant } from "./types";
 
@@ -1054,41 +1053,6 @@ describe("resourceCoversDatabase", () => {
         "instances/dev/databases/hr"
       )
     ).toBe(false);
-  });
-});
-
-describe("rewriteResourceDatabase", () => {
-  test("rewrites single resource.database condition", () => {
-    const input =
-      'resource.database == "instances/prod-instance/databases/hr_prod"';
-    expect(rewriteResourceDatabase(input)).toBe(
-      'resource.instance_id == "prod-instance" && resource.database_name == "hr_prod"'
-    );
-  });
-
-  test("rewrites multiple resource.database conditions", () => {
-    const input =
-      '(resource.database == "instances/a/databases/db1") || (resource.database == "instances/b/databases/db2")';
-    expect(rewriteResourceDatabase(input)).toBe(
-      '(resource.instance_id == "a" && resource.database_name == "db1") || (resource.instance_id == "b" && resource.database_name == "db2")'
-    );
-  });
-
-  test("preserves expressions without resource.database", () => {
-    const input = "resource.classification_level <= 3";
-    expect(rewriteResourceDatabase(input)).toBe(input);
-  });
-
-  test("handles mixed conditions", () => {
-    const input =
-      'resource.database == "instances/prod/databases/users" && resource.classification_level <= 2';
-    expect(rewriteResourceDatabase(input)).toBe(
-      'resource.instance_id == "prod" && resource.database_name == "users" && resource.classification_level <= 2'
-    );
-  });
-
-  test("handles empty string", () => {
-    expect(rewriteResourceDatabase("")).toBe("");
   });
 });
 
