@@ -32,6 +32,8 @@ func NewRolloutCommand(w *world.World) *cobra.Command {
 	cmdRollout.Flags().StringVar(&w.Plan, "plan", "", "The plan to rollout. Format: projects/{project}/plans/{plan}. Shadows file-pattern and targets.")
 	cmdRollout.Flags().StringVar(&w.ReleaseIDTemplate, "release-id-template", "release_{date}-RC{iteration}", "Template for release ID. Available variables: {date}, {time}, {timestamp}, {iteration}")
 	cmdRollout.Flags().StringVar(&w.ReleaseIDTimezone, "release-id-timezone", "UTC", "Timezone for {date} and {time} variables (e.g., 'UTC', 'America/Los_Angeles')")
+	cmdRollout.Flags().StringVar(&w.PlanTitle, "plan-title", "", "Title of the created plan. Defaults to the release ID.")
+	cmdRollout.Flags().StringVar(&w.PlanDescription, "plan-description", "", "Description of the created plan.")
 	return cmdRollout
 }
 
@@ -98,9 +100,14 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 
 			// Extract release ID from release name (format: projects/{project}/releases/{release_id})
 			releaseID := strings.TrimPrefix(release, w.Project+"/releases/")
+			title := w.PlanTitle
+			if title == "" {
+				title = releaseID
+			}
 
 			planCreated, err := client.createPlan(ctx, w.Project, &v1pb.Plan{
-				Title: releaseID,
+				Title:       title,
+				Description: w.PlanDescription,
 				Specs: []*v1pb.Plan_Spec{
 					{
 						Id: uuid.New().String(),
