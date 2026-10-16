@@ -21,6 +21,27 @@ const (
 	reviewRunIDAI   = "ai"
 )
 
+// GetReviewRun returns the run in a review slot as stored.
+func (s *IssueService) GetReviewRun(ctx context.Context, req *connect.Request[v1pb.GetReviewRunRequest]) (*connect.Response[v1pb.ReviewRun], error) {
+	projectID, issueUID, reviewRunID, err := common.GetProjectIDIssueUIDReviewRunID(req.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	reviewType, ok := reviewRunTypeFromID(reviewRunID)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown reviewer type %q", reviewRunID))
+	}
+
+	reviewRun, err := s.store.GetReviewRun(ctx, projectID, issueUID, reviewType)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get review run"))
+	}
+	if reviewRun == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("review run %q not found", req.Msg.Name))
+	}
+	return connect.NewResponse(convertToReviewRun(reviewRun)), nil
+}
+
 // RunReview triggers a review run. The slot is reset unconditionally: a
 // RUNNING execution is superseded, the attempt number is bumped, and the
 // returned run is AVAILABLE.

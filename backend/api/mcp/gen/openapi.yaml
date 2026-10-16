@@ -3139,6 +3139,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Issue'
+  /bytebase.v1.IssueService/GetReviewRun:
+    post:
+      tags:
+        - bytebase.v1.IssueService
+      summary: GetReviewRun
+      description: |-
+        Gets the current run of one reviewer on an issue. The run carries
+         execution status only; review results are issue comments. A reviewer
+         that has never run on the issue is NOT_FOUND.
+         Permissions required: bb.reviewRuns.get
+      operationId: bytebase.v1.IssueService.GetReviewRun
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          description: Define the version of the Connect protocol
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+          example: 1
+        - name: Connect-Timeout-Ms
+          in: header
+          description: Define the timeout, in ms
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+          example: 1000
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.GetReviewRunRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ReviewRun'
   /bytebase.v1.IssueService/ListIssueComments:
     post:
       tags:
@@ -3360,9 +3403,9 @@ paths:
         Triggers a review run. The slot is reset unconditionally: a RUNNING
          execution is superseded (its completion is fenced off), the attempt
          number is bumped, and the returned run is AVAILABLE.
-         Review results are not returned by this RPC and have no read RPC yet:
-         findings will surface as issue comments once the review comment
-         integration lands. The returned run carries execution status only.
+         Review results are not returned by this RPC: they are posted as issue
+         comments. The returned run carries execution status only, and
+         GetReviewRun reads it back.
          The audit log is the only record of who triggered a run.
          Permissions required: bb.reviewRuns.run
       operationId: bytebase.v1.IssueService.RunReview
@@ -13990,6 +14033,19 @@ components:
       required:
         - name
       additionalProperties: false
+    bytebase.v1.GetReviewRunRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the review run to retrieve.
+             Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+      title: GetReviewRunRequest
+      required:
+        - name
+      additionalProperties: false
     bytebase.v1.GetRevisionRequest:
       type: object
       properties:
@@ -18376,8 +18432,9 @@ components:
           title: ci_sampling_size
           format: int32
           description: |-
-            The maximum number of database rows to sample during CI data validation.
-             Without specification, sampling is disabled, resulting in full validation.
+            The maximum number of databases to sample during CI data validation and
+             AI review. Without specification, sampling is disabled, resulting in full
+             validation.
         parallelTasksPerRollout:
           type: integer
           title: parallel_tasks_per_rollout

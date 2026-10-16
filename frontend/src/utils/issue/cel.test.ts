@@ -166,7 +166,6 @@ describe("convertFromExpr with a column condition", () => {
       },
     ]);
   });
-
   test("carries shared conditions into nested OR branches", () => {
     expect(
       databaseResources(

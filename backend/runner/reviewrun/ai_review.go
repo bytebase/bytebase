@@ -21,9 +21,19 @@ import (
 const (
 	// maxAIReviewSheetBytes bounds the sheet one review reads whole.
 	maxAIReviewSheetBytes = 256 << 10
-	// aiReviewConcurrency caps the reviews of one run in flight at the model.
-	aiReviewConcurrency = 8
+	// aiReviewRunConcurrency caps the reviews of one run in flight at the model.
+	aiReviewRunConcurrency = 8
+	// aiReviewServerConcurrency caps the reviews in flight across every run on
+	// the server, so runs side by side cannot multiply the load on the provider.
+	aiReviewServerConcurrency = 16
 )
+
+// reviewSlots is the limit on reviews in flight that every run of an executor
+// shares. The server uses a *semaphore.Weighted.
+type reviewSlots interface {
+	Acquire(ctx context.Context, n int64) error
+	Release(n int64)
+}
 
 // aiReviewUnit is one AI review: a spec's sheet against one database. It
 // holds no schema, which the review loads when it starts.
@@ -179,15 +189,18 @@ func checkSheetSize(statement string) error {
 	return nil
 }
 
-// reviewUnits runs review over the units, at most aiReviewConcurrency at a
-// time, and returns each unit's result or error by index. A panic in one
-// review is that unit's error, so the run fails instead of the process: the
-// scheduler's recovery covers only the goroutine that called RunOnce.
-func reviewUnits(ctx context.Context, units []*aiReviewUnit, review func(context.Context, *aiReviewUnit) (*aireview.Result, error)) ([]*aiReviewResult, []error) {
+// reviewUnits runs review over the units, at most aiReviewRunConcurrency at a
+// time, and returns each unit's result or error by index. Each review holds
+// one of slots, which every run shares. A unit takes its slot before review
+// starts, so the wait does not count against the reviewer's timeout, and
+// gives up the wait when ctx is done. A panic in one review is that unit's
+// error, so the run fails instead of the process: the scheduler's recovery
+// covers only the goroutine that called RunOnce.
+func reviewUnits(ctx context.Context, slots reviewSlots, units []*aiReviewUnit, review func(context.Context, *aiReviewUnit) (*aireview.Result, error)) ([]*aiReviewResult, []error) {
 	results := make([]*aiReviewResult, len(units))
 	errs := make([]error, len(units))
 	var group errgroup.Group
-	group.SetLimit(aiReviewConcurrency)
+	group.SetLimit(aiReviewRunConcurrency)
 	for i, unit := range units {
 		group.Go(func() error {
 			defer func() {
@@ -196,6 +209,11 @@ func reviewUnits(ctx context.Context, units []*aiReviewUnit, review func(context
 					errs[i] = errors.Errorf("%s: review panic: %v", unit.Check.Target, r)
 				}
 			}()
+			if err := slots.Acquire(ctx, 1); err != nil {
+				errs[i] = errors.Wrapf(err, "%s", unit.Check.Target)
+				return nil
+			}
+			defer slots.Release(1)
 			result, err := review(ctx, unit)
 			if err != nil {
 				errs[i] = errors.Wrapf(err, "%s", unit.Check.Target)

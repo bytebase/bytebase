@@ -867,6 +867,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetReviewRunRequest"><span class="badge">M</span>GetReviewRunRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Issue"><span class="badge">M</span>Issue</a>
                 </li>
               
@@ -10704,6 +10708,31 @@ Format: projects/{project}/issues/{issue} </p></td>
 
         
       
+        <h3 id="bytebase.v1.GetReviewRunRequest">GetReviewRunRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the review run to retrieve.
+Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.Issue">Issue</h3>
         <p></p>
 
@@ -12062,8 +12091,11 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>DONE</td>
                 <td>3</td>
-                <td><p>Every (spec, target) unit was evaluated. DONE does not mean the
-review passed: whether problems remain is judged from open comments.</p></td>
+                <td><p>Every (spec, target) unit in the reviewer&#39;s scope was evaluated. RULE&#39;s
+scope is every target. AI&#39;s scope is the project&#39;s CI sample, the first
+ci_sampling_size targets of each spec, or every target when
+ci_sampling_size is 0. DONE does not mean the review passed: whether
+problems remain is judged from open comments.</p></td>
               </tr>
             
               <tr>
@@ -12229,15 +12261,25 @@ mirrors RequestIssue&#39;s authorization model).</p></td>
               </tr>
             
               <tr>
+                <td>GetReviewRun</td>
+                <td><a href="#bytebase.v1.GetReviewRunRequest">GetReviewRunRequest</a></td>
+                <td><a href="#bytebase.v1.ReviewRun">ReviewRun</a></td>
+                <td><p>Gets the current run of one reviewer on an issue. The run carries
+execution status only; review results are issue comments. A reviewer
+that has never run on the issue is NOT_FOUND.
+Permissions required: bb.reviewRuns.get</p></td>
+              </tr>
+            
+              <tr>
                 <td>RunReview</td>
                 <td><a href="#bytebase.v1.RunReviewRequest">RunReviewRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewRun">ReviewRun</a></td>
                 <td><p>Triggers a review run. The slot is reset unconditionally: a RUNNING
 execution is superseded (its completion is fenced off), the attempt
 number is bumped, and the returned run is AVAILABLE.
-Review results are not returned by this RPC and have no read RPC yet:
-findings will surface as issue comments once the review comment
-integration lands. The returned run carries execution status only.
+Review results are not returned by this RPC: they are posted as issue
+comments. The returned run carries execution status only, and
+GetReviewRun reads it back.
 The audit log is the only record of who triggered a run.
 Permissions required: bb.reviewRuns.run</p></td>
               </tr>
@@ -12387,6 +12429,16 @@ Permissions required: bb.reviewRuns.run</p></td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*/issues/*}:retryApproval</td>
                 <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetReviewRun</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/issues/*/reviewRuns/*}</td>
+                <td></td>
               </tr>
               
             
@@ -29513,8 +29565,9 @@ If enabled, issues will include &#34;set role &lt;db_owner&gt;&#34; statement. <
                   <td>ci_sampling_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of database rows to sample during CI data validation.
-Without specification, sampling is disabled, resulting in full validation. </p></td>
+                  <td><p>The maximum number of databases to sample during CI data validation and
+AI review. Without specification, sampling is disabled, resulting in full
+validation. </p></td>
                 </tr>
               
                 <tr>

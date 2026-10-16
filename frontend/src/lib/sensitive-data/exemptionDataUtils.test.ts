@@ -625,7 +625,6 @@ describe("generateGrantTitle", () => {
       )
     ).toBe("All databases (columns: email); hr_prod");
   });
-
   // --- Multiple databases ---
 
   test("2 databases", () => {

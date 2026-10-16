@@ -182,6 +182,7 @@
     - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
     - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
     - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
+    - [GetReviewRunRequest](#bytebase-v1-GetReviewRunRequest)
     - [Issue](#bytebase-v1-Issue)
     - [Issue.Approver](#bytebase-v1-Issue-Approver)
     - [IssueComment](#bytebase-v1-IssueComment)
@@ -3530,6 +3531,21 @@ needs a person&#39;s acceptance, not that it is forbidden.
 
 
 
+<a name="bytebase-v1-GetReviewRunRequest"></a>
+
+### GetReviewRunRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the review run to retrieve. Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} |
+
+
+
+
+
+
 <a name="bytebase-v1-Issue"></a>
 
 ### Issue
@@ -4044,7 +4060,7 @@ completion transaction, so re-running supersedes instead of canceling).
 | STATUS_UNSPECIFIED | 0 |  |
 | AVAILABLE | 1 | Created and claimable by any replica. |
 | RUNNING | 2 |  |
-| DONE | 3 | Every (spec, target) unit was evaluated. DONE does not mean the review passed: whether problems remain is judged from open comments. |
+| DONE | 3 | Every (spec, target) unit in the reviewer&#39;s scope was evaluated. RULE&#39;s scope is every target. AI&#39;s scope is the project&#39;s CI sample, the first ci_sampling_size targets of each spec, or every target when ci_sampling_size is 0. DONE does not mean the review passed: whether problems remain is judged from open comments. |
 | FAILED | 4 | At least one unit was not evaluated; the cause is in `error`. |
 
 
@@ -4086,7 +4102,8 @@ IssueService manages issues for tracking database changes and tasks.
 | RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) | Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RetryIssueApproval | [RetryIssueApprovalRequest](#bytebase-v1-RetryIssueApprovalRequest) | [Issue](#bytebase-v1-Issue) | Re-runs approval-template finding for an issue stuck in CHECKING. Useful when the synchronous post-create finding errored (e.g. against a malformed workspace approval rule) and the operator has since corrected it — without this, the issue would remain in CHECKING indefinitely because there is no other retry path for non-DATABASE_CHANGE issue types. Idempotent: returns the existing issue unchanged when approval-finding has already completed. Permissions required: None (caller must be the issue creator; mirrors RequestIssue&#39;s authorization model). |
-| RunReview | [RunReviewRequest](#bytebase-v1-RunReviewRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Triggers a review run. The slot is reset unconditionally: a RUNNING execution is superseded (its completion is fenced off), the attempt number is bumped, and the returned run is AVAILABLE. Review results are not returned by this RPC and have no read RPC yet: findings will surface as issue comments once the review comment integration lands. The returned run carries execution status only. The audit log is the only record of who triggered a run. Permissions required: bb.reviewRuns.run |
+| GetReviewRun | [GetReviewRunRequest](#bytebase-v1-GetReviewRunRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Gets the current run of one reviewer on an issue. The run carries execution status only; review results are issue comments. A reviewer that has never run on the issue is NOT_FOUND. Permissions required: bb.reviewRuns.get |
+| RunReview | [RunReviewRequest](#bytebase-v1-RunReviewRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Triggers a review run. The slot is reset unconditionally: a RUNNING execution is superseded (its completion is fenced off), the attempt number is bumped, and the returned run is AVAILABLE. Review results are not returned by this RPC: they are posted as issue comments. The returned run carries execution status only, and GetReviewRun reads it back. The audit log is the only record of who triggered a run. Permissions required: bb.reviewRuns.run |
 
  
 
@@ -10388,7 +10405,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable database tenant mode for PostgreSQL. If enabled, issues will include &#34;set role &lt;db_owner&gt;&#34; statement. |
 | allow_self_approval | [bool](#bool) |  | Whether to allow issue creators to self-approve their own issues. |
 | execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy) |  | Execution retry policy for task runs. |
-| ci_sampling_size | [int32](#int32) |  | The maximum number of database rows to sample during CI data validation. Without specification, sampling is disabled, resulting in full validation. |
+| ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation and AI review. Without specification, sampling is disabled, resulting in full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks allowed during rollout execution. |
 | labels | [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
 | enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
