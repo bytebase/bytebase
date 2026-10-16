@@ -4,10 +4,17 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
+import {
+  type ReviewAIPolicyDraft,
+  ReviewAIPolicyField,
+  useReviewAIPolicyDraft,
+} from "@/components/sql-review/ReviewAIPolicyField";
 import { SwitchRow } from "@/components/sql-review/SwitchRow";
 import { Alert } from "@/components/ui/alert";
-import { useServerState } from "@/hooks/useAppState";
+import { FormFieldGroup, FormSection } from "@/components/ui/form";
+import { useServerState, useWorkspaceResourceName } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
+import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
   AISettingSchema,
   Setting_SettingName,
@@ -86,10 +93,26 @@ export function useWorkspaceAIReview(): WorkspaceAIReview {
   };
 }
 
+// The workspace policy reaches the review of every project, together with the
+// project's own.
+export function useWorkspaceReviewAIPolicy(
+  enabled: boolean
+): ReviewAIPolicyDraft {
+  const workspace = useWorkspaceResourceName();
+  return useReviewAIPolicyDraft({
+    parentPath: workspace,
+    resourceType: PolicyResourceType.WORKSPACE,
+    can: hasWorkspacePermissionV2,
+    enabled,
+  });
+}
+
 export function SQLReviewAIReviewSection({
   aiReview,
+  policy,
 }: {
   aiReview: WorkspaceAIReview;
+  policy: ReviewAIPolicyDraft;
 }) {
   const { t } = useTranslation();
   // AI is turned on in the general settings, whose AI section shows its
@@ -100,15 +123,11 @@ export function SQLReviewAIReviewSection({
     hasWorkspacePermissionV2("bb.settings.getWorkspaceProfile");
 
   return (
-    <section className="flex flex-col gap-y-6 pt-8">
-      <div className="flex flex-col gap-y-2">
-        <h1 className="text-2xl font-bold text-main">
-          {t("sql-review.ai-review.self")}
-        </h1>
-        <p className="text-sm text-control-light">
-          {t("sql-review.ai-review.description")}
-        </p>
-      </div>
+    <FormSection
+      layout="single-column"
+      title={t("sql-review.ai-review.self")}
+      description={t("sql-review.ai-review.description")}
+    >
       {!aiReview.aiEnabled && (
         <Alert
           variant="warning"
@@ -133,15 +152,21 @@ export function SQLReviewAIReviewSection({
           }
         />
       )}
-      <SwitchRow
-        className="rounded-sm border border-block-border px-4 py-3"
-        title={t("sql-review.ai-review.enable.self")}
-        description={t("sql-review.ai-review.enable.description")}
-        checked={aiReview.enabled}
-        onCheckedChange={aiReview.setEnabled}
-        disabled={aiReview.saving}
-        readOnly={!aiReview.canEdit}
-      />
-    </section>
+      <FormFieldGroup>
+        <SwitchRow
+          className="rounded-sm border border-block-border px-4 py-3"
+          title={t("sql-review.ai-review.enable.self")}
+          description={t("sql-review.ai-review.enable.description")}
+          checked={aiReview.enabled}
+          onCheckedChange={aiReview.setEnabled}
+          disabled={aiReview.saving}
+          readOnly={!aiReview.canEdit}
+        />
+        <ReviewAIPolicyField
+          policy={policy}
+          placeholder={t("sql-review.ai-review.policy.placeholder")}
+        />
+      </FormFieldGroup>
+    </FormSection>
   );
 }

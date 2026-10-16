@@ -28,9 +28,13 @@ import {
   formFieldTitleStyle,
   formLabelStyle,
   formSectionContentStyle,
+  formSectionDescriptionStyle,
   formSectionHeaderStyle,
   formSectionStyle,
   formSectionTitleStyle,
+  singleColumnFormContentStyle,
+  singleColumnFormHeaderStyle,
+  singleColumnFormSectionStyle,
 } from "./styles.stylex";
 
 type FormLayout = "vertical" | "horizontal";
@@ -300,8 +304,38 @@ function FormFieldGroup({
 
 interface FormSectionProps extends Omit<ComponentProps<"section">, "title"> {
   title: ReactNode;
-  layout?: "default" | "stacked";
+  description?: ReactNode;
+  /**
+   * - `default`: on large screens the header takes a 25% column beside the
+   *   content; on smaller screens it stacks above.
+   * - `single-column`: the header stays above the content at every width,
+   *   with the same page section title, for a page that reads as one column.
+   * - `stacked`: the dense variant with a 16px title and 16px padding, for
+   *   sections inside a dense form such as the instance form.
+   */
+  layout?: "default" | "single-column" | "stacked";
 }
+
+const formSectionLayoutStyles = {
+  default: {
+    section: formSectionStyle,
+    header: formSectionHeaderStyle,
+    title: formSectionTitleStyle,
+    content: formSectionContentStyle,
+  },
+  "single-column": {
+    section: singleColumnFormSectionStyle,
+    header: singleColumnFormHeaderStyle,
+    title: formSectionTitleStyle,
+    content: singleColumnFormContentStyle,
+  },
+  stacked: {
+    section: denseFormSectionStyle,
+    header: denseFormHeaderStyle,
+    title: denseFormTitleStyle,
+    content: denseFormContentStyle,
+  },
+};
 
 /**
  * Wraps a settings page section with a consistent section heading and content
@@ -309,7 +343,7 @@ interface FormSectionProps extends Omit<ComponentProps<"section">, "title"> {
  *
  * @example
  * ```tsx
- * <FormSection id="general" title={sectionTitle}>
+ * <FormSection id="general" title={sectionTitle} description={summary}>
  *   <FormFieldGroup>
  *     <FormField title={fieldTitle}>
  *       <Input value={name} onChange={handleNameChange} />
@@ -324,21 +358,16 @@ function FormSection({
   ref,
   style,
   title,
+  description,
   layout = "default",
   ...props
 }: FormSectionProps) {
-  const sectionStylexProps = stylex.props(
-    layout === "stacked" ? denseFormSectionStyle() : formSectionStyle()
-  );
-  const headerStylexProps = stylex.props(
-    layout === "stacked" ? denseFormHeaderStyle() : formSectionHeaderStyle()
-  );
-  const titleStylexProps = stylex.props(
-    layout === "stacked" ? denseFormTitleStyle() : formSectionTitleStyle()
-  );
-  const contentStylexProps = stylex.props(
-    layout === "stacked" ? denseFormContentStyle() : formSectionContentStyle()
-  );
+  const styles = formSectionLayoutStyles[layout];
+  const sectionStylexProps = stylex.props(styles.section());
+  const headerStylexProps = stylex.props(styles.header());
+  const titleStylexProps = stylex.props(styles.title());
+  const descriptionStylexProps = stylex.props(formSectionDescriptionStyle());
+  const contentStylexProps = stylex.props(styles.content());
 
   return (
     <section
@@ -362,6 +391,15 @@ function FormSection({
         >
           {title}
         </div>
+        {description !== undefined && (
+          <div
+            data-slot="form-section-description"
+            className={descriptionStylexProps.className}
+            style={descriptionStylexProps.style}
+          >
+            {description}
+          </div>
+        )}
       </div>
       <div
         data-slot="form-section-content"

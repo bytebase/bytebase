@@ -3,12 +3,23 @@
   "add-rules": "Add rules",
   "ai-review": {
     "ai-off": "AI is off for the workspace, so no AI review runs.",
-    "description": "An AI model that reviews the SQL of an issue for risks the standard rules cannot see. It applies to every project in the workspace.",
+    "description": "An AI model that reviews the SQL of an issue for risks the standard rules cannot see. It applies to every project in the workspace, and each project can add its own policy.",
     "enable": {
       "description": "Each review sends the statements as written to the AI provider, and can send the schema of the target databases and their table statistics. It reads no rows from the databases.",
       "self": "Review changes with AI"
     },
-    "project-description": "An AI model that reviews the SQL of an issue for risks the standard rules cannot see.",
+    "policy": {
+      "cannot-clear": "Your role cannot delete policies, so this policy cannot be emptied.",
+      "load-failed": "The review policy could not be loaded.",
+      "none": "No review policy.",
+      "paused": "This policy is paused, so the AI review does not read it.",
+      "placeholder": "For example:\nFlag a schema change that blocks writes on a table with more than 1 million rows.\nEvery foreign key needs an index on its columns.\nNew tables need created_at and updated_at columns.",
+      "project-placeholder": "For example:\nNever delete rows from the payments or ledger tables.\nStore amounts of money in DECIMAL columns, never FLOAT or DOUBLE.\nNew columns on the users table must allow NULL or have a default.",
+      "remove-only": "You can remove this policy but not change it. Clear the text to remove it.",
+      "self": "Review policy",
+      "too-large": "The policy is {{size}} bytes, over the {{limit}}-byte limit. Shorten it to save."
+    },
+    "project-description": "An AI model that reviews the SQL of an issue for risks the standard rules cannot see. This project's policy adds to the workspace policy and wins where the two conflict.",
     "self": "AI review",
     "set-for-workspace": "Set for the whole workspace.",
     "turn-on-ai": "Turn on AI",

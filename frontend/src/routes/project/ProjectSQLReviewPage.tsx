@@ -4,6 +4,10 @@ import { useTranslation } from "react-i18next";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/app/router/handles";
 import { ProjectPageLayout } from "@/components/ProjectPageLayout";
 import { RouterLink } from "@/components/RouterLink";
+import {
+  ReviewAIPolicyField,
+  useReviewAIPolicyDraft,
+} from "@/components/sql-review/ReviewAIPolicyField";
 import { StandardRuleSwitches } from "@/components/sql-review/StandardRuleSwitches";
 import { SwitchRow } from "@/components/sql-review/SwitchRow";
 import {
@@ -15,11 +19,11 @@ import {
 } from "@/components/sql-review/standardRules";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FormFieldGroup, FormSection } from "@/components/ui/form";
 import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
 import { useWorkspaceResourceName } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
-import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
@@ -53,7 +57,9 @@ interface ProjectStandardRules {
   isDirty: boolean;
   saving: boolean;
   revert: () => void;
-  save: () => Promise<void>;
+  // Resolves whether the rules saved. The page reports the update; a failure
+  // is reported by the response middleware and keeps the draft.
+  save: () => Promise<boolean>;
 }
 
 interface Draft {
@@ -64,7 +70,6 @@ interface Draft {
 export function useProjectStandardRules(
   projectName: string
 ): ProjectStandardRules {
-  const { t } = useTranslation();
   const workspace = useWorkspaceResourceName();
   const projectPolicy = useAppStore((state) =>
     state.getPolicyByParentAndType({
@@ -141,7 +146,7 @@ export function useProjectStandardRules(
   };
 
   const save = async () => {
-    if (!draft || !isDirty) return;
+    if (!draft || !isDirty) return true;
     setSaving(true);
     try {
       const store = useAppStore.getState();
@@ -167,14 +172,9 @@ export function useProjectStandardRules(
         });
       }
       setDraft(undefined);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
-      });
+      return true;
     } catch {
-      // The response middleware reports the failure; the draft stays for a
-      // retry.
+      return false;
     } finally {
       setSaving(false);
     }
@@ -205,11 +205,19 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useProjectByName(projectName);
-  const standardRules = useProjectStandardRules(projectName);
-  useUnsavedChangesGuard(standardRules.isDirty);
-
   const can = (permission: Permission) =>
     hasProjectPermissionV2(project, permission);
+  const standardRules = useProjectStandardRules(projectName);
+  const aiReviewPolicy = useReviewAIPolicyDraft({
+    parentPath: projectName,
+    resourceType: PolicyResourceType.PROJECT,
+    can,
+  });
+  const parts = [standardRules, aiReviewPolicy];
+  const isDirty = parts.some((part) => part.isDirty);
+  const saving = parts.some((part) => part.saving);
+  useUnsavedChangesGuard(isDirty);
+
   // Switching customization on and editing the project's own rules save the
   // project policy: a create when the project has no row, else an update.
   // Switching customization off deletes the row. Undoing an unsaved switch
@@ -232,38 +240,86 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
 
   return (
     <ProjectPageLayout>
-      <div className={cn(STANDARD_RULES_COLUMN, "flex flex-col gap-y-6 pt-4")}>
-        <div className="flex flex-col gap-y-2">
-          <h1 className="text-2xl font-bold text-main">
-            {t("sql-review.standard-rules.self")}
-          </h1>
-          <p className="text-sm text-control-light">
-            {t("sql-review.standard-rules.project-description")}
-          </p>
-        </div>
-        {standardRules.readFailed && (
-          <Alert
-            variant="error"
-            description={t("sql-review.standard-rules.load-failed")}
-          >
-            <Button
-              className="mt-3"
-              appearance="outline"
-              size="sm"
-              onClick={standardRules.reload}
+      <div className={STANDARD_RULES_COLUMN}>
+        <FormSection
+          layout="single-column"
+          title={t("sql-review.standard-rules.self")}
+          description={t("sql-review.standard-rules.project-description")}
+        >
+          {standardRules.readFailed && (
+            <Alert
+              variant="error"
+              description={t("sql-review.standard-rules.load-failed")}
             >
-              {t("sql-review.standard-rules.retry")}
-            </Button>
-          </Alert>
-        )}
-        {standardRules.loaded && (
-          <>
+              <Button
+                className="mt-3"
+                appearance="outline"
+                size="sm"
+                onClick={standardRules.reload}
+              >
+                {t("sql-review.standard-rules.retry")}
+              </Button>
+            </Alert>
+          )}
+          {standardRules.loaded && (
+            <>
+              <SwitchRow
+                className="rounded-sm border border-block-border px-4 py-3"
+                title={t("sql-review.standard-rules.customize.self")}
+                description={
+                  <>
+                    {t("sql-review.standard-rules.customize.description")}
+                    {canViewWorkspaceRules && (
+                      <>
+                        {" "}
+                        <RouterLink
+                          to={{ name: WORKSPACE_ROUTE_SQL_REVIEW }}
+                          className="text-accent hover:underline"
+                        >
+                          {t(
+                            "sql-review.standard-rules.customize.view-workspace-rules"
+                          )}
+                        </RouterLink>
+                      </>
+                    )}
+                  </>
+                }
+                checked={standardRules.customized}
+                onCheckedChange={standardRules.setCustomized}
+                disabled={customizeLocked || standardRules.saving}
+              />
+              {standardRules.rules ? (
+                <StandardRuleSwitches
+                  // The rules remembered while SYNTAX is off belong to one
+                  // project.
+                  key={projectName}
+                  rules={standardRules.rules}
+                  onChange={standardRules.setRules}
+                  disabled={!canSave || standardRules.saving}
+                  readOnly={!standardRules.customized}
+                />
+              ) : (
+                <Alert
+                  description={t(
+                    "sql-review.standard-rules.workspace-rules-hidden"
+                  )}
+                />
+              )}
+            </>
+          )}
+        </FormSection>
+        <FormSection
+          layout="single-column"
+          title={t("sql-review.ai-review.self")}
+          description={t("sql-review.ai-review.project-description")}
+        >
+          <FormFieldGroup>
             <SwitchRow
               className="rounded-sm border border-block-border px-4 py-3"
-              title={t("sql-review.standard-rules.customize.self")}
+              title={t("sql-review.ai-review.enable.self")}
               description={
                 <>
-                  {t("sql-review.standard-rules.customize.description")}
+                  {t("sql-review.ai-review.set-for-workspace")}
                   {canViewWorkspaceRules && (
                     <>
                       {" "}
@@ -271,87 +327,56 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
                         to={{ name: WORKSPACE_ROUTE_SQL_REVIEW }}
                         className="text-accent hover:underline"
                       >
-                        {t(
-                          "sql-review.standard-rules.customize.view-workspace-rules"
-                        )}
+                        {t("sql-review.ai-review.view-workspace-setting")}
                       </RouterLink>
                     </>
                   )}
                 </>
               }
-              checked={standardRules.customized}
-              onCheckedChange={standardRules.setCustomized}
-              disabled={customizeLocked || standardRules.saving}
+              checked={aiReviewOn}
+              onCheckedChange={() => {}}
+              readOnly
             />
-            {standardRules.rules ? (
-              <StandardRuleSwitches
-                // The rules remembered while SYNTAX is off belong to one
-                // project.
-                key={projectName}
-                rules={standardRules.rules}
-                onChange={standardRules.setRules}
-                disabled={!canSave || standardRules.saving}
-                readOnly={!standardRules.customized}
-              />
-            ) : (
-              <Alert
-                description={t(
-                  "sql-review.standard-rules.workspace-rules-hidden"
-                )}
-              />
-            )}
-          </>
-        )}
-        <div className="flex flex-col gap-y-2 pt-8">
-          <h1 className="text-2xl font-bold text-main">
-            {t("sql-review.ai-review.self")}
-          </h1>
-          <p className="text-sm text-control-light">
-            {t("sql-review.ai-review.project-description")}
-          </p>
-        </div>
-        <SwitchRow
-          className="rounded-sm border border-block-border px-4 py-3"
-          title={t("sql-review.ai-review.enable.self")}
-          description={
-            <>
-              {t("sql-review.ai-review.set-for-workspace")}
-              {canViewWorkspaceRules && (
-                <>
-                  {" "}
-                  <RouterLink
-                    to={{ name: WORKSPACE_ROUTE_SQL_REVIEW }}
-                    className="text-accent hover:underline"
-                  >
-                    {t("sql-review.ai-review.view-workspace-setting")}
-                  </RouterLink>
-                </>
-              )}
-            </>
-          }
-          checked={aiReviewOn}
-          onCheckedChange={() => {}}
-          readOnly
-        />
+            <ReviewAIPolicyField
+              policy={aiReviewPolicy}
+              placeholder={t("sql-review.ai-review.policy.project-placeholder")}
+            />
+          </FormFieldGroup>
+        </FormSection>
       </div>
 
-      {standardRules.isDirty && (
+      {isDirty && (
         <StickyActionFooter
           contentPadding={false}
           contentClassName={STANDARD_RULES_COLUMN}
           left={
             <Button
               appearance="outline"
-              disabled={standardRules.saving}
-              onClick={standardRules.revert}
+              disabled={saving}
+              onClick={() => {
+                for (const part of parts) part.revert();
+              }}
             >
               {t("common.cancel")}
             </Button>
           }
           right={
             <Button
-              disabled={standardRules.saving}
-              onClick={() => void standardRules.save()}
+              disabled={saving || aiReviewPolicy.error !== undefined}
+              onClick={async () => {
+                const saves = parts
+                  .filter((part) => part.isDirty)
+                  .map((part) => part.save());
+                // One click reports one update, and only when every changed
+                // part saved.
+                if ((await Promise.all(saves)).every(Boolean)) {
+                  pushNotification({
+                    module: "bytebase",
+                    style: "SUCCESS",
+                    title: t("common.updated"),
+                  });
+                }
+              }}
             >
               {t("common.update")}
             </Button>

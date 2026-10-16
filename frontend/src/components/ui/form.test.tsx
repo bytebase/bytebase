@@ -14,13 +14,22 @@ import {
   FormTitle,
 } from "./form";
 import {
+  denseFormContentStyle,
+  denseFormHeaderStyle,
+  denseFormSectionStyle,
+  denseFormTitleStyle,
   formControlGroupStyle,
   formControlRowStyle,
   formErrorStyle,
   formFieldGroupStyle,
   formFieldTitleStyle,
   formLabelStyle,
+  formSectionDescriptionStyle,
   formSectionStyle,
+  formSectionTitleStyle,
+  singleColumnFormContentStyle,
+  singleColumnFormHeaderStyle,
+  singleColumnFormSectionStyle,
 } from "./styles.stylex";
 
 (
@@ -220,6 +229,113 @@ describe("Form section layouts", () => {
     expect(title?.getAttribute("aria-level")).toBe("2");
     expect(title?.querySelector("h2")).toBeNull();
     expect(title?.textContent).toBe("AnnouncementBadge");
+
+    unmount();
+  });
+
+  test("renders the description in the header, under the title", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        FormSection,
+        { title: "AI review", description: "Reviews the SQL of an issue." },
+        createElement("div", null, "Content")
+      )
+    );
+
+    const header = container.querySelector('[data-slot="form-section-header"]');
+    const description = container.querySelector(
+      '[data-slot="form-section-description"]'
+    );
+
+    expect(description?.parentElement).toBe(header);
+    expect(description?.previousElementSibling?.getAttribute("data-slot")).toBe(
+      "form-section-title"
+    );
+    expect(description?.textContent).toBe("Reviews the SQL of an issue.");
+    expect(description?.className).toContain(
+      stylex.props(formSectionDescriptionStyle()).className ?? ""
+    );
+
+    unmount();
+  });
+
+  test("renders no description slot without a description", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(FormSection, { title: "General" }, "Content")
+    );
+
+    expect(
+      container.querySelector('[data-slot="form-section-description"]')
+    ).toBeNull();
+
+    unmount();
+  });
+
+  test("keeps the page section title and puts the header above the content in the single-column layout", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        FormSection,
+        { title: "Standard rules", layout: "single-column" },
+        createElement("div", null, "Content")
+      )
+    );
+
+    const section = container.querySelector('[data-slot="form-section"]');
+    const header = container.querySelector('[data-slot="form-section-header"]');
+    const title = container.querySelector('[data-slot="form-section-title"]');
+    const content = container.querySelector(
+      '[data-slot="form-section-content"]'
+    );
+
+    expect(section?.className).toContain(
+      stylex.props(singleColumnFormSectionStyle()).className ?? ""
+    );
+    expect(section?.className).not.toContain(
+      stylex.props(formSectionStyle()).className ?? ""
+    );
+    expect(header?.className).toContain(
+      stylex.props(singleColumnFormHeaderStyle()).className ?? ""
+    );
+    expect(title?.className).toContain(
+      stylex.props(formSectionTitleStyle()).className ?? ""
+    );
+    expect(content?.className).toContain(
+      stylex.props(singleColumnFormContentStyle()).className ?? ""
+    );
+    expect(header?.nextElementSibling).toBe(content);
+
+    unmount();
+  });
+
+  test("keeps the dense styles in the stacked layout, with a description", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        FormSection,
+        {
+          title: "Connection",
+          description: "Where Bytebase reaches the instance.",
+          layout: "stacked",
+        },
+        createElement("div", null, "Content")
+      )
+    );
+
+    const slot = (name: string) =>
+      container.querySelector(`[data-slot="form-section${name}"]`);
+
+    expect(slot("")?.className).toContain(
+      stylex.props(denseFormSectionStyle()).className ?? ""
+    );
+    expect(slot("-header")?.className).toContain(
+      stylex.props(denseFormHeaderStyle()).className ?? ""
+    );
+    expect(slot("-title")?.className).toContain(
+      stylex.props(denseFormTitleStyle()).className ?? ""
+    );
+    expect(slot("-content")?.className).toContain(
+      stylex.props(denseFormContentStyle()).className ?? ""
+    );
+    expect(slot("-description")?.parentElement).toBe(slot("-header"));
 
     unmount();
   });

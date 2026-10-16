@@ -37,6 +37,7 @@ import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import {
   SQLReviewAIReviewSection,
   useWorkspaceAIReview,
+  useWorkspaceReviewAIPolicy,
 } from "./SQLReviewAIReviewSection";
 import {
   SQLReviewStandardRulesSection,
@@ -268,8 +269,10 @@ export function SQLReviewPage() {
   const sqlReviewV2 = sqlReviewV2Enabled();
   const standardRules = useWorkspaceStandardRules(sqlReviewV2);
   const aiReview = useWorkspaceAIReview();
-  const isDirty = standardRules.isDirty || aiReview.isDirty;
-  const saving = standardRules.saving || aiReview.saving;
+  const aiReviewPolicy = useWorkspaceReviewAIPolicy(sqlReviewV2);
+  const parts = [standardRules, aiReview, aiReviewPolicy];
+  const isDirty = parts.some((part) => part.isDirty);
+  const saving = parts.some((part) => part.saving);
   useUnsavedChangesGuard(isDirty);
 
   useEffect(() => {
@@ -310,7 +313,10 @@ export function SQLReviewPage() {
       {sqlReviewV2 ? (
         <div className={STANDARD_RULES_COLUMN}>
           <SQLReviewStandardRulesSection standardRules={standardRules} />
-          <SQLReviewAIReviewSection aiReview={aiReview} />
+          <SQLReviewAIReviewSection
+            aiReview={aiReview}
+            policy={aiReviewPolicy}
+          />
         </div>
       ) : (
         <>
@@ -362,8 +368,7 @@ export function SQLReviewPage() {
               appearance="outline"
               disabled={saving}
               onClick={() => {
-                standardRules.revert();
-                aiReview.revert();
+                for (const part of parts) part.revert();
               }}
             >
               {t("common.cancel")}
@@ -371,11 +376,11 @@ export function SQLReviewPage() {
           }
           right={
             <Button
-              disabled={saving}
+              disabled={saving || aiReviewPolicy.error !== undefined}
               onClick={async () => {
-                const saves: Promise<boolean>[] = [];
-                if (standardRules.isDirty) saves.push(standardRules.save());
-                if (aiReview.isDirty) saves.push(aiReview.save());
+                const saves = parts
+                  .filter((part) => part.isDirty)
+                  .map((part) => part.save());
                 // One click reports one update, and only when every changed
                 // part saved.
                 if ((await Promise.all(saves)).every(Boolean)) {
