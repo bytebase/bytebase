@@ -449,6 +449,37 @@ const environmentClauseOf = (expr: Expr): string[] | undefined => {
   return ids && uniq(ids).map((id) => `${environmentNamePrefix}${id}`);
 };
 
+// A time limit only expires the entire condition when it is a top-level
+// conjunct. A limit under `||` can be bypassed by another branch.
+export const getGuaranteedExpiration = (
+  expr: Expr | undefined
+): Date | undefined => {
+  if (!expr) return undefined;
+
+  const expirations = conjuncts(expr)
+    .map((conjunct) => {
+      const call = callOf(conjunct);
+      if (
+        call?.function !== "_<_" ||
+        factorNameOf(call.args[0]) !== CEL_ATTRIBUTE_REQUEST_TIME
+      ) {
+        return undefined;
+      }
+      const timestamp = callOf(call.args[1]);
+      if (timestamp?.function !== "timestamp") {
+        return undefined;
+      }
+      const value = constantStringOf(timestamp.args[0]);
+      if (!value) return undefined;
+      const expiration = new Date(value);
+      return Number.isNaN(expiration.getTime()) ? undefined : expiration;
+    })
+    .filter((expiration): expiration is Date => expiration !== undefined);
+
+  if (expirations.length === 0) return undefined;
+  return new Date(Math.min(...expirations.map((expiration) => +expiration)));
+};
+
 const hasOnlyBranches = (
   branches: (SimpleExpr[] | undefined)[]
 ): branches is SimpleExpr[][] =>

@@ -6,6 +6,7 @@ import {
 } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import {
   convertFromExpr,
+  getGuaranteedExpiration,
   readableCondition,
   stringifyConditionExpression,
 } from "./cel";
@@ -121,6 +122,29 @@ describe("readableCondition proves the environments and keeps the rest best-effo
     expect(environments(and(envIn("prod", "dev"), envIn("dev")))).toEqual([
       "environments/dev",
     ]);
+  });
+});
+
+describe("getGuaranteedExpiration", () => {
+  test("finds an expiration beside independent disjunctions", () => {
+    const expiration = "2020-01-01T00:00:00Z";
+    expect(
+      getGuaranteedExpiration(
+        and(
+          or(eq("database", "instances/i/databases/a"), eq("database", A)),
+          or(eq("schema_name", "public"), eq("schema_name", "internal")),
+          timeBefore(expiration)
+        )
+      )?.toISOString()
+    ).toBe("2020-01-01T00:00:00.000Z");
+  });
+
+  test("ignores an expiration that is only one OR branch", () => {
+    expect(
+      getGuaranteedExpiration(
+        or(timeBefore("2020-01-01T00:00:00Z"), eq("database", A))
+      )
+    ).toBeUndefined();
   });
 });
 
