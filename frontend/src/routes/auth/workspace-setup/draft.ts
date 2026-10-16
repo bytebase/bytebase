@@ -41,6 +41,7 @@ export type SetupDraft = {
   // project's name, ID and prepared sample are fixed.
   createdProject?: string;
   samplePrepared?: boolean;
+  sampleInstanceName?: string;
   projectGrants?: ProjectGrants;
 };
 
@@ -107,6 +108,7 @@ export const readSetupDraft = (isSaaS: boolean): SetupDraft => {
     refusedProjectId: refusedId(stored.refusedProjectId),
     createdProject: optionalString(stored.createdProject),
     samplePrepared: stored.samplePrepared === true,
+    sampleInstanceName: optionalString(stored.sampleInstanceName),
     projectGrants: grants(stored.projectGrants),
   };
   const projectAnswered = draft.projectTitle.trim()

@@ -2093,6 +2093,26 @@ describe("WorkspaceSetupPage", () => {
       });
     });
 
+    test("keeps the sample instance sync hint when server info is not refreshed", async () => {
+      mocks.prepareSampleProjectInstance.mockResolvedValueOnce({
+        name: "projects/payments-ab12/instances/sample",
+      });
+      await startAtTeam();
+
+      finishAlone();
+
+      await landed();
+      expect(mocks.sample.instances).toEqual([]);
+      expect(mocks.routerReplace).toHaveBeenCalledWith({
+        name: PROJECT_V1_ROUTE_DATABASES,
+        params: { projectId: "payments-ab12" },
+        query: {
+          syncingInstance: "sample",
+          [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+        },
+      });
+    });
+
     test("adds the workspace role to an invitee without taking away one they already hold", async () => {
       mocks.workspacePolicy = {
         bindings: [
@@ -2405,6 +2425,9 @@ describe("WorkspaceSetupPage", () => {
     });
 
     test("tries again without creating the project or requesting the sample twice", async () => {
+      mocks.prepareSampleProjectInstance.mockResolvedValueOnce({
+        name: "projects/payments-ab12/instances/sample",
+      });
       mocks.patchWorkspaceIamPolicy.mockRejectedValueOnce(unavailable());
       await startAtTeam();
       finishInviting("ann@example.com");
@@ -2426,6 +2449,15 @@ describe("WorkspaceSetupPage", () => {
         "workspaceMembers",
       ]);
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(mocks.sample.instances).toEqual([]);
+      expect(mocks.routerReplace).toHaveBeenCalledWith({
+        name: PROJECT_V1_ROUTE_DATABASES,
+        params: { projectId: "payments-ab12" },
+        query: {
+          syncingInstance: "sample",
+          [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+        },
+      });
     });
 
     test("drops an invitee removed after a failed attempt from the project too", async () => {

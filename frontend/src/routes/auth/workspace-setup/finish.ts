@@ -316,7 +316,7 @@ type SetupFinishEvents = {
   // Called before the create is sent: its answer may never arrive.
   projectCreateSent: () => void;
   projectCreated: (project: string) => void;
-  samplePrepared: () => void;
+  samplePrepared: (instanceName: string) => void;
   // The project's roles the wizard has given, as they stand.
   projectGrants: (grants: Record<string, string[]>) => void;
 };
@@ -354,11 +354,11 @@ const commitSetup = async (
       })
     );
     try {
-      await store.prepareSampleProjectInstance(project);
+      const instance = await store.prepareSampleProjectInstance(project);
+      on.samplePrepared(instance.name);
     } catch (error) {
       return { ok: false, stage: "sample", error };
     }
-    on.samplePrepared();
   }
 
   try {

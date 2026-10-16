@@ -392,7 +392,8 @@ function WorkspaceSetupWizard() {
       {
         projectCreateSent: () => save({ attemptedProjectId: draft.projectId }),
         projectCreated: (createdProject) => save({ createdProject }),
-        samplePrepared: () => save({ samplePrepared: true }),
+        samplePrepared: (sampleInstanceName) =>
+          save({ samplePrepared: true, sampleInstanceName }),
         projectGrants: (projectGrants) => save({ projectGrants }),
       }
     );
@@ -446,11 +447,12 @@ function WorkspaceSetupWizard() {
     const projectId = extractProjectResourceName(result.project);
     const sampleInstanceName =
       finishSource === "sample"
-        ? useAppStore
+        ? (draftRef.current.sampleInstanceName ??
+          useAppStore
             .getState()
             .serverInfo?.sample?.instances.find(({ instance }) =>
               instance.startsWith(`${result.project}/`)
-            )?.instance
+            )?.instance)
         : undefined;
     router.replace({
       name:
