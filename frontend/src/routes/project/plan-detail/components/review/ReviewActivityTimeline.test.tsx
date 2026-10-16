@@ -136,14 +136,17 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => ({
 vi.mock("../threads/CommentThreadCard", () => ({
   CommentThreadCard: ({
     renderContext,
+    spec,
     thread,
   }: {
     renderContext?: (onCollapse?: () => void) => ReactNode;
+    spec?: { id: string };
     thread: { root: { name: string }; replies: { name: string }[] };
   }) => (
     <div
       data-replies={thread.replies.length}
       data-root={thread.root.name}
+      data-spec={spec?.id}
       data-testid="thread-card"
     >
       {renderContext?.()}
@@ -282,6 +285,40 @@ describe("ReviewActivityTimeline", () => {
       lineNumber: expectedLine,
     });
     expect(mocks.expandPhase).toHaveBeenCalledWith("changes");
+    act(() => root.unmount());
+  });
+
+  test("hands a thread card the plan spec its anchor names, and none for a spec the plan lacks", () => {
+    const plan = create(PlanSchema, {
+      name: "projects/p1/plans/1",
+      specs: [create(Plan_SpecSchema, { id: "spec-1" })],
+    });
+    const thread = (id: string, spec: string) =>
+      create(IssueCommentSchema, {
+        name: `projects/p1/issues/1/issueComments/${id}`,
+        comment: "Review this line",
+        threadState: IssueComment_ThreadState.OPEN,
+        statementAnchor: create(StatementAnchorSchema, { spec }),
+      });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={[thread("kept", "spec-1"), thread("gone", "spec-gone")]}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={plan}
+        />
+      );
+    });
+    const cardOf = (id: string) =>
+      container.querySelector(
+        `[data-root='projects/p1/issues/1/issueComments/${id}']`
+      );
+    expect(cardOf("kept")).not.toBeNull();
+    expect(cardOf("gone")).not.toBeNull();
+    expect(cardOf("kept")?.getAttribute("data-spec")).toBe("spec-1");
+    expect(cardOf("gone")?.hasAttribute("data-spec")).toBe(false);
     act(() => root.unmount());
   });
 

@@ -716,6 +716,7 @@ export function StatementThreadsLayer({
                   onReplyDraftChange={updateReplyDraft}
                   project={project}
                   revealRoot={revealEntry?.thread.root.name}
+                  spec={spec}
                   threads={entries}
                 />
               </div>

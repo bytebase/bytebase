@@ -495,13 +495,11 @@ function ThreadActivityRow({
   const storeApi = usePlanDetailStoreApi();
   const selectedSpecId = usePlanDetailStore((s) => s.selectedSpecId);
   const anchor = thread.root.statementAnchor;
-  const targetSha256 = useMemo(
-    () =>
-      targetSha256OfSpec(
-        plan.specs.find((candidate) => candidate.id === anchor?.spec)
-      ),
+  const spec = useMemo(
+    () => plan.specs.find((candidate) => candidate.id === anchor?.spec),
     [anchor?.spec, plan.specs]
   );
+  const targetSha256 = useMemo(() => targetSha256OfSpec(spec), [spec]);
   const placement = usePlanDetailStore((s) =>
     anchor
       ? placementOf(s, thread.root.name, anchor.spec, targetSha256)
@@ -564,6 +562,7 @@ function ThreadActivityRow({
         }
         issue={issue}
         project={project}
+        spec={spec}
         thread={thread}
       />
     </ActivityRowFrame>

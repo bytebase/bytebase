@@ -1,6 +1,9 @@
 {
   "add-or-remove-rules": "添加或删除规则",
   "add-rules": "添加规则",
+  "ai-review": {
+    "self": "AI 审核"
+  },
   "attach-resource": {
     "change-resources": "更改绑定的资源",
     "label": "审核策略需要绑定到环境资源或项目资源上，并影响对应资源下所有数据库。若一个数据库同时受到项目级别与环境级别策略影响，则只有项目级别策略生效。",
