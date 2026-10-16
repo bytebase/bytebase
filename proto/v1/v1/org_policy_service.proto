@@ -28,8 +28,7 @@ service OrgPolicyService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.policies.get";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists policies at a specified resource level.
@@ -44,8 +43,7 @@ service OrgPolicyService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.policies.list";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates a new organizational policy.

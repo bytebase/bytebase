@@ -73,7 +73,7 @@ describe("MCPCapabilityLadder", () => {
       MCPSetting_Capability.READ_WRITE,
     ] as const) {
       const { container, unmount } = renderIntoContainer(ladder({ mode }));
-      // One list, so a row's position is announced as "n of 8". The dividers
+      // One list, so a row's position is announced as "n of N". The dividers
       // live in it too but are presentational, so they do not inflate that
       // count or shift a row's index.
       expect(container.querySelectorAll("ul")).toHaveLength(1);
@@ -95,6 +95,7 @@ describe("MCPCapabilityLadder", () => {
       "read-schemas",
       "read-data",
       "read-workflow",
+      "read-access",
     ]);
     // No "write" badge may appear under a mode that serves no write row.
     expect(readOnly.container.textContent).not.toContain(
@@ -263,7 +264,7 @@ describe("MCPCapabilityLadder", () => {
     expect(writeStop).toBeGreaterThan(readStop);
     // The read divider sits between the last read row and the first write row.
     expect(readStop).toBeGreaterThan(
-      text.indexOf("settings.mcp.ladder.row.read-workflow.title")
+      text.indexOf("settings.mcp.ladder.row.read-access.title")
     );
     expect(readStop).toBeLessThan(
       text.indexOf("settings.mcp.ladder.row.propose.title")
