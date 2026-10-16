@@ -35,9 +35,11 @@ import { useTimeReading } from "@/hooks/useTimeReading";
 import {
   buildMemberSummary,
   generateGrantTitle,
+  generateMemberScopeSummary,
   getConditionExpression,
   groupByMember,
   parseExpirationTimestamp,
+  resourceCoversDatabase,
 } from "@/lib/sensitive-data/exemptionDataUtils";
 import type {
   AccessUser,
@@ -209,7 +211,7 @@ export function ProjectMaskingExemptionPage({
       const matchesDb = (g: ExemptionGrant) =>
         !g.databaseResources ||
         g.databaseResources.length === 0 ||
-        g.databaseResources.some((r) => r.databaseFullName === dbScope);
+        g.databaseResources.some((r) => resourceCoversDatabase(r, dbScope));
       result = result
         .map((m) => withFilteredGrants(m, m.grants.filter(matchesDb)))
         .filter((m) => m.grants.length > 0);
@@ -882,26 +884,11 @@ function ExemptionMemberItem({
   );
 
   const scopeSummary = useMemo(() => {
-    const n = member.grants.length;
-    const exemptionWord = t("project.masking-exemption.n-exemptions", {
-      n,
-      count: n,
-    });
-
-    const realDbs = member.databaseNames.filter((name) => name !== "");
-    const hasAllDbs = member.databaseNames.includes("");
-
-    const parts: string[] = [];
-    if (realDbs.length > 0) {
-      parts.push(realDbs.join(", "));
-    }
-    if (hasAllDbs) {
-      parts.push(t("database.all"));
-    }
-
-    const scope = parts.join(", ");
-    return scope ? `${exemptionWord} · ${scope}` : exemptionWord;
-  }, [member, t]);
+    return generateMemberScopeSummary(
+      member.grants.length,
+      member.databaseNames
+    );
+  }, [member]);
 
   const handleClick = () => {
     if (expandable) {
@@ -1004,8 +991,8 @@ function ExemptionDetailPanel({
   const grantMatchesFilter = (grant: ExemptionGrant): boolean => {
     if (!databaseFilter) return false;
     return (
-      grant.databaseResources?.some(
-        (r) => r.databaseFullName === databaseFilter
+      grant.databaseResources?.some((r) =>
+        resourceCoversDatabase(r, databaseFilter)
       ) ?? false
     );
   };
@@ -1084,6 +1071,7 @@ function ExemptionGrantSection({
 }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const [showRawCondition, setShowRawCondition] = useState(false);
 
   const title = useMemo(() => generateGrantTitle(grant), [grant]);
 
@@ -1180,6 +1168,28 @@ function ExemptionGrantSection({
             <ExemptionLevelCard
               classificationLevel={grant.classificationLevel}
             />
+          )}
+
+          {grant.conditionExpression && (
+            <div className="mt-3 text-sm">
+              <Button
+                aria-expanded={showRawCondition}
+                appearance="link"
+                className="h-auto px-0"
+                onClick={() => setShowRawCondition((show) => !show)}
+                size="sm"
+                type="button"
+              >
+                {showRawCondition
+                  ? t("project.masking-exemption.hide-raw-cel-condition")
+                  : t("project.masking-exemption.show-raw-cel-condition")}
+              </Button>
+              {showRawCondition && (
+                <pre className="mt-1 whitespace-pre-wrap break-all rounded-xs border border-block-border bg-control-bg px-3 py-2 font-mono text-xs">
+                  {grant.conditionExpression}
+                </pre>
+              )}
+            </div>
           )}
         </div>
       )}

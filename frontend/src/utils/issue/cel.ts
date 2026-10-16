@@ -1,12 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { cloneDeep, head, uniq } from "lodash-es";
-import type { SimpleExpr } from "@/modules/cel";
 import {
   constantStringOf,
+  ExprType,
   factorNameOf,
   isRawStringExpr,
   resolveCELExpr,
+  type SimpleExpr,
 } from "@/modules/cel";
 import {
   databaseNamePrefix,
@@ -443,8 +444,41 @@ const environmentClauseOf = (expr: Expr): string[] | undefined => {
   return ids && uniq(ids).map((id) => `${environmentNamePrefix}${id}`);
 };
 
-export const convertFromExpr = (expr: Expr): ConditionExpression => {
-  const simpleExpr = resolveCELExpr(expr);
+const splitTopLevelOr = (expr: SimpleExpr): SimpleExpr[] => {
+  if (expr.type !== ExprType.ConditionGroup || expr.operator !== "_||_") {
+    return [expr];
+  }
+  return expr.args.flatMap(splitTopLevelOr);
+};
+
+const mergeDatabaseResources = (
+  resources: DatabaseResource[]
+): DatabaseResource[] => {
+  const merged = new Map<string, DatabaseResource>();
+  for (const resource of resources) {
+    const key = [
+      resource.databaseFullName,
+      resource.instanceResourceId,
+      resource.databaseResourceId,
+      resource.schema,
+      resource.table,
+    ].join("\u0000");
+    const existing = merged.get(key);
+    if (!existing) {
+      merged.set(key, { ...resource, columns: resource.columns?.slice() });
+      continue;
+    }
+    if (resource.columns) {
+      existing.columns = uniq([
+        ...(existing.columns ?? []),
+        ...resource.columns,
+      ]);
+    }
+  }
+  return [...merged.values()];
+};
+
+const convertFromSimpleExpr = (simpleExpr: SimpleExpr): ConditionExpression => {
   const conditionExpression: ConditionExpression = {
     databaseResources: [],
   };
@@ -509,16 +543,14 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
           }
           case CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME: {
             const databaseResource =
-              conditionExpression.databaseResources?.pop();
-            if (databaseResource) {
-              databaseResource.columns = [];
-              for (const value of values) {
-                if (value) {
-                  databaseResource.columns.push(value as string);
-                }
-              }
-              conditionExpression.databaseResources!.push(databaseResource);
-            }
+              conditionExpression.databaseResources?.pop() ?? {
+                databaseFullName: "",
+              };
+            databaseResource.columns = uniq([
+              ...(databaseResource.columns ?? []),
+              ...values.filter(Boolean).map(String),
+            ]);
+            conditionExpression.databaseResources!.push(databaseResource);
             break;
           }
         }
@@ -576,8 +608,11 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
               break;
             }
             case CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME: {
-              if (right) {
-                databaseResource.columns = [right];
+              if (right && !databaseResource.columns?.includes(right)) {
+                databaseResource.columns = [
+                  ...(databaseResource.columns ?? []),
+                  right,
+                ];
               }
               break;
             }
@@ -594,6 +629,32 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
   }
   processCondition(simpleExpr);
   return conditionExpression;
+};
+
+export const convertFromExpr = (expr: Expr): ConditionExpression => {
+  const branches = splitTopLevelOr(resolveCELExpr(expr));
+  if (branches.length === 1) {
+    return convertFromSimpleExpr(branches[0]);
+  }
+
+  const branchConditions = branches.map(convertFromSimpleExpr);
+  const expiration = branchConditions.find(
+    (condition) => condition.expiredTime
+  )?.expiredTime;
+  const environmentLists = branchConditions
+    .map((condition) => condition.environments)
+    .filter(
+      (environments): environments is string[] => environments !== undefined
+    );
+  return {
+    databaseResources: mergeDatabaseResources(
+      branchConditions.flatMap((condition) => condition.databaseResources ?? [])
+    ),
+    ...(expiration ? { expiredTime: expiration } : {}),
+    ...(environmentLists.length > 0
+      ? { environments: uniq(environmentLists.flat()) }
+      : {}),
+  };
 };
 
 const mergeDatabaseLevelConditions = (

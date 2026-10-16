@@ -1,4 +1,5 @@
 import i18n from "@/lib/i18n";
+import type { DatabaseResource } from "@/types/member";
 import { celString } from "@/utils/v1/celLiteral";
 import type {
   AccessUser,
@@ -81,9 +82,15 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
     return dbName !== "";
   });
 
-  // No specific databases
   if (realResources.length === 0) {
-    return `${i18n.t("database.all")}${levelSuffix}`;
+    const columns = [
+      ...new Set(resources.flatMap((resource) => resource.columns ?? [])),
+    ];
+    const columnSuffix =
+      columns.length > 0
+        ? ` (${i18n.t("database.columns").toLowerCase()}: ${listItems(columns)})`
+        : "";
+    return `${i18n.t("database.all")}${columnSuffix}${levelSuffix}`;
   }
 
   // Collect unique database names
@@ -171,6 +178,22 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
   return `${dbName} (${table}: ${listItems(columns)})${levelSuffix}`;
 }
 
+export function resourceCoversDatabase(
+  resource: DatabaseResource,
+  databaseFullName: string
+): boolean {
+  if (resource.databaseFullName !== "") {
+    return resource.databaseFullName === databaseFullName;
+  }
+  const target = databaseFullName.match(databaseResourcePattern)?.groups;
+  return (
+    (!resource.instanceResourceId ||
+      resource.instanceResourceId === target?.instanceName) &&
+    (!resource.databaseResourceId ||
+      resource.databaseResourceId === target?.databaseName)
+  );
+}
+
 // Rewrite `resource.database == "instances/X/databases/Y"` to
 // `resource.instance_id == "X" && resource.database_name == "Y"`.
 // The expression editor uses resource.database as a combined selector,
@@ -217,6 +240,28 @@ export function buildMemberSummary(grants: ExemptionGrant[]): {
         ? Math.min(...expiringGrants.map((g) => g.expirationTimestamp!))
         : undefined,
   };
+}
+
+export function generateMemberScopeSummary(
+  grantCount: number,
+  databaseNames: string[]
+): string {
+  const exemptionCount = i18n.t("project.masking-exemption.n-exemptions", {
+    count: grantCount,
+    n: grantCount,
+  });
+  const uniqueDatabases = [...new Set(databaseNames)];
+  if (uniqueDatabases.includes("")) {
+    return `${exemptionCount} · ${i18n.t("database.all")}`;
+  }
+  if (uniqueDatabases.length === 1) {
+    return `${exemptionCount} · ${uniqueDatabases[0]}`;
+  }
+  if (uniqueDatabases.length > 1) {
+    const databaseCount = uniqueDatabases.length;
+    return `${exemptionCount} · ${i18n.t("project.masking-exemption.n-databases", { count: databaseCount, n: databaseCount })}`;
+  }
+  return exemptionCount;
 }
 
 export function groupByMember(accessUsers: AccessUser[]): ExemptionMember[] {

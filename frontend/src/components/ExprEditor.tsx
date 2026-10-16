@@ -1172,7 +1172,13 @@ function ValueInput({
         <SelectTrigger className="w-full">
           <SelectValue placeholder={t("cel.condition.select-value")}>
             {(value: string | null) => {
-              if (!value) return null;
+              if (!value) {
+                return (
+                  <span className="text-control-placeholder">
+                    {t("cel.condition.select-value")}
+                  </span>
+                );
+              }
               const found = optionConfig.options.find((o) => o.value === value);
               return renderOptionValue(value, found?.label);
             }}

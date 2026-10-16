@@ -123,3 +123,47 @@ describe("readableCondition proves the environments and keeps the rest best-effo
     ]);
   });
 });
+
+describe("convertFromExpr with a column condition", () => {
+  const columnIn = (...names: string[]) =>
+    call("@in", resource("column_name"), list(...names.map(str)));
+  const databaseResources = (expr: Expr) =>
+    convertFromExpr(expr).databaseResources;
+
+  test("keeps the columns of a column-only in condition", () => {
+    expect(databaseResources(columnIn("email", "phone"))).toEqual([
+      { databaseFullName: "", columns: ["email", "phone"] },
+    ]);
+  });
+
+  test("collects columns from equality conditions joined by or", () => {
+    expect(
+      databaseResources(
+        or(eq("column_name", "email"), eq("column_name", "phone"))
+      )
+    ).toEqual([{ databaseFullName: "", columns: ["email", "phone"] }]);
+  });
+
+  test("keeps disjunctive column scopes in separate resources", () => {
+    expect(
+      databaseResources(
+        or(
+          columnIn("a", "b"),
+          and(
+            eq("instance_id", "mysql-instance"),
+            eq("database_name", "bytebase_210"),
+            eq("column_name", "c")
+          )
+        )
+      )
+    ).toEqual([
+      { databaseFullName: "", columns: ["a", "b"] },
+      {
+        databaseFullName: "instances/mysql-instance/databases/bytebase_210",
+        instanceResourceId: "mysql-instance",
+        databaseResourceId: "bytebase_210",
+        columns: ["c"],
+      },
+    ]);
+  });
+});

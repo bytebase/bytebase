@@ -2064,13 +2064,17 @@
       "expires-in-days_other": "Expires in {{days}} days",
       "expires-today": "Expires today",
       "grant-exemption": "Grant Exemption",
+      "hide-raw-cel-condition": "Hide raw CEL condition",
       "level": "level",
+      "n-databases_one": "{{n}} database",
+      "n-databases_other": "{{n}} databases",
       "n-exemptions_one": "{{n}} exemption",
       "n-exemptions_other": "{{n}} exemptions",
       "no-exemptions": "No masking exemptions granted yet",
       "no-reason": "No reason provided",
       "revoke-exemption-title": "Remove masking exemption for {{member}}?",
-      "self": "Masking Exemptions"
+      "self": "Masking Exemptions",
+      "show-raw-cel-condition": "Show raw CEL condition"
     },
     "members": {
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",

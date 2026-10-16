@@ -2064,13 +2064,17 @@
       "expires-in-days_other": "Expira en {{days}} días",
       "expires-today": "Expira hoy",
       "grant-exemption": "Conceder Exención",
+      "hide-raw-cel-condition": "Ocultar condición CEL sin procesar",
       "level": "nivel",
+      "n-databases_one": "{{n}} base de datos",
+      "n-databases_other": "{{n}} bases de datos",
       "n-exemptions_one": "{{n}} exención",
       "n-exemptions_other": "{{n}} exenciones",
       "no-exemptions": "Aún no se han concedido exenciones de enmascaramiento",
       "no-reason": "No se proporcionó motivo",
       "revoke-exemption-title": "¿Eliminar la exención de enmascaramiento para {{member}}?",
-      "self": "Exenciones de Enmascaramiento"
+      "self": "Exenciones de Enmascaramiento",
+      "show-raw-cel-condition": "Mostrar condición CEL sin procesar"
     },
     "members": {
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
