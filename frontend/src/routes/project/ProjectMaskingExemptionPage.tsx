@@ -522,7 +522,7 @@ export function ProjectMaskingExemptionPage({
 
 function getAccessUsers(
   exemption: MaskingExemptionPolicy_Exemption,
-  condition: ConditionExpression
+  condition: ConditionExpression | undefined
 ): AccessUser[] {
   const expression = exemption.condition?.expression ?? "";
   const description = exemption.condition?.description ?? "";
@@ -537,10 +537,7 @@ function getAccessUsers(
     expirationTimestamp,
     rawExpression: expression,
     description,
-    databaseResources:
-      condition.databaseResources && condition.databaseResources.length > 0
-        ? condition.databaseResources
-        : undefined,
+    databaseResources: condition?.databaseResources,
     conditionExpression,
   }));
 }
@@ -886,11 +883,7 @@ function ExemptionMemberItem({
   );
 
   const scopeSummary = useMemo(() => {
-    return generateMemberScopeSummary(
-      t,
-      member.grants.length,
-      member.databaseNames
-    );
+    return generateMemberScopeSummary(t, member.grants, member.databaseNames);
   }, [member, t]);
 
   const handleClick = () => {

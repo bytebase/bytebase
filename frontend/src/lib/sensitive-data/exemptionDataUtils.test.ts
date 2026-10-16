@@ -10,6 +10,7 @@ vi.mock("@/lib/i18n", () => ({
         "database.columns": "Columns",
         "common.schema": "Schema",
         "common.table": "Table",
+        "cel.condition.self": "Condition",
         "project.masking-exemption.level": "level",
       };
       if (key === "common.n-more" && params?.n !== undefined)
@@ -183,6 +184,7 @@ describe("groupByMember", () => {
     member: "user:test@bytebase.com",
     rawExpression: "",
     description: "",
+    databaseResources: [],
     conditionExpression: "",
     ...overrides,
   });
@@ -307,6 +309,18 @@ describe("groupByMember", () => {
     const result = groupByMember(users);
     // Empty sentinel indicates "all databases" (grant has no specific resources)
     expect(result[0].databaseNames).toEqual([""]);
+  });
+
+  test("does not summarize an unknown condition as all databases", () => {
+    const result = groupByMember([
+      makeAccessUser({
+        databaseResources: undefined,
+        conditionExpression:
+          '(resource.database_name in ["a", "b"]) && (resource.column_name in ["email", "phone"])',
+      }),
+    ]);
+
+    expect(result[0].databaseNames).toEqual([]);
   });
 
   test("extracts unique database names from resources", () => {
@@ -583,11 +597,18 @@ describe("generateGrantTitle", () => {
     id: "test",
     description: "",
     rawExpression: "",
+    databaseResources: [],
     conditionExpression: "",
     ...overrides,
   });
 
   // --- No databases ---
+
+  test("unknown condition → Condition", () => {
+    expect(
+      generateGrantTitle(makeGrant({ databaseResources: undefined }))
+    ).toBe("Condition");
+  });
 
   test("no resources, no level → All databases", () => {
     expect(generateGrantTitle(makeGrant({}))).toBe("All databases");

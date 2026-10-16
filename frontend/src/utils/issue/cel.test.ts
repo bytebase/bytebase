@@ -93,7 +93,7 @@ describe("readableCondition proves the environments and keeps the rest best-effo
   });
 
   test("a clause under || or ! does not count: `in [] || true` is not the switch off", () => {
-    expect(convertFromExpr(or(envIn(), bool(true))).environments).toEqual([]);
+    expect(convertFromExpr(or(envIn(), bool(true)))?.environments).toEqual([]);
     expect(environments(or(envIn(), bool(true)))).toBeUndefined();
     expect(environments(or(envIn("prod"), envIn("dev")))).toBeUndefined();
     expect(
@@ -128,7 +128,7 @@ describe("convertFromExpr with a column condition", () => {
   const columnIn = (...names: string[]) =>
     call("@in", resource("column_name"), list(...names.map(str)));
   const databaseResources = (expr: Expr) =>
-    convertFromExpr(expr).databaseResources;
+    convertFromExpr(expr)?.databaseResources;
 
   test("keeps the columns of a column-only in condition", () => {
     expect(databaseResources(columnIn("email", "phone"))).toEqual([
@@ -211,6 +211,6 @@ describe("convertFromExpr with a column condition", () => {
           or(eq("column_name", "email"), eq("column_name", "phone"))
         )
       )
-    ).toEqual({});
+    ).toBeUndefined();
   });
 });

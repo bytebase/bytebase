@@ -106,7 +106,7 @@ export const bindingScopesResources = (binding: Binding): boolean => {
 export const isBindingPolicyExpired = (binding: Binding): boolean => {
   if (binding.parsedExpr) {
     const conditionExpr = convertFromExpr(binding.parsedExpr);
-    if (conditionExpr.expiredTime) {
+    if (conditionExpr?.expiredTime) {
       const expiration = new Date(conditionExpr.expiredTime);
       if (expiration < new Date()) {
         return true;
@@ -356,6 +356,9 @@ export const checkQuerierPermission = (
         return true;
       }
       const conditionExpr = convertFromExpr(expr);
+      if (!conditionExpr) {
+        return false;
+      }
       if (
         conditionExpr.expiredTime &&
         new Date(conditionExpr.expiredTime).getTime() < Date.now()

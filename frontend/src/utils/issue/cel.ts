@@ -361,12 +361,14 @@ const convertToCELString = (
 
 export const batchConvertFromCELString = async (
   cels: string[]
-): Promise<ConditionExpression[]> => {
+): Promise<(ConditionExpression | undefined)[]> => {
   const celExprs = await batchConvertCELStringToParsedExpr(cels);
-  const resp: ConditionExpression[] = [];
+  const resp: (ConditionExpression | undefined)[] = [];
   for (let i = 0; i < celExprs.length; i++) {
-    if (cels[i] === "true" || !celExprs[i]) {
-      resp.push({});
+    if (cels[i] === "true") {
+      resp.push({ databaseResources: [] });
+    } else if (!celExprs[i]) {
+      resp.push(undefined);
     } else {
       resp.push(convertFromExpr(celExprs[i]));
     }
@@ -388,7 +390,10 @@ export const readableCondition = (
   expr: Expr | undefined
 ): ConditionExpression =>
   expr
-    ? { ...convertFromExpr(expr), environments: provenEnvironments(expr) }
+    ? {
+        ...(convertFromExpr(expr) ?? {}),
+        environments: provenEnvironments(expr),
+      }
     : { databaseResources: [] };
 
 export const readableConditionFromCELString = async (
@@ -665,12 +670,14 @@ const convertFromSimpleExpr = (simpleExpr: SimpleExpr): ConditionExpression => {
   return conditionExpression;
 };
 
-export const convertFromExpr = (expr: Expr): ConditionExpression => {
+export const convertFromExpr = (
+  expr: Expr
+): ConditionExpression | undefined => {
   const branches = splitOrBranches(resolveCELExpr(expr));
   // Resource summaries model one disjunction with shared conditions. Keep
   // CEL with multiple independent disjunctions raw instead of changing it.
   if (!branches) {
-    return {};
+    return undefined;
   }
   if (branches.length === 1) {
     return convertFromSimpleExpr(branches[0]);

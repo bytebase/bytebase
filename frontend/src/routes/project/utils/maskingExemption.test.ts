@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
 import { describe, expect, test } from "vitest";
+import type { ExemptionGrant } from "@/lib/sensitive-data/types";
 import {
   generateMemberScopeSummary,
   resourceCoversDatabase,
@@ -7,6 +8,7 @@ import {
 
 const t = ((key: string, options?: Record<string, unknown>) => {
   if (key === "database.all") return "All databases";
+  if (key === "cel.condition.self") return "Condition";
   if (key === "project.masking-exemption.n-exemptions") {
     const count = options?.count;
     return `${count} exemption${count === 1 ? "" : "s"}`;
@@ -18,17 +20,31 @@ const t = ((key: string, options?: Record<string, unknown>) => {
   return key;
 }) as TFunction;
 
+const grants = (
+  count: number,
+  databaseResources: ExemptionGrant["databaseResources"]
+) =>
+  Array.from({ length: count }, () => ({
+    databaseResources,
+  })) as ExemptionGrant[];
+
 describe("generateMemberScopeSummary", () => {
   test("uses the active translator for the summary", () => {
-    expect(generateMemberScopeSummary(t, 3, ["bytebase_210"])).toBe(
+    expect(generateMemberScopeSummary(t, grants(3, []), ["bytebase_210"])).toBe(
       "3 exemptions · bytebase_210"
     );
   });
 
   test("shows all databases when any grant has global scope", () => {
-    expect(generateMemberScopeSummary(t, 3, ["", "bytebase_210"])).toBe(
-      "3 exemptions · All databases"
-    );
+    expect(
+      generateMemberScopeSummary(t, grants(3, []), ["", "bytebase_210"])
+    ).toBe("3 exemptions · All databases");
+  });
+
+  test("shows a condition when any grant cannot be summarized", () => {
+    expect(
+      generateMemberScopeSummary(t, grants(1, undefined), ["bytebase_210"])
+    ).toBe("1 exemption · Condition");
   });
 });
 

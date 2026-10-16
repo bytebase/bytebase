@@ -68,7 +68,10 @@ function listItems(items: string[]): string {
 }
 
 export function generateGrantTitle(grant: ExemptionGrant): string {
-  const resources = grant.databaseResources ?? [];
+  if (!grant.databaseResources) {
+    return i18n.t("cel.condition.self");
+  }
+  const resources = grant.databaseResources;
   const level = grant.classificationLevel;
 
   const levelSuffix = level
@@ -204,11 +207,9 @@ export function buildMemberSummary(grants: ExemptionGrant[]): {
       )
     ),
   ];
-  // Grants with no databaseResources cover all databases — add empty sentinel
+  // Grants with an empty resource list cover all databases — add empty sentinel
   // so the member item can detect and display "All databases".
-  if (
-    grants.some((g) => !g.databaseResources || g.databaseResources.length === 0)
-  ) {
+  if (grants.some((grant) => grant.databaseResources?.length === 0)) {
     databaseNames.push("");
   }
   const expiringGrants = grants.filter((g) => g.expirationTimestamp);
