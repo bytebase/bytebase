@@ -12062,8 +12062,11 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>DONE</td>
                 <td>3</td>
-                <td><p>Every (spec, target) unit was evaluated. DONE does not mean the
-review passed: whether problems remain is judged from open comments.</p></td>
+                <td><p>Every (spec, target) unit in the reviewer&#39;s scope was evaluated. RULE&#39;s
+scope is every target. AI&#39;s scope is the project&#39;s CI sample, the first
+ci_sampling_size targets of each spec, or every target when
+ci_sampling_size is 0. DONE does not mean the review passed: whether
+problems remain is judged from open comments.</p></td>
               </tr>
             
               <tr>
@@ -29513,8 +29516,9 @@ If enabled, issues will include &#34;set role &lt;db_owner&gt;&#34; statement. <
                   <td>ci_sampling_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of database rows to sample during CI data validation.
-Without specification, sampling is disabled, resulting in full validation. </p></td>
+                  <td><p>The maximum number of databases to sample during CI data validation and
+AI review. Without specification, sampling is disabled, resulting in full
+validation. </p></td>
                 </tr>
               
                 <tr>

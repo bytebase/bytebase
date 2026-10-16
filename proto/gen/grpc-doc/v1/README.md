@@ -4044,7 +4044,7 @@ completion transaction, so re-running supersedes instead of canceling).
 | STATUS_UNSPECIFIED | 0 |  |
 | AVAILABLE | 1 | Created and claimable by any replica. |
 | RUNNING | 2 |  |
-| DONE | 3 | Every (spec, target) unit was evaluated. DONE does not mean the review passed: whether problems remain is judged from open comments. |
+| DONE | 3 | Every (spec, target) unit in the reviewer&#39;s scope was evaluated. RULE&#39;s scope is every target. AI&#39;s scope is the project&#39;s CI sample, the first ci_sampling_size targets of each spec, or every target when ci_sampling_size is 0. DONE does not mean the review passed: whether problems remain is judged from open comments. |
 | FAILED | 4 | At least one unit was not evaluated; the cause is in `error`. |
 
 
@@ -10388,7 +10388,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable database tenant mode for PostgreSQL. If enabled, issues will include &#34;set role &lt;db_owner&gt;&#34; statement. |
 | allow_self_approval | [bool](#bool) |  | Whether to allow issue creators to self-approve their own issues. |
 | execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy) |  | Execution retry policy for task runs. |
-| ci_sampling_size | [int32](#int32) |  | The maximum number of database rows to sample during CI data validation. Without specification, sampling is disabled, resulting in full validation. |
+| ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation and AI review. Without specification, sampling is disabled, resulting in full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks allowed during rollout execution. |
 | labels | [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
 | enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |

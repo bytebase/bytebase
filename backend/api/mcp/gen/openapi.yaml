@@ -18376,8 +18376,9 @@ components:
           title: ci_sampling_size
           format: int32
           description: |-
-            The maximum number of database rows to sample during CI data validation.
-             Without specification, sampling is disabled, resulting in full validation.
+            The maximum number of databases to sample during CI data validation and
+             AI review. Without specification, sampling is disabled, resulting in full
+             validation.
         parallelTasksPerRollout:
           type: integer
           title: parallel_tasks_per_rollout

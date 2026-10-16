@@ -10,6 +10,7 @@ import (
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/semaphore"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
@@ -122,8 +123,9 @@ func TestCheckSheetSize(t *testing.T) {
 }
 
 // TestReviewUnits pins the executor's concurrency guarantees: at most
-// aiReviewConcurrency reviews in flight, every unit attempted whatever the
-// others do, and a panicking review recorded as that unit's error.
+// aiReviewRunConcurrency reviews in flight, every unit attempted whatever the
+// others do, a panicking review recorded as that unit's error, and every slot
+// returned whatever the review did.
 func TestReviewUnits(t *testing.T) {
 	t.Parallel()
 
@@ -152,10 +154,11 @@ func TestReviewUnits(t *testing.T) {
 		}
 	}
 
-	results, errs := reviewUnits(context.Background(), units, review)
+	slots := semaphore.NewWeighted(aiReviewServerConcurrency)
+	results, errs := reviewUnits(context.Background(), slots, units, review)
 	require.Len(t, results, 20)
 	require.Len(t, errs, 20)
-	require.LessOrEqual(t, maxInFlight.Load(), int32(aiReviewConcurrency))
+	require.LessOrEqual(t, maxInFlight.Load(), int32(aiReviewRunConcurrency))
 	require.Greater(t, maxInFlight.Load(), int32(1), "the reviews run concurrently")
 	for i, result := range results {
 		switch i {
@@ -172,4 +175,27 @@ func TestReviewUnits(t *testing.T) {
 		}
 	}
 	require.Zero(t, inFlight.Load())
+	require.True(t, slots.TryAcquire(aiReviewServerConcurrency), "the failed and the panicking reviews return their slots too")
+}
+
+func TestReviewUnitsStopWaitingForASlotWhenTheRunEnds(t *testing.T) {
+	t.Parallel()
+
+	slots := semaphore.NewWeighted(1)
+	require.True(t, slots.TryAcquire(1), "another run holds the only slot")
+	units := []*aiReviewUnit{{Check: &plancheck.CheckTarget{SpecID: "spec-1", Target: "instances/i/databases/a"}}}
+	var reviews atomic.Int32
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan []error)
+	go func() {
+		_, errs := reviewUnits(ctx, slots, units, func(context.Context, *aiReviewUnit) (*aireview.Result, error) {
+			reviews.Add(1)
+			return &aireview.Result{}, nil
+		})
+		done <- errs
+	}()
+	cancel()
+	errs := receive(t, done)
+	require.ErrorIs(t, errs[0], context.Canceled)
+	require.Zero(t, reviews.Load(), "no review starts without a slot")
 }

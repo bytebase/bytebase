@@ -5,29 +5,39 @@ import (
 	"log/slog"
 
 	"github.com/pkg/errors"
+	"golang.org/x/sync/semaphore"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 // AIReviewExecutor is the AI review: a model judges each spec's sheet against
-// the workspace and project AI review policy, once per database, with that
-// database's facts in the prompt and its synced schema behind the tools. The
-// reviews of one run share the model and run concurrently under
-// aiReviewConcurrency.
+// the workspace and project AI review policy, once per database of the
+// project's CI sample, with that database's facts in the prompt and its synced
+// schema behind the tools. The reviews of one run share the model and run
+// concurrently under aiReviewRunConcurrency.
 type AIReviewExecutor struct {
-	store *store.Store
+	store    *store.Store
+	newModel func(*storepb.AISetting) aireview.Model
+	// slots bounds the reviews in flight across every run of the executor.
+	slots reviewSlots
 }
 
-// NewAIReviewExecutor creates the AI review executor.
+// NewAIReviewExecutor creates the AI review executor. The server creates one,
+// so aiReviewServerConcurrency bounds the reviews of every run on the server.
 func NewAIReviewExecutor(s *store.Store) *AIReviewExecutor {
-	return &AIReviewExecutor{store: s}
+	return &AIReviewExecutor{
+		store:    s,
+		newModel: aireview.NewModel,
+		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	}
 }
 
-// RunOnce implements Executor. Collect-all, no fail-fast: every database is
-// attempted, failures aggregate into one message, and the findings are
-// returned only when every database was reviewed.
+// RunOnce implements Executor. Collect-all, no fail-fast: every database of
+// the sample is attempted, failures aggregate into one message, and the
+// findings are returned only when every one of them was reviewed.
 func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueUID int64) ([]*store.IssueCommentMessage, error) {
 	plan, project, err := loadReviewPlan(ctx, e.store, projectID, issueUID)
 	if err != nil {
@@ -49,9 +59,10 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database group for plan")
 	}
-	// DeriveReviewTargets, not DeriveCheckTargets: every database is reviewed
-	// with its own facts, so the CI sampling limit does not apply.
-	checkTargets, err := plancheck.DeriveReviewTargets(ctx, e.store, project, plan, databaseGroup)
+	// DeriveCheckTargets, not DeriveReviewTargets: every database costs model
+	// calls, so the AI review covers the databases plan checks sample when the
+	// project sets ci_sampling_size, and every database otherwise.
+	checkTargets, err := plancheck.DeriveCheckTargets(ctx, e.store, project, plan, databaseGroup)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to derive review targets")
 	}
@@ -72,12 +83,12 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 		units = append(units, &aiReviewUnit{Check: checkTarget, Statement: statement})
 	}
 
-	reviewer := aireview.NewReviewer(aireview.NewModel(aiSetting))
-	results, reviewErrs := reviewUnits(ctx, units, func(ctx context.Context, unit *aiReviewUnit) (*aireview.Result, error) {
-		// The schema is loaded inside the bounded pool and the run drops it
-		// when the review ends, so the run itself holds at most
-		// aiReviewConcurrency schemas however many databases it reviews. The
-		// store's schema cache keeps its own bounded copies.
+	reviewer := aireview.NewReviewer(e.newModel(aiSetting))
+	results, reviewErrs := reviewUnits(ctx, e.slots, units, func(ctx context.Context, unit *aiReviewUnit) (*aireview.Result, error) {
+		// The schema is loaded once the unit holds its slot and dropped when
+		// the review ends, so the runs together hold at most one schema per
+		// slot however many databases they review. The store's schema cache
+		// keeps its own bounded copies.
 		request := &aireview.Request{
 			WorkspacePolicy: policy.Workspace,
 			ProjectPolicy:   policy.Project,

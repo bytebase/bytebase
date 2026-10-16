@@ -43,8 +43,9 @@ message Project {
     int32 maximum_retries = 1;
   }
 
-  // The maximum number of databases to sample during CI data validation.
-  // If not specified, sampling is disabled, resulting in a full validation.
+  // The maximum number of databases to sample during CI data validation and
+  // AI review. If not specified, sampling is disabled, resulting in a full
+  // validation.
   int32 ci_sampling_size = 11;
 
   // The maximum number of parallel tasks to run during the rollout.
