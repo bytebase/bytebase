@@ -444,30 +444,43 @@ const environmentClauseOf = (expr: Expr): string[] | undefined => {
   return ids && uniq(ids).map((id) => `${environmentNamePrefix}${id}`);
 };
 
-const splitOrBranches = (expr: SimpleExpr): SimpleExpr[] => {
+const splitOrBranches = (expr: SimpleExpr): SimpleExpr[] | undefined => {
   if (expr.type !== ExprType.ConditionGroup) {
     return [expr];
   }
   if (expr.operator === "_||_") {
-    return expr.args.flatMap(splitOrBranches);
+    const branches = expr.args.map(splitOrBranches);
+    return branches.some((branch) => branch === undefined)
+      ? undefined
+      : branches.flat();
   }
 
-  const branches = expr.args.reduce<SimpleExpr[][]>(
-    (combinations, argument) =>
-      combinations.flatMap((combination) =>
-        splitOrBranches(argument).map((branch) => [...combination, branch])
-      ),
-    [[]]
+  const branchesByArgument = expr.args.map(splitOrBranches);
+  if (branchesByArgument.some((branches) => branches === undefined)) {
+    return undefined;
+  }
+  const alternativeIndex = branchesByArgument.findIndex(
+    (branches) => branches.length > 1
   );
-  return branches.map((arguments_) =>
-    arguments_.length === 1
+  if (alternativeIndex === -1) {
+    return [expr];
+  }
+  if (branchesByArgument.filter((branches) => branches.length > 1).length > 1) {
+    return undefined;
+  }
+
+  return branchesByArgument[alternativeIndex].map((branch) => {
+    const arguments_ = branchesByArgument.map((branches, index) =>
+      index === alternativeIndex ? branch : branches[0]
+    );
+    return arguments_.length === 1
       ? arguments_[0]
       : {
           type: ExprType.ConditionGroup,
           operator: "_&&_",
           args: arguments_,
-        }
-  );
+        };
+  });
 };
 
 const mergeDatabaseResources = (
@@ -651,6 +664,11 @@ const convertFromSimpleExpr = (simpleExpr: SimpleExpr): ConditionExpression => {
 
 export const convertFromExpr = (expr: Expr): ConditionExpression => {
   const branches = splitOrBranches(resolveCELExpr(expr));
+  // Resource summaries model one disjunction with shared conditions. Keep
+  // CEL with multiple independent disjunctions raw instead of changing it.
+  if (!branches) {
+    return {};
+  }
   if (branches.length === 1) {
     return convertFromSimpleExpr(branches[0]);
   }

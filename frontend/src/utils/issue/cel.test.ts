@@ -199,4 +199,18 @@ describe("convertFromExpr with a column condition", () => {
       )
     ).toEqual([{ databaseFullName: A }]);
   });
+
+  test("falls back to the raw condition for independent OR groups", () => {
+    expect(
+      convertFromExpr(
+        and(
+          or(
+            eq("database", "instances/i/databases/a"),
+            eq("database", "instances/i/databases/b")
+          ),
+          or(eq("column_name", "email"), eq("column_name", "phone"))
+        )
+      )
+    ).toEqual({});
+  });
 });

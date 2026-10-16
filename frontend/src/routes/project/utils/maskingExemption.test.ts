@@ -1,10 +1,11 @@
+import type { TFunction } from "i18next";
 import { describe, expect, test } from "vitest";
 import {
   generateMemberScopeSummary,
   resourceCoversDatabase,
 } from "./maskingExemption";
 
-const t = (key: string, options?: Record<string, unknown>) => {
+const t = ((key: string, options?: Record<string, unknown>) => {
   if (key === "database.all") return "All databases";
   if (key === "project.masking-exemption.n-exemptions") {
     const count = options?.count;
@@ -15,7 +16,7 @@ const t = (key: string, options?: Record<string, unknown>) => {
     return `${count} database${count === 1 ? "" : "s"}`;
   }
   return key;
-};
+}) as TFunction;
 
 describe("generateMemberScopeSummary", () => {
   test("uses the active translator for the summary", () => {
