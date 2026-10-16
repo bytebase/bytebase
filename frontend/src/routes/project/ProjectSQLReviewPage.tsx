@@ -310,7 +310,9 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
             )}
           </>
         )}
-        <div className="flex flex-col gap-y-2 pt-8">
+        {/* The column's gap adds to this padding: 32px above the heading, as
+            on the workspace page. */}
+        <div className="flex flex-col gap-y-2 pt-2">
           <h1 className="text-2xl font-bold text-main">
             {t("sql-review.ai-review.self")}
           </h1>
