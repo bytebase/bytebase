@@ -11106,6 +11106,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListIssueCommentsResponse'
+  /v1/projects/{project}/issues/{issue}/reviewRuns/{reviewRun}:
+    get:
+      tags:
+        - IssueService
+      summary: GetReviewRun
+      description: |-
+        Gets the current run of one reviewer on an issue. The run carries
+         execution status only; review results are issue comments. A reviewer
+         that has never run on the issue is NOT_FOUND.
+         Permissions required: bb.reviewRuns.get
+      operationId: IssueService_GetReviewRun
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: issue
+          in: path
+          description: The issue id.
+          required: true
+          schema:
+            type: string
+        - name: reviewRun
+          in: path
+          description: The reviewRun id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ReviewRun'
   /v1/projects/{project}/issues/{issue}/reviewRuns/{reviewRun}:run:
     post:
       tags:
@@ -11115,9 +11152,9 @@ paths:
         Triggers a review run. The slot is reset unconditionally: a RUNNING
          execution is superseded (its completion is fenced off), the attempt
          number is bumped, and the returned run is AVAILABLE.
-         Review results are not returned by this RPC and have no read RPC yet:
-         findings will surface as issue comments once the review comment
-         integration lands. The returned run carries execution status only.
+         Review results are not returned by this RPC: they are posted as issue
+         comments. The returned run carries execution status only, and
+         GetReviewRun reads it back.
          The audit log is the only record of who triggered a run.
          Permissions required: bb.reviewRuns.run
       operationId: IssueService_RunReview
@@ -21491,6 +21528,19 @@ components:
             The name of the SQL review config to retrieve.
              Format: reviewConfigs/{reviewConfig}
       title: GetReviewConfigRequest
+      required:
+        - name
+      additionalProperties: false
+    bytebase.v1.GetReviewRunRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the review run to retrieve.
+             Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+      title: GetReviewRunRequest
       required:
         - name
       additionalProperties: false
