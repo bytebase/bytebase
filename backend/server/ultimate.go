@@ -47,6 +47,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 
 	// Advisors.
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/bigquery"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oceanbase"
