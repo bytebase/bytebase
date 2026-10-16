@@ -12,7 +12,6 @@ interface AgentContextPickerProps {
   context?: string;
   contextTitle?: string;
   workspace?: { name: string; title: string };
-  hasMessages: boolean;
   disabled: boolean;
   onSelect: (context: string) => boolean;
 }
@@ -24,7 +23,6 @@ interface ContextOptionsProps extends AgentContextPickerProps {
 function ContextOptions({
   context,
   workspace,
-  hasMessages,
   onSelect,
   close,
 }: ContextOptionsProps) {
@@ -36,11 +34,6 @@ function ContextOptions({
   const select = (resource: string) => {
     if (onSelect(resource)) close();
   };
-
-  const optionLabel = (name: string, title: string) =>
-    hasMessages && name !== context
-      ? t("agent.context-start-new-chat", { name: title })
-      : title;
 
   return (
     <div className="flex max-h-80 flex-col" data-agent-context-options>
@@ -68,7 +61,7 @@ function ContextOptions({
             >
               <Building2 className="size-4 shrink-0" />
               <span className="min-w-0 flex-1 truncate">
-                {optionLabel(workspace.name, workspace.title || workspace.name)}
+                {workspace.title || workspace.name}
               </span>
               {context === workspace.name ? <Check className="size-4" /> : null}
             </Button>
@@ -89,7 +82,7 @@ function ContextOptions({
             <FolderKanban className="size-4 shrink-0" />
             <span className="min-w-0 flex-1 text-left">
               <span className="block truncate">
-                {optionLabel(project.name, project.title || project.name)}
+                {project.title || project.name}
               </span>
               <span className="block truncate text-xs text-control-light">
                 {getProjectName(project.name)}

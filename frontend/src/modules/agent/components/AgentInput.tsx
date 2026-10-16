@@ -119,9 +119,6 @@ export function AgentInput() {
   const currentPendingAsk = useAgentStore(selectCurrentPendingAsk);
   const loading = useAgentStore(selectLoading);
   const hasRunningChat = useAgentStore(selectHasRunningChat);
-  const hasMessages = useAgentStore((s) =>
-    Boolean(s.messagesByChatId[s.currentChatId ?? ""]?.length)
-  );
   const isAIConfigurationBlocked = useAgentStore(
     selectCurrentChatRequiresAIConfiguration
   );
@@ -852,7 +849,6 @@ export function AgentInput() {
           context={context}
           contextTitle={contextTitle}
           workspace={workspace}
-          hasMessages={hasMessages}
           disabled={hasRunningChat || Boolean(currentPendingAsk)}
           onSelect={selectContext}
         />

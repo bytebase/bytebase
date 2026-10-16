@@ -816,9 +816,6 @@ export const createAgentStore = () => {
           if (!current) return get().createChat({ page, context });
           if (current.context === context) return current;
           if (get().getPendingAsk(current.id)) return null;
-          if (get().getMessages(current.id).length > 0) {
-            return get().createChat({ page, context });
-          }
           set((state) => {
             const chat = state.chats.find((c) => c.id === current.id);
             if (chat) {

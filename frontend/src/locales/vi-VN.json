@@ -44,7 +44,6 @@
     "context": "Ngữ cảnh",
     "context-no-projects": "Không có dự án nào có thể truy cập",
     "context-select": "Chọn ngữ cảnh",
-    "context-start-new-chat": "Bắt đầu cuộc trò chuyện mới trong {{name}}",
     "context-workspace": "Không gian làm việc",
     "delete-all-chats": "Xóa tất cả cuộc trò chuyện",
     "delete-all-chats-confirmation": "Bạn có chắc chắn muốn xóa tất cả cuộc trò chuyện đã lưu trữ không? Hành động này không thể hoàn tác.",

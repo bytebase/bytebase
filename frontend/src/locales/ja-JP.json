@@ -44,7 +44,6 @@
     "context": "コンテキスト",
     "context-no-projects": "アクセス可能なプロジェクトがありません",
     "context-select": "コンテキストを選択",
-    "context-start-new-chat": "{{name}} で新しいチャットを開始",
     "context-workspace": "ワークスペース",
     "delete-all-chats": "すべてのチャットを削除",
     "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",

@@ -44,7 +44,6 @@
     "context": "Context",
     "context-no-projects": "No accessible projects",
     "context-select": "Select context",
-    "context-start-new-chat": "Start new chat in {{name}}",
     "context-workspace": "Workspace",
     "delete-all-chats": "Delete all chats",
     "delete-all-chats-confirmation": "Are you sure you want to delete all archived chats? This action cannot be undone.",
