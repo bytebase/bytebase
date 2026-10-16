@@ -1458,7 +1458,7 @@ function EditMemberRoleDrawer({
       expiration?: Date;
     }[] => {
       if (!binding.parsedExpr) return [{}];
-      const conditionExpr = convertFromExpr(binding.parsedExpr);
+      const conditionExpr = convertFromExpr(binding.parsedExpr) ?? {};
       const base: { expiration?: Date } = {};
       if (conditionExpr.expiredTime)
         base.expiration = new Date(conditionExpr.expiredTime);

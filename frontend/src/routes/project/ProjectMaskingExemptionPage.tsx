@@ -35,11 +35,9 @@ import { useTimeReading } from "@/hooks/useTimeReading";
 import {
   buildMemberSummary,
   generateGrantTitle,
-  generateMemberScopeSummary,
   getConditionExpression,
   groupByMember,
   parseExpirationTimestamp,
-  resourceCoversDatabase,
 } from "@/lib/sensitive-data/exemptionDataUtils";
 import type {
   AccessUser,
@@ -73,6 +71,10 @@ import {
   type ConditionExpression,
 } from "@/utils/issue/cel";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
+import {
+  generateMemberScopeSummary,
+  resourceCoversDatabase,
+} from "./utils/maskingExemption";
 
 // ============================================================
 // Helpers
@@ -520,7 +522,7 @@ export function ProjectMaskingExemptionPage({
 
 function getAccessUsers(
   exemption: MaskingExemptionPolicy_Exemption,
-  condition: ConditionExpression
+  condition: ConditionExpression | undefined
 ): AccessUser[] {
   const expression = exemption.condition?.expression ?? "";
   const description = exemption.condition?.description ?? "";
@@ -535,10 +537,7 @@ function getAccessUsers(
     expirationTimestamp,
     rawExpression: expression,
     description,
-    databaseResources:
-      condition.databaseResources && condition.databaseResources.length > 0
-        ? condition.databaseResources
-        : undefined,
+    databaseResources: condition?.databaseResources,
     conditionExpression,
   }));
 }
@@ -884,11 +883,8 @@ function ExemptionMemberItem({
   );
 
   const scopeSummary = useMemo(() => {
-    return generateMemberScopeSummary(
-      member.grants.length,
-      member.databaseNames
-    );
-  }, [member]);
+    return generateMemberScopeSummary(t, member.grants, member.databaseNames);
+  }, [member, t]);
 
   const handleClick = () => {
     if (expandable) {

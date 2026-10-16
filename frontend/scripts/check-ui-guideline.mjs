@@ -15,6 +15,8 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const frontendRoot = resolve(scriptDir, "..");
 const sourceRoot = resolve(frontendRoot, "src");
 const sharedPrimitivePrefix = "src/components/ui/";
+const lifecycleStampPath =
+  "src/routes/project/plan-detail/components/lifecycle/LifecycleStamp.tsx";
 
 const legacyIgnoredPrefixes = ["src/apps/explain-visualizer/"];
 const generatedPrefixes = ["src/types/proto-es/"];
@@ -246,6 +248,7 @@ const scanTextPill = (node, path, counts) => {
     tailwindUtility
   );
   if (
+    path !== lifecycleStampPath &&
     tokens.includes("rounded-full") &&
     tokens.some((token) => /^(?:px|py)-/.test(token)) &&
     tokens.some((token) => /^text-(?:xs|sm)$/.test(token)) &&

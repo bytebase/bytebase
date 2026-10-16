@@ -6,6 +6,7 @@ import {
 } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import {
   convertFromExpr,
+  getGuaranteedExpiration,
   readableCondition,
   stringifyConditionExpression,
 } from "./cel";
@@ -93,7 +94,7 @@ describe("readableCondition proves the environments and keeps the rest best-effo
   });
 
   test("a clause under || or ! does not count: `in [] || true` is not the switch off", () => {
-    expect(convertFromExpr(or(envIn(), bool(true))).environments).toEqual([]);
+    expect(convertFromExpr(or(envIn(), bool(true)))?.environments).toEqual([]);
     expect(environments(or(envIn(), bool(true)))).toBeUndefined();
     expect(environments(or(envIn("prod"), envIn("dev")))).toBeUndefined();
     expect(
@@ -124,11 +125,34 @@ describe("readableCondition proves the environments and keeps the rest best-effo
   });
 });
 
+describe("getGuaranteedExpiration", () => {
+  test("finds an expiration beside independent disjunctions", () => {
+    const expiration = "2020-01-01T00:00:00Z";
+    expect(
+      getGuaranteedExpiration(
+        and(
+          or(eq("database", "instances/i/databases/a"), eq("database", A)),
+          or(eq("schema_name", "public"), eq("schema_name", "internal")),
+          timeBefore(expiration)
+        )
+      )?.toISOString()
+    ).toBe("2020-01-01T00:00:00.000Z");
+  });
+
+  test("ignores an expiration that is only one OR branch", () => {
+    expect(
+      getGuaranteedExpiration(
+        or(timeBefore("2020-01-01T00:00:00Z"), eq("database", A))
+      )
+    ).toBeUndefined();
+  });
+});
+
 describe("convertFromExpr with a column condition", () => {
   const columnIn = (...names: string[]) =>
     call("@in", resource("column_name"), list(...names.map(str)));
   const databaseResources = (expr: Expr) =>
-    convertFromExpr(expr).databaseResources;
+    convertFromExpr(expr)?.databaseResources;
 
   test("keeps the columns of a column-only in condition", () => {
     expect(databaseResources(columnIn("email", "phone"))).toEqual([
@@ -165,5 +189,52 @@ describe("convertFromExpr with a column condition", () => {
         columns: ["c"],
       },
     ]);
+  });
+  test("carries shared conditions into nested OR branches", () => {
+    expect(
+      databaseResources(
+        and(
+          timeBefore("2026-10-01T00:00:00Z"),
+          or(
+            columnIn("a"),
+            and(
+              eq("instance_id", "mysql-instance"),
+              eq("database_name", "bytebase_210"),
+              eq("column_name", "c")
+            )
+          )
+        )
+      )
+    ).toEqual([
+      { databaseFullName: "", columns: ["a"] },
+      {
+        databaseFullName: "instances/mysql-instance/databases/bytebase_210",
+        instanceResourceId: "mysql-instance",
+        databaseResourceId: "bytebase_210",
+        columns: ["c"],
+      },
+    ]);
+  });
+
+  test("keeps a broad OR branch broad when another branch names columns", () => {
+    expect(
+      databaseResources(
+        or(eq("database", A), and(eq("database", A), eq("column_name", "c")))
+      )
+    ).toEqual([{ databaseFullName: A }]);
+  });
+
+  test("falls back to the raw condition for independent OR groups", () => {
+    expect(
+      convertFromExpr(
+        and(
+          or(
+            eq("database", "instances/i/databases/a"),
+            eq("database", "instances/i/databases/b")
+          ),
+          or(eq("column_name", "email"), eq("column_name", "phone"))
+        )
+      )
+    ).toBeUndefined();
   });
 });

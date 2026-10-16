@@ -1,6 +1,4 @@
 import i18n from "@/lib/i18n";
-import type { DatabaseResource } from "@/types/member";
-import { celString } from "@/utils/v1/celLiteral";
 import type {
   AccessUser,
   ClassificationLevel,
@@ -70,7 +68,10 @@ function listItems(items: string[]): string {
 }
 
 export function generateGrantTitle(grant: ExemptionGrant): string {
-  const resources = grant.databaseResources ?? [];
+  if (!grant.databaseResources) {
+    return i18n.t("cel.condition.self");
+  }
+  const resources = grant.databaseResources;
   const level = grant.classificationLevel;
 
   const levelSuffix = level
@@ -81,10 +82,13 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
     const dbName = extractDatabaseName(r.databaseFullName);
     return dbName !== "";
   });
+  const globalResources = resources.filter(
+    (resource) => extractDatabaseName(resource.databaseFullName) === ""
+  );
 
   if (realResources.length === 0) {
     const columns = [
-      ...new Set(resources.flatMap((resource) => resource.columns ?? [])),
+      ...new Set(globalResources.flatMap((resource) => resource.columns ?? [])),
     ];
     const columnSuffix =
       columns.length > 0
@@ -99,6 +103,17 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
       realResources.map((r) => extractDatabaseName(r.databaseFullName))
     ),
   ];
+
+  if (globalResources.length > 0) {
+    const columns = [
+      ...new Set(globalResources.flatMap((resource) => resource.columns ?? [])),
+    ];
+    const columnSuffix =
+      columns.length > 0
+        ? ` (${i18n.t("database.columns").toLowerCase()}: ${listItems(columns)})`
+        : "";
+    return `${i18n.t("database.all")}${columnSuffix}; ${listItems(dbNames)}${levelSuffix}`;
+  }
 
   // Multiple databases: show first 2, no table/schema detail
   if (dbNames.length > 1) {
@@ -178,38 +193,6 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
   return `${dbName} (${table}: ${listItems(columns)})${levelSuffix}`;
 }
 
-export function resourceCoversDatabase(
-  resource: DatabaseResource,
-  databaseFullName: string
-): boolean {
-  if (resource.databaseFullName !== "") {
-    return resource.databaseFullName === databaseFullName;
-  }
-  const target = databaseFullName.match(databaseResourcePattern)?.groups;
-  return (
-    (!resource.instanceResourceId ||
-      resource.instanceResourceId === target?.instanceName) &&
-    (!resource.databaseResourceId ||
-      resource.databaseResourceId === target?.databaseName)
-  );
-}
-
-// Rewrite `resource.database == "instances/X/databases/Y"` to
-// `resource.instance_id == "X" && resource.database_name == "Y"`.
-// The expression editor uses resource.database as a combined selector,
-// but the backend masking exemption evaluator only knows individual attributes.
-export function rewriteResourceDatabase(expression: string): string {
-  return expression.replaceAll(
-    /resource\.database\s*==\s*"([^"]+)"/g,
-    (_match, fullPath: string) => {
-      const matches = fullPath.match(databaseResourcePattern);
-      const instanceName = matches?.groups?.instanceName ?? "";
-      const databaseName = matches?.groups?.databaseName ?? "";
-      return `resource.instance_id == ${celString(instanceName)} && resource.database_name == ${celString(databaseName)}`;
-    }
-  );
-}
-
 export function buildMemberSummary(grants: ExemptionGrant[]): {
   databaseNames: string[];
   neverExpires: boolean;
@@ -224,11 +207,9 @@ export function buildMemberSummary(grants: ExemptionGrant[]): {
       )
     ),
   ];
-  // Grants with no databaseResources cover all databases — add empty sentinel
+  // Grants with an empty resource list cover all databases — add empty sentinel
   // so the member item can detect and display "All databases".
-  if (
-    grants.some((g) => !g.databaseResources || g.databaseResources.length === 0)
-  ) {
+  if (grants.some((grant) => grant.databaseResources?.length === 0)) {
     databaseNames.push("");
   }
   const expiringGrants = grants.filter((g) => g.expirationTimestamp);
@@ -240,28 +221,6 @@ export function buildMemberSummary(grants: ExemptionGrant[]): {
         ? Math.min(...expiringGrants.map((g) => g.expirationTimestamp!))
         : undefined,
   };
-}
-
-export function generateMemberScopeSummary(
-  grantCount: number,
-  databaseNames: string[]
-): string {
-  const exemptionCount = i18n.t("project.masking-exemption.n-exemptions", {
-    count: grantCount,
-    n: grantCount,
-  });
-  const uniqueDatabases = [...new Set(databaseNames)];
-  if (uniqueDatabases.includes("")) {
-    return `${exemptionCount} · ${i18n.t("database.all")}`;
-  }
-  if (uniqueDatabases.length === 1) {
-    return `${exemptionCount} · ${uniqueDatabases[0]}`;
-  }
-  if (uniqueDatabases.length > 1) {
-    const databaseCount = uniqueDatabases.length;
-    return `${exemptionCount} · ${i18n.t("project.masking-exemption.n-databases", { count: databaseCount, n: databaseCount })}`;
-  }
-  return exemptionCount;
 }
 
 export function groupByMember(accessUsers: AccessUser[]): ExemptionMember[] {
