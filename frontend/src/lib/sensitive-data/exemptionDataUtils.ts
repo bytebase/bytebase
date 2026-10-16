@@ -1,5 +1,4 @@
 import i18n from "@/lib/i18n";
-import type { DatabaseResource } from "@/types/member";
 import type {
   AccessUser,
   ClassificationLevel,
@@ -80,10 +79,13 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
     const dbName = extractDatabaseName(r.databaseFullName);
     return dbName !== "";
   });
+  const globalResources = resources.filter(
+    (resource) => extractDatabaseName(resource.databaseFullName) === ""
+  );
 
   if (realResources.length === 0) {
     const columns = [
-      ...new Set(resources.flatMap((resource) => resource.columns ?? [])),
+      ...new Set(globalResources.flatMap((resource) => resource.columns ?? [])),
     ];
     const columnSuffix =
       columns.length > 0
@@ -98,6 +100,17 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
       realResources.map((r) => extractDatabaseName(r.databaseFullName))
     ),
   ];
+
+  if (globalResources.length > 0) {
+    const columns = [
+      ...new Set(globalResources.flatMap((resource) => resource.columns ?? [])),
+    ];
+    const columnSuffix =
+      columns.length > 0
+        ? ` (${i18n.t("database.columns").toLowerCase()}: ${listItems(columns)})`
+        : "";
+    return `${i18n.t("database.all")}${columnSuffix}; ${listItems(dbNames)}${levelSuffix}`;
+  }
 
   // Multiple databases: show first 2, no table/schema detail
   if (dbNames.length > 1) {
@@ -177,22 +190,6 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
   return `${dbName} (${table}: ${listItems(columns)})${levelSuffix}`;
 }
 
-export function resourceCoversDatabase(
-  resource: DatabaseResource,
-  databaseFullName: string
-): boolean {
-  if (resource.databaseFullName !== "") {
-    return resource.databaseFullName === databaseFullName;
-  }
-  const target = databaseFullName.match(databaseResourcePattern)?.groups;
-  return (
-    (!resource.instanceResourceId ||
-      resource.instanceResourceId === target?.instanceName) &&
-    (!resource.databaseResourceId ||
-      resource.databaseResourceId === target?.databaseName)
-  );
-}
-
 export function buildMemberSummary(grants: ExemptionGrant[]): {
   databaseNames: string[];
   neverExpires: boolean;
@@ -223,28 +220,6 @@ export function buildMemberSummary(grants: ExemptionGrant[]): {
         ? Math.min(...expiringGrants.map((g) => g.expirationTimestamp!))
         : undefined,
   };
-}
-
-export function generateMemberScopeSummary(
-  grantCount: number,
-  databaseNames: string[]
-): string {
-  const exemptionCount = i18n.t("project.masking-exemption.n-exemptions", {
-    count: grantCount,
-    n: grantCount,
-  });
-  const uniqueDatabases = [...new Set(databaseNames)];
-  if (uniqueDatabases.includes("")) {
-    return `${exemptionCount} · ${i18n.t("database.all")}`;
-  }
-  if (uniqueDatabases.length === 1) {
-    return `${exemptionCount} · ${uniqueDatabases[0]}`;
-  }
-  if (uniqueDatabases.length > 1) {
-    const databaseCount = uniqueDatabases.length;
-    return `${exemptionCount} · ${i18n.t("project.masking-exemption.n-databases", { count: databaseCount, n: databaseCount })}`;
-  }
-  return exemptionCount;
 }
 
 export function groupByMember(accessUsers: AccessUser[]): ExemptionMember[] {

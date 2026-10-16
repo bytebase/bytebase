@@ -166,4 +166,38 @@ describe("convertFromExpr with a column condition", () => {
       },
     ]);
   });
+
+  test("carries shared conditions into nested OR branches", () => {
+    expect(
+      databaseResources(
+        and(
+          timeBefore("2026-10-01T00:00:00Z"),
+          or(
+            columnIn("a"),
+            and(
+              eq("instance_id", "mysql-instance"),
+              eq("database_name", "bytebase_210"),
+              eq("column_name", "c")
+            )
+          )
+        )
+      )
+    ).toEqual([
+      { databaseFullName: "", columns: ["a"] },
+      {
+        databaseFullName: "instances/mysql-instance/databases/bytebase_210",
+        instanceResourceId: "mysql-instance",
+        databaseResourceId: "bytebase_210",
+        columns: ["c"],
+      },
+    ]);
+  });
+
+  test("keeps a broad OR branch broad when another branch names columns", () => {
+    expect(
+      databaseResources(
+        or(eq("database", A), and(eq("database", A), eq("column_name", "c")))
+      )
+    ).toEqual([{ databaseFullName: A }]);
+  });
 });

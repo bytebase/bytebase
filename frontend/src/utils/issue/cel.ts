@@ -444,11 +444,30 @@ const environmentClauseOf = (expr: Expr): string[] | undefined => {
   return ids && uniq(ids).map((id) => `${environmentNamePrefix}${id}`);
 };
 
-const splitTopLevelOr = (expr: SimpleExpr): SimpleExpr[] => {
-  if (expr.type !== ExprType.ConditionGroup || expr.operator !== "_||_") {
+const splitOrBranches = (expr: SimpleExpr): SimpleExpr[] => {
+  if (expr.type !== ExprType.ConditionGroup) {
     return [expr];
   }
-  return expr.args.flatMap(splitTopLevelOr);
+  if (expr.operator === "_||_") {
+    return expr.args.flatMap(splitOrBranches);
+  }
+
+  const branches = expr.args.reduce<SimpleExpr[][]>(
+    (combinations, argument) =>
+      combinations.flatMap((combination) =>
+        splitOrBranches(argument).map((branch) => [...combination, branch])
+      ),
+    [[]]
+  );
+  return branches.map((arguments_) =>
+    arguments_.length === 1
+      ? arguments_[0]
+      : {
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: arguments_,
+        }
+  );
 };
 
 const mergeDatabaseResources = (
@@ -468,11 +487,10 @@ const mergeDatabaseResources = (
       merged.set(key, { ...resource, columns: resource.columns?.slice() });
       continue;
     }
-    if (resource.columns) {
-      existing.columns = uniq([
-        ...(existing.columns ?? []),
-        ...resource.columns,
-      ]);
+    if (existing.columns === undefined || resource.columns === undefined) {
+      existing.columns = undefined;
+    } else {
+      existing.columns = uniq([...existing.columns, ...resource.columns]);
     }
   }
   return [...merged.values()];
@@ -632,7 +650,7 @@ const convertFromSimpleExpr = (simpleExpr: SimpleExpr): ConditionExpression => {
 };
 
 export const convertFromExpr = (expr: Expr): ConditionExpression => {
-  const branches = splitTopLevelOr(resolveCELExpr(expr));
+  const branches = splitOrBranches(resolveCELExpr(expr));
   if (branches.length === 1) {
     return convertFromSimpleExpr(branches[0]);
   }

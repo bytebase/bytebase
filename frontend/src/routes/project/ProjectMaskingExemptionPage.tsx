@@ -35,11 +35,9 @@ import { useTimeReading } from "@/hooks/useTimeReading";
 import {
   buildMemberSummary,
   generateGrantTitle,
-  generateMemberScopeSummary,
   getConditionExpression,
   groupByMember,
   parseExpirationTimestamp,
-  resourceCoversDatabase,
 } from "@/lib/sensitive-data/exemptionDataUtils";
 import type {
   AccessUser,
@@ -73,6 +71,10 @@ import {
   type ConditionExpression,
 } from "@/utils/issue/cel";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
+import {
+  generateMemberScopeSummary,
+  resourceCoversDatabase,
+} from "./utils/maskingExemption";
 
 // ============================================================
 // Helpers
@@ -885,10 +887,11 @@ function ExemptionMemberItem({
 
   const scopeSummary = useMemo(() => {
     return generateMemberScopeSummary(
+      t,
       member.grants.length,
       member.databaseNames
     );
-  }, [member]);
+  }, [member, t]);
 
   const handleClick = () => {
     if (expandable) {

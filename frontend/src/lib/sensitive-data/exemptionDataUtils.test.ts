@@ -33,12 +33,10 @@ vi.mock("@/lib/i18n", () => ({
 
 import {
   generateGrantTitle,
-  generateMemberScopeSummary,
   getConditionExpression,
   groupByMember,
   parseClassificationLevel,
   parseExpirationTimestamp,
-  resourceCoversDatabase,
 } from "./exemptionDataUtils";
 import type { AccessUser, ExemptionGrant } from "./types";
 
@@ -176,26 +174,6 @@ describe("parseExpirationTimestamp", () => {
       'request.time < timestamp("2026-12-31T23:59:59.000Z")'
     );
     expect(result).toBe(new Date("2026-12-31T23:59:59.000Z").getTime());
-  });
-});
-
-describe("generateMemberScopeSummary", () => {
-  test("shows the database name only for a single database", () => {
-    expect(generateMemberScopeSummary(3, ["bytebase_210"])).toBe(
-      "3 exemptions · bytebase_210"
-    );
-  });
-
-  test("shows a database count for multiple databases", () => {
-    expect(
-      generateMemberScopeSummary(3, ["bytebase_210", "bytebase_211"])
-    ).toBe("3 exemptions · 2 databases");
-  });
-
-  test("uses all databases when any grant has global scope", () => {
-    expect(generateMemberScopeSummary(3, ["", "bytebase_210"])).toBe(
-      "3 exemptions · All databases"
-    );
   });
 });
 
@@ -635,6 +613,19 @@ describe("generateGrantTitle", () => {
     ).toBe("All databases (columns: email, phone)");
   });
 
+  test("keeps the global scope visible beside database-specific resources", () => {
+    expect(
+      generateGrantTitle(
+        makeGrant({
+          databaseResources: [
+            { databaseFullName: "", columns: ["email"] },
+            { databaseFullName: "instances/a/databases/hr_prod" },
+          ],
+        })
+      )
+    ).toBe("All databases (columns: email); hr_prod");
+  });
+
   // --- Multiple databases ---
 
   test("2 databases", () => {
@@ -1027,32 +1018,6 @@ describe("generateGrantTitle", () => {
         })
       )
     ).toBe("hr_prod (public: audit, dept), level = 1");
-  });
-});
-
-describe("resourceCoversDatabase", () => {
-  test("a column-only resource covers every database", () => {
-    expect(
-      resourceCoversDatabase(
-        { databaseFullName: "", columns: ["email"] },
-        "instances/prod/databases/hr"
-      )
-    ).toBe(true);
-  });
-
-  test("an instance-only resource covers only that instance", () => {
-    expect(
-      resourceCoversDatabase(
-        { databaseFullName: "", instanceResourceId: "prod" },
-        "instances/prod/databases/hr"
-      )
-    ).toBe(true);
-    expect(
-      resourceCoversDatabase(
-        { databaseFullName: "", instanceResourceId: "prod" },
-        "instances/dev/databases/hr"
-      )
-    ).toBe(false);
   });
 });
 
