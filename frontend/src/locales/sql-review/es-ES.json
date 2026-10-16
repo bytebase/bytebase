@@ -760,11 +760,11 @@
         "title": "Eliminación de restricciones"
       },
       "disallow-drop-object": {
-        "description": "Señala DROP TABLE, COLUMN, SCHEMA o DATABASE.",
+        "description": "Señala la eliminación de cualquier objeto, como una tabla, columna, vista, índice, esquema o base de datos. La eliminación de restricciones se revisa por separado.",
         "title": "Eliminación de objetos"
       },
       "disallow-rename": {
-        "description": "Señala el cambio de nombre de una tabla o columna.",
+        "description": "Señala el cambio de nombre de una tabla, vista o columna.",
         "title": "Cambio de nombre"
       },
       "disallow-truncate": {

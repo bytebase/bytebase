@@ -10418,7 +10418,9 @@ NULL with IS NULL or IS NOT NULL.</p></td>
               <tr>
                 <td>DISALLOW_DROP_OBJECT</td>
                 <td>7</td>
-                <td><p>P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE.</p></td>
+                <td><p>P1: dropping any object, such as a table, column, view, index, sequence,
+schema, database, or function. Dropping a constraint is
+DISALLOW_DROP_CONSTRAINT.</p></td>
               </tr>
             
               <tr>
@@ -10436,7 +10438,7 @@ NULL with IS NULL or IS NOT NULL.</p></td>
               <tr>
                 <td>DISALLOW_RENAME</td>
                 <td>10</td>
-                <td><p>P1: renaming a table or column.</p></td>
+                <td><p>P1: renaming a table, foreign table, view, materialized view, or column.</p></td>
               </tr>
             
               <tr>

@@ -3385,10 +3385,10 @@ needs a person&#39;s acceptance, not that it is forbidden.
 | PRIOR_BACKUP | 4 | P0: the change enables prior backup but the backup cannot be taken. |
 | REQUIRE_IS_NULL | 5 | P0: = NULL or &lt;&gt; NULL in a predicate, which is always false. Test for NULL with IS NULL or IS NOT NULL. |
 | REQUIRE_WHERE | 6 | P1: UPDATE or DELETE without WHERE. |
-| DISALLOW_DROP_OBJECT | 7 | P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE. |
+| DISALLOW_DROP_OBJECT | 7 | P1: dropping any object, such as a table, column, view, index, sequence, schema, database, or function. Dropping a constraint is DISALLOW_DROP_CONSTRAINT. |
 | DISALLOW_TRUNCATE | 8 | P1: TRUNCATE. |
 | DISALLOW_DROP_CONSTRAINT | 9 | P1: dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint. |
-| DISALLOW_RENAME | 10 | P1: renaming a table or column. |
+| DISALLOW_RENAME | 10 | P1: renaming a table, foreign table, view, materialized view, or column. |
 | REQUIRE_PRIMARY_KEY | 11 | P1: the change creates a table without a primary key, or drops a primary key without adding one back. A table that already lacked a primary key before the change is not reported. |
 
 

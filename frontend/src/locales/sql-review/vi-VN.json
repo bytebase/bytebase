@@ -760,11 +760,11 @@
         "title": "Xóa ràng buộc"
       },
       "disallow-drop-object": {
-        "description": "Đánh dấu DROP TABLE, COLUMN, SCHEMA hoặc DATABASE.",
+        "description": "Đánh dấu việc xóa bất kỳ đối tượng nào, như bảng, cột, view, chỉ mục, schema hoặc cơ sở dữ liệu. Việc xóa ràng buộc được kiểm tra riêng.",
         "title": "Xóa đối tượng"
       },
       "disallow-rename": {
-        "description": "Đánh dấu việc đổi tên bảng hoặc cột.",
+        "description": "Đánh dấu việc đổi tên bảng, view hoặc cột.",
         "title": "Đổi tên"
       },
       "disallow-truncate": {

@@ -760,11 +760,11 @@
         "title": "删除约束"
       },
       "disallow-drop-object": {
-        "description": "标记 DROP TABLE、COLUMN、SCHEMA 或 DATABASE。",
+        "description": "标记删除任意对象的操作，例如表、列、视图、索引、模式或数据库。删除约束由单独的规则检查。",
         "title": "删除对象"
       },
       "disallow-rename": {
-        "description": "标记重命名表或列的操作。",
+        "description": "标记重命名表、视图或列的操作。",
         "title": "重命名"
       },
       "disallow-truncate": {

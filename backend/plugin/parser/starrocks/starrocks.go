@@ -1,6 +1,7 @@
 package starrocks
 
 import (
+	"errors"
 	"strings"
 	"unicode/utf8"
 
@@ -56,10 +57,9 @@ func parseStarRocksStatements(statement string) ([]base.ParsedStatement, error) 
 		// Parse the segment text on its own so byte offsets in any ParseError
 		// align with stmt.Text; convertParseError then shifts them into the
 		// coordinates of the original multi-statement script.
-		file, errs := parser.Parse(stmt.Text)
-		if len(errs) > 0 {
-			pe := errs[0]
-			return nil, convertParseError(stmt.Text, &pe, stmt.Start)
+		file, err := parser.Parse(stmt.Text)
+		if err != nil {
+			return nil, convertParseError(stmt.Text, err, stmt.Start)
 		}
 		var node ast.Node
 		if file != nil && len(file.Stmts) > 0 {
@@ -93,10 +93,9 @@ func parseStarRocksSQL(statement string) ([]*omniAST, error) {
 		if stmt.Empty || strings.TrimSpace(stmt.Text) == "" {
 			continue
 		}
-		file, errs := parser.Parse(stmt.Text)
-		if len(errs) > 0 {
-			pe := errs[0]
-			return nil, convertParseError(stmt.Text, &pe, stmt.Start)
+		file, err := parser.Parse(stmt.Text)
+		if err != nil {
+			return nil, convertParseError(stmt.Text, err, stmt.Start)
 		}
 		var node ast.Node
 		if file != nil && len(file.Stmts) > 0 {
@@ -110,17 +109,21 @@ func parseStarRocksSQL(statement string) ([]*omniAST, error) {
 	return result, nil
 }
 
-// convertParseError converts an omni *parser.ParseError to a
-// *base.SyntaxError that sql_service.go recognises for structured
-// error diagnostics. It converts the byte offset in ParseError.Loc
+// convertParseError converts the first omni *parser.ParseError carried by err
+// to a *base.SyntaxError that sql_service.go recognises for structured
+// error diagnostics. It converts the byte offset in ParseError.Position
 // to 1-based line and 1-based column (rune-based) matching the
 // storepb.Position convention used across other omni parser adapters.
 //
 // If basePos is non-nil, the computed position is offset by it so that
 // errors from parsing an isolated statement segment are reported in the
 // coordinates of the original multi-statement script.
-func convertParseError(statement string, pe *parser.ParseError, basePos *storepb.Position) *base.SyntaxError {
-	line, col := byteOffsetToPosition(statement, pe.Loc.Start)
+func convertParseError(statement string, err error, basePos *storepb.Position) error {
+	var pe *parser.ParseError
+	if !errors.As(err, &pe) {
+		return err
+	}
+	line, col := byteOffsetToPosition(statement, pe.Position)
 	if basePos != nil {
 		// The first line of the segment shares a line with basePos, so
 		// column offsets only apply when the error is on that line.
@@ -135,7 +138,7 @@ func convertParseError(statement string, pe *parser.ParseError, basePos *storepb
 			Column: int32(col),
 		},
 		Message:    pe.Error(),
-		RawMessage: pe.Msg,
+		RawMessage: pe.Message,
 	}
 }
 
