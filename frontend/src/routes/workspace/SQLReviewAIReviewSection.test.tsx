@@ -199,8 +199,9 @@ describe("SQLReviewAIReviewSection", () => {
 
     const editor = await screen.findByRole("textbox", POLICY_EDITOR);
     expect(editor).toHaveValue("No DROP.");
-    expect(editor).toHaveAccessibleDescription(
-      "sql-review.ai-review.policy.description"
+    expect(editor).toHaveAttribute(
+      "placeholder",
+      "sql-review.ai-review.policy.placeholder"
     );
     fireEvent.change(editor, { target: { value: "No DROP or TRUNCATE." } });
     expect(screen.getByText("policy dirty")).toBeInTheDocument();

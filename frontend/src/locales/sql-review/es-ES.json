@@ -3,24 +3,23 @@
   "add-rules": "Agregar reglas",
   "ai-review": {
     "ai-off": "La IA está desactivada en el espacio de trabajo, por lo que no se ejecuta ninguna revisión con IA.",
-    "description": "Un modelo de IA que revisa el SQL de un issue en busca de riesgos que las reglas estándar no pueden ver. Se aplica a todos los proyectos del espacio de trabajo.",
+    "description": "Un modelo de IA que revisa el SQL de un issue en busca de riesgos que las reglas estándar no pueden ver. Se aplica a todos los proyectos del espacio de trabajo, y cada proyecto puede añadir su propia política.",
     "enable": {
       "description": "Cada revisión envía al proveedor de IA las sentencias tal como están escritas, y puede enviar el esquema de las bases de datos de destino y las estadísticas de sus tablas. No lee ninguna fila de las bases de datos.",
       "self": "Revisar los cambios con IA"
     },
     "policy": {
       "cannot-clear": "Tu rol no puede eliminar políticas, por lo que esta política no se puede vaciar.",
-      "description": "Reglas en lenguaje natural con las que la revisión con IA comprueba cada cambio de base de datos. Se aplican a todos los proyectos, y cada proyecto puede añadir las suyas.",
       "load-failed": "No se pudo cargar la política de revisión.",
       "none": "No hay política de revisión.",
       "paused": "Esta política está en pausa, por lo que la revisión con IA no la lee.",
-      "placeholder": "Por ejemplo:\nSeñala cualquier sentencia que elimine o reescriba una columna de las tablas orders o payments.\nTrata un ALTER TABLE sobre una tabla de más de 10 millones de filas como de alto riesgo.\nExige las columnas created_at y updated_at en las tablas nuevas.",
-      "project-description": "Reglas en lenguaje natural con las que la revisión con IA comprueba los cambios de base de datos de este proyecto. Se suman a la política del espacio de trabajo y prevalecen cuando ambas entran en conflicto.",
+      "placeholder": "Por ejemplo:\nSeñala un cambio que bloquee o reescriba una tabla de más de 1 millón de filas, y sugiere una forma que mantenga la tabla disponible para escritura.\nToda clave foránea necesita un índice sobre sus columnas.\nLas tablas nuevas necesitan las columnas created_at y updated_at.",
+      "project-placeholder": "Por ejemplo:\nNunca elimines filas de las tablas payments o ledger.\nGuarda los importes de dinero en columnas DECIMAL, nunca FLOAT ni DOUBLE.\nLas columnas nuevas de la tabla users deben admitir NULL o tener un valor por defecto.",
       "remove-only": "Puedes eliminar esta política, pero no cambiarla. Vacía el texto para eliminarla.",
       "self": "Política de revisión",
       "too-large": "La política ocupa {{size}} bytes, más que el límite de {{limit}} bytes. Acórtala para guardarla."
     },
-    "project-description": "Un modelo de IA que revisa el SQL de un issue en busca de riesgos que las reglas estándar no pueden ver.",
+    "project-description": "Un modelo de IA que revisa el SQL de un issue en busca de riesgos que las reglas estándar no pueden ver. La política de este proyecto se suma a la del espacio de trabajo y prevalece cuando ambas se contradicen.",
     "self": "Revisión con IA",
     "set-for-workspace": "Se establece para todo el espacio de trabajo.",
     "turn-on-ai": "Activar la IA",

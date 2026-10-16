@@ -19,7 +19,6 @@ import {
 } from "@/components/sql-review/standardRules";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { FormFieldGroup, FormSection } from "@/components/ui/form";
 import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
 import { useWorkspaceResourceName } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
@@ -311,48 +310,41 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
             )}
           </>
         )}
-        <FormSection
-          title={t("sql-review.ai-review.self")}
-          // The column's gap already separates it from the standard rules.
-          style={{ paddingTop: 0 }}
-        >
-          <div className="flex flex-col gap-y-4">
-            <p className="text-sm text-control-light">
-              {t("sql-review.ai-review.project-description")}
-            </p>
-            <FormFieldGroup>
-              <SwitchRow
-                className="rounded-sm border border-block-border px-4 py-3"
-                title={t("sql-review.ai-review.enable.self")}
-                description={
-                  <>
-                    {t("sql-review.ai-review.set-for-workspace")}
-                    {canViewWorkspaceRules && (
-                      <>
-                        {" "}
-                        <RouterLink
-                          to={{ name: WORKSPACE_ROUTE_SQL_REVIEW }}
-                          className="text-accent hover:underline"
-                        >
-                          {t("sql-review.ai-review.view-workspace-setting")}
-                        </RouterLink>
-                      </>
-                    )}
-                  </>
-                }
-                checked={aiReviewOn}
-                onCheckedChange={() => {}}
-                readOnly
-              />
-              <ReviewAIPolicyField
-                policy={aiReviewPolicy}
-                description={t(
-                  "sql-review.ai-review.policy.project-description"
-                )}
-              />
-            </FormFieldGroup>
-          </div>
-        </FormSection>
+        <div className="flex flex-col gap-y-2 pt-8">
+          <h1 className="text-2xl font-bold text-main">
+            {t("sql-review.ai-review.self")}
+          </h1>
+          <p className="text-sm text-control-light">
+            {t("sql-review.ai-review.project-description")}
+          </p>
+        </div>
+        <SwitchRow
+          className="rounded-sm border border-block-border px-4 py-3"
+          title={t("sql-review.ai-review.enable.self")}
+          description={
+            <>
+              {t("sql-review.ai-review.set-for-workspace")}
+              {canViewWorkspaceRules && (
+                <>
+                  {" "}
+                  <RouterLink
+                    to={{ name: WORKSPACE_ROUTE_SQL_REVIEW }}
+                    className="text-accent hover:underline"
+                  >
+                    {t("sql-review.ai-review.view-workspace-setting")}
+                  </RouterLink>
+                </>
+              )}
+            </>
+          }
+          checked={aiReviewOn}
+          onCheckedChange={() => {}}
+          readOnly
+        />
+        <ReviewAIPolicyField
+          policy={aiReviewPolicy}
+          placeholder={t("sql-review.ai-review.policy.project-placeholder")}
+        />
       </div>
 
       {isDirty && (

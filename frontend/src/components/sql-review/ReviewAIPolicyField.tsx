@@ -174,15 +174,15 @@ export function useReviewAIPolicyDraft({
 
 export function ReviewAIPolicyField({
   policy,
-  description,
+  placeholder,
 }: {
   policy: ReviewAIPolicyDraft;
-  description: string;
+  // Example rules for this level, shown while the field is empty.
+  placeholder: string;
 }) {
   const { t } = useTranslation();
   const id = useId();
   const titleId = `${id}-title`;
-  const descriptionId = `${id}-description`;
   const errorId = `${id}-error`;
 
   if (policy.readFailed) {
@@ -201,7 +201,6 @@ export function ReviewAIPolicyField({
   return (
     <FormField
       title={<span id={titleId}>{t("sql-review.ai-review.policy.self")}</span>}
-      description={<span id={descriptionId}>{description}</span>}
     >
       <FormControlGroup>
         {policy.loaded && policy.paused && (
@@ -216,12 +215,10 @@ export function ReviewAIPolicyField({
         ) : policy.canEdit ? (
           <Textarea
             aria-labelledby={titleId}
-            aria-describedby={
-              policy.error ? `${descriptionId} ${errorId}` : descriptionId
-            }
+            aria-describedby={policy.error ? errorId : undefined}
             aria-invalid={policy.error !== undefined}
             rows={8}
-            placeholder={t("sql-review.ai-review.policy.placeholder")}
+            placeholder={placeholder}
             value={policy.content}
             onChange={(event) => policy.setContent(event.target.value)}
             disabled={policy.saving}

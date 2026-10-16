@@ -128,7 +128,7 @@ function Harness({ parentPath = PARENT }: { parentPath?: string }) {
   const [saved, setSaved] = useState<boolean>();
   return (
     <>
-      <ReviewAIPolicyField policy={policy} description="the description" />
+      <ReviewAIPolicyField policy={policy} placeholder="the example rules" />
       <output>{policy.isDirty ? "dirty" : "clean"}</output>
       <output>{`saved: ${saved}`}</output>
       <button type="button" onClick={() => void policy.save().then(setSaved)}>
@@ -167,7 +167,6 @@ describe("ReviewAIPolicyField", () => {
 
     const textbox = await editor();
     expect(textbox).toHaveValue("No DROP on prod.");
-    expect(textbox).toHaveAccessibleDescription("the description");
     expect(mocks.fetchPolicy).toHaveBeenCalledWith({
       parentPath: PARENT,
       policyType: PolicyType.REVIEW_AI,
@@ -181,10 +180,7 @@ describe("ReviewAIPolicyField", () => {
 
     const textbox = await editor();
     expect(textbox).toHaveValue("");
-    expect(textbox).toHaveAttribute(
-      "placeholder",
-      "sql-review.ai-review.policy.placeholder"
-    );
+    expect(textbox).toHaveAttribute("placeholder", "the example rules");
     await type("Flag changes to the payments table.");
     expect(screen.getByText("dirty")).toBeInTheDocument();
     await save();

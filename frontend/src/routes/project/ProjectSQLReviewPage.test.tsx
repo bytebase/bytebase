@@ -611,8 +611,9 @@ describe("ProjectSQLReviewPage", () => {
 
     const editor = await policyEditor();
     expect(editor).toHaveValue("");
-    expect(editor).toHaveAccessibleDescription(
-      "sql-review.ai-review.policy.project-description"
+    expect(editor).toHaveAttribute(
+      "placeholder",
+      "sql-review.ai-review.policy.project-placeholder"
     );
     fireEvent.change(editor, { target: { value: "No DROP in this project." } });
     await update();
