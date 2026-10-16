@@ -113,5 +113,8 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.AiEnabled != y.AiEnabled {
 		return false
 	}
+	if x.AiSqlReviewEnabled != y.AiSqlReviewEnabled {
+		return false
+	}
 	return true
 }

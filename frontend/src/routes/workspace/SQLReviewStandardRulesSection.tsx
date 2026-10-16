@@ -9,7 +9,6 @@ import {
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useWorkspaceResourceName } from "@/hooks/useAppState";
-import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
   PolicyResourceType,
@@ -31,7 +30,9 @@ export interface WorkspaceStandardRules {
   isDirty: boolean;
   saving: boolean;
   revert: () => void;
-  save: () => Promise<void>;
+  // Resolves whether the rules saved. The page reports the update; a failure
+  // is reported by the response middleware and keeps the draft.
+  save: () => Promise<boolean>;
 }
 
 // The page owns the draft so its sticky footer can sit at the end of the page,
@@ -39,7 +40,6 @@ export interface WorkspaceStandardRules {
 export function useWorkspaceStandardRules(
   enabled: boolean
 ): WorkspaceStandardRules {
-  const { t } = useTranslation();
   const workspace = useWorkspaceResourceName();
   const policy = useAppStore((state) =>
     state.getPolicyByParentAndType({
@@ -78,7 +78,7 @@ export function useWorkspaceStandardRules(
     !sameStandardRules(draft, stored);
 
   const save = async () => {
-    if (!draft) return;
+    if (!draft) return true;
     setSaving(true);
     try {
       await useAppStore.getState().upsertPolicy({
@@ -94,14 +94,9 @@ export function useWorkspaceStandardRules(
         },
       });
       setDraft(undefined);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
-      });
+      return true;
     } catch {
-      // The response middleware reports the failure; the draft stays for a
-      // retry.
+      return false;
     } finally {
       setSaving(false);
     }

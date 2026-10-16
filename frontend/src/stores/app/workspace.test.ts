@@ -37,13 +37,13 @@ const createStore = () => {
   return state as ReturnType<typeof createWorkspaceSlice>;
 };
 
-const aiSetting = (enabled: boolean) =>
+const aiSetting = (enabled: boolean, sqlReviewEnabled = false) =>
   create(SettingSchema, {
     name: "settings/AI",
     value: create(SettingValueSchema, {
       value: {
         case: "ai",
-        value: create(AISettingSchema, { enabled }),
+        value: create(AISettingSchema, { enabled, sqlReviewEnabled }),
       },
     }),
   });
@@ -71,6 +71,27 @@ describe("workspace AI setting cache", () => {
       value: disabled.value!,
     });
     expect(store.serverInfo?.aiEnabled).toBe(false);
+  });
+
+  test("updates the AI SQL review switch from a successful setting response", async () => {
+    const store = createStore();
+    const switchedOn = aiSetting(true, true);
+    mocks.updateSetting.mockResolvedValueOnce(switchedOn);
+
+    await store.upsertSetting({
+      name: Setting_SettingName.AI,
+      value: switchedOn.value!,
+    });
+    expect(store.serverInfo?.aiSqlReviewEnabled).toBe(true);
+
+    const switchedOff = aiSetting(true, false);
+    mocks.updateSetting.mockResolvedValueOnce(switchedOff);
+    await store.upsertSetting({
+      name: Setting_SettingName.AI,
+      value: switchedOff.value!,
+    });
+    expect(store.serverInfo?.aiSqlReviewEnabled).toBe(false);
+    expect(store.serverInfo?.aiEnabled).toBe(true);
   });
 
   test("does not change Ask AI availability when the setting save fails", async () => {

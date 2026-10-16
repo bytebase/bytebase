@@ -4130,6 +4130,7 @@ IssueService manages issues for tracking database changes and tasks.
 | api_key | [string](#string) |  |  |
 | model | [string](#string) |  |  |
 | version | [string](#string) |  |  |
+| sql_review_enabled | [bool](#bool) |  | Whether the AI SQL review may run. It is off by default and is a consent of its own beside `enabled`: a review sends the statements of a change to the provider, and can send the schema of its target databases and their table statistics. |
 
 
 
@@ -5087,6 +5088,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | sample | [SampleInfo](#bytebase-v1-SampleInfo) |  | Sample setup availability and provisioned resources. |
 | mcp_setting | [MCPSetting](#bytebase-v1-MCPSetting) |  | The MCP (Model Context Protocol) setting in the current workspace. |
 | ai_enabled | [bool](#bool) |  | Whether the workspace AI setting enables the AI agent. |
+| ai_sql_review_enabled | [bool](#bool) |  | Whether the workspace AI setting switches the AI SQL review on. A review also needs `ai_enabled`. |
 
 
 

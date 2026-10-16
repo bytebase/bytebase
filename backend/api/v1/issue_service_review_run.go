@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/aireview"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -104,12 +105,12 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("the plan has no reviewable SQL"))
 	}
 	if reviewType == store.ReviewRunTypeAI {
-		aiSetting, err := s.store.GetAISetting(ctx, common.GetWorkspaceIDFromContext(ctx))
+		aiSetting, err := s.store.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get AI setting"))
 		}
-		if !aiSetting.Enabled {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("AI review requires AI to be enabled in the workspace setting"))
+		if err := aireview.CheckSetting(aiSetting); err != nil {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
 	}
 

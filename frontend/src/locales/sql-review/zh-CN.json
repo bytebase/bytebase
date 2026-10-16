@@ -1,6 +1,19 @@
 {
   "add-or-remove-rules": "添加或删除规则",
   "add-rules": "添加规则",
+  "ai-review": {
+    "ai-off": "工作空间尚未启用 AI，因此不会运行 AI 审核。",
+    "description": "由 AI 模型审核工单中的 SQL，发现标准规则无法识别的风险。对工作空间内的所有项目生效。",
+    "enable": {
+      "description": "每次审核会将语句原文发送给 AI 提供方，并可能发送目标数据库的 Schema 及其表的统计信息，但不会读取数据库中的任何数据行。",
+      "self": "使用 AI 审核变更"
+    },
+    "project-description": "由 AI 模型审核工单中的 SQL，发现标准规则无法识别的风险。",
+    "self": "AI 审核",
+    "set-for-workspace": "由工作空间统一设置。",
+    "turn-on-ai": "启用 AI",
+    "view-workspace-setting": "查看工作空间设置"
+  },
   "attach-resource": {
     "change-resources": "更改绑定的资源",
     "label": "审核策略需要绑定到环境资源或项目资源上，并影响对应资源下所有数据库。若一个数据库同时受到项目级别与环境级别策略影响，则只有项目级别策略生效。",

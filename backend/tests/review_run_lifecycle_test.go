@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -121,13 +122,29 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	afterB := listReviewRuns(ctx, t, ctl, projectBID)
 	a.Equal(beforeB, afterB, "project B review_run rows must be untouched by A's re-run")
 
-	// With AI enabled but the model failing, the AI slot is created, claimed,
-	// and fails honestly with the model's error.
 	brokenModel := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, `{"error": {"message": "quota exceeded"}}`, http.StatusServiceUnavailable)
 	}))
 	defer brokenModel.Close()
-	setAISetting(ctx, t, ctl, brokenModel.URL)
+
+	setting := setAISetting(ctx, t, ctl, brokenModel.URL, false)
+	a.False(setting.GetValue().GetAi().GetSqlReviewEnabled())
+	_, err = runReview(ctx, ctl, issueA.Name, "ai")
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
+	a.ErrorContains(err, "AI SQL review is not enabled")
+
+	// With the review switched on but the model failing, the AI slot is
+	// created, claimed, and fails honestly with the model's error.
+	setting = setAISetting(ctx, t, ctl, brokenModel.URL, true)
+	a.True(setting.GetValue().GetAi().GetSqlReviewEnabled())
+
+	// The server info follows a switch written outside the server too.
+	a.True(actuatorAISQLReviewEnabled(ctx, t, ctl))
+	setStoredAISQLReviewEnabled(ctx, t, ctl, false)
+	a.False(actuatorAISQLReviewEnabled(ctx, t, ctl))
+	setStoredAISQLReviewEnabled(ctx, t, ctl, true)
+	a.True(actuatorAISQLReviewEnabled(ctx, t, ctl))
+
 	aiRun, err := runReview(ctx, ctl, issueA.Name, "ai")
 	a.NoError(err)
 	a.Equal(v1pb.ReviewRun_AI, aiRun.Type)
@@ -181,7 +198,7 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 		_, _ = w.Write([]byte(reply))
 	}))
 	defer model.Close()
-	setAISetting(ctx, t, ctl, model.URL)
+	setAISetting(ctx, t, ctl, model.URL, true)
 	aiRun, err = runReview(ctx, ctl, issueA.Name, "ai")
 	a.NoError(err)
 	a.Equal(v1pb.ReviewRun_AVAILABLE, aiRun.Status)
@@ -208,31 +225,93 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a.True(strings.HasSuffix(result.GetReviewMetadata().GetTargets()[0], fixture.DatabaseA.Name), "target %q", result.GetReviewMetadata().GetTargets()[0])
 	a.Equal(int32(1), result.GetStatementAnchor().GetStartPosition().GetLine())
 	a.Equal(v1pb.IssueComment_OPEN, result.GetThreadState())
+
+	// Switching the review off stops a run in flight at its next model call.
+	// This model answers its first call with a tool call, which asks for a
+	// second call, and the review is switched off in between.
+	var modelCalls atomic.Int32
+	switchedOff := make(chan error, 1)
+	switchingModel := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if modelCalls.Add(1) == 1 {
+			_, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+				Setting: &v1pb.Setting{
+					Name:  "settings/" + v1pb.Setting_AI.String(),
+					Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_Ai{Ai: &v1pb.AISetting{}}},
+				},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"value.ai.sql_review_enabled"}},
+			}))
+			switchedOff <- err
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"candidates": [{"content": {"parts": [{"functionCall": {"name": "read", "args": {}}}]}}], "usageMetadata": {"totalTokenCount": 10}}`))
+	}))
+	defer switchingModel.Close()
+	setAISetting(ctx, t, ctl, switchingModel.URL, true)
+	_, err = runReview(ctx, ctl, issueA.Name, "ai")
+	a.NoError(err)
+	stoppedRow := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "AI")
+	select {
+	case err := <-switchedOff:
+		a.NoError(err)
+	default:
+		a.Fail("the model was never called")
+	}
+	a.Equal("FAILED", stoppedRow.Status, "payload %s", stoppedRow.Payload)
+	a.Contains(stoppedRow.Payload, "AI SQL review is not enabled")
+	a.Equal(int32(1), modelCalls.Load(), "no call reaches the model after the review is switched off")
 }
 
 // setAISetting enables AI in the test workspace with a Gemini model served at
-// endpoint.
-func setAISetting(ctx context.Context, t *testing.T, ctl *controller, endpoint string) {
+// endpoint, and switches the AI SQL review on or off.
+func setAISetting(ctx context.Context, t *testing.T, ctl *controller, endpoint string, sqlReviewEnabled bool) *v1pb.Setting {
 	t.Helper()
-	_, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+	resp, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: "settings/" + v1pb.Setting_AI.String(),
 			Value: &v1pb.SettingValue{
 				Value: &v1pb.SettingValue_Ai{
 					Ai: &v1pb.AISetting{
-						Enabled:  true,
-						Provider: v1pb.AISetting_GEMINI,
-						Endpoint: endpoint,
-						ApiKey:   "unused",
-						Model:    "unused",
+						Enabled:          true,
+						Provider:         v1pb.AISetting_GEMINI,
+						Endpoint:         endpoint,
+						ApiKey:           "unused",
+						Model:            "unused",
+						SqlReviewEnabled: sqlReviewEnabled,
 					},
 				},
 			},
 		},
 		UpdateMask: &fieldmaskpb.FieldMask{
-			Paths: []string{"value.ai.enabled", "value.ai.provider", "value.ai.endpoint", "value.ai.api_key", "value.ai.model"},
+			Paths: []string{"value.ai.enabled", "value.ai.provider", "value.ai.endpoint", "value.ai.api_key", "value.ai.model", "value.ai.sql_review_enabled"},
 		},
 	}))
 	require.NoError(t, err)
+	return resp.Msg
+}
+
+func actuatorAISQLReviewEnabled(ctx context.Context, t *testing.T, ctl *controller) bool {
+	t.Helper()
+	info, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	require.NoError(t, err)
+	return info.Msg.AiSqlReviewEnabled
+}
+
+// setStoredAISQLReviewEnabled writes the switch straight into the metadata
+// database, past the server and its setting cache.
+func setStoredAISQLReviewEnabled(ctx context.Context, t *testing.T, ctl *controller, enabled bool) {
+	t.Helper()
+	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{Name: "workspaces/-"}))
+	require.NoError(t, err)
+	db, err := sql.Open("pgx", ctl.profile.PgURL)
+	require.NoError(t, err)
+	defer db.Close()
+	result, err := db.ExecContext(ctx, `
+		UPDATE setting SET value = jsonb_set(value, '{sqlReviewEnabled}', to_jsonb($2::boolean))
+		WHERE workspace = $1 AND name = 'AI'
+	`, strings.TrimPrefix(workspace.Msg.Name, "workspaces/"), enabled)
+	require.NoError(t, err)
+	affected, err := result.RowsAffected()
+	require.NoError(t, err)
+	require.Equal(t, int64(1), affected)
 }

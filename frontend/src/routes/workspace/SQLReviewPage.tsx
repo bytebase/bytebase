@@ -35,6 +35,10 @@ import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import {
+  SQLReviewAIReviewSection,
+  useWorkspaceAIReview,
+} from "./SQLReviewAIReviewSection";
+import {
   SQLReviewStandardRulesSection,
   useWorkspaceStandardRules,
 } from "./SQLReviewStandardRulesSection";
@@ -263,7 +267,10 @@ export function SQLReviewPage() {
   // With SQL Review V2 the standard rules replace the v1 review policies.
   const sqlReviewV2 = sqlReviewV2Enabled();
   const standardRules = useWorkspaceStandardRules(sqlReviewV2);
-  useUnsavedChangesGuard(standardRules.isDirty);
+  const aiReview = useWorkspaceAIReview();
+  const isDirty = standardRules.isDirty || aiReview.isDirty;
+  const saving = standardRules.saving || aiReview.saving;
+  useUnsavedChangesGuard(isDirty);
 
   useEffect(() => {
     if (sqlReviewV2) return;
@@ -303,6 +310,7 @@ export function SQLReviewPage() {
       {sqlReviewV2 ? (
         <div className={STANDARD_RULES_COLUMN}>
           <SQLReviewStandardRulesSection standardRules={standardRules} />
+          <SQLReviewAIReviewSection aiReview={aiReview} />
         </div>
       ) : (
         <>
@@ -345,23 +353,39 @@ export function SQLReviewPage() {
         </>
       )}
 
-      {standardRules.isDirty && (
+      {isDirty && (
         <StickyActionFooter
           contentPadding={false}
           contentClassName={STANDARD_RULES_COLUMN}
           left={
             <Button
               appearance="outline"
-              disabled={standardRules.saving}
-              onClick={standardRules.revert}
+              disabled={saving}
+              onClick={() => {
+                standardRules.revert();
+                aiReview.revert();
+              }}
             >
               {t("common.cancel")}
             </Button>
           }
           right={
             <Button
-              disabled={standardRules.saving}
-              onClick={() => void standardRules.save()}
+              disabled={saving}
+              onClick={async () => {
+                const saves: Promise<boolean>[] = [];
+                if (standardRules.isDirty) saves.push(standardRules.save());
+                if (aiReview.isDirty) saves.push(aiReview.save());
+                // One click reports one update, and only when every changed
+                // part saved.
+                if ((await Promise.all(saves)).every(Boolean)) {
+                  pushNotification({
+                    module: "bytebase",
+                    style: "SUCCESS",
+                    title: t("common.updated"),
+                  });
+                }
+              }}
             >
               {t("common.update")}
             </Button>
