@@ -937,3 +937,67 @@ func TestSyncForeignTablesWithoutTablePrivilege(t *testing.T) {
 	require.Equal(t, "note", remoteOrders.Columns[1].Name)
 	require.Equal(t, "character varying(30)", remoteOrders.Columns[1].Type)
 }
+
+func TestSyncProcedureClassification(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, pgDB := testcontainer.NewPgDatabase(t)
+
+	_, err := pgDB.ExecContext(ctx, `
+CREATE FUNCTION sync_proc_class_fn(a int) RETURNS int AS $$ BEGIN RETURN a; END $$ LANGUAGE plpgsql;
+CREATE PROCEDURE sync_proc_class_proc(a int) LANGUAGE plpgsql AS $$ BEGIN RAISE NOTICE '%', a; END $$;
+COMMENT ON PROCEDURE sync_proc_class_proc(int) IS 'proc comment';
+`)
+	require.NoError(t, err)
+
+	driver := &Driver{}
+	config := db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Type:     storepb.DataSourceType_ADMIN,
+			Username: "postgres",
+			Host:     pgContainer.GetHost(),
+			Port:     pgContainer.GetPort(),
+			Database: dbName,
+		},
+		Password: "root-password",
+		ConnectionContext: db.ConnectionContext{
+			EngineVersion: "16.0",
+			DatabaseName:  dbName,
+		},
+	}
+
+	openedDriver, err := driver.Open(ctx, storepb.Engine_POSTGRES, config)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, openedDriver.Close(ctx)) })
+
+	pgDriver, ok := openedDriver.(*Driver)
+	require.True(t, ok)
+
+	metadata, err := pgDriver.SyncDBSchema(ctx)
+	require.NoError(t, err)
+
+	fnFound := false
+	procFound := false
+	for _, schemaMeta := range metadata.Schemas {
+		if schemaMeta.Name != "public" {
+			continue
+		}
+		for _, fn := range schemaMeta.Functions {
+			require.NotEqual(t, "sync_proc_class_proc", fn.Name, "procedure must not be synced as a function")
+			if fn.Name == "sync_proc_class_fn" {
+				fnFound = true
+			}
+		}
+		for _, proc := range schemaMeta.Procedures {
+			if proc.Name == "sync_proc_class_proc" {
+				procFound = true
+				require.Equal(t, "proc comment", proc.Comment)
+				require.Contains(t, proc.Definition, "PROCEDURE")
+			}
+		}
+	}
+	require.True(t, fnFound, "function must be synced under Functions")
+	require.True(t, procFound, "procedure must be synced under Procedures")
+}
