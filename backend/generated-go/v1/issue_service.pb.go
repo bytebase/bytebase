@@ -366,8 +366,11 @@ const (
 	// Created and claimable by any replica.
 	ReviewRun_AVAILABLE ReviewRun_Status = 1
 	ReviewRun_RUNNING   ReviewRun_Status = 2
-	// Every (spec, target) unit was evaluated. DONE does not mean the
-	// review passed: whether problems remain is judged from open comments.
+	// Every (spec, target) unit in the reviewer's scope was evaluated. RULE's
+	// scope is every target. AI's scope is the project's CI sample, the first
+	// ci_sampling_size targets of each spec, or every target when
+	// ci_sampling_size is 0. DONE does not mean the review passed: whether
+	// problems remain is judged from open comments.
 	ReviewRun_DONE ReviewRun_Status = 3
 	// At least one unit was not evaluated; the cause is in `error`.
 	ReviewRun_FAILED ReviewRun_Status = 4

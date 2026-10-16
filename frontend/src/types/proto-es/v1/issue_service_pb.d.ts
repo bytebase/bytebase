@@ -1469,8 +1469,11 @@ export enum ReviewRun_Status {
   RUNNING = 2,
 
   /**
-   * Every (spec, target) unit was evaluated. DONE does not mean the
-   * review passed: whether problems remain is judged from open comments.
+   * Every (spec, target) unit in the reviewer's scope was evaluated. RULE's
+   * scope is every target. AI's scope is the project's CI sample, the first
+   * ci_sampling_size targets of each spec, or every target when
+   * ci_sampling_size is 0. DONE does not mean the review passed: whether
+   * problems remain is judged from open comments.
    *
    * @generated from enum value: DONE = 3;
    */
