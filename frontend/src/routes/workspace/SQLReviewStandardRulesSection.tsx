@@ -8,6 +8,7 @@ import {
 } from "@/components/sql-review/standardRules";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FormSection } from "@/components/ui/form";
 import { useWorkspaceResourceName } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import {
@@ -124,15 +125,11 @@ export function SQLReviewStandardRulesSection({
   const workspace = useWorkspaceResourceName();
 
   return (
-    <section className="flex flex-col gap-y-6 pt-8">
-      <div className="flex flex-col gap-y-2">
-        <h1 className="text-2xl font-bold text-main">
-          {t("sql-review.standard-rules.self")}
-        </h1>
-        <p className="text-sm text-control-light">
-          {t("sql-review.standard-rules.description")}
-        </p>
-      </div>
+    <FormSection
+      layout="single-column"
+      title={t("sql-review.standard-rules.self")}
+      description={t("sql-review.standard-rules.description")}
+    >
       {standardRules.readFailed && (
         <Alert
           variant="error"
@@ -157,6 +154,6 @@ export function SQLReviewStandardRulesSection({
           disabled={!standardRules.canEdit || standardRules.saving}
         />
       )}
-    </section>
+    </FormSection>
   );
 }

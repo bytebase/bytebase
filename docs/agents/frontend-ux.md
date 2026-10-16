@@ -190,6 +190,11 @@ behavior:
 - A section has 24px vertical padding and 16px internal rhythm.
 - On large screens, a section header uses 25% of the section width and content
   uses the remainder. On smaller screens, they stack with 16px separation.
+- A page that reads as one column uses `FormSection layout="single-column"`: the
+  same section title, the header above the content at every width, and the
+  content's children 16px apart. `layout="stacked"` is the dense variant for
+  sections inside a dense form. `FormSection description` renders a short
+  introduction under the title in the header.
 - `FormLabel` MUST reference its control with `htmlFor`.
 - Validation MUST be adjacent to the affected field. Do not rely only on a
   toast or a disabled button to explain invalid input.

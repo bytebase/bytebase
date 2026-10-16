@@ -19,11 +19,11 @@ import {
 } from "@/components/sql-review/standardRules";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FormFieldGroup, FormSection } from "@/components/ui/form";
 import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
 import { useWorkspaceResourceName } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
-import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
@@ -240,38 +240,86 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
 
   return (
     <ProjectPageLayout>
-      <div className={cn(STANDARD_RULES_COLUMN, "flex flex-col gap-y-6 pt-4")}>
-        <div className="flex flex-col gap-y-2">
-          <h1 className="text-2xl font-bold text-main">
-            {t("sql-review.standard-rules.self")}
-          </h1>
-          <p className="text-sm text-control-light">
-            {t("sql-review.standard-rules.project-description")}
-          </p>
-        </div>
-        {standardRules.readFailed && (
-          <Alert
-            variant="error"
-            description={t("sql-review.standard-rules.load-failed")}
-          >
-            <Button
-              className="mt-3"
-              appearance="outline"
-              size="sm"
-              onClick={standardRules.reload}
+      <div className={STANDARD_RULES_COLUMN}>
+        <FormSection
+          layout="single-column"
+          title={t("sql-review.standard-rules.self")}
+          description={t("sql-review.standard-rules.project-description")}
+        >
+          {standardRules.readFailed && (
+            <Alert
+              variant="error"
+              description={t("sql-review.standard-rules.load-failed")}
             >
-              {t("sql-review.standard-rules.retry")}
-            </Button>
-          </Alert>
-        )}
-        {standardRules.loaded && (
-          <>
+              <Button
+                className="mt-3"
+                appearance="outline"
+                size="sm"
+                onClick={standardRules.reload}
+              >
+                {t("sql-review.standard-rules.retry")}
+              </Button>
+            </Alert>
+          )}
+          {standardRules.loaded && (
+            <>
+              <SwitchRow
+                className="rounded-sm border border-block-border px-4 py-3"
+                title={t("sql-review.standard-rules.customize.self")}
+                description={
+                  <>
+                    {t("sql-review.standard-rules.customize.description")}
+                    {canViewWorkspaceRules && (
+                      <>
+                        {" "}
+                        <RouterLink
+                          to={{ name: WORKSPACE_ROUTE_SQL_REVIEW }}
+                          className="text-accent hover:underline"
+                        >
+                          {t(
+                            "sql-review.standard-rules.customize.view-workspace-rules"
+                          )}
+                        </RouterLink>
+                      </>
+                    )}
+                  </>
+                }
+                checked={standardRules.customized}
+                onCheckedChange={standardRules.setCustomized}
+                disabled={customizeLocked || standardRules.saving}
+              />
+              {standardRules.rules ? (
+                <StandardRuleSwitches
+                  // The rules remembered while SYNTAX is off belong to one
+                  // project.
+                  key={projectName}
+                  rules={standardRules.rules}
+                  onChange={standardRules.setRules}
+                  disabled={!canSave || standardRules.saving}
+                  readOnly={!standardRules.customized}
+                />
+              ) : (
+                <Alert
+                  description={t(
+                    "sql-review.standard-rules.workspace-rules-hidden"
+                  )}
+                />
+              )}
+            </>
+          )}
+        </FormSection>
+        <FormSection
+          layout="single-column"
+          title={t("sql-review.ai-review.self")}
+          description={t("sql-review.ai-review.project-description")}
+        >
+          <FormFieldGroup>
             <SwitchRow
               className="rounded-sm border border-block-border px-4 py-3"
-              title={t("sql-review.standard-rules.customize.self")}
+              title={t("sql-review.ai-review.enable.self")}
               description={
                 <>
-                  {t("sql-review.standard-rules.customize.description")}
+                  {t("sql-review.ai-review.set-for-workspace")}
                   {canViewWorkspaceRules && (
                     <>
                       {" "}
@@ -279,74 +327,22 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
                         to={{ name: WORKSPACE_ROUTE_SQL_REVIEW }}
                         className="text-accent hover:underline"
                       >
-                        {t(
-                          "sql-review.standard-rules.customize.view-workspace-rules"
-                        )}
+                        {t("sql-review.ai-review.view-workspace-setting")}
                       </RouterLink>
                     </>
                   )}
                 </>
               }
-              checked={standardRules.customized}
-              onCheckedChange={standardRules.setCustomized}
-              disabled={customizeLocked || standardRules.saving}
+              checked={aiReviewOn}
+              onCheckedChange={() => {}}
+              readOnly
             />
-            {standardRules.rules ? (
-              <StandardRuleSwitches
-                // The rules remembered while SYNTAX is off belong to one
-                // project.
-                key={projectName}
-                rules={standardRules.rules}
-                onChange={standardRules.setRules}
-                disabled={!canSave || standardRules.saving}
-                readOnly={!standardRules.customized}
-              />
-            ) : (
-              <Alert
-                description={t(
-                  "sql-review.standard-rules.workspace-rules-hidden"
-                )}
-              />
-            )}
-          </>
-        )}
-        {/* The column's gap adds to this padding: 32px above the heading, as
-            on the workspace page. */}
-        <div className="flex flex-col gap-y-2 pt-2">
-          <h1 className="text-2xl font-bold text-main">
-            {t("sql-review.ai-review.self")}
-          </h1>
-          <p className="text-sm text-control-light">
-            {t("sql-review.ai-review.project-description")}
-          </p>
-        </div>
-        <SwitchRow
-          className="rounded-sm border border-block-border px-4 py-3"
-          title={t("sql-review.ai-review.enable.self")}
-          description={
-            <>
-              {t("sql-review.ai-review.set-for-workspace")}
-              {canViewWorkspaceRules && (
-                <>
-                  {" "}
-                  <RouterLink
-                    to={{ name: WORKSPACE_ROUTE_SQL_REVIEW }}
-                    className="text-accent hover:underline"
-                  >
-                    {t("sql-review.ai-review.view-workspace-setting")}
-                  </RouterLink>
-                </>
-              )}
-            </>
-          }
-          checked={aiReviewOn}
-          onCheckedChange={() => {}}
-          readOnly
-        />
-        <ReviewAIPolicyField
-          policy={aiReviewPolicy}
-          placeholder={t("sql-review.ai-review.policy.project-placeholder")}
-        />
+            <ReviewAIPolicyField
+              policy={aiReviewPolicy}
+              placeholder={t("sql-review.ai-review.policy.project-placeholder")}
+            />
+          </FormFieldGroup>
+        </FormSection>
       </div>
 
       {isDirty && (
