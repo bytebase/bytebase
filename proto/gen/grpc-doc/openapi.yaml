@@ -16583,9 +16583,25 @@ components:
             - type: "null"
           title: usage
           description: Token usage for this provider call, when available.
+        stopReason:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.AIChatResponse.StopReason'
+          title: stop_reason
+          description: Why the model stopped. A truncated or blocked response can still carry content.
       title: AIChatResponse
       additionalProperties: false
       description: Response message for AIService.Chat.
+    bytebase.v1.AIChatResponse.StopReason:
+      type: string
+      title: StopReason
+      enum:
+        - STOP_REASON_UNSPECIFIED
+        - TURN_COMPLETED
+        - TOKEN_LIMIT
+        - BLOCKED
+        - MALFORMED_TOOL_CALL
+        - OTHER
+      description: Why the model stopped generating a response.
     bytebase.v1.AIChatToolCall:
       type: object
       properties:

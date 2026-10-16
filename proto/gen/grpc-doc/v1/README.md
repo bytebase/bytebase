@@ -292,6 +292,7 @@
     - [AIChatUsage](#bytebase-v1-AIChatUsage)
   
     - [AIChatMessageRole](#bytebase-v1-AIChatMessageRole)
+    - [AIChatResponse.StopReason](#bytebase-v1-AIChatResponse-StopReason)
   
     - [AIService](#bytebase-v1-AIService)
   
@@ -5188,6 +5189,7 @@ Response message for AIService.Chat.
 | content | [string](#string) | optional | The text content of the AI response. Optional when the response only contains tool calls. |
 | tool_calls | [AIChatToolCall](#bytebase-v1-AIChatToolCall) | repeated | Tool calls the AI wants to make. |
 | usage | [AIChatUsage](#bytebase-v1-AIChatUsage) | optional | Token usage for this provider call, when available. |
+| stop_reason | [AIChatResponse.StopReason](#bytebase-v1-AIChatResponse-StopReason) |  | Why the model stopped. A truncated or blocked response can still carry content. |
 
 
 
@@ -5258,6 +5260,22 @@ Role of a chat message.
 | AI_CHAT_MESSAGE_ROLE_USER | 2 | User message. |
 | AI_CHAT_MESSAGE_ROLE_ASSISTANT | 3 | Assistant (AI) message. |
 | AI_CHAT_MESSAGE_ROLE_TOOL | 4 | Tool result message. |
+
+
+
+<a name="bytebase-v1-AIChatResponse-StopReason"></a>
+
+### AIChatResponse.StopReason
+Why the model stopped generating a response.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STOP_REASON_UNSPECIFIED | 0 | The provider did not report why the model stopped. |
+| TURN_COMPLETED | 1 | The model completed its turn with an answer or with tool calls. |
+| TOKEN_LIMIT | 2 | The response was truncated at a token limit and is incomplete. |
+| BLOCKED | 3 | The provider blocked the request or the response, or the model refused to answer. |
+| MALFORMED_TOOL_CALL | 4 | The model generated a tool call that the provider could not parse. |
+| OTHER | 5 | The model stopped for a reason that no other value names. |
 
 
  

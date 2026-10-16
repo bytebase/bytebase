@@ -106,7 +106,7 @@ func TestSettingModelFailsOnASafetyBlockedGeminiReply(t *testing.T) {
 
 	model := NewModel(&storepb.AISetting{Provider: storepb.AISetting_GEMINI, Endpoint: server.URL, Model: "gemini-3.5-flash", ApiKey: "test-key"})
 	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DELETE FROM banned_phrases;"}, ordersCatalog())
-	require.ErrorIs(t, err, ErrEmptyReply)
+	require.ErrorIs(t, err, ErrBlockedReply)
 	require.Nil(t, result)
 	require.Equal(t, 1, requests, "a blocked turn gets no correction round")
 }

@@ -51,8 +51,9 @@ type chatClaudeUsage struct {
 }
 
 type chatClaudeResponse struct {
-	Content []json.RawMessage `json:"content"`
-	Usage   *chatClaudeUsage  `json:"usage,omitempty"`
+	Content    []json.RawMessage `json:"content"`
+	StopReason string            `json:"stop_reason"`
+	Usage      *chatClaudeUsage  `json:"usage,omitempty"`
 }
 
 func claudeContentFromToolCalls(toolCalls []*v1pb.AIChatToolCall) []json.RawMessage {
@@ -244,7 +245,7 @@ func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 		return nil, errors.Errorf("failed to unmarshal Claude response: %s", err)
 	}
 
-	result := &v1pb.AIChatResponse{}
+	result := &v1pb.AIChatResponse{StopReason: claudeStopReason(resp.StopReason)}
 	if resp.Usage != nil {
 		result.Usage = newAIChatUsage(resp.Usage.InputTokens + resp.Usage.OutputTokens)
 	}

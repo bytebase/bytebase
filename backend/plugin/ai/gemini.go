@@ -70,7 +70,11 @@ type chatGeminiResponse struct {
 		Content struct {
 			Parts []chatGeminiResponsePart `json:"parts"`
 		} `json:"content"`
+		FinishReason string `json:"finishReason"`
 	} `json:"candidates"`
+	PromptFeedback struct {
+		BlockReason string `json:"blockReason"`
+	} `json:"promptFeedback"`
 	UsageMetadata *chatGeminiUsage `json:"usageMetadata,omitempty"`
 }
 
@@ -128,6 +132,17 @@ func readGeminiFailure(httpErr *HTTPError) {
 	}
 }
 
+// appendGeminiContent adds parts as a turn of role. Gemini expects the roles
+// to alternate, so parts with the role of the last turn join that turn, as the
+// results of parallel function calls do in Google's examples.
+func appendGeminiContent(contents []chatGeminiContent, role string, parts ...chatGeminiPart) []chatGeminiContent {
+	if last := len(contents) - 1; last >= 0 && contents[last].Role == role {
+		contents[last].Parts = append(contents[last].Parts, parts...)
+		return contents
+	}
+	return append(contents, chatGeminiContent{Role: role, Parts: parts})
+}
+
 func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	payload := chatGeminiRequest{}
 
@@ -139,10 +154,7 @@ func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 				systemParts = append(systemParts, chatGeminiPart{Text: m.GetContent()})
 			}
 		case v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER:
-			payload.Contents = append(payload.Contents, chatGeminiContent{
-				Role:  "user",
-				Parts: []chatGeminiPart{{Text: m.GetContent()}},
-			})
+			payload.Contents = appendGeminiContent(payload.Contents, "user", chatGeminiPart{Text: m.GetContent()})
 		case v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT:
 			var parts []chatGeminiPart
 			if m.Content != nil && *m.Content != "" {
@@ -164,24 +176,16 @@ func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 				}
 				parts = append(parts, part)
 			}
-			payload.Contents = append(payload.Contents, chatGeminiContent{
-				Role:  "model",
-				Parts: parts,
-			})
+			payload.Contents = appendGeminiContent(payload.Contents, "model", parts...)
 		case v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_TOOL:
 			// Gemini uses functionResponse parts in a "user" role message.
 			// We need the tool name; get it from the tool call ID by searching prior messages.
 			toolName := getToolNameFromMessages(request.Messages, m.GetToolCallId())
 			resultData := geminiFunctionResponse(m.GetContent())
-			payload.Contents = append(payload.Contents, chatGeminiContent{
-				Role: "user",
-				Parts: []chatGeminiPart{
-					{
-						FunctionResponse: &chatGeminiFunctionResult{
-							Name:     toolName,
-							Response: resultData,
-						},
-					},
+			payload.Contents = appendGeminiContent(payload.Contents, "user", chatGeminiPart{
+				FunctionResponse: &chatGeminiFunctionResult{
+					Name:     toolName,
+					Response: resultData,
 				},
 			})
 		default:
@@ -243,6 +247,7 @@ func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 		result.Usage = newAIChatUsage(resp.UsageMetadata.TotalTokenCount)
 	}
 	if len(resp.Candidates) > 0 {
+		result.StopReason = geminiStopReason(resp.Candidates[0].FinishReason)
 		var textContent string
 		for _, part := range resp.Candidates[0].Content.Parts {
 			if part.Text != "" {
@@ -271,6 +276,8 @@ func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 		if textContent != "" {
 			result.Content = &textContent
 		}
+	} else {
+		result.StopReason = geminiPromptBlockStopReason(resp.PromptFeedback.BlockReason)
 	}
 	return result, nil
 }
