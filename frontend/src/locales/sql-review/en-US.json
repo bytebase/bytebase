@@ -13,7 +13,7 @@
       "load-failed": "The review policy could not be loaded.",
       "none": "No review policy.",
       "paused": "This policy is paused, so the AI review does not read it.",
-      "placeholder": "For example:\nFlag a change that locks or rewrites a table with more than 1 million rows.\nEvery foreign key needs an index on its columns.\nNew tables need created_at and updated_at columns.",
+      "placeholder": "For example:\nFlag a schema change that blocks writes on a table with more than 1 million rows.\nEvery foreign key needs an index on its columns.\nNew tables need created_at and updated_at columns.",
       "project-placeholder": "For example:\nNever delete rows from the payments or ledger tables.\nStore amounts of money in DECIMAL columns, never FLOAT or DOUBLE.\nNew columns on the users table must allow NULL or have a default.",
       "remove-only": "You can remove this policy but not change it. Clear the text to remove it.",
       "self": "Review policy",

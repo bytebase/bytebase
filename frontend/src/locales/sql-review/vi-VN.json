@@ -13,7 +13,7 @@
       "load-failed": "Không thể tải chính sách đánh giá.",
       "none": "Chưa có chính sách đánh giá.",
       "paused": "Chính sách này đang tạm dừng nên tính năng đánh giá bằng AI không đọc nó.",
-      "placeholder": "Ví dụ:\nĐánh dấu thay đổi khóa hoặc viết lại bảng có hơn 1 triệu hàng.\nMọi khóa ngoại đều cần chỉ mục trên các cột của nó.\nBảng mới cần có cột created_at và updated_at.",
+      "placeholder": "Ví dụ:\nĐánh dấu thay đổi lược đồ chặn ghi trên bảng có hơn 1 triệu hàng.\nMọi khóa ngoại đều cần chỉ mục trên các cột của nó.\nBảng mới cần có cột created_at và updated_at.",
       "project-placeholder": "Ví dụ:\nKhông bao giờ xóa hàng khỏi bảng payments hoặc ledger.\nLưu số tiền trong cột DECIMAL, không dùng FLOAT hoặc DOUBLE.\nCột mới trên bảng users phải cho phép NULL hoặc có giá trị mặc định.",
       "remove-only": "Bạn có thể xóa chính sách này nhưng không thể thay đổi nó. Hãy xóa hết nội dung để xóa chính sách.",
       "self": "Chính sách đánh giá",

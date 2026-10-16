@@ -13,7 +13,7 @@
       "load-failed": "审核策略加载失败。",
       "none": "未设置审核策略。",
       "paused": "此策略已暂停，AI 审核不会读取它。",
-      "placeholder": "例如：\n标记会锁住或重写超过 100 万行的表的变更。\n每个外键的列都必须有索引。\n新建的表必须包含 created_at 列和 updated_at 列。",
+      "placeholder": "例如：\n标记在超过 100 万行的表上会阻塞写入的结构变更。\n每个外键的列都必须有索引。\n新建的表必须包含 created_at 列和 updated_at 列。",
       "project-placeholder": "例如：\n禁止删除 payments 表或 ledger 表中的行。\n金额必须存放在 DECIMAL 列中，不能使用 FLOAT 或 DOUBLE。\nusers 表新增的列必须允许 NULL 或带有默认值。",
       "remove-only": "你可以删除此策略，但不能修改它。清空文本即可删除。",
       "self": "审核策略",

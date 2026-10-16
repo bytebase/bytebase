@@ -13,7 +13,7 @@
       "load-failed": "No se pudo cargar la política de revisión.",
       "none": "No hay política de revisión.",
       "paused": "Esta política está en pausa, por lo que la revisión con IA no la lee.",
-      "placeholder": "Por ejemplo:\nSeñala un cambio que bloquee o reescriba una tabla de más de 1 millón de filas.\nToda clave foránea necesita un índice sobre sus columnas.\nLas tablas nuevas necesitan las columnas created_at y updated_at.",
+      "placeholder": "Por ejemplo:\nSeñala un cambio de esquema que bloquee las escrituras en una tabla de más de 1 millón de filas.\nToda clave foránea necesita un índice sobre sus columnas.\nLas tablas nuevas necesitan las columnas created_at y updated_at.",
       "project-placeholder": "Por ejemplo:\nNunca elimines filas de las tablas payments o ledger.\nGuarda los importes de dinero en columnas DECIMAL, nunca FLOAT ni DOUBLE.\nLas columnas nuevas de la tabla users deben admitir NULL o tener un valor por defecto.",
       "remove-only": "Puedes eliminar esta política, pero no cambiarla. Vacía el texto para eliminarla.",
       "self": "Política de revisión",
