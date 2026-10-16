@@ -1,6 +1,19 @@
 {
   "add-or-remove-rules": "Agregar o eliminar reglas",
   "add-rules": "Agregar reglas",
+  "ai-review": {
+    "ai-off": "La IA está desactivada en el espacio de trabajo, por lo que no se ejecuta ninguna revisión con IA.",
+    "description": "Un modelo de IA que revisa el SQL de un issue en busca de riesgos que las reglas estándar no pueden ver. Se aplica a todos los proyectos del espacio de trabajo.",
+    "enable": {
+      "description": "Cada revisión envía al proveedor de IA las sentencias tal como están escritas, y puede enviar el esquema de las bases de datos de destino y las estadísticas de sus tablas. No lee ninguna fila de las bases de datos.",
+      "self": "Revisar los cambios con IA"
+    },
+    "project-description": "Un modelo de IA que revisa el SQL de un issue en busca de riesgos que las reglas estándar no pueden ver.",
+    "self": "Revisión con IA",
+    "set-for-workspace": "Se establece para todo el espacio de trabajo.",
+    "turn-on-ai": "Activar la IA",
+    "view-workspace-setting": "Ver la configuración del espacio de trabajo"
+  },
   "attach-resource": {
     "change-resources": "Cambiar recursos adjuntos",
     "label": "Puede aplicar la política de revisión a entornos o proyectos. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",

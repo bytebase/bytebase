@@ -28,20 +28,43 @@ const (
 
 type settingModel struct {
 	setting *storepb.AISetting
+	// beforeCall runs before every provider call, the retries included.
+	beforeCall func(ctx context.Context) error
 	// sleep waits for the duration, or returns the context's error as soon as
 	// the context ends. Tests replace it so that a retry takes no time.
 	sleep func(ctx context.Context, wait time.Duration) error
 }
 
+// ModelOption configures the Model that NewModel returns.
+type ModelOption func(*settingModel)
+
+// CheckBeforeEachCall runs check before every provider call, the retries of a
+// failed call included, and fails the call with its error. It is for a
+// condition that can change while a failed call waits to be sent again.
+func CheckBeforeEachCall(check func(ctx context.Context) error) ModelOption {
+	return func(m *settingModel) {
+		m.beforeCall = check
+	}
+}
+
 // NewModel returns the Model behind the workspace AI setting.
-func NewModel(setting *storepb.AISetting) Model {
-	return &settingModel{setting: setting, sleep: sleepContext}
+func NewModel(setting *storepb.AISetting, options ...ModelOption) Model {
+	m := &settingModel{setting: setting, sleep: sleepContext}
+	for _, option := range options {
+		option(m)
+	}
+	return m
 }
 
 // Chat sends the request again after a transient provider failure, so the
 // review loop sees one model call however many attempts it takes.
 func (m *settingModel) Chat(ctx context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	for retry := 0; ; retry++ {
+		if m.beforeCall != nil {
+			if err := m.beforeCall(ctx); err != nil {
+				return nil, err
+			}
+		}
 		response, err := ai.Chat(ctx, m.setting, request, ai.WithMaxOutputTokens(maxOutputTokens))
 		if err == nil {
 			return response, nil

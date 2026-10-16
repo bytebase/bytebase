@@ -189,6 +189,83 @@ func TestUpdateSettingAtomicMissingRow(t *testing.T) {
 	require.Contains(t, err.Error(), "not found")
 }
 
+func TestUpsertSettingAtomicMergesConcurrentWritesOnAMissingRow(t *testing.T) {
+	t.Parallel()
+	ctx, db, s := newSettingAtomicFixture(t)
+
+	upsertAI := func(wantExisted bool, set func(*storepb.AISetting), before func()) error {
+		_, err := s.UpsertSettingAtomic(ctx, "default", storepb.SettingName_AI,
+			func(current proto.Message, existed bool) (proto.Message, error) {
+				setting, ok := current.(*storepb.AISetting)
+				if !ok {
+					return nil, errors.Errorf("unexpected type %T", current)
+				}
+				if existed != wantExisted {
+					return nil, errors.Errorf("existed is %t, want %t", existed, wantExisted)
+				}
+				set(setting)
+				before()
+				return setting, nil
+			}, nil)
+		return err
+	}
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	firstResult := make(chan error, 1)
+	go func() {
+		firstResult <- upsertAI(false, func(setting *storepb.AISetting) { setting.SqlReviewEnabled = true }, func() {
+			close(entered)
+			<-release
+		})
+	}()
+	select {
+	case <-entered:
+	case <-time.After(15 * time.Second):
+		t.Fatal("first upsert never reached its apply callback")
+	}
+
+	secondResult := make(chan error, 1)
+	go func() {
+		secondResult <- upsertAI(true, func(setting *storepb.AISetting) { setting.Model = "second" }, func() {})
+	}()
+	// The second insert waits on the first's uncommitted row.
+	require.Eventually(t, func() bool {
+		var waiting bool
+		err := db.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM pg_stat_activity
+				WHERE datname = current_database()
+					AND cardinality(pg_blocking_pids(pid)) > 0
+					AND query LIKE '%INSERT INTO setting%ON CONFLICT%'
+			)
+		`).Scan(&waiting)
+		return err == nil && waiting
+	}, 10*time.Second, 10*time.Millisecond)
+
+	close(release)
+	for _, result := range []chan error{firstResult, secondResult} {
+		select {
+		case err := <-result:
+			require.NoError(t, err)
+		case <-time.After(15 * time.Second):
+			t.Fatal("upsert did not complete; possible deadlock")
+		}
+	}
+
+	fresh, err := s.GetSettingUncached(ctx, "default", storepb.SettingName_AI)
+	require.NoError(t, err)
+	setting, ok := fresh.Value.(*storepb.AISetting)
+	require.True(t, ok)
+	require.True(t, setting.SqlReviewEnabled)
+	require.Equal(t, "second", setting.Model)
+	cached, err := s.GetAISetting(ctx, "default")
+	require.NoError(t, err)
+	require.True(t, cached.SqlReviewEnabled)
+	require.Equal(t, "second", cached.Model)
+}
+
 // TestUpdateSettingAtomicPublishOrder pins that the setting cache is published
 // in commit order: while one update is paused between its commit and its cache
 // publish (test hook), a later update must not be able to commit and publish —

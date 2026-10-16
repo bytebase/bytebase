@@ -12516,6 +12516,16 @@ Permissions required: bb.reviewRuns.run</p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>sql_review_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the AI SQL review may run. It is off by default and is a consent
+of its own beside `enabled`: a review sends the statements of a change to
+the provider, and can send the schema of its target databases and their
+table statistics. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -14904,6 +14914,14 @@ Format: projects/{id} </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether the workspace AI setting enables the AI agent. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ai_sql_review_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the workspace AI setting switches the AI SQL review on. A review
+also needs `ai_enabled`. </p></td>
                 </tr>
               
             </tbody>

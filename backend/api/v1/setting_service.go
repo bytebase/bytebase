@@ -317,47 +317,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = storeSemanticTypeSetting
 	case storepb.SettingName_AI:
-		if s.profile.SaaS {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the AI setting cannot be changed in SaaS mode"))
-		}
-		if request.Msg.UpdateMask == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
-		}
-		payload := convertAISetting(request.Msg.Setting.Value.GetAi())
-		oldAISetting, err := s.store.GetAISetting(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find AI setting: %v", err))
-		}
-		// Clone to avoid mutating the cached store object if validation fails later.
-		oldAISetting = proto.CloneOf(oldAISetting)
-
-		for _, path := range request.Msg.UpdateMask.Paths {
-			switch path {
-			case "value.ai.enabled":
-				oldAISetting.Enabled = payload.Enabled
-			case "value.ai.provider":
-				oldAISetting.Provider = storepb.AISetting_Provider(payload.Provider)
-			case "value.ai.endpoint":
-				oldAISetting.Endpoint = payload.Endpoint
-			case "value.ai.api_key":
-				oldAISetting.ApiKey = payload.ApiKey
-			case "value.ai.model":
-				oldAISetting.Model = payload.Model
-			default:
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
-			}
-		}
-
-		if oldAISetting.Enabled {
-			if oldAISetting.Endpoint == "" || oldAISetting.Model == "" {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API endpoint and model are required"))
-			}
-			if oldAISetting.ApiKey == "" {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API key is required"))
-			}
-		}
-
-		storeSettingValue = oldAISetting
+		return s.updateAISetting(ctx, request, workspaceID)
 	case storepb.SettingName_ENVIRONMENT:
 		if serr := s.validateEnvironments(ctx, workspaceID, request.Msg.Setting.Value.GetEnvironment().GetEnvironments()); serr != nil {
 			return nil, serr
@@ -501,6 +461,113 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	return connect.NewResponse(settingMessage), nil
+}
+
+// updateAISetting merges the update mask onto the locked AI setting row, so a
+// save cannot restore a field outside its mask from a stale read, such as
+// turning AI or the AI SQL review back on after another admin turned it off.
+// Workspace creation does not seed this row, so a missing row starts empty.
+func (s *SettingService) updateAISetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string) (*connect.Response[v1pb.Setting], error) {
+	if s.profile.SaaS {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the AI setting cannot be changed in SaaS mode"))
+	}
+	if request.Msg.UpdateMask == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+	}
+	payload := convertAISetting(request.Msg.Setting.Value.GetAi())
+	paths := request.Msg.UpdateMask.Paths
+
+	if request.Msg.ValidateOnly {
+		stored, err := s.store.GetAISettingUncached(ctx, workspaceID)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find AI setting: %v", err))
+		}
+		if _, err := mergeAISetting(stored, payload, paths); err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(&v1pb.Setting{
+			Name:  request.Msg.Setting.Name,
+			Value: request.Msg.Setting.Value,
+		}), nil
+	}
+
+	var lockedBefore *storepb.AISetting
+	setting, err := s.store.UpsertSettingAtomic(ctx, workspaceID, storepb.SettingName_AI, func(current proto.Message, existed bool) (proto.Message, error) {
+		stored, ok := current.(*storepb.AISetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_AI))
+		}
+		// A setting that did not exist has no before-image.
+		if existed {
+			lockedBefore = stored
+		}
+		return mergeAISetting(stored, payload, paths)
+	}, nil)
+
+	// Re-capture the audit before-image from the locked row the merge ran
+	// against, overwriting UpdateSetting's earlier pre-lock snapshot. A save
+	// that fails validation is audited too, so this runs before the error check.
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
+		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
+			Name:      storepb.SettingName_AI,
+			Workspace: workspaceID,
+			Value:     lockedBefore,
+		})
+		if err != nil {
+			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
+		}
+		p, err := anypb.New(v1pbSetting)
+		if err != nil {
+			slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
+		}
+		setServiceData(p)
+	}
+	if err != nil {
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, err
+		}
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
+	}
+
+	settingMessage, err := convertToSettingMessage(setting)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+	return connect.NewResponse(settingMessage), nil
+}
+
+// mergeAISetting applies the update mask to a copy of stored and validates
+// the result.
+func mergeAISetting(stored, payload *storepb.AISetting, paths []string) (*storepb.AISetting, error) {
+	merged := proto.CloneOf(stored)
+	for _, path := range paths {
+		switch path {
+		case "value.ai.enabled":
+			merged.Enabled = payload.GetEnabled()
+		case "value.ai.provider":
+			merged.Provider = payload.GetProvider()
+		case "value.ai.endpoint":
+			merged.Endpoint = payload.GetEndpoint()
+		case "value.ai.api_key":
+			merged.ApiKey = payload.GetApiKey()
+		case "value.ai.model":
+			merged.Model = payload.GetModel()
+		case "value.ai.sql_review_enabled":
+			merged.SqlReviewEnabled = payload.GetSqlReviewEnabled()
+		default:
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+		}
+	}
+	if merged.Enabled {
+		if merged.Endpoint == "" || merged.Model == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API endpoint and model are required"))
+		}
+		if merged.ApiKey == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("API key is required"))
+		}
+	}
+	return merged, nil
 }
 
 // appIMSettingMaskPath maps each accepted APP_IM mask path to the provider it

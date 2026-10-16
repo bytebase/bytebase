@@ -208,6 +208,14 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: bool ai_enabled = 31;
    */
   aiEnabled: boolean;
+
+  /**
+   * Whether the workspace AI setting switches the AI SQL review on. A review
+   * also needs `ai_enabled`.
+   *
+   * @generated from field: bool ai_sql_review_enabled = 32;
+   */
+  aiSqlReviewEnabled: boolean;
 };
 
 /**

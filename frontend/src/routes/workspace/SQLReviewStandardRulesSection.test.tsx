@@ -1,5 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { STANDARD_RULE_TYPES } from "@/components/sql-review/standardRules";
 import {
@@ -98,11 +99,16 @@ const reviewRulePolicy = (
 
 function Harness() {
   const standardRules = useWorkspaceStandardRules(true);
+  const [saved, setSaved] = useState<boolean>();
   return (
     <>
       <SQLReviewStandardRulesSection standardRules={standardRules} />
       <output data-testid="dirty">{String(standardRules.isDirty)}</output>
-      <button type="button" onClick={() => void standardRules.save()}>
+      <output data-testid="saved">{String(saved)}</output>
+      <button
+        type="button"
+        onClick={() => void standardRules.save().then(setSaved)}
+      >
         save
       </button>
       <button type="button" onClick={standardRules.revert}>
@@ -154,10 +160,13 @@ describe("SQLReviewStandardRulesSection", () => {
       )
     );
     expect(screen.getByTestId("dirty")).toHaveTextContent("false");
+    expect(screen.getByTestId("saved")).toHaveTextContent("true");
     expect(ruleSwitch("disallow-truncate")).toHaveAttribute(
       "aria-checked",
       "false"
     );
+    // The page reports the update, once for everything the click saved.
+    expect(mocks.pushNotification).not.toHaveBeenCalled();
   });
 
   test("switching a rule back is not a change, and revert drops the draft", async () => {
@@ -186,6 +195,7 @@ describe("SQLReviewStandardRulesSection", () => {
     });
 
     expect(screen.getByTestId("dirty")).toHaveTextContent("true");
+    expect(screen.getByTestId("saved")).toHaveTextContent("false");
     expect(mocks.pushNotification).not.toHaveBeenCalled();
   });
 

@@ -37,7 +37,7 @@ func TestCISampleBoundsOnlyTheAIReview(t *testing.T) {
 	model := &findingModel{}
 	executor := &AIReviewExecutor{
 		store:    stores,
-		newModel: func(*storepb.AISetting) aireview.Model { return model },
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
 	}
 	reviewedDatabases := func() []string {
@@ -79,7 +79,7 @@ func TestAIReviewRunsShareTheServerLimit(t *testing.T) {
 	slots := &observedSlots{Weighted: semaphore.NewWeighted(limit), waiting: make(chan struct{}, total)}
 	executor := &AIReviewExecutor{
 		store:    stores,
-		newModel: func(*storepb.AISetting) aireview.Model { return model },
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    slots,
 	}
 
@@ -130,7 +130,7 @@ func setupReviewFixture(ctx context.Context, t *testing.T, issueCount int) (*sto
 		INSERT INTO project (resource_id, workspace, name) VALUES ('p', 'ws', 'P');
 	`)
 	require.NoError(t, err)
-	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{Name: storepb.SettingName_AI, Workspace: "ws", Value: &storepb.AISetting{Enabled: true}})
+	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{Name: storepb.SettingName_AI, Workspace: "ws", Value: &storepb.AISetting{Enabled: true, SqlReviewEnabled: true}})
 	require.NoError(t, err)
 	rules, err := protojson.Marshal(&storepb.ReviewRulePolicy{Rules: []storepb.ReviewRuleType{storepb.ReviewRuleType_SYNTAX}})
 	require.NoError(t, err)
@@ -289,4 +289,72 @@ func send(t *testing.T, ch chan<- struct{}) {
 	case <-time.After(testWaitLimit):
 		t.Fatal("timed out waiting for a model call to release")
 	}
+}
+
+func TestAIReviewExecutorChecksTheSettingAgain(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	db, stores, _ := testcontainer.NewMetadataDBWithCache(t, true)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('ws');
+		INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('p', 'ws', 'P');
+	`)
+	require.NoError(t, err)
+
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "p",
+		Name:      "plan",
+		Config: &storepb.PlanConfig{
+			Specs: []*storepb.PlanConfig_Spec{{
+				Id: "spec-1",
+				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+						Targets: []string{"instances/missing/databases/app"},
+					},
+				},
+			}},
+		},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "p",
+		CreatorEmail: "creator@example.com",
+		Title:        "issue",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload:      &storepb.Issue{},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+
+	setAISetting := func(setting *storepb.AISetting) {
+		t.Helper()
+		_, err := stores.UpsertSetting(ctx, &store.SettingMessage{
+			Name:      storepb.SettingName_AI,
+			Workspace: "ws",
+			Value:     setting,
+		})
+		require.NoError(t, err)
+	}
+	executor := NewAIReviewExecutor(stores)
+
+	setAISetting(&storepb.AISetting{Enabled: true})
+	_, err = executor.RunOnce(ctx, "p", issue.UID)
+	require.ErrorContains(t, err, "AI SQL review is not enabled")
+
+	// With the switch on the executor goes on to the target, which does not
+	// exist in this fixture.
+	setAISetting(&storepb.AISetting{Enabled: true, SqlReviewEnabled: true})
+	_, err = executor.RunOnce(ctx, "p", issue.UID)
+	require.Error(t, err)
+	require.NotContains(t, err.Error(), "is not enabled")
+
+	// A switch-off written outside this process leaves the cached copy on.
+	_, err = db.ExecContext(ctx, `UPDATE setting SET value = '{"enabled": true}' WHERE workspace = 'ws' AND name = 'AI'`)
+	require.NoError(t, err)
+	cached, err := stores.GetAISetting(ctx, "ws")
+	require.NoError(t, err)
+	require.True(t, cached.SqlReviewEnabled)
+	_, err = executor.RunOnce(ctx, "p", issue.UID)
+	require.ErrorContains(t, err, "AI SQL review is not enabled")
 }
