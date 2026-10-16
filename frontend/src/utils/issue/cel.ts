@@ -444,19 +444,22 @@ const environmentClauseOf = (expr: Expr): string[] | undefined => {
   return ids && uniq(ids).map((id) => `${environmentNamePrefix}${id}`);
 };
 
+const hasOnlyBranches = (
+  branches: (SimpleExpr[] | undefined)[]
+): branches is SimpleExpr[][] =>
+  branches.every((branch) => branch !== undefined);
+
 const splitOrBranches = (expr: SimpleExpr): SimpleExpr[] | undefined => {
   if (expr.type !== ExprType.ConditionGroup) {
     return [expr];
   }
   if (expr.operator === "_||_") {
     const branches = expr.args.map(splitOrBranches);
-    return branches.some((branch) => branch === undefined)
-      ? undefined
-      : branches.flat();
+    return hasOnlyBranches(branches) ? branches.flat() : undefined;
   }
 
   const branchesByArgument = expr.args.map(splitOrBranches);
-  if (branchesByArgument.some((branches) => branches === undefined)) {
+  if (!hasOnlyBranches(branchesByArgument)) {
     return undefined;
   }
   const alternativeIndex = branchesByArgument.findIndex(
