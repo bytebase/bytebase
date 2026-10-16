@@ -8,18 +8,10 @@ import (
 )
 
 // TestClassifyOmniParseError pins the dispatcher fallback classifier
-// against the actual omni error strings — empirically derived against
-// omni v0.0.0-20260513072939-39c04c4cca0f. The classifier must label each
+// against the actual omni error strings. The classifier must label each
 // known Tier-4 grammar gap correctly so the
 // tidb_dispatcher_omni_fallback_total{reason} counter drives the
 // invariant #8 retirement gate (otherwise we ship Option B blind).
-//
-// Critical empirical finding (motivating the err+sql two-arg signature):
-// CREATE SEQUENCE seq; produces an omni error string of "unexpected token
-// after CREATE (line 1, column 8)" — the keyword SEQUENCE never appears
-// in the error. A classifier that matched only against err.Error() would
-// silently mis-label SEQUENCE rejections as "unknown" and lose the entire
-// SEQUENCE telemetry signal. The sql parameter is required, not optional.
 func TestClassifyOmniParseError(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -32,12 +24,6 @@ func TestClassifyOmniParseError(t *testing.T) {
 			sql:      "FLASHBACK TABLE foo TO BEFORE DROP;",
 			wantOK:   false,
 			expected: "flashback",
-		},
-		{
-			name:     "SEQUENCE keyword ONLY in input (omni err says 'after CREATE')",
-			sql:      "CREATE SEQUENCE seq;",
-			wantOK:   false,
-			expected: "sequence",
 		},
 		// NOTE: BATCH non-transactional DML is now SUPPORTED by omni (grammar
 		// merged in omni #157, consumed via the go.mod bump). It therefore

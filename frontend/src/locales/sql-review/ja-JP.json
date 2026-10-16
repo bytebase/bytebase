@@ -760,11 +760,11 @@
         "title": "制約の削除"
       },
       "disallow-drop-object": {
-        "description": "DROP TABLE、COLUMN、SCHEMA、DATABASE を検出します。",
+        "description": "テーブル、列、ビュー、インデックス、スキーマ、データベースなど、あらゆるオブジェクトの削除を検出します。制約の削除は別のルールで検出します。",
         "title": "オブジェクトの削除"
       },
       "disallow-rename": {
-        "description": "テーブルまたは列の名前変更を検出します。",
+        "description": "テーブル、ビュー、または列の名前変更を検出します。",
         "title": "名前の変更"
       },
       "disallow-truncate": {

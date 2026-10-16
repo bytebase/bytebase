@@ -34,8 +34,8 @@ func ParseStatements(statement string, cfg Config) ([]base.ParsedStatement, erro
 
 	var result []base.ParsedStatement
 	for _, stmt := range stmts {
-		file, errs := parser.Parse(stmt.Text)
-		if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
+		file, err := parser.Parse(stmt.Text)
+		if err != nil || file == nil || len(file.Stmts) == 0 {
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
 				AST:       &AST{StartPosition: stmt.Start},

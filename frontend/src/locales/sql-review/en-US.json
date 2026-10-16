@@ -760,11 +760,11 @@
         "title": "Dropping constraints"
       },
       "disallow-drop-object": {
-        "description": "Flags DROP TABLE, COLUMN, SCHEMA, or DATABASE.",
+        "description": "Flags dropping any object, such as a table, column, view, index, schema, or database. Dropping a constraint is covered separately.",
         "title": "Dropping objects"
       },
       "disallow-rename": {
-        "description": "Flags renaming a table or column.",
+        "description": "Flags renaming a table, view, or column.",
         "title": "Renaming"
       },
       "disallow-truncate": {

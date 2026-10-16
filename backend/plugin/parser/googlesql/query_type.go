@@ -22,8 +22,8 @@ func ClassifyStatement(statement string, cfg Config) base.QueryType {
 
 // IsSetStatement reports whether the statement parses to a single SET statement.
 func IsSetStatement(statement string) bool {
-	file, errs := parser.Parse(statement)
-	if len(errs) > 0 || file == nil || len(file.Stmts) != 1 {
+	file, err := parser.Parse(statement)
+	if err != nil || file == nil || len(file.Stmts) != 1 {
 		return false
 	}
 	_, ok := file.Stmts[0].(*ast.SetStmt)
