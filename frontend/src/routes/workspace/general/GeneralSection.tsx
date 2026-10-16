@@ -197,6 +197,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
               {/* External URL — hidden in SaaS/cloud mode */}
               {!isSaaSMode && (
                 <FormField
+                  id={EXTERNAL_URL_PRODUCT_INTRO}
                   title={t("settings.general.workspace.external-url.self")}
                   description={
                     <>

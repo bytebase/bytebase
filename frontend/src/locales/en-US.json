@@ -44,12 +44,12 @@
     "context": "Context",
     "context-no-projects": "No accessible projects",
     "context-select": "Select context",
-    "context-start-new-chat": "Start new chat in {{name}}",
     "context-workspace": "Workspace",
     "delete-all-chats": "Delete all chats",
     "delete-all-chats-confirmation": "Are you sure you want to delete all archived chats? This action cannot be undone.",
     "delete-chat": "Delete chat",
     "delete-chat-confirmation": "Are you sure you want to delete this chat? This action cannot be undone.",
+    "input-keyboard-hint": "Enter to send · Shift+Enter for a new line",
     "input-placeholder": "Ask AI anything...",
     "interrupted": "Interrupted",
     "interrupted-retry-hint": "The conversation was interrupted. You can retry or send a new message.",
@@ -1604,14 +1604,26 @@
     }
   },
   "landing": {
+    "ai-placeholder": "Ask AI about workspace setup, projects, or access",
+    "ai-setup": {
+      "action": "Configure AI",
+      "description": "Configure a provider and model to use AI in this workspace.",
+      "title": "Set up AI Assistant"
+    },
     "changelog-for-version": "Changelog for {{version}}",
     "last-visit": "Last visit",
+    "onboarding": {
+      "completed-progress": "{{completed}} of {{total}} complete",
+      "connect-action": "Connect an instance",
+      "connect-description": "Connect a database server to {{project}}."
+    },
     "quick-link": {
       "manage": "Manage quick link",
-      "self": "Quick Link",
       "visit-issues": "Visit Issues",
-      "visit-prjects": "Visit Projects"
-    }
+      "visit-prjects": "Visit Projects",
+      "yours": "Your quick links"
+    },
+    "workspace": "Workspace"
   },
   "masking": {
     "reason": {
@@ -2018,6 +2030,7 @@
       "create-database": "Create a database",
       "create-database-description": "Create the first database on a connected instance.",
       "created-by-you": "You created",
+      "customize": "Customize",
       "databases": "Databases",
       "databases-load-error": "Databases could not be loaded.",
       "databases-unavailable": "Databases are not available to you in this project.",
@@ -2508,9 +2521,9 @@
             "placeholder": "An API Key usually starts with sk-*****",
             "self": "API Key"
           },
+          "available-in-saas": "AI Assistant is available in this workspace and managed by Bytebase.",
           "description": "Use AI to assist the database development tasks.",
           "enable-ai-assistant": "Enable AI Assistant",
-          "enabled-in-saas": "Gemini AI is enabled automatically in the SaaS mode.",
           "endpoint": {
             "description": "Enter the API endpoint for the custom model.",
             "openai-description": "Use a /responses endpoint for the Responses API or /chat/completions for the Chat Completions API.",
@@ -2531,7 +2544,8 @@
             "open_ai": "OpenAI",
             "self": "AI Provider"
           },
-          "self": "AI Assistant"
+          "self": "AI Assistant",
+          "unavailable-in-saas": "AI Assistant isn't available in this workspace. Contact your Bytebase administrator."
         },
         "allow-admin-data-source": {
           "description": "When enabled, users can choose between admin and read-only data sources. When disabled, users are forced to use read-only data sources if configured, otherwise fall back to admin data sources.",

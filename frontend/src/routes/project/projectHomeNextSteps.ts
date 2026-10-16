@@ -15,7 +15,7 @@ export type ProjectHomeNextStepInput = {
   database: ResourceAvailability;
   instance: ResourceAvailability;
   transferableDatabase: ResourceAvailability;
-  change: "loading" | "not-started" | "submitted" | "unknown";
+  change: "loading" | "not-started" | "rolled-out" | "unknown";
   membership: "unknown" | "solo" | "has-collaborators";
   isDefault: boolean;
   canConnectInstance: boolean;
@@ -37,7 +37,7 @@ export function getProjectHomeNextSteps(
     input.transferableDatabase === "present";
   if (
     input.isDefault ||
-    input.change === "submitted" ||
+    input.change === "rolled-out" ||
     input.database === "loading" ||
     (input.database === "present" && input.change === "loading")
   ) {

@@ -162,12 +162,12 @@ describe("getProjectHomeNextSteps", () => {
     ).toEqual(["members"]);
   });
 
-  test("hides setup after the first submitted database change", () => {
+  test("hides setup after the first database-change rollout", () => {
     expect(
       getProjectHomeNextSteps({
         ...input,
         database: "present",
-        change: "submitted",
+        change: "rolled-out",
       })
     ).toEqual([]);
   });

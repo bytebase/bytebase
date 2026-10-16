@@ -44,12 +44,12 @@
     "context": "コンテキスト",
     "context-no-projects": "アクセス可能なプロジェクトがありません",
     "context-select": "コンテキストを選択",
-    "context-start-new-chat": "{{name}} で新しいチャットを開始",
     "context-workspace": "ワークスペース",
     "delete-all-chats": "すべてのチャットを削除",
     "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",
     "delete-chat": "チャットを削除",
     "delete-chat-confirmation": "このチャットを削除しますか？この操作は元に戻せません。",
+    "input-keyboard-hint": "Enter で送信・Shift+Enter で改行",
     "input-placeholder": "AI に何でも聞いてください...",
     "interrupted": "中断",
     "interrupted-retry-hint": "会話が中断されました。再試行するか、新しいメッセージを送信できます。",
@@ -1604,14 +1604,26 @@
     }
   },
   "landing": {
+    "ai-placeholder": "ワークスペースの設定、プロジェクト、アクセスについて AI に質問",
+    "ai-setup": {
+      "action": "AI を設定",
+      "description": "このワークスペースで AI を使用するため、プロバイダーとモデルを設定してください。",
+      "title": "AI アシスタントを設定"
+    },
     "changelog-for-version": "{{version}} の変更履歴",
     "last-visit": "最終訪問",
+    "onboarding": {
+      "completed-progress": "{{total}} 件中 {{completed}} 件完了",
+      "connect-action": "インスタンスを接続",
+      "connect-description": "データベースサーバーを {{project}} に接続します。"
+    },
     "quick-link": {
       "manage": "クイックリンクを管理する",
-      "self": "クイックリンク",
       "visit-issues": "イシューを開く",
-      "visit-prjects": "プロジェクトを開く"
-    }
+      "visit-prjects": "プロジェクトを開く",
+      "yours": "クイックリンク"
+    },
+    "workspace": "ワークスペース"
   },
   "masking": {
     "reason": {
@@ -2018,6 +2030,7 @@
       "create-database": "データベースを作成",
       "create-database-description": "接続済みインスタンスに最初のデータベースを作成します。",
       "created-by-you": "あなたが作成",
+      "customize": "カスタマイズ",
       "databases": "データベース",
       "databases-load-error": "データベースを読み込めませんでした。",
       "databases-unavailable": "このプロジェクトのデータベースは利用できません。",
@@ -2508,9 +2521,9 @@
             "placeholder": "API キーは通常 sk-***** で始まります",
             "self": "APIキー"
           },
+          "available-in-saas": "AI アシスタントはこのワークスペースで利用でき、Bytebase によって管理されています。",
           "description": "AI を使用してデータベース開発タスクを支援します。",
           "enable-ai-assistant": "AIアシスタントを有効にする",
-          "enabled-in-saas": "Gemini AI は SaaS モードで自動的に有効になります。",
           "endpoint": {
             "description": "カスタムモデルの API エンドポイントを入力します。",
             "openai-description": "Responses API には /responses、Chat Completions API には /chat/completions のエンドポイントを使用します。",
@@ -2531,7 +2544,8 @@
             "open_ai": "OpenAI",
             "self": "AIプロバイダー"
           },
-          "self": "AI アシスタント"
+          "self": "AI アシスタント",
+          "unavailable-in-saas": "このワークスペースでは AI アシスタントを利用できません。Bytebase 管理者にお問い合わせください。"
         },
         "allow-admin-data-source": {
           "description": "有効にすると、ユーザーは管理データソースと読み取り専用データソースのどちらかを選択できます。無効にすると、読み取り専用データソースが設定されている場合は強制的に読み取り専用データソースを使用し、設定されていない場合は管理データソースにフォールバックします。",

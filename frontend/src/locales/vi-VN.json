@@ -44,12 +44,12 @@
     "context": "Ngữ cảnh",
     "context-no-projects": "Không có dự án nào có thể truy cập",
     "context-select": "Chọn ngữ cảnh",
-    "context-start-new-chat": "Bắt đầu cuộc trò chuyện mới trong {{name}}",
     "context-workspace": "Không gian làm việc",
     "delete-all-chats": "Xóa tất cả cuộc trò chuyện",
     "delete-all-chats-confirmation": "Bạn có chắc chắn muốn xóa tất cả cuộc trò chuyện đã lưu trữ không? Hành động này không thể hoàn tác.",
     "delete-chat": "Xóa cuộc trò chuyện",
     "delete-chat-confirmation": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.",
+    "input-keyboard-hint": "Enter để gửi · Shift+Enter để xuống dòng",
     "input-placeholder": "Hỏi AI bất cứ điều gì...",
     "interrupted": "Bị gián đoạn",
     "interrupted-retry-hint": "Cuộc trò chuyện đã bị gián đoạn. Bạn có thể thử lại hoặc gửi tin nhắn mới.",
@@ -1604,14 +1604,26 @@
     }
   },
   "landing": {
+    "ai-placeholder": "Hỏi AI về thiết lập không gian làm việc, dự án hoặc quyền truy cập",
+    "ai-setup": {
+      "action": "Cấu hình AI",
+      "description": "Cấu hình nhà cung cấp và mô hình để sử dụng AI trong không gian làm việc này.",
+      "title": "Thiết lập Trợ lý AI"
+    },
     "changelog-for-version": "Nhật ký thay đổi cho phiên bản {{version}}",
     "last-visit": "Lần truy cập cuối",
+    "onboarding": {
+      "completed-progress": "Đã hoàn thành {{completed}}/{{total}}",
+      "connect-action": "Kết nối một instance",
+      "connect-description": "Kết nối máy chủ cơ sở dữ liệu với {{project}}."
+    },
     "quick-link": {
       "manage": "Quản lý liên kết nhanh",
-      "self": "Liên kết nhanh",
       "visit-issues": "Truy cập Vấn đề",
-      "visit-prjects": "Truy cập Dự án"
-    }
+      "visit-prjects": "Truy cập Dự án",
+      "yours": "Liên kết nhanh của bạn"
+    },
+    "workspace": "Không gian làm việc"
   },
   "masking": {
     "reason": {
@@ -2018,6 +2030,7 @@
       "create-database": "Tạo cơ sở dữ liệu",
       "create-database-description": "Tạo cơ sở dữ liệu đầu tiên trên một phiên bản đã kết nối.",
       "created-by-you": "Bạn đã tạo",
+      "customize": "Tùy chỉnh",
       "databases": "Cơ sở dữ liệu",
       "databases-load-error": "Không thể tải cơ sở dữ liệu.",
       "databases-unavailable": "Bạn không thể xem cơ sở dữ liệu trong dự án này.",
@@ -2508,9 +2521,9 @@
             "placeholder": "Khóa API thường bắt đầu bằng sk-*****",
             "self": "Khóa API"
           },
+          "available-in-saas": "Trợ lý AI có sẵn trong workspace này và do Bytebase quản lý.",
           "description": "Sử dụng AI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
           "enable-ai-assistant": "Bật Trợ lý AI",
-          "enabled-in-saas": "Gemini AI được bật tự động trong chế độ SaaS.",
           "endpoint": {
             "description": "Nhập endpoint API cho model tùy chỉnh.",
             "openai-description": "Dùng endpoint /responses cho Responses API hoặc /chat/completions cho Chat Completions API.",
@@ -2531,7 +2544,8 @@
             "open_ai": "OpenAI",
             "self": "Nhà cung cấp AI"
           },
-          "self": "Trợ lý AI"
+          "self": "Trợ lý AI",
+          "unavailable-in-saas": "Trợ lý AI không khả dụng trong workspace này. Hãy liên hệ với quản trị viên Bytebase."
         },
         "allow-admin-data-source": {
           "description": "Khi được bật, người dùng có thể chọn giữa nguồn dữ liệu quản trị và nguồn dữ liệu chỉ đọc. Khi bị tắt, người dùng buộc phải sử dụng nguồn dữ liệu chỉ đọc nếu được cấu hình, nếu không sẽ quay lại sử dụng nguồn dữ liệu quản trị.",

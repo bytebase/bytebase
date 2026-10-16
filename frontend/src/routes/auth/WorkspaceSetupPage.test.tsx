@@ -13,13 +13,15 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { skipErrorNotificationContextKey } from "@/api/context-key";
 import { SplashPanelContext } from "@/app/layouts/SplashLayout";
 import {
-  PROJECT_V1_ROUTE_DASHBOARD,
-  PROJECT_V1_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_INSTANCES,
+  WORKSPACE_ROUTE_LANDING,
 } from "@/app/router/handles";
 import "@/lib/i18n";
 import {
-  CREATE_PROJECT_PRODUCT_INTRO,
+  CREATE_INSTANCE_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
 import {
   readGuideTeamSize,
@@ -382,7 +384,11 @@ beforeEach(() => {
     if (!project) throw new ConnectError("not found", Code.NotFound);
     return project;
   });
-  mocks.prepareSampleProjectInstance.mockResolvedValue({});
+  mocks.prepareSampleProjectInstance.mockImplementation(async (project: string) => {
+    const name = `${project}/instances/sample`;
+    mocks.sample.instances = [{ instance: name }];
+    return { name };
+  });
   mocks.getProjectIamPolicy.mockImplementation(
     async () => server.projectPolicy
   );
@@ -750,8 +756,7 @@ describe("WorkspaceSetupPage", () => {
 
       await landed();
       expect(mocks.routerReplace).toHaveBeenCalledWith({
-        name: PROJECT_V1_ROUTE_DASHBOARD,
-        query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
+        name: WORKSPACE_ROUTE_LANDING,
       });
       expect(writes()).toEqual(["updateUser", "updateWorkspace"]);
       expect(readSelectedGuideScenarioId()).toBe("create-database-change");
@@ -970,8 +975,7 @@ describe("WorkspaceSetupPage", () => {
 
       await landed();
       expect(mocks.routerReplace).toHaveBeenCalledWith({
-        name: PROJECT_V1_ROUTE_DASHBOARD,
-        query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
+        name: WORKSPACE_ROUTE_LANDING,
       });
       expect(writes()).toEqual(["updateUser", "updateWorkspace"]);
       expect(readSelectedGuideScenarioId()).toBe("create-database-change");
@@ -2003,14 +2007,18 @@ describe("WorkspaceSetupPage", () => {
 
       await landed();
       expect(mocks.routerReplace).toHaveBeenCalledWith({
-        name: PROJECT_V1_ROUTE_DETAIL,
+        name: PROJECT_V1_ROUTE_DATABASES,
         params: { projectId: "payments-ab12" },
+        query: {
+          syncingInstance: "sample",
+          [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+        },
       });
     });
   });
 
   describe("Finish", () => {
-    test("creates nothing before Finish, then everything in order, and lands on the project home", async () => {
+    test("creates nothing before Finish, then everything in order, and opens project databases", async () => {
       await startAtTeam({ goal: CHANGE_GOAL });
       fireEvent.click(screen.getByText("2–10"));
       enterAddress("Ann@Example.com");
@@ -2076,8 +2084,32 @@ describe("WorkspaceSetupPage", () => {
         REPORT
       );
       expect(mocks.routerReplace).toHaveBeenCalledWith({
-        name: PROJECT_V1_ROUTE_DETAIL,
+        name: PROJECT_V1_ROUTE_DATABASES,
         params: { projectId: "payments-ab12" },
+        query: {
+          syncingInstance: "sample",
+          [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+        },
+      });
+    });
+
+    test("keeps the sample instance sync hint when server info is not refreshed", async () => {
+      mocks.prepareSampleProjectInstance.mockResolvedValueOnce({
+        name: "projects/payments-ab12/instances/sample",
+      });
+      await startAtTeam();
+
+      finishAlone();
+
+      await landed();
+      expect(mocks.sample.instances).toEqual([]);
+      expect(mocks.routerReplace).toHaveBeenCalledWith({
+        name: PROJECT_V1_ROUTE_DATABASES,
+        params: { projectId: "payments-ab12" },
+        query: {
+          syncingInstance: "sample",
+          [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+        },
       });
     });
 
@@ -2173,15 +2205,16 @@ describe("WorkspaceSetupPage", () => {
       ]);
     });
 
-    test("finishes the own-instance path with an empty project, on the project home", async () => {
+    test("finishes the own-instance path on project instances", async () => {
       await startAtTeam({ database: OWN_INSTANCE });
       finishAlone();
 
       await landed();
       expect(writes()).toEqual(["updateUser", "updateWorkspace", "createProject"]);
       expect(mocks.routerReplace).toHaveBeenCalledWith({
-        name: PROJECT_V1_ROUTE_DETAIL,
+        name: PROJECT_V1_ROUTE_INSTANCES,
         params: { projectId: "payments-ab12" },
+        query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_INSTANCE_PRODUCT_INTRO },
       });
     });
 
@@ -2392,6 +2425,9 @@ describe("WorkspaceSetupPage", () => {
     });
 
     test("tries again without creating the project or requesting the sample twice", async () => {
+      mocks.prepareSampleProjectInstance.mockResolvedValueOnce({
+        name: "projects/payments-ab12/instances/sample",
+      });
       mocks.patchWorkspaceIamPolicy.mockRejectedValueOnce(unavailable());
       await startAtTeam();
       finishInviting("ann@example.com");
@@ -2413,6 +2449,15 @@ describe("WorkspaceSetupPage", () => {
         "workspaceMembers",
       ]);
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(mocks.sample.instances).toEqual([]);
+      expect(mocks.routerReplace).toHaveBeenCalledWith({
+        name: PROJECT_V1_ROUTE_DATABASES,
+        params: { projectId: "payments-ab12" },
+        query: {
+          syncingInstance: "sample",
+          [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+        },
+      });
     });
 
     test("drops an invitee removed after a failed attempt from the project too", async () => {
@@ -2804,8 +2849,9 @@ describe("WorkspaceSetupPage", () => {
         await landed();
         expect(mocks.createProject).not.toHaveBeenCalled();
         expect(mocks.routerReplace).toHaveBeenCalledWith({
-          name: PROJECT_V1_ROUTE_DETAIL,
+          name: PROJECT_V1_ROUTE_INSTANCES,
           params: { projectId: "payments-ab12" },
+          query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_INSTANCE_PRODUCT_INTRO },
         });
       });
 
@@ -3207,7 +3253,7 @@ describe("WorkspaceSetupPage", () => {
 
         expect(screen.getByText("This setup ended in another tab")).toBeInTheDocument();
         expect(mocks.routerReplace).toHaveBeenCalledWith({
-          name: PROJECT_V1_ROUTE_DASHBOARD,
+          name: WORKSPACE_ROUTE_LANDING,
         });
       });
     });
@@ -3421,8 +3467,12 @@ describe("WorkspaceSetupPage", () => {
         fireEvent.click(finishButton());
         await landed();
         expect(mocks.routerReplace).toHaveBeenCalledWith({
-          name: PROJECT_V1_ROUTE_DETAIL,
+          name: PROJECT_V1_ROUTE_DATABASES,
           params: { projectId: "orders-ab12" },
+          query: {
+            syncingInstance: "sample",
+            [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+          },
         });
       });
 
@@ -3482,8 +3532,12 @@ describe("WorkspaceSetupPage", () => {
         expect(mocks.createProject).toHaveBeenCalledTimes(2);
         expect(server.projects.size).toBe(1);
         expect(mocks.routerReplace).toHaveBeenCalledWith({
-          name: PROJECT_V1_ROUTE_DETAIL,
+          name: PROJECT_V1_ROUTE_DATABASES,
           params: { projectId: "payments-ab12" },
+          query: {
+            syncingInstance: "sample",
+            [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+          },
         });
       });
 

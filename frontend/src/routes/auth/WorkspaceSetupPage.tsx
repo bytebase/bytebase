@@ -6,8 +6,9 @@ import { behaviorAnalytics } from "@/app/analytics/provider";
 import { SplashPanel } from "@/app/layouts/SplashLayout";
 import { router } from "@/app/router";
 import {
-  PROJECT_V1_ROUTE_DASHBOARD,
-  PROJECT_V1_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_INSTANCES,
+  WORKSPACE_ROUTE_LANDING,
 } from "@/app/router/handles";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,8 +18,9 @@ import {
   useWorkspacePermission,
 } from "@/hooks/useAppState";
 import {
-  CREATE_PROJECT_PRODUCT_INTRO,
+  CREATE_INSTANCE_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
 import {
   saveGuideTeamSize,
@@ -28,6 +30,7 @@ import { saveWorkspaceSetupFinished } from "@/modules/workspace-setup-guide/setu
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import type { ValidatedMessage } from "@/types";
+import { extractInstanceResourceName } from "@/utils";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import {
   clearSetupDraft,
@@ -309,11 +312,10 @@ function WorkspaceSetupWizard() {
     workspaceTitle: workspaceTitle.trim(),
   };
 
-  // The projects page, which offers to create the first one.
+  // Self-hosted setup may finish without a project.
   const leaveWithoutProject = () =>
     router.replace({
-      name: PROJECT_V1_ROUTE_DASHBOARD,
-      query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
+      name: WORKSPACE_ROUTE_LANDING,
     });
 
   // Self-hosted only: setup is offered once there and may be left for later.
@@ -390,7 +392,8 @@ function WorkspaceSetupWizard() {
       {
         projectCreateSent: () => save({ attemptedProjectId: draft.projectId }),
         projectCreated: (createdProject) => save({ createdProject }),
-        samplePrepared: () => save({ samplePrepared: true }),
+        samplePrepared: (sampleInstanceName) =>
+          save({ samplePrepared: true, sampleInstanceName }),
         projectGrants: (projectGrants) => save({ projectGrants }),
       }
     );
@@ -441,9 +444,32 @@ function WorkspaceSetupWizard() {
       // Everything exists on the server; a browser that cannot store the
       // recent project must still leave the wizard.
     }
+    const projectId = extractProjectResourceName(result.project);
+    const sampleInstanceName =
+      finishSource === "sample"
+        ? (draftRef.current.sampleInstanceName ??
+          useAppStore
+            .getState()
+            .serverInfo?.sample?.instances.find(({ instance }) =>
+              instance.startsWith(`${result.project}/`)
+            )?.instance)
+        : undefined;
     router.replace({
-      name: PROJECT_V1_ROUTE_DETAIL,
-      params: { projectId: extractProjectResourceName(result.project) },
+      name:
+        finishSource === "sample"
+          ? PROJECT_V1_ROUTE_DATABASES
+          : PROJECT_V1_ROUTE_INSTANCES,
+      params: { projectId },
+      query:
+        finishSource === "sample"
+          ? {
+              ...(sampleInstanceName && {
+                syncingInstance:
+                  extractInstanceResourceName(sampleInstanceName),
+              }),
+              [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+            }
+          : { [PRODUCT_INTRO_QUERY_KEY]: CREATE_INSTANCE_PRODUCT_INTRO },
     });
   };
 
@@ -561,9 +587,7 @@ function WorkspaceSetupWizard() {
           </h1>
           {elsewhere === "ended" ? (
             <Button
-              onClick={() =>
-                router.replace({ name: PROJECT_V1_ROUTE_DASHBOARD })
-              }
+              onClick={() => router.replace({ name: WORKSPACE_ROUTE_LANDING })}
             >
               {t("workspace-setup.elsewhere.workspace")}
             </Button>
