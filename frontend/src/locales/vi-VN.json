@@ -2064,13 +2064,17 @@
       "expires-in-days_other": "Hết hạn sau {{days}} ngày",
       "expires-today": "Hết hạn hôm nay",
       "grant-exemption": "Cấp Miễn trừ",
+      "hide-raw-cel-condition": "Ẩn điều kiện CEL thô",
       "level": "cấp",
+      "n-databases_one": "{{n}} cơ sở dữ liệu",
+      "n-databases_other": "{{n}} cơ sở dữ liệu",
       "n-exemptions_one": "{{n}} miễn trừ",
       "n-exemptions_other": "{{n}} miễn trừ",
       "no-exemptions": "Chưa có miễn trừ che giấu nào được cấp",
       "no-reason": "Không có lý do được cung cấp",
       "revoke-exemption-title": "Xóa miễn trừ che giấu cho {{member}}?",
-      "self": "Miễn trừ Che giấu"
+      "self": "Miễn trừ Che giấu",
+      "show-raw-cel-condition": "Hiện điều kiện CEL thô"
     },
     "members": {
       "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",

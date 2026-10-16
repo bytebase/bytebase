@@ -111,24 +111,25 @@ export function ProjectReleaseDashboardPage({
           }
         />
 
-        {/* Category filter */}
-        <div className="flex items-center gap-x-4">
-          <CategorySelect
-            value={selectedCategory}
-            onChange={setSelectedCategory}
-            categories={categories}
-            loading={categoriesLoading}
-          />
-          {selectedCategory && (
-            <Button
-              appearance="secondary"
-              size="sm"
-              onClick={() => setSelectedCategory("")}
-            >
-              {t("common.clear-filters")}
-            </Button>
-          )}
-        </div>
+        {(categories.length > 0 || selectedCategory) && (
+          <div className="flex items-center gap-x-4">
+            <CategorySelect
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              categories={categories}
+              loading={categoriesLoading}
+            />
+            {selectedCategory && (
+              <Button
+                appearance="secondary"
+                size="sm"
+                onClick={() => setSelectedCategory("")}
+              >
+                {t("common.clear-filters")}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Release table */}

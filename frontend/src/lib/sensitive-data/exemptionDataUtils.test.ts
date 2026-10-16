@@ -7,12 +7,25 @@ vi.mock("@/lib/i18n", () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       const map: Record<string, string> = {
         "database.all": "All databases",
+        "database.columns": "Columns",
         "common.schema": "Schema",
         "common.table": "Table",
         "project.masking-exemption.level": "level",
       };
       if (key === "common.n-more" && params?.n !== undefined)
         return `+${params.n} more`;
+      if (
+        key === "project.masking-exemption.n-exemptions" &&
+        params?.n !== undefined
+      ) {
+        return `${params.n} exemption${params.n === 1 ? "" : "s"}`;
+      }
+      if (
+        key === "project.masking-exemption.n-databases" &&
+        params?.n !== undefined
+      ) {
+        return `${params.n} database${params.n === 1 ? "" : "s"}`;
+      }
       return map[key] ?? key;
     },
   },
@@ -20,10 +33,12 @@ vi.mock("@/lib/i18n", () => ({
 
 import {
   generateGrantTitle,
+  generateMemberScopeSummary,
   getConditionExpression,
   groupByMember,
   parseClassificationLevel,
   parseExpirationTimestamp,
+  resourceCoversDatabase,
   rewriteResourceDatabase,
 } from "./exemptionDataUtils";
 import type { AccessUser, ExemptionGrant } from "./types";
@@ -162,6 +177,26 @@ describe("parseExpirationTimestamp", () => {
       'request.time < timestamp("2026-12-31T23:59:59.000Z")'
     );
     expect(result).toBe(new Date("2026-12-31T23:59:59.000Z").getTime());
+  });
+});
+
+describe("generateMemberScopeSummary", () => {
+  test("shows the database name only for a single database", () => {
+    expect(generateMemberScopeSummary(3, ["bytebase_210"])).toBe(
+      "3 exemptions · bytebase_210"
+    );
+  });
+
+  test("shows a database count for multiple databases", () => {
+    expect(
+      generateMemberScopeSummary(3, ["bytebase_210", "bytebase_211"])
+    ).toBe("3 exemptions · 2 databases");
+  });
+
+  test("uses all databases when any grant has global scope", () => {
+    expect(generateMemberScopeSummary(3, ["", "bytebase_210"])).toBe(
+      "3 exemptions · All databases"
+    );
   });
 });
 
@@ -589,6 +624,18 @@ describe("generateGrantTitle", () => {
     ).toBe("All databases, level ≤ 3");
   });
 
+  test("no database, with columns", () => {
+    expect(
+      generateGrantTitle(
+        makeGrant({
+          databaseResources: [
+            { databaseFullName: "", columns: ["email", "phone"] },
+          ],
+        })
+      )
+    ).toBe("All databases (columns: email, phone)");
+  });
+
   // --- Multiple databases ---
 
   test("2 databases", () => {
@@ -981,6 +1028,32 @@ describe("generateGrantTitle", () => {
         })
       )
     ).toBe("hr_prod (public: audit, dept), level = 1");
+  });
+});
+
+describe("resourceCoversDatabase", () => {
+  test("a column-only resource covers every database", () => {
+    expect(
+      resourceCoversDatabase(
+        { databaseFullName: "", columns: ["email"] },
+        "instances/prod/databases/hr"
+      )
+    ).toBe(true);
+  });
+
+  test("an instance-only resource covers only that instance", () => {
+    expect(
+      resourceCoversDatabase(
+        { databaseFullName: "", instanceResourceId: "prod" },
+        "instances/prod/databases/hr"
+      )
+    ).toBe(true);
+    expect(
+      resourceCoversDatabase(
+        { databaseFullName: "", instanceResourceId: "prod" },
+        "instances/dev/databases/hr"
+      )
+    ).toBe(false);
   });
 });
 

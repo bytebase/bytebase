@@ -2064,13 +2064,17 @@
       "expires-in-days_other": "{{days}} 日後に期限切れ",
       "expires-today": "本日期限切れ",
       "grant-exemption": "免除を付与",
+      "hide-raw-cel-condition": "生の CEL 条件を非表示",
       "level": "レベル",
+      "n-databases_one": "{{n}} 個のデータベース",
+      "n-databases_other": "{{n}} 個のデータベース",
       "n-exemptions_one": "{{n}} 件の免除",
       "n-exemptions_other": "{{n}} 件の免除",
       "no-exemptions": "マスキング免除はまだ付与されていません",
       "no-reason": "理由が提供されていません",
       "revoke-exemption-title": "{{member}} のマスキング免除を削除しますか？",
-      "self": "マスキング免除"
+      "self": "マスキング免除",
+      "show-raw-cel-condition": "生の CEL 条件を表示"
     },
     "members": {
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
