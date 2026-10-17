@@ -13,6 +13,10 @@ import { SwitchRow } from "@/components/sql-review/SwitchRow";
 import { Alert } from "@/components/ui/alert";
 import { FormFieldGroup, FormSection } from "@/components/ui/form";
 import { useServerState, useWorkspaceResourceName } from "@/hooks/useAppState";
+import {
+  AI_ASSISTANT_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/lib/productIntro";
 import { useAppStore } from "@/stores/app";
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
@@ -28,7 +32,7 @@ export interface WorkspaceAIReview {
   // Whether AI is on for the workspace. While it is off no review runs,
   // whatever the switch says.
   aiEnabled: boolean;
-  // The switch is a field of the AI setting, which SaaS keeps read only.
+  // The switch is a field of the AI setting.
   canEdit: boolean;
   setEnabled: (enabled: boolean) => void;
   isDirty: boolean;
@@ -42,7 +46,6 @@ export interface WorkspaceAIReview {
 // The page owns the draft so the switch saves with the standard rules, from
 // the one sticky footer.
 export function useWorkspaceAIReview(): WorkspaceAIReview {
-  const { isSaaSMode } = useServerState();
   // The server info carries both flags, so a user who cannot read the AI
   // setting still sees whether the review is on.
   const stored = useAppStore(
@@ -84,7 +87,7 @@ export function useWorkspaceAIReview(): WorkspaceAIReview {
   return {
     enabled: draft ?? stored,
     aiEnabled,
-    canEdit: hasWorkspacePermissionV2("bb.settings.set") && !isSaaSMode,
+    canEdit: aiEnabled && hasWorkspacePermissionV2("bb.settings.set"),
     setEnabled: setDraft,
     isDirty,
     saving,
@@ -115,16 +118,19 @@ export function SQLReviewAIReviewSection({
   policy: ReviewAIPolicyDraft;
 }) {
   const { t } = useTranslation();
+  const { isSaaSMode } = useServerState();
   // AI is turned on in the general settings, whose AI section shows its
   // controls only to a user who can open that page and read the AI setting.
   const canTurnOnAI =
-    aiReview.canEdit &&
+    !isSaaSMode &&
+    hasWorkspacePermissionV2("bb.settings.set") &&
     hasWorkspacePermissionV2("bb.settings.get") &&
     hasWorkspacePermissionV2("bb.settings.getWorkspaceProfile");
 
   return (
     <FormSection
       layout="single-column"
+      padding="none"
       title={t("sql-review.ai-review.self")}
       description={t("sql-review.ai-review.description")}
     >
@@ -141,6 +147,9 @@ export function SQLReviewAIReviewSection({
                     to={{
                       name: SETTING_ROUTE_WORKSPACE_GENERAL,
                       hash: "#ai-assistant",
+                      query: {
+                        [PRODUCT_INTRO_QUERY_KEY]: AI_ASSISTANT_PRODUCT_INTRO,
+                      },
                     }}
                     className="text-accent hover:underline"
                   >
@@ -157,15 +166,17 @@ export function SQLReviewAIReviewSection({
           className="rounded-sm border border-block-border px-4 py-3"
           title={t("sql-review.ai-review.enable.self")}
           description={t("sql-review.ai-review.enable.description")}
-          checked={aiReview.enabled}
+          checked={aiReview.aiEnabled && aiReview.enabled}
           onCheckedChange={aiReview.setEnabled}
           disabled={aiReview.saving}
           readOnly={!aiReview.canEdit}
         />
-        <ReviewAIPolicyField
-          policy={policy}
-          placeholder={t("sql-review.ai-review.policy.placeholder")}
-        />
+        {aiReview.aiEnabled && aiReview.enabled && (
+          <ReviewAIPolicyField
+            policy={policy}
+            placeholder={t("sql-review.ai-review.policy.placeholder")}
+          />
+        )}
       </FormFieldGroup>
     </FormSection>
   );

@@ -1318,11 +1318,12 @@ func (*AuthService) getAdditionalWorkspaceSettings() []store.AdditionalSetting {
 		settings = append(settings, store.AdditionalSetting{
 			Name: storepb.SettingName_AI,
 			Payload: &storepb.AISetting{
-				Enabled:  true,
-				Provider: storepb.AISetting_GEMINI,
-				ApiKey:   geminiAPIKey,
-				Endpoint: "https://generativelanguage.googleapis.com/v1beta",
-				Model:    "gemini-3.7-flash",
+				Enabled:          true,
+				Provider:         storepb.AISetting_GEMINI,
+				ApiKey:           geminiAPIKey,
+				Endpoint:         "https://generativelanguage.googleapis.com/v1beta",
+				Model:            "gemini-3.7-flash",
+				SqlReviewEnabled: true,
 			},
 		})
 	}

@@ -13,7 +13,14 @@ const mocks = vi.hoisted(() => ({
     revert: vi.fn(),
     save: vi.fn(),
   },
-  aiReview: { isDirty: false, saving: false, revert: vi.fn(), save: vi.fn() },
+  aiReview: {
+    aiEnabled: true,
+    enabled: true,
+    isDirty: false,
+    saving: false,
+    revert: vi.fn(),
+    save: vi.fn(),
+  },
   aiReviewPolicy: {
     isDirty: false,
     saving: false,
@@ -94,6 +101,8 @@ describe("SQLReviewPage", () => {
       part.save.mockReset().mockResolvedValue(true);
     }
     mocks.aiReviewPolicy.error = undefined;
+    mocks.aiReview.aiEnabled = true;
+    mocks.aiReview.enabled = true;
     mocks.aiReviewPolicyEnabled.mockReset();
     mocks.pushNotification.mockReset();
   });
@@ -113,6 +122,18 @@ describe("SQLReviewPage", () => {
     expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(true);
   });
 
+  test("uses the normal workspace page width for SQL Review V2", () => {
+    mocks.sqlReviewV2.value = true;
+    const { container } = render(<SQLReviewPage />);
+
+    expect(
+      screen.getByText("standard-rules-section").parentElement
+    ).not.toHaveClass("mx-auto", "max-w-3xl");
+    expect(
+      container.querySelector('[data-slot="workspace-page-layout"]')
+    ).toContainElement(screen.getByText("standard-rules-section"));
+  });
+
   test("keeps the v1 review policies without SQL Review V2", () => {
     mocks.sqlReviewV2.value = false;
     render(<SQLReviewPage />);
@@ -124,6 +145,14 @@ describe("SQLReviewPage", () => {
     expect(screen.getByText("sql-review.description")).toBeInTheDocument();
     expect(screen.getAllByText("common.create").length).toBeGreaterThan(0);
     expect(mocks.fetchReviewPolicyList).toHaveBeenCalledTimes(1);
+    expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(false);
+  });
+
+  test("does not load the review policy when AI is unavailable", () => {
+    mocks.sqlReviewV2.value = true;
+    mocks.aiReview.aiEnabled = false;
+    render(<SQLReviewPage />);
+
     expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(false);
   });
 

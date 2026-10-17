@@ -378,6 +378,16 @@ export function formSectionStyle() {
   return formStyles.section;
 }
 
+const formSectionNoPaddingStyles = stylex.create({
+  root: {
+    paddingBlock: 0,
+  },
+});
+
+export function formSectionNoPaddingStyle() {
+  return formSectionNoPaddingStyles.root;
+}
+
 export function formSectionHeaderStyle() {
   return formStyles.sectionHeader;
 }

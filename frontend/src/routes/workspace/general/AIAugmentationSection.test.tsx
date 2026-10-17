@@ -161,4 +161,17 @@ describe("AIAugmentationSection", () => {
     expect(mocks.upsertSetting).toHaveBeenCalledOnce();
     expect(mocks.refreshServerInfo).not.toHaveBeenCalled();
   });
+
+  test("includes the selected provider when creating the AI setting", async () => {
+    const ref = createRef<SectionHandle>();
+    render(
+      <AIAugmentationSection ref={ref} title="AI" onDirtyChange={vi.fn()} />
+    );
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "enable-ai" }));
+    await act(async () => ref.current?.update());
+
+    const request = mocks.upsertSetting.mock.calls[0][0];
+    expect(request.updateMask.paths).toContain("value.ai.provider");
+  });
 });

@@ -468,14 +468,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 // turning AI or the AI SQL review back on after another admin turned it off.
 // Workspace creation does not seed this row, so a missing row starts empty.
 func (s *SettingService) updateAISetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string) (*connect.Response[v1pb.Setting], error) {
-	if s.profile.SaaS {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the AI setting cannot be changed in SaaS mode"))
-	}
 	if request.Msg.UpdateMask == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 	}
 	payload := convertAISetting(request.Msg.Setting.Value.GetAi())
 	paths := request.Msg.UpdateMask.Paths
+	if s.profile.SaaS && !canUpdateAISettingInSaaS(paths) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("only the AI SQL review can be changed in SaaS mode"))
+	}
 
 	if request.Msg.ValidateOnly {
 		stored, err := s.store.GetAISettingUncached(ctx, workspaceID)
@@ -535,6 +535,10 @@ func (s *SettingService) updateAISetting(ctx context.Context, request *connect.R
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 	}
 	return connect.NewResponse(settingMessage), nil
+}
+
+func canUpdateAISettingInSaaS(paths []string) bool {
+	return len(paths) == 1 && paths[0] == "value.ai.sql_review_enabled"
 }
 
 // mergeAISetting applies the update mask to a copy of stored and validates

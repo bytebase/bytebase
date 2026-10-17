@@ -30,6 +30,7 @@ import {
   formSectionContentStyle,
   formSectionDescriptionStyle,
   formSectionHeaderStyle,
+  formSectionNoPaddingStyle,
   formSectionStyle,
   formSectionTitleStyle,
   singleColumnFormContentStyle,
@@ -305,6 +306,8 @@ function FormFieldGroup({
 interface FormSectionProps extends Omit<ComponentProps<"section">, "title"> {
   title: ReactNode;
   description?: ReactNode;
+  /** Removes the section's outer vertical padding when its page layout owns spacing. */
+  padding?: "default" | "none";
   /**
    * - `default`: on large screens the header takes a 25% column beside the
    *   content; on smaller screens it stacks above.
@@ -360,10 +363,14 @@ function FormSection({
   title,
   description,
   layout = "default",
+  padding = "default",
   ...props
 }: FormSectionProps) {
   const styles = formSectionLayoutStyles[layout];
-  const sectionStylexProps = stylex.props(styles.section());
+  const sectionStylexProps = stylex.props(
+    styles.section(),
+    padding === "none" && formSectionNoPaddingStyle()
+  );
   const headerStylexProps = stylex.props(styles.header());
   const titleStylexProps = stylex.props(styles.title());
   const descriptionStylexProps = stylex.props(formSectionDescriptionStyle());

@@ -158,7 +158,8 @@ export const AIAugmentationSection = forwardRef<
     const init = getInitialState();
     const paths: string[] = [];
     if (state.enabled !== init.enabled) paths.push("value.ai.enabled");
-    if (state.provider !== init.provider) paths.push("value.ai.provider");
+    if (!aiSetting || state.provider !== init.provider)
+      paths.push("value.ai.provider");
     if (state.endpoint !== init.endpoint) paths.push("value.ai.endpoint");
     if (state.model !== init.model) paths.push("value.ai.model");
     if (state.apiKey || state.provider !== init.provider)

@@ -257,10 +257,6 @@ function PolicyTable({
 // SQLReviewPage (exported)
 // ============================================================
 
-// The standard rules read as one centered column, and the footer lines its
-// actions up with it.
-const STANDARD_RULES_COLUMN = "mx-auto w-full max-w-3xl";
-
 export function SQLReviewPage() {
   const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
@@ -269,7 +265,9 @@ export function SQLReviewPage() {
   const sqlReviewV2 = sqlReviewV2Enabled();
   const standardRules = useWorkspaceStandardRules(sqlReviewV2);
   const aiReview = useWorkspaceAIReview();
-  const aiReviewPolicy = useWorkspaceReviewAIPolicy(sqlReviewV2);
+  const aiReviewPolicy = useWorkspaceReviewAIPolicy(
+    sqlReviewV2 && aiReview.aiEnabled && aiReview.enabled
+  );
   const parts = [standardRules, aiReview, aiReviewPolicy];
   const isDirty = parts.some((part) => part.isDirty);
   const saving = parts.some((part) => part.saving);
@@ -311,13 +309,13 @@ export function SQLReviewPage() {
   return (
     <WorkspacePageLayout className="gap-y-4">
       {sqlReviewV2 ? (
-        <div className={STANDARD_RULES_COLUMN}>
+        <>
           <SQLReviewStandardRulesSection standardRules={standardRules} />
           <SQLReviewAIReviewSection
             aiReview={aiReview}
             policy={aiReviewPolicy}
           />
-        </div>
+        </>
       ) : (
         <>
           <WorkspacePageInfo
@@ -362,7 +360,6 @@ export function SQLReviewPage() {
       {isDirty && (
         <StickyActionFooter
           contentPadding={false}
-          contentClassName={STANDARD_RULES_COLUMN}
           left={
             <Button
               appearance="outline"

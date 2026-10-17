@@ -175,6 +175,22 @@ describe("ReviewAIPolicyField", () => {
     expect(screen.getByText("clean")).toBeInTheDocument();
   });
 
+  test("describes how the AI uses the policy", () => {
+    render(<Harness />);
+
+    expect(
+      screen.getByText("sql-review.ai-review.policy.description")
+    ).toBeInTheDocument();
+  });
+
+  test("keeps the policy control aligned with its section header", async () => {
+    render(<Harness />);
+
+    expect(
+      (await editor()).closest('[data-slot="form-field"]')
+    ).toHaveStyle({ rowGap: "16px" });
+  });
+
   test("a missing policy starts empty with example text, and a save creates it enforced", async () => {
     render(<Harness />);
 
