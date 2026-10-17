@@ -148,12 +148,12 @@ describe("SQLReviewPage", () => {
     expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(false);
   });
 
-  test("does not load the review policy when AI is unavailable", () => {
+  test("keeps the review policy draft mounted while AI is unavailable", () => {
     mocks.sqlReviewV2.value = true;
     mocks.aiReview.aiEnabled = false;
     render(<SQLReviewPage />);
 
-    expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(false);
+    expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(true);
   });
 
   test("the footer saves the AI review policy when only it changed", async () => {
