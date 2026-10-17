@@ -1174,6 +1174,103 @@ describe("InstanceFormProvider", () => {
     }
   );
 
+  const tlsExtraParameters = {
+    SSL: "FALSE",
+    "ssl verify": "TRUE",
+    WALLET: "/etc/oracle-wallet",
+    SERVER: "standby.example.com:2484",
+  };
+
+  test.each<{
+    name: string;
+    engine: Engine;
+    useSsl: boolean;
+    notices: Partial<Record<string, string>>;
+  }>([
+    {
+      name: "Oracle with TLS mode TLS",
+      engine: Engine.ORACLE,
+      useSsl: true,
+      notices: {
+        SSL: "data-source.extra-params.overridden-by-tls",
+        "ssl verify": "data-source.extra-params.overridden-by-tls",
+        WALLET: "data-source.extra-params.wallet-overridden-by-tls",
+      },
+    },
+    {
+      name: "Oracle with TLS mode Disabled",
+      engine: Engine.ORACLE,
+      useSsl: false,
+      notices: {},
+    },
+    {
+      name: "MySQL with TLS on",
+      engine: Engine.MYSQL,
+      useSsl: true,
+      notices: {},
+    },
+  ])(
+    "marks extra parameters the TLS section overrides: $name",
+    async ({ engine, useSsl, notices }) => {
+      mocks.hasSSL = true;
+      mocks.hasExtraParameters = true;
+      const { DataSourceForm } = await vi.importActual<
+        typeof import("./DataSourceForm")
+      >("./DataSourceForm");
+      let context!: ReturnType<typeof useInstanceFormContext>;
+      const Editor = () => {
+        context = useInstanceFormContext();
+        return (
+          <DataSourceForm
+            dataSource={context.adminDataSource}
+            onDataSourceChange={(ds) => context.setDataSourceEditState((state) => ({
+              ...state, dataSources: [ds],
+            }))}
+            optionsOnly
+          />
+        );
+      };
+      const harness = renderIntoContainer();
+      const notice = (key: string) => {
+        const input = Array.from(
+          harness.container.querySelectorAll<HTMLInputElement>(
+            'input[aria-label="instance.parameter-name-placeholder"]'
+          )
+        ).find((element) => element.value === key);
+        expect(input).toBeDefined();
+        const ids = input?.getAttribute("aria-describedby")?.split(" ") ?? [];
+        const texts = ids.map(
+          (id) => harness.container.querySelector(`[id="${id}"]`)?.textContent
+        );
+        return texts.length > 0 ? texts.join(" ") : undefined;
+      };
+      try {
+        await harness.render(
+          <InstanceFormProvider><Editor /></InstanceFormProvider>
+        );
+        await act(async () => {
+          context.setBasicInfo((previous) => ({ ...previous, engine }));
+          context.setDataSourceEditState((state) => ({
+            ...state,
+            dataSources: [{
+              ...context.adminDataSource,
+              host: "db.example.com",
+              serviceName: "ORCLPDB1",
+              useSsl,
+              extraConnectionParameters: tlsExtraParameters,
+            }],
+          }));
+        });
+        for (const key of Object.keys(tlsExtraParameters)) {
+          expect(notice(key), key).toBe(notices[key]);
+        }
+        expect(context.checkDataSource([context.adminDataSource])).toBe(true);
+      } finally {
+        harness.unmount();
+      }
+    }
+  );
+
   test("places add parameter in the extra parameters form field", async () => {
     mocks.hasExtraParameters = true;
     const { DataSourceForm } = await vi.importActual<
