@@ -118,6 +118,12 @@ func NewPg17Database(t testing.TB) (string, *sql.DB) {
 	return createPgDatabase(t, SharedPg17Container(t))
 }
 
+// NewTLSPgDatabase is NewPgDatabase on the shared TLS PostgreSQL container.
+func NewTLSPgDatabase(t testing.TB) (string, *sql.DB) {
+	t.Helper()
+	return createPgDatabase(t, SharedTLSPgContainer(t))
+}
+
 func createPgDatabase(t testing.TB, container *Container) (string, *sql.DB) {
 	t.Helper()
 	name := newDatabaseName()
