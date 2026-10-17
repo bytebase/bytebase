@@ -218,6 +218,9 @@ const formStyles = stylex.create({
     flexDirection: "column",
     rowGap: 6,
   },
+  fieldSectionGap: {
+    rowGap: 16,
+  },
   fieldHorizontal: {
     alignItems: "start",
     columnGap: 16,
@@ -327,6 +330,10 @@ const formStyles = stylex.create({
 
 export function formFieldStyle() {
   return formStyles.field;
+}
+
+export function formFieldSectionGapStyle() {
+  return formStyles.fieldSectionGap;
 }
 
 export function formFieldHorizontalStyle() {

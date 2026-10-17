@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import * as stylex from "@stylexjs/stylex";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -9,6 +10,7 @@ import {
   PolicyType,
   ReviewAIPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
+import { formFieldSectionGapStyle } from "@/components/ui/styles.stylex";
 
 const PARENT = "projects/p";
 const POLICY_NAME = `${PARENT}/policies/review_ai`;
@@ -188,7 +190,9 @@ describe("ReviewAIPolicyField", () => {
 
     expect(
       (await editor()).closest('[data-slot="form-field"]')
-    ).toHaveStyle({ rowGap: "16px" });
+    ).toHaveClass(
+      stylex.props(formFieldSectionGapStyle()).className ?? ""
+    );
   });
 
   test("a missing policy starts empty with example text, and a save creates it enforced", async () => {

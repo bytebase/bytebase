@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import * as stylex from "@stylexjs/stylex";
 import {
   act,
   fireEvent,
@@ -17,6 +18,7 @@ import {
   ReviewRulePolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
+import { formFieldSectionGapStyle } from "@/components/ui/styles.stylex";
 
 const WORKSPACE = "workspaces/ws";
 const PROJECT = "projects/p";
@@ -325,7 +327,9 @@ describe("ProjectSQLReviewPage", () => {
     expect(projectPolicyEditor).not.toHaveAttribute("readonly");
     expect(
       projectPolicyEditor.closest('[data-slot="form-field"]')
-    ).toHaveStyle({ rowGap: "16px" });
+    ).toHaveClass(
+      stylex.props(formFieldSectionGapStyle()).className ?? ""
+    );
   });
 
   test("a project without its own policy shows the workspace rules as text", async () => {

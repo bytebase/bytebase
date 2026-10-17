@@ -24,6 +24,7 @@ import {
   formFieldGroupStyle,
   formFieldHeaderStyle,
   formFieldHorizontalStyle,
+  formFieldSectionGapStyle,
   formFieldStyle,
   formFieldTitleStyle,
   formLabelStyle,
@@ -137,6 +138,8 @@ interface FormFieldProps extends Omit<ComponentProps<"div">, "title"> {
   title?: ReactNode;
   description?: ReactNode;
   layout?: FormLayout;
+  /** Uses section-level spacing between the field header and its control. */
+  spacing?: "default" | "section";
 }
 
 /**
@@ -159,12 +162,14 @@ function FormField({
   style,
   title,
   layout: layoutOverride,
+  spacing = "default",
   ...props
 }: FormFieldProps) {
   const inherited = useContext(FormLayoutContext);
   const layout = layoutOverride ?? inherited.layout;
   const fieldStylexProps = stylex.props(
     formFieldStyle(),
+    spacing === "section" && formFieldSectionGapStyle(),
     (title !== undefined ||
       Children.toArray(children).some(
         (child) =>

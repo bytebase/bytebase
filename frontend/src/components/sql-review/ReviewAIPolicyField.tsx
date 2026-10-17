@@ -206,7 +206,7 @@ export function ReviewAIPolicyField({
 
   return (
     <FormField
-      style={{ rowGap: 16 }}
+      spacing="section"
       title={
         <span id={titleId}>
           {title ?? t("sql-review.ai-review.policy.self")}
