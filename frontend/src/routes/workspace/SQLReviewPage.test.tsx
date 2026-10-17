@@ -13,7 +13,14 @@ const mocks = vi.hoisted(() => ({
     revert: vi.fn(),
     save: vi.fn(),
   },
-  aiReview: { isDirty: false, saving: false, revert: vi.fn(), save: vi.fn() },
+  aiReview: {
+    aiEnabled: true,
+    enabled: true,
+    isDirty: false,
+    saving: false,
+    revert: vi.fn(),
+    save: vi.fn(),
+  },
   aiReviewPolicy: {
     isDirty: false,
     saving: false,
@@ -94,6 +101,8 @@ describe("SQLReviewPage", () => {
       part.save.mockReset().mockResolvedValue(true);
     }
     mocks.aiReviewPolicy.error = undefined;
+    mocks.aiReview.aiEnabled = true;
+    mocks.aiReview.enabled = true;
     mocks.aiReviewPolicyEnabled.mockReset();
     mocks.pushNotification.mockReset();
   });
@@ -113,6 +122,18 @@ describe("SQLReviewPage", () => {
     expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(true);
   });
 
+  test("uses the normal workspace page width for SQL Review V2", () => {
+    mocks.sqlReviewV2.value = true;
+    const { container } = render(<SQLReviewPage />);
+
+    expect(
+      screen.getByText("standard-rules-section").parentElement
+    ).not.toHaveClass("mx-auto", "max-w-3xl");
+    expect(
+      container.querySelector('[data-slot="workspace-page-layout"]')
+    ).toContainElement(screen.getByText("standard-rules-section"));
+  });
+
   test("keeps the v1 review policies without SQL Review V2", () => {
     mocks.sqlReviewV2.value = false;
     render(<SQLReviewPage />);
@@ -127,6 +148,14 @@ describe("SQLReviewPage", () => {
     expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(false);
   });
 
+  test("keeps the review policy draft mounted while AI is unavailable", () => {
+    mocks.sqlReviewV2.value = true;
+    mocks.aiReview.aiEnabled = false;
+    render(<SQLReviewPage />);
+
+    expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(true);
+  });
+
   test("the footer saves the AI review policy when only it changed", async () => {
     mocks.sqlReviewV2.value = true;
     mocks.aiReviewPolicy.isDirty = true;
@@ -138,6 +167,30 @@ describe("SQLReviewPage", () => {
     expect(mocks.aiReview.save).not.toHaveBeenCalled();
     expect(mocks.standardRules.save).not.toHaveBeenCalled();
     expect(mocks.pushNotification).toHaveBeenCalledOnce();
+  });
+
+  test("does not save a hidden AI review policy draft", async () => {
+    mocks.sqlReviewV2.value = true;
+    mocks.aiReview.enabled = false;
+    mocks.aiReview.isDirty = true;
+    mocks.aiReviewPolicy.isDirty = true;
+    render(<SQLReviewPage />);
+
+    await update();
+
+    expect(mocks.aiReview.save).toHaveBeenCalledOnce();
+    expect(mocks.aiReviewPolicy.save).not.toHaveBeenCalled();
+  });
+
+  test("can save turning off AI review when its hidden policy is invalid", () => {
+    mocks.sqlReviewV2.value = true;
+    mocks.aiReview.enabled = false;
+    mocks.aiReview.isDirty = true;
+    mocks.aiReviewPolicy.isDirty = true;
+    mocks.aiReviewPolicy.error = "too-large";
+    render(<SQLReviewPage />);
+
+    expect(screen.getByRole("button", { name: "common.update" })).toBeEnabled();
   });
 
   test("the footer cannot update while the AI review policy is invalid", () => {

@@ -22,6 +22,7 @@ import {
   formControlRowStyle,
   formErrorStyle,
   formFieldGroupStyle,
+  formFieldSectionGapStyle,
   formFieldTitleStyle,
   formLabelStyle,
   formSectionDescriptionStyle,
@@ -107,6 +108,23 @@ describe("FormError", () => {
     expect(title?.textContent).toBe("Database name");
     expect(title?.className).toContain(
       stylex.props(formFieldTitleStyle()).className ?? ""
+    );
+
+    unmount();
+  });
+
+  test("supports section spacing between a field header and its control", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        FormField,
+        { title: "Review policy", spacing: "section" },
+        createElement("textarea")
+      )
+    );
+
+    const field = container.querySelector('[data-slot="form-field"]');
+    expect(field?.className).toContain(
+      stylex.props(formFieldSectionGapStyle()).className ?? ""
     );
 
     unmount();

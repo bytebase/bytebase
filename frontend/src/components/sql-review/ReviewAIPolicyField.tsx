@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { useEffect, useId, useState } from "react";
+import { type ReactNode, useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -175,10 +175,16 @@ export function useReviewAIPolicyDraft({
 export function ReviewAIPolicyField({
   policy,
   placeholder,
+  title,
+  description,
+  emptyText,
 }: {
   policy: ReviewAIPolicyDraft;
   // Example rules for this level, shown while the field is empty.
   placeholder: string;
+  title?: ReactNode;
+  description?: ReactNode;
+  emptyText?: ReactNode;
 }) {
   const { t } = useTranslation();
   const id = useId();
@@ -200,7 +206,13 @@ export function ReviewAIPolicyField({
 
   return (
     <FormField
-      title={<span id={titleId}>{t("sql-review.ai-review.policy.self")}</span>}
+      spacing="section"
+      title={
+        <span id={titleId}>
+          {title ?? t("sql-review.ai-review.policy.self")}
+        </span>
+      }
+      description={description ?? t("sql-review.ai-review.policy.description")}
     >
       <FormControlGroup>
         {policy.loaded && policy.paused && (
@@ -229,7 +241,7 @@ export function ReviewAIPolicyField({
           </p>
         ) : (
           <p className="text-sm text-control-light">
-            {t("sql-review.ai-review.policy.none")}
+            {emptyText ?? t("sql-review.ai-review.policy.none")}
           </p>
         )}
       </FormControlGroup>

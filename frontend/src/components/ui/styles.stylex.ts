@@ -218,6 +218,9 @@ const formStyles = stylex.create({
     flexDirection: "column",
     rowGap: 6,
   },
+  fieldSectionGap: {
+    rowGap: 16,
+  },
   fieldHorizontal: {
     alignItems: "start",
     columnGap: 16,
@@ -329,6 +332,10 @@ export function formFieldStyle() {
   return formStyles.field;
 }
 
+export function formFieldSectionGapStyle() {
+  return formStyles.fieldSectionGap;
+}
+
 export function formFieldHorizontalStyle() {
   return formStyles.fieldHorizontal;
 }
@@ -376,6 +383,16 @@ export function formFieldDescriptionStyle() {
 
 export function formSectionStyle() {
   return formStyles.section;
+}
+
+const formSectionNoPaddingStyles = stylex.create({
+  root: {
+    paddingBlock: 0,
+  },
+});
+
+export function formSectionNoPaddingStyle() {
+  return formSectionNoPaddingStyles.root;
 }
 
 export function formSectionHeaderStyle() {

@@ -136,6 +136,17 @@ describe("SQLReviewStandardRulesSection", () => {
     seedPolicies({ [WORKSPACE]: reviewRulePolicy([...STANDARD_RULE_TYPES]) });
   });
 
+  test("does not add outer padding around the page section", async () => {
+    render(<Harness />);
+    await findSwitches();
+
+    const section = screen
+      .getByRole("heading", { name: "sql-review.standard-rules.self" })
+      .closest('[data-slot="form-section"]');
+    expect(getComputedStyle(section!).paddingTop).toBe("0");
+    expect(getComputedStyle(section!).paddingBottom).toBe("0");
+  });
+
   test("saves the edited rules as the enforced workspace policy", async () => {
     render(<Harness />);
     await findSwitches();

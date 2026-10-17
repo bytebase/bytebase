@@ -389,3 +389,41 @@ func TestMergeAISetting(t *testing.T) {
 		require.Equal(t, "stored-key", merged.ApiKey)
 	})
 }
+
+func TestCanUpdateAISettingInSaaS(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name  string
+		paths []string
+		want  bool
+	}{
+		{
+			name:  "allows the AI SQL review switch",
+			paths: []string{"value.ai.sql_review_enabled"},
+			want:  true,
+		},
+		{
+			name:  "rejects enabling the AI assistant",
+			paths: []string{"value.ai.enabled"},
+		},
+		{
+			name:  "rejects provider credentials",
+			paths: []string{"value.ai.api_key"},
+		},
+		{
+			name:  "rejects a mixed update",
+			paths: []string{"value.ai.sql_review_enabled", "value.ai.model"},
+		},
+		{
+			name: "rejects an empty update",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tc.want, canUpdateAISettingInSaaS(tc.paths))
+		})
+	}
+}

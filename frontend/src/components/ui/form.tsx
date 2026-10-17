@@ -24,12 +24,14 @@ import {
   formFieldGroupStyle,
   formFieldHeaderStyle,
   formFieldHorizontalStyle,
+  formFieldSectionGapStyle,
   formFieldStyle,
   formFieldTitleStyle,
   formLabelStyle,
   formSectionContentStyle,
   formSectionDescriptionStyle,
   formSectionHeaderStyle,
+  formSectionNoPaddingStyle,
   formSectionStyle,
   formSectionTitleStyle,
   singleColumnFormContentStyle,
@@ -136,6 +138,8 @@ interface FormFieldProps extends Omit<ComponentProps<"div">, "title"> {
   title?: ReactNode;
   description?: ReactNode;
   layout?: FormLayout;
+  /** Uses section-level spacing between the field header and its control. */
+  spacing?: "default" | "section";
 }
 
 /**
@@ -158,12 +162,14 @@ function FormField({
   style,
   title,
   layout: layoutOverride,
+  spacing = "default",
   ...props
 }: FormFieldProps) {
   const inherited = useContext(FormLayoutContext);
   const layout = layoutOverride ?? inherited.layout;
   const fieldStylexProps = stylex.props(
     formFieldStyle(),
+    spacing === "section" && formFieldSectionGapStyle(),
     (title !== undefined ||
       Children.toArray(children).some(
         (child) =>
@@ -305,6 +311,8 @@ function FormFieldGroup({
 interface FormSectionProps extends Omit<ComponentProps<"section">, "title"> {
   title: ReactNode;
   description?: ReactNode;
+  /** Removes the section's outer vertical padding when its page layout owns spacing. */
+  padding?: "default" | "none";
   /**
    * - `default`: on large screens the header takes a 25% column beside the
    *   content; on smaller screens it stacks above.
@@ -360,10 +368,14 @@ function FormSection({
   title,
   description,
   layout = "default",
+  padding = "default",
   ...props
 }: FormSectionProps) {
   const styles = formSectionLayoutStyles[layout];
-  const sectionStylexProps = stylex.props(styles.section());
+  const sectionStylexProps = stylex.props(
+    styles.section(),
+    padding === "none" && formSectionNoPaddingStyle()
+  );
   const headerStylexProps = stylex.props(styles.header());
   const titleStylexProps = stylex.props(styles.title());
   const descriptionStylexProps = stylex.props(formSectionDescriptionStyle());

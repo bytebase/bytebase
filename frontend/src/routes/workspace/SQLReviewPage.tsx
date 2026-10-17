@@ -257,10 +257,6 @@ function PolicyTable({
 // SQLReviewPage (exported)
 // ============================================================
 
-// The standard rules read as one centered column, and the footer lines its
-// actions up with it.
-const STANDARD_RULES_COLUMN = "mx-auto w-full max-w-3xl";
-
 export function SQLReviewPage() {
   const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
@@ -270,7 +266,12 @@ export function SQLReviewPage() {
   const standardRules = useWorkspaceStandardRules(sqlReviewV2);
   const aiReview = useWorkspaceAIReview();
   const aiReviewPolicy = useWorkspaceReviewAIPolicy(sqlReviewV2);
-  const parts = [standardRules, aiReview, aiReviewPolicy];
+  const aiReviewPolicyVisible = aiReview.aiEnabled && aiReview.enabled;
+  const parts = [
+    standardRules,
+    aiReview,
+    ...(aiReviewPolicyVisible ? [aiReviewPolicy] : []),
+  ];
   const isDirty = parts.some((part) => part.isDirty);
   const saving = parts.some((part) => part.saving);
   useUnsavedChangesGuard(isDirty);
@@ -311,13 +312,13 @@ export function SQLReviewPage() {
   return (
     <WorkspacePageLayout className="gap-y-4">
       {sqlReviewV2 ? (
-        <div className={STANDARD_RULES_COLUMN}>
+        <>
           <SQLReviewStandardRulesSection standardRules={standardRules} />
           <SQLReviewAIReviewSection
             aiReview={aiReview}
             policy={aiReviewPolicy}
           />
-        </div>
+        </>
       ) : (
         <>
           <WorkspacePageInfo
@@ -362,7 +363,6 @@ export function SQLReviewPage() {
       {isDirty && (
         <StickyActionFooter
           contentPadding={false}
-          contentClassName={STANDARD_RULES_COLUMN}
           left={
             <Button
               appearance="outline"
@@ -376,7 +376,10 @@ export function SQLReviewPage() {
           }
           right={
             <Button
-              disabled={saving || aiReviewPolicy.error !== undefined}
+              disabled={
+                saving ||
+                (aiReviewPolicyVisible && aiReviewPolicy.error !== undefined)
+              }
               onClick={async () => {
                 const saves = parts
                   .filter((part) => part.isDirty)

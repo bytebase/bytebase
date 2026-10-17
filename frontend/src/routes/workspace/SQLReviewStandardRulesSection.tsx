@@ -127,6 +127,7 @@ export function SQLReviewStandardRulesSection({
   return (
     <FormSection
       layout="single-column"
+      padding="none"
       title={t("sql-review.standard-rules.self")}
       description={t("sql-review.standard-rules.description")}
     >

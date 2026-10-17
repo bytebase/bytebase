@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import * as stylex from "@stylexjs/stylex";
 import {
   act,
   fireEvent,
@@ -17,6 +18,7 @@ import {
   ReviewRulePolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
+import { formFieldSectionGapStyle } from "@/components/ui/styles.stylex";
 
 const WORKSPACE = "workspaces/ws";
 const PROJECT = "projects/p";
@@ -214,7 +216,9 @@ const updateButton = () =>
   screen.queryByRole("button", { name: "common.update" });
 
 const policyEditor = () =>
-  screen.findByRole("textbox", { name: "sql-review.ai-review.policy.self" });
+  screen.findByRole("textbox", {
+    name: "sql-review.ai-review.policy.project-self",
+  });
 
 const update = () =>
   act(async () => {
@@ -231,7 +235,7 @@ describe("ProjectSQLReviewPage", () => {
     mocks.fetchPolicy.mockReset();
     mocks.pushNotification.mockReset();
     seedPolicies({ [WORKSPACE]: workspacePolicy() });
-    seedServerInfo(undefined);
+    seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
   });
 
   // The row of the AI review: its title, its description, and its state.
@@ -254,11 +258,34 @@ describe("ProjectSQLReviewPage", () => {
       })
     ).toBeInTheDocument();
     expect(
-      aiReviewRow().getByRole("link", {
+      await screen.findByRole("link", {
         name: "sql-review.ai-review.view-workspace-setting",
       })
     ).toBeInTheDocument();
     expect(aiReviewRow().queryByRole("switch")).not.toBeInTheDocument();
+  });
+
+  test("uses the normal project page width for SQL Review", async () => {
+    const { container } = render(<ProjectSQLReviewPage projectId="p" />);
+    await screen.findByRole("switch", {
+      name: "sql-review.standard-rules.customize.self",
+    });
+
+    const page = container.querySelector('[data-slot="project-page-layout"]');
+    expect(page?.firstElementChild).not.toHaveClass("mx-auto", "max-w-3xl");
+  });
+
+  test("does not add outer padding around the Standard rules section", async () => {
+    render(<ProjectSQLReviewPage projectId="p" />);
+    await screen.findByRole("switch", {
+      name: "sql-review.standard-rules.customize.self",
+    });
+
+    const section = screen
+      .getByRole("heading", { name: "sql-review.standard-rules.self" })
+      .closest('[data-slot="form-section"]');
+    expect(getComputedStyle(section!).paddingTop).toBe("0");
+    expect(getComputedStyle(section!).paddingBottom).toBe("0");
   });
 
   test.each([
@@ -271,6 +298,9 @@ describe("ProjectSQLReviewPage", () => {
     expect(
       aiReviewRow().getByText("sql-review.standard-rules.off")
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText("sql-review.ai-review.policy.self")
+    ).not.toBeInTheDocument();
   });
 
   test("the workspace setting link of the AI review needs the workspace policy read", async () => {
@@ -280,16 +310,38 @@ describe("ProjectSQLReviewPage", () => {
     expect(aiReviewRow().queryByRole("link")).not.toBeInTheDocument();
   });
 
+  test("uses the shared project policy editor without duplicating the workspace policy", async () => {
+    seedPolicies({
+      [WORKSPACE]: workspacePolicy(),
+      ai: reviewAIPolicy(WORKSPACE, "Every foreign key needs an index."),
+    });
+    render(<ProjectSQLReviewPage projectId="p" />);
+
+    expect(
+      screen.queryByText("Every foreign key needs an index.")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("sql-review.ai-review.policy.project-description")
+    ).toBeInTheDocument();
+    const projectPolicyEditor = await policyEditor();
+    expect(projectPolicyEditor).not.toHaveAttribute("readonly");
+    expect(
+      projectPolicyEditor.closest('[data-slot="form-field"]')
+    ).toHaveClass(
+      stylex.props(formFieldSectionGapStyle()).className ?? ""
+    );
+  });
+
   test("a project without its own policy shows the workspace rules as text", async () => {
     const customize = await renderLoaded();
 
     expect(customize).toHaveAttribute("aria-checked", "false");
     // Only the customize control is a switch; the rules are read-only.
     expect(screen.getAllByRole("switch")).toHaveLength(1);
-    expect(screen.getAllByText("sql-review.standard-rules.on")).toHaveLength(2);
+    expect(screen.getAllByText("sql-review.standard-rules.on")).toHaveLength(3);
     // Nine rules, and the AI review row below them.
     expect(screen.getAllByText("sql-review.standard-rules.off")).toHaveLength(
-      10
+      9
     );
     expect(
       screen.getByText("sql-review.standard-rules.running")
@@ -403,7 +455,7 @@ describe("ProjectSQLReviewPage", () => {
 
     expect(customize).toHaveAttribute("aria-checked", "false");
     expect(screen.getAllByText("sql-review.standard-rules.on")).toHaveLength(
-      11
+      12
     );
     fireEvent.click(customize);
     expect(ruleSwitch("disallow-truncate")).toHaveAttribute(
@@ -549,9 +601,7 @@ describe("ProjectSQLReviewPage", () => {
     expect(screen.queryByRole("alert")).toHaveTextContent(
       "sql-review.standard-rules.workspace-rules-hidden"
     );
-    expect(
-      screen.queryByText("sql-review.standard-rules.on")
-    ).not.toBeInTheDocument();
+    expect(screen.getAllByText("sql-review.standard-rules.on")).toHaveLength(1);
     expect(
       screen.queryByText(
         "sql-review.standard-rules.customize.view-workspace-rules"
@@ -584,7 +634,7 @@ describe("ProjectSQLReviewPage", () => {
 
     fireEvent.click(ruleSwitch("syntax"));
     fireEvent.click(customize);
-    expect(screen.getAllByText("sql-review.standard-rules.on")).toHaveLength(2);
+    expect(screen.getAllByText("sql-review.standard-rules.on")).toHaveLength(3);
     fireEvent.click(customize);
     fireEvent.click(ruleSwitch("syntax"));
 
@@ -748,7 +798,7 @@ describe("ProjectSQLReviewPage", () => {
     render(<ProjectSQLReviewPage projectId="p" />);
 
     expect(
-      await screen.findByText("sql-review.ai-review.policy.none")
+      await screen.findByText("sql-review.ai-review.policy.project-none")
     ).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });

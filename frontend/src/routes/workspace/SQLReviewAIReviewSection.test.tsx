@@ -2,6 +2,11 @@ import { create } from "@bufbuild/protobuf";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { type ReactNode, useState } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
+import {
+  AI_ASSISTANT_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/lib/productIntro";
 import {
   type Policy,
   PolicyResourceType,
@@ -40,8 +45,10 @@ vi.mock("@/utils", () => ({
 vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
 
 vi.mock("@/components/RouterLink", () => ({
-  RouterLink: ({ children }: { children: ReactNode }) => (
-    <a href="/">{children}</a>
+  RouterLink: ({ children, to }: { children: ReactNode; to: object }) => (
+    <a href="/" data-route={JSON.stringify(to)}>
+      {children}
+    </a>
   ),
 }));
 
@@ -192,6 +199,7 @@ describe("SQLReviewAIReviewSection", () => {
   });
 
   test("loads the workspace policy, and saves an edit under the workspace", async () => {
+    seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
     seedPolicies({
       [`${WORKSPACE}/policies/review_ai`]: workspacePolicy("No DROP."),
     });
@@ -224,6 +232,7 @@ describe("SQLReviewAIReviewSection", () => {
   });
 
   test("a failed policy save keeps the edit", async () => {
+    seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
     mocks.upsertPolicy.mockRejectedValueOnce(new Error("denied"));
     render(<Harness />);
 
@@ -239,6 +248,7 @@ describe("SQLReviewAIReviewSection", () => {
   });
 
   test("shows the workspace policy as text without bb.policies.update or bb.policies.delete", async () => {
+    seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
     mocks.permissions["bb.policies.update"] = false;
     mocks.permissions["bb.policies.delete"] = false;
     seedPolicies({
@@ -320,26 +330,50 @@ describe("SQLReviewAIReviewSection", () => {
     expect(screen.getByText("sql-review.standard-rules.on")).toBeInTheDocument();
   });
 
-  test("shows the state as text in SaaS mode, where the AI setting is read only", () => {
+  test("allows switching the AI review in SaaS mode", () => {
     mocks.saas.value = true;
     render(<Harness />);
 
-    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
-    expect(
-      screen.getByText("sql-review.standard-rules.off")
-    ).toBeInTheDocument();
+    expect(screen.getByRole("switch", SWITCH)).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
   });
 
-  test("warns while AI is off for the workspace, with a link to turn it on", () => {
+  test("hides the policy while AI review is off", async () => {
+    render(<Harness />);
+    await act(async () => {});
+
+    expect(
+      screen.queryByText("sql-review.ai-review.policy.self")
+    ).not.toBeInTheDocument();
+  });
+
+  test("shows the AI review as off and hides its policy while AI is off", () => {
     seedServerInfo({ aiEnabled: false, aiSqlReviewEnabled: true });
     render(<Harness />);
 
     expect(
       screen.getByText("sql-review.ai-review.ai-off")
     ).toBeInTheDocument();
+    const link = screen.getByRole("link", {
+      name: "sql-review.ai-review.turn-on-ai",
+    });
+    expect(link).toBeInTheDocument();
+    expect(JSON.parse(link.getAttribute("data-route")!)).toEqual({
+      name: SETTING_ROUTE_WORKSPACE_GENERAL,
+      hash: "#ai-assistant",
+      query: {
+        [PRODUCT_INTRO_QUERY_KEY]: AI_ASSISTANT_PRODUCT_INTRO,
+      },
+    });
+    expect(screen.queryByRole("switch", SWITCH)).not.toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "sql-review.ai-review.turn-on-ai" })
+      screen.getByText("sql-review.standard-rules.off")
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText("sql-review.ai-review.policy.self")
+    ).not.toBeInTheDocument();
   });
 
   test.each([
