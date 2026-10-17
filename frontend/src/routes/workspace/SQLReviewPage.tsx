@@ -266,7 +266,12 @@ export function SQLReviewPage() {
   const standardRules = useWorkspaceStandardRules(sqlReviewV2);
   const aiReview = useWorkspaceAIReview();
   const aiReviewPolicy = useWorkspaceReviewAIPolicy(sqlReviewV2);
-  const parts = [standardRules, aiReview, aiReviewPolicy];
+  const aiReviewPolicyVisible = aiReview.aiEnabled && aiReview.enabled;
+  const parts = [
+    standardRules,
+    aiReview,
+    ...(aiReviewPolicyVisible ? [aiReviewPolicy] : []),
+  ];
   const isDirty = parts.some((part) => part.isDirty);
   const saving = parts.some((part) => part.saving);
   useUnsavedChangesGuard(isDirty);
@@ -371,7 +376,10 @@ export function SQLReviewPage() {
           }
           right={
             <Button
-              disabled={saving || aiReviewPolicy.error !== undefined}
+              disabled={
+                saving ||
+                (aiReviewPolicyVisible && aiReviewPolicy.error !== undefined)
+              }
               onClick={async () => {
                 const saves = parts
                   .filter((part) => part.isDirty)

@@ -169,6 +169,30 @@ describe("SQLReviewPage", () => {
     expect(mocks.pushNotification).toHaveBeenCalledOnce();
   });
 
+  test("does not save a hidden AI review policy draft", async () => {
+    mocks.sqlReviewV2.value = true;
+    mocks.aiReview.enabled = false;
+    mocks.aiReview.isDirty = true;
+    mocks.aiReviewPolicy.isDirty = true;
+    render(<SQLReviewPage />);
+
+    await update();
+
+    expect(mocks.aiReview.save).toHaveBeenCalledOnce();
+    expect(mocks.aiReviewPolicy.save).not.toHaveBeenCalled();
+  });
+
+  test("can save turning off AI review when its hidden policy is invalid", () => {
+    mocks.sqlReviewV2.value = true;
+    mocks.aiReview.enabled = false;
+    mocks.aiReview.isDirty = true;
+    mocks.aiReviewPolicy.isDirty = true;
+    mocks.aiReviewPolicy.error = "too-large";
+    render(<SQLReviewPage />);
+
+    expect(screen.getByRole("button", { name: "common.update" })).toBeEnabled();
+  });
+
   test("the footer cannot update while the AI review policy is invalid", () => {
     mocks.sqlReviewV2.value = true;
     mocks.aiReviewPolicy.isDirty = true;
