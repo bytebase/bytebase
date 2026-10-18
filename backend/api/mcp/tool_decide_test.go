@@ -14,12 +14,14 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"unicode"
 
 	"connectrpc.com/connect"
 	"github.com/labstack/echo/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/text/width"
 	"google.golang.org/grpc/codes"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -232,9 +234,9 @@ func TestDecideIssueApprovesOnConfirmation(t *testing.T) {
 	require.Equal(t, "form", asked.Mode)
 	require.Equal(t, strings.Join([]string{
 		`Approve issue "projects/hr/issues/42" titled "Add status column" as alice@example.com?`,
-		`Change on "instances/prod/databases/hr": "ALTER TABLE users\n  ADD COLUMN status VARCHAR(20);"`,
-		`Approval: step 2 of 2, role "roles/workspaceDBA". Requested by "bob@example.com".`,
-		`Comment: "checked the statement"`,
+		`Change on "instances/prod/databases/hr"`,
+		`SQL: "ALTER TABLE users\n  ADD COLUMN status VARCHAR(20);"`,
+		`Approval: step 2 of 2, role "roles/workspaceDBA". Requested by "bob@example.com". Comment: "checked the statement"`,
 	}, "\n"), asked.Message, "Claude Code shows four lines of a form whole, and only three of a longer one")
 	require.NotContains(t, asked.Message, "https://", "a form must not carry a clickable URL")
 	schema, err := json.Marshal(asked.RequestedSchema)
@@ -694,10 +696,9 @@ func accessRequestMock() *decisionMock {
 func TestDecideIssueDescribesAnAccessRequest(t *testing.T) {
 	require.Equal(t, strings.Join([]string{
 		`Approve issue "projects/hr/issues/42" titled "Read salaries" as alice@example.com?`,
-		`Access on "instances/prod/databases/hr": run "SELECT salary\nFROM employee"`,
-		`Unmasked: yes. Export: no. Expires: "1h0m0s" after approval.`,
-		`Approval: step 1 of 1, role "roles/projectOwner". Requested by "bob@example.com".`,
-		`Comment: "checked the statement"`,
+		`Access on "instances/prod/databases/hr"`,
+		`Query: "SELECT salary\nFROM employee"`,
+		`Unmasked: yes. Export: no. Expires: "1h0m0s" after approval. Approval: step 1 of 1, role "roles/projectOwner". Requested by "bob@example.com". Comment: "checked the statement"`,
 	}, "\n"), askedMessage(t, accessRequestMock()))
 }
 
@@ -712,7 +713,7 @@ func TestDecideIssueReadsTheCallersOwnAccessRequestAsTheConsoleDoes(t *testing.T
 	res, err := callDecideIssue(t, session, "approve")
 	require.NoError(t, err)
 	require.False(t, res.IsError, "a requester without bb.accessGrants.get reads their own grant: %s", resultText(t, res))
-	require.Contains(t, user.lastParams(t).Message, `Access on "instances/prod/databases/hr": run "SELECT salary\nFROM employee"`)
+	require.Contains(t, user.lastParams(t).Message, `Query: "SELECT salary\nFROM employee"`)
 	require.Len(t, mock.calls(), 1)
 
 	mock.update(func(m *decisionMock) { m.grant = nil })
@@ -726,38 +727,50 @@ func TestDecideIssueReadsTheCallersOwnAccessRequestAsTheConsoleDoes(t *testing.T
 	require.Len(t, mock.calls(), 1)
 }
 
-func TestDecideIssueShowsANewDatabasesClusterAndOwner(t *testing.T) {
+func TestDecideIssueShowsANewDatabasesSettings(t *testing.T) {
 	for name, tc := range map[string]struct {
 		config map[string]any
 		want   string
 	}{
 		"a ClickHouse cluster": {
 			map[string]any{"target": "instances/ch", "database": "events", "cluster": "ch-main"},
-			`Create database "events" on "instances/ch", cluster "ch-main"`,
+			`Cluster "ch-main"`,
 		},
 		"a PostgreSQL owner": {
-			map[string]any{"target": "instances/prod", "database": "billing", "owner": "billing_admin"},
-			`Create database "billing" on "instances/prod", owner "billing_admin"`,
+			map[string]any{"target": "instances/ch", "database": "events", "owner": "billing_admin"},
+			`Owner "billing_admin"`,
+		},
+		"a MySQL character set and collation": {
+			map[string]any{"target": "instances/ch", "database": "events", "characterSet": "utf8mb4", "collation": "utf8mb4_bin"},
+			`Character set "utf8mb4", collation "utf8mb4_bin"`,
+		},
+		"a MongoDB collection": {
+			map[string]any{"target": "instances/ch", "database": "events", "table": "orders"},
+			`Table "orders"`,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := changeIssueMock()
 			mock.plan = map[string]any{"specs": []map[string]any{{"createDatabaseConfig": tc.config}}}
-			require.Equal(t, tc.want, strings.Split(askedMessage(t, mock), "\n")[1],
-				"ON CLUSTER and WITH OWNER change what the statement does")
+			lines := strings.Split(askedMessage(t, mock), "\n")
+			require.Equal(t, `Create database "events" on "instances/ch"`, lines[1])
+			require.Equal(t, tc.want, lines[2], "each setting changes the database that is created")
 		})
 	}
 }
 
 func TestDecideIssueShowsTheAccessGrantsScope(t *testing.T) {
 	mock := accessRequestMock()
+	mock.grant["targets"] = []string{"instances/prod/databases/hr", "instances/prod/databases/hr2"}
 	mock.grant["schema"] = "payroll"
 	mock.grant["container"] = "employees"
 	mock.grant["query"] = "SELECT salary FROM employee" + strings.Repeat(" ", 300) + "UNION SELECT ssn FROM employee"
-	message := askedMessage(t, mock)
-	require.Contains(t, message, `Access on "instances/prod/databases/hr", schema "payroll", container "employees": run (first 300 of 357 characters) "SELECT salary FROM employee`,
+	lines := strings.Split(askedMessage(t, mock), "\n")
+	require.Equal(t, `Access on 2 databases, schema "payroll", container "employees": "instances/prod/databases/hr", "instances/prod/databases/hr2"`, lines[1],
 		"the schema decides which tables an unqualified query reads, and the container is the data a Cosmos DB grant opens")
-	require.NotContains(t, message, "UNION SELECT ssn")
+	require.True(t, strings.HasPrefix(lines[2], `Query (partial): "SELECT salary FROM employee`), lines[2])
+	require.True(t, strings.HasSuffix(lines[2], `" (first 300 of 357 characters)`), lines[2])
+	require.NotContains(t, lines[2], "UNION SELECT ssn")
 }
 
 func TestDecideIssueQuotesTheTitle(t *testing.T) {
@@ -831,13 +844,157 @@ func TestDecideIssueSaysWhatTheFormLeavesOut(t *testing.T) {
 		sheetSpec,
 	}}
 	lines := strings.Split(askedMessage(t, mock), "\n")
-	require.Equal(t, `Change 1 of 5 on "instances/prod/databases/hr": release "projects/hr/releases/r1" (statements not shown)`, lines[1],
+	require.Equal(t, `Change 1 of 5 on "instances/prod/databases/hr"`, lines[1],
 		"Claude Code shows the first lines only, so the first change already says how many there are")
-	require.True(t, strings.HasPrefix(lines[2], fmt.Sprintf(`Change 2 of 5 on "instances/prod/databases/hr": (first 300 characters of %d bytes) "UPDATE users`, len(statement))),
-		"a client that cuts the line at the terminal width drops its end first, so the note comes before the statement: %q", lines[2])
-	require.NotContains(t, lines[2], "DROP TABLE users;")
-	require.Equal(t, `Change 3 of 5: create database "scratch" on "instances/prod"`, lines[3])
-	require.Equal(t, "(3 of 5 changes shown)", lines[4])
+	require.Equal(t, `Release "projects/hr/releases/r1" (statements not shown)`, lines[2])
+	require.Equal(t, `Change 2 of 5 on "instances/prod/databases/hr"`, lines[3])
+	require.True(t, strings.HasPrefix(lines[4], `SQL (partial): "UPDATE users`), lines[4])
+	require.True(t, strings.HasSuffix(lines[4], fmt.Sprintf(`" (first 300 characters of %d bytes)`, len(statement))), lines[4])
+	require.NotContains(t, lines[4], "DROP TABLE users;")
+	require.Equal(t, `Change 3 of 5: create database "scratch" on "instances/prod"`, lines[5])
+	require.Equal(t, "(3 of 5 changes shown)", lines[6])
+}
+
+func TestDecideIssueFormShowsTheChangeInClaudeCodesDialog(t *testing.T) {
+	longStatement := "ALTER TABLE users ADD COLUMN status VARCHAR(20);" + strings.Repeat(" ", 300) + "DROP TABLE users;"
+	manyTargets := make([]string, 12)
+	for i := range manyTargets {
+		manyTargets[i] = fmt.Sprintf("instances/prod-%02d/databases/hr", i)
+	}
+	sheetSpec := func(targets ...string) map[string]any {
+		return map[string]any{"changeDatabaseConfig": map[string]any{"targets": targets, "sheet": "projects/hr/sheets/9"}}
+	}
+	withStatement := func(mock *decisionMock, statement string) *decisionMock {
+		mock.sheet = map[string]any{
+			"content":     base64.StdEncoding.EncodeToString([]byte(statement)),
+			"contentSize": strconv.Itoa(len(statement)),
+		}
+		return mock
+	}
+	for name, tc := range map[string]struct {
+		mock *decisionMock
+		// The start of each line after the question that must stay visible.
+		scope, statement, last string
+	}{
+		"one long target": {
+			mock: func() *decisionMock {
+				mock := changeIssueMock()
+				mock.plan = map[string]any{"specs": []map[string]any{sheetSpec("instances/" + strings.Repeat("i", 60) + "/databases/" + strings.Repeat("d", 60))}}
+				return mock
+			}(),
+			scope:     `Change on "instances/iiii`,
+			statement: `SQL: "ALTER TABLE users\n  ADD COLUMN status`,
+			last:      `Approval: step 2 of 2`,
+		},
+		"many targets": {
+			mock: func() *decisionMock {
+				mock := changeIssueMock()
+				mock.plan = map[string]any{"specs": []map[string]any{sheetSpec(manyTargets...)}}
+				return mock
+			}(),
+			scope:     `Change on 12 targets: "instances/prod-00/databases/hr"`,
+			statement: `SQL: "ALTER TABLE users\n  ADD COLUMN status`,
+			last:      `Approval: step 2 of 2`,
+		},
+		"a long statement": {
+			mock:      withStatement(changeIssueMock(), longStatement),
+			scope:     `Change on "instances/prod/databases/hr"`,
+			statement: `SQL (partial): "ALTER TABLE users ADD COLUMN status`,
+			last:      `Approval: step 2 of 2`,
+		},
+		"several changes": {
+			mock: func() *decisionMock {
+				mock := withStatement(changeIssueMock(), longStatement)
+				mock.plan = map[string]any{"specs": []map[string]any{sheetSpec(manyTargets...), sheetSpec(manyTargets...), sheetSpec(manyTargets...)}}
+				return mock
+			}(),
+			scope:     `Change 1 of 3 on 12 targets: "instances/prod-00/databases/hr"`,
+			statement: `SQL (partial): "ALTER TABLE users ADD COLUMN status`,
+			last:      `… (+`,
+		},
+		"an access request": {
+			mock: func() *decisionMock {
+				mock := accessRequestMock()
+				mock.grant["targets"] = manyTargets
+				mock.grant["schema"] = "payroll"
+				mock.grant["container"] = "employees"
+				mock.grant["query"] = "SELECT salary FROM employee" + strings.Repeat(" ", 300) + "UNION SELECT ssn FROM employee"
+				return mock
+			}(),
+			scope:     `Access on 12 databases, schema "payroll", container "employees": "`,
+			statement: `Query (partial): "SELECT salary FROM employee`,
+			last:      `Unmasked: yes. Export: no. Expires: "1h0m0s" after approval.`,
+		},
+		"wide characters": {
+			mock: func() *decisionMock {
+				mock := withStatement(changeIssueMock(), "UPDATE 用户 SET 状态 = '有效';")
+				mock.issue["title"] = strings.Repeat("为用户表添加状态列", 6)
+				return mock
+			}(),
+			scope:     `Change on "instances/prod/databases/hr"`,
+			statement: `SQL: "UPDATE 用户 SET 状态 = '有效';"`,
+			last:      `Approval: step 2 of 2`,
+		},
+	} {
+		message := askedMessage(t, tc.mock)
+		for _, columns := range []int{80, 120} {
+			t.Run(fmt.Sprintf("%s at %d columns", name, columns), func(t *testing.T) {
+				view := claudeCodeView(message, columns)
+				require.Len(t, view, 4, "%q", view)
+				require.True(t, strings.HasPrefix(view[0], "Approve issue "), "the decision: %q", view)
+				require.True(t, strings.HasPrefix(view[1], tc.scope), "the scope: %q", view)
+				require.True(t, strings.HasPrefix(view[2], tc.statement), "the statement: %q", view)
+				require.True(t, strings.HasPrefix(view[3], tc.last), "the approval, or how much is left out: %q", view)
+			})
+		}
+	}
+}
+
+// claudeCodeView is what Claude Code 2.1.302 shows of a form's message in a
+// terminal of the given width (BP in its bundle): four lines, or three and
+// "… (+N more lines)", each cut six columns short of the width and ended with
+// "…". A wide character takes two columns.
+func claudeCodeView(message string, columns int) []string {
+	lines := strings.Split(message, "\n")
+	if len(lines) > 4 {
+		lines = append(lines[:3:3], fmt.Sprintf("… (+%d more lines)", len(lines)-3))
+	}
+	limit := max(20, columns-6)
+	view := make([]string, len(lines))
+	for i, line := range lines {
+		view[i] = cutToColumns(line, limit)
+	}
+	return view
+}
+
+func cutToColumns(line string, limit int) string {
+	total := 0
+	for _, r := range line {
+		total += runeColumns(r)
+	}
+	if total <= limit {
+		return line
+	}
+	used := 0
+	for i, r := range line {
+		if used+runeColumns(r) > limit-1 {
+			return line[:i] + "…"
+		}
+		used += runeColumns(r)
+	}
+	return line
+}
+
+func runeColumns(r rune) int {
+	if unicode.Is(unicode.Mn, r) {
+		return 0
+	}
+	switch width.LookupRune(r).Kind() {
+	case width.EastAsianWide, width.EastAsianFullwidth:
+		return 2
+	default:
+		return 1
+	}
 }
 
 func TestDecideIssueAsksNothingWhenAReadFails(t *testing.T) {

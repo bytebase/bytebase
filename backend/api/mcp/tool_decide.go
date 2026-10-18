@@ -419,13 +419,18 @@ type planView struct {
 			Sheet   string   `json:"sheet"`
 			Release string   `json:"release"`
 		} `json:"changeDatabaseConfig"`
-		CreateDatabaseConfig *struct {
-			Target   string `json:"target"`
-			Database string `json:"database"`
-			Cluster  string `json:"cluster"`
-			Owner    string `json:"owner"`
-		} `json:"createDatabaseConfig"`
+		CreateDatabaseConfig *createDatabaseView `json:"createDatabaseConfig"`
 	} `json:"specs"`
+}
+
+type createDatabaseView struct {
+	Target       string `json:"target"`
+	Database     string `json:"database"`
+	Cluster      string `json:"cluster"`
+	Owner        string `json:"owner"`
+	Table        string `json:"table"`
+	CharacterSet string `json:"characterSet"`
+	Collation    string `json:"collation"`
 }
 
 type sheetView struct {
@@ -528,10 +533,11 @@ func (v *confirmationView) digest() ([]byte, error) {
 // message. The message carries no link: the MCP specification asks servers not
 // to put clickable URLs in a form.
 //
-// Claude Code 2.1.300 shows four lines of a message, or three and "… (+N more
-// lines)", and cuts each line at the terminal width; so the decision and the
-// change come first, each change line of a plan with several says how many it
-// has, and a cut note comes before the text it cuts.
+// Claude Code 2.1.302 shows four lines of a message, or three and "… (+N more
+// lines)", and cuts each line six columns short of the terminal width. So each
+// line does one job, its bounded part first: the decision; the targets, counted
+// before they are named; the statement; then the approval step, requester and
+// comment. A plan with several changes shows its first change and the total.
 //
 // It fails closed: if any part cannot be read, nothing is asked.
 func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecision, view *confirmationView) (string, error) {
@@ -540,24 +546,26 @@ func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecis
 	if email := getUserEmail(ctx); email != "" {
 		question += " as " + email
 	}
-	lines := []string{question + "?"}
+	var details []string
+	last := fmt.Sprintf("Approval: %s. Requested by %q.",
+		describeApprovalStep(issue), strings.TrimPrefix(issue.Creator, common.UserNamePrefix))
 	switch {
 	case view.Grant != nil:
-		lines = append(lines, describeAccessGrant(view.Grant)...)
+		var terms string
+		details, terms = describeAccessGrant(view.Grant)
+		last = terms + " " + last
 	case view.Plan != nil:
-		details, err := s.describePlan(ctx, view.Plan)
-		if err != nil {
+		var err error
+		if details, err = s.describePlan(ctx, view.Plan); err != nil {
 			return "", err
 		}
-		lines = append(lines, details...)
 	default:
 	}
-	lines = append(lines, fmt.Sprintf("Approval: %s. Requested by %q.",
-		describeApprovalStep(issue), strings.TrimPrefix(issue.Creator, common.UserNamePrefix)))
 	if view.Comment != "" {
-		lines = append(lines, fmt.Sprintf("Comment: %q", view.Comment))
+		last += fmt.Sprintf(" Comment: %q", view.Comment)
 	}
-	return strings.Join(lines, "\n"), nil
+	lines := append([]string{question + "?"}, details...)
+	return strings.Join(append(lines, last), "\n"), nil
 }
 
 func (s *Server) describePlan(ctx context.Context, plan *planView) ([]string, error) {
@@ -575,7 +583,7 @@ func (s *Server) describePlan(ctx context.Context, plan *planView) ([]string, er
 		switch {
 		case spec.ChangeDatabaseConfig != nil:
 			config := spec.ChangeDatabaseConfig
-			what := fmt.Sprintf("release %q (statements not shown)", config.Release)
+			what := fmt.Sprintf("Release %q (statements not shown)", config.Release)
 			if config.Sheet != "" {
 				statement, err := s.statementPreview(ctx, config.Sheet)
 				if err != nil {
@@ -583,26 +591,39 @@ func (s *Server) describePlan(ctx context.Context, plan *planView) ([]string, er
 				}
 				what = statement
 			}
-			lines = append(lines, fmt.Sprintf("%s on %s: %s", change, quoteAll(config.Targets), what))
+			lines = append(lines, fmt.Sprintf("%s on %s", change, describeTargets(config.Targets, "targets")), what)
 		case spec.CreateDatabaseConfig != nil:
-			config := spec.CreateDatabaseConfig
-			line := fmt.Sprintf("%s %q on %q", create, config.Database, config.Target)
-			if config.Cluster != "" {
-				line += fmt.Sprintf(", cluster %q", config.Cluster)
-			}
-			if config.Owner != "" {
-				line += fmt.Sprintf(", owner %q", config.Owner)
-			}
-			lines = append(lines, line)
+			lines = append(lines, describeNewDatabase(create, spec.CreateDatabaseConfig)...)
 		default:
 		}
 	}
 	return lines, nil
 }
 
-// statementPreview quotes the start of a change's statement and, when it
-// leaves the rest out, the statement's full size. GetSheet cuts content it
-// returns at common.MaxSheetSize, so the size comes from contentSize.
+func describeNewDatabase(create string, config *createDatabaseView) []string {
+	lines := []string{fmt.Sprintf("%s %q on %q", create, config.Database, config.Target)}
+	var settings []string
+	for _, setting := range []struct{ name, value string }{
+		{"cluster", config.Cluster},
+		{"owner", config.Owner},
+		{"table", config.Table},
+		{"character set", config.CharacterSet},
+		{"collation", config.Collation},
+	} {
+		if setting.value != "" {
+			settings = append(settings, fmt.Sprintf("%s %q", setting.name, setting.value))
+		}
+	}
+	if len(settings) > 0 {
+		lines = append(lines, capitalize(strings.Join(settings, ", ")))
+	}
+	return lines
+}
+
+// statementPreview quotes the start of a change's statement. When it leaves the
+// rest out, "(partial)" comes first and the statement's full size last. GetSheet
+// cuts content it returns at common.MaxSheetSize, so the size comes from
+// contentSize.
 func (s *Server) statementPreview(ctx context.Context, sheet string) (string, error) {
 	var view sheetView
 	if err := s.readResource(ctx, "/bytebase.v1.SheetService/GetSheet", sheet, "get sheets", "bb.sheets.get", &view); err != nil {
@@ -614,23 +635,25 @@ func (s *Server) statementPreview(ctx context.Context, sheet string) (string, er
 	}
 	shown, cut := common.TruncateString(string(content), maxStatementPreview)
 	if !cut {
-		return strconv.Quote(shown), nil
+		return fmt.Sprintf("SQL: %q", shown), nil
 	}
-	return fmt.Sprintf("(first %d characters of %d bytes) %q", maxStatementPreview, view.ContentSize, shown), nil
+	return fmt.Sprintf("SQL (partial): %q (first %d characters of %d bytes)", shown, maxStatementPreview, view.ContentSize), nil
 }
 
-func describeAccessGrant(grant *accessGrantView) []string {
-	scope := quoteAll(grant.Targets)
+// describeAccessGrant returns the grant's scope and query lines, and its terms
+// for the approval line.
+func describeAccessGrant(grant *accessGrantView) ([]string, string) {
+	var qualifiers []string
 	if grant.Schema != "" {
-		scope += fmt.Sprintf(", schema %q", grant.Schema)
+		qualifiers = append(qualifiers, fmt.Sprintf("schema %q", grant.Schema))
 	}
 	if grant.Container != "" {
-		scope += fmt.Sprintf(", container %q", grant.Container)
+		qualifiers = append(qualifiers, fmt.Sprintf("container %q", grant.Container))
 	}
-	query, cut := common.TruncateString(grant.Query, maxStatementPreview)
-	access := fmt.Sprintf("Access on %s: run %q", scope, query)
-	if cut {
-		access = fmt.Sprintf("Access on %s: run (first %d of %d characters) %q", scope, maxStatementPreview, utf8.RuneCountInString(grant.Query), query)
+	scope := "Access on " + describeTargets(grant.Targets, "databases", qualifiers...)
+	query := fmt.Sprintf("Query: %q", grant.Query)
+	if shown, cut := common.TruncateString(grant.Query, maxStatementPreview); cut {
+		query = fmt.Sprintf("Query (partial): %q (first %d of %d characters)", shown, maxStatementPreview, utf8.RuneCountInString(grant.Query))
 	}
 	terms := fmt.Sprintf("Unmasked: %s. Export: %s.", yesNo(grant.Unmask), yesNo(grant.Export))
 	switch {
@@ -640,7 +663,17 @@ func describeAccessGrant(grant *accessGrantView) []string {
 		terms += fmt.Sprintf(" Expires: %q after approval.", readableDuration(grant.TTL))
 	default:
 	}
-	return []string{access, terms}
+	return []string{scope, query}, terms
+}
+
+// describeTargets names targets and their qualifiers. With several targets, the
+// count and the qualifiers come before the names, so a line cut short keeps them.
+func describeTargets(targets []string, noun string, qualifiers ...string) string {
+	if len(targets) == 1 {
+		return strings.Join(append([]string{strconv.Quote(targets[0])}, qualifiers...), ", ")
+	}
+	head := append([]string{fmt.Sprintf("%d %s", len(targets), noun)}, qualifiers...)
+	return strings.Join(head, ", ") + ": " + quoteAll(targets)
 }
 
 // readResource reads one resource by name from the internal API.
