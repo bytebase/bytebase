@@ -39,6 +39,12 @@ async function doRefresh(): Promise<void> {
 }
 
 async function tryAcquireAndRefresh(): Promise<boolean> {
+  // Web Locks exists only in secure contexts, so plain-HTTP deployments
+  // refresh without cross-tab coordination.
+  if (!navigator.locks) {
+    await refreshAndBroadcast();
+    return true;
+  }
   return navigator.locks.request(
     LOCK_NAME,
     { ifAvailable: true },
@@ -46,14 +52,18 @@ async function tryAcquireAndRefresh(): Promise<boolean> {
       if (!lock) {
         return false;
       }
-      await authServiceClientConnect.refresh({});
-      // Only broadcast on success - failure lets waiting tabs timeout and retry
-      const channel = new BroadcastChannel(CHANNEL_NAME);
-      channel.postMessage("complete");
-      channel.close();
+      await refreshAndBroadcast();
       return true;
     }
   );
+}
+
+async function refreshAndBroadcast(): Promise<void> {
+  await authServiceClientConnect.refresh({});
+  // Only broadcast on success - failure lets waiting tabs timeout and retry
+  const channel = new BroadcastChannel(CHANNEL_NAME);
+  channel.postMessage("complete");
+  channel.close();
 }
 
 function waitForBroadcast(): Promise<boolean> {
