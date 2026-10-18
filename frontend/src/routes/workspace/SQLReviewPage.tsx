@@ -267,13 +267,15 @@ export function SQLReviewPage() {
   const aiReview = useWorkspaceAIReview();
   const aiReviewPolicy = useWorkspaceReviewAIPolicy(sqlReviewV2);
   const aiReviewPolicyVisible = aiReview.aiEnabled && aiReview.enabled;
-  const parts = [
+  const formParts = [standardRules, aiReview, aiReviewPolicy];
+  const saveParts = [
     standardRules,
     aiReview,
     ...(aiReviewPolicyVisible ? [aiReviewPolicy] : []),
   ];
-  const isDirty = parts.some((part) => part.isDirty);
-  const saving = parts.some((part) => part.saving);
+  const isDirty = formParts.some((part) => part.isDirty);
+  const saving = formParts.some((part) => part.saving);
+  const hasSaveableChanges = saveParts.some((part) => part.isDirty);
   useUnsavedChangesGuard(isDirty);
 
   useEffect(() => {
@@ -368,7 +370,7 @@ export function SQLReviewPage() {
               appearance="outline"
               disabled={saving}
               onClick={() => {
-                for (const part of parts) part.revert();
+                for (const part of formParts) part.revert();
               }}
             >
               {t("common.cancel")}
@@ -378,10 +380,11 @@ export function SQLReviewPage() {
             <Button
               disabled={
                 saving ||
+                !hasSaveableChanges ||
                 (aiReviewPolicyVisible && aiReviewPolicy.error !== undefined)
               }
               onClick={async () => {
-                const saves = parts
+                const saves = saveParts
                   .filter((part) => part.isDirty)
                   .map((part) => part.save());
                 // One click reports one update, and only when every changed

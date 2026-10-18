@@ -3,31 +3,31 @@
   "add-rules": "Add rules",
   "ai-review": {
     "ai-off": "AI is off for the workspace, so no AI review runs.",
-    "description": "An AI model that reviews the SQL of an issue for risks the standard rules cannot see. It applies to every project in the workspace, and each project can add its own policy.",
+    "description": "An AI model that reviews the SQL of an issue for risks the standard rules cannot see.",
     "enable": {
       "description": "Each review sends the statements as written to the AI provider, and can send the schema of the target databases and their table statistics. It reads no rows from the databases.",
       "self": "Review changes with AI"
     },
     "policy": {
       "cannot-clear": "Your role cannot delete policies, so this policy cannot be emptied.",
-      "description": "Instructions the AI follows when reviewing database changes.",
+      "description": "This policy defines what the AI checks when reviewing database changes. It applies to every project in the workspace, and each project can add its own policy.",
       "load-failed": "The review policy could not be loaded.",
       "none": "No review policy.",
-      "paused": "This policy is paused, so the AI review does not read it.",
-      "placeholder": "For example:\nFlag a schema change that blocks writes on a table with more than 1 million rows.\nEvery foreign key needs an index on its columns.\nNew tables need created_at and updated_at columns.",
-      "project-description": "Optional project-specific instructions. They are added to the workspace policy and take precedence when they conflict.",
-      "project-none": "No project instructions.",
+      "paused": "This policy is paused, so AI review does not use it.",
+      "placeholder": "For example:\nReport a schema change that blocks writes on a table with more than 1 million rows.\nEvery foreign key needs an index on its columns.\nNew tables need created_at and updated_at columns.",
+      "project-description": "Optional project-specific policy. It is added to the workspace policy and takes precedence when they conflict.",
+      "project-none": "No project policy.",
       "project-placeholder": "For example:\nNever delete rows from the payments or ledger tables.\nStore amounts of money in DECIMAL columns, never FLOAT or DOUBLE.\nNew columns on the users table must allow NULL or have a default.",
-      "project-self": "Project additions",
+      "project-self": "Project additional policy",
       "remove-only": "You can remove this policy but not change it. Clear the text to remove it.",
       "self": "Review policy",
       "too-large": "The policy is {{size}} bytes, over the {{limit}}-byte limit. Shorten it to save."
     },
-    "project-description": "AI review is configured for the workspace. Add optional instructions for this project below.",
+    "project-description": "AI review is configured for the workspace. Add an optional project-specific policy below.",
     "self": "AI review",
-    "set-for-workspace": "Set for the whole workspace.",
+    "set-for-workspace": "Managed at the workspace level.",
     "turn-on-ai": "Turn on AI",
-    "view-workspace-setting": "View workspace setting"
+    "view-workspace-setting": "View workspace AI settings"
   },
   "attach-resource": {
     "change-resources": "Change attached resources",
@@ -759,7 +759,7 @@
   "select-review-rules": "Select SQL review rules",
   "standard-rules": {
     "customize": {
-      "description": "When off, this project follows the workspace standard rules.",
+      "description": "When disabled, this project follows the workspace standard rules.",
       "self": "Customize for this project",
       "view-workspace-rules": "View workspace rules"
     },
@@ -771,53 +771,53 @@
     "retry": "Retry",
     "rule": {
       "disallow-drop-constraint": {
-        "description": "Flags dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint.",
+        "description": "Reports when a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint is dropped.",
         "title": "Dropping constraints"
       },
       "disallow-drop-object": {
-        "description": "Flags dropping any object, such as a table, column, view, index, schema, or database. Dropping a constraint is covered separately.",
+        "description": "Reports when an object is dropped, including a table, column, view, index, schema, or database. Dropping a constraint is covered separately.",
         "title": "Dropping objects"
       },
       "disallow-rename": {
-        "description": "Flags renaming a table, view, or column.",
+        "description": "Reports when a table, view, or column is renamed.",
         "title": "Renaming"
       },
       "disallow-truncate": {
-        "description": "Flags TRUNCATE.",
+        "description": "Reports TRUNCATE statements.",
         "title": "Truncating tables"
       },
       "online-migration": {
-        "description": "Flags a change that requests online migration but is not eligible for it.",
+        "description": "Reports when a change requests online migration but is not eligible.",
         "title": "Online migration eligibility"
       },
       "prior-backup": {
-        "description": "Flags a change that enables prior backup when the backup cannot be taken.",
+        "description": "Reports when a change enables prior backup but a backup cannot be taken.",
         "title": "Prior backup feasibility"
       },
       "require-is-null": {
-        "description": "Flags = NULL or <> NULL in a predicate, which is never true. Use IS NULL or IS NOT NULL instead.",
+        "description": "Reports = NULL or <> NULL in a predicate. These comparisons are never true. Use IS NULL or IS NOT NULL instead.",
         "title": "NULL comparison"
       },
       "require-primary-key": {
-        "description": "Flags a table the change creates without a primary key, or a primary key it drops without adding one back.",
+        "description": "Reports when a change creates a table without a primary key or drops one without adding it back.",
         "title": "Primary key"
       },
       "require-where": {
-        "description": "Flags UPDATE or DELETE without a WHERE clause.",
+        "description": "Reports UPDATE or DELETE statements without a WHERE clause.",
         "title": "WHERE clause"
       },
       "syntax": {
-        "description": "Flags statements that do not parse for the database engine. The other rules only check SQL that parses, so turning this off turns off every standard rule.",
+        "description": "Reports statements the database engine cannot parse. The other rules only check SQL that parses, so turning this off turns off every standard rule.",
         "title": "Syntax"
       },
       "walk-through": {
-        "description": "Flags statements that fail against the synced schema, such as a missing table or column, a duplicate object, or an invalid reference.",
+        "description": "Reports statements that are invalid against the synced schema, such as a missing table or column, a duplicate object, or an invalid reference.",
         "title": "Schema walk-through"
       }
     },
-    "running": "{{on}} of {{total}} rules running",
+    "running": "{{on}} of {{total}} rules enabled",
     "self": "Standard rules",
-    "syntax-off": "Syntax is off, so none of the standard rules run. Turn Syntax on to review changes.",
+    "syntax-off": "Syntax checking is disabled, so none of the standard rules run. Turn it on to review changes.",
     "workspace-rules-hidden": "You do not have permission to view the workspace rules this project follows."
   },
   "template": {

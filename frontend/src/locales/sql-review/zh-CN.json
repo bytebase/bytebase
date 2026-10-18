@@ -3,31 +3,31 @@
   "add-rules": "添加规则",
   "ai-review": {
     "ai-off": "工作空间尚未启用 AI，因此不会运行 AI 审核。",
-    "description": "由 AI 模型审核工单中的 SQL，发现标准规则无法识别的风险。对工作空间内的所有项目生效，每个项目还可以添加自己的策略。",
+    "description": "由 AI 模型审核工单中的 SQL，发现标准规则无法识别的风险。",
     "enable": {
       "description": "每次审核会将语句原文发送给 AI 提供方，并可能发送目标数据库的 Schema 及其表的统计信息，但不会读取数据库中的任何数据行。",
       "self": "使用 AI 审核变更"
     },
     "policy": {
       "cannot-clear": "你的角色无法删除策略，因此不能清空此策略。",
-      "description": "AI 审核数据库变更时遵循的说明。",
+      "description": "此策略定义 AI 审核数据库变更时检查的内容。它适用于工作空间中的每个项目，每个项目都可以添加自己的策略。",
       "load-failed": "审核策略加载失败。",
       "none": "未设置审核策略。",
-      "paused": "此策略已暂停，AI 审核不会读取它。",
-      "placeholder": "例如：\n标记在超过 100 万行的表上会阻塞写入的结构变更。\n每个外键的列都必须有索引。\n新建的表必须包含 created_at 列和 updated_at 列。",
-      "project-description": "可选的项目专属说明。这些说明会添加到工作空间策略中；如有冲突则优先。",
-      "project-none": "未设置项目说明。",
+      "paused": "此策略已暂停，AI 审核不会使用它。",
+      "placeholder": "例如：\n报告在超过 100 万行的表上会阻塞写入的结构变更。\n每个外键的列都必须有索引。\n新建的表必须包含 created_at 列和 updated_at 列。",
+      "project-description": "可选的项目专属策略。它会添加到工作空间策略中；如有冲突则优先。",
+      "project-none": "未设置项目策略。",
       "project-placeholder": "例如：\n禁止删除 payments 表或 ledger 表中的行。\n金额必须存放在 DECIMAL 列中，不能使用 FLOAT 或 DOUBLE。\nusers 表新增的列必须允许 NULL 或带有默认值。",
-      "project-self": "项目补充说明",
+      "project-self": "项目补充策略",
       "remove-only": "你可以删除此策略，但不能修改它。清空文本即可删除。",
       "self": "审核策略",
       "too-large": "策略大小为 {{size}} 字节，超过了 {{limit}} 字节的上限。请缩短后再保存。"
     },
-    "project-description": "AI 审核在工作空间中配置。请在下方添加本项目的可选说明。",
+    "project-description": "AI 审核在工作空间中配置。请在下方添加可选的项目专属策略。",
     "self": "AI 审核",
-    "set-for-workspace": "由工作空间统一设置。",
+    "set-for-workspace": "由工作空间统一管理。",
     "turn-on-ai": "启用 AI",
-    "view-workspace-setting": "查看工作空间设置"
+    "view-workspace-setting": "查看工作空间 AI 设置"
   },
   "attach-resource": {
     "change-resources": "更改绑定的资源",
@@ -759,7 +759,7 @@
   "select-review-rules": "选择 SQL 审核规则",
   "standard-rules": {
     "customize": {
-      "description": "关闭时，此项目遵循工作空间的标准规则。",
+      "description": "禁用后，此项目遵循工作空间的标准规则。",
       "self": "为此项目自定义",
       "view-workspace-rules": "查看工作空间规则"
     },
@@ -771,53 +771,53 @@
     "retry": "重试",
     "rule": {
       "disallow-drop-constraint": {
-        "description": "标记删除 PRIMARY KEY、FOREIGN KEY、UNIQUE 或 CHECK 约束的操作。",
+        "description": "报告删除 PRIMARY KEY、FOREIGN KEY、UNIQUE 或 CHECK 约束的操作。",
         "title": "删除约束"
       },
       "disallow-drop-object": {
-        "description": "标记删除任意对象的操作，例如表、列、视图、索引、模式或数据库。删除约束由单独的规则检查。",
+        "description": "报告删除对象的操作，包括表、列、视图、索引、模式或数据库。删除约束由单独的规则检查。",
         "title": "删除对象"
       },
       "disallow-rename": {
-        "description": "标记重命名表、视图或列的操作。",
+        "description": "报告重命名表、视图或列的操作。",
         "title": "重命名"
       },
       "disallow-truncate": {
-        "description": "标记 TRUNCATE。",
+        "description": "报告 TRUNCATE 语句。",
         "title": "清空表"
       },
       "online-migration": {
-        "description": "标记请求在线大表变更但不满足条件的变更。",
+        "description": "报告请求在线大表变更但不满足条件的变更。",
         "title": "在线大表变更可行性"
       },
       "prior-backup": {
-        "description": "标记开启了事先备份但无法完成备份的变更。",
+        "description": "报告启用了事先备份但无法完成备份的变更。",
         "title": "事先备份可行性"
       },
       "require-is-null": {
-        "description": "标记谓词中的 = NULL 或 <> NULL，它们永远不为真。请改用 IS NULL 或 IS NOT NULL。",
+        "description": "报告谓词中的 = NULL 或 <> NULL。这些比较永远不为真。请改用 IS NULL 或 IS NOT NULL。",
         "title": "NULL 比较"
       },
       "require-primary-key": {
-        "description": "标记变更新建的表没有主键，或删除主键后没有重新添加。",
+        "description": "报告创建无主键表，或删除主键后未重新添加的变更。",
         "title": "主键"
       },
       "require-where": {
-        "description": "标记没有 WHERE 子句的 UPDATE 或 DELETE。",
+        "description": "报告没有 WHERE 子句的 UPDATE 或 DELETE 语句。",
         "title": "WHERE 子句"
       },
       "syntax": {
-        "description": "标记数据库引擎无法解析的语句。其他规则只检查能解析的 SQL，因此关闭此项会关闭所有标准规则。",
+        "description": "报告数据库引擎无法解析的语句。其他规则只检查能解析的 SQL，因此关闭此项会关闭所有标准规则。",
         "title": "语法"
       },
       "walk-through": {
-        "description": "标记在已同步的 Schema 上执行失败的语句，例如表或列不存在、对象重复或引用无效。",
+        "description": "报告与已同步 Schema 不匹配的语句，例如引用不存在的表或列、重复对象或无效引用。",
         "title": "Schema 模拟执行"
       }
     },
-    "running": "{{total}} 条规则中 {{on}} 条生效",
+    "running": "{{total}} 条规则中 {{on}} 条已启用",
     "self": "标准规则",
-    "syntax-off": "语法检查已关闭，所有标准规则都不会运行。开启语法检查后才会审核变更。",
+    "syntax-off": "语法检查已禁用，因此不会运行任何标准规则。启用后即可审核变更。",
     "workspace-rules-hidden": "你没有权限查看此项目所遵循的工作空间规则。"
   },
   "template": {
