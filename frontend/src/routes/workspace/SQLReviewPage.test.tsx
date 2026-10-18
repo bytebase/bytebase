@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => ({
   },
   aiReviewPolicyEnabled: vi.fn(),
   pushNotification: vi.fn(),
+  useUnsavedChangesGuard: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -72,7 +73,7 @@ vi.mock("@/components/LearnMoreLink", () => ({
   ),
 }));
 vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
-  useUnsavedChangesGuard: vi.fn(),
+  useUnsavedChangesGuard: mocks.useUnsavedChangesGuard,
 }));
 vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
 vi.mock("@/utils", () => ({
@@ -105,6 +106,7 @@ describe("SQLReviewPage", () => {
     mocks.aiReview.enabled = true;
     mocks.aiReviewPolicyEnabled.mockReset();
     mocks.pushNotification.mockReset();
+    mocks.useUnsavedChangesGuard.mockReset();
   });
 
   test("shows the standard rules and the AI review under SQL Review V2", () => {
@@ -180,6 +182,18 @@ describe("SQLReviewPage", () => {
 
     expect(mocks.aiReview.save).toHaveBeenCalledOnce();
     expect(mocks.aiReviewPolicy.save).not.toHaveBeenCalled();
+  });
+
+  test("tracks and discards a hidden AI review policy draft", () => {
+    mocks.sqlReviewV2.value = true;
+    mocks.aiReview.enabled = false;
+    mocks.aiReviewPolicy.isDirty = true;
+    render(<SQLReviewPage />);
+
+    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(true);
+    expect(screen.getByRole("button", { name: "common.update" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "common.cancel" }));
+    expect(mocks.aiReviewPolicy.revert).toHaveBeenCalledOnce();
   });
 
   test("can save turning off AI review when its hidden policy is invalid", () => {

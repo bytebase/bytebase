@@ -3,31 +3,31 @@
   "add-rules": "Agregar reglas",
   "ai-review": {
     "ai-off": "La IA está desactivada en el espacio de trabajo, por lo que no se ejecuta ninguna revisión con IA.",
-    "description": "Un modelo de IA que revisa el SQL de un issue en busca de riesgos que las reglas estándar no pueden ver. Se aplica a todos los proyectos del espacio de trabajo, y cada proyecto puede añadir su propia política.",
+    "description": "Un modelo de IA que revisa el SQL de un issue en busca de riesgos que las reglas estándar no pueden ver.",
     "enable": {
       "description": "Cada revisión envía al proveedor de IA las sentencias tal como están escritas, y puede enviar el esquema de las bases de datos de destino y las estadísticas de sus tablas. No lee ninguna fila de las bases de datos.",
       "self": "Revisar los cambios con IA"
     },
     "policy": {
       "cannot-clear": "Tu rol no puede eliminar políticas, por lo que esta política no se puede vaciar.",
-      "description": "Instrucciones que la IA sigue al revisar cambios en la base de datos.",
+      "description": "Esta política define lo que la IA revisa al evaluar cambios en la base de datos. Se aplica a todos los proyectos del espacio de trabajo y cada proyecto puede agregar su propia política.",
       "load-failed": "No se pudo cargar la política de revisión.",
       "none": "No hay política de revisión.",
-      "paused": "Esta política está en pausa, por lo que la revisión con IA no la lee.",
-      "placeholder": "Por ejemplo:\nSeñala un cambio de esquema que bloquee las escrituras en una tabla de más de 1 millón de filas.\nToda clave foránea necesita un índice sobre sus columnas.\nLas tablas nuevas necesitan las columnas created_at y updated_at.",
-      "project-description": "Instrucciones opcionales específicas del proyecto. Se agregan a la política del espacio de trabajo y tienen prioridad cuando entran en conflicto.",
-      "project-none": "No hay instrucciones del proyecto.",
+      "paused": "Esta política está en pausa, por lo que la revisión con IA no la usa.",
+      "placeholder": "Por ejemplo:\nInforma sobre un cambio de esquema que bloquee las escrituras en una tabla de más de 1 millón de filas.\nToda clave foránea necesita un índice sobre sus columnas.\nLas tablas nuevas necesitan las columnas created_at y updated_at.",
+      "project-description": "Política opcional específica del proyecto. Se agrega a la política del espacio de trabajo y tiene prioridad cuando entran en conflicto.",
+      "project-none": "No hay política del proyecto.",
       "project-placeholder": "Por ejemplo:\nNunca elimines filas de las tablas payments o ledger.\nGuarda los importes de dinero en columnas DECIMAL, nunca FLOAT ni DOUBLE.\nLas columnas nuevas de la tabla users deben admitir NULL o tener un valor por defecto.",
-      "project-self": "Adiciones del proyecto",
+      "project-self": "Política adicional del proyecto",
       "remove-only": "Puedes eliminar esta política, pero no cambiarla. Vacía el texto para eliminarla.",
       "self": "Política de revisión",
       "too-large": "La política ocupa {{size}} bytes, más que el límite de {{limit}} bytes. Acórtala para guardarla."
     },
-    "project-description": "La revisión con IA se configura para el espacio de trabajo. Agrega abajo instrucciones opcionales para este proyecto.",
+    "project-description": "La revisión con IA se configura para el espacio de trabajo. Agrega abajo una política opcional específica del proyecto.",
     "self": "Revisión con IA",
-    "set-for-workspace": "Se establece para todo el espacio de trabajo.",
+    "set-for-workspace": "Se administra a nivel del espacio de trabajo.",
     "turn-on-ai": "Activar la IA",
-    "view-workspace-setting": "Ver la configuración del espacio de trabajo"
+    "view-workspace-setting": "Ver la configuración de IA del espacio de trabajo"
   },
   "attach-resource": {
     "change-resources": "Cambiar recursos adjuntos",
@@ -759,7 +759,7 @@
   "select-review-rules": "Seleccionar reglas de revisión de SQL",
   "standard-rules": {
     "customize": {
-      "description": "Si está desactivado, este proyecto sigue las reglas estándar del espacio de trabajo.",
+      "description": "Cuando está desactivado, este proyecto sigue las reglas estándar del espacio de trabajo.",
       "self": "Personalizar para este proyecto",
       "view-workspace-rules": "Ver las reglas del espacio de trabajo"
     },
@@ -771,53 +771,53 @@
     "retry": "Reintentar",
     "rule": {
       "disallow-drop-constraint": {
-        "description": "Señala la eliminación de una restricción PRIMARY KEY, FOREIGN KEY, UNIQUE o CHECK.",
+        "description": "Informa cuando se elimina una restricción PRIMARY KEY, FOREIGN KEY, UNIQUE o CHECK.",
         "title": "Eliminación de restricciones"
       },
       "disallow-drop-object": {
-        "description": "Señala la eliminación de cualquier objeto, como una tabla, columna, vista, índice, esquema o base de datos. La eliminación de restricciones se revisa por separado.",
+        "description": "Informa cuando se elimina cualquier objeto, como una tabla, columna, vista, índice, esquema o base de datos. La eliminación de restricciones se revisa por separado.",
         "title": "Eliminación de objetos"
       },
       "disallow-rename": {
-        "description": "Señala el cambio de nombre de una tabla, vista o columna.",
+        "description": "Informa cuando se cambia el nombre de una tabla, vista o columna.",
         "title": "Cambio de nombre"
       },
       "disallow-truncate": {
-        "description": "Señala TRUNCATE.",
+        "description": "Informa sobre las sentencias TRUNCATE.",
         "title": "Vaciado de tablas"
       },
       "online-migration": {
-        "description": "Señala un cambio que solicita migración en línea pero no es apto para ella.",
+        "description": "Informa cuando se solicita una migración en línea para un cambio que no reúne los requisitos.",
         "title": "Idoneidad para la migración en línea"
       },
       "prior-backup": {
-        "description": "Señala un cambio que activa la copia de seguridad previa cuando no se puede realizar.",
+        "description": "Informa cuando un cambio habilita una copia de seguridad previa pero no se puede realizar.",
         "title": "Viabilidad de la copia de seguridad previa"
       },
       "require-is-null": {
-        "description": "Señala = NULL o <> NULL en un predicado, que nunca es verdadero. Use IS NULL o IS NOT NULL en su lugar.",
+        "description": "Informa sobre = NULL o <> NULL en un predicado. Estas comparaciones nunca son verdaderas. Use IS NULL o IS NOT NULL en su lugar.",
         "title": "Comparación con NULL"
       },
       "require-primary-key": {
-        "description": "Señala una tabla que el cambio crea sin clave primaria, o una clave primaria que elimina sin volver a añadirla.",
+        "description": "Informa cuando un cambio crea una tabla sin clave primaria o elimina una clave primaria sin volver a agregarla.",
         "title": "Clave primaria"
       },
       "require-where": {
-        "description": "Señala UPDATE o DELETE sin cláusula WHERE.",
+        "description": "Informa sobre sentencias UPDATE o DELETE sin una cláusula WHERE.",
         "title": "Cláusula WHERE"
       },
       "syntax": {
-        "description": "Señala las sentencias que el motor de base de datos no puede analizar. Las demás reglas solo comprueban SQL que se puede analizar, por lo que desactivar esta regla desactiva todas las reglas estándar.",
+        "description": "Informa sobre las sentencias que el motor de base de datos no puede analizar. Las demás reglas solo comprueban SQL que se puede analizar, por lo que desactivar esta regla desactiva todas las reglas estándar.",
         "title": "Sintaxis"
       },
       "walk-through": {
-        "description": "Señala las sentencias que fallan contra el esquema sincronizado, como una tabla o columna inexistente, un objeto duplicado o una referencia no válida.",
+        "description": "Informa sobre las sentencias que no son válidas con el esquema sincronizado, como referencias a tablas o columnas inexistentes, objetos duplicados o referencias no válidas.",
         "title": "Recorrido del esquema"
       }
     },
-    "running": "{{on}} de {{total}} reglas activas",
+    "running": "{{on}} de {{total}} reglas habilitadas",
     "self": "Reglas estándar",
-    "syntax-off": "La sintaxis está desactivada, por lo que no se ejecuta ninguna regla estándar. Active la sintaxis para revisar los cambios.",
+    "syntax-off": "La comprobación de sintaxis está desactivada, por lo que no se ejecuta ninguna regla estándar. Actívela para revisar los cambios.",
     "workspace-rules-hidden": "No tienes permiso para ver las reglas del espacio de trabajo que sigue este proyecto."
   },
   "template": {
