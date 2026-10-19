@@ -54,6 +54,39 @@ END update_salary;`, statements[1].Text)
 CREATE TABLE t(id NUMBER)`, statements[2].Text)
 }
 
+func TestPLSQLSplitSQLKeepsEmbeddedSourceWhole(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		source string
+		suffix string
+	}{
+		{
+			name:   "Java source",
+			source: "CREATE OR REPLACE AND COMPILE JAVA SOURCE NAMED \"Dec\" AS\npublic class Dec { public static int f(int n) { return n--; } }",
+			suffix: "\n/\n",
+		},
+		{
+			name:   "MLE module",
+			source: "CREATE OR REPLACE MLE MODULE dec_module LANGUAGE JAVASCRIPT AS\nexport function f(n) { return n--; }",
+			suffix: "\n/\n",
+		},
+		{
+			name:   "inline MLE call spec",
+			source: "CREATE OR REPLACE FUNCTION dec_js(n NUMBER) RETURN NUMBER\nAS MLE LANGUAGE JAVASCRIPT\n{{ return n--; }};",
+			suffix: "\n",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			statements, err := SplitSQL(tc.source + tc.suffix + "SELECT 1 FROM dual;")
+			require.NoError(t, err)
+			statements = base.FilterEmptyStatements(statements)
+			require.Len(t, statements, 2)
+			require.Equal(t, tc.source, statements[0].Text)
+			require.Equal(t, "SELECT 1 FROM dual", strings.TrimSpace(statements[1].Text))
+		})
+	}
+}
+
 func TestPLSQLSplitSQLPreservesSQLSetStatements(t *testing.T) {
 	statement := `SET DEFINE OFF
 SET TRANSACTION READ ONLY;

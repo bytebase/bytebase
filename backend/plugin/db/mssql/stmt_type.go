@@ -77,10 +77,13 @@ func classifyStmtType(node ast.Node) (stmtType, error) {
 		return stmtTypeProcedure, nil
 
 	case *ast.SetOptionStmt:
-		if strings.EqualFold(n.Option, "NOEXEC") || strings.EqualFold(n.Option, "PARSEONLY") {
-			// These skip statements without an error, so the result sets that do
-			// arrive could not be matched to their statements.
-			return stmtTypeUnknown, errors.Errorf("SET %s is not supported", strings.ToUpper(n.Option))
+		// One SET can list several options, as in SET ANSI_NULLS, NOEXEC ON.
+		for _, option := range n.Options {
+			if strings.EqualFold(option, "NOEXEC") || strings.EqualFold(option, "PARSEONLY") {
+				// These skip statements without an error, so the result sets that do
+				// arrive could not be matched to their statements.
+				return stmtTypeUnknown, errors.Errorf("SET %s is not supported", strings.ToUpper(option))
+			}
 		}
 		return stmtTypeUnknown, nil
 
