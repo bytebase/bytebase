@@ -22,7 +22,7 @@ describe("Textarea", () => {
     container.remove();
   });
 
-  test("keeps the error border as the focused invalid state", () => {
+  test("uses an inset error focus ring when invalid", () => {
     act(() => {
       root.render(<Textarea aria-invalid="true" />);
     });
@@ -31,6 +31,8 @@ describe("Textarea", () => {
     expect(textarea).not.toBeNull();
     expect(textarea?.className).toContain("aria-invalid:border-error");
     expect(textarea?.className).toContain("aria-invalid:focus:border-error");
-    expect(textarea?.className).toContain("aria-invalid:focus:ring-0");
+    expect(textarea?.className).toContain("aria-invalid:focus:ring-1");
+    expect(textarea?.className).toContain("aria-invalid:focus:ring-error/30");
+    expect(textarea?.className).toContain("aria-invalid:focus:ring-inset");
   });
 });

@@ -22,7 +22,7 @@ describe("Input", () => {
     container.remove();
   });
 
-  test("keeps the error border as the focused invalid state", () => {
+  test("uses an inset error focus ring when invalid", () => {
     act(() => {
       root.render(<Input aria-invalid="true" />);
     });
@@ -31,6 +31,8 @@ describe("Input", () => {
     expect(input).not.toBeNull();
     expect(input?.className).toContain("aria-invalid:border-error");
     expect(input?.className).toContain("aria-invalid:focus:border-error");
-    expect(input?.className).toContain("aria-invalid:focus:ring-0");
+    expect(input?.className).toContain("aria-invalid:focus:ring-1");
+    expect(input?.className).toContain("aria-invalid:focus:ring-error/30");
+    expect(input?.className).toContain("aria-invalid:focus:ring-inset");
   });
 });
