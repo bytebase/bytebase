@@ -13,15 +13,16 @@ import (
 
 // DeriveCheckTargets derives check targets from a plan and optional database
 // group, applying the project's CI sampling limit: plan checks are CI
-// validation, and sampling bounds their cost.
+// validation, and sampling bounds their cost. The AI review uses the same
+// sample to bound its model calls.
 // This replaces the stored config by computing targets at runtime.
 func DeriveCheckTargets(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) ([]*CheckTarget, error) {
 	return deriveTargets(ctx, s, project, plan, databaseGroup, true)
 }
 
-// DeriveReviewTargets derives the same targets without CI sampling: a review
-// run's DONE means every (spec, target) unit was evaluated, so review must
-// see the full target set.
+// DeriveReviewTargets derives the same targets without CI sampling: a rule
+// review run's DONE means every (spec, target) unit was evaluated, so the
+// rule review must see the full target set.
 func DeriveReviewTargets(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) ([]*CheckTarget, error) {
 	return deriveTargets(ctx, s, project, plan, databaseGroup, false)
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -61,8 +62,10 @@ type chatOpenAIResponse struct {
 		Message struct {
 			Role      string            `json:"role"`
 			Content   *string           `json:"content"`
+			Refusal   string            `json:"refusal"`
 			ToolCalls []json.RawMessage `json:"tool_calls"`
 		} `json:"message"`
+		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
 	Usage *chatOpenAIUsage `json:"usage,omitempty"`
 }
@@ -193,6 +196,33 @@ func extractGeminiThoughtSignatureFromOpenAIToolCall(raw json.RawMessage) string
 	return providerFields.ExtraContent.Google.ThoughtSignature
 }
 
+type openAIErrorReply struct {
+	Error struct {
+		Type string `json:"type"`
+		// Code is any so that a numeric code from a compatible service still decodes.
+		Code  any    `json:"code"`
+		Param string `json:"param"`
+	} `json:"error"`
+}
+
+// readOpenAIFailure marks the reply for a used-up quota, which OpenAI answers
+// with 429 like a rate limit and tells apart by the error code, and for a
+// request refused for its tools: a parameter validation code with the tools
+// as the parameter. A safety block carries another code, so it never counts,
+// and the message is not read because free text cannot tell the two apart.
+func readOpenAIFailure(httpErr *HTTPError) {
+	var reply openAIErrorReply
+	if err := json.Unmarshal([]byte(httpErr.Body), &reply); err != nil {
+		return
+	}
+	const insufficientQuota = "insufficient_quota"
+	httpErr.QuotaExhausted = reply.Error.Code == insufficientQuota || reply.Error.Type == insufficientQuota
+	code, isString := reply.Error.Code.(string)
+	httpErr.RefusesTools = httpErr.StatusCode == http.StatusBadRequest && isString &&
+		slices.Contains([]string{"unsupported_parameter", "unsupported_value", "invalid_value"}, code) &&
+		(reply.Error.Param == "tools" || strings.HasPrefix(reply.Error.Param, "tools["))
+}
+
 func chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	if isOpenAIResponsesEndpoint(aiSetting.Endpoint) {
 		return chatOpenAIResponses(ctx, aiSetting, request)
@@ -274,7 +304,7 @@ func chatOpenAIChatCompletions(ctx context.Context, aiSetting *storepb.AISetting
 		httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", aiSetting.ApiKey))
 	}
 
-	body, err := doHTTPRequest(ctx, httpReq, "OpenAI")
+	body, err := doHTTPRequest(ctx, httpReq, "OpenAI", readOpenAIFailure)
 	if err != nil {
 		return nil, err
 	}
@@ -290,6 +320,7 @@ func chatOpenAIChatCompletions(ctx context.Context, aiSetting *storepb.AISetting
 	}
 	if len(resp.Choices) > 0 {
 		msg := resp.Choices[0].Message
+		result.StopReason = openAIChatCompletionsStopReason(resp.Choices[0].FinishReason, msg.Refusal)
 		result.Content = msg.Content
 		for _, rawTC := range msg.ToolCalls {
 			var parsed chatOpenAIToolCallParsed
@@ -395,7 +426,7 @@ func chatOpenAIResponses(ctx context.Context, aiSetting *storepb.AISetting, requ
 		httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", aiSetting.ApiKey))
 	}
 
-	body, err := doHTTPRequest(ctx, httpReq, "OpenAI")
+	body, err := doHTTPRequest(ctx, httpReq, "OpenAI", readOpenAIFailure)
 	if err != nil {
 		return nil, err
 	}
@@ -414,7 +445,7 @@ func chatOpenAIResponses(ctx context.Context, aiSetting *storepb.AISetting, requ
 		return nil, errors.Errorf("OpenAI Responses API returned an incomplete response: %s", reason)
 	}
 
-	result := &v1pb.AIChatResponse{}
+	result := &v1pb.AIChatResponse{StopReason: openAIResponsesStopReason(response.Status)}
 	if response.Usage != nil {
 		result.Usage = newAIChatUsage(response.Usage.TotalTokens)
 	}
@@ -429,9 +460,10 @@ func chatOpenAIResponses(ctx context.Context, aiSetting *storepb.AISetting, requ
 			for _, part := range output.Content {
 				switch part.Type {
 				case "output_text":
-					content.WriteString(part.Text)
+					_, _ = content.WriteString(part.Text)
 				case "refusal":
-					content.WriteString(part.Refusal)
+					_, _ = content.WriteString(part.Refusal)
+					result.StopReason = v1pb.AIChatResponse_BLOCKED
 				default:
 					continue
 				}

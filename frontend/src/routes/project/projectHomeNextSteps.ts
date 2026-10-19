@@ -1,3 +1,6 @@
+import { leadsWithQuery } from "@/modules/workspace-setup-guide/scenarios";
+import type { GuideScenarioId } from "@/modules/workspace-setup-guide/types";
+
 export type ResourceAvailability = "loading" | "present" | "empty" | "unknown";
 
 export type ProjectHomeNextStep =
@@ -12,7 +15,7 @@ export type ProjectHomeNextStepInput = {
   database: ResourceAvailability;
   instance: ResourceAvailability;
   transferableDatabase: ResourceAvailability;
-  change: "loading" | "not-started" | "submitted" | "unknown";
+  change: "loading" | "not-started" | "rolled-out" | "unknown";
   membership: "unknown" | "solo" | "has-collaborators";
   isDefault: boolean;
   canConnectInstance: boolean;
@@ -21,6 +24,8 @@ export type ProjectHomeNextStepInput = {
   canCreateChange: boolean;
   canQueryDatabase: boolean;
   canManageMembers: boolean;
+  // The setup wizard's answer, known only in the browser that ran it.
+  goal?: GuideScenarioId;
 };
 
 export function getProjectHomeNextSteps(
@@ -32,7 +37,7 @@ export function getProjectHomeNextSteps(
     input.transferableDatabase === "present";
   if (
     input.isDefault ||
-    input.change === "submitted" ||
+    input.change === "rolled-out" ||
     input.database === "loading" ||
     (input.database === "present" && input.change === "loading")
   ) {
@@ -62,9 +67,12 @@ export function getProjectHomeNextSteps(
     (input.change === "not-started" || input.change === "unknown") &&
     input.canCreateChange
   ) {
-    steps.push("changeDatabase");
-    if (input.canQueryDatabase) {
-      steps.push("queryDatabase");
+    if (!input.canQueryDatabase) {
+      steps.push("changeDatabase");
+    } else if (leadsWithQuery(input.goal)) {
+      steps.push("queryDatabase", "changeDatabase");
+    } else {
+      steps.push("changeDatabase", "queryDatabase");
     }
   }
 

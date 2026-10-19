@@ -105,33 +105,31 @@ export function ProjectReleaseDashboardPage({
         <ProjectPageInfo
           description={
             <>
-              <span>{t("release.usage-description")}</span>
-              <LearnMoreLink
-                href="https://docs.bytebase.com/gitops/migration-based-workflow/release/?source=console"
-                className="ml-1"
-              />
+              <span>{t("release.usage-description")}</span>{" "}
+              <LearnMoreLink href="https://docs.bytebase.com/gitops/migration-based-workflow/release/?source=console" />
             </>
           }
         />
 
-        {/* Category filter */}
-        <div className="flex items-center gap-x-4">
-          <CategorySelect
-            value={selectedCategory}
-            onChange={setSelectedCategory}
-            categories={categories}
-            loading={categoriesLoading}
-          />
-          {selectedCategory && (
-            <Button
-              appearance="secondary"
-              size="sm"
-              onClick={() => setSelectedCategory("")}
-            >
-              {t("common.clear-filters")}
-            </Button>
-          )}
-        </div>
+        {(categories.length > 0 || selectedCategory) && (
+          <div className="flex items-center gap-x-4">
+            <CategorySelect
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              categories={categories}
+              loading={categoriesLoading}
+            />
+            {selectedCategory && (
+              <Button
+                appearance="secondary"
+                size="sm"
+                onClick={() => setSelectedCategory("")}
+              >
+                {t("common.clear-filters")}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Release table */}
@@ -278,7 +276,7 @@ function ReleaseRow({ release }: { release: Release }) {
           {showFiles.map((file, idx) => (
             <p key={idx} className="w-full truncate">
               {file.version && (
-                <span className="mr-2 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs">
+                <span className="mr-2 inline-flex items-center rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs">
                   {file.version}
                 </span>
               )}

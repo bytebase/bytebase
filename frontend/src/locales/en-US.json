@@ -44,12 +44,12 @@
     "context": "Context",
     "context-no-projects": "No accessible projects",
     "context-select": "Select context",
-    "context-start-new-chat": "Start new chat in {{name}}",
     "context-workspace": "Workspace",
     "delete-all-chats": "Delete all chats",
     "delete-all-chats-confirmation": "Are you sure you want to delete all archived chats? This action cannot be undone.",
     "delete-chat": "Delete chat",
     "delete-chat-confirmation": "Are you sure you want to delete this chat? This action cannot be undone.",
+    "input-keyboard-hint": "Enter to send · Shift+Enter for a new line",
     "input-placeholder": "Ask AI anything...",
     "interrupted": "Interrupted",
     "interrupted-retry-hint": "The conversation was interrupted. You can retry or send a new message.",
@@ -1604,14 +1604,26 @@
     }
   },
   "landing": {
+    "ai-placeholder": "Ask AI about workspace setup, projects, or access",
+    "ai-setup": {
+      "action": "Configure AI",
+      "description": "Configure a provider and model to use AI in this workspace.",
+      "title": "Set up AI Assistant"
+    },
     "changelog-for-version": "Changelog for {{version}}",
     "last-visit": "Last visit",
+    "onboarding": {
+      "completed-progress": "{{completed}} of {{total}} complete",
+      "connect-action": "Connect an instance",
+      "connect-description": "Connect a database server to {{project}}."
+    },
     "quick-link": {
       "manage": "Manage quick link",
-      "self": "Quick Link",
       "visit-issues": "Visit Issues",
-      "visit-prjects": "Visit Projects"
-    }
+      "visit-prjects": "Visit Projects",
+      "yours": "Your quick links"
+    },
+    "workspace": "Workspace"
   },
   "masking": {
     "reason": {
@@ -2018,6 +2030,7 @@
       "create-database": "Create a database",
       "create-database-description": "Create the first database on a connected instance.",
       "created-by-you": "You created",
+      "customize": "Customize",
       "databases": "Databases",
       "databases-load-error": "Databases could not be loaded.",
       "databases-unavailable": "Databases are not available to you in this project.",
@@ -2051,13 +2064,17 @@
       "expires-in-days_other": "Expires in {{days}} days",
       "expires-today": "Expires today",
       "grant-exemption": "Grant Exemption",
+      "hide-raw-cel-condition": "Hide raw CEL condition",
       "level": "level",
+      "n-databases_one": "{{n}} database",
+      "n-databases_other": "{{n}} databases",
       "n-exemptions_one": "{{n}} exemption",
       "n-exemptions_other": "{{n}} exemptions",
       "no-exemptions": "No masking exemptions granted yet",
       "no-reason": "No reason provided",
       "revoke-exemption-title": "Remove masking exemption for {{member}}?",
-      "self": "Masking Exemptions"
+      "self": "Masking Exemptions",
+      "show-raw-cel-condition": "Show raw CEL condition"
     },
     "members": {
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
@@ -2508,9 +2525,9 @@
             "placeholder": "An API Key usually starts with sk-*****",
             "self": "API Key"
           },
+          "available-in-saas": "AI Assistant is available in this workspace and managed by Bytebase.",
           "description": "Use AI to assist the database development tasks.",
           "enable-ai-assistant": "Enable AI Assistant",
-          "enabled-in-saas": "Gemini AI is enabled automatically in the SaaS mode.",
           "endpoint": {
             "description": "Enter the API endpoint for the custom model.",
             "openai-description": "Use a /responses endpoint for the Responses API or /chat/completions for the Chat Completions API.",
@@ -2531,7 +2548,8 @@
             "open_ai": "OpenAI",
             "self": "AI Provider"
           },
-          "self": "AI Assistant"
+          "self": "AI Assistant",
+          "unavailable-in-saas": "AI Assistant isn't available in this workspace. Contact your Bytebase administrator."
         },
         "allow-admin-data-source": {
           "description": "When enabled, users can choose between admin and read-only data sources. When disabled, users are forced to use read-only data sources if configured, otherwise fall back to admin data sources.",
@@ -2983,59 +3001,16 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
-      "default-project-name": "New project",
       "display-name": "Your name",
       "display-name-placeholder": "Enter your name",
       "email": "Email",
-      "enable-sample-databases": "Enable sample databases",
-      "enable-sample-databases-create-change": "Enable sample databases as a safe database change target",
-      "enable-sample-databases-mark-sensitive-data": "Enable sample databases to try data masking immediately",
-      "enable-sample-databases-query-data": "Enable sample databases to start querying immediately",
       "password": "Password",
       "password-confirm": "Password Confirm",
       "password-confirm-placeholder": "Confirm new password",
       "password-hint": "Password should follow restriction setting",
       "password-mismatch": "New password mismatch",
       "phone": "Phone",
-      "phone-tips": "Be sure to include the country code +1xxxxxx",
-      "setup-failed": "Failed to update profile.",
-      "setup-first-project": "Setup 1st project",
-      "setup-scenario": {
-        "continue": "Continue",
-        "create-database-change": {
-          "description": "Define a change and create a traceable issue.",
-          "title": "Create a database change"
-        },
-        "mark-sensitive-data": {
-          "description": "Identify sensitive columns and apply masking.",
-          "title": "Mark sensitive data"
-        },
-        "outcome-title": "What would you like to do with Bytebase?",
-        "query-data": {
-          "description": "Open SQL Editor and run a statement against a database.",
-          "title": "Query data"
-        },
-        "workspace-usage": {
-          "solo": {
-            "description": "I will use Bytebase on my own.",
-            "title": "Just me"
-          },
-          "team": {
-            "description": "I will work with other people.",
-            "title": "My team"
-          },
-          "title": "Who will use Bytebase with you?"
-        }
-      },
-      "setup-skip": "I'll do this later",
-      "setup-steps": {
-        "scenario": "Choose a goal",
-        "workspace": "Set up workspace"
-      },
-      "setup-submit": "Setup my workspace",
-      "setup-success": "Profile updated.",
-      "workspace-name": "Workspace name",
-      "workspace-name-placeholder": "Enter workspace name"
+      "phone-tips": "Be sure to include the country code +1xxxxxx"
     },
     "sensitive-data": {
       "algorithms": {
@@ -3886,6 +3861,123 @@
       "copy-succeed": "Secret copied to clipboard. Paste it into your app.",
       "description": "Copy the code and enter it in your TOTP app manually.",
       "self": "Your two-factor secret"
+    }
+  },
+  "workspace-setup": {
+    "continue": "Continue",
+    "elsewhere": {
+      "continue": "Continue here",
+      "ended": "This setup ended in another tab",
+      "saved": "This setup continued in another tab",
+      "workspace": "Go to the workspace"
+    },
+    "goal": {
+      "change": {
+        "description": "Write a schema change or a data fix, let SQL review check it, and roll it out to the database.",
+        "finish-line": "Finish line: a change that passed SQL review and rolled out",
+        "title": "Plan, review and roll out a database change"
+      },
+      "description": "Pick what brought you here. We suggest it first once setup ends.",
+      "explore": {
+        "description": "We'll suggest a quick query to start. Pick a direction later.",
+        "title": "Not sure yet, just exploring"
+      },
+      "query": {
+        "description": "Run SQL on the database from the editor, with every statement recorded in query history.",
+        "finish-line": "Finish line: a query result from the database",
+        "title": "Query data with guardrails"
+      },
+      "required": "Pick one to continue",
+      "title": "What do you want to do first?"
+    },
+    "optional": "optional",
+    "panel": {
+      "connected-after-setup": "Connected after setup",
+      "own-databases": "Its databases",
+      "own-instance": "Your instance",
+      "sample-database": "Sample database",
+      "sample-instance": "Sample Project Instance",
+      "workspace": "Workspace"
+    },
+    "project": {
+      "database-title": "Database for {{project}}",
+      "description": "Bytebase needs a database to do anything. Name the project that will hold it, then choose where the first one comes from.",
+      "exists": "This project already exists. Rename it in its settings.",
+      "name": "Project name",
+      "name-hint": "A project groups the databases a team works on, with its members and policies. Every change and query happens inside one.",
+      "name-optional-note": "Leave it empty to create a project later.",
+      "name-placeholder": "Payments, Data platform, Internal tools",
+      "name-required": "Enter a project name",
+      "own": {
+        "description": "An instance is your database server. Setup finishes first; you connect it from {{project}} afterwards.",
+        "title": "Connect my own instance after setup"
+      },
+      "sample": {
+        "description": "One PostgreSQL database with employee sample data, hosted by Bytebase Cloud. Nothing to install; available for 7 days.",
+        "description-self-host": "One PostgreSQL database with employee sample data, running on this server. Nothing to install.",
+        "prepared": "The sample database is ready in this project.",
+        "recommended": "Recommended",
+        "title": "Start with the sample database",
+        "unavailable": "The sample database is not available on this server.",
+        "used": "This workspace has already used its sample database."
+      },
+      "skip": "I'll do this later",
+      "title": "Create a project and choose its database",
+      "your-project": "your project"
+    },
+    "steps": {
+      "goal": "Goal",
+      "project": "Project",
+      "team": "Team",
+      "workspace": "Workspace"
+    },
+    "team": {
+      "address-invalid": "Not an email address",
+      "address-own": "Your own address",
+      "address-placeholder": "name@company.com",
+      "address-placeholder-more": "Another address",
+      "description": "One question before you finish.",
+      "failed": {
+        "invitees": "Could not add the people you listed.",
+        "names": "Could not save your name and the workspace name.",
+        "project": "Could not create {{project}}.",
+        "sample": "Could not prepare the sample database."
+      },
+      "finish": "Finish",
+      "finish-invite_one": "Send {{count}} invite and finish",
+      "finish-invite_other": "Send {{count}} invites and finish",
+      "finish-without-sample": "Finish without the sample",
+      "finishing": "Setting up…",
+      "invite-teammates": "Invite teammates",
+      "members-enter": "Press Enter after each address.",
+      "members-own": "Its databases appear once your instance is connected.",
+      "members-role": "They join as members who can query and propose changes in {{project}}.",
+      "members-roles-later": "Change roles any time in Members.",
+      "progress": "Creating {{project}}…",
+      "progress-sample": "Creating {{project}} and its sample database…",
+      "remove-address": "Remove {{email}}",
+      "size": "How many people will use Bytebase?",
+      "size-required": "Pick a team size to finish",
+      "sizes": {
+        "11-50": "11–50",
+        "2-10": "2–10",
+        "200-plus": "200+",
+        "51-200": "51–200",
+        "just-me": "Just me"
+      },
+      "title": "Your team",
+      "try-again": "Try again"
+    },
+    "workspace": {
+      "default-name": "{{name}}'s workspace",
+      "default-name-anonymous": "My workspace",
+      "description": "Bytebase is ready once it has a workspace, a project and a database.",
+      "name-placeholder": "Enter your name",
+      "title": "Set up your workspace",
+      "workspace-name": "Workspace name",
+      "workspace-name-hint": "Everyone you add joins this workspace.",
+      "workspace-name-placeholder": "Usually your company",
+      "workspace-name-required": "Enter a workspace name"
     }
   },
   "workspace-setup-guide": {

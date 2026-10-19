@@ -842,12 +842,13 @@ func convertAISetting(v1Setting *v1pb.AISetting) *storepb.AISetting {
 	}
 
 	return &storepb.AISetting{
-		Enabled:  v1Setting.Enabled,
-		Provider: storepb.AISetting_Provider(v1Setting.Provider),
-		Endpoint: v1Setting.Endpoint,
-		ApiKey:   v1Setting.ApiKey,
-		Model:    v1Setting.Model,
-		Version:  v1Setting.Version,
+		Enabled:          v1Setting.Enabled,
+		Provider:         storepb.AISetting_Provider(v1Setting.Provider),
+		Endpoint:         v1Setting.Endpoint,
+		ApiKey:           v1Setting.ApiKey,
+		Model:            v1Setting.Model,
+		Version:          v1Setting.Version,
+		SqlReviewEnabled: v1Setting.SqlReviewEnabled,
 	}
 }
 
@@ -861,9 +862,10 @@ func convertToAISetting(storeSetting *storepb.AISetting) *v1pb.AISetting {
 		Provider: v1pb.AISetting_Provider(storeSetting.Provider),
 		Endpoint: storeSetting.Endpoint,
 		// Do not return the API key for security reasons.
-		ApiKey:  "",
-		Model:   storeSetting.Model,
-		Version: storeSetting.Version,
+		ApiKey:           "",
+		Model:            storeSetting.Model,
+		Version:          storeSetting.Version,
+		SqlReviewEnabled: storeSetting.SqlReviewEnabled,
 	}
 }
 

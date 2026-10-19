@@ -54,13 +54,26 @@ export const MARK_SENSITIVE_DATA_SCENARIO: GuideJourney = {
   ],
 };
 
+// An undecided account gets the quickest first result, a query, under its own
+// id so its share stays measurable.
+export const JUST_EXPLORING_SCENARIO: GuideJourney = {
+  id: "just-exploring",
+  scenarioId: "just-exploring",
+  steps: QUERY_DATA_SCENARIO.steps,
+};
+
 export const GUIDE_SCENARIO_REGISTRY: Readonly<
   Record<GuideScenarioId, GuideJourney>
 > = {
   "query-data": QUERY_DATA_SCENARIO,
   "create-database-change": CREATE_DATABASE_CHANGE_SCENARIO,
   "mark-sensitive-data": MARK_SENSITIVE_DATA_SCENARIO,
+  "just-exploring": JUST_EXPLORING_SCENARIO,
 };
+
+// The goals whose first step after setup is a query.
+export const leadsWithQuery = (scenarioId: GuideScenarioId | undefined) =>
+  scenarioId === "query-data" || scenarioId === "just-exploring";
 
 export const isGuideScenarioId = (value: unknown): value is GuideScenarioId =>
   typeof value === "string" && Object.hasOwn(GUIDE_SCENARIO_REGISTRY, value);

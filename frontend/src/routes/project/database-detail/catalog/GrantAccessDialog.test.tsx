@@ -265,6 +265,7 @@ vi.mock("@/stores/app", () => ({
 
 vi.mock("@/utils", () => ({
   batchConvertParsedExprToCELString: vi.fn(),
+  extractDatabaseResourceName: vi.fn(),
   getDatabaseNameOptionConfig: vi.fn(() => ({ options: [] })),
 }));
 

@@ -1243,15 +1243,19 @@ func (x *AppIMSetting) GetSettings() []*AppIMSetting_IMSetting {
 }
 
 type AISetting struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Enabled       bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	Provider      AISetting_Provider     `protobuf:"varint,2,opt,name=provider,proto3,enum=bytebase.store.AISetting_Provider" json:"provider,omitempty"`
-	Endpoint      string                 `protobuf:"bytes,3,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	ApiKey        string                 `protobuf:"bytes,4,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
-	Model         string                 `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`
-	Version       string                 `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Enabled  bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	Provider AISetting_Provider     `protobuf:"varint,2,opt,name=provider,proto3,enum=bytebase.store.AISetting_Provider" json:"provider,omitempty"`
+	Endpoint string                 `protobuf:"bytes,3,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	ApiKey   string                 `protobuf:"bytes,4,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
+	Model    string                 `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`
+	Version  string                 `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
+	// Whether the AI SQL review may run. It is a consent of its own beside
+	// `enabled`, because a review sends the statements of a change to the
+	// provider and can send the schema of its target databases.
+	SqlReviewEnabled bool `protobuf:"varint,7,opt,name=sql_review_enabled,json=sqlReviewEnabled,proto3" json:"sql_review_enabled,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *AISetting) Reset() {
@@ -1324,6 +1328,13 @@ func (x *AISetting) GetVersion() string {
 		return x.Version
 	}
 	return ""
+}
+
+func (x *AISetting) GetSqlReviewEnabled() bool {
+	if x != nil {
+		return x.SqlReviewEnabled
+	}
+	return false
 }
 
 type EnvironmentSetting struct {
@@ -3101,14 +3112,15 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2!.bytebase.store.AppIMSetting.LarkH\x00R\x04lark\x12C\n" +
 	"\bdingtalk\x18\x06 \x01(\v2%.bytebase.store.AppIMSetting.DingTalkH\x00R\bdingtalk\x12:\n" +
 	"\x05teams\x18\a \x01(\v2\".bytebase.store.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\xa7\x02\n" +
+	"\apayload\"\xd5\x02\n" +
 	"\tAISetting\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12>\n" +
 	"\bprovider\x18\x02 \x01(\x0e2\".bytebase.store.AISetting.ProviderR\bprovider\x12\x1a\n" +
 	"\bendpoint\x18\x03 \x01(\tR\bendpoint\x12\x17\n" +
 	"\aapi_key\x18\x04 \x01(\tR\x06apiKey\x12\x14\n" +
 	"\x05model\x18\x05 \x01(\tR\x05model\x12\x18\n" +
-	"\aversion\x18\x06 \x01(\tR\aversion\"[\n" +
+	"\aversion\x18\x06 \x01(\tR\aversion\x12,\n" +
+	"\x12sql_review_enabled\x18\a \x01(\bR\x10sqlReviewEnabled\"[\n" +
 	"\bProvider\x12\x18\n" +
 	"\x14PROVIDER_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aOPEN_AI\x10\x01\x12\n" +

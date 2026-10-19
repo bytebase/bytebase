@@ -1,10 +1,7 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { instanceServiceClientConnect } from "@/api";
-import {
-  silentContextKey,
-  skipErrorNotificationContextKey,
-} from "@/api/context-key";
+import { silentContextKey } from "@/api/context-key";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
@@ -42,7 +39,7 @@ import {
 } from "@/utils";
 import { celString, celStringList } from "@/utils/v1/celLiteral";
 import type { AppSliceCreator, InstanceFilter, InstanceSlice } from "./types";
-import { getLabelFilter, toError } from "./utils";
+import { callOptions, getLabelFilter, toError } from "./utils";
 
 export const getListInstanceFilter = (params: InstanceFilter): string => {
   const list: string[] = [];
@@ -217,12 +214,7 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
       const response =
         await instanceServiceClientConnect.prepareSampleProjectInstance(
           createProto(PrepareSampleProjectInstanceRequestSchema, { parent }),
-          {
-            contextValues: createContextValues().set(
-              skipErrorNotificationContextKey,
-              true
-            ),
-          }
+          callOptions({ byCaller: true })
         );
       const instance = upsertInstances([response])[0];
       await get()

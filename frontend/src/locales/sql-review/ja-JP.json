@@ -1,6 +1,34 @@
 {
   "add-or-remove-rules": "ルールを追加または削除する",
   "add-rules": "ルールを追加する",
+  "ai-review": {
+    "ai-off": "ワークスペースで AI が無効になっているため、AI レビューは実行されません。",
+    "description": "AI モデルが Issue の SQL をレビューし、標準ルールでは検出できないリスクを見つけます。",
+    "enable": {
+      "description": "レビューのたびにステートメントの原文が AI プロバイダーに送信され、対象データベースのスキーマとテーブルの統計情報も送信される場合があります。データベースの行は読み取りません。",
+      "self": "AI で変更をレビューする"
+    },
+    "policy": {
+      "cannot-clear": "ロールにポリシーの削除権限がないため、このポリシーを空にできません。",
+      "description": "このポリシーは、データベース変更をレビューするときに AI が確認する内容を定義します。ワークスペース内のすべてのプロジェクトに適用され、各プロジェクトは独自のポリシーを追加できます。",
+      "load-failed": "レビューポリシーを読み込めませんでした。",
+      "none": "レビューポリシーはありません。",
+      "paused": "このポリシーは一時停止中のため、AI レビューでは使用されません。",
+      "placeholder": "例:\n100 万行を超えるテーブルで書き込みをブロックするスキーマ変更を報告する。\nすべての外部キーの列にインデックスを必須とする。\n新しいテーブルには created_at 列と updated_at 列を必須とする。",
+      "project-description": "任意のプロジェクト固有のポリシーです。ワークスペースポリシーに追加され、競合する場合は優先されます。",
+      "project-none": "プロジェクトポリシーはありません。",
+      "project-placeholder": "例:\npayments テーブルと ledger テーブルの行は削除しない。\n金額は DECIMAL 列に保存し、FLOAT や DOUBLE は使わない。\nusers テーブルに追加する列は NULL を許可するか、デフォルト値を持つこと。",
+      "project-self": "プロジェクトの追加ポリシー",
+      "remove-only": "このポリシーは削除できますが、変更はできません。削除するにはテキストを空にしてください。",
+      "self": "レビューポリシー",
+      "too-large": "ポリシーのサイズは {{size}} バイトで、上限の {{limit}} バイトを超えています。短くしてから保存してください。"
+    },
+    "project-description": "AI レビューはワークスペースで設定されます。以下で任意のプロジェクト固有のポリシーを追加できます。",
+    "self": "AI レビュー",
+    "set-for-workspace": "ワークスペース レベルで管理されます。",
+    "turn-on-ai": "AI を有効にする",
+    "view-workspace-setting": "ワークスペースの AI 設定を表示"
+  },
   "attach-resource": {
     "change-resources": "バインドされたリソースを変更する",
     "label": "SQL レビューポリシーは環境リソースまたはプロジェクト リソースにバインドする必要があり、対応するリソースの下にあるすべてのデータベースに影響します。データベースがプロジェクト レベルと環境レベルの両方のポリシーの影響を受ける場合、プロジェクト レベルのポリシーのみが有効になります。",
@@ -731,7 +759,7 @@
   "select-review-rules": "SQL レビュールールを選択",
   "standard-rules": {
     "customize": {
-      "description": "オフの場合、このプロジェクトはワークスペースの標準ルールに従います。",
+      "description": "無効の場合、このプロジェクトはワークスペースの標準ルールに従います。",
       "self": "このプロジェクト用にカスタマイズ",
       "view-workspace-rules": "ワークスペースのルールを表示"
     },
@@ -743,53 +771,53 @@
     "retry": "再試行",
     "rule": {
       "disallow-drop-constraint": {
-        "description": "PRIMARY KEY、FOREIGN KEY、UNIQUE、CHECK 制約の削除を検出します。",
+        "description": "PRIMARY KEY、FOREIGN KEY、UNIQUE、CHECK 制約が削除される操作を報告します。",
         "title": "制約の削除"
       },
       "disallow-drop-object": {
-        "description": "DROP TABLE、COLUMN、SCHEMA、DATABASE を検出します。",
+        "description": "テーブル、列、ビュー、インデックス、スキーマ、データベースなどのオブジェクトが削除される操作を報告します。制約の削除は別のルールで報告します。",
         "title": "オブジェクトの削除"
       },
       "disallow-rename": {
-        "description": "テーブルまたは列の名前変更を検出します。",
+        "description": "テーブル、ビュー、または列の名前変更を報告します。",
         "title": "名前の変更"
       },
       "disallow-truncate": {
-        "description": "TRUNCATE を検出します。",
+        "description": "TRUNCATE ステートメントを報告します。",
         "title": "テーブルの切り捨て"
       },
       "online-migration": {
-        "description": "オンライン移行を要求しているが、その条件を満たさない変更を検出します。",
+        "description": "オンライン移行を要求しているが条件を満たさない変更を報告します。",
         "title": "オンライン移行の適格性"
       },
       "prior-backup": {
-        "description": "事前バックアップが有効だが、バックアップを取得できない変更を検出します。",
+        "description": "事前バックアップが有効で、バックアップを取得できない変更を報告します。",
         "title": "事前バックアップの実行可能性"
       },
       "require-is-null": {
-        "description": "述語内の = NULL または <> NULL を検出します。これらが真になることはありません。代わりに IS NULL または IS NOT NULL を使用してください。",
+        "description": "述語内の = NULL または <> NULL を報告します。これらが真になることはありません。代わりに IS NULL または IS NOT NULL を使用してください。",
         "title": "NULL の比較"
       },
       "require-primary-key": {
-        "description": "変更で作成されるテーブルに主キーがない場合や、削除した主キーを再追加しない場合を検出します。",
+        "description": "変更で主キーのないテーブルを作成する場合や、削除した主キーを再追加しない場合を報告します。",
         "title": "主キー"
       },
       "require-where": {
-        "description": "WHERE 句のない UPDATE または DELETE を検出します。",
+        "description": "WHERE 句のない UPDATE または DELETE ステートメントを報告します。",
         "title": "WHERE 句"
       },
       "syntax": {
-        "description": "データベースエンジンで解析できないステートメントを検出します。他のルールは解析できる SQL のみをチェックするため、これをオフにするとすべての標準ルールがオフになります。",
+        "description": "データベースエンジンで解析できないステートメントを報告します。他のルールは解析できる SQL のみをチェックするため、これをオフにするとすべての標準ルールがオフになります。",
         "title": "構文"
       },
       "walk-through": {
-        "description": "同期済みのスキーマに対して失敗するステートメントを検出します。例: 存在しないテーブルや列、重複したオブジェクト、無効な参照。",
+        "description": "同期済みのスキーマに対して無効なステートメントを報告します。例: 存在しないテーブルや列、重複したオブジェクト、無効な参照。",
         "title": "スキーマウォークスルー"
       }
     },
     "running": "{{total}} 件中 {{on}} 件のルールが有効",
     "self": "標準ルール",
-    "syntax-off": "構文チェックがオフのため、標準ルールはいずれも実行されません。変更をレビューするには構文チェックをオンにしてください。",
+    "syntax-off": "構文チェックが無効になっているため、標準ルールは実行されません。変更をレビューするには有効にしてください。",
     "workspace-rules-hidden": "このプロジェクトが従うワークスペースのルールを表示する権限がありません。"
   },
   "template": {

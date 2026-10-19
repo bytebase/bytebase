@@ -74,9 +74,9 @@ func statementWithResultLimitInline(statement string, limitCount int) (string, e
 		return "", errors.New("empty statement")
 	}
 
-	file, errs := parser.Parse(statement)
-	if len(errs) > 0 {
-		return "", errors.New(errs[0].Error())
+	file, err := parser.Parse(statement)
+	if err != nil {
+		return "", parser.FirstError(err)
 	}
 	if file == nil || len(file.Stmts) != 1 {
 		stmtCount := 0

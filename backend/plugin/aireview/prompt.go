@@ -16,7 +16,15 @@ type Target struct {
 	Engine      string
 	Version     string
 	Environment string
-	Schemas     []SchemaSummary
+	// The defaults a statement inherits when it names none: the character set
+	// and collation of a new table, and the search path that resolves an
+	// unqualified name.
+	CharacterSet string
+	Collation    string
+	SearchPath   string
+	// Owner is the database's owner.
+	Owner   string
+	Schemas []SchemaSummary
 }
 
 // SchemaSummary names a schema and says how many objects it holds.
@@ -77,6 +85,16 @@ func buildUserPrompt(target Target, numberedStatement string, nonce string, hasT
 	}
 	if target.Environment != "" {
 		_, _ = fmt.Fprintf(&b, "Environment: %s\n", singleLine(target.Environment))
+	}
+	for _, fact := range []struct{ label, value string }{
+		{label: "Default character set", value: target.CharacterSet},
+		{label: "Default collation", value: target.Collation},
+		{label: "Search path", value: target.SearchPath},
+		{label: "Owner", value: target.Owner},
+	} {
+		if fact.value != "" {
+			_, _ = fmt.Fprintf(&b, "%s: %s\n", fact.label, singleLine(fact.value))
+		}
 	}
 	if len(target.Schemas) > 0 {
 		schemas := make([]string, 0, len(target.Schemas))

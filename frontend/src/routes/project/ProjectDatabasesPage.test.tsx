@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     | "query-data"
     | "create-database-change"
     | "mark-sensitive-data"
+    | "just-exploring"
     | undefined,
   removeDatabaseMetadataCache: vi.fn(),
   fetchInstance: vi.fn(),
@@ -826,8 +827,11 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
-  test("only offers SQL Editor for the query scenario", async () => {
-    mocks.scenarioId = "query-data";
+  test.each([
+    "query-data",
+    "just-exploring",
+  ] as const)("only offers SQL Editor for the %s scenario", async (scenarioId) => {
+    mocks.scenarioId = scenarioId;
     mocks.routerCurrentQuery = { intro: "project-instance-synced" };
     mocks.visibleDatabases = [
       {

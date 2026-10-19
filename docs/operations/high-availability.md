@@ -82,16 +82,17 @@ Use this checklist when enabling or validating HA:
 
 ## Administrator recovery
 
-Stop every Bytebase replica before running the interactive administrator
-recovery command. Run `bytebase recovery` with the exact same shared `PG_URL`
-used by every replica. The command connects directly to the metadata database
-and does not start an HTTP server, scheduler, or background runner. Restart all
-replicas after recovery so they reload the updated settings and IAM policy.
+Run `bytebase recovery` beside the running replicas, with the exact same shared
+`PG_URL` used by every replica; do not stop them. The command connects directly
+to the metadata database and does not start an HTTP server, scheduler, or
+background runner. Replicas started with `--ha` read users, settings and
+policies from the metadata database on every request, so they see a recovery
+change at once and need no restart.
 
 Follow the [administrator recovery runbook](./admin-recovery.md) for backup,
-terminal, action-selection, login, and cleanup requirements. Recovery is not an
-alternative to HA licensing or replica coordination, and it does not repair the
-deployment topology.
+action-selection, Kubernetes Job, login, and cleanup requirements. Recovery is
+not an alternative to HA licensing or replica coordination, and it does not
+repair the deployment topology.
 
 ## Troubleshooting
 

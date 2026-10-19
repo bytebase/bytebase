@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
+  PROJECT_V1_ROUTE_DETAIL,
   SQL_EDITOR_DATABASE_MODULE,
 } from "@/app/router/handles";
 import { planEvents } from "@/lib/plan/events";
@@ -293,7 +294,10 @@ describe("useGuideContext", () => {
     expect(result.current.context.hasMarkedSensitiveData).toBe(true);
   });
 
-  test("resolves the first table for the query-data action", async () => {
+  test.each([
+    "query-data",
+    "just-exploring",
+  ] as const)("resolves the first table for the %s query action", async (scenarioId) => {
     mockDiscoveredDatabase();
     const database = "instances/sample/databases/employee";
     mocks.metadataByDatabase[database] = create(DatabaseMetadataSchema, {
@@ -309,7 +313,7 @@ describe("useGuideContext", () => {
       enabled: true,
       dismissed: false,
       route: home,
-      scenarioId: "query-data",
+      scenarioId,
     });
 
     await waitFor(() =>
@@ -322,6 +326,22 @@ describe("useGuideContext", () => {
       database,
       silent: true,
     });
+  });
+
+  test.each([
+    undefined,
+    "create-database-change",
+  ] as const)("reads no table for the goal %s, which has no query step", async (scenarioId) => {
+    mockDiscoveredDatabase();
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      scenarioId,
+    });
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(mocks.getOrFetchDatabaseMetadata).not.toHaveBeenCalled();
   });
 
   test("resolves the marked table for the masking verification action", async () => {
@@ -701,6 +721,58 @@ describe("useGuideContext", () => {
       key: GUIDE_PROGRESS_KEYS.databaseExplored,
       newState: true,
     });
+  });
+
+  test("records arriving on a project home that lists a database as exploration", async () => {
+    mockDiscoveredDatabase();
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: {
+        name: PROJECT_V1_ROUTE_DETAIL,
+        params: { projectId: "app" },
+      },
+    });
+
+    await waitFor(() =>
+      expect(result.current.context.hasExploredDatabase).toBe(true)
+    );
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: GUIDE_PROGRESS_KEYS.databaseExplored,
+      newState: true,
+    });
+  });
+
+  test("does not record another project's home as exploration", async () => {
+    mockDiscoveredDatabase();
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: {
+        name: PROJECT_V1_ROUTE_DETAIL,
+        params: { projectId: "other" },
+      },
+    });
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(result.current.context.hasExploredDatabase).toBe(false);
+    expect(mocks.saveIntroStateByKey).not.toHaveBeenCalledWith(
+      expect.objectContaining({ key: GUIDE_PROGRESS_KEYS.databaseExplored })
+    );
+  });
+
+  test("does not record an empty project home as exploration", async () => {
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: {
+        name: PROJECT_V1_ROUTE_DETAIL,
+        params: { projectId: "app" },
+      },
+    });
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(result.current.context.hasExploredDatabase).toBe(false);
   });
 
   test("does not record an empty project database page as exploration", async () => {

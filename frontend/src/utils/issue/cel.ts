@@ -1,12 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { cloneDeep, head, uniq } from "lodash-es";
-import type { SimpleExpr } from "@/modules/cel";
 import {
   constantStringOf,
+  ExprType,
   factorNameOf,
   isRawStringExpr,
   resolveCELExpr,
+  type SimpleExpr,
 } from "@/modules/cel";
 import {
   databaseNamePrefix,
@@ -360,12 +361,14 @@ const convertToCELString = (
 
 export const batchConvertFromCELString = async (
   cels: string[]
-): Promise<ConditionExpression[]> => {
+): Promise<(ConditionExpression | undefined)[]> => {
   const celExprs = await batchConvertCELStringToParsedExpr(cels);
-  const resp: ConditionExpression[] = [];
+  const resp: (ConditionExpression | undefined)[] = [];
   for (let i = 0; i < celExprs.length; i++) {
-    if (cels[i] === "true" || !celExprs[i]) {
-      resp.push({});
+    if (cels[i] === "true") {
+      resp.push({ databaseResources: [] });
+    } else if (!celExprs[i]) {
+      resp.push(undefined);
     } else {
       resp.push(convertFromExpr(celExprs[i]));
     }
@@ -387,7 +390,10 @@ export const readableCondition = (
   expr: Expr | undefined
 ): ConditionExpression =>
   expr
-    ? { ...convertFromExpr(expr), environments: provenEnvironments(expr) }
+    ? {
+        ...(convertFromExpr(expr) ?? {}),
+        environments: provenEnvironments(expr),
+      }
     : { databaseResources: [] };
 
 export const readableConditionFromCELString = async (
@@ -443,8 +449,106 @@ const environmentClauseOf = (expr: Expr): string[] | undefined => {
   return ids && uniq(ids).map((id) => `${environmentNamePrefix}${id}`);
 };
 
-export const convertFromExpr = (expr: Expr): ConditionExpression => {
-  const simpleExpr = resolveCELExpr(expr);
+// A time limit only expires the entire condition when it is a top-level
+// conjunct. A limit under `||` can be bypassed by another branch.
+export const getGuaranteedExpiration = (
+  expr: Expr | undefined
+): Date | undefined => {
+  if (!expr) return undefined;
+
+  const expirations = conjuncts(expr)
+    .map((conjunct) => {
+      const call = callOf(conjunct);
+      if (
+        call?.function !== "_<_" ||
+        factorNameOf(call.args[0]) !== CEL_ATTRIBUTE_REQUEST_TIME
+      ) {
+        return undefined;
+      }
+      const timestamp = callOf(call.args[1]);
+      if (timestamp?.function !== "timestamp") {
+        return undefined;
+      }
+      const value = constantStringOf(timestamp.args[0]);
+      if (!value) return undefined;
+      const expiration = new Date(value);
+      return Number.isNaN(expiration.getTime()) ? undefined : expiration;
+    })
+    .filter((expiration): expiration is Date => expiration !== undefined);
+
+  if (expirations.length === 0) return undefined;
+  return new Date(Math.min(...expirations.map((expiration) => +expiration)));
+};
+
+const hasOnlyBranches = (
+  branches: (SimpleExpr[] | undefined)[]
+): branches is SimpleExpr[][] =>
+  branches.every((branch) => branch !== undefined);
+
+const splitOrBranches = (expr: SimpleExpr): SimpleExpr[] | undefined => {
+  if (expr.type !== ExprType.ConditionGroup) {
+    return [expr];
+  }
+  if (expr.operator === "_||_") {
+    const branches = expr.args.map(splitOrBranches);
+    return hasOnlyBranches(branches) ? branches.flat() : undefined;
+  }
+
+  const branchesByArgument = expr.args.map(splitOrBranches);
+  if (!hasOnlyBranches(branchesByArgument)) {
+    return undefined;
+  }
+  const alternativeIndex = branchesByArgument.findIndex(
+    (branches) => branches.length > 1
+  );
+  if (alternativeIndex === -1) {
+    return [expr];
+  }
+  if (branchesByArgument.filter((branches) => branches.length > 1).length > 1) {
+    return undefined;
+  }
+
+  return branchesByArgument[alternativeIndex].map((branch) => {
+    const arguments_ = branchesByArgument.map((branches, index) =>
+      index === alternativeIndex ? branch : branches[0]
+    );
+    return arguments_.length === 1
+      ? arguments_[0]
+      : {
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: arguments_,
+        };
+  });
+};
+
+const mergeDatabaseResources = (
+  resources: DatabaseResource[]
+): DatabaseResource[] => {
+  const merged = new Map<string, DatabaseResource>();
+  for (const resource of resources) {
+    const key = [
+      resource.databaseFullName,
+      resource.instanceResourceId,
+      resource.databaseResourceId,
+      resource.schema,
+      resource.table,
+    ].join("\u0000");
+    const existing = merged.get(key);
+    if (!existing) {
+      merged.set(key, { ...resource, columns: resource.columns?.slice() });
+      continue;
+    }
+    if (existing.columns === undefined || resource.columns === undefined) {
+      existing.columns = undefined;
+    } else {
+      existing.columns = uniq([...existing.columns, ...resource.columns]);
+    }
+  }
+  return [...merged.values()];
+};
+
+const convertFromSimpleExpr = (simpleExpr: SimpleExpr): ConditionExpression => {
   const conditionExpression: ConditionExpression = {
     databaseResources: [],
   };
@@ -509,16 +613,14 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
           }
           case CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME: {
             const databaseResource =
-              conditionExpression.databaseResources?.pop();
-            if (databaseResource) {
-              databaseResource.columns = [];
-              for (const value of values) {
-                if (value) {
-                  databaseResource.columns.push(value as string);
-                }
-              }
-              conditionExpression.databaseResources!.push(databaseResource);
-            }
+              conditionExpression.databaseResources?.pop() ?? {
+                databaseFullName: "",
+              };
+            databaseResource.columns = uniq([
+              ...(databaseResource.columns ?? []),
+              ...values.filter(Boolean).map(String),
+            ]);
+            conditionExpression.databaseResources!.push(databaseResource);
             break;
           }
         }
@@ -576,8 +678,11 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
               break;
             }
             case CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME: {
-              if (right) {
-                databaseResource.columns = [right];
+              if (right && !databaseResource.columns?.includes(right)) {
+                databaseResource.columns = [
+                  ...(databaseResource.columns ?? []),
+                  right,
+                ];
               }
               break;
             }
@@ -594,6 +699,39 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
   }
   processCondition(simpleExpr);
   return conditionExpression;
+};
+
+export const convertFromExpr = (
+  expr: Expr
+): ConditionExpression | undefined => {
+  const branches = splitOrBranches(resolveCELExpr(expr));
+  // Resource summaries model one disjunction with shared conditions. Keep
+  // CEL with multiple independent disjunctions raw instead of changing it.
+  if (!branches) {
+    return undefined;
+  }
+  if (branches.length === 1) {
+    return convertFromSimpleExpr(branches[0]);
+  }
+
+  const branchConditions = branches.map(convertFromSimpleExpr);
+  const expiration = branchConditions.find(
+    (condition) => condition.expiredTime
+  )?.expiredTime;
+  const environmentLists = branchConditions
+    .map((condition) => condition.environments)
+    .filter(
+      (environments): environments is string[] => environments !== undefined
+    );
+  return {
+    databaseResources: mergeDatabaseResources(
+      branchConditions.flatMap((condition) => condition.databaseResources ?? [])
+    ),
+    ...(expiration ? { expiredTime: expiration } : {}),
+    ...(environmentLists.length > 0
+      ? { environments: uniq(environmentLists.flat()) }
+      : {}),
+  };
 };
 
 const mergeDatabaseLevelConditions = (

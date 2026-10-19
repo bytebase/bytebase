@@ -511,6 +511,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.GetQueryHistoryRequest.name",
 	"bytebase.v1.GetReleaseRequest.name",
 	"bytebase.v1.GetReviewConfigRequest.name",
+	"bytebase.v1.GetReviewRunRequest.name",
 	"bytebase.v1.GetRevisionRequest.name",
 	"bytebase.v1.GetRoleRequest.name",
 	"bytebase.v1.GetRolloutRequest.name",

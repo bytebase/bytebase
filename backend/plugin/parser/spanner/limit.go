@@ -20,8 +20,8 @@ func init() {
 // clause, so a query it cannot rewrite runs unchanged and queryStatement caps its
 // rows.
 func statementWithResultLimit(stmt string, limit int, _ string) string {
-	file, errs := parser.Parse(stmt)
-	if len(errs) > 0 || len(file.Stmts) != 1 {
+	file, err := parser.Parse(stmt)
+	if err != nil || len(file.Stmts) != 1 {
 		return stmt
 	}
 	query, ok := file.Stmts[0].(*ast.QueryStmt)

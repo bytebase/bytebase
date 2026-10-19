@@ -3,6 +3,7 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { RouterLink } from "@/components/RouterLink";
+import { Badge } from "@/components/ui/badge";
 import { useEnvironment, usePlanFeature } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 import type { Environment } from "@/types";
@@ -68,11 +69,8 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
     : undefined;
 
   const badge = (
-    <span
-      className={cn(
-        "inline-flex items-center gap-x-1 px-1.5 rounded-xs truncate",
-        className
-      )}
+    <Badge
+      className={cn("min-w-0 truncate", isUnset && "bg-transparent", className)}
       style={badgeStyle}
     >
       <span className="truncate">
@@ -87,7 +85,7 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
       {isProtected && !isUnset && (
         <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-current" />
       )}
-    </span>
+    </Badge>
   );
 
   if (!link || isUnset) {
