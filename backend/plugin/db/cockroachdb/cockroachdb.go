@@ -75,12 +75,8 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		}
 		d.sshClient = sshClient
 
-		pgxConnConfig.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
-			conn, err := sshClient.Dial(network, addr)
-			if err != nil {
-				return nil, err
-			}
-			return &util.NoDeadlineConn{Conn: conn}, nil
+		pgxConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return util.DialSSHTunnel(ctx, sshClient, network, addr)
 		}
 	}
 
