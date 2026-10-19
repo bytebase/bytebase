@@ -121,7 +121,9 @@ export function AccessGrantItem({
     if (hydratedRemainingTargets.current === targetKey) return;
     hydratedRemainingTargets.current = targetKey;
     void batchGetOrFetchDatabases(remainingTargets, true).catch(() => {
-      // The target's resource path remains visible when it is unavailable.
+      if (hydratedRemainingTargets.current === targetKey) {
+        hydratedRemainingTargets.current = undefined;
+      }
     });
   };
   const databaseTargets = (

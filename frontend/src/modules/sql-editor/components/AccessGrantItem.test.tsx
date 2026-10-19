@@ -259,6 +259,39 @@ describe("AccessGrantItem", () => {
     unmount();
   });
 
+  test("retries remaining target hydration after a failed request", async () => {
+    mocks.batchGetOrFetchDatabases
+      .mockRejectedValueOnce(new Error("temporary failure"))
+      .mockResolvedValueOnce([]);
+    const grant = makeGrant({
+      targets: [
+        "instances/inst1/databases/db1",
+        "instances/inst2/databases/db2",
+        "instances/inst3/databases/db3",
+      ],
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantItem
+        grant={grant as never}
+        onRun={vi.fn()}
+        onRequest={vi.fn()}
+      />
+    );
+    render();
+
+    const tooltipTrigger = container.querySelector<HTMLButtonElement>(
+      "[data-open-tooltip]"
+    );
+    act(() => tooltipTrigger?.click());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    act(() => tooltipTrigger?.click());
+
+    expect(mocks.batchGetOrFetchDatabases).toHaveBeenCalledTimes(2);
+    unmount();
+  });
+
   test("renders status badge with correct label for ACTIVE status", () => {
     mocks.readStatus.mockReturnValue("ACTIVE");
     mocks.getAccessGrantDisplayStatusText.mockReturnValue("Active");
