@@ -155,6 +155,9 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 	if err != nil {
 		return nil, err
 	}
+	if err := refuseAccessGrantWithoutJIT(project); err != nil {
+		return nil, err
+	}
 	if ok, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), ag.Query); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid query"))
 	} else if !ok {
@@ -291,6 +294,17 @@ func refuseUnattendedMCPAccessGrant(ctx context.Context, approval *storepb.Issue
 			"so the access would be granted at once with no human step. Ask a workspace admin to give access requests "+
 			"an approval rule that names an approver, or request the access in the Bytebase console.",
 		v1connect.AccessGrantServiceCreateAccessGrantProcedure))
+}
+
+// refuseAccessGrantWithoutJIT refuses a request in a project that does not allow
+// just-in-time access: SQLService.preCheckAccess ignores every grant there.
+func refuseAccessGrantWithoutJIT(project *store.ProjectMessage) error {
+	if project.Setting.GetAllowJustInTimeAccess() {
+		return nil
+	}
+	return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(
+		`just-in-time access is off for project %q, so an access grant there would not apply; `+
+			`a project owner can turn on "Allow access grants" in the project settings`, project.ResourceID))
 }
 
 func (s *AccessGrantService) validateAccessGrantTargets(ctx context.Context, projectID string, targets []string) (*store.ProjectMessage, *store.InstanceMessage, error) {

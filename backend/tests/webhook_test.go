@@ -685,6 +685,7 @@ func TestWebhookIntegration(t *testing.T) {
 		collector.reset()
 		project := ctl.createTestProject(ctx, t, "access-grant-approval")
 		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "access_grant_approval_db", ""))
+		require.NoError(t, ctl.allowJustInTimeAccess(ctx, project))
 
 		clearWorkspaceApprovalRules(ctx, t, ctl)
 		disableSelfApproval(ctx, t, ctl, project)

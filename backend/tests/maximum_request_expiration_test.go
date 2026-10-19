@@ -194,6 +194,7 @@ func TestAccessGrantMaximumExpiration(t *testing.T) {
 	dbName := generateRandomString("db")
 	a.NoError(ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, ""))
 	target := fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)
+	a.NoError(ctl.allowJustInTimeAccess(ctx, ctl.project))
 
 	// Cap role expiration to 7 days.
 	a.NoError(ctl.setMaximumRequestExpiration(ctx, durationpb.New(7*24*time.Hour)))
