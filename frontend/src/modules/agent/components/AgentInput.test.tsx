@@ -212,10 +212,7 @@ beforeEach(async () => {
 
   mocks.useTranslation.mockReset();
   mocks.useTranslation.mockReturnValue({
-    t: (key: string, options?: { name?: string }) =>
-      key === "agent.context-start-new-chat"
-        ? `Start new chat in ${options?.name}`
-        : key,
+    t: (key: string) => key,
   });
   mocks.routerPush.mockReset();
   mocks.lazyExtractDomRefSuggestions.mockReset();
@@ -252,6 +249,22 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test("shows the send and newline keyboard hint only in the empty input placeholder", () => {
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    expect(view.container.querySelector("[data-agent-input-placeholder]")?.textContent).toContain(
+      "agent.input-keyboard-hint"
+    );
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    act(() => {
+      setTextareaValue(textarea, "List databases");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(view.container.querySelector("[data-agent-input-placeholder]")).toBeNull();
+    expect(view.container.textContent).not.toContain("agent.input-keyboard-hint");
+    view.unmount();
+  });
+
   test("sends a queued Project Home message in its bound chat once", async () => {
     mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
     const page = { path: "/projects/billing", title: "Billing" };
@@ -420,7 +433,7 @@ describe("AgentInput", () => {
     unmount();
   });
 
-  test("starts a new chat when choosing a different context after a message", async () => {
+  test("changes the current chat context after a message", async () => {
     const original = useAgentStore
       .getState()
       .ensureCurrentChat(undefined, "projects/orders");
@@ -439,7 +452,8 @@ describe("AgentInput", () => {
         .querySelector<HTMLButtonElement>("[data-agent-context-trigger]")
         ?.click();
     });
-    expect(document.body.textContent).toContain("Start new chat in Billing");
+    expect(document.body.textContent).not.toContain("Start new chat in Billing");
+    expect(document.body.textContent).toContain("Billing");
     await act(async () => {
       document
         .querySelector<HTMLButtonElement>(
@@ -448,16 +462,29 @@ describe("AgentInput", () => {
         ?.click();
     });
 
-    expect(useAgentStore.getState().chats).toHaveLength(2);
+    expect(useAgentStore.getState().chats).toHaveLength(1);
     expect(useAgentStore.getState().getChat(original.id)?.context).toBe(
-      "projects/orders"
+      "projects/billing"
     );
     expect(useAgentStore.getState().getMessages(original.id)).toHaveLength(1);
-    expect(
-      useAgentStore
-        .getState()
-        .getChat(useAgentStore.getState().currentChatId)?.context
-    ).toBe("projects/billing");
+    expect(useAgentStore.getState().currentChatId).toBe(original.id);
+
+    mocks.runAgentLoop.mockResolvedValue({
+      kind: "completed",
+      totalTokensUsed: 0,
+    });
+    const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
+    await act(async () => {
+      setTextareaValue(textarea, "What about this project?");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      (container.querySelector("[data-agent-send]") as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(
+      expect.objectContaining({ context: "projects/billing" })
+    );
     unmount();
   });
 
@@ -741,7 +768,9 @@ describe("AgentInput", () => {
     const placeholder = container.querySelector(
       "[data-agent-input-placeholder]"
     );
-    expect(placeholder?.textContent).toBe("agent.input-placeholder");
+    expect(placeholder?.textContent).toBe(
+      "agent.input-placeholder · agent.input-keyboard-hint"
+    );
     expect(placeholder?.className).toContain("truncate");
     expect(placeholder?.className).toContain("pointer-events-none");
     expect(placeholder?.className).toContain("inset-y-0");

@@ -182,6 +182,7 @@
     - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
     - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
     - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
+    - [GetReviewRunRequest](#bytebase-v1-GetReviewRunRequest)
     - [Issue](#bytebase-v1-Issue)
     - [Issue.Approver](#bytebase-v1-Issue-Approver)
     - [IssueComment](#bytebase-v1-IssueComment)
@@ -292,6 +293,7 @@
     - [AIChatUsage](#bytebase-v1-AIChatUsage)
   
     - [AIChatMessageRole](#bytebase-v1-AIChatMessageRole)
+    - [AIChatResponse.StopReason](#bytebase-v1-AIChatResponse-StopReason)
   
     - [AIService](#bytebase-v1-AIService)
   
@@ -3383,10 +3385,10 @@ needs a person&#39;s acceptance, not that it is forbidden.
 | PRIOR_BACKUP | 4 | P0: the change enables prior backup but the backup cannot be taken. |
 | REQUIRE_IS_NULL | 5 | P0: = NULL or &lt;&gt; NULL in a predicate, which is always false. Test for NULL with IS NULL or IS NOT NULL. |
 | REQUIRE_WHERE | 6 | P1: UPDATE or DELETE without WHERE. |
-| DISALLOW_DROP_OBJECT | 7 | P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE. |
+| DISALLOW_DROP_OBJECT | 7 | P1: dropping any object, such as a table, column, view, index, sequence, schema, database, or function. Dropping a constraint is DISALLOW_DROP_CONSTRAINT. |
 | DISALLOW_TRUNCATE | 8 | P1: TRUNCATE. |
 | DISALLOW_DROP_CONSTRAINT | 9 | P1: dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint. |
-| DISALLOW_RENAME | 10 | P1: renaming a table or column. |
+| DISALLOW_RENAME | 10 | P1: renaming a table, foreign table, view, materialized view, or column. |
 | REQUIRE_PRIMARY_KEY | 11 | P1: the change creates a table without a primary key, or drops a primary key without adding one back. A table that already lacked a primary key before the change is not reported. |
 
 
@@ -3523,6 +3525,21 @@ needs a person&#39;s acceptance, not that it is forbidden.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the issue to retrieve. Format: projects/{project}/issues/{issue} |
 | force | [bool](#bool) |  | If set to true, bypass cache and fetch the latest data. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetReviewRunRequest"></a>
+
+### GetReviewRunRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the review run to retrieve. Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} |
 
 
 
@@ -4043,7 +4060,7 @@ completion transaction, so re-running supersedes instead of canceling).
 | STATUS_UNSPECIFIED | 0 |  |
 | AVAILABLE | 1 | Created and claimable by any replica. |
 | RUNNING | 2 |  |
-| DONE | 3 | Every (spec, target) unit was evaluated. DONE does not mean the review passed: whether problems remain is judged from open comments. |
+| DONE | 3 | Every (spec, target) unit in the reviewer&#39;s scope was evaluated. RULE&#39;s scope is every target. AI&#39;s scope is the project&#39;s CI sample, the first ci_sampling_size targets of each spec, or every target when ci_sampling_size is 0. DONE does not mean the review passed: whether problems remain is judged from open comments. |
 | FAILED | 4 | At least one unit was not evaluated; the cause is in `error`. |
 
 
@@ -4085,7 +4102,8 @@ IssueService manages issues for tracking database changes and tasks.
 | RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) | Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RetryIssueApproval | [RetryIssueApprovalRequest](#bytebase-v1-RetryIssueApprovalRequest) | [Issue](#bytebase-v1-Issue) | Re-runs approval-template finding for an issue stuck in CHECKING. Useful when the synchronous post-create finding errored (e.g. against a malformed workspace approval rule) and the operator has since corrected it — without this, the issue would remain in CHECKING indefinitely because there is no other retry path for non-DATABASE_CHANGE issue types. Idempotent: returns the existing issue unchanged when approval-finding has already completed. Permissions required: None (caller must be the issue creator; mirrors RequestIssue&#39;s authorization model). |
-| RunReview | [RunReviewRequest](#bytebase-v1-RunReviewRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Triggers a review run. The slot is reset unconditionally: a RUNNING execution is superseded (its completion is fenced off), the attempt number is bumped, and the returned run is AVAILABLE. Review results are not returned by this RPC and have no read RPC yet: findings will surface as issue comments once the review comment integration lands. The returned run carries execution status only. The audit log is the only record of who triggered a run. Permissions required: bb.reviewRuns.run |
+| GetReviewRun | [GetReviewRunRequest](#bytebase-v1-GetReviewRunRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Gets the current run of one reviewer on an issue. The run carries execution status only; review results are issue comments. A reviewer that has never run on the issue is NOT_FOUND. Permissions required: bb.reviewRuns.get |
+| RunReview | [RunReviewRequest](#bytebase-v1-RunReviewRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Triggers a review run. The slot is reset unconditionally: a RUNNING execution is superseded (its completion is fenced off), the attempt number is bumped, and the returned run is AVAILABLE. Review results are not returned by this RPC: they are posted as issue comments. The returned run carries execution status only, and GetReviewRun reads it back. The audit log is the only record of who triggered a run. Permissions required: bb.reviewRuns.run |
 
  
 
@@ -4112,6 +4130,7 @@ IssueService manages issues for tracking database changes and tasks.
 | api_key | [string](#string) |  |  |
 | model | [string](#string) |  |  |
 | version | [string](#string) |  |  |
+| sql_review_enabled | [bool](#bool) |  | Whether the AI SQL review may run. It is off by default and is a consent of its own beside `enabled`: a review sends the statements of a change to the provider, and can send the schema of its target databases and their table statistics. |
 
 
 
@@ -5069,6 +5088,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | sample | [SampleInfo](#bytebase-v1-SampleInfo) |  | Sample setup availability and provisioned resources. |
 | mcp_setting | [MCPSetting](#bytebase-v1-MCPSetting) |  | The MCP (Model Context Protocol) setting in the current workspace. |
 | ai_enabled | [bool](#bool) |  | Whether the workspace AI setting enables the AI agent. |
+| ai_sql_review_enabled | [bool](#bool) |  | Whether the workspace AI setting switches the AI SQL review on. A review also needs `ai_enabled`. |
 
 
 
@@ -5188,6 +5208,7 @@ Response message for AIService.Chat.
 | content | [string](#string) | optional | The text content of the AI response. Optional when the response only contains tool calls. |
 | tool_calls | [AIChatToolCall](#bytebase-v1-AIChatToolCall) | repeated | Tool calls the AI wants to make. |
 | usage | [AIChatUsage](#bytebase-v1-AIChatUsage) | optional | Token usage for this provider call, when available. |
+| stop_reason | [AIChatResponse.StopReason](#bytebase-v1-AIChatResponse-StopReason) |  | Why the model stopped. A truncated or blocked response can still carry content. |
 
 
 
@@ -5258,6 +5279,22 @@ Role of a chat message.
 | AI_CHAT_MESSAGE_ROLE_USER | 2 | User message. |
 | AI_CHAT_MESSAGE_ROLE_ASSISTANT | 3 | Assistant (AI) message. |
 | AI_CHAT_MESSAGE_ROLE_TOOL | 4 | Tool result message. |
+
+
+
+<a name="bytebase-v1-AIChatResponse-StopReason"></a>
+
+### AIChatResponse.StopReason
+Why the model stopped generating a response.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STOP_REASON_UNSPECIFIED | 0 | The provider did not report why the model stopped. |
+| TURN_COMPLETED | 1 | The model completed its turn with an answer or with tool calls. |
+| TOKEN_LIMIT | 2 | The response was truncated at a token limit and is incomplete. |
+| BLOCKED | 3 | The provider blocked the request or the response, or the model refused to answer. |
+| MALFORMED_TOOL_CALL | 4 | The model generated a tool call that the provider could not parse. |
+| OTHER | 5 | The model stopped for a reason that no other value names. |
 
 
  
@@ -10370,7 +10407,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable database tenant mode for PostgreSQL. If enabled, issues will include &#34;set role &lt;db_owner&gt;&#34; statement. |
 | allow_self_approval | [bool](#bool) |  | Whether to allow issue creators to self-approve their own issues. |
 | execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy) |  | Execution retry policy for task runs. |
-| ci_sampling_size | [int32](#int32) |  | The maximum number of database rows to sample during CI data validation. Without specification, sampling is disabled, resulting in full validation. |
+| ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation and AI review. Without specification, sampling is disabled, resulting in full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks allowed during rollout execution. |
 | labels | [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
 | enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |

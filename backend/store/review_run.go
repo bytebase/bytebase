@@ -96,6 +96,51 @@ func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID 
 	return reviewRun, nil
 }
 
+// GetReviewRun returns the run in the (issue, reviewer type) slot as stored,
+// or nil when the slot was never created.
+func (s *Store) GetReviewRun(ctx context.Context, projectID string, issueUID int64, reviewType string) (*ReviewRunMessage, error) {
+	q := qb.Q().Space(`
+		SELECT attempt, status, payload, created_at, updated_at
+		FROM review_run
+		WHERE project = ? AND issue_id = ? AND type = ?
+	`, projectID, issueUID, reviewType)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	reviewRun := &ReviewRunMessage{
+		ProjectID: projectID,
+		IssueUID:  issueUID,
+		Type:      reviewType,
+		Payload:   &storepb.ReviewRunPayload{},
+	}
+	var statusString string
+	var payload []byte
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
+		&reviewRun.Attempt,
+		&statusString,
+		&payload,
+		&reviewRun.CreatedAt,
+		&reviewRun.UpdatedAt,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, errors.Wrapf(err, "failed to get review run")
+	}
+	statusValue, ok := storepb.ReviewRun_Status_value[statusString]
+	if !ok {
+		return nil, errors.Errorf("invalid review run status %q", statusString)
+	}
+	reviewRun.Status = storepb.ReviewRun_Status(statusValue)
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, reviewRun.Payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal review run payload")
+	}
+	return reviewRun, nil
+}
+
 // ClaimedReviewRun identifies a claimed review run slot and carries the claim
 // fence (attempt).
 type ClaimedReviewRun struct {

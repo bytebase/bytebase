@@ -5,39 +5,49 @@ import (
 	"log/slog"
 
 	"github.com/pkg/errors"
+	"golang.org/x/sync/semaphore"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 // AIReviewExecutor is the AI review: a model judges each spec's sheet against
-// the workspace and project AI review policy, once per database, with that
-// database's facts in the prompt. The reviews of one run share the model and
-// run concurrently under aiReviewConcurrency.
+// the workspace and project AI review policy, once per database of the
+// project's CI sample, with that database's facts in the prompt and its synced
+// schema behind the tools. The reviews of one run share the model and run
+// concurrently under aiReviewRunConcurrency.
 type AIReviewExecutor struct {
-	store *store.Store
+	store    *store.Store
+	newModel func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model
+	// slots bounds the reviews in flight across every run of the executor.
+	slots reviewSlots
 }
 
-// NewAIReviewExecutor creates the AI review executor.
+// NewAIReviewExecutor creates the AI review executor. The server creates one,
+// so aiReviewServerConcurrency bounds the reviews of every run on the server.
 func NewAIReviewExecutor(s *store.Store) *AIReviewExecutor {
-	return &AIReviewExecutor{store: s}
+	return &AIReviewExecutor{
+		store:    s,
+		newModel: aireview.NewModel,
+		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	}
 }
 
-// RunOnce implements Executor. Collect-all, no fail-fast: every database is
-// attempted, failures aggregate into one message, and the findings are
-// returned only when every database was reviewed.
+// RunOnce implements Executor. Collect-all, no fail-fast: every database of
+// the sample is attempted, failures aggregate into one message, and the
+// findings are returned only when every one of them was reviewed.
 func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueUID int64) ([]*store.IssueCommentMessage, error) {
 	plan, project, err := loadReviewPlan(ctx, e.store, projectID, issueUID)
 	if err != nil {
 		return nil, err
 	}
-	aiSetting, err := e.store.GetAISetting(ctx, project.Workspace)
+	// A run created while the review was allowed must not reach the provider
+	// after it is switched off.
+	aiSetting, err := e.checkAISetting(ctx, project.Workspace)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get AI setting")
-	}
-	if !aiSetting.GetEnabled() {
-		return nil, errors.New("AI is not enabled in the workspace setting")
+		return nil, err
 	}
 	policy, err := e.store.GetEffectiveReviewAIPolicy(ctx, project.Workspace, projectID)
 	if err != nil {
@@ -48,9 +58,10 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database group for plan")
 	}
-	// DeriveReviewTargets, not DeriveCheckTargets: every database is reviewed
-	// with its own facts, so the CI sampling limit does not apply.
-	checkTargets, err := plancheck.DeriveReviewTargets(ctx, e.store, project, plan, databaseGroup)
+	// DeriveCheckTargets, not DeriveReviewTargets: every database costs model
+	// calls, so the AI review covers the databases plan checks sample when the
+	// project sets ci_sampling_size, and every database otherwise.
+	checkTargets, err := plancheck.DeriveCheckTargets(ctx, e.store, project, plan, databaseGroup)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to derive review targets")
 	}
@@ -68,22 +79,30 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 			unitErrs = append(unitErrs, errors.Wrapf(err, "%s", checkTarget.Target))
 			continue
 		}
-		target, err := e.resolveAIReviewTarget(ctx, checkTarget)
-		if err != nil {
-			unitErrs = append(unitErrs, errors.Wrapf(err, "%s", checkTarget.Target))
-			continue
-		}
-		units = append(units, &aiReviewUnit{Check: checkTarget, Target: target, Statement: statement})
+		units = append(units, &aiReviewUnit{Check: checkTarget, Statement: statement})
 	}
 
-	reviewer := aireview.NewReviewer(aireview.NewModel(aiSetting))
-	results, reviewErrs := reviewUnits(ctx, units, func(ctx context.Context, unit *aiReviewUnit) (*aireview.Result, error) {
-		result, err := reviewer.Review(ctx, &aireview.Request{
+	// The setting is read again before every provider call, retries included,
+	// so switching the review off stops a run in flight at its next call.
+	reviewer := aireview.NewReviewer(e.newModel(aiSetting, aireview.CheckBeforeEachCall(func(ctx context.Context) error {
+		_, err := e.checkAISetting(ctx, project.Workspace)
+		return err
+	})))
+	results, reviewErrs := reviewUnits(ctx, e.slots, units, func(ctx context.Context, unit *aiReviewUnit) (*aireview.Result, error) {
+		// The schema is loaded once the unit holds its slot and dropped when
+		// the review ends, so the runs together hold at most one schema per
+		// slot however many databases they review. The store's schema cache
+		// keeps its own bounded copies.
+		request := &aireview.Request{
 			WorkspacePolicy: policy.Workspace,
 			ProjectPolicy:   policy.Project,
-			Target:          unit.Target,
 			Statement:       unit.Statement,
-		}, aireview.NoTools{})
+		}
+		tools, err := e.resolveAIReviewTarget(ctx, unit.Check, request)
+		if err != nil {
+			return nil, err
+		}
+		result, err := reviewer.Review(ctx, request, tools)
 		if err != nil {
 			return nil, err
 		}
@@ -116,6 +135,20 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	return aiReviewComments(projectID, issueUID, results), nil
 }
 
+// checkAISetting returns the workspace AI setting if it allows the review. It
+// reads past the setting cache, which only this process's writes refresh, so
+// a switch-off written anywhere else stops the review too.
+func (e *AIReviewExecutor) checkAISetting(ctx context.Context, workspace string) (*storepb.AISetting, error) {
+	setting, err := e.store.GetAISettingUncached(ctx, workspace)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get AI setting")
+	}
+	if err := aireview.CheckSetting(setting); err != nil {
+		return nil, err
+	}
+	return setting, nil
+}
+
 // sheetStatement returns the sheet text, loaded once per run, and refuses a
 // sheet over maxAIReviewSheetBytes.
 func (e *AIReviewExecutor) sheetStatement(ctx context.Context, sheets map[string]string, sha256 string) (string, error) {
@@ -136,12 +169,14 @@ func (e *AIReviewExecutor) sheetStatement(ctx context.Context, sheets map[string
 	return sheet.Statement, nil
 }
 
-// resolveAIReviewTarget gathers the facts the prompt states about a database.
-// A database whose schema is not synced cannot be reviewed.
-func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarget *plancheck.CheckTarget) (aireview.Target, error) {
+// resolveAIReviewTarget gathers what one review needs of a database: it sets
+// the facts the prompt states as the request's target and returns the tools
+// over the synced schema, sized to the request's prompt. A database whose
+// schema is not synced cannot be reviewed.
+func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarget *plancheck.CheckTarget, request *aireview.Request) (aireview.Tools, error) {
 	instance, database, err := plancheck.ResolveDatabaseTarget(ctx, e.store, checkTarget.Target)
 	if err != nil {
-		return aireview.Target{}, err
+		return nil, err
 	}
 	dbSchema, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		Workspace:    instance.Workspace,
@@ -149,10 +184,12 @@ func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarge
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
-		return aireview.Target{}, errors.Wrapf(err, "failed to get database schema")
+		return nil, errors.Wrapf(err, "failed to get database schema")
 	}
 	if dbSchema == nil || dbSchema.GetProto() == nil {
-		return aireview.Target{}, errors.New("metadata not synced")
+		return nil, errors.New("metadata not synced")
 	}
-	return aiReviewTarget(instance, database, dbSchema.GetProto()), nil
+	schema := dbSchema.GetProto()
+	request.Target = aiReviewTarget(instance, database, schema)
+	return aireview.NewCatalogTools(instance.Metadata.GetEngine(), schema, aireview.WithPromptOf(request)), nil
 }

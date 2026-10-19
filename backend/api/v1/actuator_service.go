@@ -100,6 +100,10 @@ func actuatorAIEnabled(setting *storepb.AISetting, err error) bool {
 	return err == nil && setting != nil && setting.Enabled
 }
 
+func actuatorAISQLReviewEnabled(setting *storepb.AISetting, err error) bool {
+	return err == nil && setting != nil && setting.SqlReviewEnabled
+}
+
 func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string) (*v1pb.ActuatorInfo, error) {
 	serverInfo := v1pb.ActuatorInfo{
 		Version:             s.profile.Version,
@@ -115,11 +119,14 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 	if workspaceID != "" {
 		serverInfo.Workspace = common.FormatWorkspace(workspaceID)
 		serverInfo.McpSetting = actuatorMCPSetting(ctx, s.store, workspaceID)
-		aiSetting, err := s.store.GetAISetting(ctx, workspaceID)
+		// Read past the setting cache like the review gates, so the switch shown
+		// to users without bb.settings.get matches what the review enforces.
+		aiSetting, err := s.store.GetAISettingUncached(ctx, workspaceID)
 		if err != nil {
 			slog.Error("failed to read the AI setting", slog.String("workspace", workspaceID), log.BBError(err))
 		}
 		serverInfo.AiEnabled = actuatorAIEnabled(aiSetting, err)
+		serverInfo.AiSqlReviewEnabled = actuatorAISQLReviewEnabled(aiSetting, err)
 		if s.sampleManager != nil {
 			serverInfo.Sample.Available = s.sampleManager.CheckAvailable(ctx) == nil
 			instances, err := s.sampleManager.ListInstances(ctx, workspaceID)

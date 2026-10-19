@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/aireview"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -20,6 +21,27 @@ const (
 	reviewRunIDRule = "rule"
 	reviewRunIDAI   = "ai"
 )
+
+// GetReviewRun returns the run in a review slot as stored.
+func (s *IssueService) GetReviewRun(ctx context.Context, req *connect.Request[v1pb.GetReviewRunRequest]) (*connect.Response[v1pb.ReviewRun], error) {
+	projectID, issueUID, reviewRunID, err := common.GetProjectIDIssueUIDReviewRunID(req.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	reviewType, ok := reviewRunTypeFromID(reviewRunID)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown reviewer type %q", reviewRunID))
+	}
+
+	reviewRun, err := s.store.GetReviewRun(ctx, projectID, issueUID, reviewType)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get review run"))
+	}
+	if reviewRun == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("review run %q not found", req.Msg.Name))
+	}
+	return connect.NewResponse(convertToReviewRun(reviewRun)), nil
+}
 
 // RunReview triggers a review run. The slot is reset unconditionally: a
 // RUNNING execution is superseded, the attempt number is bumped, and the
@@ -83,12 +105,12 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("the plan has no reviewable SQL"))
 	}
 	if reviewType == store.ReviewRunTypeAI {
-		aiSetting, err := s.store.GetAISetting(ctx, common.GetWorkspaceIDFromContext(ctx))
+		aiSetting, err := s.store.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get AI setting"))
 		}
-		if !aiSetting.Enabled {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("AI review requires AI to be enabled in the workspace setting"))
+		if err := aireview.CheckSetting(aiSetting); err != nil {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
 	}
 

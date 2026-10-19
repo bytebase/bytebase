@@ -387,6 +387,10 @@ message AISetting {
   string api_key = 4;
   string model = 5;
   string version = 6;
+  // Whether the AI SQL review may run. It is a consent of its own beside
+  // `enabled`, because a review sends the statements of a change to the
+  // provider and can send the schema of its target databases.
+  bool sql_review_enabled = 7;
 }
 
 message EnvironmentSetting {

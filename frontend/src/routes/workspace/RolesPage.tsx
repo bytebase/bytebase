@@ -787,10 +787,7 @@ export function RolesPage() {
         description={
           <>
             {t("role.setting.description")}{" "}
-            <LearnMoreLink
-              href="https://docs.bytebase.com/administration/roles?source=console"
-              className="text-accent"
-            />
+            <LearnMoreLink href="https://docs.bytebase.com/administration/roles?source=console" />
           </>
         }
       />

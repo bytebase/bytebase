@@ -40,18 +40,19 @@ func AffectedRowsQuery(stmt ast.Node, statement string) string {
 	if loc.Start < 0 || loc.Start > table.Loc.Start || table.Loc.End > clausesStart || clausesStart > loc.End || loc.End > len(statement) {
 		return statement
 	}
-	// omni positions the text after an executable comment as if the comment's markers were removed, so
-	// no SELECT is cut from a statement with one. The SELECT would also leave out an optimizer hint
-	// before the table, which can change the plan.
-	if strings.Contains(statement, "/*!") || strings.Contains(statement, "/*M!") || strings.Contains(statement[loc.Start:table.Loc.Start], "/*+") {
+	keywordStart := dmlKeywordStart(statement, loc)
+	// The parser reads the body of an executable comment, so a cut could leave one unclosed; no SELECT
+	// is cut from a statement with one. The SELECT would also leave out an optimizer hint before the
+	// table, which can change the plan.
+	if strings.Contains(statement, "/*!") || strings.Contains(statement, "/*M!") || strings.Contains(statement[keywordStart:table.Loc.Start], "/*+") {
 		return statement
 	}
 	clauses := strings.TrimSpace(statement[clausesStart:loc.End])
 	if rest := trimLeadingComments(clauses); rest != "" && !startsWithKeyword(rest, "WHERE", "ORDER", "LIMIT") {
 		return statement
 	}
-	// The text before the statement holds its WITH clause.
-	query := statement[:loc.Start] + "SELECT 1 FROM " + statement[table.Loc.Start:table.Loc.End]
+	// The text before the UPDATE or DELETE keyword holds the statement's WITH clause.
+	query := statement[:keywordStart] + "SELECT 1 FROM " + statement[table.Loc.Start:table.Loc.End]
 	if clauses != "" {
 		query += " " + clauses
 	}

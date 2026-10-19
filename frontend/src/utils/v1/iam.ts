@@ -34,7 +34,7 @@ import type { Binding, IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { appStoreUtilBridge } from "@/utils/app-store-bridge";
-import { convertFromExpr } from "@/utils/issue/cel";
+import { convertFromExpr, getGuaranteedExpiration } from "@/utils/issue/cel";
 import { ensureUserFullName } from "@/utils/v1/user";
 
 // expressionReferencesResources walks a parsed CEL condition for any
@@ -104,16 +104,8 @@ export const bindingScopesResources = (binding: Binding): boolean => {
 };
 
 export const isBindingPolicyExpired = (binding: Binding): boolean => {
-  if (binding.parsedExpr) {
-    const conditionExpr = convertFromExpr(binding.parsedExpr);
-    if (conditionExpr.expiredTime) {
-      const expiration = new Date(conditionExpr.expiredTime);
-      if (expiration < new Date()) {
-        return true;
-      }
-    }
-  }
-  return false;
+  const expiration = getGuaranteedExpiration(binding.parsedExpr);
+  return expiration !== undefined && expiration < new Date();
 };
 
 // Revoke a single member from one specific role binding, returning a new policy
@@ -356,6 +348,9 @@ export const checkQuerierPermission = (
         return true;
       }
       const conditionExpr = convertFromExpr(expr);
+      if (!conditionExpr) {
+        return false;
+      }
       if (
         conditionExpr.expiredTime &&
         new Date(conditionExpr.expiredTime).getTime() < Date.now()

@@ -1208,7 +1208,9 @@ describe("InstanceFormProvider", () => {
         field?.querySelector('[data-slot="form-field-title"]')?.textContent
       ).toBe("data-source.extra-params.self");
       expect(addParameter?.className).toContain("h-7");
+      expect(addParameter?.className).toContain("border-control-border");
       expect(addParameter?.className).toContain("self-start");
+      expect(addParameter?.querySelector("svg")).not.toBeNull();
     } finally {
       harness.unmount();
     }

@@ -1469,8 +1469,11 @@ export enum ReviewRun_Status {
   RUNNING = 2,
 
   /**
-   * Every (spec, target) unit was evaluated. DONE does not mean the
-   * review passed: whether problems remain is judged from open comments.
+   * Every (spec, target) unit in the reviewer's scope was evaluated. RULE's
+   * scope is every target. AI's scope is the project's CI sample, the first
+   * ci_sampling_size targets of each spec, or every target when
+   * ci_sampling_size is 0. DONE does not mean the review passed: whether
+   * problems remain is judged from open comments.
    *
    * @generated from enum value: DONE = 3;
    */
@@ -1488,6 +1491,25 @@ export enum ReviewRun_Status {
  * Describes the enum bytebase.v1.ReviewRun.Status.
  */
 export declare const ReviewRun_StatusSchema: GenEnum<ReviewRun_Status>;
+
+/**
+ * @generated from message bytebase.v1.GetReviewRunRequest
+ */
+export declare type GetReviewRunRequest = Message<"bytebase.v1.GetReviewRunRequest"> & {
+  /**
+   * The name of the review run to retrieve.
+   * Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.GetReviewRunRequest.
+ * Use `create(GetReviewRunRequestSchema)` to create a new message.
+ */
+export declare const GetReviewRunRequestSchema: GenMessage<GetReviewRunRequest>;
 
 /**
  * @generated from message bytebase.v1.RunReviewRequest
@@ -1664,12 +1686,25 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
+   * Gets the current run of one reviewer on an issue. The run carries
+   * execution status only; review results are issue comments. A reviewer
+   * that has never run on the issue is NOT_FOUND.
+   * Permissions required: bb.reviewRuns.get
+   *
+   * @generated from rpc bytebase.v1.IssueService.GetReviewRun
+   */
+  getReviewRun: {
+    methodKind: "unary";
+    input: typeof GetReviewRunRequestSchema;
+    output: typeof ReviewRunSchema;
+  },
+  /**
    * Triggers a review run. The slot is reset unconditionally: a RUNNING
    * execution is superseded (its completion is fenced off), the attempt
    * number is bumped, and the returned run is AVAILABLE.
-   * Review results are not returned by this RPC and have no read RPC yet:
-   * findings will surface as issue comments once the review comment
-   * integration lands. The returned run carries execution status only.
+   * Review results are not returned by this RPC: they are posted as issue
+   * comments. The returned run carries execution status only, and
+   * GetReviewRun reads it back.
    * The audit log is the only record of who triggered a run.
    * Permissions required: bb.reviewRuns.run
    *

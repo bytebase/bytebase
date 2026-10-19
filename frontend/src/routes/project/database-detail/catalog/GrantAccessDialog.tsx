@@ -254,7 +254,7 @@ export function GrantAccessDialog({
         if (!parsedExpr) {
           return;
         }
-        return convertFromExpr(parsedExpr).databaseResources;
+        return convertFromExpr(parsedExpr)?.databaseResources;
       } catch {
         return;
       }

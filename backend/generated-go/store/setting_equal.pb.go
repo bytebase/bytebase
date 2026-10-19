@@ -679,6 +679,9 @@ func (x *AISetting) Equal(y *AISetting) bool {
 	if x.Version != y.Version {
 		return false
 	}
+	if x.SqlReviewEnabled != y.SqlReviewEnabled {
+		return false
+	}
 	return true
 }
 

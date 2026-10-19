@@ -17,7 +17,8 @@ func EngineSupportSQLReview(engine storepb.Engine) bool {
 		storepb.Engine_OCEANBASE,
 		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_REDSHIFT,
-		storepb.Engine_MSSQL:
+		storepb.Engine_MSSQL,
+		storepb.Engine_BIGQUERY:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
@@ -26,7 +27,6 @@ func EngineSupportSQLReview(engine storepb.Engine) bool {
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
 		storepb.Engine_SPANNER,
-		storepb.Engine_BIGQUERY,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_HIVE,
 		storepb.Engine_COCKROACHDB,
@@ -209,7 +209,8 @@ func EngineSupportStatementAdvise(e storepb.Engine) bool {
 		storepb.Engine_DYNAMODB,
 		storepb.Engine_COCKROACHDB,
 		storepb.Engine_REDSHIFT,
-		storepb.Engine_MARIADB:
+		storepb.Engine_MARIADB,
+		storepb.Engine_BIGQUERY:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
@@ -218,7 +219,6 @@ func EngineSupportStatementAdvise(e storepb.Engine) bool {
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
 		storepb.Engine_SPANNER,
-		storepb.Engine_BIGQUERY,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_HIVE,
 		storepb.Engine_DORIS,

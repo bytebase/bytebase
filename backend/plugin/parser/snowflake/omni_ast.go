@@ -72,7 +72,7 @@ func convertOmniParseError(err error, stmt base.Statement) error {
 	}
 
 	mapper := base.NewByteOffsetPositionMapper(stmt.Text)
-	position := mapper.Position(parseErr.Loc.Start)
+	position := mapper.Position(parseErr.Position)
 	if stmt.Start != nil {
 		localLine := position.Line
 		position.Line += stmt.Start.Line - 1
@@ -82,7 +82,7 @@ func convertOmniParseError(err error, stmt base.Statement) error {
 	}
 	return &base.SyntaxError{
 		Position:   position,
-		Message:    fmt.Sprintf("Syntax error at line %d:%d \n%s", position.Line, position.Column, parseErr.Msg),
-		RawMessage: parseErr.Msg,
+		Message:    fmt.Sprintf("Syntax error at line %d:%d \n%s", position.Line, position.Column, parseErr.Message),
+		RawMessage: parseErr.Message,
 	}
 }

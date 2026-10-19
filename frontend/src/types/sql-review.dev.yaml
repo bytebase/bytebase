@@ -214,6 +214,9 @@ ruleList:
   - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
     level: WARNING
     engine: MARIADB
+  - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+    level: WARNING
+    engine: BIGQUERY
   - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
     level: WARNING
     engine: MYSQL

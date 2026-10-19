@@ -867,6 +867,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetReviewRunRequest"><span class="badge">M</span>GetReviewRunRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Issue"><span class="badge">M</span>Issue</a>
                 </li>
               
@@ -1290,6 +1294,10 @@
               
                 <li>
                   <a href="#bytebase.v1.AIChatMessageRole"><span class="badge">E</span>AIChatMessageRole</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AIChatResponse.StopReason"><span class="badge">E</span>AIChatResponse.StopReason</a>
                 </li>
               
               
@@ -10407,7 +10415,9 @@ NULL with IS NULL or IS NOT NULL.</p></td>
               <tr>
                 <td>DISALLOW_DROP_OBJECT</td>
                 <td>7</td>
-                <td><p>P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE.</p></td>
+                <td><p>P1: dropping any object, such as a table, column, view, index, sequence,
+schema, database, or function. Dropping a constraint is
+DISALLOW_DROP_CONSTRAINT.</p></td>
               </tr>
             
               <tr>
@@ -10425,7 +10435,7 @@ NULL with IS NULL or IS NOT NULL.</p></td>
               <tr>
                 <td>DISALLOW_RENAME</td>
                 <td>10</td>
-                <td><p>P1: renaming a table or column.</p></td>
+                <td><p>P1: renaming a table, foreign table, view, materialized view, or column.</p></td>
               </tr>
             
               <tr>
@@ -10688,6 +10698,31 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If set to true, bypass cache and fetch the latest data. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetReviewRunRequest">GetReviewRunRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the review run to retrieve.
+Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} </p></td>
                 </tr>
               
             </tbody>
@@ -12055,8 +12090,11 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>DONE</td>
                 <td>3</td>
-                <td><p>Every (spec, target) unit was evaluated. DONE does not mean the
-review passed: whether problems remain is judged from open comments.</p></td>
+                <td><p>Every (spec, target) unit in the reviewer&#39;s scope was evaluated. RULE&#39;s
+scope is every target. AI&#39;s scope is the project&#39;s CI sample, the first
+ci_sampling_size targets of each spec, or every target when
+ci_sampling_size is 0. DONE does not mean the review passed: whether
+problems remain is judged from open comments.</p></td>
               </tr>
             
               <tr>
@@ -12222,15 +12260,25 @@ mirrors RequestIssue&#39;s authorization model).</p></td>
               </tr>
             
               <tr>
+                <td>GetReviewRun</td>
+                <td><a href="#bytebase.v1.GetReviewRunRequest">GetReviewRunRequest</a></td>
+                <td><a href="#bytebase.v1.ReviewRun">ReviewRun</a></td>
+                <td><p>Gets the current run of one reviewer on an issue. The run carries
+execution status only; review results are issue comments. A reviewer
+that has never run on the issue is NOT_FOUND.
+Permissions required: bb.reviewRuns.get</p></td>
+              </tr>
+            
+              <tr>
                 <td>RunReview</td>
                 <td><a href="#bytebase.v1.RunReviewRequest">RunReviewRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewRun">ReviewRun</a></td>
                 <td><p>Triggers a review run. The slot is reset unconditionally: a RUNNING
 execution is superseded (its completion is fenced off), the attempt
 number is bumped, and the returned run is AVAILABLE.
-Review results are not returned by this RPC and have no read RPC yet:
-findings will surface as issue comments once the review comment
-integration lands. The returned run carries execution status only.
+Review results are not returned by this RPC: they are posted as issue
+comments. The returned run carries execution status only, and
+GetReviewRun reads it back.
 The audit log is the only record of who triggered a run.
 Permissions required: bb.reviewRuns.run</p></td>
               </tr>
@@ -12386,6 +12434,16 @@ Permissions required: bb.reviewRuns.run</p></td>
               
               
               <tr>
+                <td>GetReviewRun</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/issues/*/reviewRuns/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
                 <td>RunReview</td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*/issues/*/reviewRuns/*}:run</td>
@@ -12455,6 +12513,16 @@ Permissions required: bb.reviewRuns.run</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_review_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the AI SQL review may run. It is off by default and is a consent
+of its own beside `enabled`: a review sends the statements of a change to
+the provider, and can send the schema of its target databases and their
+table statistics. </p></td>
                 </tr>
               
             </tbody>
@@ -14847,6 +14915,14 @@ Format: projects/{id} </p></td>
                   <td><p>Whether the workspace AI setting enables the AI agent. </p></td>
                 </tr>
               
+                <tr>
+                  <td>ai_sql_review_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the workspace AI setting switches the AI SQL review on. A review
+also needs `ai_enabled`. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15094,6 +15170,13 @@ Permissions required: None (authentication required)</p></td>
                   <td><p>Token usage for this provider call, when available. </p></td>
                 </tr>
               
+                <tr>
+                  <td>stop_reason</td>
+                  <td><a href="#bytebase.v1.AIChatResponse.StopReason">AIChatResponse.StopReason</a></td>
+                  <td></td>
+                  <td><p>Why the model stopped. A truncated or blocked response can still carry content. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15247,6 +15330,53 @@ Frontend must echo this back unchanged when sending tool results. </p></td>
                 <td>AI_CHAT_MESSAGE_ROLE_TOOL</td>
                 <td>4</td>
                 <td><p>Tool result message.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.AIChatResponse.StopReason">AIChatResponse.StopReason</h3>
+        <p>Why the model stopped generating a response.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STOP_REASON_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>The provider did not report why the model stopped.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TURN_COMPLETED</td>
+                <td>1</td>
+                <td><p>The model completed its turn with an answer or with tool calls.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TOKEN_LIMIT</td>
+                <td>2</td>
+                <td><p>The response was truncated at a token limit and is incomplete.</p></td>
+              </tr>
+            
+              <tr>
+                <td>BLOCKED</td>
+                <td>3</td>
+                <td><p>The provider blocked the request or the response, or the model refused to answer.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MALFORMED_TOOL_CALL</td>
+                <td>4</td>
+                <td><p>The model generated a tool call that the provider could not parse.</p></td>
+              </tr>
+            
+              <tr>
+                <td>OTHER</td>
+                <td>5</td>
+                <td><p>The model stopped for a reason that no other value names.</p></td>
               </tr>
             
           </tbody>
@@ -29452,8 +29582,9 @@ If enabled, issues will include &#34;set role &lt;db_owner&gt;&#34; statement. <
                   <td>ci_sampling_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of database rows to sample during CI data validation.
-Without specification, sampling is disabled, resulting in full validation. </p></td>
+                  <td><p>The maximum number of databases to sample during CI data validation and
+AI review. Without specification, sampling is disabled, resulting in full
+validation. </p></td>
                 </tr>
               
                 <tr>

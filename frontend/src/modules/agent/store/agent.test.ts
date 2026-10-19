@@ -155,7 +155,7 @@ describe("useAgentStore (Zustand)", () => {
     );
   });
 
-  test("starts a new chat when changing the context of a populated chat", () => {
+  test("changes the context of a populated chat without losing its history", () => {
     const store = createAgentStore();
     const original = s(store).ensureCurrentChat(undefined, "projects/orders");
     s(store).addMessage({
@@ -169,12 +169,24 @@ describe("useAgentStore (Zustand)", () => {
       title: "Orders",
     });
 
-    expect(selected?.id).not.toBe(original.id);
+    expect(selected?.id).toBe(original.id);
     expect(selected?.context).toBe("projects/billing");
-    expect(s(store).currentChatId).toBe(selected?.id);
-    expect(s(store).getMessages(selected?.id)).toEqual([]);
-    expect(s(store).getChat(original.id)?.context).toBe("projects/orders");
+    expect(s(store).chats).toHaveLength(1);
+    expect(s(store).currentChatId).toBe(original.id);
     expect(s(store).getMessages(original.id)).toHaveLength(1);
+  });
+
+  test("adds context to a populated chat that has none", () => {
+    const store = createAgentStore();
+    const chat = s(store).ensureCurrentChat();
+    s(store).addMessage({ chatId: chat.id, role: "user", content: "Hello" });
+
+    const selected = s(store).selectChatContext("projects/billing");
+
+    expect(selected?.id).toBe(chat.id);
+    expect(selected?.context).toBe("projects/billing");
+    expect(s(store).chats).toHaveLength(1);
+    expect(s(store).getMessages(chat.id)).toHaveLength(1);
   });
 
   test("does not change context while any chat is running", () => {

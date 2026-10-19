@@ -14,12 +14,23 @@ import {
   FormTitle,
 } from "./form";
 import {
+  denseFormContentStyle,
+  denseFormHeaderStyle,
+  denseFormSectionStyle,
+  denseFormTitleStyle,
   formControlGroupStyle,
   formControlRowStyle,
   formErrorStyle,
   formFieldGroupStyle,
+  formFieldSectionGapStyle,
   formFieldTitleStyle,
+  formLabelStyle,
+  formSectionDescriptionStyle,
   formSectionStyle,
+  formSectionTitleStyle,
+  singleColumnFormContentStyle,
+  singleColumnFormHeaderStyle,
+  singleColumnFormSectionStyle,
 } from "./styles.stylex";
 
 (
@@ -97,6 +108,23 @@ describe("FormError", () => {
     expect(title?.textContent).toBe("Database name");
     expect(title?.className).toContain(
       stylex.props(formFieldTitleStyle()).className ?? ""
+    );
+
+    unmount();
+  });
+
+  test("supports section spacing between a field header and its control", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        FormField,
+        { title: "Review policy", spacing: "section" },
+        createElement("textarea")
+      )
+    );
+
+    const field = container.querySelector('[data-slot="form-field"]');
+    expect(field?.className).toContain(
+      stylex.props(formFieldSectionGapStyle()).className ?? ""
     );
 
     unmount();
@@ -222,9 +250,158 @@ describe("Form section layouts", () => {
 
     unmount();
   });
+
+  test("renders the description in the header, under the title", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        FormSection,
+        { title: "AI review", description: "Reviews the SQL of an issue." },
+        createElement("div", null, "Content")
+      )
+    );
+
+    const header = container.querySelector('[data-slot="form-section-header"]');
+    const description = container.querySelector(
+      '[data-slot="form-section-description"]'
+    );
+
+    expect(description?.parentElement).toBe(header);
+    expect(description?.previousElementSibling?.getAttribute("data-slot")).toBe(
+      "form-section-title"
+    );
+    expect(description?.textContent).toBe("Reviews the SQL of an issue.");
+    expect(description?.className).toContain(
+      stylex.props(formSectionDescriptionStyle()).className ?? ""
+    );
+
+    unmount();
+  });
+
+  test("renders no description slot without a description", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(FormSection, { title: "General" }, "Content")
+    );
+
+    expect(
+      container.querySelector('[data-slot="form-section-description"]')
+    ).toBeNull();
+
+    unmount();
+  });
+
+  test("keeps the page section title and puts the header above the content in the single-column layout", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        FormSection,
+        { title: "Standard rules", layout: "single-column" },
+        createElement("div", null, "Content")
+      )
+    );
+
+    const section = container.querySelector('[data-slot="form-section"]');
+    const header = container.querySelector('[data-slot="form-section-header"]');
+    const title = container.querySelector('[data-slot="form-section-title"]');
+    const content = container.querySelector(
+      '[data-slot="form-section-content"]'
+    );
+
+    expect(section?.className).toContain(
+      stylex.props(singleColumnFormSectionStyle()).className ?? ""
+    );
+    expect(section?.className).not.toContain(
+      stylex.props(formSectionStyle()).className ?? ""
+    );
+    expect(header?.className).toContain(
+      stylex.props(singleColumnFormHeaderStyle()).className ?? ""
+    );
+    expect(title?.className).toContain(
+      stylex.props(formSectionTitleStyle()).className ?? ""
+    );
+    expect(content?.className).toContain(
+      stylex.props(singleColumnFormContentStyle()).className ?? ""
+    );
+    expect(header?.nextElementSibling).toBe(content);
+
+    unmount();
+  });
+
+  test("keeps the dense styles in the stacked layout, with a description", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        FormSection,
+        {
+          title: "Connection",
+          description: "Where Bytebase reaches the instance.",
+          layout: "stacked",
+        },
+        createElement("div", null, "Content")
+      )
+    );
+
+    const slot = (name: string) =>
+      container.querySelector(`[data-slot="form-section${name}"]`);
+
+    expect(slot("")?.className).toContain(
+      stylex.props(denseFormSectionStyle()).className ?? ""
+    );
+    expect(slot("-header")?.className).toContain(
+      stylex.props(denseFormHeaderStyle()).className ?? ""
+    );
+    expect(slot("-title")?.className).toContain(
+      stylex.props(denseFormTitleStyle()).className ?? ""
+    );
+    expect(slot("-content")?.className).toContain(
+      stylex.props(denseFormContentStyle()).className ?? ""
+    );
+    expect(slot("-description")?.parentElement).toBe(slot("-header"));
+
+    unmount();
+  });
 });
 
 describe("responsive form fields", () => {
+  test("keeps dependent fields compact and vertical inside a horizontal form", () => {
+    const { container, unmount } = renderIntoContainer(
+      <ResponsiveFormLayout layout="horizontal">
+        <FormField title="Authentication">
+          <ResponsiveFormLayout layout="inherit" density="compact">
+            <FormField
+              title="Vault URL"
+              description="Use the public endpoint."
+            >
+              <input aria-label="Vault URL" />
+            </FormField>
+          </ResponsiveFormLayout>
+        </FormField>
+      </ResponsiveFormLayout>
+    );
+
+    const dependentField = container.querySelectorAll(
+      '[data-slot="form-field"]'
+    )[1];
+    const title = dependentField?.querySelector(
+      '[data-slot="form-field-title"]'
+    );
+    const input = dependentField?.querySelector("input");
+    const description = dependentField?.querySelector(
+      '[data-slot="form-field-description"]'
+    );
+    const header = dependentField?.querySelector(
+      '[data-slot="form-field-header"]'
+    );
+
+    expect(
+      dependentField?.querySelector('[data-slot="form-field-control"]')
+    ).toBeNull();
+    expect(title?.className).toContain(
+      stylex.props(formLabelStyle()).className ?? ""
+    );
+    expect(header?.lastElementChild).toBe(description);
+    expect(input?.nextElementSibling).not.toBe(description);
+
+    unmount();
+  });
+
   test("preserves vertical consumers and associates labels after horizontal reflow", () => {
     const container = document.createElement("div");
     document.body.append(container);

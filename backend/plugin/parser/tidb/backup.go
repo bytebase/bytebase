@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/tidb/ast"
+	omniparser "github.com/bytebase/omni/tidb/parser"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -403,13 +404,11 @@ func firstKey(m map[string]*TableReference) string {
 	return ""
 }
 
-// collectCTENames returns the set of CTE (WITH clause) names that precede the
-// statement, lower-cased for case-insensitive matching. omni does not attach
-// UPDATE/DELETE CTEs to the statement node, so we parse the text before the
-// statement Loc as a WITH clause.
+// collectCTENames returns the names of the CTEs the statement opens with,
+// lower-cased for case-insensitive matching.
 func collectCTENames(fullSQL string, stmtLoc ast.Loc) map[string]bool {
 	result := make(map[string]bool)
-	for _, cte := range parseCTEPrefix(fullSQL, stmtLoc) {
+	for _, cte := range parseCTEs(withClause(fullSQL, stmtLoc)) {
 		result[strings.ToLower(cte.Name)] = true
 	}
 	return result
@@ -425,9 +424,7 @@ func isCTERef(cteNames map[string]bool, ref *TableReference) bool {
 }
 
 // writeCTEPrefix writes the statement's WITH (CTE) clause before the backup
-// SELECT, so a SELECT whose FROM references a CTE stays valid. omni does not
-// attach UPDATE/DELETE CTEs to the statement node, so the prefix is recovered
-// from the text before the statement Loc.
+// SELECT, so a SELECT whose FROM references a CTE stays valid.
 func writeCTEPrefix(buf *strings.Builder, node ast.Node, fullSQL string) error {
 	cte := extractCTE(fullSQL, nodeStmtLoc(node))
 	if cte == "" {
@@ -437,12 +434,45 @@ func writeCTEPrefix(buf *strings.Builder, node ast.Node, fullSQL string) error {
 	return err
 }
 
-// extractCTE returns the WITH-clause text preceding the statement, or "".
+// extractCTE returns the WITH clause the statement opens with, or "" when it
+// has none or the clause does not parse.
 func extractCTE(fullSQL string, stmtLoc ast.Loc) string {
-	if stmtLoc.Start <= 0 || len(parseCTEPrefix(fullSQL, stmtLoc)) == 0 {
+	clause := withClause(fullSQL, stmtLoc)
+	if len(parseCTEs(clause)) == 0 {
 		return ""
 	}
-	return strings.TrimSpace(fullSQL[:stmtLoc.Start])
+	return clause
+}
+
+// withClause returns the WITH clause that opens the UPDATE or DELETE at loc, or
+// "". omni starts the node at its WITH clause and keeps no CTE on it, so the
+// clause is the text before the UPDATE or DELETE keyword outside parentheses.
+func withClause(sql string, loc ast.Loc) string {
+	if loc.Start < 0 || loc.End > len(sql) || loc.Start >= loc.End {
+		return ""
+	}
+	text := sql[loc.Start:loc.End]
+	tokens := omniparser.Tokenize(text)
+	if len(tokens) == 0 || omniparser.TokenName(tokens[0].Type) != "WITH" {
+		return ""
+	}
+	depth := 0
+	for _, token := range tokens[1:] {
+		switch token.Type {
+		case '(':
+			depth++
+		case ')':
+			depth--
+		default:
+			if depth != 0 {
+				continue
+			}
+			if name := omniparser.TokenName(token.Type); name == "UPDATE" || name == "DELETE" {
+				return strings.TrimSpace(text[:token.Loc])
+			}
+		}
+	}
+	return ""
 }
 
 // nodeStmtLoc returns the source Loc of a DML statement node.
@@ -456,16 +486,13 @@ func nodeStmtLoc(node ast.Node) ast.Loc {
 	return ast.Loc{}
 }
 
-func parseCTEPrefix(fullSQL string, stmtLoc ast.Loc) []*ast.CommonTableExpr {
-	if stmtLoc.Start <= 0 || stmtLoc.Start > len(fullSQL) {
+// parseCTEs returns the CTEs of a WITH clause, or nil when it does not parse.
+func parseCTEs(clause string) []*ast.CommonTableExpr {
+	if clause == "" {
 		return nil
 	}
-	prefix := strings.TrimSpace(fullSQL[:stmtLoc.Start])
-	if prefix == "" {
-		return nil
-	}
-	// Wrap the prefix with a dummy SELECT so it parses as a complete statement.
-	parsed, err := ParseTiDBOmni(prefix + " SELECT 1")
+	// Wrap the clause with a dummy SELECT so it parses as a complete statement.
+	parsed, err := ParseTiDBOmni(clause + " SELECT 1")
 	if err != nil || parsed == nil {
 		return nil
 	}

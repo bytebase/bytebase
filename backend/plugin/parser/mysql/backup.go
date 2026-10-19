@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlparser "github.com/bytebase/omni/mysql/parser"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -275,40 +276,71 @@ func collectSingleTablesFromExpr(databaseName string, expr ast.TableExpr, out ma
 	}
 }
 
-// collectCTENames extracts CTE names from the SQL text before the statement Loc.
-// MySQL's UPDATE/DELETE CTEs are not in the omni AST, so we parse the prefix.
+// collectCTENames returns the names of the CTEs the statement at stmtLoc opens with.
 func collectCTENames(fullSQL string, stmtLoc ast.Loc) map[string]bool {
 	result := make(map[string]bool)
-	for _, cte := range parseCTEPrefix(fullSQL, stmtLoc) {
+	for _, cte := range parseCTEs(withClause(fullSQL, stmtLoc)) {
 		result[cte.Name] = true
 	}
 	return result
 }
 
-// extractCTE extracts the CTE (WITH clause) text from the SQL before the statement.
+// extractCTE returns the WITH clause the statement at stmtLoc opens with, or ""
+// when it has none or the clause does not parse.
 func extractCTE(fullSQL string, stmtLoc ast.Loc) string {
-	if stmtLoc.Start <= 0 {
+	clause := withClause(fullSQL, stmtLoc)
+	if len(parseCTEs(clause)) == 0 {
 		return ""
 	}
-	ctes := parseCTEPrefix(fullSQL, stmtLoc)
-	if len(ctes) == 0 {
-		return ""
-	}
-	return strings.TrimSpace(fullSQL[:stmtLoc.Start])
+	return clause
 }
 
-// parseCTEPrefix parses the SQL text before stmtLoc as a WITH clause.
-// Returns the CTE list if the prefix contains a valid WITH clause, nil otherwise.
-func parseCTEPrefix(fullSQL string, stmtLoc ast.Loc) []*ast.CommonTableExpr {
-	if stmtLoc.Start <= 0 {
+// withClause returns the WITH clause that opens the UPDATE or DELETE at loc, or "".
+func withClause(sql string, loc ast.Loc) string {
+	start := dmlKeywordStart(sql, loc)
+	if start <= loc.Start {
+		return ""
+	}
+	return strings.TrimSpace(sql[loc.Start:start])
+}
+
+// dmlKeywordStart returns the offset of the UPDATE or DELETE keyword of the
+// statement at loc. omni starts the node at its WITH clause, if any, and keeps
+// no CTE on it, so the clause is the text between the two.
+func dmlKeywordStart(sql string, loc ast.Loc) int {
+	if loc.Start < 0 || loc.End > len(sql) || loc.Start >= loc.End {
+		return loc.Start
+	}
+	tokens := mysqlparser.Tokenize(sql[loc.Start:loc.End])
+	if len(tokens) == 0 || mysqlparser.TokenName(tokens[0].Type) != "WITH" {
+		return loc.Start
+	}
+	depth := 0
+	for _, token := range tokens[1:] {
+		switch token.Type {
+		case '(':
+			depth++
+		case ')':
+			depth--
+		default:
+			if depth != 0 {
+				continue
+			}
+			if name := mysqlparser.TokenName(token.Type); name == "UPDATE" || name == "DELETE" {
+				return loc.Start + token.Loc
+			}
+		}
+	}
+	return loc.Start
+}
+
+// parseCTEs returns the CTEs of a WITH clause, or nil when it does not parse.
+func parseCTEs(clause string) []*ast.CommonTableExpr {
+	if clause == "" {
 		return nil
 	}
-	prefix := strings.TrimSpace(fullSQL[:stmtLoc.Start])
-	if prefix == "" {
-		return nil
-	}
-	// Wrap the prefix with a dummy SELECT to make it parseable.
-	parsed, err := ParseMySQL(prefix + " SELECT 1")
+	// Wrap the clause with a dummy SELECT to make it parseable.
+	parsed, err := ParseMySQL(clause + " SELECT 1")
 	if err != nil || parsed == nil {
 		return nil
 	}

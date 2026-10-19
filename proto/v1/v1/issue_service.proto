@@ -204,12 +204,24 @@ service IssueService {
     option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
+  // Gets the current run of one reviewer on an issue. The run carries
+  // execution status only; review results are issue comments. A reviewer
+  // that has never run on the issue is NOT_FOUND.
+  // Permissions required: bb.reviewRuns.get
+  rpc GetReviewRun(GetReviewRunRequest) returns (ReviewRun) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/issues/*/reviewRuns/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.reviewRuns.get";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
+  }
+
   // Triggers a review run. The slot is reset unconditionally: a RUNNING
   // execution is superseded (its completion is fenced off), the attempt
   // number is bumped, and the returned run is AVAILABLE.
-  // Review results are not returned by this RPC and have no read RPC yet:
-  // findings will surface as issue comments once the review comment
-  // integration lands. The returned run carries execution status only.
+  // Review results are not returned by this RPC: they are posted as issue
+  // comments. The returned run carries execution status only, and
+  // GetReviewRun reads it back.
   // The audit log is the only record of who triggered a run.
   // Permissions required: bb.reviewRuns.run
   rpc RunReview(RunReviewRequest) returns (ReviewRun) {
@@ -802,8 +814,11 @@ message ReviewRun {
     // Created and claimable by any replica.
     AVAILABLE = 1;
     RUNNING = 2;
-    // Every (spec, target) unit was evaluated. DONE does not mean the
-    // review passed: whether problems remain is judged from open comments.
+    // Every (spec, target) unit in the reviewer's scope was evaluated. RULE's
+    // scope is every target. AI's scope is the project's CI sample, the first
+    // ci_sampling_size targets of each spec, or every target when
+    // ci_sampling_size is 0. DONE does not mean the review passed: whether
+    // problems remain is judged from open comments.
     DONE = 3;
     // At least one unit was not evaluated; the cause is in `error`.
     FAILED = 4;
@@ -821,6 +836,15 @@ message ReviewRun {
   // failed to execute (a platform problem, never the SQL — SQL problems are
   // review results on a DONE run).
   string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message GetReviewRunRequest {
+  // The name of the review run to retrieve.
+  // Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/ReviewRun"}
+  ];
 }
 
 message RunReviewRequest {

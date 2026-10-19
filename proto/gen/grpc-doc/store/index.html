@@ -7823,8 +7823,9 @@ If enabled, the issue will be created with the prepend &#34;set role &lt;db_owne
                   <td>ci_sampling_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of databases to sample during CI data validation.
-If not specified, sampling is disabled, resulting in a full validation. </p></td>
+                  <td><p>The maximum number of databases to sample during CI data validation and
+AI review. If not specified, sampling is disabled, resulting in a full
+validation. </p></td>
                 </tr>
               
                 <tr>
@@ -9693,6 +9694,15 @@ is deleted or transferred, degrading to &#34;no database&#34; in the UI. </p></t
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_review_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the AI SQL review may run. It is a consent of its own beside
+`enabled`, because a review sends the statements of a change to the
+provider and can send the schema of its target databases. </p></td>
                 </tr>
               
             </tbody>

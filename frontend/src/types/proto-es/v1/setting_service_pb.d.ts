@@ -1394,6 +1394,16 @@ export declare type AISetting = Message<"bytebase.v1.AISetting"> & {
    * @generated from field: string version = 6;
    */
   version: string;
+
+  /**
+   * Whether the AI SQL review may run. It is off by default and is a consent
+   * of its own beside `enabled`: a review sends the statements of a change to
+   * the provider, and can send the schema of its target databases and their
+   * table statistics.
+   *
+   * @generated from field: bool sql_review_enabled = 7;
+   */
+  sqlReviewEnabled: boolean;
 };
 
 /**

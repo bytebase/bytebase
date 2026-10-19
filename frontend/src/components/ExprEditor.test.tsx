@@ -788,4 +788,44 @@ describe("ExprEditor", () => {
 
     unmount();
   });
+
+  test("shows the select placeholder for an empty static option value", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "_==_",
+          args: [CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID, ""],
+        },
+      ],
+    };
+    const environmentOptionConfig = new Map<Factor, OptionConfig>([
+      [
+        CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+        { options: [{ value: "test", label: "Test" }] },
+      ],
+    ]);
+
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={initialExpr}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]}
+        optionConfigMap={environmentOptionConfig}
+        onUpdate={() => {}}
+      />
+    );
+    await flushEffects();
+
+    const placeholder = Array.from(container.querySelectorAll("span")).find(
+      (span) =>
+        span.textContent === "cel.condition.select-value" &&
+        span.className.includes("text-control-placeholder")
+    );
+
+    expect(placeholder).toBeInstanceOf(HTMLSpanElement);
+
+    unmount();
+  });
 });

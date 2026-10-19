@@ -191,9 +191,9 @@ func TestAggregateUnitErrors(t *testing.T) {
 	require.EqualError(t, err, "4 of 5 review units failed: a; b; c (+1 more)")
 
 	unit := groupReviewUnits(nil, []*reviewTarget{
-		target("spec-1", "instances/pg/databases/a", storepb.Engine_POSTGRES, false),
-		target("spec-1", "instances/pg/databases/b", storepb.Engine_POSTGRES, false),
+		target("spec-1", "instances/ch/databases/a", storepb.Engine_CLICKHOUSE, false),
+		target("spec-1", "instances/ch/databases/b", storepb.Engine_CLICKHOUSE, false),
 	})[0]
-	err = aggregateUnitErrors(2, unit.failures(errors.New("engine POSTGRES has no standard rule reviewer")))
-	require.EqualError(t, err, "2 of 2 review units failed: instances/pg/databases/a: engine POSTGRES has no standard rule reviewer; instances/pg/databases/b: engine POSTGRES has no standard rule reviewer")
+	err = aggregateUnitErrors(2, unit.failures(errors.New("engine CLICKHOUSE has no standard rule reviewer")))
+	require.EqualError(t, err, "2 of 2 review units failed: instances/ch/databases/a: engine CLICKHOUSE has no standard rule reviewer; instances/ch/databases/b: engine CLICKHOUSE has no standard rule reviewer")
 }

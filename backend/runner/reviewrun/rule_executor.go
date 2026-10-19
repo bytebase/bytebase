@@ -57,8 +57,8 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database group for plan")
 	}
-	// DeriveReviewTargets, not DeriveCheckTargets: review must evaluate every
-	// (spec, target) unit, so the CI sampling limit does not apply.
+	// DeriveReviewTargets, not DeriveCheckTargets: the rule review evaluates
+	// every (spec, target) unit, so the CI sampling limit does not apply.
 	checkTargets, err := plancheck.DeriveReviewTargets(ctx, e.store, project, plan, databaseGroup)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to derive review targets")

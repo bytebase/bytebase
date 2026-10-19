@@ -1,4 +1,5 @@
-import { Code, ConnectError } from "@connectrpc/connect";
+import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
+import { skipErrorNotificationContextKey } from "@/api/context-key";
 
 // The per-resource failures the all-or-nothing BatchGet contract introduces.
 // Only these are worth a per-name retry; anything else is a real error.
@@ -26,7 +27,7 @@ import { isValidInstanceName } from "@/types/v1/instance";
 import { workspaceCacheScope } from "@/utils/storage-keys";
 import { celMapField, celString, celStringList } from "@/utils/v1/celLiteral";
 import { bindingScopesResources } from "@/utils/v1/iam";
-import type { AppStoreState } from "./types";
+import type { AppStoreState, ErrorReport } from "./types";
 
 export const MAX_RECENT_PROJECT = 5;
 export const MAX_RECENT_VISIT = 10;
@@ -271,6 +272,18 @@ export function projectWideBindings(
 
 export function defaultProjectName(get: () => AppStoreState) {
   return get().serverInfo?.defaultProject ?? "";
+}
+
+// Call options for a request the caller reports the failure of itself.
+export function callOptions(report: ErrorReport | undefined) {
+  return report?.byCaller
+    ? {
+        contextValues: createContextValues().set(
+          skipErrorNotificationContextKey,
+          true
+        ),
+      }
+    : undefined;
 }
 
 export function isConnectAlreadyExists(error: unknown): error is ConnectError {

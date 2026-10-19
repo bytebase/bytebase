@@ -197,14 +197,12 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
               {/* External URL — hidden in SaaS/cloud mode */}
               {!isSaaSMode && (
                 <FormField
+                  id={EXTERNAL_URL_PRODUCT_INTRO}
                   title={t("settings.general.workspace.external-url.self")}
                   description={
                     <>
                       {t("settings.general.workspace.external-url.description")}{" "}
-                      <LearnMoreLink
-                        href="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
-                        className="text-accent"
-                      />
+                      <LearnMoreLink href="https://docs.bytebase.com/get-started/self-host/external-url?source=console" />
                     </>
                   }
                 >

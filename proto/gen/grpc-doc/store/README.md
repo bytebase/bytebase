@@ -2906,7 +2906,7 @@ Project contains settings and configuration for a Bytebase project.
 | postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable the database tenant mode for PostgreSQL. If enabled, the issue will be created with the prepend &#34;set role &lt;db_owner&gt;&#34; statement. |
 | allow_self_approval | [bool](#bool) |  | Whether to allow the issue creator to self-approve the issue. |
 | execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-store-Project-ExecutionRetryPolicy) |  | Configuration for automatic retry on task execution failures. |
-| ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation. If not specified, sampling is disabled, resulting in a full validation. |
+| ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation and AI review. If not specified, sampling is disabled, resulting in a full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks to run during the rollout. |
 | labels | [Project.LabelsEntry](#bytebase-store-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
 | enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |
@@ -3654,6 +3654,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | api_key | [string](#string) |  |  |
 | model | [string](#string) |  |  |
 | version | [string](#string) |  |  |
+| sql_review_enabled | [bool](#bool) |  | Whether the AI SQL review may run. It is a consent of its own beside `enabled`, because a review sends the statements of a change to the provider and can send the schema of its target databases. |
 
 
 

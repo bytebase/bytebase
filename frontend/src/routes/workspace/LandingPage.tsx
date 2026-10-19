@@ -1,10 +1,12 @@
 import {
+  Bot,
   CircleDot,
   Database,
   GalleryHorizontalEnd,
   GripVertical,
   Layers,
   Link,
+  Send,
   Settings,
   ShieldCheck,
   SquareStack,
@@ -47,7 +49,8 @@ import {
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
-import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { QuickLinkButton, QuickLinkLink } from "@/components/ui/quick-link";
 import {
@@ -57,14 +60,29 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Tooltip } from "@/components/ui/tooltip";
-import { useOptionalCurrentUser, useServerState } from "@/hooks/useAppState";
+import { Textarea } from "@/components/ui/textarea";
+import { WorkspacePageLayout } from "@/components/WorkspacePageLayout";
+import {
+  useOptionalCurrentUser,
+  useServerState,
+  useWorkspace,
+  useWorkspacePermission,
+} from "@/hooks/useAppState";
 import { useRecentVisit } from "@/hooks/useRecentVisit";
+import {
+  AI_ASSISTANT_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/lib/productIntro";
+import {
+  selectHasRunningChat,
+  useAgentStore,
+} from "@/modules/agent/store/agent";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { extractProjectResourceName, storageKeyQuickAccess } from "@/utils";
+import { WorkspaceLandingGettingStarted } from "./WorkspaceLandingGettingStarted";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -244,10 +262,10 @@ function useFullQuickLinkList(): QuickLinkDef[] {
 // ---------------------------------------------------------------------------
 
 const DEFAULT_CONFIG = [
-  "visit-issues",
-  "visit-projects",
+  PROJECT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_SQL_REVIEW,
+  SETTING_ROUTE_WORKSPACE_GENERAL,
 ];
 
 function useQuickAccessConfig(email: string) {
@@ -433,9 +451,17 @@ function ConfigSheet({
 export function LandingPage(_: Record<string, never> = {}) {
   const { t } = useTranslation();
   const [showConfigDrawer, setShowConfigDrawer] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const workspace = useWorkspace();
+  const aiEnabled = useAppStore((state) => state.serverInfo?.aiEnabled);
+  const canConfigureAI = useWorkspacePermission("bb.settings.set");
+  const hasRunningChat = useAgentStore(selectHasRunningChat);
+  const hasQueuedMessage = useAgentStore(
+    (state) => state.queuedUserMessage !== null
+  );
 
   const email = useOptionalCurrentUser()?.email ?? "";
-  const { version, changelogURL } = useServerState();
+  const { isSaaSMode, version, changelogURL } = useServerState();
 
   const fullList = useFullQuickLinkList();
   const { config, setConfig } = useQuickAccessConfig(email);
@@ -460,80 +486,183 @@ export function LandingPage(_: Record<string, never> = {}) {
     }
   }, []);
 
+  const sendAIMessage = () => {
+    const text = aiPrompt.trim();
+    if (!text || !aiEnabled || !workspace?.name) return;
+    const store = useAgentStore.getState();
+    if (selectHasRunningChat(store) || store.queuedUserMessage) return;
+    const page = {
+      path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+      title: document.title,
+    };
+    const chat = store.createChat({ context: workspace.name, page });
+    store.queueUserMessage({ chatId: chat.id, text, page });
+    store.open();
+    setAiPrompt("");
+  };
+
   return (
     <>
-      <div className="py-4 px-4 flex flex-col h-full items-center relative">
-        <div className="flex-1" />
-        <div className="flex-[60%] flex flex-col gap-y-6">
-          <div className="flex items-baseline gap-x-4">
-            <div className="flex items-start gap-x-1">
-              <div className="font-semibold text-2xl">
-                {t("landing.quick-link.self")}
-              </div>
-              <Tooltip content={t("landing.quick-link.manage")}>
-                <Button
-                  appearance="secondary"
-                  size="xs"
-                  className="aspect-square px-0"
-                  onClick={() => setShowConfigDrawer(true)}
-                >
-                  <Settings className="w-4 h-4 text-control-light" />
-                  <span className="sr-only">
-                    {t("landing.quick-link.manage")}
-                  </span>
-                </Button>
-              </Tooltip>
-            </div>
-            {lastProject && lastVisitProjectPath && (
-              <RouterLink
-                to={{ path: lastVisitProjectPath }}
-                className="underline normal-link cursor-pointer"
-              >
-                {t("landing.last-visit")}: {lastProject.title}
-              </RouterLink>
-            )}
-          </div>
+      <WorkspacePageLayout>
+        <div className="flex min-w-0 flex-col gap-y-8">
+          <header className="min-w-0">
+            <h1 className="min-w-0 break-words text-2xl font-bold text-main">
+              {workspace?.title ?? t("landing.workspace")}
+            </h1>
+          </header>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {quickLinkList.map((link) => {
-              if (link.route) {
+          {aiEnabled && workspace?.name && (
+            <form
+              className="min-w-0 rounded-sm border border-accent/60 bg-background focus-within:border-accent focus-within:ring-1 focus-within:ring-accent"
+              onSubmit={(event) => {
+                event.preventDefault();
+                sendAIMessage();
+              }}
+            >
+              <Textarea
+                size="md"
+                rows={2}
+                value={aiPrompt}
+                aria-label={t("landing.ai-placeholder")}
+                placeholder={`${t("landing.ai-placeholder")} · ${t("agent.input-keyboard-hint")}`}
+                className="min-h-20 resize-none border-0 focus:border-0 focus:ring-0"
+                onChange={(event) => setAiPrompt(event.target.value)}
+                onKeyDown={(event) => {
+                  if (
+                    event.key === "Enter" &&
+                    !event.shiftKey &&
+                    !event.altKey &&
+                    !event.ctrlKey &&
+                    !event.metaKey &&
+                    !event.nativeEvent.isComposing
+                  ) {
+                    event.preventDefault();
+                    sendAIMessage();
+                  }
+                }}
+              />
+              <div className="flex flex-wrap items-end justify-between gap-2 px-3 pb-3">
+                <div className="flex min-w-0 flex-1 items-center text-xs text-control-light">
+                  <span className="min-w-0 max-w-full truncate">
+                    {t("agent.context")}: {workspace.title}
+                  </span>
+                </div>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={
+                    !aiPrompt.trim() || hasRunningChat || hasQueuedMessage
+                  }
+                >
+                  <Send className="size-4" />
+                  {t("agent.send")}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {aiEnabled === false && canConfigureAI && !isSaaSMode && (
+            <Alert
+              role="region"
+              aria-label={t("landing.ai-setup.title")}
+              showIcon={false}
+              className="border-block-border bg-background text-main shadow-none"
+            >
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-xs bg-accent/10 text-accent">
+                  <Bot className="size-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-sm font-semibold">
+                    {t("landing.ai-setup.title")}
+                  </h2>
+                  <p className="text-sm text-control-light">
+                    {t("landing.ai-setup.description")}
+                  </p>
+                </div>
+                <RouterLink
+                  to={{
+                    name: SETTING_ROUTE_WORKSPACE_GENERAL,
+                    hash: "#ai-assistant",
+                    query: {
+                      [PRODUCT_INTRO_QUERY_KEY]: AI_ASSISTANT_PRODUCT_INTRO,
+                    },
+                  }}
+                  className={buttonVariants({ size: "sm" })}
+                >
+                  {t("landing.ai-setup.action")}
+                </RouterLink>
+              </div>
+            </Alert>
+          )}
+
+          <WorkspaceLandingGettingStarted />
+
+          <section className="min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-block-border pb-4">
+              <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2">
+                <h2 className="text-base font-semibold text-main">
+                  {t("landing.quick-link.yours")}
+                </h2>
+                {lastProject && lastVisitProjectPath && (
+                  <RouterLink
+                    to={{ path: lastVisitProjectPath }}
+                    className="normal-link text-sm underline"
+                  >
+                    {t("landing.last-visit")}: {lastProject.title}
+                  </RouterLink>
+                )}
+              </div>
+              <Button
+                type="button"
+                appearance="outline"
+                size="sm"
+                onClick={() => setShowConfigDrawer(true)}
+              >
+                {t("project.home.customize")}
+              </Button>
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {quickLinkList.map((link) => {
+                if (link.route) {
+                  return (
+                    <QuickLinkLink
+                      key={link.id}
+                      to={{ name: link.route }}
+                      className="min-w-0 justify-start py-3"
+                      icon={<link.icon className="size-4 text-control-light" />}
+                    >
+                      {link.title}
+                    </QuickLinkLink>
+                  );
+                }
                 return (
-                  <QuickLinkLink
+                  <QuickLinkButton
                     key={link.id}
-                    to={{ name: link.route }}
-                    icon={<link.icon className="w-5 h-5 text-control-light" />}
+                    type="button"
+                    onClick={() => handleClick(link)}
+                    className="min-w-0 justify-start py-3"
+                    icon={<link.icon className="size-4 text-control-light" />}
                   >
                     {link.title}
-                  </QuickLinkLink>
+                  </QuickLinkButton>
                 );
-              }
-              return (
-                <QuickLinkButton
-                  key={link.id}
-                  type="button"
-                  onClick={() => handleClick(link)}
-                  icon={<link.icon className="w-5 h-5 text-control-light" />}
-                >
-                  {link.title}
-                </QuickLinkButton>
-              );
-            })}
-          </div>
+              })}
+            </div>
+          </section>
 
-          <div className="flex flex-col gap-y-2">
-            {changelogURL && (
-              <a
-                className="underline normal-link"
-                target="_blank"
-                rel="noopener noreferrer"
-                href={changelogURL}
-              >
-                {t("landing.changelog-for-version", { version })}
-              </a>
-            )}
-          </div>
+          {changelogURL && (
+            <a
+              className="normal-link w-fit text-sm underline"
+              target="_blank"
+              rel="noopener noreferrer"
+              href={changelogURL}
+            >
+              {t("landing.changelog-for-version", { version })}
+            </a>
+          )}
         </div>
-      </div>
+      </WorkspacePageLayout>
 
       <ConfigSheet
         open={showConfigDrawer}

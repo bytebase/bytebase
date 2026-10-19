@@ -1458,7 +1458,7 @@ function EditMemberRoleDrawer({
       expiration?: Date;
     }[] => {
       if (!binding.parsedExpr) return [{}];
-      const conditionExpr = convertFromExpr(binding.parsedExpr);
+      const conditionExpr = convertFromExpr(binding.parsedExpr) ?? {};
       const base: { expiration?: Date } = {};
       if (conditionExpr.expiredTime)
         base.expiration = new Date(conditionExpr.expiredTime);
@@ -2290,10 +2290,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
           description={
             <>
               {t("project.members.description")}{" "}
-              <LearnMoreLink
-                href="https://docs.bytebase.com/administration/roles/?source=console#project-roles"
-                className="text-accent"
-              />
+              <LearnMoreLink href="https://docs.bytebase.com/administration/roles/?source=console#project-roles" />
             </>
           }
         />
