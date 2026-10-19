@@ -2791,6 +2791,10 @@
             "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must approve it.",
             "title": "Propose changes"
           },
+          "read-access": {
+            "details": "Who holds which role in the workspace and its projects · Groups and their members · Roles and their permissions · Masking rules and exemptions · Rollout, data query, tag and review policies · Access grants, including pending requests",
+            "title": "Read members, roles and policies"
+          },
           "read-data": {
             "details": "Run read-only queries · Under Read-only, a request is refused whole unless every statement is shown to be a read that returns data; how deeply that can be checked varies by engine, and on some engines no statement can be shown to be a read at all · Your own query history · Saved queries and sheets you have access to",
             "title": "Read data by running queries"
@@ -2822,8 +2826,8 @@
           "write": "Read-write stops here"
         },
         "summary": {
-          "read-only": "Read schemas, data and the change workflow; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported",
-          "read-write": "Read schemas, data and the change workflow; propose, request access, run, export and manage"
+          "read-only": "Read schemas, data, the change workflow, members, roles and policies; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported",
+          "read-write": "Read schemas, data, the change workflow, members, roles and policies; propose, request access, run, export and manage"
         },
         "tier": {
           "read": "read",

@@ -139,8 +139,7 @@ service ProjectService {
     option (google.api.http) = {get: "/v1/{resource=projects/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Sets the IAM policy for a project.

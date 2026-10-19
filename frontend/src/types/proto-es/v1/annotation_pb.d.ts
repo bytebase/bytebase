@@ -263,8 +263,7 @@ export enum MCPDenialReason {
    * Administers the workspace rather than doing database work: identity,
    * credentials, access control, governance policy, billing, workspace and
    * instance configuration, project lifecycle, and the operator's own audit
-   * trail. Reading is administration too where the read returns the privilege
-   * topology or a stored secret rather than the state of a database.
+   * trail.
    *
    * @generated from enum value: ADMINISTERS_THE_WORKSPACE = 9;
    */

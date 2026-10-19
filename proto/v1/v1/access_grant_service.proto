@@ -20,8 +20,7 @@ service AccessGrantService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.accessGrants.get";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists access grants in a project.
@@ -30,8 +29,7 @@ service AccessGrantService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.accessGrants.list";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates an access grant.
