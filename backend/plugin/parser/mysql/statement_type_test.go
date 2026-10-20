@@ -77,3 +77,12 @@ func TestGetStatementType(t *testing.T) {
 		yamltest.Record(t, filepath, tests)
 	}
 }
+
+func TestGetStatementTypesLeavesMariaDBOnlyStatementsUnspecified(t *testing.T) {
+	stmts, err := base.ParseStatements(storepb.Engine_MARIADB, "CREATE TABLE t (a INT);\nCREATE OR REPLACE TABLE u (a INT);")
+	require.NoError(t, err)
+
+	got, err := base.GetStatementTypes(storepb.Engine_MARIADB, base.ExtractASTs(stmts))
+	require.NoError(t, err)
+	require.ElementsMatch(t, []storepb.StatementType{storepb.StatementType_CREATE_TABLE, storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED}, got)
+}

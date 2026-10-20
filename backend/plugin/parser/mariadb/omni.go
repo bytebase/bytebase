@@ -9,6 +9,20 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
+// OmniAST wraps an omni MariaDB AST node and implements the base.AST interface.
+type OmniAST struct {
+	Node ast.Node
+	// Text is the original SQL text of this statement.
+	Text string
+	// StartPosition is the 1-based position where this statement starts.
+	StartPosition *storepb.Position
+}
+
+// ASTStartPosition implements base.AST.
+func (a *OmniAST) ASTStartPosition() *storepb.Position {
+	return a.StartPosition
+}
+
 // ParseMariaDB parses SQL using omni's MariaDB parser and returns an ast.List.
 func ParseMariaDB(sql string) (*ast.List, error) {
 	return mariadbparser.Parse(sql)

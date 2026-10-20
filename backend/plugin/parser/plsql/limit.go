@@ -72,10 +72,11 @@ func addLimitFor11g(statement string, limitCount int) string {
 	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", base.TrimStatement(statement), limitCount)
 }
 
-// isSelectOrWithStatement checks if the statement is a SELECT or WITH statement
+// isSelectOrWithStatement checks if the statement is a query: SELECT, WITH, or
+// a parenthesized query.
 func isSelectOrWithStatement(statement string) bool {
 	trimmedStatement := strings.ToLower(strings.TrimLeftFunc(statement, unicode.IsSpace))
-	return strings.HasPrefix(trimmedStatement, "select") || strings.HasPrefix(trimmedStatement, "with")
+	return strings.HasPrefix(trimmedStatement, "select") || strings.HasPrefix(trimmedStatement, "with") || strings.HasPrefix(trimmedStatement, "(")
 }
 
 // addLimitFor12cAndLater adds a FETCH NEXT clause for Oracle 12c and later versions.
@@ -127,12 +128,14 @@ func addFetchNextClause(statement string, limitCount int) (string, error) {
 }
 
 func rewriteOracleSelectFetch(sql string, selectStmt *oracleast.SelectStmt, limitCount int) (string, error) {
-	target := rightmostOracleSetSelect(selectStmt)
-	if target.FetchFirst != nil {
-		return rewriteOracleFetchClause(sql, target.FetchFirst, limitCount)
-	}
-	if target.ForUpdate != nil && target.ForUpdate.Loc.Start > 0 && target.ForUpdate.Loc.Start <= len(sql) {
-		return sql[:target.ForUpdate.Loc.Start] + fmt.Sprintf("FETCH NEXT %d ROWS ONLY ", limitCount) + sql[target.ForUpdate.Loc.Start:], nil
+	target, parenthesized := rightmostOracleSetSelect(sql, selectStmt)
+	if !parenthesized {
+		if target.FetchFirst != nil {
+			return rewriteOracleFetchClause(sql, target.FetchFirst, limitCount)
+		}
+		if target.ForUpdate != nil && target.ForUpdate.Loc.Start > 0 && target.ForUpdate.Loc.Start <= len(sql) {
+			return sql[:target.ForUpdate.Loc.Start] + fmt.Sprintf("FETCH NEXT %d ROWS ONLY ", limitCount) + sql[target.ForUpdate.Loc.Start:], nil
+		}
 	}
 
 	loc := oracleast.NodeLoc(target)
@@ -142,11 +145,45 @@ func rewriteOracleSelectFetch(sql string, selectStmt *oracleast.SelectStmt, limi
 	return sql[:loc.End] + fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", limitCount) + sql[loc.End:], nil
 }
 
-func rightmostOracleSetSelect(selectStmt *oracleast.SelectStmt) *oracleast.SelectStmt {
-	if selectStmt.Op != oracleast.SETOP_NONE && selectStmt.Rarg != nil {
-		return rightmostOracleSetSelect(selectStmt.Rarg)
+// rightmostOracleSetSelect returns the operand that omni attaches the ORDER
+// BY, row limit, and FOR UPDATE ending a set operation to: its last operand.
+// omni chains operands through Rarg, and only the text tells a parenthesized
+// operand from the rest of the chain. The walk stops at a parenthesized one
+// and reports it, as the clauses inside it limit that operand alone.
+func rightmostOracleSetSelect(sql string, selectStmt *oracleast.SelectStmt) (*oracleast.SelectStmt, bool) {
+	for selectStmt.Op != oracleast.SETOP_NONE && selectStmt.Rarg != nil {
+		selectStmt = selectStmt.Rarg
+		if isParenthesizedOracleQuery(sql, oracleast.NodeLoc(selectStmt)) {
+			return selectStmt, true
+		}
 	}
-	return selectStmt
+	return selectStmt, false
+}
+
+// isParenthesizedOracleQuery reports whether one pair of parentheses encloses
+// all of sql[loc.Start:loc.End].
+func isParenthesizedOracleQuery(sql string, loc oracleast.Loc) bool {
+	if loc.Start < 0 || loc.End > len(sql) || loc.Start >= loc.End || sql[loc.Start] != '(' {
+		return false
+	}
+	lexer := oracleparser.NewLexerRange(sql, loc.Start, loc.End)
+	depth := 0
+	for {
+		tok := lexer.NextToken()
+		if tok.End <= tok.Loc {
+			return false
+		}
+		switch tok.Type {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth == 0 {
+				return tok.End == loc.End
+			}
+		default:
+		}
+	}
 }
 
 func rewriteOracleFetchClause(sql string, fetch *oracleast.FetchFirstClause, limitCount int) (string, error) {

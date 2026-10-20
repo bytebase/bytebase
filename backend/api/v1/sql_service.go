@@ -1946,7 +1946,7 @@ type writeTargetResource struct {
 
 // resolveWriteTargets returns the tables a DML/DDL statement writes/changes, using
 // the same extractor plan-check trusts. Returns (nil, nil) when the engine has no
-// extractor, the statement can't be parsed, or no targets are found — callers must
+// extractor, a statement can't be parsed or read, or no targets are found — callers must
 // then fall back to the database-level check (never fail open). See SUP-222.
 //
 // Some engines' extractors report auxiliary tables referenced by the change (e.g.
@@ -1995,9 +1995,18 @@ func (s *SQLService) resolveWriteTargets(
 	changeSummary, err := parserbase.ExtractChangedResources(
 		engine, database.DatabaseName, targetSchema, dbMeta, asts, statement,
 	)
-	if err != nil || changeSummary == nil || changeSummary.ChangedResources == nil {
-		//nolint:nilerr // unsupported engine / no result → fall back to database-level check
+	if err != nil {
+		//nolint:nilerr // unsupported engine → fall back to database-level check
 		return nil, nil
+	}
+	return writeTargetsFromChangeSummary(changeSummary), nil
+}
+
+// writeTargetsFromChangeSummary returns the write targets changeSummary records. It returns
+// nil when there are none, or when the extractor skipped a statement, which may write any table.
+func writeTargetsFromChangeSummary(changeSummary *parserbase.ChangeSummary) []writeTargetResource {
+	if changeSummary == nil || changeSummary.ChangedResources == nil || changeSummary.SkippedStatements > 0 {
+		return nil
 	}
 
 	var targets []writeTargetResource
@@ -2033,7 +2042,7 @@ func (s *SQLService) resolveWriteTargets(
 		}
 		targets = append(targets, writeTargetResource{database: db})
 	}
-	return targets, nil
+	return targets
 }
 
 // unresolvedSchemaSentinel is an impossible schema name (it contains NUL, which no real

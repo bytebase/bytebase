@@ -450,6 +450,25 @@ func TestMariaDBPriorBackupCheckAdvisor(t *testing.T) {
 	require.Contains(t, adviceList[0].Content, "mixed DDL and DML")
 }
 
+func TestMariaDBSQLReviewReviewsAroundMariaDBOnlyStatements(t *testing.T) {
+	sm := sheet.NewManager()
+	finalMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "test"}, nil, nil, storepb.Engine_MARIADB, true)
+	statement := "CREATE TABLE t (a INT);\nCREATE OR REPLACE TABLE u (a INT);\nALTER TABLE u DROP COLUMN IF EXISTS b;"
+
+	adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, statement, []*storepb.SQLReviewRule{
+		{Type: storepb.SQLReviewRule_TABLE_REQUIRE_PK, Level: storepb.SQLReviewRule_ERROR, Engine: storepb.Engine_MARIADB},
+	}, advisor.Context{
+		DBType:        storepb.Engine_MARIADB,
+		DBSchema:      advisor.MockMySQLDatabase,
+		FinalMetadata: finalMetadata,
+	})
+
+	require.NoError(t, err)
+	require.Len(t, adviceList, 1)
+	require.Equal(t, code.TableNoPK.Int32(), adviceList[0].Code)
+	require.Contains(t, adviceList[0].Content, "`t`")
+}
+
 func TestMySQLBuiltinWalkThroughCheckTableExists(t *testing.T) {
 	sm := sheet.NewManager()
 	finalMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
