@@ -10,7 +10,12 @@ import {
   ReviewRun_Status,
   ReviewRunSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  Plan_ChangeDatabaseConfigSchema,
+  Plan_CreateDatabaseConfigSchema,
+  type Plan_Spec,
+  PlanSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
 
@@ -62,6 +67,25 @@ import { PlanDetailAIReview } from "./PlanDetailAIReview";
 
 const ISSUE = "projects/p/issues/1";
 
+const changeSpec = (release = ""): Plan_Spec["config"] => ({
+  case: "changeDatabaseConfig",
+  value: create(Plan_ChangeDatabaseConfigSchema, {
+    targets: ["instances/i/databases/d"],
+    release,
+  }),
+});
+
+const planWith = (
+  fields: Record<string, unknown> = {},
+  configs: Plan_Spec["config"][] = [changeSpec()]
+) =>
+  create(PlanSchema, {
+    name: "projects/p/plans/1",
+    issue: ISSUE,
+    specs: configs.map((config, i) => ({ id: `${i}`, config })),
+    ...fields,
+  });
+
 const reviewRun = (
   status: ReviewRun_Status,
   { endSeconds, error = "" }: { endSeconds?: number; error?: string } = {}
@@ -84,7 +108,7 @@ const openPage = (
     aiReviewRun,
     issue: create(IssueSchema, { name: ISSUE, status: IssueStatus.OPEN }),
     patchState: vi.fn(),
-    plan: create(PlanSchema, { name: "projects/p/plans/1", issue: ISSUE }),
+    plan: planWith(),
     project: create(ProjectSchema, { name: "projects/p" }),
     refreshState: vi.fn(async () => undefined),
     rollout: undefined,
@@ -238,7 +262,7 @@ describe("PlanDetailAIReview", () => {
       () =>
         openPage(null, {
           issue: undefined,
-          plan: create(PlanSchema, { name: "projects/p/plans/1" }),
+          plan: planWith({ issue: "" }),
         }),
     ],
     [
@@ -252,11 +276,7 @@ describe("PlanDetailAIReview", () => {
       "once the plan records a rollout",
       () =>
         openPage(null, {
-          plan: create(PlanSchema, {
-            name: "projects/p/plans/1",
-            issue: ISSUE,
-            hasRollout: true,
-          }),
+          plan: planWith({ hasRollout: true }),
         }),
     ],
     [
@@ -264,6 +284,25 @@ describe("PlanDetailAIReview", () => {
       () =>
         openPage(null, {
           rollout: create(RolloutSchema, { name: "projects/p/rollouts/1" }),
+        }),
+    ],
+    [
+      "for a plan that only creates databases",
+      () =>
+        openPage(null, {
+          plan: planWith({}, [
+            {
+              case: "createDatabaseConfig",
+              value: create(Plan_CreateDatabaseConfigSchema, {}),
+            },
+          ]),
+        }),
+    ],
+    [
+      "for a plan whose changes all come from a release",
+      () =>
+        openPage(null, {
+          plan: planWith({}, [changeSpec("projects/p/releases/r")]),
         }),
     ],
     [

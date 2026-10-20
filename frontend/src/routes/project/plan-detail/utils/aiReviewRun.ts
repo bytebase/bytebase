@@ -12,6 +12,17 @@ import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 export const aiReviewRunName = (issueName: string): string =>
   `${issueName}/reviewRuns/ai`;
 
+// Mirrors the backend's DeriveReviewTargets: create-database and
+// release-backed specs carry no SQL to review, and RunReview refuses a plan
+// with no other spec.
+export const hasReviewableSQL = (plan: Plan): boolean =>
+  plan.specs.some(
+    (spec) =>
+      spec.config.case === "changeDatabaseConfig" &&
+      !spec.config.value.release &&
+      spec.config.value.targets.length > 0
+  );
+
 // Whether the plan page reads the issue's AI review run. The review is dark
 // launched behind SQL Review V2, runs only while the workspace has AI and its
 // review switch on, and reviews SQL that no rollout has frozen yet.
@@ -28,6 +39,7 @@ export const readsAIReviewRun = ({
   Boolean(serverInfo?.aiEnabled && serverInfo.aiSqlReviewEnabled) &&
   Boolean(plan.issue) &&
   !plan.hasRollout &&
+  hasReviewableSQL(plan) &&
   hasProjectPermissionV2(project, "bb.reviewRuns.get");
 
 // A queued or running execution; RunReview would replace it.
