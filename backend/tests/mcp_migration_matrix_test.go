@@ -504,3 +504,41 @@ func setWorkspaceMemberRoles(ctx context.Context, t *testing.T, ctl *controller,
 	}))
 	require.NoError(t, err)
 }
+
+// TestMCPWorkspaceWithNoSavedSettingServesAWrite pins the other half of the
+// default: a workspace from before the MCP setting has no row and keeps
+// Read-write, so a method that ships as WRITE reaches it with no migration.
+func TestMCPWorkspaceWithNoSavedSettingServesAWrite(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+
+	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
+		Name: "workspaces/-",
+	}))
+	a.NoError(err)
+	project, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		ProjectId: "mcp-no-setting",
+		Project:   &v1pb.Project{Title: "MCP with no saved setting"},
+	}))
+	a.NoError(err)
+
+	db, err := sql.Open("pgx", ctl.profile.PgURL)
+	a.NoError(err)
+	t.Cleanup(func() { db.Close() })
+	result, err := db.ExecContext(ctx, `DELETE FROM setting WHERE workspace = $1 AND name = 'MCP'`,
+		strings.TrimPrefix(workspace.Msg.Name, "workspaces/"))
+	a.NoError(err)
+	deleted, err := result.RowsAffected()
+	a.NoError(err)
+	a.Equal(int64(1), deleted, "workspace creation saves a row; this test removes it to stand in for an older workspace")
+
+	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
+	defer session.Close()
+	sheet := callAPIOnSession(ctx, t, session, "SheetService/CreateSheet", map[string]any{
+		"parent": project.Msg.Name,
+		"sheet":  map[string]any{"content": base64.StdEncoding.EncodeToString([]byte("SELECT 1;"))},
+	})
+	a.Equal(http.StatusOK, sheet.Status, "a workspace with no saved MCP setting is Read-write: %s", sheet.Error)
+}
