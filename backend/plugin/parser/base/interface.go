@@ -401,6 +401,9 @@ type ChangeSummary struct {
 	DMLCount int
 	// InsertCount counts the rows of INSERT ... VALUES statements.
 	InsertCount int
+	// SkippedStatements counts the statements the extractor could not read, whose
+	// changes ChangedResources misses.
+	SkippedStatements int
 }
 
 // searchPathPrefix starts the statement WithSearchPath puts before a DML statement.
