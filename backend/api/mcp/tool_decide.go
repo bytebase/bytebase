@@ -1,7 +1,6 @@
 package mcp
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
@@ -108,9 +107,7 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 	}
 	link := s.issueLink(ctx, decision.issue)
 
-	// Checked before any answer is read: a client that declared no form cannot
-	// have shown one, so an answer it sends is not a confirmation.
-	if req == nil || req.Session == nil || !clientSupportsElicitation(req.Session) {
+	if !canShowConfirmation(req) {
 		return formatToolError(&toolError{
 			Code: "CONFIRMATION_UNAVAILABLE",
 			Message: fmt.Sprintf("this MCP client cannot show the confirmation form decide_issue needs, so %s was not %s and nothing changed",
@@ -139,14 +136,9 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 		return formatToolError(err), nil, nil
 	}
 
-	// An answer counts only with the request state this server signed when it
-	// asked. A client can send an answer on a call that was never asked, so
-	// without that state the call is asked like a first one.
-	if response, state, answered := confirmationAnswer(req); answered {
-		if asked, signed := s.verifyConfirmationState(ctx, decision, state); signed {
-			result, output := s.decideOnAnswer(ctx, decision, response, bytes.Equal(asked, digest), issue.UpdateTime, link)
-			return result, output, nil
-		}
+	if reply, answered := s.signedReply(ctx, req, decision, digest); answered {
+		result, output := s.decideOnAnswer(ctx, decision, reply, issue.UpdateTime, link)
+		return result, output, nil
 	}
 
 	message, err := s.describeIssueDecision(ctx, decision, view)
@@ -230,23 +222,20 @@ func (s *Server) recordRefusedDecision(ctx context.Context, decision *issueDecis
 	audit.RecordOutOfBandAudit(ctx, s.store, s.profile.RuntimeEnableAuditLogStdout.Load(), getWorkspaceID(ctx), row)
 }
 
-// confirmationAnswer returns the answer and the request state this call
-// carries, if it carries an answer.
 // decideOnAnswer acts on the answer to a form this server sent. Only an
 // accepted form with the box checked decides, and only while what the user
 // was asked about still matches the issue. A decline is reported before a
 // change, so a user who said no is not asked again.
-func (s *Server) decideOnAnswer(ctx context.Context, decision *issueDecision, response mcp.InputResponse, unchanged bool, issueUpdateTime, link string) (*mcp.CallToolResult, any) {
-	if confirmed, why := confirmationOutcome(response); !confirmed {
+func (s *Server) decideOnAnswer(ctx context.Context, decision *issueDecision, reply *confirmationReply, issueUpdateTime, link string) (*mcp.CallToolResult, any) {
+	if confirmed, why := confirmationOutcome(reply.response); !confirmed {
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf(
 			"Not %s: %s, so nothing changed. Do not retry unless the user asks.\nIssue: %s",
 			decision.pastTense(), why, link)}}}, nil
 	}
-	if !unchanged {
+	if why := reply.staleReason(fmt.Sprintf("what the user confirmed no longer matches %s as it is now", decision.issue)); why != "" {
 		return formatToolError(&toolError{
-			Code: "STALE_CONFIRMATION",
-			Message: fmt.Sprintf("what the user confirmed no longer matches %s as it is now, so it was not %s and nothing changed",
-				decision.issue, decision.pastTense()),
+			Code:       "STALE_CONFIRMATION",
+			Message:    fmt.Sprintf("%s, so it was not %s and nothing changed", why, decision.pastTense()),
 			Suggestion: "call decide_issue again to ask the user about the issue as it is now",
 		}), nil
 	}

@@ -436,14 +436,17 @@ func TestConfirmationStateIsBoundToTheCallerAndTheDecision(t *testing.T) {
 	alice := caller("ws-test", "alice@example.com", "client-A")
 	approve := &issueDecision{issue: decideIssueName, procedure: v1connect.IssueServiceApproveIssueProcedure}
 	digest := sha256.Sum256([]byte("what the form was built from"))
-	state := s.signConfirmationState(alice, approve, digest[:])
+	askedAt := time.Date(2026, 10, 20, 9, 0, 0, 0, time.UTC)
+	state := s.signConfirmationState(alice, approve, digest[:], askedAt)
 
-	signedDigest, signed := s.verifyConfirmationState(alice, approve, state)
+	signedDigest, signedAt, signed := s.verifyConfirmationState(alice, approve, state)
 	require.True(t, signed)
 	require.Equal(t, digest[:], signedDigest)
+	require.True(t, askedAt.Equal(signedAt))
 
 	otherDigest := sha256.Sum256([]byte("something else"))
-	_, mac, _ := strings.Cut(state, ".")
+	parts := strings.Split(state, ".")
+	require.Len(t, parts, 3)
 	for name, tc := range map[string]struct {
 		ctx      context.Context
 		decision *issueDecision
@@ -454,12 +457,38 @@ func TestConfirmationStateIsBoundToTheCallerAndTheDecision(t *testing.T) {
 		"another workspace":  {caller("ws-other", "alice@example.com", "client-A"), approve, state},
 		"the other decision": {alice, &issueDecision{issue: decideIssueName, procedure: v1connect.IssueServiceRejectIssueProcedure}, state},
 		"another issue":      {alice, &issueDecision{issue: "projects/hr/issues/43", procedure: v1connect.IssueServiceApproveIssueProcedure}, state},
-		"another digest":     {alice, approve, base64.RawURLEncoding.EncodeToString(otherDigest[:]) + "." + mac},
-		"no signature":       {alice, approve, base64.RawURLEncoding.EncodeToString(digest[:])},
+		"another digest":     {alice, approve, base64.RawURLEncoding.EncodeToString(otherDigest[:]) + "." + parts[1] + "." + parts[2]},
+		"a later time":       {alice, approve, parts[0] + "." + strconv.FormatInt(askedAt.Add(time.Hour).Unix(), 10) + "." + parts[2]},
+		"no signature":       {alice, approve, parts[0] + "." + parts[1]},
 	} {
-		_, signed := s.verifyConfirmationState(tc.ctx, tc.decision, tc.state)
+		_, _, signed := s.verifyConfirmationState(tc.ctx, tc.decision, tc.state)
 		require.False(t, signed, name)
 	}
+}
+
+func TestDecideIssueRefusesAnExpiredConfirmation(t *testing.T) {
+	mock := changeIssueMock()
+	call := newDecideMRTRServer(t, mock)
+	accept := mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(true)}
+
+	first := call(nil, "", "checked the statement")
+	require.True(t, first.NeedsInput())
+	parts := strings.Split(first.RequestState, ".")
+	require.Len(t, parts, 3)
+	// Rebuild the state as the server would have signed it eleven minutes ago.
+	s, err := newServerWithStore(newTestServerStore(), &config.Profile{Mode: common.ReleaseModeDev}, revalidationSecret, mock)
+	require.NoError(t, err)
+	digest, err := base64.RawURLEncoding.DecodeString(parts[0])
+	require.NoError(t, err)
+	alice := withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), "ws-test"), "alice@example.com"), "client-A")
+	approve := &issueDecision{issue: decideIssueName, procedure: v1connect.IssueServiceApproveIssueProcedure}
+	old := s.signConfirmationState(alice, approve, digest, time.Now().Add(-11*time.Minute))
+
+	expired := call(accept, old, "checked the statement")
+	require.True(t, expired.IsError, resultText(t, expired))
+	require.Contains(t, resultText(t, expired), "STALE_CONFIRMATION")
+	require.Contains(t, resultText(t, expired), "the user was asked more than 10 minutes ago")
+	require.Empty(t, mock.calls(), "an accepted answer older than the lifetime must not decide")
 }
 
 // threeStepIssueMock is a database change waiting on the second of three steps.

@@ -26,6 +26,8 @@ import (
 type projectMock struct {
 	mu      sync.Mutex
 	enabled bool
+	// refusal, when set, is the message the update is refused with.
+	refusal string
 	updates []decisionCall
 }
 
@@ -46,7 +48,13 @@ func (m *projectMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		m.mu.Lock()
 		m.updates = append(m.updates, call)
+		refusal := m.refusal
 		m.mu.Unlock()
+		if refusal != "" {
+			w.WriteHeader(http.StatusForbidden)
+			reply(map[string]any{"code": "permission_denied", "message": refusal})
+			return
+		}
 		reply(map[string]any{"name": "projects/hr"})
 	default:
 		w.WriteHeader(http.StatusNotFound)
@@ -205,6 +213,46 @@ func TestSetJustInTimeAccessRefusesAClientThatCannotConfirm(t *testing.T) {
 	require.Empty(t, mock.calls())
 }
 
+func TestSetJustInTimeAccessReportsTheRefusalInTheServersWords(t *testing.T) {
+	mock := &projectMock{refusal: "permission denied: bb.projects.update"}
+	session := connectToProjectServer(t, mock, &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(true)}).handle})
+
+	res := callSetJustInTimeAccess(t, session, true)
+	require.True(t, res.IsError)
+	text := resultText(t, res)
+	require.Contains(t, text, "failed to turn on just-in-time access in projects/hr: HTTP 403: permission denied: bb.projects.update")
+	require.NotContains(t, text, "Turned on")
+	require.Nil(t, res.StructuredContent)
+	require.Len(t, mock.calls(), 1)
+}
+
+func TestSetJustInTimeAccessTellsAClientThatCannotConfirmWhenNothingIsNeeded(t *testing.T) {
+	mock := &projectMock{enabled: true}
+	session := connectToProjectServer(t, mock, nil)
+
+	res := callSetJustInTimeAccess(t, session, true)
+	require.False(t, res.IsError, resultText(t, res))
+	require.Contains(t, resultText(t, res), "already on in projects/hr, so nothing changed")
+	require.Empty(t, mock.calls())
+}
+
+func TestSetJustInTimeAccessRefusesAnUnaskedAnswerFromAClientThatCannotConfirm(t *testing.T) {
+	mock := &projectMock{}
+	session := connectToProjectServer(t, mock, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	res, err := session.CallTool(ctx, &mcp.CallToolParams{
+		Name:           "set_just_in_time_access",
+		Arguments:      map[string]any{"project": "projects/hr", "enabled": true},
+		InputResponses: mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(true)},
+	})
+	require.NoError(t, err)
+	require.True(t, res.IsError)
+	require.Contains(t, resultText(t, res), "CONFIRMATION_UNAVAILABLE")
+	require.Empty(t, mock.calls())
+}
+
 func TestSetJustInTimeAccessBindsTheAnswerToTheArguments(t *testing.T) {
 	mock := &projectMock{}
 	s := newProjectServer(t, mock)
@@ -265,6 +313,9 @@ func TestSetJustInTimeAccessFormShowsTheChangeInClaudeCodesDialog(t *testing.T) 
 				view := claudeCodeView(message, columns)
 				require.Len(t, view, 2, "%q", view)
 				require.True(t, strings.HasPrefix(view[0], fmt.Sprintf("Turn %s just-in-time access in project ", change.state())), "%q", view)
+				if columns == 120 {
+					require.Contains(t, view[0], `"`+longProject, "at 120 columns a 63-character project ID shows whole; the email is cut: %q", view)
+				}
 				require.True(t, strings.HasPrefix(view[1], "Active grants"), "the effect: %q", view)
 				require.NotContains(t, view[1], "…", "the effect line must fit whole: %q", view)
 			})

@@ -1,7 +1,6 @@
 package mcp
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -101,17 +100,6 @@ func (s *Server) handleSetJustInTimeAccess(ctx context.Context, req *mcp.CallToo
 	}
 	link := s.projectSettingsLink(ctx, change.project)
 
-	// Checked before any answer is read: a client that declared no form cannot
-	// have shown one, so an answer it sends is not a confirmation.
-	if req == nil || req.Session == nil || !clientSupportsElicitation(req.Session) {
-		return formatToolError(&toolError{
-			Code: "CONFIRMATION_UNAVAILABLE",
-			Message: fmt.Sprintf("this MCP client cannot show the confirmation form set_just_in_time_access needs, so just-in-time access in %s was not turned %s and nothing changed",
-				change.project, change.state()),
-			Suggestion: "change it signed in to the Bytebase console: " + link,
-		}), nil, nil
-	}
-
 	// Read on both rounds: a project already in the requested state, before
 	// asking or by the time the answer comes back, needs no write.
 	var project projectView
@@ -123,19 +111,22 @@ func (s *Server) handleSetJustInTimeAccess(ctx context.Context, req *mcp.CallToo
 				"Just-in-time access is already %s in %s, so nothing changed.\nProject settings: %s", change.state(), change.project, link)}}},
 			&SetJustInTimeAccessOutput{Project: change.project, Enabled: change.enabled, Link: link}, nil
 	}
+	if !canShowConfirmation(req) {
+		return formatToolError(&toolError{
+			Code: "CONFIRMATION_UNAVAILABLE",
+			Message: fmt.Sprintf("this MCP client cannot show the confirmation form set_just_in_time_access needs, so just-in-time access in %s was not turned %s and nothing changed",
+				change.project, change.state()),
+			Suggestion: "change it signed in to the Bytebase console: " + link,
+		}), nil, nil
+	}
 	body, err := json.Marshal(change.body())
 	if err != nil {
 		return formatToolError(errors.Wrap(err, "failed to build the update")), nil, nil
 	}
 	digest := sha256.Sum256(body)
-
-	// An answer counts only with the request state this server signed when it
-	// asked; without one the call is asked like a first one.
-	if response, state, answered := confirmationAnswer(req); answered {
-		if asked, signed := s.verifyConfirmationState(ctx, change, state); signed {
-			result, output := s.setJustInTimeAccessOnAnswer(ctx, change, response, bytes.Equal(asked, digest[:]), link)
-			return result, output, nil
-		}
+	if reply, answered := s.signedReply(ctx, req, change, digest[:]); answered {
+		result, output := s.setJustInTimeAccessOnAnswer(ctx, change, reply, link)
+		return result, output, nil
 	}
 
 	verb := "Turn " + change.state()
@@ -161,17 +152,17 @@ func describeJustInTimeChange(ctx context.Context, change *justInTimeChange) str
 
 // setJustInTimeAccessOnAnswer acts on the answer to a form this server sent. A
 // decline is reported before a change, so a user who said no is not asked again.
-func (s *Server) setJustInTimeAccessOnAnswer(ctx context.Context, change *justInTimeChange, response mcp.InputResponse, unchanged bool, link string) (*mcp.CallToolResult, any) {
-	if confirmed, why := confirmationOutcome(response); !confirmed {
+func (s *Server) setJustInTimeAccessOnAnswer(ctx context.Context, change *justInTimeChange, reply *confirmationReply, link string) (*mcp.CallToolResult, any) {
+	if confirmed, why := confirmationOutcome(reply.response); !confirmed {
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf(
 			"Just-in-time access in %s was not turned %s: %s, so nothing changed. Do not retry unless the user asks.\nProject settings: %s",
 			change.project, change.state(), why, link)}}}, nil
 	}
-	if !unchanged {
+	if why := reply.staleReason("what the user confirmed does not match this call"); why != "" {
 		return formatToolError(&toolError{
 			Code: "STALE_CONFIRMATION",
-			Message: fmt.Sprintf("what the user confirmed does not match this call, so just-in-time access in %s was not turned %s and nothing changed",
-				change.project, change.state()),
+			Message: fmt.Sprintf("%s, so just-in-time access in %s was not turned %s and nothing changed",
+				why, change.project, change.state()),
 			Suggestion: "call set_just_in_time_access again to ask the user about this change",
 		}), nil
 	}
