@@ -152,6 +152,7 @@ func TestDatabaseWritersRespectProjectInstanceOwnership(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, projectC, database.ProjectID)
+	require.Equal(t, projectB, getDatabaseProject(ctx, t, s, "workspace-instance", "independent"))
 }
 
 // workspaceInstanceSeed seeds two projects and one workspace-level instance.
