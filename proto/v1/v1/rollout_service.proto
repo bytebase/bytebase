@@ -46,37 +46,17 @@ service RolloutService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     // WRITE, and it stays WRITE: executing an approved change is what a
-    // read-write session is for. Two ways a change reaches execution without a
-    // human approval ride this method, and they get OPPOSITE answers, because
-    // only one of them is fixable at the MCP layer. Both are stated here
-    // because the gate PR is the reader who needs them.
+    // read-write session is for. Two ways a change reaches execution without
+    // an approval ride this method, and they get OPPOSITE answers, because
+    // only one of them is fixable at the MCP layer.
     //
-    // 1. DELIVERED by the gate PR (1b-2), as rejectMCPOriginatedIssuelessRollout
-    //    in rollout_service.go, on CreateRollout and BatchRunTasks both.
-    //    Both approval checks on this path are
-    //    guarded on a LINKED ISSUE existing (rollout_service.go, and the
-    //    locked re-check in component/review/rollout.go), so a plan created
-    //    without one reaches task creation with no approval whatever
-    //    require_issue_approval says. The rule to implement: on the MCP path,
-    //    refuse CreateRollout and BatchRunTasks when the project sets
-    //    require_issue_approval and the plan has no linked approved issue.
-    //    It keys on the delegated grant, so the console and the GitOps agent
-    //    are unaffected, and it bites on CreateRollout first per the ordering
-    //    trap below. Not because the behavior is a defect — the shipped GitOps Service
-    //    Agent role holds no issue permission at all, so issueless deployment
-    //    is a supported product contract, and READ_WRITE preserves supported
-    //    contracts. Because without the rule the four FORBIDDEN approval
-    //    methods are decorative for the change lane: an agent that cannot
-    //    clear the gate can skip it instead, which is the same end state the
-    //    self-approval guard exists to prevent. Ordering trap: once an
-    //    issueless rollout exists, approval finding refuses outright ("rollout
-    //    already started"), so the rule has to bite before the rollout, not
-    //    after. BOT-71 tracks whether the product should close this for every
-    //    caller; if it does, this rule becomes redundant rather than wrong.
+    // 1. A plan with no linked issue, in a project that requires issue
+    //    approval: refused to MCP sessions on this method and BatchRunTasks by
+    //    rejectMCPOriginatedIssuelessRollout (rollout_service.go), which
+    //    states why.
     //
-    // 2. The gate PR owes NOTHING here, and must not pretend otherwise. An
-    //    approval binds the plan's specs and its approval_input_version, not
-    //    the set of databases a group target resolves to. This method
+    // 2. An approval binds the plan's specs and its approval_input_version,
+    //    not the set of databases a group target resolves to. This method
     //    re-resolves the group live (rollout_service_task.go), and nothing in
     //    UpdateDatabaseGroup, UpdateDatabase or background schema sync bumps
     //    that version, so databases that join the group after approval execute
@@ -142,10 +122,10 @@ service RolloutService {
     option (bytebase.v1.audit) = true;
     // WRITE, and the same two cases as CreateRollout reach it — this is the
     // method that actually starts execution. Its approval check carries the
-    // identical linked-issue guard, so 1b-2's rule covers this method too
-    // (rejectMCPOriginatedIssuelessRollout, rollout_service.go); and it runs
-    // whatever tasks the live group resolution produced, which no MCP rule can
-    // constrain. Both stated on CreateRollout.
+    // identical linked-issue guard, so rejectMCPOriginatedIssuelessRollout
+    // (rollout_service.go) refuses here too; and it runs whatever tasks the
+    // live group resolution produced, which no MCP rule can constrain. Both
+    // stated on CreateRollout.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 

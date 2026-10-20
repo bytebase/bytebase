@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -123,8 +124,6 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.UserServiceUpdateEmailProcedure,
 		v1connect.SettingServiceUpdateSettingProcedure,
 		v1connect.InstanceServiceUpdateDataSourceProcedure,
-		v1connect.IssueServiceApproveIssueProcedure,
-		v1connect.IssueServiceRejectIssueProcedure,
 		v1connect.IssueServiceRetryIssueApprovalProcedure,
 		v1connect.AccessGrantServiceActivateAccessGrantProcedure,
 		v1connect.UserServiceChangePasswordProcedure,
@@ -182,8 +181,6 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.SettingServiceTestEmailSettingProcedure:                v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.SettingServiceUpdateSettingProcedure:                   v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY,
 		v1connect.InstanceServiceUpdateDataSourceProcedure:               v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
-		v1connect.IssueServiceApproveIssueProcedure:                      v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
-		v1connect.IssueServiceRejectIssueProcedure:                       v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
 		v1connect.IssueServiceRetryIssueApprovalProcedure:                v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
 		v1connect.AccessGrantServiceActivateAccessGrantProcedure:         v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION,
 	}
@@ -868,13 +865,19 @@ type mcpGateResult struct {
 // interceptor honors the mark.
 func invokeMCPGate(t *testing.T, stores mcpSettingsReader, authCtx *common.AuthContext, procedure string, req connect.AnyRequest) mcpGateResult {
 	t.Helper()
+	return invokeMCPGateFrom(context.Background(), t, stores, authCtx, procedure, req)
+}
+
+// invokeMCPGateFrom is invokeMCPGate on a caller-supplied context, for the
+// requests whose verdict turns on what the MCP server attached to it.
+func invokeMCPGateFrom(ctx context.Context, t *testing.T, stores mcpSettingsReader, authCtx *common.AuthContext, procedure string, req connect.AnyRequest) mcpGateResult {
+	t.Helper()
 	out := mcpGateResult{}
 	next := func(ctx context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
 		out.dispatched = true
 		out.dispatchedCtx = ctx
 		return connect.NewResponse(&v1pb.User{}), nil
 	}
-	ctx := context.Background()
 	if authCtx != nil {
 		ctx = context.WithValue(ctx, common.AuthContextKey, authCtx)
 	}
@@ -1199,6 +1202,80 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		// something else — fails closed rather than waving the call through.
 		got := invokeMCPGate(t, readWriteCeiling(), write, v1connect.IssueServiceCreateIssueProcedure,
 			connect.NewRequest(&v1pb.GetUserRequest{}))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+	})
+}
+
+func TestMCPGateServesAnIssueDecisionOnlyWithItsConfirmation(t *testing.T) {
+	const issue = "projects/p/issues/1"
+	write := classContext(v1pb.MCPMethodClass_WRITE)
+	decisions := map[string]func(name string) connect.AnyRequest{
+		v1connect.IssueServiceApproveIssueProcedure: func(name string) connect.AnyRequest {
+			return connect.NewRequest(&v1pb.ApproveIssueRequest{Name: name})
+		},
+		v1connect.IssueServiceRejectIssueProcedure: func(name string) connect.AnyRequest {
+			return connect.NewRequest(&v1pb.RejectIssueRequest{Name: name})
+		},
+	}
+	confirmed := func(procedure, name string) context.Context {
+		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{
+			Procedure:       procedure,
+			Issue:           name,
+			IssueUpdateTime: time.Date(2026, 10, 13, 8, 0, 0, 123456000, time.UTC),
+		})
+	}
+	other := map[string]string{
+		v1connect.IssueServiceApproveIssueProcedure: v1connect.IssueServiceRejectIssueProcedure,
+		v1connect.IssueServiceRejectIssueProcedure:  v1connect.IssueServiceApproveIssueProcedure,
+	}
+
+	for procedure, request := range decisions {
+		t.Run(procedure, func(t *testing.T) {
+			t.Run("an unconfirmed request, as call_api sends it, is refused", func(t *testing.T) {
+				got := invokeMCPGate(t, readWriteCeiling(), write, procedure, request(issue))
+				require.Error(t, got.err)
+				require.False(t, got.dispatched)
+				require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+				require.Contains(t, got.err.Error(), procedure)
+				require.Contains(t, got.err.Error(), "confirms that decision in the MCP client")
+				require.Contains(t, got.err.Error(), "decide_issue", "the denial must name the path that can confirm")
+				require.True(t, got.auditMarked)
+			})
+
+			t.Run("the confirmed request is served", func(t *testing.T) {
+				got := invokeMCPGateFrom(confirmed(procedure, issue), t, readWriteCeiling(), write, procedure, request(issue))
+				require.NoError(t, got.err)
+				require.True(t, got.dispatched)
+				require.False(t, got.auditMarked)
+			})
+
+			t.Run("a confirmation for another issue is refused", func(t *testing.T) {
+				got := invokeMCPGateFrom(confirmed(procedure, "projects/p/issues/2"), t, readWriteCeiling(), write, procedure, request(issue))
+				require.Error(t, got.err)
+				require.False(t, got.dispatched)
+				require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+			})
+
+			t.Run("a confirmation for the other decision is refused", func(t *testing.T) {
+				got := invokeMCPGateFrom(confirmed(other[procedure], issue), t, readWriteCeiling(), write, procedure, request(issue))
+				require.Error(t, got.err)
+				require.False(t, got.dispatched)
+				require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+			})
+
+			t.Run("a confirmed request is still held to the ceiling", func(t *testing.T) {
+				got := invokeMCPGateFrom(confirmed(procedure, issue), t, readOnlyCeiling(), write, procedure, request(issue))
+				require.Error(t, got.err)
+				require.False(t, got.dispatched)
+				require.Contains(t, got.err.Error(), "READ_ONLY", "the ceiling refuses before the confirmation is looked at")
+			})
+		})
+	}
+
+	t.Run("a request the rule cannot read refuses", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(v1connect.IssueServiceApproveIssueProcedure, issue), t, readWriteCeiling(), write,
+			v1connect.IssueServiceApproveIssueProcedure, connect.NewRequest(&v1pb.GetIssueRequest{Name: issue}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
 	})

@@ -193,6 +193,7 @@ export function WorkspaceSegment({
                 <Button
                   key={ws.name}
                   type="button"
+                  appearance="secondary"
                   className={cn(
                     "h-auto w-full flex items-center justify-between rounded-xs px-3 py-1.5 text-sm gap-x-2",
                     ws.name === currentWorkspaceName
