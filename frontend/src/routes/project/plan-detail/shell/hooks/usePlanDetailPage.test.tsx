@@ -17,7 +17,11 @@ import {
   IssueStatus,
   State,
 } from "@/types/proto-es/v1/common_pb";
-import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueSchema,
+  ReviewRun_Status,
+  ReviewRunSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -1408,6 +1412,62 @@ describe("usePlanDetailPage", () => {
       expect(result.current.plan.planCheckRunStatusCount).toEqual({
         SUCCESS: 1,
       });
+      mocks.fetchPlanSnapshot.mockClear();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(999);
+      });
+      expect(mocks.fetchPlanSnapshot).not.toHaveBeenCalled();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("polls the AI review run actively from queued through running, then idles once it is done", async () => {
+    vi.useFakeTimers();
+    try {
+      const patch = buildSnapshotPatch({ planId: "plan-1" });
+      const withRun = (status: ReviewRun_Status) => ({
+        ...patch,
+        aiReviewRun: create(ReviewRunSchema, {
+          name: "projects/foo/issues/1/reviewRuns/ai",
+          status,
+        }),
+      });
+      mocks.fetchPlanSnapshot
+        .mockResolvedValueOnce(withRun(ReviewRun_Status.AVAILABLE))
+        .mockResolvedValueOnce(withRun(ReviewRun_Status.RUNNING))
+        .mockResolvedValue(withRun(ReviewRun_Status.DONE));
+
+      const { result } = renderHook(
+        () => usePlanDetailPage({ projectId: "foo", planId: "plan-1" }),
+        { wrapper }
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(result.current.aiReviewRun?.status).toBe(
+        ReviewRun_Status.AVAILABLE
+      );
+      mocks.fetchPlanSnapshot.mockClear();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+      expect(result.current.aiReviewRun?.status).toBe(ReviewRun_Status.RUNNING);
+      mocks.fetchPlanSnapshot.mockClear();
+
+      // A status change resets the active backoff to its 500ms floor.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+      expect(result.current.aiReviewRun?.status).toBe(ReviewRun_Status.DONE);
       mocks.fetchPlanSnapshot.mockClear();
 
       await act(async () => {

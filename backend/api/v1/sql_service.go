@@ -1518,7 +1518,8 @@ func (s *SQLService) accessCheck(
 // every other source database. This preserves JIT-grant behavior for the
 // grant's target (the user is already authorized there) but blocks cross-
 // database exfiltration via cross-DB references like `SELECT * FROM db_b.t`
-// from a grant targeting `db_a` — see PR #20487 review.
+// from a grant targeting `db_a` — see PR #20487 review. The exemption is for
+// data access only; see checkDatabaseAccess for why explain stays with IAM.
 //
 // Pass `accessGrant == nil` to skip wrapping; callers in that case should
 // reference `s.accessCheck` directly.
@@ -1567,7 +1568,12 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 
 	checkDatabaseAccess := func(perm permission.Permission) error {
 		databaseFullName := formatDatabaseResourceName(instance, database)
-		if _, granted := grantedTargets[databaseFullName]; granted {
+		// A grant approves reading one statement's data on its target databases, so
+		// the holder needs no IAM role there for that statement. Reading the
+		// statement's plan is a separate capability: the approved statement can
+		// arrive with the explain flag, or be a typed EXPLAIN, and either way
+		// bb.sql.explain still comes from IAM.
+		if _, granted := grantedTargets[databaseFullName]; granted && perm != permission.SQLExplain {
 			return nil
 		}
 		attributes := map[string]any{

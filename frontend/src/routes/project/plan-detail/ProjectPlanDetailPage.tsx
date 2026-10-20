@@ -109,7 +109,7 @@ function ProjectPlanDetailPageInner({
     stageId,
     taskId,
   });
-  useIssueCommentThreadsSync(page.issue);
+  useIssueCommentThreadsSync(page.issue, page.aiReviewRun);
   const unresolvedThreads = useUnresolvedThreadTotal(page.issue?.name);
   usePlacementSync({
     issueName: page.issue?.name,

@@ -648,7 +648,9 @@
     "direct-connection": "Direct Connection",
     "extra-params": {
       "description": "Additional parameters for database connection string",
-      "self": "Extra Parameters"
+      "overridden-by-tls": "Overridden by the TLS section.",
+      "self": "Extra Parameters",
+      "wallet-overridden-by-tls": "Only its stored password is used. The TLS section supplies the certificates."
     },
     "no-read-only-data-source": "No read-only data source",
     "private-key-passphrase": "Private Key Passphrase",
@@ -1697,6 +1699,15 @@
   "plan": {
     "add-spec": "Add Change",
     "add-spec-pending-draft": "Save or discard the pending change before adding another",
+    "ai-review": {
+      "failed-to-run": "Could not start the AI review",
+      "finished": "Finished",
+      "not-run": "Not run yet",
+      "queued": "Queued",
+      "run": "Run AI review",
+      "save-first": "Save or discard your edits to run the AI review.",
+      "status-unknown": "Status not available"
+    },
     "blocker": {
       "clears-on-its-own": "Clears on its own"
     },

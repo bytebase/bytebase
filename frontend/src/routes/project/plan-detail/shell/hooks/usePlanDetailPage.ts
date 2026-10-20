@@ -25,7 +25,10 @@ import {
   IssueStatus,
   State,
 } from "@/types/proto-es/v1/common_pb";
-import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueSchema,
+  ReviewRunSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   PlanCheckRunSchema,
   PlanSchema,
@@ -44,6 +47,7 @@ import { setDocumentTitle } from "@/utils";
 import { isTaskActivelyTransitioning } from "@/utils/v1/issue/rollout";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
+import { isAIReviewRunActive } from "../../utils/aiReviewRun";
 import {
   getPlanCheckSummary,
   isRolloutExpected,
@@ -82,6 +86,7 @@ const buildDefaultSnapshot = (
   rollout: undefined,
   planCheckRuns: [],
   taskRuns: [],
+  aiReviewRun: undefined,
 });
 
 const applyDerivedState = (
@@ -132,6 +137,13 @@ const preserveSnapshotIdentities = (
     out.planCheckRuns = prev.planCheckRuns;
   }
   out.taskRuns = preserveTaskRunIdentities(prev.taskRuns, next.taskRuns);
+  if (
+    prev.aiReviewRun &&
+    next.aiReviewRun &&
+    sameMessage(ReviewRunSchema, prev.aiReviewRun, next.aiReviewRun)
+  ) {
+    out.aiReviewRun = prev.aiReviewRun;
+  }
   const changed = (Object.keys(out) as (keyof PlanDetailPageSnapshot)[]).some(
     (key) => out[key] !== prev[key]
   );
@@ -443,10 +455,14 @@ export const usePlanDetailPage = ({
           snapshot.issue?.status,
           snapshot.issue?.approvalStatus,
           JSON.stringify(snapshot.plan.planCheckRunStatusCount),
+          snapshot.aiReviewRun?.status,
         ].join(":"),
         isPlanDone: false,
         pollingMode:
-          hasActivePlanChecks || approvalChecking || rolloutExpected
+          hasActivePlanChecks ||
+          approvalChecking ||
+          rolloutExpected ||
+          isAIReviewRunActive(snapshot.aiReviewRun)
             ? "active"
             : "idle",
       };
@@ -492,11 +508,18 @@ export const usePlanDetailPage = ({
       isPlanDone: taskCount > 0 && allSettled && !hasActiveTaskRuns,
       pollingMode: shouldPollActively || hasActiveTaskRuns ? "active" : "idle",
     };
-  }, [snapshot.issue, snapshot.plan, snapshot.rollout, snapshot.taskRuns]);
+  }, [
+    snapshot.aiReviewRun,
+    snapshot.issue,
+    snapshot.plan,
+    snapshot.rollout,
+    snapshot.taskRuns,
+  ]);
 
   // Poll the complete snapshot. Idle polling backs off from 1s to 16s. Active
-  // plan checks, approval finding, rollout creation, and task execution share a
-  // faster 500ms -> 1s -> 2s -> 4s cadence which resets when state changes.
+  // plan checks, a queued or running AI review, approval finding, rollout
+  // creation, and task execution share a faster 500ms -> 1s -> 2s -> 4s
+  // cadence which resets when state changes.
   // Independent jitter prevents synchronized clients; hidden tabs pause until
   // they become visible again.
   const { restart: restartPolling } = usePlanPolling({

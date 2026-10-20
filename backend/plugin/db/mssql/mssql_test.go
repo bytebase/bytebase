@@ -353,6 +353,8 @@ SELECT id FROM dbo.t WHERE id = 3;`, queryContext)
 
 	_, err = driver.QueryConn(ctx, conn, "SET NOEXEC ON;\nSELECT 1 AS one;", queryContext)
 	require.EqualError(t, err, "SET NOEXEC is not supported")
+	_, err = driver.QueryConn(ctx, conn, "SET ANSI_NULLS, NOEXEC ON;\nDELETE FROM dbo.t;", queryContext)
+	require.EqualError(t, err, "SET NOEXEC is not supported")
 
 	_, err = driver.QueryConn(ctx, conn, "SELECT 1 AS one;\nSELECT 1/0 AS x;", queryContext)
 	require.ErrorContains(t, err, "Divide by zero error encountered")

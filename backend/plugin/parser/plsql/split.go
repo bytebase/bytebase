@@ -33,7 +33,11 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 			byteEnd = end
 			i += 2
 		}
-		byteEnd = byteStart + trimOracleSegmentTrailingHidden(statement[byteStart:byteEnd])
+		// Embedded Java or JavaScript source does not lex as SQL: its "--"
+		// decrement would read as a comment and cut the source short.
+		if seg.Kind != oracleparser.SegmentEmbeddedSource {
+			byteEnd = byteStart + trimOracleSegmentTrailingHidden(statement[byteStart:byteEnd])
+		}
 		text := statement[byteStart:byteEnd]
 		result = append(result, base.Statement{
 			Text:  text,
