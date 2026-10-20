@@ -8,6 +8,7 @@ import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { useApprovalCandidates } from "../../../useApprovalCandidates";
+import { useSqlReviewV2, withRuleReview } from "../../hooks/useSqlReviewV2";
 import type { PlanDetailPageState } from "../../shell/hooks/types";
 import { getPlanCheckSummary } from "../../utils/phaseSummary";
 import { isReleaseBackedPlan } from "../../utils/spec";
@@ -45,7 +46,13 @@ export function usePlanLifecycleHeader(
     () => isReleaseBackedPlan(page.plan.specs),
     [page.plan.specs]
   );
-  const checks = useMemo(() => getPlanCheckSummary(page.plan), [page.plan]);
+  const sqlReview = useSqlReviewV2();
+  const ruleReviewRun = sqlReview?.ruleReview?.run;
+  const checks = useMemo(
+    () => withRuleReview(getPlanCheckSummary(page.plan), ruleReviewRun),
+    [page.plan, ruleReviewRun]
+  );
+  const unresolvedThreads = sqlReview?.unresolvedThreads ?? 0;
 
   // Depend on the primitives the resolver actually reads, not the whole
   // `issue` object — polling replaces `page.issue` with a fresh reference every
@@ -72,6 +79,7 @@ export function usePlanLifecycleHeader(
         canCurrentUserApprove,
         isCurrentUserReviewCandidate,
         checks,
+        unresolvedThreads,
         hasRollout: !!page.rollout,
         rollout: page.rollout,
       }),
@@ -89,6 +97,7 @@ export function usePlanLifecycleHeader(
       page.plan.state,
       page.readonly,
       page.rollout,
+      unresolvedThreads,
     ]
   );
 }

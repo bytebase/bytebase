@@ -39,6 +39,7 @@ const base: PlanLifecycleResolverInput = {
   canCurrentUserApprove: false,
   isCurrentUserReviewCandidate: false,
   checks: checks(),
+  unresolvedThreads: 0,
   hasRollout: false,
   rollout: undefined,
 };
@@ -188,6 +189,29 @@ describe("resolvePlanLifecycleHeaderState — pre-deploy gates", () => {
       checks: checks(0, 2),
     });
     expect(state).toMatchObject({ kind: "plan-status", reason: "checking" });
+  });
+
+  test("approved + checks passed + open threads -> threads-open", () => {
+    const state = resolve({
+      approvalStatus: ApprovalStatus.APPROVED,
+      unresolvedThreads: 2,
+    });
+    expect(state).toMatchObject({
+      kind: "plan-status",
+      reason: "threads-open",
+    });
+  });
+
+  test("approved + checks failing outranks open threads", () => {
+    const state = resolve({
+      approvalStatus: ApprovalStatus.APPROVED,
+      checks: checks(1),
+      unresolvedThreads: 2,
+    });
+    expect(state).toMatchObject({
+      kind: "plan-status",
+      reason: "checks-failing",
+    });
   });
 
   test("approved + all gates passed, no rollout yet -> preparing-rollout", () => {

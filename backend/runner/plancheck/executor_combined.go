@@ -15,6 +15,7 @@ type CombinedExecutor struct {
 	store        *store.Store
 	sheetManager *sheet.Manager
 	dbFactory    *dbfactory.DBFactory
+	sqlReviewV2  bool
 }
 
 // NewCombinedExecutor creates a combined executor.
@@ -22,11 +23,13 @@ func NewCombinedExecutor(
 	store *store.Store,
 	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
+	sqlReviewV2 bool,
 ) *CombinedExecutor {
 	return &CombinedExecutor{
 		store:        store,
 		sheetManager: sheetManager,
 		dbFactory:    dbFactory,
+		sqlReviewV2:  sqlReviewV2,
 	}
 }
 
@@ -35,6 +38,9 @@ func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *CheckTarget
 	var allResults []*storepb.PlanCheckRunResult_Result
 
 	for _, checkType := range target.Types {
+		if e.sqlReviewV2 && supersededBySQLReviewV2(checkType) {
+			continue
+		}
 		results, err := e.runCheck(ctx, target, checkType)
 		if err != nil {
 			// Add error result for this target/type, continue to next
@@ -59,6 +65,14 @@ func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *CheckTarget
 	}
 
 	return allResults, nil
+}
+
+// supersededBySQLReviewV2 reports whether the standard rule review replaces
+// the check where SQL Review V2 is on: the SQL review advice, and gh-ost's
+// eligibility, which the ONLINE_MIGRATION rule covers.
+func supersededBySQLReviewV2(checkType storepb.PlanCheckType) bool {
+	return checkType == storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE ||
+		checkType == storepb.PlanCheckType_PLAN_CHECK_TYPE_GHOST_SYNC
 }
 
 func (e *CombinedExecutor) runCheck(ctx context.Context, target *CheckTarget, checkType storepb.PlanCheckType) ([]*storepb.PlanCheckRunResult_Result, error) {

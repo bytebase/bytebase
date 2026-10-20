@@ -9,8 +9,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -222,4 +225,103 @@ func TestRunReviewRefusesAIReviewWhileItsSwitchIsOff(t *testing.T) {
 	_, err = runAIReview()
 	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
 	require.ErrorContains(t, err, "AI is not enabled")
+}
+
+func TestRunReviewRefusesRuleReviewWithoutSQLReviewV2(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	service := newIssueServiceForTest(t, stores)
+	service.profile = &config.Profile{}
+	runReview := func(reviewRunID string) (*connect.Response[v1pb.ReviewRun], error) {
+		return service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
+			Name: fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/%s", issue.UID, reviewRunID),
+		}))
+	}
+
+	_, err := runReview("rule")
+	require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
+	claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
+	require.NoError(t, err)
+	require.Empty(t, claimed, "a refused review creates no run")
+
+	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_AI,
+		Workspace: "default",
+		Value:     &storepb.AISetting{Enabled: true, SqlReviewEnabled: true},
+	})
+	require.NoError(t, err)
+	resp, err := runReview("ai")
+	require.NoError(t, err, "the AI review does not depend on SQL Review V2")
+	require.Equal(t, v1pb.ReviewRun_AVAILABLE, resp.Msg.Status)
+}
+
+func TestStartRuleReview(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	b, err := bus.New()
+	require.NoError(t, err)
+	claimRuleRuns := func() []*store.ClaimedReviewRun {
+		t.Helper()
+		claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
+		require.NoError(t, err)
+		return claimed
+	}
+
+	issue := createReviewRunIssue(ctx, t, stores, "project-a")
+	startRuleReview(ctx, &config.Profile{}, stores, b, issue)
+	require.Empty(t, claimRuleRuns(), "SQL Review V2 is off")
+
+	startRuleReview(ctx, &config.Profile{SQLReviewV2: true}, stores, b, issue)
+	claimed := claimRuleRuns()
+	require.Len(t, claimed, 1)
+	require.Equal(t, issue.UID, claimed[0].IssueUID)
+	require.Equal(t, store.ReviewRunTypeRule, claimed[0].Type)
+	require.Len(t, b.ReviewRunTickleChan, 1)
+
+	issue.Status = storepb.Issue_DONE
+	startRuleReview(ctx, &config.Profile{SQLReviewV2: true}, stores, b, issue)
+	require.Empty(t, claimRuleRuns(), "a closed issue is skipped")
+}
+
+func TestResolvingAThreadRequestsARolloutCheck(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	issue := createReviewRunIssue(ctx, t, stores, "project-a")
+	open := store.ThreadStateOpen
+	root, err := stores.CreateIssueComments(ctx, "creator@example.com", &store.IssueCommentMessage{
+		ProjectID:   "project-a",
+		IssueUID:    issue.UID,
+		Payload:     &storepb.IssueCommentPayload{Comment: "Is this safe?"},
+		ThreadState: &open,
+	})
+	require.NoError(t, err)
+	parent := fmt.Sprintf("projects/project-a/issues/%d", issue.UID)
+	setThreadState := func(service *IssueService, state v1pb.IssueComment_ThreadState) {
+		t.Helper()
+		_, err := service.UpdateIssueComment(ctx, connect.NewRequest(&v1pb.UpdateIssueCommentRequest{
+			Parent: parent,
+			IssueComment: &v1pb.IssueComment{
+				Name:        fmt.Sprintf("%s/issueComments/%s", parent, root.ResourceID),
+				ThreadState: &state,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"thread_state"}},
+		}))
+		require.NoError(t, err)
+	}
+
+	withoutV2 := newIssueServiceForTest(t, stores)
+	withoutV2.profile = &config.Profile{}
+	setThreadState(withoutV2, v1pb.IssueComment_RESOLVED)
+	require.Empty(t, withoutV2.bus.RolloutCreationChan)
+
+	service := newIssueServiceForTest(t, stores)
+	setThreadState(service, v1pb.IssueComment_OPEN)
+	require.Empty(t, service.bus.RolloutCreationChan, "reopening holds the rollout; it releases nothing")
+	setThreadState(service, v1pb.IssueComment_RESOLVED)
+	require.Len(t, service.bus.RolloutCreationChan, 1)
+	require.Equal(t, bus.PlanRef{ProjectID: "project-a", PlanID: *issue.PlanUID}, <-service.bus.RolloutCreationChan)
 }

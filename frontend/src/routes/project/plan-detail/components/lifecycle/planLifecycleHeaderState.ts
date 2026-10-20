@@ -27,7 +27,8 @@ export type PlanStatusReason =
   | "checking" // approved, plan checks still running
   | "in-review" // review pending (the active gate)
   | "rejected" // review rejected
-  | "checks-failing"; // review approved, but plan checks failed
+  | "checks-failing" // review approved, but plan checks failed
+  | "threads-open"; // approved and checks passed, but threads hold the rollout
 
 export type PlanLifecycleHeaderState =
   // Nothing safe to surface (GitOps with no rollout, inconsistent backend
@@ -66,6 +67,8 @@ export interface PlanLifecycleResolverInput {
   isCurrentUserReviewCandidate: boolean;
 
   checks: PlanCheckSummary;
+  // Open threads hold the rollout under SQL Review V2; zero elsewhere.
+  unresolvedThreads: number;
 
   hasRollout: boolean;
   rollout: Rollout | undefined;
@@ -159,6 +162,9 @@ export function resolvePlanLifecycleHeaderState(
     }
     if (input.checks.running > 0) {
       return { kind: "plan-status", reason: "checking" };
+    }
+    if (input.unresolvedThreads > 0) {
+      return { kind: "plan-status", reason: "threads-open" };
     }
     // All required gates passed; the backend auto-creates the rollout. Show a
     // transient progress state until it arrives, then resolveDeploy takes over.

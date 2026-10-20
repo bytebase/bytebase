@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getRolloutStatus } from "@/utils";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { getReviewBadge } from "../utils/reviewBadge";
 import { DeployBranch } from "./components/deploy/DeployBranch";
 import { PlanDetailChangesBranch } from "./components/PlanDetailChangesBranch";
@@ -26,6 +27,7 @@ import { PlanReviewSection } from "./components/review/PlanReviewSection";
 import { useUnresolvedThreadTotal } from "./components/threads/useUnresolvedThreadCounts";
 import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
 import { usePlacementSync } from "./hooks/usePlacementSync";
+import { SqlReviewV2Provider } from "./hooks/useSqlReviewV2";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import { planPhaseAnchorId } from "./shell/focusPhase";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
@@ -261,144 +263,152 @@ function ProjectPlanDetailPageInner({
 
   return (
     <PlanDetailProvider value={page}>
-      <div
-        ref={setPageHost}
-        data-testid="plan-detail-page"
-        className="relative min-h-full overflow-x-clip bg-control-bg/50"
-      >
+      <SqlReviewV2Provider>
         <div
-          className={cn(
-            "flex min-h-full flex-col",
-            page.ready ? "" : "invisible pointer-events-none"
-          )}
+          ref={setPageHost}
+          data-testid="plan-detail-page"
+          className="relative min-h-full overflow-x-clip bg-control-bg/50"
         >
-          {/* Only the title/action row is sticky (GitHub issue-header pattern);
+          <div
+            className={cn(
+              "flex min-h-full flex-col",
+              page.ready ? "" : "invisible pointer-events-none"
+            )}
+          >
+            {/* Only the title/action row is sticky (GitHub issue-header pattern);
               the description + metadata below scroll away beneath it. The
               dashboard main pane is the scroll container, so top-0 pins to it;
               z-20 keeps it above the phase rail nodes (z-10). The border appears
               only when stuck, so the row is flat at the top. */}
-          <header
-            className={cn(
-              "sticky top-0 z-20 shrink-0 bg-background",
-              headerStuck && "border-b"
-            )}
-          >
-            <PlanDetailHeader />
-          </header>
-          <PlanDetailHeaderDetails />
+            <header
+              className={cn(
+                "sticky top-0 z-20 shrink-0 bg-background",
+                headerStuck && "border-b"
+              )}
+            >
+              <PlanDetailHeader />
+            </header>
+            <PlanDetailHeaderDetails />
 
-          <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
-            {/* No row gap here: each PhaseSection's pb-6 carries the spacing,
+            <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
+              {/* No row gap here: each PhaseSection's pb-6 carries the spacing,
                   which the connector line fills so it stays continuous. */}
-            <div className="flex min-w-0 flex-col pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
-              <PhaseSection
-                anchorId={planPhaseAnchorId("changes")}
-                badge={phaseConfigs.changes.badge}
-                expanded={page.activePhases.has("changes")}
-                icon={<Code2 className="size-3 md:size-4" />}
-                lineClass={phaseConfigs.changes.lineClass}
-                label={t("plan.navigator.changes")}
-                onSelect={() => selectPhase("changes")}
-                status={phaseConfigs.changes.status}
-                onToggle={() => page.togglePhase("changes")}
-                summary={buildChangesSummary(page.plan, t)}
-              >
-                <PlanDetailChangesBranch
-                  onSelectedSpecIdChange={setSelectedSpecId}
-                  selectedSpecId={effectiveSelectedSpecId}
-                />
-              </PhaseSection>
-
-              {reviewVisible && (
+              <div className="flex min-w-0 flex-col pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
                 <PhaseSection
-                  anchorId={planPhaseAnchorId("review")}
-                  badge={phaseConfigs.review.badge}
-                  expanded={page.activePhases.has("review")}
-                  icon={<MessageSquareMore className="size-3 md:size-4" />}
-                  lineClass={phaseConfigs.review.lineClass}
-                  label={t("plan.navigator.review")}
-                  onSelect={() => selectPhase("review")}
-                  status={phaseConfigs.review.status}
-                  onToggle={() => page.togglePhase("review")}
-                  summary={buildReviewSummary(page.issue, t, unresolvedThreads)}
+                  anchorId={planPhaseAnchorId("changes")}
+                  badge={phaseConfigs.changes.badge}
+                  expanded={page.activePhases.has("changes")}
+                  icon={<Code2 className="size-3 md:size-4" />}
+                  lineClass={phaseConfigs.changes.lineClass}
+                  label={t("plan.navigator.changes")}
+                  onSelect={() => selectPhase("changes")}
+                  status={phaseConfigs.changes.status}
+                  onToggle={() => page.togglePhase("changes")}
+                  summary={buildChangesSummary(page.plan, t)}
+                >
+                  <PlanDetailChangesBranch
+                    onSelectedSpecIdChange={setSelectedSpecId}
+                    selectedSpecId={effectiveSelectedSpecId}
+                  />
+                </PhaseSection>
+
+                {reviewVisible && (
+                  <PhaseSection
+                    anchorId={planPhaseAnchorId("review")}
+                    badge={phaseConfigs.review.badge}
+                    expanded={page.activePhases.has("review")}
+                    icon={<MessageSquareMore className="size-3 md:size-4" />}
+                    lineClass={phaseConfigs.review.lineClass}
+                    label={t("plan.navigator.review")}
+                    onSelect={() => selectPhase("review")}
+                    status={phaseConfigs.review.status}
+                    onToggle={() => page.togglePhase("review")}
+                    summary={buildReviewSummary(
+                      page.issue,
+                      t,
+                      unresolvedThreads
+                    )}
+                    future={
+                      <p className="mt-0.5 text-sm text-control-placeholder">
+                        {t("plan.phase.review-description")}
+                      </p>
+                    }
+                  >
+                    <PlanReviewSection />
+                  </PhaseSection>
+                )}
+
+                <PhaseSection
+                  anchorId={planPhaseAnchorId("deploy")}
+                  badge={phaseConfigs.deploy.badge}
+                  expanded={page.activePhases.has("deploy")}
+                  icon={<Rocket className="size-3 md:size-4" />}
+                  isLast
+                  label={t("plan.navigator.deploy")}
+                  status={phaseConfigs.deploy.status}
+                  onSelect={() => selectPhase("deploy")}
+                  onToggle={() => page.togglePhase("deploy")}
+                  summary={buildDeploySummary(
+                    page.issue?.draft ? undefined : page.rollout,
+                    t
+                  )}
                   future={
-                    <p className="mt-0.5 text-sm text-control-placeholder">
-                      {t("plan.phase.review-description")}
-                    </p>
+                    page.issue?.draft ? (
+                      <p className="mt-0.5 text-sm text-control-placeholder">
+                        {sqlReviewV2Enabled()
+                          ? t("plan.phase.deploy-description-v2")
+                          : t("plan.phase.deploy-description")}
+                      </p>
+                    ) : (
+                      <PlanDetailDeployFuture />
+                    )
                   }
                 >
-                  <PlanReviewSection />
+                  <DeployBranch />
                 </PhaseSection>
-              )}
-
-              <PhaseSection
-                anchorId={planPhaseAnchorId("deploy")}
-                badge={phaseConfigs.deploy.badge}
-                expanded={page.activePhases.has("deploy")}
-                icon={<Rocket className="size-3 md:size-4" />}
-                isLast
-                label={t("plan.navigator.deploy")}
-                status={phaseConfigs.deploy.status}
-                onSelect={() => selectPhase("deploy")}
-                onToggle={() => page.togglePhase("deploy")}
-                summary={buildDeploySummary(
-                  page.issue?.draft ? undefined : page.rollout,
-                  t
-                )}
-                future={
-                  page.issue?.draft ? (
-                    <p className="mt-0.5 text-sm text-control-placeholder">
-                      {t("plan.phase.deploy-description")}
-                    </p>
-                  ) : (
-                    <PlanDetailDeployFuture />
-                  )
-                }
-              >
-                <DeployBranch />
-              </PhaseSection>
-            </div>
-          </main>
-        </div>
-
-        {!page.ready && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
-            <Loader2 className="h-8 w-8 animate-spin text-accent" />
-            <div className="text-sm text-control-light">
-              {t("common.loading")}
-            </div>
+              </div>
+            </main>
           </div>
-        )}
 
-        <AlertDialog
-          open={page.pendingLeaveConfirm}
-          onOpenChange={(open) => {
-            if (!open) {
-              page.resolveLeaveConfirm(false);
-            }
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogTitle>
-              {t("common.leave-without-saving")}
-            </AlertDialogTitle>
-            <AlertDialogFooter>
-              <Button
-                appearance="outline"
-                onClick={() => page.resolveLeaveConfirm(false)}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => page.resolveLeaveConfirm(true)}
-              >
-                {t("common.discard-changes")}
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+          {!page.ready && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              <div className="text-sm text-control-light">
+                {t("common.loading")}
+              </div>
+            </div>
+          )}
+
+          <AlertDialog
+            open={page.pendingLeaveConfirm}
+            onOpenChange={(open) => {
+              if (!open) {
+                page.resolveLeaveConfirm(false);
+              }
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogTitle>
+                {t("common.leave-without-saving")}
+              </AlertDialogTitle>
+              <AlertDialogFooter>
+                <Button
+                  appearance="outline"
+                  onClick={() => page.resolveLeaveConfirm(false)}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => page.resolveLeaveConfirm(true)}
+                >
+                  {t("common.discard-changes")}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </SqlReviewV2Provider>
     </PlanDetailProvider>
   );
 }

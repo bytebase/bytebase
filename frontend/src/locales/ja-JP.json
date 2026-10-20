@@ -1750,6 +1750,10 @@
       "gate-review-approved": "変更が承認されました",
       "gate-review-pending": "レビュー中",
       "gate-review-rejected": "変更がリクエストされました",
+      "gate-threads-open-sub": "すべてのスレッドを解決するとロールアウトが作成されます",
+      "gate-threads-open_one": "未解決のスレッド {{count}} 件",
+      "gate-threads-open_other": "未解決のスレッド {{count}} 件",
+      "gate-threads-resolved": "すべてのスレッドが解決済み",
       "incomplete": "未完了",
       "preparing-rollout": "ロールアウトを準備中…",
       "rejected": "却下されました",
@@ -1780,6 +1784,7 @@
       "create-rollout-action": "手動でロールアウトを作成",
       "deploy-description": "すべてのチェックが通過し、Issue が承認されると、Bytebase は自動的にロールアウトを作成します。",
       "deploy-description-gitops": "このプランはロールアウトの準備ができています。リンクされたリリースをデプロイするにはロールアウトを作成してください。",
+      "deploy-description-v2": "すべてのチェックが通過し、すべてのスレッドが解決され、Issue が承認されると、Bytebase は自動的にロールアウトを作成します。",
       "hide-details": "詳細を隠す",
       "review-description": "続行するにはレビューに提出してください",
       "show-details": "詳細を表示"
@@ -1817,6 +1822,7 @@
       "footer": {
         "all-gates-passed": "すべての条件を満たしました",
         "approved-but-checks-failed": "レビューは承認されましたが、プランチェックに失敗しました",
+        "approved-but-threads-open": "レビューは承認されましたが、未解決のスレッドがあります",
         "auto-rollout-after-approval": "承認後にロールアウトが自動作成されます",
         "blocked-by-rejection": "却下されたレビューによりブロックされています — 続行するには上記のフィードバックに対応してください",
         "bypass-and-deploy": "バイパスしてデプロイ",
@@ -1827,6 +1833,8 @@
         "confirm-checks-running": "プランチェック実行中",
         "confirm-review-not-approved": "レビュー未承認",
         "confirm-review-rejected": "レビュー却下",
+        "confirm-unresolved-threads_one": "未解決のスレッド {{count}} 件",
+        "confirm-unresolved-threads_other": "未解決のスレッド {{count}} 件",
         "creating-rollout-automatically": "ロールアウトを自動作成中...",
         "errors-passed-not-created_one": "{{count}} 件のエラー、{{passed}} 件合格。ロールアウトは自動作成されませんでした。",
         "errors-passed-not-created_other": "{{count}} 件のエラー、{{passed}} 件合格。ロールアウトは自動作成されませんでした。",
@@ -1840,6 +1848,8 @@
         "rollout-auto-creates": "承認後にロールアウトが自動作成されます",
         "rollout-blocked-by-failed-checks": "チェックが通過するまでロールアウトは自動作成されません",
         "rollout-not-created": "ロールアウトは自動作成されませんでした",
+        "threads-open-not-created_one": "未解決のスレッド {{count}} 件。ロールアウトは自動作成されませんでした。",
+        "threads-open-not-created_other": "未解決のスレッド {{count}} 件。ロールアウトは自動作成されませんでした。",
         "waiting-on-review": "レビュー待ち"
       },
       "last-plan-editor-cannot-approve": "この Issue を承認できません。最後にプランを変更したユーザーであるためです。別のレビュー担当者による承認が必要です。",
@@ -1893,6 +1903,16 @@
       "description_one": "ロールアウト #{{rolloutId}} の選択したタスク 1 件をロールバックします。",
       "description_other": "ロールアウト #{{rolloutId}} の選択したタスク {{count}} 件をロールバックします。",
       "title": "ロールアウト #{{rolloutId}} のロールバック"
+    },
+    "rule-review": {
+      "failed": "SQL レビューに失敗しました",
+      "load-failed": "SQL レビューの状態を読み込めませんでした。",
+      "no-open-findings": "未解決の指摘はありません",
+      "not-run": "SQL レビュー未実行",
+      "open-findings_one": "未解決の指摘 {{count}} 件",
+      "open-findings_other": "未解決の指摘 {{count}} 件",
+      "queued": "SQL レビュー待機中",
+      "running": "SQL レビュー実行中"
     },
     "run": "再チェック",
     "select-isolation-level": "分離レベルを選択",

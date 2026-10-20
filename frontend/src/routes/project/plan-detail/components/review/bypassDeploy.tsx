@@ -26,6 +26,7 @@ import { pushNotification } from "@/stores";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { useSqlReviewV2, withRuleReview } from "../../hooks/useSqlReviewV2";
 import { focusPlanPhase } from "../../shell/focusPhase";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import type { PlanCheckSummary } from "../../utils/phaseSummary";
@@ -51,6 +52,7 @@ export interface BypassDeploy {
   setAcknowledge: (value: boolean) => void;
   gates: { label: string; met: boolean }[];
   gatesBlocked: boolean;
+  unresolvedThreads: number;
   warnings: string[];
   needAck: boolean;
   confirmDisabled: boolean;
@@ -64,7 +66,13 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [acknowledge, setAcknowledge] = useState(false);
 
-  const checks = useMemo(() => getPlanCheckSummary(plan), [plan]);
+  const sqlReview = useSqlReviewV2();
+  const ruleReviewRun = sqlReview?.ruleReview?.run;
+  const unresolvedThreads = sqlReview?.unresolvedThreads ?? 0;
+  const checks = useMemo(
+    () => withRuleReview(getPlanCheckSummary(plan), ruleReviewRun),
+    [plan, ruleReviewRun]
+  );
   const state = useMemo(
     () =>
       computeReadinessFooterState({
@@ -72,8 +80,15 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
         issueStatus: issue.status,
         approvalStatus: issue.approvalStatus,
         checks,
+        unresolvedThreads,
       }),
-    [checks, issue.approvalStatus, issue.status, plan.hasRollout]
+    [
+      checks,
+      issue.approvalStatus,
+      issue.status,
+      plan.hasRollout,
+      unresolvedThreads,
+    ]
   );
   const weight = computeBypassActionWeight({
     state: state.kind,
@@ -82,11 +97,14 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   });
   const planCheckSummary = useMemo(
     () =>
-      getPlanCheckSummaryWithFallback(
-        page.planCheckRuns,
-        plan.planCheckRunStatusCount
+      withRuleReview(
+        getPlanCheckSummaryWithFallback(
+          page.planCheckRuns,
+          plan.planCheckRunStatusCount
+        ),
+        ruleReviewRun
       ),
-    [page.planCheckRuns, plan.planCheckRunStatusCount]
+    [page.planCheckRuns, plan.planCheckRunStatusCount, ruleReviewRun]
   );
 
   const openConfirm = () => {
@@ -133,7 +151,8 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   // only bypass the project's *optional* requirements, never its mandatory ones.
   const reviewApproved =
     state.kind === "all-gates-passed" ||
-    state.kind === "approved-checks-failed";
+    state.kind === "approved-checks-failed" ||
+    state.kind === "approved-threads-open";
   const gates: { label: string; met: boolean }[] = [];
   if (page.projectRequireIssueApproval) {
     gates.push({
@@ -167,6 +186,13 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   if (checks.running > 0) {
     warnings.push(t("plan.review.footer.confirm-checks-running"));
   }
+  if (unresolvedThreads > 0) {
+    warnings.push(
+      t("plan.review.footer.confirm-unresolved-threads", {
+        count: unresolvedThreads,
+      })
+    );
+  }
   const needAck = warnings.length > 0;
   const confirmDisabled = creating || gatesBlocked || (needAck && !acknowledge);
 
@@ -183,6 +209,7 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
     setAcknowledge,
     gates,
     gatesBlocked,
+    unresolvedThreads,
     warnings,
     needAck,
     confirmDisabled,

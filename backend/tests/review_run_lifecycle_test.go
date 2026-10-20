@@ -18,6 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	component "github.com/bytebase/bytebase/backend/component/config"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -59,7 +60,7 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	ctl, ctx := startWorkspace(ctx, t)
+	ctl, ctx := startWorkspace(ctx, t, func(p *component.Profile) { p.SQLReviewV2 = true })
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -69,13 +70,21 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
 
 	// Fresh colliding plan+issue pairs without rollouts.
-	_, issueA := createPlanAndIssue(ctx, t, ctl, fixture.ProjectA, fixture.DatabaseA, "Review lifecycle A")
+	planA, issueA := createPlanAndIssue(ctx, t, ctl, fixture.ProjectA, fixture.DatabaseA, "Review lifecycle A")
 	_, issueB := createPlanAndIssue(ctx, t, ctl, fixture.ProjectB, fixture.DatabaseB, "Review lifecycle B")
 	projectAID, issueAUID, err := common.GetProjectIDIssueUID(issueA.Name)
 	a.NoError(err)
 	projectBID, issueBUID, err := common.GetProjectIDIssueUID(issueB.Name)
 	a.NoError(err)
 	a.Equal(issueAUID, issueBUID, "fixture issue ids should collide")
+
+	// Creating an issue starts its rule review.
+	rowA := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
+	a.Equal("DONE", rowA.Status, "rule review on project A, got payload %s", rowA.Payload)
+	a.Equal(int64(0), rowA.Attempt)
+	rowB := waitReviewRunTerminal(ctx, t, ctl, projectBID, issueBUID, "RULE")
+	a.Equal("DONE", rowB.Status, "rule review on project B, got payload %s", rowB.Payload)
+	a.Equal(int64(0), rowB.Attempt)
 
 	// Unknown reviewer type.
 	_, err = runReview(ctx, ctl, issueA.Name, "bogus")
@@ -100,24 +109,50 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 
 	// The scheduler claims and executes both. The rule executor evaluates
 	// the real test databases through omni's SQL Review V2 contract.
-	rowA := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
+	rowA = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
 	a.Equal("DONE", rowA.Status, "rule review on project A, got payload %s", rowA.Payload)
-	a.Equal(int64(0), rowA.Attempt)
-	rowB := waitReviewRunTerminal(ctx, t, ctl, projectBID, issueBUID, "RULE")
+	a.Equal(int64(1), rowA.Attempt)
+	rowB = waitReviewRunTerminal(ctx, t, ctl, projectBID, issueBUID, "RULE")
 	a.Equal("DONE", rowB.Status, "rule review on project B, got payload %s", rowB.Payload)
-	a.Equal(int64(0), rowB.Attempt)
+	a.Equal(int64(1), rowB.Attempt)
 
 	// Re-running A bumps only A's attempt; B's colliding slot is untouched.
+	// The fixture's own issues started reviews too; they settle first.
+	a.Eventually(func() bool {
+		for _, r := range listReviewRuns(ctx, t, ctl, projectBID) {
+			if r.Status != "DONE" && r.Status != "FAILED" {
+				return false
+			}
+		}
+		return true
+	}, 90*time.Second, 500*time.Millisecond, "project B review runs should settle")
 	beforeB := listReviewRuns(ctx, t, ctl, projectBID)
 	a.Greater(len(beforeB), 0, "project B should have review_run rows")
 	runA2, err := runReview(ctx, ctl, issueA.Name, "rule")
 	a.NoError(err)
 	a.Equal(v1pb.ReviewRun_AVAILABLE, runA2.Status)
 	rowA2 := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
-	a.Equal(int64(1), rowA2.Attempt)
+	a.Equal(int64(2), rowA2.Attempt)
 	a.Equal("DONE", rowA2.Status)
 	afterB := listReviewRuns(ctx, t, ctl, projectBID)
 	a.Equal(beforeB, afterB, "project B review_run rows must be untouched by A's re-run")
+
+	// Running the plan checks re-runs the rule review, and the checks leave
+	// the SQL review to it.
+	_, err = ctl.planServiceClient.RunPlanChecks(ctx, connect.NewRequest(&v1pb.RunPlanChecksRequest{Name: planA.Name}))
+	a.NoError(err)
+	rowA2 = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
+	a.Equal(int64(3), rowA2.Attempt)
+	a.Equal("DONE", rowA2.Status)
+	waitPlanCheckRunSettled(ctx, t, ctl, planA.Name)
+	checkRun, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{Name: planA.Name + "/planCheckRun"}))
+	a.NoError(err)
+	var checkTypes []v1pb.PlanCheckRun_Result_Type
+	for _, result := range checkRun.Msg.Results {
+		checkTypes = append(checkTypes, result.Type)
+	}
+	a.Contains(checkTypes, v1pb.PlanCheckRun_Result_STATEMENT_SUMMARY_REPORT)
+	a.NotContains(checkTypes, v1pb.PlanCheckRun_Result_STATEMENT_ADVISE)
 
 	brokenModel := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, `{"error": {"message": "quota exceeded"}}`, http.StatusServiceUnavailable)
@@ -150,7 +185,7 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a.Contains(aiRow.Payload, "model call 1 failed")
 	// The failed AI run left A's rule slot alone.
 	rowA3 := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
-	a.Equal(int64(1), rowA3.Attempt)
+	a.Equal(int64(3), rowA3.Attempt)
 	a.Equal("DONE", rowA3.Status)
 
 	// A table in A's database for the model to read through the tools.

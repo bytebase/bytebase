@@ -1750,6 +1750,10 @@
       "gate-review-approved": "Cambios aprobados",
       "gate-review-pending": "Revisión en curso",
       "gate-review-rejected": "Cambios solicitados",
+      "gate-threads-open-sub": "Resuelve todos los hilos para crear el rollout",
+      "gate-threads-open_one": "{{count}} hilo sin resolver",
+      "gate-threads-open_other": "{{count}} hilos sin resolver",
+      "gate-threads-resolved": "Todos los hilos resueltos",
       "incomplete": "Incompleto",
       "preparing-rollout": "Preparando despliegue…",
       "rejected": "Rechazado",
@@ -1780,6 +1784,7 @@
       "create-rollout-action": "Crear rollout manualmente",
       "deploy-description": "Bytebase creará automáticamente el rollout cuando todas las comprobaciones pasen y el issue esté aprobado.",
       "deploy-description-gitops": "Este plan está listo para implementarse. Crea un rollout para desplegar la versión vinculada.",
+      "deploy-description-v2": "Bytebase creará automáticamente el rollout cuando todas las comprobaciones pasen, todos los hilos estén resueltos y el issue esté aprobado.",
       "hide-details": "Ocultar detalles",
       "review-description": "Envíe para revisión para continuar",
       "show-details": "Mostrar detalles"
@@ -1817,6 +1822,7 @@
       "footer": {
         "all-gates-passed": "Todos los requisitos cumplidos",
         "approved-but-checks-failed": "Revisión aprobada, pero las comprobaciones del plan fallaron",
+        "approved-but-threads-open": "Revisión aprobada, pero hay hilos sin resolver",
         "auto-rollout-after-approval": "el despliegue se crea automáticamente tras la aprobación",
         "blocked-by-rejection": "Bloqueado por la revisión rechazada — atiende los comentarios de arriba para continuar",
         "bypass-and-deploy": "Omitir y desplegar",
@@ -1827,6 +1833,8 @@
         "confirm-checks-running": "Comprobaciones del plan en ejecución",
         "confirm-review-not-approved": "Revisión aún no aprobada",
         "confirm-review-rejected": "Revisión rechazada",
+        "confirm-unresolved-threads_one": "{{count}} hilo sin resolver",
+        "confirm-unresolved-threads_other": "{{count}} hilos sin resolver",
         "creating-rollout-automatically": "creando el despliegue automáticamente...",
         "errors-passed-not-created_one": "{{count}} error, {{passed}} superadas. El despliegue no se creó automáticamente.",
         "errors-passed-not-created_other": "{{count}} errores, {{passed}} superadas. El despliegue no se creó automáticamente.",
@@ -1840,6 +1848,8 @@
         "rollout-auto-creates": "El despliegue se crea automáticamente tras la aprobación",
         "rollout-blocked-by-failed-checks": "el despliegue no se creará automáticamente hasta que las comprobaciones pasen",
         "rollout-not-created": "El despliegue no se creó automáticamente",
+        "threads-open-not-created_one": "{{count}} hilo sin resolver. El despliegue no se creó automáticamente.",
+        "threads-open-not-created_other": "{{count}} hilos sin resolver. El despliegue no se creó automáticamente.",
         "waiting-on-review": "Esperando revisión"
       },
       "last-plan-editor-cannot-approve": "No puedes aprobar este issue porque fuiste la última persona en modificar su plan. Otra persona debe aprobarlo.",
@@ -1893,6 +1903,16 @@
       "description_one": "Revertir 1 tarea seleccionada del rollout #{{rolloutId}}.",
       "description_other": "Revertir {{count}} tareas seleccionadas del rollout #{{rolloutId}}.",
       "title": "Revertir rollout #{{rolloutId}}"
+    },
+    "rule-review": {
+      "failed": "La revisión SQL falló",
+      "load-failed": "No se pudo cargar el estado de la revisión SQL.",
+      "no-open-findings": "No hay hallazgos abiertos",
+      "not-run": "Revisión SQL no ejecutada",
+      "open-findings_one": "{{count}} hallazgo abierto",
+      "open-findings_other": "{{count}} hallazgos abiertos",
+      "queued": "Revisión SQL en cola",
+      "running": "Revisión SQL en curso"
     },
     "run": "Volver a verificar",
     "select-isolation-level": "Seleccionar nivel de aislamiento",

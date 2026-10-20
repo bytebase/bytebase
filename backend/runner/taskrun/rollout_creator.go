@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
@@ -20,14 +22,16 @@ type RolloutCreator struct {
 	store          *store.Store
 	bus            *bus.Bus
 	webhookManager *webhook.Manager
+	sqlReviewV2    bool
 }
 
 // NewRolloutCreator creates a new rollout creator.
-func NewRolloutCreator(store *store.Store, bus *bus.Bus, webhookManager *webhook.Manager) *RolloutCreator {
+func NewRolloutCreator(store *store.Store, bus *bus.Bus, webhookManager *webhook.Manager, sqlReviewV2 bool) *RolloutCreator {
 	return &RolloutCreator{
 		store:          store,
 		bus:            bus,
 		webhookManager: webhookManager,
+		sqlReviewV2:    sqlReviewV2,
 	}
 }
 
@@ -180,6 +184,23 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 		}
 	}
 
+	if rc.sqlReviewV2 {
+		blocked, err := rc.reviewBlocksRollout(ctx, issue)
+		if err != nil {
+			slog.Error("failed to check the review for rollout creation",
+				slog.String("project", ref.ProjectID),
+				slog.Int("plan_id", int(planID)),
+				log.BBError(err))
+			return
+		}
+		if blocked {
+			slog.Debug("review not finished or threads open, skipping rollout creation",
+				slog.String("project", ref.ProjectID),
+				slog.Int("plan_id", int(planID)))
+			return
+		}
+	}
+
 	// All conditions met - create the rollout
 	slog.Info("auto-creating rollout", slog.String("project", ref.ProjectID), slog.Int("plan_id", int(planID)))
 
@@ -209,6 +230,32 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	bus.Tickle(rc.bus.TaskRunPendingTickleChan)
 
 	slog.Info("successfully auto-created rollout", slog.String("project", ref.ProjectID), slog.Int("plan_id", int(planID)))
+}
+
+// reviewBlocksRollout reports whether the issue's review holds its rollout
+// under SQL Review V2: the rule review has not finished, or a thread on the
+// issue is open. An open thread blocks whatever its priority, and whoever
+// started it.
+func (rc *RolloutCreator) reviewBlocksRollout(ctx context.Context, issue *store.IssueMessage) (bool, error) {
+	run, err := rc.store.GetReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get the rule review run")
+	}
+	if run != nil && run.Status != storepb.ReviewRun_DONE {
+		return true, nil
+	}
+	open := store.ThreadStateOpen
+	limit := 1
+	threads, err := rc.store.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID:   issue.ProjectID,
+		IssueUID:    &issue.UID,
+		ThreadState: &open,
+		Limit:       &limit,
+	})
+	if err != nil {
+		return false, errors.Wrap(err, "failed to list open threads")
+	}
+	return len(threads) > 0, nil
 }
 
 func planCheckRunBlocksRollout(plan *store.PlanMessage, planCheckRun *store.PlanCheckRunMessage) bool {

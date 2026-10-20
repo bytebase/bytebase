@@ -1750,6 +1750,10 @@
       "gate-review-approved": "Changes approved",
       "gate-review-pending": "Review in progress",
       "gate-review-rejected": "Changes requested",
+      "gate-threads-open-sub": "Resolve every thread to create the rollout",
+      "gate-threads-open_one": "{{count}} unresolved thread",
+      "gate-threads-open_other": "{{count}} unresolved threads",
+      "gate-threads-resolved": "All threads resolved",
       "incomplete": "Incomplete",
       "preparing-rollout": "Preparing rollout…",
       "rejected": "Rejected",
@@ -1780,6 +1784,7 @@
       "create-rollout-action": "Manually create rollout",
       "deploy-description": "Bytebase will automatically create the rollout when all checks pass and the issue is approved.",
       "deploy-description-gitops": "This plan is ready to roll out. Create a rollout to deploy the linked release.",
+      "deploy-description-v2": "Bytebase will automatically create the rollout when all checks pass, every thread is resolved, and the issue is approved.",
       "hide-details": "Hide details",
       "review-description": "Submit for review to proceed",
       "show-details": "Show details"
@@ -1817,6 +1822,7 @@
       "footer": {
         "all-gates-passed": "All gates passed",
         "approved-but-checks-failed": "Review approved, but plan checks failed",
+        "approved-but-threads-open": "Review approved, but threads are unresolved",
         "auto-rollout-after-approval": "rollout is created automatically after approval",
         "blocked-by-rejection": "Blocked by the rejected review — address the feedback above to continue",
         "bypass-and-deploy": "Bypass and deploy",
@@ -1827,6 +1833,8 @@
         "confirm-checks-running": "Plan checks still running",
         "confirm-review-not-approved": "Review not yet approved",
         "confirm-review-rejected": "Review rejected",
+        "confirm-unresolved-threads_one": "{{count}} unresolved thread",
+        "confirm-unresolved-threads_other": "{{count}} unresolved threads",
         "creating-rollout-automatically": "creating rollout automatically...",
         "errors-passed-not-created_one": "{{count}} error, {{passed}} passed. Rollout was not created automatically.",
         "errors-passed-not-created_other": "{{count}} errors, {{passed}} passed. Rollout was not created automatically.",
@@ -1840,6 +1848,8 @@
         "rollout-auto-creates": "Rollout auto-creates after approval",
         "rollout-blocked-by-failed-checks": "rollout won't be created automatically until checks pass",
         "rollout-not-created": "Rollout was not created automatically",
+        "threads-open-not-created_one": "{{count}} unresolved thread. Rollout was not created automatically.",
+        "threads-open-not-created_other": "{{count}} unresolved threads. Rollout was not created automatically.",
         "waiting-on-review": "Waiting on review"
       },
       "last-plan-editor-cannot-approve": "You can't approve this issue because you were the last person to change its plan. A different reviewer must approve it.",
@@ -1893,6 +1903,16 @@
       "description_one": "Roll back 1 selected task from rollout #{{rolloutId}}.",
       "description_other": "Roll back {{count}} selected tasks from rollout #{{rolloutId}}.",
       "title": "Rollback rollout #{{rolloutId}}"
+    },
+    "rule-review": {
+      "failed": "SQL review failed",
+      "load-failed": "The SQL review status could not be loaded.",
+      "no-open-findings": "No open findings",
+      "not-run": "SQL review not run",
+      "open-findings_one": "{{count}} open finding",
+      "open-findings_other": "{{count}} open findings",
+      "queued": "SQL review queued",
+      "running": "SQL review running"
     },
     "run": "Run checks",
     "select-isolation-level": "Select isolation level",
