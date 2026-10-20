@@ -13,10 +13,9 @@ import type { StatementAnchor } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { tokenizeLines } from "./placement/lineTokens";
-import type { Placement } from "./placement/place";
+import { anchorLineRange, type Placement } from "./placement/place";
 import {
   type AnchorState,
-  anchorLineRange,
   completePreviewLineCount,
   excerptLines,
   type LineRange,

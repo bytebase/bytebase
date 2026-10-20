@@ -14,7 +14,6 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import { current, OUTDATED, UNAVAILABLE } from "./placement/place";
 import {
-  anchorLineRange,
   buildWholeLineAnchor,
   completePreviewLineCount,
   countPlacedUnresolvedBySpec,
@@ -200,28 +199,6 @@ describe("resolveAnchorState", () => {
         undefined
       )
     ).toBe("UNAVAILABLE");
-  });
-});
-
-describe("anchorLineRange", () => {
-  test("whole-line anchors include the end line", () => {
-    expect(anchorLineRange(anchor(8, 10))).toEqual({
-      startLine: 8,
-      endLine: 10,
-    });
-  });
-
-  test("code-point ranges ending at column 1 stop on the previous line", () => {
-    const precise = create(StatementAnchorSchema, {
-      startPosition: create(PositionSchema, { line: 3, column: 2 }),
-      endPosition: create(PositionSchema, { line: 5, column: 1 }),
-    });
-    expect(anchorLineRange(precise)).toEqual({ startLine: 3, endLine: 4 });
-  });
-
-  test("rejects malformed anchors", () => {
-    expect(anchorLineRange(create(StatementAnchorSchema))).toBeUndefined();
-    expect(anchorLineRange(anchor(5, 2))).toBeUndefined();
   });
 });
 

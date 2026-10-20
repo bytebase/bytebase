@@ -15,7 +15,6 @@ import {
   OUTDATED,
   UNAVAILABLE,
   UNAVAILABLE_SIZE_LIMIT,
-  wholeLineRange,
 } from "./place";
 import {
   type PlacementPlanInput,
@@ -94,44 +93,35 @@ const plan = (
   });
 };
 
-describe("wholeLineRange", () => {
-  test("accepts zero-column ranges and rejects anything else", () => {
-    expect(wholeLineRange(anchor(SHA_A, 2, 4))).toEqual({
-      startLine: 2,
-      endLine: 4,
-    });
-    expect(wholeLineRange(anchor(SHA_A, 2))).toEqual({
-      startLine: 2,
-      endLine: 2,
-    });
-    expect(
-      wholeLineRange(anchor(SHA_A, 2, 4, { columns: [1, 1] }))
-    ).toBeUndefined();
-    expect(
-      wholeLineRange(anchor(SHA_A, 2, 4, { columns: [0, 3] }))
-    ).toBeUndefined();
-    expect(wholeLineRange(anchor(SHA_A, 0, 1))).toBeUndefined();
-    expect(wholeLineRange(anchor(SHA_A, 3, 2))).toBeUndefined();
-  });
-});
-
 describe("planPlacements", () => {
   test("ignores unanchored comments and settles trivial cases without fetching", () => {
     const result = plan({
       comments: [
         comment("plain"),
         comment("same", anchor(SHA_B, 3, 5)),
-        comment("columns", anchor(SHA_A, 1, 1, { columns: [1, 4] })),
+        comment("columns", anchor(SHA_B, 2, 3, { columns: [5, 1] })),
         comment("no-spec", anchor(SHA_A, 1, 1, { spec: "gone" })),
       ],
       specs: [spec("spec-1", SHA_B), spec("other", SHA_C)],
     });
     expect(result.settled.has(nameOf("plain"))).toBe(false);
     expect(result.settled.get(nameOf("same"))).toEqual(current(3, 5));
-    expect(result.settled.get(nameOf("columns"))).toEqual(UNAVAILABLE);
+    expect(result.settled.get(nameOf("columns"))).toEqual(current(2, 2));
     expect(result.settled.get(nameOf("no-spec"))).toEqual(UNAVAILABLE);
     expect(result.pairs).toEqual([]);
     expect(result.fetches).toEqual([]);
+  });
+
+  test("diffs a code-point anchor on an earlier sheet by its covered lines", () => {
+    const result = plan({
+      comments: [comment("finding", anchor(SHA_A, 2, 2, { columns: [1, 21] }))],
+      sizes: { [sheet(SHA_A)]: 100, [sheet(SHA_B)]: 200 },
+    });
+    expect(result.settled.size).toBe(0);
+    expect(result.pairs).toHaveLength(1);
+    expect(result.pairs[0].anchors).toEqual([
+      { id: "2-2", startLine: 2, endLine: 2 },
+    ]);
   });
 
   test("settles UNAVAILABLE when the spec has no statement", () => {
