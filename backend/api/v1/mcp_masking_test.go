@@ -2,6 +2,8 @@ package v1
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -151,8 +153,12 @@ func TestMaskedWriteGuardIsWiredIntoTheGate(t *testing.T) {
 		v1connect.IssueServiceRejectIssueProcedure,
 		v1connect.ProjectServiceUpdateProjectProcedure,
 	}
-	require.Len(t, doors, len(mcpRequestShapeRefusals)-len(notDoors),
-		"every masked-write door in the refusal table needs a row here")
+	listed := slices.Clone(notDoors)
+	for _, door := range doors {
+		listed = append(listed, door.procedure)
+	}
+	require.ElementsMatch(t, slices.Collect(maps.Keys(mcpRequestShapeRefusals)), listed,
+		"every entry in the refusal table needs a row here, or a place in notDoors")
 
 	for _, door := range doors {
 		t.Run(door.procedure, func(t *testing.T) {

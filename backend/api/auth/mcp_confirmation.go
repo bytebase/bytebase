@@ -5,9 +5,10 @@ import (
 	"time"
 )
 
-// MCPConfirmedDecision is one write the user confirmed in their MCP client. The
-// MCP gate serves the procedures that need one only to a request whose context
-// carries one naming that procedure and the resource the request changes.
+// MCPConfirmedDecision is the user's decision, confirmed in their MCP client, to
+// make one write. The MCP gate serves the procedures that need one only to a
+// request whose context carries one naming that procedure and the resource the
+// request changes.
 type MCPConfirmedDecision struct {
 	// Procedure is the connect procedure confirmed, such as
 	// /bytebase.v1.IssueService/ApproveIssue.
