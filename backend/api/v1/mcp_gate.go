@@ -472,6 +472,8 @@ var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (rea
 		approvedIssueName, mcpIssueDecisionUnconfirmed, mcpDecideIssueWayOut),
 	v1connect.IssueServiceRejectIssueProcedure: refuseUnconfirmed(v1connect.IssueServiceRejectIssueProcedure,
 		rejectedIssueName, mcpIssueDecisionUnconfirmed, mcpDecideIssueWayOut),
+	v1connect.ProjectServiceUpdateProjectProcedure: refuseUnconfirmed(v1connect.ProjectServiceUpdateProjectProcedure,
+		updatedProjectName, mcpProjectUpdateUnconfirmed, mcpProjectUpdateWayOut),
 	v1connect.SheetServiceCreateSheetProcedure:       inTheConsole(refuseMaskedWriteSheet),
 	v1connect.SheetServiceBatchCreateSheetsProcedure: inTheConsole(refuseMaskedWriteSheetBatch),
 	v1connect.ReleaseServiceCreateReleaseProcedure:   inTheConsole(refuseMaskedWriteRelease),
@@ -508,6 +510,10 @@ const (
 	mcpDecideIssueWayOut        = "Use the decide_issue tool, which asks the user to confirm"
 	mcpIssueDecisionUnconfirmed = "an issue is approved or rejected over MCP only after the user confirms that decision in the MCP client, " +
 		"and this request carries no such confirmation"
+	mcpProjectUpdateUnconfirmed = "a project setting changes over MCP only through set_just_in_time_access, after the user confirms the change in the MCP client, " +
+		"and this request carries no such confirmation"
+	mcpProjectUpdateWayOut = "To turn just-in-time access on or off, use the set_just_in_time_access tool, which asks the user to confirm. " +
+		"Change other project settings signed in to the Bytebase console"
 )
 
 // refuseUnconfirmed serves procedure only when the request context carries a
@@ -535,6 +541,11 @@ func approvedIssueName(msg any) (string, bool) {
 func rejectedIssueName(msg any) (string, bool) {
 	request, ok := msg.(*v1pb.RejectIssueRequest)
 	return request.GetName(), ok
+}
+
+func updatedProjectName(msg any) (string, bool) {
+	request, ok := msg.(*v1pb.UpdateProjectRequest)
+	return request.GetProject().GetName(), ok
 }
 
 // refuseGrantIssueCreation applies grantIssueRefusal to CreateIssue. UpdateIssue's

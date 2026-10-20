@@ -2824,7 +2824,7 @@
             "title": "Đọc quy trình thay đổi"
           },
           "request-access": {
-            "details": "Xin cấp quyền truy cập có thời hạn để chạy một câu lệnh cụ thể, có thể kèm xem kết quả chưa che hoặc xuất kết quả; câu lệnh phải là lệnh đọc trong phạm vi engine kiểm tra được · Quyền chỉ bắt đầu sau khi được phê duyệt, và yêu cầu không cần ai phê duyệt sẽ bị từ chối · Quyền chỉ áp dụng khi dự án cho phép cấp quyền truy cập · Thu hồi quyền đang có hiệu lực",
+            "details": "Xin cấp quyền truy cập có thời hạn để chạy một câu lệnh cụ thể, có thể kèm xem kết quả chưa che hoặc xuất kết quả; câu lệnh phải là lệnh đọc trong phạm vi engine kiểm tra được · Quyền chỉ bắt đầu sau khi được phê duyệt, và yêu cầu không cần ai phê duyệt sẽ bị từ chối · Quyền chỉ áp dụng khi dự án cho phép cấp quyền truy cập · Thu hồi quyền đang có hiệu lực · Bật hoặc tắt \"Cho phép cấp quyền truy cập\" của dự án, sau khi người dùng xác nhận",
             "title": "Yêu cầu cấp quyền truy cập"
           },
           "run-rollouts": {

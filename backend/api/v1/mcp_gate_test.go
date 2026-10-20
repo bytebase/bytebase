@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
@@ -729,7 +730,7 @@ func TestTheApprovalReadsAreServed(t *testing.T) {
 	}
 }
 
-func TestTheAccessGrantCleanupIsServed(t *testing.T) {
+func TestTheJourneyOneWritesAreServed(t *testing.T) {
 	t.Parallel()
 	class := map[string]v1pb.MCPMethodClass{}
 	for _, row := range mcpClassificationsFromDescriptors(t) {
@@ -737,6 +738,57 @@ func TestTheAccessGrantCleanupIsServed(t *testing.T) {
 	}
 	require.Equal(t, v1pb.MCPMethodClass_WRITE, class[v1connect.AccessGrantServiceRevokeAccessGrantProcedure],
 		"an agent that requested access must be able to revoke the grant once the work is done (BYT-9292)")
+	require.Equal(t, v1pb.MCPMethodClass_WRITE, class[v1connect.ProjectServiceUpdateProjectProcedure],
+		"an agent must be able to turn just-in-time access on, through set_just_in_time_access (BYT-9292)")
+}
+
+func TestMCPGateServesAProjectUpdateOnlyWithItsConfirmation(t *testing.T) {
+	const project = "projects/p"
+	write := classContext(v1pb.MCPMethodClass_WRITE)
+	procedure := v1connect.ProjectServiceUpdateProjectProcedure
+	request := func(name string) connect.AnyRequest {
+		return connect.NewRequest(&v1pb.UpdateProjectRequest{
+			Project:    &v1pb.Project{Name: name, AllowJustInTimeAccess: true},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_just_in_time_access"}},
+		})
+	}
+	confirmed := func(procedure, name string) context.Context {
+		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{Procedure: procedure, Resource: name})
+	}
+
+	t.Run("an unconfirmed request, as call_api sends it, is refused", func(t *testing.T) {
+		got := invokeMCPGate(t, readWriteCeiling(), write, procedure, request(project))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.Contains(t, got.err.Error(), "set_just_in_time_access", "the denial must name the path that can confirm")
+		require.Contains(t, got.err.Error(), "Bytebase console", "the denial must name where the other settings change")
+		require.True(t, got.auditMarked)
+	})
+
+	t.Run("the confirmed request is served", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, project), t, readWriteCeiling(), write, procedure, request(project))
+		require.NoError(t, got.err)
+		require.True(t, got.dispatched)
+	})
+
+	t.Run("a confirmation for another project is refused", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, "projects/q"), t, readWriteCeiling(), write, procedure, request(project))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+	})
+
+	t.Run("a confirmation for another procedure is refused", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(v1connect.IssueServiceApproveIssueProcedure, project), t, readWriteCeiling(), write, procedure, request(project))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+	})
+
+	t.Run("a confirmed request is still held to the ceiling", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, project), t, readOnlyCeiling(), write, procedure, request(project))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+	})
 }
 
 // TestDeprecatedSQLServiceAliasesMatchTheirCanonicalMethod pins the three

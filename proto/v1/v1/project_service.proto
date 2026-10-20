@@ -89,8 +89,9 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    // An MCP session reaches it only through the set_just_in_time_access tool,
+    // after the user confirms the change in the MCP client.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Deletes (soft-delete or purge) a project.

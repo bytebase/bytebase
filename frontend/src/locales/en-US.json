@@ -2824,7 +2824,7 @@
             "title": "Read the change workflow"
           },
           "request-access": {
-            "details": "Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants · Revoke an active grant",
+            "details": "Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants · Revoke an active grant · Turn a project's \"Allow access grants\" on or off, after the user confirms",
             "title": "Request access grants"
           },
           "run-rollouts": {
