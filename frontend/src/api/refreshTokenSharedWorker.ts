@@ -1,5 +1,6 @@
 let worker: SharedWorker | undefined;
 let workerError: Error | undefined;
+let workerReady = false;
 let localPromise: Promise<void> | null = null;
 
 const WAIT_TIMEOUT_MS = 35000;
@@ -25,8 +26,11 @@ async function refreshInWorker(): Promise<void> {
         name: "bb_token_refresh",
       }
     );
+    const startingWorker = worker;
     worker.addEventListener("error", () => {
-      workerError = new Error("Session refresh worker failed");
+      if (worker === startingWorker && workerReady) {
+        workerError = new Error("Session refresh worker failed");
+      }
     });
     worker.port.start();
   }
@@ -40,24 +44,43 @@ async function refreshInWorker(): Promise<void> {
     };
     const onFailure = () => {
       cleanup();
-      workerError ??= new Error("Session refresh worker failed");
-      reject(workerError);
+      const error = new Error("Session refresh worker failed");
+      if (workerReady) {
+        workerError ??= error;
+      } else {
+        // No refresh was dispatched before readiness, so retrying startup is safe.
+        currentWorker.port.close();
+        worker = undefined;
+      }
+      reject(workerError ?? error);
     };
-    const onMessage = (event: MessageEvent<{ error?: string }>) => {
+    const sendRefresh = () => {
+      try {
+        currentWorker.port.postMessage("refresh");
+      } catch {
+        onFailure();
+      }
+    };
+    const onMessage = (
+      event: MessageEvent<{ ready?: boolean; error?: string }>
+    ) => {
+      if (event.data.ready) {
+        if (!workerReady) {
+          workerReady = true;
+          sendRefresh();
+        }
+        return;
+      }
       cleanup();
       if (event.data.error) reject(new Error(event.data.error));
       else resolve();
     };
-    // A timed-out worker may still be rotating cookies. Do not start an
-    // independent refresh whose request could reuse the consumed token.
+    // After readiness, a timed-out worker may still be rotating cookies.
+    // Retrying could reuse the consumed token.
     const timeout = setTimeout(onFailure, WAIT_TIMEOUT_MS);
     currentWorker.port.addEventListener("message", onMessage);
     currentWorker.port.addEventListener("messageerror", onFailure);
     currentWorker.addEventListener("error", onFailure);
-    try {
-      currentWorker.port.postMessage("refresh");
-    } catch {
-      onFailure();
-    }
+    if (workerReady) sendRefresh();
   });
 }

@@ -38,4 +38,5 @@ scope.onconnect = (event) => {
     }
     port.postMessage(result);
   };
+  port.postMessage({ ready: true });
 };

@@ -32,8 +32,8 @@ describe("shared refresh worker", () => {
     const first = a.onmessage!();
     const second = b.onmessage!();
     expect(mocks.refresh).toHaveBeenCalledTimes(1);
-    expect(a.postMessage).not.toHaveBeenCalled();
-    expect(b.postMessage).not.toHaveBeenCalled();
+    expect(a.postMessage).toHaveBeenCalledExactlyOnceWith({ ready: true });
+    expect(b.postMessage).toHaveBeenCalledExactlyOnceWith({ ready: true });
     response.resolve();
     await Promise.all([first, second]);
     expect(a.postMessage).toHaveBeenCalledWith({});
