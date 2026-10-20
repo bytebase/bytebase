@@ -30,7 +30,8 @@ import {
 // nothing gates on a run, so a finished run is not a pass.
 export function PlanDetailAIReview() {
   const { t } = useTranslation();
-  const { allowRun, run, runReview, shown, starting } = useAIReviewRun();
+  const { allowRun, editing, run, runReview, shown, starting } =
+    useAIReviewRun();
   if (!shown) return null;
 
   return (
@@ -46,7 +47,10 @@ export function PlanDetailAIReview() {
               appearance="outline"
               aria-label={t("plan.ai-review.run")}
               disabled={
-                starting || run === undefined || isAIReviewRunActive(run)
+                starting ||
+                editing ||
+                run === undefined ||
+                isAIReviewRunActive(run)
               }
               onClick={() => void runReview()}
               size="xs"
@@ -57,6 +61,11 @@ export function PlanDetailAIReview() {
           )}
         </div>
         <AIReviewRunStatus run={run} />
+        {allowRun && editing && (
+          <span className="text-sm text-control-light">
+            {t("plan.ai-review.save-first")}
+          </span>
+        )}
       </div>
     </>
   );
@@ -168,5 +177,14 @@ function useAIReviewRun() {
     }
   }, [issue, patchState, refreshState, t]);
 
-  return { allowRun, run: page.aiReviewRun, runReview, shown, starting };
+  // A run reviews the saved plan, so unsaved SQL would get findings about
+  // the statement the user has already changed.
+  return {
+    allowRun,
+    editing: page.isEditing,
+    run: page.aiReviewRun,
+    runReview,
+    shown,
+    starting,
+  };
 }

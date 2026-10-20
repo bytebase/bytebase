@@ -1705,6 +1705,7 @@
       "not-run": "Not run yet",
       "queued": "Queued",
       "run": "Run AI review",
+      "save-first": "Save or discard your edits to run the AI review.",
       "status-unknown": "Status not available"
     },
     "blocker": {

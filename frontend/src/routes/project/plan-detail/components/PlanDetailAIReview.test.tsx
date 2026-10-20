@@ -153,6 +153,18 @@ describe("PlanDetailAIReview", () => {
     expect(runButton()?.hasAttribute("disabled")).toBe(true);
   });
 
+  test("disables Run while the page has unsaved edits, and says why", () => {
+    openPage(null, { isEditing: true });
+    const { rerender } = render(<PlanDetailAIReview />);
+    expect(runButton()?.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByText("plan.ai-review.save-first")).toBeDefined();
+
+    openPage(null, { isEditing: false });
+    rerender(<PlanDetailAIReview />);
+    expect(runButton()?.hasAttribute("disabled")).toBe(false);
+    expect(screen.queryByText("plan.ai-review.save-first")).toBeNull();
+  });
+
   test("shows when a finished run finished, and offers Run again", () => {
     openPage(
       reviewRun(ReviewRun_Status.DONE, { endSeconds: 1_700_000_000 })

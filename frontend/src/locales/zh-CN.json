@@ -1705,6 +1705,7 @@
       "not-run": "尚未运行",
       "queued": "排队中",
       "run": "运行 AI 审核",
+      "save-first": "请先保存或放弃修改，再运行 AI 审核。",
       "status-unknown": "暂时无法获取状态"
     },
     "blocker": {
