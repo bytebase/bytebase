@@ -151,6 +151,7 @@ import {
 } from "../utils/targets";
 import { PlanChangeReference } from "./PlanChangeReference";
 import { PlanDetailAggregateChecks } from "./PlanDetailAggregateChecks";
+import { PlanDetailAIReview } from "./PlanDetailAIReview";
 import { PlanDetailDraftChecks } from "./PlanDetailDraftChecks";
 import { PlanDetailStatementSection } from "./PlanDetailStatementSection";
 import { PlanDetailTabItem, PlanDetailTabStrip } from "./PlanDetailTabStrip";
@@ -716,6 +717,7 @@ export function PlanDetailChangesBranch({
       </div>
 
       {!page.isCreating && !specHasRelease && <PlanDetailAggregateChecks />}
+      <PlanDetailAIReview />
 
       <TargetSelectorSheet
         currentTargets={currentTargets}

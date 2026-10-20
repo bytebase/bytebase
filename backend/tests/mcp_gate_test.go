@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -89,7 +90,8 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 
 // TestMCPGrantIssuesAndAccessRequests covers, over one live MCP session, the
 // grant issues a session may not create, the access request it may file
-// instead, and deciding that request through decide_issue.
+// instead (in a project that allows just-in-time access), and deciding that
+// request through decide_issue.
 func TestMCPGrantIssuesAndAccessRequests(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -221,10 +223,48 @@ func TestMCPGrantIssuesAndAccessRequests(t *testing.T) {
 			"ttl":     "3600s",
 		},
 	}
+	consoleCreate := func() (*connect.Response[v1pb.AccessGrant], error) {
+		return ctl.accessGrantServiceClient.CreateAccessGrant(ctx, connect.NewRequest(&v1pb.CreateAccessGrantRequest{
+			Parent: projectName,
+			AccessGrant: &v1pb.AccessGrant{
+				Targets:    []string{target},
+				Query:      "SELECT 1",
+				Reason:     "a person asks the same",
+				Expiration: &v1pb.AccessGrant_Ttl{Ttl: durationpb.New(time.Hour)},
+			},
+		}))
+	}
+	rowCounts := func() (int, int) {
+		grants, err := ctl.accessGrantServiceClient.ListAccessGrants(ctx, connect.NewRequest(&v1pb.ListAccessGrantsRequest{Parent: projectName}))
+		a.NoError(err)
+		issues, err := ctl.issueServiceClient.ListIssues(ctx, connect.NewRequest(&v1pb.ListIssuesRequest{Parent: projectName}))
+		a.NoError(err)
+		return len(grants.Msg.AccessGrants), len(issues.Msg.Issues)
+	}
+
+	// The project does not allow just-in-time access yet.
+	grantsAtStart, issuesAtStart := rowCounts()
+	jitOff := callAPIOnSession(ctx, t, session, "AccessGrantService/CreateAccessGrant", requestAccess)
+	a.Equal(http.StatusBadRequest, jitOff.Status, jitOff.Error)
+	var jitOffBody struct {
+		Code string `json:"code"`
+	}
+	a.NoError(json.Unmarshal([]byte(jitOff.RawResponse), &jitOffBody))
+	a.Equal("failed_precondition", jitOffBody.Code)
+	a.Contains(jitOff.Error, `just-in-time access is off for project "mcp-grant-issue"`)
+	_, err = consoleCreate()
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err), "a console request is refused the same way: %v", err)
+	grantsRefused, issuesRefused := rowCounts()
+	a.Equal(grantsAtStart, grantsRefused, "a request refused for just-in-time access leaves no access grant")
+	a.Equal(issuesAtStart, issuesRefused, "a request refused for just-in-time access leaves no issue")
+	a.NoError(ctl.allowJustInTimeAccess(ctx, project.Msg))
 
 	// The seeded fallback rule sends the request to a project owner.
 	filed := callAPIOnSession(ctx, t, session, "AccessGrantService/CreateAccessGrant", requestAccess)
 	a.Equal(http.StatusOK, filed.Status, filed.Error)
+	grantsFiled, issuesFiled := rowCounts()
+	a.Equal(grantsAtStart+1, grantsFiled, "the row count sees a filed access grant")
+	a.Equal(issuesAtStart+1, issuesFiled, "the row count sees a filed issue")
 	var pending v1pb.AccessGrant
 	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(filed.RawResponse), &pending))
 	a.Equal(v1pb.AccessGrant_PENDING, pending.Status)
@@ -274,15 +314,7 @@ func TestMCPGrantIssuesAndAccessRequests(t *testing.T) {
 	a.Equal(int32(2), asked.Load(), "each decision asks the user once")
 
 	consoleRequest := func() *v1pb.AccessGrant {
-		granted, err := ctl.accessGrantServiceClient.CreateAccessGrant(ctx, connect.NewRequest(&v1pb.CreateAccessGrantRequest{
-			Parent: projectName,
-			AccessGrant: &v1pb.AccessGrant{
-				Targets:    []string{target},
-				Query:      "SELECT 1",
-				Reason:     "a person asks the same",
-				Expiration: &v1pb.AccessGrant_Ttl{Ttl: durationpb.New(time.Hour)},
-			},
-		}))
+		granted, err := consoleCreate()
 		a.NoError(err)
 		return granted.Msg
 	}
@@ -292,13 +324,6 @@ func TestMCPGrantIssuesAndAccessRequests(t *testing.T) {
 	a.NoError(err)
 	a.Equal([]string{"roles/projectOwner"}, consoleIssue.Msg.GetApprovalTemplate().GetFlow().GetRoles())
 
-	rowCounts := func() (int, int) {
-		grants, err := ctl.accessGrantServiceClient.ListAccessGrants(ctx, connect.NewRequest(&v1pb.ListAccessGrantsRequest{Parent: projectName}))
-		a.NoError(err)
-		issues, err := ctl.issueServiceClient.ListIssues(ctx, connect.NewRequest(&v1pb.ListIssuesRequest{Parent: projectName}))
-		a.NoError(err)
-		return len(grants.Msg.AccessGrants), len(issues.Msg.Issues)
-	}
 	for _, tc := range []struct {
 		name  string
 		rules []*v1pb.WorkspaceApprovalSetting_Rule

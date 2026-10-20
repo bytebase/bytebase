@@ -359,6 +359,7 @@
     "google-chat": "Google Chat",
     "group": "组",
     "groups": "分组",
+    "hide": "隐藏",
     "history": "历史记录",
     "home": "主页",
     "id": "ID",
@@ -647,7 +648,9 @@
     "direct-connection": "直接连接",
     "extra-params": {
       "description": "数据库连接字符串的其他参数",
-      "self": "额外的参数"
+      "overridden-by-tls": "已被 TLS 部分的设置覆盖。",
+      "self": "额外的参数",
+      "wallet-overridden-by-tls": "仅使用其中保存的密码，证书由 TLS 部分提供。"
     },
     "no-read-only-data-source": "没有只读数据源",
     "private-key-passphrase": "私钥密码",
@@ -1696,6 +1699,15 @@
   "plan": {
     "add-spec": "添加变更",
     "add-spec-pending-draft": "请先保存或放弃当前的待处理变更，然后再添加新变更",
+    "ai-review": {
+      "failed-to-run": "无法启动 AI 审核",
+      "finished": "已完成",
+      "not-run": "尚未运行",
+      "queued": "排队中",
+      "run": "运行 AI 审核",
+      "save-first": "请先保存或放弃修改，再运行 AI 审核。",
+      "status-unknown": "暂时无法获取状态"
+    },
     "blocker": {
       "clears-on-its-own": "将自动完成"
     },

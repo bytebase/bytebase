@@ -359,6 +359,7 @@
     "google-chat": "Google Chat",
     "group": "グループ",
     "groups": "グループ",
+    "hide": "隠す",
     "history": "履歴",
     "home": "ホームページ",
     "id": "ID",
@@ -647,7 +648,9 @@
     "direct-connection": "直接接続",
     "extra-params": {
       "description": "データベース接続文字列の追加パラメーター",
-      "self": "追加のパラメーター"
+      "overridden-by-tls": "TLS セクションの設定が優先されます。",
+      "self": "追加のパラメーター",
+      "wallet-overridden-by-tls": "保存されたパスワードのみ使用されます。証明書は TLS セクションのものが使われます。"
     },
     "no-read-only-data-source": "読み取り専用データソースがありません",
     "private-key-passphrase": "秘密鍵のパスフレーズ",
@@ -1696,6 +1699,15 @@
   "plan": {
     "add-spec": "変更を追加",
     "add-spec-pending-draft": "新しい変更を追加する前に、保留中の変更を保存または破棄してください",
+    "ai-review": {
+      "failed-to-run": "AI レビューを開始できませんでした",
+      "finished": "完了",
+      "not-run": "未実行",
+      "queued": "待機中",
+      "run": "AI レビューを実行",
+      "save-first": "AI レビューを実行するには、編集内容を保存または破棄してください。",
+      "status-unknown": "状態を取得できません"
+    },
     "blocker": {
       "clears-on-its-own": "自動的に解消されます"
     },

@@ -359,6 +359,7 @@
     "google-chat": "Google Chat",
     "group": "Nhóm",
     "groups": "Nhóm",
+    "hide": "Ẩn",
     "history": "Lịch sử",
     "home": "Trang chủ",
     "id": "ID",
@@ -647,7 +648,9 @@
     "direct-connection": "Kết nối trực tiếp",
     "extra-params": {
       "description": "Các tham số bổ sung cho chuỗi kết nối cơ sở dữ liệu",
-      "self": "Thông số bổ sung"
+      "overridden-by-tls": "Bị ghi đè bởi phần TLS.",
+      "self": "Thông số bổ sung",
+      "wallet-overridden-by-tls": "Chỉ mật khẩu đã lưu của nó được sử dụng. Phần TLS cung cấp các chứng chỉ."
     },
     "no-read-only-data-source": "Không có nguồn dữ liệu chỉ đọc",
     "private-key-passphrase": "Mật khẩu khóa riêng",
@@ -1696,6 +1699,15 @@
   "plan": {
     "add-spec": "Thêm thay đổi",
     "add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
+    "ai-review": {
+      "failed-to-run": "Không thể bắt đầu đánh giá bằng AI",
+      "finished": "Đã hoàn tất",
+      "not-run": "Chưa chạy",
+      "queued": "Đang chờ",
+      "run": "Chạy đánh giá bằng AI",
+      "save-first": "Hãy lưu hoặc hủy các thay đổi để chạy đánh giá bằng AI.",
+      "status-unknown": "Chưa có trạng thái"
+    },
     "blocker": {
       "clears-on-its-own": "Tự động hoàn tất"
     },

@@ -1,6 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import { Info, Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Button } from "@/components/ui/button";
@@ -61,6 +68,7 @@ import {
   getLocalTlsCaSource,
   getLocalTlsClientCertSource,
   getLocalTlsPosture,
+  getOracleTlsParameterOverride,
   LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM,
   LOCAL_TLS_CLIENT_CERT_SOURCE_NONE,
   LOCAL_TLS_POSTURE_DISABLED,
@@ -210,6 +218,7 @@ export function DataSourceForm({
   );
   const [newParamKey, setNewParamKey] = useState("");
   const [newParamValue, setNewParamValue] = useState("");
+  const extraParamNoticeId = useId();
   const [localTlsCaSource, setLocalTlsCaSource] = useState(
     getLocalTlsCaSource(dataSource)
   );
@@ -397,8 +406,17 @@ export function DataSourceForm({
 
   const extraConnectionParamsList = useMemo(() => {
     const params = dataSource.extraConnectionParameters || {};
-    return Object.entries(params).map(([key, value]) => ({ key, value }));
-  }, [dataSource.extraConnectionParameters]);
+    const oracleTls = basicInfo.engine === Engine.ORACLE && dataSource.useSsl;
+    return Object.entries(params).map(([key, value]) => ({
+      key,
+      value,
+      tlsOverride: oracleTls ? getOracleTlsParameterOverride(key) : undefined,
+    }));
+  }, [
+    basicInfo.engine,
+    dataSource.extraConnectionParameters,
+    dataSource.useSsl,
+  ]);
 
   const changeSecretType = (
     secretType: DataSourceExternalSecret_SecretType
@@ -2269,6 +2287,11 @@ export function DataSourceForm({
                               className="min-w-0 flex-1"
                               value={param.key}
                               disabled={!allowEdit}
+                              aria-describedby={
+                                param.tlsOverride
+                                  ? `${extraParamNoticeId}-${index}`
+                                  : undefined
+                              }
                               aria-label={t(
                                 "instance.parameter-name-placeholder"
                               )}
@@ -2311,6 +2334,20 @@ export function DataSourceForm({
                               </Button>
                             )}
                           </FormControlRow>
+                          {param.tlsOverride && (
+                            <p
+                              id={`${extraParamNoticeId}-${index}`}
+                              className="text-xs leading-4 text-warning"
+                            >
+                              {param.tlsOverride === "wallet"
+                                ? t(
+                                    "data-source.extra-params.wallet-overridden-by-tls"
+                                  )
+                                : t(
+                                    "data-source.extra-params.overridden-by-tls"
+                                  )}
+                            </p>
+                          )}
                         </FormField>
                       ))}
                     </FormControlGroup>

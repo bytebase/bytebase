@@ -138,6 +138,19 @@ func (ctl *controller) allowLastPlanEditorApproval(ctx context.Context, project 
 	return err
 }
 
+// allowJustInTimeAccess opts the project into just-in-time access, which
+// CreateAccessGrant requires.
+func (ctl *controller) allowJustInTimeAccess(ctx context.Context, project *v1pb.Project) error {
+	_, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project: &v1pb.Project{
+			Name:                  project.Name,
+			AllowJustInTimeAccess: true,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_just_in_time_access"}},
+	}))
+	return err
+}
+
 // instanceLocks serializes registerDatabase per instance: parallel subtests
 // share instances, and a sync that reads the list before another subtest's
 // update marks that subtest's database deleted.
