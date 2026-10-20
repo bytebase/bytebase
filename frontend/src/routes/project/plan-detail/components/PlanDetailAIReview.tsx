@@ -22,6 +22,7 @@ import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
   aiReviewRunName,
   isAIReviewRunActive,
+  loadedMatchedDatabaseCount,
   readsAIReviewRun,
 } from "../utils/aiReviewRun";
 
@@ -142,9 +143,19 @@ function useAIReviewRun() {
   const page = usePlanDetailContext();
   const { issue, patchState, refreshState } = page;
   const serverInfo = useAppStore((state) => state.serverInfo);
+  const dbGroupsByName = useAppStore((state) => state.dbGroupsByName);
+  const dbGroupViewByName = useAppStore((state) => state.dbGroupViewByName);
   const [starting, setStarting] = useState(false);
   const shown =
-    readsAIReviewRun({ plan: page.plan, project: page.project, serverInfo }) &&
+    readsAIReviewRun({
+      plan: page.plan,
+      project: page.project,
+      serverInfo,
+      matchedDatabaseCount: loadedMatchedDatabaseCount({
+        dbGroupsByName,
+        dbGroupViewByName,
+      }),
+    }) &&
     issue?.status === IssueStatus.OPEN &&
     !page.rollout;
   const allowRun =

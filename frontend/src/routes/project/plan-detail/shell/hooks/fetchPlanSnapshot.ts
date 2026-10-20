@@ -34,7 +34,11 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { getRolloutFromPlan, hasProjectPermissionV2 } from "@/utils";
-import { aiReviewRunName, readsAIReviewRun } from "../../utils/aiReviewRun";
+import {
+  aiReviewRunName,
+  loadedMatchedDatabaseCount,
+  readsAIReviewRun,
+} from "../../utils/aiReviewRun";
 import { createPlanSkeleton } from "../../utils/createPlan";
 import { PROJECT_NAME_PREFIX } from "../constants";
 
@@ -186,10 +190,12 @@ export const fetchPlanSnapshot = async (
   // The rollout name is derived from the plan name, so task runs can load in
   // parallel with the rollout instead of being serialized behind it.
   let rolloutName = plan.hasRollout ? getRolloutFromPlan(plan.name) : "";
+  const appState = useAppStore.getState();
   const readsAIReview = readsAIReviewRun({
     plan,
     project,
-    serverInfo: useAppStore.getState().serverInfo,
+    serverInfo: appState.serverInfo,
+    matchedDatabaseCount: loadedMatchedDatabaseCount(appState),
   });
   const [
     issueResult,

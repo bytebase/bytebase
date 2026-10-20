@@ -2,7 +2,12 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { useAppStore } from "@/stores/app";
 import { IssueStatus } from "@/types/proto-es/v1/common_pb";
+import {
+  DatabaseGroupSchema,
+  DatabaseGroupView,
+} from "@/types/proto-es/v1/database_group_service_pb";
 import {
   IssueSchema,
   ReviewRun_Status,
@@ -188,6 +193,30 @@ describe("fetchPlanSnapshot", () => {
       const patch = await fetchPlanSnapshot("foo", "1", {}, true);
 
       expect("aiReviewRun" in patch).toBe(false);
+    });
+
+    test("gives the AI review gate the database groups the page has loaded", async () => {
+      mocks.readsAIReviewRun.mockReturnValue(false);
+      const group = "projects/foo/databaseGroups/empty";
+      useAppStore.setState({
+        dbGroupsByName: {
+          [group]: create(DatabaseGroupSchema, { name: group }),
+        },
+        dbGroupViewByName: { [group]: DatabaseGroupView.FULL },
+      });
+      try {
+        await fetchPlanSnapshot("foo", "1");
+      } finally {
+        useAppStore.setState({ dbGroupsByName: {}, dbGroupViewByName: {} });
+      }
+
+      const [gate] = mocks.readsAIReviewRun.mock.calls[0] as unknown as [
+        { matchedDatabaseCount: (group: string) => number | undefined },
+      ];
+      expect(gate.matchedDatabaseCount(group)).toBe(0);
+      expect(
+        gate.matchedDatabaseCount("projects/foo/databaseGroups/unloaded")
+      ).toBeUndefined();
     });
 
     test("does not read the AI review slot when its gate is closed", async () => {

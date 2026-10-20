@@ -16,6 +16,10 @@ import {
   type Plan_Spec,
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
+import {
+  DatabaseGroupSchema,
+  DatabaseGroupView,
+} from "@/types/proto-es/v1/database_group_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
 
@@ -27,6 +31,14 @@ const mocks = vi.hoisted(() => ({
   runReview: vi.fn(),
   serverInfo: { aiEnabled: true, aiSqlReviewEnabled: true } as
     | { aiEnabled: boolean; aiSqlReviewEnabled: boolean }
+    | undefined,
+  groups: undefined as
+    | {
+        setState: (state: {
+          dbGroupsByName: Record<string, unknown>;
+          dbGroupViewByName: Record<string, unknown>;
+        }) => void;
+      }
     | undefined,
 }));
 
@@ -45,10 +57,22 @@ vi.mock("@/api", () => ({
 
 vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
 
-vi.mock("@/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({ serverInfo: mocks.serverInfo }),
-}));
+// The groups sit in a real store, so a test that loads a group sees the
+// component react through its own subscription.
+vi.mock("@/stores/app", async () => {
+  const { createStore, useStore } = await import("zustand");
+  const groups = createStore(() => ({
+    dbGroupsByName: {} as Record<string, unknown>,
+    dbGroupViewByName: {} as Record<string, unknown>,
+  }));
+  mocks.groups = groups;
+  return {
+    useAppStore: (selector: (state: unknown) => unknown) =>
+      useStore(groups, (state) =>
+        selector({ serverInfo: mocks.serverInfo, ...state })
+      ),
+  };
+});
 
 vi.mock("@/utils/featureGates", () => ({
   sqlReviewV2Enabled: () => mocks.dev,
@@ -74,6 +98,26 @@ const changeSpec = (release = ""): Plan_Spec["config"] => ({
     release,
   }),
 });
+
+const GROUP = "projects/p/databaseGroups/g";
+
+const groupSpec = (): Plan_Spec["config"] => ({
+  case: "changeDatabaseConfig",
+  value: create(Plan_ChangeDatabaseConfigSchema, { targets: [GROUP] }),
+});
+
+const loadGroup = (databases: string[]) =>
+  act(() =>
+    mocks.groups?.setState({
+      dbGroupsByName: {
+        [GROUP]: create(DatabaseGroupSchema, {
+          name: GROUP,
+          matchedDatabases: databases.map((name) => ({ name })),
+        }),
+      },
+      dbGroupViewByName: { [GROUP]: DatabaseGroupView.FULL },
+    })
+  );
 
 const planWith = (
   fields: Record<string, unknown> = {},
@@ -128,6 +172,7 @@ beforeEach(() => {
   mocks.dev = true;
   mocks.permissions = new Set(["bb.reviewRuns.get", "bb.reviewRuns.run"]);
   mocks.serverInfo = { aiEnabled: true, aiSqlReviewEnabled: true };
+  mocks.groups?.setState({ dbGroupsByName: {}, dbGroupViewByName: {} });
 });
 
 afterEach(cleanup);
@@ -241,6 +286,18 @@ describe("PlanDetailAIReview", () => {
     render(<PlanDetailAIReview />);
     expect(screen.getByText("plan.ai-review.not-run")).toBeDefined();
     expect(runButton()).toBeNull();
+  });
+
+  test("hides the AI review while the plan's only group matches no databases", () => {
+    openPage(null, { plan: planWith({}, [groupSpec()]) });
+    render(<PlanDetailAIReview />);
+    expect(runButton()).not.toBeNull();
+
+    loadGroup([]);
+    expect(screen.queryByTestId("ai-review")).toBeNull();
+
+    loadGroup(["instances/i/databases/d"]);
+    expect(runButton()).not.toBeNull();
   });
 
   test("shows for a draft issue", () => {
