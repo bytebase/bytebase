@@ -56,6 +56,25 @@ func TestParseMariaDBStatementsReportsMariaDBSyntaxError(t *testing.T) {
 	require.Equal(t, &storepb.Position{Line: 2, Column: 41}, syntaxErr.Position)
 }
 
+func TestParseStatementsSyntaxErrorColumnOnSharedLine(t *testing.T) {
+	for _, tc := range []struct {
+		engine    storepb.Engine
+		statement string
+		want      *storepb.Position
+	}{
+		// The error is at the ')' after DEFAULT, column 51 of the line.
+		{storepb.Engine_MARIADB, "SELECT 1; CREATE OR REPLACE TABLE t (a INT DEFAULT);", &storepb.Position{Line: 1, Column: 51}},
+		{storepb.Engine_MYSQL, "SELECT 1; CREATE TABLE t (a INT DEFAULT);", &storepb.Position{Line: 1, Column: 40}},
+		{storepb.Engine_MYSQL, "SELECT 1;\nSELECT 2; CREATE TABLE t (a INT DEFAULT);", &storepb.Position{Line: 2, Column: 40}},
+	} {
+		_, err := base.ParseStatements(tc.engine, tc.statement)
+
+		var syntaxErr *base.SyntaxError
+		require.ErrorAs(t, err, &syntaxErr, tc.statement)
+		require.Equal(t, tc.want, syntaxErr.Position, tc.statement)
+	}
+}
+
 func TestParseMySQLStatementsRejectsMariaDBSyntax(t *testing.T) {
 	for _, engine := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_OCEANBASE} {
 		_, err := base.ParseStatements(engine, "CREATE OR REPLACE TABLE t (a INT);")

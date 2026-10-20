@@ -109,8 +109,11 @@ func convertOmniError(err error, stmt base.Statement) error {
 
 	pos := ByteOffsetToRunePosition(stmt.Text, position)
 
-	// Adjust line by the statement's base line (stmt.Start.Line is 1-based).
+	// Offset by the statement's 1-based start; its column applies only to the statement's first line.
 	if stmt.Start != nil {
+		if pos.Line == 1 {
+			pos.Column += stmt.Start.Column - 1
+		}
 		pos.Line += stmt.Start.Line - 1
 	}
 
