@@ -1221,7 +1221,7 @@ func TestMCPGateServesAnIssueDecisionOnlyWithItsConfirmation(t *testing.T) {
 	confirmed := func(procedure, name string) context.Context {
 		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{
 			Procedure:       procedure,
-			Issue:           name,
+			Resource:           name,
 			IssueUpdateTime: time.Date(2026, 10, 13, 8, 0, 0, 123456000, time.UTC),
 		})
 	}

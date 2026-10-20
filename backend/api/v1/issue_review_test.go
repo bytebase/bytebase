@@ -77,7 +77,7 @@ func TestConfirmedUpdateTimeComesFromTheMCPConfirmation(t *testing.T) {
 	at := time.Date(2026, 10, 13, 8, 0, 0, 123456000, time.UTC)
 	ctx := auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{
 		Procedure:       v1connect.IssueServiceApproveIssueProcedure,
-		Issue:           "projects/hr/issues/42",
+		Resource:           "projects/hr/issues/42",
 		IssueUpdateTime: at,
 	})
 	require.Equal(t, &at, confirmedUpdateTime(ctx))

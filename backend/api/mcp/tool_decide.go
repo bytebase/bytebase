@@ -265,7 +265,7 @@ func (s *Server) applyIssueDecision(ctx context.Context, decision *issueDecision
 	}
 	confirmedCtx := auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
 		Procedure:       decision.procedure,
-		Issue:           decision.issue,
+		Resource:           decision.issue,
 		IssueUpdateTime: confirmedAt,
 	})
 	resp, err := s.apiRequest(confirmedCtx, decision.procedure, map[string]any{
