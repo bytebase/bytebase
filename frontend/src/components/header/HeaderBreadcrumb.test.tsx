@@ -351,6 +351,39 @@ describe("HeaderBreadcrumb", () => {
     unmount();
   });
 
+  test("renders inactive workspace options as secondary actions", () => {
+    mocks.workspaceList = [
+      {
+        name: "workspaces/default",
+        title: "Default Workspace",
+      },
+      {
+        name: "workspaces/other",
+        title: "Other Workspace",
+      },
+    ];
+    const { container, render, unmount } = renderIntoContainer(
+      <HeaderBreadcrumb />
+    );
+
+    render();
+
+    const workspaceSwitchButton = container.querySelector<HTMLButtonElement>(
+      "button"
+    );
+    act(() => {
+      workspaceSwitchButton?.click();
+    });
+
+    const otherWorkspaceButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent?.includes("Other Workspace"));
+    expect(otherWorkspaceButton?.className).not.toContain("bg-accent");
+    expect(otherWorkspaceButton?.className).toContain("text-control");
+
+    unmount();
+  });
+
   test("checks before switching workspace", () => {
     mocks.workspaceList = [
       {
