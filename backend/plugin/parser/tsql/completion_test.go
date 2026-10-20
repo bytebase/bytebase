@@ -124,6 +124,26 @@ func TestCompletionOmniTableRefRule(t *testing.T) {
 	})
 }
 
+func TestCompletionUnsyncedDatabase(t *testing.T) {
+	for _, input := range []string{"SELECT * FROM |", "SELECT |"} {
+		statement, caretLine, caretPosition := getCaretPosition(input)
+		results, err := Completion(context.Background(), base.CompletionContext{
+			Scene:           base.SceneTypeAll,
+			DefaultDatabase: "Company",
+			Metadata: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
+				return "", nil, nil
+			},
+			ListDatabaseNames: func(context.Context, string) ([]string, error) {
+				return []string{"Company"}, nil
+			},
+		}, statement, caretLine, caretPosition)
+		require.NoError(t, err, input)
+		for _, candidate := range results {
+			require.NotContains(t, []base.CandidateType{base.CandidateTypeSchema, base.CandidateTypeTable, base.CandidateTypeColumn}, candidate.Type, input)
+		}
+	}
+}
+
 func TestCompletionDoesNotDependOnANTLR(t *testing.T) {
 	content, err := os.ReadFile("completion.go")
 	require.NoError(t, err)

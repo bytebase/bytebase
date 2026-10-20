@@ -18,11 +18,13 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 export function TransferProjectSheet({
   open,
   databases,
+  initialProjectName,
   onClose,
   onTransfer,
 }: {
   open: boolean;
   databases: Database[];
+  initialProjectName?: string;
   onClose: () => void;
   onTransfer: (projectName: string) => Promise<void>;
 }) {
@@ -31,16 +33,18 @@ export function TransferProjectSheet({
     (s) => s.serverInfo?.defaultProject ?? ""
   );
   const [mode, setMode] = useState<"project" | "unassign">("project");
-  const [selectedProject, setSelectedProject] = useState("");
+  const [selectedProject, setSelectedProject] = useState(
+    initialProjectName ?? ""
+  );
   const [transferring, setTransferring] = useState(false);
 
   useEffect(() => {
     if (open) {
       setMode("project");
-      setSelectedProject("");
+      setSelectedProject(initialProjectName ?? "");
       setTransferring(false);
     }
-  }, [open]);
+  }, [initialProjectName, open]);
 
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>

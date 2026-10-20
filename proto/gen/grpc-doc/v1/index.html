@@ -867,6 +867,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetReviewRunRequest"><span class="badge">M</span>GetReviewRunRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Issue"><span class="badge">M</span>Issue</a>
                 </li>
               
@@ -1290,6 +1294,10 @@
               
                 <li>
                   <a href="#bytebase.v1.AIChatMessageRole"><span class="badge">E</span>AIChatMessageRole</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.AIChatResponse.StopReason"><span class="badge">E</span>AIChatResponse.StopReason</a>
                 </li>
               
               
@@ -3369,7 +3377,7 @@ Unlike SENSITIVE it says nothing about the API contract.</p></td>
         </table>
       
         <h3 id="bytebase.v1.MCPDenialReason">MCPDenialReason</h3>
-        <p>Why an MCP session may not call an RPC. The mechanism, not the wording: each</p><p>value names what its methods actually do, and the serving side turns that</p><p>into a sentence. A denial whose stated reason has drifted from the mechanism</p><p>is worse than a bare refusal, because it is the thing the next reader trusts</p><p>— so a method changing what it does changes its reason here.</p><p>One enum covers both refused classes, and every value belongs to exactly one</p><p>of them: values 1-8 name a mechanism that breaks the MCP boundary, which is</p><p>what FORBIDDEN means, and values 9-13 name a scope decision this phase took,</p><p>which is what EXCLUDED means. The distinction is real and lives on the class</p><p>annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope</p><p>decision is what a future admin-capable ceiling would argue with, one</p><p>population at a time. Splitting it across two enums as well only made the</p><p>nonsense states representable: a method could carry both, or carry the kind</p><p>that contradicts its class. Neither is expressible now, and the one check</p><p>left — the reason belongs to the class it is used on — is a table the gate</p><p>already keeps for the wording.</p>
+        <p>Why an MCP session may not call an RPC. The mechanism, not the wording: each</p><p>value names what its methods actually do, and the serving side turns that</p><p>into a sentence. A denial whose stated reason has drifted from the mechanism</p><p>is worse than a bare refusal, because it is the thing the next reader trusts</p><p>— so a method changing what it does changes its reason here.</p><p>One enum covers both refused classes, and every value belongs to exactly one</p><p>of them: values 1-8 name a mechanism that breaks the MCP boundary, which is</p><p>what FORBIDDEN means, and values 9-14 name a scope decision this phase took,</p><p>which is what EXCLUDED means. The distinction is real and lives on the class</p><p>annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope</p><p>decision is what a future admin-capable ceiling would argue with, one</p><p>population at a time. Splitting it across two enums as well only made the</p><p>nonsense states representable: a method could carry both, or carry the kind</p><p>that contradicts its class. Neither is expressible now, and the one check</p><p>left — the reason belongs to the class it is used on — is a table the gate</p><p>already keeps for the wording.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -3439,10 +3447,11 @@ by it.</p></td>
               <tr>
                 <td>DRIVES_THE_APPROVAL_DECISION</td>
                 <td>8</td>
-                <td><p>Works the human approval step that gates the change: recording the review
-decision, or re-running the finding that sets it and can clear the issue
-outright. An agent composes a change; it does not move its own change
-through the gate.</p></td>
+                <td><p>Decides whether a change or an access request passes its human approval:
+recording the review decision, re-running the finding that sets it and can
+clear the issue outright, or activating an access grant without it. An
+agent composes a change or files a request; it does not decide that for its
+own work.</p></td>
               </tr>
             
               <tr>
@@ -3451,8 +3460,7 @@ through the gate.</p></td>
                 <td><p>Administers the workspace rather than doing database work: identity,
 credentials, access control, governance policy, billing, workspace and
 instance configuration, project lifecycle, and the operator&#39;s own audit
-trail. Reading is administration too where the read returns the privilege
-topology or a stored secret rather than the state of a database.</p></td>
+trail.</p></td>
               </tr>
             
               <tr>
@@ -3497,6 +3505,19 @@ secrets — are redacted on the read path, and their eight methods are
 READ. The value stays because the category is real and the next read
 found leaking should carry it rather than an invented one, and because
 retiring an enum value costs a reserved number for nothing.</p></td>
+              </tr>
+            
+              <tr>
+                <td>REDRAWS_GOVERNANCE_BOUNDARY</td>
+                <td>14</td>
+                <td><p>Changes which rules govern a database, or which databases a change that
+targets a database group runs on. Approval, SQL review and access rules
+key on a database&#39;s project and environment, and so do the masking rules
+that decide what a query returns. A database group selects databases by
+an expression that can read their environment and labels, and a change
+that targets a group runs on whichever databases the group selects when
+its rollout tasks are created. An agent that could redraw these would
+choose the checks on its own changes.</p></td>
               </tr>
             
           </tbody>
@@ -3547,9 +3568,9 @@ console; an agent acting for them does not get to.</p></td>
                 <td>EXCLUDED</td>
                 <td>4</td>
                 <td><p>Served by no MCP capability ceiling this phase ships, and not a durable
-never. These are workspace administration, plus the handful of methods
-that do something materially worse than the plain read permission they
-share suggests.
+never. These are workspace administration, the writes that change which
+rules govern a database, and the handful of methods that do something
+materially worse than the plain read permission they share suggests.
 
 The line against FORBIDDEN is reversibility. An admin-capable ceiling, if
 one is ever built, could legitimately serve an EXCLUDED method — that is a
@@ -3908,7 +3929,13 @@ Supported fields:
 - issue: the access issue fullname, support &#34;==&#34; operator.
 - expire_time: the access expire time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator.
 - create_time: the access creation time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator.
-- query: the access query, support &#34;==&#34; and &#34;.contains(xx)&#34; operator
+- query: the access query, support &#34;==&#34; and &#34;.contains(xx)&#34; operator.
+  Equality trims only boundary ASCII space, tab, LF, CR, vertical tab, and form feed.
+- query_hash: supports &#34;==&#34; with a lowercase hexadecimal SHA-256 digest of
+  the UTF-8 query after the same boundary trim. Internal whitespace and Unicode
+  remain unchanged.
+- schema: execution schema, supports &#34;==&#34;; empty matches only empty or absent values.
+- container: execution container, supports &#34;==&#34;; empty matches only empty or absent values.
 - target: the target database fullname, support &#34;==&#34; operator.
 - unmask: whether the grant allows unmasking sensitive data, support &#34;==&#34; operator with a boolean literal.
 - export: whether the grant allows exporting the query result, support &#34;==&#34; operator with a boolean literal.
@@ -10390,7 +10417,9 @@ NULL with IS NULL or IS NOT NULL.</p></td>
               <tr>
                 <td>DISALLOW_DROP_OBJECT</td>
                 <td>7</td>
-                <td><p>P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE.</p></td>
+                <td><p>P1: dropping any object, such as a table, column, view, index, sequence,
+schema, database, or function. Dropping a constraint is
+DISALLOW_DROP_CONSTRAINT.</p></td>
               </tr>
             
               <tr>
@@ -10408,7 +10437,7 @@ NULL with IS NULL or IS NOT NULL.</p></td>
               <tr>
                 <td>DISALLOW_RENAME</td>
                 <td>10</td>
-                <td><p>P1: renaming a table or column.</p></td>
+                <td><p>P1: renaming a table, foreign table, view, materialized view, or column.</p></td>
               </tr>
             
               <tr>
@@ -10671,6 +10700,31 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>If set to true, bypass cache and fetch the latest data. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetReviewRunRequest">GetReviewRunRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the review run to retrieve.
+Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} </p></td>
                 </tr>
               
             </tbody>
@@ -12038,8 +12092,11 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>DONE</td>
                 <td>3</td>
-                <td><p>Every (spec, target) unit was evaluated. DONE does not mean the
-review passed: whether problems remain is judged from open comments.</p></td>
+                <td><p>Every (spec, target) unit in the reviewer&#39;s scope was evaluated. RULE&#39;s
+scope is every target. AI&#39;s scope is the project&#39;s CI sample, the first
+ci_sampling_size targets of each spec, or every target when
+ci_sampling_size is 0. DONE does not mean the review passed: whether
+problems remain is judged from open comments.</p></td>
               </tr>
             
               <tr>
@@ -12205,15 +12262,25 @@ mirrors RequestIssue&#39;s authorization model).</p></td>
               </tr>
             
               <tr>
+                <td>GetReviewRun</td>
+                <td><a href="#bytebase.v1.GetReviewRunRequest">GetReviewRunRequest</a></td>
+                <td><a href="#bytebase.v1.ReviewRun">ReviewRun</a></td>
+                <td><p>Gets the current run of one reviewer on an issue. The run carries
+execution status only; review results are issue comments. A reviewer
+that has never run on the issue is NOT_FOUND.
+Permissions required: bb.reviewRuns.get</p></td>
+              </tr>
+            
+              <tr>
                 <td>RunReview</td>
                 <td><a href="#bytebase.v1.RunReviewRequest">RunReviewRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewRun">ReviewRun</a></td>
                 <td><p>Triggers a review run. The slot is reset unconditionally: a RUNNING
 execution is superseded (its completion is fenced off), the attempt
 number is bumped, and the returned run is AVAILABLE.
-Review results are not returned by this RPC and have no read RPC yet:
-findings will surface as issue comments once the review comment
-integration lands. The returned run carries execution status only.
+Review results are not returned by this RPC: they are posted as issue
+comments. The returned run carries execution status only, and
+GetReviewRun reads it back.
 The audit log is the only record of who triggered a run.
 Permissions required: bb.reviewRuns.run</p></td>
               </tr>
@@ -12369,6 +12436,16 @@ Permissions required: bb.reviewRuns.run</p></td>
               
               
               <tr>
+                <td>GetReviewRun</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/issues/*/reviewRuns/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
                 <td>RunReview</td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*/issues/*/reviewRuns/*}:run</td>
@@ -12438,6 +12515,16 @@ Permissions required: bb.reviewRuns.run</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sql_review_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the AI SQL review may run. It is off by default and is a consent
+of its own beside `enabled`: a review sends the statements of a change to
+the provider, and can send the schema of its target databases and their
+table statistics. </p></td>
                 </tr>
               
             </tbody>
@@ -14823,6 +14910,21 @@ Format: projects/{id} </p></td>
                   <td><p>The MCP (Model Context Protocol) setting in the current workspace. </p></td>
                 </tr>
               
+                <tr>
+                  <td>ai_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the workspace AI setting enables the AI agent. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ai_sql_review_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the workspace AI setting switches the AI SQL review on. A review
+also needs `ai_enabled`. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15070,6 +15172,13 @@ Permissions required: None (authentication required)</p></td>
                   <td><p>Token usage for this provider call, when available. </p></td>
                 </tr>
               
+                <tr>
+                  <td>stop_reason</td>
+                  <td><a href="#bytebase.v1.AIChatResponse.StopReason">AIChatResponse.StopReason</a></td>
+                  <td></td>
+                  <td><p>Why the model stopped. A truncated or blocked response can still carry content. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15223,6 +15332,53 @@ Frontend must echo this back unchanged when sending tool results. </p></td>
                 <td>AI_CHAT_MESSAGE_ROLE_TOOL</td>
                 <td>4</td>
                 <td><p>Tool result message.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.AIChatResponse.StopReason">AIChatResponse.StopReason</h3>
+        <p>Why the model stopped generating a response.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STOP_REASON_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>The provider did not report why the model stopped.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TURN_COMPLETED</td>
+                <td>1</td>
+                <td><p>The model completed its turn with an answer or with tool calls.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TOKEN_LIMIT</td>
+                <td>2</td>
+                <td><p>The response was truncated at a token limit and is incomplete.</p></td>
+              </tr>
+            
+              <tr>
+                <td>BLOCKED</td>
+                <td>3</td>
+                <td><p>The provider blocked the request or the response, or the model refused to answer.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MALFORMED_TOOL_CALL</td>
+                <td>4</td>
+                <td><p>The model generated a tool call that the provider could not parse.</p></td>
+              </tr>
+            
+              <tr>
+                <td>OTHER</td>
+                <td>5</td>
+                <td><p>The model stopped for a reason that no other value names.</p></td>
               </tr>
             
           </tbody>
@@ -29428,8 +29584,9 @@ If enabled, issues will include &#34;set role &lt;db_owner&gt;&#34; statement. <
                   <td>ci_sampling_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of database rows to sample during CI data validation.
-Without specification, sampling is disabled, resulting in full validation. </p></td>
+                  <td><p>The maximum number of databases to sample during CI data validation and
+AI review. Without specification, sampling is disabled, resulting in full
+validation. </p></td>
                 </tr>
               
                 <tr>

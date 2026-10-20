@@ -63,7 +63,19 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 
 	node := nodeList[0]
 
-	accessTables := q.getAccessTables(node)
+	accessNode := node
+	includeUncached := false
+	if explain, ok := node.(*tidbast.ExplainStmt); ok {
+		if !explain.Analyze {
+			return &base.QuerySpan{Type: base.Explain, Results: []base.QuerySpanResult{}, SourceColumns: base.SourceColumnSet{}}, nil
+		}
+		if explain.Stmt == nil {
+			return nil, errors.New("EXPLAIN ANALYZE by digest is not supported: referenced tables cannot be determined")
+		}
+		accessNode = explain.Stmt
+		includeUncached = true
+	}
+	accessTables := q.getAccessTables(accessNode, includeUncached)
 	allSystems, mixed := isMixedQuery(accessTables)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
@@ -191,10 +203,13 @@ var systemDatabases = map[string]bool{
 	"metrics_schema": true,
 }
 
-func (q *querySpanExtractor) getAccessTables(node tidbast.Node) base.SourceColumnSet {
+func (q *querySpanExtractor) getAccessTables(node tidbast.Node, includeUncached bool) base.SourceColumnSet {
 	accessesMap := make(base.SourceColumnSet)
-	tables := ExtractMySQLTableList(node, false /* asName */)
-	for _, table := range tables {
+	// ANALYZE executes before metadata can be refreshed. Keep every physical
+	// target for authorization, excluding only references to in-scope CTEs.
+	v := &accessTableVisitor{resolveCTEs: includeUncached}
+	node.Accept(v)
+	for _, table := range v.tables {
 		databaseName := table.Schema.O
 		if databaseName == "" {
 			databaseName = q.defaultDatabase
@@ -206,7 +221,7 @@ func (q *querySpanExtractor) getAccessTables(node tidbast.Node) base.SourceColum
 		// We do this because we do not have too much time to implement the real behavior.
 		// XXX(rebelice/zp): Can we pass more information here to make this function know the context and then
 		// figure out whether the table is the table the query actually accesses
-		if !q.existsTableMetadata(databaseName, table.Name.O) {
+		if !includeUncached && !q.existsTableMetadata(databaseName, table.Name.O) {
 			continue
 		}
 

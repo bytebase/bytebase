@@ -4,11 +4,14 @@ package oracle
 import (
 	"context"
 	"crypto/rand"
+	"crypto/tls"
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"log/slog"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	// Import go-ora Oracle driver.
@@ -58,21 +61,16 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.DataSource.Port)
 	}
-	options := make(map[string]string)
-	options["CONNECTION TIMEOUT"] = "0"
-	if config.DataSource.GetSid() != "" {
-		options["SID"] = config.DataSource.GetSid()
-	}
-	for key, value := range config.DataSource.GetExtraConnectionParameters() {
-		options[key] = value
-	}
-	dsn := goora.BuildUrl(config.DataSource.Host, port, config.DataSource.GetServiceName(), config.DataSource.Username, config.Password, options)
-	db, err := sql.Open("oracle", dsn)
+	tlsConfig, err := getTLSConfig(config.DataSource)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to build TLS configuration")
 	}
+	options := connectionOptions(config.DataSource.GetSid(), config.DataSource.GetExtraConnectionParameters(), tlsConfig != nil)
+	dsn := goora.BuildUrl(config.DataSource.Host, port, config.DataSource.GetServiceName(), config.DataSource.Username, config.Password, options)
+	db := sql.OpenDB(&connector{dsn: dsn, tlsConfig: tlsConfig})
 	if config.ConnectionContext.DatabaseName != "" {
 		if _, err := db.ExecContext(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = \"%s\"", config.ConnectionContext.DatabaseName)); err != nil {
+			_ = db.Close()
 			return nil, errors.Wrapf(err, "failed to set current schema to %q", config.ConnectionContext.DatabaseName)
 		}
 	}
@@ -81,6 +79,83 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	d.serviceName = config.DataSource.GetServiceName()
 	d.connectionCtx = config.ConnectionContext
 	return d, nil
+}
+
+// getTLSConfig returns the TLS configuration for the data source's TLS section, or nil when TLS
+// is off. It leaves the name check to crypto/tls instead of util.GetTLSConfig's verifier, which
+// checks Hostname: go-ora sets ServerName to each server it dials, so a SERVER address or a
+// listener redirect is checked against its own name.
+func getTLSConfig(dataSource *storepb.DataSource) (*tls.Config, error) {
+	config, err := util.GetTLSConfig(dataSource)
+	if err != nil || config == nil {
+		return config, err
+	}
+	config.InsecureSkipVerify = !dataSource.GetVerifyTlsCertificate()
+	config.VerifyPeerCertificate = nil
+	return config, nil
+}
+
+// connector opens each connection through go-ora's default driver, as sql.Open("oracle") does,
+// with its own copy of the TLS configuration: go-ora sets ServerName on the configuration it is
+// given, so connections opened in parallel can't share one.
+type connector struct {
+	dsn       string
+	tlsConfig *tls.Config
+}
+
+func (c *connector) Connect(ctx context.Context) (driver.Conn, error) {
+	oracleConnector, err := goora.GetDefaultDriver().OpenConnector(c.dsn)
+	if err != nil {
+		return nil, err
+	}
+	oracleConnector.(*goora.OracleConnector).WithTLSConfig(c.tlsConfig.Clone())
+	return oracleConnector.Connect(ctx)
+}
+
+func (*connector) Driver() driver.Driver {
+	return goora.GetDefaultDriver()
+}
+
+const (
+	sidOption              = "SID"
+	sslOption              = "SSL"
+	dialTimeoutOption      = "CONNECTION TIMEOUT"
+	dialTimeoutOptionAlias = "CONNECT TIMEOUT"
+	// defaultDialTimeoutSeconds bounds the wait for one address to accept a connection, DNS
+	// lookup included, so an unreachable address fails over in seconds. It does not limit
+	// how long a statement runs.
+	defaultDialTimeoutSeconds = "10"
+)
+
+// connectionOptions returns the go-ora URL options for a data source: the extra connection
+// parameters as typed, the SID field and the default dial timeout unless an extra parameter
+// sets the same option, and SSL=TRUE when TLS is on.
+//
+// go-ora upper-cases option keys and reads CONNECT TIMEOUT as CONNECTION TIMEOUT. A Bytebase
+// key sent next to a user key for the same option would leave the winner to go-ora's map
+// iteration order, so only one is sent: the user's key for SID and the dial timeout, and
+// Bytebase's SSL, which the TLS section decides.
+func connectionOptions(sid string, extraParameters map[string]string, useTLS bool) map[string]string {
+	options := make(map[string]string, len(extraParameters)+3)
+	userOptions := make(map[string]bool, len(extraParameters))
+	for key, value := range extraParameters {
+		option := strings.ToUpper(key)
+		if useTLS && option == sslOption {
+			continue
+		}
+		options[key] = value
+		userOptions[option] = true
+	}
+	if sid != "" && !userOptions[sidOption] {
+		options[sidOption] = sid
+	}
+	if !userOptions[dialTimeoutOption] && !userOptions[dialTimeoutOptionAlias] {
+		options[dialTimeoutOption] = defaultDialTimeoutSeconds
+	}
+	if useTLS {
+		options[sslOption] = "TRUE"
+	}
+	return options
 }
 
 // Close closes the driver.

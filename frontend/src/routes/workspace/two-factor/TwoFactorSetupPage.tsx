@@ -313,11 +313,8 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   return (
     <div className="px-4 py-4">
       <p className="mb-4 text-sm text-control-light">
-        {t("two-factor.description")}
-        <LearnMoreLink
-          href="https://docs.bytebase.com/administration/2fa?source=console"
-          className="ml-1 text-accent"
-        />
+        {t("two-factor.description")}{" "}
+        <LearnMoreLink href="https://docs.bytebase.com/administration/2fa?source=console" />
       </p>
 
       {/* Step indicator */}

@@ -156,50 +156,7 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	// follow-up (BOT-53); disallowing first is the deliberate order.
 	v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY: {v1pb.MCPMethodClass_FORBIDDEN, "it rewrites the workspace settings that bound this session, including the switch meant to contain it"},
 
-	// The four approval methods. ApproveIssue and RejectIssue are two actions of
-	// one handler (issue_review.go reviewIssue), and that handler records the
-	// review decision itself: applyReviewAction requires an approver role via
-	// canReview, enforces the self-approval guard, and appends an APPROVED or
-	// REJECTED approver (component/review/workflow.go). An agent composes a
-	// change; it does not move its own change through the gate. That is the
-	// whole claim,
-	// and it is deliberately narrower than "an agent only executes approved work",
-	// which this classification does NOT deliver: CreatePlan, CreateRollout and
-	// BatchRunTasks are all WRITE, and both approval checks on the execution
-	// path are guarded on an issue existing, so a plan created without one
-	// reaches execution with no approval at all. Whether an issueless rollout
-	// belongs in WRITE is the gate PR's decision to take deliberately rather
-	// than inherit.
-	//
-	// RequestIssue is the third action of the same handler and is deliberately
-	// NOT here — it is WRITE. Spec §1b-1 named four approval methods; that line
-	// grouped by RPC family rather than by mechanism, and the mechanism does not
-	// agree. This action requires the issue to be already rejected, requires the
-	// actor to be the issue CREATOR, never calls canReview, and records no
-	// decision: it strips the REJECTED approvers and returns the issue to
-	// PENDING for a fresh human decision. It cannot approve anything, so
-	// refusing it protects nothing the other two do not, and it costs the
-	// propose-fix-resubmit loop, since while a rejection stands Approve and
-	// Reject both hard-fail and this is the only exit from that state. The
-	// reasoning is on the RPC in issue_service.proto. Raised by the Codex
-	// review; Vincent took the call.
-	//
-	// RetryIssueApproval is the near miss and is in deliberately. It casts no
-	// vote — it re-runs approval-template finding for an issue stuck in
-	// CHECKING, and only the issue creator may call it (issue_service.go
-	// canRequestIssue) — but it is the other half of the reason's wording
-	// rather than an exception to it: on an auto-approved result the same call
-	// activates the grant and enqueues the rollout (issue_service.go:789,796),
-	// so it moves an issue through the gate without any human acting. What it
-	// does not buy is containment of re-derivation in general: UpdatePlan with
-	// a specs mask, and UpdateIssue on a label change, both reset
-	// ApprovalFindingDone and force the template to be found again against the
-	// current workspace rule (component/review/plan.go, metadata.go), and both
-	// stay WRITE. That is the intended line — editing a proposal is the agent's
-	// job, and re-review after an edit is the system working — not an oversight.
-	// Refusing RetryIssueApproval costs an agent the self-service recovery for
-	// its own stuck issue; the operator retries from the console.
-	v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION: {v1pb.MCPMethodClass_FORBIDDEN, "it works the approval step meant to gate the change, and an agent does not move its own change through that gate"},
+	v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION: {v1pb.MCPMethodClass_FORBIDDEN, "it decides whether a change or an access request passes its human approval, and an agent does not decide that for its own work"},
 
 	// The other refused class. An EXCLUDED method is out of scope for the modes
 	// this release ships and an admin-capable ceiling could legitimately serve
@@ -210,6 +167,7 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	v1pb.MCPDenialReason_READS_OTHER_USERS_SQL:       {v1pb.MCPMethodClass_EXCLUDED, "it returns SQL that other people wrote, across the workspace or past the sharing that keeps a saved query private"},
 	v1pb.MCPDenialReason_OPENS_AN_ADMIN_CONNECTION:   {v1pb.MCPMethodClass_EXCLUDED, "it opens an admin-credentialed connection to the database and returns other sessions' live, unmasked SQL"},
 	v1pb.MCPDenialReason_SENDS_DATA_TO_A_THIRD_PARTY: {v1pb.MCPMethodClass_EXCLUDED, "it spends a stored workspace credential to send whatever the caller passes to a third party"},
+	v1pb.MCPDenialReason_REDRAWS_GOVERNANCE_BOUNDARY: {v1pb.MCPMethodClass_EXCLUDED, "it changes which rules govern a database or which databases a change that targets a database group runs on, and an agent does not choose the checks on its own changes"},
 	// No method carries this one: the three leaks it was written for are
 	// redacted on the read path and their eight methods are READ. The row
 	// stays so the next read found leaking is one annotation away from a
@@ -325,22 +283,9 @@ func mcpSettingsForCurrentWorkspace(ctx context.Context, reader mcpSettingsReade
 // cannot resolve the token audience. Both refuse — an unknown policy never
 // permits — and neither is allowed to describe itself as the other.
 //
-// One gap survives, and it is worth knowing because nothing in the annotations
-// shows it.
-//
-//   - Two refusals this gate is the right slot for the CLASS of, but not the
-//     right place for the decision, because the fact they turn on is not in the
-//     request. Both are guarded at the point where the fact is loaded, and both
-//     key on the delegated grant so the console is untouched:
-//     rejectMCPOriginatedGrantIssue (issue_service.go), for the issue types
-//     that complete into a permission grant, and
-//     rejectMCPOriginatedIssuelessRollout (rollout_service.go), for the
-//     issueless plan that reaches execution without ever meeting the approval
-//     the three FORBIDDEN approval methods exist to protect. Without the
-//     second, those three are decorative in the change lane: an agent that
-//     cannot clear the gate could skip it instead. The gate keeps the half it
-//     can decide — CreateIssue, where the request shape IS the whole story —
-//     so the denial still lands before dispatch wherever that is possible.
+// A refusal that turns on a fact the request does not carry, such as whether an
+// issue exists, is taken in the handler that loads the fact and keyed on MCP
+// origin; TestMCPRefusalsNameThemselvesToTheQueryTool checks each one.
 type internalMCPGateInterceptor struct {
 	store mcpSettingsReader
 }
@@ -411,12 +356,12 @@ func (in *internalMCPGateInterceptor) refuse(ctx context.Context, req connect.An
 	switch authCtx.MCPMethodClass {
 	case v1pb.MCPMethodClass_FORBIDDEN:
 		return ctx, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-			"%s is not available to MCP sessions because %s. Perform this action signed in to the Bytebase console instead",
-			procedure, denialReason(authCtx.MCPMethodClass, authCtx.MCPDenialReason, reasonForbiddenClass)))
+			"%s is not available to MCP sessions because %s. %s",
+			procedure, denialReason(authCtx.MCPMethodClass, authCtx.MCPDenialReason, reasonForbiddenClass), mcpConsoleWayOut))
 	case v1pb.MCPMethodClass_EXCLUDED:
 		return ctx, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-			"%s is served by no MCP capability ceiling because %s. Perform this action signed in to the Bytebase console instead",
-			procedure, denialReason(authCtx.MCPMethodClass, authCtx.MCPDenialReason, reasonExcludedClass)))
+			"%s is served by no MCP capability ceiling because %s. %s",
+			procedure, denialReason(authCtx.MCPMethodClass, authCtx.MCPDenialReason, reasonExcludedClass), mcpConsoleWayOut))
 	case v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE:
 	default:
 		return ctx, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
@@ -513,32 +458,28 @@ func describeServedClasses(served []v1pb.MCPMethodClass) string {
 	return strings.Join(names, " and ") + " methods"
 }
 
-// mcpRequestShapeRefusals holds the refusals a per-method class cannot express,
-// because what the call does depends on a field of the request rather than on
-// which method it is. Each entry returns the reason to refuse for, or "" to
-// allow.
-//
-// This lives inside the gate rather than beside it. The decision is the same
-// decision — may this MCP session make this call? — and it has to be taken at
-// the same point in the chain, so that the denial is marked the same way, is
-// worded the same way, and reaches the caller before any handler side effect
-// can land. A second interceptor would duplicate the slot, the message, and the
-// audit mark to serve one method, and it would put the exception somewhere the
-// next person reading the class rule would not find it.
-//
-// The table is deliberately small and expected to stay that way. A method that
-// needs one is a method whose class annotation is not the whole truth, and the
-// better fix is usually to split the RPC.
-var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) string{
-	v1connect.IssueServiceCreateIssueProcedure:       refuseGrantIssueCreation,
-	v1connect.SheetServiceCreateSheetProcedure:       refuseMaskedWriteSheet,
-	v1connect.SheetServiceBatchCreateSheetsProcedure: refuseMaskedWriteSheetBatch,
-	v1connect.ReleaseServiceCreateReleaseProcedure:   refuseMaskedWriteRelease,
-	v1connect.SQLServiceQueryProcedure:               refuseMaskedWriteQuery,
-	v1connect.SQLServiceExportProcedure:              refuseMaskedWriteExport,
+const mcpConsoleWayOut = "Perform this action signed in to the Bytebase console instead"
 
-	v1connect.SavedQueryServiceCreateSavedQueryProcedure: refuseMaskedWriteSavedQuery,
-	v1connect.SavedQueryServiceUpdateSavedQueryProcedure: refuseMaskedWriteSavedQueryUpdate,
+// mcpRequestShapeRefusals holds the refusals a per-method class cannot express,
+// because what the call does depends on a request field. Each entry returns the
+// reason and the way out, or an empty reason to allow. It lives in the gate so a
+// refusal is audited and worded like a class refusal, before the handler runs.
+var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (reason, wayOut string){
+	v1connect.IssueServiceCreateIssueProcedure:       refuseGrantIssueCreation,
+	v1connect.SheetServiceCreateSheetProcedure:       inTheConsole(refuseMaskedWriteSheet),
+	v1connect.SheetServiceBatchCreateSheetsProcedure: inTheConsole(refuseMaskedWriteSheetBatch),
+	v1connect.ReleaseServiceCreateReleaseProcedure:   inTheConsole(refuseMaskedWriteRelease),
+	v1connect.SQLServiceQueryProcedure:               inTheConsole(refuseMaskedWriteQuery),
+	v1connect.SQLServiceExportProcedure:              inTheConsole(refuseMaskedWriteExport),
+
+	v1connect.SavedQueryServiceCreateSavedQueryProcedure: inTheConsole(refuseMaskedWriteSavedQuery),
+	v1connect.SavedQueryServiceUpdateSavedQueryProcedure: inTheConsole(refuseMaskedWriteSavedQueryUpdate),
+}
+
+func inTheConsole(refuse func(context.Context, any) string) func(context.Context, any) (string, string) {
+	return func(ctx context.Context, msg any) (string, string) {
+		return refuse(ctx, msg), mcpConsoleWayOut
+	}
 }
 
 // refuseByRequestShape applies the table above. The context carries what the
@@ -548,59 +489,41 @@ func refuseByRequestShape(ctx context.Context, procedure string, msg any) error 
 	if !ok {
 		return nil
 	}
-	reason := refuse(ctx, msg)
+	reason, wayOut := refuse(ctx, msg)
 	if reason == "" {
 		return nil
 	}
 	return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-		"%s is not available to MCP sessions for this request because %s. "+
-			"Perform this action signed in to the Bytebase console instead", procedure, reason))
+		"%s is not available to MCP sessions for this request because %s. %s", procedure, reason, wayOut))
 }
 
-// refuseGrantIssueCreation is the CreateIssue carve-out. CreateIssue is WRITE
-// for the database-change issue it exists for, and an agent composing a change
-// is the whole point of the MCP surface. A ROLE_GRANT issue is a different
-// method wearing the same name: it completes on creation whenever the workspace
-// approval rule produces no template, and completing it writes the project IAM
-// binding for whichever grantee the request names — which is
-// ProjectService/SetIamPolicy, EXCLUDED for exactly that outcome. The session
-// ends up granting access with no human step.
-//
-// It is an allow-list of the type the class covers, not a deny-list of the ones
-// that reach past it. A deny-list would silently admit the next issue type
-// somebody adds, and adding an issue type is not where anyone would think to
-// re-read the MCP ceiling. ACCESS_GRANT is refused by that allow-list and never
-// reaches the handler in the first place: buildIssueMessage has no arm for it,
-// so the type is an invalid argument there, and those issues are written by
-// AccessGrantService/CreateAccessGrant, which is EXCLUDED.
-//
-// An unset type is NOT refused: nothing can be created from it, since
-// buildIssueMessage's default arm rejects an unspecified type as an invalid
-// argument, so refusing it here would protect nothing and would answer a
-// mechanism that does not apply.
-//
-// UpdateIssue is deliberately NOT in this table, and the reason is the limit of
-// what a request shape can decide. allow_missing makes UpdateIssue create the
-// issue — but only when it does not already exist, which is not a field of the
-// request. An AIP upsert sends the complete resource, so a caller PATCHing an
-// existing ROLE_GRANT issue carries type=ROLE_GRANT in a body the handler
-// ignores, and refusing on that would refuse an ordinary edit for a mechanism
-// that is not running. The creation it really does reach is guarded where the
-// creation happens instead: rejectMCPOriginatedGrantIssue in issue_service.go.
-func refuseGrantIssueCreation(_ context.Context, msg any) string {
+// refuseGrantIssueCreation applies grantIssueRefusal to CreateIssue. UpdateIssue's
+// allow_missing creation is guarded in its handler (rejectMCPOriginatedGrantIssue).
+func refuseGrantIssueCreation(_ context.Context, msg any) (string, string) {
 	request, ok := msg.(*v1pb.CreateIssueRequest)
 	if !ok {
 		// The table is keyed by procedure, so the request type is fixed. A
 		// mismatch is a wiring bug, and a wiring bug on a refusal path fails
 		// closed.
-		return fmt.Sprintf("its request could not be read as an issue (%T)", msg)
+		return fmt.Sprintf("its request could not be read as an issue (%T)", msg), mcpConsoleWayOut
 	}
-	switch request.GetIssue().GetType() {
+	return grantIssueRefusal(request.GetIssue().GetType())
+}
+
+// grantIssueRefusal is the issue-type allow-list both MCP creation guards share,
+// so a type added later is refused until someone decides otherwise. An unset
+// type is left to buildIssueMessage, which rejects it as invalid.
+func grantIssueRefusal(issueType v1pb.Issue_Type) (reason, wayOut string) {
+	switch issueType {
 	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_TYPE_UNSPECIFIED:
-		return ""
+		return "", ""
+	case v1pb.Issue_ACCESS_GRANT:
+		reason = fmt.Sprintf("an ACCESS_GRANT issue is filed by %s, not created directly",
+			v1connect.AccessGrantServiceCreateAccessGrantProcedure)
+		return reason, "Request the access with that method instead"
 	default:
 		return fmt.Sprintf(
 			"a %v issue completes on creation whenever the workspace approval rule produces no template, "+
-				"which grants access with no human step", request.GetIssue().GetType())
+				"which grants access with no human step", issueType), mcpConsoleWayOut
 	}
 }

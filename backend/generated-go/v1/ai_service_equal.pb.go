@@ -131,5 +131,8 @@ func (x *AIChatResponse) Equal(y *AIChatResponse) bool {
 	if !x.Usage.Equal(y.Usage) {
 		return false
 	}
+	if x.StopReason != y.StopReason {
+		return false
+	}
 	return true
 }

@@ -14,10 +14,17 @@ import { router } from "@/app/router";
 import { Button } from "@/components/ui/button";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { Textarea } from "@/components/ui/textarea";
+import { projectNamePrefix } from "@/lib/resourceName";
+import { useAppStore } from "@/stores/app";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type { DomRefSuggestion } from "../dom";
 import { lazyExtractDomRefSuggestions } from "../dom";
 import { runAgentLoop } from "../logic/agentLoop";
-import { isAgentAIConfigurationError } from "../logic/aiConfiguration";
+import {
+  getAgentAIConfigurationEnabled,
+  isAgentAIConfigurationError,
+} from "../logic/aiConfiguration";
+import { getCurrentChatContext } from "../logic/chatContext";
 import { buildOutboundHistory } from "../logic/outboundHistory";
 import { buildSystemPrompt } from "../logic/prompt";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
@@ -26,9 +33,11 @@ import {
   selectCurrentChat,
   selectCurrentChatRequiresAIConfiguration,
   selectCurrentPendingAsk,
+  selectHasRunningChat,
   selectLoading,
   useAgentStore,
 } from "../store/agent";
+import { AgentContextPicker } from "./AgentContextPicker";
 
 // Module-level map — survives across renders.
 const runTokens = new Map<string, number>();
@@ -105,15 +114,29 @@ interface DomRefMentionOption {
 
 export function AgentInput() {
   const { t } = useTranslation();
-
   // Zustand selectors
   const currentChat = useAgentStore(selectCurrentChat);
   const currentPendingAsk = useAgentStore(selectCurrentPendingAsk);
   const loading = useAgentStore(selectLoading);
+  const hasRunningChat = useAgentStore(selectHasRunningChat);
   const isAIConfigurationBlocked = useAgentStore(
     selectCurrentChatRequiresAIConfiguration
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const queuedUserMessage = useAgentStore((s) => s.queuedUserMessage);
+  const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
+  const context = currentChat?.context;
+  const projectContext = context?.startsWith(projectNamePrefix)
+    ? context
+    : undefined;
+  const contextProject = useAppStore((s) =>
+    projectContext ? s.projectsByName[projectContext] : undefined
+  );
+  const workspace = useAppStore((s) => s.workspace);
+  const getOrFetchProjectByName = useAppStore((s) => s.getOrFetchProjectByName);
+  const aiConfigurationEnabled = useAppStore((s) =>
+    getAgentAIConfigurationEnabled(s.getSettingByName(Setting_SettingName.AI))
+  );
 
   // Local state
   const [input, setInput] = useState("");
@@ -163,6 +186,63 @@ export function AgentInput() {
       }),
     [currentChat?.totalTokensUsed, t]
   );
+  const contextTitle = projectContext
+    ? contextProject?.title || projectContext.slice(projectNamePrefix.length)
+    : context === workspace?.name
+      ? workspace?.title || context
+      : context;
+
+  const selectContext = useCallback((resource: string) => {
+    return Boolean(
+      useAgentStore
+        .getState()
+        .selectChatContext(resource, getCurrentPageSnapshot())
+    );
+  }, []);
+
+  useEffect(() => {
+    if (projectContext && !contextProject) {
+      void getOrFetchProjectByName(projectContext, true);
+    }
+  }, [contextProject, getOrFetchProjectByName, projectContext]);
+
+  const blockWhenAIIsNotConfigured = useCallback(
+    async (chatId: string) => {
+      const setting = await getOrFetchSettingByName(
+        Setting_SettingName.AI,
+        true
+      );
+      if (getAgentAIConfigurationEnabled(setting) !== false) return false;
+
+      useAgentStore.getState().setChatStatus(chatId, "error", {
+        requiresAIConfiguration: true,
+      });
+      return true;
+    },
+    [getOrFetchSettingByName]
+  );
+
+  useEffect(() => {
+    const chat = useAgentStore.getState().getChat(currentChatId);
+    if (!chat) return;
+
+    if (aiConfigurationEnabled === false) {
+      useAgentStore.getState().setChatStatus(chat.id, "error", {
+        requiresAIConfiguration: true,
+      });
+      return;
+    }
+
+    if (aiConfigurationEnabled === true && chat.requiresAIConfiguration) {
+      useAgentStore.getState().clearError(chat.id);
+    }
+  }, [aiConfigurationEnabled, currentChatId]);
+
+  useEffect(() => {
+    const chat = useAgentStore.getState().getChat(currentChatId);
+    if (!chat) return;
+    void blockWhenAIIsNotConfigured(chat.id);
+  }, [blockWhenAIIsNotConfigured, currentChatId]);
 
   // @-mention autocomplete
   const activeDomRefQuery = useMemo(
@@ -417,7 +497,10 @@ export function AgentInput() {
       runTokens.set(chatId, runToken);
       store.setAbortController(chatId, controller);
 
-      const systemPrompt = buildSystemPrompt(page);
+      const systemPrompt = buildSystemPrompt({
+        ...page,
+        context: store.getChat(chatId)?.context,
+      });
       const tools = getToolDefinitions();
       const executor = createToolExecutor(router, {
         chatId,
@@ -495,14 +578,49 @@ export function AgentInput() {
     [runChat]
   );
 
+  useEffect(() => {
+    if (!currentChatId || queuedUserMessage?.chatId !== currentChatId) return;
+    const store = useAgentStore.getState();
+    const message = store.takeQueuedUserMessage(currentChatId);
+    if (!message) return;
+
+    void (async () => {
+      try {
+        if (await blockWhenAIIsNotConfigured(message.chatId)) {
+          setInput(message.text);
+          return;
+        }
+        store.clearError(message.chatId);
+        store.addMessage({
+          chatId: message.chatId,
+          role: "user",
+          content: message.text,
+          metadata: { route: message.page.path },
+        });
+        await startChatRun(message.chatId, message.page);
+      } finally {
+        store.finishQueuedUserMessage(message.chatId);
+      }
+    })();
+  }, [
+    blockWhenAIIsNotConfigured,
+    currentChatId,
+    queuedUserMessage,
+    startChatRun,
+  ]);
+
   const send = useCallback(async () => {
     const store = useAgentStore.getState();
     const chat = selectCurrentChat(store);
     if (store.isChatRunning(chat?.id)) return;
 
     const currentPage = getCurrentPageSnapshot();
-    const thread = store.ensureCurrentChat(currentPage);
+    const thread = store.ensureCurrentChat(
+      currentPage,
+      getCurrentChatContext()
+    );
     const chatId = thread.id;
+    if (await blockWhenAIIsNotConfigured(chatId)) return;
     store.clearError(chatId);
 
     const pendingAsk = selectCurrentPendingAsk(store);
@@ -540,7 +658,7 @@ export function AgentInput() {
       metadata: { route: currentPage.path },
     });
     await startChatRun(chatId, currentPage);
-  }, [input, startChatRun]);
+  }, [blockWhenAIIsNotConfigured, input, startChatRun]);
 
   const retryLastTurn = useCallback(async () => {
     const store = useAgentStore.getState();
@@ -549,10 +667,11 @@ export function AgentInput() {
 
     const chatId = chat.id;
     const currentPage = getCurrentPageSnapshot();
+    if (await blockWhenAIIsNotConfigured(chatId)) return;
     store.removeMessagesByRunId(chatId, chat.runId);
     store.clearError(chatId);
     await startChatRun(chatId, currentPage);
-  }, [startChatRun]);
+  }, [blockWhenAIIsNotConfigured, startChatRun]);
 
   const dismissInterrupted = useCallback(() => {
     const store = useAgentStore.getState();
@@ -580,6 +699,7 @@ export function AgentInput() {
       const chatId = thread.id;
       const answer = confirmed ? confirmLabel : cancelLabel;
 
+      if (await blockWhenAIIsNotConfigured(chatId)) return;
       store.clearError(chatId);
       store.answerPendingAsk(
         chatId,
@@ -588,7 +708,7 @@ export function AgentInput() {
       );
       await startChatRun(chatId, currentPage);
     },
-    [confirmLabel, cancelLabel, startChatRun]
+    [blockWhenAIIsNotConfigured, confirmLabel, cancelLabel, startChatRun]
   );
 
   const submitChoice = useCallback(
@@ -608,6 +728,7 @@ export function AgentInput() {
       const thread = store.ensureCurrentChat(currentPage);
       const chatId = thread.id;
 
+      if (await blockWhenAIIsNotConfigured(chatId)) return;
       store.clearError(chatId);
       store.answerPendingAsk(
         chatId,
@@ -616,7 +737,7 @@ export function AgentInput() {
       );
       await startChatRun(chatId, currentPage);
     },
-    [startChatRun]
+    [blockWhenAIIsNotConfigured, startChatRun]
   );
 
   // Textarea keydown handler
@@ -721,10 +842,17 @@ export function AgentInput() {
       )}
 
       <div
-        className="mb-1 flex justify-end text-xs text-control-light"
+        className="mb-1 flex items-center justify-between gap-2 text-xs text-control-light"
         data-agent-input-footer
       >
-        {currentChatTokenUsageLabel}
+        <AgentContextPicker
+          context={context}
+          contextTitle={contextTitle}
+          workspace={workspace}
+          disabled={hasRunningChat || Boolean(currentPendingAsk)}
+          onSelect={selectContext}
+        />
+        <span className="shrink-0">{currentChatTokenUsageLabel}</span>
       </div>
 
       {/* Confirm buttons */}
@@ -773,7 +901,6 @@ export function AgentInput() {
           ))}
         </div>
       ) : (
-        /* Input row with @-mention autocomplete */
         <div className="relative flex items-end gap-x-2" data-agent-input-row>
           <div className="relative w-full">
             {!input && (
@@ -781,7 +908,7 @@ export function AgentInput() {
                 className="pointer-events-none absolute inset-x-3 inset-y-0 z-10 flex items-center truncate text-sm leading-5 text-control-light"
                 data-agent-input-placeholder
               >
-                {inputPlaceholder}
+                {inputPlaceholder} · {t("agent.input-keyboard-hint")}
               </div>
             )}
             <Textarea
@@ -865,6 +992,7 @@ export function AgentInput() {
             <Button
               size="md"
               className="shrink-0 self-end whitespace-nowrap"
+              data-agent-send
               disabled={isSendDisabled}
               onClick={() => void send()}
             >

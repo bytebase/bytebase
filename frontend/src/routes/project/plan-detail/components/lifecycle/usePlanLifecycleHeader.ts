@@ -7,11 +7,11 @@ import { useMemo } from "react";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { useApprovalCandidates } from "../../../useApprovalCandidates";
 import type { PlanDetailPageState } from "../../shell/hooks/types";
 import { getPlanCheckSummary } from "../../utils/phaseSummary";
 import { isReleaseBackedPlan } from "../../utils/spec";
 import { deriveSteps } from "../review/ReviewApprovalFlow";
-import { useApprovalCandidates } from "../review/useApprovalCandidates";
 import {
   type PlanLifecycleHeaderState,
   resolvePlanLifecycleHeaderState,

@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { ignoredCodesContextKey, silentContextKey } from "../context-key";
+import {
+  ignoredCodesContextKey,
+  silentContextKey,
+  skipErrorNotificationContextKey,
+} from "../context-key";
 
 const mocks = vi.hoisted(() => ({
   pushNotification: vi.fn(),
@@ -32,16 +36,19 @@ import { errorNotificationInterceptor } from "./errorNotificationMiddleware";
 
 const createRequest = ({
   silent = false,
+  skipErrorNotification = false,
   ignoredCodes = [],
   methodName = "ListDatabases",
 }: {
   silent?: boolean;
+  skipErrorNotification?: boolean;
   ignoredCodes?: Code[];
   methodName?: string;
 } = {}) =>
   ({
     contextValues: createContextValues()
       .set(silentContextKey, silent)
+      .set(skipErrorNotificationContextKey, skipErrorNotification)
       .set(ignoredCodesContextKey, ignoredCodes),
     method: { name: methodName },
     service: { name: "DatabaseService" },
@@ -102,5 +109,29 @@ describe("errorNotificationInterceptor", () => {
       title: "Code 13: Internal",
       description: "[internal] failed",
     });
+  });
+
+  test("does not toast a silent request failure", async () => {
+    const error = new ConnectError("failed", Code.Internal);
+    const next = vi.fn().mockRejectedValue(error);
+
+    await expect(
+      errorNotificationInterceptor(next)(createRequest({ silent: true }))
+    ).rejects.toBe(error);
+
+    expect(mocks.pushNotification).not.toHaveBeenCalled();
+  });
+
+  test("leaves the toast to a caller that reports the failure itself", async () => {
+    const error = new ConnectError("failed", Code.Internal);
+    const next = vi.fn().mockRejectedValue(error);
+
+    await expect(
+      errorNotificationInterceptor(next)(
+        createRequest({ skipErrorNotification: true })
+      )
+    ).rejects.toBe(error);
+
+    expect(mocks.pushNotification).not.toHaveBeenCalled();
   });
 });

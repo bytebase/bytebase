@@ -1046,6 +1046,9 @@ func (q *querySpanExtractor) findTableSchema(objectName *ast.ObjectName, normali
 		if err != nil {
 			return "", nil, errors.Wrapf(err, "failed to get database %s", normalizedDatabaseName)
 		}
+		if database == nil {
+			return "", nil, errors.Errorf("database metadata for database %q not found (database not synced)", normalizedDatabaseName)
+		}
 		allSchemaNames := database.ListSchemaNames()
 		for _, schemaSchema := range allSchemaNames {
 			if normalizedSchemaName != "" && normalizedSchemaName != schemaSchema {

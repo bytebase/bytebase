@@ -389,9 +389,18 @@ export function AttachResourcesPanel({
 
   // Fetch projects on mount so the checkbox list is populated
   useEffect(() => {
-    useAppStore
+    const controller = new AbortController();
+    void useAppStore
       .getState()
-      .fetchProjectList({ cache: true, filter: { excludeDefault: true } });
+      .fetchProjectList({
+        signal: controller.signal,
+        cache: true,
+        filter: { excludeDefault: true },
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) console.error(error);
+      });
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {

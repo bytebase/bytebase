@@ -41,10 +41,15 @@
     "chat-total-tokens": "合計トークン数: {{count}}",
     "close": "閉じる",
     "confirm": "確認",
+    "context": "コンテキスト",
+    "context-no-projects": "アクセス可能なプロジェクトがありません",
+    "context-select": "コンテキストを選択",
+    "context-workspace": "ワークスペース",
     "delete-all-chats": "すべてのチャットを削除",
     "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",
     "delete-chat": "チャットを削除",
     "delete-chat-confirmation": "このチャットを削除しますか？この操作は元に戻せません。",
+    "input-keyboard-hint": "Enter で送信・Shift+Enter で改行",
     "input-placeholder": "AI に何でも聞いてください...",
     "interrupted": "中断",
     "interrupted-retry-hint": "会話が中断されました。再試行するか、新しいメッセージを送信できます。",
@@ -354,6 +359,7 @@
     "google-chat": "Google Chat",
     "group": "グループ",
     "groups": "グループ",
+    "hide": "隠す",
     "history": "履歴",
     "home": "ホームページ",
     "id": "ID",
@@ -642,7 +648,9 @@
     "direct-connection": "直接接続",
     "extra-params": {
       "description": "データベース接続文字列の追加パラメーター",
-      "self": "追加のパラメーター"
+      "overridden-by-tls": "TLS セクションの設定が優先されます。",
+      "self": "追加のパラメーター",
+      "wallet-overridden-by-tls": "保存されたパスワードのみ使用されます。証明書は TLS セクションのものが使われます。"
     },
     "no-read-only-data-source": "読み取り専用データソースがありません",
     "private-key-passphrase": "秘密鍵のパスフレーズ",
@@ -1307,7 +1315,11 @@
           "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。次のコマンドを実行してユーザーを作成する前に、{{link}} を有効にする必要があります。"
         },
         "mysql": {
-          "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。"
+          "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。",
+          "warn": "DEFINER を別のアカウントに設定する変更を Bytebase で実行するには、MySQL 8.0 では SET_USER_ID、MySQL 8.4 以降では SET_ANY_DEFINER も付与してください。一部のクラウドプロバイダーはこれらの権限を制限しています。"
+        },
+        "oracle": {
+          "warn": "Amazon RDS for Oracle では GRANT ALL PRIVILEGES を実行できません。"
         },
         "postgresql": {
           "template": "ユーザー {{user}}、パスワード {{password}} を作成し、必要な権限を付与する例は次のとおりです。接続しているインスタンスが自己ホスト型の場合は、SUPERUSER を付与できます。",
@@ -1533,8 +1545,11 @@
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
       "details": "ロール付与の詳細",
+      "direct-execution-suffix": "{{environments}} で承認なしに {{kind}} を実行",
       "expired-at": "有効期限",
+      "grantee": "付与先",
       "manually-select": "手動選択",
+      "requested-by": "{{creator}} による申請",
       "use-cel": "CEL式を使用"
     },
     "sort": {
@@ -1592,14 +1607,26 @@
     }
   },
   "landing": {
+    "ai-placeholder": "ワークスペースの設定、プロジェクト、アクセスについて AI に質問",
+    "ai-setup": {
+      "action": "AI を設定",
+      "description": "このワークスペースで AI を使用するため、プロバイダーとモデルを設定してください。",
+      "title": "AI アシスタントを設定"
+    },
     "changelog-for-version": "{{version}} の変更履歴",
     "last-visit": "最終訪問",
+    "onboarding": {
+      "completed-progress": "{{total}} 件中 {{completed}} 件完了",
+      "connect-action": "インスタンスを接続",
+      "connect-description": "データベースサーバーを {{project}} に接続します。"
+    },
     "quick-link": {
       "manage": "クイックリンクを管理する",
-      "self": "クイックリンク",
       "visit-issues": "イシューを開く",
-      "visit-prjects": "プロジェクトを開く"
-    }
+      "visit-prjects": "プロジェクトを開く",
+      "yours": "クイックリンク"
+    },
+    "workspace": "ワークスペース"
   },
   "masking": {
     "reason": {
@@ -1672,6 +1699,15 @@
   "plan": {
     "add-spec": "変更を追加",
     "add-spec-pending-draft": "新しい変更を追加する前に、保留中の変更を保存または破棄してください",
+    "ai-review": {
+      "failed-to-run": "AI レビューを開始できませんでした",
+      "finished": "完了",
+      "not-run": "未実行",
+      "queued": "待機中",
+      "run": "AI レビューを実行",
+      "save-first": "AI レビューを実行するには、編集内容を保存または破棄してください。",
+      "status-unknown": "状態を取得できません"
+    },
     "blocker": {
       "clears-on-its-own": "自動的に解消されます"
     },
@@ -1994,6 +2030,39 @@
       "success-prompt": "{{name}} が正常に作成されました。"
     },
     "filter-projects": "プロジェクトをフィルタリング",
+    "home": {
+      "active-issues": "あなたの対応中の課題",
+      "active-issues-unavailable": "このプロジェクトの課題は表示できません。",
+      "ai-placeholder": "このプロジェクトの検索、変更、設定について AI に質問",
+      "archived-description": "このプロジェクトはアーカイブされており、読み取り専用です。",
+      "change-database": "データベースを変更",
+      "change-database-description": "このプロジェクトで管理されたデータベース変更を計画します。",
+      "connect": "インスタンスを接続",
+      "connect-description": "データベースサーバーをこのプロジェクトに接続します。",
+      "create-database": "データベースを作成",
+      "create-database-description": "接続済みインスタンスに最初のデータベースを作成します。",
+      "created-by-you": "あなたが作成",
+      "customize": "カスタマイズ",
+      "databases": "データベース",
+      "databases-load-error": "データベースを読み込めませんでした。",
+      "databases-unavailable": "このプロジェクトのデータベースは利用できません。",
+      "members": "メンバーを管理",
+      "members-optional-description": "任意: チームメンバーに共同作業とレビューのためのアクセス権を付与します。",
+      "needs-review": "あなたのレビュー待ち",
+      "next-step": "次のステップ",
+      "no-active-issues": "このプロジェクトには、あなたが作成した、またはレビュー待ちの未完了の課題はありません。",
+      "no-databases": "アクセスできるデータベースはまだありません。",
+      "no-databases-create-description": "接続済みインスタンスにデータベースを作成して始めましょう。",
+      "no-databases-description": "インスタンスを接続して、このプロジェクトにデータベースを追加します。",
+      "no-databases-prerequisite": "ここにデータベースを表示するには、インスタンスの接続が必要です。",
+      "no-databases-transfer-description": "未割り当てのデータベースをこのプロジェクトに移管するか、新しく作成します。",
+      "query-database": "データベースをクエリ",
+      "query-database-description": "SQL エディターでこのプロジェクトのデータベースを参照します。",
+      "transfer-databases": "データベースを移管",
+      "transfer-databases-description": "未割り当てのデータベースをこのプロジェクトに移管します。",
+      "view-all": "すべて表示",
+      "view-issues": "課題を見る"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {
@@ -2007,20 +2076,36 @@
       "expires-in-days_other": "{{days}} 日後に期限切れ",
       "expires-today": "本日期限切れ",
       "grant-exemption": "免除を付与",
+      "hide-raw-cel-condition": "生の CEL 条件を非表示",
       "level": "レベル",
+      "n-databases_one": "{{n}} 個のデータベース",
+      "n-databases_other": "{{n}} 個のデータベース",
       "n-exemptions_one": "{{n}} 件の免除",
       "n-exemptions_other": "{{n}} 件の免除",
       "no-exemptions": "マスキング免除はまだ付与されていません",
       "no-reason": "理由が提供されていません",
       "revoke-exemption-title": "{{member}} のマスキング免除を削除しますか？",
-      "self": "マスキング免除"
+      "self": "マスキング免除",
+      "show-raw-cel-condition": "生の CEL 条件を表示"
     },
     "members": {
-      "ddl-current-all": "すべての（ALL）環境で {{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
-      "ddl-current-none": "{{kind}} ステートメントを SQL エディターで実行するには承認が必要です。",
-      "ddl-current-some": "リストされた環境で {{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
-      "ddl-warning": "選択した環境では、{{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
+      "direct-execution": {
+        "all": "すべての環境で SQL エディターから承認なしに {{kind}} を実行できます。",
+        "environment-required": "環境を 1 つ以上選択してください。",
+        "in-environments": "対象の環境",
+        "lead-approver": "承認すると、{{grantee}} は SQL エディターで承認なしに {{kind}} を実行できます。対象：",
+        "lead-binding": "SQL エディターで承認なしに {{kind}} を実行できます。対象：",
+        "lead-grant": "このロールを持つメンバーは SQL エディターで承認なしに {{kind}} を実行できます。対象：",
+        "lead-request": "承認されると、SQL エディターで承認なしに {{kind}} を実行できます。対象：",
+        "none": "{{kind}} は承認なしには SQL エディターで実行できません。",
+        "protected-tag": "本番環境",
+        "protected_one": "{{environments}} は本番環境です。",
+        "protected_other": "{{environments}} は本番環境です。",
+        "select-environments": "環境を選択",
+        "switch-label": "SQL エディターで承認なしに {{kind}} を実行することを許可する",
+        "title": "{{kind}} の直接実行"
+      },
       "edit-member": "メンバー編集 - {{member}}",
       "expiration-presets": {
         "one-month": "1か月",
@@ -2278,7 +2363,7 @@
       "self": "SQLエディタ読み取り専用ユーザー"
     },
     "sql-editor-user": {
-      "description": "指定した範囲内のデータをクエリできます。",
+      "description": "データを照会し、許可された環境で DDL/DML を実行できます。",
       "self": "SQLエディタのユーザー"
     },
     "title": "タイトル",
@@ -2452,9 +2537,9 @@
             "placeholder": "API キーは通常 sk-***** で始まります",
             "self": "APIキー"
           },
+          "available-in-saas": "AI アシスタントはこのワークスペースで利用でき、Bytebase によって管理されています。",
           "description": "AI を使用してデータベース開発タスクを支援します。",
           "enable-ai-assistant": "AIアシスタントを有効にする",
-          "enabled-in-saas": "Gemini AI は SaaS モードで自動的に有効になります。",
           "endpoint": {
             "description": "カスタムモデルの API エンドポイントを入力します。",
             "openai-description": "Responses API には /responses、Chat Completions API には /chat/completions のエンドポイントを使用します。",
@@ -2475,7 +2560,8 @@
             "open_ai": "OpenAI",
             "self": "AIプロバイダー"
           },
-          "self": "AI アシスタント"
+          "self": "AI アシスタント",
+          "unavailable-in-saas": "このワークスペースでは AI アシスタントを利用できません。Bytebase 管理者にお問い合わせください。"
         },
         "allow-admin-data-source": {
           "description": "有効にすると、ユーザーは管理データソースと読み取り専用データソースのどちらかを選択できます。無効にすると、読み取り専用データソースが設定されている場合は強制的に読み取り専用データソースを使用し、設定されていない場合は管理データソースにフォールバックします。",
@@ -2710,12 +2796,16 @@
             "title": "クエリ結果をエクスポートする"
           },
           "manage": {
-            "details": "インスタンスとデータベースの同期 · データベースの設定とラベル · データベースをプロジェクト間で移動 · データベースグループ · 保存済みクエリ",
+            "details": "インスタンスとデータベースの同期 · 保存済みクエリ",
             "title": "データベースの運用設定を管理する"
           },
           "propose": {
             "details": "シートの作成 · Plan と Issue の作成・編集 · プランチェックとレビューの実行 · リリースの作成・削除・復元 · リビジョンの作成・削除 · スキーマ差分の生成。エージェントが自分の変更を承認することはありません。人の承認が必要かどうかはプロジェクトの承認ポリシーが決めます",
             "title": "変更を提案する"
+          },
+          "read-access": {
+            "details": "ワークスペースとそのプロジェクトで誰がどのロールを持つか · グループとそのメンバー · ロールとその権限 · マスキングルールとマスキング免除 · リリース戦略、およびデータクエリ・タグ・レビューのポリシー · アクセス付与（承認待ちのリクエストを含む）",
+            "title": "メンバー・ロール・ポリシーの読み取り"
           },
           "read-data": {
             "details": "読み取り専用のクエリを実行 · 読み取り専用では、すべてのステートメントがデータを返す読み取りだと確認できない限りリクエスト全体を拒否します。どこまで確認できるかはエンジンによって異なり、どのステートメントも読み取りだと確認できないエンジンもあります · 自分のクエリ履歴 · アクセス権のある保存済みクエリとシート",
@@ -2728,6 +2818,10 @@
           "read-workflow": {
             "details": "Issue とコメント · Plan とプランチェック · ロールアウト・タスク実行・ログ · リリース · ロールバックのプレビュー",
             "title": "変更ワークフローの読み取り"
+          },
+          "request-access": {
+            "details": "特定のステートメントを実行するための期限付きアクセス付与をリクエストします。結果のマスク解除やエクスポートも含められます。エンジンが確認できる範囲で、ステートメントは読み取りでなければなりません · 付与は人が承認した後にのみ有効になり、誰の承認も必要としないリクエストは拒否されます · 付与は、プロジェクトがアクセス付与を許可している場合にのみ適用されます",
+            "title": "アクセス付与をリクエストする"
           },
           "run-rollouts": {
             "details": "ロールアウトの作成 · プロジェクトの承認ポリシーのもとでタスクを実行・スキップ・キャンセル",
@@ -2744,8 +2838,8 @@
           "write": "読み書きはここまで"
         },
         "summary": {
-          "read-only": "スキーマ・データ・変更ワークフローの読み取り。読み取りだと確認できないものを含むリクエストは拒否され、エクスポートもできません",
-          "read-write": "スキーマ・データ・変更ワークフローの読み取り。提案・実行・エクスポート・管理"
+          "read-only": "スキーマ・データ・変更ワークフロー・メンバー・ロール・ポリシーの読み取り。読み取りだと確認できないものを含むリクエストは拒否され、エクスポートもできません",
+          "read-write": "スキーマ・データ・変更ワークフロー・メンバー・ロール・ポリシーの読み取り。提案・アクセスのリクエスト・実行・エクスポート・管理"
         },
         "tier": {
           "read": "読み取り",
@@ -2919,59 +3013,16 @@
       "workload-identity-tag-hint": "すべてのタグを許可する場合は空欄にしてください"
     },
     "profile": {
-      "default-project-name": "新しいプロジェクト",
       "display-name": "あなたの名前",
       "display-name-placeholder": "名前を入力してください",
       "email": "メールアドレス",
-      "enable-sample-databases": "サンプルデータベースを有効にする",
-      "enable-sample-databases-create-change": "安全な変更対象としてサンプルデータベースを有効にする",
-      "enable-sample-databases-mark-sensitive-data": "データマスキングをすぐに試せるようサンプルデータベースを有効にする",
-      "enable-sample-databases-query-data": "すぐにクエリを試せるようサンプルデータベースを有効にする",
       "password": "パスワード",
       "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認します",
       "password-hint": "パスワードは制限設定に従う必要があります",
       "password-mismatch": "新しいパスワードが一致しません",
       "phone": "電話番号",
-      "phone-tips": "国コードを必ず含めてください +81xxxxxx",
-      "setup-failed": "プロフィールの更新に失敗しました。",
-      "setup-first-project": "最初のプロジェクトを設定",
-      "setup-scenario": {
-        "continue": "続行",
-        "create-database-change": {
-          "description": "変更を定義し、追跡可能なイシューを作成します。",
-          "title": "データベース変更を作成"
-        },
-        "mark-sensitive-data": {
-          "description": "機密カラムを特定してデータマスキングを適用します。",
-          "title": "機密データをマーク"
-        },
-        "outcome-title": "Bytebase で何をしたいですか？",
-        "query-data": {
-          "description": "SQL Editor を開き、データベースでステートメントを実行します。",
-          "title": "データをクエリ"
-        },
-        "workspace-usage": {
-          "solo": {
-            "description": "自分だけで Bytebase を使用します。",
-            "title": "自分だけ"
-          },
-          "team": {
-            "description": "他のメンバーと一緒に使用します。",
-            "title": "チームで使用"
-          },
-          "title": "Bytebase を誰と使用しますか？"
-        }
-      },
-      "setup-skip": "後で設定する",
-      "setup-steps": {
-        "scenario": "目標を選択",
-        "workspace": "ワークスペースを設定"
-      },
-      "setup-submit": "ワークスペースをセットアップ",
-      "setup-success": "プロフィールが更新されました。",
-      "workspace-name": "ワークスペース名",
-      "workspace-name-placeholder": "ワークスペース名を入力"
+      "phone-tips": "国コードを必ず含めてください +81xxxxxx"
     },
     "sensitive-data": {
       "algorithms": {
@@ -3282,6 +3333,9 @@
     "export-available-via-issue": "Issue「{{title}}」によりエクスポート可能",
     "export-available-via-n-grants": "{{count}} 件のアクセス付与によりエクスポート可能:",
     "export-enabled-by-grant": "アクセス付与により有効になっています",
+    "export-grant-lookup-failed": "エクスポート権限を確認できませんでした。",
+    "export-grant-lookup-loading": "エクスポート権限を確認中…",
+    "export-grant-lookup-retry": "再試行",
     "format": "フォーマット",
     "format-default": "デフォルト",
     "format-sql": "SQL を整形",
@@ -3537,6 +3591,7 @@
       "manage-license": "ライセンスの管理",
       "missing-license-attention": "この機能のロックを解除するには、インスタンスにライセンスを割り当ててください。",
       "n-license-remain": "残り {{n}}",
+      "project-instance-hint": "この一覧にはワークスペースのインスタンスのみが表示されます。プロジェクトのインスタンスのライセンスを管理するには、そのインスタンスの詳細ページを開いてください。",
       "require-license": "インスタンスライセンスが必要です",
       "success-notification": "ライセンスの割り当てが正常に更新されました",
       "used-and-total-instance": "アクティブ/合計インスタンス制限",
@@ -3818,6 +3873,123 @@
       "copy-succeed": "正常にコピーされました。申請書に入力してください。",
       "description": "キーをコピーし、アプリケーションに手動で入力します。",
       "self": "二要素認証キー"
+    }
+  },
+  "workspace-setup": {
+    "continue": "続行",
+    "elsewhere": {
+      "continue": "ここで続行",
+      "ended": "このセットアップは別のタブで終了しました",
+      "saved": "このセットアップは別のタブで続行されました",
+      "workspace": "ワークスペースへ移動"
+    },
+    "goal": {
+      "change": {
+        "description": "スキーマ変更またはデータ修正を作成し、SQLレビューでチェックしてからデータベースにロールアウトします。",
+        "finish-line": "ゴール：SQLレビューを通過してロールアウトされた変更",
+        "title": "データベース変更を計画・レビューしてロールアウトする"
+      },
+      "description": "ここに来た目的を選択してください。セットアップ完了後、最初にそれを提案します。",
+      "explore": {
+        "description": "まず簡単なクエリを提案します。方向は後で選べます。",
+        "title": "まだ決めていない、試してみたい"
+      },
+      "query": {
+        "description": "エディタからデータベースに対してSQLを実行します。すべてのステートメントがクエリ履歴に記録されます。",
+        "finish-line": "ゴール：データベースからのクエリ結果",
+        "title": "ガードレール付きでデータをクエリする"
+      },
+      "required": "続行するには1つ選択してください",
+      "title": "最初に何をしますか？"
+    },
+    "optional": "任意",
+    "panel": {
+      "connected-after-setup": "セットアップ後に接続",
+      "own-databases": "そのデータベース",
+      "own-instance": "あなたのインスタンス",
+      "sample-database": "サンプルデータベース",
+      "sample-instance": "サンプルプロジェクトインスタンス",
+      "workspace": "ワークスペース"
+    },
+    "project": {
+      "database-title": "{{project}} のデータベース",
+      "description": "Bytebase を使うにはデータベースが必要です。それを保持するプロジェクトに名前を付け、最初のデータベースの入手元を選択してください。",
+      "exists": "このプロジェクトはすでに存在します。名前はプロジェクト設定で変更できます。",
+      "name": "プロジェクト名",
+      "name-hint": "プロジェクトは、チームが扱うデータベースをメンバーやポリシーとともにまとめます。すべての変更とクエリはプロジェクト内で行われます。",
+      "name-optional-note": "空欄のままにすると、プロジェクトは後で作成できます。",
+      "name-placeholder": "決済、データ基盤、社内ツール",
+      "name-required": "プロジェクト名を入力してください",
+      "own": {
+        "description": "インスタンスとはお使いのデータベースサーバーです。先にセットアップを完了し、その後 {{project}} から接続します。",
+        "title": "セットアップ後に自分のインスタンスを接続する"
+      },
+      "sample": {
+        "description": "従業員のサンプルデータを含む PostgreSQL データベース1つ。Bytebase Cloud がホストします。インストール不要、7日間利用可能です。",
+        "description-self-host": "従業員のサンプルデータを含む PostgreSQL データベース1つ。このサーバー上で動作します。インストール不要です。",
+        "prepared": "サンプルデータベースはこのプロジェクトで利用できます。",
+        "recommended": "おすすめ",
+        "title": "サンプルデータベースで始める",
+        "unavailable": "このサーバーではサンプルデータベースを利用できません。",
+        "used": "このワークスペースはすでにサンプルデータベースを使用しています。"
+      },
+      "skip": "後で設定する",
+      "title": "プロジェクトを作成してデータベースを選択",
+      "your-project": "あなたのプロジェクト"
+    },
+    "steps": {
+      "goal": "目的",
+      "project": "プロジェクト",
+      "team": "チーム",
+      "workspace": "ワークスペース"
+    },
+    "team": {
+      "address-invalid": "メールアドレスではありません",
+      "address-own": "あなた自身のアドレスです",
+      "address-placeholder": "name@company.com",
+      "address-placeholder-more": "別のアドレス",
+      "description": "完了前の最後の質問です。",
+      "failed": {
+        "invitees": "指定したメンバーを追加できませんでした。",
+        "names": "名前とワークスペース名を保存できませんでした。",
+        "project": "{{project}} を作成できませんでした。",
+        "sample": "サンプルデータベースを準備できませんでした。"
+      },
+      "finish": "完了",
+      "finish-invite_one": "{{count}} 件の招待を送信して完了",
+      "finish-invite_other": "{{count}} 件の招待を送信して完了",
+      "finish-without-sample": "サンプルなしで完了",
+      "finishing": "セットアップ中…",
+      "invite-teammates": "チームメンバーを招待",
+      "members-enter": "アドレスごとに Enter キーを押してください。",
+      "members-own": "データベースはインスタンスの接続後に表示されます。",
+      "members-role": "{{project}} でクエリと変更の提案ができるメンバーとして参加します。",
+      "members-roles-later": "ロールは「メンバー」でいつでも変更できます。",
+      "progress": "{{project}} を作成中…",
+      "progress-sample": "{{project}} とサンプルデータベースを作成中…",
+      "remove-address": "{{email}} を削除",
+      "size": "Bytebase を何人で使いますか？",
+      "size-required": "完了するにはチームの人数を選択してください",
+      "sizes": {
+        "11-50": "11–50",
+        "2-10": "2–10",
+        "200-plus": "200+",
+        "51-200": "51–200",
+        "just-me": "自分だけ"
+      },
+      "title": "あなたのチーム",
+      "try-again": "再試行"
+    },
+    "workspace": {
+      "default-name": "{{name}} のワークスペース",
+      "default-name-anonymous": "マイワークスペース",
+      "description": "ワークスペース、プロジェクト、データベースがそろえば Bytebase を使い始められます。",
+      "name-placeholder": "名前を入力",
+      "title": "ワークスペースをセットアップ",
+      "workspace-name": "ワークスペース名",
+      "workspace-name-hint": "追加したメンバーは全員このワークスペースに参加します。",
+      "workspace-name-placeholder": "通常は会社名",
+      "workspace-name-required": "ワークスペース名を入力してください"
     }
   },
   "workspace-setup-guide": {

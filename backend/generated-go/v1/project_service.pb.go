@@ -934,8 +934,9 @@ type Project struct {
 	AllowSelfApproval bool `protobuf:"varint,14,opt,name=allow_self_approval,json=allowSelfApproval,proto3" json:"allow_self_approval,omitempty"`
 	// Execution retry policy for task runs.
 	ExecutionRetryPolicy *Project_ExecutionRetryPolicy `protobuf:"bytes,15,opt,name=execution_retry_policy,json=executionRetryPolicy,proto3" json:"execution_retry_policy,omitempty"`
-	// The maximum number of database rows to sample during CI data validation.
-	// Without specification, sampling is disabled, resulting in full validation.
+	// The maximum number of databases to sample during CI data validation and
+	// AI review. Without specification, sampling is disabled, resulting in full
+	// validation.
 	CiSamplingSize int32 `protobuf:"varint,16,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
 	// The maximum number of parallel tasks allowed during rollout execution.
 	ParallelTasksPerRollout int32 `protobuf:"varint,17,opt,name=parallel_tasks_per_rollout,json=parallelTasksPerRollout,proto3" json:"parallel_tasks_per_rollout,omitempty"`
@@ -1727,7 +1728,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x0fISSUE_SENT_BACK\x10\f\x12\x13\n" +
 	"\x0fPIPELINE_FAILED\x10\r\x12\x16\n" +
 	"\x12PIPELINE_COMPLETED\x10\x0e\x12\x12\n" +
-	"\x0eISSUE_APPROVED\x10\x0f\"\x04\b\x01\x10\t2\x80\x13\n" +
+	"\x0eISSUE_APPROVED\x10\x0f\"\x04\b\x01\x10\t2\xfc\x12\n" +
 	"\x0eProjectService\x12\x83\x01\n" +
 	"\n" +
 	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\"?\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x99\x01\n" +
@@ -1738,8 +1739,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\rUpdateProject\x12!.bytebase.v1.UpdateProjectRequest\x1a\x14.bytebase.v1.Project\"j\xdaA\x13project,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02(:\aproject2\x1d/v1/{project.name=projects/*}\x12\x96\x01\n" +
 	"\rDeleteProject\x12!.bytebase.v1.DeleteProjectRequest\x1a\x16.google.protobuf.Empty\"J\xdaA\x04name\x8a\xea0\x12bb.projects.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x17*\x15/v1/{name=projects/*}\x12\x9f\x01\n" +
 	"\x0fUndeleteProject\x12#.bytebase.v1.UndeleteProjectRequest\x1a\x14.bytebase.v1.Project\"Q\x8a\xea0\x14bb.projects.undelete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/{name=projects/*}:undelete\x12\xa1\x01\n" +
-	"\x13BatchDeleteProjects\x12'.bytebase.v1.BatchDeleteProjectsRequest\x1a\x16.google.protobuf.Empty\"I\x8a\xea0\x12bb.projects.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/v1/projects:batchDelete\x12\xa0\x01\n" +
-	"\fGetIamPolicy\x12 .bytebase.v1.GetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"V\x8a\xea0\x18bb.projects.getIamPolicy\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02(\x12&/v1/{resource=projects/*}:getIamPolicy\x12\xa7\x01\n" +
+	"\x13BatchDeleteProjects\x12'.bytebase.v1.BatchDeleteProjectsRequest\x1a\x16.google.protobuf.Empty\"I\x8a\xea0\x12bb.projects.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/v1/projects:batchDelete\x12\x9c\x01\n" +
+	"\fGetIamPolicy\x12 .bytebase.v1.GetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"R\x8a\xea0\x18bb.projects.getIamPolicy\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{resource=projects/*}:getIamPolicy\x12\xa7\x01\n" +
 	"\fSetIamPolicy\x12 .bytebase.v1.SetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"]\x8a\xea0\x18bb.projects.setIamPolicy\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{resource=projects/*}:setIamPolicy\x12\x98\x01\n" +
 	"\n" +
 	"AddWebhook\x12\x1e.bytebase.v1.AddWebhookRequest\x1a\x14.bytebase.v1.Project\"T\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02(:\x01*\"#/v1/{project=projects/*}:addWebhook\x12\xce\x01\n" +

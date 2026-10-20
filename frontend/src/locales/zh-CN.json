@@ -41,10 +41,15 @@
     "chat-total-tokens": "总 token 数：{{count}}",
     "close": "关闭",
     "confirm": "确认",
+    "context": "上下文",
+    "context-no-projects": "没有可访问的项目",
+    "context-select": "选择上下文",
+    "context-workspace": "工作区",
     "delete-all-chats": "删除所有对话",
     "delete-all-chats-confirmation": "确定要删除所有已归档对话吗？此操作无法撤销。",
     "delete-chat": "删除对话",
     "delete-chat-confirmation": "确定要删除此对话吗？此操作无法撤销。",
+    "input-keyboard-hint": "按 Enter 发送 · 按 Shift+Enter 换行",
     "input-placeholder": "向 AI 提问...",
     "interrupted": "已中断",
     "interrupted-retry-hint": "对话已中断。您可以重试或发送新消息。",
@@ -354,6 +359,7 @@
     "google-chat": "Google Chat",
     "group": "组",
     "groups": "分组",
+    "hide": "隐藏",
     "history": "历史记录",
     "home": "主页",
     "id": "ID",
@@ -642,7 +648,9 @@
     "direct-connection": "直接连接",
     "extra-params": {
       "description": "数据库连接字符串的其他参数",
-      "self": "额外的参数"
+      "overridden-by-tls": "已被 TLS 部分的设置覆盖。",
+      "self": "额外的参数",
+      "wallet-overridden-by-tls": "仅使用其中保存的密码，证书由 TLS 部分提供。"
     },
     "no-read-only-data-source": "没有只读数据源",
     "private-key-passphrase": "私钥密码",
@@ -1307,7 +1315,11 @@
           "template": "创建用户 {{user}}，密码 {{password}}，并授予必要权限的例子如下。您需要首先启用 {{link}}，才能执行以下创建用户的命令。"
         },
         "mysql": {
-          "template": "创建用户 {{user}}，密码 {{password}}，并授予必要权限的例子如下。"
+          "template": "创建用户 {{user}}，密码 {{password}}，并授予必要权限的例子如下。",
+          "warn": "如需让 Bytebase 执行将 DEFINER 设为其他账户的变更，还需授予 MySQL 8.0 的 SET_USER_ID 或 MySQL 8.4 及以上版本的 SET_ANY_DEFINER。部分云服务商会限制这些权限。"
+        },
+        "oracle": {
+          "warn": "GRANT ALL PRIVILEGES 在 Amazon RDS for Oracle 上无法执行。"
         },
         "postgresql": {
           "template": "创建用户 {{user}}，密码 {{password}}，并授予必要权限的例子如下。如果您将要连接到的实例是自己托管的，那么您可以 grant SUPERUSER。",
@@ -1533,8 +1545,11 @@
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "details": "角色授权详情",
+      "direct-execution-suffix": "在 {{environments}} 免审批执行 {{kind}}",
       "expired-at": "过期时间",
+      "grantee": "被授权人",
       "manually-select": "手动选择",
+      "requested-by": "由 {{creator}} 申请",
       "use-cel": "使用 CEL 表达式"
     },
     "sort": {
@@ -1592,14 +1607,26 @@
     }
   },
   "landing": {
+    "ai-placeholder": "向 AI 询问工作区设置、项目或访问权限",
+    "ai-setup": {
+      "action": "配置 AI",
+      "description": "配置服务提供方和模型，以在此工作区使用 AI。",
+      "title": "设置 AI 助手"
+    },
     "changelog-for-version": "{{version}} 的更新日志",
     "last-visit": "上次访问",
+    "onboarding": {
+      "completed-progress": "已完成 {{completed}} / {{total}} 项",
+      "connect-action": "连接实例",
+      "connect-description": "将数据库服务器连接到 {{project}}。"
+    },
     "quick-link": {
       "manage": "管理快捷访问",
-      "self": "快捷访问",
       "visit-issues": "访问工单",
-      "visit-prjects": "访问项目"
-    }
+      "visit-prjects": "访问项目",
+      "yours": "你的快捷链接"
+    },
+    "workspace": "工作空间"
   },
   "masking": {
     "reason": {
@@ -1672,6 +1699,15 @@
   "plan": {
     "add-spec": "添加变更",
     "add-spec-pending-draft": "请先保存或放弃当前的待处理变更，然后再添加新变更",
+    "ai-review": {
+      "failed-to-run": "无法启动 AI 审核",
+      "finished": "已完成",
+      "not-run": "尚未运行",
+      "queued": "排队中",
+      "run": "运行 AI 审核",
+      "save-first": "请先保存或放弃修改，再运行 AI 审核。",
+      "status-unknown": "暂时无法获取状态"
+    },
     "blocker": {
       "clears-on-its-own": "将自动完成"
     },
@@ -1994,6 +2030,39 @@
       "success-prompt": "成功创建 {{name}}."
     },
     "filter-projects": "过滤项目",
+    "home": {
+      "active-issues": "你的待处理工单",
+      "active-issues-unavailable": "你无法查看此项目的工单。",
+      "ai-placeholder": "询问 AI 如何查询、更改或设置此项目",
+      "archived-description": "此项目已归档，处于只读状态。",
+      "change-database": "变更数据库",
+      "change-database-description": "在此项目中规划受管控的数据库变更。",
+      "connect": "连接实例",
+      "connect-description": "将数据库服务器连接到此项目。",
+      "create-database": "创建数据库",
+      "create-database-description": "在已连接的实例中创建首个数据库。",
+      "created-by-you": "由你创建",
+      "customize": "自定义",
+      "databases": "数据库",
+      "databases-load-error": "无法加载数据库。",
+      "databases-unavailable": "你无法查看此项目的数据库。",
+      "members": "管理成员",
+      "members-optional-description": "可选：授予团队成员访问权限，以便协作和审核。",
+      "needs-review": "等待你审核",
+      "next-step": "下一步",
+      "no-active-issues": "此项目中没有你创建或等待你审核的未完成工单。",
+      "no-databases": "暂无可访问的数据库。",
+      "no-databases-create-description": "在已连接的实例中创建数据库以开始使用。",
+      "no-databases-description": "连接实例，将数据库加入此项目。",
+      "no-databases-prerequisite": "连接实例后，数据库才会显示在这里。",
+      "no-databases-transfer-description": "将未分配的数据库转入此项目，或创建新数据库。",
+      "query-database": "查询数据库",
+      "query-database-description": "在 SQL 编辑器中浏览此项目的数据库。",
+      "transfer-databases": "转移数据库",
+      "transfer-databases-description": "将未分配的数据库转入此项目。",
+      "view-all": "查看全部",
+      "view-issues": "查看工单"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {
@@ -2007,20 +2076,36 @@
       "expires-in-days_other": "{{days}} 天后到期",
       "expires-today": "今天到期",
       "grant-exemption": "授予豁免",
+      "hide-raw-cel-condition": "隐藏原始 CEL 条件",
       "level": "等级",
+      "n-databases_one": "{{n}} 个数据库",
+      "n-databases_other": "{{n}} 个数据库",
       "n-exemptions_one": "{{n}} 项豁免",
       "n-exemptions_other": "{{n}} 项豁免",
       "no-exemptions": "尚未授予脱敏豁免",
       "no-reason": "未提供原因",
       "revoke-exemption-title": "是否撤销 {{member}} 的脱敏豁免？",
-      "self": "脱敏豁免"
+      "self": "脱敏豁免",
+      "show-raw-cel-condition": "显示原始 CEL 条件"
     },
     "members": {
-      "ddl-current-all": "{{kind}} 语句可在 SQL 编辑器中针对所有（ALL）环境直接执行，无需审批。",
-      "ddl-current-none": "{{kind}} 语句在 SQL 编辑器中运行前需要审批。",
-      "ddl-current-some": "{{kind}} 语句可在 SQL 编辑器中针对所列环境直接执行，无需审批。",
-      "ddl-warning": "在所选环境中，{{kind}} 语句可在 SQL 编辑器中直接执行，无需审批。",
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
+      "direct-execution": {
+        "all": "可在所有环境中免审批在 SQL 编辑器执行 {{kind}}。",
+        "environment-required": "至少需要选择一个环境。",
+        "in-environments": "允许的环境",
+        "lead-approver": "批准后，{{grantee}} 可在 SQL 编辑器中免审批执行 {{kind}}，适用环境：",
+        "lead-binding": "可在 SQL 编辑器中免审批执行 {{kind}}，适用环境：",
+        "lead-grant": "拥有此角色的成员可在 SQL 编辑器中免审批执行 {{kind}}，适用环境：",
+        "lead-request": "批准后，你可在 SQL 编辑器中免审批执行 {{kind}}，适用环境：",
+        "none": "{{kind}} 在 SQL 编辑器中需审批后才能执行。",
+        "protected-tag": "生产环境",
+        "protected_one": "{{environments}} 是生产环境。",
+        "protected_other": "{{environments}} 是生产环境。",
+        "select-environments": "选择环境",
+        "switch-label": "允许在 SQL 编辑器中免审批执行 {{kind}}",
+        "title": "{{kind}} 直接执行"
+      },
       "edit-member": "编辑成员 - {{member}}",
       "expiration-presets": {
         "one-month": "1 个月",
@@ -2278,7 +2363,7 @@
       "self": "SQL 编辑器只读用户"
     },
     "sql-editor-user": {
-      "description": "可查询指定范围的数据。",
+      "description": "可查询数据，并可在允许的环境中执行 DDL/DML。",
       "self": "SQL 编辑器用户"
     },
     "title": "称谓",
@@ -2452,9 +2537,9 @@
             "placeholder": "API Key 通常以 sk-***** 开头",
             "self": "API Key"
           },
+          "available-in-saas": "AI 助手已在此工作空间中启用，并由 Bytebase 管理。",
           "description": "使用 AI 来辅助数据库开发任务。",
           "enable-ai-assistant": "启用 AI 助手",
-          "enabled-in-saas": "Gemini AI 在 SaaS 模式下自动启用。",
           "endpoint": {
             "description": "请输入自定义模型的 API 端点。",
             "openai-description": "Responses API 使用 /responses 端点，Chat Completions API 使用 /chat/completions 端点。",
@@ -2475,7 +2560,8 @@
             "open_ai": "OpenAI",
             "self": "AI 提供方"
           },
-          "self": "AI 助手"
+          "self": "AI 助手",
+          "unavailable-in-saas": "此工作空间尚未启用 AI 助手。请联系 Bytebase 管理员。"
         },
         "allow-admin-data-source": {
           "description": "启用时，用户可以在主数据源和只读数据源之间进行选择。禁用时，如果配置了只读数据源，则强制用户使用只读数据源，否则回退到使用主数据源。",
@@ -2710,12 +2796,16 @@
             "title": "导出查询结果"
           },
           "manage": {
-            "details": "同步实例和数据库 · 数据库设置和标签 · 在项目之间移动数据库 · 数据库组 · 已保存的查询",
+            "details": "同步实例和数据库 · 已保存的查询",
             "title": "管理数据库日常维护"
           },
           "propose": {
             "details": "创建工作表 · 创建和编辑 Plan 与工单 · 执行计划检查和审核 · 创建、删除和恢复发布 · 创建和删除修订 · 生成模式差异。智能体绝不会审批自己的变更；是否需要人来审批由项目的审批策略决定",
             "title": "提议变更"
+          },
+          "read-access": {
+            "details": "谁在工作空间及其项目中拥有哪个角色 · 群组及其成员 · 角色及其权限 · 脱敏规则和脱敏豁免 · 发布、数据查询、标签和审核策略 · 访问授权，包括待审批的申请",
+            "title": "读取成员、角色和策略"
           },
           "read-data": {
             "details": "执行只读查询 · 在只读模式下，除非每条语句都能被确认为返回数据的读取，否则整体拒绝该请求；能确认到多深取决于引擎，在部分引擎上没有任何语句能被确认为读取 · 你自己的查询历史 · 你有权访问的已保存查询和工作表",
@@ -2728,6 +2818,10 @@
           "read-workflow": {
             "details": "工单和评论 · Plan 和计划检查 · 部署、任务运行和日志 · 发布 · 回滚预览",
             "title": "读取变更流程"
+          },
+          "request-access": {
+            "details": "为特定语句申请限时访问授权，可选择查看未脱敏结果或导出结果；在引擎能检查的范围内，该语句必须是读取 · 只有在有人审批后授权才会生效；无需任何人审批的申请会被拒绝 · 授权仅在项目允许访问授权时适用",
+            "title": "申请访问授权"
           },
           "run-rollouts": {
             "details": "创建部署 · 在项目审批策略之下执行、跳过或取消其任务",
@@ -2744,8 +2838,8 @@
           "write": "读写到此为止"
         },
         "summary": {
-          "read-only": "读取模式、数据和变更流程；只要请求中含有无法被确认为读取的内容就会被拒绝，也不能导出",
-          "read-write": "读取模式、数据和变更流程；提议、执行、导出和管理"
+          "read-only": "读取模式、数据、变更流程、成员、角色和策略；只要请求中含有无法被确认为读取的内容就会被拒绝，也不能导出",
+          "read-write": "读取模式、数据、变更流程、成员、角色和策略；提议、申请访问、执行、导出和管理"
         },
         "tier": {
           "read": "读取",
@@ -2919,59 +3013,16 @@
       "workload-identity-tag-hint": "留空则允许所有标签"
     },
     "profile": {
-      "default-project-name": "新项目",
       "display-name": "您的姓名",
       "display-name-placeholder": "输入您的姓名",
       "email": "邮箱",
-      "enable-sample-databases": "启用示例数据库",
-      "enable-sample-databases-create-change": "启用示例数据库作为安全的变更目标",
-      "enable-sample-databases-mark-sensitive-data": "启用示例数据库以立即试用数据脱敏",
-      "enable-sample-databases-query-data": "启用示例数据库以立即开始查询",
       "password": "密码",
       "password-confirm": "确认密码",
       "password-confirm-placeholder": "确认新密码",
       "password-hint": "密码应遵循限制设置",
       "password-mismatch": "新密码不匹配",
       "phone": "手机号",
-      "phone-tips": "请包含国家代码前缀 +86xxxxxx",
-      "setup-failed": "更新个人资料失败。",
-      "setup-first-project": "设置第一个项目",
-      "setup-scenario": {
-        "continue": "继续",
-        "create-database-change": {
-          "description": "定义变更并创建可追踪的工单。",
-          "title": "创建数据库变更"
-        },
-        "mark-sensitive-data": {
-          "description": "识别敏感列并应用数据脱敏。",
-          "title": "标记敏感数据"
-        },
-        "outcome-title": "您想使用 Bytebase 做什么？",
-        "query-data": {
-          "description": "打开 SQL Editor 并对数据库运行一条语句。",
-          "title": "查询数据"
-        },
-        "workspace-usage": {
-          "solo": {
-            "description": "我会独自使用 Bytebase。",
-            "title": "仅我自己"
-          },
-          "team": {
-            "description": "我会和其他成员一起使用。",
-            "title": "我的团队"
-          },
-          "title": "谁会和您一起使用 Bytebase？"
-        }
-      },
-      "setup-skip": "稍后再说",
-      "setup-steps": {
-        "scenario": "选择目标",
-        "workspace": "设置工作空间"
-      },
-      "setup-submit": "设置我的工作空间",
-      "setup-success": "个人资料已更新。",
-      "workspace-name": "工作空间名称",
-      "workspace-name-placeholder": "输入工作空间名称"
+      "phone-tips": "请包含国家代码前缀 +86xxxxxx"
     },
     "sensitive-data": {
       "algorithms": {
@@ -3282,6 +3333,9 @@
     "export-available-via-issue": "通过工单 \"{{title}}\" 可导出",
     "export-available-via-n-grants": "通过 {{count}} 个访问授权可导出:",
     "export-enabled-by-grant": "由访问授权启用导出",
+    "export-grant-lookup-failed": "无法检查导出权限。",
+    "export-grant-lookup-loading": "正在检查导出权限…",
+    "export-grant-lookup-retry": "重试",
     "format": "格式化",
     "format-default": "默认",
     "format-sql": "格式化 SQL",
@@ -3537,6 +3591,7 @@
       "manage-license": "管理证书",
       "missing-license-attention": "请给实例分配证书以解锁该功能。",
       "n-license-remain": "剩余 {{n}} 个",
+      "project-instance-hint": "此列表仅包含工作空间实例。要管理项目实例的证书，请前往该实例的详情页。",
       "require-license": "需要实例证书",
       "success-notification": "证书分配更新成功",
       "used-and-total-instance": "活跃/总实例限制",
@@ -3818,6 +3873,123 @@
       "copy-succeed": "复制成功。请输入到您的应用程序中。",
       "description": "复制密钥并在您的应用程序中手动输入。",
       "self": "双重认证密钥"
+    }
+  },
+  "workspace-setup": {
+    "continue": "继续",
+    "elsewhere": {
+      "continue": "在此继续",
+      "ended": "此设置已在另一个标签页中结束",
+      "saved": "此设置已在另一个标签页中继续",
+      "workspace": "前往工作空间"
+    },
+    "goal": {
+      "change": {
+        "description": "编写一个 Schema 变更或数据修复，由 SQL 审核检查后部署到数据库。",
+        "finish-line": "终点：一个通过 SQL 审核并完成部署的变更",
+        "title": "规划、审核并部署数据库变更"
+      },
+      "description": "选择您来这里想做的事。设置完成后，我们会优先推荐它。",
+      "explore": {
+        "description": "我们会先推荐一条简单的查询，方向可以之后再选。",
+        "title": "还不确定，先看看"
+      },
+      "query": {
+        "description": "在编辑器中对数据库执行 SQL，每条语句都会记录在查询历史中。",
+        "finish-line": "终点：一条来自数据库的查询结果",
+        "title": "在安全防护下查询数据"
+      },
+      "required": "请选择一项以继续",
+      "title": "您想先做什么？"
+    },
+    "optional": "可选",
+    "panel": {
+      "connected-after-setup": "设置完成后连接",
+      "own-databases": "其中的数据库",
+      "own-instance": "您的实例",
+      "sample-database": "示例数据库",
+      "sample-instance": "示例项目实例",
+      "workspace": "工作空间"
+    },
+    "project": {
+      "database-title": "{{project}} 的数据库",
+      "description": "Bytebase 需要数据库才能工作。请先为承载它的项目命名，再选择第一个数据库的来源。",
+      "exists": "该项目已存在，可在项目设置中重命名。",
+      "name": "项目名称",
+      "name-hint": "项目把一个团队使用的数据库与其成员和策略组织在一起。每次变更和查询都发生在某个项目中。",
+      "name-optional-note": "留空则稍后再创建项目。",
+      "name-placeholder": "支付、数据平台、内部工具",
+      "name-required": "请输入项目名称",
+      "own": {
+        "description": "实例即您的数据库服务器。设置会先完成，之后您在 {{project}} 中连接它。",
+        "title": "设置完成后连接我自己的实例"
+      },
+      "sample": {
+        "description": "一个包含员工示例数据的 PostgreSQL 数据库，由 Bytebase Cloud 托管。无需安装，可用 7 天。",
+        "description-self-host": "一个包含员工示例数据的 PostgreSQL 数据库，运行在本服务器上。无需安装。",
+        "prepared": "示例数据库已在该项目中就绪。",
+        "recommended": "推荐",
+        "title": "从示例数据库开始",
+        "unavailable": "本服务器不提供示例数据库。",
+        "used": "该工作空间已使用过示例数据库。"
+      },
+      "skip": "稍后再说",
+      "title": "创建项目并选择其数据库",
+      "your-project": "您的项目"
+    },
+    "steps": {
+      "goal": "目标",
+      "project": "项目",
+      "team": "团队",
+      "workspace": "工作空间"
+    },
+    "team": {
+      "address-invalid": "不是邮箱地址",
+      "address-own": "这是您自己的地址",
+      "address-placeholder": "name@company.com",
+      "address-placeholder-more": "再添加一个地址",
+      "description": "完成前的最后一个问题。",
+      "failed": {
+        "invitees": "无法添加您列出的人员。",
+        "names": "无法保存您的姓名和工作空间名称。",
+        "project": "无法创建 {{project}}。",
+        "sample": "无法准备示例数据库。"
+      },
+      "finish": "完成",
+      "finish-invite_one": "发送 {{count}} 份邀请并完成",
+      "finish-invite_other": "发送 {{count}} 份邀请并完成",
+      "finish-without-sample": "不使用示例数据库并完成",
+      "finishing": "正在设置…",
+      "invite-teammates": "邀请团队成员",
+      "members-enter": "每输入一个地址后按回车。",
+      "members-own": "连接实例后，其中的数据库才会出现。",
+      "members-role": "他们将作为成员加入，可在 {{project}} 中查询并提交变更。",
+      "members-roles-later": "可随时在“成员”中更改角色。",
+      "progress": "正在创建 {{project}}…",
+      "progress-sample": "正在创建 {{project}} 及其示例数据库…",
+      "remove-address": "移除 {{email}}",
+      "size": "有多少人会使用 Bytebase？",
+      "size-required": "请选择团队规模以完成",
+      "sizes": {
+        "11-50": "11–50",
+        "2-10": "2–10",
+        "200-plus": "200+",
+        "51-200": "51–200",
+        "just-me": "仅我自己"
+      },
+      "title": "您的团队",
+      "try-again": "重试"
+    },
+    "workspace": {
+      "default-name": "{{name}} 的工作空间",
+      "default-name-anonymous": "我的工作空间",
+      "description": "有了工作空间、项目和数据库，Bytebase 即可使用。",
+      "name-placeholder": "输入您的姓名",
+      "title": "设置您的工作空间",
+      "workspace-name": "工作空间名称",
+      "workspace-name-hint": "您添加的所有人都会加入该工作空间。",
+      "workspace-name-placeholder": "通常是您的公司名称",
+      "workspace-name-required": "请输入工作空间名称"
     }
   },
   "workspace-setup-guide": {

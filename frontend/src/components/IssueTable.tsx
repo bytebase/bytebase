@@ -14,6 +14,7 @@ import {
 } from "@/components/AdvancedSearch";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { HumanizeTs } from "@/components/HumanizeTs";
+import { IssueStatusIcon } from "@/components/IssueStatusIcon";
 import { RouterLink } from "@/components/RouterLink";
 import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
@@ -829,47 +830,6 @@ export const IssueListItem = memo(function IssueListItem({
 });
 
 // ===========================================================================
-// IssueStatusIcon
-// ===========================================================================
-
-export function IssueStatusIcon({ status }: { status: IssueStatus }) {
-  switch (status) {
-    case IssueStatus.OPEN:
-      return (
-        <span className="flex items-center justify-center rounded-full size-5 bg-background border-2 border-info text-info shrink-0">
-          <span className="h-1.5 w-1.5 bg-info rounded-full" />
-        </span>
-      );
-    case IssueStatus.DONE:
-      return (
-        <span className="flex items-center justify-center rounded-full size-5 bg-success text-accent-text shrink-0">
-          <svg className="size-4" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </span>
-      );
-    case IssueStatus.CANCELED:
-      return (
-        <span className="flex items-center justify-center rounded-full size-5 bg-background border-2 text-control-placeholder border-control-placeholder shrink-0">
-          <svg className="size-5" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </span>
-      );
-    default:
-      return null;
-  }
-}
-
-// ===========================================================================
 // RiskLevelIcon
 // ===========================================================================
 
@@ -917,7 +877,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
 
   if (issue.approvalStatus === ApprovalStatus.CHECKING) {
     return (
-      <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
+      <span className="shrink-0 mt-1 inline-flex items-center rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs text-control-light">
         {t("custom-approval.issue-review.generating-approval-flow")}
       </span>
     );
@@ -933,7 +893,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
     if (status === ApprovalStatus.APPROVED) {
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
-          <span className="inline-flex items-center rounded-full bg-success/10 text-success px-2 py-0.5 text-xs">
+          <span className="inline-flex items-center rounded-xs border border-transparent bg-success/10 px-1.5 py-0.5 text-xs text-success">
             {t("issue.table.approved")}
           </span>
           <span className="text-xs text-control-light whitespace-nowrap sm:mt-1">
@@ -945,7 +905,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
     if (status === ApprovalStatus.REJECTED) {
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
-          <span className="inline-flex items-center rounded-full bg-warning/10 text-warning px-2 py-0.5 text-xs">
+          <span className="inline-flex items-center rounded-xs border border-transparent bg-warning/10 px-1.5 py-0.5 text-xs text-warning">
             {t("common.rejected")}
           </span>
           <span className="text-xs text-control-light whitespace-nowrap sm:mt-1">
@@ -960,7 +920,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
       const roleName = role ? displayRoleTitleFromList(role, roleList) : "";
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
-          <span className="inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
+          <span className="inline-flex items-center rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs text-control-light">
             {progressText}
           </span>
           {roleName && (
@@ -974,7 +934,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
   }
 
   return (
-    <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
+    <span className="shrink-0 mt-1 inline-flex items-center rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs text-control-light">
       {t("custom-approval.approval-flow.skip")}
     </span>
   );

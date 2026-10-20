@@ -42,21 +42,11 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issues.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    // WRITE covers the DATABASE_CHANGE issue this method exists for. It does
-    // not cover a ROLE_GRANT issue, which completes on creation whenever the
-    // workspace rule produces no approval template and then writes the project
-    // IAM binding for a grantee the request names — which is
-    // ProjectService/SetIamPolicy, EXCLUDED for exactly that outcome. A class
-    // annotation cannot split by request field, so the MCP gate carries a
-    // request-shape refusal for this method: it admits DATABASE_CHANGE and
-    // refuses every other type (backend/api/v1/mcp_gate.go,
-    // mcpRequestShapeRefusals). UpdateIssue reaches the same creation through
-    // allow_missing and is refused with it.
-    //
-    // An ACCESS_GRANT issue is refused by the same allow-list and does not
-    // reach this handler in the first place: buildIssueMessage has no arm for
-    // it, so the type is an invalid argument here. Those issues are written by
-    // AccessGrantService/CreateAccessGrant, which is EXCLUDED.
+    // WRITE covers the DATABASE_CHANGE issue this method exists for. MCP
+    // sessions are refused every other type (grantIssueRefusal in
+    // backend/api/v1/mcp_gate.go): a ROLE_GRANT issue can complete on creation
+    // with no human step, and an access request goes through
+    // AccessGrantService/CreateAccessGrant instead.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -93,12 +83,9 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issues.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    // WRITE, and editing an issue is an agent's job — including an edit that
-    // resets approval finding and sends the issue back for review. What this
-    // does not cover is creation: with allow_missing set on an issue that does
-    // not exist, the handler calls CreateIssue with the request's own issue, so
-    // the MCP gate applies CreateIssue's request-shape refusal here too
-    // whenever allow_missing is set.
+    // WRITE, and editing an issue is an agent's job, including an edit that
+    // sends the issue back for review. With allow_missing on a missing issue it
+    // creates one, which rejectMCPOriginatedGrantIssue guards as CreateIssue is.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -225,12 +212,24 @@ service IssueService {
     option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
+  // Gets the current run of one reviewer on an issue. The run carries
+  // execution status only; review results are issue comments. A reviewer
+  // that has never run on the issue is NOT_FOUND.
+  // Permissions required: bb.reviewRuns.get
+  rpc GetReviewRun(GetReviewRunRequest) returns (ReviewRun) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/issues/*/reviewRuns/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.reviewRuns.get";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
+  }
+
   // Triggers a review run. The slot is reset unconditionally: a RUNNING
   // execution is superseded (its completion is fenced off), the attempt
   // number is bumped, and the returned run is AVAILABLE.
-  // Review results are not returned by this RPC and have no read RPC yet:
-  // findings will surface as issue comments once the review comment
-  // integration lands. The returned run carries execution status only.
+  // Review results are not returned by this RPC: they are posted as issue
+  // comments. The returned run carries execution status only, and
+  // GetReviewRun reads it back.
   // The audit log is the only record of who triggered a run.
   // Permissions required: bb.reviewRuns.run
   rpc RunReview(RunReviewRequest) returns (ReviewRun) {
@@ -823,8 +822,11 @@ message ReviewRun {
     // Created and claimable by any replica.
     AVAILABLE = 1;
     RUNNING = 2;
-    // Every (spec, target) unit was evaluated. DONE does not mean the
-    // review passed: whether problems remain is judged from open comments.
+    // Every (spec, target) unit in the reviewer's scope was evaluated. RULE's
+    // scope is every target. AI's scope is the project's CI sample, the first
+    // ci_sampling_size targets of each spec, or every target when
+    // ci_sampling_size is 0. DONE does not mean the review passed: whether
+    // problems remain is judged from open comments.
     DONE = 3;
     // At least one unit was not evaluated; the cause is in `error`.
     FAILED = 4;
@@ -842,6 +844,15 @@ message ReviewRun {
   // failed to execute (a platform problem, never the SQL — SQL problems are
   // review results on a DONE run).
   string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message GetReviewRunRequest {
+  // The name of the review run to retrieve.
+  // Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/ReviewRun"}
+  ];
 }
 
 message RunReviewRequest {

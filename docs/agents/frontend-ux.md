@@ -138,8 +138,10 @@ Use semantic utilities backed by CSS custom properties:
 
 ### Borders, Corners, Focus, And Layers
 
-- Use `rounded-xs` for compact controls, `rounded-sm` for ordinary framed
-  surfaces, and `rounded-full` only for circular controls, avatars, and pills.
+- Use `rounded-xs` for compact controls and textual labels, including status
+  badges, tags, and selected tokens. Use `rounded-sm` for ordinary framed
+  surfaces, and `rounded-full` only for circular controls, avatars, and
+  lifecycle status stamps that must remain distinct from adjacent actions.
 - Use `border-control-border` for controls and `border-block-border` for region
   boundaries.
 - Interactive elements MUST have a visible keyboard focus state. Prefer the
@@ -188,6 +190,11 @@ behavior:
 - A section has 24px vertical padding and 16px internal rhythm.
 - On large screens, a section header uses 25% of the section width and content
   uses the remainder. On smaller screens, they stack with 16px separation.
+- A page that reads as one column uses `FormSection layout="single-column"`: the
+  same section title, the header above the content at every width, and the
+  content's children 16px apart. `layout="stacked"` is the dense variant for
+  sections inside a dense form. `FormSection description` renders a short
+  introduction under the title in the header.
 - `FormLabel` MUST reference its control with `htmlFor`.
 - Validation MUST be adjacent to the affected field. Do not rely only on a
   toast or a disabled button to explain invalid input.
@@ -238,11 +245,16 @@ third column for section titles.
 - Stack labels based on available form width, independently of the navigation
   sidebar breakpoint. Compound controls MAY wrap within the control column
   before the field itself stacks.
-- Keep concise descriptions and validation beside the control they explain.
-  Long secondary guidance that would make a dense form harder to scan MAY use
-  a focusable info tooltip beside the field title; validation and essential
-  status remain visible beside the control. Associate labels and choice controls
-  with accessible names in both layouts.
+- Decide responsive breakpoints once at the form root. A dependent
+  configuration group inside a field's control area MUST inherit the parent
+  field's resolved layout instead of measuring its own container or
+  introducing another label column. Render it as a vertical group within its
+  fieldset boundary, with compact label typography.
+- Keep concise operational descriptions directly below the field title.
+  Longer secondary guidance that would make a dense form harder to
+  scan MAY use a focusable info tooltip beside the field title; validation and
+  essential status remain visible beside the control. Associate labels and
+  choice controls with accessible names in both layouts.
 - Put choices that determine subsequent fields first. Use one `Select` dropdown
   combining authentication methods and password sources. Do not add a separate
   password-source selector. Use a `Switch` for binary choices such as syncing
@@ -251,7 +263,8 @@ third column for section titles.
   External sources reveal their configuration there. Preserve separate drafts
   while switching sources, and submit only the active source. Reveal dependent
   TLS, SSH, IAM, and external-source configuration below its controlling
-  choice, using nested flow rather than a framed surface inside another frame.
+  choice, using nested flow and at most one fieldset boundary rather than a
+  framed surface inside another frame.
 - Keep security modes visible; reveal their dependent fields when selected.
   Switches, select triggers, and radio groups align to the start of their
   control column. Keep ordinary connection rows on the 16px rhythm using

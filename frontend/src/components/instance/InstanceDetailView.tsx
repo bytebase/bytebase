@@ -415,8 +415,9 @@ export function InstanceDetailView({
     [defaultProjectId, t]
   );
   const searchProjects = useCallback(
-    async (keyword: string): Promise<ValueOption[]> => {
+    async (keyword: string, signal?: AbortSignal): Promise<ValueOption[]> => {
       const { projects } = await useAppStore.getState().fetchProjectList({
+        signal,
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
       });
@@ -504,26 +505,27 @@ export function InstanceDetailView({
       return;
     }
 
-    let cancelled = false;
+    const controller = new AbortController();
     void (async () => {
       try {
         const { projects } = await useAppStore.getState().fetchProjectList({
+          signal: controller.signal,
           pageSize: getDefaultPagination(),
           silent: true,
         });
-        if (cancelled) {
+        if (controller.signal.aborted) {
           return;
         }
         setHasUserProject(projects.some(isUserProject));
       } catch {
-        if (!cancelled) {
+        if (!controller.signal.aborted) {
           setHasUserProject(false);
         }
       }
     })();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [
     defaultProjectName,

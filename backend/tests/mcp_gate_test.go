@@ -3,15 +3,20 @@ package tests
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -80,11 +85,9 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 		"a served, audited MCP call is stored")
 }
 
-// TestMCPGateRefusesGrantIssues is the one refusal a per-method class cannot
-// express, over the live handler. CreateIssue is WRITE for the database-change
-// issue an agent exists to compose; a ROLE_GRANT issue completes on creation
-// when the workspace rule produces no approval template and writes the project
-// IAM binding the request named, with no human in it.
+// TestMCPGateRefusesGrantIssues covers, over one live MCP session, the grant
+// issues a session may not create and the access request it may file instead,
+// which needs a project that allows just-in-time access.
 func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -98,9 +101,8 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.NoError(err)
 	projectName := project.Msg.Name
 
-	// CreateIssue is WRITE and the refusal under test is the one the class
-	// cannot express. Pinned so this test does not depend on the resolved
-	// default.
+	// CreateIssue and CreateAccessGrant are WRITE. Pinned so this test does not
+	// depend on the resolved default.
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 
 	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
@@ -121,12 +123,6 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.Contains(grant.Error, "ROLE_GRANT", "the denial must name the issue type it refused")
 	a.Contains(grant.Error, "no human step")
 
-	// The bypass: UpdateIssue with allow_missing creates the issue when it does
-	// not exist, by calling CreateIssue directly — a Go call, so the ceiling
-	// gate never sees it. The gate deliberately does not refuse UpdateIssue,
-	// because an AIP upsert sends the complete resource and the request cannot
-	// say whether it will create anything; the guard sits at the creation
-	// instead, and this is what proves it is there.
 	upsert := callAPIOnSession(ctx, t, session, "IssueService/UpdateIssue", map[string]any{
 		"issue": map[string]any{
 			"name":  projectName + "/issues/999999",
@@ -142,7 +138,8 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	})
 	a.Equal(http.StatusForbidden, upsert.Status,
 		"allow_missing on a missing issue is a creation, and the guard must reach it: %s", upsert.Error)
-	a.Contains(upsert.Error, "may not create a ROLE_GRANT issue")
+	a.Contains(upsert.Error, "may not create this issue")
+	a.Contains(upsert.Error, "ROLE_GRANT", "the denial must name the issue type it refused")
 
 	// The same upsert for the type an agent is allowed to create reaches the
 	// handler, which then asks for the plan it has no way to do without. The
@@ -180,25 +177,146 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.Equal(http.StatusBadRequest, untyped.Status,
 		"an unset type is the handler's invalid argument: %s", untyped.Error)
 	a.NotContains(untyped.Error, "MCP session")
+
+	accessGrantIssue := callAPIOnSession(ctx, t, session, "IssueService/CreateIssue", map[string]any{
+		"parent": projectName,
+		"issue":  map[string]any{"type": "ACCESS_GRANT", "title": "let me read the table"},
+	})
+	a.Equal(http.StatusForbidden, accessGrantIssue.Status)
+	a.Contains(accessGrantIssue.Error, "AccessGrantService/CreateAccessGrant",
+		"the refusal must name the method that files the request")
+	a.NotContains(accessGrantIssue.Error, "Bytebase console")
+
+	pgContainer := sharedPgTarget(t)
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst"),
+		Instance: &v1pb.Instance{
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "MCP access grant instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
+		},
+	}))
+	a.NoError(err)
+	dbName := generateRandomString("db")
+	a.NoError(ctl.createDatabase(ctx, project.Msg, instance.Msg, nil, dbName, ""))
+	target := fmt.Sprintf("%s/databases/%s", instance.Msg.Name, dbName)
+	requestAccess := map[string]any{
+		"parent": projectName,
+		"accessGrant": map[string]any{
+			"targets": []string{target},
+			"query":   "SELECT 1",
+			"reason":  "the agent needs one read",
+			"ttl":     "3600s",
+		},
+	}
+	consoleCreate := func() (*connect.Response[v1pb.AccessGrant], error) {
+		return ctl.accessGrantServiceClient.CreateAccessGrant(ctx, connect.NewRequest(&v1pb.CreateAccessGrantRequest{
+			Parent: projectName,
+			AccessGrant: &v1pb.AccessGrant{
+				Targets:    []string{target},
+				Query:      "SELECT 1",
+				Reason:     "a person asks the same",
+				Expiration: &v1pb.AccessGrant_Ttl{Ttl: durationpb.New(time.Hour)},
+			},
+		}))
+	}
+	rowCounts := func() (int, int) {
+		grants, err := ctl.accessGrantServiceClient.ListAccessGrants(ctx, connect.NewRequest(&v1pb.ListAccessGrantsRequest{Parent: projectName}))
+		a.NoError(err)
+		issues, err := ctl.issueServiceClient.ListIssues(ctx, connect.NewRequest(&v1pb.ListIssuesRequest{Parent: projectName}))
+		a.NoError(err)
+		return len(grants.Msg.AccessGrants), len(issues.Msg.Issues)
+	}
+
+	// The project does not allow just-in-time access yet.
+	grantsAtStart, issuesAtStart := rowCounts()
+	jitOff := callAPIOnSession(ctx, t, session, "AccessGrantService/CreateAccessGrant", requestAccess)
+	a.Equal(http.StatusBadRequest, jitOff.Status, jitOff.Error)
+	var jitOffBody struct {
+		Code string `json:"code"`
+	}
+	a.NoError(json.Unmarshal([]byte(jitOff.RawResponse), &jitOffBody))
+	a.Equal("failed_precondition", jitOffBody.Code)
+	a.Contains(jitOff.Error, `just-in-time access is off for project "mcp-grant-issue"`)
+	_, err = consoleCreate()
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err), "a console request is refused the same way: %v", err)
+	grantsRefused, issuesRefused := rowCounts()
+	a.Equal(grantsAtStart, grantsRefused, "a request refused for just-in-time access leaves no access grant")
+	a.Equal(issuesAtStart, issuesRefused, "a request refused for just-in-time access leaves no issue")
+	a.NoError(ctl.allowJustInTimeAccess(ctx, project.Msg))
+
+	// The seeded fallback rule sends the request to a project owner.
+	filed := callAPIOnSession(ctx, t, session, "AccessGrantService/CreateAccessGrant", requestAccess)
+	a.Equal(http.StatusOK, filed.Status, filed.Error)
+	grantsFiled, issuesFiled := rowCounts()
+	a.Equal(grantsAtStart+1, grantsFiled, "the row count sees a filed access grant")
+	a.Equal(issuesAtStart+1, issuesFiled, "the row count sees a filed issue")
+	var pending v1pb.AccessGrant
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(filed.RawResponse), &pending))
+	a.Equal(v1pb.AccessGrant_PENDING, pending.Status)
+	issue, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: pending.Issue}))
+	a.NoError(err)
+	a.Equal([]string{"roles/projectOwner"}, issue.Msg.GetApprovalTemplate().GetFlow().GetRoles())
+	a.Equal(v1pb.ApprovalStatus_PENDING, issue.Msg.ApprovalStatus)
+
+	activate := callAPIOnSession(ctx, t, session, "AccessGrantService/ActivateAccessGrant", map[string]any{
+		"name": pending.Name,
+	})
+	a.Equal(http.StatusForbidden, activate.Status)
+	a.Contains(activate.Error, "approv", "refused as an approval decision, not as workspace administration")
+	still, err := ctl.accessGrantServiceClient.GetAccessGrant(ctx, connect.NewRequest(&v1pb.GetAccessGrantRequest{Name: pending.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.AccessGrant_PENDING, still.Msg.Status)
+
+	consoleRequest := func() *v1pb.AccessGrant {
+		granted, err := consoleCreate()
+		a.NoError(err)
+		return granted.Msg
+	}
+	consolePending := consoleRequest()
+	a.Equal(v1pb.AccessGrant_PENDING, consolePending.Status, "under the seeded rule, a console request waits as before")
+	consoleIssue, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: consolePending.Issue}))
+	a.NoError(err)
+	a.Equal([]string{"roles/projectOwner"}, consoleIssue.Msg.GetApprovalTemplate().GetFlow().GetRoles())
+
+	for _, tc := range []struct {
+		name  string
+		rules []*v1pb.WorkspaceApprovalSetting_Rule
+	}{
+		{"a rule that names no approver", []*v1pb.WorkspaceApprovalSetting_Rule{{
+			Source:    v1pb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS,
+			Condition: &expr.Expr{Expression: "true"},
+			Template:  &v1pb.ApprovalTemplate{Flow: &v1pb.ApprovalFlow{}},
+		}}},
+		{"no rule at all", nil},
+	} {
+		_, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+			AllowMissing: true,
+			Setting: &v1pb.Setting{
+				Name: "settings/WORKSPACE_APPROVAL",
+				Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{Rules: tc.rules},
+				}},
+			},
+		}))
+		a.NoError(err, tc.name)
+		grantsBefore, issuesBefore := rowCounts()
+		refused := callAPIOnSession(ctx, t, session, "AccessGrantService/CreateAccessGrant", requestAccess)
+		a.Equal(http.StatusForbidden, refused.Status, tc.name)
+		a.Contains(refused.Error, "no approval rule requires a person to approve it", tc.name)
+		a.Contains(refused.Error, "an approval rule that names an approver", tc.name)
+		grantsAfter, issuesAfter := rowCounts()
+		a.Equal(grantsBefore, grantsAfter, "%s: a refused request leaves no access grant", tc.name)
+		a.Equal(issuesBefore, issuesAfter, "%s: a refused request leaves no issue", tc.name)
+		a.Equal(v1pb.AccessGrant_ACTIVE, consoleRequest().Status, "%s: a console request is granted at once, as before", tc.name)
+	}
 }
 
-// TestMCPCannotRunAnIssuelessRollout is the rule rollout_service.proto says the
-// gate PR owes, and the reason it is a rule rather than a classification.
-//
-// Three approval RPCs are FORBIDDEN so an agent cannot move its own change
-// through the human gate. That buys nothing if the agent can go round it: both
-// approval checks on the execution path are guarded on a LINKED ISSUE existing,
-// so a plan created without one reaches task creation with no approval whatever
-// require_issue_approval says. CreatePlan, CreateRollout and BatchRunTasks are
-// all WRITE and stay WRITE — issueless deployment is a supported contract, the
-// shipped GitOps Service Agent role holds no issue permission at all — so the
-// refusal is per session, not per method.
-//
-// The ceiling gate cannot take it: "the plan has no linked issue" is not a
-// field of either request. The guard sits where the fact is loaded, and the
-// control that matters most is the last one — a human doing the identical thing
-// must be unaffected, because that is the risk of putting MCP policy in a
-// handler at all.
+// TestMCPCannotRunAnIssuelessRollout pins rejectMCPOriginatedIssuelessRollout
+// over a live session, and that a console user doing the same is unaffected.
 func TestMCPCannotRunAnIssuelessRollout(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

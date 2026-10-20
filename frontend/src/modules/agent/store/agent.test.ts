@@ -62,6 +62,26 @@ afterEach(() => {
 const s = (store: StoreApi<AgentState>) => store.getState();
 
 describe("useAgentStore (Zustand)", () => {
+  test("opens the selected chat without toggling or interrupting it", () => {
+    const store = createAgentStore();
+    const chatId = s(store).currentChatId;
+    expect(chatId).not.toBeNull();
+    s(store).startChatRun(
+      chatId!,
+      { path: "/projects/orders", title: "Order service" },
+      { runId: "run-1" }
+    );
+    s(store).open();
+    s(store).minimize();
+    s(store).open();
+    s(store).open();
+    expect(s(store).visible).toBe(true);
+    expect(s(store).minimized).toBe(false);
+    expect(s(store).currentChatId).toBe(chatId);
+    expect(s(store).getChat(chatId)?.status).toBe("running");
+    expect(s(store).chats).toHaveLength(1);
+  });
+
   test("creates a default chat when no persisted state exists", () => {
     const store = createAgentStore();
 
@@ -69,6 +89,123 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).currentChatId).toBe(s(store).chats[0].id);
     expect(s(store).getMessages(s(store).currentChatId)).toEqual([]);
     expect(s(store).chats[0].totalTokensUsed).toBe(0);
+  });
+
+  test("takes a queued user message only for its chat and only once", () => {
+    const store = createAgentStore();
+    const chat = s(store).createChat({ context: "projects/orders" });
+    const message = {
+      chatId: chat.id,
+      text: "List databases",
+      page: { path: "/projects/orders", title: "Order service" },
+    };
+    s(store).queueUserMessage(message);
+
+    expect(s(store).takeQueuedUserMessage("other-chat")).toBeNull();
+    expect(s(store).takeQueuedUserMessage(chat.id)).toEqual(message);
+    expect(s(store).takeQueuedUserMessage(chat.id)).toBeNull();
+    expect(s(store).queuedUserMessage).toEqual(message);
+    s(store).finishQueuedUserMessage(chat.id);
+    expect(s(store).queuedUserMessage).toBeNull();
+  });
+
+  test("keeps a chat's resource context when its page changes and after reload", () => {
+    const store = createAgentStore();
+    const chat = s(store).createChat({ context: "projects/orders" });
+
+    s(store).updateChatPage(chat.id, {
+      path: "/projects/other/issues",
+      title: "Other project",
+    });
+
+    expect(s(store).getChat(chat.id)?.context).toBe("projects/orders");
+    expect(s(createAgentStore()).getChat(chat.id)?.context).toBe(
+      "projects/orders"
+    );
+  });
+
+  test("binds only an empty legacy chat when a context is supplied", () => {
+    const store = createAgentStore();
+    const emptyChatId = s(store).currentChatId!;
+
+    s(store).ensureCurrentChat(undefined, "workspaces/demo");
+    expect(s(store).getChat(emptyChatId)?.context).toBe("workspaces/demo");
+
+    const legacy = s(store).createChat();
+    s(store).addMessage({
+      chatId: legacy.id,
+      role: "user",
+      content: "Earlier work",
+    });
+    s(store).ensureCurrentChat(undefined, "projects/orders");
+    expect(s(store).getChat(legacy.id)?.context).toBeUndefined();
+  });
+
+  test("changes the context of an empty chat without creating another chat", () => {
+    const store = createAgentStore();
+    const chat = s(store).ensureCurrentChat(undefined, "projects/orders");
+
+    const selected = s(store).selectChatContext("workspaces/demo");
+
+    expect(selected?.id).toBe(chat.id);
+    expect(s(store).chats).toHaveLength(1);
+    expect(s(store).getChat(chat.id)?.context).toBe("workspaces/demo");
+    expect(s(createAgentStore()).getChat(chat.id)?.context).toBe(
+      "workspaces/demo"
+    );
+  });
+
+  test("changes the context of a populated chat without losing its history", () => {
+    const store = createAgentStore();
+    const original = s(store).ensureCurrentChat(undefined, "projects/orders");
+    s(store).addMessage({
+      chatId: original.id,
+      role: "user",
+      content: "Hello",
+    });
+
+    const selected = s(store).selectChatContext("projects/billing", {
+      path: "/projects/orders",
+      title: "Orders",
+    });
+
+    expect(selected?.id).toBe(original.id);
+    expect(selected?.context).toBe("projects/billing");
+    expect(s(store).chats).toHaveLength(1);
+    expect(s(store).currentChatId).toBe(original.id);
+    expect(s(store).getMessages(original.id)).toHaveLength(1);
+  });
+
+  test("adds context to a populated chat that has none", () => {
+    const store = createAgentStore();
+    const chat = s(store).ensureCurrentChat();
+    s(store).addMessage({ chatId: chat.id, role: "user", content: "Hello" });
+
+    const selected = s(store).selectChatContext("projects/billing");
+
+    expect(selected?.id).toBe(chat.id);
+    expect(selected?.context).toBe("projects/billing");
+    expect(s(store).chats).toHaveLength(1);
+    expect(s(store).getMessages(chat.id)).toHaveLength(1);
+  });
+
+  test("does not change context while any chat is running", () => {
+    const store = createAgentStore();
+    const chat = s(store).ensureCurrentChat(undefined, "projects/orders");
+    s(store).setChatStatus(chat.id, "running");
+
+    expect(s(store).selectChatContext("projects/billing")).toBeNull();
+    expect(s(store).getChat(chat.id)?.context).toBe("projects/orders");
+    expect(s(store).chats).toHaveLength(1);
+  });
+
+  test("keeps a populated chat when its current context is selected", () => {
+    const store = createAgentStore();
+    const chat = s(store).ensureCurrentChat(undefined, "projects/orders");
+    s(store).addMessage({ chatId: chat.id, role: "user", content: "Hello" });
+
+    expect(s(store).selectChatContext("projects/orders")?.id).toBe(chat.id);
+    expect(s(store).chats).toHaveLength(1);
   });
 
   test("uses larger bottom-right window defaults when no saved window state exists", () => {

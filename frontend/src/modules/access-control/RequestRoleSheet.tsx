@@ -7,12 +7,12 @@ import { issueServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/app/router/handles";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/components/DatabaseResourceSelector";
-import { EnvironmentSelect } from "@/components/EnvironmentSelect";
 import type { OptionConfig } from "@/components/ExprEditor";
 import { ExprEditor } from "@/components/ExprEditor";
 import { IssueLabelSelect } from "@/components/IssueLabelSelect";
 import { RoleSelect } from "@/components/RoleSelect";
-import { DDLWarningCallout } from "@/components/role-grant/DDLWarningCallout";
+import { DirectExecutionField } from "@/components/role-grant/DirectExecutionField";
+import { RoleDescription } from "@/components/role-grant/RoleDescription";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ExpirationPicker } from "@/components/ui/expiration-picker";
@@ -27,7 +27,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { useCurrentUser } from "@/hooks/useAppState";
+import { useCurrentUser, useEnvironmentList } from "@/hooks/useAppState";
+import {
+  type DirectExecutionValue,
+  directExecutionEnvironments,
+  EMPTY_DIRECT_EXECUTION,
+  isDirectExecutionValid,
+} from "@/lib/project-member/directExecution";
 import {
   getRoleEnvironmentLimitationKind,
   roleHasDatabaseLimitation,
@@ -58,6 +64,7 @@ import {
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
+import { resolveEnvironment } from "@/types/v1/environment";
 import {
   batchConvertParsedExprToCELString,
   extractIssueUID,
@@ -75,6 +82,7 @@ import {
   buildConditionExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
+import { formatList } from "@/utils/string";
 import type { DatabaseMode } from "./types";
 
 export interface RequestRoleSheetProps {
@@ -168,7 +176,7 @@ function RequestRoleForm({
   initialDatabaseResources = EMPTY_DATABASE_RESOURCES,
   onClose,
 }: Readonly<Omit<RequestRoleSheetProps, "open">>) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const currentUser = useCurrentUser();
   // Theming is handled by the outer RequestRoleSheet (inline vars on
   // SheetContent); this form just inherits them.
@@ -194,10 +202,13 @@ function RequestRoleForm({
   const [exprGroup, setExprGroup] = useState<ConditionGroupExpr>(() =>
     wrapAsGroup(emptySimpleExpr())
   );
-  const [environments, setEnvironments] = useState<string[]>([]);
+  const [directExecution, setDirectExecution] = useState<DirectExecutionValue>(
+    EMPTY_DIRECT_EXECUTION
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const roleList = useAppStore((state) => state.roleList);
+  const environmentList = useEnvironmentList();
   const selectedRole = useAppStore((state) =>
     role ? state.getRoleByName(role) : undefined
   );
@@ -318,6 +329,7 @@ function RequestRoleForm({
     !labelsMisconfigured &&
     databaseScopeComplete &&
     selectedRoleMatchesRequiredPermissions &&
+    isDirectExecutionValid(directExecution) &&
     (!project.forceIssueLabels || labels.length > 0);
 
   const handleSubmit = async () => {
@@ -339,7 +351,9 @@ function RequestRoleForm({
           : undefined;
       // EnvLimitationKind union has no falsy members, so the truthy check
       // is equivalent to !== undefined.
-      const scopedEnvironments = envKind ? environments : undefined;
+      const scopedEnvironments = envKind
+        ? directExecutionEnvironments(directExecution)
+        : undefined;
 
       // The backend uses two fields on the RoleGrant message:
       //   1. `condition.expression` — CEL evaluated by
@@ -421,14 +435,29 @@ function RequestRoleForm({
           ? [...new Set(scopedDatabaseResources.map((r) => r.databaseFullName))]
           : undefined;
 
+      // Stored text: the details card, not the title, is the authoritative
+      // record of the scope, so a later environment rename leaves it stale.
+      const suffix =
+        envKind && scopedEnvironments?.length
+          ? ` · ${t("issue.role-grant.direct-execution-suffix", {
+              kind: envKind,
+              environments: formatList(
+                scopedEnvironments.map(
+                  (name) => resolveEnvironment(name, environmentList).title
+                ),
+                i18n.resolvedLanguage ?? "en-US"
+              ),
+            })}`
+          : "";
       // When the project enforces issue titles, the user-provided reason is
-      // treated as the title.
+      // treated as the title. A generated title ends with its timestamp, so the
+      // suffix goes before it, where a truncated issue-list row keeps it.
       const title = project.enforceIssueTitle
-        ? `[${t("issue.title.request-role")}] ${trimmedReason}`
+        ? `[${t("issue.title.request-role")}] ${trimmedReason}${suffix}`
         : formatIssueTitle(
-            t("issue.title.request-specific-role", {
+            `${t("issue.title.request-specific-role", {
               role: displayRoleTitleFromList(role, roleList),
-            }),
+            })}${suffix}`,
             titleDatabaseNames
           );
 
@@ -513,10 +542,11 @@ function RequestRoleForm({
                 setDatabaseMode("ALL");
                 setDatabaseResources([]);
                 setExprGroup(wrapAsGroup(emptySimpleExpr()));
-                setEnvironments([]);
+                setDirectExecution(EMPTY_DIRECT_EXECUTION);
               }}
               filterRole={roleMatchesRequiredPermissions}
             />
+            <RoleDescription role={role} roleList={roleList} />
             {!!role && !selectedRoleMatchesRequiredPermissions && (
               <FormError>
                 {t("common.missing-required-permission", {
@@ -585,15 +615,12 @@ function RequestRoleForm({
             </FormField>
           )}
           {envKind && (
-            <FormField title={<>{t("common.environments")}</>}>
-              <DDLWarningCallout type="drawer" kind={envKind} />
-              <EnvironmentSelect
-                multiple
-                portal
-                value={environments}
-                onChange={setEnvironments}
-              />
-            </FormField>
+            <DirectExecutionField
+              kind={envKind}
+              lead="request"
+              value={directExecution}
+              onChange={setDirectExecution}
+            />
           )}
           <FormField
             title={

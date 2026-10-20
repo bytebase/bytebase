@@ -10,6 +10,7 @@ import {
   bindingScopesResources,
   convertFullnameToMember,
   convertMemberToFullname,
+  isBindingPolicyExpired,
 } from "./iam";
 
 const binding = (expression?: string, parsedExpr?: Expr) =>
@@ -28,6 +29,21 @@ const call = (fn: string, args: Expr[]) =>
   create(ExprSchema, {
     exprKind: { case: "callExpr", value: { function: fn, args } },
   });
+const string = (value: string) =>
+  create(ExprSchema, {
+    exprKind: {
+      case: "constExpr",
+      value: { constantKind: { case: "stringValue", value } },
+    },
+  });
+const resource = (field: string) => select(ident("resource"), field);
+const eq = (field: string, value: string) =>
+  call("_==_", [resource(field), string(value)]);
+const timeBefore = (value: string) =>
+  call("_<_", [
+    select(ident("request"), "time"),
+    call("timestamp", [string(value)]),
+  ]);
 
 // Mirrors the server's rule: any condition attribute other than request.time
 // scopes the binding away from project-wide surfaces.
@@ -91,6 +107,21 @@ describe("bindingScopesResources", () => {
 
     const mixed = call("_&&_", [requestTimeOnly, resourceScoped]);
     expect(bindingScopesResources(binding("...", mixed))).toBe(true);
+  });
+});
+
+describe("isBindingPolicyExpired", () => {
+  test("keeps checking expiry when resource branches cannot be summarized", () => {
+    const expr = call("_&&_", [
+      call("_||_", [
+        eq("database", "instances/i/databases/a"),
+        eq("database", "instances/i/databases/b"),
+      ]),
+      call("_||_", [eq("schema_name", "public"), eq("schema_name", "audit")]),
+      timeBefore("2020-01-01T00:00:00Z"),
+    ]);
+
+    expect(isBindingPolicyExpired(binding(undefined, expr))).toBe(true);
   });
 });
 

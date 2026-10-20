@@ -189,7 +189,7 @@ function PlanCollapseToggle({
         onClick={onToggle}
         // Half of the control hangs below the card so it reads as the seam the
         // subtree folds into, rather than as part of the card's own content.
-        className="absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-background px-1.5"
+        className="absolute -bottom-3 left-1/2 -translate-x-1/2 rounded-xs bg-background px-1.5"
       >
         {collapsed ? (
           <ChevronsUpDown aria-hidden="true" className="size-3" />

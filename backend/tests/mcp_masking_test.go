@@ -27,7 +27,6 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -254,14 +253,7 @@ func (f *mcpMaskingFixture) exemptFromMasking(t *testing.T, member string) strin
 func (f *mcpMaskingFixture) grantUnmask(t *testing.T, export bool) {
 	t.Helper()
 	a := require.New(t)
-
-	// preCheckAccess returns early unless the project allows JIT access, so
-	// without this the grant would exist and never be consulted.
-	_, err := f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
-		Project:    &v1pb.Project{Name: f.ctl.project.Name, AllowJustInTimeAccess: true},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_just_in_time_access"}},
-	}))
-	a.NoError(err)
+	a.NoError(f.ctl.allowJustInTimeAccess(f.ctx, f.ctl.project))
 
 	created, err := f.ctl.accessGrantServiceClient.CreateAccessGrant(f.ctx, connect.NewRequest(&v1pb.CreateAccessGrantRequest{
 		Parent: f.ctl.project.Name,
@@ -426,13 +418,21 @@ func TestMCPMaskingFollowsTheCallersProvisioning(t *testing.T) {
 		Name: exemption,
 	}))
 	a.NoError(err)
-	a.Equal(maskPlaceholder, f.agentReadsSecret(t, f.session),
+	masked := queryDatabaseOnSession(f.ctx, t, f.session, f.name, secretQuery)
+	a.False(masked.isError, masked.text)
+	a.Equal([][]any{{maskPlaceholder}}, masked.output.Rows,
 		"precondition: without the exemption the column masks again")
+	a.Len(masked.output.MaskedColumns, 1)
+	a.Equal("secret", masked.output.MaskedColumns[0].Column, "the agent is told which column is masked")
 
 	f.grantUnmask(t, true /* export */)
 	a.Equal(maskedSecret, f.consoleReadsSecret(t), "the grant unmasks in the console")
-	a.Equal(maskedSecret, f.agentReadsSecret(t, f.session),
+	granted := queryDatabaseOnSession(f.ctx, t, f.session, f.name, secretQuery)
+	a.False(granted.isError, granted.text)
+	a.Equal([][]any{{maskedSecret}}, granted.output.Rows,
 		"and the same grant unmasks the caller's MCP session")
+	a.Empty(granted.output.MaskedColumns)
+	a.NotEmpty(granted.output.AppliedAccessGrant, "the agent can tell a grant applied")
 	a.Contains(f.consoleExportsCSV(t), maskedSecret,
 		"the grant exports in the clear from the console")
 	a.Contains(f.agentExportsCSV(t, f.session), maskedSecret,

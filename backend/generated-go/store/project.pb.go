@@ -102,8 +102,9 @@ type Project struct {
 	AllowSelfApproval bool `protobuf:"varint,9,opt,name=allow_self_approval,json=allowSelfApproval,proto3" json:"allow_self_approval,omitempty"`
 	// Configuration for automatic retry on task execution failures.
 	ExecutionRetryPolicy *Project_ExecutionRetryPolicy `protobuf:"bytes,10,opt,name=execution_retry_policy,json=executionRetryPolicy,proto3" json:"execution_retry_policy,omitempty"`
-	// The maximum number of databases to sample during CI data validation.
-	// If not specified, sampling is disabled, resulting in a full validation.
+	// The maximum number of databases to sample during CI data validation and
+	// AI review. If not specified, sampling is disabled, resulting in a full
+	// validation.
 	CiSamplingSize int32 `protobuf:"varint,11,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
 	// The maximum number of parallel tasks to run during the rollout.
 	ParallelTasksPerRollout int32 `protobuf:"varint,12,opt,name=parallel_tasks_per_rollout,json=parallelTasksPerRollout,proto3" json:"parallel_tasks_per_rollout,omitempty"`

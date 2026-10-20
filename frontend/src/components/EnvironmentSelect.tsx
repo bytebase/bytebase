@@ -11,8 +11,6 @@ interface SingleProps {
   multiple?: false;
   value: string;
   onChange: (value: string) => void;
-  /** Extra content rendered next to the selected env in the trigger and rows. */
-  renderSuffix?: (environment: Environment) => React.ReactNode;
 }
 
 interface MultiProps {
@@ -27,12 +25,17 @@ export type EnvironmentSelectProps = (SingleProps | MultiProps) & {
   className?: string;
   portal?: boolean;
   clearable?: boolean;
+  /**
+   * Extra content rendered next to the environment in every option row, and
+   * in the single-select trigger beside the selected value.
+   */
+  renderSuffix?: (environment: Environment) => React.ReactNode;
 };
 
 export function EnvironmentSelect(props: EnvironmentSelectProps) {
   const { t } = useTranslation();
   const environments = useEnvironmentList();
-  const renderSuffix = !props.multiple ? props.renderSuffix : undefined;
+  const renderSuffix = props.renderSuffix;
 
   const options = useMemo(
     () =>

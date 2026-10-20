@@ -9,8 +9,8 @@ import { BytebaseApiClient } from "./api-client";
 const PID_FILE = "/tmp/bytebase-e2e-pid";
 const DEFAULT_PORT = 18234;
 const DEFAULT_TIMEOUT = 300000; // 5 minutes — server startup includes embedded Postgres + migrations + sample-instance bring-up
-const ADMIN_EMAIL = "demo@example.com";
-const ADMIN_PASSWORD = "12345678"; // NOSONAR: e2e fixture
+export const ADMIN_EMAIL = "demo@example.com";
+export const ADMIN_PASSWORD = "12345678"; // NOSONAR: e2e fixture
 const ADMIN_TITLE = "Demo";
 const SAMPLE_PROJECT_ID = "project-sample";
 const SAMPLE_PROJECT_TITLE = "Sample Project";
@@ -41,9 +41,9 @@ function isBytebaseProcess(pid: number): boolean {
   }
 }
 
-export function cleanupOrphans(): void {
-  if (!fs.existsSync(PID_FILE)) return;
-  const content = fs.readFileSync(PID_FILE, "utf-8").trim().split("\n");
+export function cleanupOrphans(pidFile: string = PID_FILE): void {
+  if (!fs.existsSync(pidFile)) return;
+  const content = fs.readFileSync(pidFile, "utf-8").trim().split("\n");
   const pid = parseInt(content[0], 10);
   const dir = content[1];
   if (Number.isFinite(pid) && pid > 0 && isBytebaseProcess(pid)) {
@@ -56,7 +56,7 @@ export function cleanupOrphans(): void {
   if (dir && fs.existsSync(dir)) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
-  fs.unlinkSync(PID_FILE);
+  fs.unlinkSync(pidFile);
 }
 
 function checkPort(port: number): Promise<boolean> {
@@ -67,7 +67,9 @@ function checkPort(port: number): Promise<boolean> {
       server.close();
       resolve(true);
     });
-    server.listen(port, "127.0.0.1");
+    // No host, as the server itself binds: macOS lets a 127.0.0.1 bind succeed
+    // beside a wildcard listener, which would hand out a running server's port.
+    server.listen(port);
   });
 }
 
@@ -118,15 +120,20 @@ function isPortListening(port: number): Promise<boolean> {
 }
 
 // Poll until predicate succeeds or deadline passes. On timeout, throws with
-// the last underlying error so the cause isn't swallowed.
+// the last underlying error so the cause isn't swallowed. `giveUp` ends the
+// wait early, with the reason it returns, when succeeding has become
+// impossible.
 async function pollUntil(
   predicate: () => Promise<void>,
   deadline: number,
   intervalMs: number,
-  timeoutMessage: string
+  timeoutMessage: string,
+  giveUp?: () => string | undefined
 ): Promise<void> {
   let lastError: unknown;
   while (Date.now() < deadline) {
+    const reason = giveUp?.();
+    if (reason) throw new Error(reason);
     try {
       await predicate();
       return;
@@ -149,10 +156,154 @@ export async function findAvailablePort(): Promise<number> {
   const offsets = [0, 2, 3];
   for (let i = 0; i < 100; i++) {
     const checks = await Promise.all(offsets.map((o) => checkPort(port + o)));
-    if (checks.every((free) => free)) return port;
+    // The embedded and sample Postgres listen on Unix sockets only, so a TCP
+    // bind cannot see another server's.
+    const sockets = await Promise.all(
+      [2, 3].map((o) => isPortListening(port + o))
+    );
+    if (checks.every((free) => free) && sockets.every((used) => !used)) {
+      return port;
+    }
     port += 4; // skip past all 3 offsets to avoid re-checking conflicting slots
   }
   throw new Error("Could not find available port range for Bytebase");
+}
+
+function findServerBinary(): string {
+  // Check both CWD-relative and repo-root-relative paths
+  const candidates = [
+    process.env.BYTEBASE_BIN,
+    "./bytebase-build/bytebase",
+    "../bytebase-build/bytebase",
+  ].filter(Boolean) as string[];
+  const binPath = candidates.find((p) => fs.existsSync(p));
+  if (!binPath) {
+    throw new Error(
+      `Bytebase binary not found. Build it with:\n` +
+        `  pnpm --dir frontend build\n` +
+        `  go build -tags embed_frontend -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go\n` +
+        `Or set BYTEBASE_BIN to the binary path.`
+    );
+  }
+  return binPath;
+}
+
+export function startupTimeoutMs(): number {
+  return parseInt(
+    process.env.BYTEBASE_STARTUP_TIMEOUT ?? String(DEFAULT_TIMEOUT),
+    10
+  );
+}
+
+// Detached, so the server leads a process group `terminateServer` can signal.
+// Its Postgres processes run outside that group and stop when the server
+// shuts down. `pidFile` records the server for `cleanupOrphans`.
+export function spawnServer(
+  port: number,
+  dataDir: string,
+  pidFile: string = PID_FILE
+): child_process.ChildProcess {
+  const child = child_process.spawn(
+    findServerBinary(),
+    ["--port", String(port), "--data", dataDir],
+    {
+      detached: true,
+      stdio: "ignore",
+      // The embedded Postgres needs a valid UTF-8 locale: without LANG,
+      // initdb rejects the locale and Postgres 17 on macOS then fails with
+      // "postmaster became multithreaded during startup".
+      env: { LANG: "en_US.UTF-8", ...process.env, PG_URL: "" },
+    }
+  );
+  child.unref();
+  fs.writeFileSync(pidFile, `${child.pid}\n${dataDir}`);
+  return child;
+}
+
+const hasExited = (child: child_process.ChildProcess) =>
+  child.exitCode !== null || child.signalCode !== null;
+
+// Waits until `child` serves requests, then signs up the fixture admin, who
+// becomes workspace admin as the first account, and logs the client in.
+//
+// Gives up as soon as `child` has exited. /healthz is asked by port, so
+// otherwise a server that died at boot would be polled to the deadline, and
+// another server on the same port would be taken for it.
+export async function waitForAdmin(
+  child: child_process.ChildProcess,
+  baseURL: string
+): Promise<BytebaseApiClient> {
+  const timeout = startupTimeoutMs();
+  const exited = () =>
+    hasExited(child) ? "Bytebase server exited during startup." : undefined;
+  await pollUntil(
+    async () => {
+      const resp = await fetch(`${baseURL}/healthz`);
+      if (!resp.ok) throw new Error(`/healthz returned ${resp.status}`);
+    },
+    Date.now() + timeout,
+    500,
+    `Bytebase server did not become healthy within ${timeout}ms.`,
+    exited
+  );
+  const reason = exited();
+  if (reason) throw new Error(reason);
+
+  // The schema is migrated before the server listens, so signup needs no
+  // retry. It sets cookies only; this client uses the bearer token of a login.
+  const api = new BytebaseApiClient({
+    baseURL,
+    credentials: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+  });
+  await api.signup(ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_TITLE);
+  await api.login(ADMIN_EMAIL, ADMIN_PASSWORD);
+  return api;
+}
+
+// Stops `child` with its process group, then removes `dataDir`.
+//
+// The directory goes only after the server has exited. Deleting it while the
+// embedded Postgres is still shutting down makes the checkpointer PANIC
+// ("could not fsync pg_xact/0000") and leaves the metadata-Postgres socket
+// (/tmp/.s.PGSQL.<PORT+2>) behind, which then trips the next boot's port
+// probe. The wait must be asynchronous: Node reaps the child on the event
+// loop, so a blocking poll of `kill(pid, 0)` would only ever see a zombie and
+// run to its deadline. Bounded (ref'd timers keep the loop alive): a server
+// that ignores SIGTERM for 15 s is SIGKILLed as a group and given a short
+// grace so the directory is never deleted under a live Postgres.
+export async function terminateServer(
+  child: child_process.ChildProcess,
+  dataDir: string | undefined
+): Promise<void> {
+  const exited = () => hasExited(child);
+  const waitExit = (ms: number) =>
+    new Promise<void>((resolve) => {
+      if (exited()) {
+        resolve();
+        return;
+      }
+      const timer = setTimeout(resolve, ms);
+      child.once("exit", () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  const signalGroup = (signal: NodeJS.Signals) => {
+    try {
+      process.kill(-child.pid!, signal);
+    } catch {
+      /* already dead */
+    }
+  };
+  signalGroup("SIGTERM");
+  await waitExit(15_000);
+  if (!exited()) {
+    signalGroup("SIGKILL");
+    await waitExit(5_000);
+  }
+  if (dataDir && fs.existsSync(dataDir)) {
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  }
 }
 
 export async function startServer(): Promise<{
@@ -174,76 +325,14 @@ export async function startServer(): Promise<{
     );
   }
 
-  // Check both CWD-relative and repo-root-relative paths
-  const candidates = [
-    process.env.BYTEBASE_BIN,
-    "./bytebase-build/bytebase",
-    "../bytebase-build/bytebase",
-  ].filter(Boolean) as string[];
-  const binPath = candidates.find((p) => fs.existsSync(p));
-  if (!binPath) {
-    throw new Error(
-      `Bytebase binary not found. Build it with:\n` +
-        `  pnpm --dir frontend build\n` +
-        `  go build -tags embed_frontend -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go\n` +
-        `Or set BYTEBASE_BIN to the binary path.`
-    );
-  }
-
   const port = await findAvailablePort();
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "bytebase-e2e-"));
-
-  const child = child_process.spawn(
-    binPath,
-    ["--port", String(port), "--data", tempDir],
-    {
-      detached: true,
-      stdio: "ignore",
-      // The embedded Postgres needs a valid UTF-8 locale: without LANG,
-      // initdb rejects the locale and Postgres 17 on macOS then fails with
-      // "postmaster became multithreaded during startup".
-      env: { LANG: "en_US.UTF-8", ...process.env, PG_URL: "" },
-    }
-  );
-
+  const child = spawnServer(port, tempDir);
   serverProcess = child;
-  child.unref();
-
-  // Write PID file for orphan cleanup
-  fs.writeFileSync(PID_FILE, `${child.pid}\n${tempDir}`);
 
   const baseURL = `http://localhost:${port}`;
-  const timeout = parseInt(
-    process.env.BYTEBASE_STARTUP_TIMEOUT ?? String(DEFAULT_TIMEOUT),
-    10
-  );
-  const deadline = Date.now() + timeout;
-
-  // Phase 1: Poll /healthz
-  await pollUntil(
-    async () => {
-      const resp = await fetch(`${baseURL}/healthz`);
-      if (!resp.ok) throw new Error(`/healthz returned ${resp.status}`);
-    },
-    deadline,
-    500,
-    `Bytebase server did not become healthy within ${timeout}ms.`
-  );
-
-  // Phase 2: Signup the first admin. Retry while the server finishes
-  // migrating its metadata schema (signup returns 4xx until the principal
-  // table exists). The first signup becomes workspace admin automatically.
-  const api = new BytebaseApiClient({ baseURL });
-  await pollUntil(
-    () => api.signup(ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_TITLE),
-    deadline,
-    500,
-    "Failed to signup admin. Server may not be fully initialized."
-  );
-
-  // Phase 3: Login to obtain a body token for subsequent API calls.
-  // Signup sets cookies only; this api-client uses bearer tokens.
-  await api.login(ADMIN_EMAIL, ADMIN_PASSWORD);
+  const deadline = Date.now() + startupTimeoutMs();
+  const api = await waitForAdmin(child, baseURL);
 
   // Phase 3b: Install the enterprise license. Its presence was verified at
   // the top of startServer (before boot); install it now that the API client
@@ -309,48 +398,13 @@ export async function startServer(): Promise<{
 }
 
 export async function stopServer(): Promise<void> {
-  if (serverProcess?.pid) {
-    const child = serverProcess;
-    serverProcess = undefined;
-    // Wait for the server to actually exit before removing its data
-    // directory. Deleting it while the embedded Postgres is still shutting down
-    // makes the checkpointer PANIC ("could not fsync pg_xact/0000") and leaves
-    // the metadata-Postgres socket (/tmp/.s.PGSQL.<PORT+2>) behind, which then
-    // trips the next boot's port probe. The wait must be asynchronous: Node
-    // reaps the child on the event loop, so a blocking poll of `kill(pid, 0)`
-    // would only ever see a zombie and run to its deadline. Bounded (ref'd
-    // timers keep the loop alive): a server that ignores SIGTERM for 15 s is
-    // SIGKILLed as a group and given a short grace so the directory is never
-    // deleted under a live Postgres.
-    const exited = () => child.exitCode !== null || child.signalCode !== null;
-    const waitExit = (ms: number) =>
-      new Promise<void>((resolve) => {
-        if (exited()) {
-          resolve();
-          return;
-        }
-        const timer = setTimeout(resolve, ms);
-        child.once("exit", () => {
-          clearTimeout(timer);
-          resolve();
-        });
-      });
-    const signalGroup = (signal: NodeJS.Signals) => {
-      try {
-        process.kill(-child.pid!, signal);
-      } catch {
-        /* already dead */
-      }
-    };
-    signalGroup("SIGTERM");
-    await waitExit(15_000);
-    if (!exited()) {
-      signalGroup("SIGKILL");
-      await waitExit(5_000);
-    }
-  }
-  if (tempDir && fs.existsSync(tempDir)) {
-    fs.rmSync(tempDir, { recursive: true, force: true });
+  const child = serverProcess;
+  const dataDir = tempDir;
+  serverProcess = undefined;
+  if (child?.pid) {
+    await terminateServer(child, dataDir);
+  } else if (dataDir && fs.existsSync(dataDir)) {
+    fs.rmSync(dataDir, { recursive: true, force: true });
   }
   if (fs.existsSync(PID_FILE)) {
     fs.unlinkSync(PID_FILE);

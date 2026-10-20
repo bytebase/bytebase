@@ -715,6 +715,19 @@ func (x *ReviewRun) Equal(y *ReviewRun) bool {
 	return true
 }
 
+func (x *GetReviewRunRequest) Equal(y *GetReviewRunRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	return true
+}
+
 func (x *RunReviewRequest) Equal(y *RunReviewRequest) bool {
 	if x == y {
 		return true

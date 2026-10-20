@@ -9,9 +9,12 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -24,6 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+// recoveryRunner is the recovery service as the command uses it.
 type recoveryRunner interface {
 	GetWorkspaceID(context.Context) (string, error)
 	EnablePasswordSignin(context.Context, string) (*recovery.EnablePasswordSigninResult, error)
@@ -53,44 +57,186 @@ func init() {
 	}))
 }
 
+// oneActionCommands are the two forms that run one action without a terminal.
+const oneActionCommands = `"bytebase recovery enable-password-signin" or "bytebase recovery reset-password --email <email> --password <password>"`
+
 func newRecoveryCommand(dependencies recoveryCommandDependencies) *cobra.Command {
 	command := &cobra.Command{
-		Use:          "recovery",
-		Short:        "Recover password sign-in for a self-hosted deployment",
-		Args:         cobra.NoArgs,
-		SilenceUsage: true,
-		RunE: func(command *cobra.Command, _ []string) (retErr error) {
+		Use:   "recovery",
+		Short: "Recover password sign-in for a self-hosted deployment",
+		Args:  noArgs,
+		RunE: func(command *cobra.Command, _ []string) error {
+			command.SilenceUsage = true
 			input := command.InOrStdin()
 			output := command.OutOrStdout()
 			if !dependencies.isTerminal(input, output) {
-				return errors.New("recovery requires terminal input and output")
+				return errors.New("recovery requires terminal input and output; without a terminal, run " + oneActionCommands)
 			}
-			fmt.Fprintln(output, "Stop all Bytebase servers that use this metadata database before continuing.")
-			fmt.Fprintln(output, "Restart all Bytebase servers after recovery so they reload updated settings and IAM policies.")
-
-			ctx, stop := signal.NotifyContext(command.Context(), os.Interrupt, syscall.SIGTERM)
-			defer stop()
-			backend, err := dependencies.open(ctx)
-			if err != nil {
-				return errors.Wrap(err, "failed to open recovery metadata store")
-			}
-			defer func() {
-				if err := backend.close(); err != nil && retErr == nil {
-					retErr = errors.Wrap(err, "failed to close recovery metadata store")
-				}
-			}()
-
-			workspaceID, err := backend.runner.GetWorkspaceID(ctx)
-			if err != nil {
-				return errors.Wrap(err, "failed to find the recovery workspace")
-			}
-			if workspaceID == "" {
-				return errors.New("no active workspace was found in the metadata database")
-			}
-			return runRecoverySession(ctx, workspaceID, input, output, backend.runner, dependencies.readPassword)
+			return runRecoveryAction(command, dependencies, func(ctx context.Context, workspaceID string, runner recoveryRunner) error {
+				return runRecoverySession(ctx, workspaceID, input, output, runner, dependencies.readPassword)
+			})
 		},
 	}
+	// The subcommands inherit this, so no flag error of theirs quotes the
+	// command line either.
+	command.SetFlagErrorFunc(redactFlagError)
+	command.AddCommand(newEnablePasswordSigninCommand(dependencies), newResetPasswordCommand(dependencies))
 	return command
+}
+
+func newEnablePasswordSigninCommand(dependencies recoveryCommandDependencies) *cobra.Command {
+	return &cobra.Command{
+		Use:   "enable-password-signin",
+		Short: "Enable password sign-in when a workspace administrator has a password",
+		Args:  noArgs,
+		RunE: func(command *cobra.Command, _ []string) error {
+			command.SilenceUsage = true
+			return runRecoveryAction(command, dependencies, func(ctx context.Context, workspaceID string, runner recoveryRunner) error {
+				result, err := runner.EnablePasswordSignin(ctx, workspaceID)
+				if result != nil {
+					printPasswordSigninEnabled(command.OutOrStdout())
+				}
+				return err
+			})
+		},
+	}
+}
+
+func newResetPasswordCommand(dependencies recoveryCommandDependencies) *cobra.Command {
+	var email, password string
+	command := &cobra.Command{
+		Use:   "reset-password --email <email> --password <password>",
+		Short: "Set a new password for an existing, active user",
+		Args:  noArgs,
+		// A Job fills these flags from Secrets; the checks catch what that gets
+		// wrong, before anything is read.
+		PreRunE: func(*cobra.Command, []string) error {
+			switch {
+			case email == "" && password == "":
+				return errors.New("--email and --password need a value")
+			case email == "":
+				return errors.New("--email needs a value")
+			case password == "":
+				return errors.New("--password needs a value")
+			}
+			if _, err := recovery.ParseEmail(email); err != nil {
+				return errors.New("--email is not an email address")
+			}
+			if unexpandedReference.MatchString(password) {
+				return errors.New("--password looks like a variable reference that was not expanded ($NAME, ${NAME} or $(NAME)); in a Job's args, Kubernetes expands only $(NAME), and only for a variable the container defines")
+			}
+			if !utf8.ValidString(password) || strings.ContainsFunc(password, cannotBeTyped) {
+				return errors.New("--password contains a character that cannot be typed at sign-in, such as a trailing newline, a byte-order mark or bytes from a file in another encoding")
+			}
+			return nil
+		},
+		RunE: func(command *cobra.Command, _ []string) error {
+			command.SilenceUsage = true
+			return runRecoveryAction(command, dependencies, func(ctx context.Context, workspaceID string, runner recoveryRunner) error {
+				result, err := runner.ResetUserPassword(ctx, recovery.ResetUserPasswordRequest{
+					WorkspaceID: workspaceID,
+					Email:       email,
+					Password:    []byte(password),
+				})
+				if result == nil {
+					return err
+				}
+				output := command.OutOrStdout()
+				printPasswordResetSuccess(output, result.Email)
+				// The role lookup only informs the operator about the saved
+				// password, so it runs even when a later step failed, and its own
+				// failure is a warning.
+				member, lookupErr := runner.IsUserInWorkspace(ctx, workspaceID, result.Email)
+				if lookupErr != nil {
+					fmt.Fprintf(command.ErrOrStderr(), "Warning: could not check whether user %s has a workspace role: %v\n", result.Email, lookupErr)
+				} else if !member {
+					fmt.Fprintf(output, "User %s has no workspace role. Before they try to sign in, run \"bytebase recovery\" to add one.\n", result.Email)
+				}
+				return err
+			})
+		},
+	}
+	command.Flags().StringVar(&email, "email", "", "email of an existing, active user")
+	command.Flags().StringVar(&password, "password", "", "the new password; it shows in the process list and the shell history, so change it after signing in")
+	return command
+}
+
+// noArgs and redactFlagError replace cobra's errors, which quote what was
+// typed: a password that lost or garbled its --password flag would be printed
+// into the log. For the same reason, no other error here repeats a flag's value.
+func noArgs(command *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		return nil
+	}
+	if command.HasSubCommands() {
+		return subcommandUsageError(command)
+	}
+	return errors.Errorf("%s takes no arguments", command.CommandPath())
+}
+
+func redactFlagError(command *cobra.Command, _ error) error {
+	if command.HasSubCommands() {
+		return subcommandUsageError(command)
+	}
+	return errors.Errorf("%s was given a flag it does not know or a flag without a valid value; the usage lists its flags", command.CommandPath())
+}
+
+// subcommandUsageError answers what `bytebase recovery` does not take, most
+// often a misspelled subcommand, with the forms it does take.
+func subcommandUsageError(command *cobra.Command) error {
+	return errors.Errorf("%s was given an argument or a flag it does not take; to run one action, use %s", command.CommandPath(), oneActionCommands)
+}
+
+// unexpandedReference matches a whole value that is a variable reference left
+// in place: $NAME and ${NAME} with a shell name, or $(NAME) with any name a
+// Secret or ConfigMap key can hold (letters, digits, '-', '.' and '_'), which
+// envFrom turns into variables. Kubernetes passes an undefined $(NAME) through
+// unchanged. A value with other characters inside, such as $(Str0ng!), is more
+// likely a password than a variable's name.
+var unexpandedReference = regexp.MustCompile(`^\$([A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\}|\([-._A-Za-z0-9]+\))$`)
+
+// cannotBeTyped reports a character that a Secret file or a pasted document
+// adds and a sign-in form cannot receive: control characters such as a
+// trailing newline, line and paragraph separators, a byte-order mark, a
+// zero-width space or word joiner, and the replacement character a decoder
+// leaves for bytes in another encoding. Joiners that keyboards produce, as in
+// Persian text or emoji, are allowed.
+func cannotBeTyped(r rune) bool {
+	switch r {
+	case '\ufeff', '\u200b', '\u2060', utf8.RuneError:
+		return true
+	default:
+		return unicode.IsControl(r) || unicode.In(r, unicode.Zl, unicode.Zp)
+	}
+}
+
+// runRecoveryAction opens the metadata store, resolves its only workspace and
+// runs action against it.
+func runRecoveryAction(
+	command *cobra.Command,
+	dependencies recoveryCommandDependencies,
+	action func(ctx context.Context, workspaceID string, runner recoveryRunner) error,
+) (retErr error) {
+	ctx, stop := signal.NotifyContext(command.Context(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	backend, err := dependencies.open(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to open recovery metadata store")
+	}
+	defer func() {
+		if err := backend.close(); err != nil && retErr == nil {
+			retErr = errors.Wrap(err, "failed to close recovery metadata store")
+		}
+	}()
+
+	workspaceID, err := backend.runner.GetWorkspaceID(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to find the recovery workspace")
+	}
+	if workspaceID == "" {
+		return errors.New("no active workspace was found in the metadata database")
+	}
+	return action(ctx, workspaceID, backend.runner)
 }
 
 func openRecoveryBackend(ctx context.Context) (*recoveryBackend, error) {
@@ -107,7 +253,8 @@ func openRecoveryBackend(ctx context.Context) (*recoveryBackend, error) {
 	}
 
 	pgURL := fmt.Sprintf("host=%s port=%d user=bb database=bb", postgres.GetPostgresSocketDir(), profile.DatastorePort)
-	if stores, err := store.New(ctx, pgURL, false); err == nil {
+	stores, connectErr := store.New(ctx, pgURL, false)
+	if connectErr == nil {
 		return newRecoveryBackend(stores, nil), nil
 	}
 
@@ -118,16 +265,34 @@ func openRecoveryBackend(ctx context.Context) (*recoveryBackend, error) {
 		}
 		return nil, errors.Wrap(err, "failed to inspect embedded metadata database")
 	}
+	if err := refuseRunningEmbeddedPostgres(pgDataDir, connectErr); err != nil {
+		return nil, err
+	}
 	stopEmbeddedPostgres, err := postgres.StartMetadataInstance(ctx, pgDataDir, profile.DatastorePort, profile.Mode)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start embedded metadata database")
 	}
-	stores, err := store.New(ctx, pgURL, false)
+	stores, err = store.New(ctx, pgURL, false)
 	if err != nil {
 		stopEmbeddedPostgres()
 		return nil, errors.Wrap(err, "failed to connect to embedded metadata database")
 	}
 	return newRecoveryBackend(stores, stopEmbeddedPostgres), nil
+}
+
+// refuseRunningEmbeddedPostgres stops recovery from starting PostgreSQL on a
+// data directory that another postmaster may hold. PostgreSQL's own lock
+// cannot see a postmaster in another container, so the two would write the
+// same files.
+func refuseRunningEmbeddedPostgres(pgDataDir string, connectErr error) error {
+	_, err := os.Stat(filepath.Join(pgDataDir, "postmaster.pid"))
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return errors.Wrap(err, "failed to inspect embedded metadata database")
+	}
+	return errors.Errorf("cannot connect to the embedded metadata database (%v), and its data directory %q may be in use: run recovery inside the Bytebase server's container, with the server's --data and --port; if no Bytebase server is running, start it once, then run recovery that way", connectErr, pgDataDir)
 }
 
 func newRecoveryBackend(stores *store.Store, stopEmbeddedPostgres func()) *recoveryBackend {
@@ -216,14 +381,16 @@ func runEnablePasswordSignin(
 	}
 
 	fmt.Fprintln(output, "Enabling password sign-in...")
-	_, err = runner.EnablePasswordSignin(ctx, workspaceID)
-	if err != nil {
+	result, err := runner.EnablePasswordSignin(ctx, workspaceID)
+	if result == nil {
 		fmt.Fprintf(output, "Failed to enable password sign-in: %v\n", err)
 		return nil
 	}
-	fmt.Fprintln(output, "Password sign-in is enabled.")
-	fmt.Fprintln(output, "Restart all Bytebase servers after exiting recovery.")
-	fmt.Fprintln(output, "After restarting, sign in at /auth with an existing user account.")
+	printPasswordSigninEnabled(output)
+	if err != nil {
+		fmt.Fprintf(output, "Warning: %v\n", err)
+	}
+	fmt.Fprintln(output, "Sign in at /auth with an existing user account.")
 	fmt.Fprintln(output, "After repairing SSO, re-enable Disallow password sign-in.")
 	return nil
 }
@@ -370,30 +537,18 @@ func resetUserPassword(
 		Email:       result.Email,
 		Role:        role.Name,
 	})
-	if addErr != nil {
-		if addResult != nil && addResult.Changed {
-			fmt.Fprintf(
-				output,
-				"User %s was added as %s (%s), but recovery did not complete: %v\n",
-				result.Email,
-				role.Title,
-				role.Name,
-				addErr,
-			)
-		} else {
-			fmt.Fprintf(output, "Failed to add user to workspace: %v\n", addErr)
-		}
+	if addResult == nil {
+		fmt.Fprintf(output, "Failed to add user to workspace: %v\n", addErr)
 		return nil
 	}
-
-	fmt.Fprintf(
-		output,
-		"User %s was added as %s (%s).\n",
-		result.Email,
-		role.Title,
-		role.Name,
-	)
-	fmt.Fprintln(output, "Restart all Bytebase servers after exiting recovery so they reload the updated IAM policy.")
+	granted := "already has"
+	if addResult.Changed {
+		granted = "was added as"
+	}
+	fmt.Fprintf(output, "User %s %s %s (%s). Live within one minute.\n", result.Email, granted, role.Title, role.Name)
+	if addErr != nil {
+		fmt.Fprintf(output, "Warning: %v\n", addErr)
+	}
 	return nil
 }
 
@@ -450,8 +605,12 @@ func selectRecoveryRole(ctx context.Context, reader *bufio.Reader, output io.Wri
 	}
 }
 
+func printPasswordSigninEnabled(output io.Writer) {
+	fmt.Fprintln(output, "Password sign-in is enabled. Live within one minute.")
+}
+
 func printPasswordResetSuccess(output io.Writer, email string) {
-	fmt.Fprintf(output, "Password updated for user %s.\n", email)
+	fmt.Fprintf(output, "Password updated for user %s. Live within one minute.\n", email)
 }
 
 func isRecoveryConfirmed(value string) bool {

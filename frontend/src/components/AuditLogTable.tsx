@@ -430,23 +430,27 @@ function ExportDropdown({
   ];
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button disabled={disabled} title={tooltip}>
-            <Download className="size-4 mr-1" />
-            {t("common.export")}
-          </Button>
-        }
-      />
-      <DropdownMenuContent className="min-w-[100px]">
-        {formats.map(({ format, label }) => (
-          <DropdownMenuItem key={label} onClick={() => onExport(format)}>
-            {label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Tooltip content={tooltip}>
+      <span className="inline-flex">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button disabled={disabled}>
+                <Download className="size-4 mr-1" />
+                {t("common.export")}
+              </Button>
+            }
+          />
+          <DropdownMenuContent className="min-w-[100px]">
+            {formats.map(({ format, label }) => (
+              <DropdownMenuItem key={label} onClick={() => onExport(format)}>
+                {label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </span>
+    </Tooltip>
   );
 }
 

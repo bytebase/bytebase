@@ -1308,15 +1308,20 @@ func setupWorkflowStoreWithDB(ctx context.Context, t *testing.T) (*sql.DB, *stor
 
 func createPendingDatabaseChangeApproval(ctx context.Context, t *testing.T, stores *store.Store, roles []string) (*store.PlanMessage, *store.IssueMessage) {
 	t.Helper()
+	return createPendingDatabaseChangeApprovalBy(ctx, t, stores, "creator@example.com", roles)
+}
+
+func createPendingDatabaseChangeApprovalBy(ctx context.Context, t *testing.T, stores *store.Store, creator string, roles []string) (*store.PlanMessage, *store.IssueMessage) {
+	t.Helper()
 	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
 		ProjectID: "project-a",
 		Name:      "change database",
 		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
-	}, "creator@example.com")
+	}, creator)
 	require.NoError(t, err)
 	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
 		ProjectID:    "project-a",
-		CreatorEmail: "creator@example.com",
+		CreatorEmail: creator,
 		Title:        "change database",
 		Type:         storepb.Issue_DATABASE_CHANGE,
 		PlanUID:      &plan.UID,
@@ -1411,4 +1416,119 @@ func TestApproverRoleLookupFailureIsNotARefusal(t *testing.T) {
 		"a policy the store cannot read is an outage, not a verdict about the caller")
 	require.Equal(t, ReasonUnspecified, workflowErr.Reason,
 		"an outage must not be marked as a permission denial in the audit log")
+}
+
+const serviceNowApproverRole = "roles/servicenow-approver"
+
+// bindApproverRole grants the role to one policy member, in the project policy
+// or the workspace policy.
+func bindApproverRole(ctx context.Context, t *testing.T, stores *store.Store, inProject bool, member string) {
+	t.Helper()
+	resourceType, resource := storepb.Policy_WORKSPACE, common.FormatWorkspace("default")
+	if inProject {
+		resourceType, resource = storepb.Policy_PROJECT, common.FormatProject("project-a")
+	}
+	_, err := stores.PatchIamPolicy(ctx, "default", resourceType, resource, func(policy *storepb.IamPolicy) error {
+		policy.Bindings = append(policy.Bindings, &storepb.Binding{
+			Role:    serviceNowApproverRole,
+			Members: []string{member},
+		})
+		return nil
+	})
+	require.NoError(t, err)
+}
+
+func TestNonHumanPrincipalApprovesTheStepItsRoleHolds(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		actor     *store.UserMessage
+		inProject bool
+	}{
+		{
+			name:  "workspace service account bound in the workspace policy",
+			actor: &store.UserMessage{Email: "integration@service.bytebase.com", Type: storepb.PrincipalType_SERVICE_ACCOUNT},
+		},
+		{
+			name:      "workspace service account bound in the project policy",
+			actor:     &store.UserMessage{Email: "integration@service.bytebase.com", Type: storepb.PrincipalType_SERVICE_ACCOUNT},
+			inProject: true,
+		},
+		{
+			name:      "project service account bound in the project policy",
+			actor:     &store.UserMessage{Email: "testdt@project-a.service.bytebase.com", Type: storepb.PrincipalType_SERVICE_ACCOUNT},
+			inProject: true,
+		},
+		{
+			name:      "workload identity bound in the project policy",
+			actor:     &store.UserMessage{Email: "deploy@project-a.workload.bytebase.com", Type: storepb.PrincipalType_WORKLOAD_IDENTITY},
+			inProject: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			bindApproverRole(ctx, t, stores, test.inProject, common.FormatPrincipalMember(test.actor.Email, test.actor.Type))
+			_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{serviceNowApproverRole})
+
+			result, err := NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+				Workspace: "default",
+				ProjectID: "project-a",
+				IssueUID:  issue.UID,
+				Actor:     test.actor,
+				Action:    ActionApprove,
+			})
+			require.NoError(t, err)
+			require.True(t, result.Approved)
+			approvers := result.Issue.Payload.GetApproval().GetApprovers()
+			require.Len(t, approvers, 1)
+			require.True(t, proto.Equal(&storepb.IssuePayloadApproval_Approver{
+				Status:    storepb.IssuePayloadApproval_Approver_APPROVED,
+				Principal: common.FormatUserEmail(test.actor.Email),
+			}, approvers[0]), "the approver is recorded as users/{email} whatever its type, like the issue creator")
+		})
+	}
+}
+
+func TestNonHumanApproverIsRefusedLikeAPerson(t *testing.T) {
+	serviceAccount := &store.UserMessage{Email: "integration@service.bytebase.com", Type: storepb.PrincipalType_SERVICE_ACCOUNT}
+
+	for _, test := range []struct {
+		name       string
+		member     string
+		creator    string
+		wantReason ErrorReason
+	}{
+		{
+			name:       "bound under the users/ prefix, which holds nothing for a service account",
+			member:     common.FormatUserEmail(serviceAccount.Email),
+			creator:    "creator@example.com",
+			wantReason: ReasonApproverRoleRequired,
+		},
+		{
+			name:       "created the issue it would approve",
+			member:     common.FormatPrincipalMember(serviceAccount.Email, serviceAccount.Type),
+			creator:    serviceAccount.Email,
+			wantReason: ReasonUnspecified,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			bindApproverRole(ctx, t, stores, true, test.member)
+			_, issue := createPendingDatabaseChangeApprovalBy(ctx, t, stores, test.creator, []string{serviceNowApproverRole})
+
+			_, err := NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+				Workspace: "default",
+				ProjectID: "project-a",
+				IssueUID:  issue.UID,
+				Actor:     serviceAccount,
+				Action:    ActionApprove,
+			})
+
+			var workflowErr *Error
+			require.ErrorAs(t, err, &workflowErr)
+			require.Equal(t, ErrorPermissionDenied, workflowErr.Code)
+			require.Equal(t, test.wantReason, workflowErr.Reason)
+		})
+	}
 }

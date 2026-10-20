@@ -6,14 +6,14 @@ import { HumanizeTs } from "@/components/HumanizeTs";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/useAppState";
+import { principalLabel, usePrincipal } from "@/hooks/usePrincipal";
 import { pushNotification } from "@/stores";
-import { useAppStore } from "@/stores/app";
 import {
   getIssueCommentType,
   IssueCommentType,
 } from "@/stores/app/issueComment";
 import { userNamePrefix } from "@/stores/modules/v1/common";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -48,15 +48,12 @@ export function ReviewRejectionBanner({
   const currentUser = useCurrentUser();
   const [reRequesting, setReRequesting] = useState(false);
   const rejection = useMemo(() => findLastRejection(comments), [comments]);
-  const rejectorUser = useAppStore((state) =>
-    rejection ? state.getUserByIdentifier(rejection.creator) : undefined
-  );
+  const rejector = usePrincipal(rejection?.creator);
 
   if (issue.approvalStatus !== ApprovalStatus.REJECTED || !rejection) {
     return null;
   }
 
-  const rejector = rejectorUser ?? unknownUser(rejection.creator);
   const isCreator =
     issue.creator === `${userNamePrefix}${currentUser?.email ?? ""}`;
 
@@ -89,7 +86,9 @@ export function ReviewRejectionBanner({
       title={
         <span className="flex items-center gap-x-2 text-error">
           <span>
-            {t("plan.review.rejection.title", { user: rejector.title })}
+            {t("plan.review.rejection.title", {
+              user: principalLabel(rejector),
+            })}
           </span>
           {rejection.createTime && (
             <>

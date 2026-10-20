@@ -41,10 +41,15 @@
     "chat-total-tokens": "Tổng số token: {{count}}",
     "close": "Đóng",
     "confirm": "Xác nhận",
+    "context": "Ngữ cảnh",
+    "context-no-projects": "Không có dự án nào có thể truy cập",
+    "context-select": "Chọn ngữ cảnh",
+    "context-workspace": "Không gian làm việc",
     "delete-all-chats": "Xóa tất cả cuộc trò chuyện",
     "delete-all-chats-confirmation": "Bạn có chắc chắn muốn xóa tất cả cuộc trò chuyện đã lưu trữ không? Hành động này không thể hoàn tác.",
     "delete-chat": "Xóa cuộc trò chuyện",
     "delete-chat-confirmation": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.",
+    "input-keyboard-hint": "Enter để gửi · Shift+Enter để xuống dòng",
     "input-placeholder": "Hỏi AI bất cứ điều gì...",
     "interrupted": "Bị gián đoạn",
     "interrupted-retry-hint": "Cuộc trò chuyện đã bị gián đoạn. Bạn có thể thử lại hoặc gửi tin nhắn mới.",
@@ -354,6 +359,7 @@
     "google-chat": "Google Chat",
     "group": "Nhóm",
     "groups": "Nhóm",
+    "hide": "Ẩn",
     "history": "Lịch sử",
     "home": "Trang chủ",
     "id": "ID",
@@ -642,7 +648,9 @@
     "direct-connection": "Kết nối trực tiếp",
     "extra-params": {
       "description": "Các tham số bổ sung cho chuỗi kết nối cơ sở dữ liệu",
-      "self": "Thông số bổ sung"
+      "overridden-by-tls": "Bị ghi đè bởi phần TLS.",
+      "self": "Thông số bổ sung",
+      "wallet-overridden-by-tls": "Chỉ mật khẩu đã lưu của nó được sử dụng. Phần TLS cung cấp các chứng chỉ."
     },
     "no-read-only-data-source": "Không có nguồn dữ liệu chỉ đọc",
     "private-key-passphrase": "Mật khẩu khóa riêng",
@@ -1307,7 +1315,11 @@
           "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết. Đầu tiên, bạn cần bật {{link}} quy trình công việc dựa trên SQL và sau đó chạy truy vấn sau để tạo người dùng."
         },
         "mysql": {
-          "template": "Dưới đây là ví dụ để tạo người dùng {{user}}@% với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết."
+          "template": "Dưới đây là ví dụ để tạo người dùng {{user}}@% với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết.",
+          "warn": "Để Bytebase chạy các thay đổi đặt DEFINER thành một tài khoản khác, hãy cấp thêm SET_USER_ID trên MySQL 8.0 hoặc SET_ANY_DEFINER trên MySQL 8.4 trở lên. Một số nhà cung cấp đám mây hạn chế các đặc quyền này."
+        },
+        "oracle": {
+          "warn": "GRANT ALL PRIVILEGES không hoạt động trên Amazon RDS for Oracle."
         },
         "postgresql": {
           "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} và cấp cho người dùng các đặc quyền cần thiết. Nếu phiên bản kết nối được tự lưu trữ, thì bạn có thể cấp SUPERUSER.",
@@ -1533,8 +1545,11 @@
       "all-databases": "Tất cả cơ sở dữ liệu",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
       "details": "Chi tiết cấp vai trò",
+      "direct-execution-suffix": "{{kind}} không cần phê duyệt tại {{environments}}",
       "expired-at": "Hết hạn lúc",
+      "grantee": "Người được cấp",
       "manually-select": "Chọn thủ công",
+      "requested-by": "Được yêu cầu bởi {{creator}}",
       "use-cel": "Sử dụng biểu thức CEL"
     },
     "sort": {
@@ -1592,14 +1607,26 @@
     }
   },
   "landing": {
+    "ai-placeholder": "Hỏi AI về thiết lập không gian làm việc, dự án hoặc quyền truy cập",
+    "ai-setup": {
+      "action": "Cấu hình AI",
+      "description": "Cấu hình nhà cung cấp và mô hình để sử dụng AI trong không gian làm việc này.",
+      "title": "Thiết lập Trợ lý AI"
+    },
     "changelog-for-version": "Nhật ký thay đổi cho phiên bản {{version}}",
     "last-visit": "Lần truy cập cuối",
+    "onboarding": {
+      "completed-progress": "Đã hoàn thành {{completed}}/{{total}}",
+      "connect-action": "Kết nối một instance",
+      "connect-description": "Kết nối máy chủ cơ sở dữ liệu với {{project}}."
+    },
     "quick-link": {
       "manage": "Quản lý liên kết nhanh",
-      "self": "Liên kết nhanh",
       "visit-issues": "Truy cập Vấn đề",
-      "visit-prjects": "Truy cập Dự án"
-    }
+      "visit-prjects": "Truy cập Dự án",
+      "yours": "Liên kết nhanh của bạn"
+    },
+    "workspace": "Không gian làm việc"
   },
   "masking": {
     "reason": {
@@ -1672,6 +1699,15 @@
   "plan": {
     "add-spec": "Thêm thay đổi",
     "add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
+    "ai-review": {
+      "failed-to-run": "Không thể bắt đầu đánh giá bằng AI",
+      "finished": "Đã hoàn tất",
+      "not-run": "Chưa chạy",
+      "queued": "Đang chờ",
+      "run": "Chạy đánh giá bằng AI",
+      "save-first": "Hãy lưu hoặc hủy các thay đổi để chạy đánh giá bằng AI.",
+      "status-unknown": "Chưa có trạng thái"
+    },
     "blocker": {
       "clears-on-its-own": "Tự động hoàn tất"
     },
@@ -1994,6 +2030,39 @@
       "success-prompt": "Đã tạo thành công dự án {{name}}."
     },
     "filter-projects": "Lọc dự án",
+    "home": {
+      "active-issues": "Yêu cầu đang xử lý của bạn",
+      "active-issues-unavailable": "Bạn không thể xem các yêu cầu trong dự án này.",
+      "ai-placeholder": "Hỏi AI để truy vấn, thay đổi hoặc thiết lập dự án này",
+      "archived-description": "Dự án này đã được lưu trữ và ở chế độ chỉ đọc.",
+      "change-database": "Thay đổi cơ sở dữ liệu",
+      "change-database-description": "Lập kế hoạch thay đổi cơ sở dữ liệu có kiểm soát trong dự án này.",
+      "connect": "Kết nối phiên bản",
+      "connect-description": "Kết nối máy chủ cơ sở dữ liệu với dự án này.",
+      "create-database": "Tạo cơ sở dữ liệu",
+      "create-database-description": "Tạo cơ sở dữ liệu đầu tiên trên một phiên bản đã kết nối.",
+      "created-by-you": "Bạn đã tạo",
+      "customize": "Tùy chỉnh",
+      "databases": "Cơ sở dữ liệu",
+      "databases-load-error": "Không thể tải cơ sở dữ liệu.",
+      "databases-unavailable": "Bạn không thể xem cơ sở dữ liệu trong dự án này.",
+      "members": "Quản lý thành viên",
+      "members-optional-description": "Tùy chọn: cấp quyền truy cập để đồng đội cộng tác và đánh giá.",
+      "needs-review": "Cần bạn xem xét",
+      "next-step": "Bước tiếp theo",
+      "no-active-issues": "Không có yêu cầu đang mở nào do bạn tạo hoặc đang chờ bạn xem xét trong dự án này.",
+      "no-databases": "Chưa có cơ sở dữ liệu nào có thể truy cập.",
+      "no-databases-create-description": "Tạo cơ sở dữ liệu trên một phiên bản đã kết nối để bắt đầu.",
+      "no-databases-description": "Kết nối một phiên bản để đưa cơ sở dữ liệu vào dự án này.",
+      "no-databases-prerequisite": "Cần kết nối một phiên bản trước khi cơ sở dữ liệu xuất hiện ở đây.",
+      "no-databases-transfer-description": "Chuyển cơ sở dữ liệu chưa được gán vào dự án này hoặc tạo cơ sở dữ liệu mới.",
+      "query-database": "Truy vấn cơ sở dữ liệu",
+      "query-database-description": "Khám phá cơ sở dữ liệu của dự án này trong Trình soạn thảo SQL.",
+      "transfer-databases": "Chuyển cơ sở dữ liệu",
+      "transfer-databases-description": "Chuyển một cơ sở dữ liệu chưa được gán vào dự án này.",
+      "view-all": "Xem tất cả",
+      "view-issues": "Xem yêu cầu"
+    },
     "masking-exemption": {
       "advanced-search": {
         "scope": {
@@ -2007,20 +2076,36 @@
       "expires-in-days_other": "Hết hạn sau {{days}} ngày",
       "expires-today": "Hết hạn hôm nay",
       "grant-exemption": "Cấp Miễn trừ",
+      "hide-raw-cel-condition": "Ẩn điều kiện CEL thô",
       "level": "cấp",
+      "n-databases_one": "{{n}} cơ sở dữ liệu",
+      "n-databases_other": "{{n}} cơ sở dữ liệu",
       "n-exemptions_one": "{{n}} miễn trừ",
       "n-exemptions_other": "{{n}} miễn trừ",
       "no-exemptions": "Chưa có miễn trừ che giấu nào được cấp",
       "no-reason": "Không có lý do được cung cấp",
       "revoke-exemption-title": "Xóa miễn trừ che giấu cho {{member}}?",
-      "self": "Miễn trừ Che giấu"
+      "self": "Miễn trừ Che giấu",
+      "show-raw-cel-condition": "Hiện điều kiện CEL thô"
     },
     "members": {
-      "ddl-current-all": "Câu lệnh {{kind}} có thể được chạy trực tiếp trong SQL Editor ở TẤT CẢ các môi trường mà không cần phê duyệt.",
-      "ddl-current-none": "Câu lệnh {{kind}} cần được phê duyệt trước khi chạy trong SQL Editor.",
-      "ddl-current-some": "Câu lệnh {{kind}} có thể được chạy trực tiếp trong SQL Editor ở các môi trường được liệt kê mà không cần phê duyệt.",
-      "ddl-warning": "Trong các môi trường đã chọn, câu lệnh {{kind}} có thể được chạy trực tiếp trong SQL Editor mà không cần phê duyệt.",
       "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
+      "direct-execution": {
+        "all": "Có thể chạy {{kind}} trong SQL Editor ở mọi môi trường mà không cần phê duyệt.",
+        "environment-required": "Cần chọn ít nhất một môi trường.",
+        "in-environments": "Trong các môi trường sau",
+        "lead-approver": "Khi phê duyệt, {{grantee}} có thể chạy {{kind}} trong SQL Editor mà không cần phê duyệt tại:",
+        "lead-binding": "Có thể chạy {{kind}} trong SQL Editor mà không cần phê duyệt tại:",
+        "lead-grant": "Thành viên có vai trò này có thể chạy {{kind}} trong SQL Editor mà không cần phê duyệt tại:",
+        "lead-request": "Sau khi được phê duyệt, bạn có thể chạy {{kind}} trong SQL Editor mà không cần phê duyệt tại:",
+        "none": "{{kind}} không thể chạy trong SQL Editor nếu không được phê duyệt.",
+        "protected-tag": "Môi trường sản xuất",
+        "protected_one": "{{environments}} là môi trường sản xuất.",
+        "protected_other": "{{environments}} là môi trường sản xuất.",
+        "select-environments": "Chọn môi trường",
+        "switch-label": "Cho phép chạy {{kind}} trong SQL Editor mà không cần phê duyệt",
+        "title": "Chạy trực tiếp {{kind}}"
+      },
       "edit-member": "Chỉnh sửa thành viên - {{member}}",
       "expiration-presets": {
         "one-month": "1 tháng",
@@ -2278,7 +2363,7 @@
       "self": "Người dùng Trình soạn thảo SQL chỉ đọc"
     },
     "sql-editor-user": {
-      "description": "Quyền truy vấn dữ liệu cơ sở dữ liệu.",
+      "description": "Truy vấn dữ liệu và chạy DDL/DML trong các môi trường được phép.",
       "self": "Người dùng Trình soạn thảo SQL"
     },
     "title": "Tiêu đề",
@@ -2452,9 +2537,9 @@
             "placeholder": "Khóa API thường bắt đầu bằng sk-*****",
             "self": "Khóa API"
           },
+          "available-in-saas": "Trợ lý AI có sẵn trong workspace này và do Bytebase quản lý.",
           "description": "Sử dụng AI để hỗ trợ các tác vụ phát triển cơ sở dữ liệu.",
           "enable-ai-assistant": "Bật Trợ lý AI",
-          "enabled-in-saas": "Gemini AI được bật tự động trong chế độ SaaS.",
           "endpoint": {
             "description": "Nhập endpoint API cho model tùy chỉnh.",
             "openai-description": "Dùng endpoint /responses cho Responses API hoặc /chat/completions cho Chat Completions API.",
@@ -2475,7 +2560,8 @@
             "open_ai": "OpenAI",
             "self": "Nhà cung cấp AI"
           },
-          "self": "Trợ lý AI"
+          "self": "Trợ lý AI",
+          "unavailable-in-saas": "Trợ lý AI không khả dụng trong workspace này. Hãy liên hệ với quản trị viên Bytebase."
         },
         "allow-admin-data-source": {
           "description": "Khi được bật, người dùng có thể chọn giữa nguồn dữ liệu quản trị và nguồn dữ liệu chỉ đọc. Khi bị tắt, người dùng buộc phải sử dụng nguồn dữ liệu chỉ đọc nếu được cấu hình, nếu không sẽ quay lại sử dụng nguồn dữ liệu quản trị.",
@@ -2710,12 +2796,16 @@
             "title": "Xuất kết quả truy vấn"
           },
           "manage": {
-            "details": "Đồng bộ phiên bản và cơ sở dữ liệu · Cài đặt và nhãn cơ sở dữ liệu · Chuyển cơ sở dữ liệu giữa các dự án · Nhóm cơ sở dữ liệu · Truy vấn đã lưu",
+            "details": "Đồng bộ phiên bản và cơ sở dữ liệu · Truy vấn đã lưu",
             "title": "Quản lý vận hành cơ sở dữ liệu"
           },
           "propose": {
             "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo, xóa và khôi phục bản phát hành · Tạo và xóa bản sửa đổi · Tạo khác biệt lược đồ. Một tác nhân không bao giờ tự phê duyệt thay đổi của mình; chính sách phê duyệt của dự án quyết định liệu có cần người phê duyệt hay không",
             "title": "Đề xuất thay đổi"
+          },
+          "read-access": {
+            "details": "Ai giữ vai trò nào trong không gian làm việc và các dự án của nó · Nhóm và thành viên của nhóm · Vai trò và quyền của vai trò · Quy tắc che giấu và miễn trừ che giấu · Chính sách triển khai, truy vấn dữ liệu, tag và rà soát · Cấp quyền truy cập, kể cả các yêu cầu đang chờ duyệt",
+            "title": "Đọc thành viên, vai trò và chính sách"
           },
           "read-data": {
             "details": "Chạy truy vấn chỉ đọc · Ở chế độ Chỉ đọc, toàn bộ yêu cầu bị từ chối trừ khi mọi câu lệnh đều được chứng minh là một truy vấn đọc có trả về dữ liệu; mức độ kiểm tra tùy theo engine, và trên một số engine không câu lệnh nào có thể được chứng minh là đọc · Lịch sử truy vấn của riêng bạn · Truy vấn đã lưu và sheet mà bạn có quyền truy cập",
@@ -2728,6 +2818,10 @@
           "read-workflow": {
             "details": "Issue và bình luận · Plan và kiểm tra plan · Triển khai, lần chạy tác vụ và nhật ký · Bản phát hành · Xem trước khôi phục",
             "title": "Đọc quy trình thay đổi"
+          },
+          "request-access": {
+            "details": "Xin cấp quyền truy cập có thời hạn để chạy một câu lệnh cụ thể, có thể kèm xem kết quả chưa che hoặc xuất kết quả; câu lệnh phải là lệnh đọc trong phạm vi engine kiểm tra được · Quyền chỉ bắt đầu sau khi một người phê duyệt, và yêu cầu không cần ai phê duyệt sẽ bị từ chối · Quyền chỉ áp dụng khi dự án cho phép cấp quyền truy cập",
+            "title": "Yêu cầu cấp quyền truy cập"
           },
           "run-rollouts": {
             "details": "Tạo một triển khai · Chạy, bỏ qua hoặc hủy các tác vụ của nó, theo chính sách phê duyệt của dự án",
@@ -2744,8 +2838,8 @@
           "write": "Đọc và ghi dừng ở đây"
         },
         "summary": {
-          "read-only": "Đọc lược đồ, dữ liệu và quy trình thay đổi; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
-          "read-write": "Đọc lược đồ, dữ liệu và quy trình thay đổi; đề xuất, chạy, xuất và quản lý"
+          "read-only": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
+          "read-write": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; đề xuất, yêu cầu truy cập, chạy, xuất và quản lý"
         },
         "tier": {
           "read": "đọc",
@@ -2919,59 +3013,16 @@
       "workload-identity-tag-hint": "Để trống để cho phép tất cả tag"
     },
     "profile": {
-      "default-project-name": "Dự án mới",
       "display-name": "Tên của bạn",
       "display-name-placeholder": "Nhập tên của bạn",
       "email": "Email",
-      "enable-sample-databases": "Bật cơ sở dữ liệu mẫu",
-      "enable-sample-databases-create-change": "Bật cơ sở dữ liệu mẫu làm đích thay đổi an toàn",
-      "enable-sample-databases-mark-sensitive-data": "Bật cơ sở dữ liệu mẫu để thử che dữ liệu ngay",
-      "enable-sample-databases-query-data": "Bật cơ sở dữ liệu mẫu để bắt đầu truy vấn ngay",
       "password": "Mật khẩu",
       "password-confirm": "Xác nhận mật khẩu",
       "password-confirm-placeholder": "Xác nhận mật khẩu mới",
       "password-hint": "Mật khẩu phải theo quy định hạn chế",
       "password-mismatch": "Mật khẩu mới không khớp",
       "phone": "Điện thoại",
-      "phone-tips": "Nhớ bao gồm mã quốc gia +1xxxxxx",
-      "setup-failed": "Cập nhật hồ sơ thất bại.",
-      "setup-first-project": "Thiết lập dự án đầu tiên",
-      "setup-scenario": {
-        "continue": "Tiếp tục",
-        "create-database-change": {
-          "description": "Xác định thay đổi và tạo issue có thể theo dõi.",
-          "title": "Tạo thay đổi cơ sở dữ liệu"
-        },
-        "mark-sensitive-data": {
-          "description": "Xác định các cột nhạy cảm và áp dụng che dữ liệu.",
-          "title": "Đánh dấu dữ liệu nhạy cảm"
-        },
-        "outcome-title": "Bạn muốn làm gì với Bytebase?",
-        "query-data": {
-          "description": "Mở SQL Editor và chạy một câu lệnh trên cơ sở dữ liệu.",
-          "title": "Truy vấn dữ liệu"
-        },
-        "workspace-usage": {
-          "solo": {
-            "description": "Tôi sẽ tự sử dụng Bytebase.",
-            "title": "Chỉ mình tôi"
-          },
-          "team": {
-            "description": "Tôi sẽ làm việc cùng những người khác.",
-            "title": "Nhóm của tôi"
-          },
-          "title": "Ai sẽ sử dụng Bytebase cùng bạn?"
-        }
-      },
-      "setup-skip": "Để sau",
-      "setup-steps": {
-        "scenario": "Chọn mục tiêu",
-        "workspace": "Thiết lập không gian làm việc"
-      },
-      "setup-submit": "Thiết lập không gian làm việc của tôi",
-      "setup-success": "Hồ sơ đã được cập nhật.",
-      "workspace-name": "Tên không gian làm việc",
-      "workspace-name-placeholder": "Nhập tên không gian làm việc"
+      "phone-tips": "Nhớ bao gồm mã quốc gia +1xxxxxx"
     },
     "sensitive-data": {
       "algorithms": {
@@ -3282,6 +3333,9 @@
     "export-available-via-issue": "Xuất khả dụng qua issue \"{{title}}\"",
     "export-available-via-n-grants": "Xuất khả dụng qua {{count}} cấp quyền truy cập:",
     "export-enabled-by-grant": "Xuất được kích hoạt bởi cấp quyền truy cập",
+    "export-grant-lookup-failed": "Không thể kiểm tra quyền xuất.",
+    "export-grant-lookup-loading": "Đang kiểm tra quyền xuất…",
+    "export-grant-lookup-retry": "Thử lại",
     "format": "Định dạng",
     "format-default": "Mặc định",
     "format-sql": "Định dạng SQL",
@@ -3537,6 +3591,7 @@
       "manage-license": "Quản lý giấy phép phiên bản",
       "missing-license-attention": "Bạn cần gán giấy phép cho phiên bản để bật tính năng này.",
       "n-license-remain": "còn lại {{n}}",
+      "project-instance-hint": "Danh sách này chỉ bao gồm các phiên bản trong không gian làm việc. Để quản lý giấy phép của một phiên bản dự án, hãy mở trang chi tiết của phiên bản đó.",
       "require-license": "Yêu cầu giấy phép phiên bản",
       "success-notification": "Đã cập nhật thành công gán giấy phép",
       "used-and-total-instance": "Giới hạn phiên bản đang hoạt động / Tổng số",
@@ -3818,6 +3873,123 @@
       "copy-succeed": "Bí mật đã được sao chép vào khay nhớ tạm. Dán nó vào ứng dụng của bạn.",
       "description": "Sao chép mã và nhập nó vào ứng dụng TOTP của bạn theo cách thủ công.",
       "self": "Bí mật hai yếu tố của bạn"
+    }
+  },
+  "workspace-setup": {
+    "continue": "Tiếp tục",
+    "elsewhere": {
+      "continue": "Tiếp tục tại đây",
+      "ended": "Thiết lập này đã kết thúc ở một tab khác",
+      "saved": "Thiết lập này đã được tiếp tục ở một tab khác",
+      "workspace": "Đi tới không gian làm việc"
+    },
+    "goal": {
+      "change": {
+        "description": "Viết một thay đổi schema hoặc một bản sửa dữ liệu, để SQL review kiểm tra, rồi triển khai lên cơ sở dữ liệu.",
+        "finish-line": "Đích đến: một thay đổi đã qua SQL review và được triển khai",
+        "title": "Lập kế hoạch, review và triển khai một thay đổi cơ sở dữ liệu"
+      },
+      "description": "Chọn điều đã đưa bạn đến đây. Chúng tôi sẽ gợi ý nó đầu tiên khi thiết lập xong.",
+      "explore": {
+        "description": "Chúng tôi sẽ gợi ý một truy vấn nhanh để bắt đầu. Bạn có thể chọn hướng đi sau.",
+        "title": "Chưa chắc, chỉ đang khám phá"
+      },
+      "query": {
+        "description": "Chạy SQL trên cơ sở dữ liệu từ trình soạn thảo, mọi câu lệnh đều được ghi vào lịch sử truy vấn.",
+        "finish-line": "Đích đến: một kết quả truy vấn từ cơ sở dữ liệu",
+        "title": "Truy vấn dữ liệu có kiểm soát"
+      },
+      "required": "Chọn một mục để tiếp tục",
+      "title": "Bạn muốn làm gì trước?"
+    },
+    "optional": "tùy chọn",
+    "panel": {
+      "connected-after-setup": "Kết nối sau khi thiết lập",
+      "own-databases": "Các cơ sở dữ liệu của nó",
+      "own-instance": "Phiên bản của bạn",
+      "sample-database": "Cơ sở dữ liệu mẫu",
+      "sample-instance": "Phiên bản dự án mẫu",
+      "workspace": "Không gian làm việc"
+    },
+    "project": {
+      "database-title": "Cơ sở dữ liệu cho {{project}}",
+      "description": "Bytebase cần một cơ sở dữ liệu để hoạt động. Đặt tên cho dự án sẽ chứa nó, rồi chọn nguồn của cơ sở dữ liệu đầu tiên.",
+      "exists": "Dự án này đã tồn tại. Đổi tên trong phần cài đặt của dự án.",
+      "name": "Tên dự án",
+      "name-hint": "Dự án nhóm các cơ sở dữ liệu mà một nhóm làm việc cùng, kèm thành viên và chính sách. Mọi thay đổi và truy vấn đều diễn ra trong một dự án.",
+      "name-optional-note": "Để trống để tạo dự án sau.",
+      "name-placeholder": "Thanh toán, Nền tảng dữ liệu, Công cụ nội bộ",
+      "name-required": "Nhập tên dự án",
+      "own": {
+        "description": "Phiên bản là máy chủ cơ sở dữ liệu của bạn. Thiết lập hoàn tất trước; sau đó bạn kết nối nó từ {{project}}.",
+        "title": "Kết nối phiên bản của tôi sau khi thiết lập"
+      },
+      "sample": {
+        "description": "Một cơ sở dữ liệu PostgreSQL với dữ liệu mẫu về nhân viên, do Bytebase Cloud lưu trữ. Không cần cài đặt; có sẵn trong 7 ngày.",
+        "description-self-host": "Một cơ sở dữ liệu PostgreSQL với dữ liệu mẫu về nhân viên, chạy trên máy chủ này. Không cần cài đặt.",
+        "prepared": "Cơ sở dữ liệu mẫu đã sẵn sàng trong dự án này.",
+        "recommended": "Khuyến nghị",
+        "title": "Bắt đầu với cơ sở dữ liệu mẫu",
+        "unavailable": "Cơ sở dữ liệu mẫu không có sẵn trên máy chủ này.",
+        "used": "Không gian làm việc này đã dùng cơ sở dữ liệu mẫu của mình."
+      },
+      "skip": "Để sau",
+      "title": "Tạo dự án và chọn cơ sở dữ liệu",
+      "your-project": "dự án của bạn"
+    },
+    "steps": {
+      "goal": "Mục tiêu",
+      "project": "Dự án",
+      "team": "Nhóm",
+      "workspace": "Không gian làm việc"
+    },
+    "team": {
+      "address-invalid": "Không phải địa chỉ email",
+      "address-own": "Địa chỉ của chính bạn",
+      "address-placeholder": "name@company.com",
+      "address-placeholder-more": "Địa chỉ khác",
+      "description": "Một câu hỏi trước khi hoàn tất.",
+      "failed": {
+        "invitees": "Không thể thêm những người bạn đã liệt kê.",
+        "names": "Không thể lưu tên của bạn và tên không gian làm việc.",
+        "project": "Không thể tạo {{project}}.",
+        "sample": "Không thể chuẩn bị cơ sở dữ liệu mẫu."
+      },
+      "finish": "Hoàn tất",
+      "finish-invite_one": "Gửi {{count}} lời mời và hoàn tất",
+      "finish-invite_other": "Gửi {{count}} lời mời và hoàn tất",
+      "finish-without-sample": "Hoàn tất mà không dùng mẫu",
+      "finishing": "Đang thiết lập…",
+      "invite-teammates": "Mời đồng đội",
+      "members-enter": "Nhấn Enter sau mỗi địa chỉ.",
+      "members-own": "Các cơ sở dữ liệu sẽ xuất hiện khi phiên bản của bạn được kết nối.",
+      "members-role": "Họ tham gia với tư cách thành viên có thể truy vấn và đề xuất thay đổi trong {{project}}.",
+      "members-roles-later": "Đổi vai trò bất cứ lúc nào trong Thành viên.",
+      "progress": "Đang tạo {{project}}…",
+      "progress-sample": "Đang tạo {{project}} và cơ sở dữ liệu mẫu…",
+      "remove-address": "Xóa {{email}}",
+      "size": "Bao nhiêu người sẽ dùng Bytebase?",
+      "size-required": "Chọn quy mô nhóm để hoàn tất",
+      "sizes": {
+        "11-50": "11–50",
+        "2-10": "2–10",
+        "200-plus": "200+",
+        "51-200": "51–200",
+        "just-me": "Chỉ mình tôi"
+      },
+      "title": "Nhóm của bạn",
+      "try-again": "Thử lại"
+    },
+    "workspace": {
+      "default-name": "Không gian làm việc của {{name}}",
+      "default-name-anonymous": "Không gian làm việc của tôi",
+      "description": "Bytebase sẵn sàng khi có một không gian làm việc, một dự án và một cơ sở dữ liệu.",
+      "name-placeholder": "Nhập tên của bạn",
+      "title": "Thiết lập không gian làm việc",
+      "workspace-name": "Tên không gian làm việc",
+      "workspace-name-hint": "Mọi người bạn thêm đều tham gia không gian làm việc này.",
+      "workspace-name-placeholder": "Thường là công ty của bạn",
+      "workspace-name-required": "Nhập tên không gian làm việc"
     }
   },
   "workspace-setup-guide": {

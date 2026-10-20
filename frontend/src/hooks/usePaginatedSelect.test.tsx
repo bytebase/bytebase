@@ -25,14 +25,22 @@ describe("usePaginatedSelect", () => {
     expect(result.current.hasMore).toBe(true);
 
     await act(() => result.current.loadMore());
-    expect(fetchPage).toHaveBeenLastCalledWith("", "page-2");
+    expect(fetchPage).toHaveBeenLastCalledWith(
+      "",
+      "page-2",
+      expect.any(AbortSignal)
+    );
     expect(result.current.items.map((item) => item.name)).toEqual([
       "one",
       "two",
     ]);
 
     await act(() => result.current.search("search"));
-    expect(fetchPage).toHaveBeenLastCalledWith("search", "");
+    expect(fetchPage).toHaveBeenLastCalledWith(
+      "search",
+      "",
+      expect.any(AbortSignal)
+    );
     expect(result.current.items.map((item) => item.name)).toEqual(["search"]);
     expect(result.current.hasMore).toBe(true);
   });
@@ -60,12 +68,49 @@ describe("usePaginatedSelect", () => {
     act(() => {
       oldRequest = result.current.search("old");
     });
+    const oldSignal = fetchPage.mock.calls[0][2] as AbortSignal;
     await act(() => result.current.search("new"));
+    expect(oldSignal.aborted).toBe(true);
     await act(async () => {
       resolveOld({ items: [{ name: "old" }], nextPageToken: "" });
       await oldRequest;
     });
 
     expect(result.current.items.map((item) => item.name)).toEqual(["new"]);
+  });
+  test("cancels load more on a new search and cancels on unmount", async () => {
+    let resolvePage: (value: { items: { name: string }[] }) => void = () => {};
+    const fetchPage = vi
+      .fn()
+      .mockResolvedValueOnce({
+        items: [{ name: "first" }],
+        nextPageToken: "next",
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolvePage = resolve;
+          })
+      )
+      .mockResolvedValueOnce({ items: [{ name: "replacement" }] });
+    const { result, unmount } = renderHook(() =>
+      usePaginatedSelect({ fetchPage })
+    );
+    await act(() => result.current.search("old"));
+    let pending: Promise<void>;
+    act(() => {
+      pending = result.current.loadMore();
+    });
+    const signal = fetchPage.mock.calls[1][2] as AbortSignal;
+    await act(() => result.current.search("new"));
+    expect(signal.aborted).toBe(true);
+    await act(async () => {
+      resolvePage({ items: [{ name: "stale" }] });
+      await pending;
+    });
+    expect(result.current.items).toEqual([{ name: "replacement" }]);
+    const currentSignal = fetchPage.mock.calls[2][2] as AbortSignal;
+    unmount();
+    expect(currentSignal.aborted).toBe(true);
   });
 });

@@ -764,11 +764,8 @@ function EnvironmentDetail({
             }
             description={
               <>
-                {t("policy.environment-tier.description", { newline: "\n" })}
-                <LearnMoreLink
-                  href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier"
-                  className="ml-1 text-accent"
-                />
+                {t("policy.environment-tier.description", { newline: "\n" })}{" "}
+                <LearnMoreLink href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier" />
               </>
             }
           >
@@ -806,11 +803,8 @@ function EnvironmentDetail({
                 <>
                   {t("policy.rollout.info", {
                     permission: "bb.taskRuns.create",
-                  })}
-                  <LearnMoreLink
-                    href="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console"
-                    className="ml-1 text-accent"
-                  />
+                  })}{" "}
+                  <LearnMoreLink href="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console" />
                 </>
               }
             >
@@ -1071,11 +1065,8 @@ function CreateSheet({
               }
               description={
                 <>
-                  {t("policy.environment-tier.description", { newline: "\n" })}
-                  <LearnMoreLink
-                    href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier"
-                    className="ml-1 text-accent"
-                  />
+                  {t("policy.environment-tier.description", { newline: "\n" })}{" "}
+                  <LearnMoreLink href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier" />
                 </>
               }
             >
@@ -1102,11 +1093,8 @@ function CreateSheet({
                 <>
                   {t("policy.rollout.info", {
                     permission: "bb.taskRuns.create",
-                  })}
-                  <LearnMoreLink
-                    href="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console"
-                    className="ml-1 text-accent"
-                  />
+                  })}{" "}
+                  <LearnMoreLink href="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console" />
                 </>
               }
             >

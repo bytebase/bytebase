@@ -1,5 +1,6 @@
 import { displayRoleTitleFromList } from "@/lib/role";
 import { useAppStore } from "@/stores/app";
+import type { Permission } from "@/types/iam";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { checkRoleContainsAnyPermission } from "@/utils";
 
@@ -27,17 +28,21 @@ export const roleHasDatabaseLimitation = (role: string) => {
 // {{kind}} is spliced raw into translated strings — do not localize.
 export type EnvLimitationKind = "DDL" | "DML" | "DDL/DML";
 
-// undefined ⇔ role has no env-scoped permissions ⇔ caller hides the env section.
-// Reads the role once (vs. two checkRoleContainsAnyPermission calls) so the
-// hot path on member-list / drawer renders touches the role store once.
+// undefined ⇔ the role carries no DDL/DML permission ⇔ no direct-execution
+// field, callout, or row to show.
 export const getRoleEnvironmentLimitationKind = (
   role: string
+): EnvLimitationKind | undefined => getRolesEnvironmentLimitationKind([role]);
+
+// Roles granted together carry the union of their permissions; unknown roles
+// contribute nothing.
+export const getRolesEnvironmentLimitationKind = (
+  roles: string[]
 ): EnvLimitationKind | undefined => {
-  const r = useAppStore.getState().getRoleByName(role);
-  if (!r) return undefined;
-  const perms = new Set(r.permissions);
-  const hasDDL = perms.has("bb.sql.ddl");
-  const hasDML = perms.has("bb.sql.dml");
+  const has = (permission: Permission) =>
+    roles.some((role) => checkRoleContainsAnyPermission(role, permission));
+  const hasDDL = has("bb.sql.ddl");
+  const hasDML = has("bb.sql.dml");
   if (hasDDL && hasDML) return "DDL/DML";
   if (hasDDL) return "DDL";
   if (hasDML) return "DML";

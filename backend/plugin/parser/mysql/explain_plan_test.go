@@ -38,7 +38,7 @@ func TestAffectedRowsQuery(t *testing.T) {
 		{
 			name:      "update with a comment before WHERE",
 			statement: "UPDATE t SET v = (SELECT MAX(v) FROM s) /* latest */ WHERE id = 1",
-			want:      "SELECT 1 FROM t WHERE id = 1",
+			want:      "SELECT 1 FROM t /* latest */ WHERE id = 1",
 		},
 		{
 			name:      "delete with a comment before WHERE",
@@ -48,7 +48,7 @@ func TestAffectedRowsQuery(t *testing.T) {
 		{
 			name:      "update with a block comment before WHERE",
 			statement: "UPDATE t SET c = 1 /* ticket 42 */ WHERE id = 1;",
-			want:      "SELECT 1 FROM t WHERE id = 1",
+			want:      "SELECT 1 FROM t /* ticket 42 */ WHERE id = 1",
 		},
 		{
 			name:      "delete with an executable comment",

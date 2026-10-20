@@ -33,6 +33,10 @@ vi.mock("@/modules/sql-editor/components/RequestQueryButton", () => ({
 
 vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
   useExportGrantBypass: () => ({
+    loading: false,
+    failedDatabases: [],
+    unmatchedDatabases: [],
+    retry: vi.fn(),
     grantName: undefined,
     tooltip: undefined,
   }),

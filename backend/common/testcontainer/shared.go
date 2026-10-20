@@ -92,6 +92,7 @@ func SharedPg17Container(t testing.TB) *Container { return shared(t, sharedPg17)
 func SharedTLSPgContainer(t testing.TB) *Container { return shared(t, sharedTLSPg) }
 
 // SharedMSSQLContainer is SharedPgContainer for SQL Server; tests take a database each.
+// Its certificate is signed by the CA at GetTLSCAPath.
 func SharedMSSQLContainer(t testing.TB) *Container { return shared(t, sharedMSSQL) }
 
 // SharedTiDBContainer is SharedPgContainer for TiDB; tests take a database each
@@ -115,6 +116,12 @@ func NewPgDatabase(t testing.TB) (string, *sql.DB) {
 func NewPg17Database(t testing.TB) (string, *sql.DB) {
 	t.Helper()
 	return createPgDatabase(t, SharedPg17Container(t))
+}
+
+// NewTLSPgDatabase is NewPgDatabase on the shared TLS PostgreSQL container.
+func NewTLSPgDatabase(t testing.TB) (string, *sql.DB) {
+	t.Helper()
+	return createPgDatabase(t, SharedTLSPgContainer(t))
 }
 
 func createPgDatabase(t testing.TB, container *Container) (string, *sql.DB) {

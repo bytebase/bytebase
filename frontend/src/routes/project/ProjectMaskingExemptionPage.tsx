@@ -71,6 +71,10 @@ import {
   type ConditionExpression,
 } from "@/utils/issue/cel";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
+import {
+  generateMemberScopeSummary,
+  resourceCoversDatabase,
+} from "./utils/maskingExemption";
 
 // ============================================================
 // Helpers
@@ -209,7 +213,7 @@ export function ProjectMaskingExemptionPage({
       const matchesDb = (g: ExemptionGrant) =>
         !g.databaseResources ||
         g.databaseResources.length === 0 ||
-        g.databaseResources.some((r) => r.databaseFullName === dbScope);
+        g.databaseResources.some((r) => resourceCoversDatabase(r, dbScope));
       result = result
         .map((m) => withFilteredGrants(m, m.grants.filter(matchesDb)))
         .filter((m) => m.grants.length > 0);
@@ -316,7 +320,7 @@ export function ProjectMaskingExemptionPage({
             </span>
             <span>{u.title}</span>
             {currentUser && u.name === currentUser.name && (
-              <span className="text-xs bg-success/10 text-success rounded-full px-1.5">
+              <span className="inline-flex items-center rounded-xs border border-transparent bg-success/10 px-1.5 py-0.5 text-xs text-success">
                 {t("common.you")}
               </span>
             )}
@@ -518,7 +522,7 @@ export function ProjectMaskingExemptionPage({
 
 function getAccessUsers(
   exemption: MaskingExemptionPolicy_Exemption,
-  condition: ConditionExpression
+  condition: ConditionExpression | undefined
 ): AccessUser[] {
   const expression = exemption.condition?.expression ?? "";
   const description = exemption.condition?.description ?? "";
@@ -533,10 +537,7 @@ function getAccessUsers(
     expirationTimestamp,
     rawExpression: expression,
     description,
-    databaseResources:
-      condition.databaseResources && condition.databaseResources.length > 0
-        ? condition.databaseResources
-        : undefined,
+    databaseResources: condition?.databaseResources,
     conditionExpression,
   }));
 }
@@ -882,25 +883,7 @@ function ExemptionMemberItem({
   );
 
   const scopeSummary = useMemo(() => {
-    const n = member.grants.length;
-    const exemptionWord = t("project.masking-exemption.n-exemptions", {
-      n,
-      count: n,
-    });
-
-    const realDbs = member.databaseNames.filter((name) => name !== "");
-    const hasAllDbs = member.databaseNames.includes("");
-
-    const parts: string[] = [];
-    if (realDbs.length > 0) {
-      parts.push(realDbs.join(", "));
-    }
-    if (hasAllDbs) {
-      parts.push(t("database.all"));
-    }
-
-    const scope = parts.join(", ");
-    return scope ? `${exemptionWord} · ${scope}` : exemptionWord;
+    return generateMemberScopeSummary(t, member.grants, member.databaseNames);
   }, [member, t]);
 
   const handleClick = () => {
@@ -948,17 +931,17 @@ function ExemptionMemberItem({
         <div className="flex items-center gap-x-1.5">
           <span className="font-medium text-sm truncate">{displayName}</span>
           {member.type === "group" && (
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-control-border bg-background">
+            <span className="inline-flex items-center rounded-xs border border-control-border bg-background px-1.5 py-0.5 text-xs">
               {t("common.groups")}
             </span>
           )}
           {isServiceAccount && (
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-accent/30 bg-accent/5 text-accent whitespace-nowrap shrink-0">
+            <span className="inline-flex items-center rounded-xs border border-accent/30 bg-accent/5 px-1.5 py-0.5 text-xs text-accent whitespace-nowrap shrink-0">
               {t("settings.members.service-account")}
             </span>
           )}
           {isWorkloadIdentity && (
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-accent/30 bg-accent/5 text-accent whitespace-nowrap shrink-0">
+            <span className="inline-flex items-center rounded-xs border border-accent/30 bg-accent/5 px-1.5 py-0.5 text-xs text-accent whitespace-nowrap shrink-0">
               {t("settings.members.workload-identity")}
             </span>
           )}
@@ -1004,8 +987,8 @@ function ExemptionDetailPanel({
   const grantMatchesFilter = (grant: ExemptionGrant): boolean => {
     if (!databaseFilter) return false;
     return (
-      grant.databaseResources?.some(
-        (r) => r.databaseFullName === databaseFilter
+      grant.databaseResources?.some((r) =>
+        resourceCoversDatabase(r, databaseFilter)
       ) ?? false
     );
   };
@@ -1084,6 +1067,7 @@ function ExemptionGrantSection({
 }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const [showRawCondition, setShowRawCondition] = useState(false);
 
   const title = useMemo(() => generateGrantTitle(grant), [grant]);
 
@@ -1180,6 +1164,28 @@ function ExemptionGrantSection({
             <ExemptionLevelCard
               classificationLevel={grant.classificationLevel}
             />
+          )}
+
+          {grant.conditionExpression && (
+            <div className="mt-3 text-sm">
+              <Button
+                aria-expanded={showRawCondition}
+                appearance="link"
+                className="h-auto px-0"
+                onClick={() => setShowRawCondition((show) => !show)}
+                size="sm"
+                type="button"
+              >
+                {showRawCondition
+                  ? t("project.masking-exemption.hide-raw-cel-condition")
+                  : t("project.masking-exemption.show-raw-cel-condition")}
+              </Button>
+              {showRawCondition && (
+                <pre className="mt-1 whitespace-pre-wrap break-all rounded-xs border border-block-border bg-control-bg px-3 py-2 font-mono text-xs">
+                  {grant.conditionExpression}
+                </pre>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -1303,7 +1309,7 @@ function ExemptionLevelCard({
         <span className="textinfolabel font-medium uppercase text-xs">
           {t("common.scope")}
         </span>
-        <span className="rounded-xs border border-success/20 bg-success/10 px-2 py-0.5 text-xs text-success">
+        <span className="rounded-xs border border-success/20 bg-success/10 px-1.5 py-0.5 text-xs text-success">
           {t("database.all")}
         </span>
       </div>

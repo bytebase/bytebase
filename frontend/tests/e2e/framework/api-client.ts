@@ -475,8 +475,9 @@ export class BytebaseApiClient {
   }
 
   // Service Accounts
+  // `serviceKey` is returned only here; it is the account's login password.
   async createServiceAccount(parent: string, serviceAccountId: string, title: string) {
-    return this.request<{ name: string; email: string }>("POST",
+    return this.request<{ name: string; email: string; serviceKey: string }>("POST",
       `/v1/${parent}/serviceAccounts?serviceAccountId=${serviceAccountId}`,
       { title });
   }
@@ -642,6 +643,26 @@ export class BytebaseApiClient {
       type: "DATABASE_CHANGE",
       plan,
       ...(description !== undefined && { description }),
+    });
+  }
+
+  // A role-grant request on `user`'s behalf; the caller is its creator.
+  async createRoleGrantIssue(
+    project: string,
+    roleGrant: { role: string; user: string; expression?: string },
+    title: string,
+  ): Promise<{ name: string }> {
+    return this.request("POST", `/v1/${project}/issues`, {
+      title,
+      type: "ROLE_GRANT",
+      roleGrant: {
+        role: roleGrant.role,
+        user: roleGrant.user,
+        condition:
+          roleGrant.expression === undefined
+            ? undefined
+            : { expression: roleGrant.expression },
+      },
     });
   }
 
@@ -846,6 +867,10 @@ export class BytebaseApiClient {
 
   async getProject(project: string): Promise<Record<string, unknown>> {
     return this.request("GET", `/v1/${project}`);
+  }
+
+  async listProjects() {
+    return this.request<{ projects?: { name: string; title: string }[] }>("GET", "/v1/projects?pageSize=100&showDeleted=false");
   }
 
   // Access grants (just-in-time). The body is the AccessGrant proto directly

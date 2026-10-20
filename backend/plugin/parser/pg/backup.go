@@ -179,6 +179,55 @@ func generateSQLForTable(statementInfoList []statementInfo, targetSchema string,
 	}, nil
 }
 
+// DataModifyingCTENames returns the names of the CTEs in a statement's WITH
+// clause that run INSERT, UPDATE, DELETE, or MERGE. PostgreSQL only allows
+// such CTEs in the top-level WITH clause, so nested queries are not searched.
+func DataModifyingCTENames(node ast.Node) []string {
+	var wc *ast.WithClause
+	switch n := node.(type) {
+	case *ast.SelectStmt:
+		wc = n.WithClause
+	case *ast.InsertStmt:
+		wc = n.WithClause
+	case *ast.UpdateStmt:
+		wc = n.WithClause
+	case *ast.DeleteStmt:
+		wc = n.WithClause
+	case *ast.MergeStmt:
+		wc = n.WithClause
+	default:
+	}
+	if wc == nil || wc.Ctes == nil {
+		return nil
+	}
+	var names []string
+	for _, item := range wc.Ctes.Items {
+		cte, ok := item.(*ast.CommonTableExpr)
+		if !ok {
+			continue
+		}
+		if _, isSelect := cte.Ctequery.(*ast.SelectStmt); !isSelect {
+			names = append(names, cte.Ctename)
+		}
+	}
+	return names
+}
+
+// rejectDataModifyingCTE fails a backup whose statement has a data-modifying
+// CTE: the backup copies the WITH clause, so running it would apply that
+// change once before the statement itself runs.
+func rejectDataModifyingCTE(node ast.Node) error {
+	names := DataModifyingCTENames(node)
+	if len(names) == 0 {
+		return nil
+	}
+	quoted := make([]string, 0, len(names))
+	for _, name := range names {
+		quoted = append(quoted, fmt.Sprintf("%q", name))
+	}
+	return errors.Errorf("prior backup does not support data-modifying WITH query %s; rewrite the statement without it, or disable or skip prior backup", strings.Join(quoted, ", "))
+}
+
 func extractCTE(node ast.Node, fullSQL string) string {
 	var wc *ast.WithClause
 	switch n := node.(type) {
@@ -286,6 +335,9 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get database metadata")
 	}
+	if metadata == nil {
+		return nil, errors.Errorf("database metadata for database %q not found (database not synced)", tCtx.DatabaseName)
+	}
 
 	searchPath := metadata.GetSearchPath()
 	var dmls []statementInfo
@@ -314,6 +366,9 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 				}
 			}
 		case *ast.UpdateStmt:
+			if err := rejectDataModifyingCTE(n); err != nil {
+				return nil, err
+			}
 			table, err := extractTableReferenceFromRangeVar(n.Relation, metadata, searchPath)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to extract table reference from update statement at offset %d", i)
@@ -336,6 +391,9 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 				fullSQL:   statement,
 			})
 		case *ast.DeleteStmt:
+			if err := rejectDataModifyingCTE(n); err != nil {
+				return nil, err
+			}
 			table, err := extractTableReferenceFromRangeVar(n.Relation, metadata, searchPath)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to extract table reference from delete statement at offset %d", i)

@@ -3,6 +3,8 @@ import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LearnMoreLink } from "@/components/LearnMoreLink";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import {
@@ -19,6 +21,7 @@ import {
   type InfoSnippet,
   type InfoSnippetContentKey,
   type InfoSnippetLinkTitleKey,
+  type InfoSnippetWarningKey,
 } from "./info-content";
 
 interface InfoPanelProps {
@@ -156,6 +159,17 @@ export function InfoPanelContent({ engine, section }: InfoPanelContentProps) {
           </div>
         </div>
       )}
+      {snippet.warning && (
+        <Alert
+          variant="warning"
+          description={
+            <>
+              {getSnippetWarning(t, snippet.warning.key)}{" "}
+              <LearnMoreLink href={snippet.warning.url} />
+            </>
+          }
+        />
+      )}
       {snippet.learnMoreLinks && snippet.learnMoreLinks.length > 0 && (
         <div className="flex flex-col gap-y-1">
           {snippet.learnMoreLinks.map((link) => (
@@ -218,6 +232,15 @@ function getSnippetContentTranslation(
       return t("instance.info.postgresql.ssl.content");
     case "instance.info.sync-databases.content":
       return t("instance.info.sync-databases.content");
+  }
+  const exhaustive: never = key;
+  return exhaustive;
+}
+
+function getSnippetWarning(t: TFunction, key: InfoSnippetWarningKey) {
+  switch (key) {
+    case "instance.sentence.create-user-example.mysql.warn":
+      return t("instance.sentence.create-user-example.mysql.warn");
   }
   const exhaustive: never = key;
   return exhaustive;

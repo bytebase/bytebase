@@ -104,13 +104,15 @@ frontend/tests/e2e/
 │   ├── setup-project.ts   — auth + discovery (runs as a Playwright setup project)
 │   ├── seed-test-data.ts  — workspace-level baseline seeded once per boot
 │   ├── sign-in.ts         — POST-login helper that captures per-user storageState
-│   └── psql.ts            — psql-over-Unix-socket helpers for DDL/DML setup
+│   ├── psql.ts            — psql-over-Unix-socket helpers for DDL/DML setup
+│   └── bare-server.ts     — a second, first-run server for the spec that needs one
 ├── sql-editor/            — SQL Editor suite (connection, result, tabs, saved query,
 │                            schema, admin-mode, history, jit, permissions,
 │                            workspace-gates, batch, misc) + sql-editor.page.ts
 ├── plan-detail/           — plan detail suite (lifecycle, checks, rollout, sections, tasks)
 │                            + plan-detail.page.ts, plan-helpers.ts
 ├── workspace/             — workspace-level suite (external-URL banner)
+├── workspace-setup/       — first-run setup wizard, on a server of its own
 └── masking-exemption/     — masking exemption suite
     ├── masking-exemption.spec.ts
     └── masking-exemption.page.ts

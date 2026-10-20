@@ -182,6 +182,7 @@
     - [CreateIssueCommentRequest](#bytebase-v1-CreateIssueCommentRequest)
     - [CreateIssueRequest](#bytebase-v1-CreateIssueRequest)
     - [GetIssueRequest](#bytebase-v1-GetIssueRequest)
+    - [GetReviewRunRequest](#bytebase-v1-GetReviewRunRequest)
     - [Issue](#bytebase-v1-Issue)
     - [Issue.Approver](#bytebase-v1-Issue-Approver)
     - [IssueComment](#bytebase-v1-IssueComment)
@@ -292,6 +293,7 @@
     - [AIChatUsage](#bytebase-v1-AIChatUsage)
   
     - [AIChatMessageRole](#bytebase-v1-AIChatMessageRole)
+    - [AIChatResponse.StopReason](#bytebase-v1-AIChatResponse-StopReason)
   
     - [AIService](#bytebase-v1-AIService)
   
@@ -867,7 +869,7 @@ is worse than a bare refusal, because it is the thing the next reader trusts
 
 One enum covers both refused classes, and every value belongs to exactly one
 of them: values 1-8 name a mechanism that breaks the MCP boundary, which is
-what FORBIDDEN means, and values 9-13 name a scope decision this phase took,
+what FORBIDDEN means, and values 9-14 name a scope decision this phase took,
 which is what EXCLUDED means. The distinction is real and lives on the class
 annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope
 decision is what a future admin-capable ceiling would argue with, one
@@ -887,14 +889,15 @@ already keeps for the wording.
 | ENDS_MEMBERSHIP | 5 | Destroys the caller&#39;s own workspace membership and mints a plain workspace token on the way out. |
 | MINTS_CREDENTIAL_FOR_OTHERS | 6 | Leaves someone holding a principal the caller is not — by issuing its credential, carrying an existing one out to a host the caller named, choosing what will later be trusted to mint one, or redirecting where one gets delivered. |
 | REWRITES_SESSION_BOUNDARY | 7 | Rewrites the workspace configuration that governs the session making the call — the MCP switch itself, the sign-in and SSO settings, the mail relay that carries credential resets, and the AI endpoint the stored API key is sent to. A session that can widen its own ceiling is not bounded by it. |
-| DRIVES_THE_APPROVAL_DECISION | 8 | Works the human approval step that gates the change: recording the review decision, or re-running the finding that sets it and can clear the issue outright. An agent composes a change; it does not move its own change through the gate. |
-| ADMINISTERS_THE_WORKSPACE | 9 | Administers the workspace rather than doing database work: identity, credentials, access control, governance policy, billing, workspace and instance configuration, project lifecycle, and the operator&#39;s own audit trail. Reading is administration too where the read returns the privilege topology or a stored secret rather than the state of a database. |
+| DRIVES_THE_APPROVAL_DECISION | 8 | Decides whether a change or an access request passes its human approval: recording the review decision, re-running the finding that sets it and can clear the issue outright, or activating an access grant without it. An agent composes a change or files a request; it does not decide that for its own work. |
+| ADMINISTERS_THE_WORKSPACE | 9 | Administers the workspace rather than doing database work: identity, credentials, access control, governance policy, billing, workspace and instance configuration, project lifecycle, and the operator&#39;s own audit trail. |
 | READS_OTHER_USERS_SQL | 10 | Returns SQL that other people wrote. The permission gating it reads as an ordinary list permission, so the exclusion is per method rather than per permission: these methods span the workspace or ignore the per-object sharing that keeps a saved query private. |
 | OPENS_AN_ADMIN_CONNECTION | 11 | Opens an admin-credentialed connection to the customer&#39;s database and returns live session state from it — including other sessions&#39; in-flight, unmasked SQL. It shares a plain read permission with sibling methods that only read Bytebase&#39;s own store. |
 | SENDS_DATA_TO_A_THIRD_PARTY | 12 | Spends a stored workspace credential on an outbound call to a third party, which puts whatever the caller passes outside the product. |
 | RETURNS_A_STORED_SECRET | 13 | Returns a stored secret in its response body today. These are ordinary reads that belong in a serving class on their merits, and each is here because of a leak that a redaction on the read path would close — the product already redacts the same values elsewhere. This reason is therefore the one that is meant to go away: fixing the leak moves the method to READ, as a reviewed widening, rather than leaving a quiet exposure the moment the ceiling starts serving.
 
 No method carries it. The three leaks it was written for — project webhook URLs, the MySQL-family grant text, and the MFA enrollment secrets — are redacted on the read path, and their eight methods are READ. The value stays because the category is real and the next read found leaking should carry it rather than an invented one, and because retiring an enum value costs a reserved number for nothing. |
+| REDRAWS_GOVERNANCE_BOUNDARY | 14 | Changes which rules govern a database, or which databases a change that targets a database group runs on. Approval, SQL review and access rules key on a database&#39;s project and environment, and so do the masking rules that decide what a query returns. A database group selects databases by an expression that can read their environment and labels, and a change that targets a group runs on whichever databases the group selects when its rollout tasks are created. An agent that could redraw these would choose the checks on its own changes. |
 
 
 
@@ -920,7 +923,7 @@ product promises as well as what it serves.
 | READ | 1 | Served to a read-only MCP session and above. |
 | WRITE | 2 | Served to a read-write MCP session only. This is a serving mode, not a verb: a method that only reads still belongs here when a read-only session has no business calling it — taking a copy of data out of the product, or generating migration DDL from a schema the caller supplied. |
 | FORBIDDEN | 3 | Never reachable by an MCP session, whatever the caller&#39;s own permissions are. These methods escape the MCP boundary rather than merely exercising a permission: a human with the permission uses the console; an agent acting for them does not get to. |
-| EXCLUDED | 4 | Served by no MCP capability ceiling this phase ships, and not a durable never. These are workspace administration, plus the handful of methods that do something materially worse than the plain read permission they share suggests.
+| EXCLUDED | 4 | Served by no MCP capability ceiling this phase ships, and not a durable never. These are workspace administration, the writes that change which rules govern a database, and the handful of methods that do something materially worse than the plain read permission they share suggests.
 
 The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is ever built, could legitimately serve an EXCLUDED method — that is a product decision nobody has made. It could never serve a FORBIDDEN one, because FORBIDDEN names a mechanism that breaks the MCP boundary itself. Keeping them apart is what stops a future widening from having to re-litigate the credential-minting set alongside the ordinary admin API. |
 
@@ -1042,7 +1045,7 @@ The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is
 | parent | [string](#string) |  | The parent project of the access grants. Format: projects/{project} |
 | page_size | [int32](#int32) |  | The maximum number of access grants to return. |
 | page_token | [string](#string) |  | A page token from a previous ListAccessGrants call. |
-| filter | [string](#string) |  | Filter expression using AIP-160 syntax. Supported fields: - name: the fullname in &#34;projects/{project}/accessGrants/{access_grant}&#34; format, support &#34;==&#34; operator. - creator: the creator name in &#34;users/{email}&#34; format, support &#34;==&#34; operator. - status: the access status, support &#34;==&#34; and &#34;in&#34; operator. - issue: the access issue fullname, support &#34;==&#34; operator. - expire_time: the access expire time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator. - create_time: the access creation time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator. - query: the access query, support &#34;==&#34; and &#34;.contains(xx)&#34; operator - target: the target database fullname, support &#34;==&#34; operator. - unmask: whether the grant allows unmasking sensitive data, support &#34;==&#34; operator with a boolean literal. - export: whether the grant allows exporting the query result, support &#34;==&#34; operator with a boolean literal.
+| filter | [string](#string) |  | Filter expression using AIP-160 syntax. Supported fields: - name: the fullname in &#34;projects/{project}/accessGrants/{access_grant}&#34; format, support &#34;==&#34; operator. - creator: the creator name in &#34;users/{email}&#34; format, support &#34;==&#34; operator. - status: the access status, support &#34;==&#34; and &#34;in&#34; operator. - issue: the access issue fullname, support &#34;==&#34; operator. - expire_time: the access expire time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator. - create_time: the access creation time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34;, &#34;&gt;&#34;, &#34;&lt;=&#34; and &#34;&lt;&#34; operator. - query: the access query, support &#34;==&#34; and &#34;.contains(xx)&#34; operator. Equality trims only boundary ASCII space, tab, LF, CR, vertical tab, and form feed. - query_hash: supports &#34;==&#34; with a lowercase hexadecimal SHA-256 digest of the UTF-8 query after the same boundary trim. Internal whitespace and Unicode remain unchanged. - schema: execution schema, supports &#34;==&#34;; empty matches only empty or absent values. - container: execution container, supports &#34;==&#34;; empty matches only empty or absent values. - target: the target database fullname, support &#34;==&#34; operator. - unmask: whether the grant allows unmasking sensitive data, support &#34;==&#34; operator with a boolean literal. - export: whether the grant allows exporting the query result, support &#34;==&#34; operator with a boolean literal.
 
 Examples: - creator == &#34;users/dev@example.com&#34; - status == &#34;ACTIVE&#34; - status in [&#34;ACTIVE&#34;, &#34;PENDING&#34;] - creator == &#34;users/dev@example.com&#34; &amp;&amp; status == &#34;ACTIVE&#34; - issue == &#34;projects/x/issues/123&#34; - status == &#34;ACTIVE&#34; &amp;&amp; expire_time &gt; &#34;2024-02-01T00:00:00Z&#34; - target == &#34;instances/sample/databases/employee&#34; - unmask == true - export == true &amp;&amp; status == &#34;ACTIVE&#34; |
 | order_by | [string](#string) |  | The order by of access grants. Support creator, expire_time, create_time. The default sorting order is ascending. For example: - order_by = &#34;creator&#34; - order_by = &#34;expire_time desc&#34; - order_by = &#34;expire_time asc, create_time desc&#34; |
@@ -3382,10 +3385,10 @@ needs a person&#39;s acceptance, not that it is forbidden.
 | PRIOR_BACKUP | 4 | P0: the change enables prior backup but the backup cannot be taken. |
 | REQUIRE_IS_NULL | 5 | P0: = NULL or &lt;&gt; NULL in a predicate, which is always false. Test for NULL with IS NULL or IS NOT NULL. |
 | REQUIRE_WHERE | 6 | P1: UPDATE or DELETE without WHERE. |
-| DISALLOW_DROP_OBJECT | 7 | P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE. |
+| DISALLOW_DROP_OBJECT | 7 | P1: dropping any object, such as a table, column, view, index, sequence, schema, database, or function. Dropping a constraint is DISALLOW_DROP_CONSTRAINT. |
 | DISALLOW_TRUNCATE | 8 | P1: TRUNCATE. |
 | DISALLOW_DROP_CONSTRAINT | 9 | P1: dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint. |
-| DISALLOW_RENAME | 10 | P1: renaming a table or column. |
+| DISALLOW_RENAME | 10 | P1: renaming a table, foreign table, view, materialized view, or column. |
 | REQUIRE_PRIMARY_KEY | 11 | P1: the change creates a table without a primary key, or drops a primary key without adding one back. A table that already lacked a primary key before the change is not reported. |
 
 
@@ -3522,6 +3525,21 @@ needs a person&#39;s acceptance, not that it is forbidden.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the issue to retrieve. Format: projects/{project}/issues/{issue} |
 | force | [bool](#bool) |  | If set to true, bypass cache and fetch the latest data. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetReviewRunRequest"></a>
+
+### GetReviewRunRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the review run to retrieve. Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} |
 
 
 
@@ -4042,7 +4060,7 @@ completion transaction, so re-running supersedes instead of canceling).
 | STATUS_UNSPECIFIED | 0 |  |
 | AVAILABLE | 1 | Created and claimable by any replica. |
 | RUNNING | 2 |  |
-| DONE | 3 | Every (spec, target) unit was evaluated. DONE does not mean the review passed: whether problems remain is judged from open comments. |
+| DONE | 3 | Every (spec, target) unit in the reviewer&#39;s scope was evaluated. RULE&#39;s scope is every target. AI&#39;s scope is the project&#39;s CI sample, the first ci_sampling_size targets of each spec, or every target when ci_sampling_size is 0. DONE does not mean the review passed: whether problems remain is judged from open comments. |
 | FAILED | 4 | At least one unit was not evaluated; the cause is in `error`. |
 
 
@@ -4084,7 +4102,8 @@ IssueService manages issues for tracking database changes and tasks.
 | RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) | Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RetryIssueApproval | [RetryIssueApprovalRequest](#bytebase-v1-RetryIssueApprovalRequest) | [Issue](#bytebase-v1-Issue) | Re-runs approval-template finding for an issue stuck in CHECKING. Useful when the synchronous post-create finding errored (e.g. against a malformed workspace approval rule) and the operator has since corrected it — without this, the issue would remain in CHECKING indefinitely because there is no other retry path for non-DATABASE_CHANGE issue types. Idempotent: returns the existing issue unchanged when approval-finding has already completed. Permissions required: None (caller must be the issue creator; mirrors RequestIssue&#39;s authorization model). |
-| RunReview | [RunReviewRequest](#bytebase-v1-RunReviewRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Triggers a review run. The slot is reset unconditionally: a RUNNING execution is superseded (its completion is fenced off), the attempt number is bumped, and the returned run is AVAILABLE. Review results are not returned by this RPC and have no read RPC yet: findings will surface as issue comments once the review comment integration lands. The returned run carries execution status only. The audit log is the only record of who triggered a run. Permissions required: bb.reviewRuns.run |
+| GetReviewRun | [GetReviewRunRequest](#bytebase-v1-GetReviewRunRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Gets the current run of one reviewer on an issue. The run carries execution status only; review results are issue comments. A reviewer that has never run on the issue is NOT_FOUND. Permissions required: bb.reviewRuns.get |
+| RunReview | [RunReviewRequest](#bytebase-v1-RunReviewRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Triggers a review run. The slot is reset unconditionally: a RUNNING execution is superseded (its completion is fenced off), the attempt number is bumped, and the returned run is AVAILABLE. Review results are not returned by this RPC: they are posted as issue comments. The returned run carries execution status only, and GetReviewRun reads it back. The audit log is the only record of who triggered a run. Permissions required: bb.reviewRuns.run |
 
  
 
@@ -4111,6 +4130,7 @@ IssueService manages issues for tracking database changes and tasks.
 | api_key | [string](#string) |  |  |
 | model | [string](#string) |  |  |
 | version | [string](#string) |  |  |
+| sql_review_enabled | [bool](#bool) |  | Whether the AI SQL review may run. It is off by default and is a consent of its own beside `enabled`: a review sends the statements of a change to the provider, and can send the schema of its target databases and their table statistics. |
 
 
 
@@ -5067,6 +5087,8 @@ Actuator concept is similar to the Spring Boot Actuator.
 | active_vcs_user_count | [int32](#int32) |  | The number of active VCS users seen in the active window. |
 | sample | [SampleInfo](#bytebase-v1-SampleInfo) |  | Sample setup availability and provisioned resources. |
 | mcp_setting | [MCPSetting](#bytebase-v1-MCPSetting) |  | The MCP (Model Context Protocol) setting in the current workspace. |
+| ai_enabled | [bool](#bool) |  | Whether the workspace AI setting enables the AI agent. |
+| ai_sql_review_enabled | [bool](#bool) |  | Whether the workspace AI setting switches the AI SQL review on. A review also needs `ai_enabled`. |
 
 
 
@@ -5186,6 +5208,7 @@ Response message for AIService.Chat.
 | content | [string](#string) | optional | The text content of the AI response. Optional when the response only contains tool calls. |
 | tool_calls | [AIChatToolCall](#bytebase-v1-AIChatToolCall) | repeated | Tool calls the AI wants to make. |
 | usage | [AIChatUsage](#bytebase-v1-AIChatUsage) | optional | Token usage for this provider call, when available. |
+| stop_reason | [AIChatResponse.StopReason](#bytebase-v1-AIChatResponse-StopReason) |  | Why the model stopped. A truncated or blocked response can still carry content. |
 
 
 
@@ -5256,6 +5279,22 @@ Role of a chat message.
 | AI_CHAT_MESSAGE_ROLE_USER | 2 | User message. |
 | AI_CHAT_MESSAGE_ROLE_ASSISTANT | 3 | Assistant (AI) message. |
 | AI_CHAT_MESSAGE_ROLE_TOOL | 4 | Tool result message. |
+
+
+
+<a name="bytebase-v1-AIChatResponse-StopReason"></a>
+
+### AIChatResponse.StopReason
+Why the model stopped generating a response.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STOP_REASON_UNSPECIFIED | 0 | The provider did not report why the model stopped. |
+| TURN_COMPLETED | 1 | The model completed its turn with an answer or with tool calls. |
+| TOKEN_LIMIT | 2 | The response was truncated at a token limit and is incomplete. |
+| BLOCKED | 3 | The provider blocked the request or the response, or the model refused to answer. |
+| MALFORMED_TOOL_CALL | 4 | The model generated a tool call that the provider could not parse. |
+| OTHER | 5 | The model stopped for a reason that no other value names. |
 
 
  
@@ -10368,7 +10407,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | postgres_database_tenant_mode | [bool](#bool) |  | Whether to enable database tenant mode for PostgreSQL. If enabled, issues will include &#34;set role &lt;db_owner&gt;&#34; statement. |
 | allow_self_approval | [bool](#bool) |  | Whether to allow issue creators to self-approve their own issues. |
 | execution_retry_policy | [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy) |  | Execution retry policy for task runs. |
-| ci_sampling_size | [int32](#int32) |  | The maximum number of database rows to sample during CI data validation. Without specification, sampling is disabled, resulting in full validation. |
+| ci_sampling_size | [int32](#int32) |  | The maximum number of databases to sample during CI data validation and AI review. Without specification, sampling is disabled, resulting in full validation. |
 | parallel_tasks_per_rollout | [int32](#int32) |  | The maximum number of parallel tasks allowed during rollout execution. |
 | labels | [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the project. For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34;backend&#34; } |
 | enforce_sql_review | [bool](#bool) |  | Whether to enforce SQL review checks to pass before issue creation. If enabled, issues cannot be created when SQL review finds errors. |

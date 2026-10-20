@@ -39,7 +39,7 @@ import {
 } from "@/utils";
 import { celString, celStringList } from "@/utils/v1/celLiteral";
 import type { AppSliceCreator, InstanceFilter, InstanceSlice } from "./types";
-import { getLabelFilter, toError } from "./utils";
+import { callOptions, getLabelFilter, toError } from "./utils";
 
 export const getListInstanceFilter = (params: InstanceFilter): string => {
   const list: string[] = [];
@@ -209,9 +209,12 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
     },
 
     prepareSampleProjectInstance: async (parent) => {
+      // Every caller reports the failure itself, so the global error toast
+      // would show it a second time.
       const response =
         await instanceServiceClientConnect.prepareSampleProjectInstance(
-          createProto(PrepareSampleProjectInstanceRequestSchema, { parent })
+          createProto(PrepareSampleProjectInstanceRequestSchema, { parent }),
+          callOptions({ byCaller: true })
         );
       const instance = upsertInstances([response])[0];
       await get()

@@ -60,8 +60,8 @@ func singleStatement(text string) (omniast.Node, error) {
 // explainedText returns the text within text of the statement explain plans, and
 // whether it could be located.
 func explainedText(explain *omniast.ExplainStmt, text string) (string, bool) {
-	// An executable comment moves every location after it, because the lexer
-	// parses the comment's body with its markers spliced out of the text.
+	// The parser reads the body of an executable comment, so a location can fall
+	// inside one and the slice would leave the comment unclosed.
 	if strings.Contains(text, "/*!") || strings.Contains(text, "/*T!") {
 		return "", false
 	}

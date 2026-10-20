@@ -34,6 +34,7 @@ import {
   extractDatabaseResourceName,
   getDatabaseProject,
 } from "@/utils/v1/database";
+import { ExportGrantLookupStatus } from "../ExportGrantLookupStatus";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
 import { SingleResultView } from "./SingleResultView";
@@ -128,23 +129,27 @@ export function ResultView({
     return false;
   }, [queryDataPolicy, envQueryDataPolicy]);
 
-  // Look up an active JIT export grant for this (target, statement) pair.
-  // When one exists, flip `showExport` so the real Export button surfaces
-  // even when the policy would normally block direct export — and let the
-  // hook render the attribution tooltip (PR #20491 bot reviews #3349086832,
-  // #3349385091). The check is independent of the Query-applied grant: the
-  // Query path prefers Unmask, so the applied grant may be unmask-only
-  // while a separate export grant exists.
-  // Hook dedupes `targets` by joined-string identity, so a fresh
-  // `[database.name]` literal per render is safe (no re-fetch unless
-  // the name actually changes).
-  const { grantName: exportGrantName, tooltip: exportTooltip } =
-    useExportGrantBypass({
-      enabled: !!queryDataPolicy?.disableExport,
-      project: database.project,
-      statement: executeParams?.statement ?? "",
-      targets: [database.name],
-    });
+  // Export discovery is independent of the grant applied during Query, which
+  // may permit unmasking without export.
+  const {
+    grantName: exportGrantName,
+    tooltip: exportTooltip,
+    loading: grantLoading,
+    failedDatabases,
+    retry,
+    unmatchedDatabases,
+  } = useExportGrantBypass({
+    enabled: !!queryDataPolicy?.disableExport && !!executeParams?.statement,
+    project: database.project,
+    targets: [
+      {
+        database: database.name,
+        statement: executeParams?.statement ?? "",
+        schema: executeParams?.connection.schema ?? "",
+        container: executeParams?.connection.table ?? "",
+      },
+    ],
+  });
 
   const showExport = !queryDataPolicy?.disableExport || !!exportGrantName;
 
@@ -152,12 +157,19 @@ export function ResultView({
   // opens the access-grant drawer (pre-filled with this database, statement,
   // and unmask + export checked). The button self-hides when the project
   // doesn't allow just-in-time access.
-  const requestExportButton = executeParams ? (
-    <RequestExportButton
-      statement={executeParams.statement}
-      targets={[database.name]}
-    />
-  ) : null;
+  const requestExportButton =
+    grantLoading || failedDatabases.length > 0 ? (
+      <ExportGrantLookupStatus
+        loading={grantLoading}
+        failed={failedDatabases.length > 0}
+        onRetry={retry}
+      />
+    ) : executeParams && unmatchedDatabases.length > 0 ? (
+      <RequestExportButton
+        statement={executeParams.statement}
+        targets={[database.name]}
+      />
+    ) : null;
 
   const filteredResults = useMemo(() => {
     if (!resultSet) return [];
