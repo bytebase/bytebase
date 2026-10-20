@@ -130,15 +130,9 @@ describe("createProjectRecentActivityTool", () => {
     );
 
     expect(result.events).toEqual([
-      expect.objectContaining({
-        action: "updated project settings",
-      }),
-      expect.objectContaining({
-        action: "updated a policy",
-      }),
-      expect.objectContaining({
-        action: "updated project access",
-      }),
+      expect.objectContaining({ action: "updated project settings" }),
+      expect.objectContaining({ action: "updated a policy" }),
+      expect.objectContaining({ action: "updated project access" }),
     ]);
   });
 
@@ -178,12 +172,8 @@ describe("createProjectRecentActivityTool", () => {
       })
     );
     expect(result.events).toEqual([
-      expect.objectContaining({
-        action: "approved an Issue",
-      }),
-      expect.objectContaining({
-        action: "updated a workspace setting",
-      }),
+      expect.objectContaining({ action: "approved an Issue" }),
+      expect.objectContaining({ action: "updated a workspace setting" }),
     ]);
   });
 
