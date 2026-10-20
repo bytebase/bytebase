@@ -1,8 +1,13 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { IssueStatus } from "@/types/proto-es/v1/common_pb";
-import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueSchema,
+  ReviewRun_Status,
+  ReviewRunSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import {
   PlanCheckRunSchema,
   PlanSchema,
@@ -20,12 +25,22 @@ const mocks = vi.hoisted(() => ({
   getPlan: vi.fn(),
   getPlanCheckRun: vi.fn(),
   getProject: vi.fn(),
+  getReviewRun: vi.fn(),
   getRollout: vi.fn(),
   listTaskRuns: vi.fn(),
+  readsAIReviewRun: vi.fn(() => false),
+}));
+
+vi.mock("../../utils/aiReviewRun", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../utils/aiReviewRun")>()),
+  readsAIReviewRun: mocks.readsAIReviewRun,
 }));
 
 vi.mock("@/api", () => ({
-  issueServiceClientConnect: { getIssue: mocks.getIssue },
+  issueServiceClientConnect: {
+    getIssue: mocks.getIssue,
+    getReviewRun: mocks.getReviewRun,
+  },
   planServiceClientConnect: {
     getPlan: mocks.getPlan,
     getPlanCheckRun: mocks.getPlanCheckRun,
@@ -45,6 +60,12 @@ const plan = (hasRollout: boolean) =>
     name: "projects/foo/plans/1",
     issue: "projects/foo/issues/1",
     hasRollout,
+  });
+
+const reviewRun = (status: ReviewRun_Status) =>
+  create(ReviewRunSchema, {
+    name: "projects/foo/issues/1/reviewRuns/ai",
+    status,
   });
 
 describe("fetchPlanSnapshot", () => {
@@ -113,4 +134,87 @@ describe("fetchPlanSnapshot", () => {
 
     expect("issue" in patch).toBe(false);
   });
+
+  describe("with an open issue", () => {
+    beforeEach(() => {
+      mocks.getPlan.mockResolvedValue(plan(false));
+      mocks.getIssue.mockResolvedValue(
+        create(IssueSchema, {
+          name: "projects/foo/issues/1",
+          status: IssueStatus.OPEN,
+        })
+      );
+    });
+
+    test("reads the issue's AI review slot, and a slot that never ran as null", async () => {
+      mocks.readsAIReviewRun.mockReturnValue(true);
+      mocks.getReviewRun.mockRejectedValueOnce(
+        new ConnectError("review run not found", Code.NotFound)
+      );
+
+      const patch = await fetchPlanSnapshot("foo", "1");
+
+      expect(mocks.readsAIReviewRun).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          plan: expect.objectContaining({ name: "projects/foo/plans/1" }),
+          project: expect.objectContaining({ name: "projects/foo" }),
+        })
+      );
+      expect(mocks.getReviewRun).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          name: "projects/foo/issues/1/reviewRuns/ai",
+        }),
+        expect.anything()
+      );
+      expect(patch.aiReviewRun).toBeNull();
+    });
+
+    test("patches the AI review run it read", async () => {
+      mocks.readsAIReviewRun.mockReturnValue(true);
+      const run = reviewRun(ReviewRun_Status.RUNNING);
+      mocks.getReviewRun.mockResolvedValueOnce(run);
+
+      const patch = await fetchPlanSnapshot("foo", "1", {}, true);
+
+      expect(patch.aiReviewRun).toBe(run);
+    });
+
+    test("keeps a failed AI review read out of the patch", async () => {
+      mocks.readsAIReviewRun.mockReturnValue(true);
+      mocks.getReviewRun.mockRejectedValueOnce(
+        new ConnectError("temporary failure", Code.Unavailable)
+      );
+
+      const patch = await fetchPlanSnapshot("foo", "1", {}, true);
+
+      expect("aiReviewRun" in patch).toBe(false);
+    });
+
+    test("does not read the AI review slot when its gate is closed", async () => {
+      mocks.readsAIReviewRun.mockReturnValue(false);
+
+      const patch = await fetchPlanSnapshot("foo", "1", {}, true);
+
+      expect(mocks.getReviewRun).not.toHaveBeenCalled();
+      expect("aiReviewRun" in patch).toBe(true);
+      expect(patch.aiReviewRun).toBeUndefined();
+    });
+  });
+
+  test.each([IssueStatus.DONE, IssueStatus.CANCELED])(
+    "drops a running AI review run once the issue is closed: status %s",
+    async (status) => {
+      mocks.getPlan.mockResolvedValue(plan(false));
+      mocks.getIssue.mockResolvedValue(
+        create(IssueSchema, { name: "projects/foo/issues/1", status })
+      );
+      mocks.readsAIReviewRun.mockReturnValue(true);
+      mocks.getReviewRun.mockResolvedValue(reviewRun(ReviewRun_Status.RUNNING));
+
+      const patch = await fetchPlanSnapshot("foo", "1", {}, true);
+
+      expect("aiReviewRun" in patch).toBe(true);
+      expect(patch.aiReviewRun).toBeUndefined();
+    }
+  );
 });

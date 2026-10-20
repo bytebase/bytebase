@@ -1699,6 +1699,14 @@
   "plan": {
     "add-spec": "Thêm thay đổi",
     "add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
+    "ai-review": {
+      "failed-to-run": "Không thể bắt đầu đánh giá bằng AI",
+      "finished": "Đã hoàn tất",
+      "not-run": "Chưa chạy",
+      "queued": "Đang chờ",
+      "run": "Chạy đánh giá bằng AI",
+      "status-unknown": "Chưa có trạng thái"
+    },
     "blocker": {
       "clears-on-its-own": "Tự động hoàn tất"
     },
