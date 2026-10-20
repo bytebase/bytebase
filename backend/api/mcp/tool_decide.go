@@ -3,7 +3,6 @@ package mcp
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -58,21 +57,9 @@ The approval rules decide who may approve, as in the console: the user must hold
 
 This is the only way to decide an issue over MCP; call_api refuses IssueService/ApproveIssue and RejectIssue.`
 
-// confirmDecisionRequestID is the ID the confirmation is filed under, and
-// confirmDecisionField the form field it asks for. The client echoes both back,
-// so the two halves of one tool call must agree on them.
-const (
-	confirmDecisionRequestID = "confirm"
-	confirmDecisionField     = "confirm"
-)
-
 // decisionNote opens the comment recorded with every decision. It claims the
 // client confirmed, not that a person did: a hook in the client can answer.
 const decisionNote = "Decided over MCP; the decision was confirmed in the MCP client."
-
-// confirmationStatePurpose names this use of the server secret, so the key
-// that signs a confirmation's request state signs nothing else.
-const confirmationStatePurpose = "bb.mcp.decide_issue.request_state"
 
 const (
 	// maxDescribedSpecs bounds how many plan specs the confirmation lists.
@@ -102,6 +89,10 @@ func (d *issueDecision) verb() string {
 	}
 	return "reject"
 }
+
+func (d *issueDecision) confirmedProcedure() string { return d.procedure }
+
+func (d *issueDecision) confirmedResource() string { return d.issue }
 
 func (d *issueDecision) pastTense() string {
 	if d.procedure == v1connect.IssueServiceApproveIssueProcedure {
@@ -162,30 +153,10 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 	if err != nil {
 		return formatToolError(err), nil, nil
 	}
-	// The same multi round-trip shape as elicitDatabaseChoice: the SDK elicits
-	// within this tools/call and re-invokes the handler with the answer and the
-	// request state. A client on the 2026-07-28 protocol answers and echoes the
-	// state itself.
-	return &mcp.CallToolResult{
-		RequestState: s.signConfirmationState(ctx, decision, digest),
-		InputRequests: mcp.InputRequestMap{
-			confirmDecisionRequestID: &mcp.ElicitParams{
-				Mode:    "form",
-				Message: message,
-				RequestedSchema: map[string]any{
-					"type": "object",
-					"properties": map[string]any{
-						confirmDecisionField: map[string]any{
-							"type":        "boolean",
-							"title":       fmt.Sprintf("%s this issue", capitalize(decision.verb())),
-							"description": fmt.Sprintf("Check to %s the issue described above. Leaving it unchecked, declining or cancelling changes nothing.", decision.verb()),
-						},
-					},
-					"required": []string{confirmDecisionField},
-				},
-			},
-		},
-	}, nil, nil
+	return s.askToConfirm(ctx, decision, digest, message,
+		fmt.Sprintf("%s this issue", capitalize(decision.verb())),
+		fmt.Sprintf("Check to %s the issue described above. Leaving it unchecked, declining or cancelling changes nothing.", decision.verb()),
+	), nil, nil
 }
 
 func parseIssueDecision(input DecideIssueInput) (*issueDecision, error) {
@@ -261,14 +232,6 @@ func (s *Server) recordRefusedDecision(ctx context.Context, decision *issueDecis
 
 // confirmationAnswer returns the answer and the request state this call
 // carries, if it carries an answer.
-func confirmationAnswer(req *mcp.CallToolRequest) (mcp.InputResponse, string, bool) {
-	if req.Params == nil {
-		return nil, "", false
-	}
-	response, answered := req.Params.InputResponses[confirmDecisionRequestID]
-	return response, req.Params.RequestState, answered
-}
-
 // decideOnAnswer acts on the answer to a form this server sent. Only an
 // accepted form with the box checked decides, and only while what the user
 // was asked about still matches the issue. A decline is reported before a
@@ -288,41 +251,6 @@ func (s *Server) decideOnAnswer(ctx context.Context, decision *issueDecision, re
 		}), nil
 	}
 	return s.applyIssueDecision(ctx, decision, issueUpdateTime, link)
-}
-
-// signConfirmationState returns the request state the form is sent with: a
-// digest of what the user is asked about, signed together with who asks,
-// through which client, and which decision on which issue.
-func (s *Server) signConfirmationState(ctx context.Context, decision *issueDecision, digest []byte) string {
-	return base64.RawURLEncoding.EncodeToString(digest) + "." +
-		base64.RawURLEncoding.EncodeToString(s.confirmationMAC(ctx, decision, digest))
-}
-
-// verifyConfirmationState returns the digest a request state carries, and
-// whether this server signed it for this caller and this decision.
-func (s *Server) verifyConfirmationState(ctx context.Context, decision *issueDecision, state string) ([]byte, bool) {
-	encodedDigest, encodedMAC, found := strings.Cut(state, ".")
-	if !found {
-		return nil, false
-	}
-	digest, err := base64.RawURLEncoding.DecodeString(encodedDigest)
-	if err != nil {
-		return nil, false
-	}
-	mac, err := base64.RawURLEncoding.DecodeString(encodedMAC)
-	if err != nil {
-		return nil, false
-	}
-	return digest, hmac.Equal(mac, s.confirmationMAC(ctx, decision, digest))
-}
-
-func (s *Server) confirmationMAC(ctx context.Context, decision *issueDecision, digest []byte) []byte {
-	key := hmac.New(sha256.New, []byte(s.secret))
-	_, _ = key.Write([]byte(confirmationStatePurpose))
-	signed := strings.Join([]string{getWorkspaceID(ctx), getUserEmail(ctx), getOAuth2ClientID(ctx), decision.procedure, decision.issue, ""}, "\x00")
-	mac := hmac.New(sha256.New, key.Sum(nil))
-	_, _ = mac.Write(append([]byte(signed), digest...))
-	return mac.Sum(nil)
 }
 
 // applyIssueDecision records the confirmed decision.
@@ -366,28 +294,6 @@ func (s *Server) applyIssueDecision(ctx context.Context, decision *issueDecision
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf(
 		"%s %s. Approval: %s. Issue status: %s.\nIssue: %s",
 		capitalize(decision.pastTense()), decision.issue, describeApprovalStep(decided), decided.Status, link)}}}, output
-}
-
-// confirmationOutcome reports whether the answer confirms the decision, and if
-// not, why, in words the result can carry.
-func confirmationOutcome(response mcp.InputResponse) (bool, string) {
-	elicited, ok := response.(*mcp.ElicitResult)
-	if !ok || elicited == nil {
-		return false, "the confirmation answer could not be read"
-	}
-	switch elicited.Action {
-	case "accept":
-		if confirmed, ok := elicited.Content[confirmDecisionField].(bool); ok && confirmed {
-			return true, ""
-		}
-		return false, "the form was submitted without the confirmation checked"
-	case "decline":
-		return false, "the user declined"
-	case "cancel":
-		return false, "the user cancelled"
-	default:
-		return false, fmt.Sprintf("the confirmation answer %q is not one Bytebase acts on", elicited.Action)
-	}
 }
 
 // issueView is the part of an Issue the confirmation and the result read.
