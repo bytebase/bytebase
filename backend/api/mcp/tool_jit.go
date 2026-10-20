@@ -78,20 +78,27 @@ func (c *justInTimeChange) body() map[string]any {
 	}
 }
 
+func parseJustInTimeChange(input SetJustInTimeAccessInput) (*justInTimeChange, error) {
+	if _, err := common.GetProjectID(input.Project); err != nil {
+		return nil, &toolError{
+			Code:       "INVALID_ARGUMENT",
+			Message:    fmt.Sprintf("invalid project %q", input.Project),
+			Suggestion: "pass the project name, e.g. projects/hr",
+		}
+	}
+	return &justInTimeChange{project: input.Project, enabled: input.Enabled}, nil
+}
+
 // projectView is the part of a Project the tool reads.
 type projectView struct {
 	AllowJustInTimeAccess bool `json:"allowJustInTimeAccess"`
 }
 
 func (s *Server) handleSetJustInTimeAccess(ctx context.Context, req *mcp.CallToolRequest, input SetJustInTimeAccessInput) (*mcp.CallToolResult, any, error) {
-	if _, err := common.GetProjectID(input.Project); err != nil {
-		return formatToolError(&toolError{
-			Code:       "INVALID_ARGUMENT",
-			Message:    fmt.Sprintf("invalid project %q", input.Project),
-			Suggestion: "pass the project name, e.g. projects/hr",
-		}), nil, nil
+	change, err := parseJustInTimeChange(input)
+	if err != nil {
+		return formatToolError(err), nil, nil
 	}
-	change := &justInTimeChange{project: input.Project, enabled: input.Enabled}
 	link := s.projectSettingsLink(ctx, change.project)
 
 	// Checked before any answer is read: a client that declared no form cannot
