@@ -370,6 +370,7 @@ func TestMCPDeveloperApprovesTheirOwnAccessRequest(t *testing.T) {
 		Project:   &v1pb.Project{Title: "MCP developer grant", AllowSelfApproval: true},
 	}))
 	a.NoError(err)
+	a.NoError(ctl.allowJustInTimeAccess(ctx, project.Msg))
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		AllowMissing: true,
