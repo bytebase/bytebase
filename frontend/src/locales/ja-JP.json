@@ -1699,6 +1699,15 @@
   "plan": {
     "add-spec": "変更を追加",
     "add-spec-pending-draft": "新しい変更を追加する前に、保留中の変更を保存または破棄してください",
+    "ai-review": {
+      "failed-to-run": "AI レビューを開始できませんでした",
+      "finished": "完了",
+      "not-run": "未実行",
+      "queued": "待機中",
+      "run": "AI レビューを実行",
+      "save-first": "AI レビューを実行するには、編集内容を保存または破棄してください。",
+      "status-unknown": "状態を取得できません"
+    },
     "blocker": {
       "clears-on-its-own": "自動的に解消されます"
     },

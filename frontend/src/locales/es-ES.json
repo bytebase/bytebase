@@ -1699,6 +1699,15 @@
   "plan": {
     "add-spec": "Agregar cambio",
     "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
+    "ai-review": {
+      "failed-to-run": "No se pudo iniciar la revisión con IA",
+      "finished": "Finalizada",
+      "not-run": "Aún no se ha ejecutado",
+      "queued": "En cola",
+      "run": "Ejecutar revisión con IA",
+      "save-first": "Guarda o descarta tus cambios para ejecutar la revisión con IA.",
+      "status-unknown": "Estado no disponible"
+    },
     "blocker": {
       "clears-on-its-own": "Se resuelve solo"
     },

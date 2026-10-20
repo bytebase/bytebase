@@ -1699,6 +1699,15 @@
   "plan": {
     "add-spec": "添加变更",
     "add-spec-pending-draft": "请先保存或放弃当前的待处理变更，然后再添加新变更",
+    "ai-review": {
+      "failed-to-run": "无法启动 AI 审核",
+      "finished": "已完成",
+      "not-run": "尚未运行",
+      "queued": "排队中",
+      "run": "运行 AI 审核",
+      "save-first": "请先保存或放弃修改，再运行 AI 审核。",
+      "status-unknown": "暂时无法获取状态"
+    },
     "blocker": {
       "clears-on-its-own": "将自动完成"
     },

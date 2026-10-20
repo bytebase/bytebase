@@ -1699,6 +1699,15 @@
   "plan": {
     "add-spec": "Add Change",
     "add-spec-pending-draft": "Save or discard the pending change before adding another",
+    "ai-review": {
+      "failed-to-run": "Could not start the AI review",
+      "finished": "Finished",
+      "not-run": "Not run yet",
+      "queued": "Queued",
+      "run": "Run AI review",
+      "save-first": "Save or discard your edits to run the AI review.",
+      "status-unknown": "Status not available"
+    },
     "blocker": {
       "clears-on-its-own": "Clears on its own"
     },
