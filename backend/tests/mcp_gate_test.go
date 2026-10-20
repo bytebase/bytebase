@@ -6,11 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -85,10 +88,11 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 		"a served, audited MCP call is stored")
 }
 
-// TestMCPGateRefusesGrantIssues covers, over one live MCP session, the grant
-// issues a session may not create and the access request it may file instead,
-// which needs a project that allows just-in-time access.
-func TestMCPGateRefusesGrantIssues(t *testing.T) {
+// TestMCPGrantIssuesAndAccessRequests covers, over one live MCP session, the
+// grant issues a session may not create, the access request it may file
+// instead (in a project that allows just-in-time access), and deciding that
+// request through decide_issue.
+func TestMCPGrantIssuesAndAccessRequests(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -105,7 +109,14 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	// depend on the resolved default.
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 
-	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
+	// The client confirms every decision it is asked about.
+	var asked atomic.Int32
+	session := openMCPSessionWithOptions(ctx, t, ctl, ctl.authInterceptor.token, &mcp.ClientOptions{
+		ElicitationHandler: func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
+			asked.Add(1)
+			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"confirm": true}}, nil
+		},
+	})
 	defer session.Close()
 
 	grant := callAPIOnSession(ctx, t, session, "IssueService/CreateIssue", map[string]any{
@@ -271,6 +282,37 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.NoError(err)
 	a.Equal(v1pb.AccessGrant_PENDING, still.Msg.Status)
 
+	// call_api cannot carry a confirmation, so the gate refuses its approval.
+	unconfirmed := callAPIOnSession(ctx, t, session, "IssueService/ApproveIssue", map[string]any{"name": pending.Issue})
+	a.Equal(http.StatusForbidden, unconfirmed.Status)
+	a.Contains(unconfirmed.Error, "decide_issue", "the refusal must name the path that asks the user")
+
+	// The requester approves its own request. The project leaves self-approval
+	// off, so the workflow refuses it after the user confirms, as it would in
+	// the console, and the tool reports why.
+	refused, refusedText := decideIssueOnSession(ctx, t, session, pending.Issue, "approve")
+	a.True(refused, refusedText)
+	a.Contains(refusedText, "self-approval is not allowed")
+	still, err = ctl.accessGrantServiceClient.GetAccessGrant(ctx, connect.NewRequest(&v1pb.GetAccessGrantRequest{Name: pending.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.AccessGrant_PENDING, still.Msg.Status)
+
+	// With self-approval on, the same confirmed approval goes through: the
+	// requester holds the step's role as the project's creator, and the grant
+	// starts.
+	_, err = ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project:    &v1pb.Project{Name: projectName, AllowSelfApproval: true},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_self_approval"}},
+	}))
+	a.NoError(err)
+	failed, approvedText := decideIssueOnSession(ctx, t, session, pending.Issue, "approve")
+	a.False(failed, approvedText)
+	a.Contains(approvedText, "Approved "+pending.Issue)
+	approved, err := ctl.accessGrantServiceClient.GetAccessGrant(ctx, connect.NewRequest(&v1pb.GetAccessGrantRequest{Name: pending.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.AccessGrant_ACTIVE, approved.Msg.Status)
+	a.Equal(int32(2), asked.Load(), "each decision asks the user once")
+
 	consoleRequest := func() *v1pb.AccessGrant {
 		granted, err := consoleCreate()
 		a.NoError(err)
@@ -313,6 +355,117 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		a.Equal(issuesBefore, issuesAfter, "%s: a refused request leaves no issue", tc.name)
 		a.Equal(v1pb.AccessGrant_ACTIVE, consoleRequest().Status, "%s: a console request is granted at once, as before", tc.name)
 	}
+}
+
+// A project developer cannot get access grants, but the approval rule may still
+// name developers, and the console shows a requester their own grant.
+func TestMCPDeveloperApprovesTheirOwnAccessRequest(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+
+	project, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		ProjectId: "mcp-developer-grant",
+		Project:   &v1pb.Project{Title: "MCP developer grant", AllowSelfApproval: true},
+	}))
+	a.NoError(err)
+	a.NoError(ctl.allowJustInTimeAccess(ctx, project.Msg))
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		AllowMissing: true,
+		Setting: &v1pb.Setting{
+			Name: "settings/WORKSPACE_APPROVAL",
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_WorkspaceApproval{
+				WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{Rules: []*v1pb.WorkspaceApprovalSetting_Rule{{
+					Source:    v1pb.WorkspaceApprovalSetting_Rule_REQUEST_ACCESS,
+					Condition: &expr.Expr{Expression: "true"},
+					Template:  &v1pb.ApprovalTemplate{Flow: &v1pb.ApprovalFlow{Roles: []string{"roles/projectDeveloper"}}},
+				}}},
+			}},
+		},
+	}))
+	a.NoError(err)
+
+	pgContainer := sharedPgTarget(t)
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst"),
+		Instance: &v1pb.Instance{
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "MCP developer grant instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
+		},
+	}))
+	a.NoError(err)
+	dbName := generateRandomString("db")
+	a.NoError(ctl.createDatabase(ctx, project.Msg, instance.Msg, nil, dbName, ""))
+
+	email, password := "developer@example.com", "1024bytebase"
+	developer, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Email: email, Password: password, Title: "Developer"},
+	}))
+	a.NoError(err)
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, developer.Msg.Workspace, "user:"+email, "roles/workspaceMember")
+	a.NoError(err)
+	policy, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{Resource: project.Msg.Name}))
+	a.NoError(err)
+	policy.Msg.Bindings = append(policy.Msg.Bindings, &v1pb.Binding{Role: "roles/projectDeveloper", Members: []string{"user:" + email}})
+	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{Resource: project.Msg.Name, Policy: policy.Msg}))
+	a.NoError(err)
+	login, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{Email: email, Password: password}))
+	a.NoError(err)
+
+	var asked atomic.Int32
+	session := openMCPSessionWithOptions(ctx, t, ctl, login.Msg.Token, &mcp.ClientOptions{
+		ElicitationHandler: func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
+			asked.Add(1)
+			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"confirm": true}}, nil
+		},
+	})
+	defer session.Close()
+	filed := callAPIOnSession(ctx, t, session, "AccessGrantService/CreateAccessGrant", map[string]any{
+		"parent": project.Msg.Name,
+		"accessGrant": map[string]any{
+			"targets": []string{fmt.Sprintf("%s/databases/%s", instance.Msg.Name, dbName)},
+			"query":   "SELECT 1",
+			"reason":  "the agent needs one read",
+			"ttl":     "3600s",
+		},
+	})
+	a.Equal(http.StatusOK, filed.Status, filed.Error)
+	var pending v1pb.AccessGrant
+	a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(filed.RawResponse), &pending))
+	read := callAPIOnSession(ctx, t, session, "AccessGrantService/GetAccessGrant", map[string]any{"name": pending.Name})
+	a.Equal(http.StatusForbidden, read.Status, "a project developer cannot get access grants: %s", read.Error)
+
+	failed, text := decideIssueOnSession(ctx, t, session, pending.Issue, "approve")
+	a.False(failed, text)
+	a.Contains(text, "Approved "+pending.Issue)
+	a.Equal(int32(1), asked.Load(), "the user is shown the request and asked once")
+	approved, err := ctl.accessGrantServiceClient.GetAccessGrant(ctx, connect.NewRequest(&v1pb.GetAccessGrantRequest{Name: pending.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.AccessGrant_ACTIVE, approved.Msg.Status)
+}
+
+// decideIssueOnSession runs the decide_issue tool and returns whether it
+// reported an error, with the text an agent would read.
+func decideIssueOnSession(ctx context.Context, t *testing.T, session *mcp.ClientSession, issue, decision string) (bool, string) {
+	t.Helper()
+	result, err := session.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "decide_issue",
+		Arguments: map[string]any{"issue": issue, "decision": decision},
+	})
+	require.NoError(t, err)
+	var texts []string
+	for _, content := range result.Content {
+		if text, ok := content.(*mcp.TextContent); ok {
+			texts = append(texts, text.Text)
+		}
+	}
+	return result.IsError, strings.Join(texts, "")
 }
 
 // TestMCPCannotRunAnIssuelessRollout pins rejectMCPOriginatedIssuelessRollout

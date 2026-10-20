@@ -2782,7 +2782,7 @@
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
         "floor": {
           "label": "Nunca, en ningún modo:",
-          "text": "aprobar issues, administrar el espacio de trabajo, manejar credenciales, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
+          "text": "administrar el espacio de trabajo, manejar credenciales, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
         },
         "heading": "{{mode}} permite",
         "hide-details": "Ocultar detalles",
@@ -2791,6 +2791,10 @@
           "refused": "No permitido"
         },
         "row": {
+          "approve": {
+            "details": "Cada decisión se confirma en el cliente MCP del usuario antes de tomarse · Las solicitudes de rol se deciden en la consola · Se aplican las reglas de aprobación y la configuración de autoaprobación del proyecto, como en la consola",
+            "title": "Aprobar o rechazar issues"
+          },
           "export": {
             "details": "Descargar resultados como archivo. Los datos salen de Bytebase.",
             "title": "Exportar resultados de consulta"
@@ -2800,7 +2804,7 @@
             "title": "Gestionar el mantenimiento de bases de datos"
           },
           "propose": {
-            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. Un agente nunca aprueba su propio cambio; la política de aprobación del proyecto decide si una persona debe hacerlo",
+            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. La política de aprobación del proyecto decide si un cambio necesita aprobación",
             "title": "Proponer cambios"
           },
           "read-access": {
@@ -2820,7 +2824,7 @@
             "title": "Leer el flujo de cambios"
           },
           "request-access": {
-            "details": "Pedir una concesión con límite de tiempo para ejecutar una sentencia concreta, opcionalmente con resultados sin enmascarar o exportados; la sentencia debe ser una lectura hasta donde el motor pueda comprobarlo · La concesión solo empieza después de que una persona la apruebe, y se rechaza una solicitud que no necesitaría la aprobación de nadie · Una concesión solo se aplica donde el proyecto permite concesiones de acceso",
+            "details": "Pedir una concesión con límite de tiempo para ejecutar una sentencia concreta, opcionalmente con resultados sin enmascarar o exportados; la sentencia debe ser una lectura hasta donde el motor pueda comprobarlo · La concesión solo empieza después de ser aprobada, y se rechaza una solicitud que no necesitaría la aprobación de nadie · Una concesión solo se aplica donde el proyecto permite concesiones de acceso",
             "title": "Solicitar concesiones de acceso"
           },
           "run-rollouts": {
@@ -2839,7 +2843,7 @@
         },
         "summary": {
           "read-only": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; una solicitud que lleve algo que no pueda demostrarse que es una lectura se rechaza, y no se exporta nada",
-          "read-write": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; proponer, solicitar acceso, ejecutar, exportar y gestionar"
+          "read-write": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; proponer, solicitar acceso, aprobar, ejecutar, exportar y gestionar"
         },
         "tier": {
           "read": "lectura",

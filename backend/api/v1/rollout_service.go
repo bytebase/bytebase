@@ -1420,11 +1420,12 @@ func (s *RolloutService) canUserCancelEnvironmentTaskRun(ctx context.Context, us
 // linked issue.
 //
 // Both approval checks on this path need a linked issue, so without this guard
-// a session could skip the issue approval it may not give. Other callers keep
-// issueless deployment, which the GitOps Service Agent role relies on; BOT-71
-// tracks whether to close it for everyone. It must refuse before the rollout exists,
-// because approval finding then refuses outright and strands the change, so
-// CreateRollout is guarded as well as BatchRunTasks.
+// a session could run a change this project requires approval for with no
+// approval at all. Other callers keep issueless deployment, which the GitOps
+// Service Agent role relies on; BOT-71 tracks whether to close it for everyone.
+// It must refuse before the rollout exists, because approval finding then
+// refuses outright and strands the change, so CreateRollout is guarded as well
+// as BatchRunTasks.
 func rejectMCPOriginatedIssuelessRollout(ctx context.Context, project *store.ProjectMessage, issue *store.IssueMessage, action string) error {
 	if !mcpSession(ctx) {
 		return nil

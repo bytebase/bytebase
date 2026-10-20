@@ -6,7 +6,7 @@ The MCP settings page offers three modes (Disabled, Read-only, Read-write) and d
 one sentence. Since [#21324](https://github.com/bytebase/bytebase/pull/21324) removed the per-mode
 method drawer, nothing on the page says what a mode actually serves, and an admin choosing between
 Read-only and Read-write has nothing to compare beyond two sentences. The rule this doc lands on:
-**show capabilities, not methods or permissions — one ordered list of ten capability rows in
+**show capabilities, not methods or permissions — one ordered list of eleven capability rows in
 which each mode is a prefix, collapsed by default inside the existing Access policy section, and
 following the picked mode while editing.** The page also gets shorter: the mode cards shrink to an
 icon, a label and a three-word caption, with the selected mode's "Best for" under them; the
@@ -59,7 +59,7 @@ What follows from it:
 
 ## The rows
 
-Ten rows: four read, six write. Each has a title and a one-line list of sub-items in plain
+Eleven rows: four read, seven write. Each has a title and a one-line list of sub-items in plain
 words. The right column records which classified methods the row's wording has to cover; it is
 documentation for whoever rereads these rows after a classification change, and never appears in
 the product.
@@ -71,18 +71,19 @@ the product.
 | read | Read the change workflow | Issues and comments · Plans and plan checks · Rollouts, task runs and logs · Releases · Rollback previews | 17 READ methods: issue, plan, rollout and release reads |
 | read | Read members, roles and policies | Who holds which role in the workspace and its projects · Groups and their members · Roles and their permissions · Masking rules and exemptions · Rollout, data query, tag and review policies · Access grants, including pending requests | 12 READ methods: `GetIamPolicy` on projects and the workspace, group reads (3), role reads (2), `GetPolicy`, `ListPolicies`, access-grant reads (3, with `SearchMyAccessGrants`) |
 | — | *Read-only stops here* | | 68 methods |
-| write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
-| write | Request access grants | Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after a person approves it, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants | 1 WRITE method: `AccessGrantService/CreateAccessGrant` |
+| write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. The project's approval policy decides whether a change needs approval | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
+| write | Request access grants | Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants | 1 WRITE method: `AccessGrantService/CreateAccessGrant` |
+| write | Approve or reject issues | Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console | 2 WRITE methods: `ApproveIssue`, `RejectIssue`, served only through the `decide_issue` tool, which asks the user to confirm each decision and refuses role requests |
 | write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
 | write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
 | write | Export query results | Download results as a file. Data leaves Bytebase | 1 WRITE method: `SQLService/Export` |
 | write | Manage database housekeeping | Sync instances and databases · Saved queries | 9 WRITE methods: sync, saved-query writes |
-| — | *Read-write stops here* | | 105 methods |
-| floor | Never, in any mode: approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history. | | 114 methods: 36 FORBIDDEN, 78 EXCLUDED |
+| — | *Read-write stops here* | | 107 methods |
+| floor | Never, in any mode: administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history. | | 112 methods: 34 FORBIDDEN, 78 EXCLUDED |
 
 Every row is displayed under every mode — served, or muted with a `—` — and against every engine a
 workspace happens to hold, so **every line on this card must be true on both axes: mode and engine.**
-That covers the ten rows, and equally the collapsed summary, the card captions and the "Best for"
+That covers the eleven rows, and equally the collapsed summary, the card captions and the "Best for"
 lines, which are not rows and were missed the first time the rule was applied. The summary is the
 line most admins read and often the only one. A
 claim whose truth depends on the mode names the mode as a condition; a claim whose truth depends on
@@ -194,20 +195,31 @@ under that same flag, and an issue whose approval finding produced no template c
 with no human acting. The console turns the flag on for new projects; the API default is off. A row
 that said "of an approved change" would therefore promise more than the gate enforces, and the
 wording an admin reads while choosing Read-write is the wrong place to be generous. What holds
-unconditionally is that an agent never approves its own change, because the approval methods are
-FORBIDDEN: approving, rejecting and re-checking an issue, and activating an access grant. That is
-the half the rows state. Whether MCP-originated rollouts should require
-approval regardless of the project flag is a product question tracked separately (BOT-71), not one
-this doc decides.
+unconditionally is that no approval decision is made over MCP without a confirmation in the client.
+A Read-write session approves or rejects an issue only through the `decide_issue` tool. The tool
+decides database changes and access requests. It refuses role requests, because approving one grants
+a project role, and role grants stay in the console with the rest of access administration. It asks
+the user through MCP form elicitation, inside the same tool call, and acts only on an accepted form
+with the box checked. A client that cannot show the form gets the issue's console link. The gate
+serves `ApproveIssue` and `RejectIssue` only to a request that carries the confirmation, so
+`call_api` is refused. The workflow then decides as it does for a person: the step's role, and the
+project's self-approval and last-editor settings. Bytebase records the decision as confirmed in the
+client, not as proof that a person clicked: a hook in the user's own client can answer the form, and
+that is the user's choice. Re-checking an issue's approval and activating an access grant directly
+stay FORBIDDEN, because each can let a request pass with no approver deciding it. That is the half
+the rows state. Whether MCP-originated rollouts should require approval regardless of the project
+flag is a product question tracked separately (BOT-71), not one this doc decides.
 
-Access requests are the exception, and the request row states the person's approval
-unconditionally. An approved access grant is active at once, so an MCP session's request that would
-count as approved on creation, with no approval template or one that names no approver, is refused
+Access requests are the exception, and the request row states the approval unconditionally. An
+approved access grant is active at once, so an MCP session's request that would count as approved
+on creation, with no approval template or one that names no approver, is refused
 before any row is written (`refuseUnattendedMCPAccessGrant` in
 `backend/api/v1/access_grant_service.go`). The finding is saved on the request's issue at
 creation, so an approval-rule edit afterwards cannot change it. Every other way a request becomes
-active is an approval method above, FORBIDDEN to the session. The person who approves can be the
-requester, signed in to the console; the rows promise a person, not a second one.
+active goes through an approver: in the console, or through `decide_issue` with a confirmation in
+the client. Activating a grant directly stays FORBIDDEN to the session. The approver can be the
+requester where the project allows self-approval; the rows promise an approval, not a second
+person.
 
 The members row shows who holds which role, the groups and their members, each role's permissions
 and every policy type, so an agent can tell which people an approval step waits on. Two choices in
@@ -228,9 +240,11 @@ pinning the creator, which this row does not touch.
 
 ### The verb rule
 
-The verb names the row's effect on the customer's databases. *Read*: none. *Propose*: none until a
-human approves. *Request*: none until a person approves, and then access to one statement's results,
-unmasked or exported if asked for. *Run*: direct. *Export*: data leaves the product. *Manage*:
+The verb names the row's effect on the customer's databases. *Read*: none. *Propose*: none until it
+is approved. *Request*: none until it is approved, and then access to one statement's results,
+unmasked or exported if asked for. *Approve*: none directly; the issue proceeds: a change rolls out
+as the project's rollout policy allows, and an access request takes effect. Role requests stay in
+the console. *Run*: direct. *Export*: data leaves the product. *Manage*:
 configuration only, no data path. Within a tier the verb repeats; it changes only where the effect
 changes.
 
@@ -240,18 +254,19 @@ One verb for the whole write tier was tried and rejected:
   change proposals" (nothing reaches a database until approval), "Write rollouts" (not English),
   "Write database housekeeping" (reads as a data change).
 - **Change** for every write row: fails for exports and rollouts, and makes "Change proposals" and
-  "Change data with SQL" read as the same thing — the distinction the FORBIDDEN approval methods
-  exist to protect.
+  "Change data with SQL" read as the same thing — the distinction the approval step exists to
+  protect.
 - **Manage** for every write row: hides the hazard on exports and on SQL.
 
 Per row: *Propose* over Create (Create fits the method names but hides that the project's approval
-policy may still require a human); *Export* over Read or Download (Read hides the egress hazard,
+policy may still require approval); *Export* over Read or Download (Read hides the egress hazard,
 which is why Export is WRITE-class in the first place); *Manage* over Update or Maintain (Update
-reads as a data change, Maintain is vague); *Request* over Propose (a proposal waits for a person
+reads as a data change, Maintain is vague); *Request* over Propose (a proposal waits for approval
 only when the project's approval policy says so, a session's request always does, and what an approved request
-gives is access to data, not a change). Rollouts and DML/DDL both take *Run* and stay two rows,
-because a custom policy will want "run approved rollouts, but no ad-hoc SQL" — the workflow the
-product exists for.
+gives is access to data, not a change); *Approve* is a row of its own, not a sub-item of Propose,
+because deciding someone's proposal or request is a different effect from filing one. Rollouts and
+DML/DDL both take *Run* and stay two rows, because a custom policy will want "run approved
+rollouts, but no ad-hoc SQL" — the workflow the product exists for.
 
 The tier is named once, by the dividers, so no row repeats it in its title.
 
@@ -277,7 +292,7 @@ its tier tag, nothing else. "Show details" reveals the sub-item line for every r
 there is one second-level control rather than one per row; per-row expanders were rejected as fiddly. No
 method names, no permission names, no counts, no link to a method list. The floor is kept as one
 short line because it is what a security-minded admin reads first, and it is what keeps the list
-honest about the 114 methods no mode reaches. There is no constants line under the list; the facts
+honest about the 112 methods no mode reaches. There is no constants line under the list; the facts
 it would carry (capped by the user's own permissions, refusals audited) move into the section
 description.
 
@@ -418,7 +433,7 @@ under
 
 - Section description: "The most any MCP session may do here. Sessions are also capped by each user's permissions, and policy refusals are streamed to stdout when audit logging to stdout is enabled."
 - Disclosure line, collapsed — Read-only: "Read schemas, data, the change workflow, members, roles and policies; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported".
-  Read-write: "Read schemas, data, the change workflow, members, roles and policies; propose, request access, run, export and manage".
+  Read-write: "Read schemas, data, the change workflow, members, roles and policies; propose, request access, approve, run, export and manage".
   Expanded heading: "{mode} allows". Details control: "Show details" / "Hide details".
 - Disabled — view sentence: "No MCP session can connect to this workspace." Edit static line:
   "Nothing is allowed; no MCP session can connect."
@@ -431,11 +446,16 @@ under
   is retired everywhere; its content lives in the Read-only summary and in row 2's sub-item.
 - Row titles and sub-items: the table above, verbatim.
 - Dividers: "Read-only stops here", "Read-write stops here".
-- Floor: "Never, in any mode: approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."
-  The verbs cover every denial reason except two, `SENDS_DATA_TO_A_THIRD_PARTY` for the reason below
-  and `REDRAWS_GOVERNANCE_BOUNDARY`, and claim only what is refused **whatever the caller's
-  permissions** and by **whatever effect** a served method has. That second rule cost three drafts. MCP's ceiling removes methods by class; it
-  never adds per-row privacy, so an ownership claim — "never read other people's SQL", then
+- Floor: "Never, in any mode: administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."
+  "Approve issues" left the floor when approving and rejecting moved to the confirmed tool.
+  "Administer the workspace" still holds for role grants, because that tool refuses role requests.
+  The verbs cover every denial reason except three: `SENDS_DATA_TO_A_THIRD_PARTY` for the reason
+  below, `REDRAWS_GOVERNANCE_BOUNDARY`, and `DRIVES_THE_APPROVAL_DECISION`, whose two remaining
+  methods re-check an issue's approval and activate an access grant directly. The verbs claim only
+  what is refused **whatever the caller's permissions** and by **whatever effect** a served method
+  has.
+  That second rule cost three drafts. MCP's ceiling removes methods by class; it never adds
+  per-row privacy, so an ownership claim — "never read other people's SQL", then
   "never browse everyone's saved SQL" — is false at whatever permission level makes it true in the
   console: `GetSavedQuery` reaches SQL shared by a binding, and `searchScope` drops all scoping for
   a caller holding project-wide `bb.savedQueries.get`. Query history is the one that qualifies,

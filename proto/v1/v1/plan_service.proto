@@ -50,9 +50,9 @@ service PlanService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     // This is the step that produces the issueless plan — it creates a plan
-    // and links no issue. It stays WRITE and needs no rule of its own: the
-    // rule the gate PR owes belongs at execution, not here, since a plan that
-    // is never rolled out changes nothing. See RolloutService/CreateRollout.
+    // and links no issue. It stays WRITE and needs no rule of its own: a plan
+    // that is never rolled out changes nothing, so the rule sits at execution
+    // (rejectMCPOriginatedIssuelessRollout; see RolloutService/CreateRollout).
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 

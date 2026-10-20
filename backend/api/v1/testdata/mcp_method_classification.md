@@ -17,9 +17,9 @@ served by no ceiling.
 | Class | Methods | Meaning |
 |---|---|---|
 | READ | 68 | served to a read-only session and above |
-| WRITE | 37 | served to a read-write session only |
+| WRITE | 39 | served to a read-write session only |
 | EXCLUDED | 78 | served by no ceiling this phase ships |
-| FORBIDDEN | 36 | never served, whatever the ceiling |
+| FORBIDDEN | 34 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **219** | |
 
@@ -96,7 +96,7 @@ served by no ceiling.
 | InstanceService/UndeleteInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.undelete |
 | InstanceService/UpdateDataSource | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.instances.update |
 | InstanceService/UpdateInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.update |
-| IssueService/ApproveIssue | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | — |
+| IssueService/ApproveIssue | WRITE | — | — |
 | IssueService/BatchUpdateIssuesStatus | WRITE | — | bb.issues.update |
 | IssueService/CreateIssue | WRITE | — | bb.issues.create |
 | IssueService/CreateIssueComment | WRITE | — | bb.issueComments.create |
@@ -104,7 +104,7 @@ served by no ceiling.
 | IssueService/GetReviewRun | READ | — | bb.reviewRuns.get |
 | IssueService/ListIssueComments | READ | — | bb.issueComments.list |
 | IssueService/ListIssues | READ | — | bb.issues.list |
-| IssueService/RejectIssue | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | — |
+| IssueService/RejectIssue | WRITE | — | — |
 | IssueService/RequestIssue | WRITE | — | — |
 | IssueService/RetryIssueApproval | FORBIDDEN | DRIVES_THE_APPROVAL_DECISION | — |
 | IssueService/RunReview | WRITE | — | bb.reviewRuns.run |

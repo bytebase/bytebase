@@ -156,13 +156,14 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	// follow-up (BOT-53); disallowing first is the deliberate order.
 	v1pb.MCPDenialReason_REWRITES_SESSION_BOUNDARY: {v1pb.MCPMethodClass_FORBIDDEN, "it rewrites the workspace settings that bound this session, including the switch meant to contain it"},
 
-	v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION: {v1pb.MCPMethodClass_FORBIDDEN, "it decides whether a change or an access request passes its human approval, and an agent does not decide that for its own work"},
+	v1pb.MCPDenialReason_DRIVES_THE_APPROVAL_DECISION: {v1pb.MCPMethodClass_FORBIDDEN, "it can let a change or an access request pass its approval without an approver deciding it"},
 
 	// The other refused class. An EXCLUDED method is out of scope for the modes
-	// this release ships and an admin-capable ceiling could legitimately serve
-	// it one day, while a FORBIDDEN method never becomes servable — so a denial
-	// that blurred the two would tell an operator the wrong thing about whether
-	// asking is worth it. The class on each row is what keeps them apart.
+	// this release ships, and an admin-capable ceiling could legitimately serve
+	// it one day; a FORBIDDEN method breaks the MCP boundary, so no ceiling
+	// serves it. A denial that blurred the two would tell an operator the wrong
+	// thing about whether asking is worth it. The class on each row is what
+	// keeps them apart.
 	v1pb.MCPDenialReason_ADMINISTERS_THE_WORKSPACE:   {v1pb.MCPMethodClass_EXCLUDED, "it administers the workspace rather than doing database work, and no MCP mode this release ships covers workspace administration"},
 	v1pb.MCPDenialReason_READS_OTHER_USERS_SQL:       {v1pb.MCPMethodClass_EXCLUDED, "it returns SQL that other people wrote, across the workspace or past the sharing that keeps a saved query private"},
 	v1pb.MCPDenialReason_OPENS_AN_ADMIN_CONNECTION:   {v1pb.MCPMethodClass_EXCLUDED, "it opens an admin-credentialed connection to the database and returns other sessions' live, unmasked SQL"},
@@ -461,11 +462,14 @@ func describeServedClasses(served []v1pb.MCPMethodClass) string {
 const mcpConsoleWayOut = "Perform this action signed in to the Bytebase console instead"
 
 // mcpRequestShapeRefusals holds the refusals a per-method class cannot express,
-// because what the call does depends on a request field. Each entry returns the
-// reason and the way out, or an empty reason to allow. It lives in the gate so a
-// refusal is audited and worded like a class refusal, before the handler runs.
+// because the verdict depends on a request field or on what the MCP server
+// attached to the request context. Each entry returns the reason and the way
+// out, or an empty reason to allow. It lives in the gate so a refusal is
+// audited and worded like a class refusal, before the handler runs.
 var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (reason, wayOut string){
 	v1connect.IssueServiceCreateIssueProcedure:       refuseGrantIssueCreation,
+	v1connect.IssueServiceApproveIssueProcedure:      refuseUnconfirmedIssueDecision,
+	v1connect.IssueServiceRejectIssueProcedure:       refuseUnconfirmedIssueDecision,
 	v1connect.SheetServiceCreateSheetProcedure:       inTheConsole(refuseMaskedWriteSheet),
 	v1connect.SheetServiceBatchCreateSheetsProcedure: inTheConsole(refuseMaskedWriteSheetBatch),
 	v1connect.ReleaseServiceCreateReleaseProcedure:   inTheConsole(refuseMaskedWriteRelease),
@@ -483,7 +487,8 @@ func inTheConsole(refuse func(context.Context, any) string) func(context.Context
 }
 
 // refuseByRequestShape applies the table above. The context carries what the
-// gate resolved, so an entry can key on more than the request; none does today.
+// gate resolved and what the MCP server attached, so an entry can key on more
+// than the request.
 func refuseByRequestShape(ctx context.Context, procedure string, msg any) error {
 	refuse, ok := mcpRequestShapeRefusals[procedure]
 	if !ok {
@@ -495,6 +500,29 @@ func refuseByRequestShape(ctx context.Context, procedure string, msg any) error 
 	}
 	return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 		"%s is not available to MCP sessions for this request because %s. %s", procedure, reason, wayOut))
+}
+
+const mcpDecideIssueWayOut = "Use the decide_issue tool, which asks the user to confirm"
+
+// refuseUnconfirmedIssueDecision serves an approval or a rejection only when
+// the request context carries that decision as the user confirmed it in the MCP
+// client, which decide_issue attaches after asking. call_api reaches the same
+// procedures but cannot set a context value, so it is refused here.
+func refuseUnconfirmedIssueDecision(ctx context.Context, msg any) (string, string) {
+	var want auth.MCPConfirmedDecision
+	switch request := msg.(type) {
+	case *v1pb.ApproveIssueRequest:
+		want = auth.MCPConfirmedDecision{Procedure: v1connect.IssueServiceApproveIssueProcedure, Issue: request.GetName()}
+	case *v1pb.RejectIssueRequest:
+		want = auth.MCPConfirmedDecision{Procedure: v1connect.IssueServiceRejectIssueProcedure, Issue: request.GetName()}
+	default:
+		return fmt.Sprintf("its request could not be read as an issue decision (%T)", msg), mcpDecideIssueWayOut
+	}
+	if confirmed, ok := auth.MCPConfirmedDecisionFromContext(ctx); ok && confirmed.Procedure == want.Procedure && confirmed.Issue == want.Issue {
+		return "", ""
+	}
+	return "an issue is approved or rejected over MCP only after the user confirms that decision in the MCP client, " +
+		"and this request carries no such confirmation", mcpDecideIssueWayOut
 }
 
 // refuseGrantIssueCreation applies grantIssueRefusal to CreateIssue. UpdateIssue's

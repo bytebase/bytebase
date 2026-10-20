@@ -437,6 +437,55 @@ func TestReviewIssueConcurrentApprovalsHaveOneWinner(t *testing.T) {
 	require.Equal(t, 1, rejected)
 }
 
+func TestReviewIssueAppliesAConfirmedActionOnlyToTheConfirmedVersion(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+		Workspace: "default",
+		Member:    common.FormatUserEmail("reviewer@example.com"),
+		Roles:     []string{"roles/projectOwner"},
+	})
+	require.NoError(t, err)
+	confirmedApproval := func(issue *store.IssueMessage) IssueInput {
+		return IssueInput{
+			Workspace:           "default",
+			ProjectID:           "project-a",
+			IssueUID:            issue.UID,
+			Actor:               &store.UserMessage{Email: "reviewer@example.com"},
+			Action:              ActionApprove,
+			ConfirmedUpdateTime: &issue.UpdatedAt,
+		}
+	}
+
+	t.Run("unchanged", func(t *testing.T) {
+		_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
+		result, err := NewWorkflow(stores).ReviewIssue(ctx, confirmedApproval(issue))
+		require.NoError(t, err)
+		require.True(t, result.Approved)
+	})
+
+	t.Run("changed after the workflow read it", func(t *testing.T) {
+		_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
+		workflow := NewWorkflow(stores)
+		// The edit lands between the workflow's unlocked read and its lock and
+		// leaves the approval as it was, so only the confirmed version refuses.
+		workflow.beforeCommit = func() {
+			title := "drop database"
+			_, err := stores.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{Title: &title})
+			require.NoError(t, err)
+		}
+
+		_, err := workflow.ReviewIssue(ctx, confirmedApproval(issue))
+		var workflowErr *Error
+		require.True(t, errors.As(err, &workflowErr))
+		require.Equal(t, ErrorConflict, workflowErr.Code)
+		require.Equal(t, ReasonChangedSinceConfirmed, workflowErr.Reason)
+		after, err := stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+		require.NoError(t, err)
+		require.Empty(t, after.Payload.GetApproval().GetApprovers(), "a refused action records no approval")
+	})
+}
+
 func TestPlanUpdateMakesPendingApprovalActionStale(t *testing.T) {
 	ctx := context.Background()
 	stores := setupWorkflowStore(ctx, t)

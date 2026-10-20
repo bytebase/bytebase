@@ -2782,7 +2782,7 @@
         "disabled": "Nothing is allowed; no MCP session can connect.",
         "floor": {
           "label": "Never, in any mode:",
-          "text": "approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."
+          "text": "administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."
         },
         "heading": "{{mode}} allows",
         "hide-details": "Hide details",
@@ -2791,6 +2791,10 @@
           "refused": "Not allowed"
         },
         "row": {
+          "approve": {
+            "details": "Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console",
+            "title": "Approve or reject issues"
+          },
           "export": {
             "details": "Download results as a file. Data leaves Bytebase.",
             "title": "Export query results"
@@ -2800,7 +2804,7 @@
             "title": "Manage database housekeeping"
           },
           "propose": {
-            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must approve it.",
+            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. The project's approval policy decides whether a change needs approval.",
             "title": "Propose changes"
           },
           "read-access": {
@@ -2820,7 +2824,7 @@
             "title": "Read the change workflow"
           },
           "request-access": {
-            "details": "Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after a person approves it, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants",
+            "details": "Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants",
             "title": "Request access grants"
           },
           "run-rollouts": {
@@ -2839,7 +2843,7 @@
         },
         "summary": {
           "read-only": "Read schemas, data, the change workflow, members, roles and policies; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported",
-          "read-write": "Read schemas, data, the change workflow, members, roles and policies; propose, request access, run, export and manage"
+          "read-write": "Read schemas, data, the change workflow, members, roles and policies; propose, request access, approve, run, export and manage"
         },
         "tier": {
           "read": "read",

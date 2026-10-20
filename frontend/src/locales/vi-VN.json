@@ -2782,7 +2782,7 @@
         "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
         "floor": {
           "label": "Không bao giờ, ở mọi chế độ:",
-          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở phiên chế độ Admin, hoặc đọc lịch sử truy vấn của người khác."
+          "text": "quản trị không gian làm việc, xử lý thông tin xác thực, mở phiên chế độ Admin, hoặc đọc lịch sử truy vấn của người khác."
         },
         "heading": "{{mode}} cho phép",
         "hide-details": "Ẩn chi tiết",
@@ -2791,6 +2791,10 @@
           "refused": "Không được phép"
         },
         "row": {
+          "approve": {
+            "details": "Mỗi quyết định được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Yêu cầu vai trò được quyết định trên bảng điều khiển · Các quy tắc phê duyệt và thiết lập tự phê duyệt của dự án vẫn áp dụng, như trên bảng điều khiển",
+            "title": "Phê duyệt hoặc từ chối Issue"
+          },
           "export": {
             "details": "Tải kết quả về dưới dạng tệp. Dữ liệu rời khỏi Bytebase.",
             "title": "Xuất kết quả truy vấn"
@@ -2800,7 +2804,7 @@
             "title": "Quản lý vận hành cơ sở dữ liệu"
           },
           "propose": {
-            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo, xóa và khôi phục bản phát hành · Tạo và xóa bản sửa đổi · Tạo khác biệt lược đồ. Một tác nhân không bao giờ tự phê duyệt thay đổi của mình; chính sách phê duyệt của dự án quyết định liệu có cần người phê duyệt hay không",
+            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo, xóa và khôi phục bản phát hành · Tạo và xóa bản sửa đổi · Tạo khác biệt lược đồ. Chính sách phê duyệt của dự án quyết định liệu một thay đổi có cần phê duyệt hay không",
             "title": "Đề xuất thay đổi"
           },
           "read-access": {
@@ -2820,7 +2824,7 @@
             "title": "Đọc quy trình thay đổi"
           },
           "request-access": {
-            "details": "Xin cấp quyền truy cập có thời hạn để chạy một câu lệnh cụ thể, có thể kèm xem kết quả chưa che hoặc xuất kết quả; câu lệnh phải là lệnh đọc trong phạm vi engine kiểm tra được · Quyền chỉ bắt đầu sau khi một người phê duyệt, và yêu cầu không cần ai phê duyệt sẽ bị từ chối · Quyền chỉ áp dụng khi dự án cho phép cấp quyền truy cập",
+            "details": "Xin cấp quyền truy cập có thời hạn để chạy một câu lệnh cụ thể, có thể kèm xem kết quả chưa che hoặc xuất kết quả; câu lệnh phải là lệnh đọc trong phạm vi engine kiểm tra được · Quyền chỉ bắt đầu sau khi được phê duyệt, và yêu cầu không cần ai phê duyệt sẽ bị từ chối · Quyền chỉ áp dụng khi dự án cho phép cấp quyền truy cập",
             "title": "Yêu cầu cấp quyền truy cập"
           },
           "run-rollouts": {
@@ -2839,7 +2843,7 @@
         },
         "summary": {
           "read-only": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
-          "read-write": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; đề xuất, yêu cầu truy cập, chạy, xuất và quản lý"
+          "read-write": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; đề xuất, yêu cầu truy cập, phê duyệt, chạy, xuất và quản lý"
         },
         "tier": {
           "read": "đọc",
