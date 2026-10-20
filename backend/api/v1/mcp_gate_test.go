@@ -729,6 +729,16 @@ func TestTheApprovalReadsAreServed(t *testing.T) {
 	}
 }
 
+func TestTheAccessGrantCleanupIsServed(t *testing.T) {
+	t.Parallel()
+	class := map[string]v1pb.MCPMethodClass{}
+	for _, row := range mcpClassificationsFromDescriptors(t) {
+		class[row.procedure] = row.class
+	}
+	require.Equal(t, v1pb.MCPMethodClass_WRITE, class[v1connect.AccessGrantServiceRevokeAccessGrantProcedure],
+		"an agent that requested access must be able to revoke the grant once the work is done (BYT-9292)")
+}
+
 // TestDeprecatedSQLServiceAliasesMatchTheirCanonicalMethod pins the three
 // query-history RPCs that SQLService still carries as deprecated aliases of
 // QueryHistoryService. They have no HTTP binding, but the MCP surface indexes
@@ -1221,7 +1231,7 @@ func TestMCPGateServesAnIssueDecisionOnlyWithItsConfirmation(t *testing.T) {
 	confirmed := func(procedure, name string) context.Context {
 		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{
 			Procedure:       procedure,
-			Resource:           name,
+			Resource:        name,
 			IssueUpdateTime: time.Date(2026, 10, 13, 8, 0, 0, 123456000, time.UTC),
 		})
 	}

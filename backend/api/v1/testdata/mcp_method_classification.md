@@ -17,8 +17,8 @@ served by no ceiling.
 | Class | Methods | Meaning |
 |---|---|---|
 | READ | 68 | served to a read-only session and above |
-| WRITE | 39 | served to a read-write session only |
-| EXCLUDED | 78 | served by no ceiling this phase ships |
+| WRITE | 40 | served to a read-write session only |
+| EXCLUDED | 77 | served by no ceiling this phase ships |
 | FORBIDDEN | 34 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **219** | |
@@ -30,7 +30,7 @@ served by no ceiling.
 | AccessGrantService/CreateAccessGrant | WRITE | — | bb.accessGrants.create |
 | AccessGrantService/GetAccessGrant | READ | — | bb.accessGrants.get |
 | AccessGrantService/ListAccessGrants | READ | — | bb.accessGrants.list |
-| AccessGrantService/RevokeAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.revoke |
+| AccessGrantService/RevokeAccessGrant | WRITE | — | bb.accessGrants.revoke |
 | AccessGrantService/SearchMyAccessGrants | READ | — | bb.accessGrants.get |
 | ActuatorService/GetActuatorInfo | READ | — | — |
 | AuditLogService/ExportAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.export |

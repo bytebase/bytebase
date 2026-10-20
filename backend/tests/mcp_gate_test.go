@@ -313,6 +313,13 @@ func TestMCPGrantIssuesAndAccessRequests(t *testing.T) {
 	a.Equal(v1pb.AccessGrant_ACTIVE, approved.Msg.Status)
 	a.Equal(int32(2), asked.Load(), "each decision asks the user once")
 
+	// Once the work is done, the session revokes the grant it was given.
+	revoked := callAPIOnSession(ctx, t, session, "AccessGrantService/RevokeAccessGrant", map[string]any{"name": pending.Name})
+	a.Equal(http.StatusOK, revoked.Status, revoked.Error)
+	after, err := ctl.accessGrantServiceClient.GetAccessGrant(ctx, connect.NewRequest(&v1pb.GetAccessGrantRequest{Name: pending.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.AccessGrant_REVOKED, after.Msg.Status)
+
 	consoleRequest := func() *v1pb.AccessGrant {
 		granted, err := consoleCreate()
 		a.NoError(err)
