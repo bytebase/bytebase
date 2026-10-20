@@ -53,11 +53,48 @@
     "input-placeholder": "Pregunta algo a la IA...",
     "interrupted": "Interrumpido",
     "interrupted-retry-hint": "La conversación fue interrumpida. Puede reintentar o enviar un nuevo mensaje.",
+    "landing-starters": {
+      "menu": "Sugerencias",
+      "more": "Más sugerencias",
+      "project-access": "¿Qué debo configurar antes de colaborar en este Proyecto?",
+      "project-collaborate": "¿Cómo invito a compañeros de equipo a este Proyecto?",
+      "project-connect": "¿Cómo conecto una base de datos a este proyecto?",
+      "project-next": "¿Qué puedo hacer a continuación?",
+      "project-open-blockers": "¿Qué necesita mi atención en este Proyecto?",
+      "project-open-recent": "¿Qué cambió recientemente en este Proyecto?",
+      "project-organize": "¿Cómo debo organizar las bases de datos y los entornos de este Proyecto?",
+      "project-propose-change": "¿Cómo propongo un cambio de base de datos?",
+      "project-review": "¿Cómo se revisan los cambios de base de datos en este Proyecto?",
+      "workspace-attention": "¿Qué requiere mi atención?",
+      "workspace-concepts": "Ayúdame a entender Proyectos, Instancias y Bases de datos",
+      "workspace-governance": "¿Cómo gobierna Bytebase los cambios de base de datos?",
+      "workspace-recent": "¿Qué cambió recientemente en este espacio de trabajo?",
+      "workspace-setup-first": "¿Qué debería configurar primero?"
+    },
     "minimize": "Minimizar",
     "new-chat": "Nuevo chat",
+    "other-chats": "Otros chats",
     "pending-choose-hint": "Seleccione una opción arriba",
     "pending-confirm-hint": "Confirme o cancele arriba",
     "pending-input-hint": "Proporcione la entrada arriba",
+    "project-attention": {
+      "checking": "Comprobando los elementos que necesitan tu atención...",
+      "empty": "No tienes Issues abiertos que requieran tu atención en este proyecto.",
+      "issue-created": "- {{title}} (creado por ti)",
+      "issue-review": "- {{title}} (esperando tu aprobación)",
+      "more": "Hay más Issues abiertos que requieren tu atención en este proyecto.",
+      "summary": "Estos Issues requieren tu atención en este proyecto:",
+      "unavailable": "No se pueden cargar los elementos que necesitan tu atención en este proyecto."
+    },
+    "recent-activity": {
+      "checking": "Comprobando la actividad reciente...",
+      "empty": "No se registró actividad importante en los últimos 3 días.",
+      "event": "{{actor}} {{action}} {{resource}} a las {{time}}",
+      "more": "Hay más actividad reciente disponible.",
+      "summary": "Actividad reciente de los últimos 3 días:",
+      "unavailable": "No se puede cargar la actividad reciente.",
+      "unknown-time": "una hora desconocida"
+    },
     "rename-chat-placeholder": "Ingrese el nombre del chat",
     "reply": "Responder",
     "result": "Resultado",
@@ -78,7 +115,16 @@
     "tool-response-submitted": "Respuesta enviada",
     "tool-value": "Valor",
     "unarchive-all-chats": "Desarchivar todos los chats",
-    "unarchive-chat": "Desarchivar chat"
+    "unarchive-chat": "Desarchivar chat",
+    "workspace-attention": {
+      "checking": "Comprobando los elementos que necesitan tu atención...",
+      "empty": "No tienes Issues abiertos que requieran tu atención.",
+      "issue-created": "- {{title}} (creado por ti)",
+      "issue-review": "- {{title}} (esperando tu aprobación)",
+      "more": "Hay más Issues abiertos que requieren tu atención.",
+      "summary": "Estos Issues requieren tu atención:",
+      "unavailable": "No se pueden cargar los elementos que necesitan tu atención."
+    }
   },
   "audit-log": {
     "advanced-search": {

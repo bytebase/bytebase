@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
+import type { LandingStarterId } from "../logic/landingStarters";
 import type {
   AgentAskUserResponse,
   AgentChat,
@@ -8,6 +9,7 @@ import type {
   AgentChatStatus,
   AgentMessage,
   AgentPendingAsk,
+  AgentRunMode,
   Message,
   ToolCall,
 } from "../logic/types";
@@ -18,7 +20,7 @@ import {
 
 export const AGENT_STATE_KEY = "bb-agent-state-v2";
 export const AGENT_WINDOW_KEY = "bb-agent-window";
-export const AGENT_WINDOW_LAYOUT_VERSION = 3;
+export const AGENT_WINDOW_LAYOUT_VERSION = 4;
 
 interface PersistedAgentState {
   currentChatId: string | null;
@@ -44,6 +46,8 @@ interface QueuedUserMessage {
   chatId: string;
   text: string;
   page: AgentChatSnapshot;
+  runMode?: AgentRunMode;
+  starterId?: LandingStarterId;
 }
 
 const DEFAULT_CHAT_STATUS: AgentChatStatus = "idle";
@@ -373,6 +377,10 @@ export interface AgentState {
   finishQueuedUserMessage: (chatId: string) => void;
   ensureCurrentChat: (page?: AgentChatSnapshot, context?: string) => AgentChat;
   selectChatContext: (
+    context: string,
+    page?: AgentChatSnapshot
+  ) => AgentChat | null;
+  selectOrCreateChatForContext: (
     context: string,
     page?: AgentChatSnapshot
   ) => AgentChat | null;
@@ -784,21 +792,12 @@ export const createAgentStore = () => {
         ensureCurrentChat: (page, context) => {
           const existing = _getChat(get().currentChatId);
           if (existing) {
-            if (
-              (page && !existing.page) ||
-              (context &&
-                !existing.context &&
-                get().getMessages(existing.id).length === 0)
-            ) {
+            if ((page && !existing.page) || (context && !existing.context)) {
               set((state) => {
                 const chat = state.chats.find((c) => c.id === existing.id);
                 if (chat) {
                   if (page && !chat.page) chat.page = page;
-                  if (
-                    context &&
-                    !chat.context &&
-                    !state.messagesByChatId[chat.id]?.length
-                  ) {
+                  if (context && !chat.context) {
                     chat.context = context;
                   }
                   _touchChatInDraft(state.chats, chat.id);
@@ -824,6 +823,58 @@ export const createAgentStore = () => {
             }
           });
           return _getChat(current.id);
+        },
+
+        selectOrCreateChatForContext: (context, page) => {
+          if (!context || _hasRunningChat() || get().queuedUserMessage) {
+            return null;
+          }
+
+          const isReusable = (chat: AgentChat) =>
+            !chat.archived &&
+            chat.status === "idle" &&
+            !get().getPendingAsk(chat.id);
+          const current = _getChat(get().currentChatId);
+          const matchingChat =
+            current?.context === context && isReusable(current)
+              ? current
+              : [...get().chats]
+                  .filter(
+                    (chat) => chat.context === context && isReusable(chat)
+                  )
+                  .sort(
+                    (a, b) =>
+                      b.updatedTs - a.updatedTs || b.createdTs - a.createdTs
+                  )[0];
+
+          if (matchingChat) {
+            set((state) => {
+              const chat = state.chats.find((c) => c.id === matchingChat.id);
+              if (!chat) return;
+              if (page) chat.page = page;
+              state.currentChatId = chat.id;
+              _touchChatInDraft(state.chats, chat.id);
+            });
+            return _getChat(matchingChat.id);
+          }
+
+          if (
+            current &&
+            !current.context &&
+            isReusable(current) &&
+            get().getMessages(current.id).length === 0
+          ) {
+            set((state) => {
+              const chat = state.chats.find((c) => c.id === current.id);
+              if (!chat) return;
+              chat.context = context;
+              if (page) chat.page = page;
+              _touchChatInDraft(state.chats, chat.id);
+            });
+            return _getChat(current.id);
+          }
+
+          return get().createChat({ context, page });
         },
 
         setCurrentChat: (chatId) => {

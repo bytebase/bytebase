@@ -20,6 +20,8 @@ export interface Message {
 
 export type AgentChatStatus = "idle" | "running" | "awaiting_user" | "error";
 
+export type AgentRunMode = "default" | "read-only";
+
 export interface AgentChatSnapshot {
   path: string;
   title: string;

@@ -64,6 +64,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { WorkspacePageLayout } from "@/components/WorkspacePageLayout";
 import {
   useOptionalCurrentUser,
+  usePlanFeature,
   useServerState,
   useWorkspace,
   useWorkspacePermission,
@@ -73,6 +74,8 @@ import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
 } from "@/lib/productIntro";
+import { LandingStarterSelector } from "@/modules/agent/components/LandingStarterSelector";
+import { getLandingStarterIds } from "@/modules/agent/logic/landingStarters";
 import {
   selectHasRunningChat,
   useAgentStore,
@@ -80,7 +83,9 @@ import {
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { extractProjectResourceName, storageKeyQuickAccess } from "@/utils";
 import { WorkspaceLandingGettingStarted } from "./WorkspaceLandingGettingStarted";
 
@@ -450,6 +455,7 @@ function ConfigSheet({
 
 export function LandingPage(_: Record<string, never> = {}) {
   const { t } = useTranslation();
+  const hasAuditLogFeature = usePlanFeature(PlanFeature.FEATURE_AUDIT_LOG);
   const [showConfigDrawer, setShowConfigDrawer] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const workspace = useWorkspace();
@@ -460,8 +466,16 @@ export function LandingPage(_: Record<string, never> = {}) {
     (state) => state.queuedUserMessage !== null
   );
 
-  const email = useOptionalCurrentUser()?.email ?? "";
+  const currentUser = useOptionalCurrentUser();
+  const email = currentUser?.email ?? "";
+  const currentUserName = currentUser?.name ?? "";
   const { isSaaSMode, version, changelogURL } = useServerState();
+  const canSearchIssues = useWorkspacePermission("bb.issues.get");
+  const canSearchAuditLogs = useWorkspacePermission("bb.auditLogs.search");
+  const listIssues = useAppStore((state) => state.listIssues);
+  const [activeWork, setActiveWork] = useState<
+    "loading" | "present" | "empty" | "unknown"
+  >("loading");
 
   const fullList = useFullQuickLinkList();
   const { config, setConfig } = useQuickAccessConfig(email);
@@ -486,6 +500,52 @@ export function LandingPage(_: Record<string, never> = {}) {
     }
   }, []);
 
+  useEffect(() => {
+    if (
+      !aiEnabled ||
+      !workspace?.name ||
+      !canSearchIssues ||
+      !currentUserName
+    ) {
+      setActiveWork("unknown");
+      return;
+    }
+    let active = true;
+    setActiveWork("loading");
+    void listIssues({
+      find: {
+        project: "projects/-",
+        query: "",
+        currentApprover: currentUserName,
+        statusList: [IssueStatus.OPEN],
+        approvalStatus: ApprovalStatus.PENDING,
+        orderBy: "update_time desc",
+      },
+      pageSize: 1,
+    })
+      .then(({ issues }) => {
+        if (active) setActiveWork(issues.length ? "present" : "empty");
+      })
+      .catch(() => {
+        if (active) setActiveWork("unknown");
+      });
+    return () => {
+      active = false;
+    };
+  }, [
+    aiEnabled,
+    canSearchIssues,
+    currentUserName,
+    listIssues,
+    workspace?.name,
+  ]);
+
+  const landingStarterIds = getLandingStarterIds({
+    scope: "workspace",
+    activeWork,
+    canViewRecentActivity: hasAuditLogFeature && canSearchAuditLogs,
+  });
+
   const sendAIMessage = () => {
     const text = aiPrompt.trim();
     if (!text || !aiEnabled || !workspace?.name) return;
@@ -495,10 +555,33 @@ export function LandingPage(_: Record<string, never> = {}) {
       path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
       title: document.title,
     };
-    const chat = store.createChat({ context: workspace.name, page });
+    const chat = store.selectOrCreateChatForContext(workspace.name, page);
+    if (!chat) return;
     store.queueUserMessage({ chatId: chat.id, text, page });
     store.open();
     setAiPrompt("");
+  };
+
+  const sendLandingStarter = (
+    starterId: (typeof landingStarterIds)[number]
+  ) => {
+    if (!aiEnabled || !workspace?.name) return;
+    const store = useAgentStore.getState();
+    if (selectHasRunningChat(store) || store.queuedUserMessage) return;
+    const page = {
+      path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+      title: document.title,
+    };
+    const chat = store.selectOrCreateChatForContext(workspace.name, page);
+    if (!chat) return;
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: t(`agent.landing-starters.${starterId}`),
+      page,
+      runMode: "read-only",
+      starterId,
+    });
+    store.open();
   };
 
   return (
@@ -519,6 +602,15 @@ export function LandingPage(_: Record<string, never> = {}) {
                 sendAIMessage();
               }}
             >
+              {!aiPrompt.trim() && (
+                <div className="px-3 pt-2">
+                  <LandingStarterSelector
+                    starterIds={landingStarterIds}
+                    disabled={hasRunningChat || hasQueuedMessage}
+                    onSelect={sendLandingStarter}
+                  />
+                </div>
+              )}
               <Textarea
                 size="md"
                 rows={2}

@@ -55,7 +55,7 @@ const mocks = vi.hoisted(() => ({
   missedPermissions: [] as Permission[],
   probedPermissions: [] as Permission[],
   open: vi.fn(),
-  createChat: vi.fn(() => ({ id: "new-chat" })),
+  selectOrCreateChatForContext: vi.fn(() => ({ id: "new-chat" })),
   queueUserMessage: vi.fn(),
   listRollouts: vi.fn(),
 }));
@@ -78,6 +78,10 @@ vi.mock("@/components/ComponentPermissionGuard", () => ({
     mocks.probedPermissions = permissions;
     return { missedPermissions: mocks.missedPermissions };
   },
+}));
+vi.mock("@/hooks/useAppState", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/useAppState")>()),
+  usePlanFeature: () => mocks.state.hasFeature(),
 }));
 vi.mock("@/components/ProjectPageLayout", () => ({
   ProjectPageLayout: ({ children }: { children: ReactNode }) => (
@@ -105,7 +109,7 @@ vi.mock("@/modules/agent/store/agent", () => ({
     {
       getState: () => ({
         open: mocks.open,
-        createChat: mocks.createChat,
+        selectOrCreateChatForContext: mocks.selectOrCreateChatForContext,
         queueUserMessage: mocks.queueUserMessage,
         chats: [],
         queuedUserMessage: null,
@@ -113,6 +117,28 @@ vi.mock("@/modules/agent/store/agent", () => ({
     }
   ),
   selectHasRunningChat: () => false,
+}));
+
+vi.mock("@/modules/agent/components/LandingStarterSelector", () => ({
+  LandingStarterSelector: ({
+    starterIds,
+    disabled,
+    onSelect,
+  }: {
+    starterIds: string[];
+    disabled: boolean;
+    onSelect: (starterId: string) => void;
+  }) => (
+    <button
+      type="button"
+      disabled={disabled}
+      data-testid="landing-starter-primary"
+      data-starter-ids={starterIds.join(",")}
+      onClick={() => onSelect(starterIds[0])}
+    >
+      {starterIds[0]}
+    </button>
+  ),
 }));
 
 import { ProjectHomePage } from "./ProjectHomePage";
@@ -128,6 +154,7 @@ beforeEach(() => {
   mocks.state.projectsByName["projects/orders"].state = State.ACTIVE;
   mocks.state.projectsByName["projects/second"].state = State.ACTIVE;
   mocks.state.hasInstanceFeature.mockReturnValue(true);
+  mocks.state.hasFeature.mockReturnValue(true);
   mocks.state.hasWorkspacePermission.mockReturnValue(true);
   mocks.state.fetchDatabases.mockResolvedValue({
     databases: [
@@ -144,7 +171,107 @@ beforeEach(() => {
 });
 
 describe("ProjectHomePage", () => {
-  test("checks migration rollouts with one project-scoped request", async () => {
+  test("sends a Project starter in a reusable read-only Agent chat", async () => {
+    render(<ProjectHomePage projectId="orders" />);
+
+    const starter = await screen.findByTestId("landing-starter-primary");
+    const prompt = screen.getByRole("textbox", {
+      name: "project.home.ai-placeholder",
+    });
+    await waitFor(() => expect(starter).toHaveTextContent("project-next"));
+    expect(
+      starter.compareDocumentPosition(prompt) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    fireEvent.click(starter);
+
+    expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
+      "projects/orders",
+      expect.objectContaining({ path: expect.any(String) })
+    );
+    expect(mocks.queueUserMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chatId: "new-chat",
+        text: "agent.landing-starters.project-next",
+        runMode: "read-only",
+        starterId: "project-next",
+      })
+    );
+    expect(mocks.open).toHaveBeenCalledOnce();
+  });
+
+  test("combines active Project work with database and collaboration starters", async () => {
+    mocks.state.listIssues.mockImplementation(({ find }) =>
+      Promise.resolve({
+        issues: find.typeList
+          ? []
+          : [
+              create(IssueSchema, {
+                name: "projects/orders/issues/1",
+                status: IssueStatus.OPEN,
+              }),
+            ],
+      })
+    );
+    render(<ProjectHomePage projectId="orders" />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("landing-starter-primary")).toHaveAttribute(
+        "data-starter-ids",
+        "project-open-blockers,project-next,project-collaborate,project-open-recent,project-propose-change,project-access,project-review"
+      )
+    );
+  });
+
+  test("does not offer recent activity without audit-log permission", async () => {
+    mocks.state.listIssues.mockImplementation(({ find }) =>
+      Promise.resolve({
+        issues: find.typeList
+          ? []
+          : [
+              create(IssueSchema, {
+                name: "projects/orders/issues/1",
+                status: IssueStatus.OPEN,
+              }),
+            ],
+      })
+    );
+    mocks.missedPermissions = ["bb.auditLogs.search"];
+    render(<ProjectHomePage projectId="orders" />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("landing-starter-primary")).toHaveAttribute(
+        "data-starter-ids",
+        "project-open-blockers,project-next,project-collaborate,project-propose-change,project-access,project-review"
+      )
+    );
+
+  });
+
+  test("does not offer recent activity without the audit-log feature", async () => {
+    mocks.state.listIssues.mockImplementation(({ find }) =>
+      Promise.resolve({
+        issues: find.typeList
+          ? []
+          : [
+              create(IssueSchema, {
+                name: "projects/orders/issues/1",
+                status: IssueStatus.OPEN,
+              }),
+            ],
+      })
+    );
+    mocks.state.hasFeature.mockReturnValue(false);
+    render(<ProjectHomePage projectId="orders" />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("landing-starter-primary")).toHaveAttribute(
+        "data-starter-ids",
+        "project-open-blockers,project-next,project-collaborate,project-propose-change,project-access,project-review"
+      )
+    );
+  });
+
+  test("checks project-scoped rollout and open database-change Issue state", async () => {
     render(<ProjectHomePage projectId="orders" />);
     await waitFor(() => expect(mocks.listRollouts).toHaveBeenCalledWith({
       parent: "projects/orders",
@@ -153,6 +280,16 @@ describe("ProjectHomePage", () => {
     }, expect.objectContaining({ contextValues: expect.anything() })));
     expect(mocks.listRollouts.mock.calls[0][1].contextValues.get(silentContextKey)).toBe(true);
     expect(mocks.listRollouts).toHaveBeenCalledOnce();
+    expect(mocks.state.listIssues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        find: expect.objectContaining({
+          project: "projects/orders",
+          typeList: [Issue_Type.DATABASE_CHANGE],
+          statusList: [IssueStatus.OPEN],
+        }),
+        pageSize: 1,
+      })
+    );
   });
 
   test("shows archived status without loading active project data", () => {
@@ -202,11 +339,14 @@ describe("ProjectHomePage", () => {
       expect(screen.getByRole("region", { name: "project.home.next-step" })).toBeTruthy();
     });
     const prompt = screen.getByRole("textbox", { name: "project.home.ai-placeholder" });
+    expect(screen.getByTestId("landing-starter-primary")).toBeTruthy();
     expect(screen.getByRole("button", { name: "agent.send" }).hasAttribute("disabled")).toBe(true);
     fireEvent.change(prompt, { target: { value: "List databases" } });
+    expect(screen.queryByTestId("landing-starter-primary")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
-    expect(mocks.createChat).toHaveBeenCalledWith(
-      expect.objectContaining({ context: "projects/orders" })
+    expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
+      "projects/orders",
+      expect.objectContaining({ path: expect.any(String) })
     );
     expect(mocks.queueUserMessage).toHaveBeenCalledWith(
       expect.objectContaining({ chatId: "new-chat", text: "List databases" })
@@ -230,12 +370,12 @@ describe("ProjectHomePage", () => {
     ).toContain("items-end");
     const shiftEnterWasNotCanceled = fireEvent.keyDown(prompt, { key: "Enter", shiftKey: true });
     expect(shiftEnterWasNotCanceled).toBe(true);
-    expect(mocks.createChat).not.toHaveBeenCalled();
+    expect(mocks.selectOrCreateChatForContext).not.toHaveBeenCalled();
 
     fireEvent.change(prompt, { target: { value: "Explain this\nproject" } });
     const enterWasCanceled = fireEvent.keyDown(prompt, { key: "Enter" });
     expect(enterWasCanceled).toBe(false);
-    expect(mocks.createChat).toHaveBeenCalledOnce();
+    expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledOnce();
     expect(mocks.queueUserMessage).toHaveBeenCalledWith(
       expect.objectContaining({ text: "Explain this\nproject" })
     );
@@ -770,7 +910,9 @@ describe("ProjectHomePage", () => {
       title: "Access request",
       status: IssueStatus.OPEN,
     });
-    mocks.state.listIssues.mockResolvedValue({ issues: [accessIssue] });
+    mocks.state.listIssues.mockImplementation(({ find }) =>
+      Promise.resolve({ issues: find.typeList ? [] : [accessIssue] })
+    );
     const view = render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
     expect((await within(next).findByRole("link", { name: "project.home.change-database" })).getAttribute("href"))
@@ -786,18 +928,29 @@ describe("ProjectHomePage", () => {
     await waitFor(() => expect(screen.queryByRole("region", { name: "project.home.next-step" })).toBeNull());
   });
 
-  test("keeps setup visible for an issue without a migration rollout", async () => {
-    mocks.state.listIssues.mockResolvedValue({
-      issues: [
-        create(IssueSchema, {
-          name: "projects/orders/issues/change",
-          status: IssueStatus.OPEN,
-        }),
-      ],
-    });
+  test("hides first-change guidance when a database change Issue is open", async () => {
+    mocks.state.listIssues.mockImplementation(({ find }) =>
+      Promise.resolve({
+        issues: find.typeList?.includes(Issue_Type.DATABASE_CHANGE)
+          ? [
+              create(IssueSchema, {
+                name: "projects/orders/issues/change",
+                type: Issue_Type.DATABASE_CHANGE,
+                status: IssueStatus.OPEN,
+              }),
+            ]
+          : [],
+      })
+    );
     render(<ProjectHomePage projectId="orders" />);
     const next = await screen.findByRole("region", { name: "project.home.next-step" });
-    expect(await within(next).findByRole("link", { name: "project.home.change-database" })).toBeTruthy();
+    await waitFor(() => expect(mocks.listRollouts).toHaveBeenCalledOnce());
+    expect(
+      within(next).queryByRole("link", { name: "project.home.change-database" })
+    ).toBeNull();
+    expect(
+      within(next).queryByRole("link", { name: "project.home.query-database" })
+    ).toBeNull();
     expect(mocks.listRollouts).toHaveBeenCalledOnce();
   });
 

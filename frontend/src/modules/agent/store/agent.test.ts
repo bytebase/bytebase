@@ -109,6 +109,99 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).queuedUserMessage).toBeNull();
   });
 
+  test("reuses an idle chat with the exact landing context", () => {
+    const store = createAgentStore();
+    const chat = s(store).createChat({ context: "projects/orders" });
+    s(store).addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "Earlier project work",
+    });
+
+    const selected = s(store).selectOrCreateChatForContext("projects/orders", {
+      path: "/projects/orders",
+      title: "Orders",
+    });
+
+    expect(selected?.id).toBe(chat.id);
+    expect(s(store).currentChatId).toBe(chat.id);
+    expect(s(store).chats).toHaveLength(2);
+    expect(s(store).getChat(chat.id)?.page).toEqual({
+      path: "/projects/orders",
+      title: "Orders",
+    });
+  });
+
+  test("prefers the current chat when it has the exact landing context", () => {
+    const store = createAgentStore();
+    const current = s(store).createChat({ context: "projects/orders" });
+    s(store).addMessage({
+      chatId: current.id,
+      role: "user",
+      content: "Continue this work",
+    });
+    const other = s(store).createChat({ context: "projects/orders" });
+    s(store).addMessage({
+      chatId: other.id,
+      role: "user",
+      content: "A separate conversation",
+    });
+    s(store).setCurrentChat(current.id);
+
+    const selected = s(store).selectOrCreateChatForContext("projects/orders");
+
+    expect(selected?.id).toBe(current.id);
+    expect(s(store).currentChatId).toBe(current.id);
+  });
+
+  test("does not reuse a chat that needs attention", () => {
+    const store = createAgentStore();
+    const unavailable = s(store).createChat({
+      context: "projects/orders",
+    });
+    s(store).setChatStatus(unavailable.id, "error");
+
+    const selected = s(store).selectOrCreateChatForContext("projects/orders");
+
+    expect(selected?.id).not.toBe(unavailable.id);
+    expect(selected?.context).toBe("projects/orders");
+    expect(s(store).chats).toHaveLength(3);
+  });
+
+  test("selects an existing matching context without changing another chat", () => {
+    const store = createAgentStore();
+    const orders = s(store).createChat({ context: "projects/orders" });
+    s(store).addMessage({
+      chatId: orders.id,
+      role: "user",
+      content: "Orders work",
+    });
+    const billing = s(store).createChat({ context: "projects/billing" });
+    s(store).addMessage({
+      chatId: billing.id,
+      role: "user",
+      content: "Billing work",
+    });
+
+    const selected = s(store).selectOrCreateChatForContext("projects/orders");
+
+    expect(selected?.id).toBe(orders.id);
+    expect(s(store).currentChatId).toBe(orders.id);
+    expect(s(store).getChat(billing.id)?.context).toBe("projects/billing");
+    expect(s(store).chats).toHaveLength(3);
+  });
+
+  test("binds an empty unscoped chat before creating a landing chat", () => {
+    const store = createAgentStore();
+    const emptyChatId = s(store).currentChatId!;
+
+    const selected = s(store).selectOrCreateChatForContext("workspaces/demo");
+
+    expect(selected?.id).toBe(emptyChatId);
+    expect(s(store).getChat(emptyChatId)?.context).toBe("workspaces/demo");
+    expect(s(store).chats).toHaveLength(1);
+  });
+
   test("keeps a chat's resource context when its page changes and after reload", () => {
     const store = createAgentStore();
     const chat = s(store).createChat({ context: "projects/orders" });
@@ -124,7 +217,7 @@ describe("useAgentStore (Zustand)", () => {
     );
   });
 
-  test("binds only an empty legacy chat when a context is supplied", () => {
+  test("binds a context to a chat created before the context was available", () => {
     const store = createAgentStore();
     const emptyChatId = s(store).currentChatId!;
 
@@ -138,7 +231,10 @@ describe("useAgentStore (Zustand)", () => {
       content: "Earlier work",
     });
     s(store).ensureCurrentChat(undefined, "projects/orders");
-    expect(s(store).getChat(legacy.id)?.context).toBeUndefined();
+    expect(s(store).getChat(legacy.id)?.context).toBe("projects/orders");
+    expect(s(createAgentStore()).getChat(legacy.id)?.context).toBe(
+      "projects/orders"
+    );
   });
 
   test("changes the context of an empty chat without creating another chat", () => {
@@ -155,7 +251,7 @@ describe("useAgentStore (Zustand)", () => {
     );
   });
 
-  test("changes the context of a populated chat without losing its history", () => {
+  test("changes the context of a populated bound chat", () => {
     const store = createAgentStore();
     const original = s(store).ensureCurrentChat(undefined, "projects/orders");
     s(store).addMessage({
@@ -173,6 +269,7 @@ describe("useAgentStore (Zustand)", () => {
     expect(selected?.context).toBe("projects/billing");
     expect(s(store).chats).toHaveLength(1);
     expect(s(store).currentChatId).toBe(original.id);
+    expect(s(store).getChat(original.id)?.context).toBe("projects/billing");
     expect(s(store).getMessages(original.id)).toHaveLength(1);
   });
 
@@ -213,8 +310,8 @@ describe("useAgentStore (Zustand)", () => {
 
     const store = createAgentStore();
 
-    expect(s(store).size).toEqual({ width: 605, height: 451 });
-    expect(s(store).position).toEqual({ x: 819, y: 433 });
+    expect(s(store).size).toEqual({ width: 750, height: 521 });
+    expect(s(store).position).toEqual({ x: 674, y: 363 });
     expect(s(store).sidebarWidth).toBe(200);
   });
 
@@ -241,8 +338,8 @@ describe("useAgentStore (Zustand)", () => {
 
     const store = createAgentStore();
 
-    expect(s(store).position).toEqual({ x: 819, y: 433 });
-    expect(s(store).size).toEqual({ width: 605, height: 451 });
+    expect(s(store).position).toEqual({ x: 674, y: 363 });
+    expect(s(store).size).toEqual({ width: 750, height: 521 });
     expect(s(store).sidebarWidth).toBe(280);
     expect(localStorage.getItem(AGENT_WINDOW_KEY)).toContain(
       `"layoutVersion":${AGENT_WINDOW_LAYOUT_VERSION}`

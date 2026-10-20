@@ -14,7 +14,7 @@ import { router } from "@/app/router";
 import { Button } from "@/components/ui/button";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { Textarea } from "@/components/ui/textarea";
-import { projectNamePrefix } from "@/lib/resourceName";
+import { projectNamePrefix, workspaceNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type { DomRefSuggestion } from "../dom";
@@ -25,10 +25,14 @@ import {
   isAgentAIConfigurationError,
 } from "../logic/aiConfiguration";
 import { getCurrentChatContext } from "../logic/chatContext";
+import type { LandingStarterId } from "../logic/landingStarters";
 import { buildOutboundHistory } from "../logic/outboundHistory";
 import { buildSystemPrompt } from "../logic/prompt";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
-import type { AgentAskUserOption, Message } from "../logic/types";
+import { createProjectOpenIssuesTool } from "../logic/tools/projectOpenIssues";
+import { getRecentActivity } from "../logic/tools/recentActivity";
+import { createWorkspaceAttentionTool } from "../logic/tools/workspaceAttention";
+import type { AgentAskUserOption, AgentRunMode, Message } from "../logic/types";
 import {
   selectCurrentChat,
   selectCurrentChatRequiresAIConfiguration,
@@ -102,6 +106,98 @@ const buildMentionListStyle = (rect: DOMRect): CSSProperties => ({
 const getMentionListStyleKey = (rect: DOMRect) =>
   `${rect.left}:${rect.top}:${rect.width}`;
 
+interface RecentActivityEvent {
+  actor: string;
+  action: string;
+  resource: string;
+  occurredAt?: string;
+}
+
+interface RecentActivityResult {
+  events: RecentActivityEvent[];
+  partial: boolean;
+  error?: string;
+}
+
+interface AttentionResult {
+  issues: {
+    name: string;
+    title: string;
+    relation: "review" | "created";
+  }[];
+  partial: boolean;
+  error?: string;
+}
+
+const parseRecentActivityResult = (value: string): RecentActivityResult => {
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    if (typeof parsed.error === "string") {
+      return { events: [], partial: false, error: parsed.error };
+    }
+    const events = Array.isArray(parsed.events)
+      ? parsed.events.flatMap((event) => {
+          if (
+            typeof event !== "object" ||
+            event === null ||
+            typeof event.actor !== "string" ||
+            typeof event.action !== "string" ||
+            typeof event.resource !== "string"
+          ) {
+            return [];
+          }
+          return [
+            {
+              actor: event.actor,
+              action: event.action,
+              resource: event.resource,
+              ...(typeof event.occurredAt === "string"
+                ? { occurredAt: event.occurredAt }
+                : {}),
+            },
+          ];
+        })
+      : [];
+    return { events, partial: parsed.partial === true };
+  } catch {
+    return { events: [], partial: false, error: "invalid result" };
+  }
+};
+
+const parseAttentionResult = (value: string): AttentionResult => {
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    if (typeof parsed.error === "string") {
+      return { issues: [], partial: false, error: parsed.error };
+    }
+    const issues = Array.isArray(parsed.issues)
+      ? parsed.issues.flatMap((issue) => {
+          if (
+            typeof issue !== "object" ||
+            issue === null ||
+            typeof issue.name !== "string" ||
+            typeof issue.title !== "string"
+          ) {
+            return [];
+          }
+          return [
+            {
+              name: issue.name,
+              title: issue.title,
+              relation:
+                issue.relation === "created"
+                  ? ("created" as const)
+                  : ("review" as const),
+            },
+          ];
+        })
+      : [];
+    return { issues, partial: parsed.partial === true };
+  } catch {
+    return { issues: [], partial: false, error: "invalid result" };
+  }
+};
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -113,7 +209,7 @@ interface DomRefMentionOption {
 }
 
 export function AgentInput() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // Zustand selectors
   const currentChat = useAgentStore(selectCurrentChat);
   const currentPendingAsk = useAgentStore(selectCurrentPendingAsk);
@@ -136,6 +232,91 @@ export function AgentInput() {
   const getOrFetchProjectByName = useAppStore((s) => s.getOrFetchProjectByName);
   const aiConfigurationEnabled = useAppStore((s) =>
     getAgentAIConfigurationEnabled(s.getSettingByName(Setting_SettingName.AI))
+  );
+
+  const formatRecentActivity = useCallback(
+    (result: string) => {
+      const payload = parseRecentActivityResult(result);
+      if (payload.error) {
+        return t("agent.recent-activity.unavailable");
+      }
+      if (payload.events.length === 0) {
+        return t("agent.recent-activity.empty");
+      }
+
+      const formatTime = (value: string | undefined) => {
+        if (!value) return t("agent.recent-activity.unknown-time");
+        const timestamp = Date.parse(value);
+        if (Number.isNaN(timestamp)) {
+          return t("agent.recent-activity.unknown-time");
+        }
+        return new Intl.DateTimeFormat(i18n.language, {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(timestamp);
+      };
+
+      return [
+        t("agent.recent-activity.summary"),
+        ...payload.events.map(
+          (event) =>
+            `- ${t("agent.recent-activity.event", {
+              actor: event.actor,
+              action: event.action,
+              resource: event.resource,
+              time: formatTime(event.occurredAt),
+            })}`
+        ),
+        ...(payload.partial ? [t("agent.recent-activity.more")] : []),
+      ].join("\n");
+    },
+    [i18n.language, t]
+  );
+
+  const formatWorkspaceAttention = useCallback(
+    (result: string) => {
+      const payload = parseAttentionResult(result);
+      if (payload.error) {
+        return t("agent.workspace-attention.unavailable");
+      }
+      if (payload.issues.length === 0) {
+        return t("agent.workspace-attention.empty");
+      }
+      return [
+        t("agent.workspace-attention.summary"),
+        ...payload.issues.map((issue) =>
+          t(`agent.workspace-attention.issue-${issue.relation}`, {
+            title: issue.title,
+          })
+        ),
+        ...(payload.partial ? [t("agent.workspace-attention.more")] : []),
+      ].join("\n");
+    },
+    [t]
+  );
+
+  const formatProjectAttention = useCallback(
+    (result: string) => {
+      const payload = parseAttentionResult(result);
+      if (payload.error) {
+        return t("agent.project-attention.unavailable");
+      }
+      if (payload.issues.length === 0) {
+        return t("agent.project-attention.empty");
+      }
+      return [
+        t("agent.project-attention.summary"),
+        ...payload.issues.map((issue) =>
+          t(`agent.project-attention.issue-${issue.relation}`, {
+            title: issue.title,
+          })
+        ),
+        ...(payload.partial ? [t("agent.project-attention.more")] : []),
+      ].join("\n");
+    },
+    [t]
   );
 
   // Local state
@@ -489,7 +670,8 @@ export function AgentInput() {
     async (
       chatId: string,
       page: { path: string; title: string },
-      runId: string
+      runId: string,
+      runMode: AgentRunMode
     ) => {
       const store = useAgentStore.getState();
       const controller = new AbortController();
@@ -500,10 +682,13 @@ export function AgentInput() {
       const systemPrompt = buildSystemPrompt({
         ...page,
         context: store.getChat(chatId)?.context,
+        runMode,
       });
-      const tools = getToolDefinitions();
+      const tools = getToolDefinitions({ runMode });
       const executor = createToolExecutor(router, {
         chatId,
+        context: store.getChat(chatId)?.context,
+        runMode,
         onNavigate: () => {
           useAgentStore
             .getState()
@@ -546,7 +731,8 @@ export function AgentInput() {
               });
             },
           },
-          controller.signal
+          controller.signal,
+          { allowPlainTextCompletion: runMode === "read-only" }
         );
 
         useAgentStore
@@ -567,15 +753,224 @@ export function AgentInput() {
     [buildChatHistory, handleOutcome]
   );
 
+  const runRecentActivityStarter = useCallback(
+    async (
+      chatId: string,
+      page: { path: string; title: string },
+      runId: string,
+      parent: string
+    ) => {
+      const store = useAgentStore.getState();
+      const controller = new AbortController();
+      const runToken = (runTokens.get(chatId) ?? 0) + 1;
+      runTokens.set(chatId, runToken);
+      store.setAbortController(chatId, controller);
+      store.addMessage({
+        chatId,
+        role: "assistant",
+        content: t("agent.recent-activity.checking"),
+        metadata: { route: page.path, runId, pending: true },
+      });
+
+      try {
+        const result = await getRecentActivity(parent);
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          store.removeMessagesByRunId(chatId, runId);
+          return;
+        }
+        store.removeMessagesByRunId(chatId, runId);
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: formatRecentActivity(result),
+          metadata: { route: page.path, runId },
+        });
+        store.finishChatRun(chatId);
+      } catch {
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          store.removeMessagesByRunId(chatId, runId);
+          return;
+        }
+        store.removeMessagesByRunId(chatId, runId);
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: t("agent.recent-activity.unavailable"),
+          metadata: { route: page.path, runId },
+        });
+        store.finishChatRun(chatId);
+      } finally {
+        if (store.getAbortController(chatId) === controller) {
+          store.setAbortController(chatId, null);
+        }
+      }
+    },
+    [formatRecentActivity, t]
+  );
+
+  const runWorkspaceAttentionStarter = useCallback(
+    async (
+      chatId: string,
+      page: { path: string; title: string },
+      runId: string
+    ) => {
+      const store = useAgentStore.getState();
+      const controller = new AbortController();
+      const runToken = (runTokens.get(chatId) ?? 0) + 1;
+      runTokens.set(chatId, runToken);
+      store.setAbortController(chatId, controller);
+      store.addMessage({
+        chatId,
+        role: "assistant",
+        content: t("agent.workspace-attention.checking"),
+        metadata: { route: page.path, runId, pending: true },
+      });
+
+      try {
+        const result = await createWorkspaceAttentionTool({
+          workspaceName: store.getChat(chatId)?.context,
+        })();
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          store.removeMessagesByRunId(chatId, runId);
+          return;
+        }
+        store.removeMessagesByRunId(chatId, runId);
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: formatWorkspaceAttention(result),
+          metadata: { route: page.path, runId },
+        });
+        store.finishChatRun(chatId);
+      } catch {
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          store.removeMessagesByRunId(chatId, runId);
+          return;
+        }
+        store.removeMessagesByRunId(chatId, runId);
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: t("agent.workspace-attention.unavailable"),
+          metadata: { route: page.path, runId },
+        });
+        store.finishChatRun(chatId);
+      } finally {
+        if (store.getAbortController(chatId) === controller) {
+          store.setAbortController(chatId, null);
+        }
+      }
+    },
+    [formatWorkspaceAttention, t]
+  );
+
+  const runProjectAttentionStarter = useCallback(
+    async (
+      chatId: string,
+      page: { path: string; title: string },
+      runId: string
+    ) => {
+      const store = useAgentStore.getState();
+      const controller = new AbortController();
+      const runToken = (runTokens.get(chatId) ?? 0) + 1;
+      runTokens.set(chatId, runToken);
+      store.setAbortController(chatId, controller);
+      store.addMessage({
+        chatId,
+        role: "assistant",
+        content: t("agent.project-attention.checking"),
+        metadata: { route: page.path, runId, pending: true },
+      });
+
+      try {
+        const result = await createProjectOpenIssuesTool({
+          projectName: store.getChat(chatId)?.context,
+        })();
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          store.removeMessagesByRunId(chatId, runId);
+          return;
+        }
+        store.removeMessagesByRunId(chatId, runId);
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: formatProjectAttention(result),
+          metadata: { route: page.path, runId },
+        });
+        store.finishChatRun(chatId);
+      } catch {
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          store.removeMessagesByRunId(chatId, runId);
+          return;
+        }
+        store.removeMessagesByRunId(chatId, runId);
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: t("agent.project-attention.unavailable"),
+          metadata: { route: page.path, runId },
+        });
+        store.finishChatRun(chatId);
+      } finally {
+        if (store.getAbortController(chatId) === controller) {
+          store.setAbortController(chatId, null);
+        }
+      }
+    },
+    [formatProjectAttention, t]
+  );
+
   const startChatRun = useCallback(
-    async (chatId: string, currentPage: { path: string; title: string }) => {
+    async (
+      chatId: string,
+      currentPage: { path: string; title: string },
+      runMode: AgentRunMode = "default",
+      starterId?: LandingStarterId
+    ) => {
       const runId = uuidv4();
       const store = useAgentStore.getState();
       store.updateChatPage(chatId, currentPage);
       store.startChatRun(chatId, currentPage, { runId });
-      await runChat(chatId, currentPage, runId);
+      if (starterId === "workspace-recent") {
+        await runRecentActivityStarter(
+          chatId,
+          currentPage,
+          runId,
+          "projects/-"
+        );
+        return;
+      }
+      if (starterId === "project-open-recent") {
+        const projectName = store.getChat(chatId)?.context;
+        if (projectName?.startsWith(projectNamePrefix)) {
+          await runRecentActivityStarter(
+            chatId,
+            currentPage,
+            runId,
+            projectName
+          );
+          return;
+        }
+      }
+      if (starterId === "workspace-attention") {
+        await runWorkspaceAttentionStarter(chatId, currentPage, runId);
+        return;
+      }
+      if (starterId === "project-open-blockers") {
+        const projectName = store.getChat(chatId)?.context;
+        if (projectName?.startsWith(projectNamePrefix)) {
+          await runProjectAttentionStarter(chatId, currentPage, runId);
+          return;
+        }
+      }
+      await runChat(chatId, currentPage, runId, runMode);
     },
-    [runChat]
+    [
+      runChat,
+      runProjectAttentionStarter,
+      runRecentActivityStarter,
+      runWorkspaceAttentionStarter,
+    ]
   );
 
   useEffect(() => {
@@ -597,7 +992,12 @@ export function AgentInput() {
           content: message.text,
           metadata: { route: message.page.path },
         });
-        await startChatRun(message.chatId, message.page);
+        await startChatRun(
+          message.chatId,
+          message.page,
+          message.runMode ?? "default",
+          message.starterId
+        );
       } finally {
         store.finishQueuedUserMessage(message.chatId);
       }
@@ -657,8 +1057,22 @@ export function AgentInput() {
       content: text,
       metadata: { route: currentPage.path },
     });
-    await startChatRun(chatId, currentPage);
-  }, [blockWhenAIIsNotConfigured, input, startChatRun]);
+    const starterId =
+      thread.context?.startsWith(workspaceNamePrefix) &&
+      text === t("agent.landing-starters.workspace-recent")
+        ? "workspace-recent"
+        : thread.context?.startsWith(workspaceNamePrefix) &&
+            text === t("agent.landing-starters.workspace-attention")
+          ? "workspace-attention"
+          : thread.context?.startsWith(projectNamePrefix) &&
+              text === t("agent.landing-starters.project-open-recent")
+            ? "project-open-recent"
+            : thread.context?.startsWith(projectNamePrefix) &&
+                text === t("agent.landing-starters.project-open-blockers")
+              ? "project-open-blockers"
+              : undefined;
+    await startChatRun(chatId, currentPage, "default", starterId);
+  }, [blockWhenAIIsNotConfigured, input, startChatRun, t]);
 
   const retryLastTurn = useCallback(async () => {
     const store = useAgentStore.getState();

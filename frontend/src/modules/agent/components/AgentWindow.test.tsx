@@ -15,7 +15,14 @@ const mocks = vi.hoisted(() => ({
     i18n: { language: "en-US" },
   })),
   getOrFetchSettingByName: vi.fn(),
+  batchFetchProjects: vi.fn(),
+  projectErrorsByName: {} as Record<string, Error | undefined>,
   currentContext: "projects/orders" as string | undefined,
+  projectsByName: {
+    "projects/orders": { title: "Order service" },
+    "projects/analytics": { title: "Analytics" },
+  } as Record<string, { title: string }>,
+  workspace: { name: "workspaces/acme", title: "Acme workspace" },
 }));
 
 function createMockStorage(): Storage {
@@ -50,6 +57,16 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/stores/app", () => {
   const state = {
     getOrFetchSettingByName: mocks.getOrFetchSettingByName,
+    batchFetchProjects: mocks.batchFetchProjects,
+    get projectsByName() {
+      return mocks.projectsByName;
+    },
+    get projectErrorsByName() {
+      return mocks.projectErrorsByName;
+    },
+    get workspace() {
+      return mocks.workspace;
+    },
   };
   const useAppStore = <T,>(selector: (value: typeof state) => T) =>
     selector(state);
@@ -143,6 +160,13 @@ beforeEach(async () => {
   });
   mocks.getOrFetchSettingByName.mockReset();
   mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
+  mocks.batchFetchProjects.mockReset();
+  mocks.batchFetchProjects.mockResolvedValue([]);
+  mocks.projectsByName = {
+    "projects/orders": { title: "Order service" },
+    "projects/analytics": { title: "Analytics" },
+  };
+  mocks.projectErrorsByName = {};
   mocks.currentContext = "projects/orders";
 
   ({ AgentWindow } = await import("./AgentWindow"));
@@ -182,6 +206,154 @@ describe("AgentWindow", () => {
       "projects/orders"
     );
     expect(useAgentStore.getState().getMessages(chatId)).toEqual([]);
+    unmount();
+  });
+
+  test("keeps context groups in a stable workspace-first order", () => {
+    const store = useAgentStore.getState();
+    const legacyChat = store.createChat({
+      title: "Legacy chat",
+      select: false,
+    });
+    const workspaceChat = store.createChat({
+      title: "List databases",
+      context: "workspaces/acme",
+      select: false,
+    });
+    const analyticsChat = store.createChat({
+      title: "Investigate analytics",
+      context: "projects/analytics",
+      select: false,
+    });
+    useAgentStore.setState((state) => ({
+      chats: state.chats.map((chat) => {
+        if (chat.id === legacyChat.id) return { ...chat, updatedTs: 4_000 };
+        if (chat.id === analyticsChat.id) return { ...chat, updatedTs: 3_000 };
+        if (chat.id === workspaceChat.id) return { ...chat, updatedTs: 2_000 };
+        return { ...chat, updatedTs: 1_000 };
+      }),
+    }));
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const groups = Array.from(
+      document.body.querySelectorAll("[data-agent-chat-group]")
+    ) as HTMLDivElement[];
+    expect(groups.map((group) => group.dataset.agentChatGroup)).toEqual([
+      "workspaces/acme",
+      "projects/orders",
+      "projects/analytics",
+      "unscoped",
+    ]);
+    expect(groups[0]?.textContent).toContain("Acme workspace");
+    expect(groups[1]?.textContent).toContain("Order service");
+    expect(groups[2]?.textContent).toContain("Analytics");
+    expect(groups[3]?.textContent).toContain("agent.other-chats");
+    expect(groups[3]?.textContent).toContain("Legacy chat");
+    expect(
+      document.body.querySelector("[data-agent-chat-updated-ts]")
+    ).toBeNull();
+
+    unmount();
+  });
+
+  test("creates a new chat in the selected context group", async () => {
+    const store = useAgentStore.getState();
+    store.createChat({
+      title: "Workspace chat",
+      context: "workspaces/acme",
+      select: false,
+    });
+    store.createChat({
+      title: "Analytics chat",
+      context: "projects/analytics",
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const workspaceButton = document.body.querySelector(
+      '[data-agent-new-chat-for-context="workspaces/acme"]'
+    ) as HTMLButtonElement | null;
+    expect(workspaceButton).toBeInstanceOf(HTMLButtonElement);
+    await act(async () => workspaceButton?.click());
+
+    const workspaceChatId = useAgentStore.getState().currentChatId!;
+    expect(useAgentStore.getState().getChat(workspaceChatId)?.context).toBe(
+      "workspaces/acme"
+    );
+    expect(useAgentStore.getState().getMessages(workspaceChatId)).toEqual([]);
+
+    const projectButton = document.body.querySelector(
+      '[data-agent-new-chat-for-context="projects/analytics"]'
+    ) as HTMLButtonElement | null;
+    expect(projectButton).toBeInstanceOf(HTMLButtonElement);
+    await act(async () => projectButton?.click());
+
+    const projectChatId = useAgentStore.getState().currentChatId!;
+    expect(useAgentStore.getState().getChat(projectChatId)?.context).toBe(
+      "projects/analytics"
+    );
+    expect(useAgentStore.getState().getMessages(projectChatId)).toEqual([]);
+    expect(
+      document.body.querySelector('[data-agent-new-chat-for-context="unscoped"]')
+    ).toBeNull();
+
+    unmount();
+  });
+
+  test("hydrates uncached project chat contexts before rendering their labels", async () => {
+    mocks.projectsByName = {};
+    mocks.batchFetchProjects.mockImplementation(async () => {
+      mocks.projectsByName = {
+        "projects/new-project-8i6r": { title: "New project" },
+      };
+      return [];
+    });
+    useAgentStore.getState().createChat({
+      title: "Set up collaboration",
+      context: "projects/new-project-8i6r",
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(mocks.batchFetchProjects).toHaveBeenCalledWith(
+          ["projects/new-project-8i6r"],
+          true
+        )
+      );
+    });
+    render();
+    expect(document.body.textContent).toContain("New project");
+    unmount();
+  });
+
+  test("keeps the project resource id when an old chat's project is unavailable", async () => {
+    mocks.projectsByName = {};
+    useAgentStore.getState().createChat({
+      title: "Set up collaboration",
+      context: "projects/deleted-project",
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(mocks.batchFetchProjects).toHaveBeenCalledWith(
+          ["projects/deleted-project"],
+          true
+        )
+      );
+    });
+    expect(document.body.textContent).toContain("deleted-project");
     unmount();
   });
 
@@ -537,6 +709,25 @@ describe("AgentWindow", () => {
 
     expect(useAgentStore.getState().getChat(chatId)?.archived).toBe(true);
     expect(useAgentStore.getState().currentChatId).toBe(chatId);
+
+    unmount();
+  });
+
+  test("vertically aligns each chat title with its archive action", () => {
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const archiveButton = document.body.querySelector(
+      "[data-agent-archive-chat]"
+    ) as HTMLButtonElement | null;
+    const title = document.body.querySelector(
+      "[data-agent-chat-title]"
+    ) as HTMLDivElement | null;
+    const rowContent = title?.parentElement?.parentElement;
+
+    expect(archiveButton).toBeInstanceOf(HTMLButtonElement);
+    expect(rowContent).toBeInstanceOf(HTMLDivElement);
+    expect(rowContent?.className).toContain("items-center");
 
     unmount();
   });

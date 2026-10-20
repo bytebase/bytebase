@@ -15,7 +15,7 @@ export type ProjectHomeNextStepInput = {
   database: ResourceAvailability;
   instance: ResourceAvailability;
   transferableDatabase: ResourceAvailability;
-  change: "loading" | "not-started" | "rolled-out" | "unknown";
+  change: "loading" | "not-started" | "proposed" | "rolled-out" | "unknown";
   membership: "unknown" | "solo" | "has-collaborators";
   isDefault: boolean;
   canConnectInstance: boolean;

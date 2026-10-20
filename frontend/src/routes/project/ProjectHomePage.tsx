@@ -30,12 +30,15 @@ import { ProjectPageLayout } from "@/components/ProjectPageLayout";
 import { RouterLink } from "@/components/RouterLink";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { usePlanFeature } from "@/hooks/useAppState";
 import {
   PREPARE_DATABASE_PRODUCT_INTRO,
   PREPARE_DATABASE_TRANSFER_TIP,
   PRODUCT_INTRO_QUERY_KEY,
   PRODUCT_INTRO_TIP_QUERY_KEY,
 } from "@/lib/productIntro";
+import { LandingStarterSelector } from "@/modules/agent/components/LandingStarterSelector";
+import { getLandingStarterIds } from "@/modules/agent/logic/landingStarters";
 import {
   selectHasRunningChat,
   useAgentStore,
@@ -49,6 +52,8 @@ import {
   State,
 } from "@/types/proto-es/v1/common_pb";
 import type { Database as DatabaseResource } from "@/types/proto-es/v1/database_service_pb";
+import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { getUserEmailInBinding } from "@/types/v1/user";
 import { autoDatabaseRoute } from "@/utils/auto-route";
 import { isBindingPolicyExpired } from "@/utils/v1/iam";
@@ -80,6 +85,7 @@ const HOME_PERMISSIONS: Permission[] = [
   "bb.sheets.create",
   "bb.projects.getIamPolicy",
   "bb.projects.setIamPolicy",
+  "bb.auditLogs.search",
 ];
 const PLAN_DETAIL_PERMISSIONS: Permission[] = [
   "bb.plans.get",
@@ -130,6 +136,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const aiEnabled = useAppStore(
     (state) => state.serverInfo?.aiEnabled === true
   );
+  const hasAuditLogFeature = usePlanFeature(PlanFeature.FEATURE_AUDIT_LOG);
   const hasRunningChat = useAgentStore(selectHasRunningChat);
   const hasQueuedMessage = useAgentStore(
     (state) => state.queuedUserMessage !== null
@@ -193,6 +200,8 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     !missedPermissions.includes("bb.issues.create") &&
     !missedPermissions.includes("bb.sheets.create") &&
     canGetPlanDetail;
+  const canViewRecentActivity =
+    hasAuditLogFeature && !missedPermissions.includes("bb.auditLogs.search");
   const canQueryDatabase =
     canListDatabases && !missedPermissions.includes("bb.projects.getIamPolicy");
   const membership =
@@ -252,7 +261,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
       : "loading";
   const [changeState, setChangeState] = useState<{
     projectName: string;
-    status: "loading" | "not-started" | "rolled-out" | "unknown";
+    status: "loading" | "not-started" | "proposed" | "rolled-out" | "unknown";
   }>({ projectName, status: "loading" });
   const changeStatus =
     changeState.projectName === projectName ? changeState.status : "loading";
@@ -380,25 +389,47 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (isArchived || availability !== "present") return;
     let active = true;
-    if (!canListRollouts) {
+    const canInspectDatabaseChanges = canListIssues && canReadIssues;
+    if (!canListRollouts && !canInspectDatabaseChanges) {
       setChangeState({ projectName, status: "unknown" });
       return;
     }
     setChangeState({ projectName, status: "loading" });
-    void rolloutServiceClientConnect
-      .listRollouts(
-        {
-          parent: projectName,
-          pageSize: 1,
-          filter: 'task_type in ["DATABASE_MIGRATE"]',
-        },
-        { contextValues: createContextValues().set(silentContextKey, true) }
-      )
-      .then(({ rollouts }) => {
+    void Promise.all([
+      canListRollouts
+        ? rolloutServiceClientConnect.listRollouts(
+            {
+              parent: projectName,
+              pageSize: 1,
+              filter: 'task_type in ["DATABASE_MIGRATE"]',
+            },
+            { contextValues: createContextValues().set(silentContextKey, true) }
+          )
+        : Promise.resolve(undefined),
+      canInspectDatabaseChanges
+        ? listIssues({
+            find: {
+              project: projectName,
+              query: "",
+              typeList: [Issue_Type.DATABASE_CHANGE],
+              statusList: [IssueStatus.OPEN],
+              orderBy: "update_time desc",
+            },
+            pageSize: 1,
+          })
+        : Promise.resolve(undefined),
+    ])
+      .then(([rolloutResponse, issueResponse]) => {
         if (active) {
           setChangeState({
             projectName,
-            status: rollouts.length ? "rolled-out" : "not-started",
+            status: issueResponse?.issues.length
+              ? "proposed"
+              : rolloutResponse?.rollouts.length
+                ? "rolled-out"
+                : canListRollouts && canInspectDatabaseChanges
+                  ? "not-started"
+                  : "unknown",
           });
         }
       })
@@ -408,7 +439,15 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     return () => {
       active = false;
     };
-  }, [availability, canListRollouts, isArchived, projectName]);
+  }, [
+    availability,
+    canListIssues,
+    canListRollouts,
+    canReadIssues,
+    isArchived,
+    listIssues,
+    projectName,
+  ]);
 
   useEffect(() => {
     if (isArchived) return;
@@ -504,6 +543,23 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     canManageMembers,
     goal: readSelectedGuideScenarioId(),
   });
+  const landingStarterIds = getLandingStarterIds({
+    scope: "project",
+    activeWork:
+      activeIssueStatus === "ready"
+        ? activeIssues.length
+          ? "present"
+          : "empty"
+        : activeIssueStatus === "loading"
+          ? "loading"
+          : "unknown",
+    database: availability,
+    change: changeStatus,
+    membership,
+    canConnectInstance,
+    canCreateChange,
+    canViewRecentActivity,
+  });
 
   const nextStepCopy = (step: ProjectHomeNextStep) => {
     switch (step) {
@@ -586,10 +642,33 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
       path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
       title: document.title,
     };
-    const chat = store.createChat({ context: project.name, page });
+    const chat = store.selectOrCreateChatForContext(project.name, page);
+    if (!chat) return;
     store.queueUserMessage({ chatId: chat.id, text, page });
     store.open();
     setAiPrompt("");
+  };
+
+  const sendLandingStarter = (
+    starterId: (typeof landingStarterIds)[number]
+  ) => {
+    if (!aiEnabled) return;
+    const store = useAgentStore.getState();
+    if (selectHasRunningChat(store) || store.queuedUserMessage) return;
+    const page = {
+      path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+      title: document.title,
+    };
+    const chat = store.selectOrCreateChatForContext(project.name, page);
+    if (!chat) return;
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: t(`agent.landing-starters.${starterId}`),
+      page,
+      runMode: "read-only",
+      starterId,
+    });
+    store.open();
   };
 
   return (
@@ -611,6 +690,15 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
             sendAIMessage();
           }}
         >
+          {!aiPrompt.trim() && (
+            <div className="px-3 pt-2">
+              <LandingStarterSelector
+                starterIds={landingStarterIds}
+                disabled={hasRunningChat || hasQueuedMessage}
+                onSelect={sendLandingStarter}
+              />
+            </div>
+          )}
           <Textarea
             size="md"
             rows={2}

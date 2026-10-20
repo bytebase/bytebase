@@ -18,13 +18,16 @@ import { LandingPage } from "./LandingPage";
 const mocks = vi.hoisted(() => ({
   aiEnabled: true as boolean | undefined,
   canConfigureAI: true,
+  canSearchAuditLogs: true,
+  hasAuditLogFeature: true,
   chatRunning: false,
   queuedUserMessage: null as { chatId: string } | null,
-  createChat: vi.fn(() => ({ id: "workspace-chat" })),
+  selectOrCreateChatForContext: vi.fn(() => ({ id: "workspace-chat" })),
   lastVisitProjectPath: "",
   openAgent: vi.fn(),
   push: vi.fn(),
   queueUserMessage: vi.fn(),
+  listIssues: vi.fn(),
   isSaaSMode: false,
 }));
 
@@ -59,9 +62,16 @@ vi.mock("@/components/ui/sheet", () => ({
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
-  useOptionalCurrentUser: () => ({ email: "creator@example.com" }),
+  useOptionalCurrentUser: () => ({
+    name: "users/creator",
+    email: "creator@example.com",
+  }),
   useServerState: () => ({ isSaaSMode: mocks.isSaaSMode, version: "", changelogURL: "" }),
-  useWorkspacePermission: () => mocks.canConfigureAI,
+  usePlanFeature: () => mocks.hasAuditLogFeature,
+  useWorkspacePermission: (permission: string) =>
+    permission === "bb.auditLogs.search"
+      ? mocks.canSearchAuditLogs
+      : mocks.canConfigureAI,
   useWorkspace: () => ({ name: "workspaces/acme", title: "Acme workspace" }),
 }));
 
@@ -76,12 +86,34 @@ vi.mock("@/modules/agent/store/agent", () => ({
       selector({ queuedUserMessage: mocks.queuedUserMessage }),
     {
       getState: () => ({
-        createChat: mocks.createChat,
+        selectOrCreateChatForContext: mocks.selectOrCreateChatForContext,
         open: mocks.openAgent,
         queueUserMessage: mocks.queueUserMessage,
         queuedUserMessage: mocks.queuedUserMessage,
       }),
     }
+  ),
+}));
+
+vi.mock("@/modules/agent/components/LandingStarterSelector", () => ({
+  LandingStarterSelector: ({
+    starterIds,
+    disabled,
+    onSelect,
+  }: {
+    starterIds: string[];
+    disabled: boolean;
+    onSelect: (starterId: string) => void;
+  }) => (
+    <button
+      type="button"
+      disabled={disabled}
+      data-testid="landing-starter-primary"
+      data-starter-ids={starterIds.join(",")}
+      onClick={() => onSelect(starterIds[0])}
+    >
+      {starterIds[0]}
+    </button>
   ),
 }));
 
@@ -92,7 +124,10 @@ vi.mock("./WorkspaceLandingGettingStarted", () => ({
 vi.mock("@/stores/app", () => ({
   useAppStore: Object.assign(
     (selector: (state: object) => unknown) =>
-      selector({ serverInfo: { aiEnabled: mocks.aiEnabled } }),
+      selector({
+        serverInfo: { aiEnabled: mocks.aiEnabled },
+        listIssues: mocks.listIssues,
+      }),
     {
       getState: () => ({
         getOrFetchProjectByName: async () => ({
@@ -107,20 +142,90 @@ vi.mock("@/stores/app", () => ({
 beforeEach(() => {
   mocks.aiEnabled = true;
   mocks.canConfigureAI = true;
+  mocks.canSearchAuditLogs = true;
+  mocks.hasAuditLogFeature = true;
   mocks.chatRunning = false;
   mocks.isSaaSMode = false;
   mocks.queuedUserMessage = null;
   mocks.lastVisitProjectPath = "";
-  mocks.createChat.mockClear();
+  mocks.selectOrCreateChatForContext.mockClear();
   mocks.openAgent.mockClear();
   mocks.queueUserMessage.mockClear();
+  mocks.listIssues.mockReset();
+  mocks.listIssues.mockResolvedValue({ issues: [] });
   localStorage.clear();
 });
 
 afterEach(cleanup);
 
 describe("LandingPage", () => {
-  test("sends a prompt in a new workspace-bound Agent chat", async () => {
+  test("offers a starter above the empty composer and sends it in a read-only chat", () => {
+    render(<LandingPage />);
+
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+    const starter = screen.getByTestId("landing-starter-primary");
+    expect(starter).toHaveTextContent("workspace-setup-first");
+    expect(
+      starter.compareDocumentPosition(prompt) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+
+    fireEvent.click(starter);
+
+    expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
+      "workspaces/acme",
+      expect.objectContaining({ path: expect.any(String) })
+    );
+    expect(mocks.queueUserMessage).toHaveBeenCalledWith({
+      chatId: "workspace-chat",
+      text: "agent.landing-starters.workspace-setup-first",
+      page: expect.objectContaining({ path: expect.any(String) }),
+      runMode: "read-only",
+      starterId: "workspace-setup-first",
+    });
+    expect(mocks.openAgent).toHaveBeenCalledOnce();
+  });
+
+  test("updates workspace starters when an active review is found", async () => {
+    mocks.listIssues.mockResolvedValue({ issues: [{ name: "issues/1" }] });
+    render(<LandingPage />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("landing-starter-primary")).toHaveAttribute(
+        "data-starter-ids",
+        "workspace-attention,workspace-recent"
+      )
+    );
+  });
+
+  test("uses the cross-project parent required by SearchIssues", async () => {
+    render(<LandingPage />);
+
+    await waitFor(() =>
+      expect(mocks.listIssues).toHaveBeenCalledWith(
+        expect.objectContaining({
+          find: expect.objectContaining({ project: "projects/-" }),
+          pageSize: 1,
+        })
+      )
+    );
+  });
+
+  test("does not offer workspace recent activity without audit-log access", async () => {
+    mocks.listIssues.mockResolvedValue({ issues: [{ name: "issues/1" }] });
+    mocks.canSearchAuditLogs = false;
+    render(<LandingPage />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("landing-starter-primary")).toHaveAttribute(
+        "data-starter-ids",
+        "workspace-attention"
+      )
+    );
+  });
+
+  test("sends a prompt in a reusable workspace-bound Agent chat", async () => {
     render(<LandingPage />);
 
     expect(
@@ -136,12 +241,13 @@ describe("LandingPage", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "landing.ai-placeholder" }), {
       target: { value: "  Show the projects in this workspace  " },
     });
+    expect(screen.queryByTestId("landing-starter-primary")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
 
-    expect(mocks.createChat).toHaveBeenCalledWith({
-      context: "workspaces/acme",
-      page: expect.objectContaining({ path: expect.any(String) }),
-    });
+    expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
+      "workspaces/acme",
+      expect.objectContaining({ path: expect.any(String) })
+    );
     expect(mocks.queueUserMessage).toHaveBeenCalledWith({
       chatId: "workspace-chat",
       text: "Show the projects in this workspace",
@@ -165,7 +271,7 @@ describe("LandingPage", () => {
     fireEvent.change(prompt, { target: { value: "Workspace\nprojects" } });
 
     expect(fireEvent.keyDown(prompt, { key: "Enter", shiftKey: true })).toBe(true);
-    expect(mocks.createChat).not.toHaveBeenCalled();
+    expect(mocks.selectOrCreateChatForContext).not.toHaveBeenCalled();
     expect(fireEvent.keyDown(prompt, { key: "Enter" })).toBe(false);
     expect(mocks.queueUserMessage).toHaveBeenCalledWith(
       expect.objectContaining({ text: "Workspace\nprojects" })
@@ -222,7 +328,7 @@ describe("LandingPage", () => {
     rerender(<LandingPage />);
     expect(send).toBeDisabled();
     fireEvent.submit(send.closest("form")!);
-    expect(mocks.createChat).not.toHaveBeenCalled();
+    expect(mocks.selectOrCreateChatForContext).not.toHaveBeenCalled();
   });
 
   test("keeps Last visit beside the shortcuts title", async () => {
