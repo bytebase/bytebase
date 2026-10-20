@@ -254,7 +254,7 @@ func TestDecideIssueApprovesOnConfirmation(t *testing.T) {
 		"the comment must record that the decision was confirmed in the client")
 	require.Equal(t, &auth.MCPConfirmedDecision{
 		Procedure:       v1connect.IssueServiceApproveIssueProcedure,
-		Resource:           decideIssueName,
+		Resource:        decideIssueName,
 		IssueUpdateTime: time.Date(2026, 10, 13, 8, 0, 0, 123456000, time.UTC),
 	}, calls[0].confirmed, "the approval must carry the confirmation the gate admits it on, and the issue version it applies to")
 
@@ -281,7 +281,7 @@ func TestDecideIssueRejectsOnConfirmation(t *testing.T) {
 	require.Equal(t, v1connect.IssueServiceRejectIssueProcedure, calls[0].path)
 	require.Equal(t, &auth.MCPConfirmedDecision{
 		Procedure:       v1connect.IssueServiceRejectIssueProcedure,
-		Resource:           decideIssueName,
+		Resource:        decideIssueName,
 		IssueUpdateTime: time.Date(2026, 10, 13, 8, 0, 0, 123456000, time.UTC),
 	}, calls[0].confirmed)
 }
@@ -1127,7 +1127,7 @@ func TestConfirmationReachesTheConnectInterceptors(t *testing.T) {
 
 	want := auth.MCPConfirmedDecision{
 		Procedure:       v1connect.IssueServiceApproveIssueProcedure,
-		Resource:           decideIssueName,
+		Resource:        decideIssueName,
 		IssueUpdateTime: time.Date(2026, 10, 13, 8, 0, 0, 123456000, time.UTC),
 	}
 	resp, err := s.apiRequest(auth.WithMCPConfirmedDecision(context.Background(), want),
