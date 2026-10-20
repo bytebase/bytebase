@@ -642,7 +642,11 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
       path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
       title: document.title,
     };
-    const chat = store.selectOrCreateChatForContext(project.name, page);
+    const chat = store.selectOrCreateChatForContext(
+      project.name,
+      page,
+      workspaceName
+    );
     if (!chat) return;
     store.queueUserMessage({ chatId: chat.id, text, page });
     store.open();
@@ -659,7 +663,11 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
       path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
       title: document.title,
     };
-    const chat = store.selectOrCreateChatForContext(project.name, page);
+    const chat = store.selectOrCreateChatForContext(
+      project.name,
+      page,
+      workspaceName
+    );
     if (!chat) return;
     store.queueUserMessage({
       chatId: chat.id,

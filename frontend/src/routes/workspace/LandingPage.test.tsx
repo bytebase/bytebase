@@ -175,7 +175,8 @@ describe("LandingPage", () => {
 
     expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
       "workspaces/acme",
-      expect.objectContaining({ path: expect.any(String) })
+      expect.objectContaining({ path: expect.any(String) }),
+      "workspaces/acme"
     );
     expect(mocks.queueUserMessage).toHaveBeenCalledWith({
       chatId: "workspace-chat",
@@ -196,6 +197,26 @@ describe("LandingPage", () => {
         "data-starter-ids",
         "workspace-attention,workspace-recent"
       )
+    );
+  });
+
+  test("updates workspace starters when the member has an open Issue they created", async () => {
+    mocks.listIssues
+      .mockResolvedValueOnce({ issues: [] })
+      .mockResolvedValueOnce({ issues: [{ name: "projects/orders/issues/1" }] });
+    render(<LandingPage />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("landing-starter-primary")).toHaveAttribute(
+        "data-starter-ids",
+        "workspace-attention,workspace-recent"
+      )
+    );
+    expect(mocks.listIssues).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        find: expect.objectContaining({ creator: "users/creator" }),
+      })
     );
   });
 
@@ -246,7 +267,8 @@ describe("LandingPage", () => {
 
     expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
       "workspaces/acme",
-      expect.objectContaining({ path: expect.any(String) })
+      expect.objectContaining({ path: expect.any(String) }),
+      "workspaces/acme"
     );
     expect(mocks.queueUserMessage).toHaveBeenCalledWith({
       chatId: "workspace-chat",

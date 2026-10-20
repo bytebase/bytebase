@@ -681,6 +681,85 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("keeps a read-only starter read-only after answering a pending question", async () => {
+    mocks.runAgentLoop
+      .mockResolvedValueOnce({
+        kind: "awaiting_user",
+        ask: {
+          toolCallId: "ask-1",
+          prompt: "Which database?",
+          kind: "input",
+        },
+      })
+      .mockResolvedValueOnce({ kind: "completed", totalTokensUsed: 0 });
+    const page = { path: "/projects/billing", title: "Billing" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/billing", page });
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "What should I review?",
+      page,
+      runMode: "read-only",
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(useAgentStore.getState().getChat(chat.id)?.status).toBe(
+          "awaiting_user"
+        )
+      );
+    });
+
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    await act(async () => {
+      setTextareaValue(textarea, "Billing database");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      (view.container.querySelector("[data-agent-send]") as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+    });
+
+    expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({
+      runMode: "read-only",
+    });
+    view.unmount();
+  });
+
+  test("keeps a read-only starter read-only when retrying an interrupted run", async () => {
+    mocks.runAgentLoop
+      .mockResolvedValueOnce({ kind: "aborted" })
+      .mockResolvedValueOnce({ kind: "completed", totalTokensUsed: 0 });
+    const page = { path: "/projects/billing", title: "Billing" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/billing", page });
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "What should I review?",
+      page,
+      runMode: "read-only",
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(useAgentStore.getState().getChat(chat.id)?.interrupted).toBe(true)
+      );
+    });
+    await act(async () => {
+      [...view.container.querySelectorAll("button")]
+        .find((button) => button.textContent === "agent.retry-last-chat-turn")
+        ?.click();
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+    });
+
+    expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith({
+      runMode: "read-only",
+    });
+    view.unmount();
+  });
+
   test("keeps the queued message busy while AI configuration loads", async () => {
     let resolveSetting!: (value: undefined) => void;
     mocks.getOrFetchSettingByName.mockReturnValue(

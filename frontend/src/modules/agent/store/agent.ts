@@ -32,6 +32,7 @@ interface PersistedAgentState {
 interface CreateChatOptions {
   page?: AgentChatSnapshot;
   context?: string;
+  workspaceName?: string;
   select?: boolean;
   title?: string;
   archived?: boolean;
@@ -60,6 +61,7 @@ const createChatRecord = (options: CreateChatOptions = {}): AgentChat => {
     id: uuidv4(),
     title: options.title ?? "",
     context: options.context,
+    workspaceName: options.workspaceName,
     createdTs: now,
     updatedTs: now,
     status: DEFAULT_CHAT_STATUS,
@@ -205,6 +207,10 @@ const normalizeChat = (raw: unknown): AgentChat => {
       typeof chat.context === "string" && chat.context.trim()
         ? chat.context
         : undefined,
+    workspaceName:
+      typeof chat.workspaceName === "string" && chat.workspaceName.trim()
+        ? chat.workspaceName
+        : undefined,
     createdTs: typeof chat.createdTs === "number" ? chat.createdTs : now,
     updatedTs: typeof chat.updatedTs === "number" ? chat.updatedTs : now,
     status,
@@ -233,6 +239,10 @@ const normalizeChat = (raw: unknown): AgentChat => {
     requiresAIConfiguration: Boolean(chat.requiresAIConfiguration),
     interrupted: Boolean(chat.interrupted),
     runId: typeof chat.runId === "string" ? chat.runId : null,
+    runMode:
+      chat.runMode === "read-only" || chat.runMode === "default"
+        ? chat.runMode
+        : undefined,
   };
 };
 
@@ -375,14 +385,20 @@ export interface AgentState {
   queueUserMessage: (message: QueuedUserMessage) => void;
   takeQueuedUserMessage: (chatId: string) => QueuedUserMessage | null;
   finishQueuedUserMessage: (chatId: string) => void;
-  ensureCurrentChat: (page?: AgentChatSnapshot, context?: string) => AgentChat;
+  ensureCurrentChat: (
+    page?: AgentChatSnapshot,
+    context?: string,
+    workspaceName?: string
+  ) => AgentChat;
   selectChatContext: (
     context: string,
-    page?: AgentChatSnapshot
+    page?: AgentChatSnapshot,
+    workspaceName?: string
   ) => AgentChat | null;
   selectOrCreateChatForContext: (
     context: string,
-    page?: AgentChatSnapshot
+    page?: AgentChatSnapshot,
+    workspaceName?: string
   ) => AgentChat | null;
   setCurrentChat: (chatId: string) => void;
   clearCurrentChat: () => void;
@@ -421,7 +437,7 @@ export interface AgentState {
   startChatRun: (
     chatId: string,
     page?: AgentChatSnapshot,
-    options?: { runId?: string }
+    options?: { runId?: string; runMode?: AgentRunMode }
   ) => void;
   finishChatRun: (
     chatId: string,
@@ -789,16 +805,21 @@ export const createAgentStore = () => {
             state.queuedUserMessageInFlight = false;
           }),
 
-        ensureCurrentChat: (page, context) => {
+        ensureCurrentChat: (page, context, workspaceName) => {
           const existing = _getChat(get().currentChatId);
           if (existing) {
-            if ((page && !existing.page) || (context && !existing.context)) {
+            const canBindContext =
+              Boolean(context) &&
+              !existing.context &&
+              get().getMessages(existing.id).length === 0;
+            if ((page && !existing.page) || canBindContext) {
               set((state) => {
                 const chat = state.chats.find((c) => c.id === existing.id);
                 if (chat) {
                   if (page && !chat.page) chat.page = page;
-                  if (context && !chat.context) {
+                  if (canBindContext && context) {
                     chat.context = context;
+                    chat.workspaceName = workspaceName;
                   }
                   _touchChatInDraft(state.chats, chat.id);
                 }
@@ -806,26 +827,33 @@ export const createAgentStore = () => {
             }
             return _getChat(existing.id)!;
           }
-          return get().createChat({ page, context });
+          return get().createChat({ page, context, workspaceName });
         },
 
-        selectChatContext: (context, page) => {
+        selectChatContext: (context, page, workspaceName) => {
           if (!context || _hasRunningChat()) return null;
           const current = _getChat(get().currentChatId);
-          if (!current) return get().createChat({ page, context });
-          if (current.context === context) return current;
+          if (!current)
+            return get().createChat({ page, context, workspaceName });
+          if (
+            current.context === context &&
+            current.workspaceName === workspaceName
+          ) {
+            return current;
+          }
           if (get().getPendingAsk(current.id)) return null;
           set((state) => {
             const chat = state.chats.find((c) => c.id === current.id);
             if (chat) {
               chat.context = context;
+              chat.workspaceName = workspaceName;
               _touchChatInDraft(state.chats, chat.id);
             }
           });
           return _getChat(current.id);
         },
 
-        selectOrCreateChatForContext: (context, page) => {
+        selectOrCreateChatForContext: (context, page, workspaceName) => {
           if (!context || _hasRunningChat() || get().queuedUserMessage) {
             return null;
           }
@@ -836,11 +864,16 @@ export const createAgentStore = () => {
             !get().getPendingAsk(chat.id);
           const current = _getChat(get().currentChatId);
           const matchingChat =
-            current?.context === context && isReusable(current)
+            current?.context === context &&
+            current.workspaceName === workspaceName &&
+            isReusable(current)
               ? current
               : [...get().chats]
                   .filter(
-                    (chat) => chat.context === context && isReusable(chat)
+                    (chat) =>
+                      chat.context === context &&
+                      chat.workspaceName === workspaceName &&
+                      isReusable(chat)
                   )
                   .sort(
                     (a, b) =>
@@ -868,13 +901,14 @@ export const createAgentStore = () => {
               const chat = state.chats.find((c) => c.id === current.id);
               if (!chat) return;
               chat.context = context;
+              chat.workspaceName = workspaceName;
               if (page) chat.page = page;
               _touchChatInDraft(state.chats, chat.id);
             });
             return _getChat(current.id);
           }
 
-          return get().createChat({ context, page });
+          return get().createChat({ context, page, workspaceName });
         },
 
         setCurrentChat: (chatId) => {
@@ -1148,6 +1182,7 @@ export const createAgentStore = () => {
             const chat = state.chats.find((c) => c.id === chatId);
             if (chat) {
               chat.runId = options.runId ?? chat.runId ?? null;
+              chat.runMode = options.runMode;
             }
           });
         },
@@ -1162,6 +1197,7 @@ export const createAgentStore = () => {
             const chat = state.chats.find((c) => c.id === chatId);
             if (chat) {
               chat.runId = null;
+              chat.runMode = undefined;
             }
           });
         },

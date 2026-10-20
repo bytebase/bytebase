@@ -132,6 +132,25 @@ describe("useAgentStore (Zustand)", () => {
     });
   });
 
+  test("does not reuse a project chat from another workspace", () => {
+    const store = createAgentStore();
+    const first = s(store).selectOrCreateChatForContext(
+      "projects/orders",
+      undefined,
+      "workspaces/alpha"
+    );
+
+    const second = s(store).selectOrCreateChatForContext(
+      "projects/orders",
+      undefined,
+      "workspaces/beta"
+    );
+
+    expect(first?.id).not.toBe(second?.id);
+    expect(s(store).getChat(first?.id)?.workspaceName).toBe("workspaces/alpha");
+    expect(s(store).getChat(second?.id)?.workspaceName).toBe("workspaces/beta");
+  });
+
   test("prefers the current chat when it has the exact landing context", () => {
     const store = createAgentStore();
     const current = s(store).createChat({ context: "projects/orders" });
@@ -217,7 +236,7 @@ describe("useAgentStore (Zustand)", () => {
     );
   });
 
-  test("binds a context to a chat created before the context was available", () => {
+  test("binds a context only to an empty chat created before the context was available", () => {
     const store = createAgentStore();
     const emptyChatId = s(store).currentChatId!;
 
@@ -231,10 +250,8 @@ describe("useAgentStore (Zustand)", () => {
       content: "Earlier work",
     });
     s(store).ensureCurrentChat(undefined, "projects/orders");
-    expect(s(store).getChat(legacy.id)?.context).toBe("projects/orders");
-    expect(s(createAgentStore()).getChat(legacy.id)?.context).toBe(
-      "projects/orders"
-    );
+    expect(s(store).getChat(legacy.id)?.context).toBeUndefined();
+    expect(s(createAgentStore()).getChat(legacy.id)?.context).toBeUndefined();
   });
 
   test("changes the context of an empty chat without creating another chat", () => {

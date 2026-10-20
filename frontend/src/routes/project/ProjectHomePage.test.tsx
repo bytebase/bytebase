@@ -186,7 +186,8 @@ describe("ProjectHomePage", () => {
 
     expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
       "projects/orders",
-      expect.objectContaining({ path: expect.any(String) })
+      expect.objectContaining({ path: expect.any(String) }),
+      "workspaces/demo"
     );
     expect(mocks.queueUserMessage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -346,7 +347,8 @@ describe("ProjectHomePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
     expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
       "projects/orders",
-      expect.objectContaining({ path: expect.any(String) })
+      expect.objectContaining({ path: expect.any(String) }),
+      "workspaces/demo"
     );
     expect(mocks.queueUserMessage).toHaveBeenCalledWith(
       expect.objectContaining({ chatId: "new-chat", text: "List databases" })

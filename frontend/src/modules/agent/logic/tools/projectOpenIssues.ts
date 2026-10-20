@@ -94,7 +94,12 @@ export function createProjectOpenIssuesTool({
     return JSON.stringify({
       project: projectName,
       issues: [...issues.values()],
-      partial: fulfilledCount !== results.length,
+      partial:
+        fulfilledCount !== results.length ||
+        results.some(
+          (result) =>
+            result.status === "fulfilled" && Boolean(result.value.nextPageToken)
+        ),
     });
   };
 }

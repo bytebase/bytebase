@@ -512,23 +512,43 @@ export function LandingPage(_: Record<string, never> = {}) {
     }
     let active = true;
     setActiveWork("loading");
-    void listIssues({
-      find: {
-        project: "projects/-",
-        query: "",
-        currentApprover: currentUserName,
-        statusList: [IssueStatus.OPEN],
-        approvalStatus: ApprovalStatus.PENDING,
-        orderBy: "update_time desc",
-      },
-      pageSize: 1,
-    })
-      .then(({ issues }) => {
-        if (active) setActiveWork(issues.length ? "present" : "empty");
-      })
-      .catch(() => {
-        if (active) setActiveWork("unknown");
-      });
+    void Promise.allSettled([
+      listIssues({
+        find: {
+          project: "projects/-",
+          query: "",
+          currentApprover: currentUserName,
+          statusList: [IssueStatus.OPEN],
+          approvalStatus: ApprovalStatus.PENDING,
+          orderBy: "update_time desc",
+        },
+        pageSize: 1,
+      }),
+      listIssues({
+        find: {
+          project: "projects/-",
+          query: "",
+          creator: currentUserName,
+          statusList: [IssueStatus.OPEN],
+          orderBy: "update_time desc",
+        },
+        pageSize: 1,
+      }),
+    ]).then((results) => {
+      if (!active) return;
+      if (
+        results.some(
+          (result) =>
+            result.status === "fulfilled" && result.value.issues.length > 0
+        )
+      ) {
+        setActiveWork("present");
+      } else if (results.every((result) => result.status === "fulfilled")) {
+        setActiveWork("empty");
+      } else {
+        setActiveWork("unknown");
+      }
+    });
     return () => {
       active = false;
     };
@@ -555,7 +575,11 @@ export function LandingPage(_: Record<string, never> = {}) {
       path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
       title: document.title,
     };
-    const chat = store.selectOrCreateChatForContext(workspace.name, page);
+    const chat = store.selectOrCreateChatForContext(
+      workspace.name,
+      page,
+      workspace.name
+    );
     if (!chat) return;
     store.queueUserMessage({ chatId: chat.id, text, page });
     store.open();
@@ -572,7 +596,11 @@ export function LandingPage(_: Record<string, never> = {}) {
       path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
       title: document.title,
     };
-    const chat = store.selectOrCreateChatForContext(workspace.name, page);
+    const chat = store.selectOrCreateChatForContext(
+      workspace.name,
+      page,
+      workspace.name
+    );
     if (!chat) return;
     store.queueUserMessage({
       chatId: chat.id,

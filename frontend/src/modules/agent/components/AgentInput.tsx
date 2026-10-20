@@ -373,13 +373,20 @@ export function AgentInput() {
       ? workspace?.title || context
       : context;
 
-  const selectContext = useCallback((resource: string) => {
-    return Boolean(
-      useAgentStore
-        .getState()
-        .selectChatContext(resource, getCurrentPageSnapshot())
-    );
-  }, []);
+  const selectContext = useCallback(
+    (resource: string) => {
+      return Boolean(
+        useAgentStore
+          .getState()
+          .selectChatContext(
+            resource,
+            getCurrentPageSnapshot(),
+            workspace?.name
+          )
+      );
+    },
+    [workspace?.name]
+  );
 
   useEffect(() => {
     if (projectContext && !contextProject) {
@@ -930,7 +937,7 @@ export function AgentInput() {
       const runId = uuidv4();
       const store = useAgentStore.getState();
       store.updateChatPage(chatId, currentPage);
-      store.startChatRun(chatId, currentPage, { runId });
+      store.startChatRun(chatId, currentPage, { runId, runMode });
       if (starterId === "workspace-recent") {
         await runRecentActivityStarter(
           chatId,
@@ -1017,7 +1024,8 @@ export function AgentInput() {
     const currentPage = getCurrentPageSnapshot();
     const thread = store.ensureCurrentChat(
       currentPage,
-      getCurrentChatContext()
+      getCurrentChatContext(),
+      workspace?.name
     );
     const chatId = thread.id;
     if (await blockWhenAIIsNotConfigured(chatId)) return;
@@ -1044,7 +1052,11 @@ export function AgentInput() {
       } else {
         return;
       }
-      await startChatRun(chatId, currentPage);
+      await startChatRun(
+        chatId,
+        currentPage,
+        store.getChat(chatId)?.runMode ?? "default"
+      );
       return;
     }
 
@@ -1072,7 +1084,7 @@ export function AgentInput() {
               ? "project-open-blockers"
               : undefined;
     await startChatRun(chatId, currentPage, "default", starterId);
-  }, [blockWhenAIIsNotConfigured, input, startChatRun, t]);
+  }, [blockWhenAIIsNotConfigured, input, startChatRun, t, workspace?.name]);
 
   const retryLastTurn = useCallback(async () => {
     const store = useAgentStore.getState();
@@ -1084,7 +1096,7 @@ export function AgentInput() {
     if (await blockWhenAIIsNotConfigured(chatId)) return;
     store.removeMessagesByRunId(chatId, chat.runId);
     store.clearError(chatId);
-    await startChatRun(chatId, currentPage);
+    await startChatRun(chatId, currentPage, chat.runMode ?? "default");
   }, [blockWhenAIIsNotConfigured, startChatRun]);
 
   const dismissInterrupted = useCallback(() => {
@@ -1120,7 +1132,11 @@ export function AgentInput() {
         { kind: "confirm", answer, confirmed },
         { route: currentPage.path }
       );
-      await startChatRun(chatId, currentPage);
+      await startChatRun(
+        chatId,
+        currentPage,
+        store.getChat(chatId)?.runMode ?? "default"
+      );
     },
     [blockWhenAIIsNotConfigured, confirmLabel, cancelLabel, startChatRun]
   );
@@ -1149,7 +1165,11 @@ export function AgentInput() {
         { kind: "choose", answer: option.label, value: option.value },
         { route: currentPage.path }
       );
-      await startChatRun(chatId, currentPage);
+      await startChatRun(
+        chatId,
+        currentPage,
+        store.getChat(chatId)?.runMode ?? "default"
+      );
     },
     [blockWhenAIIsNotConfigured, startChatRun]
   );

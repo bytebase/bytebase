@@ -99,4 +99,23 @@ describe("projectOpenIssues", () => {
     });
     expect(state.listIssues).not.toHaveBeenCalled();
   });
+
+  test("marks the result partial when either Issue query has another page", async () => {
+    state.listIssues.mockReset();
+    state.listIssues
+      .mockResolvedValueOnce({
+        nextPageToken: "next-review-page",
+        issues: [issue({ name: "projects/sample/issues/review" })],
+      })
+      .mockResolvedValueOnce({
+        nextPageToken: "",
+        issues: [issue({ name: "projects/sample/issues/created" })],
+      });
+
+    const result = JSON.parse(
+      await createProjectOpenIssuesTool({ projectName: "projects/sample" })()
+    );
+
+    expect(result.partial).toBe(true);
+  });
 });

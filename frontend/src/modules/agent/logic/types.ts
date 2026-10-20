@@ -46,6 +46,7 @@ export interface AgentChat {
   id: string;
   title: string;
   context?: string;
+  workspaceName?: string;
   createdTs: number;
   updatedTs: number;
   status: AgentChatStatus;
@@ -56,6 +57,7 @@ export interface AgentChat {
   requiresAIConfiguration?: boolean;
   interrupted?: boolean;
   runId?: string | null;
+  runMode?: AgentRunMode;
 }
 
 export type AgentAskUserKind = "input" | "confirm" | "choose";

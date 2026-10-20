@@ -455,9 +455,15 @@ export function AgentWindow() {
       store.createChat({
         page: getCurrentPageSnapshot(),
         context: getCurrentChatContext(),
+        workspaceName: workspace?.name,
       });
     },
-    [showArchivedOnly, selectFirstDisplayedChat, getCurrentPageSnapshot]
+    [
+      showArchivedOnly,
+      selectFirstDisplayedChat,
+      getCurrentPageSnapshot,
+      workspace?.name,
+    ]
   );
 
   // --- Rename ---
@@ -526,8 +532,9 @@ export function AgentWindow() {
     useAgentStore.getState().createChat({
       page: getCurrentPageSnapshot(),
       context: getCurrentChatContext(),
+      workspaceName: workspace?.name,
     });
-  }, [isChatCreationDisabled, getCurrentPageSnapshot]);
+  }, [isChatCreationDisabled, getCurrentPageSnapshot, workspace?.name]);
 
   const createChatForContext = useCallback(
     (context: string) => {
@@ -535,9 +542,10 @@ export function AgentWindow() {
       useAgentStore.getState().createChat({
         page: getCurrentPageSnapshot(),
         context,
+        workspaceName: workspace?.name,
       });
     },
-    [isChatCreationDisabled, getCurrentPageSnapshot]
+    [isChatCreationDisabled, getCurrentPageSnapshot, workspace?.name]
   );
 
   const handleChatRowClick = useCallback(
@@ -937,8 +945,12 @@ export function AgentWindow() {
     if (!visible || !currentChatId) return;
     useAgentStore
       .getState()
-      .ensureCurrentChat(getCurrentPageSnapshot(), getCurrentChatContext());
-  }, [currentChatId, getCurrentPageSnapshot, visible]);
+      .ensureCurrentChat(
+        getCurrentPageSnapshot(),
+        getCurrentChatContext(),
+        workspace?.name
+      );
+  }, [currentChatId, getCurrentPageSnapshot, visible, workspace?.name]);
 
   useEffect(() => {
     if (!visible || !currentChatId) return;
