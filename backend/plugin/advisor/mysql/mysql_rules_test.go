@@ -450,6 +450,25 @@ func TestMariaDBPriorBackupCheckAdvisor(t *testing.T) {
 	require.Contains(t, adviceList[0].Content, "mixed DDL and DML")
 }
 
+func TestMariaDBPriorBackupCheckAdvisorFlagsMariaDBOnlyStatements(t *testing.T) {
+	sm := sheet.NewManager()
+
+	adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "UPDATE test SET c1 = 1 WHERE b1 = 1;\nDELETE FROM test WHERE b1 = 2 RETURNING b1;", nil, advisor.Context{
+		DBType:            storepb.Engine_MARIADB,
+		DBSchema:          advisor.MockMySQLDatabase,
+		EnablePriorBackup: true,
+		InstanceID:        "instance",
+		ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
+			return []string{"bbdataarchive"}, nil
+		},
+	})
+
+	require.NoError(t, err)
+	require.Len(t, adviceList, 1)
+	require.Equal(t, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK.String(), adviceList[0].Title)
+	require.Equal(t, "Prior backup cannot handle MariaDB-specific syntax", adviceList[0].Content)
+}
+
 func TestMariaDBSQLReviewReviewsAroundMariaDBOnlyStatements(t *testing.T) {
 	sm := sheet.NewManager()
 	finalMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "test"}, nil, nil, storepb.Engine_MARIADB, true)
