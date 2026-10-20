@@ -240,6 +240,7 @@ export function IssueDetailCommentList() {
                   <EditableMarkdownContent
                     allowSave={allowUpdateComment}
                     content={item.comment}
+                    untrusted={Boolean(item.reviewMetadata)}
                     editContent={editContent}
                     isEditing={isEditing}
                     onCancel={cancelEditComment}
@@ -477,6 +478,7 @@ function EditableMarkdownContent({
   onSave,
   placeholder,
   projectName,
+  untrusted = false,
 }: {
   allowSave: boolean;
   content: string;
@@ -488,6 +490,9 @@ function EditableMarkdownContent({
   onSave: () => void;
   placeholder: string;
   projectName?: string;
+  // A review result is a model's or a rule's text, not a member's, so it
+  // renders without raw HTML or images.
+  untrusted?: boolean;
 }) {
   const { t } = useTranslation();
   const transform = useIssueRefTransform(projectName);
@@ -509,6 +514,7 @@ function EditableMarkdownContent({
         onChange={onChange}
         onSubmit={onSave}
         transform={transform}
+        untrusted={untrusted}
       />
       {isEditing && (
         <div className="mt-2 flex items-center justify-end gap-x-2">
