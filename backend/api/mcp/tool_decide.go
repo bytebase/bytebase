@@ -643,6 +643,14 @@ func (s *Server) statementPreview(ctx context.Context, sheet string) (string, er
 // describeAccessGrant returns the grant's scope and query lines, and its terms
 // for the approval line.
 func describeAccessGrant(grant *accessGrantView) ([]string, string) {
+	scope := "Access on " + describeTargets(grant.Targets, "databases")
+	label, text := "Query", strconv.Quote(grant.Query)
+	if shown, cut := common.TruncateString(grant.Query, maxStatementPreview); cut {
+		label = "Query (partial)"
+		text = fmt.Sprintf("%q (first %d of %d characters)", shown, maxStatementPreview, utf8.RuneCountInString(grant.Query))
+	}
+	// The schema and container decide what the query's unqualified names read,
+	// so they come before the query, where a line cut short keeps them.
 	var qualifiers []string
 	if grant.Schema != "" {
 		qualifiers = append(qualifiers, fmt.Sprintf("schema %q", grant.Schema))
@@ -650,11 +658,10 @@ func describeAccessGrant(grant *accessGrantView) ([]string, string) {
 	if grant.Container != "" {
 		qualifiers = append(qualifiers, fmt.Sprintf("container %q", grant.Container))
 	}
-	scope := "Access on " + describeTargets(grant.Targets, "databases", qualifiers...)
-	query := fmt.Sprintf("Query: %q", grant.Query)
-	if shown, cut := common.TruncateString(grant.Query, maxStatementPreview); cut {
-		query = fmt.Sprintf("Query (partial): %q (first %d of %d characters)", shown, maxStatementPreview, utf8.RuneCountInString(grant.Query))
+	if len(qualifiers) > 0 {
+		label += " in " + strings.Join(qualifiers, ", ")
 	}
+	query := label + ": " + text
 	terms := fmt.Sprintf("Unmasked: %s. Export: %s.", yesNo(grant.Unmask), yesNo(grant.Export))
 	switch {
 	case grant.ExpireTime != "":
@@ -666,14 +673,13 @@ func describeAccessGrant(grant *accessGrantView) ([]string, string) {
 	return []string{scope, query}, terms
 }
 
-// describeTargets names targets and their qualifiers. With several targets, the
-// count and the qualifiers come before the names, so a line cut short keeps them.
-func describeTargets(targets []string, noun string, qualifiers ...string) string {
+// describeTargets names targets. With several, the count comes before the
+// names, so a line cut short keeps it.
+func describeTargets(targets []string, noun string) string {
 	if len(targets) == 1 {
-		return strings.Join(append([]string{strconv.Quote(targets[0])}, qualifiers...), ", ")
+		return strconv.Quote(targets[0])
 	}
-	head := append([]string{fmt.Sprintf("%d %s", len(targets), noun)}, qualifiers...)
-	return strings.Join(head, ", ") + ": " + quoteAll(targets)
+	return fmt.Sprintf("%d %s: %s", len(targets), noun, quoteAll(targets))
 }
 
 // readResource reads one resource by name from the internal API.

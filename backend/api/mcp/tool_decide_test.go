@@ -766,9 +766,9 @@ func TestDecideIssueShowsTheAccessGrantsScope(t *testing.T) {
 	mock.grant["container"] = "employees"
 	mock.grant["query"] = "SELECT salary FROM employee" + strings.Repeat(" ", 300) + "UNION SELECT ssn FROM employee"
 	lines := strings.Split(askedMessage(t, mock), "\n")
-	require.Equal(t, `Access on 2 databases, schema "payroll", container "employees": "instances/prod/databases/hr", "instances/prod/databases/hr2"`, lines[1],
+	require.Equal(t, `Access on 2 databases: "instances/prod/databases/hr", "instances/prod/databases/hr2"`, lines[1])
+	require.True(t, strings.HasPrefix(lines[2], `Query (partial) in schema "payroll", container "employees": "SELECT salary FROM employee`), lines[2],
 		"the schema decides which tables an unqualified query reads, and the container is the data a Cosmos DB grant opens")
-	require.True(t, strings.HasPrefix(lines[2], `Query (partial): "SELECT salary FROM employee`), lines[2])
 	require.True(t, strings.HasSuffix(lines[2], `" (first 300 of 357 characters)`), lines[2])
 	require.NotContains(t, lines[2], "UNION SELECT ssn")
 }
@@ -921,8 +921,19 @@ func TestDecideIssueFormShowsTheChangeInClaudeCodesDialog(t *testing.T) {
 				mock.grant["query"] = "SELECT salary FROM employee" + strings.Repeat(" ", 300) + "UNION SELECT ssn FROM employee"
 				return mock
 			}(),
-			scope:     `Access on 12 databases, schema "payroll", container "employees": "`,
-			statement: `Query (partial): "SELECT salary FROM employee`,
+			scope:     `Access on 12 databases: "instances/prod-00/databases/hr"`,
+			statement: `Query (partial) in schema "payroll", container "employees": "SELECT`,
+			last:      `Unmasked: yes. Export: no. Expires: "1h0m0s" after approval.`,
+		},
+		"an access request on one long database": {
+			mock: func() *decisionMock {
+				mock := accessRequestMock()
+				mock.grant["targets"] = []string{"instances/pg-prod-eu-west-1/databases/payroll_reporting"}
+				mock.grant["schema"] = "payroll"
+				return mock
+			}(),
+			scope:     `Access on "instances/pg-prod-eu-west-1/databases/payroll_reporting"`,
+			statement: `Query in schema "payroll": "SELECT salary`,
 			last:      `Unmasked: yes. Export: no. Expires: "1h0m0s" after approval.`,
 		},
 		"wide characters": {
