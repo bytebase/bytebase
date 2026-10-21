@@ -1,6 +1,6 @@
 import { type MouseEventHandler, type ReactNode, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { buildProjectEntryRoute } from "@/app/router/routeHelpers";
+import { buildProjectEntryRoute } from "@/app/router/projectEntryRoute";
 import { RouterLink, type RouterLinkProps } from "@/components/RouterLink";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { cn } from "@/lib/utils";

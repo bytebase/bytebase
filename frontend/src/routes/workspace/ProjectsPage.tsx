@@ -6,7 +6,7 @@ import {
   markListScrollRestorationEntry,
   useListScrollRestorationLoadMore,
 } from "@/app/router/NavigationScrollRestoration";
-import { buildProjectEntryRoute } from "@/app/router/routeHelpers";
+import { buildProjectEntryRoute } from "@/app/router/projectEntryRoute";
 import {
   AdvancedSearch,
   getValueFromScopes,

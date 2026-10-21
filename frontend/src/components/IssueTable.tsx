@@ -4,7 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
-import { buildProjectEntryRoute } from "@/app/router/routeHelpers";
+import { buildProjectEntryRoute } from "@/app/router/projectEntryRoute";
 import {
   AdvancedSearch,
   type ScopeOption,

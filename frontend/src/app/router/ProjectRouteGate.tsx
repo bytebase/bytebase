@@ -7,7 +7,7 @@ import {
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
-import { buildProjectEntryRoute } from "@/app/router/routeHelpers";
+import { buildProjectEntryRoute } from "@/app/router/projectEntryRoute";
 import {
   PermissionDeniedFallback,
   useComponentPermissionState,
@@ -41,14 +41,18 @@ export function ProjectRouteGate() {
   const setRecentProject = useAppStore((state) => state.setRecentProject);
   const removeRecentVisit = useAppStore((state) => state.removeRecentVisit);
   const [loadedProjectName, setLoadedProjectName] = useState("");
+  const [projectHomeEnabled, setProjectHomeEnabled] = useState(false);
 
   useEffect(() => {
     let stale = false;
     setLoadedProjectName("");
+    setProjectHomeEnabled(false);
 
     const load = async () => {
       await Promise.all([loadCurrentUser(), loadServerInfo()]);
-      const isSaaSMode = useAppStore.getState().isSaaSMode();
+      const projectHomeEnabled = isSaaSOrDev(
+        useAppStore.getState().isSaaSMode()
+      );
       const nextProject = await fetchProject(projectName);
       if (stale) return;
       if (!nextProject) {
@@ -72,13 +76,8 @@ export function ProjectRouteGate() {
         return;
       }
       setRecentProject(nextProject.name);
-      if (!isSaaSOrDev(isSaaSMode) && route.name === PROJECT_V1_ROUTE_DETAIL) {
-        void navigateRef.current.replace(
-          buildProjectEntryRoute(projectId, false)
-        );
-        return;
-      }
       if (!stale) {
+        setProjectHomeEnabled(projectHomeEnabled);
         setLoadedProjectName(projectName);
       }
     };
@@ -95,8 +94,24 @@ export function ProjectRouteGate() {
     projectId,
     projectName,
     removeRecentVisit,
-    route.name,
     setRecentProject,
+  ]);
+
+  useEffect(() => {
+    if (
+      loadedProjectName !== projectName ||
+      projectHomeEnabled ||
+      route.name !== PROJECT_V1_ROUTE_DETAIL
+    ) {
+      return;
+    }
+    void navigateRef.current.replace(buildProjectEntryRoute(projectId, false));
+  }, [
+    loadedProjectName,
+    projectHomeEnabled,
+    projectId,
+    projectName,
+    route.name,
   ]);
 
   const permissionReady = usePermissionDataReady(project);

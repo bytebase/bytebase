@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   usePlanFeature: vi.fn(),
   useProjectByName: vi.fn(),
   getOrFetchProjectByName: vi.fn(),
+  isSaaSMode: true,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -49,8 +50,15 @@ vi.mock("@/hooks/useProjectByName", () => ({
 vi.mock("@/stores/app", () => ({
   useAppStore: Object.assign(
     (
-      selector: (state: { projectsByName: Record<string, unknown> }) => unknown
-    ) => selector({ projectsByName: {} }),
+      selector: (state: {
+        projectsByName: Record<string, unknown>;
+        isSaaSMode: () => boolean;
+      }) => unknown
+    ) =>
+      selector({
+        projectsByName: {},
+        isSaaSMode: () => mocks.isSaaSMode,
+      }),
     {
       getState: () => ({
         getOrFetchProjectByName: mocks.getOrFetchProjectByName,

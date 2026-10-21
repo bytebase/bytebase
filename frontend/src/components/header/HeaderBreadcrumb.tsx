@@ -11,7 +11,7 @@ import {
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
-import { buildProjectEntryRoute } from "@/app/router/routeHelpers";
+import { buildProjectEntryRoute } from "@/app/router/projectEntryRoute";
 import { RouterLink } from "@/components/RouterLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

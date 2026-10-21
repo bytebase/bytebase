@@ -151,6 +151,17 @@ const render = async () => {
   }
 };
 
+const rerender = async () => {
+  await act(async () => {
+    root.render(<ProjectRouteGate />);
+  });
+  for (let i = 0; i < 5; i++) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+};
+
 describe("ProjectRouteGate", () => {
   test("renders the Outlet when project route permissions pass", async () => {
     mocks.projectPermissions = new Set([
@@ -229,6 +240,23 @@ describe("ProjectRouteGate", () => {
     await render();
 
     expect(mocks.replace).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-testid='outlet']")).not.toBeNull();
+  });
+
+  test("does not reload the project when navigating between child routes", async () => {
+    mocks.projectPermissions = new Set([
+      "bb.projects.get",
+      "bb.databases.list",
+    ]);
+
+    await render();
+    expect(mocks.fetchProject).toHaveBeenCalledTimes(1);
+
+    mocks.route.name = "workspace.project.issue";
+    mocks.route.requiredPermissions = ["bb.projects.get"];
+    await rerender();
+
+    expect(mocks.fetchProject).toHaveBeenCalledTimes(1);
     expect(container.querySelector("[data-testid='outlet']")).not.toBeNull();
   });
 });

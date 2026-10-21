@@ -16,11 +16,11 @@ import {
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 } from "./handles";
 import { resolvePath, setRouteNameIndex } from "./navigation";
+import { buildProjectEntryRoute } from "./projectEntryRoute";
 import {
   buildPlanCreateRoute,
   buildPlanDeployRouteFromRolloutName,
   buildPlanRolloutRouteFromPlanName,
-  buildProjectEntryRoute,
   buildStageRoute,
   buildTaskDetailRoute,
 } from "./routeHelpers";

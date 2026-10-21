@@ -1,14 +1,10 @@
-import type { RouteTarget } from "@/app/router";
 import {
-  PROJECT_V1_ROUTE_DETAIL,
-  PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 } from "@/app/router/handles";
-import { isSaaSOrDev } from "@/utils/featureGates";
 import { extractPlanUID } from "@/utils/v1/issue/plan";
 import {
   extractPlanUIDFromRolloutName,
@@ -22,18 +18,6 @@ import { extractProjectResourceName } from "@/utils/v1/project";
 // application router's push, replace, and resolve methods.
 
 type BuildPlanDeployRouteSelection = { stageId: string; taskId?: string };
-
-// Project Home is available on SaaS and development builds. Keep every
-// self-hosted production project-entry path on the established Issues route.
-export const buildProjectEntryRoute = (
-  projectId: string,
-  isSaaSMode: boolean
-): RouteTarget => ({
-  name: isSaaSOrDev(isSaaSMode)
-    ? PROJECT_V1_ROUTE_DETAIL
-    : PROJECT_V1_ROUTE_ISSUES,
-  params: { projectId },
-});
 
 type BuildPlanDeployRouteParams = BuildPlanDeployRouteSelection & {
   projectId: string;

@@ -12,7 +12,7 @@ import {
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
-import { buildProjectEntryRoute } from "@/app/router/routeHelpers";
+import { buildProjectEntryRoute } from "@/app/router/projectEntryRoute";
 import { ProjectTable } from "@/components/ProjectTable";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
