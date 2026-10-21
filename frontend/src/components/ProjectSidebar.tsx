@@ -37,7 +37,7 @@ import { RouterLink } from "@/components/RouterLink";
 import { useRecentVisit } from "@/hooks/useRecentVisit";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { isSaaSOrDev, sqlReviewV2Enabled } from "@/utils/featureGates";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -74,7 +74,6 @@ function getItemClass(item: SidebarItem, currentRouteName: string): string[] {
 function useSidebarItems(): SidebarItem[] {
   const { t } = useTranslation();
   const defaultProject = useAppStore((s) => s.serverInfo?.defaultProject ?? "");
-  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
 
   const sidebarRoute = useCurrentRoute();
   const sidebarProjectId =
@@ -91,7 +90,6 @@ function useSidebarItems(): SidebarItem[] {
         path: PROJECT_V1_ROUTE_DETAIL,
         icon: House,
         type: "div",
-        hide: !isSaaSOrDev(isSaaSMode),
       },
       {
         title: t("common.issues"),
@@ -220,7 +218,7 @@ function useSidebarItems(): SidebarItem[] {
         hide: isDefault,
       },
     ],
-    [t, isDefault, isSaaSMode]
+    [t, isDefault]
   );
 }
 

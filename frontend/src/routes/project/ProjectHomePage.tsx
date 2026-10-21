@@ -56,6 +56,7 @@ import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { getUserEmailInBinding } from "@/types/v1/user";
 import { autoDatabaseRoute } from "@/utils/auto-route";
+import { isSaaSOrDev } from "@/utils/featureGates";
 import { isBindingPolicyExpired } from "@/utils/v1/iam";
 import { getIssueRoute } from "@/utils/v1/issue/issue";
 import {
@@ -136,6 +137,8 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const aiEnabled = useAppStore(
     (state) => state.serverInfo?.aiEnabled === true
   );
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
+  const showAgentChat = aiEnabled && isSaaSOrDev(isSaaSMode);
   const hasAuditLogFeature = usePlanFeature(PlanFeature.FEATURE_AUDIT_LOG);
   const hasRunningChat = useAgentStore(selectHasRunningChat);
   const hasQueuedMessage = useAgentStore(
@@ -690,7 +693,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
         </p>
       </header>
 
-      {aiEnabled && (
+      {showAgentChat && (
         <form
           className="min-w-0 rounded-sm border border-accent/60 bg-background focus-within:border-accent focus-within:ring-1 focus-within:ring-accent"
           onSubmit={(event) => {

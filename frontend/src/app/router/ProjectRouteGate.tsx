@@ -7,7 +7,6 @@ import {
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
-import { PROJECT_V1_ROUTE_ISSUES } from "@/app/router/handles";
 import {
   PermissionDeniedFallback,
   useComponentPermissionState,
@@ -15,7 +14,6 @@ import {
 } from "@/components/ComponentPermissionGuard";
 import { useNotify } from "@/hooks/useAppState";
 import { projectResourceNameFromId, useAppStore } from "@/stores/app";
-import { isSaaSOrDev } from "@/utils/featureGates";
 
 // `<Outlet/>`-aware permission gate for `/projects/:projectId/*`. Project-scoped
 // permission checks need the loaded `Project` resource, so this loads the
@@ -41,18 +39,13 @@ export function ProjectRouteGate() {
   const setRecentProject = useAppStore((state) => state.setRecentProject);
   const removeRecentVisit = useAppStore((state) => state.removeRecentVisit);
   const [loadedProjectName, setLoadedProjectName] = useState("");
-  const [projectLandingEnabled, setProjectLandingEnabled] = useState<
-    boolean | undefined
-  >();
 
   useEffect(() => {
     let stale = false;
     setLoadedProjectName("");
-    setProjectLandingEnabled(undefined);
 
     const load = async () => {
       await Promise.all([loadCurrentUser(), loadServerInfo()]);
-      const landingEnabled = isSaaSOrDev(useAppStore.getState().isSaaSMode());
       const nextProject = await fetchProject(projectName);
       if (stale) return;
       if (!nextProject) {
@@ -77,7 +70,6 @@ export function ProjectRouteGate() {
       }
       setRecentProject(nextProject.name);
       if (!stale) {
-        setProjectLandingEnabled(landingEnabled);
         setLoadedProjectName(projectName);
       }
     };
@@ -106,26 +98,8 @@ export function ProjectRouteGate() {
     });
 
   const loaded = loadedProjectName === projectName;
-  const shouldRedirectProjectLanding =
-    loaded &&
-    projectLandingEnabled === false &&
-    route.name === PROJECT_V1_ROUTE_DETAIL;
 
-  useEffect(() => {
-    if (!shouldRedirectProjectLanding) return;
-    void navigateRef.current.replace({
-      name: PROJECT_V1_ROUTE_ISSUES,
-      params: { projectId },
-    });
-  }, [projectId, shouldRedirectProjectLanding]);
-
-  if (
-    !loaded ||
-    projectLandingEnabled === undefined ||
-    shouldRedirectProjectLanding ||
-    !project ||
-    !permissionReady
-  ) {
+  if (!loaded || !project || !permissionReady) {
     return (
       <div className="flex h-full min-h-0 items-center justify-center">
         <LoaderCircle className="size-5 animate-spin text-control-light" />

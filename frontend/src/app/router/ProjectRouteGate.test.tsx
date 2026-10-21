@@ -20,8 +20,6 @@ const mocks = vi.hoisted(() => ({
   projectErrorsByName: {} as Record<string, { message: string }>,
   workspacePermissions: new Set<Permission>(),
   projectPermissions: new Set<Permission>(),
-  isSaaSMode: false,
-  dev: true,
   fetchProject: vi.fn(async (name: string) => mocks.projectsByName[name]),
   replace: vi.fn(),
   resolve: vi.fn(() => ({ fullPath: "/projects/prod" })),
@@ -40,11 +38,6 @@ vi.mock("@/app/router", () => ({
   useNavigate: () => ({ replace: mocks.replace, resolve: mocks.resolve }),
   WORKSPACE_ROUTE_LANDING: "workspace.landing",
   PROJECT_V1_ROUTE_DETAIL: "workspace.project.detail",
-  PROJECT_V1_ROUTE_ISSUES: "workspace.project.issue",
-}));
-
-vi.mock("@/utils/featureGates", () => ({
-  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.dev,
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
@@ -78,7 +71,6 @@ vi.mock("@/stores/app", () => {
       return mocks.projectErrorsByName;
     },
     serverInfo: { defaultProject: "projects/default" },
-    isSaaSMode: () => mocks.isSaaSMode,
     fetchProject: mocks.fetchProject,
     loadCurrentUser: vi.fn(async () => undefined),
     loadServerInfo: vi.fn(async () => undefined),
@@ -114,7 +106,6 @@ let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 
 beforeEach(() => {
-  mocks.route.name = "workspace.project.database";
   mocks.route.requiredPermissions = ["bb.projects.get", "bb.databases.list"];
   mocks.params = { projectId: "prod" };
   mocks.projectsByName = {
@@ -123,8 +114,6 @@ beforeEach(() => {
   mocks.projectErrorsByName = {};
   mocks.workspacePermissions = new Set(BASIC_PERMISSIONS);
   mocks.projectPermissions = new Set();
-  mocks.isSaaSMode = false;
-  mocks.dev = true;
   mocks.fetchProject.mockClear();
   mocks.replace.mockClear();
   container = document.createElement("div");
@@ -182,35 +171,5 @@ describe("ProjectRouteGate", () => {
 
     expect(mocks.replace).toHaveBeenCalledWith({ name: "workspace.landing" });
     expect(container.querySelector("[data-testid='outlet']")).toBeNull();
-  });
-
-  test("redirects self-hosted project Home to Issues", async () => {
-    mocks.route.name = "workspace.project.detail";
-    mocks.projectPermissions = new Set([
-      "bb.projects.get",
-      "bb.databases.list",
-    ]);
-    mocks.dev = false;
-
-    await render();
-
-    expect(mocks.replace).toHaveBeenCalledWith({
-      name: "workspace.project.issue",
-      params: { projectId: "prod" },
-    });
-    expect(container.querySelector("[data-testid='outlet']")).toBeNull();
-  });
-
-  test("keeps project Home available in development", async () => {
-    mocks.route.name = "workspace.project.detail";
-    mocks.projectPermissions = new Set([
-      "bb.projects.get",
-      "bb.databases.list",
-    ]);
-
-    await render();
-
-    expect(mocks.replace).not.toHaveBeenCalled();
-    expect(container.querySelector("[data-testid='outlet']")).not.toBeNull();
   });
 });

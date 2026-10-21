@@ -18,7 +18,6 @@ const mocks = vi.hoisted(() => ({
   },
   defaultProject: "",
   dev: true,
-  isSaaSMode: false,
   getOrFetchProjectByName: vi.fn(),
   record: vi.fn(),
   push: vi.fn(),
@@ -88,7 +87,6 @@ vi.mock("@/stores/app", () => {
   const useAppStore = (
     selector: (state: {
       getOrFetchProjectByName: typeof mocks.getOrFetchProjectByName;
-      isSaaSMode: () => boolean;
       serverInfo: { defaultProject: string };
     }) => unknown
   ) =>
@@ -97,7 +95,6 @@ vi.mock("@/stores/app", () => {
       serverInfo: {
         defaultProject: mocks.defaultProject,
       },
-      isSaaSMode: () => mocks.isSaaSMode,
     });
   useAppStore.getState = () => ({
     getOrFetchProjectByName: mocks.getOrFetchProjectByName,
@@ -105,9 +102,9 @@ vi.mock("@/stores/app", () => {
   return { useAppStore };
 });
 
-vi.mock("@/utils/featureGates", () => ({
-  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.dev,
-  sqlReviewV2Enabled: () => mocks.dev,
+vi.mock("@/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils")>()),
+  isDev: () => mocks.dev,
 }));
 
 let ProjectSidebar: typeof import("./ProjectSidebar").ProjectSidebar;
@@ -139,23 +136,10 @@ beforeEach(async () => {
   };
   mocks.defaultProject = "";
   mocks.dev = true;
-  mocks.isSaaSMode = false;
   ({ ProjectSidebar } = await import("./ProjectSidebar"));
 });
 
 describe("ProjectSidebar", () => {
-  test("hides Home in self-hosted release builds", () => {
-    mocks.dev = false;
-    const { container, render, unmount } = renderIntoContainer(
-      <ProjectSidebar />
-    );
-    render();
-
-    expect(container.textContent).not.toContain("Home");
-
-    unmount();
-  });
-
   test("shows Home as the active root route, including for the default project", () => {
     mocks.defaultProject = "projects/sample";
     mocks.currentRoute.name = "workspace.project.detail";
