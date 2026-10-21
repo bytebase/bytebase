@@ -114,7 +114,8 @@ func TestSetJustInTimeAccessTurnsItOnOnConfirmation(t *testing.T) {
 	require.Equal(t, int32(1), user.asked.Load())
 	asked := user.lastParams(t)
 	require.Equal(t, strings.Join([]string{
-		`Turn on just-in-time access in project "projects/hr" as alice@example.com?`,
+		`Turn on just-in-time access as alice@example.com?`,
+		`Project: "hr"`,
 		`Active grants that have not expired apply again at once.`,
 	}, "\n"), asked.Message)
 	schema, err := json.Marshal(asked.RequestedSchema)
@@ -148,7 +149,8 @@ func TestSetJustInTimeAccessSaysWhatTurningItOffDoes(t *testing.T) {
 	res := callSetJustInTimeAccess(t, session, false)
 	require.False(t, res.IsError, resultText(t, res))
 	require.Equal(t, strings.Join([]string{
-		`Turn off just-in-time access in project "projects/hr" as alice@example.com?`,
+		`Turn off just-in-time access as alice@example.com?`,
+		`Project: "hr"`,
 		`Active grants here stop applying (not revoked); new requests are refused.`,
 	}, "\n"), user.lastParams(t).Message)
 	calls := mock.calls()
@@ -304,20 +306,22 @@ func TestSetJustInTimeAccessRefusesAnInvalidProject(t *testing.T) {
 }
 
 func TestSetJustInTimeAccessFormShowsTheChangeInClaudeCodesDialog(t *testing.T) {
-	longProject := "projects/" + strings.Repeat("p", 63)
+	ctx := withUserEmail(context.Background(), "alexander.smith@example.com")
+	longestID := strings.Repeat("p", 63)
 	for _, enabled := range []bool{true, false} {
-		change := &justInTimeChange{project: longProject, enabled: enabled}
-		message := describeJustInTimeChange(withUserEmail(context.Background(), "alexander.smith@example.com"), change)
 		for _, columns := range []int{80, 120} {
 			t.Run(fmt.Sprintf("enabled %v at %d columns", enabled, columns), func(t *testing.T) {
-				view := claudeCodeView(message, columns)
-				require.Len(t, view, 2, "%q", view)
-				require.True(t, strings.HasPrefix(view[0], fmt.Sprintf("Turn %s just-in-time access in project ", change.state())), "%q", view)
-				if columns == 120 {
-					require.Contains(t, view[0], `"`+longProject, "at 120 columns a 63-character project ID shows whole; the email is cut: %q", view)
-				}
-				require.True(t, strings.HasPrefix(view[1], "Active grants"), "the effect: %q", view)
-				require.NotContains(t, view[1], "…", "the effect line must fit whole: %q", view)
+				change := &justInTimeChange{project: "projects/" + longestID, enabled: enabled}
+				view := claudeCodeView(describeJustInTimeChange(ctx, change), columns)
+				require.Len(t, view, 3, "%q", view)
+				require.True(t, strings.HasPrefix(view[0], fmt.Sprintf("Turn %s just-in-time access", change.state())), "%q", view)
+				require.Equal(t, fmt.Sprintf("Project: %q", longestID), view[1], "the longest project ID shows whole")
+				require.True(t, strings.HasPrefix(view[2], "Active grants"), "the effect: %q", view)
+				require.NotContains(t, view[2], "…", "the effect line must fit whole: %q", view)
+
+				west := claudeCodeView(describeJustInTimeChange(ctx, &justInTimeChange{project: "projects/production-analytics-platform-west", enabled: enabled}), columns)
+				east := claudeCodeView(describeJustInTimeChange(ctx, &justInTimeChange{project: "projects/production-analytics-platform-east", enabled: enabled}), columns)
+				require.NotEqual(t, west, east, "two projects that differ only at the end must not look the same")
 			})
 		}
 	}

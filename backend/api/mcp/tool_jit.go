@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
@@ -136,18 +137,22 @@ func (s *Server) handleSetJustInTimeAccess(ctx context.Context, req *mcp.CallToo
 	), nil, nil
 }
 
-// describeJustInTimeChange builds the confirmation message. The project name
+// describeJustInTimeChange builds the confirmation message. The project ID has
+// a line of its own: a resource ID is at most 63 characters, so "Project:" and
+// the quoted ID fit the 74 columns Claude Code shows of a line in an 80-column
+// terminal, and two IDs that differ only at the end stay distinguishable. It
 // enters through %q, so it cannot pose as a line of the message.
 func describeJustInTimeChange(ctx context.Context, change *justInTimeChange) string {
-	question := fmt.Sprintf("Turn %s just-in-time access in project %q", change.state(), change.project)
+	question := fmt.Sprintf("Turn %s just-in-time access", change.state())
 	if email := getUserEmail(ctx); email != "" {
 		question += " as " + email
 	}
+	projectID, _ := common.GetProjectID(change.project)
 	effect := "Active grants that have not expired apply again at once."
 	if !change.enabled {
 		effect = "Active grants here stop applying (not revoked); new requests are refused."
 	}
-	return question + "?\n" + effect
+	return strings.Join([]string{question + "?", fmt.Sprintf("Project: %q", projectID), effect}, "\n")
 }
 
 // setJustInTimeAccessOnAnswer acts on the answer to a form this server sent. A
