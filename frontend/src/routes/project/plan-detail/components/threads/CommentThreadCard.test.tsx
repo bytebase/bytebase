@@ -6,9 +6,12 @@ import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone"
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { shownTimestampInstants } from "@/test-utils/humanizeTs";
 import {
+  IssueComment_ReviewMetadata_Priority,
+  IssueComment_ReviewMetadataSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
+  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
@@ -69,11 +72,14 @@ vi.mock("@/components/MarkdownEditor", () => ({
 
 vi.mock("@/hooks/useAppState", () => ({
   useCurrentUser: () => ({ email: "me@example.com", title: "Me" }),
-  useUserByIdentifier: (principal: string) => ({
-    name: principal,
-    email: principal.replace(/^users\//, ""),
-    title: principal.replace(/^users\//, "").split("@")[0],
-  }),
+  useUserByIdentifier: (principal: string | undefined) =>
+    principal
+      ? {
+          name: principal,
+          email: principal.replace(/^users\//, ""),
+          title: principal.replace(/^users\//, "").split("@")[0],
+        }
+      : undefined,
 }));
 
 vi.mock("@/stores", () => ({
@@ -291,6 +297,28 @@ describe("CommentThreadCard", () => {
     ).toHaveLength(2);
     expect(buttonByText("common.reopen")).toBeDefined();
     expect(buttonByText("plan.review.thread.resolve")).toBeUndefined();
+  });
+
+  test("a resolved review result summarizes as its reviewer", () => {
+    const root = comment("root", "Missing WHERE clause.", {
+      creator: "",
+      resolved: true,
+    });
+    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+      runType: ReviewRun_Type.AI,
+      priority: IssueComment_ReviewMetadata_Priority.P1,
+    });
+    render(
+      <CommentThreadCard
+        issue={issue}
+        project={project}
+        thread={groupThreads([root])[0]}
+      />
+    );
+    const summary = buttonByText("plan.review.thread.resolved");
+    expect(summary?.textContent).toContain("sql-review.ai-review.self");
+    expect(summary?.querySelector("[data-testid='review-priority']")?.textContent).toBe("P1");
+    expect(summary?.textContent).not.toContain("common.unknown");
   });
 
   test("a resolved anchored thread collapses from its context header", () => {

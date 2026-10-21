@@ -2,15 +2,15 @@ import { ChevronDown, CircleCheck, MessageSquare } from "lucide-react";
 import { type ReactNode, type Ref, type SetStateAction, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
-import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useUserByIdentifier } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { CommentThreadCard } from "./CommentThreadCard";
+import { ReviewPriorityBadge, useCommentAuthor } from "./ReviewResult";
 import {
   compareByCreateTime,
   type EditorThread,
@@ -61,6 +61,7 @@ export function ThreadStack({
   onReplyDraftChange,
   project,
   revealRoot,
+  spec,
   threads,
 }: {
   expandedRoots: ReadonlySet<string>;
@@ -75,6 +76,8 @@ export function ThreadStack({
   onReplyDraftChange: (rootName: string, draft: SetStateAction<string>) => void;
   project: Project | undefined;
   revealRoot?: string;
+  // The spec whose statement the stack sits on.
+  spec: Plan_Spec;
   threads: EditorThread[];
 }) {
   const { t } = useTranslation();
@@ -137,6 +140,7 @@ export function ThreadStack({
                 onReplyDraftChange(entry.thread.root.name, draft)
               }
               project={project}
+              spec={spec}
               thread={entry.thread}
             />
           ) : (
@@ -168,8 +172,8 @@ function CollapsedThreadRow({
   resolved: boolean;
 }) {
   const { t } = useTranslation();
-  const creator =
-    useUserByIdentifier(comment.creator) ?? unknownUser(comment.creator);
+  const author = useCommentAuthor(comment);
+  const review = comment.reviewMetadata;
   const firstLine = comment.comment.split("\n")[0] ?? "";
   return (
     <Button
@@ -181,17 +185,14 @@ function CollapsedThreadRow({
       onClick={onSelect}
       size="md"
     >
-      <UserAvatar
-        colorSeed={creator.email}
-        size="xs"
-        title={creator.title || creator.email}
-      />
+      {author.avatar}
       <span
         className="max-w-24 truncate font-medium text-main"
-        title={creator.title || creator.email}
+        title={author.name}
       >
-        {creator.title || creator.email}
+        {author.name}
       </span>
+      {review && <ReviewPriorityBadge priority={review.priority} />}
       <span className="min-w-0 flex-1 truncate text-control" title={firstLine}>
         {firstLine}
       </span>
