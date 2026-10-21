@@ -195,9 +195,10 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 
 // CompleteReviewRun moves a RUNNING run this replica owns to a terminal
 // status, fenced on the claim's attempt. On DONE it posts the run's results in
-// the same transaction: every OPEN root the same reviewer posted on the issue
-// is resolved, then the results are inserted as OPEN roots with no creator. A
-// FAILED run leaves the comments alone and takes no results. False means
+// the same transaction: every earlier root the same reviewer posted on the
+// issue is marked superseded and, if OPEN, resolved; then the results are
+// inserted as OPEN roots with no creator. A FAILED run leaves the comments
+// alone and takes no results. False means
 // superseded: the slot was reset or reaped since the claim, and nothing was
 // written.
 //
@@ -233,13 +234,16 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 	defer tx.Rollback()
 
 	if status == storepb.ReviewRun_DONE {
-		// The literal 'OPEN' lets the planner use idx_issue_comment_open_thread.
+		// Each earlier root is marked once, and resolved again if someone
+		// reopened it. updated_at marks content edits, so it is left alone.
 		q := qb.Q().Space(`
 			UPDATE issue_comment
-			SET thread_state = ?
+			SET thread_state = ?,
+			    payload = jsonb_set(payload, '{reviewMetadata,superseded}', 'true'::jsonb)
 			WHERE project = ? AND issue_id = ?
-			  AND parent_id IS NULL AND thread_state = 'OPEN'
+			  AND parent_id IS NULL
 			  AND payload->'reviewMetadata'->>'runType' = ?
+			  AND (thread_state = 'OPEN' OR payload->'reviewMetadata'->'superseded' IS NULL)
 		`, string(ThreadStateResolved), claimed.ProjectID, claimed.IssueUID, claimed.Type)
 		query, args, err := q.ToSQL()
 		if err != nil {

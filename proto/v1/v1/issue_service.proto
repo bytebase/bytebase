@@ -707,6 +707,9 @@ message IssueComment {
     // Every database the result applies to, sorted.
     // Format: instances/{instance}/databases/{database}
     repeated string targets = 4;
+    // A later run of the same reviewer has completed, so the result is not
+    // from the latest review, whatever its thread state.
+    bool superseded = 5;
   }
 
   enum ThreadState {

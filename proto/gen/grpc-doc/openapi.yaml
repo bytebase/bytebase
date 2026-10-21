@@ -22653,6 +22653,12 @@ components:
           description: |-
             Every database the result applies to, sorted.
              Format: instances/{instance}/databases/{database}
+        superseded:
+          type: boolean
+          title: superseded
+          description: |-
+            A later run of the same reviewer has completed, so the result is not
+             from the latest review, whatever its thread state.
       title: ReviewMetadata
       additionalProperties: false
       description: What a review result carries beyond its text.

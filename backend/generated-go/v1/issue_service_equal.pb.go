@@ -517,6 +517,9 @@ func (x *IssueComment_ReviewMetadata) Equal(y *IssueComment_ReviewMetadata) bool
 			return false
 		}
 	}
+	if x.Superseded != y.Superseded {
+		return false
+	}
 	return true
 }
 

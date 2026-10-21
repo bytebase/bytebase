@@ -1091,6 +1091,14 @@ export declare type IssueComment_ReviewMetadata = Message<"bytebase.v1.IssueComm
    * @generated from field: repeated string targets = 4;
    */
   targets: string[];
+
+  /**
+   * A later run of the same reviewer has completed, so the result is not
+   * from the latest review, whatever its thread state.
+   *
+   * @generated from field: bool superseded = 5;
+   */
+  superseded: boolean;
 };
 
 /**

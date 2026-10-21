@@ -2299,7 +2299,8 @@ ReviewMetadata is what a review result carries beyond its text: which
 reviewer posted it, what it was judged against, its priority, and the
 databases it applies to. Results from the same reviewer are superseded
 together: when a run completes, it resolves every OPEN root of its type
-in the transaction that posts the new results.
+and marks every earlier root of its type superseded, in the transaction
+that posts the new results.
 
 
 | Field | Type | Label | Description |
@@ -2308,6 +2309,7 @@ in the transaction that posts the new results.
 | rule_type | [ReviewRuleType](#bytebase-store-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
+| superseded | [bool](#bool) |  | A later run of the same reviewer has completed, so the result is not from the latest review. Set by that run whatever the thread state, and never cleared. |
 
 
 
