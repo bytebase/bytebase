@@ -79,11 +79,12 @@
     "pending-input-hint": "Vui lòng cung cấp đầu vào ở trên",
     "project-attention": {
       "checking": "Đang kiểm tra các mục cần bạn chú ý...",
-      "empty": "Bạn không có Issue mở nào cần chú ý trong dự án này.",
+      "empty": "Bạn không có issue mở nào cần chú ý trong dự án này.",
       "issue-created": "- {{title}} (do bạn tạo)",
       "issue-review": "- {{title}} (đang chờ bạn phê duyệt)",
-      "more": "Có thêm Issue mở cần bạn chú ý trong dự án này.",
-      "summary": "Các Issue này cần bạn chú ý trong dự án này:",
+      "more": "Có thêm issue mở cần bạn chú ý trong dự án này.",
+      "partial": "Không thể kiểm tra tất cả issue mở cần bạn chú ý trong dự án này.",
+      "summary": "Các issue này cần bạn chú ý trong dự án này:",
       "unavailable": "Không thể tải các mục cần bạn chú ý trong dự án này."
     },
     "recent-activity": {
@@ -118,11 +119,12 @@
     "unarchive-chat": "Bỏ lưu trữ",
     "workspace-attention": {
       "checking": "Đang kiểm tra các mục cần bạn chú ý...",
-      "empty": "Bạn không có Issue mở nào cần chú ý.",
+      "empty": "Bạn không có issue mở nào cần chú ý.",
       "issue-created": "- {{title}} (do bạn tạo)",
       "issue-review": "- {{title}} (đang chờ bạn phê duyệt)",
-      "more": "Có thêm Issue mở cần bạn chú ý.",
-      "summary": "Các Issue này cần bạn chú ý:",
+      "more": "Có thêm issue mở cần bạn chú ý.",
+      "partial": "Không thể kiểm tra tất cả issue mở cần bạn chú ý.",
+      "summary": "Các issue này cần bạn chú ý:",
       "unavailable": "Không thể tải các mục cần bạn chú ý."
     }
   },

@@ -11,6 +11,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -140,6 +141,10 @@ export function AgentWindow() {
   const projectsByName = useAppStore((s) => s.projectsByName);
   const projectErrorsByName = useAppStore((s) => s.projectErrorsByName);
   const workspace = useAppStore((s) => s.workspace);
+
+  useLayoutEffect(() => {
+    useAgentStore.getState().setWorkspaceName(workspace?.name);
+  }, [hasRunningChat, workspace?.name]);
 
   const windowRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -934,12 +939,6 @@ export function AgentWindow() {
     useAgentStore.getState().setSidebarWidth(clampSidebarWidth(width));
     useAgentStore.getState().saveWindowState();
   }, [clampSidebarWidth]);
-
-  // --- Mount: load window state ---
-
-  useEffect(() => {
-    useAgentStore.getState().loadWindowState();
-  }, []);
 
   useEffect(() => {
     if (!visible || !currentChatId) return;

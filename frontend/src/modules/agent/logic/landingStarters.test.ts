@@ -2,11 +2,11 @@ import { describe, expect, test } from "vitest";
 import { getLandingStarterIds } from "./landingStarters";
 
 describe("getLandingStarterIds", () => {
-  test("offers setup guidance in a workspace with no known active work", () => {
+  test("offers setup guidance in a workspace without setup resources", () => {
     expect(
       getLandingStarterIds({
         scope: "workspace",
-        activeWork: "empty",
+        setupResources: "empty",
         canViewRecentActivity: false,
       })
     ).toEqual([
@@ -16,30 +16,26 @@ describe("getLandingStarterIds", () => {
     ]);
   });
 
-  test("prioritizes active workspace work after a successful discovery", () => {
+  test("offers normal workspace prompts when setup resources exist", () => {
     expect(
       getLandingStarterIds({
         scope: "workspace",
-        activeWork: "present",
+        setupResources: "present",
         canViewRecentActivity: true,
       })
     ).toEqual(["workspace-attention", "workspace-recent"]);
   });
 
   test.each(["loading", "unknown"] as const)(
-    "does not infer missing workspace work while discovery is %s",
-    (activeWork) => {
+    "does not infer missing setup resources while discovery is %s",
+    (setupResources) => {
       expect(
         getLandingStarterIds({
           scope: "workspace",
-          activeWork,
+          setupResources,
           canViewRecentActivity: false,
         })
-      ).toEqual([
-        "workspace-setup-first",
-        "workspace-concepts",
-        "workspace-governance",
-      ]);
+      ).toEqual(["workspace-attention"]);
     }
   );
 
@@ -47,7 +43,7 @@ describe("getLandingStarterIds", () => {
     expect(
       getLandingStarterIds({
         scope: "workspace",
-        activeWork: "present",
+        setupResources: "present",
         canViewRecentActivity: false,
       })
     ).toEqual(["workspace-attention"]);

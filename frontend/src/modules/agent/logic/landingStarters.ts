@@ -19,7 +19,7 @@ type Availability = "loading" | "present" | "empty" | "unknown";
 export type LandingStarterInput =
   | {
       scope: "workspace";
-      activeWork: Availability;
+      setupResources: Availability;
       canViewRecentActivity: boolean;
     }
   | {
@@ -59,14 +59,13 @@ export function getLandingStarterIds(
   input: LandingStarterInput
 ): LandingStarterId[] {
   if (input.scope === "workspace") {
-    return input.activeWork === "present"
-      ? [
-          workspaceAttentionStarters[0],
-          ...(input.canViewRecentActivity
-            ? [workspaceAttentionStarters[1]]
-            : []),
-        ]
-      : workspaceSetupStarters;
+    if (input.setupResources === "empty") {
+      return workspaceSetupStarters;
+    }
+    return [
+      workspaceAttentionStarters[0],
+      ...(input.canViewRecentActivity ? [workspaceAttentionStarters[1]] : []),
+    ];
   }
 
   const groups: LandingStarterId[][] = [];

@@ -139,12 +139,14 @@ beforeEach(async () => {
     size: initialState.size,
     sidebarWidth: initialState.sidebarWidth,
     minimized: initialState.minimized,
+    workspaceName: initialState.workspaceName,
     chats: initialState.chats,
     messagesByChatId: initialState.messagesByChatId,
     pendingAskByChatId: initialState.pendingAskByChatId,
     currentChatId: initialState.currentChatId,
     abortControllersByChatId: {},
   });
+  useAgentStore.getState().setWorkspaceName(mocks.workspace.name);
   useAgentStore.setState({
     visible: true,
     minimized: false,

@@ -281,6 +281,9 @@ export function AgentInput() {
       if (payload.error) {
         return t("agent.workspace-attention.unavailable");
       }
+      if (payload.issues.length === 0 && payload.partial) {
+        return t("agent.workspace-attention.partial");
+      }
       if (payload.issues.length === 0) {
         return t("agent.workspace-attention.empty");
       }
@@ -302,6 +305,9 @@ export function AgentInput() {
       const payload = parseAttentionResult(result);
       if (payload.error) {
         return t("agent.project-attention.unavailable");
+      }
+      if (payload.issues.length === 0 && payload.partial) {
+        return t("agent.project-attention.partial");
       }
       if (payload.issues.length === 0) {
         return t("agent.project-attention.empty");

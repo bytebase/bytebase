@@ -27,7 +27,9 @@ const mocks = vi.hoisted(() => ({
   openAgent: vi.fn(),
   push: vi.fn(),
   queueUserMessage: vi.fn(),
-  listIssues: vi.fn(),
+  searchProjects: vi.fn(),
+  listInstances: vi.fn(),
+  listDatabases: vi.fn(),
   isSaaSMode: false,
 }));
 
@@ -37,6 +39,12 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/app/router", () => ({ router: { push: mocks.push } }));
+
+vi.mock("@/api", () => ({
+  projectServiceClientConnect: { searchProjects: mocks.searchProjects },
+  instanceServiceClientConnect: { listInstances: mocks.listInstances },
+  databaseServiceClientConnect: { listDatabases: mocks.listDatabases },
+}));
 
 vi.mock("@/components/RouterLink", () => ({
   RouterLink: ({ children, to }: { children: ReactNode; to: unknown }) => (
@@ -126,7 +134,6 @@ vi.mock("@/stores/app", () => ({
     (selector: (state: object) => unknown) =>
       selector({
         serverInfo: { aiEnabled: mocks.aiEnabled },
-        listIssues: mocks.listIssues,
       }),
     {
       getState: () => ({
@@ -151,22 +158,28 @@ beforeEach(() => {
   mocks.selectOrCreateChatForContext.mockClear();
   mocks.openAgent.mockClear();
   mocks.queueUserMessage.mockClear();
-  mocks.listIssues.mockReset();
-  mocks.listIssues.mockResolvedValue({ issues: [] });
+  mocks.searchProjects.mockReset();
+  mocks.listInstances.mockReset();
+  mocks.listDatabases.mockReset();
+  mocks.searchProjects.mockResolvedValue({ projects: [] });
+  mocks.listInstances.mockResolvedValue({ instances: [] });
+  mocks.listDatabases.mockResolvedValue({ databases: [] });
   localStorage.clear();
 });
 
 afterEach(cleanup);
 
 describe("LandingPage", () => {
-  test("offers a starter above the empty composer and sends it in a read-only chat", () => {
+  test("offers a starter above the empty composer and sends it in a read-only chat", async () => {
     render(<LandingPage />);
 
     const prompt = screen.getByRole("textbox", {
       name: "landing.ai-placeholder",
     });
     const starter = screen.getByTestId("landing-starter-primary");
-    expect(starter).toHaveTextContent("workspace-setup-first");
+    await waitFor(() =>
+      expect(starter).toHaveTextContent("workspace-setup-first")
+    );
     expect(
       starter.compareDocumentPosition(prompt) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
@@ -188,8 +201,10 @@ describe("LandingPage", () => {
     expect(mocks.openAgent).toHaveBeenCalledOnce();
   });
 
-  test("updates workspace starters when an active review is found", async () => {
-    mocks.listIssues.mockResolvedValue({ issues: [{ name: "issues/1" }] });
+  test("updates workspace starters when setup resources are found", async () => {
+    mocks.searchProjects.mockResolvedValue({
+      projects: [{ name: "projects/orders" }],
+    });
     render(<LandingPage />);
 
     await waitFor(() =>
@@ -200,41 +215,45 @@ describe("LandingPage", () => {
     );
   });
 
-  test("updates workspace starters when the member has an open Issue they created", async () => {
-    mocks.listIssues
-      .mockResolvedValueOnce({ issues: [] })
-      .mockResolvedValueOnce({ issues: [{ name: "projects/orders/issues/1" }] });
+  test("uses minimal resource reads to discover workspace setup", async () => {
     render(<LandingPage />);
 
     await waitFor(() =>
-      expect(screen.getByTestId("landing-starter-primary")).toHaveAttribute(
-        "data-starter-ids",
-        "workspace-attention,workspace-recent"
+      expect(mocks.searchProjects).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: 'exclude_default == true && state == "ACTIVE"',
+          pageSize: 1,
+        })
       )
     );
-    expect(mocks.listIssues).toHaveBeenNthCalledWith(
-      2,
+    expect(mocks.listInstances).toHaveBeenCalledWith(
+      expect.objectContaining({ pageSize: 1, showDeleted: false })
+    );
+    expect(mocks.listDatabases).toHaveBeenCalledWith(
       expect.objectContaining({
-        find: expect.objectContaining({ creator: "users/creator" }),
+        parent: "workspaces/acme",
+        pageSize: 1,
+        showDeleted: false,
       })
     );
   });
 
-  test("uses the cross-project parent required by SearchIssues", async () => {
+  test("does not assume a workspace needs setup when resource discovery is incomplete", async () => {
+    mocks.searchProjects.mockRejectedValue(new Error("permission denied"));
     render(<LandingPage />);
 
     await waitFor(() =>
-      expect(mocks.listIssues).toHaveBeenCalledWith(
-        expect.objectContaining({
-          find: expect.objectContaining({ project: "projects/-" }),
-          pageSize: 1,
-        })
+      expect(screen.getByTestId("landing-starter-primary")).toHaveAttribute(
+        "data-starter-ids",
+        "workspace-attention,workspace-recent"
       )
     );
   });
 
   test("does not offer workspace recent activity without audit-log access", async () => {
-    mocks.listIssues.mockResolvedValue({ issues: [{ name: "issues/1" }] });
+    mocks.listInstances.mockResolvedValue({
+      instances: [{ name: "instances/primary" }],
+    });
     mocks.canSearchAuditLogs = false;
     render(<LandingPage />);
 

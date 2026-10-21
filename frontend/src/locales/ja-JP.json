@@ -79,11 +79,12 @@
     "pending-input-hint": "上に入力してください",
     "project-attention": {
       "checking": "対応が必要な項目を確認しています...",
-      "empty": "このプロジェクトに対応が必要なオープン Issue はありません。",
+      "empty": "このプロジェクトに対応が必要なオープン issue はありません。",
       "issue-created": "- {{title}}（自分が作成）",
       "issue-review": "- {{title}}（承認待ち）",
-      "more": "このプロジェクトに対応が必要なオープン Issue がさらにあります。",
-      "summary": "このプロジェクトの次の Issue はあなたの対応が必要です:",
+      "more": "このプロジェクトに対応が必要なオープン issue がさらにあります。",
+      "partial": "このプロジェクトで対応が必要なすべてのオープン issue を確認できませんでした。",
+      "summary": "このプロジェクトの次の issue はあなたの対応が必要です:",
       "unavailable": "このプロジェクトで対応が必要な項目を読み込めません。"
     },
     "recent-activity": {
@@ -118,11 +119,12 @@
     "unarchive-chat": "アーカイブ解除",
     "workspace-attention": {
       "checking": "対応が必要な項目を確認しています...",
-      "empty": "対応が必要なオープン Issue はありません。",
+      "empty": "対応が必要なオープン issue はありません。",
       "issue-created": "- {{title}}（自分が作成）",
       "issue-review": "- {{title}}（承認待ち）",
-      "more": "対応が必要なオープン Issue がさらにあります。",
-      "summary": "次の Issue はあなたの対応が必要です:",
+      "more": "対応が必要なオープン issue がさらにあります。",
+      "partial": "対応が必要なすべてのオープン issue を確認できませんでした。",
+      "summary": "次の issue はあなたの対応が必要です:",
       "unavailable": "対応が必要な項目を読み込めません。"
     }
   },

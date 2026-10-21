@@ -79,11 +79,12 @@
     "pending-input-hint": "Please provide input above",
     "project-attention": {
       "checking": "Checking items needing your attention...",
-      "empty": "You have no open Issues needing attention in this project.",
+      "empty": "You have no open issues needing attention in this project.",
       "issue-created": "- {{title}} (created by you)",
       "issue-review": "- {{title}} (awaiting your approval)",
-      "more": "More open Issues need your attention in this project.",
-      "summary": "These Issues need your attention in this project:",
+      "more": "More open issues need your attention in this project.",
+      "partial": "I could not check every open issue needing your attention in this project.",
+      "summary": "These issues need your attention in this project:",
       "unavailable": "Unable to load items needing your attention in this project."
     },
     "recent-activity": {
@@ -118,11 +119,12 @@
     "unarchive-chat": "Unarchive chat",
     "workspace-attention": {
       "checking": "Checking items needing your attention...",
-      "empty": "You have no open Issues needing attention.",
+      "empty": "You have no open issues needing attention.",
       "issue-created": "- {{title}} (created by you)",
       "issue-review": "- {{title}} (awaiting your approval)",
-      "more": "More open Issues need your attention.",
-      "summary": "These Issues need your attention:",
+      "more": "More open issues need your attention.",
+      "partial": "I could not check every open issue needing your attention.",
+      "summary": "These issues need your attention:",
       "unavailable": "Unable to load items needing your attention."
     }
   },

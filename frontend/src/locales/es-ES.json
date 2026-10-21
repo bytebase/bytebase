@@ -79,11 +79,12 @@
     "pending-input-hint": "Proporcione la entrada arriba",
     "project-attention": {
       "checking": "Comprobando los elementos que necesitan tu atención...",
-      "empty": "No tienes Issues abiertos que requieran tu atención en este proyecto.",
+      "empty": "No tienes issues abiertos que requieran tu atención en este proyecto.",
       "issue-created": "- {{title}} (creado por ti)",
       "issue-review": "- {{title}} (esperando tu aprobación)",
-      "more": "Hay más Issues abiertos que requieren tu atención en este proyecto.",
-      "summary": "Estos Issues requieren tu atención en este proyecto:",
+      "more": "Hay más issues abiertos que requieren tu atención en este proyecto.",
+      "partial": "No se pudieron comprobar todos los issues abiertos que requieren tu atención en este proyecto.",
+      "summary": "Estos issues requieren tu atención en este proyecto:",
       "unavailable": "No se pueden cargar los elementos que necesitan tu atención en este proyecto."
     },
     "recent-activity": {
@@ -118,11 +119,12 @@
     "unarchive-chat": "Desarchivar chat",
     "workspace-attention": {
       "checking": "Comprobando los elementos que necesitan tu atención...",
-      "empty": "No tienes Issues abiertos que requieran tu atención.",
+      "empty": "No tienes issues abiertos que requieran tu atención.",
       "issue-created": "- {{title}} (creado por ti)",
       "issue-review": "- {{title}} (esperando tu aprobación)",
-      "more": "Hay más Issues abiertos que requieren tu atención.",
-      "summary": "Estos Issues requieren tu atención:",
+      "more": "Hay más issues abiertos que requieren tu atención.",
+      "partial": "No se pudieron comprobar todos los issues abiertos que requieren tu atención.",
+      "summary": "Estos issues requieren tu atención:",
       "unavailable": "No se pueden cargar los elementos que necesitan tu atención."
     }
   },

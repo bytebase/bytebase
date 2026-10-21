@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import {
   Bot,
   CircleDot,
@@ -23,6 +24,11 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  databaseServiceClientConnect,
+  instanceServiceClientConnect,
+  projectServiceClientConnect,
+} from "@/api";
 import { router } from "@/app/router";
 import {
   DATABASE_ROUTE_DASHBOARD,
@@ -83,8 +89,12 @@ import {
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
-import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { ListDatabasesRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import { ListInstancesRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
+import {
+  type Project,
+  SearchProjectsRequestSchema,
+} from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { extractProjectResourceName, storageKeyQuickAccess } from "@/utils";
 import { WorkspaceLandingGettingStarted } from "./WorkspaceLandingGettingStarted";
@@ -468,12 +478,9 @@ export function LandingPage(_: Record<string, never> = {}) {
 
   const currentUser = useOptionalCurrentUser();
   const email = currentUser?.email ?? "";
-  const currentUserName = currentUser?.name ?? "";
   const { isSaaSMode, version, changelogURL } = useServerState();
-  const canSearchIssues = useWorkspacePermission("bb.issues.get");
   const canSearchAuditLogs = useWorkspacePermission("bb.auditLogs.search");
-  const listIssues = useAppStore((state) => state.listIssues);
-  const [activeWork, setActiveWork] = useState<
+  const [setupResources, setSetupResources] = useState<
     "loading" | "present" | "empty" | "unknown"
   >("loading");
 
@@ -501,68 +508,63 @@ export function LandingPage(_: Record<string, never> = {}) {
   }, []);
 
   useEffect(() => {
-    if (
-      !aiEnabled ||
-      !workspace?.name ||
-      !canSearchIssues ||
-      !currentUserName
-    ) {
-      setActiveWork("unknown");
+    if (!aiEnabled || !workspace?.name) {
+      setSetupResources("unknown");
       return;
     }
     let active = true;
-    setActiveWork("loading");
-    void Promise.allSettled([
-      listIssues({
-        find: {
-          project: "projects/-",
-          query: "",
-          currentApprover: currentUserName,
-          statusList: [IssueStatus.OPEN],
-          approvalStatus: ApprovalStatus.PENDING,
-          orderBy: "update_time desc",
-        },
-        pageSize: 1,
-      }),
-      listIssues({
-        find: {
-          project: "projects/-",
-          query: "",
-          creator: currentUserName,
-          statusList: [IssueStatus.OPEN],
-          orderBy: "update_time desc",
-        },
-        pageSize: 1,
-      }),
-    ]).then((results) => {
-      if (!active) return;
-      if (
-        results.some(
-          (result) =>
-            result.status === "fulfilled" && result.value.issues.length > 0
-        )
-      ) {
-        setActiveWork("present");
-      } else if (results.every((result) => result.status === "fulfilled")) {
-        setActiveWork("empty");
-      } else {
-        setActiveWork("unknown");
+    setSetupResources("loading");
+    const hasProject = projectServiceClientConnect
+      .searchProjects(
+        create(SearchProjectsRequestSchema, {
+          filter: 'exclude_default == true && state == "ACTIVE"',
+          pageSize: 1,
+          orderBy: "title",
+          showDeleted: false,
+        })
+      )
+      .then(({ projects }) => projects.length > 0);
+    const hasInstance = instanceServiceClientConnect
+      .listInstances(
+        create(ListInstancesRequestSchema, {
+          pageSize: 1,
+          showDeleted: false,
+        })
+      )
+      .then(({ instances }) => instances.length > 0);
+    const hasDatabase = databaseServiceClientConnect
+      .listDatabases(
+        create(ListDatabasesRequestSchema, {
+          parent: workspace.name,
+          pageSize: 1,
+          showDeleted: false,
+        })
+      )
+      .then(({ databases }) => databases.length > 0);
+    void Promise.allSettled([hasProject, hasInstance, hasDatabase]).then(
+      (results) => {
+        if (!active) return;
+        if (
+          results.some(
+            (result) => result.status === "fulfilled" && result.value
+          )
+        ) {
+          setSetupResources("present");
+        } else if (results.every((result) => result.status === "fulfilled")) {
+          setSetupResources("empty");
+        } else {
+          setSetupResources("unknown");
+        }
       }
-    });
+    );
     return () => {
       active = false;
     };
-  }, [
-    aiEnabled,
-    canSearchIssues,
-    currentUserName,
-    listIssues,
-    workspace?.name,
-  ]);
+  }, [aiEnabled, workspace?.name]);
 
   const landingStarterIds = getLandingStarterIds({
     scope: "workspace",
-    activeWork,
+    setupResources,
     canViewRecentActivity: hasAuditLogFeature && canSearchAuditLogs,
   });
 

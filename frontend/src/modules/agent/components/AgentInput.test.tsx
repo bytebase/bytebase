@@ -640,6 +640,75 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("does not call a partial workspace attention result empty", async () => {
+    mocks.getWorkspaceAttention.mockResolvedValue(
+      JSON.stringify({ issues: [], partial: true })
+    );
+    const page = { path: "/landing", title: "Workspace" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/demo", page });
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "What needs my attention?",
+      page,
+      runMode: "read-only",
+      starterId: "workspace-attention",
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(
+          useAgentStore
+            .getState()
+            .getMessages(chat.id)
+            .some(
+              (message) =>
+                message.content === "agent.workspace-attention.partial"
+            )
+        ).toBe(true)
+      );
+    });
+
+    view.unmount();
+  });
+
+  test("does not call a partial project attention result empty", async () => {
+    mocks.getProjectAttention.mockResolvedValue(
+      JSON.stringify({ issues: [], partial: true })
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "What needs my attention in this project?",
+      page,
+      runMode: "read-only",
+      starterId: "project-open-blockers",
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(
+          useAgentStore
+            .getState()
+            .getMessages(chat.id)
+            .some(
+              (message) => message.content === "agent.project-attention.partial"
+            )
+        ).toBe(true)
+      );
+    });
+
+    view.unmount();
+  });
+
   test("returns to the default tool mode for a typed follow-up", async () => {
     mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
     const page = { path: "/projects/billing", title: "Billing" };

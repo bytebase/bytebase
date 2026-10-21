@@ -79,11 +79,12 @@
     "pending-input-hint": "请在上方提供输入",
     "project-attention": {
       "checking": "正在检查需要你关注的事项...",
-      "empty": "此项目中没有需要你关注的开放 Issue。",
+      "empty": "此项目中没有需要你关注的开放 issue。",
       "issue-created": "- {{title}}（由你创建）",
       "issue-review": "- {{title}}（等待你的审批）",
-      "more": "此项目中还有更多开放 Issue 需要你关注。",
-      "summary": "此项目中的这些 Issue 需要你关注：",
+      "more": "此项目中还有更多开放 issue 需要你关注。",
+      "partial": "无法检查此项目中所有需要你关注的开放 issue。",
+      "summary": "此项目中的这些 issue 需要你关注：",
       "unavailable": "无法加载此项目中需要你关注的事项。"
     },
     "recent-activity": {
@@ -118,11 +119,12 @@
     "unarchive-chat": "取消归档",
     "workspace-attention": {
       "checking": "正在检查需要你关注的事项...",
-      "empty": "没有需要你关注的开放 Issue。",
+      "empty": "没有需要你关注的开放 issue。",
       "issue-created": "- {{title}}（由你创建）",
       "issue-review": "- {{title}}（等待你的审批）",
-      "more": "还有更多开放 Issue 需要你关注。",
-      "summary": "这些 Issue 需要你关注：",
+      "more": "还有更多开放 issue 需要你关注。",
+      "partial": "无法检查所有需要你关注的开放 issue。",
+      "summary": "这些 issue 需要你关注：",
       "unavailable": "无法加载需要你关注的事项。"
     }
   },
