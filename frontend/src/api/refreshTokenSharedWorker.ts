@@ -7,7 +7,8 @@ const WAIT_TIMEOUT_MS = 35000;
 const STARTUP_ATTEMPTS = 3;
 const STARTUP_RETRY_DELAY_MS = 250;
 
-class WorkerStartupError extends Error {}
+/** Startup failed before this caller dispatched a refresh request. */
+export class WorkerStartupError extends Error {}
 
 /** Refresh shared session cookies through the same worker in every tab. */
 export function refreshTokensInWorker(): Promise<void> {
