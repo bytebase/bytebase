@@ -2830,7 +2830,7 @@
             "title": "Leer el flujo de cambios"
           },
           "request-access": {
-            "details": "Pedir una concesión con límite de tiempo para ejecutar una sentencia concreta, opcionalmente con resultados sin enmascarar o exportados; la sentencia debe ser una lectura hasta donde el motor pueda comprobarlo · La concesión solo empieza después de ser aprobada, y se rechaza una solicitud que no necesitaría la aprobación de nadie · Una concesión solo se aplica donde el proyecto permite concesiones de acceso",
+            "details": "Pedir una concesión con límite de tiempo para ejecutar una sentencia concreta, opcionalmente con resultados sin enmascarar o exportados; la sentencia debe ser una lectura hasta donde el motor pueda comprobarlo · La concesión solo empieza después de ser aprobada, y se rechaza una solicitud que no necesitaría la aprobación de nadie · Una concesión solo se aplica donde el proyecto permite concesiones de acceso · Revocar una concesión activa · Activar o desactivar \"Permitir concesiones de acceso\" de un proyecto, después de que el usuario lo confirme",
             "title": "Solicitar concesiones de acceso"
           },
           "run-rollouts": {
@@ -2849,7 +2849,7 @@
         },
         "summary": {
           "read-only": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; una solicitud que lleve algo que no pueda demostrarse que es una lectura se rechaza, y no se exporta nada",
-          "read-write": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; proponer, solicitar acceso, aprobar, ejecutar, exportar y gestionar"
+          "read-write": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; proponer, solicitar y revocar acceso, aprobar, ejecutar, exportar y gestionar"
         },
         "tier": {
           "read": "lectura",

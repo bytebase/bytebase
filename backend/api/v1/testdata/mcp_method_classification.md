@@ -17,8 +17,8 @@ served by no ceiling.
 | Class | Methods | Meaning |
 |---|---|---|
 | READ | 68 | served to a read-only session and above |
-| WRITE | 39 | served to a read-write session only |
-| EXCLUDED | 78 | served by no ceiling this phase ships |
+| WRITE | 41 | served to a read-write session only |
+| EXCLUDED | 76 | served by no ceiling this phase ships |
 | FORBIDDEN | 34 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **219** | |
@@ -30,7 +30,7 @@ served by no ceiling.
 | AccessGrantService/CreateAccessGrant | WRITE | — | bb.accessGrants.create |
 | AccessGrantService/GetAccessGrant | READ | — | bb.accessGrants.get |
 | AccessGrantService/ListAccessGrants | READ | — | bb.accessGrants.list |
-| AccessGrantService/RevokeAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.revoke |
+| AccessGrantService/RevokeAccessGrant | WRITE | — | bb.accessGrants.revoke |
 | AccessGrantService/SearchMyAccessGrants | READ | — | bb.accessGrants.get |
 | ActuatorService/GetActuatorInfo | READ | — | — |
 | AuditLogService/ExportAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.export |
@@ -136,7 +136,7 @@ served by no ceiling.
 | ProjectService/SetIamPolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.setIamPolicy |
 | ProjectService/TestWebhook | EXCLUDED | SENDS_DATA_TO_A_THIRD_PARTY | bb.projects.update |
 | ProjectService/UndeleteProject | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.undelete |
-| ProjectService/UpdateProject | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.update |
+| ProjectService/UpdateProject | WRITE | — | bb.projects.update |
 | ProjectService/UpdateWebhook | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.update |
 | QueryHistoryService/GetQueryHistory | READ | — | — |
 | QueryHistoryService/ListQueryHistories | EXCLUDED | READS_OTHER_USERS_SQL | bb.queryHistories.list |
