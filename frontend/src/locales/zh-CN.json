@@ -1890,6 +1890,7 @@
         "confirm-checks-running": "检查仍在运行",
         "confirm-review-not-approved": "审批尚未通过",
         "confirm-review-rejected": "审批已被拒绝",
+        "confirm-rule-review-unknown": "SQL 审核状态未知",
         "confirm-unresolved-threads_one": "{{count}} 个未解决的讨论",
         "confirm-unresolved-threads_other": "{{count}} 个未解决的讨论",
         "creating-rollout-automatically": "正在自动创建发布...",

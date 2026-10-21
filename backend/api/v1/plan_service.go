@@ -386,6 +386,13 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		}
 	}
 
+	// The review starts before the plan checks and the approval check are
+	// signaled, as either can create the rollout: a slot already reset holds it
+	// until the review of the new SQL is done.
+	if planCheckRunsTrigger {
+		startRuleReview(ctx, s.profile, s.store, s.bus, updateResult.Issue)
+	}
+
 	if updatedIssue := updateResult.Issue; updateResult.ApprovalReset && updatedIssue != nil {
 		if updatedIssue.Type == storepb.Issue_DATABASE_CHANGE && planCheckRunsTrigger && !planCheckRunCreated {
 			s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: updatedIssue.ProjectID, UID: updatedIssue.UID}
@@ -395,9 +402,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	if planCheckRunCreated {
 		// Tickle plan check scheduler.
 		s.bus.PlanCheckTickleChan <- 0
-	}
-	if planCheckRunsTrigger {
-		startRuleReview(ctx, s.profile, s.store, s.bus, updateResult.Issue)
 	}
 
 	for _, event := range updateResult.Events {

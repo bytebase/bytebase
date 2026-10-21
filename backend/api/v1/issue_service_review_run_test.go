@@ -15,6 +15,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -381,4 +383,99 @@ func TestCreateIssueStartsTheRuleReviewBeforeTheWorkflow(t *testing.T) {
 	}))
 	require.NoError(t, err)
 	require.True(t, <-slotBeforeApprovalCheck, "the rule review slot exists before the approval check is sent")
+}
+
+// TestUpdatePlanStartsTheRuleReviewBeforeTheChecks pins the order that keeps
+// an edited plan's rollout held: the plan checks and the approval check can
+// each lead to the rollout, so the rule review slot must be reset first.
+func TestUpdatePlanStartsTheRuleReviewBeforeTheChecks(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	projectID := "project-a"
+	_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "prod",
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			Activation:  true,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	_, err = stores.UpsertDatabase(ctx, &store.DatabaseMessage{
+		InstanceID:   "prod",
+		DatabaseName: "app",
+		ProjectID:    projectID,
+		Metadata:     &storepb.DatabaseMetadata{},
+	})
+	require.NoError(t, err)
+	sheets, err := stores.CreateSheets(ctx, projectID, &store.SheetMessage{Statement: "ALTER TABLE t ADD COLUMN c INT;"})
+	require.NoError(t, err)
+	issue := createReviewRunIssue(ctx, t, stores, projectID)
+	_, err = stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+	updated, err := stores.CompleteReviewRun(ctx, claimed[0], "replica", storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{}, nil)
+	require.NoError(t, err)
+	require.True(t, updated)
+
+	b, err := bus.New()
+	require.NoError(t, err)
+	iamManager, err := iam.NewManager(stores, nil, false)
+	require.NoError(t, err)
+	service := NewPlanService(stores, b, iamManager, webhook.NewManager(stores, nil), nil, &config.Profile{SQLReviewV2: true})
+	// Unbuffered and not yet received, so either signal blocks the update: a
+	// slot not reset before the first signal stays DONE until the listener
+	// takes it.
+	b.PlanCheckTickleChan = make(chan int)
+	b.ApprovalCheckChan = make(chan bus.IssueRef)
+	slotResetBeforeSignal := make(chan bool, 1)
+	signals := make(chan int, 1)
+	updateDone := make(chan struct{})
+	go func() {
+		reset := false
+		for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
+			run, err := stores.GetReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+			if err == nil && run != nil && run.Status == storepb.ReviewRun_AVAILABLE {
+				reset = true
+				break
+			}
+		}
+		slotResetBeforeSignal <- reset
+		received := 0
+		for {
+			select {
+			case <-b.PlanCheckTickleChan:
+				received++
+			case <-b.ApprovalCheckChan:
+				received++
+			case <-updateDone:
+				signals <- received
+				return
+			}
+		}
+	}()
+
+	_, err = service.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+		Plan: &v1pb.Plan{
+			Name: common.FormatPlan(projectID, *issue.PlanUID),
+			Specs: []*v1pb.Plan_Spec{{
+				Id: "spec-1",
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+						Targets: []string{"instances/prod/databases/app"},
+						Sheet:   common.FormatSheet(projectID, sheets[0].Sha256),
+					},
+				},
+			}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
+	}))
+	close(updateDone)
+	require.NoError(t, err)
+	require.Positive(t, <-signals, "the update signals the plan checks or the approval check")
+	require.True(t, <-slotResetBeforeSignal, "the rule review slot is reset before the first signal")
 }

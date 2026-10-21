@@ -1890,6 +1890,7 @@
         "confirm-checks-running": "Kiểm tra kế hoạch đang chạy",
         "confirm-review-not-approved": "Đánh giá chưa được phê duyệt",
         "confirm-review-rejected": "Đánh giá bị từ chối",
+        "confirm-rule-review-unknown": "Không rõ trạng thái đánh giá SQL",
         "confirm-unresolved-threads_one": "{{count}} luồng chưa giải quyết",
         "confirm-unresolved-threads_other": "{{count}} luồng chưa giải quyết",
         "creating-rollout-automatically": "đang tự động tạo bản triển khai...",

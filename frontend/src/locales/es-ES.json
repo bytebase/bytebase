@@ -1890,6 +1890,7 @@
         "confirm-checks-running": "Comprobaciones del plan en ejecución",
         "confirm-review-not-approved": "Revisión aún no aprobada",
         "confirm-review-rejected": "Revisión rechazada",
+        "confirm-rule-review-unknown": "Estado de la revisión SQL desconocido",
         "confirm-unresolved-threads_one": "{{count}} hilo sin resolver",
         "confirm-unresolved-threads_other": "{{count}} hilos sin resolver",
         "creating-rollout-automatically": "creando el despliegue automáticamente...",

@@ -67,7 +67,13 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   const [acknowledge, setAcknowledge] = useState(false);
 
   const sqlReview = useSqlReviewV2();
-  const ruleReviewRun = sqlReview?.ruleReview?.run;
+  const ruleReview = sqlReview?.ruleReview;
+  const ruleReviewRun = ruleReview?.run;
+  // A rule review this page cannot read (still loading, failed to load, or no
+  // permission) may be queued or running on the server.
+  const ruleReviewUnknown =
+    !!sqlReview &&
+    (!ruleReview || ruleReview.run === undefined || ruleReview.loadFailed);
   const unresolvedThreads = sqlReview?.unresolvedThreads ?? 0;
   const checks = useMemo(
     () => withRuleReview(getPlanCheckSummary(plan), ruleReviewRun),
@@ -116,7 +122,11 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   // bypass or confirm — deploy straight away. Any other case (failed/running
   // checks, or bypassing review) opens the confirm sheet.
   const triggerDeploy = () => {
-    if (state.kind === "all-gates-passed" && checks.running === 0) {
+    if (
+      state.kind === "all-gates-passed" &&
+      checks.running === 0 &&
+      !ruleReviewUnknown
+    ) {
       void createRollout();
     } else {
       openConfirm();
@@ -185,6 +195,9 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   }
   if (checks.running > 0) {
     warnings.push(t("plan.review.footer.confirm-checks-running"));
+  }
+  if (ruleReviewUnknown) {
+    warnings.push(t("plan.review.footer.confirm-rule-review-unknown"));
   }
   if (unresolvedThreads > 0) {
     warnings.push(

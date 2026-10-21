@@ -1890,6 +1890,7 @@
         "confirm-checks-running": "Plan checks still running",
         "confirm-review-not-approved": "Review not yet approved",
         "confirm-review-rejected": "Review rejected",
+        "confirm-rule-review-unknown": "SQL review status unknown",
         "confirm-unresolved-threads_one": "{{count}} unresolved thread",
         "confirm-unresolved-threads_other": "{{count}} unresolved threads",
         "creating-rollout-automatically": "creating rollout automatically...",
