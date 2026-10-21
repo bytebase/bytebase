@@ -197,9 +197,12 @@ describe("ProjectRouteGate", () => {
     expect(container.querySelector("[data-testid='outlet']")).toBeNull();
   });
 
-  test("redirects self-hosted project Home URLs to Issues", async () => {
+  test("redirects self-hosted project Home URLs to Issues without mounting the outlet", async () => {
     mocks.route.name = "workspace.project.detail";
-    mocks.projectPermissions = new Set(["bb.projects.get"]);
+    mocks.projectPermissions = new Set([
+      "bb.projects.get",
+      "bb.databases.list",
+    ]);
     mocks.isSaaSMode = false;
 
     await render();

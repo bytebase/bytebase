@@ -1,3 +1,4 @@
+import type { RouteTarget } from "@/app/router";
 import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,

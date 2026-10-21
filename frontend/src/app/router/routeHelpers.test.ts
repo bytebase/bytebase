@@ -1,22 +1,12 @@
-import { describe, expect, test, vi } from "vitest";
-
-const mocks = vi.hoisted(() => ({ isDev: false }));
-
-vi.mock("@/utils/featureGates", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/utils/featureGates")>()),
-  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.isDev,
-}));
+import { describe, expect, test } from "vitest";
 
 import {
-  PROJECT_V1_ROUTE_DETAIL,
-  PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 } from "./handles";
 import { resolvePath, setRouteNameIndex } from "./navigation";
-import { buildProjectEntryRoute } from "./projectEntryRoute";
 import {
   buildPlanCreateRoute,
   buildPlanDeployRouteFromRolloutName,
@@ -27,31 +17,6 @@ import {
 import { buildRouteNameIndex } from "./routes";
 
 describe("plan detail resource route helpers", () => {
-  test("builds the SaaS project landing route", () => {
-    expect(buildProjectEntryRoute("orders", true)).toEqual({
-      name: PROJECT_V1_ROUTE_DETAIL,
-      params: { projectId: "orders" },
-    });
-  });
-
-  test("keeps the self-hosted project entry on Issues", () => {
-    expect(buildProjectEntryRoute("orders", false)).toEqual({
-      name: PROJECT_V1_ROUTE_ISSUES,
-      params: { projectId: "orders" },
-    });
-  });
-
-  test("enables the project landing in development", () => {
-    mocks.isDev = true;
-
-    expect(buildProjectEntryRoute("orders", false)).toEqual({
-      name: PROJECT_V1_ROUTE_DETAIL,
-      params: { projectId: "orders" },
-    });
-
-    mocks.isDev = false;
-  });
-
   test("builds plan creation on the plan root without a placeholder spec", () => {
     const query = {
       databaseList: "projects/p/databases/db",

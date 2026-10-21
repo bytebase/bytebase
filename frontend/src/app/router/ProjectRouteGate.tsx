@@ -97,22 +97,17 @@ export function ProjectRouteGate() {
     setRecentProject,
   ]);
 
+  const shouldRedirectProjectHome =
+    loadedProjectName === projectName &&
+    !projectHomeEnabled &&
+    route.name === PROJECT_V1_ROUTE_DETAIL;
+
   useEffect(() => {
-    if (
-      loadedProjectName !== projectName ||
-      projectHomeEnabled ||
-      route.name !== PROJECT_V1_ROUTE_DETAIL
-    ) {
+    if (!shouldRedirectProjectHome) {
       return;
     }
     void navigateRef.current.replace(buildProjectEntryRoute(projectId, false));
-  }, [
-    loadedProjectName,
-    projectHomeEnabled,
-    projectId,
-    projectName,
-    route.name,
-  ]);
+  }, [projectId, shouldRedirectProjectHome]);
 
   const permissionReady = usePermissionDataReady(project);
   const { missedBasicPermissions, missedPermissions, permitted } =
@@ -124,7 +119,7 @@ export function ProjectRouteGate() {
 
   const loaded = loadedProjectName === projectName;
 
-  if (!loaded || !project || !permissionReady) {
+  if (!loaded || shouldRedirectProjectHome || !project || !permissionReady) {
     return (
       <div className="flex h-full min-h-0 items-center justify-center">
         <LoaderCircle className="size-5 animate-spin text-control-light" />
