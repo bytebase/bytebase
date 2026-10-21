@@ -96,6 +96,16 @@ describe("getProjectHomeNextSteps", () => {
     ).toEqual(["changeDatabase", "queryDatabase", "members"]);
   });
 
+  test("does not offer a first database change after one is proposed", () => {
+    expect(
+      getProjectHomeNextSteps({
+        ...input,
+        database: "present",
+        change: "proposed",
+      })
+    ).toEqual(["members"]);
+  });
+
   test("waits for initial discovery before showing membership setup", () => {
     expect(getProjectHomeNextSteps({ ...input, database: "loading" })).toEqual(
       []

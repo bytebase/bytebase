@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Table } from "@/components/ui/table";
@@ -134,107 +135,145 @@ export function AgentChat({ className }: AgentChatProps) {
       ref={chatContainerRef}
       className={`flex flex-col overflow-y-auto gap-3 p-3 ${className ?? ""}`}
     >
-      {displayMessages.map((msg) =>
-        msg.role === "user" ? (
-          <div key={msg.id} className="flex justify-end">
-            <div className="max-w-[80%] rounded-sm bg-info/10 px-3 py-2 text-sm">
-              {msg.content}
-            </div>
-          </div>
-        ) : (
-          <div key={msg.id} className="flex flex-col gap-y-2">
-            {msg.content && (
-              <div className="max-w-[80%] rounded-sm bg-control-bg px-3 py-2 text-sm">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    p: ({ children }) => (
-                      <p className="my-1 first:mt-0 last:mb-0">{children}</p>
-                    ),
-                    pre: ({ children }) => (
-                      <pre className="my-1 overflow-x-auto rounded-xs bg-control-bg p-2 text-xs">
-                        {children}
-                      </pre>
-                    ),
-                    code: ({ children }) => (
-                      <code className="break-all rounded-xs bg-control-bg-hover px-1 text-xs">
-                        {children}
-                      </code>
-                    ),
-                    ul: ({ children }) => (
-                      <ul className="my-1 list-disc pl-5">{children}</ul>
-                    ),
-                    ol: ({ children }) => (
-                      <ol className="my-1 list-decimal pl-5">{children}</ol>
-                    ),
-                    li: ({ children }) => (
-                      <li className="my-0.5">{children}</li>
-                    ),
-                    h1: ({ children }) => (
-                      <h1 className="my-1 font-semibold">{children}</h1>
-                    ),
-                    h2: ({ children }) => (
-                      <h2 className="my-1 font-semibold">{children}</h2>
-                    ),
-                    h3: ({ children }) => (
-                      <h3 className="my-1 font-semibold">{children}</h3>
-                    ),
-                    a: ({ children, href }) => (
-                      <a
-                        className="break-all text-accent underline"
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {children}
-                      </a>
-                    ),
-                    blockquote: ({ children }) => (
-                      <blockquote className="my-1 border-l-2 border-control-border pl-2 text-control-light">
-                        {children}
-                      </blockquote>
-                    ),
-                    table: ({ children }) => (
-                      <Table className="my-1 border-collapse text-xs">
-                        {children}
-                      </Table>
-                    ),
-                    th: ({ children }) => (
-                      <th className="border border-control-border px-2 py-1">
-                        {children}
-                      </th>
-                    ),
-                    td: ({ children }) => (
-                      <td className="border border-control-border px-2 py-1">
-                        {children}
-                      </td>
-                    ),
-                  }}
-                >
+      {displayMessages.map((msg) => {
+        const isPending = msg.metadata?.pending === true;
+        const showTimestamp =
+          msg.role === "user" ||
+          (msg.role === "assistant" &&
+            !isPending &&
+            !!msg.content &&
+            !msg.toolCalls?.length);
+        const timestamp = (
+          <time
+            className="mt-1 text-xs text-control-light"
+            dateTime={new Date(msg.createdTs).toISOString()}
+            data-agent-message-timestamp
+          >
+            <HumanizeTs tsMs={msg.createdTs} tooltip={false} />
+          </time>
+        );
+
+        return (
+          <div key={msg.id}>
+            {msg.role === "user" ? (
+              <div className="flex flex-col items-end">
+                <div className="w-fit max-w-full rounded-sm bg-info/10 px-3 py-2 text-sm">
                   {msg.content}
-                </ReactMarkdown>
+                </div>
+                {showTimestamp && timestamp}
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                <div className="flex flex-col gap-y-2">
+                  {isPending && msg.content ? (
+                    <div
+                      className="flex items-center gap-x-2 text-sm text-control-placeholder"
+                      data-agent-pending-message
+                    >
+                      <span className="animate-pulse">&#9679;</span>
+                      {msg.content}
+                    </div>
+                  ) : msg.content ? (
+                    <div className="w-fit max-w-full rounded-sm bg-control-bg px-3 py-2 text-sm">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ children }) => (
+                            <p className="my-1 first:mt-0 last:mb-0">
+                              {children}
+                            </p>
+                          ),
+                          pre: ({ children }) => (
+                            <pre className="my-1 overflow-x-auto rounded-xs bg-control-bg p-2 text-xs">
+                              {children}
+                            </pre>
+                          ),
+                          code: ({ children }) => (
+                            <code className="break-all rounded-xs bg-control-bg-hover px-1 text-xs">
+                              {children}
+                            </code>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="my-1 list-disc pl-5">{children}</ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="my-1 list-decimal pl-5">
+                              {children}
+                            </ol>
+                          ),
+                          li: ({ children }) => (
+                            <li className="my-0.5">{children}</li>
+                          ),
+                          h1: ({ children }) => (
+                            <h1 className="my-1 font-semibold">{children}</h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="my-1 font-semibold">{children}</h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="my-1 font-semibold">{children}</h3>
+                          ),
+                          a: ({ children, href }) => (
+                            <a
+                              className="break-all text-accent underline"
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {children}
+                            </a>
+                          ),
+                          blockquote: ({ children }) => (
+                            <blockquote className="my-1 border-l-2 border-control-border pl-2 text-control-light">
+                              {children}
+                            </blockquote>
+                          ),
+                          table: ({ children }) => (
+                            <Table className="my-1 border-collapse text-xs">
+                              {children}
+                            </Table>
+                          ),
+                          th: ({ children }) => (
+                            <th className="border border-control-border px-2 py-1">
+                              {children}
+                            </th>
+                          ),
+                          td: ({ children }) => (
+                            <td className="border border-control-border px-2 py-1">
+                              {children}
+                            </td>
+                          ),
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  ) : null}
+                  {msg.toolCalls?.map((toolCall, index, toolCalls) => (
+                    <ToolCallCard
+                      key={`${msg.id}:${toolCall.id}:${index}`}
+                      toolCall={toolCall}
+                      result={getToolResult(
+                        msg.id,
+                        toolCall.id,
+                        getToolCallDuplicateIndex(toolCalls, index)
+                      )}
+                    />
+                  ))}
+                </div>
+                {showTimestamp && timestamp}
               </div>
             )}
-            {msg.toolCalls?.map((toolCall, index, toolCalls) => (
-              <ToolCallCard
-                key={`${msg.id}:${toolCall.id}:${index}`}
-                toolCall={toolCall}
-                result={getToolResult(
-                  msg.id,
-                  toolCall.id,
-                  getToolCallDuplicateIndex(toolCalls, index)
-                )}
-              />
-            ))}
           </div>
-        )
-      )}
+        );
+      })}
 
-      {loading && (
-        <div className="flex items-center gap-x-2 text-sm text-control-placeholder">
-          <span className="animate-pulse">&#9679;</span> {t("common.loading")}
-        </div>
-      )}
+      {loading &&
+        !displayMessages.some((message) => message.metadata?.pending) && (
+          <div className="flex items-center gap-x-2 text-sm text-control-placeholder">
+            <span className="animate-pulse">&#9679;</span> {t("common.loading")}
+          </div>
+        )}
 
       {showAIConfigurationRecovery ? (
         <div className="max-w-[80%] rounded-sm border border-warning/20 bg-warning/10 px-3 py-3 text-sm text-warning">

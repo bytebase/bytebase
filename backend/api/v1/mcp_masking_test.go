@@ -2,6 +2,8 @@ package v1
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -12,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/masker"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -142,10 +145,20 @@ func TestMaskedWriteGuardIsWiredIntoTheGate(t *testing.T) {
 	}
 
 	// A door added to the table but not exercised here ships wired to nothing,
-	// and the unit test above would still pass. CreateIssue is the one entry in
-	// mcpRequestShapeRefusals that is not a masked-write door.
-	require.Len(t, doors, len(mcpRequestShapeRefusals)-1,
-		"every masked-write door in the refusal table needs a row here")
+	// and the unit test above would still pass. These are the entries in
+	// mcpRequestShapeRefusals that are not masked-write doors.
+	notDoors := []string{
+		v1connect.IssueServiceCreateIssueProcedure,
+		v1connect.IssueServiceApproveIssueProcedure,
+		v1connect.IssueServiceRejectIssueProcedure,
+		v1connect.ProjectServiceUpdateProjectProcedure,
+	}
+	listed := slices.Clone(notDoors)
+	for _, door := range doors {
+		listed = append(listed, door.procedure)
+	}
+	require.ElementsMatch(t, slices.Collect(maps.Keys(mcpRequestShapeRefusals)), listed,
+		"every entry in the refusal table needs a row here, or a place in notDoors")
 
 	for _, door := range doors {
 		t.Run(door.procedure, func(t *testing.T) {
@@ -284,6 +297,13 @@ func TestMCPRefusalsNameThemselvesToTheQueryTool(t *testing.T) {
 	unattended := refuseUnattendedMCPAccessGrant(mcpCtx, &storepb.IssuePayloadApproval{ApprovalFindingDone: true})
 	require.Error(t, unattended)
 	require.True(t, mcp.IsPolicyRefusal(unattended.Error()))
+
+	unconfirmed := invokeMCPGate(t, readWrite, &common.AuthContext{
+		MCPMethodClass: v1pb.MCPMethodClass_WRITE,
+		DelegatedGrant: &common.DelegatedGrant{},
+	}, v1connect.IssueServiceApproveIssueProcedure, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: "projects/p/issues/1"}))
+	require.Error(t, unconfirmed.err)
+	require.True(t, mcp.IsPolicyRefusal(unconfirmed.err.Error()))
 }
 
 // TestMaskPlaceholderMatchIsDeliberatelyBroad records which side of the trade

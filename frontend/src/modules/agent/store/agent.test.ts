@@ -6,6 +6,8 @@ import {
   AGENT_WINDOW_KEY,
   AGENT_WINDOW_LAYOUT_VERSION,
   createAgentStore,
+  getAgentStateKey,
+  getAgentWindowKey,
   selectLoading,
   selectOrderedChats,
 } from "./agent";
@@ -91,6 +93,134 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).chats[0].totalTokensUsed).toBe(0);
   });
 
+  test("keeps chat history in the current workspace cache", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    const alphaChatId = s(store).currentChatId!;
+    s(store).addMessage({
+      chatId: alphaChatId,
+      role: "user",
+      content: "Alpha workspace work",
+    });
+
+    expect(
+      localStorage.getItem(getAgentStateKey("workspaces/alpha"))
+    ).toContain("Alpha workspace work");
+
+    s(store).setWorkspaceName("workspaces/beta");
+    expect(s(store).getMessages(s(store).currentChatId)).toEqual([]);
+
+    s(store).setWorkspaceName("workspaces/alpha");
+    expect(s(store).getMessages(s(store).currentChatId)).toHaveLength(1);
+    expect(s(store).getMessages(s(store).currentChatId)[0]?.content).toBe(
+      "Alpha workspace work"
+    );
+  });
+
+  test("keeps agent window layout in the current workspace cache", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    s(store).setPosition(320, 240);
+    s(store).saveWindowState();
+
+    expect(
+      localStorage.getItem(getAgentWindowKey("workspaces/alpha"))
+    ).toContain('"x":320');
+
+    s(store).setWorkspaceName("workspaces/beta");
+    expect(s(store).position).not.toEqual({ x: 320, y: 240 });
+
+    s(store).setWorkspaceName("workspaces/alpha");
+    expect(s(store).position).toEqual({ x: 320, y: 240 });
+  });
+
+  test("migrates unscoped legacy chats to the first workspace context", () => {
+    localStorage.setItem(
+      AGENT_STATE_KEY,
+      JSON.stringify({
+        currentChatId: "alpha-chat",
+        chats: [
+          {
+            id: "alpha-chat",
+            title: "Alpha",
+            workspaceName: "workspaces/alpha",
+            createdTs: 10,
+            updatedTs: 20,
+            status: "idle",
+          },
+          {
+            id: "beta-chat",
+            title: "Beta",
+            workspaceName: "workspaces/beta",
+            createdTs: 10,
+            updatedTs: 20,
+            status: "idle",
+          },
+          {
+            id: "legacy-chat",
+            title: "Legacy",
+            context: "projects/orders",
+            createdTs: 10,
+            updatedTs: 20,
+            status: "idle",
+          },
+        ],
+        messagesByChatId: {
+          "alpha-chat": [],
+          "beta-chat": [],
+          "legacy-chat": [],
+        },
+        pendingAskByChatId: {},
+      })
+    );
+
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+
+    expect(s(store).getChat("alpha-chat")).not.toBeNull();
+    expect(s(store).getChat("beta-chat")).toBeNull();
+    expect(s(store).getChat("legacy-chat")).toMatchObject({
+      workspaceName: "workspaces/alpha",
+      context: "workspaces/alpha",
+    });
+
+    s(store).setWorkspaceName("workspaces/beta");
+    expect(s(store).getChat("beta-chat")).not.toBeNull();
+    expect(s(store).getChat("alpha-chat")).toBeNull();
+
+    expect(localStorage.getItem(AGENT_STATE_KEY)).toBeNull();
+    expect(localStorage.getItem(`${AGENT_STATE_KEY}.legacy`)).toBeNull();
+  });
+
+  test("recovers chats stored by the interim unassigned legacy migration", () => {
+    localStorage.setItem(
+      `${AGENT_STATE_KEY}.legacy`,
+      JSON.stringify({
+        currentChatId: "legacy-chat",
+        chats: [
+          {
+            id: "legacy-chat",
+            title: "Legacy",
+            createdTs: 10,
+            updatedTs: 20,
+            status: "idle",
+          },
+        ],
+        messagesByChatId: { "legacy-chat": [] },
+        pendingAskByChatId: {},
+      })
+    );
+
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+
+    expect(s(store).getChat("legacy-chat")).toMatchObject({
+      workspaceName: "workspaces/alpha",
+      context: "workspaces/alpha",
+    });
+    expect(localStorage.getItem(`${AGENT_STATE_KEY}.legacy`)).toBeNull();
+  });
+
   test("takes a queued user message only for its chat and only once", () => {
     const store = createAgentStore();
     const chat = s(store).createChat({ context: "projects/orders" });
@@ -109,8 +239,122 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).queuedUserMessage).toBeNull();
   });
 
+  test("reuses an idle chat with the exact landing context", () => {
+    const store = createAgentStore();
+    const chat = s(store).createChat({ context: "projects/orders" });
+    s(store).addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "Earlier project work",
+    });
+
+    const selected = s(store).selectOrCreateChatForContext("projects/orders", {
+      path: "/projects/orders",
+      title: "Orders",
+    });
+
+    expect(selected?.id).toBe(chat.id);
+    expect(s(store).currentChatId).toBe(chat.id);
+    expect(s(store).chats).toHaveLength(2);
+    expect(s(store).getChat(chat.id)?.page).toEqual({
+      path: "/projects/orders",
+      title: "Orders",
+    });
+  });
+
+  test("does not reuse a project chat from another workspace", () => {
+    const store = createAgentStore();
+    const first = s(store).selectOrCreateChatForContext(
+      "projects/orders",
+      undefined,
+      "workspaces/alpha"
+    );
+
+    const second = s(store).selectOrCreateChatForContext(
+      "projects/orders",
+      undefined,
+      "workspaces/beta"
+    );
+
+    expect(first?.id).not.toBe(second?.id);
+    expect(s(store).getChat(second?.id)?.workspaceName).toBe("workspaces/beta");
+    s(store).setWorkspaceName("workspaces/alpha");
+    expect(s(store).getChat(first?.id)?.workspaceName).toBe("workspaces/alpha");
+  });
+
+  test("prefers the current chat when it has the exact landing context", () => {
+    const store = createAgentStore();
+    const current = s(store).createChat({ context: "projects/orders" });
+    s(store).addMessage({
+      chatId: current.id,
+      role: "user",
+      content: "Continue this work",
+    });
+    const other = s(store).createChat({ context: "projects/orders" });
+    s(store).addMessage({
+      chatId: other.id,
+      role: "user",
+      content: "A separate conversation",
+    });
+    s(store).setCurrentChat(current.id);
+
+    const selected = s(store).selectOrCreateChatForContext("projects/orders");
+
+    expect(selected?.id).toBe(current.id);
+    expect(s(store).currentChatId).toBe(current.id);
+  });
+
+  test("does not reuse a chat that needs attention", () => {
+    const store = createAgentStore();
+    const unavailable = s(store).createChat({
+      context: "projects/orders",
+    });
+    s(store).setChatStatus(unavailable.id, "error");
+
+    const selected = s(store).selectOrCreateChatForContext("projects/orders");
+
+    expect(selected?.id).not.toBe(unavailable.id);
+    expect(selected?.context).toBe("projects/orders");
+    expect(s(store).chats).toHaveLength(3);
+  });
+
+  test("selects an existing matching context without changing another chat", () => {
+    const store = createAgentStore();
+    const orders = s(store).createChat({ context: "projects/orders" });
+    s(store).addMessage({
+      chatId: orders.id,
+      role: "user",
+      content: "Orders work",
+    });
+    const billing = s(store).createChat({ context: "projects/billing" });
+    s(store).addMessage({
+      chatId: billing.id,
+      role: "user",
+      content: "Billing work",
+    });
+
+    const selected = s(store).selectOrCreateChatForContext("projects/orders");
+
+    expect(selected?.id).toBe(orders.id);
+    expect(s(store).currentChatId).toBe(orders.id);
+    expect(s(store).getChat(billing.id)?.context).toBe("projects/billing");
+    expect(s(store).chats).toHaveLength(3);
+  });
+
+  test("binds an empty unscoped chat before creating a landing chat", () => {
+    const store = createAgentStore();
+    const emptyChatId = s(store).currentChatId!;
+
+    const selected = s(store).selectOrCreateChatForContext("workspaces/demo");
+
+    expect(selected?.id).toBe(emptyChatId);
+    expect(s(store).getChat(emptyChatId)?.context).toBe("workspaces/demo");
+    expect(s(store).chats).toHaveLength(1);
+  });
+
   test("keeps a chat's resource context when its page changes and after reload", () => {
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
     const chat = s(store).createChat({ context: "projects/orders" });
 
     s(store).updateChatPage(chat.id, {
@@ -119,13 +363,16 @@ describe("useAgentStore (Zustand)", () => {
     });
 
     expect(s(store).getChat(chat.id)?.context).toBe("projects/orders");
-    expect(s(createAgentStore()).getChat(chat.id)?.context).toBe(
+    const rehydratedStore = createAgentStore();
+    s(rehydratedStore).setWorkspaceName("workspaces/acme");
+    expect(s(rehydratedStore).getChat(chat.id)?.context).toBe(
       "projects/orders"
     );
   });
 
-  test("binds only an empty legacy chat when a context is supplied", () => {
+  test("binds a context only to an empty chat created before the context was available", () => {
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
     const emptyChatId = s(store).currentChatId!;
 
     s(store).ensureCurrentChat(undefined, "workspaces/demo");
@@ -139,10 +386,14 @@ describe("useAgentStore (Zustand)", () => {
     });
     s(store).ensureCurrentChat(undefined, "projects/orders");
     expect(s(store).getChat(legacy.id)?.context).toBeUndefined();
+    const rehydratedStore = createAgentStore();
+    s(rehydratedStore).setWorkspaceName("workspaces/acme");
+    expect(s(rehydratedStore).getChat(legacy.id)?.context).toBeUndefined();
   });
 
   test("changes the context of an empty chat without creating another chat", () => {
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
     const chat = s(store).ensureCurrentChat(undefined, "projects/orders");
 
     const selected = s(store).selectChatContext("workspaces/demo");
@@ -150,12 +401,14 @@ describe("useAgentStore (Zustand)", () => {
     expect(selected?.id).toBe(chat.id);
     expect(s(store).chats).toHaveLength(1);
     expect(s(store).getChat(chat.id)?.context).toBe("workspaces/demo");
-    expect(s(createAgentStore()).getChat(chat.id)?.context).toBe(
+    const rehydratedStore = createAgentStore();
+    s(rehydratedStore).setWorkspaceName("workspaces/acme");
+    expect(s(rehydratedStore).getChat(chat.id)?.context).toBe(
       "workspaces/demo"
     );
   });
 
-  test("changes the context of a populated chat without losing its history", () => {
+  test("changes the context of a populated bound chat", () => {
     const store = createAgentStore();
     const original = s(store).ensureCurrentChat(undefined, "projects/orders");
     s(store).addMessage({
@@ -173,6 +426,7 @@ describe("useAgentStore (Zustand)", () => {
     expect(selected?.context).toBe("projects/billing");
     expect(s(store).chats).toHaveLength(1);
     expect(s(store).currentChatId).toBe(original.id);
+    expect(s(store).getChat(original.id)?.context).toBe("projects/billing");
     expect(s(store).getMessages(original.id)).toHaveLength(1);
   });
 
@@ -213,8 +467,8 @@ describe("useAgentStore (Zustand)", () => {
 
     const store = createAgentStore();
 
-    expect(s(store).size).toEqual({ width: 605, height: 451 });
-    expect(s(store).position).toEqual({ x: 819, y: 433 });
+    expect(s(store).size).toEqual({ width: 750, height: 521 });
+    expect(s(store).position).toEqual({ x: 674, y: 363 });
     expect(s(store).sidebarWidth).toBe(200);
   });
 
@@ -240,13 +494,14 @@ describe("useAgentStore (Zustand)", () => {
     );
 
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
 
-    expect(s(store).position).toEqual({ x: 819, y: 433 });
-    expect(s(store).size).toEqual({ width: 605, height: 451 });
+    expect(s(store).position).toEqual({ x: 674, y: 363 });
+    expect(s(store).size).toEqual({ width: 750, height: 521 });
     expect(s(store).sidebarWidth).toBe(280);
-    expect(localStorage.getItem(AGENT_WINDOW_KEY)).toContain(
-      `"layoutVersion":${AGENT_WINDOW_LAYOUT_VERSION}`
-    );
+    expect(
+      localStorage.getItem(getAgentWindowKey("workspaces/acme"))
+    ).toContain(`"layoutVersion":${AGENT_WINDOW_LAYOUT_VERSION}`);
   });
 
   test("loads persisted window state from the current layout version", () => {
@@ -261,16 +516,21 @@ describe("useAgentStore (Zustand)", () => {
     );
 
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
     s(store).loadWindowState();
 
     expect(s(store).sidebarWidth).toBe(280);
     expect(s(store).position).toEqual({ x: 120, y: 240 });
     expect(s(store).size).toEqual({ width: 480, height: 640 });
-    expect(localStorage.getItem(AGENT_WINDOW_KEY)).toContain('"width":480');
-    expect(localStorage.getItem(AGENT_WINDOW_KEY)).toContain(
-      '"sidebarWidth":280'
-    );
-    expect(localStorage.getItem(AGENT_STATE_KEY)).not.toBeNull();
+    expect(
+      localStorage.getItem(getAgentWindowKey("workspaces/acme"))
+    ).toContain('"width":480');
+    expect(
+      localStorage.getItem(getAgentWindowKey("workspaces/acme"))
+    ).toContain('"sidebarWidth":280');
+    expect(
+      localStorage.getItem(getAgentStateKey("workspaces/acme"))
+    ).not.toBeNull();
   });
 
   test("keeps persisted position when opening the agent", () => {
@@ -286,6 +546,7 @@ describe("useAgentStore (Zustand)", () => {
     );
 
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
 
     s(store).toggle();
 
@@ -322,7 +583,7 @@ describe("useAgentStore (Zustand)", () => {
 
   test("normalizes stale running chats on load", () => {
     localStorage.setItem(
-      AGENT_STATE_KEY,
+      getAgentStateKey("workspaces/acme"),
       JSON.stringify({
         currentChatId: "thread-1",
         chats: [
@@ -351,6 +612,7 @@ describe("useAgentStore (Zustand)", () => {
     );
 
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
     const chat = s(store).getChat(s(store).currentChatId);
 
     expect(chat).not.toBeNull();
@@ -383,6 +645,7 @@ describe("useAgentStore (Zustand)", () => {
 
   test("persists the selected chat across store reloads", () => {
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
     const firstChatId = s(store).currentChatId!;
 
     s(store).addMessage({
@@ -400,6 +663,7 @@ describe("useAgentStore (Zustand)", () => {
     s(store).setCurrentChat(secondChat.id);
 
     const rehydratedStore = createAgentStore();
+    s(rehydratedStore).setWorkspaceName("workspaces/acme");
     expect(s(rehydratedStore).currentChatId).toBe(secondChat.id);
     expect(s(rehydratedStore).getMessages(firstChatId)).toHaveLength(1);
     expect(s(rehydratedStore).getChat(secondChat.id)?.page).toEqual({
@@ -410,7 +674,7 @@ describe("useAgentStore (Zustand)", () => {
 
   test("preserves a cleared current chat across store reloads", () => {
     localStorage.setItem(
-      AGENT_STATE_KEY,
+      getAgentStateKey("workspaces/acme"),
       JSON.stringify({
         currentChatId: null,
         chats: [
@@ -431,6 +695,7 @@ describe("useAgentStore (Zustand)", () => {
     );
 
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
 
     expect(s(store).chats).toHaveLength(1);
     expect(s(store).getChat("thread-1")).not.toBeNull();
@@ -439,6 +704,7 @@ describe("useAgentStore (Zustand)", () => {
 
   test("increments and persists chat token totals", () => {
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
     const chatId = s(store).currentChatId!;
 
     s(store).incrementChatTotalTokens(chatId, 120);
@@ -447,6 +713,7 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).getChat(chatId)?.totalTokensUsed).toBe(150);
 
     const rehydratedStore = createAgentStore();
+    s(rehydratedStore).setWorkspaceName("workspaces/acme");
     expect(s(rehydratedStore).getChat(chatId)?.totalTokensUsed).toBe(150);
   });
 
@@ -554,6 +821,7 @@ describe("useAgentStore (Zustand)", () => {
 
   test("persists pending choose asks for awaiting-user chats", () => {
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
     const chatId = s(store).currentChatId!;
 
     s(store).awaitUser(chatId, {
@@ -575,6 +843,7 @@ describe("useAgentStore (Zustand)", () => {
     });
 
     const rehydratedStore = createAgentStore();
+    s(rehydratedStore).setWorkspaceName("workspaces/acme");
     expect(s(rehydratedStore).getChat(chatId)?.status).toBe("awaiting_user");
     expect(s(rehydratedStore).getPendingAsk(chatId)).toEqual({
       toolCallId: "tool-1",
@@ -599,7 +868,7 @@ describe("useAgentStore (Zustand)", () => {
 
   test("normalizes invalid persisted choose asks to input", () => {
     localStorage.setItem(
-      AGENT_STATE_KEY,
+      getAgentStateKey("workspaces/acme"),
       JSON.stringify({
         currentChatId: "thread-1",
         chats: [
@@ -626,6 +895,7 @@ describe("useAgentStore (Zustand)", () => {
     );
 
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
 
     expect(s(store).getPendingAsk("thread-1")).toEqual({
       toolCallId: "tool-1",
@@ -702,7 +972,7 @@ describe("useAgentStore (Zustand)", () => {
 
   test("migrates persisted chats without archived state", () => {
     localStorage.setItem(
-      AGENT_STATE_KEY,
+      getAgentStateKey("workspaces/acme"),
       JSON.stringify({
         currentChatId: "thread-1",
         chats: [
@@ -722,6 +992,7 @@ describe("useAgentStore (Zustand)", () => {
     );
 
     const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
 
     expect(s(store).getChat("thread-1")?.archived).toBe(false);
   });

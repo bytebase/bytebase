@@ -53,11 +53,49 @@
     "input-placeholder": "向 AI 提问...",
     "interrupted": "已中断",
     "interrupted-retry-hint": "对话已中断。您可以重试或发送新消息。",
+    "landing-starters": {
+      "menu": "建议",
+      "more": "更多建议",
+      "project-access": "在此项目中协作前，我应该设置什么？",
+      "project-collaborate": "如何邀请团队成员加入此项目？",
+      "project-connect": "如何将数据库连接到此项目？",
+      "project-next": "下一步我可以做什么？",
+      "project-open-blockers": "此项目中有哪些事项需要我关注？",
+      "project-open-recent": "这个项目最近有哪些变化？",
+      "project-organize": "我应该如何为这个项目组织数据库和环境？",
+      "project-propose-change": "如何提出数据库变更？",
+      "project-review": "此项目中的数据库变更如何审批？",
+      "workspace-attention": "有哪些事情需要我关注？",
+      "workspace-concepts": "帮我了解项目、实例和数据库",
+      "workspace-governance": "Bytebase 如何治理数据库变更？",
+      "workspace-recent": "这个工作区最近有哪些变化？",
+      "workspace-setup-first": "我应该先设置什么？"
+    },
     "minimize": "最小化",
     "new-chat": "新对话",
+    "other-chats": "其他对话",
     "pending-choose-hint": "请在上方选择一个选项",
     "pending-confirm-hint": "请在上方确认或取消",
     "pending-input-hint": "请在上方提供输入",
+    "project-attention": {
+      "checking": "正在检查需要你关注的事项...",
+      "empty": "此项目中没有需要你关注的开放 issue。",
+      "issue-created": "- {{title}}（由你创建）",
+      "issue-review": "- {{title}}（等待你的审批）",
+      "more": "此项目中还有更多开放 issue 需要你关注。",
+      "partial": "无法检查此项目中所有需要你关注的开放 issue。",
+      "summary": "此项目中的这些 issue 需要你关注：",
+      "unavailable": "无法加载此项目中需要你关注的事项。"
+    },
+    "recent-activity": {
+      "checking": "正在检查最近活动...",
+      "empty": "过去 3 天内没有记录到重要活动。",
+      "event": "{{actor}} 于 {{time}} {{action}} {{resource}}",
+      "more": "还有更多最近活动。",
+      "summary": "过去 3 天的最近活动：",
+      "unavailable": "无法加载最近活动。",
+      "unknown-time": "未知时间"
+    },
     "rename-chat-placeholder": "输入对话名称",
     "reply": "回复",
     "result": "结果",
@@ -78,7 +116,17 @@
     "tool-response-submitted": "已提交回复",
     "tool-value": "值",
     "unarchive-all-chats": "取消归档所有对话",
-    "unarchive-chat": "取消归档"
+    "unarchive-chat": "取消归档",
+    "workspace-attention": {
+      "checking": "正在检查需要你关注的事项...",
+      "empty": "没有需要你关注的开放 issue。",
+      "issue-created": "- {{title}}（由你创建）",
+      "issue-review": "- {{title}}（等待你的审批）",
+      "more": "还有更多开放 issue 需要你关注。",
+      "partial": "无法检查所有需要你关注的开放 issue。",
+      "summary": "这些 issue 需要你关注：",
+      "unavailable": "无法加载需要你关注的事项。"
+    }
   },
   "audit-log": {
     "advanced-search": {
@@ -1699,6 +1747,15 @@
   "plan": {
     "add-spec": "添加变更",
     "add-spec-pending-draft": "请先保存或放弃当前的待处理变更，然后再添加新变更",
+    "ai-review": {
+      "failed-to-run": "无法启动 AI 审核",
+      "finished": "已完成",
+      "not-run": "尚未运行",
+      "queued": "排队中",
+      "run": "运行 AI 审核",
+      "save-first": "请先保存或放弃修改，再运行 AI 审核。",
+      "status-unknown": "暂时无法获取状态"
+    },
     "blocker": {
       "clears-on-its-own": "将自动完成"
     },
@@ -1872,11 +1929,17 @@
           "unavailable-change": "已删除的变更",
           "view-in-statement": "在语句中查看"
         },
+        "applies-to": "适用于",
         "comment-on-lines": "评论所选行",
         "n-replies-hidden_one": "已隐藏 {{count}} 条回复",
         "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
         "n-replies_one": "{{count}} 条回复",
         "n-replies_other": "{{count}} 条回复",
+        "priority": {
+          "p0": "SQL 有误，必须修改。",
+          "p1": "有风险但合理，需要有人确认接受。",
+          "p2": "仅供参考。"
+        },
         "publish": "发布",
         "reopen-thread": "重新打开线程",
         "reply": "回复",
@@ -2793,7 +2856,7 @@
         "disabled": "不允许任何操作；MCP 会话无法连接。",
         "floor": {
           "label": "在任何模式下都不允许：",
-          "text": "审批工单、管理工作空间、处理凭据、开启 Admin 模式会话、查看他人的查询历史。"
+          "text": "管理工作空间、处理凭据、开启 Admin 模式会话、查看他人的查询历史。"
         },
         "heading": "{{mode}} 允许",
         "hide-details": "隐藏详情",
@@ -2802,6 +2865,10 @@
           "refused": "不允许"
         },
         "row": {
+          "approve": {
+            "details": "每项决定都会先在用户的 MCP 客户端中确认，然后才会执行 · 角色申请需在控制台中批准或拒绝 · 审批规则和项目的自我审批设置照常适用，与控制台相同",
+            "title": "批准或拒绝工单"
+          },
           "export": {
             "details": "将结果下载为文件。数据会离开 Bytebase。",
             "title": "导出查询结果"
@@ -2811,7 +2878,7 @@
             "title": "管理数据库日常维护"
           },
           "propose": {
-            "details": "创建工作表 · 创建和编辑 Plan 与工单 · 执行计划检查和审核 · 创建、删除和恢复发布 · 创建和删除修订 · 生成模式差异。智能体绝不会审批自己的变更；是否需要人来审批由项目的审批策略决定",
+            "details": "创建工作表 · 创建和编辑 Plan 与工单 · 执行计划检查和审核 · 创建、删除和恢复发布 · 创建和删除修订 · 生成模式差异。变更是否需要审批由项目的审批策略决定",
             "title": "提议变更"
           },
           "read-access": {
@@ -2831,7 +2898,7 @@
             "title": "读取变更流程"
           },
           "request-access": {
-            "details": "为特定语句申请限时访问授权，可选择查看未脱敏结果或导出结果；在引擎能检查的范围内，该语句必须是读取 · 只有在有人审批后授权才会生效；无需任何人审批的申请会被拒绝 · 授权仅在项目允许访问授权时适用",
+            "details": "为特定语句申请限时访问授权，可选择查看未脱敏结果或导出结果；在引擎能检查的范围内，该语句必须是读取 · 只有在获得批准后授权才会生效；无需任何人审批的申请会被拒绝 · 授权仅在项目允许访问授权时适用 · 撤销生效中的授权 · 在用户确认后开启或关闭项目的“允许访问授权”",
             "title": "申请访问授权"
           },
           "run-rollouts": {
@@ -2850,7 +2917,7 @@
         },
         "summary": {
           "read-only": "读取模式、数据、变更流程、成员、角色和策略；只要请求中含有无法被确认为读取的内容就会被拒绝，也不能导出",
-          "read-write": "读取模式、数据、变更流程、成员、角色和策略；提议、申请访问、执行、导出和管理"
+          "read-write": "读取模式、数据、变更流程、成员、角色和策略；提议、申请和撤销访问、批准、执行、导出和管理"
         },
         "tier": {
           "read": "读取",

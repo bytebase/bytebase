@@ -1518,7 +1518,8 @@ func (s *SQLService) accessCheck(
 // every other source database. This preserves JIT-grant behavior for the
 // grant's target (the user is already authorized there) but blocks cross-
 // database exfiltration via cross-DB references like `SELECT * FROM db_b.t`
-// from a grant targeting `db_a` — see PR #20487 review.
+// from a grant targeting `db_a` — see PR #20487 review. The exemption is for
+// data access only; see checkDatabaseAccess for why explain stays with IAM.
 //
 // Pass `accessGrant == nil` to skip wrapping; callers in that case should
 // reference `s.accessCheck` directly.
@@ -1567,7 +1568,12 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 
 	checkDatabaseAccess := func(perm permission.Permission) error {
 		databaseFullName := formatDatabaseResourceName(instance, database)
-		if _, granted := grantedTargets[databaseFullName]; granted {
+		// A grant approves reading one statement's data on its target databases, so
+		// the holder needs no IAM role there for that statement. Reading the
+		// statement's plan is a separate capability: the approved statement can
+		// arrive with the explain flag, or be a typed EXPLAIN, and either way
+		// bb.sql.explain still comes from IAM.
+		if _, granted := grantedTargets[databaseFullName]; granted && perm != permission.SQLExplain {
 			return nil
 		}
 		attributes := map[string]any{
@@ -1940,7 +1946,7 @@ type writeTargetResource struct {
 
 // resolveWriteTargets returns the tables a DML/DDL statement writes/changes, using
 // the same extractor plan-check trusts. Returns (nil, nil) when the engine has no
-// extractor, the statement can't be parsed, or no targets are found — callers must
+// extractor, a statement can't be parsed or read, or no targets are found — callers must
 // then fall back to the database-level check (never fail open). See SUP-222.
 //
 // Some engines' extractors report auxiliary tables referenced by the change (e.g.
@@ -1989,9 +1995,18 @@ func (s *SQLService) resolveWriteTargets(
 	changeSummary, err := parserbase.ExtractChangedResources(
 		engine, database.DatabaseName, targetSchema, dbMeta, asts, statement,
 	)
-	if err != nil || changeSummary == nil || changeSummary.ChangedResources == nil {
-		//nolint:nilerr // unsupported engine / no result → fall back to database-level check
+	if err != nil {
+		//nolint:nilerr // unsupported engine → fall back to database-level check
 		return nil, nil
+	}
+	return writeTargetsFromChangeSummary(changeSummary), nil
+}
+
+// writeTargetsFromChangeSummary returns the write targets changeSummary records. It returns
+// nil when there are none, or when the extractor skipped a statement, which may write any table.
+func writeTargetsFromChangeSummary(changeSummary *parserbase.ChangeSummary) []writeTargetResource {
+	if changeSummary == nil || changeSummary.ChangedResources == nil || changeSummary.SkippedStatements > 0 {
+		return nil
 	}
 
 	var targets []writeTargetResource
@@ -2027,7 +2042,7 @@ func (s *SQLService) resolveWriteTargets(
 		}
 		targets = append(targets, writeTargetResource{database: db})
 	}
-	return targets, nil
+	return targets
 }
 
 // unresolvedSchemaSentinel is an impossible schema name (it contains NUL, which no real

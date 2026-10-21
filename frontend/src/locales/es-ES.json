@@ -53,11 +53,49 @@
     "input-placeholder": "Pregunta algo a la IA...",
     "interrupted": "Interrumpido",
     "interrupted-retry-hint": "La conversación fue interrumpida. Puede reintentar o enviar un nuevo mensaje.",
+    "landing-starters": {
+      "menu": "Sugerencias",
+      "more": "Más sugerencias",
+      "project-access": "¿Qué debo configurar antes de colaborar en este Proyecto?",
+      "project-collaborate": "¿Cómo invito a compañeros de equipo a este Proyecto?",
+      "project-connect": "¿Cómo conecto una base de datos a este proyecto?",
+      "project-next": "¿Qué puedo hacer a continuación?",
+      "project-open-blockers": "¿Qué necesita mi atención en este Proyecto?",
+      "project-open-recent": "¿Qué cambió recientemente en este Proyecto?",
+      "project-organize": "¿Cómo debo organizar las bases de datos y los entornos de este Proyecto?",
+      "project-propose-change": "¿Cómo propongo un cambio de base de datos?",
+      "project-review": "¿Cómo se revisan los cambios de base de datos en este Proyecto?",
+      "workspace-attention": "¿Qué requiere mi atención?",
+      "workspace-concepts": "Ayúdame a entender Proyectos, Instancias y Bases de datos",
+      "workspace-governance": "¿Cómo gobierna Bytebase los cambios de base de datos?",
+      "workspace-recent": "¿Qué cambió recientemente en este espacio de trabajo?",
+      "workspace-setup-first": "¿Qué debería configurar primero?"
+    },
     "minimize": "Minimizar",
     "new-chat": "Nuevo chat",
+    "other-chats": "Otros chats",
     "pending-choose-hint": "Seleccione una opción arriba",
     "pending-confirm-hint": "Confirme o cancele arriba",
     "pending-input-hint": "Proporcione la entrada arriba",
+    "project-attention": {
+      "checking": "Comprobando los elementos que necesitan tu atención...",
+      "empty": "No tienes issues abiertos que requieran tu atención en este proyecto.",
+      "issue-created": "- {{title}} (creado por ti)",
+      "issue-review": "- {{title}} (esperando tu aprobación)",
+      "more": "Hay más issues abiertos que requieren tu atención en este proyecto.",
+      "partial": "No se pudieron comprobar todos los issues abiertos que requieren tu atención en este proyecto.",
+      "summary": "Estos issues requieren tu atención en este proyecto:",
+      "unavailable": "No se pueden cargar los elementos que necesitan tu atención en este proyecto."
+    },
+    "recent-activity": {
+      "checking": "Comprobando la actividad reciente...",
+      "empty": "No se registró actividad importante en los últimos 3 días.",
+      "event": "{{actor}} {{action}} {{resource}} a las {{time}}",
+      "more": "Hay más actividad reciente disponible.",
+      "summary": "Actividad reciente de los últimos 3 días:",
+      "unavailable": "No se puede cargar la actividad reciente.",
+      "unknown-time": "una hora desconocida"
+    },
     "rename-chat-placeholder": "Ingrese el nombre del chat",
     "reply": "Responder",
     "result": "Resultado",
@@ -78,7 +116,17 @@
     "tool-response-submitted": "Respuesta enviada",
     "tool-value": "Valor",
     "unarchive-all-chats": "Desarchivar todos los chats",
-    "unarchive-chat": "Desarchivar chat"
+    "unarchive-chat": "Desarchivar chat",
+    "workspace-attention": {
+      "checking": "Comprobando los elementos que necesitan tu atención...",
+      "empty": "No tienes issues abiertos que requieran tu atención.",
+      "issue-created": "- {{title}} (creado por ti)",
+      "issue-review": "- {{title}} (esperando tu aprobación)",
+      "more": "Hay más issues abiertos que requieren tu atención.",
+      "partial": "No se pudieron comprobar todos los issues abiertos que requieren tu atención.",
+      "summary": "Estos issues requieren tu atención:",
+      "unavailable": "No se pueden cargar los elementos que necesitan tu atención."
+    }
   },
   "audit-log": {
     "advanced-search": {
@@ -1699,6 +1747,15 @@
   "plan": {
     "add-spec": "Agregar cambio",
     "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
+    "ai-review": {
+      "failed-to-run": "No se pudo iniciar la revisión con IA",
+      "finished": "Finalizada",
+      "not-run": "Aún no se ha ejecutado",
+      "queued": "En cola",
+      "run": "Ejecutar revisión con IA",
+      "save-first": "Guarda o descarta tus cambios para ejecutar la revisión con IA.",
+      "status-unknown": "Estado no disponible"
+    },
     "blocker": {
       "clears-on-its-own": "Se resuelve solo"
     },
@@ -1872,11 +1929,17 @@
           "unavailable-change": "Cambio eliminado",
           "view-in-statement": "Ver en la sentencia"
         },
+        "applies-to": "Se aplica a",
         "comment-on-lines": "Comentar las líneas",
         "n-replies-hidden_one": "{{count}} respuesta oculta",
         "n-replies-hidden_other": "{{count}} respuestas ocultas",
         "n-replies_one": "{{count}} respuesta",
         "n-replies_other": "{{count}} respuestas",
+        "priority": {
+          "p0": "El SQL es incorrecto y debe cambiar.",
+          "p1": "Peligroso pero legítimo. Una persona debe aceptarlo.",
+          "p2": "Solo informativo."
+        },
         "publish": "Publicar",
         "reopen-thread": "Reabrir hilo",
         "reply": "Responder",
@@ -2793,7 +2856,7 @@
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
         "floor": {
           "label": "Nunca, en ningún modo:",
-          "text": "aprobar issues, administrar el espacio de trabajo, manejar credenciales, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
+          "text": "administrar el espacio de trabajo, manejar credenciales, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
         },
         "heading": "{{mode}} permite",
         "hide-details": "Ocultar detalles",
@@ -2802,6 +2865,10 @@
           "refused": "No permitido"
         },
         "row": {
+          "approve": {
+            "details": "Cada decisión se confirma en el cliente MCP del usuario antes de tomarse · Las solicitudes de rol se deciden en la consola · Se aplican las reglas de aprobación y la configuración de autoaprobación del proyecto, como en la consola",
+            "title": "Aprobar o rechazar issues"
+          },
           "export": {
             "details": "Descargar resultados como archivo. Los datos salen de Bytebase.",
             "title": "Exportar resultados de consulta"
@@ -2811,7 +2878,7 @@
             "title": "Gestionar el mantenimiento de bases de datos"
           },
           "propose": {
-            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. Un agente nunca aprueba su propio cambio; la política de aprobación del proyecto decide si una persona debe hacerlo",
+            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. La política de aprobación del proyecto decide si un cambio necesita aprobación",
             "title": "Proponer cambios"
           },
           "read-access": {
@@ -2831,7 +2898,7 @@
             "title": "Leer el flujo de cambios"
           },
           "request-access": {
-            "details": "Pedir una concesión con límite de tiempo para ejecutar una sentencia concreta, opcionalmente con resultados sin enmascarar o exportados; la sentencia debe ser una lectura hasta donde el motor pueda comprobarlo · La concesión solo empieza después de que una persona la apruebe, y se rechaza una solicitud que no necesitaría la aprobación de nadie · Una concesión solo se aplica donde el proyecto permite concesiones de acceso",
+            "details": "Pedir una concesión con límite de tiempo para ejecutar una sentencia concreta, opcionalmente con resultados sin enmascarar o exportados; la sentencia debe ser una lectura hasta donde el motor pueda comprobarlo · La concesión solo empieza después de ser aprobada, y se rechaza una solicitud que no necesitaría la aprobación de nadie · Una concesión solo se aplica donde el proyecto permite concesiones de acceso · Revocar una concesión activa · Activar o desactivar \"Permitir concesiones de acceso\" de un proyecto, después de que el usuario lo confirme",
             "title": "Solicitar concesiones de acceso"
           },
           "run-rollouts": {
@@ -2850,7 +2917,7 @@
         },
         "summary": {
           "read-only": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; una solicitud que lleve algo que no pueda demostrarse que es una lectura se rechaza, y no se exporta nada",
-          "read-write": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; proponer, solicitar acceso, ejecutar, exportar y gestionar"
+          "read-write": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; proponer, solicitar y revocar acceso, aprobar, ejecutar, exportar y gestionar"
         },
         "tier": {
           "read": "lectura",

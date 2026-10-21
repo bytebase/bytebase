@@ -125,6 +125,18 @@ func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 	require.NotNil(t, state.GetSchemaMetadata("").GetTable("t1"))
 }
 
+func TestWalkThroughSkipsMariaDBOnlyStatements(t *testing.T) {
+	state := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "test"}, nil, nil, storepb.Engine_MARIADB, true)
+	statement := "CREATE OR REPLACE TABLE t (a INT);\nALTER TABLE t ADD COLUMN b INT;"
+	sm := sheet.NewManager()
+	stmts, advices := sm.GetStatementsForChecks(storepb.Engine_MARIADB, statement)
+	require.Empty(t, advices)
+
+	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
+	require.Nil(t, advice)
+	require.Empty(t, state.GetProto().GetSchemas())
+}
+
 // TestWalkThroughSRIDInvisible verifies the omni catalog -> metadatapb.ColumnMetadata
 // conversion (tableToProto) carries the spatial SRID (presence + value, including the
 // valid explicit SRID 0) and the INVISIBLE flag. Without this the WalkThroughWithContext

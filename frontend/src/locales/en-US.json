@@ -53,11 +53,49 @@
     "input-placeholder": "Ask AI anything...",
     "interrupted": "Interrupted",
     "interrupted-retry-hint": "The conversation was interrupted. You can retry or send a new message.",
+    "landing-starters": {
+      "menu": "Suggestions",
+      "more": "More suggestions",
+      "project-access": "What should I set up before collaborating on this project?",
+      "project-collaborate": "How do I invite teammates to this project?",
+      "project-connect": "How do I connect a database to this project?",
+      "project-next": "What can I do next?",
+      "project-open-blockers": "What needs my attention in this project?",
+      "project-open-recent": "What changed recently in this project?",
+      "project-organize": "How should I organize databases and environments for this project?",
+      "project-propose-change": "How do I propose a database change?",
+      "project-review": "How are database changes reviewed in this project?",
+      "workspace-attention": "What needs my attention?",
+      "workspace-concepts": "Help me understand Projects, Instances, and Databases",
+      "workspace-governance": "How does Bytebase govern database changes?",
+      "workspace-recent": "What changed recently in this workspace?",
+      "workspace-setup-first": "What should I set up first?"
+    },
     "minimize": "Minimize",
     "new-chat": "New Chat",
+    "other-chats": "Other chats",
     "pending-choose-hint": "Please select an option above",
     "pending-confirm-hint": "Please confirm or cancel above",
     "pending-input-hint": "Please provide input above",
+    "project-attention": {
+      "checking": "Checking items needing your attention...",
+      "empty": "You have no open issues needing attention in this project.",
+      "issue-created": "- {{title}} (created by you)",
+      "issue-review": "- {{title}} (awaiting your approval)",
+      "more": "More open issues need your attention in this project.",
+      "partial": "I could not check every open issue needing your attention in this project.",
+      "summary": "These issues need your attention in this project:",
+      "unavailable": "Unable to load items needing your attention in this project."
+    },
+    "recent-activity": {
+      "checking": "Checking recent activity...",
+      "empty": "No meaningful activity was recorded in the last 3 days.",
+      "event": "{{actor}} {{action}} {{resource}} at {{time}}",
+      "more": "More recent activity is available.",
+      "summary": "Recent activity from the last 3 days:",
+      "unavailable": "Unable to load recent activity.",
+      "unknown-time": "an unknown time"
+    },
     "rename-chat-placeholder": "Enter chat name",
     "reply": "Reply",
     "result": "Result",
@@ -78,7 +116,17 @@
     "tool-response-submitted": "Response submitted",
     "tool-value": "Value",
     "unarchive-all-chats": "Unarchive all chats",
-    "unarchive-chat": "Unarchive chat"
+    "unarchive-chat": "Unarchive chat",
+    "workspace-attention": {
+      "checking": "Checking items needing your attention...",
+      "empty": "You have no open issues needing attention.",
+      "issue-created": "- {{title}} (created by you)",
+      "issue-review": "- {{title}} (awaiting your approval)",
+      "more": "More open issues need your attention.",
+      "partial": "I could not check every open issue needing your attention.",
+      "summary": "These issues need your attention:",
+      "unavailable": "Unable to load items needing your attention."
+    }
   },
   "audit-log": {
     "advanced-search": {
@@ -1699,6 +1747,15 @@
   "plan": {
     "add-spec": "Add Change",
     "add-spec-pending-draft": "Save or discard the pending change before adding another",
+    "ai-review": {
+      "failed-to-run": "Could not start the AI review",
+      "finished": "Finished",
+      "not-run": "Not run yet",
+      "queued": "Queued",
+      "run": "Run AI review",
+      "save-first": "Save or discard your edits to run the AI review.",
+      "status-unknown": "Status not available"
+    },
     "blocker": {
       "clears-on-its-own": "Clears on its own"
     },
@@ -1872,11 +1929,17 @@
           "unavailable-change": "Deleted change",
           "view-in-statement": "View in Statement"
         },
+        "applies-to": "Applies to",
         "comment-on-lines": "Comment on lines",
         "n-replies-hidden_one": "{{count}} reply hidden",
         "n-replies-hidden_other": "{{count}} replies hidden",
         "n-replies_one": "{{count}} reply",
         "n-replies_other": "{{count}} replies",
+        "priority": {
+          "p0": "The SQL is wrong and must change.",
+          "p1": "Dangerous but legitimate. A person must accept it.",
+          "p2": "Advisory only."
+        },
         "publish": "Publish",
         "reopen-thread": "Reopen thread",
         "reply": "Reply",
@@ -2793,7 +2856,7 @@
         "disabled": "Nothing is allowed; no MCP session can connect.",
         "floor": {
           "label": "Never, in any mode:",
-          "text": "approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."
+          "text": "administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."
         },
         "heading": "{{mode}} allows",
         "hide-details": "Hide details",
@@ -2802,6 +2865,10 @@
           "refused": "Not allowed"
         },
         "row": {
+          "approve": {
+            "details": "Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console",
+            "title": "Approve or reject issues"
+          },
           "export": {
             "details": "Download results as a file. Data leaves Bytebase.",
             "title": "Export query results"
@@ -2811,7 +2878,7 @@
             "title": "Manage database housekeeping"
           },
           "propose": {
-            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must approve it.",
+            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. The project's approval policy decides whether a change needs approval.",
             "title": "Propose changes"
           },
           "read-access": {
@@ -2831,7 +2898,7 @@
             "title": "Read the change workflow"
           },
           "request-access": {
-            "details": "Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after a person approves it, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants",
+            "details": "Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants · Revoke an active grant · Turn a project's \"Allow access grants\" on or off, after the user confirms",
             "title": "Request access grants"
           },
           "run-rollouts": {
@@ -2850,7 +2917,7 @@
         },
         "summary": {
           "read-only": "Read schemas, data, the change workflow, members, roles and policies; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported",
-          "read-write": "Read schemas, data, the change workflow, members, roles and policies; propose, request access, run, export and manage"
+          "read-write": "Read schemas, data, the change workflow, members, roles and policies; propose, request and revoke access, approve, run, export and manage"
         },
         "tier": {
           "read": "read",

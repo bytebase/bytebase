@@ -38,4 +38,18 @@ describe("buildSystemPrompt", () => {
     expect(prompt).not.toContain("read element indices");
     expect(prompt).not.toContain("dom_action(type, index, value)");
   });
+
+  test("keeps a read-only landing starter on its current page", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Order service",
+      runMode: "read-only",
+    });
+
+    expect(prompt).toContain("Stay on the current page");
+    expect(prompt).toContain("Do not navigate");
+    expect(prompt).toContain("get_project_open_issues");
+    expect(prompt).toContain("get_project_recent_activity");
+    expect(prompt).toContain("get_workspace_recent_activity");
+  });
 });

@@ -29,9 +29,6 @@ const (
 
 // nextAction enum constants.
 const (
-	// The agent waits; it does not approve. ApproveIssue is FORBIDDEN to MCP
-	// sessions, so naming it here would send the agent at a call that is
-	// refused. The issue link in the output is what a human follows instead.
 	nextActionAwaitApproval  = "AWAIT_HUMAN_APPROVAL"
 	nextActionCreateRollout  = "CREATE_ROLLOUT"
 	nextActionMonitorRollout = "MONITOR_ROLLOUT"
@@ -151,6 +148,7 @@ propose_database_change(database="app", sql="UPDATE orders SET status='shipped' 
 - Plan checks run automatically; results included in response when available.
 - Requires bb.sheets.create, bb.plans.create, bb.issues.create permissions.
 - If createRollout=true but policy gates aren't satisfied, returns success with rolloutCreated=false and a reason.
+- nextAction AWAIT_HUMAN_APPROVAL means the issue waits for its approvers. If the user is one of them, decide_issue asks them to confirm in this client and then approves; otherwise share links.issue with an approver.
 - Masked data: a masked column reads back as "******". That is a placeholder, not a value anything holds. Any change containing it is refused, because writing it back would overwrite the real value. Ask a human to make the change in the Bytebase console instead.
 `
 

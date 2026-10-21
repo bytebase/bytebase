@@ -3,7 +3,14 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { createRef, useState } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { IssueCommentSchema, IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueComment_ReviewMetadata_Priority,
+  IssueComment_ReviewMetadataSchema,
+  IssueCommentSchema,
+  IssueSchema,
+  ReviewRun_Type,
+} from "@/types/proto-es/v1/issue_service_pb";
+import { Plan_SpecSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { EditorThread } from "./threadModel";
 import { ThreadStack } from "./ThreadStack";
 
@@ -19,13 +26,14 @@ vi.mock("@/stores/app", () => ({
     selector({ getUserByIdentifier: () => ({ email: "a@example.com", title: "Aurora" }) }),
 }));
 vi.mock("./CommentThreadCard", () => ({
-  CommentThreadCard: ({ thread, onClose, replyDraft, onReplyDraftChange }: {
+  CommentThreadCard: ({ thread, onClose, replyDraft, onReplyDraftChange, spec }: {
     thread: EditorThread["thread"];
     onClose: () => void;
     replyDraft: string;
     onReplyDraftChange: (draft: string) => void;
+    spec?: { id: string };
   }) => (
-    <div data-thread-name={thread.root.name} data-resolved={String(thread.resolved)}>
+    <div data-thread-name={thread.root.name} data-resolved={String(thread.resolved)} data-spec={spec?.id}>
       <input aria-label="Reply draft" value={replyDraft} onChange={(e) => onReplyDraftChange(e.target.value)} />
       <button onClick={onClose}>Close</button>
     </div>
@@ -55,6 +63,7 @@ const props = {
   expandedRoots: new Set<string>(),
   replyDrafts: {},
   onReplyDraftChange: vi.fn(),
+  spec: create(Plan_SpecSchema, { id: "spec-1" }),
 };
 const order = (container: HTMLElement) =>
   Array.from(container.querySelectorAll("[data-thread-name]")).map((el) => el.getAttribute("data-thread-name"));
@@ -131,6 +140,28 @@ describe("ThreadStack", () => {
   });
 });
 
+
+test("shows a collapsed review result as its reviewer with its priority", () => {
+  const review = entry("finding", false, 1);
+  review.thread.root.creator = "";
+  review.thread.root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+    runType: ReviewRun_Type.RULE,
+    priority: IssueComment_ReviewMetadata_Priority.P0,
+  });
+  const { container } = render(<ThreadStack {...props} threads={[review, entry("person", false, 2)]} />);
+  const rows = container.querySelectorAll("[data-testid='thread-row']");
+  expect(rows[0].textContent).toContain("sql-review.standard-rules.self");
+  expect(rows[0].querySelector("[data-testid='review-priority']")?.textContent).toBe("P0");
+  expect(rows[0].textContent).not.toContain("Aurora");
+  expect(rows[1].textContent).toContain("Aurora");
+  expect(rows[1].querySelector("[data-testid='review-priority']")).toBeNull();
+});
+
+test("hands each expanded card the spec of the statement it sits on", () => {
+  const { container } = render(<ThreadStack {...props} expandedRoots={new Set(["a", "b"])} threads={[entry("a", false, 1), entry("b", true, 2)]} />);
+  const cards = Array.from(container.querySelectorAll("[data-thread-name]"));
+  expect(cards.map((card) => card.getAttribute("data-spec"))).toEqual(["spec-1", "spec-1"]);
+});
 
 test("exposes the expanded card for editor reveal", () => {
   const ref = createRef<HTMLDivElement>();

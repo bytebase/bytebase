@@ -12,6 +12,7 @@ import { createAgentStore, useAgentStore } from "../store/agent";
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
+    i18n: { language: "en-US" },
   })),
   hasWorkspacePermissionV2: vi.fn(() => true),
   routerPush: vi.fn(),
@@ -106,6 +107,7 @@ beforeEach(async () => {
   mocks.useTranslation.mockReset();
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
+    i18n: { language: "en-US" },
   });
   mocks.hasWorkspacePermissionV2.mockReset();
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
@@ -163,6 +165,97 @@ describe("AgentChat", () => {
     const link = container.querySelector("a");
     expect(link).toBeInstanceOf(HTMLElement);
     expect(link?.className).toContain("break-all");
+
+    unmount();
+  });
+
+  test("sizes user and assistant message bubbles to their content", () => {
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "List databases",
+    });
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: "No databases found.",
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const bubbles = Array.from(container.querySelectorAll("div")).filter(
+      (element) =>
+        element.className.includes("bg-info/10") ||
+        element.className.includes("bg-control-bg px-3 py-2")
+    );
+    expect(bubbles).toHaveLength(2);
+    for (const bubble of bubbles) {
+      const classes = bubble.className.split(/\s+/);
+      expect(classes).toContain("w-fit");
+      expect(classes).toContain("max-w-full");
+      expect(classes).not.toContain("w-full");
+      expect(classes).not.toContain("max-w-[80%]");
+    }
+
+    unmount();
+  });
+
+  test("shows timestamps for user messages and final assistant replies", () => {
+    const userMessage = useAgentStore.getState().addMessage({
+      role: "user",
+      content: "List databases",
+    });
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      toolCalls: [
+        {
+          id: "call_list_databases",
+          name: "list_databases",
+          arguments: "{}",
+        },
+      ],
+    });
+    const assistantMessage = useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: "You can find databases from the Database section.",
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const timestamps = Array.from(
+      container.querySelectorAll("[data-agent-message-timestamp]")
+    ) as HTMLTimeElement[];
+    expect(timestamps).toHaveLength(2);
+    expect(timestamps.map((timestamp) => timestamp.dateTime)).toEqual([
+      new Date(userMessage.createdTs).toISOString(),
+      new Date(assistantMessage.createdTs).toISOString(),
+    ]);
+    expect(timestamps[1]?.parentElement?.className).not.toContain("gap-y-2");
+    expect(timestamps[1]?.previousElementSibling?.className).toContain(
+      "gap-y-2"
+    );
+    expect(container.querySelector("[data-agent-message-day]")).toBeNull();
+
+    unmount();
+  });
+
+  test("renders a pending starter as one compact status instead of progress cards", () => {
+    const chat = useAgentStore.getState().ensureCurrentChat();
+    useAgentStore.getState().setChatStatus(chat.id, "running");
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: "Checking recent activity...",
+      metadata: { pending: true },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-pending-message]")?.textContent).toContain(
+      "Checking recent activity..."
+    );
+    expect(container.querySelector("[data-agent-message-timestamp]")).toBeNull();
+    expect(container.textContent).not.toContain("common.loading");
 
     unmount();
   });

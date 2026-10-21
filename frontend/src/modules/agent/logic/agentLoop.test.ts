@@ -267,6 +267,50 @@ describe("runAgentLoop", () => {
     expect(executeTool).not.toHaveBeenCalled();
   });
 
+  test("completes a read-only starter when the model answers in plain text after a tool result", async () => {
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "tool-open-issues",
+            name: "get_project_open_issues",
+            arguments: "{}",
+            metadata: "",
+          },
+        ],
+      } as never)
+      .mockResolvedValueOnce({
+        content: "You have two open Issues in this Project.",
+        toolCalls: [],
+      } as never);
+
+    const executeTool: ToolExecutor = vi.fn(async () => ({
+      kind: "tool_result" as const,
+      result: JSON.stringify({ issues: [] }),
+    }));
+    const onText = vi.fn();
+
+    const outcome = await runAgentLoop(
+      [{ role: "system", content: "system" }],
+      [],
+      executeTool,
+      { onText },
+      undefined,
+      { allowPlainTextCompletion: true }
+    );
+
+    expect(outcome).toEqual({
+      kind: "completed",
+      text: "You have two open Issues in this Project.",
+      success: true,
+      totalTokensUsed: 0,
+    });
+    expect(onText).toHaveBeenCalledWith(
+      "You have two open Issues in this Project."
+    );
+  });
+
   test("returns awaiting_user without synthesizing an immediate tool result", async () => {
     vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
       content: "",

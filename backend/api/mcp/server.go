@@ -235,6 +235,8 @@ func (s *Server) registerTools() {
 	s.registerQueryTool()
 	s.registerSchemaTool()
 	s.registerChangeTool()
+	s.registerDecideIssueTool()
+	s.registerSetJustInTimeAccessTool()
 	s.registerReauthorizeTool()
 }
 

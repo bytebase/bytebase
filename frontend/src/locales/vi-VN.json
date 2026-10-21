@@ -53,11 +53,49 @@
     "input-placeholder": "Hỏi AI bất cứ điều gì...",
     "interrupted": "Bị gián đoạn",
     "interrupted-retry-hint": "Cuộc trò chuyện đã bị gián đoạn. Bạn có thể thử lại hoặc gửi tin nhắn mới.",
+    "landing-starters": {
+      "menu": "Gợi ý",
+      "more": "Thêm gợi ý",
+      "project-access": "Tôi nên thiết lập gì trước khi cộng tác trong Dự án này?",
+      "project-collaborate": "Làm cách nào để mời đồng đội vào Dự án này?",
+      "project-connect": "Làm cách nào để kết nối cơ sở dữ liệu với dự án này?",
+      "project-next": "Tôi có thể làm gì tiếp theo?",
+      "project-open-blockers": "Điều gì trong Dự án này cần tôi chú ý?",
+      "project-open-recent": "Gần đây có gì thay đổi trong Dự án này?",
+      "project-organize": "Tôi nên tổ chức cơ sở dữ liệu và môi trường cho Dự án này như thế nào?",
+      "project-propose-change": "Tôi đề xuất thay đổi cơ sở dữ liệu như thế nào?",
+      "project-review": "Các thay đổi cơ sở dữ liệu được xem xét như thế nào trong Dự án này?",
+      "workspace-attention": "Điều gì cần tôi chú ý?",
+      "workspace-concepts": "Giúp tôi hiểu Dự án, Phiên bản và Cơ sở dữ liệu",
+      "workspace-governance": "Bytebase quản trị thay đổi cơ sở dữ liệu như thế nào?",
+      "workspace-recent": "Gần đây có gì thay đổi trong không gian làm việc này?",
+      "workspace-setup-first": "Tôi nên thiết lập gì trước?"
+    },
     "minimize": "Thu nhỏ",
     "new-chat": "Cuộc trò chuyện mới",
+    "other-chats": "Các cuộc trò chuyện khác",
     "pending-choose-hint": "Vui lòng chọn một tùy chọn ở trên",
     "pending-confirm-hint": "Vui lòng xác nhận hoặc hủy ở trên",
     "pending-input-hint": "Vui lòng cung cấp đầu vào ở trên",
+    "project-attention": {
+      "checking": "Đang kiểm tra các mục cần bạn chú ý...",
+      "empty": "Bạn không có issue mở nào cần chú ý trong dự án này.",
+      "issue-created": "- {{title}} (do bạn tạo)",
+      "issue-review": "- {{title}} (đang chờ bạn phê duyệt)",
+      "more": "Có thêm issue mở cần bạn chú ý trong dự án này.",
+      "partial": "Không thể kiểm tra tất cả issue mở cần bạn chú ý trong dự án này.",
+      "summary": "Các issue này cần bạn chú ý trong dự án này:",
+      "unavailable": "Không thể tải các mục cần bạn chú ý trong dự án này."
+    },
+    "recent-activity": {
+      "checking": "Đang kiểm tra hoạt động gần đây...",
+      "empty": "Không có hoạt động quan trọng nào được ghi nhận trong 3 ngày qua.",
+      "event": "{{actor}} {{action}} {{resource}} lúc {{time}}",
+      "more": "Có thêm hoạt động gần đây.",
+      "summary": "Hoạt động gần đây trong 3 ngày qua:",
+      "unavailable": "Không thể tải hoạt động gần đây.",
+      "unknown-time": "thời gian không xác định"
+    },
     "rename-chat-placeholder": "Nhập tên cuộc trò chuyện",
     "reply": "Trả lời",
     "result": "Kết quả",
@@ -78,7 +116,17 @@
     "tool-response-submitted": "Phản hồi đã được gửi",
     "tool-value": "Giá trị",
     "unarchive-all-chats": "Bỏ lưu trữ tất cả cuộc trò chuyện",
-    "unarchive-chat": "Bỏ lưu trữ"
+    "unarchive-chat": "Bỏ lưu trữ",
+    "workspace-attention": {
+      "checking": "Đang kiểm tra các mục cần bạn chú ý...",
+      "empty": "Bạn không có issue mở nào cần chú ý.",
+      "issue-created": "- {{title}} (do bạn tạo)",
+      "issue-review": "- {{title}} (đang chờ bạn phê duyệt)",
+      "more": "Có thêm issue mở cần bạn chú ý.",
+      "partial": "Không thể kiểm tra tất cả issue mở cần bạn chú ý.",
+      "summary": "Các issue này cần bạn chú ý:",
+      "unavailable": "Không thể tải các mục cần bạn chú ý."
+    }
   },
   "audit-log": {
     "advanced-search": {
@@ -1699,6 +1747,15 @@
   "plan": {
     "add-spec": "Thêm thay đổi",
     "add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
+    "ai-review": {
+      "failed-to-run": "Không thể bắt đầu đánh giá bằng AI",
+      "finished": "Đã hoàn tất",
+      "not-run": "Chưa chạy",
+      "queued": "Đang chờ",
+      "run": "Chạy đánh giá bằng AI",
+      "save-first": "Hãy lưu hoặc hủy các thay đổi để chạy đánh giá bằng AI.",
+      "status-unknown": "Chưa có trạng thái"
+    },
     "blocker": {
       "clears-on-its-own": "Tự động hoàn tất"
     },
@@ -1872,11 +1929,17 @@
           "unavailable-change": "Thay đổi đã xóa",
           "view-in-statement": "Xem trong câu lệnh"
         },
+        "applies-to": "Áp dụng cho",
         "comment-on-lines": "Bình luận các dòng đã chọn",
         "n-replies-hidden_one": "{{count}} phản hồi bị ẩn",
         "n-replies-hidden_other": "{{count}} phản hồi bị ẩn",
         "n-replies_one": "{{count}} phản hồi",
         "n-replies_other": "{{count}} phản hồi",
+        "priority": {
+          "p0": "SQL sai và phải được sửa.",
+          "p1": "Nguy hiểm nhưng hợp lệ. Cần có người chấp nhận.",
+          "p2": "Chỉ mang tính tham khảo."
+        },
         "publish": "Đăng",
         "reopen-thread": "Mở lại luồng",
         "reply": "Trả lời",
@@ -2793,7 +2856,7 @@
         "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
         "floor": {
           "label": "Không bao giờ, ở mọi chế độ:",
-          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở phiên chế độ Admin, hoặc đọc lịch sử truy vấn của người khác."
+          "text": "quản trị không gian làm việc, xử lý thông tin xác thực, mở phiên chế độ Admin, hoặc đọc lịch sử truy vấn của người khác."
         },
         "heading": "{{mode}} cho phép",
         "hide-details": "Ẩn chi tiết",
@@ -2802,6 +2865,10 @@
           "refused": "Không được phép"
         },
         "row": {
+          "approve": {
+            "details": "Mỗi quyết định được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Yêu cầu vai trò được quyết định trên bảng điều khiển · Các quy tắc phê duyệt và thiết lập tự phê duyệt của dự án vẫn áp dụng, như trên bảng điều khiển",
+            "title": "Phê duyệt hoặc từ chối Issue"
+          },
           "export": {
             "details": "Tải kết quả về dưới dạng tệp. Dữ liệu rời khỏi Bytebase.",
             "title": "Xuất kết quả truy vấn"
@@ -2811,7 +2878,7 @@
             "title": "Quản lý vận hành cơ sở dữ liệu"
           },
           "propose": {
-            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo, xóa và khôi phục bản phát hành · Tạo và xóa bản sửa đổi · Tạo khác biệt lược đồ. Một tác nhân không bao giờ tự phê duyệt thay đổi của mình; chính sách phê duyệt của dự án quyết định liệu có cần người phê duyệt hay không",
+            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo, xóa và khôi phục bản phát hành · Tạo và xóa bản sửa đổi · Tạo khác biệt lược đồ. Chính sách phê duyệt của dự án quyết định liệu một thay đổi có cần phê duyệt hay không",
             "title": "Đề xuất thay đổi"
           },
           "read-access": {
@@ -2831,7 +2898,7 @@
             "title": "Đọc quy trình thay đổi"
           },
           "request-access": {
-            "details": "Xin cấp quyền truy cập có thời hạn để chạy một câu lệnh cụ thể, có thể kèm xem kết quả chưa che hoặc xuất kết quả; câu lệnh phải là lệnh đọc trong phạm vi engine kiểm tra được · Quyền chỉ bắt đầu sau khi một người phê duyệt, và yêu cầu không cần ai phê duyệt sẽ bị từ chối · Quyền chỉ áp dụng khi dự án cho phép cấp quyền truy cập",
+            "details": "Xin cấp quyền truy cập có thời hạn để chạy một câu lệnh cụ thể, có thể kèm xem kết quả chưa che hoặc xuất kết quả; câu lệnh phải là lệnh đọc trong phạm vi engine kiểm tra được · Quyền chỉ bắt đầu sau khi được phê duyệt, và yêu cầu không cần ai phê duyệt sẽ bị từ chối · Quyền chỉ áp dụng khi dự án cho phép cấp quyền truy cập · Thu hồi quyền đang có hiệu lực · Bật hoặc tắt \"Cho phép cấp quyền truy cập\" của dự án, sau khi người dùng xác nhận",
             "title": "Yêu cầu cấp quyền truy cập"
           },
           "run-rollouts": {
@@ -2850,7 +2917,7 @@
         },
         "summary": {
           "read-only": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
-          "read-write": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; đề xuất, yêu cầu truy cập, chạy, xuất và quản lý"
+          "read-write": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; đề xuất, yêu cầu và thu hồi truy cập, phê duyệt, chạy, xuất và quản lý"
         },
         "tier": {
           "read": "đọc",

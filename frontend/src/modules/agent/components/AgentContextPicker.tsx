@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { useProjectList } from "@/hooks/useAppState";
-import { getProjectName } from "@/lib/resourceName";
 
 interface AgentContextPickerProps {
   context?: string;
@@ -83,9 +82,6 @@ function ContextOptions({
             <span className="min-w-0 flex-1 text-left">
               <span className="block truncate">
                 {project.title || project.name}
-              </span>
-              <span className="block truncate text-xs text-control-light">
-                {getProjectName(project.name)}
               </span>
             </span>
             {context === project.name ? <Check className="size-4" /> : null}

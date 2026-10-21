@@ -17,12 +17,36 @@ vi.mock("./navigate", () => ({
 vi.mock("./pageState", () => ({
   createPageStateTool: vi.fn(() => vi.fn(async () => "page_state")),
 }));
+vi.mock("./projectOpenIssues", () => ({
+  createProjectOpenIssuesTool: vi.fn(() => vi.fn(async () => "project_issues")),
+}));
+vi.mock("./projectRecentActivity", () => ({
+  createProjectRecentActivityTool: vi.fn(() =>
+    vi.fn(async () => "project_recent_activity")
+  ),
+}));
+vi.mock("./workspaceRecentActivity", () => ({
+  createWorkspaceRecentActivityTool: vi.fn(() =>
+    vi.fn(async () => "workspace_recent_activity")
+  ),
+}));
+vi.mock("./workspaceAttention", () => ({
+  createWorkspaceAttentionTool: vi.fn(() =>
+    vi.fn(async () => "workspace_attention")
+  ),
+}));
 vi.mock("./searchApi", () => ({
   searchApi: vi.fn(async () => "search_api"),
 }));
 
 import { createToolExecutor, getToolDefinitions } from ".";
+import { callApi } from "./callApi";
+import { createDomActionTool } from "./domAction";
 import { createNavigateTool } from "./navigate";
+import { createProjectOpenIssuesTool } from "./projectOpenIssues";
+import { createProjectRecentActivityTool } from "./projectRecentActivity";
+import { createWorkspaceAttentionTool } from "./workspaceAttention";
+import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
 
 describe("agent tools navigate", () => {
   test("calls onNavigate after a successful navigation result", async () => {
@@ -109,6 +133,171 @@ describe("agent tools dom_action", () => {
         }),
       })
     );
+  });
+});
+
+describe("agent tools read-only mode", () => {
+  test("only exposes page inspection, guidance, and completion", () => {
+    expect(
+      getToolDefinitions({ runMode: "read-only" }).map((tool) => tool.name)
+    ).toEqual([
+      "get_page_state",
+      "get_project_open_issues",
+      "get_project_recent_activity",
+      "get_workspace_attention",
+      "get_workspace_recent_activity",
+      "get_skill",
+      "ask_user",
+      "done",
+    ]);
+    expect(getToolDefinitions().map((tool) => tool.name)).not.toContain(
+      "get_project_open_issues"
+    );
+    expect(getToolDefinitions().map((tool) => tool.name)).not.toContain(
+      "get_project_recent_activity"
+    );
+    expect(getToolDefinitions().map((tool) => tool.name)).not.toContain(
+      "get_workspace_recent_activity"
+    );
+    expect(getToolDefinitions().map((tool) => tool.name)).not.toContain(
+      "get_workspace_attention"
+    );
+  });
+
+  test("uses the chat-bound Project for a starter issue lookup", async () => {
+    const issueTool = vi.fn(async () =>
+      JSON.stringify({
+        project: "projects/sample",
+        issues: [
+          {
+            name: "projects/sample/issues/1",
+            title: "Add customer table",
+            relation: "review",
+            approvalStatus: "PENDING",
+          },
+        ],
+        partial: false,
+      })
+    );
+    vi.mocked(createProjectOpenIssuesTool).mockReturnValue(issueTool);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      runMode: "read-only",
+    });
+
+    await expect(
+      executeTool("get_project_open_issues", {}, "tool-issues")
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: expect.stringContaining("Add customer table"),
+    });
+    expect(createProjectOpenIssuesTool).toHaveBeenCalledWith({
+      projectName: "projects/sample",
+    });
+    expect(issueTool).toHaveBeenCalledWith();
+  });
+
+  test("uses the chat-bound Project for a starter recent-activity lookup", async () => {
+    const recentActivityTool = vi.fn(async () => "project_recent_activity");
+    vi.mocked(createProjectRecentActivityTool).mockReturnValue(
+      recentActivityTool
+    );
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      runMode: "read-only",
+    });
+
+    await expect(
+      executeTool("get_project_recent_activity", {}, "tool-recent-activity")
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: "project_recent_activity",
+    });
+    expect(createProjectRecentActivityTool).toHaveBeenCalledWith({
+      projectName: "projects/sample",
+    });
+    expect(recentActivityTool).toHaveBeenCalledWith();
+  });
+
+  test("uses the chat-bound workspace for a starter recent-activity lookup", async () => {
+    const recentActivityTool = vi.fn(async () => "workspace_recent_activity");
+    vi.mocked(createWorkspaceRecentActivityTool).mockReturnValue(
+      recentActivityTool
+    );
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "workspaces/acme",
+      runMode: "read-only",
+    });
+
+    await expect(
+      executeTool("get_workspace_recent_activity", {}, "tool-recent-activity")
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: "workspace_recent_activity",
+    });
+    expect(createWorkspaceRecentActivityTool).toHaveBeenCalledWith({
+      workspaceName: "workspaces/acme",
+    });
+    expect(recentActivityTool).toHaveBeenCalledWith();
+  });
+
+  test("uses the chat-bound workspace for a starter attention lookup", async () => {
+    const attentionTool = vi.fn(async () => "workspace_attention");
+    vi.mocked(createWorkspaceAttentionTool).mockReturnValue(attentionTool);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "workspaces/acme",
+      runMode: "read-only",
+    });
+
+    await expect(
+      executeTool("get_workspace_attention", {}, "tool-attention")
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: "workspace_attention",
+    });
+    expect(createWorkspaceAttentionTool).toHaveBeenCalledWith({
+      workspaceName: "workspaces/acme",
+    });
+    expect(attentionTool).toHaveBeenCalledWith();
+  });
+
+  test("rejects unavailable tools before they can change the page or make a call", async () => {
+    const navigateTool = vi.fn(async () => "navigate");
+    vi.mocked(createNavigateTool).mockReturnValue(navigateTool);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      runMode: "read-only",
+    });
+    const callApiMock = vi.mocked(callApi);
+    const createDomActionToolMock = vi.mocked(createDomActionTool);
+    callApiMock.mockClear();
+    createDomActionToolMock.mockClear();
+
+    await expect(
+      executeTool("call_api", { operationId: "SQLService/Query" }, "tool-api")
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: expect.stringContaining("not available during this starter"),
+    });
+    await expect(
+      executeTool("dom_action", { type: "click", ref: "e1" }, "tool-dom")
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: expect.stringContaining("not available during this starter"),
+    });
+    await expect(
+      executeTool(
+        "navigate",
+        { path: "/projects/demo/issues" },
+        "tool-navigate"
+      )
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: expect.stringContaining("not available during this starter"),
+    });
+
+    expect(callApiMock).not.toHaveBeenCalled();
+    expect(createDomActionToolMock).not.toHaveBeenCalled();
+    expect(navigateTool).not.toHaveBeenCalled();
   });
 });
 

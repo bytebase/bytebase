@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -75,4 +76,21 @@ func TestPostgresWriteTargetSchemaForRequest(t *testing.T) {
 func TestUnresolvedSchemaSentinelIsImpossible(t *testing.T) {
 	t.Parallel()
 	require.Contains(t, unresolvedSchemaSentinel, "\x00")
+}
+
+func TestWriteTargetsFromChangeSummaryRefusesSkippedStatements(t *testing.T) {
+	t.Parallel()
+	extract := func(statement string) *parserbase.ChangeSummary {
+		stmts, err := parserbase.ParseStatements(storepb.Engine_MARIADB, statement)
+		require.NoError(t, err)
+		changeSummary, err := parserbase.ExtractChangedResources(storepb.Engine_MARIADB, "db", "", nil /* dbMetadata */, parserbase.ExtractASTs(stmts), statement)
+		require.NoError(t, err)
+		return changeSummary
+	}
+
+	require.Equal(t,
+		[]writeTargetResource{{database: "db", table: "t"}},
+		writeTargetsFromChangeSummary(extract("CREATE TABLE t (a INT);")),
+	)
+	require.Nil(t, writeTargetsFromChangeSummary(extract("CREATE OR REPLACE TABLE other_db.t (a INT);")))
 }
