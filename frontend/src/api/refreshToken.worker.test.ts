@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ refresh: vi.fn() }));
 vi.mock("@connectrpc/connect", () => ({ createClient: () => mocks }));
@@ -21,7 +21,28 @@ beforeEach(async () => {
   await import("./refreshToken.worker");
 });
 
+afterEach(() => vi.useRealTimers());
+
 describe("shared refresh worker", () => {
+  test("lets a slow rotation finish without a client deadline", async () => {
+    vi.useFakeTimers();
+    const response = Promise.withResolvers<void>();
+    mocks.refresh.mockReturnValue(response.promise);
+    const a = connect();
+    const first = a.onmessage!();
+    expect(mocks.refresh).toHaveBeenCalledExactlyOnceWith({});
+    await vi.advanceTimersByTimeAsync(40000);
+    const b = connect();
+    const second = b.onmessage!();
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
+    expect(a.postMessage).toHaveBeenCalledExactlyOnceWith({ ready: true });
+    expect(b.postMessage).toHaveBeenCalledExactlyOnceWith({ ready: true });
+    response.resolve();
+    await Promise.all([first, second]);
+    expect(a.postMessage).toHaveBeenLastCalledWith({});
+    expect(b.postMessage).toHaveBeenLastCalledWith({});
+  });
+
   test("two tabs share one request and a later refresh can rotate again", async () => {
     const response = Promise.withResolvers<void>();
     mocks.refresh

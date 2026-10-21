@@ -22,7 +22,7 @@ scope.onconnect = (event) => {
     // The worker owns the network request, so closing the initiating tab
     // does not hand an in-flight refresh to another tab.
     pending ??= client
-      .refresh({}, { timeoutMs: 30000 })
+      .refresh({})
       .then(() => {})
       .finally(() => {
         pending = undefined;
