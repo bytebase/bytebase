@@ -136,12 +136,9 @@ func parseExemptionGrant(input GrantMaskingExemptionInput) (*exemptionGrant, err
 			"pass the database, or allDatabases: true for every database in the project, current and future")
 	case input.Database != "":
 		// A database on a project-owned instance is named under its project.
-		owner, instanceID, databaseName, err := common.GetDatabaseResourceName(input.Database)
+		_, instanceID, databaseName, err := common.GetDatabaseResourceName(input.Database)
 		if err != nil {
 			return nil, invalid(fmt.Sprintf("invalid database %q", input.Database), "pass the database name, e.g. instances/prod/databases/hr")
-		}
-		if owner != nil && common.FormatProject(*owner) != input.Project {
-			return nil, invalid(fmt.Sprintf("%s belongs to projects/%s, not %s", input.Database, *owner, input.Project), "grant it in the project the database belongs to")
 		}
 		g.database, g.instanceID, g.databaseName = input.Database, instanceID, databaseName
 	default:
@@ -486,10 +483,12 @@ func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionIn
 	scope, expiry := splitExemptionExpiry(input.Condition)
 	condition += " " + strconv.Quote(scope)
 	switch {
+	case scope == "" && expiry == "":
+		condition += " (all databases, no expiry)"
+	case scope == "":
+		condition += fmt.Sprintf(" (all databases), until %q", expiry)
 	case expiry != "":
 		condition += fmt.Sprintf(", until %q", expiry)
-	case input.Condition == "":
-		condition += " (all databases, no expiry)"
 	default:
 	}
 	return strings.Join([]string{
@@ -501,9 +500,10 @@ func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionIn
 }
 
 // splitExemptionExpiry splits a condition in the console's form, the expiry
-// first, into its scope and its expiry, so the form can show the scope first,
-// where a cut does not hide what is revoked. Any other condition is returned
-// whole, with no expiry.
+// first and then one parenthesized scope, into its scope and its expiry, so the
+// form can show the scope first, where a cut does not hide what is revoked. Any
+// other condition is returned whole, with no expiry: in CEL && binds tighter
+// than ||, so the expiry of "T && A || B" does not cover B.
 func splitExemptionExpiry(condition string) (string, string) {
 	rest, found := strings.CutPrefix(condition, `request.time < timestamp(`)
 	if !found {
@@ -522,10 +522,39 @@ func splitExemptionExpiry(condition string) (string, string) {
 		return "", expiry
 	}
 	scope, found := strings.CutPrefix(rest, ") && ")
-	if !found {
+	if !found || !isOneParenthesizedGroup(scope) {
 		return condition, ""
 	}
 	return scope, expiry
+}
+
+// isOneParenthesizedGroup reports whether expression is a single group in
+// parentheses: its first parenthesis closes at its last character. Parentheses
+// inside string literals do not count.
+func isOneParenthesizedGroup(expression string) bool {
+	if !strings.HasPrefix(expression, "(") || !strings.HasSuffix(expression, ")") {
+		return false
+	}
+	depth := 0
+	inString := false
+	for i := 0; i < len(expression); i++ {
+		switch c := expression[i]; {
+		case inString && c == '\\':
+			i++
+		case c == '"':
+			inString = !inString
+		case inString:
+		case c == '(':
+			depth++
+		case c == ')':
+			depth--
+			if depth == 0 && i != len(expression)-1 {
+				return false
+			}
+		default:
+		}
+	}
+	return depth == 0 && !inString
 }
 
 func (s *Server) maskingExemptionLink(ctx context.Context, project string) string {

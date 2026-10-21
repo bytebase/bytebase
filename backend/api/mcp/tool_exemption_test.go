@@ -69,7 +69,14 @@ func (m *policyMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		reply(map[string]any{"name": exemptionPolicyName, "type": "MASKING_EXEMPTION",
 			"maskingExemptionPolicy": map[string]any{"exemptions": m.exemptions}})
 	case "/bytebase.v1.DatabaseService/GetDatabase":
-		reply(map[string]any{"name": request["name"], "project": m.databaseProject})
+		// A database on a project-owned instance always reports its owner.
+		project := m.databaseProject
+		if name, ok := request["name"].(string); ok {
+			if owner, _, _, err := common.GetDatabaseResourceName(name); err == nil && owner != nil {
+				project = common.FormatProject(*owner)
+			}
+		}
+		reply(map[string]any{"name": request["name"], "project": project})
 	case v1connect.OrgPolicyServiceUpdatePolicyProcedure:
 		call := decisionCall{path: r.URL.Path, body: request}
 		if confirmed, ok := auth.MCPConfirmedDecisionFromContext(r.Context()); ok {
@@ -510,8 +517,16 @@ func TestRevokeMaskingExemptionShowsTheScopeBeforeTheExpiry(t *testing.T) {
 			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.instance_id == "prod" && resource.database_name == "hr")`,
 			`Condition "(resource.instance_id == \"prod\" && resource.database_name == \"hr\")", until "2026-10-27T00:00:00.000Z"`,
 		},
-		"an expiry only": {`request.time < timestamp("2026-10-27T00:00:00.000Z")`, `Condition "", until "2026-10-27T00:00:00.000Z"`},
-		"another form":   {`resource.database_name == "hr" && request.time < timestamp("2026-10-27T00:00:00.000Z")`, `Condition "resource.database_name == \"hr\" && request.time < timestamp(\"2026-10-27T00:00:00.000Z\")"`},
+		"an expiry only": {`request.time < timestamp("2026-10-27T00:00:00.000Z")`, `Condition "" (all databases), until "2026-10-27T00:00:00.000Z"`},
+		"a top-level or": {
+			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.database_name == "hr") || (resource.database_name == "finance")`,
+			`Condition "request.time < timestamp(\"2026-10-27T00:00:00.000Z\") && (resource.database_name == \"hr\") || (resource.database_name == \"finance\")"`,
+		},
+		"a parenthesis in a name": {
+			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.table_name == "a)b")`,
+			`Condition "(resource.table_name == \"a)b\")", until "2026-10-27T00:00:00.000Z"`,
+		},
+		"another form": {`resource.database_name == "hr" && request.time < timestamp("2026-10-27T00:00:00.000Z")`, `Condition "resource.database_name == \"hr\" && request.time < timestamp(\"2026-10-27T00:00:00.000Z\")"`},
 	} {
 		t.Run(name, func(t *testing.T) {
 			lines := strings.Split(describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: "user:bob@example.com", Condition: tc.condition}, 1), "\n")

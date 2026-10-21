@@ -6,7 +6,7 @@ The MCP settings page offers three modes (Disabled, Read-only, Read-write) and d
 one sentence. Since [#21324](https://github.com/bytebase/bytebase/pull/21324) removed the per-mode
 method drawer, nothing on the page says what a mode actually serves, and an admin choosing between
 Read-only and Read-write has nothing to compare beyond two sentences. The rule this doc lands on:
-**show capabilities, not methods or permissions — one ordered list of eleven capability rows in
+**show capabilities, not methods or permissions — one ordered list of twelve capability rows in
 which each mode is a prefix, collapsed by default inside the existing Access policy section, and
 following the picked mode while editing.** The page also gets shorter: the mode cards shrink to an
 icon, a label and a three-word caption, with the selected mode's "Best for" under them; the
