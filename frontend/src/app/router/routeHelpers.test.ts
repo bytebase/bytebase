@@ -1,4 +1,12 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({ isDev: false }));
+
+vi.mock("@/utils/featureGates", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/featureGates")>()),
+  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.isDev,
+}));
+
 import {
   PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_ISSUES,
@@ -31,6 +39,17 @@ describe("plan detail resource route helpers", () => {
       name: PROJECT_V1_ROUTE_ISSUES,
       params: { projectId: "orders" },
     });
+  });
+
+  test("enables the project landing in development", () => {
+    mocks.isDev = true;
+
+    expect(buildProjectEntryRoute("orders", false)).toEqual({
+      name: PROJECT_V1_ROUTE_DETAIL,
+      params: { projectId: "orders" },
+    });
+
+    mocks.isDev = false;
   });
 
   test("builds plan creation on the plan root without a placeholder spec", () => {

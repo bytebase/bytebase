@@ -37,7 +37,7 @@ import { RouterLink } from "@/components/RouterLink";
 import { useRecentVisit } from "@/hooks/useRecentVisit";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { sqlReviewV2Enabled } from "@/utils/featureGates";
+import { isSaaSOrDev, sqlReviewV2Enabled } from "@/utils/featureGates";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -91,7 +91,7 @@ function useSidebarItems(): SidebarItem[] {
         path: PROJECT_V1_ROUTE_DETAIL,
         icon: House,
         type: "div",
-        hide: !isSaaSMode,
+        hide: !isSaaSOrDev(isSaaSMode),
       },
       {
         title: t("common.issues"),

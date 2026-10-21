@@ -10,6 +10,10 @@ const mocks = vi.hoisted(() => ({
   routerResolve: vi.fn(() => ({ fullPath: "/projects/visible" })),
   isSaaSMode: true,
 }));
+
+vi.mock("@/utils/featureGates", () => ({
+  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode,
+}));
 vi.mock("@/stores/app", () => {
   const state = {
     isLoggedIn: () => true,

@@ -110,6 +110,11 @@ vi.mock("@/utils", async (importOriginal) => ({
   isDev: () => mocks.dev,
 }));
 
+vi.mock("@/utils/featureGates", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/featureGates")>()),
+  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.dev,
+}));
+
 let ProjectSidebar: typeof import("./ProjectSidebar").ProjectSidebar;
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -139,12 +144,12 @@ beforeEach(async () => {
   };
   mocks.defaultProject = "";
   mocks.isSaaSMode = true;
-  mocks.dev = true;
+  mocks.dev = false;
   ({ ProjectSidebar } = await import("./ProjectSidebar"));
 });
 
 describe("ProjectSidebar", () => {
-  test("hides the SaaS-only Home entry outside SaaS", () => {
+  test("hides the Home entry in self-hosted production", () => {
     mocks.isSaaSMode = false;
     const { container, render, unmount } = renderIntoContainer(
       <ProjectSidebar />
@@ -152,6 +157,19 @@ describe("ProjectSidebar", () => {
     render();
 
     expect(container.textContent).not.toContain("Home");
+
+    unmount();
+  });
+
+  test("shows the Home entry in development", () => {
+    mocks.isSaaSMode = false;
+    mocks.dev = true;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProjectSidebar />
+    );
+    render();
+
+    expect(container.textContent).toContain("Home");
 
     unmount();
   });

@@ -31,6 +31,11 @@ const mocks = vi.hoisted(() => ({
   listInstances: vi.fn(),
   listDatabases: vi.fn(),
   isSaaSMode: true,
+  isDev: false,
+}));
+
+vi.mock("@/utils/featureGates", () => ({
+  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.isDev,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -153,6 +158,7 @@ beforeEach(() => {
   mocks.hasAuditLogFeature = true;
   mocks.chatRunning = false;
   mocks.isSaaSMode = true;
+  mocks.isDev = false;
   mocks.queuedUserMessage = null;
   mocks.lastVisitProjectPath = "";
   mocks.selectOrCreateChatForContext.mockClear();
@@ -238,7 +244,7 @@ describe("LandingPage", () => {
     );
   });
 
-  test("hides the Agent chatbox and skips starter discovery outside SaaS", () => {
+  test("hides the Agent chatbox and skips starter discovery in self-hosted production", () => {
     mocks.isSaaSMode = false;
 
     render(<LandingPage />);
@@ -249,6 +255,17 @@ describe("LandingPage", () => {
     expect(mocks.searchProjects).not.toHaveBeenCalled();
     expect(mocks.listInstances).not.toHaveBeenCalled();
     expect(mocks.listDatabases).not.toHaveBeenCalled();
+  });
+
+  test("shows the Agent chatbox in development", () => {
+    mocks.isSaaSMode = false;
+    mocks.isDev = true;
+
+    render(<LandingPage />);
+
+    expect(
+      screen.getByRole("textbox", { name: "landing.ai-placeholder" })
+    ).toBeInTheDocument();
   });
 
   test("does not assume a workspace needs setup when resource discovery is incomplete", async () => {

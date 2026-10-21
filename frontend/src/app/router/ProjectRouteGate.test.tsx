@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   workspacePermissions: new Set<Permission>(),
   projectPermissions: new Set<Permission>(),
   isSaaSMode: true,
+  isDev: false,
   fetchProject: vi.fn(async (name: string) => mocks.projectsByName[name]),
   loadServerInfo: vi.fn(async () => undefined),
   replace: vi.fn(),
@@ -28,6 +29,10 @@ const mocks = vi.hoisted(() => ({
   // Stable ref — mirrors the real `useNotify` (returns `state.notify`). A fresh
   // function each render would make the load effect's deps unstable and loop.
   notify: vi.fn(),
+}));
+
+vi.mock("@/utils/featureGates", () => ({
+  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.isDev,
 }));
 
 vi.mock("react-router", () => ({
@@ -119,6 +124,7 @@ beforeEach(() => {
   mocks.workspacePermissions = new Set(BASIC_PERMISSIONS);
   mocks.projectPermissions = new Set();
   mocks.isSaaSMode = true;
+  mocks.isDev = false;
   mocks.fetchProject.mockClear();
   mocks.loadServerInfo.mockReset();
   mocks.loadServerInfo.mockResolvedValue(undefined);
@@ -192,6 +198,21 @@ describe("ProjectRouteGate", () => {
       params: { projectId: "prod" },
     });
     expect(container.querySelector("[data-testid='outlet']")).toBeNull();
+  });
+
+  test("keeps project Home URLs in development", async () => {
+    mocks.route.name = "workspace.project.detail";
+    mocks.projectPermissions = new Set([
+      "bb.projects.get",
+      "bb.databases.list",
+    ]);
+    mocks.isSaaSMode = false;
+    mocks.isDev = true;
+
+    await render();
+
+    expect(mocks.replace).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-testid='outlet']")).not.toBeNull();
   });
 
   test("waits for server info before deciding the project entry route", async () => {

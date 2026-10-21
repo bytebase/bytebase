@@ -15,6 +15,7 @@ import {
 } from "@/components/ComponentPermissionGuard";
 import { useNotify } from "@/hooks/useAppState";
 import { projectResourceNameFromId, useAppStore } from "@/stores/app";
+import { isSaaSOrDev } from "@/utils/featureGates";
 
 // `<Outlet/>`-aware permission gate for `/projects/:projectId/*`. Project-scoped
 // permission checks need the loaded `Project` resource, so this loads the
@@ -71,7 +72,7 @@ export function ProjectRouteGate() {
         return;
       }
       setRecentProject(nextProject.name);
-      if (!isSaaSMode && route.name === PROJECT_V1_ROUTE_DETAIL) {
+      if (!isSaaSOrDev(isSaaSMode) && route.name === PROJECT_V1_ROUTE_DETAIL) {
         void navigateRef.current.replace(
           buildProjectEntryRoute(projectId, false)
         );

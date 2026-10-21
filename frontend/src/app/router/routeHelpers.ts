@@ -8,6 +8,7 @@ import {
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 } from "@/app/router/handles";
+import { isSaaSOrDev } from "@/utils/featureGates";
 import { extractPlanUID } from "@/utils/v1/issue/plan";
 import {
   extractPlanUIDFromRolloutName,
@@ -22,13 +23,15 @@ import { extractProjectResourceName } from "@/utils/v1/project";
 
 type BuildPlanDeployRouteSelection = { stageId: string; taskId?: string };
 
-// Project Home is a SaaS-only landing surface. Keep every project-entry path
-// on the established Issues route for self-hosted deployments.
+// Project Home is available on SaaS and development builds. Keep every
+// self-hosted production project-entry path on the established Issues route.
 export const buildProjectEntryRoute = (
   projectId: string,
-  isSaaS: boolean
+  isSaaSMode: boolean
 ): RouteTarget => ({
-  name: isSaaS ? PROJECT_V1_ROUTE_DETAIL : PROJECT_V1_ROUTE_ISSUES,
+  name: isSaaSOrDev(isSaaSMode)
+    ? PROJECT_V1_ROUTE_DETAIL
+    : PROJECT_V1_ROUTE_ISSUES,
   params: { projectId },
 });
 
