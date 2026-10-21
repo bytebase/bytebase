@@ -79,6 +79,7 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
       ruleReview.loadFailed ||
       ruleReview.stale);
   const unresolvedThreads = sqlReview?.unresolvedThreads ?? 0;
+  const threadsUnknown = !!sqlReview && !sqlReview.threadsLoaded;
   const checks = useMemo(
     () => withRuleReview(getPlanCheckSummary(plan), ruleReviewRun),
     [plan, ruleReviewRun]
@@ -129,7 +130,8 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
     if (
       state.kind === "all-gates-passed" &&
       checks.running === 0 &&
-      !ruleReviewUnknown
+      !ruleReviewUnknown &&
+      !threadsUnknown
     ) {
       void createRollout();
     } else {
@@ -209,6 +211,9 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
         count: unresolvedThreads,
       })
     );
+  }
+  if (threadsUnknown) {
+    warnings.push(t("plan.review.footer.confirm-threads-unknown"));
   }
   const needAck = warnings.length > 0;
   const confirmDisabled = creating || gatesBlocked || (needAck && !acknowledge);

@@ -67,6 +67,7 @@ beforeEach(() => {
 test("asks to acknowledge open threads before deploying past them", async () => {
   mocks.sqlReview = {
     unresolvedThreads: 2,
+    threadsLoaded: true,
     ruleReview: {
       run: { status: ReviewRun_Status.DONE },
       stale: false,
@@ -92,6 +93,7 @@ test("asks to acknowledge open threads before deploying past them", async () => 
 test("counts a failed rule review as a failed check", () => {
   mocks.sqlReview = {
     unresolvedThreads: 0,
+    threadsLoaded: true,
     ruleReview: { run: { status: ReviewRun_Status.FAILED } },
   };
   const { result } = renderHook(() => useBypassDeploy(issue, plan));
@@ -111,7 +113,7 @@ test.each([
     { run: { status: ReviewRun_Status.DONE }, stale: true, loadFailed: false },
   ],
 ])("asks to confirm deploying past a rule review it cannot read %s", (_, ruleReview) => {
-  mocks.sqlReview = { unresolvedThreads: 0, ruleReview };
+  mocks.sqlReview = { unresolvedThreads: 0, threadsLoaded: true, ruleReview };
   const { result } = renderHook(() => useBypassDeploy(issue, plan));
   expect(result.current.state.kind).toBe("all-gates-passed");
   expect(result.current.warnings).toEqual([
@@ -123,9 +125,31 @@ test.each([
   expect(mocks.createRollout).not.toHaveBeenCalled();
 });
 
+test("asks to confirm deploying before the threads have loaded", () => {
+  mocks.sqlReview = {
+    unresolvedThreads: 0,
+    threadsLoaded: false,
+    ruleReview: {
+      run: { status: ReviewRun_Status.DONE },
+      stale: false,
+      loadFailed: false,
+    },
+  };
+  const { result } = renderHook(() => useBypassDeploy(issue, plan));
+  expect(result.current.state.kind).toBe("all-gates-passed");
+  expect(result.current.warnings).toEqual([
+    "plan.review.footer.confirm-threads-unknown",
+  ]);
+
+  act(() => result.current.triggerDeploy());
+  expect(result.current.confirmOpen).toBe(true);
+  expect(mocks.createRollout).not.toHaveBeenCalled();
+});
+
 test("deploys at once after the rule review is done", async () => {
   mocks.sqlReview = {
     unresolvedThreads: 0,
+    threadsLoaded: true,
     ruleReview: {
       run: { status: ReviewRun_Status.DONE },
       stale: false,

@@ -7,7 +7,10 @@ import {
 } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
-import { useUnresolvedThreadTotal } from "../components/threads/useUnresolvedThreadCounts";
+import {
+  useIssueThreadsLoaded,
+  useUnresolvedThreadTotal,
+} from "../components/threads/useUnresolvedThreadCounts";
 import { PROJECT_NAME_PREFIX } from "../shell/constants";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { type RuleReviewRunState, useRuleReviewRun } from "./useRuleReviewRun";
@@ -17,6 +20,9 @@ import { type RuleReviewRunState, useRuleReviewRun } from "./useRuleReviewRun";
 // server's rollout creator does.
 export type SqlReviewV2State = {
   unresolvedThreads: number;
+  // False until the issue's threads have loaded; `unresolvedThreads` reads
+  // zero until then.
+  threadsLoaded: boolean;
   // Undefined without permission to read the review run.
   ruleReview?: RuleReviewRunState;
 };
@@ -41,15 +47,17 @@ export function SqlReviewV2Provider({ children }: { children: ReactNode }) {
     reloadKey: `${updateTime?.seconds ?? ""}:${updateTime?.nanos ?? ""}`,
   });
   const unresolvedThreads = useUnresolvedThreadTotal(page.issue?.name);
+  const threadsLoaded = useIssueThreadsLoaded(page.issue?.name);
   const value = useMemo(
     () =>
       enabled
         ? {
             unresolvedThreads,
+            threadsLoaded,
             ruleReview: canReadReview ? ruleReview : undefined,
           }
         : undefined,
-    [canReadReview, enabled, ruleReview, unresolvedThreads]
+    [canReadReview, enabled, ruleReview, threadsLoaded, unresolvedThreads]
   );
   return (
     <SqlReviewV2Context.Provider value={value}>

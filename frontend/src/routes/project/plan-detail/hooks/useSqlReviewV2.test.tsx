@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
     loadFailed: false,
     openFindings: 0,
   } as unknown,
+  threadsLoaded: true,
   unresolvedThreads: 2,
   useRuleReviewRun: vi.fn(),
 }));
@@ -34,6 +35,7 @@ vi.mock("@/utils/featureGates", () => ({
 }));
 
 vi.mock("../components/threads/useUnresolvedThreadCounts", () => ({
+  useIssueThreadsLoaded: () => mocks.threadsLoaded,
   useUnresolvedThreadTotal: () => mocks.unresolvedThreads,
 }));
 
@@ -59,6 +61,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.gate = true;
   mocks.permissions = new Set(["bb.reviewRuns.get"]);
+  mocks.threadsLoaded = true;
   mocks.page = {
     issue: { name: "projects/foo/issues/7" },
     plan: { updateTime: { seconds: 9n, nanos: 1 } },
@@ -72,6 +75,7 @@ describe("SqlReviewV2Provider", () => {
     const { result } = renderHook(() => useSqlReviewV2(), { wrapper });
     expect(result.current).toEqual({
       unresolvedThreads: 2,
+      threadsLoaded: true,
       ruleReview: mocks.ruleReview,
     });
     expect(mocks.useRuleReviewRun).toHaveBeenCalledWith({
@@ -84,10 +88,19 @@ describe("SqlReviewV2Provider", () => {
   test("still counts threads without permission to read the review", () => {
     mocks.permissions.clear();
     const { result } = renderHook(() => useSqlReviewV2(), { wrapper });
-    expect(result.current).toEqual({ unresolvedThreads: 2 });
+    expect(result.current).toEqual({
+      unresolvedThreads: 2,
+      threadsLoaded: true,
+    });
     expect(mocks.useRuleReviewRun).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: false })
     );
+  });
+
+  test("says when the threads have not loaded", () => {
+    mocks.threadsLoaded = false;
+    const { result } = renderHook(() => useSqlReviewV2(), { wrapper });
+    expect(result.current?.threadsLoaded).toBe(false);
   });
 
   test.each([

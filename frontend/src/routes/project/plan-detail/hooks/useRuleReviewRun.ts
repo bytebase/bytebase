@@ -22,8 +22,8 @@ const isActive = (run: ReviewRun | null | undefined) =>
 export type RuleReviewRunState = {
   // undefined while loading; null when the review never ran on the issue.
   run: ReviewRun | null | undefined;
-  // True while `run` predates the latest reload key: the plan has changed
-  // since, and the server may have started a new review.
+  // True while `run` may not match the server: the plan changed after it was
+  // read, or it has just completed and its findings are not yet listed.
   stale: boolean;
   loadFailed: boolean;
   openFindings: number;
@@ -48,8 +48,10 @@ export function useRuleReviewRun({
   const [run, setRun] = useState<ReviewRun | null | undefined>(undefined);
   const [readKey, setReadKey] = useState<string | undefined>(undefined);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [findingsPending, setFindingsPending] = useState(false);
   // Only the latest read lands: one it overtook would bring back an older run.
   const latestRead = useRef(0);
+  const lastRun = useRef<ReviewRun | null | undefined>(undefined);
 
   const reload = useCallback(async () => {
     if (!reviewRunName) return;
@@ -60,12 +62,18 @@ export function useRuleReviewRun({
         { contextValues: createContextValues().set(silentContextKey, true) }
       );
       if (read !== latestRead.current) return;
+      // Set with the run, so no render shows it completed with old findings.
+      if (isActive(lastRun.current) && !isActive(resp)) {
+        setFindingsPending(true);
+      }
+      lastRun.current = resp;
       setRun(resp);
       setReadKey(reloadKey);
       setLoadFailed(false);
     } catch (error) {
       if (read !== latestRead.current) return;
       if (ConnectError.from(error).code === Code.NotFound) {
+        lastRun.current = null;
         setRun(null);
         setReadKey(reloadKey);
         setLoadFailed(false);
@@ -77,9 +85,11 @@ export function useRuleReviewRun({
 
   useEffect(() => {
     latestRead.current++;
+    lastRun.current = undefined;
     setRun(undefined);
     setReadKey(undefined);
     setLoadFailed(false);
+    setFindingsPending(false);
   }, [reviewRunName]);
 
   useEffect(() => {
@@ -94,18 +104,22 @@ export function useRuleReviewRun({
   }, [reload, run]);
 
   // A run posts its findings as comments when it completes; re-list them then
-  // so they appear without waiting for the page's thread refresh.
-  const active = isActive(run);
-  const wasActive = useRef(false);
+  // so they appear without waiting for the page's thread refresh. A failed
+  // re-list leaves the findings pending.
   useEffect(() => {
-    if (wasActive.current && !active && run && issueName) {
-      void useAppStore
-        .getState()
-        .fetchIssueCommentThreads({ parent: issueName })
-        .catch(() => undefined);
-    }
-    wasActive.current = active;
-  }, [active, issueName, run]);
+    if (!findingsPending || !issueName) return;
+    let current = true;
+    void useAppStore
+      .getState()
+      .fetchIssueCommentThreads({ parent: issueName })
+      .then(() => {
+        if (current) setFindingsPending(false);
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [findingsPending, issueName]);
 
   const comments = useAppStore((state) =>
     state.getIssueComments(issueName ?? EMPTY_ISSUE)
@@ -120,7 +134,7 @@ export function useRuleReviewRun({
     [comments]
   );
 
-  const stale = readKey !== reloadKey;
+  const stale = readKey !== reloadKey || findingsPending;
   return useMemo(
     () => ({ run, stale, loadFailed, openFindings, reload }),
     [loadFailed, openFindings, reload, run, stale]

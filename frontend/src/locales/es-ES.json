@@ -1891,6 +1891,7 @@
         "confirm-review-not-approved": "Revisión aún no aprobada",
         "confirm-review-rejected": "Revisión rechazada",
         "confirm-rule-review-unknown": "Estado de la revisión SQL desconocido",
+        "confirm-threads-unknown": "Estado de los hilos desconocido",
         "confirm-unresolved-threads_one": "{{count}} hilo sin resolver",
         "confirm-unresolved-threads_other": "{{count}} hilos sin resolver",
         "creating-rollout-automatically": "creando el despliegue automáticamente...",

@@ -24,10 +24,19 @@ const useIssueThreads = (issueName: string | undefined) => {
   return useMemo(() => groupThreads(comments), [comments]);
 };
 
-// Every unresolved thread on the issue; zero before an issue exists.
+// Every unresolved thread on the issue; zero before an issue exists, and
+// before its comments have loaded.
 export function useUnresolvedThreadTotal(issueName: string | undefined) {
   const threads = useIssueThreads(issueName);
   return useMemo(() => countUnresolvedThreads(threads), [threads]);
+}
+
+// Whether the issue's comments have loaded at least once. A failed load leaves
+// it false.
+export function useIssueThreadsLoaded(issueName: string | undefined) {
+  return useAppStore(
+    (state) => !issueName || state.issueCommentsByIssue[issueName] !== undefined
+  );
 }
 
 // Unresolved threads the statement editor shows for each of `specs`, so a

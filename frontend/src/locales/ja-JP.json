@@ -1891,6 +1891,7 @@
         "confirm-review-not-approved": "レビュー未承認",
         "confirm-review-rejected": "レビュー却下",
         "confirm-rule-review-unknown": "SQL レビューの状態が不明",
+        "confirm-threads-unknown": "スレッドの状態が不明",
         "confirm-unresolved-threads_one": "未解決のスレッド {{count}} 件",
         "confirm-unresolved-threads_other": "未解決のスレッド {{count}} 件",
         "creating-rollout-automatically": "ロールアウトを自動作成中...",

@@ -196,3 +196,42 @@ test("keeps the latest read when an earlier one answers last", async () => {
   await flush();
   expect(result.current.run?.status).toBe(ReviewRun_Status.AVAILABLE);
 });
+
+test("keeps a completed run stale until its findings are listed", async () => {
+  const listed = deferred<undefined>();
+  mocks.fetchIssueCommentThreads.mockReturnValueOnce(listed.promise);
+  mocks.getReviewRun
+    .mockResolvedValueOnce(reviewRun(ReviewRun_Status.RUNNING))
+    .mockResolvedValueOnce(reviewRun(ReviewRun_Status.DONE));
+  const { result } = renderHook(() =>
+    useRuleReviewRun({ enabled: true, issueName: ISSUE, reloadKey: "1" })
+  );
+  await flush();
+  expect(result.current.stale).toBe(false);
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+  expect(result.current.run?.status).toBe(ReviewRun_Status.DONE);
+  expect(result.current.stale).toBe(true);
+
+  listed.resolve(undefined);
+  await flush();
+  expect(result.current.stale).toBe(false);
+});
+
+test("keeps a completed run stale when its findings fail to list", async () => {
+  mocks.fetchIssueCommentThreads.mockRejectedValueOnce(new Error("boom"));
+  mocks.getReviewRun
+    .mockResolvedValueOnce(reviewRun(ReviewRun_Status.RUNNING))
+    .mockResolvedValueOnce(reviewRun(ReviewRun_Status.DONE));
+  const { result } = renderHook(() =>
+    useRuleReviewRun({ enabled: true, issueName: ISSUE, reloadKey: "1" })
+  );
+  await flush();
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+  expect(mocks.fetchIssueCommentThreads).toHaveBeenCalledTimes(1);
+  expect(result.current.stale).toBe(true);
+});
