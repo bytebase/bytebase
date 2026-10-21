@@ -83,6 +83,8 @@ async function refreshInWorker(): Promise<void> {
       reject(workerError ?? error);
     };
     const sendRefresh = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(onFailure, WAIT_TIMEOUT_MS);
       try {
         currentWorker.port.postMessage("refresh");
       } catch {
@@ -105,7 +107,7 @@ async function refreshInWorker(): Promise<void> {
     };
     // After readiness, a timed-out worker may still be rotating cookies.
     // Retrying could reuse the consumed token.
-    const timeout = setTimeout(onFailure, WAIT_TIMEOUT_MS);
+    let timeout = setTimeout(onFailure, WAIT_TIMEOUT_MS);
     currentWorker.port.addEventListener("message", onMessage);
     currentWorker.port.addEventListener("messageerror", onFailure);
     currentWorker.addEventListener("error", onFailure);

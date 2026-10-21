@@ -70,6 +70,25 @@ test("worker failure after readiness prevents independent retries", async () => 
   expect(worker.port.postMessage).toHaveBeenCalledTimes(1);
 });
 
+test("slow startup leaves a full watchdog interval for refresh", async () => {
+  vi.useFakeTimers();
+  const first = refreshTokensInWorker();
+  const rejected = vi.fn();
+  void first.catch(rejected);
+  await vi.advanceTimersByTimeAsync(34000);
+  expect(worker.port.postMessage).not.toHaveBeenCalled();
+  respond({ ready: true });
+  await vi.advanceTimersByTimeAsync(34000);
+  expect(rejected).not.toHaveBeenCalled();
+  expect(worker.port.postMessage).toHaveBeenCalledExactlyOnceWith("refresh");
+  respond();
+  await first;
+  const later = refreshTokensInWorker();
+  respond();
+  await later;
+  expect(construct).toHaveBeenCalledTimes(1);
+});
+
 test("a silent worker times out without starting another refresh", async () => {
   vi.useFakeTimers();
   const first = expect(refreshTokensInWorker()).rejects.toThrow(
