@@ -67,7 +67,11 @@ beforeEach(() => {
 test("asks to acknowledge open threads before deploying past them", async () => {
   mocks.sqlReview = {
     unresolvedThreads: 2,
-    ruleReview: { run: { status: ReviewRun_Status.DONE }, loadFailed: false },
+    ruleReview: {
+      run: { status: ReviewRun_Status.DONE },
+      stale: false,
+      loadFailed: false,
+    },
   };
   const { result } = renderHook(() => useBypassDeploy(issue, plan));
   expect(result.current.state.kind).toBe("approved-threads-open");
@@ -97,10 +101,14 @@ test("counts a failed rule review as a failed check", () => {
 
 test.each([
   ["without permission to read it", undefined],
-  ["while it loads", { run: undefined, loadFailed: false }],
+  ["while it loads", { run: undefined, stale: true, loadFailed: false }],
   [
     "when it fails to load",
-    { run: { status: ReviewRun_Status.DONE }, loadFailed: true },
+    { run: { status: ReviewRun_Status.DONE }, stale: false, loadFailed: true },
+  ],
+  [
+    "before it reads the plan's latest change",
+    { run: { status: ReviewRun_Status.DONE }, stale: true, loadFailed: false },
   ],
 ])("asks to confirm deploying past a rule review it cannot read %s", (_, ruleReview) => {
   mocks.sqlReview = { unresolvedThreads: 0, ruleReview };
@@ -118,7 +126,11 @@ test.each([
 test("deploys at once after the rule review is done", async () => {
   mocks.sqlReview = {
     unresolvedThreads: 0,
-    ruleReview: { run: { status: ReviewRun_Status.DONE }, loadFailed: false },
+    ruleReview: {
+      run: { status: ReviewRun_Status.DONE },
+      stale: false,
+      loadFailed: false,
+    },
   };
   const { result } = renderHook(() => useBypassDeploy(issue, plan));
   expect(result.current.warnings).toEqual([]);

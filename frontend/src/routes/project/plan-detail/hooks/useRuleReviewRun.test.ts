@@ -55,6 +55,7 @@ const flush = () =>
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
+  mocks.getReviewRun.mockReset();
   mocks.comments = [];
   mocks.fetchIssueCommentThreads.mockResolvedValue(undefined);
   mocks.getReviewRun.mockRejectedValue(
@@ -144,4 +145,54 @@ test("reports a failed read", async () => {
   );
   await flush();
   expect(result.current.loadFailed).toBe(true);
+});
+
+const deferred = <T>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
+};
+
+test("marks the run stale until the plan's new run is read", async () => {
+  const next = deferred<ReturnType<typeof reviewRun>>();
+  mocks.getReviewRun
+    .mockResolvedValueOnce(reviewRun(ReviewRun_Status.DONE))
+    .mockReturnValueOnce(next.promise);
+  const { result, rerender } = renderHook(
+    ({ reloadKey }) =>
+      useRuleReviewRun({ enabled: true, issueName: ISSUE, reloadKey }),
+    { initialProps: { reloadKey: "1" } }
+  );
+  await flush();
+  expect(result.current.stale).toBe(false);
+
+  rerender({ reloadKey: "2" });
+  expect(result.current.run?.status).toBe(ReviewRun_Status.DONE);
+  expect(result.current.stale).toBe(true);
+
+  next.resolve(reviewRun(ReviewRun_Status.AVAILABLE));
+  await flush();
+  expect(result.current.run?.status).toBe(ReviewRun_Status.AVAILABLE);
+  expect(result.current.stale).toBe(false);
+});
+
+test("keeps the latest read when an earlier one answers last", async () => {
+  const earlier = deferred<ReturnType<typeof reviewRun>>();
+  mocks.getReviewRun
+    .mockReturnValueOnce(earlier.promise)
+    .mockResolvedValueOnce(reviewRun(ReviewRun_Status.AVAILABLE));
+  const { result } = renderHook(() =>
+    useRuleReviewRun({ enabled: true, issueName: ISSUE, reloadKey: "1" })
+  );
+  await act(async () => {
+    void result.current.reload();
+    await vi.advanceTimersByTimeAsync(0);
+  });
+  expect(result.current.run?.status).toBe(ReviewRun_Status.AVAILABLE);
+
+  earlier.resolve(reviewRun(ReviewRun_Status.DONE));
+  await flush();
+  expect(result.current.run?.status).toBe(ReviewRun_Status.AVAILABLE);
 });

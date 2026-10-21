@@ -10,7 +10,12 @@ const mocks = vi.hoisted(() => ({
   gate: true,
   page: {} as Record<string, unknown>,
   permissions: new Set<string>(),
-  ruleReview: { run: null, loadFailed: false, openFindings: 0 } as unknown,
+  ruleReview: {
+    run: null,
+    stale: false,
+    loadFailed: false,
+    openFindings: 0,
+  } as unknown,
   unresolvedThreads: 2,
   useRuleReviewRun: vi.fn(),
 }));

@@ -37,6 +37,7 @@ const renderSummary = (state: Partial<RuleReviewRunState>) =>
         openFindings: 0,
         reload: vi.fn(),
         run: undefined,
+        stale: false,
         ...state,
       }}
     />

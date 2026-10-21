@@ -61,6 +61,7 @@ beforeEach(() => {
       openFindings: 0,
       reload: mocks.reload,
       run: null,
+      stale: false,
     },
   };
 });

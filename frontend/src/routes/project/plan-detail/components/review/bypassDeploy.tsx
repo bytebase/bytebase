@@ -69,11 +69,15 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   const sqlReview = useSqlReviewV2();
   const ruleReview = sqlReview?.ruleReview;
   const ruleReviewRun = ruleReview?.run;
-  // A rule review this page cannot read (still loading, failed to load, or no
-  // permission) may be queued or running on the server.
+  // A rule review this page cannot read (still loading, failed to load, no
+  // permission, or not yet read since the plan changed) may be queued or
+  // running on the server.
   const ruleReviewUnknown =
     !!sqlReview &&
-    (!ruleReview || ruleReview.run === undefined || ruleReview.loadFailed);
+    (!ruleReview ||
+      ruleReview.run === undefined ||
+      ruleReview.loadFailed ||
+      ruleReview.stale);
   const unresolvedThreads = sqlReview?.unresolvedThreads ?? 0;
   const checks = useMemo(
     () => withRuleReview(getPlanCheckSummary(plan), ruleReviewRun),

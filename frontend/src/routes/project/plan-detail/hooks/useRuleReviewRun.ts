@@ -22,6 +22,9 @@ const isActive = (run: ReviewRun | null | undefined) =>
 export type RuleReviewRunState = {
   // undefined while loading; null when the review never ran on the issue.
   run: ReviewRun | null | undefined;
+  // True while `run` predates the latest reload key: the plan has changed
+  // since, and the server may have started a new review.
+  stale: boolean;
   loadFailed: boolean;
   openFindings: number;
   reload: () => Promise<void>;
@@ -43,35 +46,45 @@ export function useRuleReviewRun({
   const reviewRunName =
     enabled && issueName ? `${issueName}/reviewRuns/rule` : undefined;
   const [run, setRun] = useState<ReviewRun | null | undefined>(undefined);
+  const [readKey, setReadKey] = useState<string | undefined>(undefined);
   const [loadFailed, setLoadFailed] = useState(false);
+  // Only the latest read lands: one it overtook would bring back an older run.
+  const latestRead = useRef(0);
 
   const reload = useCallback(async () => {
     if (!reviewRunName) return;
+    const read = ++latestRead.current;
     try {
       const resp = await issueServiceClientConnect.getReviewRun(
         create(GetReviewRunRequestSchema, { name: reviewRunName }),
         { contextValues: createContextValues().set(silentContextKey, true) }
       );
+      if (read !== latestRead.current) return;
       setRun(resp);
+      setReadKey(reloadKey);
       setLoadFailed(false);
     } catch (error) {
+      if (read !== latestRead.current) return;
       if (ConnectError.from(error).code === Code.NotFound) {
         setRun(null);
+        setReadKey(reloadKey);
         setLoadFailed(false);
       } else {
         setLoadFailed(true);
       }
     }
-  }, [reviewRunName]);
+  }, [reloadKey, reviewRunName]);
 
   useEffect(() => {
+    latestRead.current++;
     setRun(undefined);
+    setReadKey(undefined);
     setLoadFailed(false);
   }, [reviewRunName]);
 
   useEffect(() => {
     void reload();
-  }, [reload, reloadKey]);
+  }, [reload]);
 
   // Each poll stores a new run object, which schedules the next poll.
   useEffect(() => {
@@ -107,8 +120,9 @@ export function useRuleReviewRun({
     [comments]
   );
 
+  const stale = readKey !== reloadKey;
   return useMemo(
-    () => ({ run, loadFailed, openFindings, reload }),
-    [loadFailed, openFindings, reload, run]
+    () => ({ run, stale, loadFailed, openFindings, reload }),
+    [loadFailed, openFindings, reload, run, stale]
   );
 }
