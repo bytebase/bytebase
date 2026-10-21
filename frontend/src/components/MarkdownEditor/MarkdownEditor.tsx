@@ -20,7 +20,8 @@ const markdown = new MarkdownIt({
 // when someone merely opens the page. So it renders no raw HTML, and an image
 // becomes a link to its source, labeled with its alt text or else the source,
 // that the reader may choose to follow. Without a source, or inside a link
-// where anchors cannot nest, the label stays plain text.
+// where anchors cannot nest, the label stays plain text. The page turns DNS
+// prefetching off in index.html, so no link resolves its host until clicked.
 const untrustedMarkdown = new MarkdownIt({
   html: false,
   linkify: true,
