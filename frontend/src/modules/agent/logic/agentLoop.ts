@@ -99,6 +99,10 @@ export interface AgentCallbacks {
   onError?: (error: Error) => void;
 }
 
+export interface AgentLoopOptions {
+  allowPlainTextCompletion?: boolean;
+}
+
 function createSkippedToolResult(blockedBy: {
   toolCallId: string;
   kind: "ask_user" | "done";
@@ -116,7 +120,8 @@ export async function runAgentLoop(
   tools: ToolDefinition[],
   executeTool: ToolExecutor,
   callbacks?: AgentCallbacks,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  options: AgentLoopOptions = {}
 ): Promise<AgentLoopOutcome> {
   const conversation: Message[] = [...messages];
   const protoTools = tools.map(toolDefToProto);
@@ -251,6 +256,17 @@ export async function runAgentLoop(
         }
 
         continue;
+      }
+
+      const text = response.content?.trim() ?? "";
+      if (options.allowPlainTextCompletion && text) {
+        callbacks?.onText?.(text);
+        return {
+          kind: "completed",
+          text,
+          success: true,
+          totalTokensUsed,
+        };
       }
 
       const error = new Error(

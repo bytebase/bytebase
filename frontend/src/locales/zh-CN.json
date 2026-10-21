@@ -53,11 +53,49 @@
     "input-placeholder": "向 AI 提问...",
     "interrupted": "已中断",
     "interrupted-retry-hint": "对话已中断。您可以重试或发送新消息。",
+    "landing-starters": {
+      "menu": "建议",
+      "more": "更多建议",
+      "project-access": "在此项目中协作前，我应该设置什么？",
+      "project-collaborate": "如何邀请团队成员加入此项目？",
+      "project-connect": "如何将数据库连接到此项目？",
+      "project-next": "下一步我可以做什么？",
+      "project-open-blockers": "此项目中有哪些事项需要我关注？",
+      "project-open-recent": "这个项目最近有哪些变化？",
+      "project-organize": "我应该如何为这个项目组织数据库和环境？",
+      "project-propose-change": "如何提出数据库变更？",
+      "project-review": "此项目中的数据库变更如何审批？",
+      "workspace-attention": "有哪些事情需要我关注？",
+      "workspace-concepts": "帮我了解项目、实例和数据库",
+      "workspace-governance": "Bytebase 如何治理数据库变更？",
+      "workspace-recent": "这个工作区最近有哪些变化？",
+      "workspace-setup-first": "我应该先设置什么？"
+    },
     "minimize": "最小化",
     "new-chat": "新对话",
+    "other-chats": "其他对话",
     "pending-choose-hint": "请在上方选择一个选项",
     "pending-confirm-hint": "请在上方确认或取消",
     "pending-input-hint": "请在上方提供输入",
+    "project-attention": {
+      "checking": "正在检查需要你关注的事项...",
+      "empty": "此项目中没有需要你关注的开放 issue。",
+      "issue-created": "- {{title}}（由你创建）",
+      "issue-review": "- {{title}}（等待你的审批）",
+      "more": "此项目中还有更多开放 issue 需要你关注。",
+      "partial": "无法检查此项目中所有需要你关注的开放 issue。",
+      "summary": "此项目中的这些 issue 需要你关注：",
+      "unavailable": "无法加载此项目中需要你关注的事项。"
+    },
+    "recent-activity": {
+      "checking": "正在检查最近活动...",
+      "empty": "过去 3 天内没有记录到重要活动。",
+      "event": "{{actor}} 于 {{time}} {{action}} {{resource}}",
+      "more": "还有更多最近活动。",
+      "summary": "过去 3 天的最近活动：",
+      "unavailable": "无法加载最近活动。",
+      "unknown-time": "未知时间"
+    },
     "rename-chat-placeholder": "输入对话名称",
     "reply": "回复",
     "result": "结果",
@@ -78,7 +116,17 @@
     "tool-response-submitted": "已提交回复",
     "tool-value": "值",
     "unarchive-all-chats": "取消归档所有对话",
-    "unarchive-chat": "取消归档"
+    "unarchive-chat": "取消归档",
+    "workspace-attention": {
+      "checking": "正在检查需要你关注的事项...",
+      "empty": "没有需要你关注的开放 issue。",
+      "issue-created": "- {{title}}（由你创建）",
+      "issue-review": "- {{title}}（等待你的审批）",
+      "more": "还有更多开放 issue 需要你关注。",
+      "partial": "无法检查所有需要你关注的开放 issue。",
+      "summary": "这些 issue 需要你关注：",
+      "unavailable": "无法加载需要你关注的事项。"
+    }
   },
   "audit-log": {
     "advanced-search": {

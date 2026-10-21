@@ -4,6 +4,7 @@ import type {
   AgentAskUserKind,
   AgentAskUserOption,
   AgentPendingAsk,
+  AgentRunMode,
   ToolDefinition,
   ToolExecutionResult,
   ToolExecutor,
@@ -12,7 +13,11 @@ import { callApi, type CallApiArgs } from "./callApi";
 import { createDomActionTool, type DomActionArgs } from "./domAction";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool, type PageStateArgs } from "./pageState";
+import { createProjectOpenIssuesTool } from "./projectOpenIssues";
+import { createProjectRecentActivityTool } from "./projectRecentActivity";
 import { searchApi, type SearchApiArgs } from "./searchApi";
+import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
+import { createWorkspaceAttentionTool } from "./workspaceAttention";
 
 const toToolResult = (result: string): ToolExecutionResult => ({
   kind: "tool_result",
@@ -116,8 +121,24 @@ const parseAskUserArgs = (
   };
 };
 
-export function getToolDefinitions(): ToolDefinition[] {
-  return [
+const READ_ONLY_TOOL_NAMES = new Set([
+  "get_page_state",
+  "get_project_open_issues",
+  "get_project_recent_activity",
+  "get_workspace_attention",
+  "get_workspace_recent_activity",
+  "get_skill",
+  "ask_user",
+  "done",
+]);
+
+const READ_ONLY_TOOL_ERROR =
+  "This tool is not available during this starter. Inspect the current page or ask the user to send a follow-up message to take action.";
+
+export function getToolDefinitions(
+  options: { runMode?: AgentRunMode } = {}
+): ToolDefinition[] {
+  const tools: ToolDefinition[] = [
     {
       name: "search_api",
       description: `Browse API endpoints and get request/response schemas. Use the API Directory in the system prompt to identify the right service first.
@@ -227,6 +248,42 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
               'Default "semantic" returns route info + store context. "dom" adds a ref-labeled tree of interactive elements for use with dom_action.',
           },
         },
+      },
+    },
+    {
+      name: "get_project_open_issues",
+      description:
+        "List the current user's open Bytebase Issues in the Project bound to this chat. The result includes Issues awaiting the user's approval and Issues the user created. This tool has no parameters and cannot read another Project.",
+      parametersSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "get_project_recent_activity",
+      description:
+        "List the newest recorded activity for the project bound to this chat. The result contains at most five safe summaries with the time, actor, action, resource, and outcome. It excludes audit-log request and response data. This tool has no parameters and cannot read another project.",
+      parametersSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "get_workspace_attention",
+      description:
+        "List the current user's open Issues across the workspace bound to this chat. The result includes Issues awaiting the user's approval and Issues the user created, with at most five of each, and does not navigate. This tool has no parameters and cannot read another workspace.",
+      parametersSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "get_workspace_recent_activity",
+      description:
+        "List the newest recorded activity in the workspace bound to this chat, including project and workspace administration changes. The result contains at most five safe summaries with the time, actor, action, resource, and outcome. It excludes audit-log request and response data. This tool has no parameters and cannot read another workspace.",
+      parametersSchema: {
+        type: "object",
+        properties: {},
       },
     },
     {
@@ -363,11 +420,24 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
       },
     },
   ];
+
+  if (options.runMode === "read-only") {
+    return tools.filter((tool) => READ_ONLY_TOOL_NAMES.has(tool.name));
+  }
+  return tools.filter(
+    (tool) =>
+      tool.name !== "get_project_open_issues" &&
+      tool.name !== "get_project_recent_activity" &&
+      tool.name !== "get_workspace_attention" &&
+      tool.name !== "get_workspace_recent_activity"
+  );
 }
 
 interface CreateToolExecutorOptions {
   chatId?: string;
+  context?: string;
   onNavigate?: () => void;
+  runMode?: AgentRunMode;
 }
 
 const PAGE_MUTATION_TOOL_NAMES = new Set(["navigate", "dom_action"]);
@@ -404,12 +474,28 @@ export function createToolExecutor(
   const navigateTool = createNavigateTool(router);
   const pageStateTool = createPageStateTool(router);
   const domActionTool = createDomActionTool(router);
+  const projectOpenIssuesTool = createProjectOpenIssuesTool({
+    projectName: options.context,
+  });
+  const projectRecentActivityTool = createProjectRecentActivityTool({
+    projectName: options.context,
+  });
+  const workspaceRecentActivityTool = createWorkspaceRecentActivityTool({
+    workspaceName: options.context,
+  });
+  const workspaceAttentionTool = createWorkspaceAttentionTool({
+    workspaceName: options.context,
+  });
 
   return async (
     name: string,
     args: Record<string, unknown>,
     toolCallId: string
   ): Promise<ToolExecutionResult> => {
+    if (options.runMode === "read-only" && !READ_ONLY_TOOL_NAMES.has(name)) {
+      return toToolResult(JSON.stringify({ error: READ_ONLY_TOOL_ERROR }));
+    }
+
     switch (name) {
       case "search_api":
         return toToolResult(await searchApi(args as SearchApiArgs));
@@ -436,6 +522,14 @@ export function createToolExecutor(
       }
       case "get_page_state":
         return toToolResult(await pageStateTool(args as PageStateArgs));
+      case "get_project_open_issues":
+        return toToolResult(await projectOpenIssuesTool());
+      case "get_project_recent_activity":
+        return toToolResult(await projectRecentActivityTool());
+      case "get_workspace_attention":
+        return toToolResult(await workspaceAttentionTool());
+      case "get_workspace_recent_activity":
+        return toToolResult(await workspaceRecentActivityTool());
       case "dom_action":
         return toToolResult(
           await withPageMutationLock(options.chatId, name, async () => {

@@ -20,6 +20,8 @@ export interface Message {
 
 export type AgentChatStatus = "idle" | "running" | "awaiting_user" | "error";
 
+export type AgentRunMode = "default" | "read-only";
+
 export interface AgentChatSnapshot {
   path: string;
   title: string;
@@ -44,6 +46,7 @@ export interface AgentChat {
   id: string;
   title: string;
   context?: string;
+  workspaceName?: string;
   createdTs: number;
   updatedTs: number;
   status: AgentChatStatus;
@@ -54,6 +57,7 @@ export interface AgentChat {
   requiresAIConfiguration?: boolean;
   interrupted?: boolean;
   runId?: string | null;
+  runMode?: AgentRunMode;
 }
 
 export type AgentAskUserKind = "input" | "confirm" | "choose";

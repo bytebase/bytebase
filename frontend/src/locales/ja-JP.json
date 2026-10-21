@@ -53,11 +53,49 @@
     "input-placeholder": "AI に何でも聞いてください...",
     "interrupted": "中断",
     "interrupted-retry-hint": "会話が中断されました。再試行するか、新しいメッセージを送信できます。",
+    "landing-starters": {
+      "menu": "候補",
+      "more": "候補をさらに表示",
+      "project-access": "このプロジェクトで共同作業を始める前に何を設定すればよいですか？",
+      "project-collaborate": "このプロジェクトにチームメンバーを招待するにはどうすればよいですか？",
+      "project-connect": "このプロジェクトにデータベースを接続するにはどうすればよいですか？",
+      "project-next": "次に何ができますか？",
+      "project-open-blockers": "このプロジェクトで私の対応が必要なことは何ですか？",
+      "project-open-recent": "このプロジェクトで最近何が変わりましたか？",
+      "project-organize": "このプロジェクトのデータベースと環境をどのように整理すればよいですか？",
+      "project-propose-change": "データベース変更を提案するにはどうすればよいですか？",
+      "project-review": "このプロジェクトのデータベース変更はどのようにレビューされますか？",
+      "workspace-attention": "私が確認すべきことは何ですか？",
+      "workspace-concepts": "プロジェクト、インスタンス、データベースについて教えてください",
+      "workspace-governance": "Bytebase はデータベース変更をどのように管理しますか？",
+      "workspace-recent": "このワークスペースで最近何が変わりましたか？",
+      "workspace-setup-first": "最初に何を設定すればよいですか？"
+    },
     "minimize": "最小化",
     "new-chat": "新しいチャット",
+    "other-chats": "その他のチャット",
     "pending-choose-hint": "上のオプションから選択してください",
     "pending-confirm-hint": "上で確認またはキャンセルしてください",
     "pending-input-hint": "上に入力してください",
+    "project-attention": {
+      "checking": "対応が必要な項目を確認しています...",
+      "empty": "このプロジェクトに対応が必要なオープン issue はありません。",
+      "issue-created": "- {{title}}（自分が作成）",
+      "issue-review": "- {{title}}（承認待ち）",
+      "more": "このプロジェクトに対応が必要なオープン issue がさらにあります。",
+      "partial": "このプロジェクトで対応が必要なすべてのオープン issue を確認できませんでした。",
+      "summary": "このプロジェクトの次の issue はあなたの対応が必要です:",
+      "unavailable": "このプロジェクトで対応が必要な項目を読み込めません。"
+    },
+    "recent-activity": {
+      "checking": "最近のアクティビティを確認しています...",
+      "empty": "過去 3 日間に重要なアクティビティは記録されていません。",
+      "event": "{{time}} に {{actor}} が {{resource}} を {{action}}",
+      "more": "さらに最近のアクティビティがあります。",
+      "summary": "過去 3 日間の最近のアクティビティ:",
+      "unavailable": "最近のアクティビティを読み込めません。",
+      "unknown-time": "不明な時刻"
+    },
     "rename-chat-placeholder": "チャット名を入力",
     "reply": "返信",
     "result": "結果",
@@ -78,7 +116,17 @@
     "tool-response-submitted": "回答が送信されました",
     "tool-value": "値",
     "unarchive-all-chats": "すべてのチャットのアーカイブを解除",
-    "unarchive-chat": "アーカイブ解除"
+    "unarchive-chat": "アーカイブ解除",
+    "workspace-attention": {
+      "checking": "対応が必要な項目を確認しています...",
+      "empty": "対応が必要なオープン issue はありません。",
+      "issue-created": "- {{title}}（自分が作成）",
+      "issue-review": "- {{title}}（承認待ち）",
+      "more": "対応が必要なオープン issue がさらにあります。",
+      "partial": "対応が必要なすべてのオープン issue を確認できませんでした。",
+      "summary": "次の issue はあなたの対応が必要です:",
+      "unavailable": "対応が必要な項目を読み込めません。"
+    }
   },
   "audit-log": {
     "advanced-search": {

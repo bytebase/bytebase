@@ -1,8 +1,17 @@
-import { Archive, EllipsisVertical, Plus, Trash2, Undo2 } from "lucide-react";
+import {
+  Archive,
+  Building2,
+  EllipsisVertical,
+  FolderKanban,
+  Plus,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -15,14 +24,17 @@ import {
   type PanelImperativeHandle,
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
-import { HumanizeTs } from "@/components/HumanizeTs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getLayerRoot } from "@/components/ui/layer";
+import {
+  getProjectName,
+  projectNamePrefix,
+  workspaceNamePrefix,
+} from "@/lib/resourceName";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { formatAbsoluteDateTime } from "@/utils";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
 import { getCurrentChatContext } from "../logic/chatContext";
 import type { AgentChat as AgentChatRecord } from "../logic/types";
@@ -78,6 +90,40 @@ const resizeZoneClasses: Record<ResizeDirection, string> = {
   sw: "bottom-[-6px] left-[-6px] size-[12px] cursor-sw-resize",
 };
 
+interface AgentChatGroup {
+  context?: string;
+  chats: AgentChatRecord[];
+}
+
+function groupChatsByContext(chats: AgentChatRecord[]): AgentChatGroup[] {
+  const groups = new Map<string, AgentChatGroup>();
+  for (const chat of chats) {
+    const key = chat.context ?? "";
+    const group = groups.get(key);
+    if (group) {
+      group.chats.push(chat);
+      continue;
+    }
+    groups.set(key, { context: chat.context, chats: [chat] });
+  }
+  const unscopedGroup = groups.get("");
+  const groupRank = (context: string) => {
+    if (context.startsWith(workspaceNamePrefix)) return 0;
+    if (context.startsWith(projectNamePrefix)) return 1;
+    return 2;
+  };
+  return [
+    ...[...groups.entries()]
+      .filter(([context]) => context)
+      .sort(([left], [right]) => {
+        const rankDifference = groupRank(left) - groupRank(right);
+        return rankDifference || right.localeCompare(left);
+      })
+      .map(([, group]) => group),
+    ...(unscopedGroup ? [unscopedGroup] : []),
+  ];
+}
+
 export function AgentWindow() {
   const { t } = useTranslation();
 
@@ -91,6 +137,14 @@ export function AgentWindow() {
   const currentChatId = useAgentStore((s) => s.currentChatId);
   const hasRunningChat = useAgentStore(selectHasRunningChat);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
+  const batchFetchProjects = useAppStore((s) => s.batchFetchProjects);
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  const projectErrorsByName = useAppStore((s) => s.projectErrorsByName);
+  const workspace = useAppStore((s) => s.workspace);
+
+  useLayoutEffect(() => {
+    useAgentStore.getState().setWorkspaceName(workspace?.name);
+  }, [hasRunningChat, workspace?.name]);
 
   const windowRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -253,6 +307,23 @@ export function AgentWindow() {
     () => orderedChats.filter((chat) => chat.archived === showArchivedOnly),
     [orderedChats, showArchivedOnly]
   );
+  const displayedChatGroups = useMemo(
+    () => groupChatsByContext(displayedChats),
+    [displayedChats]
+  );
+  const missingProjectContexts = useMemo(
+    () =>
+      [
+        ...new Set(
+          displayedChatGroups.flatMap((group) =>
+            group.context?.startsWith(projectNamePrefix) ? [group.context] : []
+          )
+        ),
+      ].filter(
+        (context) => !projectsByName[context] && !projectErrorsByName[context]
+      ),
+    [displayedChatGroups, projectErrorsByName, projectsByName]
+  );
   const activeChats = useMemo(
     () => orderedChats.filter((chat) => !chat.archived),
     [orderedChats]
@@ -270,6 +341,13 @@ export function AgentWindow() {
   const isDeleteAllDisabled =
     hasRunningChat || !showArchivedOnly || archivedChats.length === 0;
   const canResizeWindow = supportsFinePointer;
+
+  useEffect(() => {
+    if (!visible || missingProjectContexts.length === 0) return;
+    void batchFetchProjects(missingProjectContexts, true).catch(() => {
+      // Keep the stable resource-id fallback when a context cannot be loaded.
+    });
+  }, [batchFetchProjects, missingProjectContexts, visible]);
 
   const syncStoreToDisplayState = useCallback(() => {
     const store = useAgentStore.getState();
@@ -306,6 +384,19 @@ export function AgentWindow() {
         : baseLabel;
     },
     [getEditableChatTitle, t]
+  );
+
+  const getContextLabel = useCallback(
+    (context: string) => {
+      if (context.startsWith(projectNamePrefix)) {
+        return projectsByName[context]?.title || getProjectName(context);
+      }
+      if (context === workspace?.name) {
+        return workspace.title || workspace.name;
+      }
+      return context;
+    },
+    [projectsByName, workspace]
   );
 
   const selectFirstDisplayedChat = useCallback(() => {
@@ -369,9 +460,15 @@ export function AgentWindow() {
       store.createChat({
         page: getCurrentPageSnapshot(),
         context: getCurrentChatContext(),
+        workspaceName: workspace?.name,
       });
     },
-    [showArchivedOnly, selectFirstDisplayedChat, getCurrentPageSnapshot]
+    [
+      showArchivedOnly,
+      selectFirstDisplayedChat,
+      getCurrentPageSnapshot,
+      workspace?.name,
+    ]
   );
 
   // --- Rename ---
@@ -440,8 +537,21 @@ export function AgentWindow() {
     useAgentStore.getState().createChat({
       page: getCurrentPageSnapshot(),
       context: getCurrentChatContext(),
+      workspaceName: workspace?.name,
     });
-  }, [isChatCreationDisabled, getCurrentPageSnapshot]);
+  }, [isChatCreationDisabled, getCurrentPageSnapshot, workspace?.name]);
+
+  const createChatForContext = useCallback(
+    (context: string) => {
+      if (isChatCreationDisabled) return;
+      useAgentStore.getState().createChat({
+        page: getCurrentPageSnapshot(),
+        context,
+        workspaceName: workspace?.name,
+      });
+    },
+    [isChatCreationDisabled, getCurrentPageSnapshot, workspace?.name]
+  );
 
   const handleChatRowClick = useCallback(
     (chatId: string) => {
@@ -830,18 +940,16 @@ export function AgentWindow() {
     useAgentStore.getState().saveWindowState();
   }, [clampSidebarWidth]);
 
-  // --- Mount: load window state ---
-
-  useEffect(() => {
-    useAgentStore.getState().loadWindowState();
-  }, []);
-
   useEffect(() => {
     if (!visible || !currentChatId) return;
     useAgentStore
       .getState()
-      .ensureCurrentChat(getCurrentPageSnapshot(), getCurrentChatContext());
-  }, [currentChatId, getCurrentPageSnapshot, visible]);
+      .ensureCurrentChat(
+        getCurrentPageSnapshot(),
+        getCurrentChatContext(),
+        workspace?.name
+      );
+  }, [currentChatId, getCurrentPageSnapshot, visible, workspace?.name]);
 
   useEffect(() => {
     if (!visible || !currentChatId) return;
@@ -1083,109 +1191,142 @@ export function AgentWindow() {
               {/* Chat list */}
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <div className="flex flex-col" data-agent-chat-list>
-                  {displayedChats.map((chat) => (
+                  {displayedChatGroups.map((group) => (
                     <div
-                      key={chat.id}
-                      className={`group w-full rounded-xs px-3 py-2 text-left text-sm transition-colors ${
-                        chat.id === currentChatId
-                          ? "bg-accent/10 text-accent"
-                          : "text-control hover:bg-control-bg-hover"
-                      }`}
-                      data-agent-chat-row={chat.id}
+                      key={group.context ?? "unscoped"}
+                      className="flex flex-col"
+                      data-agent-chat-group={group.context ?? "unscoped"}
                     >
-                      {chat.id === currentChatId && isRenamingCurrentChat ? (
-                        <Input
-                          ref={renameInputRef}
-                          value={renamingTitle}
-                          onChange={(e) => setRenamingTitle(e.target.value)}
-                          className="h-7 text-sm"
-                          placeholder={t("agent.rename-chat-placeholder")}
-                          data-agent-inline-rename-input
-                          onBlur={commitRenameCurrentChat}
-                          onKeyDown={onRenameKeydown}
-                        />
-                      ) : (
-                        <div className="flex items-start gap-x-2">
-                          <Button
-                            appearance="secondary"
-                            size="md"
-                            type="button"
-                            className="h-auto min-w-0 flex-1 flex-col items-start p-0 text-left whitespace-normal hover:bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
-                            disabled={
-                              !useAgentStore.getState().canSelectChat(chat.id)
-                            }
-                            aria-current={
-                              chat.id === currentChatId ? "true" : undefined
-                            }
-                            onClick={() => handleChatRowClick(chat.id)}
-                          >
-                            <div
-                              className="w-full truncate font-medium"
-                              data-agent-chat-title
-                            >
-                              {getChatLabel(chat)}
-                            </div>
-                            <span
-                              className={`mt-1 block w-full truncate text-xs ${
-                                chat.id === currentChatId
-                                  ? "text-accent/80"
-                                  : "text-control-light"
-                              }`}
-                              data-agent-chat-updated-ts
-                            >
-                              <AgentTooltip
-                                content={formatAbsoluteDateTime(chat.updatedTs)}
-                              >
-                                <HumanizeTs
-                                  tsMs={chat.updatedTs}
-                                  tooltip={false}
-                                />
-                              </AgentTooltip>
-                            </span>
-                          </Button>
-                          <div className="pointer-events-none flex shrink-0 items-center gap-x-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-                            {chat.archived ? (
-                              <>
-                                <SidebarIconButton
-                                  tooltip={t("agent.unarchive-chat")}
-                                  ariaLabel={t("agent.unarchive-chat")}
-                                  dataAttr="data-agent-unarchive-chat"
-                                  onClick={() => unarchiveChat(chat.id)}
-                                >
-                                  <Undo2
-                                    className="size-3.5"
-                                    aria-hidden="true"
-                                  />
-                                </SidebarIconButton>
-                                <ConfirmDialog
-                                  message={t("agent.delete-chat-confirmation")}
-                                  onConfirm={() => deleteChat(chat.id)}
-                                  triggerLabel={t("agent.delete-chat")}
-                                  triggerDataAttr="data-agent-delete-chat"
-                                  triggerVariant="icon"
-                                >
-                                  <Trash2
-                                    className="size-3.5"
-                                    aria-hidden="true"
-                                  />
-                                </ConfirmDialog>
-                              </>
+                      <div className="flex min-w-0 items-center justify-between gap-x-2 px-3 pt-3 pb-1 text-xs font-medium text-control-light">
+                        {group.context ? (
+                          <div className="flex min-w-0 items-center gap-x-1.5">
+                            {group.context.startsWith(projectNamePrefix) ? (
+                              <FolderKanban className="size-3.5 shrink-0" />
                             ) : (
-                              <SidebarIconButton
-                                tooltip={t("agent.archive-chat")}
-                                ariaLabel={t("agent.archive-chat")}
-                                dataAttr="data-agent-archive-chat"
-                                onClick={() => archiveChat(chat.id)}
-                              >
-                                <Archive
-                                  className="size-3.5"
-                                  aria-hidden="true"
-                                />
-                              </SidebarIconButton>
+                              <Building2 className="size-3.5 shrink-0" />
                             )}
+                            <span className="truncate">
+                              {getContextLabel(group.context)}
+                            </span>
                           </div>
+                        ) : (
+                          <span className="truncate">
+                            {t("agent.other-chats")}
+                          </span>
+                        )}
+                        {group.context && (
+                          <AgentTooltip
+                            content={`${t("agent.new-chat")}: ${getContextLabel(group.context)}`}
+                          >
+                            <Button
+                              appearance="secondary"
+                              size="xs"
+                              className="shrink-0 px-1 text-control-light hover:bg-control-bg-hover"
+                              aria-label={`${t("agent.new-chat")}: ${getContextLabel(group.context)}`}
+                              data-agent-new-chat-for-context={group.context}
+                              disabled={isChatCreationDisabled}
+                              onClick={() =>
+                                createChatForContext(group.context!)
+                              }
+                            >
+                              <Plus className="size-3.5" aria-hidden="true" />
+                            </Button>
+                          </AgentTooltip>
+                        )}
+                      </div>
+                      {group.chats.map((chat) => (
+                        <div
+                          key={chat.id}
+                          className={`group w-full rounded-xs px-3 py-2 text-left text-sm transition-colors ${
+                            chat.id === currentChatId
+                              ? "bg-accent/10 text-accent"
+                              : "text-control hover:bg-control-bg-hover"
+                          }`}
+                          data-agent-chat-row={chat.id}
+                        >
+                          {chat.id === currentChatId &&
+                          isRenamingCurrentChat ? (
+                            <Input
+                              ref={renameInputRef}
+                              value={renamingTitle}
+                              onChange={(e) => setRenamingTitle(e.target.value)}
+                              className="h-7 text-sm"
+                              placeholder={t("agent.rename-chat-placeholder")}
+                              data-agent-inline-rename-input
+                              onBlur={commitRenameCurrentChat}
+                              onKeyDown={onRenameKeydown}
+                            />
+                          ) : (
+                            <div className="flex items-center gap-x-2">
+                              <Button
+                                appearance="secondary"
+                                size="md"
+                                type="button"
+                                className="h-auto min-w-0 flex-1 flex-col items-start p-0 text-left whitespace-normal hover:bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={
+                                  !useAgentStore
+                                    .getState()
+                                    .canSelectChat(chat.id)
+                                }
+                                aria-current={
+                                  chat.id === currentChatId ? "true" : undefined
+                                }
+                                onClick={() => handleChatRowClick(chat.id)}
+                              >
+                                <div
+                                  className="w-full truncate font-medium"
+                                  data-agent-chat-title
+                                >
+                                  {getChatLabel(chat)}
+                                </div>
+                              </Button>
+                              <div className="pointer-events-none flex shrink-0 items-center gap-x-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+                                {chat.archived ? (
+                                  <>
+                                    <SidebarIconButton
+                                      tooltip={t("agent.unarchive-chat")}
+                                      ariaLabel={t("agent.unarchive-chat")}
+                                      dataAttr="data-agent-unarchive-chat"
+                                      onClick={() => unarchiveChat(chat.id)}
+                                    >
+                                      <Undo2
+                                        className="size-3.5"
+                                        aria-hidden="true"
+                                      />
+                                    </SidebarIconButton>
+                                    <ConfirmDialog
+                                      message={t(
+                                        "agent.delete-chat-confirmation"
+                                      )}
+                                      onConfirm={() => deleteChat(chat.id)}
+                                      triggerLabel={t("agent.delete-chat")}
+                                      triggerDataAttr="data-agent-delete-chat"
+                                      triggerVariant="icon"
+                                    >
+                                      <Trash2
+                                        className="size-3.5"
+                                        aria-hidden="true"
+                                      />
+                                    </ConfirmDialog>
+                                  </>
+                                ) : (
+                                  <SidebarIconButton
+                                    tooltip={t("agent.archive-chat")}
+                                    ariaLabel={t("agent.archive-chat")}
+                                    dataAttr="data-agent-archive-chat"
+                                    onClick={() => archiveChat(chat.id)}
+                                  >
+                                    <Archive
+                                      className="size-3.5"
+                                      aria-hidden="true"
+                                    />
+                                  </SidebarIconButton>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
                   ))}
                 </div>

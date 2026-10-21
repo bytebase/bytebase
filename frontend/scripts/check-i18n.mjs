@@ -66,6 +66,13 @@ const DYNAMIC_PREFIXES = [
   "workspace-setup-guide.generic.",
   "workspace-setup-guide.scenarios.",
   "workspace-setup-guide.steps.",
+  // Landing starter IDs are ranked in a pure helper and translated by the
+  // shared selector using the selected ID.
+  "agent.landing-starters.",
+  // Attention result labels use the Issue relation returned by a bounded
+  // read-only lookup to choose the corresponding translation key.
+  "agent.project-attention.issue-",
+  "agent.workspace-attention.issue-",
   // MCP mode cards and the broken-ceiling banner, rendered via
   // t(`settings.mcp.policy.mode.${key}.title`) and a ternary over two key
   // strings in MCPAccessPolicySection.tsx, not as literal t("…") calls.
