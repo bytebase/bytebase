@@ -1,6 +1,6 @@
 import { type MouseEventHandler, type ReactNode, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { buildProjectEntryRoute } from "@/app/router/projectEntryRoute";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
 import { RouterLink, type RouterLinkProps } from "@/components/RouterLink";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { cn } from "@/lib/utils";
@@ -28,7 +28,6 @@ export function ProjectLabel({
   const projectId = extractProjectResourceName(projectName);
   const validProjectName = isValidProjectName(projectName);
   const defaultProject = isDefaultProject(projectName);
-  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
   const shouldFetchProject = children === undefined;
 
   useEffect(() => {
@@ -66,7 +65,10 @@ export function ProjectLabel({
   return (
     <RouterLink
       {...linkProps}
-      to={buildProjectEntryRoute(projectId, isSaaSMode)}
+      to={{
+        name: PROJECT_V1_ROUTE_DETAIL,
+        params: { projectId },
+      }}
       className={cn(
         "inline-flex min-w-0 max-w-full normal-link hover:underline",
         className

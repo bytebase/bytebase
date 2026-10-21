@@ -11,11 +11,6 @@ const mocks = vi.hoisted(() => ({
   useProjectByName: vi.fn(),
   getOrFetchProjectByName: vi.fn(),
   isDefaultProject: vi.fn((_name: string) => false),
-  isSaaSMode: true,
-}));
-
-vi.mock("@/utils/featureGates", () => ({
-  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -51,15 +46,11 @@ vi.mock("@/hooks/useProjectByName", () => ({
 }));
 
 vi.mock("@/stores/app", () => ({
-  useAppStore: Object.assign(
-    (selector: (state: { isSaaSMode: () => boolean }) => unknown) =>
-      selector({ isSaaSMode: () => mocks.isSaaSMode }),
-    {
-      getState: () => ({
-        getOrFetchProjectByName: mocks.getOrFetchProjectByName,
-      }),
-    }
-  ),
+  useAppStore: {
+    getState: () => ({
+      getOrFetchProjectByName: mocks.getOrFetchProjectByName,
+    }),
+  },
 }));
 
 vi.mock("@/types/v1/project", async (importOriginal) => ({
@@ -88,7 +79,6 @@ describe("ProjectLabel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.isDefaultProject.mockReturnValue(false);
-    mocks.isSaaSMode = true;
     mocks.useProjectByName.mockReturnValue({
       name: "projects/sample",
       title: "Sample Project",
@@ -139,18 +129,6 @@ describe("ProjectLabel", () => {
     expect(mocks.getOrFetchProjectByName).toHaveBeenCalledWith(
       "projects/sample",
       true
-    );
-  });
-
-  test("links to Issues outside SaaS", async () => {
-    mocks.isSaaSMode = false;
-    const rendered = await render(
-      <ProjectLabel projectName="projects/sample" link />
-    );
-    root = rendered.root;
-
-    expect(rendered.container.querySelector("a")?.getAttribute("data-route-name")).toBe(
-      "workspace.project.issue"
     );
   });
 

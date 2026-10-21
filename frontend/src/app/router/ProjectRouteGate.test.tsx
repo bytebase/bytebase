@@ -20,19 +20,14 @@ const mocks = vi.hoisted(() => ({
   projectErrorsByName: {} as Record<string, { message: string }>,
   workspacePermissions: new Set<Permission>(),
   projectPermissions: new Set<Permission>(),
-  isSaaSMode: true,
-  isDev: false,
+  isSaaSMode: false,
+  dev: true,
   fetchProject: vi.fn(async (name: string) => mocks.projectsByName[name]),
-  loadServerInfo: vi.fn(async () => undefined),
   replace: vi.fn(),
   resolve: vi.fn(() => ({ fullPath: "/projects/prod" })),
   // Stable ref — mirrors the real `useNotify` (returns `state.notify`). A fresh
   // function each render would make the load effect's deps unstable and loop.
   notify: vi.fn(),
-}));
-
-vi.mock("@/utils/featureGates", () => ({
-  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.isDev,
 }));
 
 vi.mock("react-router", () => ({
@@ -45,6 +40,11 @@ vi.mock("@/app/router", () => ({
   useNavigate: () => ({ replace: mocks.replace, resolve: mocks.resolve }),
   WORKSPACE_ROUTE_LANDING: "workspace.landing",
   PROJECT_V1_ROUTE_DETAIL: "workspace.project.detail",
+  PROJECT_V1_ROUTE_ISSUES: "workspace.project.issue",
+}));
+
+vi.mock("@/utils/featureGates", () => ({
+  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.dev,
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
@@ -81,7 +81,7 @@ vi.mock("@/stores/app", () => {
     isSaaSMode: () => mocks.isSaaSMode,
     fetchProject: mocks.fetchProject,
     loadCurrentUser: vi.fn(async () => undefined),
-    loadServerInfo: mocks.loadServerInfo,
+    loadServerInfo: vi.fn(async () => undefined),
     loadWorkspacePermissionState: vi.fn(async () => {}),
     loadProjectIamPolicy: vi.fn(async () => undefined),
     loadSubscription: vi.fn(async () => undefined),
@@ -114,8 +114,8 @@ let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 
 beforeEach(() => {
-  mocks.route.requiredPermissions = ["bb.projects.get", "bb.databases.list"];
   mocks.route.name = "workspace.project.database";
+  mocks.route.requiredPermissions = ["bb.projects.get", "bb.databases.list"];
   mocks.params = { projectId: "prod" };
   mocks.projectsByName = {
     "projects/prod": { name: "projects/prod", allowRequestRole: true },
@@ -123,11 +123,9 @@ beforeEach(() => {
   mocks.projectErrorsByName = {};
   mocks.workspacePermissions = new Set(BASIC_PERMISSIONS);
   mocks.projectPermissions = new Set();
-  mocks.isSaaSMode = true;
-  mocks.isDev = false;
+  mocks.isSaaSMode = false;
+  mocks.dev = true;
   mocks.fetchProject.mockClear();
-  mocks.loadServerInfo.mockReset();
-  mocks.loadServerInfo.mockResolvedValue(undefined);
   mocks.replace.mockClear();
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -144,17 +142,6 @@ const render = async () => {
     root.render(<ProjectRouteGate />);
   });
   // Flush the async project-load effect + the permission-ready effect.
-  for (let i = 0; i < 5; i++) {
-    await act(async () => {
-      await Promise.resolve();
-    });
-  }
-};
-
-const rerender = async () => {
-  await act(async () => {
-    root.render(<ProjectRouteGate />);
-  });
   for (let i = 0; i < 5; i++) {
     await act(async () => {
       await Promise.resolve();
@@ -197,13 +184,13 @@ describe("ProjectRouteGate", () => {
     expect(container.querySelector("[data-testid='outlet']")).toBeNull();
   });
 
-  test("redirects self-hosted project Home URLs to Issues without mounting the outlet", async () => {
+  test("redirects self-hosted project Home to Issues", async () => {
     mocks.route.name = "workspace.project.detail";
     mocks.projectPermissions = new Set([
       "bb.projects.get",
       "bb.databases.list",
     ]);
-    mocks.isSaaSMode = false;
+    mocks.dev = false;
 
     await render();
 
@@ -214,52 +201,16 @@ describe("ProjectRouteGate", () => {
     expect(container.querySelector("[data-testid='outlet']")).toBeNull();
   });
 
-  test("keeps project Home URLs in development", async () => {
+  test("keeps project Home available in development", async () => {
     mocks.route.name = "workspace.project.detail";
     mocks.projectPermissions = new Set([
       "bb.projects.get",
       "bb.databases.list",
     ]);
-    mocks.isSaaSMode = false;
-    mocks.isDev = true;
 
     await render();
 
     expect(mocks.replace).not.toHaveBeenCalled();
-    expect(container.querySelector("[data-testid='outlet']")).not.toBeNull();
-  });
-
-  test("waits for server info before deciding the project entry route", async () => {
-    mocks.route.name = "workspace.project.detail";
-    mocks.projectPermissions = new Set([
-      "bb.projects.get",
-      "bb.databases.list",
-    ]);
-    mocks.isSaaSMode = false;
-    mocks.loadServerInfo.mockImplementation(async () => {
-      mocks.isSaaSMode = true;
-    });
-
-    await render();
-
-    expect(mocks.replace).not.toHaveBeenCalled();
-    expect(container.querySelector("[data-testid='outlet']")).not.toBeNull();
-  });
-
-  test("does not reload the project when navigating between child routes", async () => {
-    mocks.projectPermissions = new Set([
-      "bb.projects.get",
-      "bb.databases.list",
-    ]);
-
-    await render();
-    expect(mocks.fetchProject).toHaveBeenCalledTimes(1);
-
-    mocks.route.name = "workspace.project.issue";
-    mocks.route.requiredPermissions = ["bb.projects.get"];
-    await rerender();
-
-    expect(mocks.fetchProject).toHaveBeenCalledTimes(1);
     expect(container.querySelector("[data-testid='outlet']")).not.toBeNull();
   });
 });

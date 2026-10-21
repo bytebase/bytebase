@@ -480,7 +480,7 @@ export function LandingPage(_: Record<string, never> = {}) {
   const currentUser = useOptionalCurrentUser();
   const email = currentUser?.email ?? "";
   const { isSaaSMode, version, changelogURL } = useServerState();
-  const isLandingExperienceEnabled = isSaaSOrDev(isSaaSMode);
+  const landingAgentEnabled = isSaaSOrDev(isSaaSMode);
   const canSearchAuditLogs = useWorkspacePermission("bb.auditLogs.search");
   const [setupResources, setSetupResources] = useState<
     "loading" | "present" | "empty" | "unknown"
@@ -510,7 +510,7 @@ export function LandingPage(_: Record<string, never> = {}) {
   }, []);
 
   useEffect(() => {
-    if (!isLandingExperienceEnabled || !aiEnabled || !workspace?.name) {
+    if (!landingAgentEnabled || !aiEnabled || !workspace?.name) {
       setSetupResources("unknown");
       return;
     }
@@ -562,7 +562,7 @@ export function LandingPage(_: Record<string, never> = {}) {
     return () => {
       active = false;
     };
-  }, [aiEnabled, isLandingExperienceEnabled, workspace?.name]);
+  }, [aiEnabled, landingAgentEnabled, workspace?.name]);
 
   const landingStarterIds = getLandingStarterIds({
     scope: "workspace",
@@ -626,7 +626,7 @@ export function LandingPage(_: Record<string, never> = {}) {
             </h1>
           </header>
 
-          {isLandingExperienceEnabled && aiEnabled && workspace?.name && (
+          {landingAgentEnabled && aiEnabled && workspace?.name && (
             <form
               className="min-w-0 rounded-sm border border-accent/60 bg-background focus-within:border-accent focus-within:ring-1 focus-within:ring-accent"
               onSubmit={(event) => {

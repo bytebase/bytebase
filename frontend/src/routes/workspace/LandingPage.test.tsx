@@ -30,12 +30,8 @@ const mocks = vi.hoisted(() => ({
   searchProjects: vi.fn(),
   listInstances: vi.fn(),
   listDatabases: vi.fn(),
-  isSaaSMode: true,
-  isDev: false,
-}));
-
-vi.mock("@/utils/featureGates", () => ({
-  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.isDev,
+  dev: true,
+  isSaaSMode: false,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -44,6 +40,10 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/app/router", () => ({ router: { push: mocks.push } }));
+
+vi.mock("@/utils/featureGates", () => ({
+  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.dev,
+}));
 
 vi.mock("@/api", () => ({
   projectServiceClientConnect: { searchProjects: mocks.searchProjects },
@@ -157,8 +157,8 @@ beforeEach(() => {
   mocks.canSearchAuditLogs = true;
   mocks.hasAuditLogFeature = true;
   mocks.chatRunning = false;
-  mocks.isSaaSMode = true;
-  mocks.isDev = false;
+  mocks.dev = true;
+  mocks.isSaaSMode = false;
   mocks.queuedUserMessage = null;
   mocks.lastVisitProjectPath = "";
   mocks.selectOrCreateChatForContext.mockClear();
@@ -176,6 +176,18 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("LandingPage", () => {
+  test("hides the Agent chatbox in self-hosted release builds", () => {
+    mocks.dev = false;
+    render(<LandingPage />);
+
+    expect(
+      screen.queryByRole("textbox", { name: "landing.ai-placeholder" })
+    ).not.toBeInTheDocument();
+    expect(mocks.searchProjects).not.toHaveBeenCalled();
+    expect(mocks.listInstances).not.toHaveBeenCalled();
+    expect(mocks.listDatabases).not.toHaveBeenCalled();
+  });
+
   test("offers a starter above the empty composer and sends it in a read-only chat", async () => {
     render(<LandingPage />);
 
@@ -242,30 +254,6 @@ describe("LandingPage", () => {
         showDeleted: false,
       })
     );
-  });
-
-  test("hides the Agent chatbox and skips starter discovery in self-hosted production", () => {
-    mocks.isSaaSMode = false;
-
-    render(<LandingPage />);
-
-    expect(
-      screen.queryByRole("textbox", { name: "landing.ai-placeholder" })
-    ).not.toBeInTheDocument();
-    expect(mocks.searchProjects).not.toHaveBeenCalled();
-    expect(mocks.listInstances).not.toHaveBeenCalled();
-    expect(mocks.listDatabases).not.toHaveBeenCalled();
-  });
-
-  test("shows the Agent chatbox in development", () => {
-    mocks.isSaaSMode = false;
-    mocks.isDev = true;
-
-    render(<LandingPage />);
-
-    expect(
-      screen.getByRole("textbox", { name: "landing.ai-placeholder" })
-    ).toBeInTheDocument();
   });
 
   test("does not assume a workspace needs setup when resource discovery is incomplete", async () => {
@@ -351,7 +339,6 @@ describe("LandingPage", () => {
 
   test("guides an eligible workspace admin to AI configuration", () => {
     mocks.aiEnabled = false;
-    mocks.isSaaSMode = false;
     const { rerender } = render(<LandingPage />);
 
     expect(
@@ -367,7 +354,6 @@ describe("LandingPage", () => {
     });
 
     mocks.aiEnabled = true;
-    mocks.isSaaSMode = true;
     rerender(<LandingPage />);
     expect(screen.queryByRole("link", { name: "landing.ai-setup.action" })).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "landing.ai-placeholder" })).toBeVisible();

@@ -8,17 +8,11 @@ const mocks = vi.hoisted(() => ({
   fetchProjectList: vi.fn(),
   routerPush: vi.fn(),
   routerResolve: vi.fn(() => ({ fullPath: "/projects/visible" })),
-  isSaaSMode: true,
-}));
-
-vi.mock("@/utils/featureGates", () => ({
-  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode,
 }));
 vi.mock("@/stores/app", () => {
   const state = {
     isLoggedIn: () => true,
     fetchProjectList: mocks.fetchProjectList,
-    isSaaSMode: () => mocks.isSaaSMode,
   };
   return {
     useAppStore: Object.assign(
@@ -107,25 +101,7 @@ vi.mock("@/utils", async (original) => ({
 }));
 
 describe("ProjectsPage", () => {
-  test("opens Issues from a project row outside SaaS", async () => {
-    mocks.isSaaSMode = false;
-    mocks.fetchProjectList.mockResolvedValue({
-      projects: [{ name: "projects/visible" }],
-      nextPageToken: "",
-    });
-    const view = render(<ProjectsPage />);
-    const row = await view.findByRole("button", { name: "projects/visible" });
-
-    fireEvent.click(row);
-
-    expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.project.issue",
-      params: { projectId: "visible" },
-    });
-  });
-
   test("opens Project Home from a project row and in a new tab", async () => {
-    mocks.isSaaSMode = true;
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/visible" }],
       nextPageToken: "",

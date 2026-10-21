@@ -7,7 +7,7 @@ import {
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
-import { buildProjectEntryRoute } from "@/app/router/projectEntryRoute";
+import { PROJECT_V1_ROUTE_ISSUES } from "@/app/router/handles";
 import {
   PermissionDeniedFallback,
   useComponentPermissionState,
@@ -41,18 +41,18 @@ export function ProjectRouteGate() {
   const setRecentProject = useAppStore((state) => state.setRecentProject);
   const removeRecentVisit = useAppStore((state) => state.removeRecentVisit);
   const [loadedProjectName, setLoadedProjectName] = useState("");
-  const [projectHomeEnabled, setProjectHomeEnabled] = useState(false);
+  const [projectLandingEnabled, setProjectLandingEnabled] = useState<
+    boolean | undefined
+  >();
 
   useEffect(() => {
     let stale = false;
     setLoadedProjectName("");
-    setProjectHomeEnabled(false);
+    setProjectLandingEnabled(undefined);
 
     const load = async () => {
       await Promise.all([loadCurrentUser(), loadServerInfo()]);
-      const projectHomeEnabled = isSaaSOrDev(
-        useAppStore.getState().isSaaSMode()
-      );
+      const landingEnabled = isSaaSOrDev(useAppStore.getState().isSaaSMode());
       const nextProject = await fetchProject(projectName);
       if (stale) return;
       if (!nextProject) {
@@ -77,7 +77,7 @@ export function ProjectRouteGate() {
       }
       setRecentProject(nextProject.name);
       if (!stale) {
-        setProjectHomeEnabled(projectHomeEnabled);
+        setProjectLandingEnabled(landingEnabled);
         setLoadedProjectName(projectName);
       }
     };
@@ -97,18 +97,6 @@ export function ProjectRouteGate() {
     setRecentProject,
   ]);
 
-  const shouldRedirectProjectHome =
-    loadedProjectName === projectName &&
-    !projectHomeEnabled &&
-    route.name === PROJECT_V1_ROUTE_DETAIL;
-
-  useEffect(() => {
-    if (!shouldRedirectProjectHome) {
-      return;
-    }
-    void navigateRef.current.replace(buildProjectEntryRoute(projectId, false));
-  }, [projectId, shouldRedirectProjectHome]);
-
   const permissionReady = usePermissionDataReady(project);
   const { missedBasicPermissions, missedPermissions, permitted } =
     useComponentPermissionState({
@@ -118,8 +106,26 @@ export function ProjectRouteGate() {
     });
 
   const loaded = loadedProjectName === projectName;
+  const shouldRedirectProjectLanding =
+    loaded &&
+    projectLandingEnabled === false &&
+    route.name === PROJECT_V1_ROUTE_DETAIL;
 
-  if (!loaded || shouldRedirectProjectHome || !project || !permissionReady) {
+  useEffect(() => {
+    if (!shouldRedirectProjectLanding) return;
+    void navigateRef.current.replace({
+      name: PROJECT_V1_ROUTE_ISSUES,
+      params: { projectId },
+    });
+  }, [projectId, shouldRedirectProjectLanding]);
+
+  if (
+    !loaded ||
+    projectLandingEnabled === undefined ||
+    shouldRedirectProjectLanding ||
+    !project ||
+    !permissionReady
+  ) {
     return (
       <div className="flex h-full min-h-0 items-center justify-center">
         <LoaderCircle className="size-5 animate-spin text-control-light" />

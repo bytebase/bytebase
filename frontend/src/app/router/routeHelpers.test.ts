@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vitest";
-
 import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT,

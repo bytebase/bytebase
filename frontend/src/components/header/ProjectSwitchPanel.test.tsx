@@ -57,11 +57,6 @@ const mocks = vi.hoisted(() => ({
   inputOnChange: undefined as
     | ((event: ChangeEvent<HTMLInputElement>) => void)
     | undefined,
-  isSaaSMode: true,
-}));
-
-vi.mock("@/utils/featureGates", () => ({
-  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -127,26 +122,6 @@ vi.mock("@/app/router", () => ({
   WORKSPACE_ROUTE_LANDING: "workspace.landing",
 }));
 
-vi.mock("@/stores/app", () => ({
-  useAppStore: Object.assign(
-    (
-      selector: (state: {
-        isSaaSMode: () => boolean;
-        projectsByName: Record<string, never>;
-      }) => unknown
-    ) =>
-      selector({
-        isSaaSMode: () => mocks.isSaaSMode,
-        projectsByName: {},
-      }),
-    {
-      getState: () => ({
-        getProjectByName: (name: string) => ({ name, title: name }),
-      }),
-    }
-  ),
-}));
-
 vi.mock("@/components/ui/input", () => ({
   Input: (props: InputHTMLAttributes<HTMLInputElement>) => {
     mocks.inputOnChange = props.onChange;
@@ -207,7 +182,6 @@ beforeEach(async () => {
   mocks.projectListQueries = [];
   mocks.hasMore = false;
   mocks.inputOnChange = undefined;
-  mocks.isSaaSMode = true;
   window.open = vi.fn();
   ({ ProjectSwitchPanel } = await import("./ProjectSwitchPanel"));
 });
@@ -217,31 +191,6 @@ afterEach(() => {
 });
 
 describe("ProjectSwitchPanel", () => {
-  test("opens Issues when selecting a project outside SaaS", () => {
-    mocks.isSaaSMode = false;
-    const { container, render, unmount } = renderIntoContainer(
-      <ProjectSwitchPanel
-        onClose={mocks.close}
-        onRequestCreate={mocks.requestCreate}
-      />
-    );
-
-    render();
-
-    const row = Array.from(container.querySelectorAll("tr")).find((tr) =>
-      tr.textContent?.includes("Recent Project")
-    );
-    act(() => {
-      row?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    expect(mocks.resolve).toHaveBeenCalledWith({
-      name: "workspace.project.issue",
-      params: { projectId: "recent-project" },
-    });
-    unmount();
-  });
-
   test("debounces the backend project query at the input owner", () => {
     vi.useFakeTimers();
     const { render, unmount } = renderIntoContainer(

@@ -17,8 +17,8 @@ const mocks = vi.hoisted(() => ({
     query: {},
   },
   defaultProject: "",
-  isSaaSMode: true,
   dev: true,
+  isSaaSMode: false,
   getOrFetchProjectByName: vi.fn(),
   record: vi.fn(),
   push: vi.fn(),
@@ -88,8 +88,8 @@ vi.mock("@/stores/app", () => {
   const useAppStore = (
     selector: (state: {
       getOrFetchProjectByName: typeof mocks.getOrFetchProjectByName;
-      serverInfo: { defaultProject: string };
       isSaaSMode: () => boolean;
+      serverInfo: { defaultProject: string };
     }) => unknown
   ) =>
     selector({
@@ -105,14 +105,9 @@ vi.mock("@/stores/app", () => {
   return { useAppStore };
 });
 
-vi.mock("@/utils", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/utils")>()),
-  isDev: () => mocks.dev,
-}));
-
-vi.mock("@/utils/featureGates", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/utils/featureGates")>()),
+vi.mock("@/utils/featureGates", () => ({
   isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.dev,
+  sqlReviewV2Enabled: () => mocks.dev,
 }));
 
 let ProjectSidebar: typeof import("./ProjectSidebar").ProjectSidebar;
@@ -143,33 +138,20 @@ beforeEach(async () => {
     projectId: "sample",
   };
   mocks.defaultProject = "";
-  mocks.isSaaSMode = true;
-  mocks.dev = false;
+  mocks.dev = true;
+  mocks.isSaaSMode = false;
   ({ ProjectSidebar } = await import("./ProjectSidebar"));
 });
 
 describe("ProjectSidebar", () => {
-  test("hides the Home entry in self-hosted production", () => {
-    mocks.isSaaSMode = false;
+  test("hides Home in self-hosted release builds", () => {
+    mocks.dev = false;
     const { container, render, unmount } = renderIntoContainer(
       <ProjectSidebar />
     );
     render();
 
     expect(container.textContent).not.toContain("Home");
-
-    unmount();
-  });
-
-  test("shows the Home entry in development", () => {
-    mocks.isSaaSMode = false;
-    mocks.dev = true;
-    const { container, render, unmount } = renderIntoContainer(
-      <ProjectSidebar />
-    );
-    render();
-
-    expect(container.textContent).toContain("Home");
 
     unmount();
   });

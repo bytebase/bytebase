@@ -9,7 +9,5 @@ import { isDev } from "./util";
 // the whole un-gate.
 export const sqlReviewV2Enabled = (): boolean => isDev();
 
-// Landing experience work can be exercised locally before it is made
-// available to self-hosted production deployments.
 export const isSaaSOrDev = (isSaaSMode: boolean): boolean =>
   isSaaSMode || isDev();
