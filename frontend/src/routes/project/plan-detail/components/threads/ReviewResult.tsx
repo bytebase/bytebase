@@ -31,7 +31,6 @@ export function useCommentAuthor(comment: IssueComment): {
   const review = comment.reviewMetadata;
   const user = useUserByIdentifier(review ? undefined : comment.creator);
   if (review) {
-    const Icon = review.runType === ReviewRun_Type.AI ? Bot : ListChecks;
     return {
       avatar: (
         <span
@@ -39,7 +38,7 @@ export function useCommentAuthor(comment: IssueComment): {
           className="flex size-5 shrink-0 items-center justify-center rounded-full bg-control-bg text-control"
           data-testid="reviewer-avatar"
         >
-          <Icon className="size-3.5" />
+          <ReviewerIcon className="size-3.5" runType={review.runType} />
         </span>
       ),
       name: reviewerName(t, review.runType),
@@ -53,7 +52,18 @@ export function useCommentAuthor(comment: IssueComment): {
   };
 }
 
-function reviewerName(t: TFunction, runType: ReviewRun_Type): string {
+export function ReviewerIcon({
+  className,
+  runType,
+}: {
+  className: string;
+  runType: ReviewRun_Type;
+}) {
+  const Icon = runType === ReviewRun_Type.AI ? Bot : ListChecks;
+  return <Icon className={className} />;
+}
+
+export function reviewerName(t: TFunction, runType: ReviewRun_Type): string {
   switch (runType) {
     case ReviewRun_Type.AI:
       return t("sql-review.ai-review.self");
