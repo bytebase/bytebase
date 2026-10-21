@@ -740,6 +740,12 @@ func TestTheJourneyOneWritesAreServed(t *testing.T) {
 		"an agent that requested access must be able to revoke the grant once the work is done (BYT-9292)")
 	require.Equal(t, v1pb.MCPMethodClass_WRITE, class[v1connect.ProjectServiceUpdateProjectProcedure],
 		"an agent must be able to turn just-in-time access on, through set_just_in_time_access (BYT-9292)")
+	require.Equal(t, v1pb.MCPMethodClass_WRITE, class[v1connect.OrgPolicyServiceUpdatePolicyProcedure],
+		"an agent must be able to grant and revoke a masking exemption, through the exemption tools (BYT-9292)")
+	for _, procedure := range []string{v1connect.OrgPolicyServiceCreatePolicyProcedure, v1connect.OrgPolicyServiceDeletePolicyProcedure} {
+		require.Equal(t, v1pb.MCPMethodClass_EXCLUDED, class[procedure],
+			"%s stays EXCLUDED: the exemption tools create the first policy through UpdatePolicy's allow_missing and write an empty list for the last entry", procedure)
+	}
 }
 
 func TestMCPGateServesAProjectUpdateOnlyWithItsConfirmation(t *testing.T) {
@@ -786,6 +792,60 @@ func TestMCPGateServesAProjectUpdateOnlyWithItsConfirmation(t *testing.T) {
 
 	t.Run("a confirmed request is still held to the ceiling", func(t *testing.T) {
 		got := invokeMCPGateFrom(confirmed(procedure, project), t, readOnlyCeiling(), write, procedure, request(project))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+	})
+}
+
+func TestMCPGateServesAPolicyUpdateOnlyWithItsConfirmation(t *testing.T) {
+	const policy = "projects/p/policies/masking_exemption"
+	write := classContext(v1pb.MCPMethodClass_WRITE)
+	procedure := v1connect.OrgPolicyServiceUpdatePolicyProcedure
+	request := func(name string) connect.AnyRequest {
+		return connect.NewRequest(&v1pb.UpdatePolicyRequest{
+			Policy: &v1pb.Policy{
+				Name:   name,
+				Type:   v1pb.PolicyType_MASKING_EXEMPTION,
+				Policy: &v1pb.Policy_MaskingExemptionPolicy{MaskingExemptionPolicy: &v1pb.MaskingExemptionPolicy{}},
+			},
+			UpdateMask:   &fieldmaskpb.FieldMask{Paths: []string{"masking_exemption_policy"}},
+			AllowMissing: true,
+		})
+	}
+	confirmed := func(procedure, name string) context.Context {
+		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{Procedure: procedure, Resource: name})
+	}
+
+	t.Run("an unconfirmed request, as call_api sends it, is refused", func(t *testing.T) {
+		got := invokeMCPGate(t, readWriteCeiling(), write, procedure, request(policy))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.Contains(t, got.err.Error(), "grant_masking_exemption", "the denial must name the paths that can confirm")
+		require.Contains(t, got.err.Error(), "Bytebase console", "the denial must name where other policies change")
+		require.True(t, got.auditMarked)
+	})
+
+	t.Run("the confirmed request is served", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, policy), t, readWriteCeiling(), write, procedure, request(policy))
+		require.NoError(t, got.err)
+		require.True(t, got.dispatched)
+	})
+
+	t.Run("a confirmation for another policy is refused", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, "projects/q/policies/masking_exemption"), t, readWriteCeiling(), write, procedure, request(policy))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+	})
+
+	t.Run("a confirmation for another procedure is refused", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(v1connect.ProjectServiceUpdateProjectProcedure, policy), t, readWriteCeiling(), write, procedure, request(policy))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+	})
+
+	t.Run("a confirmed request is still held to the ceiling", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, policy), t, readOnlyCeiling(), write, procedure, request(policy))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
 	})

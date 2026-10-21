@@ -90,8 +90,10 @@ service OrgPolicyService {
     option (bytebase.v1.permission) = "bb.policies.update";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    // An MCP session reaches it only through the grant_masking_exemption and
+    // revoke_masking_exemption tools, after the user confirms the change in the
+    // MCP client.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Deletes an organizational policy.

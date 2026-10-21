@@ -152,6 +152,7 @@ func TestMaskedWriteGuardIsWiredIntoTheGate(t *testing.T) {
 		v1connect.IssueServiceApproveIssueProcedure,
 		v1connect.IssueServiceRejectIssueProcedure,
 		v1connect.ProjectServiceUpdateProjectProcedure,
+		v1connect.OrgPolicyServiceUpdatePolicyProcedure,
 	}
 	listed := slices.Clone(notDoors)
 	for _, door := range doors {

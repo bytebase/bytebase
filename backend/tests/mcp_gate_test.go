@@ -605,3 +605,76 @@ func TestMCPDefaultRowIsReadOnly(t *testing.T) {
 	a.Equal(http.StatusForbidden, sheet.Status,
 		"the default READ_ONLY policy must refuse a WRITE method: %s", sheet.Error)
 }
+
+// TestMCPGrantsAndRevokesAMaskingExemption drives both exemption tools over one
+// live session, and pins that call_api cannot write the policy itself.
+func TestMCPGrantsAndRevokesAMaskingExemption(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+
+	project, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		ProjectId: "mcp-exemption",
+		Project:   &v1pb.Project{Title: "MCP exemption"},
+	}))
+	a.NoError(err)
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+	pgContainer := sharedPgTarget(t)
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst"),
+		Instance: &v1pb.Instance{
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "MCP exemption instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
+		},
+	}))
+	a.NoError(err)
+	dbName := generateRandomString("db")
+	a.NoError(ctl.createDatabase(ctx, project.Msg, instance.Msg, nil, dbName, ""))
+	database := fmt.Sprintf("%s/databases/%s", instance.Msg.Name, dbName)
+	policyName := project.Msg.Name + "/policies/masking_exemption"
+
+	var asked atomic.Int32
+	session := openMCPSessionWithOptions(ctx, t, ctl, ctl.authInterceptor.token, &mcp.ClientOptions{
+		ElicitationHandler: func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
+			asked.Add(1)
+			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"confirm": true}}, nil
+		},
+	})
+	defer session.Close()
+
+	direct := callAPIOnSession(ctx, t, session, "OrgPolicyService/UpdatePolicy", map[string]any{
+		"policy":       map[string]any{"name": policyName, "type": "MASKING_EXEMPTION", "maskingExemptionPolicy": map[string]any{}},
+		"updateMask":   "maskingExemptionPolicy",
+		"allowMissing": true,
+	})
+	a.Equal(http.StatusForbidden, direct.Status, direct.Error)
+	a.Contains(direct.Error, "grant_masking_exemption")
+
+	failed, granted := callToolOnSession(ctx, t, session, "grant_masking_exemption", map[string]any{
+		"project": project.Msg.Name, "member": "user:demo@example.com", "database": database,
+		"table": "employee", "column": "salary", "expireTime": "2099-01-01T00:00:00Z",
+	})
+	a.False(failed, granted)
+	policy, err := ctl.orgPolicyServiceClient.GetPolicy(ctx, connect.NewRequest(&v1pb.GetPolicyRequest{Name: policyName}))
+	a.NoError(err)
+	exemptions := policy.Msg.GetMaskingExemptionPolicy().GetExemptions()
+	a.Len(exemptions, 1)
+	a.Equal([]string{"user:demo@example.com"}, exemptions[0].Members)
+	condition := exemptions[0].GetCondition().GetExpression()
+	a.Equal(fmt.Sprintf(`request.time < timestamp("2099-01-01T00:00:00.000Z") && (resource.instance_id == %q && resource.database_name == %q && resource.table_name == "employee" && resource.column_name == "salary")`,
+		strings.TrimPrefix(instance.Msg.Name, "instances/"), dbName), condition)
+
+	failed, revoked := callToolOnSession(ctx, t, session, "revoke_masking_exemption", map[string]any{
+		"project": project.Msg.Name, "member": "user:demo@example.com", "condition": condition,
+	})
+	a.False(failed, revoked)
+	policy, err = ctl.orgPolicyServiceClient.GetPolicy(ctx, connect.NewRequest(&v1pb.GetPolicyRequest{Name: policyName}))
+	a.NoError(err)
+	a.Empty(policy.Msg.GetMaskingExemptionPolicy().GetExemptions())
+	a.Equal(int32(2), asked.Load(), "the grant and the revoke each ask the user once")
+}
