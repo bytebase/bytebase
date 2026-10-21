@@ -20,7 +20,9 @@ const mocks = vi.hoisted(() => ({
   projectErrorsByName: {} as Record<string, { message: string }>,
   workspacePermissions: new Set<Permission>(),
   projectPermissions: new Set<Permission>(),
+  isSaaSMode: true,
   fetchProject: vi.fn(async (name: string) => mocks.projectsByName[name]),
+  loadServerInfo: vi.fn(async () => undefined),
   replace: vi.fn(),
   resolve: vi.fn(() => ({ fullPath: "/projects/prod" })),
   // Stable ref — mirrors the real `useNotify` (returns `state.notify`). A fresh
@@ -71,9 +73,10 @@ vi.mock("@/stores/app", () => {
       return mocks.projectErrorsByName;
     },
     serverInfo: { defaultProject: "projects/default" },
+    isSaaSMode: () => mocks.isSaaSMode,
     fetchProject: mocks.fetchProject,
     loadCurrentUser: vi.fn(async () => undefined),
-    loadServerInfo: vi.fn(async () => undefined),
+    loadServerInfo: mocks.loadServerInfo,
     loadWorkspacePermissionState: vi.fn(async () => {}),
     loadProjectIamPolicy: vi.fn(async () => undefined),
     loadSubscription: vi.fn(async () => undefined),
@@ -107,6 +110,7 @@ let root: ReturnType<typeof createRoot>;
 
 beforeEach(() => {
   mocks.route.requiredPermissions = ["bb.projects.get", "bb.databases.list"];
+  mocks.route.name = "workspace.project.database";
   mocks.params = { projectId: "prod" };
   mocks.projectsByName = {
     "projects/prod": { name: "projects/prod", allowRequestRole: true },
@@ -114,7 +118,10 @@ beforeEach(() => {
   mocks.projectErrorsByName = {};
   mocks.workspacePermissions = new Set(BASIC_PERMISSIONS);
   mocks.projectPermissions = new Set();
+  mocks.isSaaSMode = true;
   mocks.fetchProject.mockClear();
+  mocks.loadServerInfo.mockReset();
+  mocks.loadServerInfo.mockResolvedValue(undefined);
   mocks.replace.mockClear();
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -171,5 +178,36 @@ describe("ProjectRouteGate", () => {
 
     expect(mocks.replace).toHaveBeenCalledWith({ name: "workspace.landing" });
     expect(container.querySelector("[data-testid='outlet']")).toBeNull();
+  });
+
+  test("redirects self-hosted project Home URLs to Issues", async () => {
+    mocks.route.name = "workspace.project.detail";
+    mocks.projectPermissions = new Set(["bb.projects.get"]);
+    mocks.isSaaSMode = false;
+
+    await render();
+
+    expect(mocks.replace).toHaveBeenCalledWith({
+      name: "workspace.project.issue",
+      params: { projectId: "prod" },
+    });
+    expect(container.querySelector("[data-testid='outlet']")).toBeNull();
+  });
+
+  test("waits for server info before deciding the project entry route", async () => {
+    mocks.route.name = "workspace.project.detail";
+    mocks.projectPermissions = new Set([
+      "bb.projects.get",
+      "bb.databases.list",
+    ]);
+    mocks.isSaaSMode = false;
+    mocks.loadServerInfo.mockImplementation(async () => {
+      mocks.isSaaSMode = true;
+    });
+
+    await render();
+
+    expect(mocks.replace).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-testid='outlet']")).not.toBeNull();
   });
 });

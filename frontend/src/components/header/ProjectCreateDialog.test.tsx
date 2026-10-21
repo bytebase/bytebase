@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   notify: vi.fn(),
   onClose: vi.fn(),
   setRecentProject: vi.fn(),
+  isSaaSMode: true,
 }));
 
 vi.mock("react-i18next", async (importOriginal) => ({
@@ -27,7 +28,11 @@ vi.mock("@/hooks/useAppState", () => ({
   useWorkspacePermission: () => true,
 }));
 vi.mock("@/stores/app", () => ({
-  useAppStore: { getState: () => ({ fetchProject: vi.fn() }) },
+  useAppStore: Object.assign(
+    (selector: (state: { isSaaSMode: () => boolean }) => unknown) =>
+      selector({ isSaaSMode: () => mocks.isSaaSMode }),
+    { getState: () => ({ fetchProject: vi.fn() }) }
+  ),
 }));
 vi.mock("@/components/ResourceIdField", () => ({
   ResourceIdField: ({
@@ -62,6 +67,7 @@ import { ProjectCreateDialog } from "./ProjectCreateDialog";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.isSaaSMode = true;
   mocks.createProject.mockResolvedValue({
     name: "projects/new-project",
     title: "New project",
@@ -69,6 +75,24 @@ beforeEach(() => {
 });
 
 describe("ProjectCreateDialog", () => {
+  test("opens Issues after creating a project outside SaaS", async () => {
+    mocks.isSaaSMode = false;
+    render(<ProjectCreateDialog open onClose={mocks.onClose} />);
+    fireEvent.click(screen.getByRole("button", { name: "set-resource-id" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "common.create" }).hasAttribute("disabled")).toBe(false)
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "common.create" }));
+
+    await waitFor(() =>
+      expect(mocks.navigatePush).toHaveBeenCalledWith({
+        name: "workspace.project.issue",
+        params: { projectId: "new-project" },
+      })
+    );
+  });
+
   test("opens the new project's Home after creation", async () => {
     render(<ProjectCreateDialog open onClose={mocks.onClose} />);
     fireEvent.click(screen.getByRole("button", { name: "set-resource-id" }));

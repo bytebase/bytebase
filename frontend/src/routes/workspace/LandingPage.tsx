@@ -508,7 +508,7 @@ export function LandingPage(_: Record<string, never> = {}) {
   }, []);
 
   useEffect(() => {
-    if (!aiEnabled || !workspace?.name) {
+    if (!isSaaSMode || !aiEnabled || !workspace?.name) {
       setSetupResources("unknown");
       return;
     }
@@ -560,7 +560,7 @@ export function LandingPage(_: Record<string, never> = {}) {
     return () => {
       active = false;
     };
-  }, [aiEnabled, workspace?.name]);
+  }, [aiEnabled, isSaaSMode, workspace?.name]);
 
   const landingStarterIds = getLandingStarterIds({
     scope: "workspace",
@@ -624,7 +624,7 @@ export function LandingPage(_: Record<string, never> = {}) {
             </h1>
           </header>
 
-          {aiEnabled && workspace?.name && (
+          {isSaaSMode && aiEnabled && workspace?.name && (
             <form
               className="min-w-0 rounded-sm border border-accent/60 bg-background focus-within:border-accent focus-within:ring-1 focus-within:ring-accent"
               onSubmit={(event) => {

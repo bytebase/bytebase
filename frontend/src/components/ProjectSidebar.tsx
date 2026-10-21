@@ -74,6 +74,7 @@ function getItemClass(item: SidebarItem, currentRouteName: string): string[] {
 function useSidebarItems(): SidebarItem[] {
   const { t } = useTranslation();
   const defaultProject = useAppStore((s) => s.serverInfo?.defaultProject ?? "");
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
 
   const sidebarRoute = useCurrentRoute();
   const sidebarProjectId =
@@ -90,6 +91,7 @@ function useSidebarItems(): SidebarItem[] {
         path: PROJECT_V1_ROUTE_DETAIL,
         icon: House,
         type: "div",
+        hide: !isSaaSMode,
       },
       {
         title: t("common.issues"),
@@ -218,7 +220,7 @@ function useSidebarItems(): SidebarItem[] {
         hide: isDefault,
       },
     ],
-    [t, isDefault]
+    [t, isDefault, isSaaSMode]
   );
 }
 

@@ -1,5 +1,7 @@
 import type { RouteTarget } from "@/app/router";
 import {
+  PROJECT_V1_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT,
@@ -19,6 +21,16 @@ import { extractProjectResourceName } from "@/utils/v1/project";
 // application router's push, replace, and resolve methods.
 
 type BuildPlanDeployRouteSelection = { stageId: string; taskId?: string };
+
+// Project Home is a SaaS-only landing surface. Keep every project-entry path
+// on the established Issues route for self-hosted deployments.
+export const buildProjectEntryRoute = (
+  projectId: string,
+  isSaaS: boolean
+): RouteTarget => ({
+  name: isSaaS ? PROJECT_V1_ROUTE_DETAIL : PROJECT_V1_ROUTE_ISSUES,
+  params: { projectId },
+});
 
 type BuildPlanDeployRouteParams = BuildPlanDeployRouteSelection & {
   projectId: string;

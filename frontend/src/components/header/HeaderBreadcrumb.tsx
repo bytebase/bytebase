@@ -11,7 +11,7 @@ import {
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
-import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
+import { buildProjectEntryRoute } from "@/app/router/routeHelpers";
 import { RouterLink } from "@/components/RouterLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import {
   workspaceNamePrefix,
 } from "@/lib/resourceName";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/app";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { ProjectCreateDialog } from "./ProjectCreateDialog";
 import {
@@ -254,6 +255,7 @@ export function ProjectSegment({
   const hasProject = isValidProjectName(currentProject?.name);
   const { record } = useRecentVisit();
   const navigate = useNavigate();
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
 
   useEffect(() => {
     setOpen(false);
@@ -276,15 +278,11 @@ export function ProjectSegment({
             </Button>
           ) : (
             <RouterLink
-              to={{
-                name: PROJECT_V1_ROUTE_DETAIL,
-                params: { projectId },
-              }}
+              to={buildProjectEntryRoute(projectId, isSaaSMode)}
               onClick={() => {
-                const resolvedRoute = navigate.resolve({
-                  name: PROJECT_V1_ROUTE_DETAIL,
-                  params: { projectId },
-                });
+                const resolvedRoute = navigate.resolve(
+                  buildProjectEntryRoute(projectId, isSaaSMode)
+                );
                 record(resolvedRoute.fullPath);
               }}
               className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer no-underline"

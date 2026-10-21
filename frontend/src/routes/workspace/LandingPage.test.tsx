@@ -30,7 +30,7 @@ const mocks = vi.hoisted(() => ({
   searchProjects: vi.fn(),
   listInstances: vi.fn(),
   listDatabases: vi.fn(),
-  isSaaSMode: false,
+  isSaaSMode: true,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -152,7 +152,7 @@ beforeEach(() => {
   mocks.canSearchAuditLogs = true;
   mocks.hasAuditLogFeature = true;
   mocks.chatRunning = false;
-  mocks.isSaaSMode = false;
+  mocks.isSaaSMode = true;
   mocks.queuedUserMessage = null;
   mocks.lastVisitProjectPath = "";
   mocks.selectOrCreateChatForContext.mockClear();
@@ -238,6 +238,19 @@ describe("LandingPage", () => {
     );
   });
 
+  test("hides the Agent chatbox and skips starter discovery outside SaaS", () => {
+    mocks.isSaaSMode = false;
+
+    render(<LandingPage />);
+
+    expect(
+      screen.queryByRole("textbox", { name: "landing.ai-placeholder" })
+    ).not.toBeInTheDocument();
+    expect(mocks.searchProjects).not.toHaveBeenCalled();
+    expect(mocks.listInstances).not.toHaveBeenCalled();
+    expect(mocks.listDatabases).not.toHaveBeenCalled();
+  });
+
   test("does not assume a workspace needs setup when resource discovery is incomplete", async () => {
     mocks.searchProjects.mockRejectedValue(new Error("permission denied"));
     render(<LandingPage />);
@@ -321,6 +334,7 @@ describe("LandingPage", () => {
 
   test("guides an eligible workspace admin to AI configuration", () => {
     mocks.aiEnabled = false;
+    mocks.isSaaSMode = false;
     const { rerender } = render(<LandingPage />);
 
     expect(
@@ -336,6 +350,7 @@ describe("LandingPage", () => {
     });
 
     mocks.aiEnabled = true;
+    mocks.isSaaSMode = true;
     rerender(<LandingPage />);
     expect(screen.queryByRole("link", { name: "landing.ai-setup.action" })).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "landing.ai-placeholder" })).toBeVisible();

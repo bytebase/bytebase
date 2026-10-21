@@ -8,11 +8,11 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  PROJECT_V1_ROUTE_DETAIL,
   useCurrentRoute,
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
+import { buildProjectEntryRoute } from "@/app/router/routeHelpers";
 import { ProjectTable } from "@/components/ProjectTable";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
@@ -37,6 +37,7 @@ import {
   isValidProjectName,
   projectNamePrefix,
 } from "@/lib/resourceName";
+import { useAppStore } from "@/stores/app";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 export interface ProjectSwitchPanelProps {
@@ -131,6 +132,7 @@ export function ProjectSwitchPanel({
     (projectId ? `${projectNamePrefix}${projectId}` : "");
   const currentProject = useProject(currentProjectName);
   const allowToCreateProject = useWorkspacePermission("bb.projects.create");
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
 
   const filteredRecentProjectList = useMemo(() => {
     return recentProjectList.filter((project) =>
@@ -173,12 +175,9 @@ export function ProjectSwitchPanel({
         return;
       }
 
-      const route = navigate.resolve({
-        name: PROJECT_V1_ROUTE_DETAIL,
-        params: {
-          projectId: getProjectName(project.name),
-        },
-      });
+      const route = navigate.resolve(
+        buildProjectEntryRoute(getProjectName(project.name), isSaaSMode)
+      );
       record(route.fullPath);
 
       if (event.ctrlKey || event.metaKey) {
@@ -189,7 +188,7 @@ export function ProjectSwitchPanel({
 
       onClose();
     },
-    [navigate, onClose, onSelectProject, record]
+    [isSaaSMode, navigate, onClose, onSelectProject, record]
   );
 
   const handleGotoWorkspace = useCallback(

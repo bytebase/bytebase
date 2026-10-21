@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
+  PROJECT_V1_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT,
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
@@ -10,12 +12,27 @@ import {
   buildPlanCreateRoute,
   buildPlanDeployRouteFromRolloutName,
   buildPlanRolloutRouteFromPlanName,
+  buildProjectEntryRoute,
   buildStageRoute,
   buildTaskDetailRoute,
 } from "./routeHelpers";
 import { buildRouteNameIndex } from "./routes";
 
 describe("plan detail resource route helpers", () => {
+  test("builds the SaaS project landing route", () => {
+    expect(buildProjectEntryRoute("orders", true)).toEqual({
+      name: PROJECT_V1_ROUTE_DETAIL,
+      params: { projectId: "orders" },
+    });
+  });
+
+  test("keeps the self-hosted project entry on Issues", () => {
+    expect(buildProjectEntryRoute("orders", false)).toEqual({
+      name: PROJECT_V1_ROUTE_ISSUES,
+      params: { projectId: "orders" },
+    });
+  });
+
   test("builds plan creation on the plan root without a placeholder spec", () => {
     const query = {
       databaseList: "projects/p/databases/db",

@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
     | undefined,
   onSelectWorkspace: vi.fn(),
   switchWorkspace: vi.fn(),
+  isSaaSMode: true,
   workspaceList: [
     {
       name: "workspaces/default",
@@ -72,6 +73,11 @@ vi.mock("@/hooks/useAppState", () => ({
     title: "Default Workspace",
   }),
   useWorkspaceList: () => mocks.workspaceList,
+}));
+
+vi.mock("@/stores/app", () => ({
+  useAppStore: (selector: (state: { isSaaSMode: () => boolean }) => unknown) =>
+    selector({ isSaaSMode: () => mocks.isSaaSMode }),
 }));
 
 vi.mock("@/components/RouterLink", () => ({
@@ -178,6 +184,7 @@ beforeEach(async () => {
     title: "Recent Project",
   };
   mocks.projectSwitchPanelProps = undefined;
+  mocks.isSaaSMode = true;
   mocks.workspaceList = [
     {
       name: "workspaces/default",
@@ -188,6 +195,22 @@ beforeEach(async () => {
 });
 
 describe("HeaderBreadcrumb", () => {
+  test("links the project title to Issues outside SaaS", () => {
+    mocks.isSaaSMode = false;
+    const { container, render, unmount } = renderIntoContainer(
+      <HeaderBreadcrumb />
+    );
+
+    render();
+
+    const projectLink = container.querySelector<HTMLAnchorElement>(
+      'a[data-route-name="workspace.project.issue"]'
+    );
+    expect(projectLink?.dataset.projectId).toBe("recent-project");
+
+    unmount();
+  });
+
   test("opens project switcher only from the chevron and links title to project home", () => {
     const { container, render, unmount } = renderIntoContainer(
       <HeaderBreadcrumb />

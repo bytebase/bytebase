@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     query: {},
   },
   defaultProject: "",
+  isSaaSMode: true,
   dev: true,
   getOrFetchProjectByName: vi.fn(),
   record: vi.fn(),
@@ -88,6 +89,7 @@ vi.mock("@/stores/app", () => {
     selector: (state: {
       getOrFetchProjectByName: typeof mocks.getOrFetchProjectByName;
       serverInfo: { defaultProject: string };
+      isSaaSMode: () => boolean;
     }) => unknown
   ) =>
     selector({
@@ -95,6 +97,7 @@ vi.mock("@/stores/app", () => {
       serverInfo: {
         defaultProject: mocks.defaultProject,
       },
+      isSaaSMode: () => mocks.isSaaSMode,
     });
   useAppStore.getState = () => ({
     getOrFetchProjectByName: mocks.getOrFetchProjectByName,
@@ -135,11 +138,24 @@ beforeEach(async () => {
     projectId: "sample",
   };
   mocks.defaultProject = "";
+  mocks.isSaaSMode = true;
   mocks.dev = true;
   ({ ProjectSidebar } = await import("./ProjectSidebar"));
 });
 
 describe("ProjectSidebar", () => {
+  test("hides the SaaS-only Home entry outside SaaS", () => {
+    mocks.isSaaSMode = false;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProjectSidebar />
+    );
+    render();
+
+    expect(container.textContent).not.toContain("Home");
+
+    unmount();
+  });
+
   test("shows Home as the active root route, including for the default project", () => {
     mocks.defaultProject = "projects/sample";
     mocks.currentRoute.name = "workspace.project.detail";

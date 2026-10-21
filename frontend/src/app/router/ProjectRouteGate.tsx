@@ -7,6 +7,7 @@ import {
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
+import { buildProjectEntryRoute } from "@/app/router/routeHelpers";
 import {
   PermissionDeniedFallback,
   useComponentPermissionState,
@@ -46,6 +47,7 @@ export function ProjectRouteGate() {
 
     const load = async () => {
       await Promise.all([loadCurrentUser(), loadServerInfo()]);
+      const isSaaSMode = useAppStore.getState().isSaaSMode();
       const nextProject = await fetchProject(projectName);
       if (stale) return;
       if (!nextProject) {
@@ -69,6 +71,12 @@ export function ProjectRouteGate() {
         return;
       }
       setRecentProject(nextProject.name);
+      if (!isSaaSMode && route.name === PROJECT_V1_ROUTE_DETAIL) {
+        void navigateRef.current.replace(
+          buildProjectEntryRoute(projectId, false)
+        );
+        return;
+      }
       if (!stale) {
         setLoadedProjectName(projectName);
       }
@@ -86,6 +94,7 @@ export function ProjectRouteGate() {
     projectId,
     projectName,
     removeRecentVisit,
+    route.name,
     setRecentProject,
   ]);
 

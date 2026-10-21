@@ -4,7 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
-import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
+import { buildProjectEntryRoute } from "@/app/router/routeHelpers";
 import {
   AdvancedSearch,
   type ScopeOption,
@@ -634,6 +634,7 @@ export const IssueListItem = memo(function IssueListItem({
   const creatorUser = useAppStore((state) =>
     state.getUserByIdentifier(issue.creator)
   );
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
   const creator = creatorUser || unknownUser(issue.creator);
 
   const issueProject = useMemo(() => projectOfIssue(issue), [issue]);
@@ -798,12 +799,10 @@ export const IssueListItem = memo(function IssueListItem({
                 <span>&middot;</span>
                 <RouterLink
                   className="hover:underline"
-                  to={{
-                    name: PROJECT_V1_ROUTE_DETAIL,
-                    params: {
-                      projectId: extractProjectResourceName(issueProject.name),
-                    },
-                  }}
+                  to={buildProjectEntryRoute(
+                    extractProjectResourceName(issueProject.name),
+                    isSaaSMode
+                  )}
                   onClick={(e) => {
                     e.stopPropagation();
                   }}

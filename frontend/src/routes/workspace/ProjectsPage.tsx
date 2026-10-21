@@ -2,11 +2,11 @@ import { Archive, Check, EllipsisVertical, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router, useCurrentRoute } from "@/app/router";
-import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
 import {
   markListScrollRestorationEntry,
   useListScrollRestorationLoadMore,
 } from "@/app/router/NavigationScrollRestoration";
+import { buildProjectEntryRoute } from "@/app/router/routeHelpers";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -70,13 +70,6 @@ import {
 } from "@/utils";
 
 const parseProjectSearch = createAdvancedSearchParser(["state", "label"]);
-
-function projectHomeRoute(project: Project) {
-  return {
-    name: PROJECT_V1_ROUTE_DETAIL,
-    params: { projectId: getProjectName(project.name) },
-  };
-}
 
 // ============================================================
 // ConfirmDialog
@@ -575,6 +568,7 @@ export function ProjectsPage() {
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const canCreate = hasWorkspacePermissionV2("bb.projects.create");
   const canDelete = hasWorkspacePermissionV2("bb.projects.delete");
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
 
   useProductIntro({
     id: CREATE_PROJECT_PRODUCT_INTRO,
@@ -583,24 +577,30 @@ export function ProjectsPage() {
     disabled: !canCreate,
   });
 
-  const handleCreated = useCallback((project: Project) => {
-    router.push({
-      name: PROJECT_V1_ROUTE_DETAIL,
-      params: { projectId: getProjectName(project.name) },
-    });
-  }, []);
+  const handleCreated = useCallback(
+    (project: Project) => {
+      router.push(
+        buildProjectEntryRoute(getProjectName(project.name), isSaaSMode)
+      );
+    },
+    [isSaaSMode]
+  );
 
   const handleRowClick = useCallback(
     (project: Project, e: React.MouseEvent<HTMLElement>) => {
-      const route = router.resolve(projectHomeRoute(project));
+      const target = buildProjectEntryRoute(
+        getProjectName(project.name),
+        isSaaSMode
+      );
+      const route = router.resolve(target);
       if (e.ctrlKey || e.metaKey) {
         window.open(route.fullPath, "_blank");
       } else {
         markListScrollRestorationEntry();
-        router.push(projectHomeRoute(project));
+        router.push(target);
       }
     },
-    []
+    [isSaaSMode]
   );
 
   const handleProjectAction = useCallback(() => {

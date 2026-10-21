@@ -2,7 +2,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "@/app/router";
-import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
+import { buildProjectEntryRoute } from "@/app/router/routeHelpers";
 import {
   ResourceIdField,
   type ResourceIdFieldRef,
@@ -42,6 +42,7 @@ export function ProjectCreateDialog({
 }: ProjectCreateDialogProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
   const { createProject, setRecentProject } = useCreateProject();
   const notify = useNotify();
   const hasCreatePermission = useWorkspacePermission("bb.projects.create");
@@ -110,12 +111,12 @@ export function ProjectCreateDialog({
         onCreated(createdProject);
       } else {
         setRecentProject(createdProject.name);
-        void navigate.push({
-          name: PROJECT_V1_ROUTE_DETAIL,
-          params: {
-            projectId: extractProjectResourceName(createdProject.name),
-          },
-        });
+        void navigate.push(
+          buildProjectEntryRoute(
+            extractProjectResourceName(createdProject.name),
+            isSaaSMode
+          )
+        );
       }
 
       onClose();
@@ -135,6 +136,7 @@ export function ProjectCreateDialog({
     allowCreate,
     isCreating,
     createProject,
+    isSaaSMode,
     navigate,
     notify,
     onClose,
