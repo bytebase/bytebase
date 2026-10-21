@@ -4,16 +4,41 @@ let workerReady = false;
 let localPromise: Promise<void> | null = null;
 
 const WAIT_TIMEOUT_MS = 35000;
+const STARTUP_ATTEMPTS = 3;
+const STARTUP_RETRY_DELAY_MS = 250;
+
+class WorkerStartupError extends Error {}
 
 /** Refresh shared session cookies through the same worker in every tab. */
 export function refreshTokensInWorker(): Promise<void> {
   if (localPromise) {
     return localPromise;
   }
-  localPromise = refreshInWorker().finally(() => {
+  localPromise = refreshWithStartupRetry().finally(() => {
     localPromise = null;
   });
   return localPromise;
+}
+
+async function refreshWithStartupRetry(): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await refreshInWorker();
+      return;
+    } catch (error) {
+      if (
+        !(error instanceof WorkerStartupError) ||
+        attempt >= STARTUP_ATTEMPTS
+      ) {
+        throw error;
+      }
+      // Keep transient startup failures inside the shared promise: callers
+      // interpret a rejected refresh as an expired session.
+      await new Promise((resolve) =>
+        setTimeout(resolve, STARTUP_RETRY_DELAY_MS * attempt)
+      );
+    }
+  }
 }
 
 async function refreshInWorker(): Promise<void> {
@@ -51,6 +76,8 @@ async function refreshInWorker(): Promise<void> {
         // No refresh was dispatched before readiness, so retrying startup is safe.
         currentWorker.port.close();
         worker = undefined;
+        reject(new WorkerStartupError(error.message));
+        return;
       }
       reject(workerError ?? error);
     };

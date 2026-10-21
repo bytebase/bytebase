@@ -89,32 +89,55 @@ test("does not fall back to an uncoordinated refresh when SharedWorker is unavai
 });
 
 for (const failure of ["error", "timeout"] as const) {
-  test(`startup ${failure} can recover without dispatching an uncoordinated refresh`, async () => {
+  test(`startup ${failure} retries within the same shared refresh promise`, async () => {
     vi.useFakeTimers();
-    const first = expect(refreshTokensInWorker()).rejects.toThrow(
-      "worker failed"
-    );
+    const first = refreshTokensInWorker();
+    const rejected = vi.fn();
+    void first.catch(rejected);
+    expect(refreshTokensInWorker()).toBe(first);
     const failedWorker = worker;
     if (failure === "error") {
       worker.dispatchEvent(new Event("error"));
     } else {
       await vi.advanceTimersByTimeAsync(35000);
     }
-    await first;
     expect(failedWorker.port.postMessage).not.toHaveBeenCalled();
     expect(failedWorker.port.close).toHaveBeenCalledTimes(1);
     worker = new TestWorker();
-    const next = refreshTokensInWorker();
+    await vi.advanceTimersByTimeAsync(250);
+    expect(rejected).not.toHaveBeenCalled();
+    expect(refreshTokensInWorker()).toBe(first);
     expect(construct).toHaveBeenCalledTimes(2);
     expect(worker.port.postMessage).not.toHaveBeenCalled();
     respond({ ready: true });
     expect(worker.port.postMessage).toHaveBeenCalledExactlyOnceWith("refresh");
     failedWorker.dispatchEvent(new Event("error"));
     respond();
-    await next;
+    await first;
+    expect(rejected).not.toHaveBeenCalled();
     const later = refreshTokensInWorker();
     respond();
     await later;
     expect(worker.port.postMessage).toHaveBeenCalledTimes(2);
   });
 }
+
+test("persistent startup failures reject after three attempts without refreshing", async () => {
+  vi.useFakeTimers();
+  const result = expect(refreshTokensInWorker()).rejects.toThrow(
+    "worker failed"
+  );
+  const failedWorkers = [];
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    failedWorkers.push(worker);
+    worker.dispatchEvent(new Event("error"));
+    worker = new TestWorker();
+    await vi.advanceTimersByTimeAsync(250 * attempt);
+  }
+  await result;
+  expect(construct).toHaveBeenCalledTimes(3);
+  for (const failedWorker of failedWorkers) {
+    expect(failedWorker.port.close).toHaveBeenCalledTimes(1);
+    expect(failedWorker.port.postMessage).not.toHaveBeenCalled();
+  }
+});
