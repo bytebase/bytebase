@@ -163,6 +163,86 @@ func TestAddLimitFor12cAndLaterRegressionClauseOrder(t *testing.T) {
 	}
 }
 
+func TestAddLimitFor12cAndLaterParenthesizedQueries(t *testing.T) {
+	tests := []struct {
+		name      string
+		statement string
+		want      string
+	}{
+		{
+			name:      "parenthesized query",
+			statement: "(SELECT a FROM t)",
+			want:      "(SELECT a FROM t) FETCH NEXT 10 ROWS ONLY",
+		},
+		{
+			name:      "parenthesized query with order by",
+			statement: "(SELECT a FROM t) ORDER BY a",
+			want:      "(SELECT a FROM t) ORDER BY a FETCH NEXT 10 ROWS ONLY",
+		},
+		{
+			name:      "parenthesized query lowers its row limit",
+			statement: "(SELECT a FROM t) FETCH FIRST 100 ROWS ONLY",
+			want:      "(SELECT a FROM t) FETCH FIRST 10 ROWS ONLY",
+		},
+		{
+			name:      "row limit of a parenthesized last operand limits that operand only",
+			statement: "SELECT a FROM t UNION ALL (SELECT b FROM t FETCH FIRST 3 ROWS ONLY)",
+			want:      "SELECT a FROM t UNION ALL (SELECT b FROM t FETCH FIRST 3 ROWS ONLY) FETCH NEXT 10 ROWS ONLY",
+		},
+		{
+			name:      "row limit inside a parenthesized set operation limits that operation only",
+			statement: "SELECT a FROM t UNION (SELECT b FROM t UNION SELECT a FROM t FETCH FIRST 3 ROWS ONLY)",
+			want:      "SELECT a FROM t UNION (SELECT b FROM t UNION SELECT a FROM t FETCH FIRST 3 ROWS ONLY) FETCH NEXT 10 ROWS ONLY",
+		},
+		{
+			name:      "row limit after a parenthesized last operand limits the query",
+			statement: "SELECT a FROM t UNION (SELECT b FROM t UNION SELECT a FROM t) FETCH FIRST 30 ROWS ONLY",
+			want:      "SELECT a FROM t UNION (SELECT b FROM t UNION SELECT a FROM t) FETCH FIRST 10 ROWS ONLY",
+		},
+		{
+			name:      "row limit after a parenthesized middle operand limits the query",
+			statement: "SELECT a FROM t UNION (SELECT b FROM t) UNION SELECT a FROM t FETCH FIRST 30 ROWS ONLY",
+			want:      "SELECT a FROM t UNION (SELECT b FROM t) UNION SELECT a FROM t FETCH FIRST 10 ROWS ONLY",
+		},
+		{
+			name:      "parenthesized operands with order by",
+			statement: "(SELECT a FROM t) UNION (SELECT b FROM t) ORDER BY 1",
+			want:      "(SELECT a FROM t) UNION (SELECT b FROM t) ORDER BY 1 FETCH NEXT 10 ROWS ONLY",
+		},
+		{
+			name:      "parenthesized set operation",
+			statement: "(SELECT a FROM t UNION SELECT b FROM t)",
+			want:      "(SELECT a FROM t UNION SELECT b FROM t FETCH NEXT 10 ROWS ONLY)",
+		},
+		{
+			name:      "parenthesis in a string literal of the last operand",
+			statement: "SELECT a FROM t UNION (SELECT ')' FROM t)",
+			want:      "SELECT a FROM t UNION (SELECT ')' FROM t) FETCH NEXT 10 ROWS ONLY",
+		},
+		{
+			name:      "except",
+			statement: "SELECT a FROM t EXCEPT SELECT b FROM t",
+			want:      "SELECT a FROM t EXCEPT SELECT b FROM t FETCH NEXT 10 ROWS ONLY",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := addLimitFor12cAndLater(tc.statement, 10)
+
+			require.Equal(t, tc.want, got)
+			_, err := ParsePLSQL(got)
+			require.NoError(t, err, "rewritten SQL should remain parseable: %s", got)
+		})
+	}
+}
+
+func TestAddLimitFor11gWrapsParenthesizedQuery(t *testing.T) {
+	got := addLimitFor11g("(SELECT a FROM t) ORDER BY a", 10)
+
+	require.Equal(t, "SELECT * FROM ((SELECT a FROM t) ORDER BY a) WHERE ROWNUM <= 10", got)
+}
+
 func TestAddFetchNextClauseRegressionExistingFetch(t *testing.T) {
 	tests := []struct {
 		name      string

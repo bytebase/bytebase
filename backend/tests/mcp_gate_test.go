@@ -257,7 +257,18 @@ func TestMCPGrantIssuesAndAccessRequests(t *testing.T) {
 	grantsRefused, issuesRefused := rowCounts()
 	a.Equal(grantsAtStart, grantsRefused, "a request refused for just-in-time access leaves no access grant")
 	a.Equal(issuesAtStart, issuesRefused, "a request refused for just-in-time access leaves no issue")
-	a.NoError(ctl.allowJustInTimeAccess(ctx, project.Msg))
+
+	// The agent turns just-in-time access on through the tool that asks the
+	// user first; call_api cannot change the project.
+	direct := callAPIOnSession(ctx, t, session, "ProjectService/UpdateProject", map[string]any{
+		"project":    map[string]any{"name": projectName, "allowJustInTimeAccess": true},
+		"updateMask": "allowJustInTimeAccess",
+	})
+	a.Equal(http.StatusForbidden, direct.Status, direct.Error)
+	a.Contains(direct.Error, "set_just_in_time_access")
+	failedToTurnOn, turnedOn := callToolOnSession(ctx, t, session, "set_just_in_time_access", map[string]any{"project": projectName, "enabled": true})
+	a.False(failedToTurnOn, turnedOn)
+	a.Contains(turnedOn, "Turned on just-in-time access in "+projectName)
 
 	// The seeded fallback rule sends the request to a project owner.
 	filed := callAPIOnSession(ctx, t, session, "AccessGrantService/CreateAccessGrant", requestAccess)
@@ -311,7 +322,14 @@ func TestMCPGrantIssuesAndAccessRequests(t *testing.T) {
 	approved, err := ctl.accessGrantServiceClient.GetAccessGrant(ctx, connect.NewRequest(&v1pb.GetAccessGrantRequest{Name: pending.Name}))
 	a.NoError(err)
 	a.Equal(v1pb.AccessGrant_ACTIVE, approved.Msg.Status)
-	a.Equal(int32(2), asked.Load(), "each decision asks the user once")
+	a.Equal(int32(3), asked.Load(), "turning just-in-time access on and each decision ask the user once")
+
+	// Once the work is done, the session revokes the grant it was given.
+	revoked := callAPIOnSession(ctx, t, session, "AccessGrantService/RevokeAccessGrant", map[string]any{"name": pending.Name})
+	a.Equal(http.StatusOK, revoked.Status, revoked.Error)
+	after, err := ctl.accessGrantServiceClient.GetAccessGrant(ctx, connect.NewRequest(&v1pb.GetAccessGrantRequest{Name: pending.Name}))
+	a.NoError(err)
+	a.Equal(v1pb.AccessGrant_REVOKED, after.Msg.Status)
 
 	consoleRequest := func() *v1pb.AccessGrant {
 		granted, err := consoleCreate()
@@ -450,14 +468,16 @@ func TestMCPDeveloperApprovesTheirOwnAccessRequest(t *testing.T) {
 	a.Equal(v1pb.AccessGrant_ACTIVE, approved.Msg.Status)
 }
 
-// decideIssueOnSession runs the decide_issue tool and returns whether it
-// reported an error, with the text an agent would read.
 func decideIssueOnSession(ctx context.Context, t *testing.T, session *mcp.ClientSession, issue, decision string) (bool, string) {
 	t.Helper()
-	result, err := session.CallTool(ctx, &mcp.CallToolParams{
-		Name:      "decide_issue",
-		Arguments: map[string]any{"issue": issue, "decision": decision},
-	})
+	return callToolOnSession(ctx, t, session, "decide_issue", map[string]any{"issue": issue, "decision": decision})
+}
+
+// callToolOnSession runs an MCP tool and returns whether it reported an error,
+// with the text an agent would read.
+func callToolOnSession(ctx context.Context, t *testing.T, session *mcp.ClientSession, name string, arguments map[string]any) (bool, string) {
+	t.Helper()
+	result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: arguments})
 	require.NoError(t, err)
 	var texts []string
 	for _, content := range result.Content {

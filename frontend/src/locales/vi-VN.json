@@ -1919,11 +1919,17 @@
           "unavailable-change": "Thay đổi đã xóa",
           "view-in-statement": "Xem trong câu lệnh"
         },
+        "applies-to": "Áp dụng cho",
         "comment-on-lines": "Bình luận các dòng đã chọn",
         "n-replies-hidden_one": "{{count}} phản hồi bị ẩn",
         "n-replies-hidden_other": "{{count}} phản hồi bị ẩn",
         "n-replies_one": "{{count}} phản hồi",
         "n-replies_other": "{{count}} phản hồi",
+        "priority": {
+          "p0": "SQL sai và phải được sửa.",
+          "p1": "Nguy hiểm nhưng hợp lệ. Cần có người chấp nhận.",
+          "p2": "Chỉ mang tính tham khảo."
+        },
         "publish": "Đăng",
         "reopen-thread": "Mở lại luồng",
         "reply": "Trả lời",
@@ -2872,7 +2878,7 @@
             "title": "Đọc quy trình thay đổi"
           },
           "request-access": {
-            "details": "Xin cấp quyền truy cập có thời hạn để chạy một câu lệnh cụ thể, có thể kèm xem kết quả chưa che hoặc xuất kết quả; câu lệnh phải là lệnh đọc trong phạm vi engine kiểm tra được · Quyền chỉ bắt đầu sau khi được phê duyệt, và yêu cầu không cần ai phê duyệt sẽ bị từ chối · Quyền chỉ áp dụng khi dự án cho phép cấp quyền truy cập",
+            "details": "Xin cấp quyền truy cập có thời hạn để chạy một câu lệnh cụ thể, có thể kèm xem kết quả chưa che hoặc xuất kết quả; câu lệnh phải là lệnh đọc trong phạm vi engine kiểm tra được · Quyền chỉ bắt đầu sau khi được phê duyệt, và yêu cầu không cần ai phê duyệt sẽ bị từ chối · Quyền chỉ áp dụng khi dự án cho phép cấp quyền truy cập · Thu hồi quyền đang có hiệu lực · Bật hoặc tắt \"Cho phép cấp quyền truy cập\" của dự án, sau khi người dùng xác nhận",
             "title": "Yêu cầu cấp quyền truy cập"
           },
           "run-rollouts": {
@@ -2891,7 +2897,7 @@
         },
         "summary": {
           "read-only": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
-          "read-write": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; đề xuất, yêu cầu truy cập, phê duyệt, chạy, xuất và quản lý"
+          "read-write": "Đọc lược đồ, dữ liệu, quy trình thay đổi, thành viên, vai trò và chính sách; đề xuất, yêu cầu và thu hồi truy cập, phê duyệt, chạy, xuất và quản lý"
         },
         "tier": {
           "read": "đọc",

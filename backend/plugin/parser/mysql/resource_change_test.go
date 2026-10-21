@@ -105,3 +105,18 @@ func TestExtractChangedResourcesObjectDDLDatabaseOnly(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, got.ChangedResources.GetDatabaseOnlyTargets())
 }
+
+func TestExtractChangedResourcesCountsMariaDBOnlyStatements(t *testing.T) {
+	const statement = "CREATE TABLE t (a INT);\nCREATE OR REPLACE TABLE other_db.u (a INT);"
+
+	want := model.NewChangedResources(nil /* dbMetadata */)
+	want.AddTable("db", "", &storepb.ChangedResourceTable{Name: "t"}, false)
+
+	stmts, err := base.ParseStatements(storepb.Engine_MARIADB, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got.ChangedResources)
+	require.Equal(t, 1, got.SkippedStatements)
+}

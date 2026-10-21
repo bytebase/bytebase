@@ -2,6 +2,8 @@ package v1
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -143,11 +145,20 @@ func TestMaskedWriteGuardIsWiredIntoTheGate(t *testing.T) {
 	}
 
 	// A door added to the table but not exercised here ships wired to nothing,
-	// and the unit test above would still pass. CreateIssue, ApproveIssue and
-	// RejectIssue are the entries in mcpRequestShapeRefusals that are not
-	// masked-write doors.
-	require.Len(t, doors, len(mcpRequestShapeRefusals)-3,
-		"every masked-write door in the refusal table needs a row here")
+	// and the unit test above would still pass. These are the entries in
+	// mcpRequestShapeRefusals that are not masked-write doors.
+	notDoors := []string{
+		v1connect.IssueServiceCreateIssueProcedure,
+		v1connect.IssueServiceApproveIssueProcedure,
+		v1connect.IssueServiceRejectIssueProcedure,
+		v1connect.ProjectServiceUpdateProjectProcedure,
+	}
+	listed := slices.Clone(notDoors)
+	for _, door := range doors {
+		listed = append(listed, door.procedure)
+	}
+	require.ElementsMatch(t, slices.Collect(maps.Keys(mcpRequestShapeRefusals)), listed,
+		"every entry in the refusal table needs a row here, or a place in notDoors")
 
 	for _, door := range doors {
 		t.Run(door.procedure, func(t *testing.T) {

@@ -467,9 +467,13 @@ const mcpConsoleWayOut = "Perform this action signed in to the Bytebase console 
 // out, or an empty reason to allow. It lives in the gate so a refusal is
 // audited and worded like a class refusal, before the handler runs.
 var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (reason, wayOut string){
-	v1connect.IssueServiceCreateIssueProcedure:       refuseGrantIssueCreation,
-	v1connect.IssueServiceApproveIssueProcedure:      refuseUnconfirmedIssueDecision,
-	v1connect.IssueServiceRejectIssueProcedure:       refuseUnconfirmedIssueDecision,
+	v1connect.IssueServiceCreateIssueProcedure: refuseGrantIssueCreation,
+	v1connect.IssueServiceApproveIssueProcedure: refuseUnconfirmed(v1connect.IssueServiceApproveIssueProcedure,
+		approvedIssueName, mcpIssueDecisionUnconfirmed, mcpDecideIssueWayOut),
+	v1connect.IssueServiceRejectIssueProcedure: refuseUnconfirmed(v1connect.IssueServiceRejectIssueProcedure,
+		rejectedIssueName, mcpIssueDecisionUnconfirmed, mcpDecideIssueWayOut),
+	v1connect.ProjectServiceUpdateProjectProcedure: refuseUnconfirmed(v1connect.ProjectServiceUpdateProjectProcedure,
+		updatedProjectName, mcpProjectUpdateUnconfirmed, mcpProjectUpdateWayOut),
 	v1connect.SheetServiceCreateSheetProcedure:       inTheConsole(refuseMaskedWriteSheet),
 	v1connect.SheetServiceBatchCreateSheetsProcedure: inTheConsole(refuseMaskedWriteSheetBatch),
 	v1connect.ReleaseServiceCreateReleaseProcedure:   inTheConsole(refuseMaskedWriteRelease),
@@ -502,27 +506,46 @@ func refuseByRequestShape(ctx context.Context, procedure string, msg any) error 
 		"%s is not available to MCP sessions for this request because %s. %s", procedure, reason, wayOut))
 }
 
-const mcpDecideIssueWayOut = "Use the decide_issue tool, which asks the user to confirm"
+const (
+	mcpDecideIssueWayOut        = "Use the decide_issue tool, which asks the user to confirm"
+	mcpIssueDecisionUnconfirmed = "an issue is approved or rejected over MCP only after the user confirms that decision in the MCP client, " +
+		"and this request carries no such confirmation"
+	mcpProjectUpdateUnconfirmed = "a project setting changes over MCP only through set_just_in_time_access, after the user confirms the change in the MCP client, " +
+		"and this request carries no such confirmation"
+	mcpProjectUpdateWayOut = "To turn just-in-time access on or off, use the set_just_in_time_access tool, which asks the user to confirm. " +
+		"Change other project settings signed in to the Bytebase console"
+)
 
-// refuseUnconfirmedIssueDecision serves an approval or a rejection only when
-// the request context carries that decision as the user confirmed it in the MCP
-// client, which decide_issue attaches after asking. call_api reaches the same
-// procedures but cannot set a context value, so it is refused here.
-func refuseUnconfirmedIssueDecision(ctx context.Context, msg any) (string, string) {
-	var want auth.MCPConfirmedDecision
-	switch request := msg.(type) {
-	case *v1pb.ApproveIssueRequest:
-		want = auth.MCPConfirmedDecision{Procedure: v1connect.IssueServiceApproveIssueProcedure, Issue: request.GetName()}
-	case *v1pb.RejectIssueRequest:
-		want = auth.MCPConfirmedDecision{Procedure: v1connect.IssueServiceRejectIssueProcedure, Issue: request.GetName()}
-	default:
-		return fmt.Sprintf("its request could not be read as an issue decision (%T)", msg), mcpDecideIssueWayOut
+// refuseUnconfirmed serves procedure only when the request context carries a
+// confirmation naming that procedure and the resource the request changes. A
+// confirmed MCP tool attaches one after asking the user. call_api reaches the
+// same procedures but cannot set a context value, so it is refused here.
+func refuseUnconfirmed(procedure string, resourceOf func(msg any) (string, bool), reason, wayOut string) func(context.Context, any) (string, string) {
+	return func(ctx context.Context, msg any) (string, string) {
+		resource, ok := resourceOf(msg)
+		if !ok {
+			return fmt.Sprintf("its request could not be read (%T)", msg), wayOut
+		}
+		if confirmed, ok := auth.MCPConfirmedDecisionFromContext(ctx); ok && confirmed.Procedure == procedure && confirmed.Resource == resource {
+			return "", ""
+		}
+		return reason, wayOut
 	}
-	if confirmed, ok := auth.MCPConfirmedDecisionFromContext(ctx); ok && confirmed.Procedure == want.Procedure && confirmed.Issue == want.Issue {
-		return "", ""
-	}
-	return "an issue is approved or rejected over MCP only after the user confirms that decision in the MCP client, " +
-		"and this request carries no such confirmation", mcpDecideIssueWayOut
+}
+
+func approvedIssueName(msg any) (string, bool) {
+	request, ok := msg.(*v1pb.ApproveIssueRequest)
+	return request.GetName(), ok
+}
+
+func rejectedIssueName(msg any) (string, bool) {
+	request, ok := msg.(*v1pb.RejectIssueRequest)
+	return request.GetName(), ok
+}
+
+func updatedProjectName(msg any) (string, bool) {
+	request, ok := msg.(*v1pb.UpdateProjectRequest)
+	return request.GetProject().GetName(), ok
 }
 
 // refuseGrantIssueCreation applies grantIssueRefusal to CreateIssue. UpdateIssue's

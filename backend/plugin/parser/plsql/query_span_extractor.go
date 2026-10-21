@@ -633,6 +633,11 @@ func (q *omniQuerySpanExtractor) extractOmniSelect(stmt *oracleast.SelectStmt) (
 	if stmt.Op != 0 {
 		return q.extractOmniSetSelect(stmt)
 	}
+	// omni wraps a parenthesized query that ORDER BY or a row limit follows,
+	// or a WITH clause precedes; the wrapper has no select list of its own.
+	if stmt.Larg != nil {
+		return q.extractOmniSelect(stmt.Larg)
+	}
 	if stmt.ModelClause != nil {
 		source, err := q.extractOmniModelSelect(stmt)
 		if err != nil {

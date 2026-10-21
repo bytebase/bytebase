@@ -5,17 +5,20 @@ import (
 	"time"
 )
 
-// MCPConfirmedDecision is one issue decision the user confirmed in their MCP
-// client. The MCP gate serves IssueService/ApproveIssue and RejectIssue only to
-// a request whose context carries one naming that procedure and issue.
+// MCPConfirmedDecision is the user's decision, confirmed in their MCP client, to
+// make one write. The MCP gate serves the procedures that need one only to a
+// request whose context carries one naming that procedure and the resource the
+// request changes.
 type MCPConfirmedDecision struct {
 	// Procedure is the connect procedure confirmed, such as
 	// /bytebase.v1.IssueService/ApproveIssue.
 	Procedure string
-	// Issue is the issue's resource name: projects/{project}/issues/{issue}.
-	Issue string
-	// IssueUpdateTime is the issue's update time when the user confirmed. The
-	// review workflow refuses the decision when it no longer matches.
+	// Resource is the name of the resource the write changes, such as
+	// projects/{project}/issues/{issue}.
+	Resource string
+	// IssueUpdateTime is, for an issue decision, the issue's update time when the
+	// user confirmed. The review workflow refuses the decision when it no longer
+	// matches.
 	IssueUpdateTime time.Time
 }
 
