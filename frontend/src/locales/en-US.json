@@ -2809,6 +2809,10 @@
             "details": "Sync instances and databases · Saved queries",
             "title": "Manage database housekeeping"
           },
+          "masking-exemptions": {
+            "details": "Exempt one member from masking for a database, a schema, a table or a column, or for every database in a project, with an optional expiry · Each exemption and each removal is confirmed in the user's MCP client before it is made · Exempted data shows unmasked in query and export results",
+            "title": "Grant or revoke masking exemptions"
+          },
           "propose": {
             "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. The project's approval policy decides whether a change needs approval.",
             "title": "Propose changes"
@@ -2849,7 +2853,7 @@
         },
         "summary": {
           "read-only": "Read schemas, data, the change workflow, members, roles and policies; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported",
-          "read-write": "Read schemas, data, the change workflow, members, roles and policies; propose, request and revoke access, approve, run, export and manage"
+          "read-write": "Read schemas, data, the change workflow, members, roles and policies; propose, request and revoke access, grant masking exemptions, approve, run, export and manage"
         },
         "tier": {
           "read": "read",

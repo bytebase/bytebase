@@ -73,13 +73,14 @@ the product.
 | — | *Read-only stops here* | | 68 methods |
 | write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. The project's approval policy decides whether a change needs approval | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
 | write | Request access grants | Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants · Revoke an active grant · Turn a project's "Allow access grants" on or off, after the user confirms | 3 WRITE methods: `AccessGrantService/CreateAccessGrant` and `RevokeAccessGrant`, served like any WRITE method; and `ProjectService/UpdateProject`, served only through the `set_just_in_time_access` tool, which asks the user to confirm and changes only that setting |
+| write | Grant or revoke masking exemptions | Exempt one member from masking for a database, a schema, a table or a column, or for every database in a project, with an optional expiry · Each exemption and each removal is confirmed in the user's MCP client before it is made · Exempted data shows unmasked in query and export results | 1 WRITE method: `OrgPolicyService/UpdatePolicy`, served only through the `grant_masking_exemption` and `revoke_masking_exemption` tools, which ask the user to confirm and change one masking exemption entry; other policy types and `CreatePolicy` and `DeletePolicy` stay refused |
 | write | Approve or reject issues | Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console | 2 WRITE methods: `ApproveIssue`, `RejectIssue`, served only through the `decide_issue` tool, which asks the user to confirm each decision and refuses role requests |
 | write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
 | write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
 | write | Export query results | Download results as a file. Data leaves Bytebase | 1 WRITE method: `SQLService/Export` |
 | write | Manage database housekeeping | Sync instances and databases · Saved queries | 9 WRITE methods: sync, saved-query writes |
-| — | *Read-write stops here* | | 109 methods |
-| floor | Never, in any mode: administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history. | | 110 methods: 34 FORBIDDEN, 76 EXCLUDED |
+| — | *Read-write stops here* | | 110 methods |
+| floor | Never, in any mode: administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history. | | 109 methods: 34 FORBIDDEN, 75 EXCLUDED |
 
 Every row is displayed under every mode — served, or muted with a `—` — and against every engine a
 workspace happens to hold, so **every line on this card must be true on both axes: mode and engine.**
@@ -292,7 +293,7 @@ its tier tag, nothing else. "Show details" reveals the sub-item line for every r
 there is one second-level control rather than one per row; per-row expanders were rejected as fiddly. No
 method names, no permission names, no counts, no link to a method list. The floor is kept as one
 short line because it is what a security-minded admin reads first, and it is what keeps the list
-honest about the 110 methods no mode reaches. There is no constants line under the list; the facts
+honest about the 109 methods no mode reaches. There is no constants line under the list; the facts
 it would carry (capped by the user's own permissions, refusals audited) move into the section
 description.
 
@@ -433,7 +434,7 @@ under
 
 - Section description: "The most any MCP session may do here. Sessions are also capped by each user's permissions, and policy refusals are streamed to stdout when audit logging to stdout is enabled."
 - Disclosure line, collapsed — Read-only: "Read schemas, data, the change workflow, members, roles and policies; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported".
-  Read-write: "Read schemas, data, the change workflow, members, roles and policies; propose, request and revoke access, approve, run, export and manage".
+  Read-write: "Read schemas, data, the change workflow, members, roles and policies; propose, request and revoke access, grant masking exemptions, approve, run, export and manage".
   Expanded heading: "{mode} allows". Details control: "Show details" / "Hide details".
 - Disabled — view sentence: "No MCP session can connect to this workspace." Edit static line:
   "Nothing is allowed; no MCP session can connect."
