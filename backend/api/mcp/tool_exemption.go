@@ -126,8 +126,9 @@ func parseExemptionGrant(input GrantMaskingExemptionInput) (*exemptionGrant, err
 	if err := checkProjectName(input.Project); err != nil {
 		return nil, err
 	}
-	if strings.TrimSpace(input.Member) == "" {
-		return nil, invalid("member is required", `pass the member, e.g. "user:bob@example.com"`)
+	if !isNamedMember(input.Member) {
+		return nil, invalid(fmt.Sprintf("invalid member %q: an exemption names one user, group, service account or workload identity", input.Member),
+			`pass the member, e.g. "user:bob@example.com"; allUsers, which the policy API also accepts, would unmask the scope for everyone`)
 	}
 	g := &exemptionGrant{
 		project: input.Project, member: input.Member,
@@ -163,6 +164,17 @@ func parseExemptionGrant(input GrantMaskingExemptionInput) (*exemptionGrant, err
 		g.expireTime = expireTime.UTC().Format("2006-01-02T15:04:05.000Z")
 	}
 	return g, nil
+}
+
+// isNamedMember reports whether member names one principal, as the tool's
+// contract and the console's exemption picker do.
+func isNamedMember(member string) bool {
+	for _, prefix := range []string{common.UserBindingPrefix, common.GroupBindingPrefix, common.ServiceAccountBindingPrefix, common.WorkloadIdentityBindingPrefix} {
+		if name, found := strings.CutPrefix(member, prefix); found && strings.TrimSpace(name) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func checkProjectName(project string) error {

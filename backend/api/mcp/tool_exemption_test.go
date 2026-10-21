@@ -311,7 +311,10 @@ func TestGrantMaskingExemptionRefusesBadArguments(t *testing.T) {
 		"column without table":  {with(map[string]any{"database": "instances/prod/databases/hr", "column": "salary"}), "column needs table"},
 		"a malformed time":      {with(map[string]any{"allDatabases": true, "expireTime": "next week"}), "invalid expireTime"},
 		"a malformed database":  {with(map[string]any{"database": "hr"}), "invalid database"},
-		"no member":             {map[string]any{"project": "projects/hr", "member": " ", "allDatabases": true}, "member is required"},
+		"no member":             {map[string]any{"project": "projects/hr", "member": " ", "allDatabases": true}, "invalid member"},
+		"every user":            {map[string]any{"project": "projects/hr", "member": "allUsers", "allDatabases": true}, "would unmask the scope for everyone"},
+		"no prefix":             {map[string]any{"project": "projects/hr", "member": "bob@example.com", "allDatabases": true}, "invalid member"},
+		"a prefix alone":        {map[string]any{"project": "projects/hr", "member": "user:", "allDatabases": true}, "invalid member"},
 		"an invalid project":    {map[string]any{"project": "hr", "member": "user:bob@example.com", "allDatabases": true}, "invalid project"},
 	} {
 		t.Run(name, func(t *testing.T) {
