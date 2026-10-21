@@ -515,18 +515,26 @@ func TestRevokeMaskingExemptionShowsTheScopeBeforeTheExpiry(t *testing.T) {
 	}{
 		"the console's form": {
 			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.instance_id == "prod" && resource.database_name == "hr")`,
-			`Condition "(resource.instance_id == \"prod\" && resource.database_name == \"hr\")", until "2026-10-27T00:00:00.000Z"`,
+			`Condition "resource.instance_id == \"prod\" && resource.database_name == \"hr\"", until "2026-10-27T00:00:00.000Z"`,
 		},
 		"an expiry only": {`request.time < timestamp("2026-10-27T00:00:00.000Z")`, `Condition "" (all databases), until "2026-10-27T00:00:00.000Z"`},
+		"an expiry last": {
+			`resource.database_name == "hr" && request.time < timestamp("2026-10-27T00:00:00.000Z")`,
+			`Condition "resource.database_name == \"hr\" && request.time < timestamp(\"2026-10-27T00:00:00.000Z\")"`,
+		},
 		"a top-level or": {
 			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.database_name == "hr") || (resource.database_name == "finance")`,
 			`Condition "request.time < timestamp(\"2026-10-27T00:00:00.000Z\") && (resource.database_name == \"hr\") || (resource.database_name == \"finance\")"`,
 		},
+		"single-quoted parentheses around a top-level or": {
+			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.table_name == '(') || (resource.database_name == ')')`,
+			`Condition "request.time < timestamp(\"2026-10-27T00:00:00.000Z\") && (resource.table_name == '(') || (resource.database_name == ')')"`,
+		},
 		"a parenthesis in a name": {
 			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.table_name == "a)b")`,
-			`Condition "(resource.table_name == \"a)b\")", until "2026-10-27T00:00:00.000Z"`,
+			`Condition "resource.table_name == \"a)b\"", until "2026-10-27T00:00:00.000Z"`,
 		},
-		"another form": {`resource.database_name == "hr" && request.time < timestamp("2026-10-27T00:00:00.000Z")`, `Condition "resource.database_name == \"hr\" && request.time < timestamp(\"2026-10-27T00:00:00.000Z\")"`},
+		"not CEL": {`((`, `Condition "(("`},
 	} {
 		t.Run(name, func(t *testing.T) {
 			lines := strings.Split(describeExemptionRevoke(ctx, RevokeMaskingExemptionInput{Project: "projects/hr", Member: "user:bob@example.com", Condition: tc.condition}, 1), "\n")

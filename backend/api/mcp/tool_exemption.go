@@ -12,6 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	"github.com/google/cel-go/common/operators"
+	"github.com/google/cel-go/common/types"
+	"github.com/google/cel-go/parser"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 
@@ -499,62 +504,61 @@ func describeExemptionRevoke(ctx context.Context, input RevokeMaskingExemptionIn
 	}, "\n")
 }
 
-// splitExemptionExpiry splits a condition in the console's form, the expiry
-// first and then one parenthesized scope, into its scope and its expiry, so the
-// form can show the scope first, where a cut does not hide what is revoked. Any
-// other condition is returned whole, with no expiry: in CEL && binds tighter
-// than ||, so the expiry of "T && A || B" does not cover B.
+// splitExemptionExpiry splits a condition whose top level is an expiry and'ed
+// with a scope, as the console writes it, into the scope and the expiry, so the
+// form can show the scope first, where a cut does not hide what is revoked. It
+// parses the condition, so CEL's precedence and literal forms decide: the
+// expiry of "T && A || B" does not cover B, and that condition is returned
+// whole, with no expiry, as is any other shape.
 func splitExemptionExpiry(condition string) (string, string) {
-	rest, found := strings.CutPrefix(condition, `request.time < timestamp(`)
-	if !found {
-		return condition, ""
-	}
-	quoted, err := strconv.QuotedPrefix(rest)
+	env, err := cel.NewEnv(common.MaskingExemptionPolicyCELAttributes...)
 	if err != nil {
 		return condition, ""
 	}
-	expiry, err := strconv.Unquote(quoted)
-	if err != nil {
+	parsed, issues := env.Parse(condition)
+	if issues != nil && issues.Err() != nil {
 		return condition, ""
 	}
-	rest = strings.TrimPrefix(rest, quoted)
-	if rest == ")" {
+	native := parsed.NativeRep()
+	root := native.Expr()
+	if expiry, ok := exemptionExpiry(root); ok {
 		return "", expiry
 	}
-	scope, found := strings.CutPrefix(rest, ") && ")
-	if !found || !isOneParenthesizedGroup(scope) {
+	if root.Kind() != celast.CallKind || root.AsCall().FunctionName() != operators.LogicalAnd || len(root.AsCall().Args()) != 2 {
+		return condition, ""
+	}
+	expiry, ok := exemptionExpiry(root.AsCall().Args()[0])
+	if !ok {
+		return condition, ""
+	}
+	scope, err := parser.Unparse(root.AsCall().Args()[1], native.SourceInfo())
+	if err != nil {
 		return condition, ""
 	}
 	return scope, expiry
 }
 
-// isOneParenthesizedGroup reports whether expression is a single group in
-// parentheses: its first parenthesis closes at its last character. Parentheses
-// inside string literals do not count.
-func isOneParenthesizedGroup(expression string) bool {
-	if !strings.HasPrefix(expression, "(") || !strings.HasSuffix(expression, ")") {
-		return false
+// exemptionExpiry returns the time of `request.time < timestamp("…")`.
+func exemptionExpiry(e celast.Expr) (string, bool) {
+	if e.Kind() != celast.CallKind || e.AsCall().FunctionName() != operators.Less || len(e.AsCall().Args()) != 2 {
+		return "", false
 	}
-	depth := 0
-	inString := false
-	for i := 0; i < len(expression); i++ {
-		switch c := expression[i]; {
-		case inString && c == '\\':
-			i++
-		case c == '"':
-			inString = !inString
-		case inString:
-		case c == '(':
-			depth++
-		case c == ')':
-			depth--
-			if depth == 0 && i != len(expression)-1 {
-				return false
-			}
-		default:
-		}
+	left, right := e.AsCall().Args()[0], e.AsCall().Args()[1]
+	if left.Kind() != celast.SelectKind || left.AsSelect().FieldName() != "time" {
+		return "", false
 	}
-	return depth == 0 && !inString
+	if operand := left.AsSelect().Operand(); operand.Kind() != celast.IdentKind || operand.AsIdent() != "request" {
+		return "", false
+	}
+	if right.Kind() != celast.CallKind || right.AsCall().FunctionName() != "timestamp" || len(right.AsCall().Args()) != 1 {
+		return "", false
+	}
+	literal := right.AsCall().Args()[0]
+	if literal.Kind() != celast.LiteralKind {
+		return "", false
+	}
+	value, ok := literal.AsLiteral().(types.String)
+	return string(value), ok
 }
 
 func (s *Server) maskingExemptionLink(ctx context.Context, project string) string {
