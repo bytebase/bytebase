@@ -89,6 +89,14 @@ repo, even if gitignored — too easy to accidentally commit, and
 `.env*` files inside repos are commonly opened by IDEs / pasted
 into screenshots.
 
+## Nightly routine
+
+The suite is in no CI workflow. A cloud scheduled task runs it nightly against
+`main` with [`.claude/skills/e2e-routine`](../../../.claude/skills/e2e-routine/SKILL.md):
+build, run, classify each red test, attribute an owner, file or propose Linear
+issues, and record the run on the `claude/e2e-ledger` branch. The same skill
+runs locally from a worktree (`/e2e-routine`).
+
 ## Directory Layout
 
 ```
