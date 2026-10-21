@@ -13,7 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // SetJustInTimeAccessInput is the input for the set_just_in_time_access tool.
@@ -79,12 +78,8 @@ func (c *justInTimeChange) body() map[string]any {
 }
 
 func parseJustInTimeChange(input SetJustInTimeAccessInput) (*justInTimeChange, error) {
-	if _, err := common.GetProjectID(input.Project); err != nil {
-		return nil, &toolError{
-			Code:       "INVALID_ARGUMENT",
-			Message:    fmt.Sprintf("invalid project %q", input.Project),
-			Suggestion: "pass the project name, e.g. projects/hr",
-		}
+	if err := checkProjectName(input.Project); err != nil {
+		return nil, err
 	}
 	return &justInTimeChange{project: input.Project, enabled: input.Enabled}, nil
 }
@@ -189,6 +184,5 @@ func (s *Server) setJustInTimeAccessOnAnswer(ctx context.Context, change *justIn
 }
 
 func (s *Server) projectSettingsLink(ctx context.Context, project string) string {
-	externalURL, _ := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, getWorkspaceID(ctx))
-	return buildResourceURL(externalURL, project) + "/settings"
+	return s.consoleLink(ctx, project) + "/settings"
 }

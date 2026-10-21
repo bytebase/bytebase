@@ -488,6 +488,13 @@ func planChecksHaveErrors(info *PlanCheckInfo) bool {
 }
 
 // buildResourceURL constructs a URL from externalURL and resource name.
+// consoleLink returns the console URL of a resource, under the workspace's
+// external URL.
+func (s *Server) consoleLink(ctx context.Context, resourceName string) string {
+	externalURL, _ := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, getWorkspaceID(ctx))
+	return buildResourceURL(externalURL, resourceName)
+}
+
 func buildResourceURL(externalURL, resourceName string) string {
 	if externalURL == "" {
 		return resourceName

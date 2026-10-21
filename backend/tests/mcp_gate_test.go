@@ -666,7 +666,7 @@ func TestMCPGrantsAndRevokesAMaskingExemption(t *testing.T) {
 	a.Len(exemptions, 1)
 	a.Equal([]string{"user:demo@example.com"}, exemptions[0].Members)
 	condition := exemptions[0].GetCondition().GetExpression()
-	a.Equal(fmt.Sprintf(`request.time < timestamp("2099-01-01T00:00:00Z") && (resource.instance_id == %q && resource.database_name == %q && resource.table_name == "employee" && resource.column_name == "salary")`,
+	a.Equal(fmt.Sprintf(`request.time < timestamp("2099-01-01T00:00:00.000Z") && (resource.instance_id == %q && resource.database_name == %q && resource.table_name == "employee" && resource.column_name == "salary")`,
 		strings.TrimPrefix(instance.Msg.Name, "instances/"), dbName), condition)
 
 	failed, revoked := callToolOnSession(ctx, t, session, "revoke_masking_exemption", map[string]any{

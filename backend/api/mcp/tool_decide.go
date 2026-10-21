@@ -21,7 +21,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/audit"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // DecideIssueInput is the input for the decide_issue tool.
@@ -590,8 +589,7 @@ func (s *Server) readResource(ctx context.Context, path, name, operation, permis
 }
 
 func (s *Server) issueLink(ctx context.Context, issue string) string {
-	externalURL, _ := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, getWorkspaceID(ctx))
-	return buildResourceURL(externalURL, issue)
+	return s.consoleLink(ctx, issue)
 }
 
 // describeApprovalStep names the step a decision would record. It mirrors

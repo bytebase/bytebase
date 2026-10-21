@@ -59,7 +59,7 @@ What follows from it:
 
 ## The rows
 
-Eleven rows: four read, seven write. Each has a title and a one-line list of sub-items in plain
+Twelve rows: four read, eight write. Each has a title and a one-line list of sub-items in plain
 words. The right column records which classified methods the row's wording has to cover; it is
 documentation for whoever rereads these rows after a classification change, and never appears in
 the product.
@@ -73,7 +73,7 @@ the product.
 | — | *Read-only stops here* | | 68 methods |
 | write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. The project's approval policy decides whether a change needs approval | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
 | write | Request access grants | Ask for a time-boxed grant to run a specific statement, optionally with results unmasked or exported; the statement must be a read as far as the engine can check it · The grant starts only after it is approved, and a request that would need no one's approval is refused · A grant applies only where the project allows access grants · Revoke an active grant · Turn a project's "Allow access grants" on or off, after the user confirms | 3 WRITE methods: `AccessGrantService/CreateAccessGrant` and `RevokeAccessGrant`, served like any WRITE method; and `ProjectService/UpdateProject`, served only through the `set_just_in_time_access` tool, which asks the user to confirm and changes only that setting |
-| write | Grant or revoke masking exemptions | Exempt one member from masking for a database, a schema, a table or a column, or for every database in a project, with an optional expiry · Each exemption and each removal is confirmed in the user's MCP client before it is made · Exempted data shows unmasked in query and export results | 1 WRITE method: `OrgPolicyService/UpdatePolicy`, served only through the `grant_masking_exemption` and `revoke_masking_exemption` tools, which ask the user to confirm and change one masking exemption entry; other policy types and `CreatePolicy` and `DeletePolicy` stay refused |
+| write | Grant or revoke masking exemptions | Exempt one member from masking for a database, a schema, a table or a column, or for every database in a project, with an optional expiry · Each exemption and each removal is confirmed in the user's MCP client before it is made · Exempted data shows unmasked in query and export results | 1 WRITE method: `OrgPolicyService/UpdatePolicy`, served only through the `grant_masking_exemption` and `revoke_masking_exemption` tools, which ask the user to confirm, then add one exemption entry or remove one member from the entries whose condition matches exactly; other policy types and `CreatePolicy` and `DeletePolicy` stay refused |
 | write | Approve or reject issues | Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console | 2 WRITE methods: `ApproveIssue`, `RejectIssue`, served only through the `decide_issue` tool, which asks the user to confirm each decision and refuses role requests |
 | write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
 | write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
@@ -84,7 +84,7 @@ the product.
 
 Every row is displayed under every mode — served, or muted with a `—` — and against every engine a
 workspace happens to hold, so **every line on this card must be true on both axes: mode and engine.**
-That covers the eleven rows, and equally the collapsed summary, the card captions and the "Best for"
+That covers the twelve rows, and equally the collapsed summary, the card captions and the "Best for"
 lines, which are not rows and were missed the first time the rule was applied. The summary is the
 line most admins read and often the only one. A
 claim whose truth depends on the mode names the mode as a condition; a claim whose truth depends on
@@ -245,7 +245,8 @@ The verb names the row's effect on the customer's databases. *Read*: none. *Prop
 is approved. *Request*: none until it is approved, and then access to one statement's results,
 unmasked or exported if asked for. *Approve*: none directly; the issue proceeds: a change rolls out
 as the project's rollout policy allows, and an access request takes effect. Role requests stay in
-the console. *Run*: direct. *Export*: data leaves the product. *Manage*:
+the console. *Grant*: direct and standing: an exempted member sees the covered data unmasked in
+query and export results until the exemption ends or is revoked. *Run*: direct. *Export*: data leaves the product. *Manage*:
 configuration only, no data path. Within a tier the verb repeats; it changes only where the effect
 changes.
 
