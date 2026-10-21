@@ -13,6 +13,8 @@ import { PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { storageKeyWorkspaceSetupGuideScenario } from "@/utils/storage-keys";
 
 const mocks = vi.hoisted(() => ({
+  dev: true,
+  isSaaSMode: false,
   state: {
     projectsByName: {
       "projects/orders": {
@@ -51,6 +53,7 @@ const mocks = vi.hoisted(() => ({
     hasInstanceFeature: vi.fn(() => true),
     hasFeature: vi.fn(() => true),
     loadSubscription: vi.fn(),
+    isSaaSMode: () => mocks.isSaaSMode,
   },
   missedPermissions: [] as Permission[],
   probedPermissions: [] as Permission[],
@@ -62,6 +65,9 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/api", () => ({
   rolloutServiceClientConnect: { listRollouts: mocks.listRollouts },
+}));
+vi.mock("@/utils/featureGates", () => ({
+  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.dev,
 }));
 vi.mock("react-i18next", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react-i18next")>()),
@@ -149,6 +155,8 @@ beforeEach(() => {
   localStorage.clear();
   mocks.missedPermissions = [];
   mocks.probedPermissions = [];
+  mocks.dev = true;
+  mocks.isSaaSMode = false;
   mocks.state.serverInfo.aiEnabled = true;
   mocks.state.serverInfo.defaultProject = "projects/default";
   mocks.state.projectsByName["projects/orders"].state = State.ACTIVE;
@@ -171,6 +179,15 @@ beforeEach(() => {
 });
 
 describe("ProjectHomePage", () => {
+  test("hides the Agent chatbox in self-hosted release builds", async () => {
+    mocks.dev = false;
+    render(<ProjectHomePage projectId="orders" />);
+
+    expect(
+      screen.queryByRole("textbox", { name: "project.home.ai-placeholder" })
+    ).toBeNull();
+  });
+
   test("sends a Project starter in a reusable read-only Agent chat", async () => {
     render(<ProjectHomePage projectId="orders" />);
 

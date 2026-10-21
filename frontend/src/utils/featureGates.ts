@@ -8,3 +8,6 @@ import { isDev } from "./util";
 // `false` and drops the UI rather than hiding it. Flipping this to `true` is
 // the whole un-gate.
 export const sqlReviewV2Enabled = (): boolean => isDev();
+
+export const isSaaSOrDev = (isSaaSMode: boolean): boolean =>
+  isSaaSMode || isDev();

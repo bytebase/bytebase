@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => ({
   searchProjects: vi.fn(),
   listInstances: vi.fn(),
   listDatabases: vi.fn(),
+  dev: true,
   isSaaSMode: false,
 }));
 
@@ -39,6 +40,10 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/app/router", () => ({ router: { push: mocks.push } }));
+
+vi.mock("@/utils/featureGates", () => ({
+  isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.dev,
+}));
 
 vi.mock("@/api", () => ({
   projectServiceClientConnect: { searchProjects: mocks.searchProjects },
@@ -152,6 +157,7 @@ beforeEach(() => {
   mocks.canSearchAuditLogs = true;
   mocks.hasAuditLogFeature = true;
   mocks.chatRunning = false;
+  mocks.dev = true;
   mocks.isSaaSMode = false;
   mocks.queuedUserMessage = null;
   mocks.lastVisitProjectPath = "";
@@ -170,6 +176,18 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("LandingPage", () => {
+  test("hides the Agent chatbox in self-hosted release builds", () => {
+    mocks.dev = false;
+    render(<LandingPage />);
+
+    expect(
+      screen.queryByRole("textbox", { name: "landing.ai-placeholder" })
+    ).not.toBeInTheDocument();
+    expect(mocks.searchProjects).not.toHaveBeenCalled();
+    expect(mocks.listInstances).not.toHaveBeenCalled();
+    expect(mocks.listDatabases).not.toHaveBeenCalled();
+  });
+
   test("offers a starter above the empty composer and sends it in a read-only chat", async () => {
     render(<LandingPage />);
 
