@@ -1948,6 +1948,7 @@
         "resolve": "Resolve",
         "resolve-thread": "Resolve thread",
         "resolved": "Resolved",
+        "rule": "Rule",
         "threads-on-line_one": "{{count}} thread on this line",
         "threads-on-line_other": "{{count}} threads on this line",
         "walker": {

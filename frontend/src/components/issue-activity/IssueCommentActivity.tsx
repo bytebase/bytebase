@@ -96,12 +96,13 @@ function isDoneRolloutComment(
 
 // Whether the current user may edit a comment: only user comments and approval
 // decisions that carry a note are editable, and only with the update
-// permission. Shared so every activity surface gates edits alike.
+// permission. A review result's text is its reviewer's, which the server
+// refuses to edit. Shared so every activity surface gates edits alike.
 export function canEditIssueComment(
   comment: IssueComment,
   project: Parameters<typeof hasProjectPermissionV2>[0] | undefined
 ): boolean {
-  if (!project) {
+  if (!project || comment.reviewMetadata) {
     return false;
   }
   const type = getIssueCommentType(comment);

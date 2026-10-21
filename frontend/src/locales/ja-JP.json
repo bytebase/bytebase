@@ -1948,6 +1948,7 @@
         "resolve": "解決",
         "resolve-thread": "スレッドを解決",
         "resolved": "解決済み",
+        "rule": "ルール",
         "threads-on-line_one": "この行に {{count}} 件のスレッド",
         "threads-on-line_other": "この行に {{count}} 件のスレッド",
         "walker": {

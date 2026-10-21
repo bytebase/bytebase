@@ -1948,6 +1948,7 @@
         "resolve": "Giải quyết",
         "resolve-thread": "Giải quyết luồng",
         "resolved": "Đã giải quyết",
+        "rule": "Quy tắc",
         "threads-on-line_one": "{{count}} chủ đề trên dòng này",
         "threads-on-line_other": "{{count}} chủ đề trên dòng này",
         "walker": {

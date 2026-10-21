@@ -1948,6 +1948,7 @@
         "resolve": "Resolver",
         "resolve-thread": "Resolver hilo",
         "resolved": "Resuelto",
+        "rule": "Regla",
         "threads-on-line_one": "{{count}} hilo en esta línea",
         "threads-on-line_other": "{{count}} hilos en esta línea",
         "walker": {

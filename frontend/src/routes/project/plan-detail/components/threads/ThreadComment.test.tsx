@@ -15,6 +15,7 @@ import {
   Plan_SpecSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
@@ -163,6 +164,25 @@ describe("ThreadComment", () => {
       expect(container.textContent).not.toContain("Unknown");
     }
   );
+
+  test("names the standard rule of a RULE result, and no rule for an AI result", () => {
+    const rule = reviewResult(
+      "DELETE FROM employee has no WHERE clause",
+      ReviewRun_Type.RULE,
+      IssueComment_ReviewMetadata_Priority.P1
+    );
+    if (rule.reviewMetadata) {
+      rule.reviewMetadata.ruleType = ReviewRuleType.REQUIRE_WHERE;
+    }
+    const { getByTestId } = renderComment(rule);
+    expect(getByTestId("review-rule").textContent).toContain(
+      "sql-review.standard-rules.rule.require-where.title"
+    );
+    cleanup();
+
+    const { container } = renderComment(reviewResult("Missing WHERE clause."));
+    expect(container.querySelector("[data-testid='review-rule']")).toBeNull();
+  });
 
   test("shows a user comment as its author with no review details", () => {
     const { container, getByTitle } = renderComment(

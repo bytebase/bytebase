@@ -1948,6 +1948,7 @@
         "resolve": "解决",
         "resolve-thread": "解决线程",
         "resolved": "已解决",
+        "rule": "规则",
         "threads-on-line_one": "此行有 {{count}} 个讨论",
         "threads-on-line_other": "此行有 {{count}} 个讨论",
         "walker": {
