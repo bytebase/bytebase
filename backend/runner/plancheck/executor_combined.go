@@ -68,11 +68,11 @@ func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *CheckTarget
 }
 
 // supersededBySQLReviewV2 reports whether the standard rule review replaces
-// the check where SQL Review V2 is on: the SQL review advice, and gh-ost's
-// eligibility, which the ONLINE_MIGRATION rule covers.
+// the check where SQL Review V2 is on: only the SQL review advice. The gh-ost
+// check stays, since it dry-runs the migration against the instance, which
+// the ONLINE_MIGRATION rule, reading the SQL alone, cannot.
 func supersededBySQLReviewV2(checkType storepb.PlanCheckType) bool {
-	return checkType == storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE ||
-		checkType == storepb.PlanCheckType_PLAN_CHECK_TYPE_GHOST_SYNC
+	return checkType == storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE
 }
 
 func (e *CombinedExecutor) runCheck(ctx context.Context, target *CheckTarget, checkType storepb.PlanCheckType) ([]*storepb.PlanCheckRunResult_Result, error) {

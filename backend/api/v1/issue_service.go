@@ -525,14 +525,16 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 	}
 
+	// The review starts before the workflow, whose approval check can create
+	// the rollout: a slot already in place holds it until the review is done.
+	if created {
+		startRuleReview(ctx, s.profile, s.store, s.bus, issue)
+	}
 	if created && !issue.Payload.GetDraft() {
 		issue, err = startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
-	}
-	if created {
-		startRuleReview(ctx, s.profile, s.store, s.bus, issue)
 	}
 
 	converted, err := s.convertToIssue(issue)

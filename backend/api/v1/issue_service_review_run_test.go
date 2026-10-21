@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
@@ -324,4 +325,60 @@ func TestResolvingAThreadRequestsARolloutCheck(t *testing.T) {
 	setThreadState(service, v1pb.IssueComment_RESOLVED)
 	require.Len(t, service.bus.RolloutCreationChan, 1)
 	require.Equal(t, bus.PlanRef{ProjectID: "project-a", PlanID: *issue.PlanUID}, <-service.bus.RolloutCreationChan)
+}
+
+// TestCreateIssueStartsTheRuleReviewBeforeTheWorkflow pins the order that
+// keeps a new issue's rollout held: the workflow's approval check can create
+// the rollout, so the rule review slot must exist by the time it is sent.
+func TestCreateIssueStartsTheRuleReviewBeforeTheWorkflow(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "plan",
+		Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+			Id: "spec-1",
+			Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+					Targets: []string{"instances/prod/databases/app"},
+				},
+			},
+		}}},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	// Unbuffered and not yet received, so the workflow's send blocks: a slot
+	// that is not in place before the send cannot appear until the listener
+	// takes it.
+	approvalCheck := make(chan bus.IssueRef)
+	service.bus.ApprovalCheckChan = approvalCheck
+	slotBeforeApprovalCheck := make(chan bool, 1)
+	go func() {
+		defer func() { <-approvalCheck }()
+		deadline := time.Now().Add(5 * time.Second)
+		for time.Now().Before(deadline) {
+			issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, PlanUID: &plan.UID})
+			if err == nil && issue != nil {
+				run, err := stores.GetReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+				if err == nil && run != nil {
+					slotBeforeApprovalCheck <- true
+					return
+				}
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		slotBeforeApprovalCheck <- false
+	}()
+
+	_, err = service.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		Parent: "projects/project-a",
+		Issue: &v1pb.Issue{
+			Type: v1pb.Issue_DATABASE_CHANGE,
+			Plan: common.FormatPlan("project-a", plan.UID),
+		},
+	}))
+	require.NoError(t, err)
+	require.True(t, <-slotBeforeApprovalCheck, "the rule review slot exists before the approval check is sent")
 }
