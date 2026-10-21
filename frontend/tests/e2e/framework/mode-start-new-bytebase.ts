@@ -195,6 +195,27 @@ export function startupTimeoutMs(): number {
   );
 }
 
+// BYTEBASE_E2E_LICENSE wins; otherwise the dev-signed enterprise license that
+// frontend/.env.dev commits for dev builds. The dev key only validates on a
+// binary built without the `release` tag, which is what the README prescribes.
+export function resolveLicense(): string {
+  const fromEnv = process.env.BYTEBASE_E2E_LICENSE?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+  const envFile = path.resolve(__dirname, "../../../.env.dev");
+  if (!fs.existsSync(envFile)) {
+    return "";
+  }
+  for (const line of fs.readFileSync(envFile, "utf8").split("\n")) {
+    const match = line.match(/^BB_DEV_ENTERPRISE_LICENSE=(.*)$/);
+    if (match) {
+      return match[1].trim().replace(/^["']|["']$/g, "");
+    }
+  }
+  return "";
+}
+
 // Detached, so the server leads a process group `terminateServer` can signal.
 // Its Postgres processes run outside that group and stop when the server
 // shuts down. `pidFile` records the server for `cleanupOrphans`.
@@ -313,15 +334,15 @@ export async function startServer(): Promise<{
   project: string;
   instance: string;
 }> {
-  // License is REQUIRED (the suite is enterprise-only). Verify it's present
-  // BEFORE booting the server, so a missing license fails fast and never
-  // orphans a server process.
-  const license = process.env.BYTEBASE_E2E_LICENSE?.trim();
+  // License is REQUIRED (the suite is enterprise-only). Resolve it BEFORE
+  // booting the server, so a missing license fails fast and never orphans a
+  // server process.
+  const license = resolveLicense();
   if (!license) {
     throw new Error(
-      "BYTEBASE_E2E_LICENSE is required to run the e2e suite. Set it to a valid " +
-        "enterprise license JWT (signed by Bytebase's license key) and re-run. " +
-        "The suite does not run on the free plan.",
+      "No enterprise license: set BYTEBASE_E2E_LICENSE, or keep the dev license " +
+        "line BB_DEV_ENTERPRISE_LICENSE in frontend/.env.dev. The suite does not " +
+        "run on the free plan.",
     );
   }
 
