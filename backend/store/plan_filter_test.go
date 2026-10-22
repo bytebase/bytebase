@@ -1,6 +1,7 @@
 package store
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -83,6 +84,60 @@ func TestGetListPlanFilter(t *testing.T) {
 			filter:      `spec_type == "export_data_config"`,
 			wantErr:     true,
 			errContains: "invalid spec_type value",
+		},
+		{
+			name:     "has_release filter - true",
+			filter:   `has_release == true`,
+			wantSQL:  "(EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE NULLIF(spec->'changeDatabaseConfig'->>'release', '') IS NOT NULL))",
+			wantArgs: []any{},
+		},
+		{
+			name:     "has_release filter - false",
+			filter:   `has_release == false`,
+			wantSQL:  "(NOT EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE NULLIF(spec->'changeDatabaseConfig'->>'release', '') IS NOT NULL))",
+			wantArgs: []any{},
+		},
+		{
+			name:        "has_release with non-bool value",
+			filter:      `has_release == "true"`,
+			wantErr:     true,
+			errContains: `"has_release" should be bool`,
+		},
+		{
+			name:     "release filter",
+			filter:   `release == "projects/p1/releases/release_20261022-RC01"`,
+			wantSQL:  "(EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->'changeDatabaseConfig'->>'release' = $1))",
+			wantArgs: []any{"projects/p1/releases/release_20261022-RC01"},
+		},
+		{
+			name:        "release filter with a non-release name",
+			filter:      `release == "release_20261022-RC01"`,
+			wantErr:     true,
+			errContains: "invalid release",
+		},
+		{
+			name:        "task_status with an unknown value",
+			filter:      `task_status in ["BROKEN"]`,
+			wantErr:     true,
+			errContains: "invalid task_status value: BROKEN",
+		},
+		{
+			name:        "task_status with the unspecified value",
+			filter:      `task_status in ["STATUS_UNSPECIFIED"]`,
+			wantErr:     true,
+			errContains: "invalid task_status value",
+		},
+		{
+			name:        "task_status with an empty list",
+			filter:      `task_status in []`,
+			wantErr:     true,
+			errContains: "empty list value",
+		},
+		{
+			name:        "in on an unsupported field",
+			filter:      `title in ["a"]`,
+			wantErr:     true,
+			errContains: `"in" is only supported for "task_status"`,
 		},
 		{
 			name:     "state filter - ACTIVE",
@@ -204,4 +259,16 @@ func TestGetListPlanFilter(t *testing.T) {
 			require.Equal(t, tt.wantArgs, args)
 		})
 	}
+}
+
+func TestGetListPlanFilterTaskStatus(t *testing.T) {
+	t.Parallel()
+	q, err := GetListPlanFilter(`task_status in ["FAILED", "PENDING"] && has_rollout == true`)
+	require.NoError(t, err)
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(sql, "((EXISTS (SELECT 1 FROM ("), sql)
+	require.Contains(t, sql, "WHERE task.project = plan.project AND task.plan_id = plan.id")
+	require.Contains(t, sql, "AS t WHERE t.status = ANY($5))")
+	require.Equal(t, []any{"SKIPPED", "NOT_STARTED", "AVAILABLE", "PENDING", []string{"FAILED", "PENDING"}, "true"}, args)
 }
