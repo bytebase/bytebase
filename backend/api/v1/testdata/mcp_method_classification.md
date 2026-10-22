@@ -17,8 +17,8 @@ served by no ceiling.
 | Class | Methods | Meaning |
 |---|---|---|
 | READ | 68 | served to a read-only session and above |
-| WRITE | 41 | served to a read-write session only |
-| EXCLUDED | 76 | served by no ceiling this phase ships |
+| WRITE | 42 | served to a read-write session only |
+| EXCLUDED | 75 | served by no ceiling this phase ships |
 | FORBIDDEN | 34 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **219** | |
@@ -115,7 +115,7 @@ served by no ceiling.
 | OrgPolicyService/DeletePolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.policies.delete |
 | OrgPolicyService/GetPolicy | READ | — | bb.policies.get |
 | OrgPolicyService/ListPolicies | READ | — | bb.policies.list |
-| OrgPolicyService/UpdatePolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.policies.update |
+| OrgPolicyService/UpdatePolicy | WRITE | — | bb.policies.update |
 | PlanService/CancelPlanCheckRun | WRITE | — | bb.planCheckRuns.run |
 | PlanService/CreatePlan | WRITE | — | bb.plans.create |
 | PlanService/GetPlan | READ | — | bb.plans.get |

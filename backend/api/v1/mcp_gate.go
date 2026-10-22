@@ -474,6 +474,8 @@ var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (rea
 		rejectedIssueName, mcpIssueDecisionUnconfirmed, mcpDecideIssueWayOut),
 	v1connect.ProjectServiceUpdateProjectProcedure: refuseUnconfirmed(v1connect.ProjectServiceUpdateProjectProcedure,
 		updatedProjectName, mcpProjectUpdateUnconfirmed, mcpProjectUpdateWayOut),
+	v1connect.OrgPolicyServiceUpdatePolicyProcedure: refuseUnconfirmed(v1connect.OrgPolicyServiceUpdatePolicyProcedure,
+		updatedPolicyName, mcpPolicyUpdateUnconfirmed, mcpPolicyUpdateWayOut),
 	v1connect.SheetServiceCreateSheetProcedure:       inTheConsole(refuseMaskedWriteSheet),
 	v1connect.SheetServiceBatchCreateSheetsProcedure: inTheConsole(refuseMaskedWriteSheetBatch),
 	v1connect.ReleaseServiceCreateReleaseProcedure:   inTheConsole(refuseMaskedWriteRelease),
@@ -514,6 +516,10 @@ const (
 		"and this request carries no such confirmation"
 	mcpProjectUpdateWayOut = "To turn just-in-time access on or off, use the set_just_in_time_access tool, which asks the user to confirm. " +
 		"Change other project settings signed in to the Bytebase console"
+	mcpPolicyUpdateUnconfirmed = "a policy changes over MCP only through grant_masking_exemption and revoke_masking_exemption, after the user confirms the change in the MCP client, " +
+		"and this request carries no such confirmation"
+	mcpPolicyUpdateWayOut = "To grant or revoke a masking exemption, use those tools, which ask the user to confirm. " +
+		"Change other policies signed in to the Bytebase console"
 )
 
 // refuseUnconfirmed serves procedure only when the request context carries a
@@ -546,6 +552,11 @@ func rejectedIssueName(msg any) (string, bool) {
 func updatedProjectName(msg any) (string, bool) {
 	request, ok := msg.(*v1pb.UpdateProjectRequest)
 	return request.GetProject().GetName(), ok
+}
+
+func updatedPolicyName(msg any) (string, bool) {
+	request, ok := msg.(*v1pb.UpdatePolicyRequest)
+	return request.GetPolicy().GetName(), ok
 }
 
 // refuseGrantIssueCreation applies grantIssueRefusal to CreateIssue. UpdateIssue's

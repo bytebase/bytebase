@@ -2862,6 +2862,10 @@
             "details": "Sincronizar instancias y bases de datos · Consultas guardadas",
             "title": "Gestionar el mantenimiento de bases de datos"
           },
+          "masking-exemptions": {
+            "details": "Eximir a un miembro del enmascaramiento para una base de datos, un esquema, una tabla o una columna, o para todas las bases de datos de un proyecto, con vencimiento opcional · Cada exención y cada retirada se confirma en el cliente MCP del usuario antes de aplicarse · Los datos exentos se muestran sin enmascarar en los resultados de consultas y exportaciones",
+            "title": "Conceder o revocar exenciones de enmascaramiento"
+          },
           "propose": {
             "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. La política de aprobación del proyecto decide si un cambio necesita aprobación",
             "title": "Proponer cambios"
@@ -2902,7 +2906,7 @@
         },
         "summary": {
           "read-only": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; una solicitud que lleve algo que no pueda demostrarse que es una lectura se rechaza, y no se exporta nada",
-          "read-write": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; proponer, solicitar y revocar acceso, aprobar, ejecutar, exportar y gestionar"
+          "read-write": "Leer esquemas, datos, el flujo de cambios, miembros, roles y políticas; proponer, solicitar y revocar acceso, conceder exenciones de enmascaramiento, aprobar, ejecutar, exportar y gestionar"
         },
         "tier": {
           "read": "lectura",
