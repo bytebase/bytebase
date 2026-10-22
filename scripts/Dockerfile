@@ -10,14 +10,14 @@ COPY . .
 RUN pnpm --dir ./frontend i
 RUN pnpm --dir ./frontend release-docker
 
-FROM golang:1.27.1-alpine3.23 AS backend
+FROM golang:1.27.3-alpine3.24 AS backend
 ARG VERSION
 ARG GIT_COMMIT
 
 ADD go.mod go.sum /
 
 RUN go mod download
-RUN apk add --no-cache clang krb5-dev binutils-gold
+RUN apk add --no-cache clang gcc binutils krb5-dev
 
 WORKDIR /backend-build
 
@@ -32,7 +32,7 @@ RUN CC=clang go build \
   -ldflags="-extldflags '-Wl,-z,stack-size=0x1000000' -w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
   -o bytebase ./backend/bin/server/main.go
 
-FROM alpine:3.24 AS monolithic
+FROM alpine:3.24.3 AS monolithic
 ARG VERSION
 ARG GIT_COMMIT
 
@@ -45,7 +45,7 @@ RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase 
 # Directory to store the data, which can be referenced as the mounting point.
 RUN mkdir -p /var/opt/bytebase
 RUN apk update
-RUN apk add --no-cache gnupg curl psmisc procps ncurses krb5
+RUN apk add --no-cache ca-certificates gnupg curl psmisc procps ncurses krb5
 # Install postgresql.
 RUN apk add postgresql16
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
@@ -55,7 +55,6 @@ RUN apk add postgresql16
 # The file indicates running in docker environment.
 RUN touch /etc/bb.env
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
-COPY --from=backend /etc/ssl/certs /etc/ssl/certs
 
 ENV OPENSSL_CONF=/etc/ssl/
 ENV GOGC=50
