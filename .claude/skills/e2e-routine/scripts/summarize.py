@@ -30,7 +30,10 @@ SERVER_LOST_SHARE = 0.8
 
 INFRA_SIGNATURES = [
     ("boot", r"did not become healthy|Could not find available port|bind: address already in use"),
-    ("license", r"BYTEBASE_E2E_LICENSE|license"),
+    # The messages that mean the license itself is missing or unusable. Not
+    # the bare word: every error from the license upload API carries it in
+    # the URL, and a regression in that API is a product failure.
+    ("license", r"No enterprise license: set BYTEBASE_E2E_LICENSE|token signature is invalid|license has expired"),
     ("binary", r"Bytebase binary not found|does not bundle frontend"),
     ("psql", r"spawn psql ENOENT"),
     ("browser", r"Executable doesn't exist|browserType\.launch|playwright install"),
@@ -183,6 +186,13 @@ def main(results_dir):
         summary["infra"] = {"kind": "server-lost",
                             "detail": f"{len(signed)} of {len(failed)} failures lost the server; first: {signed[0]['error']}",
                             "first_test": f"{signed[0]['file']}:{signed[0]['line']}"}
+        # The server's casualties prove nothing about their tests, so they
+        # leave the triage queue; failures without the signature stay in it.
+        summary["lost_to_server"] = signed
+        summary["failed"] = [e for e in failed if e not in signed]
+        failed = summary["failed"]
+        summary["totals"]["failed"] = len(failed)
+        summary["totals"]["lost_to_server"] = len(signed)
     elif summary["errors"]:
         # Errors outside any test after tests ran (global teardown, a worker
         # crash): Playwright fails the run for them. One with an environment
@@ -251,6 +261,7 @@ def write(results_dir, s):
                   f"{t['lock_holding']} lock holding, {t.get('not_run', 0)} did not run, "
                   f"{t.get('skipped_deliberate', t['skipped'])} skipped on purpose, {t['tests']} total, {t['duration_s']}s", ""]
     for bucket, head in (("failed", "Failed (every attempt)"), ("flaky", "Flaky (passed on retry)"),
+                         ("lost_to_server", "Lost to the server (not triaged; rerun once the server is fixed)"),
                          ("lock_flipped", "Locks that now pass"),
                          ("not_run", "Did not run (not covered by this run)"), ("skipped", "Skipped on purpose")):
         if s.get(bucket):
