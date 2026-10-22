@@ -21,12 +21,14 @@ head="$(git rev-parse HEAD)"
 # config, plugins), not only frontend/src. The e2e specs do not reach it.
 dirty="$(git status --porcelain -- frontend backend proto go.mod go.sum ':!frontend/tests/e2e' | head -1)"
 
+timing="$RESULTS/build-timing.txt"
 if [ -x "$BIN" ] && [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$head" ] && [ -z "$dirty" ] && [ "${FORCE_BUILD:-0}" != 1 ]; then
   log "binary already built from $head; skipping (FORCE_BUILD=1 to rebuild)"
+  # Every run directory gets a timing record, a reused binary included.
+  printf '%-16s %5ss\n' "cached" 0 >"$timing"
   exit 0
 fi
 
-timing="$RESULTS/build-timing.txt"
 : >"$timing"
 phase() { # phase <name> <cmd...>
   local name="$1"; shift
