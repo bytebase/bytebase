@@ -346,20 +346,25 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 					return nil, errors.Errorf("unsupported variable %q", variable)
 				}
 			case celoperators.In:
-				variable, value := getVariableAndValueFromExpr(expr)
+				variable, _ := getVariableAndValueFromExpr(expr)
 				if variable != "task_status" {
 					return nil, errors.Errorf(`"in" is only supported for "task_status", but found %q`, variable)
 				}
-				rawList, ok := value.([]any)
-				if !ok {
-					return nil, errors.Errorf("invalid list value %q for %v", value, variable)
+				// Read the list from the AST: getVariableAndValueFromExpr drops non-literal elements.
+				args := expr.AsCall().Args()
+				if len(args) != 2 || args[1].Kind() != celast.ListKind {
+					return nil, errors.Errorf("invalid list value for filter %v", variable)
 				}
-				if len(rawList) == 0 {
+				elements := args[1].AsList().Elements()
+				if len(elements) == 0 {
 					return nil, errors.Errorf("empty list value for filter %v", variable)
 				}
 				var statuses []string
-				for _, raw := range rawList {
-					status, ok := raw.(string)
+				for _, element := range elements {
+					if element.Kind() != celast.LiteralKind {
+						return nil, errors.Errorf("task_status value must be a string")
+					}
+					status, ok := element.AsLiteral().Value().(string)
 					if !ok {
 						return nil, errors.Errorf("task_status value must be a string")
 					}

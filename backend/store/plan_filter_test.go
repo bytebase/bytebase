@@ -128,6 +128,24 @@ func TestGetListPlanFilter(t *testing.T) {
 			errContains: "invalid task_status value",
 		},
 		{
+			name:        "task_status with a non-literal entry",
+			filter:      `task_status in ["FAILED", typo]`,
+			wantErr:     true,
+			errContains: "task_status value must be a string",
+		},
+		{
+			name:        "task_status with a non-string entry",
+			filter:      `task_status in ["FAILED", 1]`,
+			wantErr:     true,
+			errContains: "task_status value must be a string",
+		},
+		{
+			name:        "task_status with a non-list value",
+			filter:      `task_status in "FAILED"`,
+			wantErr:     true,
+			errContains: "invalid list value",
+		},
+		{
 			name:        "task_status with an empty list",
 			filter:      `task_status in []`,
 			wantErr:     true,
