@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	colorpb "google.golang.org/genproto/googleapis/type/color"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -388,6 +389,95 @@ func TestMergeAISetting(t *testing.T) {
 		require.False(t, merged.Enabled)
 		require.Equal(t, "stored-key", merged.ApiKey)
 	})
+}
+
+func TestMergeSharePointSetting(t *testing.T) {
+	t.Parallel()
+	stored := func() *storepb.SharePointSetting {
+		return &storepb.SharePointSetting{TenantId: "tenant", ClientId: "client", ClientSecret: "stored-secret"}
+	}
+	allPaths := []string{"value.sharepoint.tenant_id", "value.sharepoint.client_id", "value.sharepoint.client_secret"}
+
+	t.Run("an empty secret keeps the stored one", func(t *testing.T) {
+		t.Parallel()
+		before := stored()
+		merged, err := mergeSharePointSetting(before, &storepb.SharePointSetting{TenantId: "new-tenant", ClientId: "client"}, allPaths)
+		require.NoError(t, err)
+		require.Equal(t, "new-tenant", merged.TenantId)
+		require.Equal(t, "stored-secret", merged.ClientSecret)
+		require.Equal(t, "tenant", before.TenantId)
+	})
+
+	t.Run("a new secret replaces the stored one", func(t *testing.T) {
+		t.Parallel()
+		merged, err := mergeSharePointSetting(stored(), &storepb.SharePointSetting{ClientSecret: "rotated"}, []string{"value.sharepoint.client_secret"})
+		require.NoError(t, err)
+		require.Equal(t, "rotated", merged.ClientSecret)
+		require.Equal(t, "client", merged.ClientId)
+	})
+
+	t.Run("a first save needs every field", func(t *testing.T) {
+		t.Parallel()
+		_, err := mergeSharePointSetting(&storepb.SharePointSetting{}, &storepb.SharePointSetting{TenantId: "tenant", ClientId: "client"}, allPaths)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		merged, err := mergeSharePointSetting(&storepb.SharePointSetting{}, &storepb.SharePointSetting{TenantId: " tenant ", ClientId: "client", ClientSecret: "secret"}, allPaths)
+		require.NoError(t, err)
+		require.Equal(t, "tenant", merged.TenantId)
+	})
+
+	t.Run("clearing one ID is refused", func(t *testing.T) {
+		t.Parallel()
+		_, err := mergeSharePointSetting(stored(), &storepb.SharePointSetting{}, []string{"value.sharepoint.client_id"})
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	})
+
+	t.Run("clearing both IDs removes the secret", func(t *testing.T) {
+		t.Parallel()
+		merged, err := mergeSharePointSetting(stored(), &storepb.SharePointSetting{}, allPaths)
+		require.NoError(t, err)
+		require.Empty(t, merged.ClientSecret)
+	})
+
+	t.Run("an unknown path is refused", func(t *testing.T) {
+		t.Parallel()
+		_, err := mergeSharePointSetting(stored(), &storepb.SharePointSetting{}, []string{"value.sharepoint.client_secret_set"})
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	})
+}
+
+func TestUpdateSharePointSettingRejectedInSaaS(t *testing.T) {
+	t.Parallel()
+	saas := &SettingService{profile: &config.Profile{SaaS: true}}
+	_, err := saas.updateSharePointSetting(context.Background(), connect.NewRequest(&v1pb.UpdateSettingRequest{
+		Setting:    &v1pb.Setting{Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_Sharepoint{Sharepoint: &v1pb.SharePointSetting{}}}},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"value.sharepoint.tenant_id"}},
+	}), "ws")
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+}
+
+func TestCheckLocalExportDownloadChange(t *testing.T) {
+	t.Parallel()
+	unlicensed := errors.New("feature FEATURE_SHAREPOINT_EXPORT is a ENTERPRISE feature")
+	disabled := &storepb.WorkspaceProfileSetting{DisableLocalExportDownload: true}
+	enabled := &storepb.WorkspaceProfileSetting{}
+
+	err := checkLocalExportDownloadChange(enabled, disabled, unlicensed)
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err), "disabling needs the license")
+	err = checkLocalExportDownloadChange(disabled, enabled, unlicensed)
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err), "re-enabling needs the license")
+	require.NoError(t, checkLocalExportDownloadChange(disabled, disabled, unlicensed), "an unchanged switch survives a lapsed license")
+	require.NoError(t, checkLocalExportDownloadChange(enabled, disabled, nil))
+}
+
+func TestMergeWorkspaceProfileDisableLocalExportDownload(t *testing.T) {
+	t.Parallel()
+	request := connect.NewRequest(&v1pb.UpdateSettingRequest{
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"value.workspace_profile.disable_local_export_download"}},
+	})
+	stored := &storepb.WorkspaceProfileSetting{Watermark: true}
+	require.NoError(t, mergeWorkspaceProfilePaths(request, &storepb.WorkspaceProfileSetting{DisableLocalExportDownload: true}, stored))
+	require.True(t, stored.DisableLocalExportDownload)
+	require.True(t, stored.Watermark)
 }
 
 func TestCanUpdateAISettingInSaaS(t *testing.T) {

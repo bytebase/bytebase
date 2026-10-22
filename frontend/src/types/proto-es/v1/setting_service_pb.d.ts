@@ -203,6 +203,11 @@ export enum Setting_SettingName {
    * @generated from enum value: MCP = 9;
    */
   MCP = 9,
+
+  /**
+   * @generated from enum value: SHAREPOINT = 10;
+   */
+  SHAREPOINT = 10,
 }
 
 /**
@@ -273,6 +278,12 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
      */
     value: MCPSetting;
     case: "mcp";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.SharePointSetting sharepoint = 10;
+     */
+    value: SharePointSetting;
+    case: "sharepoint";
   } | { case: undefined; value?: undefined };
 };
 
@@ -281,6 +292,49 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
  * Use `create(SettingValueSchema)` to create a new message.
  */
 export declare const SettingValueSchema: GenMessage<SettingValue>;
+
+/**
+ * SharePointSetting is the Microsoft Entra application that delivers exports to
+ * SharePoint. It is granted access per library by the customer's SharePoint
+ * administrators.
+ *
+ * @generated from message bytebase.v1.SharePointSetting
+ */
+export declare type SharePointSetting = Message<"bytebase.v1.SharePointSetting"> & {
+  /**
+   * The Microsoft Entra tenant (directory) ID.
+   *
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+
+  /**
+   * The application (client) ID.
+   *
+   * @generated from field: string client_id = 2;
+   */
+  clientId: string;
+
+  /**
+   * The client secret. It is never returned.
+   *
+   * @generated from field: string client_secret = 3;
+   */
+  clientSecret: string;
+
+  /**
+   * Whether a client secret is stored.
+   *
+   * @generated from field: bool client_secret_set = 4;
+   */
+  clientSecretSet: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.SharePointSetting.
+ * Use `create(SharePointSettingSchema)` to create a new message.
+ */
+export declare const SharePointSettingSchema: GenMessage<SharePointSetting>;
 
 /**
  * @generated from message bytebase.v1.AppIMSetting
@@ -677,6 +731,16 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool directory_sync_token_configured = 27;
    */
   directorySyncTokenConfigured: boolean;
+
+  /**
+   * Disable Local Export Download. Exports can then only be delivered to the
+   * project's export destination. It stays in effect if the workspace license
+   * no longer includes FEATURE_SHAREPOINT_EXPORT; only changing it requires
+   * the license.
+   *
+   * @generated from field: bool disable_local_export_download = 28;
+   */
+  disableLocalExportDownload: boolean;
 };
 
 /**

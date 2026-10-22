@@ -1131,6 +1131,13 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
    * @generated from field: optional string container = 9;
    */
   container?: string | undefined;
+
+  /**
+   * Where the export is delivered.
+   *
+   * @generated from field: bytebase.v1.ExportRequest.Delivery delivery = 10;
+   */
+  delivery: ExportRequest_Delivery;
 };
 
 /**
@@ -1138,6 +1145,39 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
  * Use `create(ExportRequestSchema)` to create a new message.
  */
 export declare const ExportRequestSchema: GenMessage<ExportRequest>;
+
+/**
+ * Delivery is where an export is delivered.
+ *
+ * @generated from enum bytebase.v1.ExportRequest.Delivery
+ */
+export enum ExportRequest_Delivery {
+  /**
+   * Treated as LOCAL.
+   *
+   * @generated from enum value: DELIVERY_UNSPECIFIED = 0;
+   */
+  DELIVERY_UNSPECIFIED = 0,
+
+  /**
+   * Return the export as a zip file in the response.
+   *
+   * @generated from enum value: LOCAL = 1;
+   */
+  LOCAL = 1,
+
+  /**
+   * Upload the export files to the project's SharePoint export destination.
+   *
+   * @generated from enum value: SHAREPOINT = 2;
+   */
+  SHAREPOINT = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.ExportRequest.Delivery.
+ */
+export declare const ExportRequest_DeliverySchema: GenEnum<ExportRequest_Delivery>;
 
 /**
  * @generated from message bytebase.v1.ExportResponse
@@ -1158,6 +1198,13 @@ export declare type ExportResponse = Message<"bytebase.v1.ExportResponse"> & {
    * @generated from field: string applied_access_grant = 2;
    */
   appliedAccessGrant: string;
+
+  /**
+   * Set when the export was delivered to SharePoint. content is then empty.
+   *
+   * @generated from field: bytebase.v1.SharePointDelivery sharepoint_delivery = 3;
+   */
+  sharepointDelivery?: SharePointDelivery | undefined;
 };
 
 /**
@@ -1165,6 +1212,33 @@ export declare type ExportResponse = Message<"bytebase.v1.ExportResponse"> & {
  * Use `create(ExportResponseSchema)` to create a new message.
  */
 export declare const ExportResponseSchema: GenMessage<ExportResponse>;
+
+/**
+ * The result of delivering an export to SharePoint.
+ *
+ * @generated from message bytebase.v1.SharePointDelivery
+ */
+export declare type SharePointDelivery = Message<"bytebase.v1.SharePointDelivery"> & {
+  /**
+   * The name of the folder created in the destination for this export.
+   *
+   * @generated from field: string folder_name = 1;
+   */
+  folderName: string;
+
+  /**
+   * The URL of that folder.
+   *
+   * @generated from field: string web_url = 2;
+   */
+  webUrl: string;
+};
+
+/**
+ * Describes the message bytebase.v1.SharePointDelivery.
+ * Use `create(SharePointDeliverySchema)` to create a new message.
+ */
+export declare const SharePointDeliverySchema: GenMessage<SharePointDelivery>;
 
 /**
  * SQLService executes SQL queries and manages query operations.

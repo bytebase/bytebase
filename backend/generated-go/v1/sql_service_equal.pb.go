@@ -522,6 +522,9 @@ func (x *ExportRequest) Equal(y *ExportRequest) bool {
 	if p, q := x.Container, y.Container; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
+	if x.Delivery != y.Delivery {
+		return false
+	}
 	return true
 }
 
@@ -536,6 +539,25 @@ func (x *ExportResponse) Equal(y *ExportResponse) bool {
 		return false
 	}
 	if x.AppliedAccessGrant != y.AppliedAccessGrant {
+		return false
+	}
+	if !x.SharepointDelivery.Equal(y.SharepointDelivery) {
+		return false
+	}
+	return true
+}
+
+func (x *SharePointDelivery) Equal(y *SharePointDelivery) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.FolderName != y.FolderName {
+		return false
+	}
+	if x.WebUrl != y.WebUrl {
 		return false
 	}
 	return true

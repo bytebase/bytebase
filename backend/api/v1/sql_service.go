@@ -15,7 +15,6 @@ import (
 	"log/slog"
 
 	"connectrpc.com/connect"
-	"github.com/alexmullins/zip"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -33,6 +32,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/sharepoint"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -50,6 +50,8 @@ type SQLService struct {
 	// queryHistoryService backs the deprecated query history aliases until
 	// they are removed.
 	queryHistoryService *QueryHistoryService
+	// newSharePointClient defaults to sharepoint.NewClient when nil.
+	newSharePointClient func(sharepoint.Config) (sharepoint.Client, error)
 }
 
 // NewSQLService creates a SQLService.
@@ -1161,6 +1163,7 @@ func executeWithTimeout(
 // Export exports the SQL query result.
 func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.ExportRequest]) (*connect.Response[v1pb.ExportResponse], error) {
 	request := req.Msg
+	exportTime := time.Now()
 	// Prepare related message.
 	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
 	if err != nil {
@@ -1196,6 +1199,15 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		return nil, err
 	}
 
+	queryRestriction := getEffectiveQueryDataPolicy(ctx, s.store, s.licenseService, request.Limit, database.ProjectID)
+	if err := checkExportApproval(queryRestriction, accessGrant); err != nil {
+		return nil, err
+	}
+	sharePointTarget, err := s.prepareExportDelivery(ctx, request, database)
+	if err != nil {
+		return nil, err
+	}
+
 	// Same cross-database guardrail as Query: the JIT grant authorizes only
 	// its target databases, so span-level ACL still runs and only the
 	// granted targets are exempted from IAM. See PR #20487 review.
@@ -1204,7 +1216,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	if accessGrant != nil {
 		skipMasking = accessGrant.Payload.Unmask
 	}
-	bytes, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, optionalAccessCheck, s.schemaSyncer, dataSource, skipMasking)
+	files, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, queryRestriction, request, user, instance, database, optionalAccessCheck, s.schemaSyncer, dataSource, skipMasking)
 
 	s.createQueryHistory(instance, database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
 
@@ -1216,8 +1228,9 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		return nil, connect.NewError(connect.CodeInternal, exportErr)
 	}
 
-	exportResponse := &v1pb.ExportResponse{
-		Content: bytes,
+	exportResponse, err := s.deliverExport(ctx, sharePointTarget, user, database, files, request, exportTime)
+	if err != nil {
+		return nil, err
 	}
 	if accessGrant != nil {
 		exportResponse.AppliedAccessGrant = common.FormatAccessGrant(accessGrant.ProjectID, accessGrant.ID)
@@ -1226,13 +1239,14 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	return connect.NewResponse(exportResponse), nil
 }
 
-// doExport performs SQL Editor exports with masking applied.
-// This is used for ad-hoc exports where users have the EXPORTER role.
+// doExport runs an SQL Editor export with masking applied and returns its
+// statement and result files.
 func doExport(
 	ctx context.Context,
 	stores *store.Store,
 	dbFactory *dbfactory.DBFactory,
 	licenseService *enterprise.LicenseService,
+	queryRestriction *store.EffectiveQueryDataPolicy,
 	request *v1pb.ExportRequest,
 	user *store.UserMessage,
 	instance *store.InstanceMessage,
@@ -1241,7 +1255,7 @@ func doExport(
 	schemaSyncer *schemasync.Syncer,
 	dataSource *storepb.DataSource,
 	skipMasking bool,
-) ([]byte, time.Duration, error) {
+) ([]sharepoint.File, time.Duration, error) {
 	if dataSource == nil {
 		return nil, 0, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found valid data source"))
 	}
@@ -1264,13 +1278,6 @@ func doExport(
 		}
 		defer conn.Close()
 	}
-	queryRestriction := getEffectiveQueryDataPolicy(
-		ctx,
-		stores,
-		licenseService,
-		request.Limit,
-		database.ProjectID,
-	)
 	queryContext := buildExportQueryContext(queryRestriction, user.Email, request.Schema, request.GetContainer(), skipMasking)
 	queryContext.DataSourceType = dataSource.GetType()
 
@@ -1308,82 +1315,23 @@ func doExport(
 		}
 	}
 
-	var buf bytes.Buffer
-	zipw := zip.NewWriter(&buf)
-
-	exportCount := 0
-	for i, result := range results {
-		if result.GetError() != "" {
-			return nil, duration, errors.Errorf("failed to exec the SQL with error: %v", result.GetError())
-		}
-
-		if err := exportResultToZip(ctx, zipw, stores, instance, database, result, request, i+1); err != nil {
-			return nil, duration, errors.Errorf("failed to export result to zip with error: %v", result.GetError())
-		}
-
-		exportCount++
-		// Help GC by clearing the result data we've already processed
-		result.Rows = nil
-	}
-
-	if exportCount == 0 {
-		return nil, duration, errors.Errorf("empty export data for database %s", database.DatabaseName)
-	}
-
-	if err := zipw.Close(); err != nil {
-		return nil, duration, errors.Wrap(err, "failed to close zip writer")
-	}
-
-	return buf.Bytes(), duration, nil
-}
-
-// exportResultToZip exports a single query result to the ZIP archive.
-// It writes both the SQL statement and the formatted result data.
-func exportResultToZip(
-	ctx context.Context,
-	zipw *zip.Writer,
-	stores *store.Store,
-	instance *store.InstanceMessage,
-	database *store.DatabaseMessage,
-	result *v1pb.QueryResult,
-	request *v1pb.ExportRequest,
-	statementNumber int,
-) error {
-	baseFilename := fmt.Sprintf("%s/%s/statement-%d", database.InstanceID, database.DatabaseName, statementNumber)
-
-	// Write statement file
-	statementFilename := fmt.Sprintf("%s.sql", baseFilename)
-	if err := export.WriteZipEntry(zipw, statementFilename, []byte(result.Statement), request.GetPassword()); err != nil {
-		return errors.Wrap(err, "failed to write statement")
-	}
-
-	// Write result file by streaming directly to ZIP
-	resultExt := strings.ToLower(request.Format.String())
-	resultFilename := fmt.Sprintf("%s.result.%s", baseFilename, resultExt)
-	if err := formatExportToZip(ctx, zipw, resultFilename, stores, instance, database, result, request); err != nil {
-		return errors.Wrap(err, "failed to write formatted result")
-	}
-
-	return nil
-}
-
-// formatExportToZip formats query results and writes them directly to a ZIP entry.
-// This function streams the formatted data to minimize memory usage.
-func formatExportToZip(
-	ctx context.Context,
-	zipw *zip.Writer,
-	filename string,
-	stores *store.Store,
-	instance *store.InstanceMessage,
-	database *store.DatabaseMessage,
-	result *v1pb.QueryResult,
-	request *v1pb.ExportRequest,
-) error {
-	writer, err := export.CreateZipWriter(zipw, filename, request.GetPassword())
+	files, err := buildExportFiles(ctx, stores, instance, database, results, request)
 	if err != nil {
-		return err
+		return nil, duration, err
 	}
+	return files, duration, nil
+}
 
+// formatExportResult writes a query result in the requested format.
+func formatExportResult(
+	ctx context.Context,
+	writer io.Writer,
+	stores *store.Store,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	result *v1pb.QueryResult,
+	request *v1pb.ExportRequest,
+) error {
 	switch request.Format {
 	case v1pb.ExportFormat_CSV:
 		return export.CSVToWriter(writer, result)

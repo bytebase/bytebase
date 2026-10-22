@@ -182,6 +182,7 @@
     - [Label](#bytebase-store-Label)
     - [Project](#bytebase-store-Project)
     - [Project.ExecutionRetryPolicy](#bytebase-store-Project-ExecutionRetryPolicy)
+    - [Project.ExportDestination](#bytebase-store-Project-ExportDestination)
     - [Project.LabelsEntry](#bytebase-store-Project-LabelsEntry)
   
 - [store/project_webhook.proto](#store_project_webhook-proto)
@@ -262,6 +263,7 @@
     - [SQLEditorThemeSetting.TokensEntry](#bytebase-store-SQLEditorThemeSetting-TokensEntry)
     - [SemanticTypeSetting](#bytebase-store-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-store-SemanticTypeSetting-SemanticType)
+    - [SharePointSetting](#bytebase-store-SharePointSetting)
     - [SystemSetting](#bytebase-store-SystemSetting)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
@@ -2919,6 +2921,7 @@ Project contains settings and configuration for a Bytebase project.
 | data_classification_config_id | [string](#string) |  | The data classification configuration ID for the project. |
 | allow_just_in_time_access | [bool](#bool) |  | Once enabled, users can request and use the just-in-time access in the SQL Editor. |
 | allow_last_plan_editor_approval | [bool](#bool) |  | Whether to allow the last Plan editor to approve a database change issue. |
+| export_destination | [Project.ExportDestination](#bytebase-store-Project-ExportDestination) |  | The destination that receives this project&#39;s exports. |
 
 
 
@@ -2934,6 +2937,25 @@ ExecutionRetryPolicy defines retry behavior for failed task executions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | maximum_retries | [int32](#int32) |  | The maximum number of retry attempts for lock timeout errors. |
+
+
+
+
+
+
+<a name="bytebase-store-Project-ExportDestination"></a>
+
+### Project.ExportDestination
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sharepoint_url | [string](#string) |  | The canonical URL of a SharePoint document library root or folder. |
+| site_name | [string](#string) |  | Display names resolved when the URL was saved. Exports resolve the URL again rather than trusting these. |
+| library_name | [string](#string) |  |  |
+| folder_path | [string](#string) |  |  |
+| web_url | [string](#string) |  |  |
 
 
 
@@ -4153,6 +4175,24 @@ sign-in configuration.
 
 
 
+<a name="bytebase-store-SharePointSetting"></a>
+
+### SharePointSetting
+SharePointSetting is the Microsoft Entra application that delivers exports to
+SharePoint.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tenant_id | [string](#string) |  |  |
+| client_id | [string](#string) |  |  |
+| client_secret | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-SystemSetting"></a>
 
 ### SystemSetting
@@ -4232,6 +4272,7 @@ sign-in configuration.
 | sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-store-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for request role. Deprecated: use just-in-time access request flows instead. |
 | directory_sync_token_hash | [string](#string) |  | Hex-encoded SHA-256 of the SCIM directory sync token. The plaintext is shown once at rotation and never stored. SHA-256 rather than a slow KDF because the token is 122 bits of crypto/rand, not a human-chosen secret. |
+| disable_local_export_download | [bool](#bool) |  | Disable Local Export Download. Enforced regardless of the license. |
 
 
 
@@ -4395,6 +4436,7 @@ Capability is the ceiling: a session runs at this level or lower.
 | ENVIRONMENT | 8 |  |
 | EMAIL | 9 |  |
 | MCP | 10 |  |
+| SHAREPOINT | 11 |  |
 
 
 

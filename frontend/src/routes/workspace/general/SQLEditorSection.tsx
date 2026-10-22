@@ -76,6 +76,7 @@ interface SQLEditorSectionProps {
 
 interface LocalState {
   disableExport: boolean;
+  allowLocalExportDownload: boolean;
   disableCopyData: boolean;
   allowAdminDataSource: boolean;
   // `null` represents an empty input while the user is typing; coerced to a
@@ -97,6 +98,9 @@ export const SQLEditorSection = forwardRef<
   );
   const hasRestrictCopyingDataFeature = usePlanFeature(
     PlanFeature.FEATURE_RESTRICT_COPYING_DATA
+  );
+  const hasSharePointExportFeature = usePlanFeature(
+    PlanFeature.FEATURE_SHAREPOINT_EXPORT
   );
 
   const canUpdatePolicy = hasWorkspacePermissionV2("bb.policies.update");
@@ -150,6 +154,7 @@ export const SQLEditorSection = forwardRef<
     }
     return {
       disableExport: policyPayload.disableExport,
+      allowLocalExportDownload: !workspaceProfile.disableLocalExportDownload,
       disableCopyData: policyPayload.disableCopyData,
       allowAdminDataSource: policyPayload.allowAdminDataSource,
       maximumResultSize: Math.round(Number(size) / 1024 / 1024),
@@ -319,6 +324,17 @@ export const SQLEditorSection = forwardRef<
       state.maximumResultSize ?? DEFAULT_MAX_RESULT_SIZE_IN_MB;
     const maximumResultRows = state.maximumResultRows ?? 0;
 
+    if (init.allowLocalExportDownload !== state.allowLocalExportDownload) {
+      await useAppStore.getState().updateWorkspaceProfile({
+        payload: {
+          disableLocalExportDownload: !state.allowLocalExportDownload,
+        },
+        updateMask: create(FieldMaskSchema, {
+          paths: ["value.workspace_profile.disable_local_export_download"],
+        }),
+      });
+    }
+
     // Update query timeout if changed
     if (init.maxQueryTimeInSeconds !== maxQueryTimeInSeconds) {
       await useAppStore.getState().updateWorkspaceProfile({
@@ -406,7 +422,11 @@ export const SQLEditorSection = forwardRef<
   }, [state, selectedThemeId, customDraft, onDirtyChange]);
 
   const handleToggle = (
-    field: "disableExport" | "disableCopyData" | "allowAdminDataSource",
+    field:
+      | "disableExport"
+      | "allowLocalExportDownload"
+      | "disableCopyData"
+      | "allowAdminDataSource",
     value: boolean
   ) => {
     setState((prev) => ({ ...prev, [field]: value }));
@@ -440,6 +460,33 @@ export const SQLEditorSection = forwardRef<
             }
             description={t(
               "settings.general.workspace.data-export.description"
+            )}
+          />
+        </PermissionGuard>
+
+        {/* Local Export Download toggle */}
+        <PermissionGuard
+          permissions={["bb.settings.setWorkspaceProfile"]}
+          display="block"
+        >
+          <FormField
+            title={
+              <span className="w-full inline-flex items-center gap-x-2">
+                <Switch
+                  checked={state.allowLocalExportDownload}
+                  disabled={
+                    !canSetWorkspaceProfile || !hasSharePointExportFeature
+                  }
+                  onCheckedChange={(checked) =>
+                    handleToggle("allowLocalExportDownload", checked)
+                  }
+                />
+                {t("settings.general.workspace.local-export-download.self")}
+                <FeatureBadge feature={PlanFeature.FEATURE_SHAREPOINT_EXPORT} />
+              </span>
+            }
+            description={t(
+              "settings.general.workspace.local-export-download.description"
             )}
           />
         </PermissionGuard>

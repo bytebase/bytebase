@@ -273,6 +273,10 @@
         "desc": "Hỗ trợ System for Cross-domain Identity Management.",
         "title": "SCIM"
       },
+      "FEATURE_SHAREPOINT_EXPORT": {
+        "desc": "Gửi các bản xuất từ SQL Editor đến thư viện tài liệu SharePoint.",
+        "title": "Xuất sang SharePoint"
+      },
       "FEATURE_SQL_EDITOR_ADMIN_MODE": {
         "desc": "Truy cập các chức năng quản trị trong trình soạn thảo SQL.",
         "title": "Chế độ quản trị SQL editor"

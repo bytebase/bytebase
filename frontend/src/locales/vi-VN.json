@@ -973,11 +973,31 @@
     "unexpected-error-description": "Đã xảy ra lỗi không mong muốn khi hiển thị trang này. Tải lại thường sẽ khắc phục được; nếu lỗi tiếp diễn, vui lòng báo cáo cho quản trị viên."
   },
   "export-data": {
+    "delivery": {
+      "local": "Tải về máy",
+      "self": "Hình thức gửi",
+      "sharepoint": "SharePoint"
+    },
     "export-format": "Định dạng xuất",
     "export-rows": "Xuất số dòng",
     "generate-password": "Tạo mật khẩu",
     "password-info": "Cung cấp mật khẩu để mã hóa tệp xuất.",
-    "password-optional": "Mã hóa bằng mật khẩu (Tùy chọn)"
+    "password-optional": "Mã hóa bằng mật khẩu (Tùy chọn)",
+    "sharepoint": {
+      "access-note": "Quyền SharePoint quyết định ai có thể mở các tệp đã gửi.",
+      "delivered-title": "Đã gửi bản xuất đến SharePoint",
+      "open": "Mở trong SharePoint",
+      "result-title": "Kết quả xuất sang SharePoint",
+      "status": {
+        "delivered": "Đã gửi",
+        "failed": "Thất bại",
+        "unconfirmed": "Chưa xác nhận"
+      }
+    },
+    "unavailable": {
+      "feature-unavailable": "Không gian làm việc này đã tắt tải bản xuất về máy, và gói hiện tại không bao gồm gửi đến SharePoint.",
+      "no-destination": "Không gian làm việc này đã tắt tải bản xuất về máy, và dự án này chưa có đích xuất SharePoint. Chủ sở hữu dự án có thể đặt đích trong cài đặt dự án."
+    }
   },
   "gitops": {
     "checklist": {
@@ -2213,6 +2233,14 @@
     "settings": {
       "confirm-archive-project": "Việc lưu trữ \"{{name}}\" sẽ khiến nó trở thành chỉ đọc và ẩn khỏi danh sách dự án đang hoạt động. Tất cả issue, cơ sở dữ liệu và cài đặt sẽ được giữ lại. Bạn có thể khôi phục lại sau từ danh sách dự án đã lưu trữ.",
       "confirm-delete-project": "Việc xóa \"{{name}}\" sẽ xóa vĩnh viễn dự án và tất cả dữ liệu liên quan bao gồm issue, cấu hình và lịch sử. Tất cả cơ sở dữ liệu trong dự án này sẽ được chuyển sang dự án mặc định. Hành động này không thể hoàn tác.",
+      "export-destination": {
+        "description": "URL SharePoint của một thư viện tài liệu hoặc một thư mục trong đó. Bản xuất của dự án này được tải lên đó, và quyền SharePoint quyết định ai có thể mở chúng.",
+        "found": "Đã tìm thấy",
+        "found-description": "Bytebase có thể đọc đích này. Lần xuất đầu tiên sẽ xác nhận việc ghi vào đó.",
+        "placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
+        "self": "Đích xuất",
+        "update-failed": "Chưa lưu đích xuất"
+      },
       "issue-related": {
         "allow-access-grants": {
           "description": "Cho phép thành viên dự án yêu cầu cấp quyền truy cập có thời hạn cho các câu lệnh chỉ đọc cụ thể. Quyền được cấp cũng có thể bao gồm xuất kết quả và xem dữ liệu chưa che.",
@@ -2756,6 +2784,10 @@
           "hours": "Giờ",
           "self": "Thời gian chờ phiên không hoạt động"
         },
+        "local-export-download": {
+          "description": "Khi tắt, bản xuất chỉ được gửi đến đích xuất SharePoint của dự án, và dự án không có đích xuất sẽ không thể xuất. Người dùng vẫn có thể sao chép kết quả truy vấn đang hiển thị, trừ khi việc sao chép dữ liệu bị hạn chế.",
+          "self": "Cho phép tải bản xuất về máy"
+        },
         "log": "Nhật ký",
         "logo": "Logo",
         "logo-aspect": "Kích thước logo được đề xuất nên theo tỷ lệ 5:2, ví dụ 100 x 40.",
@@ -2877,7 +2909,7 @@
             "title": "Phê duyệt hoặc từ chối Issue"
           },
           "export": {
-            "details": "Tải kết quả về dưới dạng tệp. Dữ liệu rời khỏi Bytebase.",
+            "details": "Xuất kết quả dưới dạng tệp. Dữ liệu rời khỏi Bytebase.",
             "title": "Xuất kết quả truy vấn"
           },
           "manage": {
@@ -3203,6 +3235,14 @@
         }
       }
     },
+    "sharepoint": {
+      "client-id": "ID client",
+      "client-secret": "Client secret",
+      "client-secret-description": "Client secret của ứng dụng Microsoft Entra. Không thể đọc lại sau khi lưu.",
+      "client-secret-saved": "Đã lưu client secret. Nhập giá trị mới để thay thế.",
+      "description": "Bytebase gửi các bản xuất từ SQL Editor đến SharePoint bằng ứng dụng Microsoft Entra này. Hãy cấp cho ứng dụng quyền ghi vào từng thư viện đích trong SharePoint. Bytebase không quản lý quyền, lưu giữ hay xóa trong SharePoint.",
+      "tenant-id": "ID tenant"
+    },
     "sidebar": {
       "audit-log": "Nhật ký kiểm tra",
       "custom-roles": "Vai trò tùy chỉnh",
@@ -3218,6 +3258,7 @@
       "members-and-groups": "Thành viên & Nhóm",
       "profile": "Hồ sơ",
       "security-and-policy": "Bảo mật & Chính sách",
+      "sharepoint": "SharePoint",
       "sso": "SSO",
       "subscription": "Gói đăng ký",
       "users-and-groups": "Người dùng & Nhóm"

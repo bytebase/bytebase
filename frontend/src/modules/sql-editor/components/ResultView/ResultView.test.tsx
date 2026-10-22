@@ -1,14 +1,23 @@
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { QueryResultSchema } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  ExportRequest_Delivery,
+  QueryResultSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { ResultView } from "./ResultView";
 
-const { exportData } = vi.hoisted(() => ({
+const { exportData, exportRequest } = vi.hoisted(() => ({
   exportData: vi.fn(),
+  exportRequest: {
+    delivery: 1,
+    resolve: (_outcome: unknown) => {},
+    reject: (_reason: unknown) => {},
+  },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -39,6 +48,13 @@ vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
     retry: vi.fn(),
     grantName: undefined,
     tooltip: undefined,
+  }),
+}));
+
+vi.mock("@/modules/sql-editor/components/useExportDelivery", () => ({
+  useExportDelivery: () => ({
+    deliveries: [2, 1],
+    destination: { webUrl: "https://contoso.sharepoint.com/sites/x/Exports" },
   }),
 }));
 
@@ -101,9 +117,14 @@ vi.mock("./SingleResultView", () => ({
       type="button"
       onClick={() =>
         onExport({
-          options: { format: ExportFormat.CSV, limit: 100, password: "" },
-          resolve: vi.fn(),
-          reject: vi.fn(),
+          options: {
+            format: ExportFormat.CSV,
+            limit: 100,
+            password: "",
+            delivery: exportRequest.delivery,
+          },
+          resolve: exportRequest.resolve,
+          reject: exportRequest.reject,
           statement: "SELECT * FROM c",
         })
       }
@@ -133,8 +154,16 @@ const database = {
 describe("ResultView", () => {
   beforeEach(() => {
     exportData.mockReset();
-    exportData.mockResolvedValue(new Uint8Array());
+    exportData.mockResolvedValue({ content: new Uint8Array() });
+    exportRequest.delivery = ExportRequest_Delivery.LOCAL;
+    exportRequest.resolve = vi.fn();
+    exportRequest.reject = vi.fn();
   });
+
+  const singleResultSet = {
+    error: "",
+    results: [create(QueryResultSchema, { statement: "SELECT * FROM c" })],
+  };
 
   test("blocks analytics recording for query results", () => {
     const { container } = render(
@@ -174,5 +203,67 @@ describe("ResultView", () => {
         expect.objectContaining({ container: "customers" })
       );
     });
+  });
+
+  test("resolves a SharePoint export with its delivered folder", async () => {
+    exportRequest.delivery = ExportRequest_Delivery.SHAREPOINT;
+    exportData.mockResolvedValue({
+      content: new Uint8Array(),
+      sharepointDelivery: { folderName: "20261022-main", webUrl: "https://f" },
+    });
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={singleResultSet}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "export" }));
+
+    await waitFor(() => {
+      expect(exportRequest.resolve).toHaveBeenCalledWith({
+        sharepoint: [
+          {
+            database: "main",
+            status: "DELIVERED",
+            folderName: "20261022-main",
+            webUrl: "https://f",
+          },
+        ],
+      });
+    });
+    expect(exportData).toHaveBeenCalledWith(
+      expect.objectContaining({ delivery: ExportRequest_Delivery.SHAREPOINT })
+    );
+  });
+
+  test("reports an unconfirmed SharePoint delivery instead of rejecting", async () => {
+    exportRequest.delivery = ExportRequest_Delivery.SHAREPOINT;
+    exportData.mockRejectedValue(
+      new ConnectError("could not be confirmed", Code.Unavailable)
+    );
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={singleResultSet}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "export" }));
+
+    await waitFor(() => {
+      expect(exportRequest.resolve).toHaveBeenCalledWith({
+        sharepoint: [
+          {
+            database: "main",
+            status: "UNCONFIRMED",
+            reason: "could not be confirmed",
+          },
+        ],
+      });
+    });
+    expect(exportRequest.reject).not.toHaveBeenCalled();
   });
 });

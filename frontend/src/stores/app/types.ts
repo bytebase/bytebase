@@ -85,6 +85,7 @@ import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type {
   ExportRequest,
   QueryRequest,
+  SharePointDelivery,
 } from "@/types/proto-es/v1/sql_service_pb";
 import type {
   BillingInterval,
@@ -444,7 +445,11 @@ export type ProjectSlice = {
     resourceId: string,
     report?: ErrorReport
   ) => Promise<Project>;
-  updateProject: (project: Project, updateMask: string[]) => Promise<Project>;
+  updateProject: (
+    project: Project,
+    updateMask: string[],
+    report?: ErrorReport
+  ) => Promise<Project>;
   archiveProject: (project: Project) => Promise<void>;
   restoreProject: (project: Project) => Promise<void>;
   deleteProject: (project: string) => Promise<void>;
@@ -1043,7 +1048,13 @@ export type IssueSlice = {
 // permission-denied / silent context conventions.
 export type SQLSlice = {
   query: (params: QueryRequest, signal: AbortSignal) => Promise<SQLResultSetV1>;
-  exportData: (params: ExportRequest) => Promise<Uint8Array>;
+  exportData: (params: ExportRequest) => Promise<ExportDataResult>;
+};
+
+// `content` is empty when the export was delivered to SharePoint.
+export type ExportDataResult = {
+  content: Uint8Array;
+  sharepointDelivery?: SharePointDelivery;
 };
 
 export interface GetOrFetchDatabaseMetadataParams {

@@ -892,6 +892,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.Project.ExportDestination"><span class="badge">M</span>Project.ExportDestination</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.Project.LabelsEntry"><span class="badge">M</span>Project.LabelsEntry</a>
                 </li>
               
@@ -1227,6 +1231,10 @@
               
                 <li>
                   <a href="#bytebase.store.SemanticTypeSetting.SemanticType"><span class="badge">M</span>SemanticTypeSetting.SemanticType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SharePointSetting"><span class="badge">M</span>SharePointSetting</a>
                 </li>
               
                 <li>
@@ -7910,6 +7918,13 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><p>Whether to allow the last Plan editor to approve a database change issue. </p></td>
                 </tr>
               
+                <tr>
+                  <td>export_destination</td>
+                  <td><a href="#bytebase.store.Project.ExportDestination">Project.ExportDestination</a></td>
+                  <td></td>
+                  <td><p>The destination that receives this project&#39;s exports. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7932,6 +7947,59 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>The maximum number of retry attempts for lock timeout errors. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Project.ExportDestination">Project.ExportDestination</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The canonical URL of a SharePoint document library root or folder. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>site_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Display names resolved when the URL was saved. Exports resolve the URL
+again rather than trusting these. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>library_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>folder_path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>web_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -10789,6 +10857,44 @@ it only reads. </p></td>
 
         
       
+        <h3 id="bytebase.store.SharePointSetting">SharePointSetting</h3>
+        <p>SharePointSetting is the Microsoft Entra application that delivers exports to</p><p>SharePoint.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tenant_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.SystemSetting">SystemSetting</h3>
         <p></p>
 
@@ -11060,6 +11166,13 @@ Deprecated: use just-in-time access request flows instead. </p></td>
                   <td><p>Hex-encoded SHA-256 of the SCIM directory sync token. The plaintext is shown
 once at rotation and never stored. SHA-256 rather than a slow KDF because the
 token is 122 bits of crypto/rand, not a human-chosen secret. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>disable_local_export_download</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Disable Local Export Download. Enforced regardless of the license. </p></td>
                 </tr>
               
             </tbody>
@@ -11482,6 +11595,12 @@ frontend-only concept that seeds these colors; the store only holds them. </p></
               <tr>
                 <td>MCP</td>
                 <td>10</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SHAREPOINT</td>
+                <td>11</td>
                 <td><p></p></td>
               </tr>
             

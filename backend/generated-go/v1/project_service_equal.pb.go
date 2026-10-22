@@ -359,6 +359,9 @@ func (x *Project) Equal(y *Project) bool {
 	if x.AllowLastPlanEditorApproval != y.AllowLastPlanEditorApproval {
 		return false
 	}
+	if !x.ExportDestination.Equal(y.ExportDestination) {
+		return false
+	}
 	return true
 }
 
@@ -438,6 +441,44 @@ func (x *TestWebhookResponse) Equal(y *TestWebhookResponse) bool {
 		return x == nil && y == nil
 	}
 	if x.Error != y.Error {
+		return false
+	}
+	return true
+}
+
+func (x *ExportDestination) Equal(y *ExportDestination) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.SharepointUrl != y.SharepointUrl {
+		return false
+	}
+	if !x.SharepointLocation.Equal(y.SharepointLocation) {
+		return false
+	}
+	return true
+}
+
+func (x *SharePointLocation) Equal(y *SharePointLocation) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.SiteName != y.SiteName {
+		return false
+	}
+	if x.LibraryName != y.LibraryName {
+		return false
+	}
+	if x.FolderPath != y.FolderPath {
+		return false
+	}
+	if x.WebUrl != y.WebUrl {
 		return false
 	}
 	return true

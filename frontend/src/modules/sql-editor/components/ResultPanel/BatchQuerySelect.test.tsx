@@ -1,8 +1,10 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { ExportRequest_Delivery } from "@/types/proto-es/v1/sql_service_pb";
 import { BatchQuerySelect } from "./BatchQuerySelect";
 
 (
@@ -21,6 +23,9 @@ const mocks = vi.hoisted(() => ({
     tags: {},
   },
   deleteDatabaseQueryContext: vi.fn(),
+  disableExport: true,
+  exportData: vi.fn(),
+  resolveExport: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -29,11 +34,51 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/components/DataExportButton", () => ({
-  DataExportButton: () => null,
+  DataExportButton: ({
+    formContent,
+    onExport,
+  }: {
+    formContent: ReactNode;
+    onExport: (request: unknown) => void;
+  }) => (
+    <div>
+      {formContent}
+      <button
+        type="button"
+        data-testid="batch-export"
+        onClick={() =>
+          onExport({
+            options: {
+              format: 1,
+              limit: 100,
+              password: "",
+              delivery: 2,
+            },
+            resolve: mocks.resolveExport,
+            reject: vi.fn(),
+          })
+        }
+      />
+    </div>
+  ),
 }));
 
 vi.mock("@/components/database", () => ({
-  DatabaseTableView: () => null,
+  DatabaseTableView: ({
+    databases,
+    onSelectedNamesChange,
+  }: {
+    databases: Database[];
+    onSelectedNamesChange: (names: Set<string>) => void;
+  }) => (
+    <button
+      type="button"
+      data-testid="select-all"
+      onClick={() =>
+        onSelectedNamesChange(new Set(databases.map((db) => db.name)))
+      }
+    />
+  ),
 }));
 
 vi.mock("@/components/EngineIcon", () => ({
@@ -75,9 +120,16 @@ vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
   }),
 }));
 
+vi.mock("@/modules/sql-editor/components/useExportDelivery", () => ({
+  useExportDelivery: () => ({
+    deliveries: [2, 1],
+    destination: { webUrl: "https://contoso.sharepoint.com/sites/x/Exports" },
+  }),
+}));
+
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
   useSQLEditorQueryDataPolicy: () => ({
-    disableExport: true,
+    disableExport: mocks.disableExport,
     maximumResultRows: 100,
   }),
 }));
@@ -115,9 +167,10 @@ vi.mock("@/stores/app", () => {
   const state = () => ({
     databasesByName: mocks.databasesByName,
     environmentList: [mocks.environment],
-    exportData: vi.fn(),
+    exportData: mocks.exportData,
     getDatabaseByName: (name: string) => mocks.databasesByName[name],
     getEnvironmentByName: () => mocks.environment,
+    notify: vi.fn(),
   });
   return {
     useAppStore: Object.assign(
@@ -192,6 +245,7 @@ describe("BatchQuerySelect", () => {
     act(() => root.unmount());
     container.remove();
     vi.clearAllMocks();
+    mocks.disableExport = true;
   });
 
   const render = () => {
@@ -223,5 +277,50 @@ describe("BatchQuerySelect", () => {
 
     expect(buttons[0].className).toContain("shrink-0");
     expect(buttons[1].className).toContain("shrink-0");
+  });
+
+  it("reports each database's SharePoint delivery separately", async () => {
+    mocks.disableExport = false;
+    mocks.exportData
+      .mockResolvedValueOnce({
+        content: new Uint8Array(),
+        sharepointDelivery: { folderName: "folder-a", webUrl: "https://a" },
+      })
+      .mockRejectedValueOnce(
+        new ConnectError("destination not found", Code.FailedPrecondition)
+      );
+    render();
+
+    act(() => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="select-all"]')
+        ?.click();
+    });
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="batch-export"]')
+        ?.click();
+    });
+
+    await vi.waitFor(() => {
+      expect(mocks.resolveExport).toHaveBeenCalledWith({
+        sharepoint: [
+          {
+            database: "cell-a/linear",
+            status: "DELIVERED",
+            folderName: "folder-a",
+            webUrl: "https://a",
+          },
+          {
+            database: "cell-b/linear",
+            status: "FAILED",
+            reason: "destination not found",
+          },
+        ],
+      });
+    });
+    expect(mocks.exportData).toHaveBeenCalledWith(
+      expect.objectContaining({ delivery: ExportRequest_Delivery.SHAREPOINT })
+    );
   });
 });

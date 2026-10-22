@@ -4,6 +4,22 @@ Bytebase is a governed database development workspace. It turns proposed databas
 
 ## Language
 
+**Export Destination**:
+A configured storage location that receives a database export directly from Bytebase. Access to the delivered file and its retention are governed by the destination's administrators.
+_Avoid_: Download location
+
+**Project Export Destination**:
+The single configured Export Destination for a project's exports. Its readers are determined by the customer's storage permissions, independently of who initiates an export.
+_Avoid_: User export folder
+
+**Local Export Download**:
+Delivery of an exported file from Bytebase to the caller's machine. This is distinct from viewing query results in SQL Editor or accessing a file already delivered to an Export Destination.
+_Avoid_: Query access
+
+**Export Approval**:
+The workspace requirement that an export be authorized by an approved access grant. It governs whether an export may run, independently of where the export is delivered.
+_Avoid_: Disable export
+
 **Workspace**:
 The top-level collaboration boundary that contains projects, database connections, environments, users, and policies.
 _Avoid_: Project, organization

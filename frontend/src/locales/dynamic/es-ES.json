@@ -273,6 +273,10 @@
         "desc": "Soporte para Sistema de Gestión de Identidad entre Dominios.",
         "title": "SCIM"
       },
+      "FEATURE_SHAREPOINT_EXPORT": {
+        "desc": "Entrega las exportaciones del Editor SQL en bibliotecas de documentos de SharePoint.",
+        "title": "Exportación a SharePoint"
+      },
       "FEATURE_SQL_EDITOR_ADMIN_MODE": {
         "desc": "Acceda a funciones administrativas en el editor SQL.",
         "title": "Modo administrador del editor SQL"

@@ -125,8 +125,10 @@ type Project struct {
 	AllowJustInTimeAccess bool `protobuf:"varint,19,opt,name=allow_just_in_time_access,json=allowJustInTimeAccess,proto3" json:"allow_just_in_time_access,omitempty"`
 	// Whether to allow the last Plan editor to approve a database change issue.
 	AllowLastPlanEditorApproval bool `protobuf:"varint,20,opt,name=allow_last_plan_editor_approval,json=allowLastPlanEditorApproval,proto3" json:"allow_last_plan_editor_approval,omitempty"`
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
+	// The destination that receives this project's exports.
+	ExportDestination *Project_ExportDestination `protobuf:"bytes,21,opt,name=export_destination,json=exportDestination,proto3" json:"export_destination,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -271,6 +273,13 @@ func (x *Project) GetAllowLastPlanEditorApproval() bool {
 	return false
 }
 
+func (x *Project) GetExportDestination() *Project_ExportDestination {
+	if x != nil {
+		return x.ExportDestination
+	}
+	return nil
+}
+
 // ExecutionRetryPolicy defines retry behavior for failed task executions.
 type Project_ExecutionRetryPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -317,6 +326,85 @@ func (x *Project_ExecutionRetryPolicy) GetMaximumRetries() int32 {
 	return 0
 }
 
+type Project_ExportDestination struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The canonical URL of a SharePoint document library root or folder.
+	SharepointUrl string `protobuf:"bytes,1,opt,name=sharepoint_url,json=sharepointUrl,proto3" json:"sharepoint_url,omitempty"`
+	// Display names resolved when the URL was saved. Exports resolve the URL
+	// again rather than trusting these.
+	SiteName      string `protobuf:"bytes,2,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
+	LibraryName   string `protobuf:"bytes,3,opt,name=library_name,json=libraryName,proto3" json:"library_name,omitempty"`
+	FolderPath    string `protobuf:"bytes,4,opt,name=folder_path,json=folderPath,proto3" json:"folder_path,omitempty"`
+	WebUrl        string `protobuf:"bytes,5,opt,name=web_url,json=webUrl,proto3" json:"web_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Project_ExportDestination) Reset() {
+	*x = Project_ExportDestination{}
+	mi := &file_store_project_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Project_ExportDestination) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Project_ExportDestination) ProtoMessage() {}
+
+func (x *Project_ExportDestination) ProtoReflect() protoreflect.Message {
+	mi := &file_store_project_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Project_ExportDestination.ProtoReflect.Descriptor instead.
+func (*Project_ExportDestination) Descriptor() ([]byte, []int) {
+	return file_store_project_proto_rawDescGZIP(), []int{1, 2}
+}
+
+func (x *Project_ExportDestination) GetSharepointUrl() string {
+	if x != nil {
+		return x.SharepointUrl
+	}
+	return ""
+}
+
+func (x *Project_ExportDestination) GetSiteName() string {
+	if x != nil {
+		return x.SiteName
+	}
+	return ""
+}
+
+func (x *Project_ExportDestination) GetLibraryName() string {
+	if x != nil {
+		return x.LibraryName
+	}
+	return ""
+}
+
+func (x *Project_ExportDestination) GetFolderPath() string {
+	if x != nil {
+		return x.FolderPath
+	}
+	return ""
+}
+
+func (x *Project_ExportDestination) GetWebUrl() string {
+	if x != nil {
+		return x.WebUrl
+	}
+	return ""
+}
+
 var File_store_project_proto protoreflect.FileDescriptor
 
 const file_store_project_proto_rawDesc = "" +
@@ -325,7 +413,8 @@ const file_store_project_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12(\n" +
 	"\x05color\x18\x02 \x01(\v2\x12.google.type.ColorR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xb7\b\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xc8\n" +
+	"\n" +
 	"\aProject\x128\n" +
 	"\fissue_labels\x18\x01 \x03(\v2\x15.bytebase.store.LabelR\vissueLabels\x12,\n" +
 	"\x12force_issue_labels\x18\x02 \x01(\bR\x10forceIssueLabels\x12.\n" +
@@ -343,12 +432,20 @@ const file_store_project_proto_rawDesc = "" +
 	"\x12allow_request_role\x18\x11 \x01(\bR\x10allowRequestRole\x12A\n" +
 	"\x1ddata_classification_config_id\x18\x12 \x01(\tR\x1adataClassificationConfigId\x128\n" +
 	"\x19allow_just_in_time_access\x18\x13 \x01(\bR\x15allowJustInTimeAccess\x12D\n" +
-	"\x1fallow_last_plan_editor_approval\x18\x14 \x01(\bR\x1ballowLastPlanEditorApproval\x1a?\n" +
+	"\x1fallow_last_plan_editor_approval\x18\x14 \x01(\bR\x1ballowLastPlanEditorApproval\x12X\n" +
+	"\x12export_destination\x18\x15 \x01(\v2).bytebase.store.Project.ExportDestinationR\x11exportDestination\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x03\x10\x05J\x04\b\x06\x10\bB\x8f\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a\xb4\x01\n" +
+	"\x11ExportDestination\x12%\n" +
+	"\x0esharepoint_url\x18\x01 \x01(\tR\rsharepointUrl\x12\x1b\n" +
+	"\tsite_name\x18\x02 \x01(\tR\bsiteName\x12!\n" +
+	"\flibrary_name\x18\x03 \x01(\tR\vlibraryName\x12\x1f\n" +
+	"\vfolder_path\x18\x04 \x01(\tR\n" +
+	"folderPath\x12\x17\n" +
+	"\aweb_url\x18\x05 \x01(\tR\x06webUrlJ\x04\b\x03\x10\x05J\x04\b\x06\x10\bB\x8f\x01\n" +
 	"\x12com.bytebase.storeB\fProjectProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -363,24 +460,26 @@ func file_store_project_proto_rawDescGZIP() []byte {
 	return file_store_project_proto_rawDescData
 }
 
-var file_store_project_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_store_project_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_store_project_proto_goTypes = []any{
 	(*Label)(nil),                        // 0: bytebase.store.Label
 	(*Project)(nil),                      // 1: bytebase.store.Project
 	(*Project_ExecutionRetryPolicy)(nil), // 2: bytebase.store.Project.ExecutionRetryPolicy
 	nil,                                  // 3: bytebase.store.Project.LabelsEntry
-	(*color.Color)(nil),                  // 4: google.type.Color
+	(*Project_ExportDestination)(nil),    // 4: bytebase.store.Project.ExportDestination
+	(*color.Color)(nil),                  // 5: google.type.Color
 }
 var file_store_project_proto_depIdxs = []int32{
-	4, // 0: bytebase.store.Label.color:type_name -> google.type.Color
+	5, // 0: bytebase.store.Label.color:type_name -> google.type.Color
 	0, // 1: bytebase.store.Project.issue_labels:type_name -> bytebase.store.Label
 	2, // 2: bytebase.store.Project.execution_retry_policy:type_name -> bytebase.store.Project.ExecutionRetryPolicy
 	3, // 3: bytebase.store.Project.labels:type_name -> bytebase.store.Project.LabelsEntry
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	4, // 4: bytebase.store.Project.export_destination:type_name -> bytebase.store.Project.ExportDestination
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_store_project_proto_init() }
@@ -394,7 +493,7 @@ func file_store_project_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_project_proto_rawDesc), len(file_store_project_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

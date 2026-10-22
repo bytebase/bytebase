@@ -11,10 +11,16 @@ import {
   type DownloadContent,
 } from "@/components/DataExportButton";
 import { DatabaseTableView } from "@/components/database";
+import {
+  type SharePointDeliveryResult,
+  toDeliveredSharePointResult,
+  toFailedSharePointDelivery,
+} from "@/components/SharePointDeliveryResultDialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
+import { useExportDelivery } from "@/modules/sql-editor/components/useExportDelivery";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
 import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -26,7 +32,10 @@ import {
 import { useAppStore } from "@/stores/app";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  ExportRequest_Delivery,
+  ExportRequestSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 import type { SQLEditorDatabaseQueryContext } from "@/types/sqlEditor/tab";
 import { DEFAULT_ENVIRONMENT_COLOR } from "@/types/v1/environment";
 import {
@@ -83,6 +92,7 @@ export function BatchQuerySelect({
   const currentTab = useCurrentSQLEditorTab();
   const project = useSQLEditorEditorState((s) => s.project);
   const queryDataPolicy = useSQLEditorQueryDataPolicy(project);
+  const exportDelivery = useExportDelivery(project);
 
   const [showEmpty, setShowEmpty] = useState(true);
   const [selectedDatabaseNames, setSelectedDatabaseNames] = useState<
@@ -275,7 +285,10 @@ export function BatchQuerySelect({
   const handleExport = ({ options, resolve }: DataExportRequest) => {
     void (async () => {
       // === Prod path: per-database backend Export RPC ===
+      const toSharePoint =
+        options.delivery === ExportRequest_Delivery.SHAREPOINT;
       const contents: DownloadContent[] = [];
+      const deliveries: SharePointDeliveryResult[] = [];
       const tabsState = getSQLEditorTabsState();
       const tab = tabsState.tabsById.get(tabsState.currentTabId);
       // Defensive intersect — the drawer already filters to authorized
@@ -286,10 +299,12 @@ export function BatchQuerySelect({
       for (const databaseName of Array.from(selectedDatabaseNames)) {
         if (!exportableSet.has(databaseName)) continue;
         const database = getDatabaseByName(databaseName);
+        const { instanceName, databaseName: shortName } =
+          extractDatabaseResourceName(database.name);
         const context = head(tab?.databaseQueryContexts?.get(databaseName));
         if (!context) continue;
         try {
-          const content = await exportData(
+          const { content, sharepointDelivery } = await exportData(
             create(ExportRequestSchema, {
               name: databaseName,
               ...(context.params.connection.dataSourceId
@@ -302,15 +317,30 @@ export function BatchQuerySelect({
               password: options.password,
               schema: context.params.connection.schema,
               container: context.params.connection.table,
+              delivery: options.delivery,
             })
           );
+          if (toSharePoint) {
+            deliveries.push(
+              toDeliveredSharePointResult(
+                `${instanceName}/${shortName}`,
+                sharepointDelivery,
+                exportDelivery.destination?.webUrl ?? ""
+              )
+            );
+            continue;
+          }
           contents.push({
             content,
-            filename: `${
-              extractDatabaseResourceName(database.name).databaseName
-            }.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
+            filename: `${shortName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
           });
         } catch (e) {
+          if (toSharePoint) {
+            deliveries.push(
+              toFailedSharePointDelivery(`${instanceName}/${shortName}`, e)
+            );
+            continue;
+          }
           useAppStore.getState().notify({
             module: "bytebase",
             style: "CRITICAL",
@@ -321,7 +351,7 @@ export function BatchQuerySelect({
           });
         }
       }
-      resolve(contents);
+      resolve(toSharePoint ? { sharepoint: deliveries } : contents);
       setSelectedDatabaseNames(new Set());
     })();
   };
@@ -388,6 +418,9 @@ export function BatchQuerySelect({
             }
             validate={validateExport}
             maximumExportCount={queryDataPolicy.maximumResultRows}
+            deliveries={exportDelivery.deliveries}
+            sharepointDestination={exportDelivery.destination}
+            unavailableMessage={exportDelivery.unavailableMessage}
             onExport={handleExport}
             formContent={
               <div className="w-full flex flex-col gap-y-2">

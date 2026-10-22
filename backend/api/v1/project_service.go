@@ -24,11 +24,13 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sample"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/utils"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/plugin/sharepoint"
 	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -36,10 +38,13 @@ import (
 // ProjectService implements the project service.
 type ProjectService struct {
 	v1connect.UnimplementedProjectServiceHandler
-	store         *store.Store
-	profile       *config.Profile
-	iamManager    *iam.Manager
-	sampleManager sample.Manager
+	store          *store.Store
+	profile        *config.Profile
+	iamManager     *iam.Manager
+	sampleManager  sample.Manager
+	licenseService *enterprise.LicenseService
+	// newSharePointClient is sharepoint.NewClient when nil.
+	newSharePointClient func(sharepoint.Config) (sharepoint.Client, error)
 }
 
 // NewProjectService creates a new ProjectService.
@@ -48,12 +53,14 @@ func NewProjectService(
 	profile *config.Profile,
 	iamManager *iam.Manager,
 	sampleManager sample.Manager,
+	licenseService *enterprise.LicenseService,
 ) *ProjectService {
 	return &ProjectService{
-		store:         store,
-		profile:       profile,
-		iamManager:    iamManager,
-		sampleManager: sampleManager,
+		store:          store,
+		profile:        profile,
+		iamManager:     iamManager,
+		sampleManager:  sampleManager,
+		licenseService: licenseService,
 	}
 }
 
@@ -374,6 +381,18 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 			}
 			projectSettings.Labels = req.Msg.Project.Labels
 			patch.Setting = projectSettings
+		case "export_destination":
+			rawURL := strings.TrimSpace(req.Msg.Project.GetExportDestination().GetSharepointUrl())
+			if rawURL == "" {
+				projectSettings.ExportDestination = nil
+			} else {
+				destination, err := s.resolveExportDestination(ctx, project.Workspace, rawURL)
+				if err != nil {
+					return nil, err
+				}
+				projectSettings.ExportDestination = destination
+			}
+			patch.Setting = projectSettings
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupport update_mask "%s"`, path))
 		}
@@ -387,6 +406,60 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(convertToProject(project)), nil
+}
+
+func (s *ProjectService) resolveExportDestination(ctx context.Context, workspaceID, rawURL string) (*storepb.Project_ExportDestination, error) {
+	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_SHAREPOINT_EXPORT); err != nil {
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
+	}
+	setting, err := s.store.GetSharePointSetting(ctx, workspaceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get SharePoint setting"))
+	}
+	newClient := s.newSharePointClient
+	if newClient == nil {
+		newClient = sharepoint.NewClient
+	}
+	return resolveSharePointDestination(ctx, rawURL, setting, newClient)
+}
+
+// resolveSharePointDestination normalizes rawURL and resolves it with the
+// workspace's SharePoint application. Resolving proves only that the
+// destination is readable, so it is stored as found, not verified.
+func resolveSharePointDestination(ctx context.Context, rawURL string, setting *storepb.SharePointSetting, newClient func(sharepoint.Config) (sharepoint.Client, error)) (*storepb.Project_ExportDestination, error) {
+	canonicalURL, err := sharepoint.NormalizeURL(rawURL)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if setting.GetTenantId() == "" || setting.GetClientId() == "" || setting.GetClientSecret() == "" {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("SharePoint is not configured for this workspace"))
+	}
+	client, err := newClient(sharepoint.Config{
+		TenantID:     setting.GetTenantId(),
+		ClientID:     setting.GetClientId(),
+		ClientSecret: setting.GetClientSecret(),
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create SharePoint client"))
+	}
+	location, err := client.Resolve(ctx, canonicalURL)
+	if err != nil {
+		switch {
+		case errors.Is(err, sharepoint.ErrNotFoundOrNoAccess):
+			return nil, connect.NewError(connect.CodeFailedPrecondition, sharepoint.ErrNotFoundOrNoAccess)
+		case errors.Is(err, sharepoint.ErrCredential):
+			return nil, connect.NewError(connect.CodeFailedPrecondition, sharepoint.ErrCredential)
+		default:
+			return nil, connect.NewError(connect.CodeUnavailable, errors.Wrap(err, "failed to resolve the SharePoint destination"))
+		}
+	}
+	return &storepb.Project_ExportDestination{
+		SharepointUrl: canonicalURL,
+		SiteName:      location.SiteName,
+		LibraryName:   location.LibraryName,
+		FolderPath:    location.FolderPath,
+		WebUrl:        location.WebURL,
+	}, nil
 }
 
 // DeleteProject deletes a project.

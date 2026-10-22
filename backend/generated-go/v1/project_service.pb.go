@@ -92,7 +92,7 @@ func (x Activity_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Activity_Type.Descriptor instead.
 func (Activity_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{20, 0}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{22, 0}
 }
 
 type GetProjectRequest struct {
@@ -955,8 +955,11 @@ type Project struct {
 	AllowJustInTimeAccess bool `protobuf:"varint,23,opt,name=allow_just_in_time_access,json=allowJustInTimeAccess,proto3" json:"allow_just_in_time_access,omitempty"`
 	// Whether to allow the last Plan editor to approve a database change issue.
 	AllowLastPlanEditorApproval bool `protobuf:"varint,24,opt,name=allow_last_plan_editor_approval,json=allowLastPlanEditorApproval,proto3" json:"allow_last_plan_editor_approval,omitempty"`
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
+	// The destination that receives this project's exports. Updating it requires
+	// the workspace SharePoint setting, because the URL is resolved on save.
+	ExportDestination *ExportDestination `protobuf:"bytes,25,opt,name=export_destination,json=exportDestination,proto3" json:"export_destination,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -1127,6 +1130,13 @@ func (x *Project) GetAllowLastPlanEditorApproval() bool {
 		return x.AllowLastPlanEditorApproval
 	}
 	return false
+}
+
+func (x *Project) GetExportDestination() *ExportDestination {
+	if x != nil {
+		return x.ExportDestination
+	}
+	return nil
 }
 
 type AddWebhookRequest struct {
@@ -1397,6 +1407,138 @@ func (x *TestWebhookResponse) GetError() string {
 	return ""
 }
 
+// The destination that receives a project's exports. Readers of a delivered
+// file are governed by the destination's own permissions.
+type ExportDestination struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The URL of a SharePoint document library root or folder. Browser URLs are
+	// normalized to the canonical URL. Empty means the project has no destination.
+	SharepointUrl string `protobuf:"bytes,1,opt,name=sharepoint_url,json=sharepointUrl,proto3" json:"sharepoint_url,omitempty"`
+	// The location the URL resolved to when it was saved. Resolving proves only
+	// that the destination is readable; the first export proves Bytebase can
+	// write to it.
+	SharepointLocation *SharePointLocation `protobuf:"bytes,2,opt,name=sharepoint_location,json=sharepointLocation,proto3" json:"sharepoint_location,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *ExportDestination) Reset() {
+	*x = ExportDestination{}
+	mi := &file_v1_project_service_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExportDestination) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportDestination) ProtoMessage() {}
+
+func (x *ExportDestination) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_project_service_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportDestination.ProtoReflect.Descriptor instead.
+func (*ExportDestination) Descriptor() ([]byte, []int) {
+	return file_v1_project_service_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ExportDestination) GetSharepointUrl() string {
+	if x != nil {
+		return x.SharepointUrl
+	}
+	return ""
+}
+
+func (x *ExportDestination) GetSharepointLocation() *SharePointLocation {
+	if x != nil {
+		return x.SharepointLocation
+	}
+	return nil
+}
+
+// A SharePoint document library root or folder.
+type SharePointLocation struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The display name of the site.
+	SiteName string `protobuf:"bytes,1,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
+	// The display name of the document library.
+	LibraryName string `protobuf:"bytes,2,opt,name=library_name,json=libraryName,proto3" json:"library_name,omitempty"`
+	// The folder path within the library. Empty for the library root.
+	FolderPath string `protobuf:"bytes,3,opt,name=folder_path,json=folderPath,proto3" json:"folder_path,omitempty"`
+	// The URL of the library root or folder.
+	WebUrl        string `protobuf:"bytes,4,opt,name=web_url,json=webUrl,proto3" json:"web_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SharePointLocation) Reset() {
+	*x = SharePointLocation{}
+	mi := &file_v1_project_service_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SharePointLocation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SharePointLocation) ProtoMessage() {}
+
+func (x *SharePointLocation) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_project_service_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SharePointLocation.ProtoReflect.Descriptor instead.
+func (*SharePointLocation) Descriptor() ([]byte, []int) {
+	return file_v1_project_service_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *SharePointLocation) GetSiteName() string {
+	if x != nil {
+		return x.SiteName
+	}
+	return ""
+}
+
+func (x *SharePointLocation) GetLibraryName() string {
+	if x != nil {
+		return x.LibraryName
+	}
+	return ""
+}
+
+func (x *SharePointLocation) GetFolderPath() string {
+	if x != nil {
+		return x.FolderPath
+	}
+	return ""
+}
+
+func (x *SharePointLocation) GetWebUrl() string {
+	if x != nil {
+		return x.WebUrl
+	}
+	return ""
+}
+
 type Webhook struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// name is the name of the webhook, generated by the server.
@@ -1447,7 +1589,7 @@ type Webhook struct {
 
 func (x *Webhook) Reset() {
 	*x = Webhook{}
-	mi := &file_v1_project_service_proto_msgTypes[19]
+	mi := &file_v1_project_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1459,7 +1601,7 @@ func (x *Webhook) String() string {
 func (*Webhook) ProtoMessage() {}
 
 func (x *Webhook) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[19]
+	mi := &file_v1_project_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1472,7 +1614,7 @@ func (x *Webhook) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Webhook.ProtoReflect.Descriptor instead.
 func (*Webhook) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{19}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *Webhook) GetName() string {
@@ -1533,7 +1675,7 @@ type Activity struct {
 
 func (x *Activity) Reset() {
 	*x = Activity{}
-	mi := &file_v1_project_service_proto_msgTypes[20]
+	mi := &file_v1_project_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1545,7 +1687,7 @@ func (x *Activity) String() string {
 func (*Activity) ProtoMessage() {}
 
 func (x *Activity) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[20]
+	mi := &file_v1_project_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1558,7 +1700,7 @@ func (x *Activity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Activity.ProtoReflect.Descriptor instead.
 func (*Activity) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{20}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{22}
 }
 
 // Execution retry policy configuration.
@@ -1572,7 +1714,7 @@ type Project_ExecutionRetryPolicy struct {
 
 func (x *Project_ExecutionRetryPolicy) Reset() {
 	*x = Project_ExecutionRetryPolicy{}
-	mi := &file_v1_project_service_proto_msgTypes[21]
+	mi := &file_v1_project_service_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1584,7 +1726,7 @@ func (x *Project_ExecutionRetryPolicy) String() string {
 func (*Project_ExecutionRetryPolicy) ProtoMessage() {}
 
 func (x *Project_ExecutionRetryPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[21]
+	mi := &file_v1_project_service_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1663,7 +1805,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12(\n" +
 	"\x05color\x18\x02 \x01(\v2\x12.google.type.ColorR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xed\t\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xbc\n" +
+	"\n" +
 	"\aProject\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
@@ -1685,7 +1828,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x1brequire_plan_check_no_error\x18\x15 \x01(\bR\x17requirePlanCheckNoError\x12,\n" +
 	"\x12allow_request_role\x18\x16 \x01(\bR\x10allowRequestRole\x128\n" +
 	"\x19allow_just_in_time_access\x18\x17 \x01(\bR\x15allowJustInTimeAccess\x12D\n" +
-	"\x1fallow_last_plan_editor_approval\x18\x18 \x01(\bR\x1ballowLastPlanEditorApproval\x1a?\n" +
+	"\x1fallow_last_plan_editor_approval\x18\x18 \x01(\bR\x1ballowLastPlanEditorApproval\x12M\n" +
+	"\x12export_destination\x18\x19 \x01(\v2\x1e.bytebase.v1.ExportDestinationR\x11exportDestination\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
@@ -1709,7 +1853,16 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x14bytebase.com/ProjectR\aproject\x123\n" +
 	"\awebhook\x18\x02 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\"+\n" +
 	"\x13TestWebhookResponse\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\"\x83\x03\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"\x91\x01\n" +
+	"\x11ExportDestination\x12%\n" +
+	"\x0esharepoint_url\x18\x01 \x01(\tR\rsharepointUrl\x12U\n" +
+	"\x13sharepoint_location\x18\x02 \x01(\v2\x1f.bytebase.v1.SharePointLocationB\x03\xe0A\x03R\x12sharepointLocation\"\x8e\x01\n" +
+	"\x12SharePointLocation\x12\x1b\n" +
+	"\tsite_name\x18\x01 \x01(\tR\bsiteName\x12!\n" +
+	"\flibrary_name\x18\x02 \x01(\tR\vlibraryName\x12\x1f\n" +
+	"\vfolder_path\x18\x03 \x01(\tR\n" +
+	"folderPath\x12\x17\n" +
+	"\aweb_url\x18\x04 \x01(\tR\x06webUrl\"\x83\x03\n" +
 	"\aWebhook\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x121\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x18.bytebase.v1.WebhookTypeB\x03\xe0A\x02R\x04type\x12\x19\n" +
@@ -1762,7 +1915,7 @@ func file_v1_project_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_project_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_project_service_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_v1_project_service_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_v1_project_service_proto_goTypes = []any{
 	(Activity_Type)(0),                   // 0: bytebase.v1.Activity.Type
 	(*GetProjectRequest)(nil),            // 1: bytebase.v1.GetProjectRequest
@@ -1784,18 +1937,20 @@ var file_v1_project_service_proto_goTypes = []any{
 	(*RemoveWebhookRequest)(nil),         // 17: bytebase.v1.RemoveWebhookRequest
 	(*TestWebhookRequest)(nil),           // 18: bytebase.v1.TestWebhookRequest
 	(*TestWebhookResponse)(nil),          // 19: bytebase.v1.TestWebhookResponse
-	(*Webhook)(nil),                      // 20: bytebase.v1.Webhook
-	(*Activity)(nil),                     // 21: bytebase.v1.Activity
-	(*Project_ExecutionRetryPolicy)(nil), // 22: bytebase.v1.Project.ExecutionRetryPolicy
-	nil,                                  // 23: bytebase.v1.Project.LabelsEntry
-	(*fieldmaskpb.FieldMask)(nil),        // 24: google.protobuf.FieldMask
-	(*color.Color)(nil),                  // 25: google.type.Color
-	(State)(0),                           // 26: bytebase.v1.State
-	(WebhookType)(0),                     // 27: bytebase.v1.WebhookType
-	(*GetIamPolicyRequest)(nil),          // 28: bytebase.v1.GetIamPolicyRequest
-	(*SetIamPolicyRequest)(nil),          // 29: bytebase.v1.SetIamPolicyRequest
-	(*emptypb.Empty)(nil),                // 30: google.protobuf.Empty
-	(*IamPolicy)(nil),                    // 31: bytebase.v1.IamPolicy
+	(*ExportDestination)(nil),            // 20: bytebase.v1.ExportDestination
+	(*SharePointLocation)(nil),           // 21: bytebase.v1.SharePointLocation
+	(*Webhook)(nil),                      // 22: bytebase.v1.Webhook
+	(*Activity)(nil),                     // 23: bytebase.v1.Activity
+	(*Project_ExecutionRetryPolicy)(nil), // 24: bytebase.v1.Project.ExecutionRetryPolicy
+	nil,                                  // 25: bytebase.v1.Project.LabelsEntry
+	(*fieldmaskpb.FieldMask)(nil),        // 26: google.protobuf.FieldMask
+	(*color.Color)(nil),                  // 27: google.type.Color
+	(State)(0),                           // 28: bytebase.v1.State
+	(WebhookType)(0),                     // 29: bytebase.v1.WebhookType
+	(*GetIamPolicyRequest)(nil),          // 30: bytebase.v1.GetIamPolicyRequest
+	(*SetIamPolicyRequest)(nil),          // 31: bytebase.v1.SetIamPolicyRequest
+	(*emptypb.Empty)(nil),                // 32: google.protobuf.Empty
+	(*IamPolicy)(nil),                    // 33: bytebase.v1.IamPolicy
 }
 var file_v1_project_service_proto_depIdxs = []int32{
 	14, // 0: bytebase.v1.BatchGetProjectsResponse.projects:type_name -> bytebase.v1.Project
@@ -1803,55 +1958,57 @@ var file_v1_project_service_proto_depIdxs = []int32{
 	14, // 2: bytebase.v1.SearchProjectsResponse.projects:type_name -> bytebase.v1.Project
 	14, // 3: bytebase.v1.CreateProjectRequest.project:type_name -> bytebase.v1.Project
 	14, // 4: bytebase.v1.UpdateProjectRequest.project:type_name -> bytebase.v1.Project
-	24, // 5: bytebase.v1.UpdateProjectRequest.update_mask:type_name -> google.protobuf.FieldMask
-	25, // 6: bytebase.v1.Label.color:type_name -> google.type.Color
-	26, // 7: bytebase.v1.Project.state:type_name -> bytebase.v1.State
-	20, // 8: bytebase.v1.Project.webhooks:type_name -> bytebase.v1.Webhook
+	26, // 5: bytebase.v1.UpdateProjectRequest.update_mask:type_name -> google.protobuf.FieldMask
+	27, // 6: bytebase.v1.Label.color:type_name -> google.type.Color
+	28, // 7: bytebase.v1.Project.state:type_name -> bytebase.v1.State
+	22, // 8: bytebase.v1.Project.webhooks:type_name -> bytebase.v1.Webhook
 	13, // 9: bytebase.v1.Project.issue_labels:type_name -> bytebase.v1.Label
-	22, // 10: bytebase.v1.Project.execution_retry_policy:type_name -> bytebase.v1.Project.ExecutionRetryPolicy
-	23, // 11: bytebase.v1.Project.labels:type_name -> bytebase.v1.Project.LabelsEntry
-	20, // 12: bytebase.v1.AddWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	20, // 13: bytebase.v1.UpdateWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	24, // 14: bytebase.v1.UpdateWebhookRequest.update_mask:type_name -> google.protobuf.FieldMask
-	20, // 15: bytebase.v1.RemoveWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	20, // 16: bytebase.v1.TestWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	27, // 17: bytebase.v1.Webhook.type:type_name -> bytebase.v1.WebhookType
-	0,  // 18: bytebase.v1.Webhook.notification_types:type_name -> bytebase.v1.Activity.Type
-	1,  // 19: bytebase.v1.ProjectService.GetProject:input_type -> bytebase.v1.GetProjectRequest
-	2,  // 20: bytebase.v1.ProjectService.BatchGetProjects:input_type -> bytebase.v1.BatchGetProjectsRequest
-	4,  // 21: bytebase.v1.ProjectService.ListProjects:input_type -> bytebase.v1.ListProjectsRequest
-	6,  // 22: bytebase.v1.ProjectService.SearchProjects:input_type -> bytebase.v1.SearchProjectsRequest
-	8,  // 23: bytebase.v1.ProjectService.CreateProject:input_type -> bytebase.v1.CreateProjectRequest
-	9,  // 24: bytebase.v1.ProjectService.UpdateProject:input_type -> bytebase.v1.UpdateProjectRequest
-	10, // 25: bytebase.v1.ProjectService.DeleteProject:input_type -> bytebase.v1.DeleteProjectRequest
-	11, // 26: bytebase.v1.ProjectService.UndeleteProject:input_type -> bytebase.v1.UndeleteProjectRequest
-	12, // 27: bytebase.v1.ProjectService.BatchDeleteProjects:input_type -> bytebase.v1.BatchDeleteProjectsRequest
-	28, // 28: bytebase.v1.ProjectService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
-	29, // 29: bytebase.v1.ProjectService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
-	15, // 30: bytebase.v1.ProjectService.AddWebhook:input_type -> bytebase.v1.AddWebhookRequest
-	16, // 31: bytebase.v1.ProjectService.UpdateWebhook:input_type -> bytebase.v1.UpdateWebhookRequest
-	17, // 32: bytebase.v1.ProjectService.RemoveWebhook:input_type -> bytebase.v1.RemoveWebhookRequest
-	18, // 33: bytebase.v1.ProjectService.TestWebhook:input_type -> bytebase.v1.TestWebhookRequest
-	14, // 34: bytebase.v1.ProjectService.GetProject:output_type -> bytebase.v1.Project
-	3,  // 35: bytebase.v1.ProjectService.BatchGetProjects:output_type -> bytebase.v1.BatchGetProjectsResponse
-	5,  // 36: bytebase.v1.ProjectService.ListProjects:output_type -> bytebase.v1.ListProjectsResponse
-	7,  // 37: bytebase.v1.ProjectService.SearchProjects:output_type -> bytebase.v1.SearchProjectsResponse
-	14, // 38: bytebase.v1.ProjectService.CreateProject:output_type -> bytebase.v1.Project
-	14, // 39: bytebase.v1.ProjectService.UpdateProject:output_type -> bytebase.v1.Project
-	30, // 40: bytebase.v1.ProjectService.DeleteProject:output_type -> google.protobuf.Empty
-	14, // 41: bytebase.v1.ProjectService.UndeleteProject:output_type -> bytebase.v1.Project
-	30, // 42: bytebase.v1.ProjectService.BatchDeleteProjects:output_type -> google.protobuf.Empty
-	31, // 43: bytebase.v1.ProjectService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	31, // 44: bytebase.v1.ProjectService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	14, // 45: bytebase.v1.ProjectService.AddWebhook:output_type -> bytebase.v1.Project
-	14, // 46: bytebase.v1.ProjectService.UpdateWebhook:output_type -> bytebase.v1.Project
-	14, // 47: bytebase.v1.ProjectService.RemoveWebhook:output_type -> bytebase.v1.Project
-	19, // 48: bytebase.v1.ProjectService.TestWebhook:output_type -> bytebase.v1.TestWebhookResponse
-	34, // [34:49] is the sub-list for method output_type
-	19, // [19:34] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	24, // 10: bytebase.v1.Project.execution_retry_policy:type_name -> bytebase.v1.Project.ExecutionRetryPolicy
+	25, // 11: bytebase.v1.Project.labels:type_name -> bytebase.v1.Project.LabelsEntry
+	20, // 12: bytebase.v1.Project.export_destination:type_name -> bytebase.v1.ExportDestination
+	22, // 13: bytebase.v1.AddWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
+	22, // 14: bytebase.v1.UpdateWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
+	26, // 15: bytebase.v1.UpdateWebhookRequest.update_mask:type_name -> google.protobuf.FieldMask
+	22, // 16: bytebase.v1.RemoveWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
+	22, // 17: bytebase.v1.TestWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
+	21, // 18: bytebase.v1.ExportDestination.sharepoint_location:type_name -> bytebase.v1.SharePointLocation
+	29, // 19: bytebase.v1.Webhook.type:type_name -> bytebase.v1.WebhookType
+	0,  // 20: bytebase.v1.Webhook.notification_types:type_name -> bytebase.v1.Activity.Type
+	1,  // 21: bytebase.v1.ProjectService.GetProject:input_type -> bytebase.v1.GetProjectRequest
+	2,  // 22: bytebase.v1.ProjectService.BatchGetProjects:input_type -> bytebase.v1.BatchGetProjectsRequest
+	4,  // 23: bytebase.v1.ProjectService.ListProjects:input_type -> bytebase.v1.ListProjectsRequest
+	6,  // 24: bytebase.v1.ProjectService.SearchProjects:input_type -> bytebase.v1.SearchProjectsRequest
+	8,  // 25: bytebase.v1.ProjectService.CreateProject:input_type -> bytebase.v1.CreateProjectRequest
+	9,  // 26: bytebase.v1.ProjectService.UpdateProject:input_type -> bytebase.v1.UpdateProjectRequest
+	10, // 27: bytebase.v1.ProjectService.DeleteProject:input_type -> bytebase.v1.DeleteProjectRequest
+	11, // 28: bytebase.v1.ProjectService.UndeleteProject:input_type -> bytebase.v1.UndeleteProjectRequest
+	12, // 29: bytebase.v1.ProjectService.BatchDeleteProjects:input_type -> bytebase.v1.BatchDeleteProjectsRequest
+	30, // 30: bytebase.v1.ProjectService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
+	31, // 31: bytebase.v1.ProjectService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
+	15, // 32: bytebase.v1.ProjectService.AddWebhook:input_type -> bytebase.v1.AddWebhookRequest
+	16, // 33: bytebase.v1.ProjectService.UpdateWebhook:input_type -> bytebase.v1.UpdateWebhookRequest
+	17, // 34: bytebase.v1.ProjectService.RemoveWebhook:input_type -> bytebase.v1.RemoveWebhookRequest
+	18, // 35: bytebase.v1.ProjectService.TestWebhook:input_type -> bytebase.v1.TestWebhookRequest
+	14, // 36: bytebase.v1.ProjectService.GetProject:output_type -> bytebase.v1.Project
+	3,  // 37: bytebase.v1.ProjectService.BatchGetProjects:output_type -> bytebase.v1.BatchGetProjectsResponse
+	5,  // 38: bytebase.v1.ProjectService.ListProjects:output_type -> bytebase.v1.ListProjectsResponse
+	7,  // 39: bytebase.v1.ProjectService.SearchProjects:output_type -> bytebase.v1.SearchProjectsResponse
+	14, // 40: bytebase.v1.ProjectService.CreateProject:output_type -> bytebase.v1.Project
+	14, // 41: bytebase.v1.ProjectService.UpdateProject:output_type -> bytebase.v1.Project
+	32, // 42: bytebase.v1.ProjectService.DeleteProject:output_type -> google.protobuf.Empty
+	14, // 43: bytebase.v1.ProjectService.UndeleteProject:output_type -> bytebase.v1.Project
+	32, // 44: bytebase.v1.ProjectService.BatchDeleteProjects:output_type -> google.protobuf.Empty
+	33, // 45: bytebase.v1.ProjectService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	33, // 46: bytebase.v1.ProjectService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	14, // 47: bytebase.v1.ProjectService.AddWebhook:output_type -> bytebase.v1.Project
+	14, // 48: bytebase.v1.ProjectService.UpdateWebhook:output_type -> bytebase.v1.Project
+	14, // 49: bytebase.v1.ProjectService.RemoveWebhook:output_type -> bytebase.v1.Project
+	19, // 50: bytebase.v1.ProjectService.TestWebhook:output_type -> bytebase.v1.TestWebhookResponse
+	36, // [36:51] is the sub-list for method output_type
+	21, // [21:36] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_v1_project_service_proto_init() }
@@ -1868,7 +2025,7 @@ func file_v1_project_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_project_service_proto_rawDesc), len(file_v1_project_service_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   23,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

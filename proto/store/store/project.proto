@@ -75,4 +75,18 @@ message Project {
 
   // Whether to allow the last Plan editor to approve a database change issue.
   bool allow_last_plan_editor_approval = 20;
+
+  // The destination that receives this project's exports.
+  ExportDestination export_destination = 21;
+
+  message ExportDestination {
+    // The canonical URL of a SharePoint document library root or folder.
+    string sharepoint_url = 1;
+    // Display names resolved when the URL was saved. Exports resolve the URL
+    // again rather than trusting these.
+    string site_name = 2;
+    string library_name = 3;
+    string folder_path = 4;
+    string web_url = 5;
+  }
 }

@@ -121,6 +121,7 @@ message Setting {
     ENVIRONMENT = 7;
     EMAIL = 8;
     MCP = 9;
+    SHAREPOINT = 10;
   }
 
   // The resource name of the setting.
@@ -144,7 +145,28 @@ message SettingValue {
     EnvironmentSetting environment = 7;
     EmailSetting email = 8;
     MCPSetting mcp = 9;
+    SharePointSetting sharepoint = 10;
   }
+}
+
+// SharePointSetting is the Microsoft Entra application that delivers exports to
+// SharePoint. It is granted access per library by the customer's SharePoint
+// administrators.
+message SharePointSetting {
+  // The Microsoft Entra tenant (directory) ID.
+  string tenant_id = 1;
+
+  // The application (client) ID.
+  string client_id = 2;
+
+  // The client secret. It is never returned.
+  string client_secret = 3 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
+
+  // Whether a client secret is stored.
+  bool client_secret_set = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message AppIMSetting {
@@ -314,6 +336,12 @@ message WorkspaceProfileSetting {
   // The token itself is never returned; this only lets the UI decide between
   // offering "generate" and "regenerate".
   bool directory_sync_token_configured = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Disable Local Export Download. Exports can then only be delivered to the
+  // project's export destination. It stays in effect if the workspace license
+  // no longer includes FEATURE_SHAREPOINT_EXPORT; only changing it requires
+  // the license.
+  bool disable_local_export_download = 28;
 }
 
 // MCPSetting is what an MCP (Model Context Protocol) session may do in this

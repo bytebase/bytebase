@@ -140,6 +140,31 @@ func (x *SettingValue) Equal(y *SettingValue) bool {
 	if !x.GetMcp().Equal(y.GetMcp()) {
 		return false
 	}
+	if !x.GetSharepoint().Equal(y.GetSharepoint()) {
+		return false
+	}
+	return true
+}
+
+func (x *SharePointSetting) Equal(y *SharePointSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.TenantId != y.TenantId {
+		return false
+	}
+	if x.ClientId != y.ClientId {
+		return false
+	}
+	if x.ClientSecret != y.ClientSecret {
+		return false
+	}
+	if x.ClientSecretSet != y.ClientSecretSet {
+		return false
+	}
 	return true
 }
 
@@ -407,6 +432,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 		return false
 	}
 	if x.DirectorySyncTokenConfigured != y.DirectorySyncTokenConfigured {
+		return false
+	}
+	if x.DisableLocalExportDownload != y.DisableLocalExportDownload {
 		return false
 	}
 	return true

@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => {
           },
       sqlResultSize: 0n,
       queryTimeout: undefined as undefined | { seconds: bigint },
+      disableLocalExportDownload: false,
     },
     policy: {
       disableExport: false,
@@ -31,6 +32,7 @@ const mocks = vi.hoisted(() => {
       async (_params: {
         payload: {
           sqlEditorThemeId?: string;
+          disableLocalExportDownload?: boolean;
           sqlEditorCustomTheme?: {
             id: string;
             name: string;
@@ -186,6 +188,7 @@ beforeEach(() => {
   mocks.profile.sqlEditorCustomTheme = undefined;
   mocks.profile.sqlResultSize = 0n;
   mocks.profile.queryTimeout = undefined;
+  mocks.profile.disableLocalExportDownload = false;
   mocks.policy.disableExport = false;
   mocks.policy.disableCopyData = false;
   mocks.policy.allowAdminDataSource = false;
@@ -411,5 +414,59 @@ describe("SQLEditorSection data-export policy toggle", () => {
     });
     expect(ref.current?.isDirty()).toBe(true);
     expect(exportSwitch().getAttribute("aria-checked")).toBe("false");
+  });
+});
+
+// Stored as `disableLocalExportDownload`; the switch names the allowed state.
+describe("SQLEditorSection local export download toggle", () => {
+  function renderSection() {
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
+    );
+    return ref;
+  }
+
+  function localDownloadSwitch(): HTMLElement {
+    const span = Array.from(container.querySelectorAll("span")).find((s) =>
+      s.textContent?.includes(
+        "settings.general.workspace.local-export-download.self"
+      )
+    );
+    const control = span?.querySelector<HTMLElement>('[role="switch"]');
+    expect(control).toBeTruthy();
+    return control as HTMLElement;
+  }
+
+  test("renders checked while local download is allowed", () => {
+    renderSection();
+    expect(localDownloadSwitch().getAttribute("aria-checked")).toBe("true");
+    expect(container.textContent).toContain(
+      "settings.general.workspace.local-export-download.description"
+    );
+  });
+
+  test("renders unchecked when local download is disabled", () => {
+    mocks.profile.disableLocalExportDownload = true;
+    renderSection();
+    expect(localDownloadSwitch().getAttribute("aria-checked")).toBe("false");
+  });
+
+  test("turning it off disables local download in the workspace profile", async () => {
+    const ref = renderSection();
+    act(() => {
+      localDownloadSwitch().click();
+    });
+    expect(ref.current?.isDirty()).toBe(true);
+    await act(async () => {
+      await ref.current?.update();
+    });
+    expect(mocks.updateWorkspaceProfile).toHaveBeenCalledWith({
+      payload: { disableLocalExportDownload: true },
+      updateMask: expect.objectContaining({
+        paths: ["value.workspace_profile.disable_local_export_download"],
+      }),
+    });
+    expect(mocks.upsertPolicy).not.toHaveBeenCalled();
   });
 });

@@ -487,6 +487,19 @@ message ExportRequest {
   // Container is the container name to execute the query against, used for
   // CosmosDB only.
   optional string container = 9;
+
+  // Where the export is delivered.
+  Delivery delivery = 10;
+
+  // Delivery is where an export is delivered.
+  enum Delivery {
+    // Treated as LOCAL.
+    DELIVERY_UNSPECIFIED = 0;
+    // Return the export as a zip file in the response.
+    LOCAL = 1;
+    // Upload the export files to the project's SharePoint export destination.
+    SHAREPOINT = 2;
+  }
 }
 
 message ExportResponse {
@@ -497,4 +510,16 @@ message ExportResponse {
   // Format: projects/{project}/accessGrants/{accessGrant}.
   // Empty when the user was authorized through normal ACL rather than a grant.
   string applied_access_grant = 2;
+
+  // Set when the export was delivered to SharePoint. content is then empty.
+  SharePointDelivery sharepoint_delivery = 3;
+}
+
+// The result of delivering an export to SharePoint.
+message SharePointDelivery {
+  // The name of the folder created in the destination for this export.
+  string folder_name = 1;
+
+  // The URL of that folder.
+  string web_url = 2;
 }

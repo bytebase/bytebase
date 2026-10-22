@@ -39,6 +39,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
+import type { ExportDeliveryState } from "@/modules/sql-editor/components/useExportDelivery";
 import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useSQLEditorTabState } from "@/modules/sql-editor/store/tab";
@@ -113,6 +114,7 @@ export interface SingleResultViewProps {
   // Optional tooltip shown on the export button — used to explain when the
   // export is enabled by a JIT access grant despite the policy disabling it.
   exportTooltip?: ReactNode;
+  exportDelivery?: ExportDeliveryState;
   maximumExportCount?: number;
   onExport?: (req: DataExportRequest & { statement: string }) => void;
   // Rendered in the toolbar when `showExport` is false — e.g. a
@@ -297,6 +299,7 @@ function SingleResultViewInner({
   resultIndex = 0,
   showExport,
   exportTooltip,
+  exportDelivery,
   maximumExportCount,
   onExport,
   requestExportSlot,
@@ -755,6 +758,9 @@ function SingleResultViewInner({
                   viewMode="DRAWER"
                   supportPassword
                   tooltip={exportTooltip}
+                  deliveries={exportDelivery?.deliveries}
+                  sharepointDestination={exportDelivery?.destination}
+                  unavailableMessage={exportDelivery?.unavailableMessage}
                   maximumExportCount={maximumExportCount}
                   formContent={<DatabaseInfo database={database} />}
                   onExport={handleExport}

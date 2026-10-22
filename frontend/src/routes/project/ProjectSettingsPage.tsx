@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual } from "lodash-es";
 import { ShieldCheck, TriangleAlert, X } from "lucide-react";
 import {
@@ -52,6 +53,7 @@ import {
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Label } from "@/types/proto-es/v1/project_service_pb";
 import {
+  ExportDestinationSchema,
   LabelSchema,
   Project_ExecutionRetryPolicySchema,
 } from "@/types/proto-es/v1/project_service_pb";
@@ -68,6 +70,7 @@ import {
   sqlReviewPolicySlug,
 } from "@/utils";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
+import { ProjectExportDestinationField } from "./ProjectExportDestinationField";
 
 // ---------------------------------------------------------------------------
 // ApprovalFlowIndicator
@@ -211,6 +214,23 @@ export function ProjectSettingsPage() {
   const hasQueryPolicyFeature = useAppStore((s) =>
     s.hasInstanceFeature(PlanFeature.FEATURE_QUERY_POLICY)
   );
+  const hasSharePointExportFeature = useAppStore((s) =>
+    s.hasFeature(PlanFeature.FEATURE_SHAREPOINT_EXPORT)
+  );
+
+  // -----------------------------------------------------------------------
+  // Export destination state
+  // -----------------------------------------------------------------------
+  const savedExportDestinationUrl =
+    project?.exportDestination?.sharepointUrl ?? "";
+  const [exportDestinationUrl, setExportDestinationUrl] = useState(
+    savedExportDestinationUrl
+  );
+  const [exportDestinationError, setExportDestinationError] = useState("");
+  const handleExportDestinationChange = useCallback((value: string) => {
+    setExportDestinationUrl(value);
+    setExportDestinationError("");
+  }, []);
 
   // -----------------------------------------------------------------------
   // Issue-related state
@@ -334,6 +354,7 @@ export function ProjectSettingsPage() {
       (parallelTasksPerRollout ?? 0) !== (project.parallelTasksPerRollout ?? 0)
     )
       return true;
+    if (exportDestinationUrl.trim() !== savedExportDestinationUrl) return true;
     return false;
   }, [
     project,
@@ -358,6 +379,8 @@ export function ProjectSettingsPage() {
     maxRetries,
     ciSamplingSize,
     parallelTasksPerRollout,
+    exportDestinationUrl,
+    savedExportDestinationUrl,
   ]);
 
   // Unsaved-changes protection: browser close + in-app navigation
@@ -405,7 +428,14 @@ export function ProjectSettingsPage() {
     setMaxRetries(project.executionRetryPolicy?.maximumRetries ?? 0);
     setCiSamplingSize(project.ciSamplingSize);
     setParallelTasksPerRollout(project.parallelTasksPerRollout);
-  }, [project, currentReviewPolicy, getInitialMaxRows]);
+    setExportDestinationUrl(savedExportDestinationUrl);
+    setExportDestinationError("");
+  }, [
+    project,
+    currentReviewPolicy,
+    getInitialMaxRows,
+    savedExportDestinationUrl,
+  ]);
 
   // -----------------------------------------------------------------------
   // Save
@@ -549,6 +579,36 @@ export function ProjectSettingsPage() {
         }
       }
 
+      // Saved on its own so a URL that does not resolve is reported beside the
+      // field without discarding the other changes.
+      const nextExportDestinationUrl = exportDestinationUrl.trim();
+      if (nextExportDestinationUrl !== savedExportDestinationUrl) {
+        try {
+          const destinationPatch = cloneDeep(project);
+          destinationPatch.exportDestination = create(ExportDestinationSchema, {
+            sharepointUrl: nextExportDestinationUrl,
+          });
+          const updatedProject = await useAppStore
+            .getState()
+            .updateProject(destinationPatch, ["export_destination"], {
+              byCaller: true,
+            });
+          setExportDestinationUrl(
+            updatedProject.exportDestination?.sharepointUrl ?? ""
+          );
+        } catch (error) {
+          setExportDestinationError(
+            error instanceof ConnectError ? error.rawMessage : String(error)
+          );
+          pushNotification({
+            module: "bytebase",
+            style: "WARN",
+            title: t("project.settings.export-destination.update-failed"),
+          });
+          return;
+        }
+      }
+
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -589,6 +649,8 @@ export function ProjectSettingsPage() {
     maxRetries,
     ciSamplingSize,
     parallelTasksPerRollout,
+    exportDestinationUrl,
+    savedExportDestinationUrl,
     t,
   ]);
 
@@ -842,6 +904,16 @@ export function ProjectSettingsPage() {
                 </FormField>
               </>
             )}
+
+            <ProjectExportDestinationField
+              value={exportDestinationUrl}
+              onChange={handleExportDestinationChange}
+              disabled={!canUpdateProject || !hasSharePointExportFeature}
+              canClear={canUpdateProject}
+              savedUrl={savedExportDestinationUrl}
+              savedLocation={project.exportDestination?.sharepointLocation}
+              error={exportDestinationError}
+            />
 
             {/* Allow Request Role */}
             <ToggleRow

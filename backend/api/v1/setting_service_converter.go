@@ -147,6 +147,19 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 				},
 			},
 		}, nil
+	case storepb.SettingName_SHAREPOINT:
+		storeValue, ok := setting.Value.(*storepb.SharePointSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_Sharepoint{
+					Sharepoint: convertToSharePointSetting(storeValue),
+				},
+			},
+		}, nil
 	default:
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unsupported setting %v", setting.Name))
 	}
@@ -190,6 +203,8 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_EMAIL
 	case storepb.SettingName_MCP:
 		return v1pb.Setting_MCP
+	case storepb.SettingName_SHAREPOINT:
+		return v1pb.Setting_SHAREPOINT
 	case storepb.SettingName_SYSTEM:
 		// Backend-only setting, not exposed in v1 API
 	default:
@@ -221,6 +236,8 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 		return storepb.SettingName_EMAIL
 	case v1pb.Setting_MCP:
 		return storepb.SettingName_MCP
+	case v1pb.Setting_SHAREPOINT:
+		return storepb.SettingName_SHAREPOINT
 	default:
 		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
 	}
@@ -291,12 +308,13 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		// by WorkspaceService.RotateDirectorySyncToken. Callers of UpdateSetting
 		// must not be able to choose it, so nothing is carried over here — the
 		// update path preserves the stored hash instead.
-		PasswordRestriction:  convertToStorePasswordRestriction(v1Setting.PasswordRestriction),
-		EnableDebug:          v1Setting.EnableDebug,
-		SqlResultSize:        v1Setting.SqlResultSize,
-		QueryTimeout:         v1Setting.QueryTimeout,
-		SqlEditorThemeId:     v1Setting.SqlEditorThemeId,
-		SqlEditorCustomTheme: convertToStoreSQLEditorThemeSetting(v1Setting.SqlEditorCustomTheme),
+		PasswordRestriction:        convertToStorePasswordRestriction(v1Setting.PasswordRestriction),
+		EnableDebug:                v1Setting.EnableDebug,
+		SqlResultSize:              v1Setting.SqlResultSize,
+		QueryTimeout:               v1Setting.QueryTimeout,
+		SqlEditorThemeId:           v1Setting.SqlEditorThemeId,
+		SqlEditorCustomTheme:       convertToStoreSQLEditorThemeSetting(v1Setting.SqlEditorCustomTheme),
+		DisableLocalExportDownload: v1Setting.DisableLocalExportDownload,
 	}
 
 	// Convert announcement if present. The store only holds the theme colors.
@@ -375,6 +393,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		QueryTimeout:                 storeSetting.QueryTimeout,
 		SqlEditorThemeId:             storeSetting.SqlEditorThemeId,
 		SqlEditorCustomTheme:         convertToV1SQLEditorThemeSetting(storeSetting.SqlEditorCustomTheme),
+		DisableLocalExportDownload:   storeSetting.DisableLocalExportDownload,
 	}
 }
 
@@ -866,6 +885,22 @@ func convertToAISetting(storeSetting *storepb.AISetting) *v1pb.AISetting {
 		Model:            storeSetting.Model,
 		Version:          storeSetting.Version,
 		SqlReviewEnabled: storeSetting.SqlReviewEnabled,
+	}
+}
+
+func convertSharePointSetting(v1Setting *v1pb.SharePointSetting) *storepb.SharePointSetting {
+	return &storepb.SharePointSetting{
+		TenantId:     v1Setting.GetTenantId(),
+		ClientId:     v1Setting.GetClientId(),
+		ClientSecret: v1Setting.GetClientSecret(),
+	}
+}
+
+func convertToSharePointSetting(storeSetting *storepb.SharePointSetting) *v1pb.SharePointSetting {
+	return &v1pb.SharePointSetting{
+		TenantId:        storeSetting.GetTenantId(),
+		ClientId:        storeSetting.GetClientId(),
+		ClientSecretSet: storeSetting.GetClientSecret() != "",
 	}
 }
 

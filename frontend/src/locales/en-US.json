@@ -973,11 +973,31 @@
     "unexpected-error-description": "An unexpected error occurred while displaying this page. Refreshing usually fixes it; if it keeps happening, please report the issue to your administrator."
   },
   "export-data": {
+    "delivery": {
+      "local": "Local download",
+      "self": "Delivery",
+      "sharepoint": "SharePoint"
+    },
     "export-format": "Export format",
     "export-rows": "Export rows",
     "generate-password": "Generate password",
     "password-info": "Provide a password to encrypt the export file.",
-    "password-optional": "Encrypt with password (Optional)"
+    "password-optional": "Encrypt with password (Optional)",
+    "sharepoint": {
+      "access-note": "SharePoint permissions decide who can open the delivered files.",
+      "delivered-title": "Export delivered to SharePoint",
+      "open": "Open in SharePoint",
+      "result-title": "SharePoint export results",
+      "status": {
+        "delivered": "Delivered",
+        "failed": "Failed",
+        "unconfirmed": "Not confirmed"
+      }
+    },
+    "unavailable": {
+      "feature-unavailable": "Local export download is disabled in this workspace, and SharePoint delivery is not included in the current plan.",
+      "no-destination": "Local export download is disabled in this workspace, and this project has no SharePoint export destination. A project owner can set one in project settings."
+    }
   },
   "gitops": {
     "checklist": {
@@ -2213,6 +2233,14 @@
     "settings": {
       "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
+      "export-destination": {
+        "description": "The SharePoint URL of a document library or a folder in one. Exports from this project are uploaded there, and SharePoint permissions decide who can open them.",
+        "found": "Found",
+        "found-description": "Bytebase can read this destination. The first export confirms that it can write to it.",
+        "placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
+        "self": "Export destination",
+        "update-failed": "The export destination was not saved"
+      },
       "issue-related": {
         "allow-access-grants": {
           "description": "Allow project members to request time-boxed access grants for specific read-only statements. Grants can also cover exporting results and viewing unmasked data.",
@@ -2756,6 +2784,10 @@
           "hours": "Hour(s)",
           "self": "Inactive session timeout"
         },
+        "local-export-download": {
+          "description": "When off, exports are delivered only to the project's SharePoint export destination, and projects without one cannot export. Users can still copy visible query results unless data copying is restricted.",
+          "self": "Allow local export download"
+        },
         "log": "Log",
         "logo": "Logo",
         "logo-aspect": "The suggested logo size should be 5:2 aspect ratio, e.g 100 x 40.",
@@ -2877,7 +2909,7 @@
             "title": "Approve or reject issues"
           },
           "export": {
-            "details": "Download results as a file. Data leaves Bytebase.",
+            "details": "Export results as files. Data leaves Bytebase.",
             "title": "Export query results"
           },
           "manage": {
@@ -3203,6 +3235,14 @@
         }
       }
     },
+    "sharepoint": {
+      "client-id": "Client ID",
+      "client-secret": "Client secret",
+      "client-secret-description": "The client secret of the Microsoft Entra application. It cannot be read back after saving.",
+      "client-secret-saved": "A client secret is saved. Enter a new one to replace it.",
+      "description": "Bytebase delivers SQL Editor exports to SharePoint with this Microsoft Entra application. Grant it write access to each destination library in SharePoint. Bytebase does not manage SharePoint permissions, retention, or deletion.",
+      "tenant-id": "Tenant ID"
+    },
     "sidebar": {
       "audit-log": "Audit Logs",
       "custom-roles": "Custom Roles",
@@ -3218,6 +3258,7 @@
       "members-and-groups": "Members & Groups",
       "profile": "Profile",
       "security-and-policy": "Security & Policy",
+      "sharepoint": "SharePoint",
       "sso": "SSO",
       "subscription": "Subscription",
       "users-and-groups": "Users & Groups"

@@ -8,6 +8,10 @@ import {
   DataExportButton,
   type DataExportRequest,
 } from "@/components/DataExportButton";
+import {
+  toDeliveredSharePointResult,
+  toFailedSharePointDelivery,
+} from "@/components/SharePointDeliveryResultDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -15,6 +19,7 @@ import { isDisallowChangeDatabaseError } from "@/hooks/useExecuteSQL";
 import { cn } from "@/lib/utils";
 import { RequestExportButton } from "@/modules/sql-editor/components/RequestExportButton";
 import { RequestQueryButton } from "@/modules/sql-editor/components/RequestQueryButton";
+import { useExportDelivery } from "@/modules/sql-editor/components/useExportDelivery";
 import { useExportGrantBypass } from "@/modules/sql-editor/components/useExportGrantBypass";
 import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -28,7 +33,10 @@ import {
 } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
-import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  ExportRequest_Delivery,
+  ExportRequestSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import {
   extractDatabaseResourceName,
@@ -152,6 +160,7 @@ export function ResultView({
   });
 
   const showExport = !queryDataPolicy?.disableExport || !!exportGrantName;
+  const exportDelivery = useExportDelivery(database.project);
 
   // When direct export is unavailable, offer a "Request export" affordance that
   // opens the access-grant drawer (pre-filled with this database, statement,
@@ -194,34 +203,55 @@ export function ResultView({
     req: DataExportRequest & { statement: string }
   ) => {
     const { options, resolve, reject, statement } = req;
+    const { databaseName } = extractDatabaseResourceName(database.name);
+    const toSharePoint = options.delivery === ExportRequest_Delivery.SHAREPOINT;
 
     // === Prod path: backend Export RPC ===
     const tabsState = getSQLEditorTabsState();
     const admin =
       tabsState.tabsById.get(tabsState.currentTabId)?.mode === "ADMIN";
     try {
-      const content = await useAppStore.getState().exportData(
-        create(ExportRequestSchema, {
-          name: database.name,
-          ...(executeParams.connection.dataSourceId
-            ? { dataSourceId: executeParams.connection.dataSourceId }
-            : {}),
-          format: options.format,
-          statement,
-          limit: options.limit,
-          admin,
-          password: options.password,
-          schema: executeParams.connection.schema,
-          container: executeParams.connection.table,
-        })
-      );
+      const { content, sharepointDelivery } = await useAppStore
+        .getState()
+        .exportData(
+          create(ExportRequestSchema, {
+            name: database.name,
+            ...(executeParams.connection.dataSourceId
+              ? { dataSourceId: executeParams.connection.dataSourceId }
+              : {}),
+            format: options.format,
+            statement,
+            limit: options.limit,
+            admin,
+            password: options.password,
+            schema: executeParams.connection.schema,
+            container: executeParams.connection.table,
+            delivery: options.delivery,
+          })
+        );
+      if (toSharePoint) {
+        resolve({
+          sharepoint: [
+            toDeliveredSharePointResult(
+              databaseName,
+              sharepointDelivery,
+              exportDelivery.destination?.webUrl ?? ""
+            ),
+          ],
+        });
+        return;
+      }
       resolve([
         {
           content,
-          filename: `${extractDatabaseResourceName(database.name).databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
+          filename: `${databaseName}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}.zip`,
         },
       ]);
     } catch (e) {
+      if (toSharePoint) {
+        resolve({ sharepoint: [toFailedSharePointDelivery(databaseName, e)] });
+        return;
+      }
       reject(e);
     }
   };
@@ -270,6 +300,7 @@ export function ResultView({
                 result={resultSet.results[0]}
                 showExport={showExport}
                 exportTooltip={exportTooltip}
+                exportDelivery={exportDelivery}
                 maximumExportCount={queryDataPolicy?.maximumResultRows}
                 onExport={handleExport}
                 requestExportSlot={
@@ -313,6 +344,9 @@ export function ResultView({
                       viewMode="DRAWER"
                       supportPassword
                       tooltip={exportTooltip}
+                      deliveries={exportDelivery.deliveries}
+                      sharepointDestination={exportDelivery.destination}
+                      unavailableMessage={exportDelivery.unavailableMessage}
                       maximumExportCount={queryDataPolicy?.maximumResultRows}
                       onExport={(req) =>
                         handleExport({
