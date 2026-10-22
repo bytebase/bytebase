@@ -182,9 +182,12 @@ test("first-run setup: skip, no project, own instance, then the sample", async (
 
     // An own-instance setup finishes on the project's instances page, where
     // the connect control carries the "Connect the instance" intro (#21594).
+    // The Getting started bar has a "Connect instance" step button too.
     await page.waitForURL(new RegExp(`/projects/${chosenId}/instances`));
     await expect(
-      page.getByRole("button", { name: "Connect instance" })
+      page
+        .locator("#bb-layout-main")
+        .getByRole("button", { name: "Connect instance" })
     ).toBeVisible();
     await expect(page.getByText("Connect the instance")).toBeVisible();
   });
