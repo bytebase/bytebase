@@ -715,6 +715,9 @@ func (x *ReviewRun) Equal(y *ReviewRun) bool {
 	if x.Error != y.Error {
 		return false
 	}
+	if x.Outdated != y.Outdated {
+		return false
+	}
 	return true
 }
 

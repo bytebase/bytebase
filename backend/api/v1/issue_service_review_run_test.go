@@ -289,6 +289,36 @@ func TestStartRuleReview(t *testing.T) {
 	require.Empty(t, claimRuleRuns(), "a closed issue is skipped")
 }
 
+func TestGetReviewRunReportsAnOutdatedRun(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	issue := createReviewRunIssue(ctx, t, stores, "project-a")
+	_, err := stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	getRun := func() *v1pb.ReviewRun {
+		t.Helper()
+		resp, err := service.GetReviewRun(ctx, connect.NewRequest(&v1pb.GetReviewRunRequest{
+			Name: fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/rule", issue.UID),
+		}))
+		require.NoError(t, err)
+		return resp.Msg
+	}
+	require.False(t, getRun().Outdated)
+
+	_, err = stores.GetDB().ExecContext(ctx, `
+		UPDATE plan SET config = jsonb_set(config, '{approvalInputVersion}', '"1"')
+		WHERE project = $1 AND id = $2
+	`, issue.ProjectID, *issue.PlanUID)
+	require.NoError(t, err)
+	require.True(t, getRun().Outdated, "the plan's SQL changed after the run started")
+
+	_, err = stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	require.False(t, getRun().Outdated)
+}
+
 func TestResolvingAThreadRequestsARolloutCheck(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()

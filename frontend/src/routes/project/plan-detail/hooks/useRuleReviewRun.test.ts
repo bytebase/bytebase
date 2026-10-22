@@ -261,3 +261,25 @@ test("lists the findings of a run first read as done", async () => {
   expect(mocks.fetchIssueCommentThreads).toHaveBeenCalledTimes(1);
   expect(result.current.stale).toBe(false);
 });
+
+test("keeps an outdated run stale and polls it until its replacement starts", async () => {
+  mocks.getReviewRun
+    .mockResolvedValueOnce({
+      ...reviewRun(ReviewRun_Status.DONE),
+      outdated: true,
+    })
+    .mockResolvedValueOnce(reviewRun(ReviewRun_Status.AVAILABLE));
+  const { result } = renderHook(() =>
+    useRuleReviewRun({ enabled: true, issueName: ISSUE, reloadKey: "1" })
+  );
+  await flush();
+  expect(result.current.run?.status).toBe(ReviewRun_Status.DONE);
+  expect(result.current.stale).toBe(true);
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+  expect(mocks.getReviewRun).toHaveBeenCalledTimes(2);
+  expect(result.current.run?.status).toBe(ReviewRun_Status.AVAILABLE);
+  expect(result.current.stale).toBe(false);
+});

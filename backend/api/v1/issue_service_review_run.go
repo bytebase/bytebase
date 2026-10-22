@@ -26,7 +26,8 @@ const (
 	reviewRunIDAI   = "ai"
 )
 
-// GetReviewRun returns the run in a review slot as stored.
+// GetReviewRun returns the run in a review slot as stored, and whether the
+// plan's SQL changed after it started.
 func (s *IssueService) GetReviewRun(ctx context.Context, req *connect.Request[v1pb.GetReviewRunRequest]) (*connect.Response[v1pb.ReviewRun], error) {
 	projectID, issueUID, reviewRunID, err := common.GetProjectIDIssueUIDReviewRunID(req.Msg.Name)
 	if err != nil {
@@ -44,7 +45,36 @@ func (s *IssueService) GetReviewRun(ctx context.Context, req *connect.Request[v1
 	if reviewRun == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("review run %q not found", req.Msg.Name))
 	}
-	return connect.NewResponse(convertToReviewRun(reviewRun)), nil
+	converted := convertToReviewRun(reviewRun)
+	converted.Outdated, err = reviewRunOutdated(ctx, s.store, reviewRun)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	return connect.NewResponse(converted), nil
+}
+
+// reviewRunOutdated reports whether the run's approval input version is no
+// longer its issue's plan's: the plan's SQL changed after the run started.
+func reviewRunOutdated(ctx context.Context, stores *store.Store, reviewRun *store.ReviewRunMessage) (bool, error) {
+	issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ProjectIDs: []string{reviewRun.ProjectID},
+		UID:        &reviewRun.IssueUID,
+	})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get issue")
+	}
+	if issue == nil || issue.PlanUID == nil {
+		return false, nil
+	}
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: reviewRun.ProjectID, UID: issue.PlanUID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get plan")
+	}
+	if plan == nil {
+		return false, nil
+	}
+	return reviewRun.Payload.GetApprovalInputVersion() != plan.Config.GetApprovalInputVersion(), nil
 }
 
 // RunReview triggers a review run. The slot is reset unconditionally: a

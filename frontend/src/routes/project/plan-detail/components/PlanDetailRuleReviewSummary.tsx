@@ -25,7 +25,8 @@ export function PlanDetailRuleReviewSummary({
     );
   }
   if (run === undefined) return null;
-  if (run === null) {
+  // An outdated run reviewed earlier SQL: the plan's current SQL has not run.
+  if (run === null || run.outdated) {
     return (
       <span className="text-sm text-control-placeholder">
         {t("plan.rule-review.not-run")}

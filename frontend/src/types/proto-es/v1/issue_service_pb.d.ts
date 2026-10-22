@@ -1413,6 +1413,15 @@ export declare type ReviewRun = Message<"bytebase.v1.ReviewRun"> & {
    * @generated from field: string error = 6;
    */
   error: string;
+
+  /**
+   * Whether the plan's SQL changed after this run started, so the run
+   * reviews an earlier version of it. The server starts a new run before it
+   * creates the rollout automatically.
+   *
+   * @generated from field: bool outdated = 7;
+   */
+  outdated: boolean;
 };
 
 /**

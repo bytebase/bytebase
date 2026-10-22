@@ -35,8 +35,9 @@ const sameExecution = (a: ReviewRun | null | undefined, b: ReviewRun) =>
 export type RuleReviewRunState = {
   // undefined while loading; null when the review never ran on the issue.
   run: ReviewRun | null | undefined;
-  // True while `run` may not match the server: the plan changed after it was
-  // read, or it shows a completion whose findings are not yet listed.
+  // True while `run` may not match the plan's SQL: the plan changed after it
+  // was read, the server reports it outdated, or it shows a completion whose
+  // findings are not yet listed.
   stale: boolean;
   loadFailed: boolean;
   openFindings: number;
@@ -115,9 +116,10 @@ export function useRuleReviewRun({
     void reload();
   }, [reload]);
 
-  // Each poll stores a new run object, which schedules the next poll.
+  // Each poll stores a new run object, which schedules the next poll. An
+  // outdated run is polled too, until the server starts its replacement.
   useEffect(() => {
-    if (!isActive(run)) return;
+    if (!isActive(run) && !run?.outdated) return;
     const timer = window.setTimeout(() => void reload(), POLL_INTERVAL_MS);
     return () => window.clearTimeout(timer);
   }, [reload, run]);
@@ -153,7 +155,7 @@ export function useRuleReviewRun({
     [comments]
   );
 
-  const stale = readKey !== reloadKey || findingsPending;
+  const stale = readKey !== reloadKey || findingsPending || !!run?.outdated;
   return useMemo(
     () => ({ run, stale, loadFailed, openFindings, reload }),
     [loadFailed, openFindings, reload, run, stale]

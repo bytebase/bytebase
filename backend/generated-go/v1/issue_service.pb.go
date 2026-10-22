@@ -2212,7 +2212,11 @@ type ReviewRun struct {
 	// Fatal execution error, set if and only if status is FAILED: the review
 	// failed to execute (a platform problem, never the SQL — SQL problems are
 	// review results on a DONE run).
-	Error         string `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	Error string `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	// Whether the plan's SQL changed after this run started, so the run
+	// reviews an earlier version of it. The server starts a new run before it
+	// creates the rollout automatically.
+	Outdated      bool `protobuf:"varint,7,opt,name=outdated,proto3" json:"outdated,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2287,6 +2291,13 @@ func (x *ReviewRun) GetError() string {
 		return x.Error
 	}
 	return ""
+}
+
+func (x *ReviewRun) GetOutdated() bool {
+	if x != nil {
+		return x.Outdated
+	}
+	return false
 }
 
 type GetReviewRunRequest struct {
@@ -2967,7 +2978,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x04spec\x18\x01 \x01(\tR\x04spec\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12<\n" +
 	"\x0estart_position\x18\x03 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
-	"\fend_position\x18\x04 \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"\x85\x04\n" +
+	"\fend_position\x18\x04 \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"\xa6\x04\n" +
 	"\tReviewRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x124\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1b.bytebase.v1.ReviewRun.TypeB\x03\xe0A\x03R\x04type\x12:\n" +
@@ -2975,7 +2986,8 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12:\n" +
 	"\bend_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\aendTime\x12\x19\n" +
-	"\x05error\x18\x06 \x01(\tB\x03\xe0A\x03R\x05error\".\n" +
+	"\x05error\x18\x06 \x01(\tB\x03\xe0A\x03R\x05error\x12\x1f\n" +
+	"\boutdated\x18\a \x01(\bB\x03\xe0A\x03R\boutdated\".\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04RULE\x10\x01\x12\x06\n" +

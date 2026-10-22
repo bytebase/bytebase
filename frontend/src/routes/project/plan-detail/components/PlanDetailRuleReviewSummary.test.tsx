@@ -53,6 +53,13 @@ test("says the review never ran", () => {
   expect(screen.getByText("plan.rule-review.not-run")).toBeVisible();
 });
 
+test("says the review never ran on the plan's current SQL", () => {
+  renderSummary({
+    run: reviewRun(ReviewRun_Status.DONE, { outdated: true }),
+  });
+  expect(screen.getByText("plan.rule-review.not-run")).toBeVisible();
+});
+
 test.each([
   [ReviewRun_Status.AVAILABLE, "plan.rule-review.queued"],
   [ReviewRun_Status.RUNNING, "plan.rule-review.running"],

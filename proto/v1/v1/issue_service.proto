@@ -839,6 +839,11 @@ message ReviewRun {
   // failed to execute (a platform problem, never the SQL — SQL problems are
   // review results on a DONE run).
   string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether the plan's SQL changed after this run started, so the run
+  // reviews an earlier version of it. The server starts a new run before it
+  // creates the rollout automatically.
+  bool outdated = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message GetReviewRunRequest {

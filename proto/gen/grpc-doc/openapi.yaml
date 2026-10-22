@@ -27057,6 +27057,14 @@ components:
              failed to execute (a platform problem, never the SQL — SQL problems are
              review results on a DONE run).
           readOnly: true
+        outdated:
+          type: boolean
+          title: outdated
+          description: |-
+            Whether the plan's SQL changed after this run started, so the run
+             reviews an earlier version of it. The server starts a new run before it
+             creates the rollout automatically.
+          readOnly: true
       title: ReviewRun
       additionalProperties: false
     bytebase.v1.ReviewRun.Status:
