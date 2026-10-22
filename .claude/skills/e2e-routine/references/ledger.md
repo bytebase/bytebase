@@ -8,7 +8,7 @@ query, and so flake history survives between sessions.
 ```
 README.md
 last-run.json            # the most recent run (the file should-run.sh reads)
-runs/<YYYY-MM-DD>-<sha7>.json
+runs/<YYYY-MM-DD>-<sha7>-<run_id>.json
 flakes.json              # {"runs": [sha7 ...last 20], "tests": {"<file>::<title>": [sha7 of runs where it was flaky]}}
 ```
 

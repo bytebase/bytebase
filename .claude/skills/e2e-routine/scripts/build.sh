@@ -16,7 +16,10 @@ mkdir -p "$RESULTS" bytebase-build
 STAMP=bytebase-build/.built-sha
 BIN=bytebase-build/bytebase
 head="$(git rev-parse HEAD)"
-dirty="$(git status --porcelain -- frontend/src backend proto go.mod go.sum | head -1)"
+# Any uncommitted change that can reach the binary invalidates the cached
+# build: the whole frontend tree (package.json, lockfile, Tailwind and Vite
+# config, plugins), not only frontend/src. The e2e specs do not reach it.
+dirty="$(git status --porcelain -- frontend backend proto go.mod go.sum ':!frontend/tests/e2e' | head -1)"
 
 if [ -x "$BIN" ] && [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$head" ] && [ -z "$dirty" ] && [ "${FORCE_BUILD:-0}" != 1 ]; then
   log "binary already built from $head; skipping (FORCE_BUILD=1 to rebuild)"

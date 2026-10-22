@@ -54,7 +54,9 @@ entry = {"run_id": meta.get("run_id"), "sha": sha, "date": day, "result": result
          "flaky": [f"{e['file']}::{e['title']}" for e in s.get("flaky", [])],
          "infra": s.get("infra"), "note": note, "run_url": run_url}
 os.makedirs(os.path.join(dest, "runs"), exist_ok=True)
-json.dump(entry, open(os.path.join(dest, "runs", f"{day}-{sha[:7]}.json"), "w"), indent=2)
+# The run id keeps a retry of the same SHA on the same day from overwriting
+# the earlier entry.
+json.dump(entry, open(os.path.join(dest, "runs", f"{day}-{sha[:7]}-{entry['run_id']}.json"), "w"), indent=2)
 json.dump(entry, open(os.path.join(dest, "last-run.json"), "w"), indent=2)
 fp = os.path.join(dest, "flakes.json")
 flakes = json.load(open(fp)) if os.path.exists(fp) else {"runs": [], "tests": {}}
@@ -66,7 +68,7 @@ for key in entry["flaky"]:
 json.dump(flakes, open(fp, "w"), indent=2)
 if not os.path.exists(os.path.join(dest, "README.md")):
     open(os.path.join(dest, "README.md"), "w").write(
-        "# e2e routine ledger\n\nMachine state for `.claude/skills/e2e-routine`: `last-run.json`, one `runs/<date>-<sha7>.json` per run, `flakes.json` (per-test flake history over the last 20 runs). Written by `ledger.sh record`; nothing here is hand-edited.\n")
+        "# e2e routine ledger\n\nMachine state for `.claude/skills/e2e-routine`: `last-run.json`, one `runs/<date>-<sha7>-<run_id>.json` per run, `flakes.json` (per-test flake history over the last 20 runs). Written by `ledger.sh record`; nothing here is hand-edited.\n")
 print(f"recorded {result} run {entry['run_id']} @ {sha[:7]}")
 PY
   (
