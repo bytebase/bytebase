@@ -132,8 +132,9 @@ Get the correct port from `getInstance(env.instance)` rather than hardcoding the
 - **`psql` dependency**: must be on PATH for DDL/DML setup.
 - **Unix-like OS only**: the sample Postgres uses Unix sockets in `/tmp`.
 - **Admin credentials**: hardcoded `demo@example.com` / `12345678`. The first user created via `/v1/auth/signup` becomes workspace admin, so e2e signs up this fixture.
-- **First-run state**: the shared server has two members and a used sample, so it never shows the setup wizard. A spec that needs a workspace with one member and an unused sample starts its own with `startBareServer()` and stops it in `afterAll` (see `workspace-setup/workspace-setup.spec.ts`). That server has no license, so it is for free-plan behavior only.
-- **DBA fixture**: `dba1@example.com` / `12345678` is created during `globalSetup` and granted `roles/workspaceDBA`. Used as the second approver by plan-detail approval specs. If a spec needs additional users (developer, QA, etc.), provision them the same way in `mode-start-new-bytebase.ts` — don't assume they exist.
+- **First-run state**: the shared server has several members and a used sample, so it never shows the setup wizard. A spec that needs a workspace with one member and an unused sample starts its own with `startBareServer()` and stops it in `afterAll` (see `workspace-setup/workspace-setup.spec.ts`). That server has no license, so it is for free-plan behavior only.
+- **DBA fixture**: `dba1@example.com` / `12345678` is created during `globalSetup` and granted `roles/workspaceDBA`. Used as the second approver by plan-detail approval specs.
+- **Approver fixture**: `approver1@example.com` / `12345678` is created during `globalSetup` and granted `roles/workspaceAdmin`. It never edits a plan, so it is the approver when the author may not approve (`allow_last_plan_editor_approval=false`). If a spec needs additional users (developer, QA, etc.), provision them the same way in `mode-start-new-bytebase.ts` — don't assume they exist.
 - **Approval by the plan author**: the admin creates, edits, and approves its own plans, so it is both the issue creator and the last plan editor. A new project denies approval to both, through two separate settings. Enable both with `authorMayApprove(true)` from `plan-detail/plan-helpers.ts`, and snapshot and restore both fields.
 
 ## Assertions and regression coverage

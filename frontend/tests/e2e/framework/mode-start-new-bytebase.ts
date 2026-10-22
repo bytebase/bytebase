@@ -20,6 +20,12 @@ const DBA_EMAIL = "dba1@example.com";
 const DBA_PASSWORD = "12345678"; // NOSONAR: e2e fixture
 const DBA_TITLE = "DBA1";
 const DBA_ROLE = "roles/workspaceDBA";
+// A second workspace admin who never edits a plan: the approver when the
+// author may not approve its own plan (allow_last_plan_editor_approval=false).
+const APPROVER_EMAIL = "approver1@example.com";
+const APPROVER_PASSWORD = "12345678"; // NOSONAR: e2e fixture
+const APPROVER_TITLE = "Approver1";
+const APPROVER_ROLE = "roles/workspaceAdmin";
 
 let serverProcess: child_process.ChildProcess | undefined;
 let tempDir: string | undefined;
@@ -353,13 +359,13 @@ export async function startServer(): Promise<{
     "value.workspace_profile.access_token_duration",
   );
 
-  // Phase 3c: Provision the DBA fixture user that plan-detail approval
-  // specs use as the second approver. The previous demo dump pre-seeded
-  // additional users (dba1/dev1/qa1); now we create only what's actually
-  // referenced. Add more fixtures here if new specs need them.
+  // Phase 3c: Provision the fixture users the approval specs sign in as.
+  // Create only what a spec references; add more here, never inside a spec.
   const { workspace } = await api.getActuatorInfo();
   await api.createUser(DBA_EMAIL, DBA_PASSWORD, DBA_TITLE);
   await api.addWorkspaceRoleMember(workspace, DBA_EMAIL, DBA_ROLE);
+  await api.createUser(APPROVER_EMAIL, APPROVER_PASSWORD, APPROVER_TITLE);
+  await api.addWorkspaceRoleMember(workspace, APPROVER_EMAIL, APPROVER_ROLE);
 
   // Phase 4: Create the sample project and provision its instance on PORT+3.
   const sampleProject = await api.createProject(

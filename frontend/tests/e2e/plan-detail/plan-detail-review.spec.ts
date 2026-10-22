@@ -442,6 +442,8 @@ test.describe("Permission boundary: non-candidate cannot review but can comment"
 // who never touched the plan approves as usual.
 test.describe("Last plan editor cannot approve while the project option is off", () => {
   test.describe.configure({ mode: "serial" });
+  // The second workspace admin provisioned at server startup; it never edits
+  // a plan, so it is the approver this rule leaves.
   const APPROVER_EMAIL = "approver1@example.com";
   const APPROVER_PASSWORD = "12345678"; // NOSONAR: e2e fixture
   let planId: string;
@@ -453,21 +455,6 @@ test.describe("Last plan editor cannot approve while the project option is off",
       allowSelfApproval: true,
       allowLastPlanEditorApproval: false,
     });
-    // A second workspace admin: a candidate of the step who did not edit the
-    // plan. A retried attempt finds the account from the previous attempt,
-    // soft-deleted by its afterAll, so a 409 means "reactivate", not "reuse".
-    try {
-      await env.api.createUser(APPROVER_EMAIL, APPROVER_PASSWORD, "Approver1");
-    } catch (err) {
-      if (!String(err).includes("409")) throw err;
-      await env.api.undeleteUser(APPROVER_EMAIL).catch(() => {});
-    }
-    const { workspace } = await env.api.getActuatorInfo();
-    await env.api.addWorkspaceRoleMember(
-      workspace,
-      APPROVER_EMAIL,
-      "roles/workspaceAdmin",
-    );
     const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review LastEditor",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_le_${Date.now()} TEXT;`,
@@ -476,10 +463,6 @@ test.describe("Last plan editor cannot approve while the project option is off",
     planId = seeded.planId;
     issueName = seeded.issueName;
     await goReview(planId);
-  });
-
-  test.afterAll(async () => {
-    await env.api.deleteUser(APPROVER_EMAIL);
   });
 
   test("the editor is a candidate, but Approve is disabled with the reason and the API refuses", async () => {
