@@ -454,11 +454,13 @@ test.describe("Last plan editor cannot approve while the project option is off",
       allowLastPlanEditorApproval: false,
     });
     // A second workspace admin: a candidate of the step who did not edit the
-    // plan. Creation tolerates a leftover from a retried attempt.
+    // plan. A retried attempt finds the account from the previous attempt,
+    // soft-deleted by its afterAll, so a 409 means "reactivate", not "reuse".
     try {
       await env.api.createUser(APPROVER_EMAIL, APPROVER_PASSWORD, "Approver1");
     } catch (err) {
       if (!String(err).includes("409")) throw err;
+      await env.api.undeleteUser(APPROVER_EMAIL).catch(() => {});
     }
     const { workspace } = await env.api.getActuatorInfo();
     await env.api.addWorkspaceRoleMember(
