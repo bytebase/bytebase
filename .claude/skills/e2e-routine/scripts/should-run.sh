@@ -2,7 +2,8 @@
 # Decide whether tonight's run is worth doing.
 #
 #   should-run.sh            -> prints a JSON decision; exit codes:
-#     0  RUN          main moved and the diff touches product or e2e code
+#     0  RUN          main moved and the diff touches product or e2e code, or the
+#                     last run of this SHA was infra or incomplete (not covered)
 #     3  NO_CHANGE    origin/main is the SHA the ledger already recorded
 #     4  NOT_RELEVANT main moved but only docs/CI/workflow files changed
 #   FORCE=1 should-run.sh    -> always RUN (manual fire)
@@ -25,6 +26,12 @@ emit() {
 
 if [ "${FORCE:-0}" = 1 ]; then emit RUN forced; exit 0; fi
 if [ -z "$last" ]; then emit RUN "no ledger entry yet"; exit 0; fi
+# A SHA counts as covered only when its last run actually tested it: an
+# infra failure or a run cut short proves nothing, so the same SHA runs again.
+last_result="$("$E2E_SKILL_DIR/scripts/ledger.sh" last-result 2>/dev/null || true)"
+case "$last_result" in
+  infra|incomplete) emit RUN "last run on $last was $last_result; retrying"; exit 0 ;;
+esac
 if [ "$last" = "$head" ]; then emit NO_CHANGE "origin/main unchanged since the last run"; exit 3; fi
 if ! git cat-file -e "$last^{commit}" 2>/dev/null; then
   git fetch -q origin "$last" 2>/dev/null || { emit RUN "last SHA $last not fetchable; running"; exit 0; }

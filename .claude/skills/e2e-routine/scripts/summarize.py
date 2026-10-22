@@ -9,6 +9,9 @@ Buckets (see references/triage.md for what to do with each):
   lock_flipped  test.fail() lock that now passes      -> the bug was fixed; remove the lock
   lock_holding  test.fail() lock still failing        -> not red
   infra         no test ran, or every test died on a boot/license/browser signature
+  incomplete    the run was cut short (global timeout, crash): tests never ran, never green
+
+Exit code: 0 green, 1 red or infra, 2 no report, 3 incomplete.
 """
 import json
 import os
@@ -75,7 +78,8 @@ def main(results_dir):
         exit_code = int(open(ep).read().strip() or 0)
 
     summary = {"meta": meta, "exit_code": exit_code, "totals": {}, "failed": [], "flaky": [],
-               "lock_flipped": [], "lock_holding": [], "skipped": [], "infra": None, "errors": []}
+               "lock_flipped": [], "lock_holding": [], "skipped": [], "infra": None, "incomplete": None,
+               "errors": []}
 
     if not os.path.exists(report_path):
         log_tail = ""
@@ -136,8 +140,28 @@ def main(results_dir):
     elif failed and all(e["infra_signature"] in ("connection", "boot") for e in failed) and len(failed) >= max(5, summary["totals"]["tests"] // 2):
         summary["infra"] = {"kind": "server-lost", "detail": failed[0]["error"]}
 
+    # A run the global timeout (or a crash) cut short has no failures, a
+    # nonzero exit code and tests that never ran. It proves nothing about the
+    # tests it did not reach, so it is "incomplete", never green.
+    log_text = ""
+    lp = os.path.join(results_dir, "playwright.log")
+    if os.path.exists(lp):
+        log_text = open(lp, errors="replace").read()
+    timed_out = re.search(r"global timeout|Timed out waiting .* for the test suite", log_text, re.I) is not None
+    if not summary["infra"] and (timed_out or (exit_code not in (0, None) and not failed)):
+        summary["incomplete"] = {
+            "reason": "global timeout" if timed_out else f"exit code {exit_code} with no failed test",
+            "not_run": summary["totals"]["skipped"],
+        }
+    else:
+        summary["incomplete"] = None
+
     write(results_dir, summary)
-    return 0 if not failed and not summary["infra"] else 1
+    if summary["infra"]:
+        return 1
+    if summary["incomplete"]:
+        return 3
+    return 0 if not failed else 1
 
 
 def write(results_dir, s):
@@ -148,6 +172,8 @@ def write(results_dir, s):
     lines = [f"# e2e run {m.get('run_id', '?')} @ {m.get('short_sha', '?')}", ""]
     if s["infra"]:
         lines += [f"**INFRA**: {s['infra']['kind']}: {s['infra']['detail']}", ""]
+    if s.get("incomplete"):
+        lines += [f"**INCOMPLETE**: {s['incomplete']['reason']}; {s['incomplete']['not_run']} test(s) never ran. Not a green run.", ""]
     if t:
         lines += [f"{t['passed']} passed, {t['failed']} failed, {t['flaky']} flaky, {t['lock_flipped']} lock flipped, "
                   f"{t['lock_holding']} lock holding, {t['skipped']} skipped, {t['tests']} total, {t['duration_s']}s", ""]

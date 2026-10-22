@@ -4,6 +4,7 @@
 # result" without a second repository. Format: references/ledger.md.
 #
 #   ledger.sh last-sha                      # prints the SHA of the last recorded run, or nothing
+#   ledger.sh last-result                   # green | red | infra | incomplete, or nothing
 #   ledger.sh show                          # prints last-run.json
 #   ledger.sh flakes                        # prints flakes.json
 #   ledger.sh record <results-dir> [note]   # appends the run and pushes the branch
@@ -16,6 +17,7 @@ fetch_ledger() { git fetch -q origin "+refs/heads/$E2E_LEDGER_BRANCH:$ref" 2>/de
 
 case "${1:-}" in
 last-sha) fetch_ledger; git show "$ref:last-run.json" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("sha",""))' 2>/dev/null ;;
+last-result) fetch_ledger; git show "$ref:last-run.json" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("result",""))' 2>/dev/null ;;
 show)     fetch_ledger; git show "$ref:last-run.json" 2>/dev/null || echo '{}' ;;
 flakes)   fetch_ledger; git show "$ref:flakes.json" 2>/dev/null || echo '{}' ;;
 record)
@@ -39,7 +41,14 @@ run_url = ""
 sid = os.environ.get("CLAUDE_CODE_REMOTE_SESSION_ID")
 if sid:
     run_url = f"https://claude.ai/code/session_{sid}" if not sid.startswith("session_") else f"https://claude.ai/code/{sid}"
-result = "infra" if s.get("infra") else ("red" if t.get("failed") else "green")
+if s.get("infra"):
+    result = "infra"
+elif s.get("incomplete"):
+    result = "incomplete"
+elif t.get("failed"):
+    result = "red"
+else:
+    result = "green"
 entry = {"run_id": meta.get("run_id"), "sha": sha, "date": day, "result": result, "totals": t,
          "failed": [f"{e['file']}::{e['title']}" for e in s.get("failed", [])],
          "flaky": [f"{e['file']}::{e['title']}" for e in s.get("flaky", [])],
@@ -67,5 +76,5 @@ PY
   git worktree remove --force "$tmp" 2>/dev/null || rm -rf "$tmp"
   git worktree prune
   ;;
-*) echo "usage: ledger.sh last-sha | show | flakes | record <results-dir> [note]" >&2; exit 2 ;;
+*) echo "usage: ledger.sh last-sha | last-result | show | flakes | record <results-dir> [note]" >&2; exit 2 ;;
 esac

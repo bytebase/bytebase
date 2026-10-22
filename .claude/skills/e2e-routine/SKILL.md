@@ -122,8 +122,11 @@ run anything else that boots a Bytebase while it runs. The suite takes roughly
 40 to 60 minutes.
 
 `summarize.py` writes `summary.json` and `summary.md` (buckets: `failed`,
-`flaky`, `lock_flipped`, `lock_holding`, `skipped`, `infra`). Paste
-`summary.md`. Exit 2 means no `report.json`: INFRA, go to Phase 6.
+`flaky`, `lock_flipped`, `lock_holding`, `skipped`, `infra`, `incomplete`).
+Paste `summary.md`. Exit 2 means no `report.json`: INFRA, go to Phase 6. Exit
+3 means the run was cut short (the two-hour cap or a crash) with tests never
+reached: INCOMPLETE, never green; triage what did fail, then go to Phase 6 and
+say how much wall clock the build and the suite took.
 
 ## Phase 4: Classify and verify
 

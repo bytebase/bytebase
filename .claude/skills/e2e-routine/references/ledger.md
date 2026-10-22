@@ -19,7 +19,7 @@ flakes.json              # {"runs": [sha7 ...last 20], "tests": {"<file>::<title
   "run_id": "20261022T140712Z",
   "sha": "<40-hex main sha the binary was built from>",
   "date": "2026-10-22",
-  "result": "green | red | infra",
+  "result": "green | red | infra | incomplete",
   "totals": {"tests": 221, "passed": 218, "failed": 2, "flaky": 1, "lock_flipped": 0, "lock_holding": 7, "skipped": 0, "duration_s": 2410},
   "failed": ["sql-editor/sql-editor-result.spec.ts::Request export shows for a developer"],
   "flaky":  ["plan-detail/plan-detail-rollout.spec.ts::..."],
@@ -37,7 +37,11 @@ Rules:
   `attribute.py` widens on its own to the spec file's last change when nothing
   inside the window scores.
 - A run records itself exactly once, after `summarize.py`, whatever the result.
-  An aborted run (no `report.json`) records `infra` with the reason.
+  An aborted run (no `report.json`) records `infra` with the reason; a run the
+  global timeout or a crash cut short records `incomplete`.
+- Only `green` and `red` mean the SHA was tested. `should-run.sh` runs the same
+  SHA again when the last entry is `infra` or `incomplete`, so a transient
+  failure never leaves a commit uncovered.
 - Flake threshold: a test flaky in 3 of the last 5 recorded runs is an issue
   candidate (`ledger.sh flakes`).
 - Nothing in the ledger is secret; the branch is public like the repository.
