@@ -126,8 +126,10 @@ def main(results_dir):
         if bucket == "skipped":
             counts["not_run" if not deliberate else "skipped_deliberate"] += 1
         results = test.get("results", [])
-        last = results[-1] if results else {}
-        err = first_line((last.get("error") or {}).get("message", "")) if last else ""
+        # The latest attempt that carries an error: for a flaky test the final
+        # attempt passed and has none, and the failure is the evidence.
+        errored = [r for r in results if (r.get("error") or {}).get("message")]
+        err = first_line(errored[-1]["error"]["message"]) if errored else ""
         attachments = [a.get("path") for r in results for a in r.get("attachments", []) if a.get("path")]
         entry = {
             "file": file_title,
@@ -165,11 +167,15 @@ def main(results_dir):
 
     failed = summary["failed"]
     # The disposable server dying mid-run fails every test after it with a
-    # connection or boot signature. Judge that by the share of failures that
-    # carry the signature, not by their share of the suite: a server lost late
-    # leaves most tests passed. Failures without the signature stay in
-    # `failed` and are still triaged one by one.
-    signed = [e for e in failed if e["infra_signature"] in ("connection", "boot")]
+    # connection or boot signature; a missing browser, psql or toolchain fails
+    # them with that signature instead. Judge it by the share of failures that
+    # carry any environment signature, not by their share of the suite: a
+    # server lost late leaves most tests passed. A failure of the setup project
+    # alone is enough, since every other test depends on it. Failures without a
+    # signature stay in `failed` and are still triaged one by one.
+    signed = [e for e in failed if e["infra_signature"]]
+    setup_lost = bool(signed) and len(signed) == len(failed) and any(
+        e["file"].endswith("framework/setup-project.ts") for e in signed)
     setup_signature = infra_signature(" ".join(summary["errors"])) if summary["errors"] else None
     if summary["totals"]["tests"] == 0 and summary["errors"] and setup_signature:
         summary["infra"] = {"kind": setup_signature, "detail": summary["errors"][0]}
@@ -182,17 +188,19 @@ def main(results_dir):
                               "statuses": ["failed"], "attachments": []}]
         failed = summary["failed"]
         summary["totals"]["failed"] = 1
-    elif len(signed) >= SERVER_LOST_MIN_FAILURES and len(signed) >= SERVER_LOST_SHARE * len(failed):
-        summary["infra"] = {"kind": "server-lost",
-                            "detail": f"{len(signed)} of {len(failed)} failures lost the server; first: {signed[0]['error']}",
+    elif setup_lost or (len(signed) >= SERVER_LOST_MIN_FAILURES and len(signed) >= SERVER_LOST_SHARE * len(failed)):
+        dominant = Counter(e["infra_signature"] for e in signed).most_common(1)[0][0]
+        kind = "server-lost" if dominant in ("connection", "boot") else dominant
+        summary["infra"] = {"kind": kind,
+                            "detail": f"{len(signed)} of {len(failed)} failures carry an environment signature ({dominant}); first: {signed[0]['error']}",
                             "first_test": f"{signed[0]['file']}:{signed[0]['line']}"}
-        # The server's casualties prove nothing about their tests, so they
-        # leave the triage queue; failures without the signature stay in it.
-        summary["lost_to_server"] = signed
+        # These casualties prove nothing about their tests, so they leave the
+        # triage queue; failures without a signature stay in it.
+        summary["lost_to_infra"] = signed
         summary["failed"] = [e for e in failed if e not in signed]
         failed = summary["failed"]
         summary["totals"]["failed"] = len(failed)
-        summary["totals"]["lost_to_server"] = len(signed)
+        summary["totals"]["lost_to_infra"] = len(signed)
     elif summary["errors"]:
         # Errors outside any test after tests ran (global teardown, a worker
         # crash): Playwright fails the run for them. One with an environment
@@ -261,7 +269,7 @@ def write(results_dir, s):
                   f"{t['lock_holding']} lock holding, {t.get('not_run', 0)} did not run, "
                   f"{t.get('skipped_deliberate', t['skipped'])} skipped on purpose, {t['tests']} total, {t['duration_s']}s", ""]
     for bucket, head in (("failed", "Failed (every attempt)"), ("flaky", "Flaky (passed on retry)"),
-                         ("lost_to_server", "Lost to the server (not triaged; rerun once the server is fixed)"),
+                         ("lost_to_infra", "Lost to the environment (not triaged; they rerun once it is fixed)"),
                          ("lock_flipped", "Locks that now pass"),
                          ("not_run", "Did not run (not covered by this run)"), ("skipped", "Skipped on purpose")):
         if s.get(bucket):
