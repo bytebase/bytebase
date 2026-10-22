@@ -1,10 +1,11 @@
 import { create } from "@bufbuild/protobuf";
-import { Code, ConnectError } from "@connectrpc/connect";
+import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import {
   issueServiceClientConnect,
   planServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   GetIssueRequestSchema,
@@ -36,7 +37,8 @@ type NotStarted = { status: "not_started" };
 type ReviewFacet =
   | Available<{ runStatus: string }>
   | Unavailable
-  | NotConfigured;
+  | NotConfigured
+  | NotStarted;
 
 type IssueOverview = {
   project: string;
@@ -182,7 +184,7 @@ function parseReviewResult(
     };
   }
   return isNotFound(result.reason)
-    ? { status: "not_configured" }
+    ? { status: "not_started" }
     : { status: "unavailable" };
 }
 
@@ -197,9 +199,13 @@ export async function collectIssueOverview(
     return null;
   }
 
+  const silentOptions = {
+    contextValues: createContextValues().set(silentContextKey, true),
+  };
   const issueResult = await Promise.allSettled([
     issueServiceClientConnect.getIssue(
-      create(GetIssueRequestSchema, { name: issueName })
+      create(GetIssueRequestSchema, { name: issueName }),
+      silentOptions
     ),
   ]);
   if (issueResult[0].status !== "fulfilled") {
@@ -254,22 +260,26 @@ export async function collectIssueOverview(
   const [planResult, planCheckResult, ruleReviewResult, aiReviewResult] =
     await Promise.allSettled([
       planServiceClientConnect.getPlan(
-        create(GetPlanRequestSchema, { name: issue.plan })
+        create(GetPlanRequestSchema, { name: issue.plan }),
+        silentOptions
       ),
       planServiceClientConnect.getPlanCheckRun(
         create(GetPlanCheckRunRequestSchema, {
           name: `${issue.plan}/planCheckRun`,
-        })
+        }),
+        silentOptions
       ),
       issueServiceClientConnect.getReviewRun(
         create(GetReviewRunRequestSchema, {
           name: `${issue.name}/reviewRuns/rule`,
-        })
+        }),
+        silentOptions
       ),
       issueServiceClientConnect.getReviewRun(
         create(GetReviewRunRequestSchema, {
           name: `${issue.name}/reviewRuns/ai`,
-        })
+        }),
+        silentOptions
       ),
     ]);
 
@@ -333,7 +343,8 @@ export async function collectIssueOverview(
   const rolloutName = getRolloutFromPlan(plan.name);
   const rolloutResult = await Promise.allSettled([
     rolloutServiceClientConnect.getRollout(
-      create(GetRolloutRequestSchema, { name: rolloutName })
+      create(GetRolloutRequestSchema, { name: rolloutName }),
+      silentOptions
     ),
   ]);
   if (
@@ -358,7 +369,8 @@ export async function collectIssueOverview(
       create(ListTaskRunsRequestSchema, {
         parent: `${rollout.name}/stages/-/tasks/-`,
         pageSize: TASK_RUN_PAGE_SIZE,
-      })
+      }),
+      silentOptions
     ),
   ]);
   const taskRuns =

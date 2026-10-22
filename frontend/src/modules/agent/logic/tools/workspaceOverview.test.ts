@@ -6,6 +6,7 @@ import {
   instanceServiceClientConnect,
   projectServiceClientConnect,
 } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { ListDatabasesRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { ListInstancesRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { SearchProjectsRequestSchema } from "@/types/proto-es/v1/project_service_pb";
@@ -58,10 +59,12 @@ describe("workspaceOverview", () => {
       projects: [{ name: "projects/orders", title: "Orders" }],
       nextPageToken: "",
     } as never);
-    mocks.listInstances.mockResolvedValue({
-      instances: [{ name: "instances/prod" }],
-      nextPageToken: "",
-    } as never);
+    mocks.listInstances
+      .mockResolvedValueOnce({
+        instances: [{ name: "instances/prod" }],
+        nextPageToken: "",
+      } as never)
+      .mockResolvedValueOnce({ instances: [], nextPageToken: "" } as never);
     mocks.listDatabases.mockResolvedValue({
       databases: [{ name: "instances/prod/databases/orders" }],
       nextPageToken: "",
@@ -105,18 +108,137 @@ describe("workspaceOverview", () => {
         pageSize: 3,
         orderBy: "title",
         showDeleted: false,
-      })
+      }),
+      expect.anything()
     );
     expect(instanceServiceClientConnect.listInstances).toHaveBeenCalledWith(
-      create(ListInstancesRequestSchema, { pageSize: 3, showDeleted: false })
+      create(ListInstancesRequestSchema, { pageSize: 3, showDeleted: false }),
+      expect.anything()
+    );
+    expect(instanceServiceClientConnect.listInstances).toHaveBeenCalledWith(
+      create(ListInstancesRequestSchema, {
+        parent: "projects/orders",
+        pageSize: 3,
+        showDeleted: false,
+      }),
+      expect.anything()
     );
     expect(databaseServiceClientConnect.listDatabases).toHaveBeenCalledWith(
       create(ListDatabasesRequestSchema, {
         parent: "workspaces/default",
         pageSize: 3,
         showDeleted: false,
-      })
+      }),
+      expect.anything()
     );
+    for (const read of [
+      mocks.searchProjects,
+      mocks.listInstances,
+      mocks.listDatabases,
+    ]) {
+      for (const [, options] of read.mock.calls) {
+        expect(options.contextValues.get(silentContextKey)).toBe(true);
+      }
+    }
+  });
+
+  test("includes project-owned instances when no workspace instances exist", async () => {
+    workspaceAttentionTool.mockResolvedValue(
+      JSON.stringify({ issues: [], partial: false })
+    );
+    mocks.searchProjects.mockResolvedValue({
+      projects: [{ name: "projects/orders" }],
+      nextPageToken: "",
+    } as never);
+    mocks.listInstances
+      .mockResolvedValueOnce({ instances: [], nextPageToken: "" } as never)
+      .mockResolvedValueOnce({
+        instances: [{ name: "projects/orders/instances/prod" }],
+        nextPageToken: "",
+      } as never);
+    mocks.listDatabases.mockResolvedValue({
+      databases: [],
+      nextPageToken: "",
+    } as never);
+
+    const overview = await collectWorkspaceOverview("workspaces/default");
+
+    expect(overview?.setup.instances).toEqual({
+      status: "available",
+      partial: false,
+      count: 1,
+    });
+    expect(mocks.listInstances).toHaveBeenCalledWith(
+      create(ListInstancesRequestSchema, {
+        parent: "projects/orders",
+        pageSize: 3,
+        showDeleted: false,
+      }),
+      expect.anything()
+    );
+  });
+
+  test("does not call instance discovery complete when projects remain unseen", async () => {
+    workspaceAttentionTool.mockResolvedValue(
+      JSON.stringify({ issues: [], partial: false })
+    );
+    mocks.searchProjects.mockResolvedValue({
+      projects: [{ name: "projects/orders" }],
+      nextPageToken: "more-projects",
+    } as never);
+    mocks.listInstances.mockResolvedValue({
+      instances: [],
+      nextPageToken: "",
+    } as never);
+    mocks.listDatabases.mockResolvedValue({
+      databases: [],
+      nextPageToken: "",
+    } as never);
+
+    expect(
+      (await collectWorkspaceOverview("workspaces/default"))?.setup.instances
+    ).toEqual({ status: "available", partial: true, count: 0 });
+  });
+
+  test("marks instance discovery partial when a project instance read fails", async () => {
+    workspaceAttentionTool.mockResolvedValue(
+      JSON.stringify({ issues: [], partial: false })
+    );
+    mocks.searchProjects.mockResolvedValue({
+      projects: [{ name: "projects/orders" }],
+      nextPageToken: "",
+    } as never);
+    mocks.listInstances
+      .mockResolvedValueOnce({ instances: [], nextPageToken: "" } as never)
+      .mockRejectedValueOnce(new Error("project instances unavailable"));
+    mocks.listDatabases.mockResolvedValue({
+      databases: [],
+      nextPageToken: "",
+    } as never);
+
+    expect(
+      (await collectWorkspaceOverview("workspaces/default"))?.setup.instances
+    ).toEqual({ status: "available", partial: true, count: 0 });
+  });
+
+  test("does not report zero instances as complete when project discovery fails", async () => {
+    workspaceAttentionTool.mockResolvedValue(
+      JSON.stringify({ issues: [], partial: false })
+    );
+    mocks.searchProjects.mockRejectedValue(new Error("projects unavailable"));
+    mocks.listInstances.mockResolvedValue({
+      instances: [],
+      nextPageToken: "",
+    } as never);
+    mocks.listDatabases.mockResolvedValue({
+      databases: [],
+      nextPageToken: "",
+    } as never);
+
+    expect(
+      (await collectWorkspaceOverview("workspaces/default"))?.setup.instances
+    ).toEqual({ status: "available", partial: true, count: 0 });
+    expect(mocks.listInstances).toHaveBeenCalledTimes(1);
   });
 
   test("keeps successful facets when setup reads are partial or unavailable", async () => {

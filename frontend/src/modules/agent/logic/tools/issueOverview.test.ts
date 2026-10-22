@@ -2,6 +2,7 @@
 
 import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { silentContextKey } from "@/api/context-key";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   Issue_Type,
@@ -152,29 +153,41 @@ describe("issueOverview", () => {
         ],
       },
     });
+    for (const read of Object.values(mocks)) {
+      for (const [, options] of read.mock.calls) {
+        expect(options?.contextValues?.get(silentContextKey)).toBe(true);
+      }
+    }
     expect(mocks.getIssue).toHaveBeenCalledWith(
-      expect.objectContaining({ name: issueName })
+      expect.objectContaining({ name: issueName }),
+      expect.anything()
     );
     expect(mocks.getPlan).toHaveBeenCalledWith(
-      expect.objectContaining({ name: planName })
+      expect.objectContaining({ name: planName }),
+      expect.anything()
     );
     expect(mocks.getPlanCheckRun).toHaveBeenCalledWith(
-      expect.objectContaining({ name: `${planName}/planCheckRun` })
+      expect.objectContaining({ name: `${planName}/planCheckRun` }),
+      expect.anything()
     );
     expect(mocks.getReviewRun).toHaveBeenCalledWith(
-      expect.objectContaining({ name: `${issueName}/reviewRuns/rule` })
+      expect.objectContaining({ name: `${issueName}/reviewRuns/rule` }),
+      expect.anything()
     );
     expect(mocks.getReviewRun).toHaveBeenCalledWith(
-      expect.objectContaining({ name: `${issueName}/reviewRuns/ai` })
+      expect.objectContaining({ name: `${issueName}/reviewRuns/ai` }),
+      expect.anything()
     );
     expect(mocks.getRollout).toHaveBeenCalledWith(
-      expect.objectContaining({ name: `${planName}/rollout` })
+      expect.objectContaining({ name: `${planName}/rollout` }),
+      expect.anything()
     );
     expect(mocks.listTaskRuns).toHaveBeenCalledWith(
       expect.objectContaining({
         parent: `${planName}/rollout/stages/-/tasks/-`,
         pageSize: 10,
-      })
+      }),
+      expect.anything()
     );
   });
 
@@ -208,7 +221,7 @@ describe("issueOverview", () => {
     expect(mocks.listTaskRuns).not.toHaveBeenCalled();
   });
 
-  test("treats missing dependent resources as not configured", async () => {
+  test("treats missing checks as not configured and missing review runs as not started", async () => {
     mocks.getIssue.mockResolvedValue({
       name: issueName,
       title: "Add customer table",
@@ -235,8 +248,8 @@ describe("issueOverview", () => {
       plan: { status: "available", hasRollout: false },
       planCheck: { status: "not_configured" },
       reviews: {
-        rule: { status: "not_configured" },
-        ai: { status: "not_configured" },
+        rule: { status: "not_started" },
+        ai: { status: "not_started" },
       },
       rollout: { status: "not_started" },
       taskRuns: { status: "not_started" },

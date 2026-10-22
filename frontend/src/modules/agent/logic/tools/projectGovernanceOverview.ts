@@ -1,8 +1,10 @@
 import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import {
   projectServiceClientConnect,
   settingServiceClientConnect,
 } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { settingNamePrefix } from "@/lib/resourceName";
 import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -77,14 +79,19 @@ export async function collectProjectGovernanceOverview(
     return null;
   }
 
+  const options = {
+    contextValues: createContextValues().set(silentContextKey, true),
+  };
   const [projectResult, approvalSettingResult] = await Promise.allSettled([
     projectServiceClientConnect.getProject(
-      create(GetProjectRequestSchema, { name: projectName })
+      create(GetProjectRequestSchema, { name: projectName }),
+      options
     ),
     settingServiceClientConnect.getSetting(
       create(GetSettingRequestSchema, {
         name: `${settingNamePrefix}${Setting_SettingName[Setting_SettingName.WORKSPACE_APPROVAL]}`,
-      })
+      }),
+      options
     ),
   ]);
 

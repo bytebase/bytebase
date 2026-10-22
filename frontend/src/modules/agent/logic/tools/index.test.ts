@@ -327,6 +327,29 @@ describe("agent tools read-only mode", () => {
     });
   });
 
+  test("describes the database backup field as prior-DML-backup readiness", () => {
+    const databaseOverview = getToolDefinitions().find(
+      (tool) => tool.name === "get_database_overview"
+    );
+
+    expect(databaseOverview?.description).toContain(
+      "DML prior-backup readiness"
+    );
+    expect(databaseOverview?.description).toContain(
+      "does not inspect existing backups or recovery points"
+    );
+  });
+
+  test("does not equate an absent review run with review configuration", () => {
+    const issueOverview = getToolDefinitions().find(
+      (tool) => tool.name === "get_issue_overview"
+    );
+
+    expect(issueOverview?.description).toContain(
+      "does not establish whether that review is configured or applicable"
+    );
+  });
+
   test("uses the chat-bound Project for a starter issue lookup", async () => {
     const issueTool = vi.fn(async () =>
       JSON.stringify({

@@ -102,6 +102,9 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain(
       "call get_issue_overview before explaining a specific Issue's approval"
     );
+    expect(prompt).toContain(
+      "not_started for a review run means no run is recorded; it does not prove that review is configured or applicable"
+    );
     expect(prompt).toContain("matching the chat project");
   });
 
@@ -116,7 +119,10 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain(
       "call get_database_overview before explaining a specific database's current state"
     );
-    expect(prompt).toContain("backup availability");
+    expect(prompt).toContain("DML prior-backup readiness");
+    expect(prompt).toContain(
+      "does not establish that an existing recoverable backup exists"
+    );
   });
 
   test("asks the Agent to use a workspace overview without recent activity", () => {

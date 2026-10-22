@@ -1,9 +1,11 @@
 import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import {
   databaseServiceClientConnect,
   instanceServiceClientConnect,
   projectServiceClientConnect,
 } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { ListDatabasesRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { ListInstancesRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { SearchProjectsRequestSchema } from "@/types/proto-es/v1/project_service_pb";
@@ -113,6 +115,9 @@ export async function collectWorkspaceOverview(
     return null;
   }
 
+  const silentOptions = {
+    contextValues: createContextValues().set(silentContextKey, true),
+  };
   const results = await Promise.allSettled([
     createWorkspaceAttentionTool({ workspaceName })(),
     projectServiceClientConnect.searchProjects(
@@ -121,22 +126,45 @@ export async function collectWorkspaceOverview(
         pageSize: PAGE_SIZE,
         orderBy: "title",
         showDeleted: false,
-      })
+      }),
+      silentOptions
     ),
     instanceServiceClientConnect.listInstances(
       create(ListInstancesRequestSchema, {
         pageSize: PAGE_SIZE,
         showDeleted: false,
-      })
+      }),
+      silentOptions
     ),
     databaseServiceClientConnect.listDatabases(
       create(ListDatabasesRequestSchema, {
         parent: workspaceName,
         pageSize: PAGE_SIZE,
         showDeleted: false,
-      })
+      }),
+      silentOptions
     ),
   ]);
+
+  const projectInstanceResults =
+    results[1].status === "fulfilled"
+      ? await Promise.allSettled(
+          results[1].value.projects.map((project) =>
+            instanceServiceClientConnect.listInstances(
+              create(ListInstancesRequestSchema, {
+                parent: project.name,
+                pageSize: PAGE_SIZE,
+                showDeleted: false,
+              }),
+              silentOptions
+            )
+          )
+        )
+      : [];
+  const instanceResults = [results[2], ...projectInstanceResults];
+  const availableInstanceResults = instanceResults.filter(
+    (result) => result.status === "fulfilled"
+  );
 
   const attention =
     results[0].status === "fulfilled"
@@ -152,11 +180,21 @@ export async function collectWorkspaceOverview(
           }
         : unavailableSetupFacet(),
     instances:
-      results[2].status === "fulfilled"
+      availableInstanceResults.length > 0
         ? {
             status: "available" as const,
-            partial: Boolean(results[2].value.nextPageToken),
-            count: results[2].value.instances.length,
+            partial:
+              results[1].status !== "fulfilled" ||
+              Boolean(results[1].value.nextPageToken) ||
+              instanceResults.some(
+                (result) =>
+                  result.status === "rejected" ||
+                  Boolean(result.value.nextPageToken)
+              ),
+            count: availableInstanceResults.reduce(
+              (count, result) => count + result.value.instances.length,
+              0
+            ),
           }
         : unavailableSetupFacet(),
     databases:

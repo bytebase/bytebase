@@ -5,6 +5,7 @@ import {
   projectServiceClientConnect,
   settingServiceClientConnect,
 } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { settingNamePrefix } from "@/lib/resourceName";
 import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -91,13 +92,21 @@ describe("projectGovernanceOverview", () => {
     });
 
     expect(projectServiceClientConnect.getProject).toHaveBeenCalledWith(
-      create(GetProjectRequestSchema, { name: "projects/orders" })
+      create(GetProjectRequestSchema, { name: "projects/orders" }),
+      expect.objectContaining({ contextValues: expect.anything() })
     );
     expect(settingServiceClientConnect.getSetting).toHaveBeenCalledWith(
       create(GetSettingRequestSchema, {
         name: `${settingNamePrefix}${Setting_SettingName[Setting_SettingName.WORKSPACE_APPROVAL]}`,
-      })
+      }),
+      expect.objectContaining({ contextValues: expect.anything() })
     );
+    expect(
+      mocks.getProject.mock.calls[0][1].contextValues.get(silentContextKey)
+    ).toBe(true);
+    expect(
+      mocks.getSetting.mock.calls[0][1].contextValues.get(silentContextKey)
+    ).toBe(true);
   });
 
   test("keeps independently available governance facets when another read fails", async () => {

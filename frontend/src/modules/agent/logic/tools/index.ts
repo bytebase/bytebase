@@ -286,7 +286,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "get_issue_overview",
       description:
-        "Get a bounded, read-only overview of one Issue in the project bound to this chat. It includes the Issue's approval state, linked Plan and plan-check state, rule and AI review-run state, plus Rollout and up to ten task-run statuses when available. Pass a canonical Issue name from this project. Each facet explicitly reports whether it is available, not configured, not started, or unavailable. This tool cannot read another project or take action.",
+        "Get a bounded, read-only overview of one Issue in the project bound to this chat. It includes the Issue's approval state, linked Plan and plan-check state, rule and AI review-run state, plus Rollout and up to ten task-run statuses when available. Pass a canonical Issue name from this project. Each facet explicitly reports whether it is available, not configured, not started, or unavailable. A review run marked not started has no recorded run; this does not establish whether that review is configured or applicable. This tool cannot read another project or take action.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -302,7 +302,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "get_database_overview",
       description:
-        "Get a bounded, read-only overview of one database in the project bound to this chat. It includes the database state, instance, effective environment, last applied release, backup availability, and sync status. Pass a canonical database name from this project. Each resource facet explicitly reports whether it is available, not configured, or unavailable. This tool reads only DatabaseService.GetDatabase; it does not read schema, metadata, labels, data-source configuration, or sync errors, and cannot take action.",
+        "Get a bounded, read-only overview of one database in the project bound to this chat. It includes the database state, instance, effective environment, last applied release, DML prior-backup readiness (`dmlPriorBackupAvailable`), and sync status. This readiness does not prove that a recoverable backup exists. Pass a canonical database name from this project. Each resource facet explicitly reports whether it is available, not configured, or unavailable. This tool reads only DatabaseService.GetDatabase; it does not inspect existing backups or recovery points, schema, metadata, labels, data-source configuration, or sync errors, and cannot take action.",
       parametersSchema: {
         type: "object",
         properties: {

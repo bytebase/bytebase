@@ -40,7 +40,7 @@ type DatabaseOverview = {
         instance: InstanceFacet;
         environment: ResourceFacet;
         release: ResourceFacet;
-        backupAvailable: boolean;
+        dmlPriorBackupAvailable: boolean;
         sync: Available<{
           syncStatus: string;
           successfulSyncTime: TimestampFacet;
@@ -206,7 +206,7 @@ export async function collectDatabaseOverview(
         instance,
         environment,
         release,
-        backupAvailable: database.backupAvailable,
+        dmlPriorBackupAvailable: database.backupAvailable,
         sync: {
           status: "available",
           syncStatus: enumName(SyncStatus, database.syncStatus),

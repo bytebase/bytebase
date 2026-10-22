@@ -71,7 +71,7 @@ describe("databaseOverview", () => {
           status: "available",
           name: "projects/orders/releases/release-20261022",
         },
-        backupAvailable: true,
+        dmlPriorBackupAvailable: true,
         sync: {
           status: "available",
           syncStatus: "OK",
