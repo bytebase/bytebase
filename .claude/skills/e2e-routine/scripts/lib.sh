@@ -52,8 +52,15 @@ e2e_license_available() {
   if e2e_license >/dev/null 2>&1; then echo yes; else echo no; fi
 }
 
+# origin/main as fetched now. When the fetch fails it is HEAD, never an older
+# origin/main left by an earlier fetch, which would test or skip a stale SHA.
 main_sha() {
-  git -C "$REPO_ROOT" rev-parse --verify -q origin/main 2>/dev/null || git -C "$REPO_ROOT" rev-parse HEAD
+  if git -C "$REPO_ROOT" fetch -q origin main 2>/dev/null; then
+    git -C "$REPO_ROOT" rev-parse origin/main
+  else
+    log "fetch of origin/main failed; using HEAD"
+    git -C "$REPO_ROOT" rev-parse HEAD
+  fi
 }
 
 run_id_now() { date -u +%Y%m%dT%H%M%SZ; }

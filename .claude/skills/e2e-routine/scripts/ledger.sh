@@ -7,6 +7,7 @@
 #   ledger.sh last-result                   # green | red | infra | incomplete, or nothing
 #   ledger.sh show                          # prints last-run.json
 #   ledger.sh flakes                        # prints flakes.json
+#   ledger.sh last-green                    # prints the attribution baseline SHA
 #   ledger.sh record <results-dir> [note]   # appends the run and pushes the branch
 set -u
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -30,6 +31,35 @@ last-sha) git show "$(read_ref):last-run.json" 2>/dev/null | python3 -c 'import 
 last-result) git show "$(read_ref):last-run.json" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("result",""))' 2>/dev/null ;;
 show)     git show "$(read_ref):last-run.json" 2>/dev/null || echo '{}' ;;
 flakes)   git show "$(read_ref):flakes.json" 2>/dev/null || echo '{}' ;;
+last-green)
+  # The attribution baseline (references/ledger.md): the newest green run's
+  # SHA, else the last run's, else main 60 days back. Computed on each call so
+  # a phase never depends on a variable an earlier shell set.
+  r="$(read_ref)"
+  sha="$(python3 - "$r" <<'PY'
+import json, subprocess, sys
+ref = sys.argv[1]
+def git(*a):
+    return subprocess.run(["git", *a], capture_output=True, text=True).stdout
+runs = []
+for path in git("ls-tree", "--name-only", f"{ref}:runs").split():
+    try:
+        runs.append(json.loads(git("show", f"{ref}:runs/{path}")))
+    except ValueError:
+        pass
+green = [e for e in runs if e.get("result") == "green" and e.get("sha")]
+if green:
+    print(max(green, key=lambda e: (e.get("date", ""), e.get("run_id", "")))["sha"])
+else:
+    try:
+        print(json.loads(git("show", f"{ref}:last-run.json")).get("sha", ""))
+    except ValueError:
+        print("")
+PY
+)"
+  [ -n "$sha" ] || sha="$(git rev-list -1 --before='60 days ago' "$(main_sha)")"
+  echo "$sha"
+  ;;
 record)
   RESULTS="${2:?results dir}"; note="${3:-}"
   [ -f "$RESULTS/summary.json" ] || die "$RESULTS/summary.json missing; run summarize.py first"
@@ -95,5 +125,5 @@ PY
   git worktree prune
   exit "${status:-0}"
   ;;
-*) echo "usage: ledger.sh last-sha | last-result | show | flakes | record <results-dir> [note]" >&2; exit 2 ;;
+*) echo "usage: ledger.sh last-sha | last-result | show | flakes | last-green | record <results-dir> [note]" >&2; exit 2 ;;
 esac

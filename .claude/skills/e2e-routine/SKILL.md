@@ -74,8 +74,11 @@ issue body is `references/issue-template.md`; the ledger format is
 | `BASH_DEFAULT_TIMEOUT_MS`, `BASH_MAX_TIMEOUT_MS` | tool defaults | set on the cloud environment (10 min / 60 min) so `wait` can block |
 
 Each Bash call runs in a fresh shell, so no variable survives from one phase
-to the next. `scripts/run-dir.sh new` creates the run's directory once and
-records it; every later command asks `run-dir.sh` for it in the same call.
+to the next, and no command may use one set by an earlier call. Values a
+later phase needs come from a script in the same call (`run-dir.sh` for the
+run directory, created once by `run-dir.sh new`; `ledger.sh last-green` for
+the attribution baseline) or are written in as literals (the SHAs from the
+Phase 1 JSON).
 
 ## Phase 0: Preflight
 
@@ -100,9 +103,9 @@ one line ("e2e routine: nothing to do, main at `<sha7>`, <n> docs-only
 commits") as a comment on the umbrella when filing is enabled, otherwise as the
 final message, and stop. Exit 0: keep `head_sha` and `last_sha` from the JSON.
 
-Set `LAST_GREEN`: the newest ledger run with `"result": "green"`
-(`ledger.sh show` for the last run; `git show origin/claude/e2e-ledger:runs/<file>`
-for older ones). Fall back per `references/ledger.md`.
+The attribution baseline (the newest green run, with the fallbacks in
+`references/ledger.md`) is `ledger.sh last-green`; Phase 4 calls it inside
+its own command.
 
 ## Phase 2: Build
 
@@ -175,7 +178,7 @@ Work `references/triage.md` for every entry of `failed`, `flaky` and
    points to a race, not a missing feature. `evidence.screenshots` is empty
    when no failed attempt took one; say so.
 3. Pin the spec line and the quoted UI text or locator.
-4. `python3 .claude/skills/e2e-routine/scripts/attribute.py --spec <file> --since $LAST_GREEN --text "<quoted text>"`
+4. `python3 .claude/skills/e2e-routine/scripts/attribute.py --spec <file> --since "$(bash .claude/skills/e2e-routine/scripts/ledger.sh last-green)" --text "<quoted text>"`
    (`<file>` as `summary.json` gives it; the range ends at `HEAD`, the tested commit, never a newer `origin/main`),
    then `gh pr view <n> --json title,body` for the top candidate.
 5. Decide the class, the owner and the action; write the row.
@@ -221,7 +224,7 @@ environment's network policy must allow it). With filing disabled, put the
 full issue text under "Proposed issues" in the report instead, with the
 screenshot path and what it shows; the file does not outlive the session.
 
-**SPEC-ROT, LOCK-FLIPPED, TEST-ISOLATION, PRODUCT locks**: one branch
+**SPEC-ROT, FOCUSED, LOCK-FLIPPED, TEST-ISOLATION, PRODUCT locks**: one branch
 `claude/e2e-adapt-<YYYY-MM-DD>` from `head_sha`, changes only under
 `frontend/tests/e2e/`, one commit per adapted spec whose message names the
 product PR (`test(e2e): follow #21489 export format select`). Rerun each changed

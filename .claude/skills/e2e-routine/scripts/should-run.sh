@@ -14,7 +14,6 @@ set -u
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 cd "$REPO_ROOT" || exit 1
 
-git fetch -q origin main 2>/dev/null || true
 head="$(main_sha)"
 last="$("$E2E_SKILL_DIR/scripts/ledger.sh" last-sha 2>/dev/null || true)"
 

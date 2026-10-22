@@ -43,6 +43,16 @@ INFRA_SIGNATURES = [
 ]
 
 
+FOCUSED_RE = re.compile(r"focused with '\.only' is not allowed")
+
+
+def spec_path(path):
+    """A report location as the report's own spec paths read (relative to
+    frontend/tests/e2e/)."""
+    marker = "/frontend/tests/e2e/"
+    return path.split(marker, 1)[1] if marker in path else os.path.basename(path)
+
+
 # Infra kinds that only say the client lost the server; server.log says why.
 SERVER_LOSS_KINDS = ("server-lost", "boot", "connection")
 
@@ -234,7 +244,19 @@ def main(results_dir):
     setup_lost = bool(signed) and len(signed) == len(failed) and any(
         e["file"].endswith("framework/setup-project.ts") for e in signed)
     setup_signature = infra_signature(" ".join(summary["errors"])) if summary["errors"] else None
-    if summary["totals"]["tests"] == 0 and summary["errors"] and setup_signature:
+    focused = [e for e in report.get("errors", []) if FOCUSED_RE.search(e.get("message", ""))]
+    if focused:
+        # --forbid-only refused a committed test.only / describe.only: nothing
+        # ran. Without the flag only the focused test would run and pass, so
+        # this is red, a test-file fix, never green or infra.
+        summary["failed"] = [{"file": spec_path(e.get("location", {}).get("file", "")),
+                              "title": "a focused test (.only) is committed",
+                              "line": e.get("location", {}).get("line", 0), "error": first_line(e["message"]),
+                              "infra_signature": None, "attempts": 0, "statuses": [], "evidence": NO_EVIDENCE}
+                             for e in focused]
+        failed = summary["failed"]
+        summary["totals"]["failed"] = len(failed)
+    elif summary["totals"]["tests"] == 0 and summary["errors"] and setup_signature:
         summary["infra"] = {"kind": setup_signature, "detail": summary["errors"][0]}
     elif summary["totals"]["tests"] == 0 and summary["errors"]:
         # Global setup failed with no known environment signature: one of its

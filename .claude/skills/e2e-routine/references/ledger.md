@@ -31,7 +31,7 @@ flakes.json              # {"runs": [sha7 ...last 20], "tests": {"<file>::<title
 
 Rules:
 
-- `LAST_GREEN` for attribution is the newest `runs/*.json` with `"result": "green"`;
+- The attribution baseline (`ledger.sh last-green`) is the newest `runs/*.json` with `"result": "green"`;
   when none exists, the last run's `sha`; when the ledger is empty, 60 days
   back on `main`. A spec can have been red for longer than any window, so
   `attribute.py` widens on its own to the spec file's last change when nothing
