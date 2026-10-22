@@ -9,6 +9,7 @@
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import type { BytebaseApiClient } from "../framework/api-client";
+import { getInstancePgPort, execSql } from "../framework/psql";
 import { SqlEditorPage } from "./sql-editor.page";
 
 let env: TestEnv & { api: BytebaseApiClient };
@@ -360,37 +361,57 @@ test.describe("Right-click on a table opens its detail in a new tab", () => {
 test.describe("Resting the pointer on a table row shows its hover panel", () => {
   // The hover panel opens after a 1s delay. Each row remount under a resting
   // pointer re-fires mouseenter and restarts that delay, so a tree that
-  // remounts rows on hover never shows the panel (BOT-154).
+  // remounts rows on hover never shows the panel (BYT-10343).
+  const TEST_SCHEMA = "e2e_schema_hover";
+  const TEST_TABLE = "hover_probe";
 
-  test("the panel appears for employee and stays while the pointer rests", async () => {
+  test.beforeAll(async () => {
+    const port = await getInstancePgPort(env);
+    execSql(env.databaseId, port, `DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
+    execSql(env.databaseId, port, `CREATE SCHEMA ${TEST_SCHEMA}`);
+    execSql(
+      env.databaseId,
+      port,
+      `CREATE TABLE ${TEST_SCHEMA}.${TEST_TABLE} (id INT PRIMARY KEY)`,
+    );
+    await env.api.syncDatabase(env.database);
+  });
+
+  test.afterAll(async () => {
+    const port = await getInstancePgPort(env);
+    execSql(env.databaseId, port, `DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
+    await env.api.syncDatabase(env.database);
+  });
+
+  test("the panel appears for a table and stays while the pointer rests", async ({
+    page,
+  }) => {
     test.setTimeout(120_000);
+    const editor = new SqlEditorPage(page, env.baseURL);
 
     const projectId = env.project.split("/").pop()!;
-    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
-    await sqlEditor.gutterSchemaTab.click();
+    await editor.gotoWithDb(projectId, env.instanceId, env.databaseId);
+    await editor.gutterSchemaTab.click();
 
     const search = page.getByPlaceholder("Search").first();
     await expect(search).toBeVisible({ timeout: 10_000 });
-    await search.fill("employee");
+    await search.fill(TEST_TABLE);
 
-    const employeeRow = page
+    const tableRow = page
       .locator('.bb-schema-tree-row[data-node-meta-type="table"]')
-      .filter({ hasText: /^employee$/ })
+      .filter({ hasText: new RegExp(`^${TEST_TABLE}$`) })
       .first();
-    await expect(employeeRow).toBeVisible({ timeout: 10_000 });
-    await employeeRow.hover({ position: { x: 40, y: 8 } });
+    await expect(tableRow).toBeVisible({ timeout: 10_000 });
+    await tableRow.hover({ position: { x: 40, y: 8 } });
 
     const panel = page.getByTestId("schema-hover-panel");
     await expect(panel).toBeVisible({ timeout: 5000 });
     await expect(panel).toContainText("Row count estimate");
-    await expect(panel).toContainText("employee");
+    await expect(panel).toContainText(TEST_TABLE);
 
     // Still shown a second later: the panel is not flickering off.
     await page.waitForTimeout(1000);
     await expect(panel).toBeVisible();
-
-    await page.mouse.move(5, 5);
-    await search.fill("");
   });
 });
 
