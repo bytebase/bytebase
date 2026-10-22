@@ -54,7 +54,19 @@ for p in 18234 18236 18237; do
     warn "port $p" "in use: $(lsof -nP -iTCP:$p -sTCP:LISTEN | awk 'NR==2{print $1, $2}') (harness falls back to the next range; do NOT kill it)"
   fi
 done
-[ -f /tmp/bytebase-e2e-pid ] && warn pid-file "/tmp/bytebase-e2e-pid exists: $(cat /tmp/bytebase-e2e-pid)" || ok pid-file "none"
+# The harness's global setup kills the process group the PID file names when it
+# is a live Bytebase process, so a live entry means another suite would be
+# killed: stop. A stale entry is cleaned up harmlessly, so it only warns.
+if [ -f /tmp/bytebase-e2e-pid ]; then
+  owner_pid=$(head -1 /tmp/bytebase-e2e-pid | tr -dc '0-9')
+  if [ -n "$owner_pid" ] && ps -p "$owner_pid" -o command= 2>/dev/null | grep -q bytebase; then
+    bad pid-file "pid $owner_pid in /tmp/bytebase-e2e-pid is a live Bytebase server of another suite run; starting would kill it"
+  else
+    warn pid-file "stale /tmp/bytebase-e2e-pid (pid ${owner_pid:-?} not running); the harness removes it"
+  fi
+else
+  ok pid-file "none"
+fi
 
 df_out=$(df -Pk . | awk 'NR==2{printf "%.1f GiB free", $4/1024/1024}')
 ok disk "$df_out"

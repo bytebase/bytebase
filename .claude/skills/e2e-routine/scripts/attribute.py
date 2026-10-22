@@ -52,19 +52,30 @@ def locale_matches(value, text):
         return True
     if "{{" not in value:
         return False
-    pattern = "".join(".+" if part.startswith("{{") else re.escape(part)
-                      for part in re.split(r"(\{\{[^}]*\}\})", value) if part)
+    parts = [p for p in re.split(r"(\{\{[^}]*\}\})", value) if p]
+    # A value made only of placeholders ("{{bound}} {{audit}}") would match any
+    # text; it carries no literal words to identify the string by.
+    if not any(not p.startswith("{{") and p.strip() for p in parts):
+        return False
+    pattern = "".join(".+" if part.startswith("{{") else re.escape(part) for part in parts)
     return re.fullmatch(pattern, text, re.I) is not None
 
 
 def locale_keys(text):
+    """Keys whose English value is the quoted text. The main bundle's keys are
+    used as is; a nested bundle (locales/dynamic, sql-review, subscription) is
+    merged by buildTranslation() under its directory name, so its keys carry
+    that name as a prefix."""
     keys = set()
-    for f in glob.glob(os.path.join(REPO, "frontend/src/locales/en*.json")):
+    locales = os.path.join(REPO, "frontend/src/locales")
+    for f in glob.glob(os.path.join(locales, "**", "en*.json"), recursive=True):
         try:
             data = json.load(open(f))
         except Exception:
             continue
-        stack = [("", data)]
+        sub = os.path.relpath(os.path.dirname(f), locales)
+        namespace = "" if sub == "." else sub.replace(os.sep, ".")
+        stack = [(namespace, data)]
         while stack:
             prefix, node = stack.pop()
             if isinstance(node, dict):
