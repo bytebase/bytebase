@@ -86,20 +86,41 @@ def locale_keys(text):
     return keys
 
 
+E2E_ROOT = "frontend/tests/e2e"
+TEST_FILE = re.compile(r"(\.test\.(ts|tsx|mjs)$|/test-utils/)")
+
+
 def files_using(needle):
+    """Product files under frontend/src that contain needle: the components
+    that render a string. Locale JSON and unit tests mention it without
+    rendering it, so a commit to them is not a culprit."""
     out = subprocess.run(["git", "-C", REPO, "grep", "-l", "-F", needle, "--", "frontend/src"],
                          capture_output=True, text=True).stdout
-    return [l for l in out.splitlines() if not l.endswith(".json")]
+    return [l for l in out.splitlines() if not l.endswith(".json") and not TEST_FILE.search(l)]
+
+
+def repo_spec_path(spec):
+    """The spec as a repo-relative path. Playwright's JSON report gives it
+    relative to the test root (sql-editor/x.spec.ts); git needs the full path."""
+    spec = spec.lstrip("./")
+    if spec.startswith("tests/e2e/"):
+        spec = "frontend/" + spec
+    if not spec.startswith(E2E_ROOT + "/") and os.path.exists(os.path.join(REPO, E2E_ROOT, spec)):
+        spec = f"{E2E_ROOT}/{spec}"
+    return spec
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--spec", required=True)
     ap.add_argument("--since", required=True)
-    ap.add_argument("--head", default="origin/main")
+    # HEAD is the tested checkout. origin/main can move during a 40-60 minute
+    # run, and a commit merged after the test cannot have caused its failure.
+    ap.add_argument("--head", default="HEAD")
     ap.add_argument("--text", action="append", default=[])
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
+    a.spec = repo_spec_path(a.spec)
 
     owners = json.load(open(os.path.join(SKILL_DIR, "owners.json")))
     area = os.path.basename(os.path.dirname(a.spec))

@@ -157,7 +157,8 @@ Work `references/triage.md` for every entry of `failed`, `flaky` and
 2. Read `test-results/<test>/error-context.md`, the screenshot, the error in
    `playwright.log`, and `server.log` around the timestamp.
 3. Pin the spec line and the quoted UI text or locator.
-4. `python3 .claude/skills/e2e-routine/scripts/attribute.py --spec <file> --since $LAST_GREEN --text "<quoted text>"`,
+4. `python3 .claude/skills/e2e-routine/scripts/attribute.py --spec <file> --since $LAST_GREEN --text "<quoted text>"`
+   (`<file>` as `summary.json` gives it; the range ends at `HEAD`, the tested commit, never a newer `origin/main`),
    then `gh pr view <n> --json title,body` for the top candidate.
 5. Decide the class, the owner and the action; write the row.
 
