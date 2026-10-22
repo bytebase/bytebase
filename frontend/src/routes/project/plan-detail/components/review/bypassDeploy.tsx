@@ -23,12 +23,17 @@ import {
 } from "@/components/ui/sheet";
 import { getPlanCheckSummaryWithFallback } from "@/lib/plan/check";
 import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { useSqlReviewV2, withRuleReview } from "../../hooks/useSqlReviewV2";
 import { focusPlanPhase } from "../../shell/focusPhase";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import {
+  hasReviewableSQL,
+  loadedMatchedDatabaseCount,
+} from "../../utils/aiReviewRun";
 import type { PlanCheckSummary } from "../../utils/phaseSummary";
 import { getPlanCheckSummary } from "../../utils/phaseSummary";
 import { ReviewApprovalFlow } from "./ReviewApprovalFlow";
@@ -69,13 +74,21 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   const sqlReview = useSqlReviewV2();
   const ruleReview = sqlReview?.ruleReview;
   const ruleReviewRun = ruleReview?.run;
-  // A rule review this page cannot read (still loading, failed to load, no
-  // permission, or not yet read since the plan changed) may be queued or
-  // running on the server.
+  const dbGroupsByName = useAppStore((state) => state.dbGroupsByName);
+  const dbGroupViewByName = useAppStore((state) => state.dbGroupViewByName);
+  const reviewsSQL = hasReviewableSQL(
+    plan,
+    loadedMatchedDatabaseCount({ dbGroupsByName, dbGroupViewByName })
+  );
+  // The rule review is unknown when this page cannot read it (still loading,
+  // failed to load, no permission, or not read since the plan changed), or
+  // when it never ran on a plan with SQL to review: the server may still be
+  // running it, or start it before an automatic rollout.
   const ruleReviewUnknown =
     !!sqlReview &&
     (!ruleReview ||
       ruleReview.run === undefined ||
+      (ruleReview.run === null && reviewsSQL) ||
       ruleReview.loadFailed ||
       ruleReview.stale);
   const unresolvedThreads = sqlReview?.unresolvedThreads ?? 0;

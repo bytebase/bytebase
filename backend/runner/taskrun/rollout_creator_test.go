@@ -520,6 +520,66 @@ func TestTryCreateRolloutStartsAMissingOrStaleReview(t *testing.T) {
 	require.True(t, tryCreateRollout(), "the review of the current SQL is done")
 }
 
+func TestReviewRestartsWhenThePlanLosesItsSQL(t *testing.T) {
+	ctx := context.Background()
+	s, plan, issue := newAutoRolloutIssue(ctx, t)
+	project, err := s.GetProjectByResourceID(ctx, plan.ProjectID)
+	require.NoError(t, err)
+	b, err := bus.New()
+	require.NoError(t, err)
+	creator := NewRolloutCreator(s, b, nil, true)
+
+	// The review of version 2 left an open finding.
+	_, err = s.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica")
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+	updated, err := s.CompleteReviewRun(ctx, claimed[0], "replica", storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{}, []*store.IssueCommentMessage{{
+		ProjectID: issue.ProjectID,
+		IssueUID:  issue.UID,
+		Payload: &storepb.IssueCommentPayload{
+			Comment: "UPDATE without WHERE",
+			ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
+				RunType:  storepb.ReviewRun_RULE,
+				RuleType: storepb.ReviewRuleType_REQUIRE_WHERE,
+				Priority: storepb.IssueCommentPayload_ReviewMetadata_P1,
+			},
+		},
+	}})
+	require.NoError(t, err)
+	require.True(t, updated)
+
+	// Version 3 has nothing to review.
+	_, err = s.GetDB().ExecContext(ctx, `
+		UPDATE plan SET config = jsonb_set(config, '{approvalInputVersion}', '"3"')
+		WHERE project = $1 AND id = $2
+	`, plan.ProjectID, plan.UID)
+	require.NoError(t, err)
+	plan, err = s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: plan.ProjectID, UID: &plan.UID})
+	require.NoError(t, err)
+	plan.Config.Specs[0].GetChangeDatabaseConfig().Targets = nil
+
+	blocked, err := creator.reviewBlocksRollout(ctx, project, plan, issue)
+	require.NoError(t, err)
+	require.True(t, blocked)
+	run, err := s.GetReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
+	require.Equal(t, int64(3), run.Payload.GetApprovalInputVersion())
+
+	// The restarted run finds nothing, which supersedes the earlier finding.
+	claimed, err = s.ClaimAvailableReviewRuns(ctx, "replica")
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+	updated, err = s.CompleteReviewRun(ctx, claimed[0], "replica", storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{}, nil)
+	require.NoError(t, err)
+	require.True(t, updated)
+	blocked, err = creator.reviewBlocksRollout(ctx, project, plan, issue)
+	require.NoError(t, err)
+	require.False(t, blocked)
+}
+
 func TestReviewDoesNotHoldARolloutWithNothingToRead(t *testing.T) {
 	ctx := context.Background()
 	s, plan, issue := newAutoRolloutIssue(ctx, t)

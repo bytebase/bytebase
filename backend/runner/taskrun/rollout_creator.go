@@ -238,28 +238,33 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 // finished, or a thread on the issue is open. An open thread blocks whatever
 // its priority, and whoever started it.
 //
-// A plan with SQL to review but no run for its approval input version holds
-// too: the slot write that should have started the review failed, or never
-// happened. The review starts here then, as the approval evaluator does for a
-// missing plan check run, and its completion asks for this check again.
+// A run for an earlier approval input version holds too, and so does a
+// missing run on a plan with SQL to review: the slot write that should have
+// started the review failed, or never happened. The review starts here then,
+// as the approval evaluator does for a missing or stale plan check run, and its
+// completion asks for this check again. A stale run restarts even when the
+// plan has nothing left to review: it then completes with no findings, which
+// supersedes those of the earlier SQL.
 func (rc *RolloutCreator) reviewBlocksRollout(ctx context.Context, project *store.ProjectMessage, plan *store.PlanMessage, issue *store.IssueMessage) (bool, error) {
 	run, err := rc.store.GetReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to get the rule review run")
 	}
-	if run == nil || run.Payload.GetApprovalInputVersion() != plan.Config.GetApprovalInputVersion() {
-		hasTargets, err := plancheck.HasReviewTargets(ctx, rc.store, project, plan)
+	start := run != nil && run.Payload.GetApprovalInputVersion() != plan.Config.GetApprovalInputVersion()
+	if run == nil {
+		start, err = plancheck.HasReviewTargets(ctx, rc.store, project, plan)
 		if err != nil {
 			return false, err
 		}
-		if hasTargets {
-			if _, err := rc.store.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule); err != nil {
-				return false, errors.Wrap(err, "failed to start the rule review")
-			}
-			bus.Tickle(rc.bus.ReviewRunTickleChan)
-			return true, nil
+	}
+	if start {
+		if _, err := rc.store.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule); err != nil {
+			return false, errors.Wrap(err, "failed to start the rule review")
 		}
-	} else if run.Status != storepb.ReviewRun_DONE {
+		bus.Tickle(rc.bus.ReviewRunTickleChan)
+		return true, nil
+	}
+	if run != nil && run.Status != storepb.ReviewRun_DONE {
 		return true, nil
 	}
 	open := store.ThreadStateOpen

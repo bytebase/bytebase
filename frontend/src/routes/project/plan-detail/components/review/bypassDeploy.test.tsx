@@ -27,6 +27,15 @@ vi.mock("@/api", () => ({
 
 vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
 
+vi.mock("@/stores/app", () => ({
+  useAppStore: (
+    selector: (state: {
+      dbGroupsByName: Record<string, unknown>;
+      dbGroupViewByName: Record<string, unknown>;
+    }) => unknown
+  ) => selector({ dbGroupsByName: {}, dbGroupViewByName: {} }),
+}));
+
 vi.mock("../../hooks/useSqlReviewV2", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../hooks/useSqlReviewV2")>()),
   useSqlReviewV2: () => mocks.sqlReview,
@@ -44,11 +53,14 @@ const issue = {
   approvalStatus: ApprovalStatus.APPROVED,
   status: IssueStatus.OPEN,
 } as Issue;
-const plan = {
-  hasRollout: false,
-  name: "projects/foo/plans/7",
-  planCheckRunStatusCount: { SUCCESS: 1 },
-} as unknown as Plan;
+const planOf = (change: { targets: string[]; release: string }) =>
+  ({
+    hasRollout: false,
+    name: "projects/foo/plans/7",
+    planCheckRunStatusCount: { SUCCESS: 1 },
+    specs: [{ config: { case: "changeDatabaseConfig", value: change } }],
+  }) as unknown as Plan;
+const plan = planOf({ targets: ["instances/prod/databases/app"], release: "" });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -123,6 +135,41 @@ test.each([
   act(() => result.current.triggerDeploy());
   expect(result.current.confirmOpen).toBe(true);
   expect(mocks.createRollout).not.toHaveBeenCalled();
+});
+
+test("asks to confirm deploying past a rule review that never ran on the SQL", () => {
+  mocks.sqlReview = {
+    unresolvedThreads: 0,
+    threadsLoaded: true,
+    ruleReview: { run: null, stale: false, loadFailed: false },
+  };
+  const { result } = renderHook(() => useBypassDeploy(issue, plan));
+  expect(result.current.warnings).toEqual([
+    "plan.review.footer.confirm-rule-review-unknown",
+  ]);
+
+  act(() => result.current.triggerDeploy());
+  expect(result.current.confirmOpen).toBe(true);
+  expect(mocks.createRollout).not.toHaveBeenCalled();
+});
+
+test("deploys at once where the plan has no SQL to review", async () => {
+  mocks.sqlReview = {
+    unresolvedThreads: 0,
+    threadsLoaded: true,
+    ruleReview: { run: null, stale: false, loadFailed: false },
+  };
+  const releasePlan = planOf({
+    targets: ["instances/prod/databases/app"],
+    release: "projects/foo/releases/1",
+  });
+  const { result } = renderHook(() => useBypassDeploy(issue, releasePlan));
+  expect(result.current.warnings).toEqual([]);
+
+  await act(async () => {
+    result.current.triggerDeploy();
+  });
+  expect(mocks.createRollout).toHaveBeenCalledTimes(1);
 });
 
 test("asks to confirm deploying before the threads have loaded", () => {
