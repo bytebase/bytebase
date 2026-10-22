@@ -67,7 +67,7 @@ const grantMaskingExemptionDescription = `Exempt one member from data masking in
 | expireTime   | No       | RFC 3339 time the exemption ends, e.g. "2026-10-27T00:00:00Z"; without it, it does not expire |
 | reason       | No       | Why, recorded with the exemption |
 
-An exemption is a standing policy change: the member then sees the covered data unmasked in query and export results. For a one-off query, request an access grant instead (AccessGrantService/CreateAccessGrant).
+An exemption is a standing policy change: the member then sees the covered data unmasked in query and export results. For a one-off query, request an access grant instead with request_access_grant.
 
 The tool adds one exemption and leaves every other entry as it is. It shows the user the member, the scope, the expiry and the effect, and asks them to confirm in a form; it writes only when they accept. A client that cannot show the form gets the project's masking exemption page, to grant it in the Bytebase console instead. Do not ask in chat first: the form is the question.
 
@@ -89,6 +89,7 @@ func (s *Server) registerMaskingExemptionTools() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
 		Name:        "grant_masking_exemption",
 		Description: grantMaskingExemptionDescription,
+		Meta:        requiresUserInteraction(),
 	}, s.handleGrantMaskingExemption)
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
 		Name:        "revoke_masking_exemption",

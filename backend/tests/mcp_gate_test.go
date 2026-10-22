@@ -196,6 +196,7 @@ func TestMCPGrantIssuesAndAccessRequests(t *testing.T) {
 	a.Equal(http.StatusForbidden, accessGrantIssue.Status)
 	a.Contains(accessGrantIssue.Error, "AccessGrantService/CreateAccessGrant",
 		"the refusal must name the method that files the request")
+	a.Contains(accessGrantIssue.Error, "request_access_grant", "and the tool an agent files it with")
 	a.NotContains(accessGrantIssue.Error, "Bytebase console")
 
 	pgContainer := sharedPgTarget(t)

@@ -1,0 +1,291 @@
+package mcp
+
+import (
+	"context"
+	"encoding/json"
+	"math"
+	"net/http"
+	"net/http/httptest"
+	"slices"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/labstack/echo/v5"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+)
+
+// accessGrantMock is the internal API behind request_access_grant: the
+// database read, and the request, recorded as sent.
+type accessGrantMock struct {
+	mu sync.Mutex
+	// project is the project GetDatabase reports.
+	project string
+	// readStatus and readRefusal, when set, are how GetDatabase is refused.
+	readStatus  int
+	readRefusal map[string]any
+	// refusalStatus and refusal, when set, are how the request is refused.
+	refusalStatus int
+	refusal       map[string]any
+	reads         []string
+	requests      []map[string]any
+}
+
+func (m *accessGrantMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	reply := func(v any) { _ = json.NewEncoder(w).Encode(v) }
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	switch r.URL.Path {
+	case v1connect.DatabaseServiceGetDatabaseProcedure:
+		var body struct {
+			Name string `json:"name"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		m.reads = append(m.reads, body.Name)
+		if m.readRefusal != nil {
+			w.WriteHeader(m.readStatus)
+			reply(m.readRefusal)
+			return
+		}
+		reply(map[string]any{"name": body.Name, "project": m.project})
+	case v1connect.AccessGrantServiceCreateAccessGrantProcedure:
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		m.requests = append(m.requests, body)
+		if m.refusal != nil {
+			w.WriteHeader(m.refusalStatus)
+			reply(m.refusal)
+			return
+		}
+		reply(map[string]any{"name": "projects/hr/accessGrants/g1", "status": "PENDING", "issue": "projects/hr/issues/7"})
+	default:
+		w.WriteHeader(http.StatusNotFound)
+	}
+}
+
+func (m *accessGrantMock) calls() (reads []string, requests []map[string]any) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]string(nil), m.reads...), append([]map[string]any(nil), m.requests...)
+}
+
+func connectToAccessGrantServer(t *testing.T, mock *accessGrantMock) *mcp.ClientSession {
+	t.Helper()
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
+	s, err := newServerWithStore(newTestServerStore(), profile, revalidationSecret, mock)
+	require.NoError(t, err)
+	e := echo.New()
+	s.RegisterRoutes(e)
+	ts := httptest.NewServer(e)
+	t.Cleanup(ts.Close)
+	token := mintMCPToken(t, "alice@example.com", "client-A", "ws-test", "mcp:read-write", time.Hour)
+	return connectLegacy(t, ts.URL+mcpResourcePath, token, nil)
+}
+
+func callRequestAccessGrant(t *testing.T, session *mcp.ClientSession, arguments map[string]any) *mcp.CallToolResult {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	res, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "request_access_grant", Arguments: arguments})
+	require.NoError(t, err)
+	return res
+}
+
+func TestRequestAccessGrantFilesTheRequest(t *testing.T) {
+	mock := &accessGrantMock{project: "projects/hr"}
+	session := connectToAccessGrantServer(t, mock)
+
+	res := callRequestAccessGrant(t, session, map[string]any{
+		"database":      "projects/hr/instances/prod/databases/hr",
+		"statement":     "SELECT first_name, last_name FROM employee",
+		"schema":        "public",
+		"container":     "employees",
+		"unmask":        true,
+		"export":        true,
+		"reason":        "Compensation review",
+		"durationHours": 4,
+	})
+	require.False(t, res.IsError, resultText(t, res))
+
+	reads, requests := mock.calls()
+	require.Equal(t, []string{"projects/hr/instances/prod/databases/hr"}, reads)
+	require.Len(t, requests, 1)
+	require.Equal(t, map[string]any{
+		"parent": "projects/hr",
+		"accessGrant": map[string]any{
+			"targets":   []any{"projects/hr/instances/prod/databases/hr"},
+			"query":     "SELECT first_name, last_name FROM employee",
+			"schema":    "public",
+			"container": "employees",
+			"unmask":    true,
+			"export":    true,
+			"reason":    "Compensation review",
+			"ttl":       "14400s",
+		},
+	}, requests[0], "the request names the database as given, sends no creator, and asks for a duration that starts at approval")
+
+	require.Equal(t, "Requested projects/hr/accessGrants/g1: run the statement on projects/hr/instances/prod/databases/hr, unmasked, with export for 4 hours from approval. "+
+		"A person approves it in Bytebase before it takes effect.\n"+
+		"Issue: https://bb.example.com/projects/hr/issues/7\n"+
+		"Once it is approved, rerun the statement unchanged with query_database, with the same schema and container.", resultText(t, res))
+	output, err := json.Marshal(res.StructuredContent)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"accessGrant":"projects/hr/accessGrants/g1","issue":"projects/hr/issues/7",
+		"durationHours":4,"link":"https://bb.example.com/projects/hr/issues/7"}`, string(output))
+}
+
+func TestRequestAccessGrantFilesInTheDatabaseProject(t *testing.T) {
+	mock := &accessGrantMock{project: "projects/finance"}
+	session := connectToAccessGrantServer(t, mock)
+
+	res := callRequestAccessGrant(t, session, map[string]any{
+		"database":      "instances/prod/databases/ledger",
+		"statement":     "SELECT 1",
+		"export":        true,
+		"reason":        "Quarter close",
+		"durationHours": 1,
+	})
+	require.False(t, res.IsError, resultText(t, res))
+
+	_, requests := mock.calls()
+	require.Len(t, requests, 1)
+	require.Equal(t, "projects/finance", requests[0]["parent"], "a workspace instance's database name carries no project")
+	require.Equal(t, "3600s", requests[0]["accessGrant"].(map[string]any)["ttl"])
+	require.Contains(t, resultText(t, res), "run the statement on instances/prod/databases/ledger, with export for 1 hour from approval")
+}
+
+func TestRequestAccessGrantRefusesADurationBeforeAnyCall(t *testing.T) {
+	for name, tt := range map[string]struct {
+		durationHours int64
+		want          string
+	}{
+		"no duration":         {0, "invalid durationHours 0"},
+		"a negative duration": {-2, "invalid durationHours -2"},
+		"a duration past the input schema's maximum": {math.MaxInt32 + 1, "validating /properties/durationHours: maximum"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &accessGrantMock{project: "projects/hr"}
+			session := connectToAccessGrantServer(t, mock)
+
+			res := callRequestAccessGrant(t, session, map[string]any{
+				"database":      "projects/hr/instances/prod/databases/hr",
+				"statement":     "SELECT 1",
+				"reason":        "a look",
+				"durationHours": tt.durationHours,
+			})
+			require.True(t, res.IsError)
+			require.Contains(t, resultText(t, res), tt.want)
+			reads, requests := mock.calls()
+			require.Empty(t, reads)
+			require.Empty(t, requests)
+		})
+	}
+}
+
+func TestRequestAccessGrantFilesNothingWhenTheDatabaseReadFails(t *testing.T) {
+	// GetDatabase's own answer to a name that is not a full database name.
+	malformed := `failed to parse "hr_test": invalid request "hr_test"`
+	mock := &accessGrantMock{
+		readStatus:  http.StatusBadRequest,
+		readRefusal: map[string]any{"code": "invalid_argument", "message": malformed},
+	}
+	session := connectToAccessGrantServer(t, mock)
+
+	res := callRequestAccessGrant(t, session, map[string]any{
+		"database":      "hr_test",
+		"statement":     "SELECT 1",
+		"reason":        "a look",
+		"durationHours": 4,
+	})
+	require.True(t, res.IsError)
+	require.Contains(t, resultText(t, res), malformed)
+	reads, requests := mock.calls()
+	require.Equal(t, []string{"hr_test"}, reads)
+	require.Empty(t, requests)
+}
+
+func TestRequestAccessGrantPassesPermissionDenialsThrough(t *testing.T) {
+	for name, tt := range map[string]struct {
+		message    string
+		suggestion string
+	}{
+		"a request no person would approve": {
+			"/bytebase.v1.AccessGrantService/CreateAccessGrant is not available to MCP sessions for this request because no approval rule requires a person to approve it, " +
+				"so the access would be granted at once with no human step. Ask a workspace admin to give access requests " +
+				"an approval rule that names an approver, or request the access in the Bytebase console.",
+			"",
+		},
+		"a missing permission": {
+			`permission denied for method "/bytebase.v1.AccessGrantService/CreateAccessGrant", user does not have permission "bb.accessGrants.create", extra map[]`,
+			"ask your workspace admin to grant you the bb.accessGrants.create permission",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &accessGrantMock{
+				project:       "projects/hr",
+				refusalStatus: http.StatusForbidden,
+				refusal:       map[string]any{"code": "permission_denied", "message": tt.message},
+			}
+			session := connectToAccessGrantServer(t, mock)
+
+			res := callRequestAccessGrant(t, session, map[string]any{
+				"database":      "projects/hr/instances/prod/databases/hr",
+				"statement":     "SELECT 1",
+				"reason":        "a look",
+				"durationHours": 4,
+			})
+			require.True(t, res.IsError)
+			var denial toolError
+			require.NoError(t, json.Unmarshal([]byte(resultText(t, res)), &denial))
+			require.Equal(t, toolError{Code: "PERMISSION_DENIED", Message: tt.message, Suggestion: tt.suggestion}, denial)
+		})
+	}
+}
+
+func TestRequestAccessGrantReportsTheAPIRefusal(t *testing.T) {
+	jitOff := `just-in-time access is off for project "hr", so an access grant there would not apply; ` +
+		`a project owner can turn on "Allow access grants" in the project settings`
+	mock := &accessGrantMock{
+		project:       "projects/hr",
+		refusalStatus: http.StatusBadRequest,
+		refusal:       map[string]any{"code": "failed_precondition", "message": jitOff},
+	}
+	session := connectToAccessGrantServer(t, mock)
+
+	res := callRequestAccessGrant(t, session, map[string]any{
+		"database":      "projects/hr/instances/prod/databases/hr",
+		"statement":     "SELECT 1",
+		"reason":        "a look",
+		"durationHours": 4,
+	})
+	require.True(t, res.IsError)
+	require.Contains(t, resultText(t, res), jitOff)
+}
+
+func TestOnlyTheGrantingToolsRequireUserInteraction(t *testing.T) {
+	session := connectToAccessGrantServer(t, &accessGrantMock{})
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	listed, err := session.ListTools(ctx, &mcp.ListToolsParams{})
+	require.NoError(t, err)
+
+	var names, flagged []string
+	for _, tool := range listed.Tools {
+		names = append(names, tool.Name)
+		if required, ok := tool.Meta["anthropic/requiresUserInteraction"].(bool); ok && required {
+			flagged = append(flagged, tool.Name)
+		}
+	}
+	slices.Sort(names)
+	require.Equal(t, []string{
+		"call_api", "decide_issue", "get_schema", "get_skill", "grant_masking_exemption", "propose_database_change",
+		"query_database", "reauthorize", "request_access_grant", "revoke_masking_exemption", "search_api", "set_just_in_time_access",
+	}, names)
+	require.ElementsMatch(t, []string{"request_access_grant", "grant_masking_exemption"}, flagged)
+}
