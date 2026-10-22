@@ -269,6 +269,21 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test("uses a growing textarea without a row cap", () => {
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+
+    render();
+
+    const textarea = container.querySelector(
+      'textarea[aria-label="agent.input-placeholder"]'
+    );
+    expect(textarea).toBeInstanceOf(HTMLTextAreaElement);
+    expect(textarea?.className).toContain("min-h-9");
+    expect(textarea?.className).not.toContain("max-h-");
+
+    unmount();
+  });
+
   test("shows the send and newline keyboard hint only in the empty input placeholder", () => {
     const view = renderIntoContainer(<AgentInput />);
     view.render();
@@ -1334,23 +1349,18 @@ describe("AgentInput", () => {
     unmount();
   });
 
-  test("uses the same single-line height for the textarea and send button", () => {
+  test("uses a one-line textarea starting size beside the send button", () => {
     const { container, render, unmount } = renderIntoContainer(<AgentInput />);
 
     render();
 
     const row = container.querySelector("[data-agent-input-row]");
     expect(row?.className).toContain("items-end");
-    expect(container.querySelector("textarea")?.className).toContain(
-      "h-9"
-    );
-    expect(container.querySelector("textarea")?.className).toContain(
-      "min-h-9"
-    );
-    expect(container.querySelector("textarea")?.className).toContain(
-      "max-h-[134px]"
-    );
-    expect(container.querySelector("textarea")?.className).toContain("block");
+    const textarea = container.querySelector("textarea");
+    expect(textarea).toBeInstanceOf(HTMLTextAreaElement);
+    expect(textarea?.className).toContain("h-9");
+    expect(textarea?.className).toContain("min-h-9");
+    expect(textarea?.className).not.toContain("max-h-");
     expect(container.querySelector("[data-agent-send]")?.className).toContain(
       "h-9"
     );
@@ -1358,53 +1368,44 @@ describe("AgentInput", () => {
     unmount();
   });
 
-  test("sizes from CSS min/max heights and enables scrolling only at max height", () => {
+  test("keeps pasted line breaks in the textarea", () => {
     const { container, render, unmount } = renderIntoContainer(<AgentInput />);
 
     render();
 
-    const textarea = container.querySelector("textarea");
-    expect(textarea).toBeInstanceOf(HTMLTextAreaElement);
+    const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
 
-    const element = textarea as HTMLTextAreaElement;
-    let scrollHeight = 32;
-    Object.defineProperty(element, "scrollHeight", {
-      configurable: true,
-      get: () => scrollHeight,
+    act(() => {
+      setTextareaValue(textarea, "first line\nsecond line");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    Object.defineProperty(element, "offsetHeight", {
-      configurable: true,
-      get: () => 34,
-    });
-    Object.defineProperty(element, "clientHeight", {
-      configurable: true,
-      get: () => 32,
+
+    expect(textarea.value).toContain("\n");
+    unmount();
+  });
+
+  test("grows without a maximum height", () => {
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+
+    render();
+
+    const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
+    Object.defineProperties(textarea, {
+      clientHeight: { configurable: true, value: 32 },
+      offsetHeight: { configurable: true, value: 34 },
+      scrollHeight: { configurable: true, value: 200 },
     });
     const getComputedStyleSpy = vi
       .spyOn(window, "getComputedStyle")
-      .mockReturnValue({
-        minHeight: "34px",
-        maxHeight: "134px",
-      } as CSSStyleDeclaration);
+      .mockReturnValue({ minHeight: "34px" } as CSSStyleDeclaration);
 
     act(() => {
-      setTextareaValue(element, "hello");
-      element.dispatchEvent(new Event("input", { bubbles: true }));
+      setTextareaValue(textarea, "a\nb\nc\nd\ne\nf\ng");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
-    expect(element.style.height).toBe("34px");
-    expect(element.style.overflowY).toBe("hidden");
-
-    scrollHeight = 200;
-
-    act(() => {
-      setTextareaValue(element, "a\nb\nc\nd\ne\nf\ng");
-      element.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-
-    expect(element.style.height).toBe("134px");
-    expect(element.style.overflowY).toBe("auto");
-
+    expect(textarea.style.height).toBe("202px");
+    expect(textarea.style.overflowY).toBe("hidden");
     getComputedStyleSpy.mockRestore();
     unmount();
   });

@@ -118,6 +118,8 @@ beforeEach(async () => {
     }
   );
   vi.stubGlobal("PointerEvent", MouseEvent);
+  vi.stubGlobal("innerWidth", 1600);
+  vi.stubGlobal("innerHeight", 1000);
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -135,7 +137,6 @@ beforeEach(async () => {
   const initialState = createAgentStore().getState();
   useAgentStore.setState({
     visible: initialState.visible,
-    position: initialState.position,
     size: initialState.size,
     sidebarWidth: initialState.sidebarWidth,
     minimized: initialState.minimized,
@@ -150,8 +151,7 @@ beforeEach(async () => {
   useAgentStore.setState({
     visible: true,
     minimized: false,
-    position: { x: 100, y: 120 },
-    size: { width: 500, height: 450 },
+    size: { width: 1200, height: 450 },
     sidebarWidth: 200,
   });
 
@@ -181,6 +181,279 @@ afterEach(() => {
 });
 
 describe("AgentWindow", () => {
+  test("uses the compact rail below the roomy agent-window width", () => {
+    useAgentStore.setState({ size: { width: 700, height: 450 } });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    expect(
+      document.body.querySelector("[data-agent-compact-rail]")
+    ).toBeInstanceOf(HTMLElement);
+    expect(
+      document.body.querySelector("[data-agent-chat-sidebar]")
+    ).toBeNull();
+
+    unmount();
+  });
+
+  test("does not render a sidebar resize handle in compact view", () => {
+    useAgentStore.setState({ size: { width: 700, height: 450 } });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    expect(
+      document.body.querySelector("[data-agent-sidebar-resize]")
+    ).toBeNull();
+
+    unmount();
+  });
+
+  test("keeps the compact rail at the 480px agent-window boundary", () => {
+    useAgentStore.setState({ size: { width: 480, height: 450 } });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      expect(
+        document.body.querySelector("[data-agent-compact-rail]")
+      ).toBeInstanceOf(HTMLElement);
+      expect(
+        document.body.querySelector("[data-agent-mobile-chat-list]")
+      ).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test("keeps the full chat sidebar when the agent window has room for it", () => {
+    useAgentStore.setState({ size: { width: 750, height: 450 } });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    expect(
+      document.body.querySelector("[data-agent-chat-sidebar]")
+    ).toBeInstanceOf(HTMLElement);
+    expect(
+      document.body.querySelector("[data-agent-compact-rail]")
+    ).toBeNull();
+
+    unmount();
+  });
+
+  test("renders the compact drawer outside the clipped rail panel", async () => {
+    useAgentStore.setState({ size: { width: 700, height: 450 } });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const listButton = document.body.querySelector(
+      'button[aria-label="agent.chat-list-label"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      listButton.click();
+      await Promise.resolve();
+    });
+
+    const drawer = document.body.querySelector(
+      "[data-agent-compact-drawer]"
+    );
+    const body = document.body.querySelector("[data-agent-window-body]");
+    expect(drawer?.parentElement).toBe(body);
+    expect(
+      document.body.querySelector("[data-agent-compact-rail]")
+    ).toBeInstanceOf(HTMLElement);
+
+    unmount();
+  });
+
+  test("layers the compact drawer above the chat panel and composer", async () => {
+    useAgentStore.setState({ size: { width: 700, height: 450 } });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const listButton = document.body.querySelector(
+      'button[aria-label="agent.chat-list-label"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      listButton.click();
+      await Promise.resolve();
+    });
+
+    try {
+      const body = document.body.querySelector("[data-agent-window-body]");
+      const panels = document.body.querySelector("[data-agent-chat-panels]");
+      const drawer = document.body.querySelector(
+        "[data-agent-compact-drawer]"
+      );
+      const overlay = document.body.querySelector(
+        "[data-agent-compact-overlay]"
+      );
+      const input = document.body.querySelector('[data-testid="agent-input"]');
+
+      expect(panels?.parentElement).toBe(body);
+      expect(panels?.contains(input)).toBe(true);
+      expect(panels?.className).toContain("relative");
+      expect(panels?.className).toContain("z-0");
+      expect(overlay?.parentElement).toBe(body);
+      expect(overlay?.className).toContain("absolute");
+      expect(overlay?.className).toContain("inset-0");
+      expect(overlay?.className).toContain("z-1");
+      expect(drawer?.parentElement).toBe(body);
+      expect(drawer?.className).toContain("z-2");
+    } finally {
+      unmount();
+    }
+  });
+
+  test("opens the mobile agent directly in its current conversation", async () => {
+    useAgentStore.setState({
+      visible: false,
+      minimized: false,
+      size: { width: 479, height: 450 },
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      await act(async () => {
+        useAgentStore.getState().open();
+        await Promise.resolve();
+      });
+
+      expect(
+        document.body.querySelector("[data-agent-mobile-conversation]")
+      ).toBeInstanceOf(HTMLDivElement);
+      expect(
+        document.body.querySelector("[data-agent-mobile-chat-list]")
+      ).toBeNull();
+      expect(
+        document.body.querySelector("[data-agent-compact-rail]")
+      ).toBeNull();
+
+      const back = document.body.querySelector(
+        '[aria-label="agent.chat-list-label"]'
+      ) as HTMLButtonElement;
+      act(() => back.click());
+      expect(
+        document.body.querySelector("[data-agent-mobile-chat-list]")
+      ).toBeInstanceOf(HTMLDivElement);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("keeps rename out of the mobile chat list", () => {
+    useAgentStore.setState({ size: { width: 479, height: 450 } });
+    const chatId = useAgentStore.getState().currentChatId!;
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const back = document.body.querySelector(
+      '[aria-label="agent.chat-list-label"]'
+    ) as HTMLButtonElement;
+    act(() => back.click());
+
+    const row = document.body.querySelector(
+      `[data-agent-chat-row="${chatId}"] button`
+    ) as HTMLButtonElement;
+    act(() => row.click());
+
+    expect(
+      document.body.querySelector("[data-agent-inline-rename-input]")
+    ).toBeNull();
+    expect(
+      document.body.querySelector("[data-agent-mobile-conversation]")
+    ).toBeInstanceOf(HTMLDivElement);
+
+    unmount();
+  });
+
+  test("restores and deletes archived chats from the mobile archive view", () => {
+    useAgentStore.setState({ size: { width: 479, height: 450 } });
+    const store = useAgentStore.getState();
+    const restoredChat = store.createChat({
+      title: "Restore me",
+      archived: true,
+      select: false,
+    });
+    const deletedChat = store.createChat({
+      title: "Delete me",
+      archived: true,
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const back = document.body.querySelector(
+      '[aria-label="agent.chat-list-label"]'
+    ) as HTMLButtonElement;
+    act(() => back.click());
+
+    const archiveButton = document.body.querySelector(
+      '[aria-label="agent.archived-only-chats"]'
+    ) as HTMLButtonElement;
+    act(() => archiveButton.click());
+
+    const restoreButton = document.body.querySelector(
+      `[data-agent-chat-row="${restoredChat.id}"] [data-agent-unarchive-chat]`
+    ) as HTMLButtonElement;
+    act(() => restoreButton.click());
+    expect(useAgentStore.getState().getChat(restoredChat.id)?.archived).toBe(
+      false
+    );
+
+    const deleteButton = document.body.querySelector(
+      `[data-agent-chat-row="${deletedChat.id}"] [data-agent-delete-chat]`
+    ) as HTMLButtonElement;
+    act(() => deleteButton.click());
+    const confirmButton = Array.from(
+      document.body.querySelectorAll("button")
+    ).find((button) => button.textContent === "common.confirm");
+    act(() => confirmButton?.click());
+    expect(useAgentStore.getState().getChat(deletedChat.id)).toBeNull();
+
+    unmount();
+  });
+
+  test("opens the compact chat list before renaming the selected chat", async () => {
+    useAgentStore.setState({ size: { width: 700, height: 450 } });
+    const chatId = useAgentStore.getState().currentChatId!;
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const listButton = document.body.querySelector(
+      'button[aria-label="agent.chat-list-label"]'
+    ) as HTMLButtonElement;
+    await act(async () => {
+      listButton.click();
+      await Promise.resolve();
+    });
+
+    const selectedChat = document.body.querySelector(
+      `[data-agent-chat-row="${chatId}"] button`
+    ) as HTMLButtonElement;
+    expect(selectedChat).toBeInstanceOf(HTMLButtonElement);
+    await act(async () => {
+      selectedChat.click();
+      await Promise.resolve();
+    });
+
+    expect(
+      document.body.querySelector("[data-agent-inline-rename-input]")
+    ).toBeInstanceOf(HTMLInputElement);
+
+    unmount();
+  });
+
   test("binds the initial empty chat when opened under a project", () => {
     const chatId = useAgentStore.getState().currentChatId!;
     expect(useAgentStore.getState().getChat(chatId)?.context).toBeUndefined();
@@ -304,6 +577,92 @@ describe("AgentWindow", () => {
     ).toBeNull();
 
     unmount();
+  });
+
+  test("hides new-chat actions from the archived full sidebar", async () => {
+    useAgentStore.setState({ size: { width: 750, height: 450 } });
+    useAgentStore.getState().createChat({
+      title: "Archived analytics",
+      context: "projects/analytics",
+      archived: true,
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const moreButton = document.body.querySelector(
+      "[aria-label='common.more']"
+    ) as HTMLButtonElement;
+    act(() => {
+      moreButton.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+
+    const archivedModeButton = document.body.querySelector(
+      "[data-agent-chat-list-mode]"
+    ) as HTMLDivElement;
+    await act(async () => {
+      archivedModeButton.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+      await Promise.resolve();
+    });
+
+    try {
+      const actions = document.body.querySelector(
+        "[data-agent-chat-sidebar-actions]"
+      );
+      expect(
+        actions?.querySelector("[aria-label='agent.new-chat']")
+      ).toBeNull();
+      expect(
+        actions?.querySelector("[aria-label='common.more']")
+      ).toBeInstanceOf(HTMLButtonElement);
+      expect(
+        document.body.querySelector(
+          '[data-agent-new-chat-for-context="projects/analytics"]'
+        )
+      ).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test("hides the compact rail new-chat action while viewing archived chats", async () => {
+    useAgentStore.setState({ size: { width: 700, height: 450 } });
+    useAgentStore.getState().createChat({
+      title: "Archived analytics",
+      context: "projects/analytics",
+      archived: true,
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const archiveButton = document.body.querySelector(
+      "[data-agent-compact-rail] [aria-label='agent.archived-only-chats']"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      archiveButton.click();
+      await Promise.resolve();
+    });
+
+    try {
+      const rail = document.body.querySelector("[data-agent-compact-rail]");
+      expect(
+        rail?.querySelector("[aria-label='agent.new-chat']")
+      ).toBeNull();
+      expect(
+        document.body.querySelector(
+          '[data-agent-new-chat-for-context="projects/analytics"]'
+        )
+      ).toBeNull();
+    } finally {
+      unmount();
+    }
   });
 
   test("hydrates uncached project chat contexts before rendering their labels", async () => {
@@ -734,7 +1093,7 @@ describe("AgentWindow", () => {
     unmount();
   });
 
-  test("commits drag position only on pointerup", () => {
+  test("anchors the window at the bottom right without a drag affordance", () => {
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
 
     render();
@@ -742,21 +1101,23 @@ describe("AgentWindow", () => {
     const windowEl = document.body.querySelector(
       "[data-agent-window]"
     ) as HTMLDivElement | null;
-    const header = windowEl?.querySelector(
-      ".cursor-move"
+    const header = document.body.querySelector(
+      "[data-agent-window-header]"
     ) as HTMLDivElement | null;
 
     expect(windowEl).toBeInstanceOf(HTMLDivElement);
     expect(header).toBeInstanceOf(HTMLDivElement);
-
-    Object.defineProperty(windowEl, "offsetWidth", {
-      configurable: true,
-      get: () => 500,
-    });
-    Object.defineProperty(windowEl, "offsetHeight", {
-      configurable: true,
-      get: () => 450,
-    });
+    expect(windowEl?.style.right).toBe("16px");
+    expect(windowEl?.style.bottom).toBe("16px");
+    expect(windowEl?.style.left).toBe("");
+    expect(windowEl?.style.top).toBe("");
+    expect(header?.className).not.toContain("cursor-move");
+    expect(
+      Array.from(
+        document.body.querySelectorAll("[data-agent-window-resize-zone]"),
+        (zone) => zone.getAttribute("data-agent-window-resize-zone")
+      )
+    ).toEqual(["n", "w", "nw"]);
 
     act(() => {
       header?.dispatchEvent(
@@ -774,13 +1135,6 @@ describe("AgentWindow", () => {
           clientY: 190,
         })
       );
-    });
-
-    expect(windowEl?.style.left).toBe("130px");
-    expect(windowEl?.style.top).toBe("160px");
-    expect(useAgentStore.getState().position).toEqual({ x: 100, y: 120 });
-
-    act(() => {
       document.dispatchEvent(
         new PointerEvent("pointerup", {
           bubbles: true,
@@ -790,8 +1144,12 @@ describe("AgentWindow", () => {
       );
     });
 
-    expect(useAgentStore.getState().position).toEqual({ x: 130, y: 160 });
+    expect(windowEl?.style.right).toBe("16px");
+    expect(windowEl?.style.bottom).toBe("16px");
+    expect(windowEl?.style.left).toBe("");
+    expect(windowEl?.style.top).toBe("");
 
     unmount();
   });
+
 });

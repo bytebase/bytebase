@@ -1,8 +1,10 @@
 import {
   Archive,
   Building2,
+  ChevronLeft,
   EllipsisVertical,
   FolderKanban,
+  MessageSquare,
   Plus,
   Trash2,
   Undo2,
@@ -79,16 +81,21 @@ import {
   resizeWindowBounds,
 } from "./window-resize";
 
-const resizeZoneClasses: Record<ResizeDirection, string> = {
+type AnchoredResizeDirection = Extract<ResizeDirection, "n" | "w" | "nw">;
+
+const resizeZoneClasses: Record<AnchoredResizeDirection, string> = {
   n: "left-[12px] top-[-6px] h-[6px] w-[calc(100%-24px)] cursor-n-resize",
-  s: "bottom-[-6px] left-[12px] h-[6px] w-[calc(100%-24px)] cursor-s-resize",
-  e: "right-[-6px] top-[12px] h-[calc(100%-24px)] w-[6px] cursor-e-resize",
   w: "left-[-6px] top-[12px] h-[calc(100%-24px)] w-[6px] cursor-w-resize",
-  ne: "right-[-6px] top-[-6px] size-[12px] cursor-ne-resize",
   nw: "left-[-6px] top-[-6px] size-[12px] cursor-nw-resize",
-  se: "bottom-[-6px] right-[-6px] size-[12px] cursor-se-resize",
-  sw: "bottom-[-6px] left-[-6px] size-[12px] cursor-sw-resize",
 };
+
+// The default 750px agent window leaves a useful reading column beside the
+// persistent chat sidebar. Keep the compact rail for genuinely constrained
+// desktop widths, rather than applying a browser-level breakpoint.
+const COMPACT_WINDOW_MAX_WIDTH = 719;
+// Compact remains viable down to the 460px minimum agent-window width. Reserve
+// the single-pane mobile flow for genuinely phone-sized agent windows.
+const MOBILE_WINDOW_MAX_WIDTH = 479;
 
 interface AgentChatGroup {
   context?: string;
@@ -129,7 +136,6 @@ export function AgentWindow() {
 
   const visible = useAgentStore((s) => s.visible);
   const minimized = useAgentStore((s) => s.minimized);
-  const position = useAgentStore((s) => s.position);
   const size = useAgentStore((s) => s.size);
   const sidebarWidth = useAgentStore((s) => s.sidebarWidth);
   const orderedChats = useAgentStore(selectOrderedChats);
@@ -147,6 +153,7 @@ export function AgentWindow() {
   }, [hasRunningChat, workspace?.name]);
 
   const windowRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   const [viewportSize, setViewportSize] = useState({
@@ -160,6 +167,12 @@ export function AgentWindow() {
   const viewportResizeFrameRef = useRef(0);
 
   const [showArchivedOnly, setShowArchivedOnly] = useState(false);
+  const [compactPanel, setCompactPanel] = useState<"chats" | "archived" | null>(
+    null
+  );
+  const [mobileScreen, setMobileScreen] = useState<
+    "chats" | "conversation" | "archived"
+  >("chats");
   const [isRenamingCurrentChat, setIsRenamingCurrentChat] = useState(false);
   const [
     isDeleteAllArchivedChatsDialogOpen,
@@ -167,21 +180,18 @@ export function AgentWindow() {
   ] = useState(false);
   const [renamingTitle, setRenamingTitle] = useState("");
 
-  // Refs for drag/resize intermediate values (avoid re-renders)
-  const isDraggingRef = useRef(false);
-  const dragOffsetRef = useRef({ x: 0, y: 0 });
-  const dragPositionRef = useRef<{ x: number; y: number } | null>(null);
+  // Refs for resize intermediate values (avoid re-renders)
   const isResizingRef = useRef(false);
   const resizeStartRef = useRef<{
     x: number;
     y: number;
     bounds: ResizeBounds;
-    direction: ResizeDirection;
+    direction: AnchoredResizeDirection;
   }>({
     x: 0,
     y: 0,
     bounds: { x: 0, y: 0, width: 0, height: 0 },
-    direction: "se",
+    direction: "nw",
   });
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
@@ -229,46 +239,13 @@ export function AgentWindow() {
     [clampWidth, clampHeight]
   );
 
-  const getDisplayPosition = useCallback(
-    (x: number, y: number, displaySize?: { width: number; height: number }) => {
-      const sz = displaySize ?? getDisplaySize(size.width, size.height);
-      const maxX = Math.max(
-        WINDOW_MARGIN,
-        viewportSize.width - sz.width - WINDOW_MARGIN
-      );
-      const maxY = Math.max(
-        WINDOW_MARGIN,
-        viewportSize.height - sz.height - WINDOW_MARGIN
-      );
-      return {
-        x: Math.min(maxX, Math.max(WINDOW_MARGIN, Math.round(x))),
-        y: Math.min(maxY, Math.max(WINDOW_MARGIN, Math.round(y))),
-      };
-    },
-    [
-      getDisplaySize,
-      size.width,
-      size.height,
-      viewportSize.width,
-      viewportSize.height,
-    ]
+  const displaySize = useMemo(
+    () => getDisplaySize(size.width, size.height),
+    [getDisplaySize, size.height, size.width]
   );
 
-  const displayWindowState = useMemo(() => {
-    const sz = getDisplaySize(size.width, size.height);
-    const pos = getDisplayPosition(position.x, position.y, sz);
-    return { position: pos, size: sz };
-  }, [
-    getDisplaySize,
-    getDisplayPosition,
-    size.width,
-    size.height,
-    position.x,
-    position.y,
-  ]);
-
   const clampSidebarWidth = useCallback(
-    (width: number, windowWidth = displayWindowState.size.width) => {
+    (width: number, windowWidth = displaySize.width) => {
       const maxSW = Math.max(
         MIN_SIDEBAR_WIDTH,
         windowWidth - MIN_MAIN_PANEL_WIDTH
@@ -276,7 +253,7 @@ export function AgentWindow() {
       const minSW = Math.min(MIN_SIDEBAR_WIDTH, maxSW);
       return Math.min(maxSW, Math.max(minSW, Math.round(width)));
     },
-    [displayWindowState.size.width]
+    [displaySize.width]
   );
 
   const clampedSidebarWidth = useMemo(
@@ -285,21 +262,24 @@ export function AgentWindow() {
   );
 
   const windowStyle: React.CSSProperties = {
-    left: `${displayWindowState.position.x}px`,
-    top: `${displayWindowState.position.y}px`,
-    width: `${displayWindowState.size.width}px`,
-    height: `${displayWindowState.size.height}px`,
+    right: `${WINDOW_MARGIN}px`,
+    bottom: `${WINDOW_MARGIN}px`,
+    width: `${displaySize.width}px`,
+    height: `${displaySize.height}px`,
   };
 
   const maxSidebarWidth = Math.max(
     MIN_SIDEBAR_WIDTH,
-    displayWindowState.size.width - MIN_MAIN_PANEL_WIDTH
+    displaySize.width - MIN_MAIN_PANEL_WIDTH
   );
   const minSidebarWidth = Math.min(MIN_SIDEBAR_WIDTH, maxSidebarWidth);
   const minMainPanelWidth = Math.min(
     MIN_MAIN_PANEL_WIDTH,
-    Math.max(1, displayWindowState.size.width - minSidebarWidth)
+    Math.max(1, displaySize.width - minSidebarWidth)
   );
+  const isMobileWindow = displaySize.width <= MOBILE_WINDOW_MAX_WIDTH;
+  const isCompactWindow =
+    displaySize.width <= COMPACT_WINDOW_MAX_WIDTH && !isMobileWindow;
 
   // --- Derived chat data ---
 
@@ -349,17 +329,10 @@ export function AgentWindow() {
     });
   }, [batchFetchProjects, missingProjectContexts, visible]);
 
-  const syncStoreToDisplayState = useCallback(() => {
+  const syncStoreToDisplaySize = useCallback(() => {
     const store = useAgentStore.getState();
-    store.setSize(
-      displayWindowState.size.width,
-      displayWindowState.size.height
-    );
-    store.setPosition(
-      displayWindowState.position.x,
-      displayWindowState.position.y
-    );
-  }, [displayWindowState]);
+    store.setSize(displaySize.width, displaySize.height);
+  }, [displaySize]);
 
   // --- Chat helpers ---
 
@@ -660,108 +633,36 @@ export function AgentWindow() {
     ensureCurrentChatMatchesDisplayedMode();
   }, [showArchivedOnly]);
 
-  // --- Drag handlers ---
-  // All drag/resize handlers manipulate DOM directly during movement
-  // and only commit to the Zustand store on pointerup, avoiding per-frame
-  // immer drafts + React re-renders.
-
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
-  const dragCleanupRef = useRef<(() => void) | null>(null);
   const resizeCleanupRef = useRef<(() => void) | null>(null);
 
-  // Cleanup drag/resize listeners on unmount
+  // Cleanup resize listeners on unmount.
   useEffect(() => {
     return () => {
-      dragCleanupRef.current?.();
       resizeCleanupRef.current?.();
     };
   }, []);
 
-  const startDrag = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      if (event.button !== 0) return;
-      if (
-        event.target instanceof HTMLElement &&
-        event.target.closest("[data-agent-window-action]")
-      ) {
-        return;
-      }
-      event.preventDefault();
-      syncStoreToDisplayState();
-      isDraggingRef.current = true;
-      const store = useAgentStore.getState();
-      dragOffsetRef.current = {
-        x: event.clientX - store.position.x,
-        y: event.clientY - store.position.y,
-      };
-      dragPositionRef.current = {
-        x: store.position.x,
-        y: store.position.y,
-      };
-
-      const onDrag = (e: PointerEvent) => {
-        if (!isDraggingRef.current || !windowRef.current) return;
-        const el = windowRef.current;
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const w = el.offsetWidth;
-        const h = el.offsetHeight;
-        const maxX = Math.max(WINDOW_MARGIN, vw - w - WINDOW_MARGIN);
-        const maxY = Math.max(WINDOW_MARGIN, vh - h - WINDOW_MARGIN);
-        const x = Math.min(
-          maxX,
-          Math.max(WINDOW_MARGIN, e.clientX - dragOffsetRef.current.x)
-        );
-        const y = Math.min(
-          maxY,
-          Math.max(WINDOW_MARGIN, e.clientY - dragOffsetRef.current.y)
-        );
-        el.style.left = `${x}px`;
-        el.style.top = `${y}px`;
-        dragPositionRef.current = { x, y };
-      };
-
-      const stopDrag = () => {
-        isDraggingRef.current = false;
-        document.removeEventListener("pointermove", onDrag);
-        document.removeEventListener("pointerup", stopDrag);
-        document.removeEventListener("pointercancel", stopDrag);
-        dragCleanupRef.current = null;
-        if (dragPositionRef.current) {
-          useAgentStore
-            .getState()
-            .setPosition(dragPositionRef.current.x, dragPositionRef.current.y);
-        }
-        dragPositionRef.current = null;
-        useAgentStore.getState().saveWindowState();
-      };
-
-      document.addEventListener("pointermove", onDrag);
-      document.addEventListener("pointerup", stopDrag);
-      document.addEventListener("pointercancel", stopDrag);
-      dragCleanupRef.current = stopDrag;
-    },
-    [syncStoreToDisplayState]
-  );
-
   // --- Resize handlers ---
 
   const startResize = useCallback(
-    (direction: ResizeDirection, event: React.PointerEvent<HTMLDivElement>) => {
+    (
+      direction: AnchoredResizeDirection,
+      event: React.PointerEvent<HTMLDivElement>
+    ) => {
       if (!canResizeWindow || event.button !== 0) return;
       event.preventDefault();
       event.stopPropagation();
-      syncStoreToDisplayState();
+      syncStoreToDisplaySize();
       isResizingRef.current = true;
-      const store = useAgentStore.getState();
       resizeStartRef.current = {
         x: event.clientX,
         y: event.clientY,
         bounds: {
-          x: store.position.x,
-          y: store.position.y,
-          width: store.size.width,
-          height: store.size.height,
+          x: window.innerWidth - displaySize.width - WINDOW_MARGIN,
+          y: window.innerHeight - displaySize.height - WINDOW_MARGIN,
+          width: displaySize.width,
+          height: displaySize.height,
         },
         direction,
       };
@@ -782,13 +683,9 @@ export function AgentWindow() {
             margin: WINDOW_MARGIN,
           },
         });
-        el.style.left = `${nextBounds.x}px`;
-        el.style.top = `${nextBounds.y}px`;
         el.style.width = `${nextBounds.width}px`;
         el.style.height = `${nextBounds.height}px`;
-        const store = useAgentStore.getState();
-        store.setSize(nextBounds.width, nextBounds.height);
-        store.setPosition(nextBounds.x, nextBounds.y);
+        useAgentStore.getState().setSize(nextBounds.width, nextBounds.height);
       };
 
       const stopResize = () => {
@@ -805,7 +702,7 @@ export function AgentWindow() {
       document.addEventListener("pointercancel", stopResize);
       resizeCleanupRef.current = stopResize;
     },
-    [canResizeWindow, syncStoreToDisplayState]
+    [canResizeWindow, displaySize, syncStoreToDisplaySize]
   );
 
   // --- Viewport resize ---
@@ -878,22 +775,6 @@ export function AgentWindow() {
         const clH = Math.min(maxH, Math.max(minH, Math.round(height)));
         state.size.width = clW;
         state.size.height = clH;
-        const maxX = Math.max(
-          WINDOW_MARGIN,
-          viewportSize.width - clW - WINDOW_MARGIN
-        );
-        const maxY = Math.max(
-          WINDOW_MARGIN,
-          viewportSize.height - clH - WINDOW_MARGIN
-        );
-        state.position.x = Math.min(
-          maxX,
-          Math.max(WINDOW_MARGIN, Math.round(state.position.x))
-        );
-        state.position.y = Math.min(
-          maxY,
-          Math.max(WINDOW_MARGIN, Math.round(state.position.y))
-        );
       });
       useAgentStore.getState().saveWindowState();
     });
@@ -906,8 +787,9 @@ export function AgentWindow() {
   // --- Sync sidebar width when window width changes ---
 
   useEffect(() => {
+    if (isCompactWindow) return;
     const store = useAgentStore.getState();
-    const windowWidth = displayWindowState.size.width;
+    const windowWidth = displaySize.width;
     const maxSW = Math.max(
       MIN_SIDEBAR_WIDTH,
       windowWidth - MIN_MAIN_PANEL_WIDTH
@@ -923,15 +805,24 @@ export function AgentWindow() {
       });
       store.saveWindowState();
     }
-  }, [displayWindowState.size.width]);
+  }, [displaySize.width, isCompactWindow]);
 
   useEffect(() => {
+    if (isCompactWindow) return;
     const panel = sidebarPanelRef.current;
     if (!panel) return;
     if (Math.round(panel.getSize().inPixels) !== clampedSidebarWidth) {
       panel.resize(clampedSidebarWidth);
     }
-  }, [clampedSidebarWidth]);
+  }, [clampedSidebarWidth, isCompactWindow]);
+
+  useEffect(() => {
+    if (!isCompactWindow) setCompactPanel(null);
+  }, [isCompactWindow]);
+
+  useLayoutEffect(() => {
+    if (visible && isMobileWindow) setMobileScreen("conversation");
+  }, [isMobileWindow, visible]);
 
   const saveSidebarWidth = useCallback(() => {
     const width = sidebarPanelRef.current?.getSize().inPixels;
@@ -970,6 +861,92 @@ export function AgentWindow() {
       cancelled = true;
     };
   }, [currentChatId, getOrFetchSettingByName, visible]);
+
+  const openMobileChatList = useCallback(() => {
+    setShowArchivedOnly(false);
+    setMobileScreen("chats");
+  }, []);
+
+  const openMobileArchivedChats = useCallback(() => {
+    setShowArchivedOnly(true);
+    setMobileScreen("archived");
+  }, []);
+
+  const createMobileChat = useCallback(
+    (context?: string) => {
+      if (context) {
+        createChatForContext(context);
+      } else {
+        createChat();
+      }
+      setMobileScreen("conversation");
+    },
+    [createChat, createChatForContext]
+  );
+
+  const selectMobileChat = useCallback(
+    (chatId: string) => {
+      if (!useAgentStore.getState().canSelectChat(chatId)) return;
+      cancelRenameCurrentChat();
+      useAgentStore.getState().setCurrentChat(chatId);
+      setMobileScreen("conversation");
+    },
+    [cancelRenameCurrentChat]
+  );
+
+  const renderCompactRail = (overlay = false) => (
+    <nav
+      className={cn(
+        "flex flex-col items-center gap-y-2 border-r border-block-border bg-control-bg py-3",
+        overlay ? "absolute inset-y-0 left-0 z-3 w-12" : "size-full"
+      )}
+      data-agent-compact-rail
+      aria-label={t("agent.chat-list-label")}
+    >
+      <AgentTooltip content={t("agent.chat-list-label")}>
+        <Button
+          appearance="secondary"
+          size="xs"
+          className="text-control-light hover:bg-control-bg-hover"
+          aria-label={t("agent.chat-list-label")}
+          onClick={() => {
+            setShowArchivedOnly(false);
+            setCompactPanel("chats");
+          }}
+        >
+          <MessageSquare className="size-3.5" aria-hidden="true" />
+        </Button>
+      </AgentTooltip>
+      {!showArchivedOnly && (
+        <AgentTooltip content={t("agent.new-chat")}>
+          <Button
+            appearance="secondary"
+            size="xs"
+            className="text-control-light hover:bg-control-bg-hover"
+            aria-label={t("agent.new-chat")}
+            disabled={isChatCreationDisabled}
+            onClick={createChat}
+          >
+            <Plus className="size-3.5" aria-hidden="true" />
+          </Button>
+        </AgentTooltip>
+      )}
+      <AgentTooltip content={t("agent.archived-only-chats")}>
+        <Button
+          appearance="secondary"
+          size="xs"
+          className="text-control-light hover:bg-control-bg-hover"
+          aria-label={t("agent.archived-only-chats")}
+          onClick={() => {
+            setShowArchivedOnly(true);
+            setCompactPanel("archived");
+          }}
+        >
+          <Archive className="size-3.5" aria-hidden="true" />
+        </Button>
+      </AgentTooltip>
+    </nav>
+  );
 
   // --- Render ---
 
@@ -1040,15 +1017,83 @@ export function AgentWindow() {
         {/* Header */}
         <div
           data-agent-window-header
-          className="flex cursor-move select-none items-center justify-between border-b bg-control-bg px-3 py-2 [touch-action:none]"
-          onPointerDown={startDrag}
+          className="flex select-none items-center justify-between border-b bg-control-bg px-3 py-2"
         >
           <div className="flex min-w-0 items-center gap-x-2">
+            {isMobileWindow && mobileScreen === "conversation" && (
+              <Button
+                appearance="secondary"
+                size="xs"
+                data-agent-window-action
+                className="-ml-1 text-control-light hover:bg-control-bg-hover"
+                aria-label={t("agent.chat-list-label")}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openMobileChatList();
+                }}
+              >
+                <ChevronLeft className="size-4" aria-hidden="true" />
+              </Button>
+            )}
+            {isMobileWindow && mobileScreen === "archived" && (
+              <Button
+                appearance="secondary"
+                size="xs"
+                data-agent-window-action
+                className="-ml-1 text-control-light hover:bg-control-bg-hover"
+                aria-label={t("agent.chat-list-label")}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openMobileChatList();
+                }}
+              >
+                <ChevronLeft className="size-4" aria-hidden="true" />
+              </Button>
+            )}
             <span className="truncate text-sm font-medium">
-              {t("agent.assistant-title")}
+              {isMobileWindow && mobileScreen === "chats"
+                ? t("agent.chat-list-label")
+                : isMobileWindow && mobileScreen === "archived"
+                  ? t("agent.archived-only-chats")
+                  : t("agent.assistant-title")}
             </span>
           </div>
           <div className="flex items-center gap-x-1">
+            {isMobileWindow && mobileScreen === "chats" && (
+              <>
+                <AgentTooltip content={t("agent.archived-only-chats")}>
+                  <Button
+                    appearance="secondary"
+                    size="xs"
+                    data-agent-window-action
+                    className="text-control-light hover:bg-control-bg-hover"
+                    aria-label={t("agent.archived-only-chats")}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openMobileArchivedChats();
+                    }}
+                  >
+                    <Archive className="size-3.5" aria-hidden="true" />
+                  </Button>
+                </AgentTooltip>
+                <AgentTooltip content={t("agent.new-chat")}>
+                  <Button
+                    appearance="secondary"
+                    size="xs"
+                    data-agent-window-action
+                    className="text-control-light hover:bg-control-bg-hover"
+                    aria-label={t("agent.new-chat")}
+                    disabled={isChatCreationDisabled}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      createMobileChat();
+                    }}
+                  >
+                    <Plus className="size-3.5" aria-hidden="true" />
+                  </Button>
+                </AgentTooltip>
+              </>
+            )}
             <Button
               appearance="secondary"
               size="xs"
@@ -1079,117 +1124,25 @@ export function AgentWindow() {
         </div>
 
         {/* Body */}
-        <PanelGroup
-          orientation="horizontal"
-          className="min-h-0 flex-1 bg-background"
-          onLayoutChanged={(_, meta) => {
-            if (meta.isUserInteraction) saveSidebarWidth();
-          }}
+        <div
+          ref={bodyRef}
+          className="relative min-h-0 flex-1"
+          data-agent-window-body
         >
-          {/* Sidebar */}
-          <Panel
-            id="agent-chat-sidebar"
-            panelRef={sidebarPanelRef}
-            defaultSize={clampedSidebarWidth}
-            minSize={minSidebarWidth}
-            maxSize={maxSidebarWidth}
-            groupResizeBehavior="preserve-pixel-size"
-          >
-            <aside className="flex size-full flex-col bg-control-bg">
-              {/* Sidebar header */}
-              <div className="border-b border-block-border px-3 py-3">
-                <div className="flex items-center justify-between gap-x-2">
-                  <div>
-                    <h2 className="text-xs font-semibold uppercase tracking-wide text-control-light">
-                      {t("agent.chat-list-label")}
-                    </h2>
-                  </div>
-                  <div
-                    className="flex items-center gap-x-1"
-                    data-agent-chat-sidebar-actions
-                  >
-                    <AgentTooltip content={t("agent.new-chat")}>
-                      <Button
-                        appearance="secondary"
-                        size="xs"
-                        className="px-1 text-control-light hover:bg-control-bg-hover"
-                        aria-label={t("agent.new-chat")}
-                        disabled={isChatCreationDisabled}
-                        onClick={createChat}
-                      >
-                        <Plus className="size-3.5" aria-hidden="true" />
-                      </Button>
-                    </AgentTooltip>
-                    <AgentDropdownMenu>
-                      <AgentTooltip content={t("common.more")}>
-                        <AgentDropdownMenuTrigger
-                          className="inline-flex size-6 items-center justify-center rounded-xs text-control-light outline-hidden hover:bg-control-bg-hover focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50"
-                          aria-label={t("common.more")}
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          <EllipsisVertical
-                            className="size-3.5"
-                            aria-hidden="true"
-                          />
-                        </AgentDropdownMenuTrigger>
-                      </AgentTooltip>
-                      <AgentDropdownMenuContent>
-                        {showArchivedOnly ? (
-                          <>
-                            <AgentDropdownMenuItem
-                              data-agent-unarchive-all-chats
-                              disabled={isUnarchiveAllDisabled}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                unarchiveAllChats();
-                              }}
-                            >
-                              {t("agent.unarchive-all-chats")}
-                            </AgentDropdownMenuItem>
-                            <AgentDropdownMenuItem
-                              data-agent-delete-all-chats
-                              className="text-error data-highlighted:bg-error/10"
-                              disabled={isDeleteAllDisabled}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setIsDeleteAllArchivedChatsDialogOpen(true);
-                              }}
-                            >
-                              {t("agent.delete-all-chats")}
-                            </AgentDropdownMenuItem>
-                          </>
-                        ) : (
-                          <AgentDropdownMenuItem
-                            data-agent-archive-all-chats
-                            disabled={isArchiveAllDisabled}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              archiveAllChats();
-                            }}
-                          >
-                            {t("agent.archive-all-chats")}
-                          </AgentDropdownMenuItem>
-                        )}
-                        <AgentDropdownMenuSeparator />
-                        <AgentDropdownMenuItem
-                          data-agent-chat-list-mode
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            toggleChatListMode();
-                          }}
-                        >
-                          {showArchivedOnly
-                            ? t("agent.active-only-chats")
-                            : t("agent.archived-only-chats")}
-                        </AgentDropdownMenuItem>
-                      </AgentDropdownMenuContent>
-                    </AgentDropdownMenu>
-                  </div>
-                </div>
+          {isMobileWindow ? (
+            mobileScreen === "conversation" ? (
+              <div
+                className="flex size-full flex-col bg-background"
+                data-agent-mobile-conversation
+              >
+                <AgentChat className="min-h-0 flex-1" />
+                <AgentInput />
               </div>
-
-              {/* Chat list */}
-              <div className="min-h-0 flex-1 overflow-y-auto">
+            ) : (
+              <div
+                className="size-full overflow-y-auto bg-control-bg"
+                data-agent-mobile-chat-list
+              >
                 <div className="flex flex-col" data-agent-chat-list>
                   {displayedChatGroups.map((group) => (
                     <div
@@ -1214,7 +1167,7 @@ export function AgentWindow() {
                             {t("agent.other-chats")}
                           </span>
                         )}
-                        {group.context && (
+                        {group.context && !showArchivedOnly && (
                           <AgentTooltip
                             content={`${t("agent.new-chat")}: ${getContextLabel(group.context)}`}
                           >
@@ -1225,9 +1178,7 @@ export function AgentWindow() {
                               aria-label={`${t("agent.new-chat")}: ${getContextLabel(group.context)}`}
                               data-agent-new-chat-for-context={group.context}
                               disabled={isChatCreationDisabled}
-                              onClick={() =>
-                                createChatForContext(group.context!)
-                              }
+                              onClick={() => createMobileChat(group.context)}
                             >
                               <Plus className="size-3.5" aria-hidden="true" />
                             </Button>
@@ -1237,93 +1188,69 @@ export function AgentWindow() {
                       {group.chats.map((chat) => (
                         <div
                           key={chat.id}
-                          className={`group w-full rounded-xs px-3 py-2 text-left text-sm transition-colors ${
+                          className={cn(
+                            "flex items-center gap-x-2 px-3 py-2 text-sm",
                             chat.id === currentChatId
                               ? "bg-accent/10 text-accent"
-                              : "text-control hover:bg-control-bg-hover"
-                          }`}
+                              : "text-control"
+                          )}
                           data-agent-chat-row={chat.id}
                         >
-                          {chat.id === currentChatId &&
-                          isRenamingCurrentChat ? (
-                            <Input
-                              ref={renameInputRef}
-                              value={renamingTitle}
-                              onChange={(e) => setRenamingTitle(e.target.value)}
-                              className="h-7 text-sm"
-                              placeholder={t("agent.rename-chat-placeholder")}
-                              data-agent-inline-rename-input
-                              onBlur={commitRenameCurrentChat}
-                              onKeyDown={onRenameKeydown}
-                            />
-                          ) : (
-                            <div className="flex items-center gap-x-2">
-                              <Button
-                                appearance="secondary"
-                                size="md"
-                                type="button"
-                                className="h-auto min-w-0 flex-1 flex-col items-start p-0 text-left whitespace-normal hover:bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
-                                disabled={
-                                  !useAgentStore
-                                    .getState()
-                                    .canSelectChat(chat.id)
-                                }
-                                aria-current={
-                                  chat.id === currentChatId ? "true" : undefined
-                                }
-                                onClick={() => handleChatRowClick(chat.id)}
+                          <Button
+                            appearance="secondary"
+                            size="md"
+                            type="button"
+                            className="h-auto min-w-0 flex-1 justify-start p-0 text-left hover:bg-transparent"
+                            disabled={
+                              !useAgentStore.getState().canSelectChat(chat.id)
+                            }
+                            aria-current={
+                              chat.id === currentChatId ? "true" : undefined
+                            }
+                            onClick={() => selectMobileChat(chat.id)}
+                          >
+                            <span className="truncate font-medium">
+                              {getChatLabel(chat)}
+                            </span>
+                          </Button>
+                          {chat.archived ? (
+                            <>
+                              <SidebarIconButton
+                                tooltip={t("agent.unarchive-chat")}
+                                ariaLabel={t("agent.unarchive-chat")}
+                                dataAttr="data-agent-unarchive-chat"
+                                onClick={() => unarchiveChat(chat.id)}
                               >
-                                <div
-                                  className="w-full truncate font-medium"
-                                  data-agent-chat-title
-                                >
-                                  {getChatLabel(chat)}
-                                </div>
-                              </Button>
-                              <div className="pointer-events-none flex shrink-0 items-center gap-x-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-                                {chat.archived ? (
-                                  <>
-                                    <SidebarIconButton
-                                      tooltip={t("agent.unarchive-chat")}
-                                      ariaLabel={t("agent.unarchive-chat")}
-                                      dataAttr="data-agent-unarchive-chat"
-                                      onClick={() => unarchiveChat(chat.id)}
-                                    >
-                                      <Undo2
-                                        className="size-3.5"
-                                        aria-hidden="true"
-                                      />
-                                    </SidebarIconButton>
-                                    <ConfirmDialog
-                                      message={t(
-                                        "agent.delete-chat-confirmation"
-                                      )}
-                                      onConfirm={() => deleteChat(chat.id)}
-                                      triggerLabel={t("agent.delete-chat")}
-                                      triggerDataAttr="data-agent-delete-chat"
-                                      triggerVariant="icon"
-                                    >
-                                      <Trash2
-                                        className="size-3.5"
-                                        aria-hidden="true"
-                                      />
-                                    </ConfirmDialog>
-                                  </>
-                                ) : (
-                                  <SidebarIconButton
-                                    tooltip={t("agent.archive-chat")}
-                                    ariaLabel={t("agent.archive-chat")}
-                                    dataAttr="data-agent-archive-chat"
-                                    onClick={() => archiveChat(chat.id)}
-                                  >
-                                    <Archive
-                                      className="size-3.5"
-                                      aria-hidden="true"
-                                    />
-                                  </SidebarIconButton>
-                                )}
-                              </div>
-                            </div>
+                                <Undo2
+                                  className="size-3.5"
+                                  aria-hidden="true"
+                                />
+                              </SidebarIconButton>
+                              <ConfirmDialog
+                                message={t("agent.delete-chat-confirmation")}
+                                onConfirm={() => deleteChat(chat.id)}
+                                triggerLabel={t("agent.delete-chat")}
+                                triggerDataAttr="data-agent-delete-chat"
+                                triggerVariant="icon"
+                              >
+                                <Trash2
+                                  className="size-3.5"
+                                  aria-hidden="true"
+                                />
+                              </ConfirmDialog>
+                            </>
+                          ) : (
+                            <SidebarIconButton
+                              tooltip={t("agent.archive-chat")}
+                              ariaLabel={t("agent.archive-chat")}
+                              dataAttr="data-agent-archive-chat"
+                              onClick={() => archiveChat(chat.id)}
+                            >
+                              <Archive
+                                className="size-3.5"
+                                aria-hidden="true"
+                              />
+                            </SidebarIconButton>
                           )}
                         </div>
                       ))}
@@ -1331,29 +1258,370 @@ export function AgentWindow() {
                   ))}
                 </div>
               </div>
-            </aside>
-          </Panel>
+            )
+          ) : (
+            <PanelGroup
+              orientation="horizontal"
+              className="relative z-0 size-full bg-background"
+              data-agent-chat-panels
+              onLayoutChanged={(_, meta) => {
+                if (!isCompactWindow && meta.isUserInteraction)
+                  saveSidebarWidth();
+              }}
+            >
+              {/* Sidebar */}
+              <Panel
+                key={isCompactWindow ? "compact" : "roomy"}
+                id="agent-chat-sidebar"
+                panelRef={sidebarPanelRef}
+                defaultSize={isCompactWindow ? 48 : clampedSidebarWidth}
+                minSize={isCompactWindow ? 48 : minSidebarWidth}
+                maxSize={isCompactWindow ? 48 : maxSidebarWidth}
+                groupResizeBehavior="preserve-pixel-size"
+                className="relative"
+              >
+                {isCompactWindow && !compactPanel ? (
+                  renderCompactRail()
+                ) : (
+                  <EscapePanelClip
+                    target={
+                      isCompactWindow && compactPanel ? bodyRef.current : null
+                    }
+                  >
+                    <aside
+                      className={cn(
+                        "flex size-full flex-col bg-control-bg",
+                        isCompactWindow &&
+                          "absolute inset-y-0 left-12 z-2 w-80 shadow-lg"
+                      )}
+                      data-agent-chat-sidebar={
+                        isCompactWindow ? undefined : true
+                      }
+                      data-agent-compact-drawer={
+                        isCompactWindow ? true : undefined
+                      }
+                    >
+                      {/* Sidebar header */}
+                      <div className="border-b border-block-border px-3 py-3">
+                        <div className="flex items-center justify-between gap-x-2">
+                          <h2 className="text-xs font-semibold uppercase tracking-wide text-control-light">
+                            {showArchivedOnly
+                              ? t("agent.archived-only-chats")
+                              : t("agent.chat-list-label")}
+                          </h2>
+                          {isCompactWindow ? (
+                            <Button
+                              appearance="secondary"
+                              size="xs"
+                              className="text-control-light hover:bg-control-bg-hover"
+                              aria-label={t("agent.close")}
+                              onClick={() => setCompactPanel(null)}
+                            >
+                              &#10005;
+                            </Button>
+                          ) : (
+                            <div
+                              className="flex items-center gap-x-1"
+                              data-agent-chat-sidebar-actions
+                            >
+                              {!showArchivedOnly && (
+                                <AgentTooltip content={t("agent.new-chat")}>
+                                  <Button
+                                    appearance="secondary"
+                                    size="xs"
+                                    className="px-1 text-control-light hover:bg-control-bg-hover"
+                                    aria-label={t("agent.new-chat")}
+                                    disabled={isChatCreationDisabled}
+                                    onClick={createChat}
+                                  >
+                                    <Plus
+                                      className="size-3.5"
+                                      aria-hidden="true"
+                                    />
+                                  </Button>
+                                </AgentTooltip>
+                              )}
+                              <AgentDropdownMenu>
+                                <AgentTooltip content={t("common.more")}>
+                                  <AgentDropdownMenuTrigger
+                                    className="inline-flex size-6 items-center justify-center rounded-xs text-control-light outline-hidden hover:bg-control-bg-hover focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50"
+                                    aria-label={t("common.more")}
+                                    onClick={(event) => event.stopPropagation()}
+                                  >
+                                    <EllipsisVertical
+                                      className="size-3.5"
+                                      aria-hidden="true"
+                                    />
+                                  </AgentDropdownMenuTrigger>
+                                </AgentTooltip>
+                                <AgentDropdownMenuContent>
+                                  {showArchivedOnly ? (
+                                    <>
+                                      <AgentDropdownMenuItem
+                                        data-agent-unarchive-all-chats
+                                        disabled={isUnarchiveAllDisabled}
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          unarchiveAllChats();
+                                        }}
+                                      >
+                                        {t("agent.unarchive-all-chats")}
+                                      </AgentDropdownMenuItem>
+                                      <AgentDropdownMenuItem
+                                        data-agent-delete-all-chats
+                                        className="text-error data-highlighted:bg-error/10"
+                                        disabled={isDeleteAllDisabled}
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          setIsDeleteAllArchivedChatsDialogOpen(
+                                            true
+                                          );
+                                        }}
+                                      >
+                                        {t("agent.delete-all-chats")}
+                                      </AgentDropdownMenuItem>
+                                    </>
+                                  ) : (
+                                    <AgentDropdownMenuItem
+                                      data-agent-archive-all-chats
+                                      disabled={isArchiveAllDisabled}
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        archiveAllChats();
+                                      }}
+                                    >
+                                      {t("agent.archive-all-chats")}
+                                    </AgentDropdownMenuItem>
+                                  )}
+                                  <AgentDropdownMenuSeparator />
+                                  <AgentDropdownMenuItem
+                                    data-agent-chat-list-mode
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      toggleChatListMode();
+                                    }}
+                                  >
+                                    {showArchivedOnly
+                                      ? t("agent.active-only-chats")
+                                      : t("agent.archived-only-chats")}
+                                  </AgentDropdownMenuItem>
+                                </AgentDropdownMenuContent>
+                              </AgentDropdownMenu>
+                            </div>
+                          )}
+                        </div>
+                      </div>
 
-          {/* Sidebar resize handle */}
-          <PanelResizeHandle
-            data-agent-sidebar-resize
-            className="group relative w-1 shrink-0 cursor-ew-resize bg-control-bg transition-colors hover:bg-accent/10"
-          >
-            <span className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover:bg-accent" />
-          </PanelResizeHandle>
+                      {/* Chat list */}
+                      <div className="min-h-0 flex-1 overflow-y-auto">
+                        <div className="flex flex-col" data-agent-chat-list>
+                          {displayedChatGroups.map((group) => (
+                            <div
+                              key={group.context ?? "unscoped"}
+                              className="flex flex-col"
+                              data-agent-chat-group={
+                                group.context ?? "unscoped"
+                              }
+                            >
+                              <div className="flex min-w-0 items-center justify-between gap-x-2 px-3 pt-3 pb-1 text-xs font-medium text-control-light">
+                                {group.context ? (
+                                  <div className="flex min-w-0 items-center gap-x-1.5">
+                                    {group.context.startsWith(
+                                      projectNamePrefix
+                                    ) ? (
+                                      <FolderKanban className="size-3.5 shrink-0" />
+                                    ) : (
+                                      <Building2 className="size-3.5 shrink-0" />
+                                    )}
+                                    <span className="truncate">
+                                      {getContextLabel(group.context)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="truncate">
+                                    {t("agent.other-chats")}
+                                  </span>
+                                )}
+                                {group.context && !showArchivedOnly && (
+                                  <AgentTooltip
+                                    content={`${t("agent.new-chat")}: ${getContextLabel(group.context)}`}
+                                  >
+                                    <Button
+                                      appearance="secondary"
+                                      size="xs"
+                                      className="shrink-0 px-1 text-control-light hover:bg-control-bg-hover"
+                                      aria-label={`${t("agent.new-chat")}: ${getContextLabel(group.context)}`}
+                                      data-agent-new-chat-for-context={
+                                        group.context
+                                      }
+                                      disabled={isChatCreationDisabled}
+                                      onClick={() =>
+                                        createChatForContext(group.context!)
+                                      }
+                                    >
+                                      <Plus
+                                        className="size-3.5"
+                                        aria-hidden="true"
+                                      />
+                                    </Button>
+                                  </AgentTooltip>
+                                )}
+                              </div>
+                              {group.chats.map((chat) => (
+                                <div
+                                  key={chat.id}
+                                  className={`group w-full rounded-xs px-3 py-2 text-left text-sm transition-colors ${
+                                    chat.id === currentChatId
+                                      ? "bg-accent/10 text-accent"
+                                      : "text-control hover:bg-control-bg-hover"
+                                  }`}
+                                  data-agent-chat-row={chat.id}
+                                >
+                                  {chat.id === currentChatId &&
+                                  isRenamingCurrentChat ? (
+                                    <Input
+                                      ref={renameInputRef}
+                                      value={renamingTitle}
+                                      onChange={(e) =>
+                                        setRenamingTitle(e.target.value)
+                                      }
+                                      className="h-7 text-sm"
+                                      placeholder={t(
+                                        "agent.rename-chat-placeholder"
+                                      )}
+                                      data-agent-inline-rename-input
+                                      onBlur={commitRenameCurrentChat}
+                                      onKeyDown={onRenameKeydown}
+                                    />
+                                  ) : (
+                                    <div className="flex items-center gap-x-2">
+                                      <Button
+                                        appearance="secondary"
+                                        size="md"
+                                        type="button"
+                                        className="h-auto min-w-0 flex-1 flex-col items-start p-0 text-left whitespace-normal hover:bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
+                                        disabled={
+                                          !useAgentStore
+                                            .getState()
+                                            .canSelectChat(chat.id)
+                                        }
+                                        aria-current={
+                                          chat.id === currentChatId
+                                            ? "true"
+                                            : undefined
+                                        }
+                                        onClick={() =>
+                                          handleChatRowClick(chat.id)
+                                        }
+                                      >
+                                        <div
+                                          className="w-full truncate font-medium"
+                                          data-agent-chat-title
+                                        >
+                                          {getChatLabel(chat)}
+                                        </div>
+                                      </Button>
+                                      <div className="pointer-events-none flex shrink-0 items-center gap-x-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+                                        {chat.archived ? (
+                                          <>
+                                            <SidebarIconButton
+                                              tooltip={t(
+                                                "agent.unarchive-chat"
+                                              )}
+                                              ariaLabel={t(
+                                                "agent.unarchive-chat"
+                                              )}
+                                              dataAttr="data-agent-unarchive-chat"
+                                              onClick={() =>
+                                                unarchiveChat(chat.id)
+                                              }
+                                            >
+                                              <Undo2
+                                                className="size-3.5"
+                                                aria-hidden="true"
+                                              />
+                                            </SidebarIconButton>
+                                            <ConfirmDialog
+                                              message={t(
+                                                "agent.delete-chat-confirmation"
+                                              )}
+                                              onConfirm={() =>
+                                                deleteChat(chat.id)
+                                              }
+                                              triggerLabel={t(
+                                                "agent.delete-chat"
+                                              )}
+                                              triggerDataAttr="data-agent-delete-chat"
+                                              triggerVariant="icon"
+                                            >
+                                              <Trash2
+                                                className="size-3.5"
+                                                aria-hidden="true"
+                                              />
+                                            </ConfirmDialog>
+                                          </>
+                                        ) : (
+                                          <SidebarIconButton
+                                            tooltip={t("agent.archive-chat")}
+                                            ariaLabel={t("agent.archive-chat")}
+                                            dataAttr="data-agent-archive-chat"
+                                            onClick={() => archiveChat(chat.id)}
+                                          >
+                                            <Archive
+                                              className="size-3.5"
+                                              aria-hidden="true"
+                                            />
+                                          </SidebarIconButton>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </aside>
+                  </EscapePanelClip>
+                )}
+              </Panel>
 
-          {/* Main panel */}
-          <Panel id="agent-chat-main" minSize={minMainPanelWidth}>
-            <div className="flex size-full min-w-0 flex-col">
-              <AgentChat className="min-h-0 flex-1" />
-              <AgentInput />
-            </div>
-          </Panel>
-        </PanelGroup>
+              {!isCompactWindow && (
+                <PanelResizeHandle
+                  data-agent-sidebar-resize
+                  className="group relative w-1 shrink-0 cursor-ew-resize bg-control-bg transition-colors hover:bg-accent/10"
+                >
+                  <span className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover:bg-accent" />
+                </PanelResizeHandle>
+              )}
+
+              {/* Main panel */}
+              <Panel id="agent-chat-main" minSize={minMainPanelWidth}>
+                <div className="relative flex size-full min-w-0 flex-col">
+                  <AgentChat className="min-h-0 flex-1" />
+                  <AgentInput />
+                </div>
+              </Panel>
+            </PanelGroup>
+          )}
+          {isCompactWindow && compactPanel && (
+            <Button
+              type="button"
+              appearance="secondary"
+              size="xs"
+              aria-label={t("agent.close")}
+              className="absolute inset-0 z-1 h-auto rounded-none bg-overlay/50 hover:bg-overlay/50"
+              data-agent-compact-overlay
+              onClick={() => setCompactPanel(null)}
+            />
+          )}
+          {isCompactWindow && compactPanel && renderCompactRail(true)}
+        </div>
       </div>
 
       {canResizeWindow &&
-        (Object.keys(resizeZoneClasses) as ResizeDirection[]).map(
+        (Object.keys(resizeZoneClasses) as AnchoredResizeDirection[]).map(
           (direction) => (
             <div
               key={direction}
@@ -1370,6 +1638,16 @@ export function AgentWindow() {
     </div>,
     getLayerRoot("agent")
   );
+}
+
+function EscapePanelClip({
+  children,
+  target,
+}: Readonly<{
+  children: ReactNode;
+  target: HTMLElement | null;
+}>) {
+  return target ? createPortal(children, target) : children;
 }
 
 // --- Confirmation Dialog ---

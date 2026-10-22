@@ -93,7 +93,6 @@ beforeEach(async () => {
   const initialState = createAgentStore().getState();
   useAgentStore.setState({
     visible: initialState.visible,
-    position: initialState.position,
     size: initialState.size,
     sidebarWidth: initialState.sidebarWidth,
     minimized: initialState.minimized,
