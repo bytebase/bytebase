@@ -38,13 +38,16 @@ if ! git cat-file -e "$last^{commit}" 2>/dev/null; then
 fi
 
 count=$(git rev-list --count "$last..$head" 2>/dev/null || echo 0)
-# Paths that can change what the suite sees. Everything else (docs, workflows,
-# action/, scripts/) cannot turn a spec red.
-relevant=$(git diff --name-only "$last" "$head" -- \
-  'frontend/src' 'frontend/tests/e2e' 'frontend/package.json' 'frontend/pnpm-lock.yaml' 'frontend/playwright.config.ts' \
-  'frontend/vite.config.ts' 'frontend/index.html' 'frontend/.env.dev' \
-  'backend' 'proto' 'go.mod' 'go.sum' \
-  | grep -vE '(^|/)[^/]+\.md$' | grep -vE '^backend/.*_test\.go$' | wc -l | tr -d ' ')
+# Everything that is built into the binary or drives the suite counts: the
+# whole frontend, backend and proto trees and the Go module files. Excluded are
+# only files that cannot reach the build: Markdown, Go tests and frontend unit
+# tests. Listing build inputs one by one misses some (a Tailwind or Vite plugin
+# file), so the list names what to drop, not what to keep.
+relevant=$(git diff --name-only "$last" "$head" -- 'frontend' 'backend' 'proto' 'go.mod' 'go.sum' \
+  | grep -vE '(^|/)[^/]+\.md$' \
+  | grep -vE '^backend/.*_test\.go$' \
+  | grep -vE '^frontend/(src|scripts)/.*\.test\.(ts|tsx|mjs)$' \
+  | wc -l | tr -d ' ')
 
 if [ "$relevant" = 0 ]; then emit NOT_RELEVANT "$count commit(s) since $last touch no product or e2e code" "$count" 0; exit 4; fi
 emit RUN "$count commit(s) since $last, $relevant relevant path(s)" "$count" "$relevant"

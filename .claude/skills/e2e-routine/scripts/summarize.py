@@ -174,15 +174,19 @@ def main(results_dir):
                             "detail": f"{len(signed)} of {len(failed)} failures lost the server; first: {signed[0]['error']}",
                             "first_test": f"{signed[0]['file']}:{signed[0]['line']}"}
 
-    # A run the global timeout (or a crash) cut short has no failures, a
-    # nonzero exit code and tests that never ran. It proves nothing about the
-    # tests it did not reach, so it is "incomplete", never green.
+    # A run the global timeout (or a crash) cut short proves nothing about the
+    # tests it did not reach, so it is "incomplete", never green. The evidence
+    # is the timeout line, or a nonzero exit with no failure to explain it and
+    # tests that never ran. A flipped lock also exits nonzero with no failure,
+    # but every test ran, so it is not incomplete.
     log_text = ""
     lp = os.path.join(results_dir, "playwright.log")
     if os.path.exists(lp):
         log_text = open(lp, errors="replace").read()
     timed_out = re.search(r"global timeout|Timed out waiting .* for the test suite", log_text, re.I) is not None
-    if not summary["infra"] and (timed_out or (exit_code not in (0, None) and not failed)):
+    cut_short = (exit_code not in (0, None) and not failed and not summary["lock_flipped"]
+                 and summary["totals"]["not_run"] > 0)
+    if not summary["infra"] and (timed_out or cut_short):
         summary["incomplete"] = {
             "reason": "global timeout" if timed_out else f"exit code {exit_code} with no failed test",
             "not_run": summary["totals"]["skipped"],
