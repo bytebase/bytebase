@@ -8,7 +8,8 @@ Candidates are the non-merge commits in <since>..origin/main that touch the
 area's source paths (owners.json), the component files that render any quoted
 UI text (found through the locale files), or whose diff adds/removes the text
 itself (git log -S). Score = 3 per text hit + 1 per path hit. The owner is the
-top candidate's author mapped through owners.json, else the area default.
+top candidate's author mapped through owners.json to a Linear user name, else
+the area default.
 """
 import argparse
 import glob
