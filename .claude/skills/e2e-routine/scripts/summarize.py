@@ -183,6 +183,19 @@ def main(results_dir):
         summary["infra"] = {"kind": "server-lost",
                             "detail": f"{len(signed)} of {len(failed)} failures lost the server; first: {signed[0]['error']}",
                             "first_test": f"{signed[0]['file']}:{signed[0]['line']}"}
+    elif summary["errors"]:
+        # Errors outside any test after tests ran (global teardown, a worker
+        # crash): Playwright fails the run for them. One with an environment
+        # signature is infra; otherwise each becomes a failed row to triage.
+        if setup_signature:
+            summary["infra"] = {"kind": setup_signature, "detail": summary["errors"][0]}
+        else:
+            for err in summary["errors"]:
+                summary["failed"].append({"file": "(outside any test)", "title": "suite-level error", "line": 0,
+                                          "error": err, "infra_signature": None, "attempts": 1,
+                                          "statuses": ["failed"], "attachments": []})
+            failed = summary["failed"]
+            summary["totals"]["failed"] = len(failed)
 
     # A run the global timeout (or a crash) cut short proves nothing about the
     # tests it did not reach, so it is "incomplete", never green. The evidence
@@ -206,6 +219,14 @@ def main(results_dir):
         }
     else:
         summary["incomplete"] = None
+
+    # Green requires Playwright's own verdict. A nonzero exit that nothing
+    # above explains (no failure, flipped lock, infra or incomplete) is never
+    # recorded green: it is infra, with the exit code as the evidence.
+    explained = failed or summary["lock_flipped"] or summary["infra"] or summary["incomplete"]
+    if exit_code not in (0, None) and not explained:
+        summary["infra"] = {"kind": "unexplained-exit",
+                            "detail": f"playwright exited {exit_code} with every test passing and no reported error"}
 
     write(results_dir, summary)
     if summary["infra"]:
