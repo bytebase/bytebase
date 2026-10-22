@@ -209,6 +209,9 @@ rerun output; or "no action" per class.
 ## Phase 6: Record and report
 
 ```bash
+# Phase 3 sets DIR; a run that stopped in Phase 0 or 2 recorded its summary
+# under the run id instead.
+DIR=${DIR:-/tmp/e2e-routine/$RUN_ID}
 bash .claude/skills/e2e-routine/scripts/ledger.sh record "$DIR" "<one line: classes, PR, issues>"
 bash .claude/skills/e2e-routine/scripts/ledger.sh show
 ```
@@ -217,7 +220,7 @@ Then write the report, in this order, and post it as a comment on the umbrella
 issue when filing is enabled (otherwise it is the session's final message; with
 `E2E_ROUTINE_SLACK_CHANNEL` set, post the first block to Slack as well):
 
-1. `e2e routine <date>: <green|red|infra> on main <sha7>` and the counts line from `summary.md`, the build time, the suite time.
+1. `e2e routine <date>: <green|red|infra|incomplete> on main <sha7>` (the ledger's `result`) and the counts line from `summary.md`, the build time, the suite time.
 2. The decision table from Phase 4 with links (issue, PR, run directory names).
 3. Proposed issues (filing disabled) in full.
 4. Not covered: specs skipped or blocked, checks the run could not make, flakes under threshold.
