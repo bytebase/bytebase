@@ -117,21 +117,23 @@ describe("useAgentStore (Zustand)", () => {
     );
   });
 
-  test("keeps agent window layout in the current workspace cache", () => {
+  test("keeps agent window size and sidebar width in the current workspace cache", () => {
     const store = createAgentStore();
     s(store).setWorkspaceName("workspaces/alpha");
-    s(store).setPosition(320, 240);
+    s(store).setSize(680, 500);
+    s(store).setSidebarWidth(240);
     s(store).saveWindowState();
 
     expect(
       localStorage.getItem(getAgentWindowKey("workspaces/alpha"))
-    ).toContain('"x":320');
+    ).toContain('"width":680');
 
     s(store).setWorkspaceName("workspaces/beta");
-    expect(s(store).position).not.toEqual({ x: 320, y: 240 });
+    expect(s(store).size).not.toEqual({ width: 680, height: 500 });
 
     s(store).setWorkspaceName("workspaces/alpha");
-    expect(s(store).position).toEqual({ x: 320, y: 240 });
+    expect(s(store).size).toEqual({ width: 680, height: 500 });
+    expect(s(store).sidebarWidth).toBe(240);
   });
 
   test("migrates unscoped legacy chats to the first workspace context", () => {
@@ -462,13 +464,12 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).chats).toHaveLength(1);
   });
 
-  test("uses larger bottom-right window defaults when no saved window state exists", () => {
+  test("uses the default window size when no saved window state exists", () => {
     setViewportSize(1440, 900);
 
     const store = createAgentStore();
 
     expect(s(store).size).toEqual({ width: 750, height: 521 });
-    expect(s(store).position).toEqual({ x: 674, y: 363 });
     expect(s(store).sidebarWidth).toBe(200);
   });
 
@@ -478,7 +479,6 @@ describe("useAgentStore (Zustand)", () => {
     const store = createAgentStore();
 
     expect(s(store).size).toEqual({ width: 398, height: 400 });
-    expect(s(store).position).toEqual({ x: 16, y: 34 });
   });
 
   test("moves outdated stored windows to the current default layout", () => {
@@ -496,7 +496,6 @@ describe("useAgentStore (Zustand)", () => {
     const store = createAgentStore();
     s(store).setWorkspaceName("workspaces/acme");
 
-    expect(s(store).position).toEqual({ x: 674, y: 363 });
     expect(s(store).size).toEqual({ width: 750, height: 521 });
     expect(s(store).sidebarWidth).toBe(280);
     expect(
@@ -504,7 +503,7 @@ describe("useAgentStore (Zustand)", () => {
     ).toContain(`"layoutVersion":${AGENT_WINDOW_LAYOUT_VERSION}`);
   });
 
-  test("loads persisted window state from the current layout version", () => {
+  test("loads persisted window size and sidebar while dropping legacy position", () => {
     localStorage.setItem(
       AGENT_WINDOW_KEY,
       JSON.stringify({
@@ -520,65 +519,31 @@ describe("useAgentStore (Zustand)", () => {
     s(store).loadWindowState();
 
     expect(s(store).sidebarWidth).toBe(280);
-    expect(s(store).position).toEqual({ x: 120, y: 240 });
     expect(s(store).size).toEqual({ width: 480, height: 640 });
     expect(
-      localStorage.getItem(getAgentWindowKey("workspaces/acme"))
-    ).toContain('"width":480');
-    expect(
-      localStorage.getItem(getAgentWindowKey("workspaces/acme"))
-    ).toContain('"sidebarWidth":280');
+      JSON.parse(
+        localStorage.getItem(getAgentWindowKey("workspaces/acme")) ?? "{}"
+      )
+    ).toEqual({
+      layoutVersion: AGENT_WINDOW_LAYOUT_VERSION,
+      size: { width: 480, height: 640 },
+      sidebarWidth: 280,
+    });
     expect(
       localStorage.getItem(getAgentStateKey("workspaces/acme"))
     ).not.toBeNull();
   });
 
-  test("keeps persisted position when opening the agent", () => {
-    setViewportSize(1440, 900);
-    localStorage.setItem(
-      AGENT_WINDOW_KEY,
-      JSON.stringify({
-        layoutVersion: AGENT_WINDOW_LAYOUT_VERSION,
-        position: { x: 120, y: 140 },
-        size: { width: 480, height: 540 },
-        sidebarWidth: 200,
-      })
-    );
-
-    const store = createAgentStore();
-    s(store).setWorkspaceName("workspaces/acme");
-
-    s(store).toggle();
-
-    expect(s(store).visible).toBe(true);
-    expect(s(store).position).toEqual({ x: 120, y: 140 });
-  });
-
-  test("keeps current position when opening the agent", () => {
+  test("keeps current window size when opening the agent", () => {
     setViewportSize(1440, 900);
     const store = createAgentStore();
 
     s(store).setSize(788, 625);
-    s(store).setPosition(320, 180);
 
     s(store).toggle();
 
     expect(s(store).visible).toBe(true);
-    expect(s(store).position).toEqual({ x: 320, y: 180 });
     expect(s(store).size).toEqual({ width: 788, height: 625 });
-  });
-
-  test("clamps opening position using the rendered minimum size on wider viewports", () => {
-    setViewportSize(1440, 900);
-    const store = createAgentStore();
-
-    s(store).setSize(398, 388);
-    s(store).setPosition(700, 500);
-
-    s(store).toggle();
-
-    expect(s(store).visible).toBe(true);
-    expect(s(store).position).toEqual({ x: 700, y: 484 });
   });
 
   test("normalizes stale running chats on load", () => {
