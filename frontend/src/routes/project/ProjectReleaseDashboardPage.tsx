@@ -186,7 +186,7 @@ export function ProjectReleaseDashboardPage({
     content = (
       <div
         data-testid="release-setup-empty-state"
-        className="flex flex-col items-center gap-y-4 py-16 text-center"
+        className="flex flex-col items-center gap-y-4 rounded-sm border border-dashed border-block-border px-4 py-16 text-center"
       >
         <div className="flex flex-col items-center gap-y-1">
           <h2 className="text-base font-semibold text-main">
