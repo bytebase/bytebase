@@ -67,7 +67,7 @@ issue body is `references/issue-template.md`; the ledger format is
 | `E2E_ROUTINE_SLACK_CHANNEL` | none | when set and the Slack connector is attached, post the report summary there |
 | `E2E_RESULTS_ROOT` | `/tmp/e2e-routine` | run directories |
 | `E2E_LEDGER_BRANCH` | `claude/e2e-ledger` | ledger branch |
-| `E2E_LEDGER_PUSH` | `1` | `0` commits the ledger entry locally without pushing (local dry runs) |
+| `E2E_LEDGER_PUSH` | `1` | `0` commits the ledger entry to the local ref `refs/e2e-routine/ledger-dry-run` without pushing, and ledger reads use it (local dry runs) |
 | `E2E_GLOBAL_TIMEOUT_MS` | `7200000` | wall-clock cap for one suite run; tests not reached count as skipped and the run is reported as such |
 | `BYTEBASE_E2E_LICENSE` | from `frontend/.env.dev` | override only when a different license is wanted |
 | `FORCE` | `0` | `FORCE=1 should-run.sh` runs even when main did not move |

@@ -49,6 +49,11 @@ Rules:
   report lists each under the test that blocked it.
 - Flake threshold: a test flaky in 3 of the last 5 recorded runs is an issue
   candidate (`ledger.sh flakes`).
+- A dry run (`E2E_LEDGER_PUSH=0`) never pushes. It commits onto the local ref
+  `refs/e2e-routine/ledger-dry-run` (starting from the remote ledger the
+  first time), and every `ledger.sh` read prefers that ref while
+  `E2E_LEDGER_PUSH=0`, so the dry run sees its own entries. Delete the ref
+  with `git update-ref -d refs/e2e-routine/ledger-dry-run` to start over.
 - Nothing in the ledger is secret; the branch is public like the repository.
   Screenshots and traces stay in the run directory; a screenshot leaves it
   only as an upload to the Linear issue it is evidence for, shown inline in

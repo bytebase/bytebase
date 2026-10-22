@@ -12,22 +12,34 @@ set -u
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 cd "$REPO_ROOT" || exit 1
 
-ref="refs/remotes/origin/$E2E_LEDGER_BRANCH"
-fetch_ledger() { git fetch -q origin "+refs/heads/$E2E_LEDGER_BRANCH:$ref" 2>/dev/null; }
+remote_ref="refs/remotes/origin/$E2E_LEDGER_BRANCH"
+# A dry run (E2E_LEDGER_PUSH=0) commits here instead of pushing, and reads it
+# back while the variable is 0 (references/ledger.md).
+dry_ref="refs/e2e-routine/ledger-dry-run"
+ident=(-c user.name="e2e-routine" -c user.email="e2e-routine@bytebase.com")
+fetch_ledger() { git fetch -q origin "+refs/heads/$E2E_LEDGER_BRANCH:$remote_ref" 2>/dev/null; }
+dry_run() { [ "${E2E_LEDGER_PUSH:-1}" != 1 ]; }
+has_ref() { git rev-parse -q --verify "$1^{commit}" >/dev/null; }
+read_ref() {
+  fetch_ledger
+  if dry_run && has_ref "$dry_ref"; then echo "$dry_ref"; else echo "$remote_ref"; fi
+}
 
 case "${1:-}" in
-last-sha) fetch_ledger; git show "$ref:last-run.json" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("sha",""))' 2>/dev/null ;;
-last-result) fetch_ledger; git show "$ref:last-run.json" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("result",""))' 2>/dev/null ;;
-show)     fetch_ledger; git show "$ref:last-run.json" 2>/dev/null || echo '{}' ;;
-flakes)   fetch_ledger; git show "$ref:flakes.json" 2>/dev/null || echo '{}' ;;
+last-sha) git show "$(read_ref):last-run.json" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("sha",""))' 2>/dev/null ;;
+last-result) git show "$(read_ref):last-run.json" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("result",""))' 2>/dev/null ;;
+show)     git show "$(read_ref):last-run.json" 2>/dev/null || echo '{}' ;;
+flakes)   git show "$(read_ref):flakes.json" 2>/dev/null || echo '{}' ;;
 record)
   RESULTS="${2:?results dir}"; note="${3:-}"
   [ -f "$RESULTS/summary.json" ] || die "$RESULTS/summary.json missing; run summarize.py first"
   tmp="$(mktemp -d)"
-  if fetch_ledger; then
-    git worktree add -q --detach "$tmp" "$ref"
+  if dry_run && has_ref "$dry_ref"; then
+    git worktree add -q --detach "$tmp" "$dry_ref"
+  elif fetch_ledger; then
+    git worktree add -q --detach "$tmp" "$remote_ref"
   else
-    root="$(git commit-tree "$(git hash-object -t tree /dev/null)" -m "e2e ledger root")"
+    root="$(git "${ident[@]}" commit-tree "$(git hash-object -t tree /dev/null)" -m "e2e ledger root")"
     git worktree add -q --detach "$tmp" "$root"
   fi
   python3 - "$RESULTS" "$tmp" "$note" <<'PY'
@@ -72,8 +84,12 @@ if not os.path.exists(os.path.join(dest, "README.md")):
 print(f"recorded {result} run {entry['run_id']} @ {sha[:7]}")
 PY
   (
-    cd "$tmp" && git add -A && git -c user.name="e2e-routine" -c user.email="e2e-routine@bytebase.com" commit -q -m "e2e ledger: $(date -u +%F) $(git -C "$REPO_ROOT" rev-parse --short HEAD)" \
-      && if [ "${E2E_LEDGER_PUSH:-1}" = 1 ]; then git push -q origin "HEAD:refs/heads/$E2E_LEDGER_BRANCH"; else log "E2E_LEDGER_PUSH=0: not pushing; inspect with git show $(git rev-parse --short HEAD)"; git show --stat --format='%h %s' HEAD; fi
+    cd "$tmp" && git add -A && git "${ident[@]}" commit -q -m "e2e ledger: $(date -u +%F) $(git -C "$REPO_ROOT" rev-parse --short HEAD)" \
+      && if dry_run; then
+           git update-ref "$dry_ref" HEAD
+           log "E2E_LEDGER_PUSH=0: not pushing; recorded on $dry_ref, which ledger.sh reads while E2E_LEDGER_PUSH=0"
+           git show --stat --format='%h %s' HEAD
+         else git push -q origin "HEAD:refs/heads/$E2E_LEDGER_BRANCH"; fi
   ) || log "ledger push failed; the run dir still holds summary.json"
   git worktree remove --force "$tmp" 2>/dev/null || rm -rf "$tmp"
   git worktree prune
