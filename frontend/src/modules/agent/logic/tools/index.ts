@@ -141,19 +141,24 @@ export function getToolDefinitions(
   const tools: ToolDefinition[] = [
     {
       name: "search_api",
-      description: `Browse API endpoints and get request/response schemas. Use the API Directory in the system prompt to identify the right service first.
+      description: `Find API endpoints and inspect request/response schemas. Search by the user's task before calling an endpoint.
 
 | Mode | Parameters | Result |
 |------|------------|--------|
-| List | (none) | All services |
+| Search | query="list databases in this project" | Up to five matching endpoints |
 | Browse | service="SQLService" | All endpoints in a service |
 | Details | operationId="SQLService/Query" | Request/response schema |
 | Schema | schema="Instance" | Message type definition |
 
-**Typical workflow:** Read API Directory → search_api(service="...") → search_api(operationId="...") → call_api(...)`,
+**Typical workflow:** search_api(query="...") → search_api(operationId="...") → call_api(...)`,
       parametersSchema: {
         type: "object",
         properties: {
+          query: {
+            type: "string",
+            description:
+              "Natural-language description of the API capability to find. Returns up to five ranked endpoints.",
+          },
           operationId: {
             type: "string",
             description:

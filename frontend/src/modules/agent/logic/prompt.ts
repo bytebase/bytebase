@@ -1,59 +1,5 @@
 import type { AgentRunMode } from "./types";
 
-const serviceDirectory = `API Directory — use search_api(service="...") to browse endpoints, search_api(operationId="...") for schemas.
-
-Database Management:
-- DatabaseService: CRUD databases, list schemas/tables/columns, metadata, schema diff, secrets, slow queries, backups
-- DatabaseCatalogService: semantic types, column masking config, data classification
-- DatabaseGroupService: database groups, matching databases by expression
-
-SQL & Queries:
-- SQLService: execute SQL queries, export query results, SQL check/lint, parse SQL
-- QueryHistoryService: query/export history records of SQL Editor sessions
-- SheetService: internal saved SQL sheets (system use)
-- SavedQueryService: user-facing saved SQL queries
-
-Change Management:
-- PlanService: create/update database change plans, plan checks, spec management
-- IssueService: change tickets (issues), approval flow, issue status, comments, subscribers
-- RolloutService: rollout stages, tasks, task runs, batch rollout execution
-- ChangelogService: database migration history (changelogs)
-- RevisionService: schema revision snapshots
-- ReleaseService: release bundles grouping multiple changes
-
-Access & Identity:
-- AuthService: login, logout, password management, OAuth/OIDC
-- UserService: user CRUD, list users
-- GroupService: user groups
-- ServiceAccountService: service account CRUD
-- WorkloadIdentityService: workload identity federation
-- RoleService: custom RBAC role definitions
-- IdentityProviderService: SSO/IdP config (OIDC, OAuth2, LDAP)
-- AccessGrantService: time-limited data access grants, approval
-
-Infrastructure:
-- InstanceService: database server instances, connections, SSL config
-- InstanceRoleService: database roles/users on instances
-- EnvironmentService: environments (dev, staging, prod)
-
-Policy & Compliance:
-- OrgPolicyService: organization policies (masking, access control, backup, SQL review)
-- ReviewConfigService: SQL review rule configuration
-- RiskService: risk rules for custom approval routing
-
-Workspace:
-- ProjectService: projects, webhooks, Git/VCS connectors, IAM bindings, project search
-- SettingService: workspace-level settings (branding, approval, classification, mail, etc.)
-- WorkspaceService: workspace metadata
-- SubscriptionService: license and subscription info
-- ActuatorService: server health, version, debug info
-- AuditLogService: workspace audit logs
-
-Utility:
-- CelService: parse/format CEL expressions (Common Expression Language)
-- AIService: internal AI chat endpoint (system use)
-`;
-
 export function buildSystemPrompt(pageContext: {
   path: string;
   title: string;
@@ -81,9 +27,7 @@ Tool selection — choose based on context, not a fixed preference:
 - Either works for mutations on persisted resources. Use DOM if the user is already on the relevant page and would benefit from seeing the interaction. Use API for speed or when the relevant page is not open.
 
 DOM interaction workflow: get_page_state(mode="dom") → read element refs like [e1] in the DOM tree → dom_action(type, ref, value).
-API interaction workflow: Use the API Directory below to choose the right service first. Browse with search_api(service="..."), inspect the exact endpoint with search_api(operationId="..."), then call call_api(...). Do not guess operationIds or request body fields.
-
-${serviceDirectory}
+API interaction workflow: Find endpoints with search_api(query="..."), inspect the exact endpoint with search_api(operationId="..."), then call call_api(...). Do not guess operationIds or request body fields.
 
 Core concepts:
 - Workspace: top-level container. One workspace per deployment.
