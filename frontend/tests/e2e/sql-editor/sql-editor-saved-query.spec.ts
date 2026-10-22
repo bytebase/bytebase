@@ -194,7 +194,7 @@ test.describe("Multi-select delete shows the dedicated confirm dialog (BYT-9631)
   test("deleting two checked saved queries uses the multi-select dialog, not the non-empty-folder prompt", async () => {
     test.setTimeout(120_000);
 
-    await sqlEditor.gotoHome();
+    await sqlEditor.gotoSavedQueries();
     await page.waitForTimeout(1000);
 
     const tree = page.getByTestId("saved-query-tree");
@@ -397,7 +397,7 @@ test.describe("Right-click → Delete prompts for confirmation and removes the s
     test.setTimeout(120_000);
 
     const projectId = env.project.split("/").pop()!;
-    await sqlEditor.gotoHome();
+    await sqlEditor.gotoSavedQueries();
     await page.waitForTimeout(800);
 
     // The saved query appears in the sidebar tree under "Mine" — find
@@ -476,7 +476,7 @@ test.describe("Sidebar search filters the saved query list", () => {
   test('typing "needle" hides the non-matching saved query', async () => {
     test.setTimeout(120_000);
 
-    await sqlEditor.gotoHome();
+    await sqlEditor.gotoSavedQueries();
     await page.waitForTimeout(800);
 
     // Both saved queries visible at baseline.
@@ -539,7 +539,7 @@ test.describe("Mine / Shared / Draft folders collapse and re-expand", () => {
   test("clicking Mine hides its children, clicking again restores them", async () => {
     test.setTimeout(120_000);
 
-    await sqlEditor.gotoHome();
+    await sqlEditor.gotoSavedQueries();
     await page.waitForTimeout(800);
 
     const child = page.getByTestId("saved-query-tree").getByText(TITLE).first();
