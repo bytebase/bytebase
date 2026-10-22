@@ -70,7 +70,7 @@ export BYTEBASE_STARTUP_TIMEOUT="\${BYTEBASE_STARTUP_TIMEOUT:-900000}"
 export PLAYWRIGHT_JSON_OUTPUT_NAME="$RESULTS/report.json"
 export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 export PATH="$PATH"
-./node_modules/.bin/playwright test --reporter=list,json --forbid-only --retries=2--global-timeout="\${E2E_GLOBAL_TIMEOUT_MS:-7200000}" --output="$RESULTS/test-results" $args_quoted
+./node_modules/.bin/playwright test --reporter=list,json --forbid-only --retries=2 --global-timeout="\${E2E_GLOBAL_TIMEOUT_MS:-7200000}" --output="$RESULTS/test-results" $args_quoted
 code=\$?
 echo "\$code" >"$RESULTS/exit-code"
 date -u +%FT%TZ >"$RESULTS/finished-at"
