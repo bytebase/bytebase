@@ -72,12 +72,14 @@ issue body is `references/issue-template.md`; the ledger format is
 ## Phase 0: Preflight
 
 ```bash
+RUN_ID=$(date -u +%Y%m%dT%H%M%SZ)
 bash .claude/skills/e2e-routine/scripts/preflight.sh
 ```
 
-Paste the table. Any `FAIL` line ends the run as INFRA (Phase 6 still records
-it). A `WARN` on a port means another server is listening; the harness picks the
-next free range, so continue, and say so in the report.
+Paste the table. Any `FAIL` line ends the run as INFRA: record it with
+`python3 .claude/skills/e2e-routine/scripts/summarize.py --pre-run-failure /tmp/e2e-routine/$RUN_ID preflight "<the FAIL lines>"`,
+then go to Phase 6. A `WARN` on a port means another server is listening; the
+harness picks the next free range, so continue, and say so in the report.
 
 ## Phase 1: Decide
 
@@ -97,7 +99,6 @@ for older ones). Fall back per `references/ledger.md`.
 ## Phase 2: Build
 
 ```bash
-RUN_ID=$(date -u +%Y%m%dT%H%M%SZ)
 bash .claude/skills/e2e-routine/scripts/build.sh /tmp/e2e-routine/$RUN_ID
 cat /tmp/e2e-routine/$RUN_ID/build-timing.txt
 ```
@@ -111,6 +112,8 @@ A build failure
 is INFRA unless the failing step is the Go or frontend compile of a product
 file, which is PRODUCT with the compile error as evidence (main is protected
 by CI, so this is rare and worth a Linear issue regardless of filing mode).
+Either way record it with `summarize.py --pre-run-failure /tmp/e2e-routine/$RUN_ID build "<failing step and first error line>"`
+and go to Phase 6; the next run retries the SHA.
 
 ## Phase 3: Run
 

@@ -12,12 +12,20 @@ Buckets (see references/triage.md for what to do with each):
   incomplete    the run was cut short (global timeout, crash): tests never ran, never green
 
 Exit code: 0 green, 1 red or infra, 2 no report, 3 incomplete.
+
+    summarize.py --pre-run-failure <results-dir> <kind> <detail>
+        records a failure before the suite ran (preflight, build) as infra, so
+        ledger.sh can record it; kind is e.g. preflight or build.
 """
 import json
 import os
 import re
+import subprocess
 import sys
 from collections import Counter
+
+SERVER_LOST_MIN_FAILURES = 5
+SERVER_LOST_SHARE = 0.8
 
 INFRA_SIGNATURES = [
     ("boot", r"did not become healthy|Could not find available port|bind: address already in use"),
@@ -134,11 +142,19 @@ def main(results_dir):
     }
 
     failed = summary["failed"]
+    # The disposable server dying mid-run fails every test after it with a
+    # connection or boot signature. Judge that by the share of failures that
+    # carry the signature, not by their share of the suite: a server lost late
+    # leaves most tests passed. Failures without the signature stay in
+    # `failed` and are still triaged one by one.
+    signed = [e for e in failed if e["infra_signature"] in ("connection", "boot")]
     if summary["totals"]["tests"] == 0 and summary["errors"]:
         summary["infra"] = {"kind": infra_signature(" ".join(summary["errors"])) or "setup",
                             "detail": summary["errors"][0]}
-    elif failed and all(e["infra_signature"] in ("connection", "boot") for e in failed) and len(failed) >= max(5, summary["totals"]["tests"] // 2):
-        summary["infra"] = {"kind": "server-lost", "detail": failed[0]["error"]}
+    elif len(signed) >= SERVER_LOST_MIN_FAILURES and len(signed) >= SERVER_LOST_SHARE * len(failed):
+        summary["infra"] = {"kind": "server-lost",
+                            "detail": f"{len(signed)} of {len(failed)} failures lost the server; first: {signed[0]['error']}",
+                            "first_test": f"{signed[0]['file']}:{signed[0]['line']}"}
 
     # A run the global timeout (or a crash) cut short has no failures, a
     # nonzero exit code and tests that never ran. It proves nothing about the
@@ -195,7 +211,29 @@ def write(results_dir, s):
     print(md)
 
 
+def record_pre_run_failure(results_dir, kind, detail):
+    """A failure before the suite ran (preflight, build) has no report. Write
+    the same meta.json and summary.json a run would, with `infra` set, so
+    ledger.sh can record it and the next run retries the SHA."""
+    os.makedirs(results_dir, exist_ok=True)
+    mp = os.path.join(results_dir, "meta.json")
+    if os.path.exists(mp):
+        meta = json.load(open(mp))
+    else:
+        repo = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", ".."))
+        sha = subprocess.run(["git", "-C", repo, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+        meta = {"run_id": os.path.basename(os.path.normpath(results_dir)), "sha": sha, "short_sha": sha[:10]}
+        json.dump(meta, open(mp, "w"))
+    summary = {"meta": meta, "exit_code": None, "totals": {}, "failed": [], "flaky": [],
+               "lock_flipped": [], "lock_holding": [], "skipped": [],
+               "infra": {"kind": kind, "detail": detail}, "incomplete": None, "errors": []}
+    write(results_dir, summary)
+    return 1
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 5 and sys.argv[1] == "--pre-run-failure":
+        sys.exit(record_pre_run_failure(sys.argv[2], sys.argv[3], sys.argv[4]))
     if len(sys.argv) != 2:
         print(__doc__)
         sys.exit(2)

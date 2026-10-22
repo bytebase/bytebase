@@ -45,9 +45,15 @@ exec "$REPO_ROOT/bytebase-build/bytebase" "\$@" >>"$RESULTS/server.log" 2>&1
 EOF
   chmod +x "$RESULTS/bytebase-wrapper.sh"
 
-  cat >"$RESULTS/meta.json" <<EOF
-{"run_id":"$run_id","sha":"$(git rev-parse HEAD)","short_sha":"$(git rev-parse --short HEAD)","started_at":"$(date -u +%FT%TZ)","host":"$(hostname)","args":"$*"}
-EOF
+  # A JSON encoder writes the metadata: Playwright arguments can hold quotes,
+  # backslashes or newlines that raw interpolation would turn into invalid JSON.
+  python3 - "$RESULTS/meta.json" "$run_id" "$(git rev-parse HEAD)" "$(git rev-parse --short HEAD)" \
+    "$(date -u +%FT%TZ)" "$(hostname)" "$@" <<'PY'
+import json, sys
+path, run_id, sha, short_sha, started_at, host, *args = sys.argv[1:]
+json.dump({"run_id": run_id, "sha": sha, "short_sha": short_sha, "started_at": started_at,
+           "host": host, "args": args}, open(path, "w"))
+PY
 
   # Playwright arguments reach the runner shell-quoted word by word, so a
   # filter such as -g "Request export" keeps its boundaries and no argument
