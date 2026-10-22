@@ -146,7 +146,10 @@ run anything else that boots a Bytebase while it runs. The suite takes roughly
 `incomplete`). Each entry's `evidence` names the screenshots (one per open
 page), aria snapshot (`error-context.md`) and trace of the failed attempt it
 reports; `summary.md` prints the screenshot paths under each failed and flaky
-row. `not_run` lists tests that never ran because an earlier test in
+row. When the server was lost and `server.log` holds a Go crash, the run is
+red, not infra: one `failed` row "Bytebase server crashed" carries the crash
+line and backend frame, and the tests that died with it go to `lost_to_crash`
+(SERVER-CRASH in `triage.md`). `not_run` lists tests that never ran because an earlier test in
 their serial group failed, each with the failure that blocked it; they are not
 covered by this run, and they run again once that failure is fixed, so the
 report names them under the blocking test's row instead of leaving them out.
@@ -244,7 +247,11 @@ bash .claude/skills/e2e-routine/scripts/ledger.sh show
 ```
 
 The same directory holds the summary whether the run reached Phase 3 or
-stopped in Phase 0 or 2.
+stopped in Phase 0 or 2. A nonzero exit from `record` means the entry was not
+recorded (push rejected, another writer, no credentials). Run `record` once
+more: it rebuilds the entry on the freshly fetched ledger. If that fails too,
+the report's first line says "ledger not recorded" and the infra notes quote
+the error, since the next run will not know this one happened.
 
 Then write the report, in this order, and post it as a comment on the umbrella
 issue when filing is enabled (otherwise it is the session's final message; with

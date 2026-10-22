@@ -9,6 +9,7 @@ Buckets (see references/triage.md for what to do with each):
   lock_flipped  test.fail() lock that now passes      -> the bug was fixed; remove the lock
   lock_holding  test.fail() lock still failing        -> not red
   infra         no test ran, or every test died on a boot/license/browser signature
+                (a lost server whose server.log holds a Go crash is a failed row instead)
   incomplete    the run was cut short (global timeout, crash): tests never ran, never green
 
 Exit code: 0 green, 1 red or infra, 2 no report, 3 incomplete.
@@ -40,6 +41,37 @@ INFRA_SIGNATURES = [
     ("toolchain", r"ERR_PNPM_|Command failed: pnpm|ENOSPC|EAI_AGAIN|Could not reach https?://registry"),
     ("connection", r"fetch failed|ECONNREFUSED|ERR_CONNECTION_REFUSED"),
 ]
+
+
+# Infra kinds that only say the client lost the server; server.log says why.
+SERVER_LOSS_KINDS = ("server-lost", "boot", "connection")
+
+# What the Go runtime prints when the process dies: the message at the start
+# of a line, then a goroutine dump. Errors the server logs and survives carry
+# stack text inside a log record, never at the start of a line.
+CRASH_RE = re.compile(r"^(?:panic|fatal error): .*$", re.M)
+GOROUTINE_RE = re.compile(r"^goroutine \d+ \[", re.M)
+FRAME_RE = re.compile(r"^\t(\S+?\.go:\d+)", re.M)
+
+
+def server_crash(results_dir):
+    """The first unrecovered crash in server.log: its message line and the
+    first backend frame of its stack (the file attribution starts from)."""
+    sp = os.path.join(results_dir, "server.log")
+    if not os.path.exists(sp):
+        return None
+    text = open(sp, errors="replace").read()
+    for m in CRASH_RE.finditer(text):
+        dump = GOROUTINE_RE.search(text, m.end())
+        if not dump:
+            continue
+        # Only the crashing goroutine's frames: its block ends at the next dump.
+        nxt = GOROUTINE_RE.search(text, dump.end())
+        block = text[dump.end():nxt.start() if nxt else len(text)]
+        frame = next(("backend/" + p.split("/backend/", 1)[1] for p in FRAME_RE.findall(block)
+                      if "/pkg/mod/" not in p and "/backend/" in p), None)
+        return {"line": m.group(0)[:300], "frame": frame}
+    return None
 
 
 def first_line(msg):
@@ -240,6 +272,28 @@ def main(results_dir):
             failed = summary["failed"]
             summary["totals"]["failed"] = len(failed)
 
+    # Losing the server is only an environment failure when the server did not
+    # crash on its own: a Go panic in server.log is a product failure. The
+    # casualties still prove nothing about their own tests, so they stay out of
+    # triage; one row for the crash takes their place.
+    crash = server_crash(results_dir)
+    summary["server_crash"] = crash
+    lost_server = summary["infra"]
+    if crash and lost_server and lost_server["kind"] in SERVER_LOSS_KINDS:
+        summary["infra"] = None
+        casualties = summary.pop("lost_to_infra", [])
+        summary["totals"].pop("lost_to_infra", None)
+        if casualties:
+            summary["lost_to_crash"] = casualties
+            summary["totals"]["lost_to_crash"] = len(casualties)
+        summary["failed"].insert(0, {
+            "file": "(server)", "title": "Bytebase server crashed", "line": 0, "error": crash["line"],
+            "frame": crash["frame"], "first_test": lost_server.get("first_test"), "infra_signature": None,
+            "attempts": 1, "statuses": ["failed"],
+            "evidence": casualties[0]["evidence"] if casualties else NO_EVIDENCE})
+        failed = summary["failed"]
+        summary["totals"]["failed"] = len(failed)
+
     # A run the global timeout (or a crash) cut short proves nothing about the
     # tests it did not reach, so it is "incomplete", never green. The evidence
     # is the timeout line, or a nonzero exit with no failure to explain it and
@@ -258,7 +312,7 @@ def main(results_dir):
     if not summary["infra"] and (timed_out or cut_short):
         summary["incomplete"] = {
             "reason": "global timeout" if timed_out else f"exit code {exit_code} with no failed test",
-            "not_run": summary["totals"]["skipped"],
+            "not_run": summary["totals"]["not_run"],
         }
     else:
         summary["incomplete"] = None
@@ -297,6 +351,9 @@ def write(results_dir, s):
     lines = [f"# e2e run {m.get('run_id', '?')} @ {m.get('short_sha', '?')}", ""]
     if s["infra"]:
         lines += [f"**INFRA**: {s['infra']['kind']}: {s['infra']['detail']}", ""]
+    if s.get("server_crash"):
+        c = s["server_crash"]
+        lines += [f"**SERVER CRASH** in server.log: `{c['line']}` at `{c['frame'] or 'no backend frame'}`", ""]
     if s.get("incomplete"):
         lines += [f"**INCOMPLETE**: {s['incomplete']['reason']}; {s['incomplete']['not_run']} test(s) never ran. Not a green run.", ""]
     if t:
@@ -305,6 +362,7 @@ def write(results_dir, s):
                   f"{t.get('skipped_deliberate', t['skipped'])} skipped on purpose, {t['tests']} total, {t['duration_s']}s", ""]
     for bucket, head in (("failed", "Failed (every attempt)"), ("flaky", "Flaky (passed on retry)"),
                          ("lost_to_infra", "Lost to the environment (not triaged; they rerun once it is fixed)"),
+                         ("lost_to_crash", "Lost to the server crash (not triaged; they rerun once the crash is fixed)"),
                          ("lock_flipped", "Locks that now pass"),
                          ("not_run", "Did not run (not covered by this run)"), ("skipped", "Skipped on purpose")):
         if s.get(bucket):

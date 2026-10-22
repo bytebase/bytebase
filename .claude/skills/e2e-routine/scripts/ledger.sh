@@ -90,9 +90,10 @@ PY
            log "E2E_LEDGER_PUSH=0: not pushing; recorded on $dry_ref, which ledger.sh reads while E2E_LEDGER_PUSH=0"
            git show --stat --format='%h %s' HEAD
          else git push -q origin "HEAD:refs/heads/$E2E_LEDGER_BRANCH"; fi
-  ) || log "ledger push failed; the run dir still holds summary.json"
+  ) || { status=$?; log "ledger NOT recorded (commit or push exit $status); the run dir still holds summary.json"; }
   git worktree remove --force "$tmp" 2>/dev/null || rm -rf "$tmp"
   git worktree prune
+  exit "${status:-0}"
   ;;
 *) echo "usage: ledger.sh last-sha | last-result | show | flakes | record <results-dir> [note]" >&2; exit 2 ;;
 esac
