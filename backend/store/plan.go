@@ -242,6 +242,11 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	return plans, nil
 }
 
+// planReleaseSpecQuery selects the plan's change database specs that reference a release.
+func planReleaseSpecQuery() *qb.Query {
+	return qb.Q().Space("SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE NULLIF(spec->'changeDatabaseConfig'->>'release', '') IS NOT NULL")
+}
+
 // GetListPlanFilter parses a CEL filter expression into a query builder query for listing plans.
 func GetListPlanFilter(filter string) (*qb.Query, error) {
 	if filter == "" {
@@ -290,6 +295,24 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 					return qb.Q().Space("plan.config->>'hasRollout' = ?", "true"), nil
 				case "title":
 					return qb.Q().Space("plan.name = ?", value), nil
+				case "has_release":
+					hasRelease, ok := value.(bool)
+					if !ok {
+						return nil, errors.Errorf(`"has_release" should be bool`)
+					}
+					if hasRelease {
+						return qb.Q().Space("EXISTS (?)", planReleaseSpecQuery()), nil
+					}
+					return qb.Q().Space("NOT EXISTS (?)", planReleaseSpecQuery()), nil
+				case "release":
+					release, ok := value.(string)
+					if !ok {
+						return nil, errors.Errorf("release value must be a string")
+					}
+					if _, _, err := common.GetProjectReleaseID(release); err != nil {
+						return nil, errors.Wrapf(err, "invalid release %q", release)
+					}
+					return qb.Q().Space("EXISTS (SELECT 1 FROM jsonb_array_elements(plan.config->'specs') AS spec WHERE spec->'changeDatabaseConfig'->>'release' = ?)", release), nil
 				case "spec_type":
 					specType, ok := value.(string)
 					if !ok {
@@ -322,6 +345,36 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 				default:
 					return nil, errors.Errorf("unsupported variable %q", variable)
 				}
+			case celoperators.In:
+				variable, _ := getVariableAndValueFromExpr(expr)
+				if variable != "task_status" {
+					return nil, errors.Errorf(`"in" is only supported for "task_status", but found %q`, variable)
+				}
+				// Read the list from the AST: getVariableAndValueFromExpr drops non-literal elements.
+				args := expr.AsCall().Args()
+				if len(args) != 2 || args[1].Kind() != celast.ListKind {
+					return nil, errors.Errorf("invalid list value for filter %v", variable)
+				}
+				elements := args[1].AsList().Elements()
+				if len(elements) == 0 {
+					return nil, errors.Errorf("empty list value for filter %v", variable)
+				}
+				var statuses []string
+				for _, element := range elements {
+					if element.Kind() != celast.LiteralKind {
+						return nil, errors.Errorf("task_status value must be a string")
+					}
+					status, ok := element.AsLiteral().Value().(string)
+					if !ok {
+						return nil, errors.Errorf("task_status value must be a string")
+					}
+					if v, ok := v1pb.Task_Status_value[status]; !ok || v1pb.Task_Status(v) == v1pb.Task_STATUS_UNSPECIFIED {
+						return nil, errors.Errorf("invalid task_status value: %s", status)
+					}
+					statuses = append(statuses, status)
+				}
+				tasks := taskStatusQuery(qb.Q().Space("task.project = plan.project AND task.plan_id = plan.id"))
+				return qb.Q().Space("EXISTS (SELECT 1 FROM (?) AS t WHERE t.status = ANY(?))", tasks, statuses), nil
 			case celoperators.GreaterEquals, celoperators.LessEquals:
 				variable, rawValue := getVariableAndValueFromExpr(expr)
 				value, ok := rawValue.(string)

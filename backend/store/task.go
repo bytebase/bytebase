@@ -425,39 +425,10 @@ func (s *Store) ListTaskStatusCountByPlanIDs(ctx context.Context, projectIDs []s
 			t.environment,
 			t.status,
 			COUNT(*)::INT
-		FROM (
-			SELECT
-				task.project,
-				task.plan_id,
-				COALESCE(task.environment, '') AS environment,
-				CASE
-					WHEN COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) THEN ?
-					WHEN latest_task_run.status IS NULL THEN ?
-					WHEN latest_task_run.status = ? THEN ?
-					ELSE latest_task_run.status
-				END AS status
-			FROM task
-			LEFT JOIN LATERAL (
-				SELECT task_run.status
-				FROM task_run
-				WHERE task_run.project = task.project
-				  AND task_run.task_id = task.id
-				ORDER BY task_run.id DESC
-				LIMIT 1
-			) AS latest_task_run ON TRUE
-			WHERE task.project = ANY(?)
-			  AND task.plan_id = ANY(?)
-		) AS t
+		FROM (?) AS t
 		GROUP BY t.project, t.plan_id, t.environment, t.status
 		ORDER BY t.project, t.plan_id, t.environment
-	`,
-		storepb.TaskRun_SKIPPED.String(),
-		storepb.TaskRun_NOT_STARTED.String(),
-		storepb.TaskRun_AVAILABLE.String(),
-		storepb.TaskRun_PENDING.String(),
-		projectIDs,
-		planIDs,
-	)
+	`, taskStatusQuery(qb.Q().Space("task.project = ANY(?) AND task.plan_id = ANY(?)", projectIDs, planIDs)))
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
@@ -481,6 +452,39 @@ func (s *Store) ListTaskStatusCountByPlanIDs(ctx context.Context, projectIDs []s
 		return nil, err
 	}
 	return results, nil
+}
+
+// taskStatusQuery selects the API-visible status of each task matching where.
+// Plan stage summaries and the plan task_status filter share it so they cannot disagree.
+func taskStatusQuery(where *qb.Query) *qb.Query {
+	return qb.Q().Space(`
+		SELECT
+			task.project,
+			task.plan_id,
+			COALESCE(task.environment, '') AS environment,
+			CASE
+				WHEN COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) THEN ?
+				WHEN latest_task_run.status IS NULL THEN ?
+				WHEN latest_task_run.status = ? THEN ?
+				ELSE latest_task_run.status
+			END AS status
+		FROM task
+		LEFT JOIN LATERAL (
+			SELECT task_run.status
+			FROM task_run
+			WHERE task_run.project = task.project
+			  AND task_run.task_id = task.id
+			ORDER BY task_run.id DESC
+			LIMIT 1
+		) AS latest_task_run ON TRUE
+		WHERE ?
+	`,
+		storepb.TaskRun_SKIPPED.String(),
+		storepb.TaskRun_NOT_STARTED.String(),
+		storepb.TaskRun_AVAILABLE.String(),
+		storepb.TaskRun_PENDING.String(),
+		where,
+	)
 }
 
 // BatchSkipTasks batch skip tasks.
