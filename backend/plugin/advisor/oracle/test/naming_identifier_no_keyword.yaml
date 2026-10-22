@@ -53,3 +53,89 @@
   changeType: 1
 - statement: GRANT SELECT, INSERT, UPDATE, DELETE ON my_table TO admin;
   changeType: 1
+- statement: |-
+    CREATE OR REPLACE PROCEDURE p_demo AS
+      v NUMBER;
+      x NUMBER;
+      n NUMBER;
+      TYPE t_nos IS TABLE OF NUMBER;
+      coll t_nos;
+    BEGIN
+      SELECT COUNT(1) INTO v FROM t;
+      x := coll.COUNT;
+      n := SQL%ROWCOUNT;
+      RAISE_APPLICATION_ERROR(-20001, SQLCODE || SQLERRM);
+    END;
+  changeType: 1
+- statement: |-
+    DECLARE
+      TYPE t_nos IS TABLE OF NUMBER;
+      l_record_nos t_nos;
+      CURSOR c_rows IS SELECT id FROM t;
+    BEGIN
+      SELECT id BULK COLLECT INTO l_record_nos FROM t;
+      FORALL i IN 1..l_record_nos.COUNT
+        DELETE FROM t WHERE id = l_record_nos(i);
+      IF SQL%ROWCOUNT = 0 AND l_record_nos.FIRST IS NOT NULL THEN
+        NULL;
+      END IF;
+      OPEN c_rows;
+      IF c_rows%NOTFOUND THEN
+        NULL;
+      END IF;
+      CLOSE c_rows;
+    EXCEPTION
+      WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE(SQLCODE || ': ' || SQLERRM);
+    END;
+  changeType: 1
+- statement: |-
+    DECLARE
+      name VARCHAR2(10);
+    BEGIN
+      SELECT COUNT(1) INTO name FROM t;
+    END;
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "NAME" is a keyword and should be avoided
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t_log (id NUMBER, "PARTITION" NUMBER, "TIMESTAMP" DATE)
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "PARTITION" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "TIMESTAMP" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT COUNT(*) AS "DATE" FROM t
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "DATE" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: UPDATE t SET name = 1 WHERE id = 1
+  changeType: 1
+- statement: ALTER TABLE t DROP CONSTRAINT "LEVEL"
+  changeType: 1

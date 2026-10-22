@@ -28,3 +28,19 @@
     create table techBook(id int);
     ALTER TABLE techBook RENAME TO tech_book_tmp;
   changeType: 1
+- statement: |-
+    DECLARE
+      "v_Count" NUMBER;
+    BEGIN
+      SELECT COUNT(1) INTO "v_Count" FROM "Tt";
+    END;
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "v_Count" should be upper case
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
