@@ -32,8 +32,10 @@ flakes.json              # {"runs": [sha7 ...last 20], "tests": {"<file>::<title
 Rules:
 
 - `LAST_GREEN` for attribution is the newest `runs/*.json` with `"result": "green"`;
-  when none exists, the last run's `sha`; when the ledger is empty, the
-  oldest commit of the last 14 days on `main`.
+  when none exists, the last run's `sha`; when the ledger is empty, 60 days
+  back on `main`. A spec can have been red for longer than any window, so
+  `attribute.py` widens on its own to the spec file's last change when nothing
+  inside the window scores.
 - A run records itself exactly once, after `summarize.py`, whatever the result.
   An aborted run (no `report.json`) records `infra` with the reason.
 - Flake threshold: a test flaky in 3 of the last 5 recorded runs is an issue

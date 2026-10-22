@@ -98,7 +98,11 @@ cat /tmp/e2e-routine/$RUN_ID/build-timing.txt
 ```
 
 Build from `origin/main` checked out at `head_sha` (`git checkout -q
-<head_sha>` in the clone is fine; the ledger records the SHA). A build failure
+<head_sha>` in the clone is fine; the ledger records `HEAD`, so it must be
+main's commit). While this skill lives on a branch, overlay its files onto that
+checkout instead of cherry-picking:
+`git checkout origin/<branch> -- .claude/skills/e2e-routine frontend/tests/e2e`.
+A build failure
 is INFRA unless the failing step is the Go or frontend compile of a product
 file, which is PRODUCT with the compile error as evidence (main is protected
 by CI, so this is rare and worth a Linear issue regardless of filing mode).
@@ -126,7 +130,10 @@ run anything else that boots a Bytebase while it runs. The suite takes roughly
 Work `references/triage.md` for every entry of `failed`, `flaky` and
 `lock_flipped`. For each `failed` entry:
 
-1. Isolate: `run-suite.sh start $RUN_ID-iso-<n> -- <spec file> --retries=0 --repeat-each=2`, then `wait`.
+1. Isolate: `run-suite.sh start $RUN_ID-iso-<n> -- <spec file> --retries=0 --repeat-each=2`,
+   then `wait`, one file after another, always in the foreground. Never park
+   the reruns in a background loop and go idle: a cloud session with nothing
+   in the foreground pauses, and the first run lost 25 minutes that way.
 2. Read `test-results/<test>/error-context.md`, the screenshot, the error in
    `playwright.log`, and `server.log` around the timestamp.
 3. Pin the spec line and the quoted UI text or locator.

@@ -113,6 +113,26 @@ def main():
         for k in keys:
             add(commits(rng, (), pickaxe=re.escape(k)), 3, f"adds/removes key {k}")
 
+    # Nothing decisive inside the window: the spec may have been red for longer
+    # than the ledger knows. Widen to the span between the spec file's own last
+    # change and the window's start, so a culprit from weeks ago still surfaces.
+    widened = None
+    if not any(s >= 3 for s in score.values()):
+        spec_base = git("log", "-1", "--format=%H", "--", a.spec).strip()
+        is_older = subprocess.run(["git", "-C", REPO, "merge-base", "--is-ancestor", spec_base, a.since],
+                                  capture_output=True).returncode == 0
+        if spec_base and is_older and spec_base != git("rev-parse", a.since).strip():
+            widened = f"{spec_base}..{a.since}"
+            note = f"widened to the spec's last change {spec_base[:10]}"
+            add(commits(widened, area_cfg["sources"]), 1, f"touches {area} sources ({note})")
+            for t in a.text:
+                files = text_files[t]["files"]
+                if files:
+                    add(commits(widened, files), 2, f"touches a file rendering '{t}' ({note})")
+                add(commits(widened, (), pickaxe=re.escape(t)), 3, f"adds/removes '{t}' ({note})")
+                for k in text_files[t]["keys"]:
+                    add(commits(widened, (), pickaxe=re.escape(k)), 3, f"adds/removes key {k} ({note})")
+
     ranked = sorted(info.values(), key=lambda c: -score[[s for s, v in info.items() if v is c][0]])
     for c in ranked:
         c["score"] = score[[s for s, v in info.items() if v is c][0]]
@@ -129,13 +149,13 @@ def main():
     else:
         owner, basis = None, "unassigned: no area default and no decisive commit"
 
-    result = {"spec": a.spec, "area": area, "range": rng, "commits_in_range": total,
+    result = {"spec": a.spec, "area": area, "range": rng, "range_widened": widened, "commits_in_range": total,
               "texts": text_files, "candidates": ranked[:10], "owner": owner, "owner_basis": basis,
               "framework_owner": owners.get("framework_owner")}
     if a.json:
         print(json.dumps(result, indent=2))
         return
-    print(f"spec {a.spec}  area {area}  range {rng} ({total} commits)")
+    print(f"spec {a.spec}  area {area}  range {rng} ({total} commits)" + (f"  widened {widened}" if widened else ""))
     for t, v in text_files.items():
         print(f"text '{t}': keys {v['keys'] or '-'}; files {v['files'] or '-'}")
     print("candidates (score, sha, date, author -> linear, PR, subject):")
