@@ -40,11 +40,12 @@ fi
 count=$(git rev-list --count "$last..$head" 2>/dev/null || echo 0)
 # Everything that is built into the binary or drives the suite counts: the
 # whole frontend, backend and proto trees and the Go module files. Excluded are
-# only files that cannot reach the build: Markdown, Go tests and frontend unit
-# tests. Listing build inputs one by one misses some (a Tailwind or Vite plugin
-# file), so the list names what to drop, not what to keep.
+# only files that cannot reach the build: contributor docs, Go tests and
+# frontend unit tests. Other Markdown is product input (guide pages loaded by
+# import.meta.glob, prompts and skills pulled in by go:embed), so it stays.
+# The list names what to drop, not what to keep.
 relevant=$(git diff --name-only "$last" "$head" -- 'frontend' 'backend' 'proto' 'go.mod' 'go.sum' \
-  | grep -vE '(^|/)[^/]+\.md$' \
+  | grep -vE '(^|/)(README|AGENTS|CLAUDE|CHANGELOG|CONTRIBUTING)\.md$' \
   | grep -vE '^backend/.*_test\.go$' \
   | grep -vE '^frontend/(src|scripts)/.*\.test\.(ts|tsx|mjs)$' \
   | wc -l | tr -d ' ')

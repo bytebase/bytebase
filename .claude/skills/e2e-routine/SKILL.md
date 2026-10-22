@@ -69,15 +69,19 @@ issue body is `references/issue-template.md`; the ledger format is
 | `FORCE` | `0` | `FORCE=1 should-run.sh` runs even when main did not move |
 | `BASH_DEFAULT_TIMEOUT_MS`, `BASH_MAX_TIMEOUT_MS` | tool defaults | set on the cloud environment (10 min / 60 min) so `wait` can block |
 
+Each Bash call runs in a fresh shell, so no variable survives from one phase
+to the next. `scripts/run-dir.sh new` creates the run's directory once and
+records it; every later command asks `run-dir.sh` for it in the same call.
+
 ## Phase 0: Preflight
 
 ```bash
-RUN_ID=$(date -u +%Y%m%dT%H%M%SZ)
+bash .claude/skills/e2e-routine/scripts/run-dir.sh new
 bash .claude/skills/e2e-routine/scripts/preflight.sh
 ```
 
 Paste the table. Any `FAIL` line ends the run as INFRA: record it with
-`python3 .claude/skills/e2e-routine/scripts/summarize.py --pre-run-failure /tmp/e2e-routine/$RUN_ID preflight "<the FAIL lines>"`,
+`python3 .claude/skills/e2e-routine/scripts/summarize.py --pre-run-failure "$(bash .claude/skills/e2e-routine/scripts/run-dir.sh)" preflight "<the FAIL lines>"`,
 then go to Phase 6. A `WARN` on a port means another server is listening; the
 harness picks the next free range, so continue, and say so in the report.
 
@@ -99,8 +103,7 @@ for older ones). Fall back per `references/ledger.md`.
 ## Phase 2: Build
 
 ```bash
-bash .claude/skills/e2e-routine/scripts/build.sh /tmp/e2e-routine/$RUN_ID
-cat /tmp/e2e-routine/$RUN_ID/build-timing.txt
+DIR=$(bash .claude/skills/e2e-routine/scripts/run-dir.sh) && bash .claude/skills/e2e-routine/scripts/build.sh "$DIR" && cat "$DIR/build-timing.txt"
 ```
 
 Build from `origin/main` checked out at `head_sha` (`git checkout -q
@@ -112,7 +115,7 @@ A build failure is INFRA unless the failing step is the Go or frontend compile
 of a product file.
 
 - INFRA (dependency download, toolchain, disk): record it with
-  `summarize.py --pre-run-failure /tmp/e2e-routine/$RUN_ID build "<failing step and first error line>"`
+  `summarize.py --pre-run-failure "$(bash .claude/skills/e2e-routine/scripts/run-dir.sh)" build "<failing step and first error line>"`
   and go to Phase 6; the next run retries the SHA.
 - PRODUCT (a product file does not compile; main is protected by CI, so this
   is rare): record it with the same command plus a final `product` argument,
@@ -123,9 +126,9 @@ of a product file.
 ## Phase 3: Run
 
 ```bash
-DIR=$(bash .claude/skills/e2e-routine/scripts/run-suite.sh start $RUN_ID)
-bash .claude/skills/e2e-routine/scripts/run-suite.sh wait "$DIR" 120
-python3 .claude/skills/e2e-routine/scripts/summarize.py "$DIR"
+bash .claude/skills/e2e-routine/scripts/run-suite.sh start "$(bash .claude/skills/e2e-routine/scripts/run-dir.sh id)"
+bash .claude/skills/e2e-routine/scripts/run-suite.sh wait "$(bash .claude/skills/e2e-routine/scripts/run-dir.sh)" 120
+python3 .claude/skills/e2e-routine/scripts/summarize.py "$(bash .claude/skills/e2e-routine/scripts/run-dir.sh)"
 ```
 
 `start` detaches the suite (its own session, so a tool timeout cannot kill it)
@@ -150,8 +153,8 @@ say how much wall clock the build and the suite took.
 Work `references/triage.md` for every entry of `failed`, `flaky` and
 `lock_flipped`. For each `failed` entry:
 
-1. Isolate: `run-suite.sh start $RUN_ID-iso-<n> -- <spec file> --retries=0 --repeat-each=2`,
-   then `wait`, one file after another, always in the foreground. Never park
+1. Isolate: `run-suite.sh start "$(bash .claude/skills/e2e-routine/scripts/run-dir.sh id)-iso-<n>" -- <spec file> --retries=0 --repeat-each=2`,
+   then `wait` on the directory it prints, one file after another, always in the foreground. Never park
    the reruns in a background loop and go idle: a cloud session with nothing
    in the foreground pauses, and the first run lost 25 minutes that way.
 2. Read `test-results/<test>/error-context.md`, the screenshot, the error in
@@ -193,7 +196,7 @@ instead.
 `claude/e2e-adapt-<YYYY-MM-DD>` from `head_sha`, changes only under
 `frontend/tests/e2e/`, one commit per adapted spec whose message names the
 product PR (`test(e2e): follow #21489 export format select`). Rerun each changed
-file (`run-suite.sh start $RUN_ID-adapt -- <files>`) and paste the green list
+file (`run-suite.sh start "$(bash .claude/skills/e2e-routine/scripts/run-dir.sh id)-adapt" -- <files>`) and paste the green list
 output. Push and open the PR with `gh pr create --title "test(e2e): adapt to main <date>"`;
 the body lists each change with its product PR and asks that PR's author for
 review. Never merge it. A PRODUCT lock (`test.describe('… (BUG BOT-n)')` +
@@ -210,12 +213,12 @@ rerun output; or "no action" per class.
 ## Phase 6: Record and report
 
 ```bash
-# Phase 3 sets DIR; a run that stopped in Phase 0 or 2 recorded its summary
-# under the run id instead.
-DIR=${DIR:-/tmp/e2e-routine/$RUN_ID}
-bash .claude/skills/e2e-routine/scripts/ledger.sh record "$DIR" "<one line: classes, PR, issues>"
+bash .claude/skills/e2e-routine/scripts/ledger.sh record "$(bash .claude/skills/e2e-routine/scripts/run-dir.sh)" "<one line: classes, PR, issues>"
 bash .claude/skills/e2e-routine/scripts/ledger.sh show
 ```
+
+The same directory holds the summary whether the run reached Phase 3 or
+stopped in Phase 0 or 2.
 
 Then write the report, in this order, and post it as a comment on the umbrella
 issue when filing is enabled (otherwise it is the session's final message; with

@@ -123,9 +123,18 @@ def main():
     a.spec = repo_spec_path(a.spec)
 
     owners = json.load(open(os.path.join(SKILL_DIR, "owners.json")))
-    area = os.path.basename(os.path.dirname(a.spec))
-    area_cfg = owners["areas"].get(area, {"sources": [], "owner": None})
     rng = f"{a.since}..{a.head}"
+    # A path outside the e2e tree is a product source file (a compile error
+    # names one): commits to that file are the decisive evidence, and its area
+    # is the one whose sources contain it.
+    source_mode = not a.spec.startswith(E2E_ROOT + "/")
+    if source_mode:
+        area = next((name for name, cfg in owners["areas"].items()
+                     if any(a.spec == s or a.spec.startswith(s.rstrip("/") + "/") for s in cfg["sources"])),
+                    "(none)")
+    else:
+        area = os.path.basename(os.path.dirname(a.spec))
+    area_cfg = owners["areas"].get(area, {"sources": [], "owner": None})
 
     score, info = {}, {}
     def add(found, pts, why):
@@ -133,7 +142,11 @@ def main():
             info.setdefault(sha, c).setdefault("why", []).append(why)
             score[sha] = score.get(sha, 0) + pts
 
-    add(commits(rng, area_cfg["sources"]), 1, f"touches {area} sources")
+    if source_mode:
+        add(commits(rng, [a.spec]), 3, f"changes {a.spec}, the file that fails")
+    # An empty path list would make git log return every commit in the range.
+    if area_cfg["sources"]:
+        add(commits(rng, area_cfg["sources"]), 1, f"touches {area} sources")
     text_files = {}
     for t in a.text:
         keys = locale_keys(t)
@@ -160,7 +173,8 @@ def main():
         if spec_base and is_older and spec_base != git("rev-parse", a.since).strip():
             widened = f"{spec_base}..{a.since}"
             note = f"widened to the spec's last change {spec_base[:10]}"
-            add(commits(widened, area_cfg["sources"]), 1, f"touches {area} sources ({note})")
+            if area_cfg["sources"]:
+                add(commits(widened, area_cfg["sources"]), 1, f"touches {area} sources ({note})")
             for t in a.text:
                 files = text_files[t]["files"]
                 if files:
