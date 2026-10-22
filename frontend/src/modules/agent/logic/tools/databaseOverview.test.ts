@@ -22,6 +22,7 @@ import {
 
 const projectName = "projects/orders";
 const databaseName = "projects/orders/instances/prod/databases/orders";
+const workspaceInstanceDatabaseName = "instances/prod/databases/orders";
 
 describe("databaseOverview", () => {
   beforeEach(() => {
@@ -100,6 +101,39 @@ describe("databaseOverview", () => {
     expect(mocks.getDatabase).not.toHaveBeenCalled();
   });
 
+  test("accepts a workspace-instance database after checking its fetched project", async () => {
+    mocks.getDatabase.mockResolvedValue({
+      name: workspaceInstanceDatabaseName,
+      project: projectName,
+      state: State.ACTIVE,
+      instanceResource: {
+        name: "instances/prod",
+        title: "Production PostgreSQL",
+        engine: Engine.POSTGRES,
+        engineVersion: "16",
+      },
+      backupAvailable: false,
+      syncStatus: SyncStatus.OK,
+    });
+
+    await expect(
+      collectDatabaseOverview(projectName, workspaceInstanceDatabaseName)
+    ).resolves.toMatchObject({
+      project: projectName,
+      database: {
+        status: "available",
+        name: workspaceInstanceDatabaseName,
+      },
+      evidence: {
+        project: projectName,
+        references: [{ kind: "database", name: workspaceInstanceDatabaseName }],
+      },
+    });
+    expect(mocks.getDatabase).toHaveBeenCalledWith(
+      expect.objectContaining({ name: workspaceInstanceDatabaseName })
+    );
+  });
+
   test("marks a mismatched database response unavailable and withholds evidence", async () => {
     mocks.getDatabase.mockResolvedValue({
       name: "projects/orders/instances/prod/databases/orders_archive",
@@ -123,6 +157,21 @@ describe("databaseOverview", () => {
 
     await expect(
       collectDatabaseOverview(projectName, databaseName)
+    ).resolves.toEqual({
+      project: projectName,
+      database: { status: "unavailable" },
+      evidence: { project: projectName, references: [] },
+    });
+  });
+
+  test("marks a workspace-instance response from a different project unavailable", async () => {
+    mocks.getDatabase.mockResolvedValue({
+      name: workspaceInstanceDatabaseName,
+      project: "projects/orders-archive",
+    });
+
+    await expect(
+      collectDatabaseOverview(projectName, workspaceInstanceDatabaseName)
     ).resolves.toEqual({
       project: projectName,
       database: { status: "unavailable" },
@@ -162,6 +211,21 @@ describe("databaseOverview", () => {
           evidence: {
             project: projectName,
             references: [
+              { kind: "database", name: workspaceInstanceDatabaseName },
+            ],
+          },
+        })
+      )
+    ).toEqual({
+      project: projectName,
+      references: [{ kind: "database", name: workspaceInstanceDatabaseName }],
+    });
+    expect(
+      extractDatabaseOverviewEvidence(
+        JSON.stringify({
+          evidence: {
+            project: projectName,
+            references: [
               {
                 kind: "database",
                 name: "projects/orders-archive/instances/prod/databases/orders",
@@ -173,10 +237,10 @@ describe("databaseOverview", () => {
     ).toBeUndefined();
   });
 
-  test("reports an invalid tool argument without calling the API", async () => {
+  test("rejects a malformed tool argument without calling the API", async () => {
     await expect(
       createDatabaseOverviewTool({ projectName })({
-        databaseName: "instances/prod/databases/orders",
+        databaseName: "instances/prod/orders",
       })
     ).resolves.toBe(
       JSON.stringify({

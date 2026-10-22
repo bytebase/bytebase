@@ -240,6 +240,59 @@ describe("AgentChat", () => {
         instanceId: "prod",
         databaseName: "orders",
       },
+      query: { parent: "projects/orders/instances/prod" },
+    });
+
+    unmount();
+  });
+
+  test("preserves the workspace-instance parent in a database evidence link", () => {
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: "The database is ready for its next governed change.",
+      metadata: {
+        evidence: {
+          project: "projects/orders",
+          references: [
+            {
+              kind: "database",
+              name: "instances/prod/databases/orders",
+            },
+          ],
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const evidenceTrigger = Array.from(
+      container.querySelectorAll("button")
+    ).find(
+      (button) => button.textContent === "agent.evidence.references"
+    );
+    act(() => {
+      evidenceTrigger?.click();
+    });
+
+    const databaseLink = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent === "orders"
+    );
+    expect(databaseLink).toBeInstanceOf(HTMLElement);
+
+    act(() => {
+      databaseLink?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: {
+        projectId: "orders",
+        instanceId: "prod",
+        databaseName: "orders",
+      },
+      query: { parent: "instances/prod" },
     });
 
     unmount();

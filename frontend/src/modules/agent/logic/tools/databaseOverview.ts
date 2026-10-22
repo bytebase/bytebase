@@ -1,6 +1,12 @@
 import { create } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { databaseServiceClientConnect } from "@/api";
+import {
+  databaseNamePrefix,
+  getNameParentTokens,
+  instanceNamePrefix,
+  projectNamePrefix,
+} from "@/stores/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
@@ -47,34 +53,28 @@ type DatabaseOverview = {
 type DatabaseOverviewArgs = { databaseName?: unknown };
 
 function isProjectName(value: string | undefined): value is string {
-  return !!value && /^projects\/[^/]+$/.test(value);
+  return (
+    !!value && getNameParentTokens(value, [projectNamePrefix]).length === 1
+  );
 }
 
 function isDatabaseNameInProject(
   projectName: string,
   databaseName: string | undefined
 ): databaseName is string {
-  if (!databaseName) return false;
-  const [projectPrefix, projectId] = projectName.split("/");
-  const [
-    databaseProjectPrefix,
-    databaseProjectId,
-    instancesCollection,
-    instanceId,
-    databasesCollection,
-    databaseId,
-    ...remainingSegments
-  ] = databaseName.split("/");
-  return (
-    projectPrefix === "projects" &&
-    databaseProjectPrefix === projectPrefix &&
-    databaseProjectId === projectId &&
-    instancesCollection === "instances" &&
-    Boolean(instanceId) &&
-    databasesCollection === "databases" &&
-    Boolean(databaseId) &&
-    remainingSegments.length === 0
-  );
+  const workspaceDatabaseTokens = getNameParentTokens(databaseName ?? "", [
+    instanceNamePrefix,
+    databaseNamePrefix,
+  ]);
+  if (workspaceDatabaseTokens.length === 2) return true;
+
+  const [projectId] = getNameParentTokens(projectName, [projectNamePrefix]);
+  const [databaseProjectId] = getNameParentTokens(databaseName ?? "", [
+    projectNamePrefix,
+    instanceNamePrefix,
+    databaseNamePrefix,
+  ]);
+  return Boolean(databaseProjectId) && databaseProjectId === projectId;
 }
 
 function isInstanceNameForProject(projectName: string, value: string): boolean {

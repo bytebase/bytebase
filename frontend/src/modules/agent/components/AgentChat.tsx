@@ -59,6 +59,7 @@ type ResolvedEvidenceReference = {
     | {
         name: typeof PROJECT_V1_ROUTE_DATABASE_DETAIL;
         params: { projectId: string; instanceId: string; databaseName: string };
+        query: { parent: string };
       };
 };
 
@@ -114,6 +115,9 @@ function resolveEvidenceReferences(
     if (!match || (referenceProjectId && referenceProjectId !== projectId)) {
       continue;
     }
+    const parent = referenceProjectId
+      ? `projects/${referenceProjectId}/instances/${match[2]}`
+      : `instances/${match[2]}`;
     resolved.push({
       reference,
       label: match[3],
@@ -124,6 +128,7 @@ function resolveEvidenceReferences(
           instanceId: match[2],
           databaseName: match[3],
         },
+        query: { parent },
       },
     });
   }
