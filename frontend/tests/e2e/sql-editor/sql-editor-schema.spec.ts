@@ -357,6 +357,43 @@ test.describe("Right-click on a table opens its detail in a new tab", () => {
   });
 });
 
+test.describe("Resting the pointer on a table row shows its hover panel", () => {
+  // The hover panel opens after a 1s delay. Each row remount under a resting
+  // pointer re-fires mouseenter and restarts that delay, so a tree that
+  // remounts rows on hover never shows the panel (BOT-154).
+
+  test("the panel appears for employee and stays while the pointer rests", async () => {
+    test.setTimeout(120_000);
+
+    const projectId = env.project.split("/").pop()!;
+    await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
+    await sqlEditor.gutterSchemaTab.click();
+
+    const search = page.getByPlaceholder("Search").first();
+    await expect(search).toBeVisible({ timeout: 10_000 });
+    await search.fill("employee");
+
+    const employeeRow = page
+      .locator('.bb-schema-tree-row[data-node-meta-type="table"]')
+      .filter({ hasText: /^employee$/ })
+      .first();
+    await expect(employeeRow).toBeVisible({ timeout: 10_000 });
+    await employeeRow.hover({ position: { x: 40, y: 8 } });
+
+    const panel = page.getByTestId("schema-hover-panel");
+    await expect(panel).toBeVisible({ timeout: 5000 });
+    await expect(panel).toContainText("Row count estimate");
+    await expect(panel).toContainText("employee");
+
+    // Still shown a second later: the panel is not flickering off.
+    await page.waitForTimeout(1000);
+    await expect(panel).toBeVisible();
+
+    await page.mouse.move(5, 5);
+    await search.fill("");
+  });
+});
+
 test.describe("Schema Diagram menuitem opens the diagram canvas", () => {
   // The "Schema Diagram" menu item on a schema row routes to the
   // DiagramPanel, which mounts the SchemaDiagram canvas with one
