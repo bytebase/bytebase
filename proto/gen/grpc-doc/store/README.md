@@ -2163,6 +2163,7 @@ issue. Results live in issue comments; the run carries none.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | error | [string](#string) |  | Fatal execution error for the FAILED status, e.g. &#34;metadata not synced: instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the executor or by the reaper. |
+| approval_input_version | [int64](#int64) |  | The plan&#39;s PlanConfig.approval_input_version when the slot was reset: the version of the plan&#39;s SQL this run reviews. Completion keeps it. |
 
 
 

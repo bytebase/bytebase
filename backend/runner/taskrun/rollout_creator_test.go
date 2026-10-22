@@ -372,9 +372,7 @@ func TestTryCreateRolloutRejectsArchivedProjectInstanceWithWarmDatabaseCache(t *
 
 func TestTryCreateRolloutWaitsForTheReview(t *testing.T) {
 	ctx := context.Background()
-	const workspaceID = "workspace-a"
-	s := setupRolloutCreatorStoreInWorkspace(ctx, t, workspaceID)
-	plan, issue := createAutoRolloutIssue(ctx, t, s, workspaceID)
+	s, plan, issue := newAutoRolloutIssue(ctx, t)
 	b, err := bus.New()
 	require.NoError(t, err)
 	creator := NewRolloutCreator(s, b, nil, true)
@@ -388,7 +386,7 @@ func TestTryCreateRolloutWaitsForTheReview(t *testing.T) {
 
 	// An open thread on the colliding issue of another project must not hold
 	// this one.
-	_, err = s.GetDB().ExecContext(ctx, "INSERT INTO project (resource_id, workspace, name) VALUES ('project-b', $1, 'Project B')", workspaceID)
+	_, err = s.GetDB().ExecContext(ctx, "INSERT INTO project (resource_id, workspace, name) VALUES ('project-b', $1, 'Project B')", autoRolloutWorkspaceID)
 	require.NoError(t, err)
 	planB, err := s.CreatePlan(ctx, &store.PlanMessage{ProjectID: "project-b", Name: "colliding plan", Config: &storepb.PlanConfig{}}, "creator@example.com")
 	require.NoError(t, err)
@@ -446,11 +444,102 @@ func TestTryCreateRolloutWaitsForTheReview(t *testing.T) {
 	require.True(t, tryCreateRollout(), "every thread is resolved")
 }
 
+func TestTryCreateRolloutStartsAMissingOrStaleReview(t *testing.T) {
+	ctx := context.Background()
+	s, plan, issue := newAutoRolloutIssue(ctx, t)
+	b, err := bus.New()
+	require.NoError(t, err)
+	creator := NewRolloutCreator(s, b, nil, true)
+	tryCreateRollout := func() bool {
+		t.Helper()
+		creator.tryCreateRollout(ctx, bus.PlanRef{ProjectID: plan.ProjectID, PlanID: plan.UID})
+		got, err := s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: plan.ProjectID, UID: &plan.UID})
+		require.NoError(t, err)
+		return got.Config.GetHasRollout()
+	}
+	ruleRun := func(projectID string) *store.ReviewRunMessage {
+		t.Helper()
+		run, err := s.GetReviewRun(ctx, projectID, issue.UID, store.ReviewRunTypeRule)
+		require.NoError(t, err)
+		return run
+	}
+	completeRuleRun := func() {
+		t.Helper()
+		claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica")
+		require.NoError(t, err)
+		require.Len(t, claimed, 1)
+		updated, err := s.CompleteReviewRun(ctx, claimed[0], "replica", storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{}, nil)
+		require.NoError(t, err)
+		require.True(t, updated)
+	}
+
+	// The colliding issue of another project must not get a review.
+	_, err = s.GetDB().ExecContext(ctx, "INSERT INTO project (resource_id, workspace, name) VALUES ('project-b', $1, 'Project B')", autoRolloutWorkspaceID)
+	require.NoError(t, err)
+	planB, err := s.CreatePlan(ctx, &store.PlanMessage{ProjectID: "project-b", Name: "colliding plan", Config: &storepb.PlanConfig{}}, "creator@example.com")
+	require.NoError(t, err)
+	issueB, err := s.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-b",
+		CreatorEmail: "creator@example.com",
+		Title:        "colliding issue",
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload:      &storepb.Issue{},
+		PlanUID:      &planB.UID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, issue.UID, issueB.UID, "issue ids should collide")
+
+	require.False(t, tryCreateRollout(), "the review never started")
+	run := ruleRun(issue.ProjectID)
+	require.NotNil(t, run)
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
+	require.Equal(t, int64(2), run.Payload.GetApprovalInputVersion())
+	require.Len(t, b.ReviewRunTickleChan, 1)
+	require.Nil(t, ruleRun("project-b"))
+
+	// The plan's SQL changes and is approved again, but the slot was not
+	// reset: the DONE run reviewed version 2.
+	completeRuleRun()
+	_, err = s.GetDB().ExecContext(ctx, `
+		UPDATE plan SET config = jsonb_set(config, '{approvalInputVersion}', '"3"')
+		WHERE project = $1 AND id = $2
+	`, plan.ProjectID, plan.UID)
+	require.NoError(t, err)
+	_, err = s.GetDB().ExecContext(ctx, `
+		UPDATE issue SET payload = jsonb_set(payload, '{approval,approvalInputVersion}', '"3"')
+		WHERE project = $1 AND id = $2
+	`, issue.ProjectID, issue.UID)
+	require.NoError(t, err)
+	require.False(t, tryCreateRollout(), "the done run reviewed older SQL")
+	run = ruleRun(issue.ProjectID)
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
+	require.Equal(t, int64(1), run.Attempt)
+	require.Equal(t, int64(3), run.Payload.GetApprovalInputVersion())
+
+	completeRuleRun()
+	require.True(t, tryCreateRollout(), "the review of the current SQL is done")
+}
+
+func TestReviewDoesNotHoldARolloutWithNothingToRead(t *testing.T) {
+	ctx := context.Background()
+	s, plan, issue := newAutoRolloutIssue(ctx, t)
+	project, err := s.GetProjectByResourceID(ctx, plan.ProjectID)
+	require.NoError(t, err)
+	plan.Config.Specs[0].GetChangeDatabaseConfig().Targets = nil
+
+	b, err := bus.New()
+	require.NoError(t, err)
+	blocked, err := NewRolloutCreator(s, b, nil, true).reviewBlocksRollout(ctx, project, plan, issue)
+	require.NoError(t, err)
+	require.False(t, blocked)
+	run, err := s.GetReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	require.Nil(t, run, "no review starts without SQL to read")
+}
+
 func TestTryCreateRolloutIgnoresThreadsWithoutSQLReviewV2(t *testing.T) {
 	ctx := context.Background()
-	const workspaceID = "workspace-a"
-	s := setupRolloutCreatorStoreInWorkspace(ctx, t, workspaceID)
-	plan, issue := createAutoRolloutIssue(ctx, t, s, workspaceID)
+	s, plan, issue := newAutoRolloutIssue(ctx, t)
 	open := store.ThreadStateOpen
 	_, err := s.CreateIssueComments(ctx, "creator@example.com", &store.IssueCommentMessage{
 		ProjectID:   issue.ProjectID,
@@ -468,20 +557,23 @@ func TestTryCreateRolloutIgnoresThreadsWithoutSQLReviewV2(t *testing.T) {
 	require.True(t, got.Config.GetHasRollout())
 }
 
-// createAutoRolloutIssue creates an approved issue in project-a whose plan the
-// rollout creator would roll out at once.
-func createAutoRolloutIssue(ctx context.Context, t *testing.T, s *store.Store, workspaceID string) (*store.PlanMessage, *store.IssueMessage) {
+const autoRolloutWorkspaceID = "workspace-a"
+
+// newAutoRolloutIssue sets up a store with an approved issue in project-a whose
+// plan the rollout creator would roll out at once.
+func newAutoRolloutIssue(ctx context.Context, t *testing.T) (*store.Store, *store.PlanMessage, *store.IssueMessage) {
 	t.Helper()
+	s := setupRolloutCreatorStoreInWorkspace(ctx, t, autoRolloutWorkspaceID)
 	require.NoError(t, s.UpdateProjects(ctx, &store.UpdateProjectMessage{
 		ResourceID: "project-a",
-		Workspace:  workspaceID,
+		Workspace:  autoRolloutWorkspaceID,
 		Setting:    &storepb.Project{RequireIssueApproval: false},
 	}))
 	environment := "prod"
 	projectID := "project-a"
 	_, err := s.CreateInstance(ctx, &store.InstanceMessage{
 		ResourceID:    "prod",
-		Workspace:     workspaceID,
+		Workspace:     autoRolloutWorkspaceID,
 		ProjectID:     &projectID,
 		EnvironmentID: &environment,
 		Metadata: &storepb.Instance{
@@ -525,7 +617,7 @@ func createAutoRolloutIssue(ctx context.Context, t *testing.T, s *store.Store, w
 		PlanUID: &plan.UID,
 	})
 	require.NoError(t, err)
-	return plan, issue
+	return s, plan, issue
 }
 
 func setupRolloutCreatorStore(ctx context.Context, t *testing.T) *store.Store {

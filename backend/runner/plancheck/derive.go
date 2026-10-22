@@ -27,6 +27,20 @@ func DeriveReviewTargets(ctx context.Context, s *store.Store, project *store.Pro
 	return deriveTargets(ctx, s, project, plan, databaseGroup, false)
 }
 
+// HasReviewTargets reports whether the rule review has SQL to read in the
+// plan: whether DeriveReviewTargets finds any target.
+func HasReviewTargets(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage) (bool, error) {
+	databaseGroup, err := GetDatabaseGroupForPlan(ctx, s, plan, nil)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get database group for plan")
+	}
+	targets, err := DeriveReviewTargets(ctx, s, project, plan, databaseGroup)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to derive review targets")
+	}
+	return len(targets) > 0, nil
+}
+
 func deriveTargets(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup, applySampling bool) ([]*CheckTarget, error) {
 	var targets []*CheckTarget
 

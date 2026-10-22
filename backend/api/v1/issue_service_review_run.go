@@ -129,15 +129,11 @@ func checkReviewable(ctx context.Context, stores *store.Store, issue *store.Issu
 	if project == nil {
 		return connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
 	}
-	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, stores, plan, nil)
+	hasTargets, err := plancheck.HasReviewTargets(ctx, stores, project, plan)
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database group for plan"))
+		return connect.NewError(connect.CodeInternal, err)
 	}
-	targets, err := plancheck.DeriveReviewTargets(ctx, stores, project, plan, databaseGroup)
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to derive review targets"))
-	}
-	if len(targets) == 0 {
+	if !hasTargets {
 		return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("the plan has no reviewable SQL"))
 	}
 	return nil

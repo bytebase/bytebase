@@ -38,8 +38,9 @@ type ReviewRunMessage struct {
 
 // CreateReviewRun creates a new AVAILABLE run in the (issue, reviewer type)
 // slot. The slot row is reset in place unconditionally: created at attempt 0
-// when absent, attempt bumped otherwise, with created_at restarted and
-// replica_id and payload cleared. A RUNNING execution is superseded — its
+// when absent, attempt bumped otherwise, with created_at restarted,
+// replica_id cleared, and the payload reset to the approval input version of
+// the issue's plan as of this write. A RUNNING execution is superseded — its
 // completion transaction is fenced on the old attempt and will match zero
 // rows.
 //
@@ -57,9 +58,11 @@ func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID 
 	}
 
 	q := qb.Q().Space(`
-		INSERT INTO review_run (project, issue_id, type, status)
-		SELECT issue.project, issue.id, ?, ?
+		INSERT INTO review_run (project, issue_id, type, status, payload)
+		SELECT issue.project, issue.id, ?, ?,
+			jsonb_strip_nulls(jsonb_build_object('approvalInputVersion', plan.config->'approvalInputVersion'))
 		FROM issue
+		LEFT JOIN plan ON plan.project = issue.project AND plan.id = issue.plan_id
 		WHERE issue.project = ? AND issue.id = ?
 		ON CONFLICT (project, issue_id, type) DO UPDATE
 		SET status = EXCLUDED.status,
@@ -67,8 +70,8 @@ func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID 
 			created_at = now(),
 			updated_at = now(),
 			replica_id = NULL,
-			payload = '{}'
-		RETURNING attempt, created_at, updated_at
+			payload = EXCLUDED.payload
+		RETURNING attempt, payload, created_at, updated_at
 	`, reviewType, storepb.ReviewRun_AVAILABLE.String(), projectID, issueUID)
 
 	query, args, err := q.ToSQL()
@@ -83,11 +86,15 @@ func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID 
 		Status:    storepb.ReviewRun_AVAILABLE,
 		Payload:   &storepb.ReviewRunPayload{},
 	}
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&reviewRun.Attempt, &reviewRun.CreatedAt, &reviewRun.UpdatedAt); err != nil {
+	var payload []byte
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&reviewRun.Attempt, &payload, &reviewRun.CreatedAt, &reviewRun.UpdatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, common.Errorf(common.NotFound, "issue %d not found in project %s", issueUID, projectID)
 		}
 		return nil, errors.Wrapf(err, "failed to create review run")
+	}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, reviewRun.Payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal review run payload")
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -95,6 +102,12 @@ func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID 
 	}
 	return reviewRun, nil
 }
+
+// keepApprovalInputVersion is the payload a terminal write stores: the new
+// payload, with the slot's approval input version carried over. Losing it would
+// make a finished run look stale to the rollout creator, which would start it
+// again.
+const keepApprovalInputVersion = `CAST(? AS JSONB) || jsonb_strip_nulls(jsonb_build_object('approvalInputVersion', review_run.payload->'approvalInputVersion'))`
 
 // GetReviewRun returns the run in the (issue, reviewer type) slot as stored,
 // or nil when the slot was never created.
@@ -256,10 +269,10 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 
 	q := qb.Q().Space(`
 		UPDATE review_run
-		SET status = ?, updated_at = now(), payload = ?
+		SET status = ?, updated_at = now(), payload = `+keepApprovalInputVersion+`
 		WHERE project = ? AND issue_id = ? AND type = ?
 		  AND status = ? AND replica_id = ? AND attempt = ?
-	`, status.String(), payloadBytes,
+	`, status.String(), string(payloadBytes),
 		claimed.ProjectID, claimed.IssueUID, claimed.Type,
 		storepb.ReviewRun_RUNNING.String(), replicaID, claimed.Attempt)
 	query, args, err := q.ToSQL()
@@ -350,7 +363,7 @@ func (s *Store) FailStaleReviewRuns(ctx context.Context, stalenessThreshold time
 
 	q := qb.Q().Space(`
 		UPDATE review_run
-		SET status = ?, updated_at = now(), payload = ?
+		SET status = ?, updated_at = now(), payload = `+keepApprovalInputVersion+`
 		WHERE status = ?
 		  AND replica_id IS NOT NULL
 		  AND NOT EXISTS (
@@ -358,7 +371,7 @@ func (s *Store) FailStaleReviewRuns(ctx context.Context, stalenessThreshold time
 			WHERE rh.replica_id = review_run.replica_id
 			  AND rh.last_heartbeat >= now() - ?::INTERVAL
 		  )
-	`, storepb.ReviewRun_FAILED.String(), payloadBytes,
+	`, storepb.ReviewRun_FAILED.String(), string(payloadBytes),
 		storepb.ReviewRun_RUNNING.String(), stalenessThreshold.String())
 
 	query, args, err := q.ToSQL()

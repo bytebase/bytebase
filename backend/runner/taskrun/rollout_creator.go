@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -185,7 +186,7 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 	}
 
 	if rc.sqlReviewV2 {
-		blocked, err := rc.reviewBlocksRollout(ctx, issue)
+		blocked, err := rc.reviewBlocksRollout(ctx, project, plan, issue)
 		if err != nil {
 			slog.Error("failed to check the review for rollout creation",
 				slog.String("project", ref.ProjectID),
@@ -233,15 +234,32 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 }
 
 // reviewBlocksRollout reports whether the issue's review holds its rollout
-// under SQL Review V2: the rule review has not finished, or a thread on the
-// issue is open. An open thread blocks whatever its priority, and whoever
-// started it.
-func (rc *RolloutCreator) reviewBlocksRollout(ctx context.Context, issue *store.IssueMessage) (bool, error) {
+// under SQL Review V2: the rule review of the plan's current SQL has not
+// finished, or a thread on the issue is open. An open thread blocks whatever
+// its priority, and whoever started it.
+//
+// A plan with SQL to review but no run for its approval input version holds
+// too: the slot write that should have started the review failed, or never
+// happened. The review starts here then, as the approval evaluator does for a
+// missing plan check run, and its completion asks for this check again.
+func (rc *RolloutCreator) reviewBlocksRollout(ctx context.Context, project *store.ProjectMessage, plan *store.PlanMessage, issue *store.IssueMessage) (bool, error) {
 	run, err := rc.store.GetReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to get the rule review run")
 	}
-	if run != nil && run.Status != storepb.ReviewRun_DONE {
+	if run == nil || run.Payload.GetApprovalInputVersion() != plan.Config.GetApprovalInputVersion() {
+		hasTargets, err := plancheck.HasReviewTargets(ctx, rc.store, project, plan)
+		if err != nil {
+			return false, err
+		}
+		if hasTargets {
+			if _, err := rc.store.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule); err != nil {
+				return false, errors.Wrap(err, "failed to start the rule review")
+			}
+			bus.Tickle(rc.bus.ReviewRunTickleChan)
+			return true, nil
+		}
+	} else if run.Status != storepb.ReviewRun_DONE {
 		return true, nil
 	}
 	open := store.ThreadStateOpen
