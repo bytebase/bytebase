@@ -50,5 +50,6 @@ Rules:
 - Flake threshold: a test flaky in 3 of the last 5 recorded runs is an issue
   candidate (`ledger.sh flakes`).
 - Nothing in the ledger is secret; the branch is public like the repository.
-  Screenshots and traces stay in the run directory and go to Linear as
-  attachments only when an issue is created.
+  Screenshots and traces stay in the run directory; a screenshot leaves it
+  only as an upload to the Linear issue it is evidence for, shown inline in
+  the description or comment.

@@ -26,8 +26,12 @@ on `<last green sha>`, or an invariant (permission, masking, gate).
 
 - Spec: `frontend/tests/e2e/<area>/<file>.spec.ts:<line>` "<test title>", red on every attempt of run <run-id>, red in isolation (`--repeat-each=2`)
 - Error: `<first line of the Playwright error>`
-- Screenshot and aria snapshot attached (`test-failed-1.png`, `error-context.md`)
 - Server log: <the 4xx/5xx or panic line, or "clean">
+- Aria snapshot attached (`error-context.md`)
+
+![<upload filename>](<assetUrl of the screenshot>)
+
+<One line: what the screenshot shows, e.g. "the result pane with Copy and Download, no Request export button".>
 
 ## Since
 
@@ -45,8 +49,20 @@ Candidate commits between `<last green sha>` and `<head sha>` (score from attrib
 Run <run-id> on `<head sha>`; report: <link to the umbrella comment or the session>.
 ```
 
+The issue is created with the Evidence section ending at the snapshot line;
+the image and its line go in once the screenshot is uploaded to the issue (see
+Phase 5 of SKILL.md). When the upload fails, the image line says
+`Screenshot upload failed: <the linear-upload.py failure line>`.
+
 Comment on an existing issue (same mechanism already filed):
 
 ```markdown
 Seen again by the e2e routine: run <run-id> on `<head sha>` (<date>), `<spec>:<line>` "<title>", error `<first line>`. Candidates since `<last green>`: <sha> #<pr>.
+
+![<upload filename>](<assetUrl of this run's screenshot>)
+
+<One line: what the screenshot shows.>
 ```
+
+Upload the screenshot to that issue before writing the comment, so the comment
+embeds this run's image rather than the first one.

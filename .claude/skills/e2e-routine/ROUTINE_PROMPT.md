@@ -34,7 +34,7 @@ First: git fetch origin worktree-e2e-routine && git checkout origin/worktree-e2e
 
 | Setting | Value |
 |---|---|
-| Network access | Custom: check "Also include default list", add `cdn.playwright.dev` and `playwright.download.prss.microsoft.com` |
+| Network access | Custom: check "Also include default list", add `cdn.playwright.dev` and `playwright.download.prss.microsoft.com`; if a run reports `linear-upload.py` blocked, add the upload host it names |
 | Setup script | contents of `scripts/setup-env.sh` |
 | Environment variables | `BASH_DEFAULT_TIMEOUT_MS=600000`, `BASH_MAX_TIMEOUT_MS=3600000`, `E2E_ROUTINE_FILE_ISSUES=0`, `E2E_ROUTINE_UMBRELLA=<team>-<n>`, `E2E_ROUTINE_LINEAR_TEAM=BOT` (or `BYT` to file into the product team) |
 | Network secrets | none needed (the dev license is in the repo; GitHub goes through the proxy; Linear is a connector) |

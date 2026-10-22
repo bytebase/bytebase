@@ -26,10 +26,10 @@ be reached after sign-in.
 ## Verification procedure for a `failed` entry
 
 1. **Isolate.** `run-suite.sh start <run-id>-iso-N -- <spec file> --retries=0 --repeat-each=2`, then `wait`. Green here means TEST-ISOLATION.
-2. **Read the evidence, not the title.** In `test-results/<test dir>/`: `error-context.md` is the aria snapshot of the page at failure (the real DOM); `test-failed-1.png`; `trace.zip` when a retry ran. In `playwright.log`, the attempt's error with the locator and the expected vs received text. In `server.log`, 4xx/5xx or panics around the timestamp.
+2. **Read the evidence, not the title.** The entry's `evidence` in `summary.json` names the files of the failed attempt it reports: `screenshots`, one per open page (open them and look: they are what a user would have seen), `error_context`, the aria snapshot of the page at failure (the real DOM), and `trace` when a retry ran. In `playwright.log`, the attempt's error with the locator and the expected vs received text. In `server.log`, 4xx/5xx or panics around the timestamp.
 3. **Pin the assertion.** Open the spec at the failing line. Write down the exact UI text or locator and what the test expected.
 4. **Find the component.** `attribute.py --text "<quoted text>"` resolves the text through `frontend/src/locales/en*.json` to its key and the files that use it, and lists the commits in `since..origin/main` that touched them or the text. Read the top candidate's PR (`gh pr view <n> --json title,body`).
-5. **Decide.** Apply the table. A decision cites: the attempt error line, the evidence file, the spec line, and the commit (SPEC-ROT, PRODUCT) or the isolated rerun (TEST-ISOLATION).
+5. **Decide.** Apply the table. A decision cites: the attempt error line, the screenshot and what it shows, the spec line, and the commit (SPEC-ROT, PRODUCT) or the isolated rerun (TEST-ISOLATION).
 6. **Weigh before filing.** Validity (does the evidence show it), frequency (every run, or one race), return (what a fix buys). A valid, rare, cosmetic failure is still recorded in the report with the decision "not worth an issue" and why; it is never silently dropped.
 
 ## Priority for PRODUCT issues

@@ -51,6 +51,32 @@ def first_line(msg):
     return ""
 
 
+def pick_evidence(results):
+    """The files that show the failure the entry reports: the screenshots (one
+    per open page) and aria snapshot of the latest failed attempt that has
+    them, and the trace of a failed attempt (Playwright traces the first retry
+    only). A passing retry's trace shows the pass, so it is never the evidence."""
+    failed = [(i, r) for i, r in enumerate(results) if r.get("status") not in ("passed", "skipped")]
+
+    def latest(name):
+        for i, r in reversed(failed):
+            paths = sorted({a["path"] for a in r.get("attachments", [])
+                            if a.get("name") == name and a.get("path") and os.path.exists(a["path"])})
+            if paths:
+                return i, paths
+        return None, []
+
+    shot_attempt, screenshots = latest("screenshot")
+    _, error_context = latest("error-context")
+    _, trace = latest("trace")
+    return {"attempt": shot_attempt, "screenshots": screenshots,
+            "error_context": error_context[0] if error_context else None,
+            "trace": trace[0] if trace else None}
+
+
+NO_EVIDENCE = {"attempt": None, "screenshots": [], "error_context": None, "trace": None}
+
+
 def walk(suite, file_title, out):
     file_title = suite.get("file") or file_title
     for spec in suite.get("specs", []):
@@ -130,7 +156,6 @@ def main(results_dir):
         # attempt passed and has none, and the failure is the evidence.
         errored = [r for r in results if (r.get("error") or {}).get("message")]
         err = first_line(errored[-1]["error"]["message"]) if errored else ""
-        attachments = [a.get("path") for r in results for a in r.get("attachments", []) if a.get("path")]
         entry = {
             "file": file_title,
             "title": spec.get("title"),
@@ -141,7 +166,7 @@ def main(results_dir):
             "duration_ms": sum(r.get("durationMs", r.get("duration", 0)) or 0 for r in results),
             "error": err,
             "infra_signature": infra_signature(err),
-            "attachments": attachments,
+            "evidence": pick_evidence(results),
             "annotations": [a.get("type") for a in test.get("annotations", [])],
         }
         if bucket == "skipped" and not deliberate:
@@ -185,7 +210,7 @@ def main(results_dir):
         # a failure to triage and attribute like any other, not infra.
         summary["failed"] = [{"file": "framework/global-setup.ts", "title": "global setup", "line": 0,
                               "error": summary["errors"][0], "infra_signature": None, "attempts": 1,
-                              "statuses": ["failed"], "attachments": []}]
+                              "statuses": ["failed"], "evidence": NO_EVIDENCE}]
         failed = summary["failed"]
         summary["totals"]["failed"] = 1
     elif setup_lost or (len(signed) >= SERVER_LOST_MIN_FAILURES and len(signed) >= SERVER_LOST_SHARE * len(failed)):
@@ -211,7 +236,7 @@ def main(results_dir):
             for err in summary["errors"]:
                 summary["failed"].append({"file": "(outside any test)", "title": "suite-level error", "line": 0,
                                           "error": err, "infra_signature": None, "attempts": 1,
-                                          "statuses": ["failed"], "attachments": []})
+                                          "statuses": ["failed"], "evidence": NO_EVIDENCE})
             failed = summary["failed"]
             summary["totals"]["failed"] = len(failed)
 
@@ -254,6 +279,16 @@ def main(results_dir):
     return 0 if not failed else 1
 
 
+def evidence_line(ev, results_dir):
+    if not ev["screenshots"]:
+        return "none (read error-context.md and playwright.log)" if ev["error_context"] else "none"
+
+    def show(path):
+        rel = os.path.relpath(path, results_dir)
+        return path if rel.startswith("..") else rel
+    return ", ".join(f"`{show(p)}`" for p in ev["screenshots"]) + f" (attempt {ev['attempt'] + 1})"
+
+
 def write(results_dir, s):
     with open(os.path.join(results_dir, "summary.json"), "w") as f:
         json.dump(s, f, indent=2)
@@ -281,6 +316,8 @@ def write(results_dir, s):
                     lines.append(f"  - {e['error']}")
                 if bucket == "not_run":
                     lines.append(f"  - blocked by: {e.get('blocked_by') or 'the run ending early'}")
+                if bucket in ("failed", "flaky", "lock_flipped"):
+                    lines.append(f"  - screenshots: {evidence_line(e.get('evidence') or NO_EVIDENCE, results_dir)}")
             lines.append("")
     if s.get("errors"):
         lines += ["## Suite-level errors", ""] + [f"- {e}" for e in s["errors"]] + [""]
@@ -311,7 +348,8 @@ def record_pre_run_failure(results_dir, kind, detail, cause="infra"):
                "infra": None, "incomplete": None, "errors": []}
     if cause == "product":
         summary["failed"] = [{"file": f"({kind})", "title": f"{kind} of a product file failed", "line": 0,
-                              "error": detail, "infra_signature": None, "attempts": 1}]
+                              "error": detail, "infra_signature": None, "attempts": 1,
+                              "evidence": NO_EVIDENCE}]
         summary["totals"] = {"tests": 0, "passed": 0, "failed": 1, "flaky": 0, "lock_flipped": 0,
                              "lock_holding": 0, "skipped": 0, "not_run": 0, "skipped_deliberate": 0,
                              "duration_s": 0}
