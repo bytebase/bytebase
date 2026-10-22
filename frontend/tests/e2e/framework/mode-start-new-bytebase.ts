@@ -342,6 +342,17 @@ export async function startServer(): Promise<{
   // is logged in. See frontend/tests/e2e/AGENTS.md for a dev license.
   await api.uploadLicense(license);
 
+  // Keep every browser session valid for the whole run. The setup project
+  // captures the admin's storage state once; access tokens default to one
+  // hour and refresh tokens are single-use, so after the first hour a context
+  // built from that state lands on the sign-in page and its spec fails on an
+  // unrelated element. Needs the license (sign-in frequency control) above.
+  await api.upsertSetting(
+    "WORKSPACE_PROFILE",
+    { workspaceProfile: { accessTokenDuration: "86400s" } },
+    "value.workspace_profile.access_token_duration",
+  );
+
   // Phase 3c: Provision the DBA fixture user that plan-detail approval
   // specs use as the second approver. The previous demo dump pre-seeded
   // additional users (dba1/dev1/qa1); now we create only what's actually

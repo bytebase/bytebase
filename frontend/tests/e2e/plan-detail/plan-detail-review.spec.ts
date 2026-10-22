@@ -433,6 +433,122 @@ test.describe("Permission boundary: non-candidate cannot review but can comment"
   });
 });
 
+// A new project denies approval by the last person who changed the plan
+// (allow_last_plan_editor_approval=false). Every other describe turns the
+// option on through authorMayApprove so the single admin can approve its own
+// plans; this one keeps it off and checks the rule from both sides of the
+// boundary: the editor (a candidate of the step) sees Approve disabled with
+// the reason and is refused by the API, can still reject, and a second admin
+// who never touched the plan approves as usual.
+test.describe("Last plan editor cannot approve while the project option is off", () => {
+  test.describe.configure({ mode: "serial" });
+  const APPROVER_EMAIL = "approver1@example.com";
+  const APPROVER_PASSWORD = "12345678"; // NOSONAR: e2e fixture
+  let planId: string;
+  let issueName: string;
+
+  test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
+    await env.api.updateProjectSettings(env.project, {
+      allowSelfApproval: true,
+      allowLastPlanEditorApproval: false,
+    });
+    // A second workspace admin: a candidate of the step who did not edit the
+    // plan. Creation tolerates a leftover from a retried attempt.
+    try {
+      await env.api.createUser(APPROVER_EMAIL, APPROVER_PASSWORD, "Approver1");
+    } catch (err) {
+      if (!String(err).includes("409")) throw err;
+    }
+    const { workspace } = await env.api.getActuatorInfo();
+    await env.api.addWorkspaceRoleMember(
+      workspace,
+      APPROVER_EMAIL,
+      "roles/workspaceAdmin",
+    );
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review LastEditor",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_le_${Date.now()} TEXT;`,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    issueName = seeded.issueName;
+    await goReview(planId);
+  });
+
+  test.afterAll(async () => {
+    await env.api.deleteUser(APPROVER_EMAIL);
+  });
+
+  test("the editor is a candidate, but Approve is disabled with the reason and the API refuses", async () => {
+    await expect(planPage.reviewBadge("Under review")).toBeVisible({
+      timeout: 15_000,
+    });
+    // The approval flow names the blocked candidate under the step.
+    await expect(
+      page.getByText("Can't approve — last changed this plan", { exact: false }),
+    ).toBeVisible();
+    // The Review action is still offered: the editor can comment or reject.
+    await planPage.reviewButton.click();
+    await page.getByText("Submit feedback and request changes").waitFor();
+    const approve = page.getByRole("radio", { name: /^Approve/ });
+    await expect(approve).toBeDisabled();
+    await page.getByText("Approve", { exact: true }).hover();
+    await expect(
+      page.getByText(
+        "You can't approve this issue because you were the last person to change its plan",
+        { exact: false },
+      ),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    // The server enforces the same rule.
+    await expect(env.api.approveIssue(issueName)).rejects.toThrow(
+      /last Plan editor/,
+    );
+  });
+
+  test("a second admin who never edited the plan approves it", async ({ browser }) => {
+    await signInBrowserAs(
+      browser,
+      env.baseURL,
+      APPROVER_EMAIL,
+      APPROVER_PASSWORD,
+      ".auth/approver-review.json",
+    );
+    const approverContext = await browser.newContext({
+      storageState: ".auth/approver-review.json",
+    });
+    try {
+      const approverPage = new PlanDetailPage(
+        await approverContext.newPage(),
+        env.baseURL,
+      );
+      await approverPage.goto(projectId, planId);
+      await approverPage.dismissModals();
+      await approverPage.expandSection("Review");
+      await expect(approverPage.reviewButton).toBeVisible({ timeout: 15_000 });
+      await approverPage.submitReview("Approve");
+      await expect(approverPage.reviewBadge("Approved")).toBeVisible({
+        timeout: 15_000,
+      });
+    } finally {
+      await approverContext.close();
+    }
+  });
+
+  test("the editor can still reject", async () => {
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review LastEditor Reject",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_ler_${Date.now()} TEXT;`,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    await goReview(seeded.planId);
+    await planPage.submitReview("Reject", "Add a default value before this can ship");
+    await expect(planPage.reviewBadge("Rejected")).toBeVisible({ timeout: 15_000 });
+    await expect(planPage.rejectionBanner).toBeVisible();
+  });
+});
+
 // An integration approves through the API as a service account that holds a
 // custom role (design doc: docs/design/approval-step-non-human-approvers.md).
 // The step used to read "No reviewers".
@@ -656,12 +772,13 @@ test.describe("Inline comment threads (CUJ K)", () => {
     });
 
     // View in Statement lands on the anchored lines with the seeded thread
-    // expanded, collapsing the thread created above.
+    // expanded. Threads expand independently (#21543), so the thread created
+    // above stays open beside it.
     await reopened.getByRole("button", { name: "View in Statement" }).click();
     const editorCard = planPage.threadCardIn("changes", seededRoot);
     await expect(editorCard).toBeVisible({ timeout: 15_000 });
     await expect(editorCard).toContainText(typedReply);
-    await expect(planPage.threadCardIn("changes", createdRoot)).not.toBeVisible();
+    await expect(planPage.threadCardIn("changes", createdRoot)).toBeVisible();
   });
 });
 
@@ -1016,9 +1133,13 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
     await expect(planPage.specUnresolvedCounts).toHaveCount(1, { timeout: 15_000 });
     await expect(planPage.specUnresolvedCounts).toHaveText("2");
     await expectReviewSummary("3 unresolved threads");
-    await expect(planPage.threadWalker).toContainText("2");
-    await expect(planPage.threadWalker).toHaveAttribute(
-      "title",
+    // The walker reads "position/count" (#21543); its explanation is the
+    // aria-label of the count's tooltip trigger.
+    await expect(planPage.threadWalker).toContainText("/2");
+    await expect(
+      planPage.threadWalker.locator("[aria-label]").first(),
+    ).toHaveAttribute(
+      "aria-label",
       "2 unresolved threads on this version · 1 more not shown on this version",
     );
     // Markers: A, B, and the resolved one; the stale thread has none.
@@ -1030,7 +1151,8 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
     await expect(planPage.threadCardIn("changes", rootA)).toBeVisible();
     await planPage.threadWalkerNext.click();
     await expect(planPage.threadCardIn("changes", rootB)).toBeVisible({ timeout: 10_000 });
-    await expect(planPage.threadCardIn("changes", rootA)).not.toBeVisible();
+    // Stepping opens the next thread without closing the previous one (#21543).
+    await expect(planPage.threadCardIn("changes", rootA)).toBeVisible();
     await planPage.threadWalkerNext.click();
     await expect(planPage.threadCardIn("changes", rootA)).toBeVisible({ timeout: 10_000 });
     await planPage.threadWalkerPrevious.click();
@@ -1244,6 +1366,7 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
   let issueName: string;
   let specId: string;
   let sheetSha256: string;
+  let earlierRootName = "";
   let laterRootName = "";
   const stamp = Date.now();
   const earlierRoot = `M earlier root lines 4-5 ${stamp}`;
@@ -1271,7 +1394,8 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
       statementAnchor: { spec: specId, sheetSha256, startLine, endLine },
     });
     // Both end on line 5, so they share its marker.
-    await env.api.createIssueComment(issueName, earlierRoot, anchor(4, 5));
+    const earlier = await env.api.createIssueComment(issueName, earlierRoot, anchor(4, 5));
+    earlierRootName = earlier.name;
     const later = await env.api.createIssueComment(issueName, laterRoot, anchor(5, 5));
     laterRootName = later.name;
     await goReview(planId);
@@ -1303,15 +1427,31 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
   test("two threads ending on one line share a counted marker, and the stack expands either one", async () => {
     const shared = planPage.statementEditor.locator(".bb-thread-glyph--count-2");
     await expect(shared).toHaveCount(1);
-    await shared.click();
-    // The earliest unresolved thread expands; the other waits as a row.
+    // The marker toggles its own stack (#21543). The stack may already be open
+    // from the layer's mount, which expands the first unresolved thread, so
+    // open it only when it is not showing.
+    const stack = page
+      .locator("#plan-phase-changes [data-testid='thread-stack']")
+      .filter({ hasText: laterRoot });
+    if (!(await stack.isVisible().catch(() => false))) {
+      await shared.click();
+    }
+    await expect(stack).toBeVisible();
+    // Each thread in the stack opens on its own, and expanding one leaves the
+    // other open: both cards end up visible.
+    for (const [rootName, rootText] of [
+      [earlierRootName, earlierRoot],
+      [laterRootName, laterRoot],
+    ]) {
+      const row = planPage.collapsedThreadRow(rootName);
+      if (await row.isVisible().catch(() => false)) {
+        await expect(row).toContainText(rootText);
+        await row.click();
+      }
+      await expect(planPage.threadCardIn("changes", rootText)).toBeVisible();
+    }
     await expect(planPage.threadCardIn("changes", earlierRoot)).toBeVisible();
-    const laterRow = planPage.collapsedThreadRow(laterRootName);
-    await expect(laterRow).toBeVisible();
-    await expect(laterRow).toContainText(laterRoot);
-    await laterRow.click();
     await expect(planPage.threadCardIn("changes", laterRoot)).toBeVisible();
-    await expect(planPage.threadCardIn("changes", earlierRoot)).not.toBeVisible();
   });
 
   test("the walker announces its position and yields the corner to the find widget", async () => {
