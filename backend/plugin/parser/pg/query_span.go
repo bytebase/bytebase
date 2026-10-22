@@ -284,21 +284,14 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	// Step 4: Classify query type.
 	queryType, isExplainAnalyze := classifyQueryType(omniStmts[0].AST, allSystems)
 
-	// Step 5: Return early for non-SELECT queries.
-	if queryType != base.Select {
+	// Step 5: Return early for non-SELECT queries, keeping the tables the
+	// statement touches and no result columns.
+	if queryType != base.Select || isExplainAnalyze {
 		return &base.QuerySpan{
-			Type:          queryType,
-			SourceColumns: base.SourceColumnSet{},
-			Results:       []base.QuerySpanResult{},
-		}, nil
-	}
-
-	// For EXPLAIN ANALYZE SELECT, return with source columns but no results.
-	if isExplainAnalyze {
-		return &base.QuerySpan{
-			Type:          queryType,
-			SourceColumns: accessesMap,
-			Results:       []base.QuerySpanResult{},
+			Type:           queryType,
+			ExplainAnalyze: isExplainAnalyze,
+			SourceColumns:  accessesMap,
+			Results:        []base.QuerySpanResult{},
 		}, nil
 	}
 

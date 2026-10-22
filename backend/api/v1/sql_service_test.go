@@ -9,6 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/permission"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -486,4 +489,156 @@ func TestExplainGateAllowsPlans(t *testing.T) {
 		require.Errorf(t, validateExplainStatements(instance, "SELECT 1; ANALYZE DELETE FROM t", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: smuggle after a read", engine)
 		require.Errorf(t, validateExplainStatements(instance, "ANALYZE DELETE FROM t; SELECT 1", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: smuggle before a read", engine)
 	}
+}
+
+// explainAccessFixture is one instance holding a database of project A and a
+// database of project B, with users whose explain and select rights differ
+// between the two projects.
+type explainAccessFixture struct {
+	service  *SQLService
+	instance *store.InstanceMessage
+	database *store.DatabaseMessage
+}
+
+func newExplainAccessFixture(ctx context.Context, t *testing.T, engine storepb.Engine) *explainAccessFixture {
+	t.Helper()
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+    INSERT INTO workspace (resource_id) VALUES ('default');
+    INSERT INTO principal (name, email, password_hash) VALUES
+      ('explain-a', 'explain-a@example.com', 'unused'),
+      ('explain-ab', 'explain-ab@example.com', 'unused'),
+      ('select-a', 'select-a@example.com', 'unused'),
+      ('both-a', 'both-a@example.com', 'unused');
+    INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'A'), ('project-b', 'default', 'B');`)
+	require.NoError(t, err)
+	for _, role := range []struct {
+		id   string
+		perm permission.Permission
+	}{
+		{id: "explainer", perm: permission.SQLExplain},
+		{id: "selector", perm: permission.SQLSelect},
+	} {
+		_, err = stores.CreateRole(ctx, &store.RoleMessage{
+			ResourceID: role.id, Workspace: "default", Name: role.id,
+			Permissions: map[permission.Permission]bool{role.perm: true},
+		})
+		require.NoError(t, err)
+	}
+	for _, binding := range []struct {
+		project string
+		role    string
+		members []string
+	}{
+		{project: "project-a", role: "explainer", members: []string{"explain-a@example.com", "explain-ab@example.com", "both-a@example.com"}},
+		{project: "project-a", role: "selector", members: []string{"select-a@example.com", "both-a@example.com"}},
+		{project: "project-b", role: "explainer", members: []string{"explain-ab@example.com"}},
+	} {
+		members := make([]string, 0, len(binding.members))
+		for _, member := range binding.members {
+			members = append(members, common.FormatUserEmail(member))
+		}
+		_, err = stores.PatchIamPolicy(ctx, "default", storepb.Policy_PROJECT, common.FormatProject(binding.project), func(policy *storepb.IamPolicy) error {
+			policy.Bindings = append(policy.Bindings, &storepb.Binding{Role: "roles/" + binding.role, Members: members})
+			return nil
+		})
+		require.NoError(t, err)
+	}
+	instance, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "test", Workspace: "default",
+		// lower_case_table_names=1 makes the instance fold case, so DB_B names db_b.
+		Metadata: &storepb.Instance{Engine: engine, Activation: true, MysqlLowerCaseTableNames: 1, DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}}},
+	})
+	require.NoError(t, err)
+	var connected *store.DatabaseMessage
+	for name, project := range map[string]string{"db_a": "project-a", "db_b": "project-b"} {
+		database, err := stores.UpsertDatabase(ctx, &store.DatabaseMessage{
+			InstanceID: "test", DatabaseName: name, ProjectID: project, Metadata: &storepb.DatabaseMetadata{},
+		})
+		require.NoError(t, err)
+		if name == "db_a" {
+			connected = database
+		}
+	}
+	iamManager, err := iam.NewManager(stores, nil, false)
+	require.NoError(t, err)
+	return &explainAccessFixture{
+		service:  &SQLService{store: stores, iamManager: iamManager},
+		instance: instance,
+		database: connected,
+	}
+}
+
+func (f *explainAccessFixture) check(ctx context.Context, email string, isExplain bool, statement string, span *parserbase.QuerySpan) error {
+	user := &store.UserMessage{Email: email}
+	return f.service.accessCheckWithGrantedTargets(ctx, f.instance, f.database, user, []*parserbase.QuerySpan{span}, isExplain, []parserbase.Statement{{Text: statement}}, nil, "", false)
+}
+
+func reads(databases ...string) parserbase.SourceColumnSet {
+	columns := parserbase.SourceColumnSet{}
+	for _, database := range databases {
+		columns[parserbase.ColumnResource{Database: database, Table: "t"}] = true
+	}
+	return columns
+}
+
+func requireExplainDenied(t *testing.T, err error, perm permission.Permission, resources ...string) {
+	t.Helper()
+	var denied *queryError
+	require.ErrorAs(t, err, &denied)
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(denied.err))
+	require.Equal(t, perm, denied.permission)
+	require.Equal(t, resources, denied.resources)
+}
+
+// TestExplainRequiresEachReferencedDatabase pins the plan boundary: a plan
+// describes every database its statement references, a database in another
+// project fails closed as it does for a write, and a typed EXPLAIN ANALYZE
+// needs the statement's permission as well as explain.
+func TestExplainRequiresEachReferencedDatabase(t *testing.T) {
+	t.Parallel()
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	f := newExplainAccessFixture(ctx, t, storepb.Engine_MYSQL)
+	const dbB = "instances/test/databases/db_b"
+
+	t.Run("explain request", func(t *testing.T) {
+		t.Parallel()
+		crossRead := &parserbase.QuerySpan{Type: parserbase.Select, SourceColumns: reads("db_a", "db_b")}
+		require.NoError(t, f.check(ctx, "explain-a@example.com", true, "SELECT 1", &parserbase.QuerySpan{Type: parserbase.Select, SourceColumns: reads("db_a")}))
+		requireExplainDenied(t, f.check(ctx, "explain-a@example.com", true, "SELECT 1", crossRead), permission.SQLExplain, dbB)
+		requireExplainDenied(t, f.check(ctx, "explain-ab@example.com", true, "SELECT 1", crossRead), permission.SQLExplain, dbB)
+		requireExplainDenied(t, f.check(ctx, "select-a@example.com", true, "SELECT 1", crossRead), permission.SQLExplain, "instances/test/databases/db_a", dbB)
+		require.NoError(t, f.check(ctx, "explain-a@example.com", true, "SELECT 1", &parserbase.QuerySpan{Type: parserbase.Select, SourceColumns: reads("db_a", "SYS")}), "an untracked database is left to the connected database's check")
+	})
+
+	t.Run("typed EXPLAIN", func(t *testing.T) {
+		t.Parallel()
+		crossRead := &parserbase.QuerySpan{Type: parserbase.Explain, SourceColumns: reads("db_a", "db_b")}
+		requireExplainDenied(t, f.check(ctx, "explain-a@example.com", false, "EXPLAIN SELECT 1", crossRead), permission.SQLExplain, dbB)
+		requireExplainDenied(t, f.check(ctx, "explain-a@example.com", false, "EXPLAIN SELECT 1", &parserbase.QuerySpan{Type: parserbase.Explain, SourceColumns: reads("DB_B")}), permission.SQLExplain, dbB)
+		require.NoError(t, f.check(ctx, "explain-a@example.com", false, "EXPLAIN SELECT 1", &parserbase.QuerySpan{Type: parserbase.Explain, SourceColumns: reads("db_a")}))
+	})
+
+	t.Run("typed EXPLAIN ANALYZE", func(t *testing.T) {
+		t.Parallel()
+		analyze := &parserbase.QuerySpan{Type: parserbase.Select, ExplainAnalyze: true, SourceColumns: reads("db_a")}
+		requireExplainDenied(t, f.check(ctx, "explain-a@example.com", false, "EXPLAIN ANALYZE SELECT 1", analyze), permission.SQLSelect, "instances/test/databases/db_a/tables/t")
+		requireExplainDenied(t, f.check(ctx, "select-a@example.com", false, "EXPLAIN ANALYZE SELECT 1", analyze), permission.SQLExplain, "instances/test/databases/db_a")
+		require.NoError(t, f.check(ctx, "both-a@example.com", false, "EXPLAIN ANALYZE SELECT 1", analyze))
+	})
+}
+
+// TestExplainOfAWriteNamesItsTables pins explain over DML: the databases its
+// tables live in are checked like a read's, and a write that names no table,
+// such as a procedure call, is checked on the connected database alone.
+func TestExplainOfAWriteNamesItsTables(t *testing.T) {
+	t.Parallel()
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	f := newExplainAccessFixture(ctx, t, storepb.Engine_MYSQL)
+	require.NoError(t, f.check(ctx, "explain-a@example.com", true, "DELETE FROM t", &parserbase.QuerySpan{Type: parserbase.DML, SourceColumns: reads("db_a")}))
+	crossRead := &parserbase.QuerySpan{Type: parserbase.DML, SourceColumns: reads("db_a", "db_b")}
+	requireExplainDenied(t, f.check(ctx, "explain-a@example.com", true, "INSERT INTO t SELECT * FROM db_b.t", crossRead), permission.SQLExplain, "instances/test/databases/db_b")
+	call := &parserbase.QuerySpan{Type: parserbase.DML, SourceColumns: parserbase.SourceColumnSet{}}
+	require.NoError(t, f.check(ctx, "explain-a@example.com", true, "CALL p()", call))
+	requireExplainDenied(t, f.check(ctx, "select-a@example.com", true, "CALL p()", call), permission.SQLExplain, "instances/test/databases/db_a")
 }

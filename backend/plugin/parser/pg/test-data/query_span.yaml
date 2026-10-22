@@ -2915,7 +2915,12 @@
   querySpan:
     type: 3
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: information_schema
+          table: tables
+          column: ""
     predicatecolumns: []
 - description: Test table.* with JOIN on different tables for masking
   statement: SELECT users.*, payments.* FROM users JOIN payments ON users.id = payments.user_id;

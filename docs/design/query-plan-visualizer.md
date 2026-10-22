@@ -1,6 +1,6 @@
 # Query plan visualizer
 
-**Status:** draft for review · **Scope:** SQL Editor · Code references are to `main` at `7664688752`.
+**Status:** partly implemented, see §6 · **Scope:** SQL Editor · Code references are to `main` at `7664688752` unless a PR is named.
 
 Bytebase draws query plans, but few users reach the drawing. This covers the
 whole journey: how you ask for a plan, when you get a picture, how you read it,
@@ -21,10 +21,7 @@ Journey 3 is the rarest — most people press Run without checking — so the de
 spends its effort on what happens *after* a run. Supabase removed its editor
 Explain tab, which only served journey 3, for non-use.
 
-This ordering is a guess, so instrument it before building. Four events settle
-it: which of the four triggers fired (§3.1), whether the result drew a graph or
-fell back to text, whether Visualize was pressed, and time-to-plan. Unnamed
-telemetry never gets built, so these are the names.
+This ordering is a judgment call, not a measurement.
 
 ---
 
@@ -346,11 +343,10 @@ limit and all. The estimate badge is about statistics moving; it must not quietl
 cover a different query.
 
 That requires every driver that rewrites a statement to record what it actually
-ran, and two do not: SQL Server executes `refinedBatch` but records
-`singleSQLs[i].Text` (`mssql.go:607`), and Spanner executes `limitedStatement`
-but records `statement` (`spanner.go:400`). Their Plan tabs wait on that being
-fixed, exactly as the timed-out case waits on the timeout response carrying its
-statement.
+ran. SQL Server and Spanner did not until
+[#21476](https://github.com/bytebase/bytebase/pull/21476) and
+[#21481](https://github.com/bytebase/bytebase/pull/21481); the timed-out case
+still waits on the timeout response carrying its statement.
 
 **Say which one it is, in words.** Measured and estimated carry a badge, and an
 estimated plan says *"A new plan, made just now. It may differ from the plan that
@@ -363,9 +359,7 @@ was never the problem. That is the inverted failure this wording exists to stop.
 
 **Nine of twelve engines have no parser**, so for those the plan is text. Showing
 it as formatted text instead of grid rows is a small change with wide reach.
-Whether it reaches most *users* is a separate question that engine counts cannot
-answer — the §1 instrumentation is what settles which engines people actually
-explain, and it should settle the sequencing too. MySQL and Oracle are the
+MySQL and Oracle are the
 cheapest graphs to add later: MySQL already emits structured JSON, and Oracle's
 plan table already holds the parent-child links the driver discards.
 
@@ -415,36 +409,45 @@ permission to read rows. That boundary applies identically to the Plan tab, the
 Text tab, Copy plan, and any plan attached to an ordinary run (§3.4): all of them
 are the same capability, so none of them may be reachable without it.
 
-Two ways that boundary leaks today, both in `checkDatabaseAccess`
-(`sql_service.go:1411-1447`), and both have to close before any of this ships:
+Two ways that boundary leaked, both in `checkDatabaseAccess`
+(`sql_service.go:1411-1447`), both closed:
 
-- **It is checked per connection, not per referenced database**, on both routes.
-  An explain request has no query spans at all; a typed `EXPLAIN` does have one,
-  but MySQL extracts it as a pseudo-table with no source columns
-  (`query_span_extractor.go:468`), so nothing per-resource fires there either.
-  Both end at the same single check against the database the editor is connected
-  to, so `EXPLAIN SELECT * FROM db_b.secret` on `db_a` yields `db_b`'s plan to
-  someone with explain on `db_a` only. Explain has to be required on every
-  database the statement references — typed and generated alike — which means
-  extracting them from the inner statement, and evaluating each against **its
-  own** project's policy. One instance can hold databases owned by different
-  projects, while the policy is loaded once from the connected database
-  (`sql_service.go:1393-1407`), so reusing it would judge `db_b` by `db_a`'s
-  bindings: exposure for a project-A member, and a wrong denial for a legitimate
-  project-B one.
-- **A data access grant exempts it.** The check returns early for a granted
-  target before the permission is ever evaluated, so a temporary select or
-  unmask grant carries explain along with it. Access grants convey data access;
-  they do not convey the right to read plans.
+- **It was checked per connection, not per referenced database**, on both
+  routes. An explain request had no query spans at all; a typed `EXPLAIN` had
+  one, but MySQL extracted it as a pseudo-table with no source columns, so
+  nothing per-resource fired there either. Both ended at the same single check
+  against the database the editor is connected to, so `EXPLAIN SELECT * FROM
+  db_b.secret` on `db_a` yielded `db_b`'s plan to someone with explain on `db_a`
+  only. Now the inner statement's span names every database it references —
+  typed and generated alike — and `bb.sql.explain` is required on each tracked
+  one, through the same per-target check a write uses (`checkExplainAccess`
+  over `authorizeWriteTargets`). One instance can hold databases owned by
+  different projects, and the connected database's policy says nothing about
+  another project's, so a database in another project fails closed, as it does
+  for a write. A name is resolved as typed, and case-insensitively where the
+  engine folds case; one Bytebase does not track as a database — Oracle's
+  `SYS`, Snowflake's `SNOWFLAKE` — is left to the connected database's check. A
+  typed `EXPLAIN ANALYZE` carries an `ExplainAnalyze` mark on its span and needs
+  the inner statement's permission as well. SQL Server's `SET STATISTICS XML
+  ON` also executes and returns a plan, and still passes on `bb.sql.select`
+  alone: the explain recognizer knows only SHOWPLAN. That is the one permission
+  item still open here.
+- **A data access grant exempted it**
+  ([#21619](https://github.com/bytebase/bytebase/pull/21619)). The check
+  returned early for a granted target before the permission was evaluated, so a
+  temporary select or unmask grant carried explain along with it. Access grants
+  convey data access; they do not convey the right to read plans, and
+  `bb.sql.explain` now comes from IAM on every route.
 
 Reading the statement does not always reveal what it touches. `EXEC dbo.p` is
 classified as DML with no source columns (`tsql/query_type.go:42`,
 `query_span_extractor.go:501-505`), while SHOWPLAN and `STATISTICS XML` expose
 plans for the statements *inside* the procedure — so a procedure reading `db_b`
-would be authorized against `db_a` alone. Resolving routine dependencies is a
-larger feature than this design. **When the resource set is opaque, refuse the
-plan**: no plan is the safe answer, and it is the same choice §3.3 makes for
-session-dependent scripts.
+is authorized against `db_a` alone. Resolving routine dependencies is a larger
+feature than this design, and a plan is still worth having: a statement whose
+span names no table is checked on the connected database, as every explain was
+before. Every query span now carries the tables its statement touches, whatever
+the statement type, so this is the only case left to that single check.
 
 **Slow and large plans.** The on-demand call can take as long as any query: show
 a skeleton, allow cancel, time out rather than hang. Past a node cap the Plan tab
@@ -490,3 +493,42 @@ they are no guide — two cannot express one — so §3.2 follows SSMS and pgAdm
 **Method.** Code read at `main`; walkthrough of a local build (86 screenshots, 24
 problems); 20+ SQL editors and 6 plan viewers checked against docs, source and
 live servers, September 2026.
+
+---
+
+## 6. Status
+
+Checked against `main` on 2026-10-22.
+
+**Landed**
+
+- §3.2 — the result states its plan format (`QueryResult.query_plan`), a typed
+  `EXPLAIN (FORMAT JSON)` draws inline, and Visualize substitutes the format on
+  the server: [#21485](https://github.com/bytebase/bytebase/pull/21485),
+  [#21492](https://github.com/bytebase/bytebase/pull/21492),
+  [#21493](https://github.com/bytebase/bytebase/pull/21493).
+- §3.4 — SQL Server and Spanner record the statement they ran:
+  [#21476](https://github.com/bytebase/bytebase/pull/21476),
+  [#21481](https://github.com/bytebase/bytebase/pull/21481).
+- §3.5 — the explain gate refuses a smuggled write
+  ([#21447](https://github.com/bytebase/bytebase/pull/21447)); an access
+  grant no longer carries `bb.sql.explain`
+  ([#21619](https://github.com/bytebase/bytebase/pull/21619)); explain is
+  required on every database the statement references, with a database in
+  another project failing closed, and a typed `EXPLAIN ANALYZE` needs the inner
+  statement's permission as well. What remains of §3.5: SQL Server's
+  `SET STATISTICS XML ON` route still passes on `bb.sql.select` alone, and the
+  Plan tab items — disabled with the reason shown, skeleton and cancel, the
+  node cap — ride with item 1.
+
+**Not yet, in the order to do them**
+
+1. §3.2/§3.3 — the Plan tab on an ordinary result, planning the executed
+   statement, with the estimate wording from §3.4.
+2. §3.1 — Explain and Explain analyze in the Run dropdown, planning the limited
+   statement; today every driver's explain path skips the limit.
+3. §3.3 — the reading changes: summary panel always visible, graph opening on
+   the costliest operator, View SQL, warning relevance, measured plans with
+   planned vs actual rows, cost share on the tab label.
+4. §3.4 — delete the pop-up page (`frontend/explain-visualizer.html`), which
+   nothing links to any more.

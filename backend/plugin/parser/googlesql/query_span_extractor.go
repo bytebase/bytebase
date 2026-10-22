@@ -121,13 +121,12 @@ func (q *QuerySpanExtractor) GetQuerySpan(ctx context.Context, statement string)
 	accessTables := q.toTableResources(omniSpan)
 
 	// Only a read-only query produces per-column results; DML/DDL/Explain/
-	// Unknown return no per-column lineage — exactly the legacy behaviour
-	// (it returned an empty span for any non-Select). SelectInfoSchema is a
-	// read so it is treated like Select here.
+	// Unknown keep the accessed tables and no per-column lineage.
+	// SelectInfoSchema is a read so it is treated like Select here.
 	if queryType != base.Select && queryType != base.SelectInfoSchema {
 		return &base.QuerySpan{
 			Type:          queryType,
-			SourceColumns: base.SourceColumnSet{},
+			SourceColumns: accessTables,
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}

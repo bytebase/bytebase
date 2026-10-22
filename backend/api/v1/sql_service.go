@@ -833,38 +833,34 @@ func queryRetry(
 	schemaSyncer *schemasync.Syncer,
 	multiStatement bool,
 ) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
-	var spans []*parserbase.QuerySpan
 	var sensitivePredicateColumns [][]parserbase.ColumnResource
-	var err error
-	if !queryContext.Explain {
-		spans, err = parserbase.GetQuerySpan(
-			ctx,
-			parserbase.GetQuerySpanContext{
-				InstanceID:                    instance.ResourceID,
-				GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
-				ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
-				GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
-			},
-			instance.Metadata.GetEngine(),
-			statements,
-			database.DatabaseName,
-			queryContext.Schema,
-			!store.IsObjectCaseSensitive(instance),
-		)
-		if err != nil {
-			return nil, nil, time.Duration(0), err
-		}
-		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
-		// If err != nil, this function will return the original spans.
-		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
-			slog.Debug("failed to replace backup table with source", log.BBError(err))
-		}
+	// An explain request carries the bare statements the driver will wrap, so
+	// their spans name the databases the plan describes.
+	spans, err := parserbase.GetQuerySpan(
+		ctx,
+		parserbase.GetQuerySpanContext{
+			InstanceID:                    instance.ResourceID,
+			GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
+			ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
+			GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
+		},
+		instance.Metadata.GetEngine(),
+		statements,
+		database.DatabaseName,
+		queryContext.Schema,
+		!store.IsObjectCaseSensitive(instance),
+	)
+	if err != nil {
+		return nil, nil, time.Duration(0), err
+	}
+	// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
+	// If err != nil, this function will return the original spans.
+	if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
+		slog.Debug("failed to replace backup table with source", log.BBError(err))
 	}
 	if optionalAccessCheck != nil {
-		// An EXPLAIN request leaves spans nil (GetQuerySpan runs only above), so
-		// accessCheckWithGrantedTargets takes its database-level branch and requires
-		// bb.sql.explain. A smuggled write (EXPLAIN ANALYZE of a write) is refused
-		// earlier, in the Query handler, before it reaches execution.
+		// A smuggled write (EXPLAIN ANALYZE of a write) is refused earlier, in
+		// the Query handler, before it reaches execution.
 		if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain, statements, queryContext.Schema, multiStatement); err != nil {
 			return nil, nil, time.Duration(0), err
 		}
@@ -1615,9 +1611,8 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		return nil
 	}
 
-	// No spans: either a read with no source columns (e.g. SELECT 1) or an EXPLAIN
-	// request (GetQuerySpan runs only for non-EXPLAIN). Check at the database
-	// level, with EXPLAIN permission for the latter.
+	// No spans: an engine without a span extractor. Check at the database level,
+	// with the explain permission for an explain request.
 	if len(spans) == 0 {
 		perm := permission.SQLSelect
 		if isExplain {
@@ -1660,6 +1655,19 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		if perm == "" {
 			// always fallback to bb.sql.select
 			perm = permission.SQLSelect
+		}
+
+		// A plan names the tables it reads, so reading one needs bb.sql.explain on
+		// every database the statement references, not only the connected one.
+		// A plain EXPLAIN, typed or requested, executes nothing and is done here;
+		// EXPLAIN ANALYZE executes its statement and is checked for that below.
+		if isExplain || perm == permission.SQLExplain || (span.ExplainAnalyze && common.EngineSupportQueryNewACL(instance.Metadata.GetEngine())) {
+			if err := s.checkExplainAccess(ctx, user, instance, database, span, workspacePolicy.Policy, projectPolicy.Policy); err != nil {
+				return err
+			}
+			if !span.ExplainAnalyze {
+				continue
+			}
 		}
 
 		// DML/DDL: authorize per write-target so table/schema-scoped grants work. Resolve the
@@ -1795,9 +1803,86 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	return nil
 }
 
+// checkExplainAccess requires bb.sql.explain on every database a plan of the
+// span's statement would describe: the connected database and each tracked
+// database the statement's tables live in, authorized like a write's targets.
+// Access grants do not apply; they convey data access, not plan access. What
+// the span cannot place in a tracked database — a procedure call that names no
+// table, a system schema such as Oracle's SYS — is left to the connected
+// database's check.
+func (s *SQLService) checkExplainAccess(
+	ctx context.Context,
+	user *store.UserMessage,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	span *parserbase.QuerySpan,
+	workspacePolicy *storepb.IamPolicy,
+	projectPolicy *storepb.IamPolicy,
+) error {
+	targets := []writeTargetResource{{database: database.DatabaseName}}
+	var referenced []string
+	for column := range span.SourceColumns {
+		if column.Database != "" && column.Database != database.DatabaseName {
+			referenced = append(referenced, column.Database)
+		}
+	}
+	slices.Sort(referenced)
+	for _, name := range slices.Compact(referenced) {
+		tracked, err := s.findDatabaseAsTyped(ctx, instance, name)
+		if err != nil {
+			return err
+		}
+		if tracked != nil {
+			targets = append(targets, writeTargetResource{database: tracked.DatabaseName})
+		}
+	}
+	deniedResources, err := s.authorizeWriteTargets(ctx, user, instance, database, permission.SQLExplain, targets, nil, true, workspacePolicy, projectPolicy)
+	if err != nil {
+		return err
+	}
+	if len(deniedResources) > 0 {
+		setPermissionDenied(ctx)
+		return &queryError{
+			err: connect.NewError(
+				connect.CodePermissionDenied,
+				errors.Errorf("permission denied to access resources: %v", deniedResources),
+			),
+			resources:  deniedResources,
+			permission: permission.SQLExplain,
+		}
+	}
+	return nil
+}
+
+// findDatabaseAsTyped resolves a database name as a statement spells it. An
+// engine that folds case accepts DB_B for db_b, so there the name is matched
+// case-insensitively against the instance's databases. nil means Bytebase does
+// not track the name.
+func (s *SQLService) findDatabaseAsTyped(ctx context.Context, instance *store.InstanceMessage, name string) (*store.DatabaseMessage, error) {
+	workspace := common.GetWorkspaceIDFromContext(ctx)
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{Workspace: workspace, InstanceID: &instance.ResourceID, DatabaseName: &name})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve database %q: %v", name, err))
+	}
+	if database != nil || store.IsObjectCaseSensitive(instance) {
+		return database, nil
+	}
+	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{Workspace: workspace, InstanceID: &instance.ResourceID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list databases of %q: %v", instance.ResourceID, err))
+	}
+	for _, candidate := range databases {
+		if strings.EqualFold(candidate.DatabaseName, name) {
+			return candidate, nil
+		}
+	}
+	return nil, nil
+}
+
 // authorizeWriteTargets evaluates perm for each resolved DML/DDL write target and returns the
 // resources that were denied (empty = all authorized). A target whose database is already
-// JIT-granted is skipped.
+// JIT-granted is skipped. checkExplainAccess reuses it, at the database level, for the
+// databases a plan describes.
 //
 // databaseLevelOnly selects the precision of the check. For a single statement it is false and
 // each target is authorized at full per-(schema,table) precision. For a multi-statement batch it
