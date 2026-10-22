@@ -345,6 +345,10 @@ export async function startServer(): Promise<{
         "run on the free plan.",
     );
   }
+  // Specs that swap the license and restore it (workspace-seat-limit) read the
+  // variable; publish the resolved value so they restore the same license,
+  // whichever source it came from. Workers inherit globalSetup's environment.
+  process.env.BYTEBASE_E2E_LICENSE = license;
 
   const port = await findAvailablePort();
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "bytebase-e2e-"));

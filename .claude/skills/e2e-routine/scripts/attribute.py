@@ -21,6 +21,9 @@ import sys
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = os.path.abspath(os.path.join(SKILL_DIR, "..", "..", ".."))
+# Text searches (git log -S) look only at product code and copy. A docs, test
+# or routine commit that merely mentions a UI word must not become the culprit.
+PRODUCT_PATHS = ["frontend/src", "backend", "proto"]
 
 
 def git(*args):
@@ -110,9 +113,9 @@ def main():
         text_files[t] = {"keys": sorted(keys), "files": sorted(files)}
         if files:
             add(commits(rng, sorted(files)), 2, f"touches a file rendering '{t}'")
-        add(commits(rng, (), pickaxe=re.escape(t)), 3, f"adds/removes '{t}'")
+        add(commits(rng, PRODUCT_PATHS, pickaxe=re.escape(t)), 3, f"adds/removes '{t}'")
         for k in keys:
-            add(commits(rng, (), pickaxe=re.escape(k)), 3, f"adds/removes key {k}")
+            add(commits(rng, PRODUCT_PATHS, pickaxe=re.escape(k)), 3, f"adds/removes key {k}")
 
     # Nothing decisive inside the window: the spec may have been red for longer
     # than the ledger knows. Widen to the span between the spec file's own last
@@ -130,9 +133,9 @@ def main():
                 files = text_files[t]["files"]
                 if files:
                     add(commits(widened, files), 2, f"touches a file rendering '{t}' ({note})")
-                add(commits(widened, (), pickaxe=re.escape(t)), 3, f"adds/removes '{t}' ({note})")
+                add(commits(widened, PRODUCT_PATHS, pickaxe=re.escape(t)), 3, f"adds/removes '{t}' ({note})")
                 for k in text_files[t]["keys"]:
-                    add(commits(widened, (), pickaxe=re.escape(k)), 3, f"adds/removes key {k} ({note})")
+                    add(commits(widened, PRODUCT_PATHS, pickaxe=re.escape(k)), 3, f"adds/removes key {k} ({note})")
 
     ranked = sorted(info.values(), key=lambda c: -score[[s for s, v in info.items() if v is c][0]])
     for c in ranked:
