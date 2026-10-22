@@ -2,6 +2,7 @@ package oracle
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -182,31 +183,18 @@ func omniIdentifiers(node ast.Node) []omniIdentifier {
 		}
 	}
 	omniWalk(node, func(n ast.Node) {
+		add(omniCreatedName(n))
 		switch x := n.(type) {
 		case *ast.CreateTableStmt:
-			addObject(x.Name)
 			addTableConstraints(x.Constraints)
 		case *ast.CreateViewStmt:
-			addObject(x.Name)
 			addStrings(x.Columns, x.Loc)
 			addTableConstraints(x.Constraints)
 			add(x.ConstraintName, x.Loc)
-		case *ast.CreateIndexStmt:
-			addObject(x.Name)
-		case *ast.CreateSequenceStmt:
-			addObject(x.Name)
-		case *ast.CreateSynonymStmt:
-			addObject(x.Name)
-		case *ast.CreateTypeStmt:
-			addObject(x.Name)
-		case *ast.CreatePackageStmt:
-			addObject(x.Name)
-		case *ast.CreateProcedureStmt:
-			addObject(x.Name)
-		case *ast.CreateFunctionStmt:
-			addObject(x.Name)
-		case *ast.CreateTriggerStmt:
-			addObject(x.Name)
+		case *ast.AdminDDLStmt:
+			if x.Action == "CREATE" {
+				addObject(x.Name)
+			}
 		case *ast.RenameStmt:
 			addObject(x.NewName)
 		case *ast.AlterTableCmd:
@@ -260,6 +248,42 @@ func omniIdentifiers(node ast.Node) []omniIdentifier {
 		}
 	})
 	return result
+}
+
+// omniCreatedName returns the Name field of any omni Create*Stmt node, so
+// CREATE statements omni adds later are checked without being listed here.
+func omniCreatedName(node ast.Node) (string, ast.Loc) {
+	value := reflect.ValueOf(node)
+	if value.Kind() != reflect.Pointer || value.IsNil() {
+		return "", ast.Loc{}
+	}
+	elem := value.Elem()
+	if elem.Kind() != reflect.Struct {
+		return "", ast.Loc{}
+	}
+	typeName := elem.Type().Name()
+	if !strings.HasPrefix(typeName, "Create") || !strings.HasSuffix(typeName, "Stmt") {
+		return "", ast.Loc{}
+	}
+	nameField := elem.FieldByName("Name")
+	if !nameField.IsValid() {
+		return "", ast.Loc{}
+	}
+	switch name := nameField.Interface().(type) {
+	case *ast.ObjectName:
+		if name != nil {
+			return name.Name, name.Loc
+		}
+	case string:
+		if locField := elem.FieldByName("Loc"); locField.IsValid() {
+			if loc, ok := locField.Interface().(ast.Loc); ok {
+				return name, loc
+			}
+		}
+		return name, ast.Loc{}
+	default:
+	}
+	return "", ast.Loc{}
 }
 
 func omniWalk(node ast.Node, visit func(ast.Node)) {
