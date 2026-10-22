@@ -17,7 +17,7 @@ Policy for this task:
 - Never push to main. Push only claude/e2e-ledger (ledger.sh) and claude/e2e-adapt-<date>.
 - Never print the license or the contents of frontend/.env.dev.
 - Never kill a process you did not start.
-- Linear: team BOT only, under the umbrella issue; never edit or close an existing issue.
+- Linear: only the team in E2E_ROUTINE_LINEAR_TEAM (default BOT), under the umbrella issue; never edit or close an existing issue.
 - Finish with Phase 6 even when an earlier phase failed, and end your final message with the report.
 ```
 
@@ -36,7 +36,7 @@ First: git fetch origin worktree-e2e-routine && git checkout -q worktree-e2e-rou
 |---|---|
 | Network access | Custom: check "Also include default list", add `cdn.playwright.dev` and `playwright.download.prss.microsoft.com` |
 | Setup script | contents of `scripts/setup-env.sh` |
-| Environment variables | `BASH_DEFAULT_TIMEOUT_MS=600000`, `BASH_MAX_TIMEOUT_MS=3600000`, `E2E_ROUTINE_FILE_ISSUES=0`, `E2E_ROUTINE_UMBRELLA=BOT-<n>` |
+| Environment variables | `BASH_DEFAULT_TIMEOUT_MS=600000`, `BASH_MAX_TIMEOUT_MS=3600000`, `E2E_ROUTINE_FILE_ISSUES=0`, `E2E_ROUTINE_UMBRELLA=<team>-<n>`, `E2E_ROUTINE_LINEAR_TEAM=BOT` (or `BYT` to file into the product team) |
 | Network secrets | none needed (the dev license is in the repo; GitHub goes through the proxy; Linear is a connector) |
 
 Switch `E2E_ROUTINE_FILE_ISSUES` to `1` after a week of reviewing proposals.

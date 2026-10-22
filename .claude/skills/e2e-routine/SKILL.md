@@ -1,15 +1,16 @@
 ---
 name: e2e-routine
 description: >-
-  Nightly regression routine for the Bytebase Playwright e2e suite: decide
-  whether main moved, build the frontend-embedded binary, run the licensed
-  suite on a disposable server, classify every red test (product regression,
-  spec rot, flake, test isolation, infra, flipped lock), attribute an owner,
-  file or propose Linear BOT issues, open a test-only adaptation PR, and record
-  the run ledger. Use it as the prompt target of the cloud scheduled task, or
-  locally with /e2e-routine from a worktree. Not for exploratory QA or writing
-  new specs (that is bytebase-e2e-testing) and not for verifying one change
-  (that is verify).
+  Nightly regression run of the EXISTING Bytebase Playwright e2e suite. It
+  writes no new tests: decide whether main moved, build the frontend-embedded
+  binary, run the suite on a disposable server, and for every red test decide
+  whether the product broke (bug: Linear issue with an owner) or the test is
+  outdated (spec rot: test-only adaptation PR), with flake, isolation, infra
+  and flipped-lock as the other outcomes; then record the run ledger. Use it
+  as the prompt target of the cloud scheduled task, or locally with
+  /e2e-routine from a worktree. Not for exploratory QA or writing new specs
+  (that is bytebase-e2e-testing) and not for verifying one change (that is
+  verify).
 ---
 
 # E2E regression routine
@@ -33,7 +34,9 @@ issue body is `references/issue-template.md`; the ledger format is
 - **Processes**: never kill a process you did not start. The harness owns its
   server (PID file, port 18234 with fallback). A port conflict is reported, not
   resolved by killing.
-- **Linear**: team `BOT` only, parent = the issue in `E2E_ROUTINE_UMBRELLA`.
+- **Linear**: the team in `E2E_ROUTINE_LINEAR_TEAM` only (default `BOT`, the
+  agent-issue team from docs/agents/issue-tracker.md), parent = the issue in
+  `E2E_ROUTINE_UMBRELLA`.
   Create issues and comments only when `E2E_ROUTINE_FILE_ISSUES=1`; otherwise
   write proposals into the report. Never edit, retitle, close, reassign or
   relabel an existing issue. Search before creating; one issue per mechanism.
@@ -50,7 +53,8 @@ issue body is `references/issue-template.md`; the ledger format is
 | Variable | Default | Meaning |
 |---|---|---|
 | `E2E_ROUTINE_FILE_ISSUES` | `0` | `1` files into Linear; `0` writes proposals only |
-| `E2E_ROUTINE_UMBRELLA` | none | the BOT umbrella issue (parent of filed issues, target of the run comment) |
+| `E2E_ROUTINE_UMBRELLA` | none | the umbrella issue (parent of filed issues, target of the run comment) |
+| `E2E_ROUTINE_LINEAR_TEAM` | `BOT` | the only Linear team the routine may create issues in |
 | `E2E_ROUTINE_SLACK_CHANNEL` | none | when set and the Slack connector is attached, post the report summary there |
 | `E2E_RESULTS_ROOT` | `/tmp/e2e-routine` | run directories |
 | `E2E_LEDGER_BRANCH` | `claude/e2e-ledger` | ledger branch |
@@ -147,8 +151,8 @@ the violated expectation.
 
 ## Phase 5: Act
 
-**PRODUCT**: search `BOT` (`list_issues team=BOT query=...`) and the umbrella's
-open children. Existing open issue: comment (template at the end of
+**PRODUCT**: search the routine's team (`list_issues team=$E2E_ROUTINE_LINEAR_TEAM query=...`)
+and the umbrella's open children. Existing open issue: comment (template at the end of
 `references/issue-template.md`). Otherwise create per the template: parent
 umbrella, label `Bug`, priority per `triage.md`, assignee = attributed owner
 (none when unassigned, with candidates in the body), attach

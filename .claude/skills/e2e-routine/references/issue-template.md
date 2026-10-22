@@ -1,9 +1,10 @@
 # Linear issue for a PRODUCT regression found by the e2e routine
 
-Team `BOT`, parent = the umbrella issue from `E2E_ROUTINE_UMBRELLA`, label
-`Bug`, priority per `triage.md`, assignee from `attribute.py` (or none).
-Search first: `list_issues team=BOT query=<spec title words>` and the open
-children of the umbrella; a matching open issue gets a comment, not a twin.
+Team from `E2E_ROUTINE_LINEAR_TEAM` (default `BOT`), parent = the umbrella
+issue from `E2E_ROUTINE_UMBRELLA`, label `Bug`, priority per `triage.md`,
+assignee from `attribute.py` (or none). Search first: `list_issues team=<team>
+query=<spec title words>` and the open children of the umbrella; a matching
+open issue gets a comment, not a twin.
 
 Title: the symptom in the user's terms, under 100 characters, not the test
 name. Example: `SQL Editor: "Request export" button missing from the result pane for a developer with query access`.

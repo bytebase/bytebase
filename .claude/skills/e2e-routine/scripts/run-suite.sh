@@ -67,9 +67,13 @@ EOF
   chmod +x "$runner"
 
   # setsid (Linux) or a perl setsid (macOS) puts the run in its own session so
-  # the Bash tool's process-group kill on timeout does not reach it.
+  # the Bash tool's process-group kill on timeout does not reach it. On macOS,
+  # caffeinate keeps the machine from idle-sleeping under the run: a laptop
+  # that slept mid-run once stretched 120 s timeouts to 1000 s each.
   if command -v setsid >/dev/null 2>&1; then
     BYTEBASE_E2E_LICENSE="$license" setsid nohup "$runner" >"$RESULTS/playwright.log" 2>&1 < /dev/null &
+  elif command -v caffeinate >/dev/null 2>&1; then
+    BYTEBASE_E2E_LICENSE="$license" nohup caffeinate -i perl -MPOSIX -e 'POSIX::setsid() or die; exec @ARGV' "$runner" >"$RESULTS/playwright.log" 2>&1 < /dev/null &
   else
     BYTEBASE_E2E_LICENSE="$license" nohup perl -MPOSIX -e 'POSIX::setsid() or die; exec @ARGV' "$runner" >"$RESULTS/playwright.log" 2>&1 < /dev/null &
   fi
