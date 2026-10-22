@@ -8,9 +8,12 @@
 #
 # Layout of <results-dir>: playwright.log, server.log, report.json (Playwright
 # JSON reporter), test-results/ (traces, screenshots, error-context.md),
-# exit-code, meta.json. Retries are 2, so a test that fails then passes is
-# reported as flaky rather than failed. The license comes from lib.sh's
-# e2e_license and is exported only into the detached process.
+# exit-code, meta.json. Every test gets three attempts (--retries=2): red only
+# when all three fail, flaky when a retry passes. A run is capped at
+# E2E_GLOBAL_TIMEOUT_MS (default 2 h; a healthy run takes about 1 h) because a
+# night of hung tests otherwise multiplies 3 attempts by each test's timeout.
+# The license comes from lib.sh's e2e_license and is exported only into the
+# detached process.
 set -u
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
@@ -55,7 +58,7 @@ export BYTEBASE_STARTUP_TIMEOUT="\${BYTEBASE_STARTUP_TIMEOUT:-900000}"
 export PLAYWRIGHT_JSON_OUTPUT_NAME="$RESULTS/report.json"
 export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 export PATH="$PATH"
-./node_modules/.bin/playwright test --reporter=list,json --retries=2 --output="$RESULTS/test-results" $*
+./node_modules/.bin/playwright test --reporter=list,json --retries=2 --global-timeout="\${E2E_GLOBAL_TIMEOUT_MS:-7200000}" --output="$RESULTS/test-results" $*
 code=\$?
 echo "\$code" >"$RESULTS/exit-code"
 date -u +%FT%TZ >"$RESULTS/finished-at"
