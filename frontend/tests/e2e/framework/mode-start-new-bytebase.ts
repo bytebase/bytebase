@@ -20,6 +20,12 @@ const DBA_EMAIL = "dba1@example.com";
 const DBA_PASSWORD = "12345678"; // NOSONAR: e2e fixture
 const DBA_TITLE = "DBA1";
 const DBA_ROLE = "roles/workspaceDBA";
+// A second workspace admin who never edits a plan: the approver when the
+// author may not approve its own plan (allow_last_plan_editor_approval=false).
+const APPROVER_EMAIL = "approver1@example.com";
+const APPROVER_PASSWORD = "12345678"; // NOSONAR: e2e fixture
+const APPROVER_TITLE = "Approver1";
+const APPROVER_ROLE = "roles/workspaceAdmin";
 
 let serverProcess: child_process.ChildProcess | undefined;
 let tempDir: string | undefined;
@@ -59,7 +65,10 @@ export function cleanupOrphans(pidFile: string = PID_FILE): void {
   fs.unlinkSync(pidFile);
 }
 
-function checkPort(port: number): Promise<boolean> {
+// A port is free only when nothing answers on loopback, where the health
+// checks connect, and the server's own bind would succeed.
+async function checkPort(port: number): Promise<boolean> {
+  if (await isPortListening(port)) return false;
   return new Promise((resolve) => {
     const server = net.createServer();
     server.once("error", () => resolve(false));
@@ -339,13 +348,24 @@ export async function startServer(): Promise<{
   // is logged in. See frontend/tests/e2e/AGENTS.md for a dev license.
   await api.uploadLicense(license);
 
-  // Phase 3c: Provision the DBA fixture user that plan-detail approval
-  // specs use as the second approver. The previous demo dump pre-seeded
-  // additional users (dba1/dev1/qa1); now we create only what's actually
-  // referenced. Add more fixtures here if new specs need them.
+  // Keep every browser session valid for the whole run. The setup project
+  // captures the admin's storage state once; access tokens default to one
+  // hour and refresh tokens are single-use, so after the first hour a context
+  // built from that state lands on the sign-in page and its spec fails on an
+  // unrelated element. Needs the license (sign-in frequency control) above.
+  await api.upsertSetting(
+    "WORKSPACE_PROFILE",
+    { workspaceProfile: { accessTokenDuration: "86400s" } },
+    "value.workspace_profile.access_token_duration",
+  );
+
+  // Phase 3c: Provision the fixture users the approval specs sign in as.
+  // Create only what a spec references; add more here, never inside a spec.
   const { workspace } = await api.getActuatorInfo();
   await api.createUser(DBA_EMAIL, DBA_PASSWORD, DBA_TITLE);
   await api.addWorkspaceRoleMember(workspace, DBA_EMAIL, DBA_ROLE);
+  await api.createUser(APPROVER_EMAIL, APPROVER_PASSWORD, APPROVER_TITLE);
+  await api.addWorkspaceRoleMember(workspace, APPROVER_EMAIL, APPROVER_ROLE);
 
   // Phase 4: Create the sample project and provision its instance on PORT+3.
   const sampleProject = await api.createProject(

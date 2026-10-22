@@ -57,9 +57,6 @@ const openWizard = async (page: Page) => {
 const choice = (page: Page, title: string) =>
   page.locator("label", { hasText: title }).getByRole("radio");
 
-const nextStep = (page: Page) =>
-  page.getByRole("region", { name: "Next step" });
-
 const projectNames = async () =>
   ((await server.api.listProjects()).projects ?? []).map(({ name }) => name);
 
@@ -118,7 +115,8 @@ test("first-run setup: skip, no project, own instance, then the sample", async (
     await expect(page.getByText(/Bytebase Cloud/)).toHaveCount(0);
     await page.getByRole("button", { name: "I'll do this later" }).click();
 
-    await page.waitForURL(/\/projects\?/);
+    // Leaving setup without a project lands on the workspace landing (#21594).
+    await page.waitForURL(/\/landing/);
     expect(await projectNames()).toEqual(projectsBefore);
   });
 
@@ -137,7 +135,8 @@ test("first-run setup: skip, no project, own instance, then the sample", async (
     await page.getByText("2–10", { exact: true }).click();
     await page.getByRole("button", { name: "Finish", exact: true }).click();
 
-    await page.waitForURL(/\/projects\?/);
+    // Leaving setup without a project lands on the workspace landing (#21594).
+    await page.waitForURL(/\/landing/);
     expect(await projectNames()).toEqual(projectsBefore);
   });
 
@@ -181,10 +180,13 @@ test("first-run setup: skip, no project, own instance, then the sample", async (
 
     await page.getByRole("button", { name: "Finish", exact: true }).click();
 
-    await page.waitForURL(new RegExp(`/projects/${chosenId}$`));
+    // An own-instance setup finishes on the project's instances page, where
+    // the connect control carries the "Connect the instance" intro (#21594).
+    await page.waitForURL(new RegExp(`/projects/${chosenId}/instances`));
     await expect(
-      nextStep(page).getByRole("link", { name: "Connect an instance" })
+      page.getByRole("button", { name: "Connect instance" })
     ).toBeVisible();
+    await expect(page.getByText("Connect the instance")).toBeVisible();
   });
 
   await test.step("the sample path recovers from a create whose answer was lost and leads with the goal", async () => {
@@ -214,13 +216,13 @@ test("first-run setup: skip, no project, own instance, then the sample", async (
     // The retry takes that project as its own and prepares the sample.
     await page.getByRole("button", { name: "Try again" }).click();
 
-    await page.waitForURL(new RegExp(`/projects/${chosenId}$`));
-    await expect(nextStep(page).getByRole("link").first()).toHaveText(
-      "Query a database"
-    );
+    // The sample path finishes on the project's databases page; once the
+    // sample instance has synced, the intro leads with the query goal chosen
+    // above (#21594).
+    await page.waitForURL(new RegExp(`/projects/${chosenId}/databases`));
     await expect(
-      nextStep(page).getByRole("link", { name: "Change a database" })
-    ).toBeVisible();
+      page.getByText("Database ready to query").first()
+    ).toBeVisible({ timeout: 90_000 });
     expect((await projectNames()).sort()).toEqual(
       [...projectsBefore, `projects/${chosenId}`].sort()
     );
