@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { issueServiceClientConnect } from "@/api";
@@ -19,11 +20,23 @@ const isActive = (run: ReviewRun | null | undefined) =>
   run?.status === ReviewRun_Status.AVAILABLE ||
   run?.status === ReviewRun_Status.RUNNING;
 
+const sameTime = (a: Timestamp | undefined, b: Timestamp | undefined) =>
+  a?.seconds === b?.seconds && a?.nanos === b?.nanos;
+
+// Whether two reads show the same execution in the same status. The slot
+// restarts its create time on every reset and stamps an end time on every
+// completion.
+const sameExecution = (a: ReviewRun | null | undefined, b: ReviewRun) =>
+  !!a &&
+  a.status === b.status &&
+  sameTime(a.createTime, b.createTime) &&
+  sameTime(a.endTime, b.endTime);
+
 export type RuleReviewRunState = {
   // undefined while loading; null when the review never ran on the issue.
   run: ReviewRun | null | undefined;
   // True while `run` may not match the server: the plan changed after it was
-  // read, or it has just completed and its findings are not yet listed.
+  // read, or it shows a completion whose findings are not yet listed.
   stale: boolean;
   loadFailed: boolean;
   openFindings: number;
@@ -62,8 +75,14 @@ export function useRuleReviewRun({
         { contextValues: createContextValues().set(silentContextKey, true) }
       );
       if (read !== latestRead.current) return;
+      // A run posts its findings with its DONE, so a DONE execution this hook
+      // has not seen may come with comments the page has not listed, even on
+      // the first read: the page's comment load may predate the completion.
       // Set with the run, so no render shows it completed with old findings.
-      if (isActive(lastRun.current) && !isActive(resp)) {
+      if (
+        resp.status === ReviewRun_Status.DONE &&
+        !sameExecution(lastRun.current, resp)
+      ) {
         setFindingsPending(true);
       }
       lastRun.current = resp;

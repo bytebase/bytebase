@@ -235,3 +235,29 @@ test("keeps a completed run stale when its findings fail to list", async () => {
   expect(mocks.fetchIssueCommentThreads).toHaveBeenCalledTimes(1);
   expect(result.current.stale).toBe(true);
 });
+
+test("lists the findings of a run first read as done", async () => {
+  const listed = deferred<undefined>();
+  mocks.fetchIssueCommentThreads.mockReturnValueOnce(listed.promise);
+  mocks.getReviewRun.mockResolvedValue(reviewRun(ReviewRun_Status.DONE));
+  const { result, rerender } = renderHook(
+    ({ reloadKey }) =>
+      useRuleReviewRun({ enabled: true, issueName: ISSUE, reloadKey }),
+    { initialProps: { reloadKey: "1" } }
+  );
+  await flush();
+  expect(result.current.run?.status).toBe(ReviewRun_Status.DONE);
+  expect(result.current.stale).toBe(true);
+  expect(mocks.fetchIssueCommentThreads).toHaveBeenCalledTimes(1);
+
+  listed.resolve(undefined);
+  await flush();
+  expect(result.current.stale).toBe(false);
+
+  // Reading the same execution again lists nothing.
+  rerender({ reloadKey: "2" });
+  await flush();
+  expect(mocks.getReviewRun).toHaveBeenCalledTimes(2);
+  expect(mocks.fetchIssueCommentThreads).toHaveBeenCalledTimes(1);
+  expect(result.current.stale).toBe(false);
+});

@@ -15,7 +15,9 @@ type CombinedExecutor struct {
 	store        *store.Store
 	sheetManager *sheet.Manager
 	dbFactory    *dbfactory.DBFactory
-	sqlReviewV2  bool
+	// ruleReviewCovers reports whether SQL Review V2's standard rule review
+	// covers an engine; nil where SQL Review V2 is off.
+	ruleReviewCovers func(storepb.Engine) bool
 }
 
 // NewCombinedExecutor creates a combined executor.
@@ -23,13 +25,13 @@ func NewCombinedExecutor(
 	store *store.Store,
 	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
-	sqlReviewV2 bool,
+	ruleReviewCovers func(storepb.Engine) bool,
 ) *CombinedExecutor {
 	return &CombinedExecutor{
-		store:        store,
-		sheetManager: sheetManager,
-		dbFactory:    dbFactory,
-		sqlReviewV2:  sqlReviewV2,
+		store:            store,
+		sheetManager:     sheetManager,
+		dbFactory:        dbFactory,
+		ruleReviewCovers: ruleReviewCovers,
 	}
 }
 
@@ -38,7 +40,7 @@ func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *CheckTarget
 	var allResults []*storepb.PlanCheckRunResult_Result
 
 	for _, checkType := range target.Types {
-		if e.sqlReviewV2 && supersededBySQLReviewV2(checkType) {
+		if e.supersededBySQLReviewV2(ctx, target, checkType) {
 			continue
 		}
 		results, err := e.runCheck(ctx, target, checkType)
@@ -68,11 +70,20 @@ func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *CheckTarget
 }
 
 // supersededBySQLReviewV2 reports whether the standard rule review replaces
-// the check where SQL Review V2 is on: only the SQL review advice. The gh-ost
+// the check where SQL Review V2 is on: only the SQL review advice, and only on
+// an engine the rule review covers; V1 keeps advising the others. The gh-ost
 // check stays, since it dry-runs the migration against the instance, which
 // the ONLINE_MIGRATION rule, reading the SQL alone, cannot.
-func supersededBySQLReviewV2(checkType storepb.PlanCheckType) bool {
-	return checkType == storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE
+func (e *CombinedExecutor) supersededBySQLReviewV2(ctx context.Context, target *CheckTarget, checkType storepb.PlanCheckType) bool {
+	if e.ruleReviewCovers == nil || checkType != storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE {
+		return false
+	}
+	instance, _, err := ResolveDatabaseTarget(ctx, e.store, target.Target)
+	if err != nil {
+		// The advice runs, and reports the target it cannot resolve.
+		return false
+	}
+	return e.ruleReviewCovers(instance.Metadata.GetEngine())
 }
 
 func (e *CombinedExecutor) runCheck(ctx context.Context, target *CheckTarget, checkType storepb.PlanCheckType) ([]*storepb.PlanCheckRunResult_Result, error) {
