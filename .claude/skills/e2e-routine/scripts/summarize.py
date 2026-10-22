@@ -33,7 +33,8 @@ INFRA_SIGNATURES = [
     ("license", r"BYTEBASE_E2E_LICENSE|license"),
     ("binary", r"Bytebase binary not found|does not bundle frontend"),
     ("psql", r"spawn psql ENOENT"),
-    ("browser", r"Executable doesn't exist|browserType\.launch"),
+    ("browser", r"Executable doesn't exist|browserType\.launch|playwright install"),
+    ("toolchain", r"ERR_PNPM_|Command failed: pnpm|ENOSPC|EAI_AGAIN|Could not reach https?://registry"),
     ("connection", r"fetch failed|ECONNREFUSED|ERR_CONNECTION_REFUSED"),
 ]
 
@@ -166,9 +167,18 @@ def main(results_dir):
     # leaves most tests passed. Failures without the signature stay in
     # `failed` and are still triaged one by one.
     signed = [e for e in failed if e["infra_signature"] in ("connection", "boot")]
-    if summary["totals"]["tests"] == 0 and summary["errors"]:
-        summary["infra"] = {"kind": infra_signature(" ".join(summary["errors"])) or "setup",
-                            "detail": summary["errors"][0]}
+    setup_signature = infra_signature(" ".join(summary["errors"])) if summary["errors"] else None
+    if summary["totals"]["tests"] == 0 and summary["errors"] and setup_signature:
+        summary["infra"] = {"kind": setup_signature, "detail": summary["errors"][0]}
+    elif summary["totals"]["tests"] == 0 and summary["errors"]:
+        # Global setup failed with no known environment signature: one of its
+        # product calls (signup, project creation, sample instance) broke. It is
+        # a failure to triage and attribute like any other, not infra.
+        summary["failed"] = [{"file": "framework/global-setup.ts", "title": "global setup", "line": 0,
+                              "error": summary["errors"][0], "infra_signature": None, "attempts": 1,
+                              "statuses": ["failed"], "attachments": []}]
+        failed = summary["failed"]
+        summary["totals"]["failed"] = 1
     elif len(signed) >= SERVER_LOST_MIN_FAILURES and len(signed) >= SERVER_LOST_SHARE * len(failed):
         summary["infra"] = {"kind": "server-lost",
                             "detail": f"{len(signed)} of {len(failed)} failures lost the server; first: {signed[0]['error']}",
@@ -183,7 +193,10 @@ def main(results_dir):
     lp = os.path.join(results_dir, "playwright.log")
     if os.path.exists(lp):
         log_text = open(lp, errors="replace").read()
-    timed_out = re.search(r"global timeout|Timed out waiting .* for the test suite", log_text, re.I) is not None
+    # Playwright's runner reports the global timeout as
+    # "Timed out waiting <N>s for the <task> to run"; the task name varies by
+    # phase ("entire test run", "test suite", ...).
+    timed_out = re.search(r"Timed out waiting [\d.]+s for the ", log_text) is not None
     cut_short = (exit_code not in (0, None) and not failed and not summary["lock_flipped"]
                  and summary["totals"]["not_run"] > 0)
     if not summary["infra"] and (timed_out or cut_short):
