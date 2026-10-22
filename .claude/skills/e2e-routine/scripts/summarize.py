@@ -13,9 +13,10 @@ Buckets (see references/triage.md for what to do with each):
 
 Exit code: 0 green, 1 red or infra, 2 no report, 3 incomplete.
 
-    summarize.py --pre-run-failure <results-dir> <kind> <detail>
-        records a failure before the suite ran (preflight, build) as infra, so
-        ledger.sh can record it; kind is e.g. preflight or build.
+    summarize.py --pre-run-failure <results-dir> <kind> <detail> [infra|product]
+        records a failure before the suite ran (preflight, build) so ledger.sh
+        can record it; kind is e.g. preflight or build. infra (default) is
+        retried next run; product (a product file does not compile) is red.
 """
 import json
 import os
@@ -86,8 +87,8 @@ def main(results_dir):
         exit_code = int(open(ep).read().strip() or 0)
 
     summary = {"meta": meta, "exit_code": exit_code, "totals": {}, "failed": [], "flaky": [],
-               "lock_flipped": [], "lock_holding": [], "skipped": [], "infra": None, "incomplete": None,
-               "errors": []}
+               "lock_flipped": [], "lock_holding": [], "skipped": [], "not_run": [], "infra": None,
+               "incomplete": None, "errors": []}
 
     if not os.path.exists(report_path):
         log_tail = ""
@@ -106,9 +107,20 @@ def main(results_dir):
         walk(suite, suite.get("file"), rows)
 
     counts = Counter()
+    # A test skipped without a skip/fixme annotation never ran: its serial
+    # group stopped at an earlier failure (or the run was cut short). It is not
+    # covered, so it is counted and listed apart from deliberate skips, with
+    # the failure that blocked it. Re-running the same SHA would block it again;
+    # it runs once that failure is fixed.
+    last_failed_in_file = {}
     for file_title, spec, test in rows:
         bucket = classify(test)
         counts[bucket] += 1
+        if bucket == "failed":
+            last_failed_in_file[file_title] = f"{file_title}:{spec.get('line')} {spec.get('title')}"
+        deliberate = any(a.get("type") in ("skip", "fixme") for a in test.get("annotations", []))
+        if bucket == "skipped":
+            counts["not_run" if not deliberate else "skipped_deliberate"] += 1
         results = test.get("results", [])
         last = results[-1] if results else {}
         err = first_line((last.get("error") or {}).get("message", "")) if last else ""
@@ -126,18 +138,24 @@ def main(results_dir):
             "attachments": attachments,
             "annotations": [a.get("type") for a in test.get("annotations", [])],
         }
-        if bucket in ("failed", "flaky", "lock_flipped", "lock_holding", "skipped"):
+        if bucket == "skipped" and not deliberate:
+            entry["blocked_by"] = last_failed_in_file.get(file_title)
+            summary["not_run"].append(entry)
+        elif bucket in ("failed", "flaky", "lock_flipped", "lock_holding", "skipped"):
             summary[bucket].append(entry)
 
     stats = report.get("stats", {})
     summary["totals"] = {
-        "tests": sum(counts.values()),
+        # not_run and skipped_deliberate split `skipped`; they are not extra tests.
+        "tests": sum(n for k, n in counts.items() if k not in ("not_run", "skipped_deliberate")),
         "passed": counts["passed"],
         "failed": counts["failed"],
         "flaky": counts["flaky"],
         "lock_flipped": counts["lock_flipped"],
         "lock_holding": counts["lock_holding"],
         "skipped": counts["skipped"],
+        "not_run": counts["not_run"],
+        "skipped_deliberate": counts["skipped_deliberate"],
         "duration_s": round((stats.get("duration") or 0) / 1000),
     }
 
@@ -192,9 +210,11 @@ def write(results_dir, s):
         lines += [f"**INCOMPLETE**: {s['incomplete']['reason']}; {s['incomplete']['not_run']} test(s) never ran. Not a green run.", ""]
     if t:
         lines += [f"{t['passed']} passed, {t['failed']} failed, {t['flaky']} flaky, {t['lock_flipped']} lock flipped, "
-                  f"{t['lock_holding']} lock holding, {t['skipped']} skipped, {t['tests']} total, {t['duration_s']}s", ""]
+                  f"{t['lock_holding']} lock holding, {t.get('not_run', 0)} did not run, "
+                  f"{t.get('skipped_deliberate', t['skipped'])} skipped on purpose, {t['tests']} total, {t['duration_s']}s", ""]
     for bucket, head in (("failed", "Failed (every attempt)"), ("flaky", "Flaky (passed on retry)"),
-                         ("lock_flipped", "Locks that now pass"), ("skipped", "Skipped")):
+                         ("lock_flipped", "Locks that now pass"),
+                         ("not_run", "Did not run (not covered by this run)"), ("skipped", "Skipped on purpose")):
         if s.get(bucket):
             lines += [f"## {head}", ""]
             for e in s[bucket]:
@@ -202,6 +222,8 @@ def write(results_dir, s):
                 lines.append(f"- `{e['file']}:{e['line']}` {e['title']}{sig}")
                 if e.get("error"):
                     lines.append(f"  - {e['error']}")
+                if bucket == "not_run":
+                    lines.append(f"  - blocked by: {e.get('blocked_by') or 'the run ending early'}")
             lines.append("")
     if s.get("errors"):
         lines += ["## Suite-level errors", ""] + [f"- {e}" for e in s["errors"]] + [""]
@@ -211,10 +233,13 @@ def write(results_dir, s):
     print(md)
 
 
-def record_pre_run_failure(results_dir, kind, detail):
+def record_pre_run_failure(results_dir, kind, detail, cause="infra"):
     """A failure before the suite ran (preflight, build) has no report. Write
-    the same meta.json and summary.json a run would, with `infra` set, so
-    ledger.sh can record it and the next run retries the SHA."""
+    the same meta.json and summary.json a run would, so ledger.sh can record
+    it. cause=infra (the default) sets `infra`, and the next run retries the
+    SHA. cause=product is a product file that does not compile: it is one
+    failed entry, the run is red, and it goes through Phase 5 like any product
+    regression."""
     os.makedirs(results_dir, exist_ok=True)
     mp = os.path.join(results_dir, "meta.json")
     if os.path.exists(mp):
@@ -225,15 +250,27 @@ def record_pre_run_failure(results_dir, kind, detail):
         meta = {"run_id": os.path.basename(os.path.normpath(results_dir)), "sha": sha, "short_sha": sha[:10]}
         json.dump(meta, open(mp, "w"))
     summary = {"meta": meta, "exit_code": None, "totals": {}, "failed": [], "flaky": [],
-               "lock_flipped": [], "lock_holding": [], "skipped": [],
-               "infra": {"kind": kind, "detail": detail}, "incomplete": None, "errors": []}
+               "lock_flipped": [], "lock_holding": [], "skipped": [], "not_run": [],
+               "infra": None, "incomplete": None, "errors": []}
+    if cause == "product":
+        summary["failed"] = [{"file": f"({kind})", "title": f"{kind} of a product file failed", "line": 0,
+                              "error": detail, "infra_signature": None, "attempts": 1}]
+        summary["totals"] = {"tests": 0, "passed": 0, "failed": 1, "flaky": 0, "lock_flipped": 0,
+                             "lock_holding": 0, "skipped": 0, "not_run": 0, "skipped_deliberate": 0,
+                             "duration_s": 0}
+    else:
+        summary["infra"] = {"kind": kind, "detail": detail}
     write(results_dir, summary)
     return 1
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 5 and sys.argv[1] == "--pre-run-failure":
-        sys.exit(record_pre_run_failure(sys.argv[2], sys.argv[3], sys.argv[4]))
+    if sys.argv[1:2] == ["--pre-run-failure"] and len(sys.argv) in (5, 6):
+        cause = sys.argv[5] if len(sys.argv) == 6 else "infra"
+        if cause not in ("infra", "product"):
+            print("cause must be infra or product", file=sys.stderr)
+            sys.exit(2)
+        sys.exit(record_pre_run_failure(sys.argv[2], sys.argv[3], sys.argv[4], cause))
     if len(sys.argv) != 2:
         print(__doc__)
         sys.exit(2)

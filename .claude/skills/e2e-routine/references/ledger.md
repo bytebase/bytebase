@@ -42,6 +42,11 @@ Rules:
 - Only `green` and `red` mean the SHA was tested. `should-run.sh` runs the same
   SHA again when the last entry is `infra` or `incomplete`, so a transient
   failure never leaves a commit uncovered.
+- A `red` run whose serial groups stopped at a failure has `totals.not_run`
+  tests it never reached. It still counts as tested on purpose: the same SHA
+  would stop at the same failure and skip the same tests, so a retry buys
+  nothing. Those tests run again once the blocking failure is fixed, and the
+  report lists each under the test that blocked it.
 - Flake threshold: a test flaky in 3 of the last 5 recorded runs is an issue
   candidate (`ledger.sh flakes`).
 - Nothing in the ledger is secret; the branch is public like the repository.

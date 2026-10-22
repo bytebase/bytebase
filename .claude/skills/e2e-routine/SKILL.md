@@ -108,12 +108,17 @@ Build from `origin/main` checked out at `head_sha` (`git checkout -q
 main's commit). While this skill lives on a branch, overlay its files onto that
 checkout instead of cherry-picking:
 `git checkout origin/<branch> -- .claude/skills/e2e-routine frontend/tests/e2e`.
-A build failure
-is INFRA unless the failing step is the Go or frontend compile of a product
-file, which is PRODUCT with the compile error as evidence (main is protected
-by CI, so this is rare and worth a Linear issue regardless of filing mode).
-Either way record it with `summarize.py --pre-run-failure /tmp/e2e-routine/$RUN_ID build "<failing step and first error line>"`
-and go to Phase 6; the next run retries the SHA.
+A build failure is INFRA unless the failing step is the Go or frontend compile
+of a product file.
+
+- INFRA (dependency download, toolchain, disk): record it with
+  `summarize.py --pre-run-failure /tmp/e2e-routine/$RUN_ID build "<failing step and first error line>"`
+  and go to Phase 6; the next run retries the SHA.
+- PRODUCT (a product file does not compile; main is protected by CI, so this
+  is rare): record it with the same command plus a final `product` argument,
+  attribute it with `attribute.py` on the file the compiler names, then do
+  Phase 5's PRODUCT action (issue or proposal; it is worth one regardless of
+  filing mode) and Phase 6.
 
 ## Phase 3: Run
 
@@ -130,7 +135,11 @@ run anything else that boots a Bytebase while it runs. The suite takes roughly
 40 to 60 minutes.
 
 `summarize.py` writes `summary.json` and `summary.md` (buckets: `failed`,
-`flaky`, `lock_flipped`, `lock_holding`, `skipped`, `infra`, `incomplete`).
+`flaky`, `lock_flipped`, `lock_holding`, `not_run`, `skipped`, `infra`,
+`incomplete`). `not_run` lists tests that never ran because an earlier test in
+their serial group failed, each with the failure that blocked it; they are not
+covered by this run, and they run again once that failure is fixed, so the
+report names them under the blocking test's row instead of leaving them out.
 Paste `summary.md`. Exit 2 means no `report.json`: INFRA, go to Phase 6. Exit
 3 means the run was cut short (the two-hour cap or a crash) with tests never
 reached: INCOMPLETE, never green; triage what did fail, then go to Phase 6 and
