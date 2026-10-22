@@ -14,10 +14,7 @@ import type {
   Message,
   ToolCall,
 } from "../logic/types";
-import {
-  clampAgentWindowPosition,
-  getDefaultAgentWindowState,
-} from "../window";
+import { getDefaultAgentWindowState } from "../window";
 
 export const AGENT_STATE_KEY = "bb-agent-state-v2";
 export const AGENT_WINDOW_KEY = "bb-agent-window";
@@ -373,7 +370,6 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
 export interface AgentState {
   // Window state
   visible: boolean;
-  position: { x: number; y: number };
   size: { width: number; height: number };
   sidebarWidth: number;
   minimized: boolean;
@@ -393,7 +389,6 @@ export interface AgentState {
   toggle: () => void;
   minimize: () => void;
   restore: () => void;
-  setPosition: (x: number, y: number) => void;
   setSize: (width: number, height: number) => void;
   setSidebarWidth: (width: number) => void;
 
@@ -582,7 +577,6 @@ const getSafeStorage = (): Storage | null => {
 const getInitialWindowState = () => {
   if (typeof window === "undefined") {
     return {
-      position: { x: 0, y: 0 },
       size: { width: 480, height: 540 },
       sidebarWidth: 200,
     };
@@ -777,7 +771,6 @@ export const createAgentStore = () => {
       return {
         // Window state
         visible: false,
-        position: initialWindowState.position,
         size: initialWindowState.size,
         sidebarWidth: initialWindowState.sidebarWidth,
         minimized: false,
@@ -797,30 +790,12 @@ export const createAgentStore = () => {
           set((state) => {
             state.visible = true;
             state.minimized = false;
-            if (typeof window !== "undefined") {
-              state.position = clampAgentWindowPosition(
-                window.innerWidth,
-                window.innerHeight,
-                state.size.width,
-                state.size.height,
-                state.position
-              );
-            }
           }),
         toggle: () =>
           set((state) => {
             state.visible = !state.visible;
             if (state.visible) {
               state.minimized = false;
-              if (typeof window !== "undefined") {
-                state.position = clampAgentWindowPosition(
-                  window.innerWidth,
-                  window.innerHeight,
-                  state.size.width,
-                  state.size.height,
-                  state.position
-                );
-              }
             }
           }),
         minimize: () =>
@@ -830,10 +805,6 @@ export const createAgentStore = () => {
         restore: () =>
           set((state) => {
             state.minimized = false;
-          }),
-        setPosition: (x, y) =>
-          set((state) => {
-            state.position = { x, y };
           }),
         setSize: (width, height) =>
           set((state) => {
@@ -1483,7 +1454,6 @@ export const createAgentStore = () => {
             key,
             JSON.stringify({
               layoutVersion: AGENT_WINDOW_LAYOUT_VERSION,
-              position: state.position,
               size: state.size,
               sidebarWidth: state.sidebarWidth,
             })
@@ -1502,7 +1472,6 @@ export const createAgentStore = () => {
           if (!saved) {
             const defaultWindowState = getInitialWindowState();
             set((draft) => {
-              draft.position = defaultWindowState.position;
               draft.size = defaultWindowState.size;
               draft.sidebarWidth = defaultWindowState.sidebarWidth;
             });
@@ -1511,24 +1480,15 @@ export const createAgentStore = () => {
           try {
             const state = JSON.parse(saved) as {
               layoutVersion?: number;
-              position?: { x?: number; y?: number };
+              position?: unknown;
               size?: { width?: number; height?: number };
               sidebarWidth?: number;
             };
             const isCurrentLayout =
               state.layoutVersion === AGENT_WINDOW_LAYOUT_VERSION;
+            const hasLegacyPosition = state.position !== undefined;
             const defaultWindowState = getInitialWindowState();
             set((draft) => {
-              if (
-                isCurrentLayout &&
-                typeof state.position?.x === "number" &&
-                typeof state.position?.y === "number"
-              ) {
-                draft.position = {
-                  x: state.position.x,
-                  y: state.position.y,
-                };
-              }
               if (
                 isCurrentLayout &&
                 typeof state.size?.width === "number" &&
@@ -1539,14 +1499,17 @@ export const createAgentStore = () => {
                   height: state.size.height,
                 };
               } else if (!isCurrentLayout) {
-                draft.position = defaultWindowState.position;
                 draft.size = defaultWindowState.size;
               }
               if (typeof state.sidebarWidth === "number") {
                 draft.sidebarWidth = state.sidebarWidth;
               }
             });
-            if (!isCurrentLayout || !storage?.getItem(key)) {
+            if (
+              !isCurrentLayout ||
+              !storage?.getItem(key) ||
+              hasLegacyPosition
+            ) {
               get().saveWindowState();
             }
           } catch {
@@ -1593,7 +1556,7 @@ export const createAgentStore = () => {
   // Auto-persist on state changes
   // Auto-persist only the chat state slice (not UI/window state).
   // Uses a serialization check to avoid redundant writes during
-  // drag/resize operations that only change position/size.
+  // layout-only changes such as resizing.
   const lastSerializedByWorkspace = new Map<string, string>();
   store.subscribe((state) => {
     const storage = getSafeStorage();

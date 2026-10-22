@@ -567,7 +567,6 @@ export function AgentInput() {
     });
   }, [input, selectionStart, selectionEnd]);
 
-  // Auto-resize textarea
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -577,14 +576,11 @@ export function AgentInput() {
     const styles = window.getComputedStyle(el);
     const minHeight =
       Number.parseFloat(styles.minHeight) || el.getBoundingClientRect().height;
-    const maxHeight =
-      Number.parseFloat(styles.maxHeight) || Number.POSITIVE_INFINITY;
     const borderHeight = el.offsetHeight - el.clientHeight;
-    const contentHeight = el.scrollHeight + borderHeight;
-    const nextHeight = Math.max(minHeight, Math.min(contentHeight, maxHeight));
+    const nextHeight = Math.max(minHeight, el.scrollHeight + borderHeight);
 
     el.style.height = `${nextHeight}px`;
-    el.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
+    el.style.overflowY = "hidden";
   }, []);
 
   useEffect(() => {
@@ -1202,7 +1198,6 @@ export function AgentInput() {
     [blockWhenAIIsNotConfigured, startChatRun]
   );
 
-  // Textarea keydown handler
   const handleTextareaKeydown = useCallback(
     (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (showMention) {
@@ -1378,7 +1373,7 @@ export function AgentInput() {
               ref={textareaRef}
               value={input}
               rows={1}
-              className="block h-9 min-h-9 max-h-[134px] w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+              className="block h-9 min-h-9 w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               aria-label={inputPlaceholder}
               disabled={isCurrentChatRunning || isAIConfigurationBlocked}
               onChange={(e) => {

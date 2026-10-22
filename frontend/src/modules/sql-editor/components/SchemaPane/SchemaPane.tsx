@@ -38,7 +38,11 @@ import { useAvailableActions } from "./availableActions";
 import { useClickEvents } from "./click";
 import { FlatTableList } from "./FlatTableList";
 import { HoverPanel } from "./HoverPanel/HoverPanel";
-import { HoverStateProvider, useHoverState } from "./hover-state";
+import {
+  type HoverActions,
+  HoverStateProvider,
+  useHoverActions,
+} from "./hover-state";
 import {
   SchemaContextMenu,
   type SchemaContextMenuHandle,
@@ -75,7 +79,7 @@ function SchemaPaneInner() {
   const getOrFetchDatabaseMetadata = useAppStore(
     (s) => s.getOrFetchDatabaseMetadata
   );
-  const hoverState = useHoverState();
+  const hover = useHoverActions();
 
   const currentTabId = useSQLEditorTabState((s) => s.currentTabId);
   const currentTab = useSQLEditorTabState((s) =>
@@ -412,7 +416,7 @@ function SchemaPaneInner() {
       // the cursor exits through whitespace where no row handler fires
       // — or crosses through the floating panel itself which keeps
       // itself alive on hover — the panel can otherwise linger.
-      onMouseLeave={() => hoverState.update(undefined, "after")}
+      onMouseLeave={() => hover.update(undefined, "after")}
     >
       <div className="px-1 flex flex-row gap-1">
         <div className="flex-1 overflow-hidden">
@@ -476,9 +480,7 @@ function SchemaPaneInner() {
                   }
                   keyword={searchKeyword}
                   selected={selectedKeys.includes(node.data.data.key)}
-                  hoverUpdate={hoverState.update}
-                  hoverHasState={hoverState.state !== undefined}
-                  hoverSetPosition={hoverState.setPosition}
+                  hover={hover}
                   databaseName={database.name}
                   onClickNode={handleClick}
                   onContextMenu={(n, e) => contextMenuRef.current?.show(n, e)}
@@ -621,9 +623,7 @@ function SchemaTreeRow({
   hasChildren,
   keyword,
   selected,
-  hoverUpdate,
-  hoverHasState,
-  hoverSetPosition,
+  hover,
   databaseName,
   onClickNode,
   onContextMenu,
@@ -634,9 +634,7 @@ function SchemaTreeRow({
   hasChildren: boolean;
   keyword: string;
   selected: boolean;
-  hoverUpdate: ReturnType<typeof useHoverState>["update"];
-  hoverHasState: boolean;
-  hoverSetPosition: ReturnType<typeof useHoverState>["setPosition"];
+  hover: HoverActions;
   databaseName: string;
   onClickNode: (node: SchemaTreeNode) => void;
   onContextMenu: (node: SchemaTreeNode, e: React.MouseEvent) => void;
@@ -678,8 +676,8 @@ function SchemaTreeRow({
     if ("column" in target) state.column = target.column as string;
     if ("partition" in target) state.partition = target.partition as string;
 
-    const delay = hoverHasState ? 150 : undefined;
-    hoverUpdate(state, "before", delay);
+    const delay = hover.isActive() ? 150 : undefined;
+    hover.update(state, "before", delay);
 
     // Compute position from the row's bounding rect.
     const wrapper = findAncestor(
@@ -687,15 +685,15 @@ function SchemaTreeRow({
       ".bb-schema-tree-row"
     );
     if (!wrapper) {
-      hoverUpdate(undefined, "after", 150);
+      hover.update(undefined, "after", 150);
       return;
     }
     const rect = wrapper.getBoundingClientRect();
-    hoverSetPosition({ x: e.clientX, y: rect.bottom });
+    hover.setPosition({ x: e.clientX, y: rect.bottom });
   };
 
   const handleMouseLeave = () => {
-    hoverUpdate(undefined, "after");
+    hover.update(undefined, "after");
   };
 
   return (
