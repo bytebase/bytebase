@@ -981,6 +981,7 @@
     "password-optional": "设置密码加密（可选）"
   },
   "gitops": {
+    "back-to-releases": "返回发布包",
     "checklist": {
       "database-group-recommendation": "对于具有相同 Schema 的数据库，数据库分组可以让您在一次变更中同时迁移它们。只需定义一次分组，即可在多次迁移中复用，无需每次都逐个选择数据库。",
       "external-url": "外部访问地址",
@@ -996,7 +997,6 @@
       "description-git": "数据库架构与应用代码一起存储在 Git 中。拉取请求会触发 SQL 审查，合并到目标分支后会自动创建变更发布。",
       "title": "什么是 GitOps"
     },
-    "self": "GitOps",
     "test-setup": {
       "description": "使用示例迁移文件验证整个工作流是否正常运行。",
       "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。",
@@ -1823,6 +1823,7 @@
       "review-waiting": "等待 {{role}}",
       "run": "执行"
     },
+    "list-description": "在界面中创建的变更请求及其部署进度。",
     "meta": {
       "created-by": "由 {{user}} 创建"
     },
@@ -2009,8 +2010,11 @@
       "reopen-confirm": "确认重新打开这个计划？",
       "reopen-review-confirm": "确认重新打开这个审批？"
     },
+    "status-scope": {
+      "description": "按计划中任务的当前状态筛选",
+      "waiting": "等待中"
+    },
     "submit-review-anyway": "仍然提交",
-    "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",
     "summary": {
       "last-approved-by": "最后由 {{name}} 审批",
       "n-changes": "{{n}} 个变更",
@@ -2358,17 +2362,24 @@
   "release": {
     "and-n-more-files": "以及另外 {{count}} 个文件",
     "change-tip": "该变更关联到了一个发布包。",
-    "file": "发布包文件",
+    "empty": {
+      "description": "CI 流水线发布到 Bytebase 的变更会连同部署进度显示在这里。",
+      "read-guide": "阅读 GitOps 指南",
+      "set-up": "设置 GitOps",
+      "title": "暂无 GitOps 变更"
+    },
     "file-type": {
       "declarative": "声明式",
       "unspecified": "未指定",
       "versioned": "版本化"
     },
     "files": "文件",
+    "gitops-setup": "GitOps 设置",
+    "list-description": "通过 GitOps 发布的变更及其部署进度。",
     "not-found": "未找到发布包",
     "releases": "发布包",
-    "total-files": "共 {{}} 个文件",
-    "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。",
+    "self": "发布包",
+    "source": "来源",
     "vcs-source": "VCS 来源",
     "vcs-type": {
       "unspecified": "未知 VCS"

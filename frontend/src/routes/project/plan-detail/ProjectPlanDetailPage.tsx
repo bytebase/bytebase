@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useOnKeyChange } from "@/hooks/useOnKeyChange";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/app";
 import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getRolloutStatus } from "@/utils";
@@ -123,6 +124,11 @@ function ProjectPlanDetailPageInner({
     () => isReleaseBackedPlan(page.plan.specs),
     [page.plan.specs]
   );
+  const setViewedPlan = useAppStore((s) => s.setViewedPlan);
+  useEffect(() => {
+    if (!page.ready) return;
+    setViewedPlan({ name: page.plan.name, isReleaseBacked: isGitOpsPlan });
+  }, [page.ready, page.plan.name, isGitOpsPlan, setViewedPlan]);
   // CI/CD UI (sheet-backed) plans always surface the review phase — even
   // before an issue exists it shows as an upcoming step. Only GitOps
   // release-backed plans, which bypass review entirely, hide it.

@@ -1,12 +1,20 @@
-import { Check, ChevronDown, ChevronRight, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  XCircle,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PROJECT_V1_ROUTE_RELEASES } from "@/app/router/handles";
 import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
 import { CreateWorkloadIdentitySheet } from "@/components/CreateWorkloadIdentitySheet";
 import { DatabaseSelect } from "@/components/DatabaseSelect";
 import { ExternalUrlAlert } from "@/components/ExternalUrlAlert";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { ProjectPageLayout } from "@/components/ProjectPageLayout";
+import { RouterLink } from "@/components/RouterLink";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
@@ -232,6 +240,13 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
 
   return (
     <ProjectPageLayout className="gap-y-1">
+      <RouterLink
+        to={{ name: PROJECT_V1_ROUTE_RELEASES, params: { projectId } }}
+        className="mb-2 inline-flex items-center gap-x-1 self-start text-sm text-accent hover:underline"
+      >
+        <ArrowLeft className="size-4" />
+        {t("gitops.back-to-releases")}
+      </RouterLink>
       {/* Section 1: What is GitOps */}
       <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
         <div className="flex flex-col gap-y-1">

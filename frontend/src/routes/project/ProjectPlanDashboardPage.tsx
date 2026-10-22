@@ -5,11 +5,10 @@ import {
   Loader2,
   Plus,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/app/router/handles";
 import {
   markListScrollRestorationEntry,
   useListScrollRestorationKey,
@@ -35,7 +34,7 @@ import {
   ProjectPageInfo,
   ProjectPageLayout,
 } from "@/components/ProjectPageLayout";
-import { TaskStatusIcon } from "@/components/TaskStatusIcon";
+import { TimeRangePicker } from "@/components/TimeRangePicker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
@@ -47,16 +46,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useCurrentUser } from "@/hooks/useAppState";
-import { useColumnWidths } from "@/hooks/useColumnWidths";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
@@ -73,13 +63,7 @@ import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { buildPlanFindBySearchParams } from "@/stores/app/plan";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import {
-  formatEnvironmentName,
-  getTimeForPbTimestampProtoEs,
-  isValidDatabaseGroupName,
-  unknownUser,
-} from "@/types";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { isValidDatabaseGroupName } from "@/types";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
@@ -94,21 +78,22 @@ import {
   getDefaultPagination,
 } from "@/utils";
 import {
-  extractStageUID,
-  getStageStatusFromCounts,
-} from "@/utils/v1/issue/rollout";
-import { isReleaseBackedPlan } from "./plan-detail/utils/spec";
-import {
-  getPlanDraftState,
-  getReviewBadge,
-  type PlanDraftState,
-  type ReviewBadge,
-} from "./utils/reviewBadge";
+  createPlanStagesColumn,
+  type PlanColumn,
+  PlanLifecycleBadges,
+  PlanTable,
+} from "./PlanTable";
+import { planStateScopeOption, planStatusScopeOption } from "./planListSearch";
 
 // Below Tailwind's `sm` breakpoint (640px) we switch the plan list and the
 // database picker to their compact mobile layouts.
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
-const parsePlanSearchParams = createAdvancedSearchParser(["state", "creator"]);
+const parsePlanSearchParams = createAdvancedSearchParser([
+  "state",
+  "creator",
+  "status",
+  "created",
+]);
 
 export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
@@ -153,23 +138,8 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   // Scope options
   const scopeOptions: ScopeOption[] = useMemo(
     () => [
-      {
-        id: "state",
-        title: t("common.state"),
-        description: t("issue.advanced-search.scope.state.description"),
-        options: [
-          {
-            value: "ACTIVE",
-            keywords: ["active", "ACTIVE"],
-            render: () => <span>{t("common.active")}</span>,
-          },
-          {
-            value: "DELETED",
-            keywords: ["deleted", "DELETED", "closed", "CLOSED"],
-            render: () => <span>{t("common.closed")}</span>,
-          },
-        ],
-      },
+      planStateScopeOption(t),
+      planStatusScopeOption(t),
       {
         id: "creator",
         title: t("issue.advanced-search.scope.creator.title"),
@@ -199,6 +169,9 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
     [t, listUsers, me]
   );
 
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+  const columns = usePlanColumns(isMobile);
+
   const [canCreate] = usePermissionCheck(
     ["bb.plans.create", "bb.issues.create"],
     project
@@ -215,6 +188,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
     };
     return buildPlanFindBySearchParams(merged, {
       specType: "change_database_config",
+      hasRelease: false,
     });
   }, [searchParams, projectId]);
 
@@ -296,13 +270,19 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   return (
     <ProjectPageLayout>
       <div className="flex flex-col gap-y-2">
-        <ProjectPageInfo description={t("plan.subtitle")} />
+        <ProjectPageInfo description={t("plan.list-description")} />
         <div className="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2">
-          <div className="w-full flex flex-1 items-center justify-between gap-x-2">
-            <AdvancedSearch
+          <div className="w-full flex flex-1 flex-wrap items-center justify-between gap-2">
+            <div className="min-w-0 basis-80 grow">
+              <AdvancedSearch
+                params={searchParams}
+                onParamsChange={setSearchParams}
+                scopeOptions={scopeOptions}
+              />
+            </div>
+            <TimeRangePicker
               params={searchParams}
               onParamsChange={setSearchParams}
-              scopeOptions={scopeOptions}
             />
             <PermissionGuard
               permissions={["bb.plans.create", "bb.issues.create"]}
@@ -334,6 +314,8 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
           <PlanTable
             plans={paged.dataList}
             projectId={projectId}
+            columns={columns}
+            isMobile={isMobile}
             onOpenPlan={markListScrollRestorationEntry}
           />
         )}
@@ -364,41 +346,12 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// PlanTable
+// Columns
 // ---------------------------------------------------------------------------
 
-interface PlanColumn {
-  key: string;
-  title: React.ReactNode;
-  defaultWidth: number;
-  minWidth?: number;
-  resizable?: boolean;
-  render: (plan: Plan, ctx: PlanRowContext) => React.ReactNode;
-}
-
-interface PlanRowContext {
-  creator: { title: string; name: string };
-  updateTimeMs: number | undefined;
-  approvalTag: { label: string; variant: ReviewBadge["variant"] } | undefined;
-  isDeleted: boolean;
-  draftState: PlanDraftState;
-}
-
-function PlanTable({
-  plans,
-  projectId,
-  onOpenPlan,
-}: {
-  plans: Plan[];
-  projectId: string;
-  onOpenPlan: () => void;
-}) {
+function usePlanColumns(isMobile: boolean): PlanColumn[] {
   const { t } = useTranslation();
-  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
-  // Subscribe so stage cells re-render when the environment cache loads.
-  void useAppStore((s) => s.environmentList);
-
-  const columns = useMemo<PlanColumn[]>(
+  return useMemo<PlanColumn[]>(
     () => [
       {
         key: "name",
@@ -419,21 +372,7 @@ function PlanTable({
             ) : (
               <span className="opacity-60 italic">{t("common.untitled")}</span>
             )}
-            {ctx.isDeleted && (
-              <span className="inline-flex items-center rounded-xs border border-transparent bg-warning/10 px-1.5 py-0.5 text-xs text-warning shrink-0">
-                {t("common.closed")}
-              </span>
-            )}
-            {ctx.draftState === "draft" && !ctx.isDeleted && (
-              <span className="inline-flex items-center rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs text-control-light shrink-0">
-                {t("common.draft")}
-              </span>
-            )}
-            {ctx.draftState === "incomplete" && !ctx.isDeleted && (
-              <Badge variant="destructive" className="shrink-0 px-2 text-xs">
-                {t("plan.lifecycle.incomplete")}
-              </Badge>
-            )}
+            <PlanLifecycleBadges ctx={ctx} />
           </div>
         ),
       },
@@ -465,44 +404,7 @@ function PlanTable({
             <span className="text-control-light">-</span>
           ),
       },
-      {
-        key: "stages",
-        title: t("rollout.stage.self", { count: 2 }),
-        defaultWidth: 260,
-        minWidth: 140,
-        resizable: true,
-        render: (plan, _ctx) =>
-          plan.rolloutStageSummaries.length === 0 ? (
-            <span className="text-control-light">-</span>
-          ) : (
-            <div className="flex items-center gap-1 flex-wrap">
-              {plan.rolloutStageSummaries.map((summary, index) => {
-                const envName = formatEnvironmentName(
-                  extractStageUID(summary.stage)
-                );
-                const environment = useAppStore
-                  .getState()
-                  .getEnvironmentByName(envName);
-                const stageStatus = getStageStatusFromCounts(
-                  summary.taskStatusCounts
-                );
-                return (
-                  <div key={summary.stage} className="flex items-center gap-1">
-                    <div className="flex items-center gap-1">
-                      <TaskStatusIcon size="tiny" status={stageStatus} />
-                      <span className="text-sm">
-                        {environment?.title || envName}
-                      </span>
-                    </div>
-                    {index < plan.rolloutStageSummaries.length - 1 && (
-                      <span className="mx-1 text-control-light">&rarr;</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ),
-      },
+      createPlanStagesColumn(t),
       {
         key: "updated",
         title: t("issue.table.updated"),
@@ -521,148 +423,6 @@ function PlanTable({
       },
     ],
     [t, isMobile]
-  );
-
-  const { widths, totalWidth, onResizeStart, setWidths } =
-    useColumnWidths(columns);
-
-  // useColumnWidths seeds its state only on first render, so a viewport that
-  // crosses the `sm` breakpoint after mount (resize / rotate) would keep the
-  // stale name-column width. Re-seed from the rebuilt column defaults whenever
-  // the breakpoint flips.
-  const wasMobile = useRef(isMobile);
-  useEffect(() => {
-    if (wasMobile.current !== isMobile) {
-      wasMobile.current = isMobile;
-      setWidths(columns.map((c) => c.defaultWidth));
-    }
-  }, [isMobile, columns, setWidths]);
-
-  return (
-    <div className="overflow-x-auto rounded-sm border border-block-border">
-      <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
-        <colgroup>
-          {widths.map((w, i) => (
-            <col key={columns[i].key} style={{ width: `${w}px` }} />
-          ))}
-        </colgroup>
-        <TableHeader>
-          <TableRow className="bg-control-bg">
-            {columns.map((col, colIdx) => (
-              <TableHead
-                key={col.key}
-                resizable={col.resizable}
-                onResizeStart={
-                  col.resizable ? (e) => onResizeStart(colIdx, e) : undefined
-                }
-              >
-                {col.title}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {plans.map((plan) => (
-            <PlanRow
-              key={plan.name}
-              plan={plan}
-              projectId={projectId}
-              columns={columns}
-              onOpenPlan={onOpenPlan}
-            />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// PlanRow
-// ---------------------------------------------------------------------------
-
-function PlanRow({
-  plan,
-  projectId,
-  columns,
-  onOpenPlan,
-}: Readonly<{
-  plan: Plan;
-  projectId: string;
-  columns: PlanColumn[];
-  onOpenPlan: () => void;
-}>) {
-  const { t } = useTranslation();
-
-  const isDeleted = plan.state === State.DELETED;
-  const draftState = getPlanDraftState({
-    approvalStatus: plan.approvalStatus,
-    hasRollout: plan.hasRollout,
-    isGitOpsPlan: isReleaseBackedPlan(plan.specs),
-    issueName: plan.issue,
-  });
-
-  const creatorUser = useAppStore((state) =>
-    state.getUserByIdentifier(plan.creator)
-  );
-  const creator = creatorUser || unknownUser(plan.creator);
-
-  const updateTimeMs = getTimeForPbTimestampProtoEs(plan.updateTime);
-
-  const planUrl = useMemo(() => {
-    return router.resolve({
-      name: PROJECT_V1_ROUTE_PLAN_DETAIL,
-      params: {
-        projectId,
-        planId: extractPlanUID(plan.name),
-      },
-    }).fullPath;
-  }, [plan.name, projectId]);
-
-  const onRowClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        window.open(planUrl, "_blank");
-      } else {
-        onOpenPlan();
-        router.push(planUrl);
-      }
-    },
-    [onOpenPlan, planUrl]
-  );
-
-  const approvalTag = useMemo(() => {
-    const badge = getReviewBadge({
-      hasIssue: plan.issue !== "",
-      issueStatus: plan.issueStatus,
-      hasRollout: plan.hasRollout,
-      approvalStatus: plan.approvalStatus,
-    });
-    if (!badge) return undefined;
-    return { label: t(badge.labelKey), variant: badge.variant };
-  }, [plan.approvalStatus, plan.hasRollout, plan.issue, plan.issueStatus, t]);
-
-  const ctx: PlanRowContext = {
-    creator,
-    updateTimeMs,
-    approvalTag,
-    isDeleted,
-    draftState,
-  };
-
-  return (
-    <TableRow
-      data-testid="plan-list-item"
-      data-scroll-restoration-anchor={plan.name}
-      className={cn("cursor-pointer", isDeleted && "opacity-60")}
-      onClick={onRowClick}
-    >
-      {columns.map((col) => (
-        <TableCell key={col.key} className="overflow-hidden">
-          {col.render(plan, ctx)}
-        </TableCell>
-      ))}
-    </TableRow>
   );
 }
 
