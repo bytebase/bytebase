@@ -33,6 +33,18 @@ const mocks = vi.hoisted(() => ({
   getRecentActivity: vi.fn(),
   getWorkspaceAttention: vi.fn(),
   getProjectAttention: vi.fn(),
+  extractWorkspaceOverviewEvidence: vi.fn((result: string) => {
+    const payload = JSON.parse(result) as { evidence?: unknown };
+    return payload.evidence;
+  }),
+  extractIssueOverviewEvidence: vi.fn((result: string) => {
+    const payload = JSON.parse(result) as { evidence?: unknown };
+    return payload.evidence;
+  }),
+  extractDatabaseOverviewEvidence: vi.fn((result: string) => {
+    const payload = JSON.parse(result) as { evidence?: unknown };
+    return payload.evidence;
+  }),
   getOrFetchSettingByName: vi.fn(),
   getOrFetchProjectByName: vi.fn(),
   projectsByName: {} as Record<string, { title: string }>,
@@ -156,6 +168,18 @@ vi.mock("../logic/tools/projectOpenIssues", () => ({
   createProjectOpenIssuesTool: vi.fn(() => mocks.getProjectAttention),
 }));
 
+vi.mock("../logic/tools/workspaceOverview", () => ({
+  extractWorkspaceOverviewEvidence: mocks.extractWorkspaceOverviewEvidence,
+}));
+
+vi.mock("../logic/tools/issueOverview", () => ({
+  extractIssueOverviewEvidence: mocks.extractIssueOverviewEvidence,
+}));
+
+vi.mock("../logic/tools/databaseOverview", () => ({
+  extractDatabaseOverviewEvidence: mocks.extractDatabaseOverviewEvidence,
+}));
+
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -248,6 +272,16 @@ beforeEach(async () => {
   mocks.getRecentActivity.mockReset();
   mocks.getWorkspaceAttention.mockReset();
   mocks.getProjectAttention.mockReset();
+  mocks.extractIssueOverviewEvidence.mockReset();
+  mocks.extractIssueOverviewEvidence.mockImplementation((result: string) => {
+    const payload = JSON.parse(result) as { evidence?: unknown };
+    return payload.evidence;
+  });
+  mocks.extractDatabaseOverviewEvidence.mockReset();
+  mocks.extractDatabaseOverviewEvidence.mockImplementation((result: string) => {
+    const payload = JSON.parse(result) as { evidence?: unknown };
+    return payload.evidence;
+  });
   mocks.getOrFetchSettingByName.mockReset();
   mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
   mocks.getOrFetchProjectByName.mockReset();
@@ -424,6 +458,326 @@ describe("AgentInput", () => {
       );
     });
     expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  test("runs a project starter through the generic read-only Agent path", async () => {
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            {
+              id: "tool-project-overview",
+              name: "get_project_overview",
+              arguments: "{}",
+            },
+          ],
+        });
+        callbacks.onToolResult(
+          "tool-project-overview",
+          JSON.stringify({
+            evidence: {
+              project: "projects/orders",
+              references: [
+                {
+                  kind: "database",
+                  name: "projects/orders/instances/prod/databases/orders",
+                },
+              ],
+            },
+          })
+        );
+        callbacks.onText("The project is ready for a governed change.");
+        return { kind: "completed", totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "What can I do next?",
+      page,
+      runMode: "read-only",
+      starterId: "project-next",
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+
+    expect(mocks.buildSystemPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: "projects/orders",
+        runMode: "read-only",
+      })
+    );
+    expect(mocks.getToolDefinitions).toHaveBeenCalledWith({
+      runMode: "read-only",
+    });
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find(
+          (message) =>
+            message.content === "The project is ready for a governed change."
+        )?.metadata?.evidence
+    ).toEqual({
+      project: "projects/orders",
+      references: [
+        {
+          kind: "database",
+          name: "projects/orders/instances/prod/databases/orders",
+        },
+      ],
+    });
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .some((message) => message.metadata?.pending)
+    ).toBe(false);
+    view.unmount();
+  });
+
+  test("attaches workspace overview evidence to the final answer", async () => {
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            {
+              id: "tool-workspace-overview",
+              name: "get_workspace_overview",
+              arguments: "{}",
+            },
+          ],
+        });
+        callbacks.onToolResult(
+          "tool-workspace-overview",
+          JSON.stringify({
+            evidence: {
+              workspace: "workspaces/default",
+              references: [
+                {
+                  kind: "issue",
+                  name: "projects/orders/issues/42",
+                  title: "Add customer table",
+                },
+              ],
+            },
+          })
+        );
+        callbacks.onText("One issue needs your review.");
+        return { kind: "completed", totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/landing", title: "Workspace" };
+    const chat = useAgentStore.getState().createChat({
+      context: "workspaces/default",
+      page,
+    });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "What can I do next?",
+      page,
+      runMode: "read-only",
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "One issue needs your review.")
+        ?.metadata?.evidence
+    ).toEqual({
+      workspace: "workspaces/default",
+      references: [
+        {
+          kind: "issue",
+          name: "projects/orders/issues/42",
+          title: "Add customer table",
+        },
+      ],
+    });
+    view.unmount();
+  });
+
+  test("attaches Issue overview evidence to the final answer", async () => {
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            {
+              id: "tool-issue-overview",
+              name: "get_issue_overview",
+              arguments: '{"issueName":"projects/orders/issues/42"}',
+            },
+          ],
+        });
+        callbacks.onToolResult(
+          "tool-issue-overview",
+          JSON.stringify({
+            evidence: {
+              project: "projects/orders",
+              references: [
+                {
+                  kind: "issue",
+                  name: "projects/orders/issues/42",
+                  title: "Add customer table",
+                },
+              ],
+            },
+          })
+        );
+        callbacks.onText("The Issue is awaiting approval.");
+        return { kind: "completed", totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({
+      context: "projects/orders",
+      page,
+    });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "Why is this Issue waiting?",
+      page,
+      runMode: "read-only",
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+
+    expect(mocks.extractIssueOverviewEvidence).toHaveBeenCalledOnce();
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "The Issue is awaiting approval.")
+        ?.metadata?.evidence
+    ).toEqual({
+      project: "projects/orders",
+      references: [
+        {
+          kind: "issue",
+          name: "projects/orders/issues/42",
+          title: "Add customer table",
+        },
+      ],
+    });
+    view.unmount();
+  });
+
+  test("attaches database overview evidence to the final answer", async () => {
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            {
+              id: "tool-database-overview",
+              name: "get_database_overview",
+              arguments:
+                '{"databaseName":"projects/orders/instances/prod/databases/application"}',
+            },
+          ],
+        });
+        callbacks.onToolResult(
+          "tool-database-overview",
+          JSON.stringify({
+            evidence: {
+              project: "projects/orders",
+              references: [
+                {
+                  kind: "database",
+                  name: "projects/orders/instances/prod/databases/application",
+                },
+              ],
+            },
+          })
+        );
+        callbacks.onText("The database is synchronized.");
+        return { kind: "completed", totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = useAgentStore.getState().createChat({
+      context: "projects/orders",
+      page,
+    });
+    useAgentStore.getState().queueUserMessage({
+      chatId: chat.id,
+      text: "Is the application database healthy?",
+      page,
+      runMode: "read-only",
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+
+    expect(mocks.extractDatabaseOverviewEvidence).toHaveBeenCalledOnce();
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find(
+          (message) => message.content === "The database is synchronized."
+        )?.metadata?.evidence
+    ).toEqual({
+      project: "projects/orders",
+      references: [
+        {
+          kind: "database",
+          name: "projects/orders/instances/prod/databases/application",
+        },
+      ],
+    });
+    view.unmount();
+  });
+
+  test("does not special-case a typed project readiness question", async () => {
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string) =>
+        key === "agent.landing-starters.project-next"
+          ? "What can I do next?"
+          : key,
+      i18n: { language: "en-US" },
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "What can I do next?");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+    });
+
+    await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    expect(mocks.getToolDefinitions).toHaveBeenCalledWith({
+      runMode: "default",
+    });
     view.unmount();
   });
 

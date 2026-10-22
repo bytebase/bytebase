@@ -49,7 +49,89 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("Stay on the current page");
     expect(prompt).toContain("Do not navigate");
     expect(prompt).toContain("get_project_open_issues");
+    expect(prompt).toContain("get_project_overview");
+    expect(prompt).toContain("get_project_governance_overview");
+    expect(prompt).toContain("get_issue_overview");
+    expect(prompt).toContain("get_database_overview");
     expect(prompt).toContain("get_project_recent_activity");
     expect(prompt).toContain("get_workspace_recent_activity");
+  });
+
+  test("asks the Agent to use a project overview for a current-state question", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Order service",
+      context: "projects/orders",
+      runMode: "read-only",
+    });
+
+    expect(prompt).toContain(
+      "call get_project_overview before recommending a next step"
+    );
+    expect(prompt).toContain(
+      "answer the member's actual question directly, not with a catalog of capabilities"
+    );
+    expect(prompt).toContain(
+      "recommend at most one next step when the available evidence supports it"
+    );
+    expect(prompt).not.toContain("<project_readiness_evidence>");
+  });
+
+  test("asks the Agent to inspect project governance before describing it", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Order service",
+      context: "projects/orders",
+      runMode: "read-only",
+    });
+
+    expect(prompt).toContain(
+      "call get_project_governance_overview before describing how Database Changes are reviewed"
+    );
+    expect(prompt).toContain("conditions are evaluated per Database Change");
+  });
+
+  test("asks the Agent to inspect a selected Issue before describing its state", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Order service",
+      context: "projects/orders",
+      runMode: "read-only",
+    });
+
+    expect(prompt).toContain(
+      "call get_issue_overview before explaining a specific Issue's approval"
+    );
+    expect(prompt).toContain("matching the chat project");
+  });
+
+  test("asks the Agent to inspect a selected database before describing its state", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Order service",
+      context: "projects/orders",
+      runMode: "read-only",
+    });
+
+    expect(prompt).toContain(
+      "call get_database_overview before explaining a specific database's current state"
+    );
+    expect(prompt).toContain("backup availability");
+  });
+
+  test("asks the Agent to use a workspace overview without recent activity", () => {
+    const prompt = buildSystemPrompt({
+      path: "/landing",
+      title: "Workspace",
+      context: "workspaces/default",
+      runMode: "read-only",
+    });
+
+    expect(prompt).toContain(
+      "call get_workspace_overview before recommending a next step"
+    );
+    expect(prompt).toContain(
+      "Use get_workspace_recent_activity only when the member asks what changed recently"
+    );
   });
 });

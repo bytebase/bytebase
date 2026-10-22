@@ -10,12 +10,17 @@ import type {
   ToolExecutor,
 } from "../types";
 import { callApi, type CallApiArgs } from "./callApi";
+import { createDatabaseOverviewTool } from "./databaseOverview";
 import { createDomActionTool, type DomActionArgs } from "./domAction";
+import { createIssueOverviewTool } from "./issueOverview";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool, type PageStateArgs } from "./pageState";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
+import { createProjectGovernanceOverviewTool } from "./projectGovernanceOverview";
 import { createProjectRecentActivityTool } from "./projectRecentActivity";
+import { createProjectOverviewTool } from "./projectOverview";
 import { searchApi, type SearchApiArgs } from "./searchApi";
+import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
 import { createWorkspaceAttentionTool } from "./workspaceAttention";
 
@@ -123,6 +128,11 @@ const parseAskUserArgs = (
 
 const READ_ONLY_TOOL_NAMES = new Set([
   "get_page_state",
+  "get_project_overview",
+  "get_project_governance_overview",
+  "get_issue_overview",
+  "get_database_overview",
+  "get_workspace_overview",
   "get_project_open_issues",
   "get_project_recent_activity",
   "get_workspace_attention",
@@ -253,6 +263,65 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
               'Default "semantic" returns route info + store context. "dom" adds a ref-labeled tree of interactive elements for use with dom_action.',
           },
         },
+      },
+    },
+    {
+      name: "get_project_overview",
+      description:
+        "Get a bounded snapshot of the project bound to this chat. The result includes the current member's relevant open Issues, open database-change Issues, and accessible databases, with partial or unavailable facets made explicit. Use this before recommending what to do next or describing current project readiness. Answer the member's actual question from the returned evidence, rather than listing generic capabilities. This tool has no parameters and cannot read another project.",
+      parametersSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "get_project_governance_overview",
+      description:
+        "Get a bounded snapshot of how Database Changes are governed in the project bound to this chat. The result includes the project's approval, plan-check, SQL-review, approver, and rollout-concurrency settings, plus the number of configured database-change and fallback approval rules. Approval-rule conditions are evaluated per Database Change, so rule counts do not prove that a rule applies to a particular change. This tool has no parameters and cannot read another project.",
+      parametersSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "get_issue_overview",
+      description:
+        "Get a bounded, read-only overview of one Issue in the project bound to this chat. It includes the Issue's approval state, linked Plan and plan-check state, rule and AI review-run state, plus Rollout and up to ten task-run statuses when available. Pass a canonical Issue name from this project. Each facet explicitly reports whether it is available, not configured, not started, or unavailable. This tool cannot read another project or take action.",
+      parametersSchema: {
+        type: "object",
+        properties: {
+          issueName: {
+            type: "string",
+            description:
+              "Canonical Issue resource name in the chat-bound project, for example projects/my-project/issues/123.",
+          },
+        },
+        required: ["issueName"],
+      },
+    },
+    {
+      name: "get_database_overview",
+      description:
+        "Get a bounded, read-only overview of one database in the project bound to this chat. It includes the database state, instance, effective environment, last applied release, backup availability, and sync status. Pass a canonical database name from this project. Each resource facet explicitly reports whether it is available, not configured, or unavailable. This tool reads only DatabaseService.GetDatabase; it does not read schema, metadata, labels, data-source configuration, or sync errors, and cannot take action.",
+      parametersSchema: {
+        type: "object",
+        properties: {
+          databaseName: {
+            type: "string",
+            description:
+              "Canonical database resource name in the chat-bound project, for example projects/my-project/instances/prod/databases/app.",
+          },
+        },
+        required: ["databaseName"],
+      },
+    },
+    {
+      name: "get_workspace_overview",
+      description:
+        "Get a bounded snapshot of the workspace bound to this chat. The result includes setup readiness for accessible projects, instances, and databases plus the current member's open Issues. Recent activity is deliberately excluded; use get_workspace_recent_activity only when the member asks what changed recently. Answer the member's actual question from the returned evidence, rather than listing generic capabilities. This tool has no parameters and cannot read another workspace.",
+      parametersSchema: {
+        type: "object",
+        properties: {},
       },
     },
     {
@@ -482,6 +551,21 @@ export function createToolExecutor(
   const projectOpenIssuesTool = createProjectOpenIssuesTool({
     projectName: options.context,
   });
+  const projectOverviewTool = createProjectOverviewTool({
+    projectName: options.context,
+  });
+  const projectGovernanceOverviewTool = createProjectGovernanceOverviewTool({
+    projectName: options.context,
+  });
+  const issueOverviewTool = createIssueOverviewTool({
+    projectName: options.context,
+  });
+  const databaseOverviewTool = createDatabaseOverviewTool({
+    projectName: options.context,
+  });
+  const workspaceOverviewTool = createWorkspaceOverviewTool({
+    workspaceName: options.context,
+  });
   const projectRecentActivityTool = createProjectRecentActivityTool({
     projectName: options.context,
   });
@@ -527,6 +611,16 @@ export function createToolExecutor(
       }
       case "get_page_state":
         return toToolResult(await pageStateTool(args as PageStateArgs));
+      case "get_project_overview":
+        return toToolResult(await projectOverviewTool());
+      case "get_project_governance_overview":
+        return toToolResult(await projectGovernanceOverviewTool());
+      case "get_issue_overview":
+        return toToolResult(await issueOverviewTool(args));
+      case "get_database_overview":
+        return toToolResult(await databaseOverviewTool(args));
+      case "get_workspace_overview":
+        return toToolResult(await workspaceOverviewTool());
       case "get_project_open_issues":
         return toToolResult(await projectOpenIssuesTool());
       case "get_project_recent_activity":

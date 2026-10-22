@@ -1,5 +1,36 @@
 import { describe, expect, test } from "vitest";
-import { getLandingStarterIds } from "./landingStarters";
+import {
+  getLandingStarterIdForText,
+  getLandingStarterIds,
+} from "./landingStarters";
+
+describe("getLandingStarterIdForText", () => {
+  test("does not special-case a typed project readiness starter", () => {
+    expect(
+      getLandingStarterIdForText({
+        context: "projects/orders",
+        text: "What can I do next?",
+        translate: (key) =>
+          key === "agent.landing-starters.project-next"
+            ? "What can I do next?"
+            : key,
+      })
+    ).toBeUndefined();
+  });
+
+  test("does not infer a project starter in workspace context", () => {
+    expect(
+      getLandingStarterIdForText({
+        context: "workspaces/demo",
+        text: "What can I do next?",
+        translate: (key) =>
+          key === "agent.landing-starters.project-next"
+            ? "What can I do next?"
+            : key,
+      })
+    ).toBeUndefined();
+  });
+});
 
 describe("getLandingStarterIds", () => {
   test("offers setup guidance in a workspace without setup resources", () => {
