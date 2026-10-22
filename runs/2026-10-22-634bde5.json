@@ -1,0 +1,44 @@
+{
+  "run_id": "20261022T011246Z",
+  "sha": "634bde572d0015445fc8d73e1c5b4b10919d53ca",
+  "date": "2026-10-22",
+  "result": "red",
+  "totals": {
+    "tests": 230,
+    "passed": 196,
+    "failed": 20,
+    "flaky": 1,
+    "lock_flipped": 0,
+    "lock_holding": 1,
+    "skipped": 12,
+    "duration_s": 2583
+  },
+  "failed": [
+    "issue-detail/issue-detail-targets.spec.ts::the all-targets sheet is scrollable \u2014 the last target can be brought into view",
+    "plan-detail/plan-detail-lifecycle.spec.ts::header shows the '\u2026 checks failing' pill after approval",
+    "plan-detail/plan-detail-review.spec.ts::approving turns the badge to Approved and removes the Review action",
+    "plan-detail/plan-detail-review.spec.ts::a gutter-created thread, then reply, resolve, reopen, and View in Statement round-trip between the surfaces",
+    "plan-detail/plan-detail-review.spec.ts::constrained width folds approved + pending into chips; current stays named",
+    "plan-detail/plan-detail-review.spec.ts::the change tab counts placed unresolved threads; the Review summary counts all of them",
+    "plan-detail/plan-detail-review.spec.ts::two threads ending on one line share a counted marker, and the stack expands either one",
+    "plan-detail/plan-detail-rollout.spec.ts::issue blocks until admin approves; afterward rollout auto-creates",
+    "plan-detail/plan-detail-rollout.spec.ts::after approval, plan-check failure keeps the rollout fully blocked (no manual-create)",
+    "sql-editor/sql-editor-connection.spec.ts::clicking 'SQL Editor' on the database page opens a connected, runnable tab",
+    "sql-editor/sql-editor-export.spec.ts::running a query then Export opens the backend-export drawer and Confirm fires the Export RPC",
+    "sql-editor/sql-editor-saved-query.spec.ts::deleting two checked saved queries uses the multi-select dialog, not the non-empty-folder prompt",
+    "sql-editor/sql-editor-saved-query.spec.ts::confirming the alert removes the saved query from the sidebar",
+    "sql-editor/sql-editor-saved-query.spec.ts::typing \"needle\" hides the non-matching saved query",
+    "sql-editor/sql-editor-saved-query.spec.ts::clicking Mine hides its children, clicking again restores them",
+    "sql-editor/sql-editor-tabs.spec.ts::horizontal scrollbar is reachable with enough tabs to overflow",
+    "workspace/workspace-general-settings.spec.ts::the retitled checkbox and its description render, reflecting the live policy in both states (W1)",
+    "workspace/workspace-general-settings.spec.ts::unchecking + Update persists disableExport, re-checking restores it (W2)",
+    "workspace/workspace-mcp-policy.spec.ts::the chip is the subject of the view and the disclosure carries the description (M1)",
+    "workspace-setup/workspace-setup.spec.ts::first-run setup: skip, no project, own instance, then the sample"
+  ],
+  "flaky": [
+    "sql-editor/sql-editor-schema.spec.ts::every table card lands inside the viewport at default zoom"
+  ],
+  "infra": null,
+  "note": "red: 20 failed (17 SPEC-ROT via #21298 #21543 #21489 #21243 #21438 #21594 #21300; 1 PRODUCT mcp-policy audit copy #21517; 1 PRODUCT? tabs race), 1 flake; bootstrap, no PR/issues",
+  "run_url": "https://claude.ai/code/session_cse_01SzNejWZLHNF8fnzSS8wAXm"
+}

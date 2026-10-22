@@ -1,0 +1,10 @@
+{
+  "runs": [
+    "634bde5"
+  ],
+  "tests": {
+    "sql-editor/sql-editor-schema.spec.ts::every table card lands inside the viewport at default zoom": [
+      "634bde5"
+    ]
+  }
+}
