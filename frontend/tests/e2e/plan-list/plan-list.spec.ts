@@ -24,6 +24,10 @@ let failedPlan: { id: string; title: string };
 let draftPlan: { id: string; title: string };
 let gitOpsPlan: { id: string; title: string; releaseId: string };
 let originalProjectSettings: Record<string, boolean> = {};
+// Closed or archived in afterAll so later suites see the sample project as before.
+const createdPlans: string[] = [];
+let createdRelease: string | undefined;
+let createdProject: string | undefined;
 let originalApprovalSetting: unknown = null;
 
 const planId = (name: string) => name.split("/").pop()!;
@@ -77,6 +81,7 @@ test.beforeAll(async () => {
     const tasks = (stage.tasks ?? []).map((task) => task.name);
     await env.api.batchRunTasks(stage.name, tasks).catch(() => {});
   }
+  createdPlans.push(failed.name);
   await waitForFailedTask(failed.name);
   failedPlan = { id: planId(failed.name), title: failedTitle };
 
@@ -85,6 +90,7 @@ test.beforeAll(async () => {
     prefix: "plan-list draft",
     sql: "SELECT 1;",
   });
+  createdPlans.push(draft.planName);
   draftPlan = {
     id: draft.planId,
     title: (await env.api.getPlan(draft.planName)).title,
@@ -101,12 +107,14 @@ test.beforeAll(async () => {
     ],
     vcsSource: { vcsType: "GITHUB", url: COMMIT_URL },
   });
+  createdRelease = release.name;
   const gitOpsTitle = `plan-list gitops ${ts}`;
   const gitOps = await env.api.createReleasePlan(env.project, gitOpsTitle, {
     id: `gitops-${ts}`,
     targets: [env.database],
     release: release.name,
   });
+  createdPlans.push(gitOps.name);
   await env.api.createRollout(gitOps.name);
   gitOpsPlan = {
     id: planId(gitOps.name),
@@ -115,7 +123,9 @@ test.beforeAll(async () => {
   };
 
   emptyProjectId = `plan-list-empty-${ts}`;
-  await env.api.createProject(emptyProjectId, `Plan list empty ${ts}`);
+  createdProject = (
+    await env.api.createProject(emptyProjectId, `Plan list empty ${ts}`)
+  ).name;
 });
 
 test.afterAll(async () => {
@@ -126,6 +136,15 @@ test.afterAll(async () => {
       originalApprovalSetting,
       "value.workspace_approval",
     );
+  }
+  for (const plan of createdPlans) {
+    await env.api.closePlan(plan);
+  }
+  if (createdRelease) {
+    await env.api.deleteRelease(createdRelease);
+  }
+  if (createdProject) {
+    await env.api.deleteProject(createdProject);
   }
 });
 

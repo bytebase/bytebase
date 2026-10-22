@@ -660,6 +660,18 @@ export class BytebaseApiClient {
     await this.request("POST", `/v1/${stage}/tasks:batchRun`, { tasks });
   }
 
+  async closePlan(planName: string): Promise<void> {
+    await this.request("PATCH", `/v1/${planName}?updateMask=state`, { state: "DELETED" });
+  }
+
+  async deleteRelease(releaseName: string): Promise<void> {
+    await this.request("DELETE", `/v1/${releaseName}`);
+  }
+
+  async deleteProject(project: string): Promise<void> {
+    await this.request("DELETE", `/v1/${project}`);
+  }
+
   async runPlanChecks(planName: string): Promise<void> {
     try {
       await this.request("POST", `/v1/${planName}:runPlanChecks`, {});

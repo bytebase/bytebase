@@ -24,7 +24,10 @@ import {
   type SearchParams,
 } from "@/components/AdvancedSearch";
 import { HumanizeTs } from "@/components/HumanizeTs";
-import { PermissionGuard } from "@/components/PermissionGuard";
+import {
+  PermissionGuard,
+  usePermissionCheck,
+} from "@/components/PermissionGuard";
 import {
   ProjectPageContent,
   ProjectPageFooter,
@@ -95,6 +98,10 @@ export function ProjectReleaseDashboardPage({
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useProjectByName(projectName);
   const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+  const [canSetUpGitOps] = usePermissionCheck(
+    GITOPS_SETUP_PERMISSIONS,
+    project
+  );
 
   const defaultSearchParams = useMemo<SearchParams>(
     () => ({
@@ -200,7 +207,9 @@ export function ProjectReleaseDashboardPage({
           permissions={GITOPS_SETUP_PERMISSIONS}
           project={project}
         >
-          <Button onClick={openGitOpsSetup}>{t("release.empty.set-up")}</Button>
+          <Button disabled={!canSetUpGitOps} onClick={openGitOpsSetup}>
+            {t("release.empty.set-up")}
+          </Button>
         </PermissionGuard>
         <a
           href={GITOPS_GUIDE_URL}
@@ -264,6 +273,7 @@ export function ProjectReleaseDashboardPage({
               <Button
                 data-testid="release-gitops-setup"
                 appearance="outline"
+                disabled={!canSetUpGitOps}
                 onClick={openGitOpsSetup}
               >
                 <Settings2 className="size-4 mr-1" />

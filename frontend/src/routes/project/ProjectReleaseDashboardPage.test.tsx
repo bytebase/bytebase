@@ -42,6 +42,7 @@ const mocks = vi.hoisted(() => ({
   fetchRelease: vi.fn(),
   listPlans: vi.fn(),
   probeListPlans: vi.fn(),
+  canSetUpGitOps: true,
   routerPush: vi.fn(),
   usePagedData: vi.fn(),
 }));
@@ -106,6 +107,7 @@ vi.mock("@/components/HumanizeTs", async () => ({
 
 vi.mock("@/components/PermissionGuard", () => ({
   PermissionGuard: ({ children }: { children: ReactNode }) => children,
+  usePermissionCheck: () => [mocks.canSetUpGitOps, undefined],
 }));
 
 vi.mock("@/components/ProjectPageLayout", () => ({
@@ -201,6 +203,7 @@ describe("ProjectReleaseDashboardPage", () => {
     mocks.listPlans.mockResolvedValue({ plans: [], nextPageToken: "" });
     mocks.probeListPlans.mockResolvedValue({ plans: [] });
     mocks.usePagedData.mockReturnValue(pagedData([gitOpsPlan]));
+    mocks.canSetUpGitOps = true;
   });
 
   afterEach(() => {
@@ -320,5 +323,20 @@ describe("ProjectReleaseDashboardPage", () => {
     expect(
       container.querySelector('[data-testid="release-gitops-setup"]')
     ).not.toBeNull();
+  });
+
+  test.each([
+    { name: "the toolbar", plans: [gitOpsPlan], label: "release.gitops-setup" },
+    { name: "the empty state", plans: [], label: "release.empty.set-up" },
+  ])("disables GitOps setup in $name without setup permission", async ({ plans, label }) => {
+    mocks.canSetUpGitOps = false;
+    mocks.usePagedData.mockReturnValue(pagedData(plans));
+
+    await render();
+
+    const button = Array.from(container.querySelectorAll("button")).find(
+      (element) => element.textContent?.includes(label)
+    );
+    expect(button?.disabled).toBe(true);
   });
 });
