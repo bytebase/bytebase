@@ -63,7 +63,7 @@ context first.
 
 | Trigger | Where the control is | Journey | Executes? |
 |---|---|---|---|
-| Click the **Plan** tab on a result | in the result pane, next to Text | 1, 2 | no |
+| Choose **Plan** in the result's view switch | the result pane, beside Table and Vertical | 1, 2 | no |
 | Type `EXPLAIN …`, press **Run** (`Ctrl/Cmd+Enter`) | the editor | 1, 2 | as typed |
 | Choose **Explain**, press `Ctrl/Cmd+E`, or right-click → Explain | Run button's dropdown; keyboard; editor context menu | 3 | **no** |
 | Choose **Explain analyze** | Run button's dropdown | 1, 2 | **yes** |
@@ -77,7 +77,7 @@ sets session state, such as `SET search_path = tenant; SELECT * FROM orders`,
 cannot be explained statement by statement. `EXPLAIN SET …` is not valid, and
 skipping the `SET` would plan the next statement against the wrong search path.
 The actions say so rather than explaining part of the script — the same rule
-§3.3 applies to the Plan tab, stated once and enforced on both paths.
+§3.3 applies to the Plan view, stated once and enforced on both paths.
 
 They are two actions, not one, because the difference is whether your query runs.
 pgAdmin splits them the same way (F7 / Shift+F7). **Explain** never executes:
@@ -173,8 +173,9 @@ what the user asked to see, and no SQL editor we surveyed rewrites a typed
 `EXPLAIN`. Supabase tried the nearest thing — parsing the text plan — and deleted
 it seven months later for non-use.
 
-**Not every result has a Plan tab.** DDL and anything else the engine cannot
-explain gets none — an empty tab is worse than no tab.
+**Not every result offers Plan.** DDL and anything else the engine cannot
+explain gets no Plan option in its view switch — a Plan that cannot plan is
+worse than none.
 
 A query killed by the workspace timeout is the case worth having: no measured
 plan can exist, but an estimate is usually the answer to why it died. It has a
@@ -183,7 +184,7 @@ yields nil (`sql_service.go:999`), `Query` turns that into an RPC error
 (`:451-456`), and the client records an empty result set — so there is no
 executed statement to explain, and explaining the user's text instead would plan
 a differently-limited query, which is what §3.4 rejects. The timeout response
-has to carry the executed statement first. Until it does, no Plan tab here
+has to carry the executed statement first. Until it does, no Plan here
 either.
 
 **PostgreSQL XML is text until someone writes the parser.** `parsePostgresPlan`
@@ -205,19 +206,25 @@ rewriting anyone's statement.
 
 ### 3.3 Reading the plan
 
-**A tab in the result pane, not a side drawer.** No product surveyed uses a
-drawer. BigQuery, Spanner Studio, SSMS, DBeaver, DataGrip, pgAdmin and Navicat
-all put the plan in a tab beside the results; BigQuery and Spanner Studio add a
-full-screen control on that pane, which is what our Maximize already is.
-Snowflake and Databricks escalate to a full page instead, which we rejected in
-§4. So: a **Plan** tab beside the results, **Text** one click away — every plan
-viewer we checked keeps the raw text next to the picture, so Text is not
-optional.
+**A view of the result, in the result pane: not a side drawer, not a tab
+row.** No product surveyed uses a drawer. BigQuery, Spanner Studio, SSMS,
+DBeaver, DataGrip, pgAdmin and Navicat all put the plan beside the results, as
+a tab; BigQuery and Spanner Studio add a full-screen control on that pane,
+which is what our Maximize already is. Snowflake and Databricks escalate to a
+full page instead, which we rejected in §4. Their tabs exist because the plan
+came back with the job. On our engines the plan is fetched on demand, so a
+permanent tab promises something that is not there until clicked, and the
+result toolbar is already full (§4). So: **Plan** is one more option in the
+result pane's view switch, beside Table and Vertical — the plan is another way
+of looking at this result, which is what it is — and **Text** is one click
+away; every plan viewer we checked keeps the raw text next to the picture, so
+Text is not optional. The explain action is that one icon: where the engine
+cannot explain, the option is absent; where the user lacks the permission, it
+is disabled with the reason (§3.5).
 
 **Text appears only when Plan has a picture.** On the nine engines we cannot draw
-(§3.4), the plan *is* text, so a second text tab would say the same thing twice
-and leave the reader asking why the Plan tab has no plan in it. One tab there,
-named Plan, containing the plan.
+(§3.4), the plan *is* text, so a second text view would say the same thing
+twice. There, Plan shows the plan as text, and nothing else.
 
 1. **Summary panel** — the most expensive operators, ranked; click one and the
    graph jumps to it. Snowflake and Databricks lead with this, because the ranked
@@ -270,15 +277,16 @@ tab, and Query duplicates the editor they came from.
 | Grid | **Table** |
 | Summary (tab, only when the plan has costs) | **always-visible panel** beside the graph |
 | Raw plan | the **Text** tab, beside Plan |
-| Query | becomes a **View SQL** disclosure in the Plan tab |
+| Query | becomes a **View SQL** disclosure in the Plan view |
 
 View SQL is not a tooltip. The editor may have moved on since the result was
 produced, so the statement a plan belongs to has to be readable somewhere — and
 selectable and copyable, which a hover tooltip is not, least of all for a long
 statement.
 
-Plan or Text is remembered per editor tab, like the result pane's height, so
-comparing two runs does not mean re-selecting Plan each time (CUJ 2).
+The view switch's choice — Table, Vertical, Plan or Text — is remembered per
+editor tab, like the result pane's height, so comparing two runs does not mean
+re-selecting Plan each time (CUJ 2).
 
 CUJ 2 only works on a plan captured **before** the change. A result tab holds the
 plan it already fetched, so an earlier run keeps its baseline; opening Plan on
@@ -297,7 +305,8 @@ SELECT * FROM orders`, the second statement's plan depends on the first, and we
 explain statements one at a time on a connection that never saw the `SET`. The
 driver would also prefix a split script blindly, producing an invalid
 `EXPLAIN SET …`. Temporary tables and SQL Server's `USE` break the same way. So
-when a script establishes session state, the statements after it get no Plan tab.
+when a script establishes session state, the statements after it get no Plan
+option.
 Reproducing session context is a larger feature than this design, and a plan for
 the wrong table is worse than no plan.
 
@@ -322,7 +331,7 @@ regression.
 
 ### 3.4 Engine differences
 
-| Engine | Plan tab on a result | Picture | Explain analyze |
+| Engine | Plan on a result | Picture | Explain analyze |
 |---|---|---|---|
 | **PostgreSQL** | one `Query()`, on demand, cached | graph | yes — `EXPLAIN (ANALYZE, FORMAT JSON)` |
 | **SQL Server** | one `Query()`, on demand, cached | graph | yes — `SET STATISTICS XML` |
@@ -350,7 +359,7 @@ still waits on the timeout response carrying its statement.
 
 **Say which one it is, in words.** Measured and estimated carry a badge, and an
 estimated plan says *"A new plan, made just now. It may differ from the plan that
-ran."* A timestamp alone is not enough: the plan sits in the Plan tab of the
+ran."* A timestamp alone is not enough: the plan sits in the Plan view of the
 result of the query that was slow, so everything about its placement says it
 explains that run. It may not — PostgreSQL chooses a plan from current
 statistics, and if the slow run was caused by stale statistics that have since
@@ -376,14 +385,14 @@ would fail queries the user is authorized to run. Profiling only when asked
 requires a control that says so before the run, which is a second explain action
 on the Run button for a case **Explain analyze** already covers. Out of scope.
 
-Once the Plan tab matches the pop-up page, delete the page, its token hand-off
+Once the Plan view matches the pop-up page, delete the page, its token hand-off
 and the old link.
 
 ### 3.5 Permissions, masking and limits
 
 **Explain is its own permission** — `bb.sql.explain`, not `bb.sql.select`
 (`sql_service.go:1480`) — so a user can be allowed to run a query and not to plan
-it. For them the Plan tab is **disabled with the reason shown**, not hidden:
+it. For them the Plan option is **disabled with the reason shown**, not hidden:
 hiding it leaves them unable to tell the capability exists or what to ask an
 admin for.
 
@@ -405,8 +414,8 @@ histogram-derived boundary values, and any engine's predicates and estimates say
 something about the distribution behind them. So the justification is not "there
 is nothing sensitive in here" — it is that reading a plan is a distinct,
 deliberately granted capability, `bb.sql.explain`, held separately from the
-permission to read rows. That boundary applies identically to the Plan tab, the
-Text tab, Copy plan, and any plan attached to an ordinary run (§3.4): all of them
+permission to read rows. That boundary applies identically to the Plan view, the
+Text view, Copy plan, and any plan attached to an ordinary run (§3.4): all of them
 are the same capability, so none of them may be reachable without it.
 
 Two ways that boundary leaked, both in `checkDatabaseAccess`
@@ -450,7 +459,7 @@ before. Every query span now carries the tables its statement touches, whatever
 the statement type, so this is the only case left to that single check.
 
 **Slow and large plans.** The on-demand call can take as long as any query: show
-a skeleton, allow cancel, time out rather than hang. Past a node cap the Plan tab
+a skeleton, allow cancel, time out rather than hang. Past a node cap the Plan view
 falls back to Text instead of drawing something unreadable — SSMS degrades the
 same way, at 2 MB.
 
@@ -465,6 +474,11 @@ rejects shows that error in the tab, like any failed query.
 
 - **Keep the pop-up tab.** Only Snowflake opens one, and theirs is a permanent
   page with a link, not a throwaway that loses the database, theme and language.
+- **A Plan tab beside every result.** The warehouses have one because the plan
+  came back with the job. On our engines it is fetched on demand, the journey's
+  frequency is unmeasured, and the result toolbar already holds search, the
+  view switch, the row count, Copy and Export. One icon in the view switch
+  costs one icon if nobody uses it; a tab row costs every result.
 - **Explain button on the toolbar.** SSMS, pgAdmin and DBeaver do this; none of
   the four does. Permanent space for the rarest journey.
 - **Parse the text plan.** PostgreSQL's text output has no escaping, so a string
@@ -518,13 +532,13 @@ Checked against `main` on 2026-10-22.
   another project failing closed, and a typed `EXPLAIN ANALYZE` needs the inner
   statement's permission as well. What remains of §3.5: SQL Server's
   `SET STATISTICS XML ON` route still passes on `bb.sql.select` alone, and the
-  Plan tab items — disabled with the reason shown, skeleton and cancel, the
+  Plan view items — disabled with the reason shown, skeleton and cancel, the
   node cap — ride with item 1.
 
 **Not yet, in the order to do them**
 
-1. §3.2/§3.3 — the Plan tab on an ordinary result, planning the executed
-   statement, with the estimate wording from §3.4.
+1. §3.2/§3.3 — Plan in the result pane's view switch on an ordinary result,
+   planning the executed statement, with the estimate wording from §3.4.
 2. §3.1 — Explain and Explain analyze in the Run dropdown, planning the limited
    statement; today every driver's explain path skips the limit.
 3. §3.3 — the reading changes: summary panel always visible, graph opening on
