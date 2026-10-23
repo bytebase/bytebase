@@ -31,6 +31,7 @@ func (e *omniQuerySpanExtractor) collectStatementPredicateColumns(query *catalog
 			for _, limit := range []ast.Node{v.LimitCount, v.LimitOffset} {
 				if limit != nil {
 					r.addReferences(limit)
+					e.analyzeFunctionsCalledIn(limit)
 					limited = true
 				}
 			}
@@ -162,6 +163,37 @@ func (e *omniQuerySpanExtractor) collectNestedPredicateColumns(queryStack []*cat
 	})
 }
 
+// analyzeFunctionsCalledIn analyzes the body of every user function node calls,
+// which merges the body's predicates, as walkExpr does for an analyzed call.
+func (e *omniQuerySpanExtractor) analyzeFunctionsCalledIn(node ast.Node) {
+	ast.Inspect(node, func(n ast.Node) bool {
+		if call, ok := n.(*ast.FuncCall); ok {
+			if proc := e.userProcNamed(astStrings(call.Funcname)); proc != nil {
+				e.analyzeFunctionBody(proc)
+			}
+		}
+		return true
+	})
+}
+
+// userProcNamed returns the user function a possibly schema-qualified name
+// names.
+func (e *omniQuerySpanExtractor) userProcNamed(names []string) *catalog.UserProc {
+	if len(names) == 0 {
+		return nil
+	}
+	name := names[len(names)-1]
+	if len(names) == 1 {
+		return e.lookupUserProcByName(name)
+	}
+	for _, row := range e.cat.QueryPgProc(names[len(names)-2]) {
+		if strings.EqualFold(row.ProName, name) {
+			return e.cat.GetUserProcByOID(row.OID)
+		}
+	}
+	return nil
+}
+
 // namedFunctionReturnsSet reports whether a function of that name is known to
 // return a set.
 func (e *omniQuerySpanExtractor) namedFunctionReturnsSet(name string) bool {
@@ -192,6 +224,7 @@ func (e *omniQuerySpanExtractor) returnsSet(oid uint32) bool {
 // analysis fails. Without scopes it over-approximates by name, so that an
 // analysis failure never lets a condition on a masked column through.
 func (e *omniQuerySpanExtractor) collectFallbackPredicateColumns(stmt ast.Node, accesses base.SourceColumnSet) {
+	e.analyzeFunctionsCalledIn(stmt)
 	r := newPredicateNameResolver(stmt, e.namedFunctionReturnsSet)
 	for _, name := range r.usingNames {
 		r.addName(name)
