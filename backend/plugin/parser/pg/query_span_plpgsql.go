@@ -13,6 +13,13 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+// snapshotFunc is a function's language and body as the schema snapshot
+// defines it.
+type snapshotFunc struct {
+	language string
+	body     string
+}
+
 type funcBodyAnalysis struct {
 	sourceColumns    []base.SourceColumnSet
 	predicateColumns base.SourceColumnSet
@@ -52,29 +59,38 @@ func (e *omniQuerySpanExtractor) analyzeFunctionBodyForProc(proc *catalog.UserPr
 	}()
 
 	// The catalog keeps each overload's own body. A function it could not
-	// install is a stand-in with a placeholder body, so its body comes from the
-	// snapshot.
-	body := proc.Body
-	if proc.Schema != nil && e.standInFuncs[strings.ToLower(proc.Schema.Name+"."+proc.Name)] {
-		if origBody, ok := e.funcOrigDefs[strings.ToLower(proc.Name)]; ok && origBody != "" {
-			body = origBody
+	// install is a stand-in with a placeholder body, and the snapshot cannot
+	// tell which overload it stands for, so every overload's body is analyzed
+	// and merged.
+	defs := []snapshotFunc{{language: proc.Language, body: proc.Body}}
+	if proc.Schema != nil {
+		key := strings.ToLower(proc.Schema.Name + "." + proc.Name)
+		if e.standInFuncs[key] && len(e.snapshotFuncs[key]) > 0 {
+			defs = e.snapshotFuncs[key]
 		}
 	}
 
 	var result []base.SourceColumnSet
 	var err error
-
-	switch strings.ToLower(proc.Language) {
-	case "plpgsql":
-		result, err = e.analyzePLpgSQLBody(proc, body)
-	case "sql":
-		result, err = e.analyzeSQLBody(body)
-	default:
-		// Unsupported language (C, internal, etc.) — unknown lineage.
-		result = makeEmptySets(proc)
+	for _, def := range defs {
+		defResult, defErr := e.analyzeBodyAs(proc, def)
+		if defErr != nil {
+			err = defErr
+			continue
+		}
+		if len(defs) == 1 {
+			result = defResult
+			break
+		}
+		for i, set := range defResult {
+			if i >= len(result) {
+				result = append(result, make(base.SourceColumnSet))
+			}
+			mergeSourceColumnSetInto(result[i], set)
+		}
 	}
 
-	if err != nil {
+	if err != nil && result == nil {
 		// On error, cache empty sets so we don't retry.
 		e.funcBodyCache[proc.OID] = &funcBodyAnalysis{
 			sourceColumns:    makeEmptySets(proc),
@@ -88,6 +104,18 @@ func (e *omniQuerySpanExtractor) analyzeFunctionBodyForProc(proc *catalog.UserPr
 		predicateColumns: cloneSourceColumnSet(bodyPredicateColumns),
 	}
 	return e.funcBodyCache[proc.OID]
+}
+
+func (e *omniQuerySpanExtractor) analyzeBodyAs(proc *catalog.UserProc, def snapshotFunc) ([]base.SourceColumnSet, error) {
+	switch strings.ToLower(def.language) {
+	case "plpgsql":
+		return e.analyzePLpgSQLBody(proc, def.body)
+	case "sql":
+		return e.analyzeSQLBody(def.body)
+	default:
+		// Unsupported language (C, internal, etc.) — unknown lineage.
+		return makeEmptySets(proc), nil
+	}
 }
 
 func cloneSourceColumnSet(src base.SourceColumnSet) base.SourceColumnSet {
@@ -171,6 +199,7 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColum
 		if err != nil {
 			e.collectFallbackPredicateColumns(selStmt, accesses)
 			if i != last {
+				e.collectDiscardedOutputColumns(nil, selStmt, accesses)
 				continue
 			}
 			// Fall back to parse-tree extraction when analysis fails
@@ -188,6 +217,8 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColum
 		e.collectStatementPredicateColumns(query, selStmt, accesses)
 		if i == last {
 			result = e.extractFuncLineage(query)
+		} else {
+			e.collectDiscardedOutputColumns(query, selStmt, accesses)
 		}
 	}
 	return result, nil

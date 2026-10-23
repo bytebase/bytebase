@@ -57,12 +57,12 @@ type omniQuerySpanExtractor struct {
 	metaCache     map[string]*model.DatabaseMetadata
 	cat           *catalog.Catalog
 	funcBodyCache map[uint32]*funcBodyAnalysis
-	// funcOrigDefs stores the function bodies of the snapshot keyed by
-	// lowercase function name. Used by analyzeFunctionBody for a function the
-	// catalog installed as a stand-in, listed in standInFuncs by lowercase
-	// "schema.name".
-	funcOrigDefs map[string]string
-	standInFuncs map[string]bool
+	// snapshotFuncs holds the snapshot's definition of every overload, keyed by
+	// lowercase "schema.name". Used by analyzeFunctionBody for a function the
+	// catalog installed as a stand-in, listed in standInFuncs by the same key;
+	// the stand-in may stand for any overload of the name.
+	snapshotFuncs map[string][]snapshotFunc
+	standInFuncs  map[string]bool
 	// funcSourceColumns accumulates table-level access (column="") discovered inside
 	// function bodies. Merged into the top-level QuerySpan.SourceColumns.
 	funcSourceColumns base.SourceColumnSet
@@ -91,7 +91,7 @@ func newOmniQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx
 		gCtx:              gCtx,
 		metaCache:         make(map[string]*model.DatabaseMetadata),
 		funcBodyCache:     make(map[uint32]*funcBodyAnalysis),
-		funcOrigDefs:      make(map[string]string),
+		snapshotFuncs:     make(map[string][]snapshotFunc),
 		standInFuncs:      make(map[string]bool),
 		funcSourceColumns: make(base.SourceColumnSet),
 		predicateColumns:  make(base.SourceColumnSet),
@@ -145,16 +145,15 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 		)
 	}
 
-	// Populate original (non-stubbed) function definitions for PL/pgSQL body
-	// analysis.
 	for _, s := range meta.GetProto().GetSchemas() {
 		for _, f := range s.GetFunctions() {
 			if f.Definition == "" {
 				continue
 			}
-			origBody := extractFuncBodyFromDef(f.Definition)
-			if origBody != "" {
-				e.funcOrigDefs[strings.ToLower(f.Name)] = origBody
+			_, body, language := parseFuncDefForLineage(f.Definition)
+			if body != "" {
+				key := strings.ToLower(s.Name + "." + f.Name)
+				e.snapshotFuncs[key] = append(e.snapshotFuncs[key], snapshotFunc{language: language, body: body})
 			}
 		}
 	}
@@ -757,7 +756,7 @@ func (e *omniQuerySpanExtractor) walkExprWithVisited(queryStack []*catalog.Query
 			e.walkExprWithVisited(queryStack, arg, result, visited)
 		}
 		// Trace lineage through user-defined function body.
-		if proc := e.cat.GetUserProcByOID(v.FuncOID); proc != nil {
+		for _, proc := range e.userProcsCalled(v) {
 			// Expression context: merge all output columns into one set.
 			for _, colSet := range e.analyzeFunctionBody(proc) {
 				for k, val := range colSet {
@@ -874,11 +873,13 @@ func (e *omniQuerySpanExtractor) resolveVar(queryStack []*catalog.Query, v *cata
 		// Trace lineage through user-defined function body.
 		if len(rte.FuncExprs) > 0 {
 			if fc, ok := rte.FuncExprs[0].(*catalog.FuncCallExpr); ok {
-				if proc := e.cat.GetUserProcByOID(fc.FuncOID); proc != nil {
-					bodySets := e.analyzeFunctionBody(proc)
-					if colIdx >= 0 && colIdx < len(bodySets) {
-						for k, val := range bodySets[colIdx] {
-							result[k] = val
+				if procs := e.userProcsCalled(fc); len(procs) > 0 {
+					for _, proc := range procs {
+						bodySets := e.analyzeFunctionBody(proc)
+						if colIdx >= 0 && colIdx < len(bodySets) {
+							for k, val := range bodySets[colIdx] {
+								result[k] = val
+							}
 						}
 					}
 				} else {

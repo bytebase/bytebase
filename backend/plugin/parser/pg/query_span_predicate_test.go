@@ -96,6 +96,11 @@ func TestGetQuerySpanPredicateColumnsOfFunctionBodies(t *testing.T) {
 		// would be the harmless one.
 		{Name: "probe_over", Definition: "CREATE FUNCTION public.probe_over(x text) RETURNS boolean LANGUAGE sql AS $$ SELECT EXISTS (SELECT 1 FROM t WHERE ssn = x) $$"},
 		{Name: "probe_over", Definition: "CREATE FUNCTION public.probe_over(x int) RETURNS boolean LANGUAGE sql AS $$ SELECT true $$"},
+		// A missing return type makes the catalog install these as stand-ins.
+		{Name: "probe_stand_in", Definition: "CREATE FUNCTION public.probe_stand_in(x text) RETURNS SETOF missing_tbl LANGUAGE sql AS $$ SELECT * FROM t WHERE ssn = x $$"},
+		{Name: "probe_stand_in", Definition: "CREATE FUNCTION public.probe_stand_in(x int) RETURNS SETOF missing_tbl LANGUAGE sql AS $$ SELECT * FROM o $$"},
+		{Name: "probe_stand_in_pl", Definition: "CREATE FUNCTION public.probe_stand_in_pl(x text) RETURNS SETOF missing_tbl LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT * FROM t WHERE ssn = x; END; $$"},
+		{Name: "probe_discard", Definition: "CREATE FUNCTION public.probe_discard() RETURNS int LANGUAGE sql AS $$ SELECT pg_sleep(CASE WHEN ssn = 'guess' THEN 0 ELSE 0 END) FROM t; SELECT 1 $$"},
 		{Name: "probe_for", Definition: "CREATE FUNCTION public.probe_for() RETURNS SETOF int LANGUAGE plpgsql AS $$ BEGIN FOR i IN 1..(SELECT ascii(ssn) FROM t LIMIT 1) LOOP RETURN NEXT i; END LOOP; END; $$"},
 		{Name: "probe_join", Definition: "CREATE FUNCTION public.probe_join(guess text) RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT o.id FROM " + unanalyzable + "; END; $$"},
 		{Name: "probe_join_sql", Definition: "CREATE FUNCTION public.probe_join_sql(guess text) RETURNS SETOF int LANGUAGE sql AS $$ SELECT o.id FROM " + unanalyzable + " $$"},
@@ -115,6 +120,9 @@ func TestGetQuerySpanPredicateColumnsOfFunctionBodies(t *testing.T) {
 		{"SELECT probe_update() AS x", []string{"t.ssn"}},
 		{"SELECT probe_record() AS x", []string{"t.ssn"}},
 		{"SELECT probe_raise() AS x", []string{"t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_stand_in('guess')", []string{"t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_stand_in_pl('guess')", []string{"t.ssn"}},
+		{"SELECT probe_discard() AS x", []string{"t.ssn"}},
 		{"SELECT probe_over('guess') AS b", []string{"t.ssn"}},
 		{"SELECT probe_over(1) AS b", []string{}},
 		{"SELECT * FROM o CROSS JOIN unknown_rows() u WHERE probe_over(1)", []string{"t.ssn"}},

@@ -43,6 +43,24 @@ func (e *omniQuerySpanExtractor) collectStatementPredicateColumns(query *catalog
 	}
 }
 
+// collectDiscardedOutputColumns records the columns a SELECT whose rows are
+// discarded reads in its output. It still evaluates the output, so those
+// columns decide how long it takes. query is nil when sel failed analysis.
+func (e *omniQuerySpanExtractor) collectDiscardedOutputColumns(query *catalog.Query, sel *ast.SelectStmt, accesses base.SourceColumnSet) {
+	if query != nil {
+		for _, set := range e.extractFuncLineage(query) {
+			mergeSourceColumnSetInto(e.predicateColumns, set)
+		}
+		return
+	}
+	if sel.TargetList == nil {
+		return
+	}
+	r := newPredicateNameResolver(sel, e.namedFunctionReturnsSet)
+	r.addReferences(sel.TargetList)
+	e.recordPredicateNames(r, accesses)
+}
+
 func (e *omniQuerySpanExtractor) collectPredicateColumnsInStack(queryStack []*catalog.Query, visited map[*catalog.Query]bool) {
 	q := currentQuery(queryStack)
 	if q == nil || visited[q] {
@@ -92,7 +110,7 @@ func (e *omniQuerySpanExtractor) collectPredicateColumnsInStack(queryStack []*ca
 			for _, arg := range call.Args {
 				e.collectConditionColumns(queryStack, arg, visited)
 			}
-			if proc := e.cat.GetUserProcByOID(call.FuncOID); proc != nil {
+			for _, proc := range e.userProcsCalled(call) {
 				e.analyzeFunctionBody(proc)
 			}
 		}
@@ -176,6 +194,19 @@ func (e *omniQuerySpanExtractor) analyzeFunctionsCalledIn(node ast.Node) {
 		}
 		return true
 	})
+}
+
+// userProcsCalled returns the user function an analyzed call invokes. An
+// opaque call, which the analyzer could not match to a function (as for a
+// stand-in), may invoke any user function of its name.
+func (e *omniQuerySpanExtractor) userProcsCalled(call *catalog.FuncCallExpr) []*catalog.UserProc {
+	if proc := e.cat.GetUserProcByOID(call.FuncOID); proc != nil {
+		return []*catalog.UserProc{proc}
+	}
+	if call.FuncOID == 0 {
+		return e.userProcsNamed([]string{call.FuncName})
+	}
+	return nil
 }
 
 // userProcsNamed returns every user function, overloads included, that a
