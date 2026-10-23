@@ -127,7 +127,7 @@ Get the correct port from `getInstance(env.instance)` rather than hardcoding the
 ## Known Constraints
 
 - **Sample-data bootstrap**: `globalSetup` creates `project-sample` and calls `PrepareSampleProjectInstance`. The single project-scoped sample Postgres instance comes up on `PORT+3` with `hr_test`; the setup project adds `hr_prod` on that instance as an E2E-only multi-database fixture.
-- **License required**: the suite exercises enterprise-only features (masking, JIT, approval workflow, query-data-policy, database groups) and does NOT run on the free plan. Set `BYTEBASE_E2E_LICENSE` to a license JWT signed by Bytebase's license key (ask Bytebase ops for a dev/test license; not stored in this repo); `globalSetup` installs it via `PATCH /v1/subscription/license`. If the env var is absent the bootstrap throws and the whole run stops — there is no per-spec `test.skip` fallback.
+- **License required**: the suite exercises enterprise-only features (masking, JIT, approval workflow, query-data-policy, database groups) and does NOT run on the free plan. `globalSetup` installs a license via `PATCH /v1/subscription/license`: `BYTEBASE_E2E_LICENSE` when set, else the dev-signed `BB_DEV_ENTERPRISE_LICENSE` committed in `frontend/.env.dev` (valid only on a binary built without the `release` tag). With neither, the bootstrap throws and the whole run stops — there is no per-spec `test.skip` fallback. Never print the license.
 - **Serial execution**: `fullyParallel: false` + `workers: 1`. Tests within and across files are sequential.
 - **`psql` dependency**: must be on PATH for DDL/DML setup.
 - **Unix-like OS only**: the sample Postgres uses Unix sockets in `/tmp`.
