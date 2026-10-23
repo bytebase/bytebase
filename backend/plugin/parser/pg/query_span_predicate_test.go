@@ -101,6 +101,11 @@ func TestGetQuerySpanPredicateColumnsOfFunctionBodies(t *testing.T) {
 		{Name: "probe_stand_in", Definition: "CREATE FUNCTION public.probe_stand_in(x int) RETURNS SETOF missing_tbl LANGUAGE sql AS $$ SELECT * FROM o $$"},
 		{Name: "probe_stand_in_pl", Definition: "CREATE FUNCTION public.probe_stand_in_pl(x text) RETURNS SETOF missing_tbl LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT * FROM t WHERE ssn = x; END; $$"},
 		{Name: "probe_discard", Definition: "CREATE FUNCTION public.probe_discard() RETURNS int LANGUAGE sql AS $$ SELECT pg_sleep(CASE WHEN ssn = 'guess' THEN 0 ELSE 0 END) FROM t; SELECT 1 $$"},
+		{Name: "probe_declare", Definition: "CREATE FUNCTION public.probe_declare() RETURNS int LANGUAGE plpgsql AS $$ DECLARE v text := (SELECT ssn FROM t LIMIT 1); BEGIN RAISE EXCEPTION '%', v; END; $$"},
+		{Name: "proc_check", Definition: "CREATE PROCEDURE public.proc_check(x text) LANGUAGE plpgsql AS $$ BEGIN IF x = 'guess' THEN RAISE EXCEPTION 'hit'; END IF; END; $$"},
+		{Name: "probe_call", Definition: "CREATE FUNCTION public.probe_call() RETURNS int LANGUAGE plpgsql AS $$ DECLARE v text; BEGIN SELECT ssn INTO v FROM t LIMIT 1; CALL proc_check(v); RETURN 1; END; $$"},
+		// The last SELECT reads a table the snapshot lacks, so the body fails analysis.
+		{Name: "probe_failing", Definition: "CREATE FUNCTION public.probe_failing() RETURNS SETOF record LANGUAGE sql AS $$ SELECT pg_sleep(0) FROM t WHERE ssn = 'guess'; SELECT * FROM missing_tbl $$"},
 		{Name: "probe_for", Definition: "CREATE FUNCTION public.probe_for() RETURNS SETOF int LANGUAGE plpgsql AS $$ BEGIN FOR i IN 1..(SELECT ascii(ssn) FROM t LIMIT 1) LOOP RETURN NEXT i; END LOOP; END; $$"},
 		{Name: "probe_join", Definition: "CREATE FUNCTION public.probe_join(guess text) RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT o.id FROM " + unanalyzable + "; END; $$"},
 		{Name: "probe_join_sql", Definition: "CREATE FUNCTION public.probe_join_sql(guess text) RETURNS SETOF int LANGUAGE sql AS $$ SELECT o.id FROM " + unanalyzable + " $$"},
@@ -123,6 +128,9 @@ func TestGetQuerySpanPredicateColumnsOfFunctionBodies(t *testing.T) {
 		{"SELECT count(*) AS c FROM probe_stand_in('guess')", []string{"t.ssn"}},
 		{"SELECT count(*) AS c FROM probe_stand_in_pl('guess')", []string{"t.ssn"}},
 		{"SELECT probe_discard() AS x", []string{"t.ssn"}},
+		{"SELECT probe_declare() AS x", []string{"t.ssn"}},
+		{"SELECT probe_call() AS x", []string{"t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_failing() AS f(a int)", []string{"t.ssn"}},
 		{"SELECT probe_over('guess') AS b", []string{"t.ssn"}},
 		{"SELECT probe_over(1) AS b", []string{}},
 		{"SELECT * FROM o CROSS JOIN unknown_rows() u WHERE probe_over(1)", []string{"t.ssn"}},
@@ -164,6 +172,21 @@ func TestGetQuerySpanResultLineage(t *testing.T) {
 			span := spanFor(t, tc.statement, healthySchema())
 			require.Len(t, span.Results, 1)
 			require.Equal(t, tc.want, predicateColumnNames(span.Results[0].SourceColumns))
+		})
+	}
+}
+
+func TestGetQuerySpanResultLineageThroughCursor(t *testing.T) {
+	schema := healthySchema()
+	schema.Schemas[0].Functions = []*metadatapb.FunctionMetadata{
+		{Name: "read_cursor", Definition: "CREATE FUNCTION public.read_cursor() RETURNS text LANGUAGE plpgsql AS $$ DECLARE c CURSOR FOR SELECT ssn FROM t; v text; BEGIN OPEN c; FETCH c INTO v; RETURN v; END; $$"},
+		{Name: "loop_cursor", Definition: "CREATE FUNCTION public.loop_cursor() RETURNS SETOF text LANGUAGE plpgsql AS $$ DECLARE c CURSOR FOR SELECT ssn FROM t; BEGIN FOR r IN c LOOP RETURN NEXT r.ssn; END LOOP; END; $$"},
+	}
+	for _, statement := range []string{"SELECT read_cursor() AS x", "SELECT loop_cursor() AS x"} {
+		t.Run(statement, func(t *testing.T) {
+			span := spanFor(t, statement, schema)
+			require.Len(t, span.Results, 1)
+			require.Equal(t, []string{"t.ssn"}, predicateColumnNames(span.Results[0].SourceColumns))
 		})
 	}
 }
