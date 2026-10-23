@@ -246,6 +246,81 @@ describe("QueryPlanGrid", () => {
     expect(guideCells(0)).toHaveLength(1);
   });
 
+  test("lines a deep row's guides up with its ancestors' at every depth", () => {
+    // A chain eight levels deep whose head has a sibling after it, so the
+    // head's branch line passes every row of the chain in the first column.
+    const chain = (depth: number): unknown => ({
+      "Node Type": `Level ${depth}`,
+      "Startup Cost": 0,
+      "Total Cost": 1,
+      "Plan Rows": 1,
+      "Plan Width": 1,
+      ...(depth < 8 ? { Plans: [chain(depth + 1)] } : {}),
+    });
+    renderGrid({
+      tree: treeFrom([
+        {
+          Plan: {
+            "Node Type": "Nested Loop",
+            "Startup Cost": 0,
+            "Total Cost": 2,
+            "Plan Rows": 1,
+            "Plan Width": 1,
+            Plans: [
+              chain(1),
+              {
+                "Node Type": "Seq Scan",
+                "Startup Cost": 0,
+                "Total Cost": 1,
+                "Plan Rows": 1,
+                "Plan Width": 1,
+              },
+            ],
+          },
+        },
+      ]),
+    });
+
+    const nodeCells = screen.getAllByTestId("plan-grid-node");
+    const guides = screen.getAllByTestId("plan-grid-guides");
+    for (let depth = 1; depth <= 8; depth++) {
+      expect(nodeCells[depth].style.paddingLeft).toBe(`${depth * 12}px`);
+      const cells = Array.from(guides[depth - 1].children);
+      expect(cells).toHaveLength(depth);
+      // The head's sibling is still to come, so its line runs down column one.
+      expect(cells[0].querySelector(".w-px")).not.toBeNull();
+      // Nothing between the head and the row continues, so no other column
+      // above the row's own elbow draws a line.
+      for (const cell of cells.slice(1, -1)) {
+        expect(cell.querySelector(".w-px")).toBeNull();
+      }
+    }
+  });
+
+  test("brings the selected row on screen when the selection changes", () => {
+    // jsdom lays nothing out, so it has no scrollIntoView to observe.
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      const plan = tree();
+      const { rerender } = renderGrid({ tree: plan });
+      const target = rows()[4];
+      rerender(
+        <QueryPlanGrid
+          tree={plan}
+          selectedId={target.dataset.planNodeId}
+          onSelect={() => undefined}
+        />
+      );
+
+      expect(scrollIntoView).toHaveBeenLastCalledWith({ block: "nearest" });
+      expect(scrollIntoView.mock.contexts.at(-1)).toBe(rows()[4]);
+    } finally {
+      // biome-ignore lint/performance/noDelete: restores jsdom's prototype
+      delete (Element.prototype as Partial<Element>).scrollIntoView;
+    }
+  });
+
   test("keeps the guides out of the accessibility tree", () => {
     renderGrid();
 

@@ -140,7 +140,14 @@ function PlanTotalsLine({ tree, legend }: { tree: PlanTree; legend?: string }) {
         .join(" · ")}
       {legend ? (
         <Tooltip content={legend}>
-          <Info aria-label={legend} className="size-3.5 shrink-0" />
+          <Button
+            size="xs"
+            appearance="secondary"
+            aria-label={legend}
+            className="w-6 p-0"
+          >
+            <Info aria-hidden="true" />
+          </Button>
         </Tooltip>
       ) : null}
     </p>

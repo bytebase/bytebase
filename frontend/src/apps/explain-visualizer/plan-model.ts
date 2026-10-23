@@ -62,15 +62,14 @@ export interface PlanTree {
   readonly maxSelfCost: number;
   readonly maxRows: number;
   /**
-   * The whole plan's cost: the denominator of every cost share and the maximum
-   * of the summary timeline's axis.
+   * The whole plan's cost: the denominator of every cost share.
    *
    * Normally this is the root's total cost, which by construction equals the
    * sum of every node's self cost. A node that stops its children early —
    * `Limit` is the common one — reports a total below its children's, and
    * `selfCost` clamps that difference at zero, so the self costs can add up to
    * more than the root reports. Taking the larger of the two keeps every share
-   * at or below 100% and every timeline bar inside the axis.
+   * at or below 100%.
    */
   readonly costBasis: number;
 }

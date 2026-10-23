@@ -3534,7 +3534,7 @@
         "total-cost": "总成本"
       },
       "summary": {
-        "costliest": "成本最高的操作符",
+        "costliest": "按预估成本最高的操作符",
         "no-added-cost": "此计划中没有节点自身增加预计成本。"
       },
       "tab": {

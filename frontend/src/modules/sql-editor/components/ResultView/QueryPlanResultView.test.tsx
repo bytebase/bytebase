@@ -66,7 +66,7 @@ describe("QueryPlanResultView", () => {
     );
   });
 
-  test("loads a drawable plan immediately and opens on its text tab", async () => {
+  test("loads a drawable plan immediately and hands the viewer its text plan", async () => {
     const loadPlan = vi.fn().mockResolvedValue({
       source: "structured plan",
     });

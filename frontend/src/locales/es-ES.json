@@ -3534,7 +3534,7 @@
         "total-cost": "Coste total"
       },
       "summary": {
-        "costliest": "Operadores más costosos",
+        "costliest": "Más costosos según el coste estimado",
         "no-added-cost": "Ningún nodo de este plan añade un coste estimado propio."
       },
       "tab": {

@@ -43,6 +43,7 @@ import {
   type PlanHighlightMode,
   type PlanNode,
   type PlanTree,
+  planCollapsedAncestor,
   planCostliestNodes,
   planDescendantCount,
   planEdgeWidth,
@@ -270,8 +271,12 @@ export function QueryPlanDiagram({
   );
 
   // The diagram opens on the operator that adds the most cost, which is where
-  // reading a slow plan starts.
-  const focusId = useMemo(() => planCostliestNodes(tree, 1)[0]?.id, [tree]);
+  // reading a slow plan starts. A collapse that hides it takes its place, as it
+  // takes the selection.
+  const costliestId = useMemo(() => planCostliestNodes(tree, 1)[0]?.id, [tree]);
+  const focusId =
+    planCollapsedAncestor(tree.root, collapsedIds, costliestId)?.id ??
+    costliestId;
 
   const placeView = useCallback(
     (placed: PlacedView) => {

@@ -221,8 +221,9 @@ describe("QueryPlanViewer", () => {
         .map((option) => option.textContent)
     ).toEqual(["Off", "Cost", "Rows"]);
     expect(screen.getByText("10 nodes · estimated cost 1.64")).toBeVisible();
-    // What the bars and edges mean is a hover away, not a line of its own.
-    expect(screen.getByLabelText(/card's bar/)).toBeInTheDocument();
+    // What the bars and edges mean is a hover or a focus away, not a line of
+    // its own.
+    expect(screen.getByRole("button", { name: /card's bar/ })).toBeVisible();
   });
 
   test("keeps to what a plan without estimates can show", () => {

@@ -66,7 +66,7 @@ const ENGLISH = {
   "metric.row-width": "Row width",
   "metric.startup-cost": "Startup cost",
   "metric.total-cost": "Total cost",
-  "summary.costliest": "Costliest operators",
+  "summary.costliest": "Costliest by estimated cost",
   "summary.no-added-cost":
     "No node in this plan adds an estimated cost of its own.",
   "tab.diagram": "Diagram",

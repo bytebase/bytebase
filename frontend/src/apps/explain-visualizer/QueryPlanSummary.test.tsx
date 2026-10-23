@@ -57,7 +57,7 @@ describe("QueryPlanSummary", () => {
   test("ranks the costliest operators with their share of the plan", () => {
     renderSummary();
 
-    expect(screen.getByText("Costliest operators")).toBeVisible();
+    expect(screen.getByText("Costliest by estimated cost")).toBeVisible();
     expect(rows()).toHaveLength(3);
     expect(rows()[0]).toHaveTextContent("Seq Scan");
     expect(rows()[0]).toHaveTextContent("orders");

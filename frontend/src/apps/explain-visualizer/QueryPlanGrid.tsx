@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -9,11 +9,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useQueryPlanTranslation } from "./plan-i18n";
-import {
-  PLAN_INDENT_STEP,
-  planGuideLevels,
-  planIndentPixels,
-} from "./plan-layout";
+import { PLAN_INDENT_STEP, planIndentPixels } from "./plan-layout";
 import {
   formatPlanCost,
   formatPlanCount,
@@ -51,16 +47,15 @@ function PlanTreeGuides({
 }: {
   branchContinues: readonly boolean[];
 }) {
-  const levels = planGuideLevels(branchContinues);
-  if (levels.length === 0) return null;
+  if (branchContinues.length === 0) return null;
   return (
     <span
       aria-hidden="true"
       data-testid="plan-grid-guides"
       className="pointer-events-none absolute inset-y-0 left-4 flex"
     >
-      {levels.map((continues, index) => {
-        const last = index === levels.length - 1;
+      {branchContinues.map((continues, index) => {
+        const last = index === branchContinues.length - 1;
         // Every level but the last is a pass-through: a line only where an
         // ancestor still has rows to come. The last level turns into the row,
         // so it always arrives from above and carries on only when a sibling
@@ -205,6 +200,15 @@ const PlanGridRow = memo(function PlanGridRow({
 export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
   const translate = useQueryPlanTranslation();
   const rows = useMemo(() => planRows(tree.root), [tree]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // The selection can be chosen beside the table, from the ranking or the
+  // diagram, so the table brings it on screen rather than leaving it below.
+  useEffect(() => {
+    scrollRef.current
+      ?.querySelector('[aria-selected="true"]')
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [selectedId]);
 
   // Roving tab stop: Tab reaches the grid once and the arrow keys move within
   // it, rather than making every row of a 30-node plan its own tab stop.
@@ -252,6 +256,7 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
 
   return (
     <div
+      ref={scrollRef}
       data-testid="plan-grid-scroll"
       className="min-h-0 w-full flex-1 overflow-auto"
     >

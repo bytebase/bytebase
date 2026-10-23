@@ -239,7 +239,7 @@ twice. There, Plan shows the plan as text, and nothing else.
    includes its children and is reported per loop, so ranking the raw number
    just finds the root. Subtract the children and multiply out the loops, per
    engine — which is what the model already does for estimates by ranking
-   `selfCost` (`plan-model.ts:467-468`), and the measured side has to match it
+   `selfCost` (`planCostliestNodes`), and the measured side has to match it
    before any percentage or opening zoom is shown.
 2. **Graph** — opens zoomed on the costliest operator, not the root; long
    single-child chains fold into one box with a count. Nodes show their share of
@@ -351,7 +351,7 @@ ordinary query with the result limit but skips that wrapper on the explain path
 (`pg.go:801-809`), so explaining the original text would plan an unbounded query
 when the user ran a bounded one — and PostgreSQL plans for `LIMIT`, so the two
 differ, not just in cost but in shape. The plan request and its cache carry the
-executed statement and its connection context, and View SQL shows that statement,
+executed statement and its connection context, and the status bar shows that statement,
 limit and all. The estimate badge is about statistics moving; it must not quietly
 cover a different query.
 
@@ -557,7 +557,9 @@ Checked against `main` on 2026-10-23, after [#21652](https://github.com/bytebase
 - §3.3/§3.4 — the viewer opens on the diagram, centered on the costliest
   operator; three tabs (Diagram, Table, Text) instead of five; the costliest
   operators ranked in the side panel; the legend on hover; the pop-up page
-  deleted ([#21652](https://github.com/bytebase/bytebase/pull/21652)).
+  deleted ([#21652](https://github.com/bytebase/bytebase/pull/21652)). The
+  ranking and the opening view use estimated cost and say so; ranking a
+  measured plan by measured time waits for measured plans, item 2 below.
 
 **Not yet, in the order to do them**
 

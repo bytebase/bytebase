@@ -3534,7 +3534,7 @@
         "total-cost": "Tổng chi phí"
       },
       "summary": {
-        "costliest": "Toán tử tốn kém nhất",
+        "costliest": "Tốn kém nhất theo chi phí ước tính",
         "no-added-cost": "Không có nút nào trong kế hoạch này tự thêm chi phí ước tính."
       },
       "tab": {

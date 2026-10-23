@@ -3534,7 +3534,7 @@
         "total-cost": "Total cost"
       },
       "summary": {
-        "costliest": "Costliest operators",
+        "costliest": "Costliest by estimated cost",
         "no-added-cost": "No node in this plan adds an estimated cost of its own."
       },
       "tab": {

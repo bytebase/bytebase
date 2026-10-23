@@ -14,30 +14,14 @@ export const PLAN_NODE_WIDTH = 216;
 export const PLAN_NODE_HEIGHT = 96;
 
 /**
- * Indent per nesting level for the surfaces that list the plan as rows, capped
- * so a ten-deep plan still leaves the node column readable at phone width.
- * Callers expose the uncapped depth through `aria-level`.
+ * Indent per nesting level for the surfaces that list the plan as rows. Every
+ * level indents, so a row's tree guides line up with its ancestors' at any
+ * depth; a capped indent would put two depths in one column.
  */
 export const PLAN_INDENT_STEP = 12;
-const MAX_INDENT_LEVELS = 6;
 
 export function planIndentPixels(depth: number): number {
-  return Math.min(Math.max(depth, 0), MAX_INDENT_LEVELS) * PLAN_INDENT_STEP;
-}
-
-/**
- * The connector levels a row has room to draw, one per `PLAN_INDENT_STEP` of
- * its indent.
- *
- * Past the indent cap there is no column left to draw in, so the deepest levels
- * are kept: those are the ones that tie the row to its own parent, which is
- * what a reader traces. Mirrors `planIndentPixels`, and each entry says whether
- * that level's branch carries on below the row.
- */
-export function planGuideLevels(
-  branchContinues: readonly boolean[]
-): readonly boolean[] {
-  return branchContinues.slice(-MAX_INDENT_LEVELS);
+  return Math.max(depth, 0) * PLAN_INDENT_STEP;
 }
 
 const COLUMN_GAP = 32;
@@ -237,8 +221,8 @@ export function planNodeCenter(placed: PlanLayoutNode): {
 
 /**
  * The viewport that puts a content-space point in the middle of the screen,
- * at the zoom already in use. Both the mini-map and a deep link land on a node
- * this way.
+ * at the zoom already in use. Both the mini-map and the ranking beside the
+ * diagram land on a node this way.
  */
 export function planViewportCenteredOn(
   point: { x: number; y: number },

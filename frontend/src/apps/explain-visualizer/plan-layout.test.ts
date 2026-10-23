@@ -8,7 +8,6 @@ import {
   PLAN_READABLE_SCALE,
   planFitsViewport,
   planFitViewport,
-  planGuideLevels,
   planIndentPixels,
   planMiniMap,
   planNodeCenter,
@@ -184,25 +183,10 @@ describe("layoutPlan with collapsed subtrees", () => {
 });
 
 describe("planIndentPixels", () => {
-  test("steps with depth and then stops, so deep rows stay readable", () => {
+  test("steps with depth at every level", () => {
     expect([0, 1, 2, 6, 7, 30].map(planIndentPixels)).toEqual([
-      0, 12, 24, 72, 72, 72,
+      0, 12, 24, 72, 84, 360,
     ]);
-  });
-});
-
-describe("planGuideLevels", () => {
-  test("draws one level per indent step the row actually has", () => {
-    expect(planGuideLevels([])).toEqual([]);
-    expect(planGuideLevels([true, false])).toEqual([true, false]);
-  });
-
-  test("keeps the levels nearest the row once the indent stops growing", () => {
-    const deep = [true, true, false, true, false, true, false, true];
-    // Eight levels of nesting, six columns of indent: the six closest to the
-    // row survive, so the connector into its own parent is always drawn.
-    expect(planGuideLevels(deep)).toEqual(deep.slice(2));
-    expect(planGuideLevels(deep)).toHaveLength(planIndentPixels(8) / 12);
   });
 });
 
