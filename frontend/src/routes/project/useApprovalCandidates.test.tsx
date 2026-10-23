@@ -16,10 +16,10 @@ import {
 import { useApprovalCandidates } from "./useApprovalCandidates";
 
 const ROLE = "roles/servicenow-approver";
-const PROJECT = "projects/orders";
+const PROJECT = "projects/project-a";
 const WORKSPACE_SA = "integration@service.bytebase.com";
-const PROJECT_SA = "testdt@orders.service.bytebase.com";
-const WORKLOAD_IDENTITY = "deploy@orders.workload.bytebase.com";
+const PROJECT_SA = "approver@project-a.service.bytebase.com";
+const WORKLOAD_IDENTITY = "deploy@project-a.workload.bytebase.com";
 
 type Account = { name: string; email: string; title: string; state: State };
 
@@ -71,7 +71,7 @@ const issue = (creator = "users/creator@example.com") =>
 
 const candidatesOf = async (issueArg = issue(), role = ROLE) => {
   const { result } = renderHook(() =>
-    useApprovalCandidates(issueArg, "orders", role, "")
+    useApprovalCandidates(issueArg, "project-a", role, "")
   );
   return result;
 };
@@ -124,7 +124,7 @@ describe("useApprovalCandidates", () => {
     );
     serviceAccounts[`serviceAccounts/${PROJECT_SA}`] = account(
       PROJECT_SA,
-      "testdt"
+      "Team approver"
     );
     workloadIdentities[`workloadIdentities/${WORKLOAD_IDENTITY}`] = account(
       WORKLOAD_IDENTITY,
@@ -139,7 +139,7 @@ describe("useApprovalCandidates", () => {
     ).toEqual([
       ["Deploy pipeline", WORKLOAD_IDENTITY],
       ["ServiceNow integration", WORKSPACE_SA],
-      ["testdt", PROJECT_SA],
+      ["Team approver", PROJECT_SA],
     ]);
     expect(store.batchGetOrFetchUsers).not.toHaveBeenCalledWith(
       expect.arrayContaining([expect.stringContaining("service.bytebase.com")])
@@ -186,7 +186,7 @@ describe("useApprovalCandidates", () => {
     ]);
     serviceAccounts[`serviceAccounts/${PROJECT_SA}`] = account(
       PROJECT_SA,
-      "testdt",
+      "Team approver",
       State.DELETED
     );
 
