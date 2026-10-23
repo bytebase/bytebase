@@ -87,6 +87,8 @@ func TestGetQuerySpanPredicateColumnsOfFunctionBodies(t *testing.T) {
 		{Name: "probe_update", Definition: "CREATE FUNCTION public.probe_update() RETURNS int LANGUAGE sql AS $$ UPDATE t SET id = id WHERE ssn = 'guess'; SELECT 1 $$"},
 		{Name: "probe_exec", Definition: "CREATE FUNCTION public.probe_exec() RETURNS int LANGUAGE plpgsql AS $$ BEGIN DELETE FROM t WHERE ssn = 'guess'; RETURN 1; END; $$"},
 		{Name: "probe_table", Definition: "CREATE FUNCTION public.probe_table() RETURNS TABLE(id int) LANGUAGE sql AS $$ SELECT id FROM t WHERE ssn = 'guess' $$"},
+		{Name: "probe_record", Definition: "CREATE FUNCTION public.probe_record() RETURNS int LANGUAGE plpgsql AS $$ DECLARE r record; BEGIN SELECT ssn INTO r FROM t LIMIT 1; IF r.ssn = 'guess' THEN RETURN 1; END IF; RETURN 0; END; $$"},
+		{Name: "probe_execute", Definition: "CREATE FUNCTION public.probe_execute() RETURNS int LANGUAGE plpgsql AS $$ BEGIN EXECUTE 'SELECT pg_sleep(0) FROM t ' || 'WHERE ssn = ''guess'''; RETURN 1; END; $$"},
 		{Name: "probe_for", Definition: "CREATE FUNCTION public.probe_for() RETURNS SETOF int LANGUAGE plpgsql AS $$ BEGIN FOR i IN 1..(SELECT ascii(ssn) FROM t LIMIT 1) LOOP RETURN NEXT i; END LOOP; END; $$"},
 		{Name: "probe_join", Definition: "CREATE FUNCTION public.probe_join(guess text) RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT o.id FROM " + unanalyzable + "; END; $$"},
 		{Name: "probe_join_sql", Definition: "CREATE FUNCTION public.probe_join_sql(guess text) RETURNS SETOF int LANGUAGE sql AS $$ SELECT o.id FROM " + unanalyzable + " $$"},
@@ -104,6 +106,8 @@ func TestGetQuerySpanPredicateColumnsOfFunctionBodies(t *testing.T) {
 		{"SELECT probe_variable() AS x", []string{"t.id", "t.ssn"}},
 		{"SELECT count(*) AS c FROM probe_for()", []string{"t.ssn"}},
 		{"SELECT probe_update() AS x", []string{"t.ssn"}},
+		{"SELECT probe_record() AS x", []string{"t.ssn"}},
+		{"SELECT probe_execute() AS x", []string{"t.ssn"}},
 		{"SELECT probe_exec() AS x", []string{"t.ssn"}},
 		// * over an unknown function sends the outer query to the fallback.
 		{"SELECT * FROM probe_table() p CROSS JOIN unknown_rows() u", []string{"t.ssn"}},

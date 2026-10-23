@@ -400,12 +400,14 @@ func (a *plpgsqlAnalyzer) walkStmt(node plpgsqlast.Node) {
 	// what it reads.
 	case *plpgsqlast.PLPerform:
 		a.handleCondition(stmt.Expr)
+	case *plpgsqlast.PLDynExecute:
+		a.handleDynExecute(stmt)
 	case *plpgsqlast.PLExit:
 		a.handleCondition(stmt.Condition)
 	case *plpgsqlast.PLAssert:
 		a.handleCondition(stmt.Condition)
 	// Skip nodes that don't affect lineage:
-	// PLDynExecute, PLRaise, PLNull, PLCommit, PLRollback,
+	// PLRaise, PLNull, PLCommit, PLRollback,
 	// PLCall, PLOpen, PLFetch, PLClose, PLGetDiag
 	default:
 	}
@@ -423,8 +425,10 @@ func (a *plpgsqlAnalyzer) handleCondition(expr string) {
 	if err != nil || len(stmts) != 1 {
 		return
 	}
+	// A variable, or the record variable a qualified reference such as r.ssn
+	// names, carries the columns it was assigned from.
 	ast.Inspect(stmts[0].AST, func(n ast.Node) bool {
-		if ref, ok := n.(*ast.ColumnRef); ok && ref.Fields != nil && len(ref.Fields.Items) == 1 {
+		if ref, ok := n.(*ast.ColumnRef); ok && ref.Fields != nil && len(ref.Fields.Items) > 0 {
 			if name, ok := ref.Fields.Items[0].(*ast.String); ok {
 				if sources, ok := a.scope.get(name.Str); ok {
 					mergeSourceColumnSetInto(a.extractor.predicateColumns, sources)
@@ -478,6 +482,55 @@ func (a *plpgsqlAnalyzer) handleExecSQL(stmt *plpgsqlast.PLExecSQL) {
 			a.scope.merge(varName, results[i])
 		}
 	}
+}
+
+// handleDynExecute analyzes EXECUTE of a constant query like the statement it
+// runs. A query built at run time cannot be analyzed.
+func (a *plpgsqlAnalyzer) handleDynExecute(stmt *plpgsqlast.PLDynExecute) {
+	stmts, err := ParsePg("SELECT " + stmt.Query)
+	if err != nil || len(stmts) != 1 {
+		return
+	}
+	sel, ok := stmts[0].AST.(*ast.SelectStmt)
+	if !ok || sel.TargetList == nil || len(sel.TargetList.Items) != 1 {
+		return
+	}
+	rt, ok := sel.TargetList.Items[0].(*ast.ResTarget)
+	if !ok {
+		return
+	}
+	query, ok := constantString(rt.Val)
+	if !ok {
+		return
+	}
+	a.handleExecSQL(&plpgsqlast.PLExecSQL{SQLText: query, Into: stmt.Into})
+}
+
+// constantString returns the text of a string literal, a cast of one, or a
+// concatenation of them.
+func constantString(node ast.Node) (string, bool) {
+	switch v := node.(type) {
+	case *ast.A_Const:
+		if s, ok := v.Val.(*ast.String); ok {
+			return s.Str, true
+		}
+	case *ast.TypeCast:
+		return constantString(v.Arg)
+	case *ast.A_Expr:
+		if names := astStrings(v.Name); len(names) == 1 && names[0] == "||" {
+			left, ok := constantString(v.Lexpr)
+			if !ok {
+				return "", false
+			}
+			right, ok := constantString(v.Rexpr)
+			if !ok {
+				return "", false
+			}
+			return left + right, true
+		}
+	default:
+	}
+	return "", false
 }
 
 // handleStatementConditions records the conditions of a statement that runs
