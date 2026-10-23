@@ -31,9 +31,17 @@ flakes.json              # {"runs": [sha7 ...last 20], "tests": {"<file>::<title
 
 Rules:
 
-- The attribution baseline (`ledger.sh last-green`) is the newest `runs/*.json` with `"result": "green"`;
-  when none exists, the last run's `sha`; when the ledger is empty, 60 days
-  back on `main`. A spec can have been red for longer than any window, so
+- `sha` is always a commit on `main`: the one whose product files (`frontend`,
+  `backend`, `proto`, `go.mod`, `go.sum`, outside `frontend/tests/e2e`) the
+  binary was built from. Local commits that touch only the e2e tree or
+  `.claude/` (an adaptation, an overlay) do not change it, so `run-suite.sh`
+  records the merge base with `origin/main` in that case. A tree whose
+  product files match no `main` commit is a branch, not main: `ledger.sh
+  record` refuses it (exit 1) instead of writing a SHA no later run can use.
+- The attribution baseline (`ledger.sh last-green`) is the newest `runs/*.json` with `"result": "green"`
+  whose `sha` is on `main`; when none exists, the last such run's `sha`; when
+  there is none, 60 days back on `main`. Entries whose `sha` is not on `main`
+  (written before this rule) are skipped. A spec can have been red for longer than any window, so
   `attribute.py` widens on its own to the spec file's last change when nothing
   inside the window scores.
 - A run records itself exactly once, after `summarize.py`, whatever the result.

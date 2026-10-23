@@ -10,7 +10,7 @@
 # JSON reporter), test-results/ (traces, screenshots, error-context.md),
 # exit-code, meta.json. Every test gets three attempts (--retries=2): red only
 # when all three fail, flaky when a retry passes. A run is capped at
-# E2E_GLOBAL_TIMEOUT_MS (default 2 h; a healthy run takes about 1 h) because a
+# E2E_GLOBAL_TIMEOUT_MS (default 2 h; a green run took 43 min on the cloud VM) because a
 # night of hung tests otherwise multiplies 3 attempts by each test's timeout.
 # The license comes from lib.sh's e2e_license and is exported only into the
 # detached process.
@@ -47,12 +47,17 @@ EOF
 
   # A JSON encoder writes the metadata: Playwright arguments can hold quotes,
   # backslashes or newlines that raw interpolation would turn into invalid JSON.
-  python3 - "$RESULTS/meta.json" "$run_id" "$(git rev-parse HEAD)" "$(git rev-parse --short HEAD)" \
+  # `sha` is the main commit under test (references/ledger.md), not HEAD: an
+  # adaptation or overlay commit on top must not end up in the ledger.
+  if sha="$(tested_sha)"; then on_main=1; else sha="$(git rev-parse HEAD)"; on_main=0
+    log "product files match no main commit; recording HEAD $sha (ledger.sh record will refuse it)"
+  fi
+  python3 - "$RESULTS/meta.json" "$run_id" "$sha" "$on_main" "$(git rev-parse HEAD)" \
     "$(date -u +%FT%TZ)" "$(hostname)" "$@" <<'PY'
 import json, sys
-path, run_id, sha, short_sha, started_at, host, *args = sys.argv[1:]
-json.dump({"run_id": run_id, "sha": sha, "short_sha": short_sha, "started_at": started_at,
-           "host": host, "args": args}, open(path, "w"))
+path, run_id, sha, on_main, head, started_at, host, *args = sys.argv[1:]
+json.dump({"run_id": run_id, "sha": sha, "short_sha": sha[:10], "on_main": on_main == "1", "head": head,
+           "started_at": started_at, "host": host, "args": args}, open(path, "w"))
 PY
 
   # Playwright arguments reach the runner shell-quoted word by word, so a
@@ -110,11 +115,15 @@ status)
   RESULTS="${1:?results dir}"
   lg="$RESULTS/playwright.log"
   [ -f "$lg" ] || { echo "no log yet"; exit 0; }
-  done_n=$(grep -cE '^\s+[✓✘-]\s' "$lg" 2>/dev/null || echo 0)
-  fail_n=$(grep -cE '^\s+✘\s' "$lg" 2>/dev/null || echo 0)
-  last=$(grep -E '^\s+[✓✘-]\s' "$lg" | tail -1 | cut -c1-110)
+  # A list-reporter result line carries a run number and a [project] tag;
+  # Playwright's indented call-log lines ("- waiting for ...") do not.
+  # grep -c prints 0 itself when nothing matches, so no fallback echo.
+  result_line='^\s+[✓✘-]\s+[0-9]+ \['
+  done_n=$(grep -cE "$result_line" "$lg" 2>/dev/null; true)
+  fail_n=$(grep -cE '^\s+✘\s+[0-9]+ \[' "$lg" 2>/dev/null; true)
+  last=$(grep -E "$result_line" "$lg" | tail -1 | cut -c1-110)
   state=$([ -f "$RESULTS/exit-code" ] && echo "done(exit $(cat "$RESULTS/exit-code"))" || echo running)
-  echo "$(date -u +%H:%M:%SZ) $state lines=$done_n red=$fail_n last: $last"
+  echo "$(date -u +%H:%M:%SZ) $state results=${done_n:-0} red=${fail_n:-0} last: $last"
   ;;
 *)
   echo "usage: run-suite.sh start [run-id] [-- playwright args] | wait <dir> [max-min] | status <dir>" >&2; exit 2 ;;

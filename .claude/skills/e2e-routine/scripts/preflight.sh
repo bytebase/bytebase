@@ -13,8 +13,12 @@ bad()  { printf 'FAIL  %-28s %s\n' "$1" "$2"; fail=1; }
 v=$(node --version 2>/dev/null || true)
 case "$v" in v2[4-9].*|v[3-9]*) ok node "$v" ;; "") bad node "missing" ;; *) warn node "$v (CI uses 24.18.1; build_init.sh requires >= 24.15)" ;; esac
 
-v=$(pnpm --version 2>/dev/null || true)
-[ -n "$v" ] && ok pnpm "$v (packageManager pins 11.17.0; pnpm self-switches)" || bad pnpm "missing"
+# The pnpm that build.sh runs: the one corepack picks inside frontend/.
+want=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("packageManager","").split("@")[-1].split("+")[0])' frontend/package.json 2>/dev/null)
+v=$(cd frontend && pnpm --version 2>/dev/null || true)
+if [ -z "$v" ]; then bad pnpm "missing"
+elif [ -n "$want" ] && [ "$v" != "$want" ]; then bad pnpm "$v inside frontend/, but packageManager pins $want"
+else ok pnpm "$v inside frontend/ (packageManager pins ${want:-?})"; fi
 
 v=$(go version 2>/dev/null | awk '{print $3}')
 [ -n "$v" ] && ok go "$v (go.mod 1.27.1; GOTOOLCHAIN=$GOTOOLCHAIN)" || bad go "missing"
