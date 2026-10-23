@@ -85,6 +85,7 @@ const GITOPS_SETUP_PERMISSIONS: Permission[] = [
   "bb.workloadIdentities.list",
   "bb.databases.list",
 ];
+const GET_RELEASE_PERMISSIONS: Permission[] = ["bb.releases.get"];
 const GITOPS_GUIDE_URL =
   "https://docs.bytebase.com/gitops/overview?source=console";
 
@@ -174,7 +175,9 @@ export function ProjectReleaseDashboardPage({
     () => paged.dataList.map(getPlanReleaseName).filter(Boolean),
     [paged.dataList]
   );
-  useFetchReleases(releaseNames);
+  // A role that can list plans but not read releases sees "-" in Source.
+  const [canGetReleases] = usePermissionCheck(GET_RELEASE_PERMISSIONS, project);
+  useFetchReleases(canGetReleases ? releaseNames : []);
 
   const gitOpsSetupUrl = router.resolve({
     name: PROJECT_V1_ROUTE_GITOPS,

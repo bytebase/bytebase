@@ -43,6 +43,7 @@ const mocks = vi.hoisted(() => ({
   listPlans: vi.fn(),
   probeListPlans: vi.fn(),
   canSetUpGitOps: true,
+  canGetReleases: true,
   routerPush: vi.fn(),
   usePagedData: vi.fn(),
 }));
@@ -107,7 +108,12 @@ vi.mock("@/components/HumanizeTs", async () => ({
 
 vi.mock("@/components/PermissionGuard", () => ({
   PermissionGuard: ({ children }: { children: ReactNode }) => children,
-  usePermissionCheck: () => [mocks.canSetUpGitOps, undefined],
+  usePermissionCheck: (permissions: string[]) => [
+    permissions.includes("bb.releases.get")
+      ? mocks.canGetReleases
+      : mocks.canSetUpGitOps,
+    undefined,
+  ],
 }));
 
 vi.mock("@/components/ProjectPageLayout", () => ({
@@ -204,6 +210,7 @@ describe("ProjectReleaseDashboardPage", () => {
     mocks.probeListPlans.mockResolvedValue({ plans: [] });
     mocks.usePagedData.mockReturnValue(pagedData([gitOpsPlan]));
     mocks.canSetUpGitOps = true;
+    mocks.canGetReleases = true;
   });
 
   afterEach(() => {
@@ -267,6 +274,16 @@ describe("ProjectReleaseDashboardPage", () => {
     expect(container.querySelector("a")).toBeNull();
     const sourceCell = container.querySelectorAll("td")[1];
     expect(sourceCell.textContent).toBe("-");
+  });
+
+  test("skips release lookups without permission to read releases", async () => {
+    mocks.canGetReleases = false;
+
+    await render();
+
+    expect(mocks.fetchRelease).not.toHaveBeenCalled();
+    expect(text()).toContain("release_20261022-RC01");
+    expect(container.querySelectorAll("td")[1].textContent).toBe("-");
   });
 
   test("opens a Plan's rollout from its row", async () => {
