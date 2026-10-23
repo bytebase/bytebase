@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -122,18 +121,8 @@ func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEn
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to list databases")
 		}
-		if resp.Status == http.StatusForbidden {
-			if message := parseError(resp.Body); IsPolicyRefusal(message) {
-				return nil, &toolError{Code: "PERMISSION_DENIED", Message: message}
-			}
-			return nil, &toolError{
-				Code:       "PERMISSION_DENIED",
-				Message:    "you don't have permission to list databases in this workspace",
-				Suggestion: "ask your workspace admin to grant you the bb.databases.list permission",
-			}
-		}
-		if resp.Status >= 400 {
-			return nil, errors.Errorf("failed to list databases: HTTP %d: %s", resp.Status, parseError(resp.Body))
+		if err := checkAPIResponse(resp, "list databases", "bb.databases.list"); err != nil {
+			return nil, err
 		}
 
 		var listResp listDatabasesResponse

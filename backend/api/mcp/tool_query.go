@@ -10,6 +10,8 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common/permission"
 )
 
 const (
@@ -194,6 +196,11 @@ type queryResult struct {
 	Error           string          `json:"error"`
 	Statement       string          `json:"statement"`
 	Masked          []maskingReason `json:"masked"`
+	// PermissionDenied is set when the SQL access check refused the statement.
+	PermissionDenied *struct {
+		RequiredPermissions []permission.Permission `json:"requiredPermissions"`
+		Resources           []string                `json:"resources"`
+	} `json:"permissionDenied"`
 }
 
 // maskingReason holds the MaskingReason fields the tool reports.
@@ -234,16 +241,11 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		if errMsg == "" {
 			errMsg = fmt.Sprintf("HTTP %d", resp.Status)
 		}
-		suggestion := "check your SQL syntax and try again"
-		if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
-			// A refusal that already names its own way out gets none added.
-			// Telling an agent to request a project role for one sends the
-			// person it acts for after a grant that cannot lift a workspace
-			// setting.
-			suggestion = ""
-			if !IsPolicyRefusal(errMsg) {
-				suggestion = "you may not have permission to query this database — request the SQL Editor role on the project"
-			}
+		// A refusal at this level gets no advice: no access grant lifts a
+		// missing bb.databases.get, which the ACL checks first, or an MCP policy.
+		suggestion := ""
+		if resp.Status != http.StatusForbidden && resp.Status != http.StatusUnauthorized {
+			suggestion = "check your SQL syntax and try again"
 		}
 		return nil, &toolError{
 			Code:       "QUERY_ERROR",
@@ -267,10 +269,18 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 
 	result := qr.Results[0]
 	if result.Error != "" {
+		suggestion := "check your SQL syntax and try again"
+		if result.PermissionDenied != nil {
+			// MCP sessions cannot file role requests, so the only advice is a grant.
+			suggestion = ""
+			if denied := result.PermissionDenied; grantLifts(denied.RequiredPermissions) && withinDatabase(denied.Resources, resolved.resourceName) {
+				suggestion = grantAdvice(input.Statement, result.Statement)
+			}
+		}
 		return nil, &toolError{
 			Code:       "QUERY_ERROR",
 			Message:    result.Error,
-			Suggestion: "check your SQL syntax and try again",
+			Suggestion: suggestion,
 		}
 	}
 
@@ -402,22 +412,46 @@ func parseLatencyMs(latency string) int64 {
 	return d.Milliseconds()
 }
 
-// IsPolicyRefusal reports whether a 403 came from the MCP enforcement chain
-// rather than from the caller's own RBAC. It matches wording because the verdict
-// crosses a process boundary as an error body and nothing else survives the
-// trip; the producers call this, not a copy of it, in
-// TestMCPRefusalsNameThemselvesToTheQueryTool (backend/api/v1).
-func IsPolicyRefusal(message string) bool {
-	for _, phrase := range []string{
-		"MCP capability ceiling",
-		// Singular, so it also matches the plural the gate uses and the
-		// refusals taken in handlers.
-		"MCP session",
-		"MCP classification",
-	} {
-		if strings.Contains(message, phrase) {
-			return true
+// grantLifts reports whether an approved access grant lifts a refusal that
+// required these permissions. Writes and DDL cannot be granted, and a granted
+// target still needs bb.sql.explain (SQLService.accessCheckWithGrantedTargets).
+func grantLifts(required []permission.Permission) bool {
+	if len(required) == 0 {
+		return false
+	}
+	for _, p := range required {
+		if p != permission.SQLSelect && p != permission.SQLInfo {
+			return false
 		}
 	}
-	return false
+	return true
+}
+
+// withinDatabase reports whether every denied resource is the database or lies
+// inside it. request_access_grant files a grant for that one database, and a
+// grant exempts only its own targets.
+func withinDatabase(resources []string, database string) bool {
+	if len(resources) == 0 {
+		return false
+	}
+	for _, resource := range resources {
+		if resource != database && !strings.HasPrefix(resource, database+"/") {
+			return false
+		}
+	}
+	return true
+}
+
+// grantAdvice names the refused statement when the input was a batch. Query
+// runs a batch one statement at a time and stops at the first refusal
+// (queryRetryStopOnError), and a grant applies only to the exact read-only
+// statement it names (hashAccessGrantQuery).
+func grantAdvice(input, refused string) string {
+	const howTo = "(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
+	refused = strings.TrimSpace(refused)
+	if refused == "" || refused == strings.TrimSpace(input) {
+		return "in a Read-write session, request an access grant for this statement with request_access_grant " + howTo
+	}
+	return fmt.Sprintf("the batch stopped at %q: in a Read-write session, request an access grant for that statement alone "+
+		"with request_access_grant and, once approved, run it by itself %s", refused, howTo)
 }
