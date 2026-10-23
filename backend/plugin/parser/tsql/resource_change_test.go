@@ -45,6 +45,8 @@ func TestExtractChangedResources_DMLWriteTarget(t *testing.T) {
 		{"qualified target ignores an alias of its bare name", `UPDATE dbo.Orders SET status = 'x' FROM dbo.Orders AS o JOIN dbo.Customers AS Orders ON Orders.id = o.id WHERE o.id = 1;`, "DB", "dbo", "Orders"},
 		{"qualified DELETE target ignores an alias of its bare name", `DELETE dbo.Orders FROM dbo.Orders AS o JOIN dbo.Customers AS Orders ON Orders.id = o.id WHERE o.id = 1;`, "DB", "dbo", "Orders"},
 		{"qualified target in another database ignores an alias of its bare name", `UPDATE otherdb.dbo.Orders SET status = 'x' FROM otherdb.dbo.Orders AS o JOIN dbo.Customers AS Orders ON Orders.id = o.id WHERE o.id = 1;`, "otherdb", "dbo", "Orders"},
+		// The server part is dropped, as for any linked-server name (BYT-10235).
+		{"server-qualified target ignores an alias of its bare name", `UPDATE srv...Orders SET status = 'x' FROM srv...Orders AS t JOIN dbo.Customers AS Orders ON Orders.id = t.id WHERE t.id = 1;`, "DB", "dbo", "Orders"},
 		// A case-insensitive database binds the next two to the FROM table (BOT-158); a
 		// case-sensitive one does not.
 		{"differently cased alias stays as written", `UPDATE O SET status = 'x' FROM dbo.Orders AS o WHERE o.id = 1;`, "DB", "dbo", "O"},

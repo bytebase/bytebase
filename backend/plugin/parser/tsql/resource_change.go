@@ -187,7 +187,7 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 // exact and the CTE check folds case. Other targets stay as written, such as a differently cased
 // name (BOT-158) and a CTE or derived-table target (BOT-160).
 func resolveDMLWriteTarget(target *ast.TableRef, fromClause *ast.List, withClause *ast.WithClause) *ast.TableRef {
-	if target.Schema != "" || target.Database != "" || fromClause == nil {
+	if target.Server != "" || target.Database != "" || target.Schema != "" || fromClause == nil {
 		return target
 	}
 	source := tableByExposedName(fromClause, target.Object)
