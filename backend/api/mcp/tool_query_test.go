@@ -756,11 +756,36 @@ func TestQueryDatabase_TableAccessDenialAdvisesAnAccessGrant(t *testing.T) {
 		},
 		"the access check refused a metadata read": {
 			result: map[string]any{
-				"error":            "permission_denied: permission denied to access resources: projects/hr/instances/prod-pg/databases/employee_db",
-				"permissionDenied": map[string]any{"requiredPermissions": []string{"bb.sql.info"}},
+				"error": "permission_denied: permission denied to access resources: projects/hr/instances/prod-pg/databases/employee_db",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.info"},
+					"resources":           []string{"projects/hr/instances/prod-pg/databases/employee_db"},
+				},
 			},
 			want: "in a Read-write session, request an access grant for this statement with request_access_grant " +
 				"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor",
+		},
+		// A grant from request_access_grant targets the queried database only.
+		"the access check refused a table in another database": {
+			result: map[string]any{
+				"error": "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/payroll/schemas/public/tables/salary]",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.select"},
+					"resources":           []string{"projects/hr/instances/prod-pg/databases/payroll/schemas/public/tables/salary"},
+				},
+			},
+		},
+		"the access check refused tables in this and another database": {
+			result: map[string]any{
+				"error": "permission_denied: permission denied to access resources: [two tables]",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.select"},
+					"resources": []string{
+						"projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee",
+						"projects/hr/instances/prod-pg/databases/employee_db2/schemas/public/tables/salary",
+					},
+				},
+			},
 		},
 		// No grant lifts these: a grant's statement must be read-only, and a
 		// granted target still needs bb.sql.explain from IAM.

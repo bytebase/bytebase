@@ -1238,12 +1238,9 @@ func collectStatementTypes(celVarsList []map[string]any) []string {
 }
 
 // getApproversForRole returns the people who hold the role, for a notification
-// to mention.
+// to mention. On an error it still returns the people who resolved.
 func getApproversForRole(ctx context.Context, stores *store.Store, projectID string, role string) ([]webhook.User, error) {
 	people, err := activeRoleHolders(ctx, stores, projectID, role)
-	if err != nil {
-		return nil, err
-	}
 	approvers := make([]webhook.User, 0, len(people))
 	for _, person := range people {
 		approvers = append(approvers, webhook.User{
@@ -1252,12 +1249,13 @@ func getApproversForRole(ctx context.Context, stores *store.Store, projectID str
 			Phone: person.Phone,
 		})
 	}
-	return approvers, nil
+	return approvers, err
 }
 
 // activeRoleHolders returns the people who hold the role in the project or
 // workspace IAM policy. Service accounts and workload identities can approve but
 // are not people; a deactivated account keeps its bindings but cannot sign in.
+// After a failed member lookup it returns the people who resolved and the error.
 func activeRoleHolders(ctx context.Context, stores *store.Store, projectID string, role string) ([]*store.UserMessage, error) {
 	// Get project to determine workspace
 	project, err := stores.GetProjectByResourceID(ctx, projectID)
@@ -1281,7 +1279,7 @@ func activeRoleHolders(ctx context.Context, stores *store.Store, projectID strin
 	}
 
 	// Get all users with the specified role
-	users := utils.GetUsersByRoleInIAMPolicy(
+	users, lookupErr := utils.UsersByRoleInIAMPolicy(
 		ctx,
 		stores,
 		project.Workspace,
@@ -1300,7 +1298,7 @@ func activeRoleHolders(ctx context.Context, stores *store.Store, projectID strin
 		}
 		people = append(people, user)
 	}
-	return people, nil
+	return people, lookupErr
 }
 
 // NotifyApprovalRequested sends the ISSUE_APPROVAL_REQUESTED webhook event for the next pending approval stage.
@@ -1325,8 +1323,7 @@ func NotifyApprovalRequested(ctx context.Context, stores *store.Store, webhookMa
 	// Get approvers for this role
 	approvers, err := getApproversForRole(ctx, stores, issue.ProjectID, role)
 	if err != nil {
-		slog.Warn("failed to get approvers", log.BBError(err))
-		approvers = []webhook.User{} // Continue with empty list
+		slog.Warn("failed to get every approver", log.BBError(err))
 	}
 	if !project.Setting.GetAllowLastPlanEditorApproval() && issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
 		plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})

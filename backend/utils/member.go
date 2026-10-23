@@ -3,9 +3,12 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"strings"
 	"time"
+
+	pkgerrors "github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -30,8 +33,9 @@ func FormatGroupName(group *store.GroupMessage) string {
 	return common.FormatGroupEmail(group.ID)
 }
 
-// GetUsersByRoleInIAMPolicy gets users in the iam policy.
-// The role can be either with or without the "roles/" prefix.
+// GetUsersByRoleInIAMPolicy returns the users bound to the role in the
+// policies. A failed lookup is logged and its member skipped; a caller whose
+// decision changes with a missing user uses UsersByRoleInIAMPolicy.
 func GetUsersByRoleInIAMPolicy(
 	ctx context.Context,
 	stores *store.Store,
@@ -40,11 +44,30 @@ func GetUsersByRoleInIAMPolicy(
 	allowAllUsers bool,
 	policies ...*storepb.IamPolicy,
 ) []*store.UserMessage {
+	users, err := UsersByRoleInIAMPolicy(ctx, stores, workspace, role, allowAllUsers, policies...)
+	if err != nil {
+		slog.Error("failed to resolve every user bound to the role", slog.String("role", role), log.BBError(err))
+	}
+	return users
+}
+
+// UsersByRoleInIAMPolicy returns the users bound to the role in the policies,
+// and the failed lookups joined into one error. The users that resolved are
+// returned either way.
+func UsersByRoleInIAMPolicy(
+	ctx context.Context,
+	stores *store.Store,
+	workspace string,
+	role string,
+	allowAllUsers bool,
+	policies ...*storepb.IamPolicy,
+) ([]*store.UserMessage, error) {
 	roleFullName := role
 	if !strings.HasPrefix(role, common.RolePrefix) {
 		roleFullName = common.FormatRole(role)
 	}
 	var users []*store.UserMessage
+	var failures []error
 
 	seen := map[string]bool{}
 	for _, policy := range policies {
@@ -64,12 +87,15 @@ func GetUsersByRoleInIAMPolicy(
 						ShowDeleted: false,
 					})
 					if err != nil {
-						slog.Error("failed to list all users for role", slog.String("role", role), log.BBError(err))
+						failures = append(failures, pkgerrors.Wrapf(err, "failed to list all users for role %s", role))
 						continue
 					}
-					return allUsers
+					return allUsers, nil
 				}
-				userMessages := GetUsersByMember(ctx, stores, workspace, member)
+				userMessages, err := usersByMember(ctx, stores, workspace, member)
+				if err != nil {
+					failures = append(failures, err)
+				}
 
 				for _, user := range userMessages {
 					if seen[user.Email] {
@@ -82,78 +108,86 @@ func GetUsersByRoleInIAMPolicy(
 		}
 	}
 
-	return users
+	return users, errors.Join(failures...)
 }
 
 // GetUsersByMember gets user messages by member.
 // The member should be in users/{email}, serviceAccounts/{email}, workloadIdentities/{email}, or groups/{email} format.
+// A failed lookup is logged and skipped.
 func GetUsersByMember(ctx context.Context, stores *store.Store, workspace string, member string) []*store.UserMessage {
-	var users []*store.UserMessage
-	if strings.HasPrefix(member, common.UserNamePrefix) {
-		user := getUserByIdentifier(ctx, stores, member, common.UserNamePrefix)
-		if user != nil {
-			users = append(users, user)
-		}
-	} else if strings.HasPrefix(member, common.ServiceAccountNamePrefix) {
-		user := getUserByIdentifier(ctx, stores, member, common.ServiceAccountNamePrefix)
-		if user != nil {
-			users = append(users, user)
-		}
-	} else if strings.HasPrefix(member, common.WorkloadIdentityNamePrefix) {
-		user := getUserByIdentifier(ctx, stores, member, common.WorkloadIdentityNamePrefix)
-		if user != nil {
-			users = append(users, user)
-		}
-	} else if strings.HasPrefix(member, common.GroupPrefix) {
-		group, err := stores.GetGroupByName(ctx, workspace, member)
-		if err != nil {
-			slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
-			return users
-		}
-		if group == nil {
-			slog.Error("cannot found group", slog.String("group", member))
-			return users
-		}
-		for _, member := range group.Payload.Members {
-			user := getUserByIdentifier(ctx, stores, member.Member, common.UserNamePrefix)
-			if user != nil {
-				users = append(users, user)
-			}
-		}
+	users, err := usersByMember(ctx, stores, workspace, member)
+	if err != nil {
+		slog.Error("failed to resolve every user of the member", slog.String("member", member), log.BBError(err))
 	}
 	return users
 }
 
-// getUserByIdentifier gets user message by identifier.
-// The identifier should be in {prefix}{email} format where prefix is one of:
-// users/, serviceAccounts/, or workloadIdentities/
-func getUserByIdentifier(ctx context.Context, stores *store.Store, identifier, prefix string) *store.UserMessage {
+func usersByMember(ctx context.Context, stores *store.Store, workspace string, member string) ([]*store.UserMessage, error) {
+	prefix := ""
+	switch {
+	case strings.HasPrefix(member, common.UserNamePrefix):
+		prefix = common.UserNamePrefix
+	case strings.HasPrefix(member, common.ServiceAccountNamePrefix):
+		prefix = common.ServiceAccountNamePrefix
+	case strings.HasPrefix(member, common.WorkloadIdentityNamePrefix):
+		prefix = common.WorkloadIdentityNamePrefix
+	case strings.HasPrefix(member, common.GroupPrefix):
+		group, err := stores.GetGroupByName(ctx, workspace, member)
+		if err != nil {
+			return nil, pkgerrors.Wrapf(err, "failed to get group %s", member)
+		}
+		if group == nil {
+			slog.Error("cannot found group", slog.String("group", member))
+			return nil, nil
+		}
+		var users []*store.UserMessage
+		var failures []error
+		for _, member := range group.Payload.Members {
+			user, err := userByIdentifier(ctx, stores, member.Member, common.UserNamePrefix)
+			if err != nil {
+				failures = append(failures, err)
+				continue
+			}
+			if user != nil {
+				users = append(users, user)
+			}
+		}
+		return users, errors.Join(failures...)
+	default:
+		return nil, nil
+	}
+	user, err := userByIdentifier(ctx, stores, member, prefix)
+	if err != nil || user == nil {
+		return nil, err
+	}
+	return []*store.UserMessage{user}, nil
+}
+
+// userByIdentifier gets the user an identifier in {prefix}{email} format names,
+// where prefix is users/, serviceAccounts/ or workloadIdentities/. A principal
+// that does not exist is nil with no error.
+func userByIdentifier(ctx context.Context, stores *store.Store, identifier, prefix string) (*store.UserMessage, error) {
 	var email string
 	var err error
 	switch prefix {
-	case common.UserNamePrefix:
-		email, err = common.GetUserEmail(identifier)
 	case common.ServiceAccountNamePrefix:
 		email, err = common.GetServiceAccountEmail(identifier)
 	case common.WorkloadIdentityNamePrefix:
 		email, err = common.GetWorkloadIdentityEmail(identifier)
 	default:
-		// Fallback to user email for backward compatibility
 		email, err = common.GetUserEmail(identifier)
 	}
 	if err != nil {
-		slog.Error("failed to parse email from identifier", slog.String("identifier", identifier), log.BBError(err))
-		return nil
+		return nil, pkgerrors.Wrapf(err, "failed to parse email from identifier %s", identifier)
 	}
 	account, err := stores.GetAccountByEmail(ctx, email)
 	if err != nil {
-		slog.Error("failed to get principal by email", slog.String("identifier", identifier), log.BBError(err))
-		return nil
+		return nil, pkgerrors.Wrapf(err, "failed to get principal %s", identifier)
 	}
 	if account == nil {
-		return nil
+		return nil, nil
 	}
-	return userMessageFromAccount(account)
+	return userMessageFromAccount(account), nil
 }
 
 func userMessageFromAccount(account *store.AccountMessage) *store.UserMessage {

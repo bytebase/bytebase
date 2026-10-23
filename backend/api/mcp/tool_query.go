@@ -199,6 +199,7 @@ type queryResult struct {
 	// PermissionDenied is set when the SQL access check refused the statement.
 	PermissionDenied *struct {
 		RequiredPermissions []permission.Permission `json:"requiredPermissions"`
+		Resources           []string                `json:"resources"`
 	} `json:"permissionDenied"`
 }
 
@@ -272,7 +273,7 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		if result.PermissionDenied != nil {
 			// MCP sessions cannot file role requests, so the only advice is a grant.
 			suggestion = ""
-			if grantLifts(result.PermissionDenied.RequiredPermissions) {
+			if denied := result.PermissionDenied; grantLifts(denied.RequiredPermissions) && withinDatabase(denied.Resources, resolved.resourceName) {
 				suggestion = "in a Read-write session, request an access grant for this statement with request_access_grant " +
 					"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
 			}
@@ -421,6 +422,21 @@ func grantLifts(required []permission.Permission) bool {
 	}
 	for _, p := range required {
 		if p != permission.SQLSelect && p != permission.SQLInfo {
+			return false
+		}
+	}
+	return true
+}
+
+// withinDatabase reports whether every denied resource is the database or lies
+// inside it. request_access_grant files a grant for that one database, and a
+// grant exempts only its own targets.
+func withinDatabase(resources []string, database string) bool {
+	if len(resources) == 0 {
+		return false
+	}
+	for _, resource := range resources {
+		if resource != database && !strings.HasPrefix(resource, database+"/") {
 			return false
 		}
 	}

@@ -1605,6 +1605,32 @@ func TestFindUnapprovableStep(t *testing.T) {
 	}
 }
 
+// A holder the lookup cannot resolve leaves the answer unknown, so the check
+// fails instead of reporting that no one else can approve.
+func TestFindUnapprovableStepFailsWhenAHolderCannotBeResolved(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	for _, member := range []string{"users/creator@example.com", "users/"} {
+		_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{Workspace: "default", Member: member, Roles: []string{"roles/projectOwner"}})
+		require.NoError(t, err)
+	}
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "access grant request",
+		Type:         storepb.Issue_ACCESS_GRANT,
+		Payload: &storepb.Issue{Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: true,
+			ApprovalTemplate:    &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},
+		}},
+	})
+	require.NoError(t, err)
+
+	step, err := FindUnapprovableStep(ctx, stores, "default", common.FormatIssue("project-a", issue.UID))
+	require.ErrorContains(t, err, `failed to parse email from identifier users/`)
+	require.Nil(t, step)
+}
+
 func TestApproverRoleLookupFailureIsNotARefusal(t *testing.T) {
 	ctx := context.Background()
 	db, stores := setupWorkflowStoreWithDB(ctx, t)
