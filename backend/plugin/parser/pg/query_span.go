@@ -303,6 +303,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 			if err := e.collectExplainedPredicateColumns(omniStmts[0].AST, accessesMap); err != nil {
 				return nil, err
 			}
+			e.mergeFunctionAccesses(accessesMap)
 			// Columns a stale snapshot lacks can hide a condition, so the
 			// caller syncs before running it, as for the SELECT itself.
 			unresolved = e.unresolvedColumnsError(accessesMap)
@@ -338,21 +339,17 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		// Before falling back, try to handle user-defined table-returning functions
 		// that omni's AnalyzeSelectStmt can't resolve (e.g., RETURNS TABLE functions
 		// used as table sources: SELECT * FROM func()).
-		if results := e.tryUserFuncTableSource(selStmt, accessesMap); results != nil {
-			return &base.QuerySpan{
-				Type:                   base.Select,
-				SourceColumns:          accessesMap,
-				Results:                results,
-				PredicateColumns:       e.predicateColumns,
-				UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
-			}, nil
+		results := e.tryUserFuncTableSource(selStmt, accessesMap)
+		if results == nil {
+			// Fail-open: return access tables with best-effort column names and lineage
+			// when analysis fails (e.g., unsupported built-in functions).
+			results = e.extractFallbackColumns(selStmt)
 		}
-		// Fail-open: return access tables with best-effort column names and lineage
-		// when analysis fails (e.g., unsupported built-in functions).
+		e.mergeFunctionAccesses(accessesMap)
 		return &base.QuerySpan{
 			Type:                   base.Select,
 			SourceColumns:          accessesMap,
-			Results:                e.extractFallbackColumns(selStmt),
+			Results:                results,
 			PredicateColumns:       e.predicateColumns,
 			UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 		}, nil
@@ -364,10 +361,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	results := e.extractLineage(query, selStmt)
 	e.collectStatementPredicateColumns(query, selStmt, accessesMap)
 
-	// Merge columns discovered inside function bodies into the top-level sets.
-	for col := range e.funcSourceColumns {
-		accessesMap[col] = true
-	}
+	e.mergeFunctionAccesses(accessesMap)
 
 	return &base.QuerySpan{
 		Type:                   base.Select,
@@ -396,6 +390,14 @@ func (e *omniQuerySpanExtractor) collectExplainedPredicateColumns(stmt ast.Node,
 		e.collectFallbackPredicateColumns(explained, accesses)
 	}
 	return nil
+}
+
+// mergeFunctionAccesses adds the tables the analyzed function bodies read to
+// accesses, so access checks and the unresolved-columns signal see them.
+func (e *omniQuerySpanExtractor) mergeFunctionAccesses(accesses base.SourceColumnSet) {
+	for col := range e.funcSourceColumns {
+		accesses[col] = true
+	}
 }
 
 // analyzeSelect analyzes sel for lineage. A function the synced schema does not

@@ -286,6 +286,12 @@ func (e *omniQuerySpanExtractor) collectFallbackPredicateColumns(stmt ast.Node, 
 }
 
 func (e *omniQuerySpanExtractor) recordPredicateNames(r *predicateNameResolver, accesses base.SourceColumnSet) {
+	mergeSourceColumnSetInto(e.predicateColumns, e.columnsNamed(r, accesses))
+}
+
+// columnsNamed returns the columns of accesses that r's names match.
+func (e *omniQuerySpanExtractor) columnsNamed(r *predicateNameResolver, accesses base.SourceColumnSet) base.SourceColumnSet {
+	columns := make(base.SourceColumnSet)
 	for resource := range accesses {
 		rel := e.cat.GetRelation(resource.Schema, resource.Table)
 		if rel == nil {
@@ -295,7 +301,7 @@ func (e *omniQuerySpanExtractor) recordPredicateNames(r *predicateNameResolver, 
 		for _, column := range rel.Columns {
 			name := strings.ToLower(column.Name)
 			if r.wholeRows[table] || r.anyTable[name] || r.ofTable[table][name] {
-				e.predicateColumns[base.ColumnResource{
+				columns[base.ColumnResource{
 					Database: resource.Database,
 					Schema:   resource.Schema,
 					Table:    resource.Table,
@@ -304,6 +310,58 @@ func (e *omniQuerySpanExtractor) recordPredicateNames(r *predicateNameResolver, 
 			}
 		}
 	}
+	return columns
+}
+
+// returningLineage returns, for each column a DML statement's RETURNING list
+// outputs, the columns of accesses it reads, matched by name. It returns nil
+// for a statement without RETURNING.
+func (e *omniQuerySpanExtractor) returningLineage(stmt ast.Node, accesses base.SourceColumnSet) []base.SourceColumnSet {
+	var returning *ast.List
+	var target *ast.RangeVar
+	switch v := stmt.(type) {
+	case *ast.InsertStmt:
+		returning, target = v.ReturningList, v.Relation
+	case *ast.UpdateStmt:
+		returning, target = v.ReturningList, v.Relation
+	case *ast.DeleteStmt:
+		returning, target = v.ReturningList, v.Relation
+	default:
+	}
+	if returning == nil {
+		return nil
+	}
+	var lineage []base.SourceColumnSet
+	for _, item := range returning.Items {
+		rt, ok := item.(*ast.ResTarget)
+		if !ok {
+			continue
+		}
+		if isStarTarget(rt) && target != nil {
+			// RETURNING * outputs every column of the target table in order.
+			for resource := range accesses {
+				if !strings.EqualFold(resource.Table, target.Relname) {
+					continue
+				}
+				if rel := e.cat.GetRelation(resource.Schema, resource.Table); rel != nil {
+					for _, column := range rel.Columns {
+						lineage = append(lineage, base.SourceColumnSet{{
+							Database: resource.Database,
+							Schema:   resource.Schema,
+							Table:    resource.Table,
+							Column:   column.Name,
+						}: true})
+					}
+				}
+				break
+			}
+			continue
+		}
+		r := newPredicateNameResolver(stmt, e.namedFunctionReturnsSet)
+		r.addReferences(rt.Val)
+		lineage = append(lineage, e.columnsNamed(r, accesses))
+	}
+	return lineage
 }
 
 // predicateNameResolver resolves the column references of conditions by name.

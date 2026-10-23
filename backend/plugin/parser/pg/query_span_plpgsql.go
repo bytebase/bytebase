@@ -178,22 +178,33 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColum
 		return nil, errors.Wrapf(err, "failed to parse SQL function body")
 	}
 
-	// Every statement in the body runs, so each SELECT's conditions count; the
-	// last SELECT returns the function's result.
+	// Every statement in the body runs, so each one's conditions count; the
+	// last one returns the function's result.
 	last := -1
 	for i, stmt := range stmts {
-		if _, ok := stmt.AST.(*ast.SelectStmt); ok {
+		if stmt.AST != nil {
 			last = i
 		}
 	}
 	var result []base.SourceColumnSet
 	for i, stmt := range stmts {
+		if stmt.AST == nil {
+			continue
+		}
 		accesses := e.accessTablesOf(stmt.Text)
 		selStmt, ok := stmt.AST.(*ast.SelectStmt)
 		if !ok {
-			// The analyzer reads SELECT alone, so the conditions of another
-			// statement, which runs too, are matched by name.
+			// The analyzer reads SELECT alone, so another statement's conditions
+			// and RETURNING list are matched by name.
 			e.collectFallbackPredicateColumns(stmt.AST, accesses)
+			returning := e.returningLineage(stmt.AST, accesses)
+			if i == last {
+				result = returning
+			} else {
+				for _, set := range returning {
+					mergeSourceColumnSetInto(e.predicateColumns, set)
+				}
+			}
 			continue
 		}
 		query, err := e.analyzeSelect(selStmt)
@@ -574,11 +585,20 @@ func (a *plpgsqlAnalyzer) handleReturnNext(stmt *plpgsqlast.PLReturnNext) {
 }
 
 func (a *plpgsqlAnalyzer) handleExecSQL(stmt *plpgsqlast.PLExecSQL) {
-	if len(stmt.Into) == 0 {
-		a.handleStatementConditions(stmt.SQLText)
+	stmts, err := ParsePg(stmt.SQLText)
+	if err != nil || len(stmts) != 1 {
 		return
 	}
-	results := a.analyzeEmbeddedSQL(stmt.SQLText)
+	var results []base.SourceColumnSet
+	if _, ok := stmts[0].AST.(*ast.SelectStmt); ok {
+		results = a.analyzeEmbeddedSQL(stmt.SQLText)
+	} else {
+		// The analyzer reads SELECT alone, so another statement, which runs for
+		// its effect, has its conditions and RETURNING list matched by name.
+		accesses := a.extractor.accessTablesOf(stmt.SQLText)
+		a.extractor.collectFallbackPredicateColumns(stmts[0].AST, accesses)
+		results = a.extractor.returningLineage(stmts[0].AST, accesses)
+	}
 	for i, varName := range stmt.Into {
 		if i < len(results) {
 			a.scope.merge(varName, results[i])
@@ -633,21 +653,6 @@ func constantString(node ast.Node) (string, bool) {
 	default:
 	}
 	return "", false
-}
-
-// handleStatementConditions records the conditions of a statement that runs
-// for its effect. The analyzer reads SELECT alone, so another statement's
-// conditions are matched by name.
-func (a *plpgsqlAnalyzer) handleStatementConditions(sql string) {
-	stmts, err := ParsePg(sql)
-	if err != nil || len(stmts) != 1 {
-		return
-	}
-	if _, ok := stmts[0].AST.(*ast.SelectStmt); ok {
-		a.analyzeEmbeddedSQL(sql)
-		return
-	}
-	a.extractor.collectFallbackPredicateColumns(stmts[0].AST, a.extractor.accessTablesOf(sql))
 }
 
 func (a *plpgsqlAnalyzer) handleForS(stmt *plpgsqlast.PLForS) {

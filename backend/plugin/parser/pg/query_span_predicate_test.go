@@ -176,19 +176,43 @@ func TestGetQuerySpanResultLineage(t *testing.T) {
 	}
 }
 
-func TestGetQuerySpanResultLineageThroughCursor(t *testing.T) {
+func TestGetQuerySpanResultLineageOfFunctionBodies(t *testing.T) {
 	schema := healthySchema()
 	schema.Schemas[0].Functions = []*metadatapb.FunctionMetadata{
 		{Name: "read_cursor", Definition: "CREATE FUNCTION public.read_cursor() RETURNS text LANGUAGE plpgsql AS $$ DECLARE c CURSOR FOR SELECT ssn FROM t; v text; BEGIN OPEN c; FETCH c INTO v; RETURN v; END; $$"},
 		{Name: "loop_cursor", Definition: "CREATE FUNCTION public.loop_cursor() RETURNS SETOF text LANGUAGE plpgsql AS $$ DECLARE c CURSOR FOR SELECT ssn FROM t; BEGIN FOR r IN c LOOP RETURN NEXT r.ssn; END LOOP; END; $$"},
+		{Name: "returning_sql", Definition: "CREATE FUNCTION public.returning_sql() RETURNS SETOF text LANGUAGE sql AS $$ UPDATE t SET id = id RETURNING ssn $$"},
+		{Name: "returning_table", Definition: "CREATE FUNCTION public.returning_table() RETURNS TABLE(i int, e text, s text) LANGUAGE sql AS $$ DELETE FROM t WHERE false RETURNING * $$"},
+		{Name: "returning_pl", Definition: "CREATE FUNCTION public.returning_pl() RETURNS text LANGUAGE plpgsql AS $$ DECLARE v text; BEGIN UPDATE t SET id = id WHERE id = 1 RETURNING ssn INTO v; RETURN v; END; $$"},
 	}
-	for _, statement := range []string{"SELECT read_cursor() AS x", "SELECT loop_cursor() AS x"} {
-		t.Run(statement, func(t *testing.T) {
-			span := spanFor(t, statement, schema)
+	testCases := []struct {
+		statement string
+		want      []string
+	}{
+		{"SELECT read_cursor() AS x", []string{"t.ssn"}},
+		{"SELECT loop_cursor() AS x", []string{"t.ssn"}},
+		{"SELECT returning_sql() AS x", []string{"t.ssn"}},
+		{"SELECT returning_pl() AS x", []string{"t.ssn"}},
+		{"SELECT r.s FROM returning_table() r", []string{"t.ssn"}},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.statement, func(t *testing.T) {
+			span := spanFor(t, tc.statement, schema)
 			require.Len(t, span.Results, 1)
-			require.Equal(t, []string{"t.ssn"}, predicateColumnNames(span.Results[0].SourceColumns))
+			require.Equal(t, tc.want, predicateColumnNames(span.Results[0].SourceColumns))
 		})
 	}
+}
+
+func TestGetQuerySpanFallbackKeepsFunctionAccesses(t *testing.T) {
+	schema := degradedSchema()
+	schema.Schemas[0].Functions = []*metadatapb.FunctionMetadata{
+		{Name: "probe_t", Definition: "CREATE FUNCTION public.probe_t() RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT 1 FROM t WHERE secret = 'guess'; END; $$"},
+	}
+	// * over an unknown function sends the statement to the fallback.
+	span := spanFor(t, "SELECT * FROM probe_t() p CROSS JOIN unknown_rows() u", schema)
+	require.Contains(t, span.SourceColumns, base.ColumnResource{Database: "db", Schema: "public", Table: "t"})
+	require.NotNil(t, span.UnresolvedColumnsError, "t, read only inside the function, was synced with no columns")
 }
 
 func newFallbackTestExtractor(t *testing.T) *omniQuerySpanExtractor {
