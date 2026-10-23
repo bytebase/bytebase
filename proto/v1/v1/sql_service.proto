@@ -487,6 +487,10 @@ message ExportRequest {
   // Container is the container name to execute the query against, used for
   // CosmosDB only.
   optional string container = 9;
+
+  // Where the export is delivered. LOCAL is rejected when the workspace query
+  // data policy disables export.
+  ExportDelivery delivery = 10;
 }
 
 message ExportResponse {
@@ -497,4 +501,9 @@ message ExportResponse {
   // Format: projects/{project}/accessGrants/{accessGrant}.
   // Empty when the user was authorized through normal ACL rather than a grant.
   string applied_access_grant = 2;
+
+  // Set when the export was delivered to an export destination: the absolute
+  // location of the folder or key prefix created for this export, for example
+  // https://… for SharePoint or s3://bucket/prefix for S3. content is then empty.
+  string uri = 3;
 }

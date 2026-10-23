@@ -1,7 +1,8 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine, ExportDelivery } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { BatchQuerySelect } from "./BatchQuerySelect";
 
@@ -21,6 +22,11 @@ const mocks = vi.hoisted(() => ({
     tags: {},
   },
   deleteDatabaseQueryContext: vi.fn(),
+  deliveries: [] as number[],
+  disableExport: false,
+  unmatchedDatabases: [] as string[],
+  exportData: vi.fn(),
+  resolveExport: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -29,11 +35,51 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/components/DataExportButton", () => ({
-  DataExportButton: () => null,
+  DataExportButton: ({
+    formContent,
+    onExport,
+  }: {
+    formContent: ReactNode;
+    onExport: (request: unknown) => void;
+  }) => (
+    <div>
+      {formContent}
+      <button
+        type="button"
+        data-testid="batch-export"
+        onClick={() =>
+          onExport({
+            options: {
+              format: 1,
+              limit: 100,
+              password: "",
+              delivery: 2,
+            },
+            resolve: mocks.resolveExport,
+            reject: vi.fn(),
+          })
+        }
+      />
+    </div>
+  ),
 }));
 
 vi.mock("@/components/database", () => ({
-  DatabaseTableView: () => null,
+  DatabaseTableView: ({
+    databases,
+    onSelectedNamesChange,
+  }: {
+    databases: Database[];
+    onSelectedNamesChange: (names: Set<string>) => void;
+  }) => (
+    <button
+      type="button"
+      data-testid="select-all"
+      onClick={() =>
+        onSelectedNamesChange(new Set(databases.map((db) => db.name)))
+      }
+    />
+  ),
 }));
 
 vi.mock("@/components/EngineIcon", () => ({
@@ -61,23 +107,32 @@ vi.mock("@/components/ui/ellipsis-text", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/components/RequestExportButton", () => ({
-  RequestExportButton: () => null,
+  RequestExportButton: ({ targets }: { targets: string[] }) => (
+    <span data-testid="request-export">{targets.join(",")}</span>
+  ),
 }));
 
 vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
   useExportGrantBypass: () => ({
     loading: false,
     failedDatabases: [],
-    unmatchedDatabases: [],
+    unmatchedDatabases: mocks.unmatchedDatabases,
     retry: vi.fn(),
     matchedDatabases: [],
     tooltip: undefined,
   }),
 }));
 
+vi.mock("@/modules/sql-editor/components/useExportDelivery", () => ({
+  useExportDelivery: () => ({
+    deliveries: mocks.deliveries,
+    sharepointUrl: "https://contoso.sharepoint.com/sites/x/Exports",
+  }),
+}));
+
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
   useSQLEditorQueryDataPolicy: () => ({
-    disableExport: true,
+    disableExport: mocks.disableExport,
     maximumResultRows: 100,
   }),
 }));
@@ -115,9 +170,10 @@ vi.mock("@/stores/app", () => {
   const state = () => ({
     databasesByName: mocks.databasesByName,
     environmentList: [mocks.environment],
-    exportData: vi.fn(),
+    exportData: mocks.exportData,
     getDatabaseByName: (name: string) => mocks.databasesByName[name],
     getEnvironmentByName: () => mocks.environment,
+    notify: vi.fn(),
   });
   return {
     useAppStore: Object.assign(
@@ -192,6 +248,9 @@ describe("BatchQuerySelect", () => {
     act(() => root.unmount());
     container.remove();
     vi.clearAllMocks();
+    mocks.deliveries = [];
+    mocks.disableExport = false;
+    mocks.unmatchedDatabases = [];
   });
 
   const render = () => {
@@ -223,5 +282,64 @@ describe("BatchQuerySelect", () => {
 
     expect(buttons[0].className).toContain("shrink-0");
     expect(buttons[1].className).toContain("shrink-0");
+  });
+
+  it("hides batch export when no delivery is offered", () => {
+    render();
+
+    expect(
+      container.querySelector('[data-testid="batch-export"]')
+    ).toBeNull();
+  });
+
+  it("reports each database's SharePoint delivery separately", async () => {
+    // disableExport is on and no grant matched: SharePoint still covers every
+    // queried database, and Request export stays offered for the uncovered.
+    mocks.disableExport = true;
+    mocks.deliveries = [ExportDelivery.SHAREPOINT];
+    mocks.unmatchedDatabases = [cellA.name];
+    mocks.exportData
+      .mockResolvedValueOnce({
+        content: new Uint8Array(),
+        uri: "https://contoso.sharepoint.com/sites/x/Exports/folder-a",
+      })
+      .mockRejectedValueOnce(
+        new ConnectError("destination not found", Code.FailedPrecondition)
+      );
+    render();
+    expect(
+      container.querySelector('[data-testid="request-export"]')?.textContent
+    ).toBe(cellA.name);
+
+    act(() => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="select-all"]')
+        ?.click();
+    });
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="batch-export"]')
+        ?.click();
+    });
+
+    await vi.waitFor(() => {
+      expect(mocks.resolveExport).toHaveBeenCalledWith({
+        sharepoint: [
+          {
+            database: "cell-a/linear",
+            status: "DELIVERED",
+            uri: "https://contoso.sharepoint.com/sites/x/Exports/folder-a",
+          },
+          {
+            database: "cell-b/linear",
+            status: "FAILED",
+            reason: "destination not found",
+          },
+        ],
+      });
+    });
+    expect(mocks.exportData).toHaveBeenCalledWith(
+      expect.objectContaining({ delivery: ExportDelivery.SHAREPOINT })
+    );
   });
 });

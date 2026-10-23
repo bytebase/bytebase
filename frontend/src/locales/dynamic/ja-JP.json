@@ -273,6 +273,10 @@
         "desc": "クロスドメインアイデンティティ管理のためのシステムサポート。",
         "title": "SCIM"
       },
+      "FEATURE_SHAREPOINT_EXPORT": {
+        "desc": "SQL エディターのエクスポートを SharePoint ドキュメントライブラリに配信します。",
+        "title": "SharePoint エクスポート"
+      },
       "FEATURE_SQL_EDITOR_ADMIN_MODE": {
         "desc": "SQLエディターで管理機能にアクセスします。",
         "title": "SQLエディター管理者モード"

@@ -422,7 +422,7 @@ export const SQLEditorSection = forwardRef<
   return (
     <FormSection id="security" title={title}>
       <FormFieldGroup>
-        {/* Data Export toggle */}
+        {/* Local Export Download toggle, stored inverted as disableExport */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <FormField
             title={

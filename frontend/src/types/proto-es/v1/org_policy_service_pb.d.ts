@@ -371,7 +371,8 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 
   /**
    * workspace-level policy
-   * Disable data export in the SQL editor.
+   * Disallow local export download. Exports can then only be delivered to an
+   * export destination, even when an export access grant covers them.
    *
    * @generated from field: bool disable_export = 2;
    */

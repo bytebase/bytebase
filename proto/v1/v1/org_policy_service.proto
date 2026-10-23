@@ -300,7 +300,8 @@ message QueryDataPolicy {
   int32 maximum_result_rows = 1;
 
   // workspace-level policy
-  // Disable data export in the SQL editor.
+  // Disallow local export download. Exports can then only be delivered to an
+  // export destination, even when an export access grant covers them.
   bool disable_export = 2;
 
   // workspace-level policy

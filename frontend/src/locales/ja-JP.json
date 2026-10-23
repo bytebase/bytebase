@@ -973,11 +973,27 @@
     "unexpected-error-description": "このページの表示中に予期しないエラーが発生しました。通常は更新すると解決します。問題が続く場合は、管理者にご報告ください。"
   },
   "export-data": {
+    "delivery": {
+      "local": "ローカルダウンロード",
+      "self": "配信方法",
+      "sharepoint": "SharePoint"
+    },
     "export-format": "エクスポート形式",
     "export-rows": "エクスポート行数",
     "generate-password": "パスワードを生成",
     "password-info": "エクスポートされたファイルを暗号化するためのパスワードを入力します",
-    "password-optional": "パスワード暗号化の設定 (オプション)"
+    "password-optional": "パスワード暗号化の設定 (オプション)",
+    "sharepoint": {
+      "access-note": "配信されたファイルを開けるユーザーは SharePoint の権限で決まります。",
+      "delivered-title": "エクスポートを SharePoint に配信しました",
+      "open": "SharePoint で開く",
+      "result-title": "SharePoint エクスポートの結果",
+      "status": {
+        "delivered": "配信済み",
+        "failed": "失敗",
+        "unconfirmed": "未確認"
+      }
+    }
   },
   "gitops": {
     "checklist": {
@@ -2213,6 +2229,12 @@
     "settings": {
       "confirm-archive-project": "\"{{name}}\" をアーカイブすると、読み取り専用になり、アクティブなプロジェクト一覧から非表示になります。すべての Issue、データベース、設定は保持されます。後でアーカイブ済みプロジェクト一覧から復元できます。",
       "confirm-delete-project": "\"{{name}}\" を削除すると、Issue、設定、履歴を含むプロジェクトとそれに関連するすべてのデータが完全に削除されます。このプロジェクト内のすべてのデータベースはデフォルトプロジェクトに移動されます。この操作は元に戻せません。",
+      "export-destination": {
+        "description": "SharePoint ドキュメントライブラリ、またはその中のフォルダーの URL です。このプロジェクトのエクスポートはここにアップロードされ、開けるユーザーは SharePoint の権限で決まります。",
+        "placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
+        "self": "エクスポート先",
+        "update-failed": "エクスポート先は保存されませんでした"
+      },
       "issue-related": {
         "allow-access-grants": {
           "description": "プロジェクトメンバーが特定の読み取り専用ステートメントに対して期限付きのアクセス付与をリクエストできるようにします。付与には結果のエクスポートやマスク解除データの閲覧を含めることもできます。",
@@ -2700,8 +2722,8 @@
         },
         "data-copy": "データのコピーを有効にする",
         "data-export": {
-          "description": "無効にすると、ユーザーはクエリ結果を直接エクスポートできません。アクセス付与が有効なプロジェクトでは、「エクスポートをリクエスト」からアクセス付与をリクエストし、承認後にエクスポートできます。",
-          "self": "承認なしのデータエクスポートを許可"
+          "description": "オフの場合、エクスポートはプロジェクトのエクスポート先にのみ配信でき、エクスポート先のないプロジェクトはエクスポートできません。「エクスポートをリクエスト」で申請したものを含め、エクスポートのアクセス付与が承認されてもローカルダウンロードは許可されません。データのコピーが制限されていない限り、ユーザーは表示中のクエリ結果をコピーできます。",
+          "self": "エクスポートのローカルダウンロードを許可"
         },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "ワークスペースのデフォルト ビューが SQL エディターに変更されました。",
@@ -2877,7 +2899,7 @@
             "title": "Issue の承認・却下"
           },
           "export": {
-            "details": "結果をファイルとしてダウンロードします。データが Bytebase の外に出ます。",
+            "details": "結果をファイルとしてエクスポートします。データが Bytebase の外に出ます。",
             "title": "クエリ結果をエクスポートする"
           },
           "manage": {
@@ -3203,6 +3225,14 @@
         }
       }
     },
+    "sharepoint": {
+      "client-id": "クライアント ID",
+      "client-secret": "クライアントシークレット",
+      "client-secret-description": "Microsoft Entra アプリケーションのクライアントシークレットです。保存後は読み取れません。",
+      "client-secret-saved": "クライアントシークレットは保存済みです。置き換えるには新しい値を入力してください。",
+      "description": "Bytebase はこの Microsoft Entra アプリケーションを使用して、SQL エディターのエクスポートを SharePoint に配信します。SharePoint で各配信先ライブラリへの書き込み権限をこのアプリケーションに付与してください。Bytebase は SharePoint の権限、保持、削除を管理しません。",
+      "tenant-id": "テナント ID"
+    },
     "sidebar": {
       "audit-log": "監査ログ",
       "custom-roles": "カスタムロール",
@@ -3218,6 +3248,7 @@
       "members-and-groups": "メンバーとグループ",
       "profile": "プロフィール",
       "security-and-policy": "セキュリティポリシー",
+      "sharepoint": "SharePoint",
       "sso": "SSO",
       "subscription": "サブスクリプション",
       "users-and-groups": "ユーザーとグループ"
@@ -3366,7 +3397,6 @@
     "and-n-more-databases": "他 {{n}} 件のデータベース",
     "batch-export": {
       "failed-for-db": "{{db}} のデータのエクスポートに失敗しました",
-      "partial": "部分的な一括エクスポート",
       "self": "一括エクスポート",
       "tooltip": "最新のクエリ結果を一括エクスポートするには、最大 {{max}} 個のデータベースを選択してください"
     },

@@ -872,7 +872,8 @@ type QueryDataPolicy struct {
 	// The default value <= 0, means no limit.
 	MaximumResultRows int32 `protobuf:"varint,1,opt,name=maximum_result_rows,json=maximumResultRows,proto3" json:"maximum_result_rows,omitempty"`
 	// workspace-level policy
-	// Disable data export in the SQL editor.
+	// Disallow local export download. Exports can then only be delivered to an
+	// export destination, even when an export access grant covers them.
 	DisableExport bool `protobuf:"varint,2,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
 	// workspace-level policy
 	// Disable copying query results in the SQL editor.

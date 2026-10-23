@@ -1,6 +1,7 @@
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { sqlServiceClientConnect } from "@/api";
 import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
+import { ExportDelivery } from "@/types/proto-es/v1/common_pb";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import type { AppSliceCreator, SQLSlice } from "./types";
 
@@ -8,7 +9,8 @@ import type { AppSliceCreator, SQLSlice } from "./types";
  * Stateless — just RPC wrappers around `query` / `export` with the SQL
  * editor's permission-denied + silent context conventions. Query failures are
  * swallowed into the returned `SQLResultSetV1.error` so the result table can
- * render the error inline instead of bubbling a thrown exception.
+ * render the error inline instead of bubbling a thrown exception. SharePoint
+ * export failures are silent because the export result reports them.
  */
 export const createSQLSlice: AppSliceCreator<SQLSlice> = () => ({
   query: async (params, signal) => {
@@ -35,10 +37,10 @@ export const createSQLSlice: AppSliceCreator<SQLSlice> = () => ({
 
   exportData: async (params) => {
     const response = await sqlServiceClientConnect.export(params, {
-      contextValues: createContextValues().set(ignoredCodesContextKey, [
-        Code.PermissionDenied,
-      ]),
+      contextValues: createContextValues()
+        .set(ignoredCodesContextKey, [Code.PermissionDenied])
+        .set(silentContextKey, params.delivery === ExportDelivery.SHAREPOINT),
     });
-    return response.content;
+    return { content: response.content, uri: response.uri };
   },
 });

@@ -1041,6 +1041,13 @@ export enum PlanFeature {
    * @generated from enum value: FEATURE_DEDICATED_SUPPORT_WITH_SLA = 71;
    */
   FEATURE_DEDICATED_SUPPORT_WITH_SLA = 71,
+
+  /**
+   * Deliver exports to SharePoint.
+   *
+   * @generated from enum value: FEATURE_SHAREPOINT_EXPORT = 72;
+   */
+  FEATURE_SHAREPOINT_EXPORT = 72,
 }
 
 /**

@@ -273,6 +273,10 @@
         "desc": "System for Cross-domain Identity Management support.",
         "title": "SCIM"
       },
+      "FEATURE_SHAREPOINT_EXPORT": {
+        "desc": "Deliver SQL Editor exports to SharePoint document libraries.",
+        "title": "SharePoint export"
+      },
       "FEATURE_SQL_EDITOR_ADMIN_MODE": {
         "desc": "Access administrative functions in the SQL editor.",
         "title": "SQL editor admin mode"

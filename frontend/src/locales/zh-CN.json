@@ -973,11 +973,27 @@
     "unexpected-error-description": "显示此页面时发生意外错误。刷新通常可以解决；如果问题持续出现，请联系管理员反馈。"
   },
   "export-data": {
+    "delivery": {
+      "local": "本地下载",
+      "self": "发送方式",
+      "sharepoint": "SharePoint"
+    },
     "export-format": "导出格式",
     "export-rows": "导出行数",
     "generate-password": "生成密码",
     "password-info": "提供密码来对导出的文件进行加密",
-    "password-optional": "设置密码加密（可选）"
+    "password-optional": "设置密码加密（可选）",
+    "sharepoint": {
+      "access-note": "由 SharePoint 权限决定谁可以打开已发送的文件。",
+      "delivered-title": "导出文件已发送到 SharePoint",
+      "open": "在 SharePoint 中打开",
+      "result-title": "SharePoint 导出结果",
+      "status": {
+        "delivered": "已发送",
+        "failed": "失败",
+        "unconfirmed": "未确认"
+      }
+    }
   },
   "gitops": {
     "checklist": {
@@ -2213,6 +2229,12 @@
     "settings": {
       "confirm-archive-project": "归档「{{name}}」将使其变为只读并从活跃项目列表中隐藏。所有工单、数据库和设置将被保留。您可以稍后从已归档项目列表中恢复。",
       "confirm-delete-project": "删除「{{name}}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。",
+      "export-destination": {
+        "description": "SharePoint 文档库或其中某个文件夹的 URL。此项目的导出文件会上传到这里，由 SharePoint 权限决定谁可以打开。",
+        "placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
+        "self": "导出目标",
+        "update-failed": "导出目标未保存"
+      },
       "issue-related": {
         "allow-access-grants": {
           "description": "允许项目成员为特定只读语句申请限时访问授权。授权还可包含导出查询结果和查看未脱敏数据。",
@@ -2700,8 +2722,8 @@
         },
         "data-copy": "启用复制数据",
         "data-export": {
-          "description": "关闭后，用户无法直接导出查询结果。在启用访问授权的项目中，用户仍可点击“申请导出”提交访问授权申请，审批通过后即可导出。",
-          "self": "允许无需审批导出数据"
+          "description": "关闭后，导出文件只能发送到项目的导出目标，未配置导出目标的项目无法导出。已获批的导出访问授权（包括通过“申请导出”申请的授权）也不会恢复本地下载。除非限制了数据复制，用户仍可复制可见的查询结果。",
+          "self": "允许本地下载导出文件"
         },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "工作区的默认视图已更改为 SQL 编辑器。",
@@ -2877,7 +2899,7 @@
             "title": "批准或拒绝工单"
           },
           "export": {
-            "details": "将结果下载为文件。数据会离开 Bytebase。",
+            "details": "将结果导出为文件。数据会离开 Bytebase。",
             "title": "导出查询结果"
           },
           "manage": {
@@ -3203,6 +3225,14 @@
         }
       }
     },
+    "sharepoint": {
+      "client-id": "客户端 ID",
+      "client-secret": "客户端密钥",
+      "client-secret-description": "Microsoft Entra 应用的客户端密钥。保存后无法读取。",
+      "client-secret-saved": "已保存客户端密钥。输入新密钥即可替换。",
+      "description": "Bytebase 使用此 Microsoft Entra 应用将 SQL 编辑器的导出文件发送到 SharePoint。请在 SharePoint 中为每个目标文档库授予该应用写入权限。Bytebase 不管理 SharePoint 的权限、保留或删除。",
+      "tenant-id": "租户 ID"
+    },
     "sidebar": {
       "audit-log": "审计日志",
       "custom-roles": "自定义角色",
@@ -3218,6 +3248,7 @@
       "members-and-groups": "成员和群组",
       "profile": "个人信息",
       "security-and-policy": "安全 & 策略",
+      "sharepoint": "SharePoint",
       "sso": "SSO",
       "subscription": "订阅",
       "users-and-groups": "用户和群组"
@@ -3366,7 +3397,6 @@
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-export": {
       "failed-for-db": "无法导出 {{db}} 的数据",
-      "partial": "部分批量导出",
       "self": "批量导出",
       "tooltip": "最多选择 {{max}} 个数据库，批量导出最后一次执行的查询结果"
     },

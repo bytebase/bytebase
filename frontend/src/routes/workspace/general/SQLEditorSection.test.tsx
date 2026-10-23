@@ -43,6 +43,7 @@ const mocks = vi.hoisted(() => {
     upsertPolicy: vi.fn(async (_params: unknown) => {}),
     getOrFetchPolicyByParentAndType: vi.fn(async (_params: unknown) => {}),
     hasWorkspacePermissionV2: vi.fn((_permission: string) => true),
+    hasPlanFeature: vi.fn((_feature: unknown) => true),
   };
 });
 
@@ -66,7 +67,7 @@ vi.mock("@/utils", () => ({
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
-  usePlanFeature: () => true,
+  usePlanFeature: mocks.hasPlanFeature,
   useWorkspaceResourceName: () => "workspaces/-",
 }));
 
@@ -168,6 +169,7 @@ vi.mock("@/stores", () => ({
 
 import { SQLEditorSection } from "./SQLEditorSection";
 import type { SectionHandle } from "./useSettingSection";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -193,6 +195,7 @@ beforeEach(() => {
   mocks.updateWorkspaceProfile.mockClear();
   mocks.upsertPolicy.mockClear();
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
+  mocks.hasPlanFeature.mockImplementation(() => true);
 });
 
 afterEach(() => {
@@ -356,10 +359,8 @@ describe("SQLEditorSection theme", () => {
   });
 });
 
-// The data-export policy is stored as `disableExport`, while the control names
-// the inverse allowed state. Keep that inversion and its explanatory copy in
-// sync.
-describe("SQLEditorSection data-export policy toggle", () => {
+// Local export download is stored inverted as the policy's `disableExport`.
+describe("SQLEditorSection local export download toggle", () => {
   function renderSection() {
     const ref = createRef<SectionHandle>();
     render(
@@ -368,48 +369,60 @@ describe("SQLEditorSection data-export policy toggle", () => {
     return ref;
   }
 
-  function exportSwitch(): HTMLElement {
-    // The switch renders inside the FormField title span, as a sibling of
-    // the label text (SQLEditorSection.tsx) — scope by that span.
+  function localDownloadSwitch(): HTMLElement {
+    // The switch renders inside the FormField title span, beside the label.
     const span = Array.from(container.querySelectorAll("span")).find((s) =>
-      s.textContent?.includes("settings.general.workspace.data-export.self")
+      s.textContent?.includes(
+        "settings.general.workspace.data-export.self"
+      )
     );
-    expect(span).toBeTruthy();
     const control = span?.querySelector<HTMLElement>('[role="switch"]');
     expect(control).toBeTruthy();
     return control as HTMLElement;
   }
 
-  test("renders the retitled label with its description", () => {
+  test("renders checked while disableExport is off", () => {
     renderSection();
-    expect(container.textContent).toContain(
-      "settings.general.workspace.data-export.self"
-    );
+    expect(localDownloadSwitch().getAttribute("aria-checked")).toBe("true");
     expect(container.textContent).toContain(
       "settings.general.workspace.data-export.description"
     );
   });
 
-  test("export allowed without approval (disableExport=false) renders checked", () => {
-    mocks.policy.disableExport = false;
-    renderSection();
-    expect(exportSwitch().getAttribute("aria-checked")).toBe("true");
-  });
-
-  test("approval-gated export (disableExport=true) renders unchecked", () => {
+  test("renders unchecked when disableExport is on", () => {
     mocks.policy.disableExport = true;
     renderSection();
-    expect(exportSwitch().getAttribute("aria-checked")).toBe("false");
+    expect(localDownloadSwitch().getAttribute("aria-checked")).toBe("false");
   });
 
-  test("toggling the switch marks the section dirty for the Update bar", () => {
-    mocks.policy.disableExport = false;
+  test("turning it off saves disableExport in the query data policy", async () => {
     const ref = renderSection();
     expect(ref.current?.isDirty()).toBe(false);
     act(() => {
-      exportSwitch().click();
+      localDownloadSwitch().click();
     });
     expect(ref.current?.isDirty()).toBe(true);
-    expect(exportSwitch().getAttribute("aria-checked")).toBe("false");
+    await act(async () => {
+      await ref.current?.update();
+    });
+    expect(mocks.upsertPolicy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        policy: expect.objectContaining({
+          policy: expect.objectContaining({
+            case: "queryDataPolicy",
+            value: expect.objectContaining({ disableExport: true }),
+          }),
+        }),
+      })
+    );
+    expect(mocks.updateWorkspaceProfile).not.toHaveBeenCalled();
+  });
+
+  test("cannot be changed without the query policy feature", () => {
+    mocks.hasPlanFeature.mockImplementation(
+      (feature) => feature !== PlanFeature.FEATURE_QUERY_POLICY
+    );
+    renderSection();
+    expect(localDownloadSwitch()).toHaveAttribute("data-disabled");
   });
 });
