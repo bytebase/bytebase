@@ -117,9 +117,9 @@ func TestResolve_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
 	require.Empty(t, te.Suggestion, "no grant fixes a stored ceiling this build does not serve")
 }
 
-// TestTranslateMetadataError_PolicyDenialGetsNoRoleAdvice is the same contract
-// on the get_schema door.
-func TestTranslateMetadataError_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
+// TestTranslateMetadataError_PassesTheRefusalThrough is the same contract on
+// the get_schema door.
+func TestTranslateMetadataError_PassesTheRefusalThrough(t *testing.T) {
 	body, err := json.Marshal(map[string]any{
 		"message": "/bytebase.v1.DatabaseService/GetDatabaseMetadata is not available to MCP sessions",
 	})
@@ -131,10 +131,10 @@ func TestTranslateMetadataError_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
 	require.Contains(t, te.Message, "MCP sessions")
 	require.Empty(t, te.Suggestion)
 
-	plain, err := json.Marshal(map[string]any{"message": "permission denied"})
+	plain, err := json.Marshal(map[string]any{"message": `user does not have permission "bb.databases.getSchema"`})
 	require.NoError(t, err)
 	got = translateMetadataError(&apiResponse{Status: http.StatusForbidden, Body: plain})
 	require.ErrorAs(t, got, &te)
-	require.Contains(t, te.Suggestion, "bb.databases.getSchema",
-		"a plain ACL denial keeps the permission advice")
+	require.Equal(t, toolError{Code: "PERMISSION_DENIED", Message: `user does not have permission "bb.databases.getSchema"`}, *te,
+		"an ACL denial names its permission, and nothing is added")
 }

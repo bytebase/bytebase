@@ -1437,6 +1437,111 @@ func TestApproverRoleRefusalCarriesItsReason(t *testing.T) {
 	}
 }
 
+func TestFindUnapprovableStep(t *testing.T) {
+	const owner, releaser = "roles/projectOwner", "roles/projectReleaser"
+	grant := func(member, role string) func(context.Context, *testing.T, *store.Store) {
+		return func(ctx context.Context, t *testing.T, stores *store.Store) {
+			_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{Workspace: "default", Member: member, Roles: []string{role}})
+			require.NoError(t, err)
+		}
+	}
+	for _, test := range []struct {
+		name  string
+		flow  []string
+		setup []func(context.Context, *testing.T, *store.Store)
+		// approved counts the steps approved before the check.
+		approved int
+		want     *UnapprovableStep
+	}{
+		{
+			name:  "only the creator holds the role, and self-approval is off",
+			flow:  []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){grant("users/creator@example.com", owner)},
+			want:  &UnapprovableStep{Position: 1, Role: owner, CreatorHoldsRole: true},
+		},
+		{
+			name: "only the creator holds the role, and the project allows self-approval",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				grant("users/creator@example.com", owner),
+				func(ctx context.Context, t *testing.T, stores *store.Store) {
+					require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+						Workspace: "default", ResourceID: "project-a", Setting: &storepb.Project{AllowSelfApproval: true},
+					}))
+				},
+			},
+		},
+		{
+			name:  "another person holds the role",
+			flow:  []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){grant("users/creator@example.com", owner), grant("users/reviewer@example.com", owner)},
+		},
+		{
+			name: "another person holds the role through a group",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				func(ctx context.Context, t *testing.T, stores *store.Store) {
+					_, err := stores.CreateGroup(ctx, &store.GroupMessage{
+						Workspace: "default",
+						Email:     "approvers@example.com",
+						Title:     "Approvers",
+						Payload:   &storepb.GroupPayload{Members: []*storepb.GroupMember{{Member: "users/reviewer@example.com", Role: storepb.GroupMember_MEMBER}}},
+					})
+					require.NoError(t, err)
+				},
+				grant("groups/approvers@example.com", owner),
+			},
+		},
+		{
+			name: "no person holds the role",
+			flow: []string{owner},
+			want: &UnapprovableStep{Position: 1, Role: owner},
+		},
+		{
+			name:  "a later step",
+			flow:  []string{owner, releaser},
+			setup: []func(context.Context, *testing.T, *store.Store){grant("users/reviewer@example.com", owner)},
+			want:  &UnapprovableStep{Position: 2, Role: releaser},
+		},
+		{
+			name:     "an approved step is not checked",
+			flow:     []string{releaser, owner},
+			setup:    []func(context.Context, *testing.T, *store.Store){grant("users/reviewer@example.com", owner)},
+			approved: 1,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			for _, setup := range test.setup {
+				setup(ctx, t, stores)
+			}
+			var approvers []*storepb.IssuePayloadApproval_Approver
+			for range test.approved {
+				approvers = append(approvers, &storepb.IssuePayloadApproval_Approver{
+					Status: storepb.IssuePayloadApproval_Approver_APPROVED, Principal: "users/reviewer2@example.com",
+				})
+			}
+			issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+				ProjectID:    "project-a",
+				CreatorEmail: "creator@example.com",
+				Title:        "access grant request",
+				Type:         storepb.Issue_ACCESS_GRANT,
+				Payload: &storepb.Issue{Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone: true,
+					ApprovalTemplate:    &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: test.flow}},
+					Approvers:           approvers,
+				}},
+			})
+			require.NoError(t, err)
+
+			got, err := FindUnapprovableStep(ctx, stores, "default", common.FormatIssue("project-a", issue.UID))
+			require.NoError(t, err)
+			require.Equal(t, test.want, got)
+		})
+	}
+}
+
 func TestApproverRoleLookupFailureIsNotARefusal(t *testing.T) {
 	ctx := context.Background()
 	db, stores := setupWorkflowStoreWithDB(ctx, t)

@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
@@ -95,9 +98,41 @@ func (s *Server) handleRequestAccessGrant(ctx context.Context, _ *mcp.CallToolRe
 		DurationHours: input.DurationHours,
 		Link:          link,
 	}
+	approval, next := "A person approves it in Bytebase before it takes effect.", useAfterApproval(input.Export)
+	if step := s.unapprovableStep(ctx, grant.Issue); step != nil {
+		approval, next = describeUnapprovableStep(step), wayAroundUnapprovableStep(input.Unmask)
+	}
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf(
-		"Requested %s: %s for %s from approval. A person approves it in Bytebase before it takes effect.\nIssue: %s\n%s",
-		grant.Name, describeRequestedAccess(input), hours(input.DurationHours), link, useAfterApproval(input.Export))}}}, output, nil
+		"Requested %s: %s for %s from approval. %s\nIssue: %s\n%s",
+		grant.Name, describeRequestedAccess(input), hours(input.DurationHours), approval, link, next)}}}, output, nil
+}
+
+// unapprovableStep drops the note on a failed read, not the result: an agent
+// shown an error could file the request again.
+func (s *Server) unapprovableStep(ctx context.Context, issue string) *review.UnapprovableStep {
+	step, err := s.findUnapprovableStep(ctx, getWorkspaceID(ctx), issue)
+	if err != nil {
+		slog.Warn("failed to check whether anyone can approve an access grant request", slog.String("issue", issue), log.BBError(err))
+		return nil
+	}
+	return step
+}
+
+func describeUnapprovableStep(step *review.UnapprovableStep) string {
+	if step.CreatorHoldsRole {
+		return fmt.Sprintf("No other person can approve it: step %d of its approval flow needs %s, which only you hold, and this project does not allow self-approval.", step.Position, step.Role)
+	}
+	return fmt.Sprintf("No person can approve it: step %d of its approval flow needs %s, which no person holds.", step.Position, step.Role)
+}
+
+// wayAroundUnapprovableStep never suggests allowing self-approval: the setting
+// covers every issue type in the project, not only this request.
+func wayAroundUnapprovableStep(unmask bool) string {
+	way := "An approver can be added only in the Bytebase console, by granting someone that role."
+	if unmask {
+		way += " To read the masked values without this request, a project owner can grant a masking exemption with grant_masking_exemption."
+	}
+	return way
 }
 
 // useAfterApproval says how to run the statement once the grant applies. Only

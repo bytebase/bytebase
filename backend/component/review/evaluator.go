@@ -1350,6 +1350,62 @@ func NotifyApprovalRequested(ctx context.Context, stores *store.Store, webhookMa
 	})
 }
 
+// UnapprovableStep is a remaining approval step that no person can approve.
+type UnapprovableStep struct {
+	// Position counts the steps of the approval flow from 1.
+	Position int
+	// Role is the role the step requires, e.g. "roles/projectOwner".
+	Role string
+	// CreatorHoldsRole is set when the issue's creator is the only person who
+	// holds the role, and the project refuses self-approval.
+	CreatorHoldsRole bool
+}
+
+// FindUnapprovableStep returns the first remaining step of the issue's approval
+// flow that no person can approve, or nil. It finds people as approval
+// notifications do, so a service account that holds the role does not count.
+func FindUnapprovableStep(ctx context.Context, stores *store.Store, workspace, issueName string) (*UnapprovableStep, error) {
+	projectID, issueUID, err := common.GetProjectIDIssueUID(issueName)
+	if err != nil {
+		return nil, err
+	}
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: workspace, ResourceID: &projectID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project %s", projectID)
+	}
+	if project == nil {
+		return nil, errors.Errorf("project %s not found", projectID)
+	}
+	issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{Workspace: workspace, ProjectIDs: []string{projectID}, UID: &issueUID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get issue %s", issueName)
+	}
+	if issue == nil {
+		return nil, errors.Errorf("issue %s not found", issueName)
+	}
+	approval := issue.Payload.GetApproval()
+	roles := approval.GetApprovalTemplate().GetFlow().GetRoles()
+	for i := len(approval.GetApprovers()); i < len(roles); i++ {
+		people, err := getApproversForRole(ctx, stores, projectID, roles[i])
+		if err != nil {
+			return nil, err
+		}
+		creatorHoldsRole, othersHoldRole := false, false
+		for _, person := range people {
+			if person.Email == issue.CreatorEmail {
+				creatorHoldsRole = true
+			} else {
+				othersHoldRole = true
+			}
+		}
+		if othersHoldRole || (creatorHoldsRole && !refusesSelfApproval(project, issue.CreatorEmail, issue.CreatorEmail)) {
+			continue
+		}
+		return &UnapprovableStep{Position: i + 1, Role: roles[i], CreatorHoldsRole: creatorHoldsRole}, nil
+	}
+	return nil, nil
+}
+
 // NotifyIssueApproved sends the ISSUE_APPROVED webhook event when all approval steps complete.
 // It notifies the issue creator that their issue has been fully approved.
 func NotifyIssueApproved(ctx context.Context, stores *store.Store, webhookManager *webhook.Manager, issue *store.IssueMessage, project *store.ProjectMessage, approver *store.UserMessage) {

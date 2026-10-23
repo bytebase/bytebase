@@ -594,3 +594,15 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 	require.NoError(t, err)
 	return tokenStr
 }
+
+// The handshake tells the agent which Bytebase account it acts as. Clients
+// also show the model their own sign-in, which can be another account.
+func TestInitializeNamesTheSignedInAccount(t *testing.T) {
+	endpoint, _, _ := newProbeServer(t)
+	token := mintMCPToken(t, "jordan@example.com", "client-A", "ws-test", "mcp:read-write", time.Hour)
+
+	session := connectLegacy(t, endpoint, token, nil)
+	require.Equal(t, `This session acts as the Bytebase account jordan@example.com: every tool call runs with its permissions, `+
+		`and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`,
+		session.InitializeResult().Instructions)
+}

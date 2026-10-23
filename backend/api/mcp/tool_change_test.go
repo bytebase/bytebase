@@ -947,7 +947,7 @@ func TestChange_IssueCreateFailed_SqlReview(t *testing.T) {
 func TestChange_PermissionDenied_Sheet(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.sheetStatus = http.StatusForbidden
-	mock.sheetResponse = map[string]any{"message": "permission denied"}
+	mock.sheetResponse = map[string]any{"message": `user does not have permission "bb.sheets.create"`}
 	s := newChangeTestServer(t, mock)
 
 	result, _, err := s.handleChange(testContext(), nil, ChangeInput{
@@ -993,7 +993,7 @@ func TestChange_PolicyDenialKeepsItsOwnRemedy(t *testing.T) {
 func TestChange_PermissionDenied_Plan(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.planStatus = http.StatusForbidden
-	mock.planResponse = map[string]any{"message": "permission denied"}
+	mock.planResponse = map[string]any{"message": `user does not have permission "bb.plans.create"`}
 	s := newChangeTestServer(t, mock)
 
 	result, _, err := s.handleChange(testContext(), nil, ChangeInput{
@@ -1013,7 +1013,7 @@ func TestChange_PermissionDenied_Plan(t *testing.T) {
 func TestChange_PermissionDenied_Issue(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.issueStatus = http.StatusForbidden
-	mock.issueResponse = map[string]any{"message": "permission denied"}
+	mock.issueResponse = map[string]any{"message": `user does not have permission "bb.issues.create"`}
 	s := newChangeTestServer(t, mock)
 
 	result, _, err := s.handleChange(testContext(), nil, ChangeInput{

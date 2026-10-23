@@ -723,7 +723,7 @@ func TestGetSchema_PermissionDenied(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"message": "permission denied",
+				"message": `user does not have permission "bb.databases.getSchema"`,
 				"code":    "PERMISSION_DENIED",
 			})
 			return

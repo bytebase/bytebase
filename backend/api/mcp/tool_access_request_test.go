@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
@@ -32,8 +34,13 @@ type accessGrantMock struct {
 	// refusalStatus and refusal, when set, are how the request is refused.
 	refusalStatus int
 	refusal       map[string]any
-	reads         []string
-	requests      []map[string]any
+	// unapprovable and unapprovableErr are what the approval-flow check
+	// reports for the filed request.
+	unapprovable    *review.UnapprovableStep
+	unapprovableErr error
+	reads           []string
+	requests        []map[string]any
+	checks          []string
 }
 
 func (m *accessGrantMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +76,19 @@ func (m *accessGrantMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (m *accessGrantMock) findUnapprovableStep(_ context.Context, workspace, issue string) (*review.UnapprovableStep, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.checks = append(m.checks, workspace+" "+issue)
+	return m.unapprovable, m.unapprovableErr
+}
+
+func (m *accessGrantMock) checked() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]string(nil), m.checks...)
+}
+
 func (m *accessGrantMock) calls() (reads []string, requests []map[string]any) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -80,6 +100,7 @@ func connectToAccessGrantServer(t *testing.T, mock *accessGrantMock) *mcp.Client
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 	s, err := newServerWithStore(newTestServerStore(), profile, revalidationSecret, mock)
 	require.NoError(t, err)
+	s.findUnapprovableStep = mock.findUnapprovableStep
 	e := echo.New()
 	s.RegisterRoutes(e)
 	ts := httptest.NewServer(e)
@@ -138,6 +159,63 @@ func TestRequestAccessGrantFilesTheRequest(t *testing.T) {
 	require.NoError(t, err)
 	require.JSONEq(t, `{"accessGrant":"projects/hr/accessGrants/g1","issue":"projects/hr/issues/7",
 		"durationHours":4,"link":"https://bb.example.com/projects/hr/issues/7"}`, string(output))
+	require.Equal(t, []string{"ws-test projects/hr/issues/7"}, mock.checked(), "the filed issue's approval flow is checked in the session's workspace")
+}
+
+func TestRequestAccessGrantSaysWhenNoOneCanApprove(t *testing.T) {
+	for name, tt := range map[string]struct {
+		step   *review.UnapprovableStep
+		unmask bool
+		want   string
+	}{
+		"only the requester holds the role": {
+			step:   &review.UnapprovableStep{Position: 1, Role: "roles/projectOwner", CreatorHoldsRole: true},
+			unmask: true,
+			want: "Requested projects/hr/accessGrants/g1: run the statement on projects/hr/instances/prod/databases/hr, unmasked for 4 hours from approval. " +
+				"No other person can approve it: step 1 of its approval flow needs roles/projectOwner, which only you hold, and this project does not allow self-approval.\n" +
+				"Issue: https://bb.example.com/projects/hr/issues/7\n" +
+				"An approver can be added only in the Bytebase console, by granting someone that role. " +
+				"To read the masked values without this request, a project owner can grant a masking exemption with grant_masking_exemption.",
+		},
+		"no person holds the role": {
+			step: &review.UnapprovableStep{Position: 2, Role: "roles/workspaceDBA"},
+			want: "Requested projects/hr/accessGrants/g1: run the statement on projects/hr/instances/prod/databases/hr for 4 hours from approval. " +
+				"No person can approve it: step 2 of its approval flow needs roles/workspaceDBA, which no person holds.\n" +
+				"Issue: https://bb.example.com/projects/hr/issues/7\n" +
+				"An approver can be added only in the Bytebase console, by granting someone that role.",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := &accessGrantMock{project: "projects/hr", unapprovable: tt.step}
+			session := connectToAccessGrantServer(t, mock)
+
+			res := callRequestAccessGrant(t, session, map[string]any{
+				"database":      "projects/hr/instances/prod/databases/hr",
+				"statement":     "SELECT 1",
+				"unmask":        tt.unmask,
+				"reason":        "a look",
+				"durationHours": 4,
+			})
+			require.False(t, res.IsError, resultText(t, res))
+			require.Equal(t, tt.want, resultText(t, res))
+		})
+	}
+}
+
+func TestRequestAccessGrantKeepsItsResultWhenTheApprovalCheckFails(t *testing.T) {
+	mock := &accessGrantMock{project: "projects/hr", unapprovableErr: errors.New("connection refused")}
+	session := connectToAccessGrantServer(t, mock)
+
+	res := callRequestAccessGrant(t, session, map[string]any{
+		"database":      "projects/hr/instances/prod/databases/hr",
+		"statement":     "SELECT 1",
+		"reason":        "a look",
+		"durationHours": 4,
+	})
+	require.False(t, res.IsError, "the request is filed, so a failed check must not read as a failed request: %s", resultText(t, res))
+	require.Contains(t, resultText(t, res), "A person approves it in Bytebase before it takes effect.")
+	_, requests := mock.calls()
+	require.Len(t, requests, 1)
 }
 
 func TestRequestAccessGrantFilesInTheDatabaseProject(t *testing.T) {
@@ -212,26 +290,18 @@ func TestRequestAccessGrantFilesNothingWhenTheDatabaseReadFails(t *testing.T) {
 }
 
 func TestRequestAccessGrantPassesPermissionDenialsThrough(t *testing.T) {
-	for name, tt := range map[string]struct {
-		message    string
-		suggestion string
-	}{
-		"a request no person would approve": {
-			"/bytebase.v1.AccessGrantService/CreateAccessGrant is not available to MCP sessions for this request because no approval rule requires a person to approve it, " +
-				"so the access would be granted at once with no human step. Ask a workspace admin to give access requests " +
-				"an approval rule that names an approver, or request the access in the Bytebase console.",
-			"",
-		},
-		"a missing permission": {
-			`permission denied for method "/bytebase.v1.AccessGrantService/CreateAccessGrant", user does not have permission "bb.accessGrants.create", extra map[]`,
-			"ask your workspace admin to grant you the bb.accessGrants.create permission",
-		},
+	for name, message := range map[string]string{
+		"a request no person would approve": "/bytebase.v1.AccessGrantService/CreateAccessGrant is not available to MCP sessions for this request because no approval rule requires a person to approve it, " +
+			"so the access would be granted at once with no human step. Ask a workspace admin to give access requests " +
+			"an approval rule that names an approver, or request the access in the Bytebase console.",
+		"a missing permission": `permission denied for method "/bytebase.v1.AccessGrantService/CreateAccessGrant", user does not have permission "bb.accessGrants.create", extra map[]`,
+		"a plan feature":       "feature FEATURE_JIT is a ENTERPRISE feature, please upgrade to access it",
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &accessGrantMock{
 				project:       "projects/hr",
 				refusalStatus: http.StatusForbidden,
-				refusal:       map[string]any{"code": "permission_denied", "message": tt.message},
+				refusal:       map[string]any{"code": "permission_denied", "message": message},
 			}
 			session := connectToAccessGrantServer(t, mock)
 
@@ -244,7 +314,7 @@ func TestRequestAccessGrantPassesPermissionDenialsThrough(t *testing.T) {
 			require.True(t, res.IsError)
 			var denial toolError
 			require.NoError(t, json.Unmarshal([]byte(resultText(t, res)), &denial))
-			require.Equal(t, toolError{Code: "PERMISSION_DENIED", Message: tt.message, Suggestion: tt.suggestion}, denial)
+			require.Equal(t, toolError{Code: "PERMISSION_DENIED", Message: message}, denial, "the server's message is the whole answer")
 		})
 	}
 }

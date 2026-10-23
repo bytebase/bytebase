@@ -225,11 +225,11 @@ func TestMaskedWriteGuardCoversTheExecutionDoor(t *testing.T) {
 // TestMCPRefusalsNameThemselvesToTheQueryTool is a contract between two
 // processes that meet only over an error body.
 //
-// query_database drops its own "request the SQL Editor role" advice when it
-// recognizes an MCP policy refusal, because no project role lifts a workspace
-// setting. It recognizes one by wording, so every producer's wording has to stay
-// inside the list the consumer keys on — including the masked-write guard, which
-// is the newest producer and the one whose refusal names a literal rather than a
+// query_database drops its own access-request advice when it recognizes an
+// MCP policy refusal, because no access grant lifts a workspace setting. It
+// recognizes one by wording, so every producer's wording has to stay inside the
+// list the consumer keys on — including the masked-write guard, which is the
+// newest producer and the one whose refusal names a literal rather than a
 // policy.
 func TestMCPRefusalsNameThemselvesToTheQueryTool(t *testing.T) {
 	readWrite := readWriteCeiling()

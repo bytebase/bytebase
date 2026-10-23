@@ -316,7 +316,7 @@ func TestQueryDatabase_WorkspacePermissionDenied(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"message": "permission denied",
+			"message": `user does not have permission "bb.databases.list"`,
 			"code":    "PERMISSION_DENIED",
 		})
 	})
@@ -327,8 +327,8 @@ func TestQueryDatabase_WorkspacePermissionDenied(t *testing.T) {
 
 	var te *toolError
 	require.ErrorAs(t, err, &te)
-	require.Equal(t, "PERMISSION_DENIED", te.Code)
-	require.Contains(t, te.Suggestion, "bb.databases.list")
+	require.Equal(t, toolError{Code: "PERMISSION_DENIED", Message: `user does not have permission "bb.databases.list"`}, *te,
+		"the server's message names the permission, and nothing is added")
 }
 
 func TestQueryDatabase_Ambiguous(t *testing.T) {
@@ -672,7 +672,7 @@ func TestQueryDatabase_QueryError(t *testing.T) {
 // TestQueryDatabase_PolicyDenialGetsNoRoleAdvice is the same contract on the
 // read tool. The masked-write guard refuses through SQLService/Query, and a
 // project role cannot lift a workspace setting.
-func TestQueryDatabase_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
+func TestQueryDatabase_PolicyDenialGetsNoAccessAdvice(t *testing.T) {
 	databases := []map[string]any{
 		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
 	}
@@ -700,8 +700,8 @@ func TestQueryDatabase_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "******")
-	require.NotContains(t, text, "SQL Editor role",
-		"no project role lifts a workspace setting")
+	require.NotContains(t, text, "request_access_grant",
+		"no access grant lifts a workspace setting")
 }
 
 func TestQueryDatabase_PermissionDenied(t *testing.T) {
@@ -731,6 +731,8 @@ func TestQueryDatabase_PermissionDenied(t *testing.T) {
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "permission denied")
+	require.Contains(t, text, "request an access grant for this statement with request_access_grant")
+	require.NotContains(t, text, "role", "an MCP session cannot file a role request")
 }
 
 // --- Task 6 tests: masked values and timeout ---

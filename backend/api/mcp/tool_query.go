@@ -236,13 +236,14 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		}
 		suggestion := "check your SQL syntax and try again"
 		if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
-			// A refusal that already names its own way out gets none added.
-			// Telling an agent to request a project role for one sends the
-			// person it acts for after a grant that cannot lift a workspace
-			// setting.
+			// A refusal that already names its own way out gets none added:
+			// no access grant lifts a workspace setting. MCP sessions cannot
+			// file role requests, so the advice is an access grant.
 			suggestion = ""
 			if !IsPolicyRefusal(errMsg) {
-				suggestion = "you may not have permission to query this database — request the SQL Editor role on the project"
+				suggestion = "if you lack permission to query this database: in a Read-write session, request an access grant " +
+					"for this statement with request_access_grant (the project must allow just-in-time access); " +
+					"otherwise the user requests access in the SQL Editor"
 			}
 		}
 		return nil, &toolError{

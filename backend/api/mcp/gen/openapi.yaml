@@ -9285,8 +9285,9 @@ components:
           type: string
           title: creator
           description: |-
-            The creator of the access grant.
+            The creator of the access grant, the caller who requested it.
              Format: users/{email}
+          readOnly: true
         status:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.AccessGrant.Status'
@@ -9348,7 +9349,6 @@ components:
           description: The container name to execute the query against, used for CosmosDB only.
       title: AccessGrant
       required:
-        - creator
         - targets
     bytebase.v1.AccessGrant.Status:
       type: string

@@ -25,7 +25,7 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
   name: string;
 
   /**
-   * The creator of the access grant.
+   * The creator of the access grant, the caller who requested it.
    * Format: users/{email}
    *
    * @generated from field: string creator = 2;
