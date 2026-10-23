@@ -14,6 +14,43 @@ export type LandingStarterId =
   | "project-access"
   | "project-review";
 
+const directStarterScopes: Partial<
+  Record<LandingStarterId, "workspace" | "project">
+> = {
+  "workspace-attention": "workspace",
+  "workspace-recent": "workspace",
+  "project-open-blockers": "project",
+  "project-open-recent": "project",
+};
+
+export function getLandingStarterIdForText({
+  context,
+  text,
+  translate,
+}: {
+  context?: string;
+  text: string;
+  translate: (key: string) => string;
+}): LandingStarterId | undefined {
+  const scope = context?.startsWith("workspaces/")
+    ? "workspace"
+    : context?.startsWith("projects/")
+      ? "project"
+      : undefined;
+  if (!scope) return undefined;
+
+  return (
+    Object.entries(directStarterScopes) as [
+      LandingStarterId,
+      "workspace" | "project",
+    ][]
+  ).find(
+    ([starterId, starterScope]) =>
+      starterScope === scope &&
+      text === translate(`agent.landing-starters.${starterId}`)
+  )?.[0];
+}
+
 type Availability = "loading" | "present" | "empty" | "unknown";
 
 export type LandingStarterInput =

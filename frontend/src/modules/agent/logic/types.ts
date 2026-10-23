@@ -27,12 +27,32 @@ export interface AgentChatSnapshot {
   title: string;
 }
 
+export type AgentEvidenceReference =
+  | {
+      kind: "issue";
+      name: string;
+      title: string;
+    }
+  | {
+      kind: "database";
+      name: string;
+    };
+
+export interface AgentEvidence {
+  project?: string;
+  workspace?: string;
+  references: AgentEvidenceReference[];
+}
+
+export type AgentAnswerEvidence = AgentEvidence | AgentEvidence[];
+
 export interface AgentMessageMetadata {
   route?: string;
   pending?: boolean;
   hidden?: boolean;
   error?: string;
   runId?: string;
+  evidence?: AgentAnswerEvidence;
 }
 
 export interface AgentMessage extends Message {

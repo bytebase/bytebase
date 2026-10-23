@@ -14,7 +14,7 @@ import { router } from "@/app/router";
 import { Button } from "@/components/ui/button";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { Textarea } from "@/components/ui/textarea";
-import { projectNamePrefix, workspaceNamePrefix } from "@/lib/resourceName";
+import { projectNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import type { DomRefSuggestion } from "../dom";
@@ -25,14 +25,27 @@ import {
   isAgentAIConfigurationError,
 } from "../logic/aiConfiguration";
 import { getCurrentChatContext } from "../logic/chatContext";
-import type { LandingStarterId } from "../logic/landingStarters";
+import {
+  getLandingStarterIdForText,
+  type LandingStarterId,
+} from "../logic/landingStarters";
 import { buildOutboundHistory } from "../logic/outboundHistory";
 import { buildSystemPrompt } from "../logic/prompt";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
+import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
+import { extractIssueOverviewEvidence } from "../logic/tools/issueOverview";
 import { createProjectOpenIssuesTool } from "../logic/tools/projectOpenIssues";
+import { extractProjectOverviewEvidence } from "../logic/tools/projectOverview";
 import { getRecentActivity } from "../logic/tools/recentActivity";
 import { createWorkspaceAttentionTool } from "../logic/tools/workspaceAttention";
-import type { AgentAskUserOption, AgentRunMode, Message } from "../logic/types";
+import { extractWorkspaceOverviewEvidence } from "../logic/tools/workspaceOverview";
+import type {
+  AgentAnswerEvidence,
+  AgentAskUserOption,
+  AgentEvidence,
+  AgentRunMode,
+  Message,
+} from "../logic/types";
 import {
   selectCurrentChat,
   selectCurrentChatRequiresAIConfiguration,
@@ -196,6 +209,40 @@ const parseAttentionResult = (value: string): AttentionResult => {
   } catch {
     return { issues: [], partial: false, error: "invalid result" };
   }
+};
+
+const mergeOverviewEvidence = (
+  current: AgentAnswerEvidence | undefined,
+  next: AgentEvidence | undefined
+): AgentAnswerEvidence | undefined => {
+  if (!next || next.references.length === 0) return current;
+  if (!current) return next;
+
+  const groups = Array.isArray(current) ? current : [current];
+  const matchingIndex = groups.findIndex(
+    (group) =>
+      group.project === next.project && group.workspace === next.workspace
+  );
+  if (matchingIndex < 0) return [...groups, next];
+
+  const existing = groups[matchingIndex];
+  const seen = new Set(
+    existing.references.map(
+      (reference) => `${reference.kind}:${reference.name}`
+    )
+  );
+  const references = [...existing.references];
+  for (const reference of next.references) {
+    const key = `${reference.kind}:${reference.name}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    references.push(reference);
+  }
+  const merged = { ...existing, references };
+  if (!Array.isArray(current)) return merged;
+  return groups.map((group, index) =>
+    index === matchingIndex ? merged : group
+  );
 };
 
 // ---------------------------------------------------------------------------
@@ -704,6 +751,8 @@ export function AgentInput() {
             .updateChatPage(chatId, getCurrentPageSnapshot());
         },
       });
+      const toolNamesByCallId = new Map<string, string>();
+      let overviewEvidence: AgentAnswerEvidence | undefined;
 
       try {
         const outcome = await runAgentLoop(
@@ -712,6 +761,9 @@ export function AgentInput() {
           executor,
           {
             onAssistantMessage: (message) => {
+              for (const toolCall of message.toolCalls ?? []) {
+                toolNamesByCallId.set(toolCall.id, toolCall.name);
+              }
               if (!message.content && !message.toolCalls?.length) return;
               useAgentStore.getState().addMessage({
                 chatId,
@@ -722,6 +774,28 @@ export function AgentInput() {
               });
             },
             onToolResult: (toolCallId, result) => {
+              const toolName = toolNamesByCallId.get(toolCallId);
+              if (toolName === "get_project_overview") {
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractProjectOverviewEvidence(result)
+                );
+              } else if (toolName === "get_issue_overview") {
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractIssueOverviewEvidence(result)
+                );
+              } else if (toolName === "get_database_overview") {
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractDatabaseOverviewEvidence(result)
+                );
+              } else if (toolName === "get_workspace_overview") {
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractWorkspaceOverviewEvidence(result)
+                );
+              }
               useAgentStore.getState().addMessage({
                 chatId,
                 role: "tool",
@@ -736,7 +810,11 @@ export function AgentInput() {
                 chatId,
                 role: "assistant",
                 content: text,
-                metadata: { route: page.path, runId },
+                metadata: {
+                  route: page.path,
+                  runId,
+                  ...(overviewEvidence ? { evidence: overviewEvidence } : {}),
+                },
               });
             },
           },
@@ -1071,20 +1149,11 @@ export function AgentInput() {
       content: text,
       metadata: { route: currentPage.path },
     });
-    const starterId =
-      thread.context?.startsWith(workspaceNamePrefix) &&
-      text === t("agent.landing-starters.workspace-recent")
-        ? "workspace-recent"
-        : thread.context?.startsWith(workspaceNamePrefix) &&
-            text === t("agent.landing-starters.workspace-attention")
-          ? "workspace-attention"
-          : thread.context?.startsWith(projectNamePrefix) &&
-              text === t("agent.landing-starters.project-open-recent")
-            ? "project-open-recent"
-            : thread.context?.startsWith(projectNamePrefix) &&
-                text === t("agent.landing-starters.project-open-blockers")
-              ? "project-open-blockers"
-              : undefined;
+    const starterId = getLandingStarterIdForText({
+      context: thread.context,
+      text,
+      translate: t,
+    });
     await startChatRun(chatId, currentPage, "default", starterId);
   }, [blockWhenAIIsNotConfigured, input, startChatRun, t, workspace?.name]);
 

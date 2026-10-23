@@ -1,11 +1,21 @@
+import { ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
+import {
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  SETTING_ROUTE_WORKSPACE_GENERAL,
+} from "@/app/router/handles";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Table } from "@/components/ui/table";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
@@ -15,7 +25,13 @@ import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
-import type { AgentMessage, ToolCall } from "../logic/types";
+import type {
+  AgentAnswerEvidence,
+  AgentEvidence,
+  AgentEvidenceReference,
+  AgentMessage,
+  ToolCall,
+} from "../logic/types";
 import {
   selectCurrentChatRequiresAIConfiguration,
   selectError,
@@ -27,6 +43,149 @@ import { ToolCallCard } from "./ToolCallCard";
 
 interface AgentChatProps {
   className?: string;
+}
+
+const ISSUE_NAME_PATTERN = /^projects\/([^/]+)\/issues\/([^/]+)$/;
+const DATABASE_NAME_PATTERN =
+  /^(?:projects\/([^/]+)\/)?instances\/([^/]+)\/databases\/([^/]+)$/;
+
+type ResolvedEvidenceReference = {
+  reference: AgentEvidenceReference;
+  label: string;
+  to:
+    | {
+        name: typeof PROJECT_V1_ROUTE_ISSUE_DETAIL;
+        params: { projectId: string; issueId: string };
+      }
+    | {
+        name: typeof PROJECT_V1_ROUTE_DATABASE_DETAIL;
+        params: { projectId: string; instanceId: string; databaseName: string };
+        query: { parent: string };
+      };
+};
+
+function resolveScopedEvidenceReferences(
+  evidence: AgentEvidence
+): ResolvedEvidenceReference[] {
+  if (!evidence || !Array.isArray(evidence.references)) {
+    return [];
+  }
+
+  const projectMatch =
+    typeof evidence.project === "string"
+      ? evidence.project.match(/^projects\/([^/]+)$/)
+      : undefined;
+  const isWorkspaceScoped =
+    typeof evidence.workspace === "string" &&
+    /^workspaces\/[^/]+$/.test(evidence.workspace);
+  if ((projectMatch ? 1 : 0) + (isWorkspaceScoped ? 1 : 0) !== 1) {
+    return [];
+  }
+
+  const projectId = projectMatch?.[1];
+  const resolved: ResolvedEvidenceReference[] = [];
+  for (const reference of evidence.references) {
+    if (!reference || typeof reference.name !== "string") {
+      continue;
+    }
+    if (reference.kind === "issue") {
+      const match = reference.name.match(ISSUE_NAME_PATTERN);
+      if (
+        !match ||
+        (projectId && match[1] !== projectId) ||
+        typeof reference.title !== "string" ||
+        !reference.title
+      ) {
+        continue;
+      }
+      resolved.push({
+        reference,
+        label: reference.title,
+        to: {
+          name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+          params: { projectId: match[1], issueId: match[2] },
+        },
+      });
+      continue;
+    }
+
+    if (reference.kind !== "database" || !projectId) continue;
+
+    const match = reference.name.match(DATABASE_NAME_PATTERN);
+    const referenceProjectId = match?.[1];
+    if (!match || (referenceProjectId && referenceProjectId !== projectId)) {
+      continue;
+    }
+    const parent = referenceProjectId
+      ? `projects/${referenceProjectId}/instances/${match[2]}`
+      : `instances/${match[2]}`;
+    resolved.push({
+      reference,
+      label: match[3],
+      to: {
+        name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+        params: {
+          projectId,
+          instanceId: match[2],
+          databaseName: match[3],
+        },
+        query: { parent },
+      },
+    });
+  }
+  return resolved;
+}
+
+function resolveEvidenceReferences(
+  evidence: AgentAnswerEvidence | undefined
+): ResolvedEvidenceReference[] {
+  const groups = Array.isArray(evidence)
+    ? evidence
+    : evidence
+      ? [evidence]
+      : [];
+  const seen = new Set<string>();
+  return groups.flatMap((group) =>
+    resolveScopedEvidenceReferences(group).filter(({ reference }) => {
+      const key = `${reference.kind}:${reference.name}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+  );
+}
+
+function EvidenceReferences({ evidence }: { evidence?: AgentAnswerEvidence }) {
+  const { t } = useTranslation();
+  const references = resolveEvidenceReferences(evidence);
+  const labels = {
+    issue: t("agent.evidence.issue"),
+    database: t("agent.evidence.database"),
+  };
+  if (references.length === 0) return null;
+
+  return (
+    <Collapsible className="mt-2">
+      <CollapsibleTrigger className="w-fit text-xs text-control-light hover:text-control">
+        <ChevronRight className="size-3" />
+        {t("agent.evidence.references")}
+      </CollapsibleTrigger>
+      <CollapsiblePanel className="pt-1">
+        <ul className="flex flex-col gap-y-1 pl-5 text-xs">
+          {references.map(({ reference, label, to }) => (
+            <li key={`${reference.kind}:${reference.name}`}>
+              <span className="text-control-light">
+                {labels[reference.kind]}:{" "}
+              </span>
+              <RouterLink className="normal-link" to={to}>
+                {label}
+              </RouterLink>
+            </li>
+          ))}
+        </ul>
+      </CollapsiblePanel>
+    </Collapsible>
+  );
 }
 
 export function AgentChat({ className }: AgentChatProps) {
@@ -247,6 +406,7 @@ export function AgentChat({ className }: AgentChatProps) {
                       >
                         {msg.content}
                       </ReactMarkdown>
+                      <EvidenceReferences evidence={msg.metadata?.evidence} />
                     </div>
                   ) : null}
                   {msg.toolCalls?.map((toolCall, index, toolCalls) => (

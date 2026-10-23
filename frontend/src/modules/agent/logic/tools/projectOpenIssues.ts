@@ -1,6 +1,14 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { issueServiceClientConnect } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { useAppStore } from "@/stores/app";
+import { buildIssueFilter } from "@/stores/app/issue";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  type Issue,
+  SearchIssuesRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 
 const PAGE_SIZE = 10;
 
@@ -39,33 +47,44 @@ export function createProjectOpenIssuesTool({
       });
     }
 
-    const { currentUser, listIssues } = useAppStore.getState();
+    const { currentUser } = useAppStore.getState();
     if (!currentUser?.name) {
       return JSON.stringify({ error: "The current user is unavailable." });
     }
 
+    const options = {
+      contextValues: createContextValues().set(silentContextKey, true),
+    };
     const results = await Promise.allSettled([
-      listIssues({
-        find: {
-          project: projectName,
-          query: "",
-          currentApprover: currentUser.name,
-          statusList: [IssueStatus.OPEN],
-          approvalStatus: ApprovalStatus.PENDING,
+      issueServiceClientConnect.searchIssues(
+        create(SearchIssuesRequestSchema, {
+          parent: projectName,
+          filter: buildIssueFilter({
+            project: projectName,
+            query: "",
+            currentApprover: currentUser.name,
+            statusList: [IssueStatus.OPEN],
+            approvalStatus: ApprovalStatus.PENDING,
+          }),
           orderBy: "update_time desc",
-        },
-        pageSize: PAGE_SIZE,
-      }),
-      listIssues({
-        find: {
-          project: projectName,
-          query: "",
-          creator: currentUser.name,
-          statusList: [IssueStatus.OPEN],
+          pageSize: PAGE_SIZE,
+        }),
+        options
+      ),
+      issueServiceClientConnect.searchIssues(
+        create(SearchIssuesRequestSchema, {
+          parent: projectName,
+          filter: buildIssueFilter({
+            project: projectName,
+            query: "",
+            creator: currentUser.name,
+            statusList: [IssueStatus.OPEN],
+          }),
           orderBy: "update_time desc",
-        },
-        pageSize: PAGE_SIZE,
-      }),
+          pageSize: PAGE_SIZE,
+        }),
+        options
+      ),
     ]);
 
     const fulfilledCount = results.filter(

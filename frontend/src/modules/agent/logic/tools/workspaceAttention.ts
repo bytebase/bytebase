@@ -1,5 +1,7 @@
 import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import { issueServiceClientConnect } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { useAppStore } from "@/stores/app";
 import { buildIssueFilter } from "@/stores/app/issue";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
@@ -34,6 +36,9 @@ export function createWorkspaceAttentionTool({
       return JSON.stringify({ error: "The current user is unavailable." });
     }
 
+    const options = {
+      contextValues: createContextValues().set(silentContextKey, true),
+    };
     const results = await Promise.allSettled([
       issueServiceClientConnect.searchIssues(
         create(SearchIssuesRequestSchema, {
@@ -47,7 +52,8 @@ export function createWorkspaceAttentionTool({
           }),
           orderBy: "update_time desc",
           pageSize: PAGE_SIZE,
-        })
+        }),
+        options
       ),
       issueServiceClientConnect.searchIssues(
         create(SearchIssuesRequestSchema, {
@@ -60,7 +66,8 @@ export function createWorkspaceAttentionTool({
           }),
           orderBy: "update_time desc",
           pageSize: PAGE_SIZE,
-        })
+        }),
+        options
       ),
     ]);
     const fulfilled = results.filter((result) => result.status === "fulfilled");

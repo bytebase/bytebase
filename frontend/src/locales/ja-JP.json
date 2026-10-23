@@ -49,6 +49,11 @@
     "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",
     "delete-chat": "チャットを削除",
     "delete-chat-confirmation": "このチャットを削除しますか？この操作は元に戻せません。",
+    "evidence": {
+      "database": "データベース",
+      "issue": "issue",
+      "references": "根拠"
+    },
     "input-keyboard-hint": "Enter で送信・Shift+Enter で改行",
     "input-placeholder": "AI に何でも聞いてください...",
     "interrupted": "中断",

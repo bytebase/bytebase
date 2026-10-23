@@ -49,6 +49,11 @@
     "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
     "delete-chat": "Eliminar chat",
     "delete-chat-confirmation": "¿Está seguro de que desea eliminar este chat? Esta acción no se puede deshacer.",
+    "evidence": {
+      "database": "base de datos",
+      "issue": "issue",
+      "references": "Evidencia"
+    },
     "input-keyboard-hint": "Enter para enviar · Shift+Enter para un salto de línea",
     "input-placeholder": "Pregunta algo a la IA...",
     "interrupted": "Interrumpido",
