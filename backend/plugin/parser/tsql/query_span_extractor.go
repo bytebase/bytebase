@@ -504,7 +504,7 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	if queryType != base.Select || !isSelect {
 		return &base.QuerySpan{
 			Type:          queryType,
-			SourceColumns: base.SourceColumnSet{},
+			SourceColumns: accessTables,
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
@@ -1878,6 +1878,15 @@ func collectOmniAccessTables(root ast.Node, currentDatabase, currentSchema strin
 	return out
 }
 
+func walkTableList(list *ast.List, db, schema string, out base.SourceColumnSet) {
+	if list == nil {
+		return
+	}
+	for _, it := range list.Items {
+		walkAccessTables(it, db, schema, out)
+	}
+}
+
 func walkAccessTables(n ast.Node, db, schema string, out base.SourceColumnSet) {
 	if n == nil {
 		return
@@ -1909,6 +1918,27 @@ func walkAccessTables(n ast.Node, db, schema string, out base.SourceColumnSet) {
 		if v.Rarg != nil {
 			walkAccessTables(v.Rarg, db, schema, out)
 		}
+		if v.OrderByClause != nil {
+			for _, it := range v.OrderByClause.Items {
+				walkAccessTables(it, db, schema, out)
+			}
+		}
+	case *ast.OrderByItem:
+		walkAccessTables(v.Expr, db, schema, out)
+	case *ast.InsertStmt:
+		walkAccessTables(v.Relation, db, schema, out)
+		walkAccessTables(v.Source, db, schema, out)
+	case *ast.UpdateStmt:
+		walkAccessTables(v.Relation, db, schema, out)
+		walkTableList(v.FromClause, db, schema, out)
+		walkAccessTables(v.WhereClause, db, schema, out)
+	case *ast.DeleteStmt:
+		walkAccessTables(v.Relation, db, schema, out)
+		walkTableList(v.FromClause, db, schema, out)
+		walkAccessTables(v.WhereClause, db, schema, out)
+	case *ast.MergeStmt:
+		walkAccessTables(v.Target, db, schema, out)
+		walkAccessTables(v.Source, db, schema, out)
 	case *ast.WithClause:
 		if v.CTEs != nil {
 			for _, it := range v.CTEs.Items {

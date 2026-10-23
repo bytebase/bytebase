@@ -26,7 +26,12 @@
   querySpan:
     type: 3
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: SYS
+          schema: ""
+          table: SOMETABLE
+          column: ""
     predicatecolumns: []
 - description: Test for Explain
   statement: EXPLAIN PLAN FOR SELECT * FROM SCHEMA1.V1;
@@ -56,7 +61,12 @@
   querySpan:
     type: 2
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: SCHEMA1
+          schema: ""
+          table: V1
+          column: ""
     predicatecolumns: []
 - description: Test for DDL
   statement: create table t(a int);
@@ -116,7 +126,12 @@
   querySpan:
     type: 5
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: PUBLIC
+          schema: ""
+          table: T
+          column: ""
     predicatecolumns: []
 - description: Test for cross-schema view
   statement: SELECT * FROM SCHEMA1.V1;

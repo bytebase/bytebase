@@ -430,10 +430,8 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	if allSystems {
 		accessTables = base.SourceColumnSet{}
 	}
-	resultSourceColumns := accessTables
-	if queryType != base.Select {
-		resultSourceColumns = base.SourceColumnSet{}
-	}
+	explain, isExplain := root.(*ast.ExplainStmt)
+	explainAnalyze := isExplain && explain.Analyze
 
 	var results []base.QuerySpanResult
 	if queryType == base.Select {
@@ -455,7 +453,8 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	}
 	return &base.QuerySpan{
 		Type:             queryType,
-		SourceColumns:    resultSourceColumns,
+		ExplainAnalyze:   explainAnalyze,
+		SourceColumns:    accessTables,
 		Results:          results,
 		PredicateColumns: base.SourceColumnSet{},
 	}, nil

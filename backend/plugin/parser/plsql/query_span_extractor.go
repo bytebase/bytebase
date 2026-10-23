@@ -342,9 +342,13 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 
 	queryType := omniQueryType(raw.Stmt, allSystem)
 	if queryType != base.Select {
+		sourceColumns := make(base.SourceColumnSet)
+		for _, resource := range accessTables {
+			sourceColumns[base.ColumnResource{Database: resource.Database, Table: resource.Table}] = true
+		}
 		return &base.QuerySpan{
 			Type:          queryType,
-			SourceColumns: base.SourceColumnSet{},
+			SourceColumns: sourceColumns,
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
@@ -366,7 +370,6 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 		}
 		columnSet[column] = true
 	}
-
 	selectStmt, ok := raw.Stmt.(*oracleast.SelectStmt)
 	if !ok {
 		return nil, errors.Errorf("expected SELECT statement, got %T", raw.Stmt)
@@ -582,14 +585,28 @@ func collectOmniAccessTables(defaultDatabase string, stmt oracleast.StmtNode) (l
 		}
 		local = append(local, resource)
 	}
+	addTarget := func(name *oracleast.ObjectName) {
+		if name != nil {
+			addResource(name, name.DBLink)
+		}
+	}
 	oracleast.Inspect(stmt, func(node oracleast.Node) bool {
 		switch node := node.(type) {
 		case *oracleast.TableRef:
 			addResource(node.Name, omniTableLink(node))
 		case *oracleast.ContainersExpr:
-			if node.Name != nil {
-				addResource(node.Name, node.Name.DBLink)
-			}
+			addTarget(node.Name)
+		// A DML target is an ObjectName, not a TableRef, so it is named here.
+		case *oracleast.InsertStmt:
+			addTarget(node.Table)
+		case *oracleast.InsertIntoClause:
+			addTarget(node.Table)
+		case *oracleast.UpdateStmt:
+			addTarget(node.Table)
+		case *oracleast.DeleteStmt:
+			addTarget(node.Table)
+		case *oracleast.MergeStmt:
+			addTarget(node.Target)
 		default:
 		}
 		return true

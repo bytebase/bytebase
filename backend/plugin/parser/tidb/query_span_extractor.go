@@ -66,11 +66,19 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	accessNode := node
 	includeUncached := false
 	if explain, ok := node.(*tidbast.ExplainStmt); ok {
-		if !explain.Analyze {
-			return &base.QuerySpan{Type: base.Explain, Results: []base.QuerySpanResult{}, SourceColumns: base.SourceColumnSet{}}, nil
-		}
 		if explain.Stmt == nil {
-			return nil, errors.New("EXPLAIN ANALYZE by digest is not supported: referenced tables cannot be determined")
+			return nil, errors.New("EXPLAIN by digest or connection is not supported: referenced tables cannot be determined")
+		}
+		// A plan carries the tables it reads. System tables are left out: they are
+		// not tracked databases, and a plain EXPLAIN may mix them with user tables.
+		if !explain.Analyze {
+			sourceColumns := q.getAccessTables(explain.Stmt, true)
+			for resource := range sourceColumns {
+				if isSystemResource(resource) {
+					delete(sourceColumns, resource)
+				}
+			}
+			return &base.QuerySpan{Type: base.Explain, Results: []base.QuerySpanResult{}, SourceColumns: sourceColumns}, nil
 		}
 		accessNode = explain.Stmt
 		includeUncached = true
@@ -84,18 +92,20 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	queryType, isExplainAnalyze := getQueryType(node, allSystems)
 	if skipQuerySpan(node, queryType) {
 		return &base.QuerySpan{
-			Type:          queryType,
-			Results:       []base.QuerySpanResult{},
-			SourceColumns: base.SourceColumnSet{},
+			Type:           queryType,
+			ExplainAnalyze: isExplainAnalyze,
+			Results:        []base.QuerySpanResult{},
+			SourceColumns:  accessTables,
 		}, nil
 	}
 
 	// For EXPLAIN ANALYZE SELECT, we determine the query type and access tables from the inner SELECT statement.
 	if isExplainAnalyze {
 		return &base.QuerySpan{
-			Type:          queryType,
-			Results:       []base.QuerySpanResult{},
-			SourceColumns: accessTables,
+			Type:           queryType,
+			ExplainAnalyze: true,
+			Results:        []base.QuerySpanResult{},
+			SourceColumns:  accessTables,
 		}, nil
 	}
 
