@@ -1372,7 +1372,7 @@ type UnapprovableStep struct {
 // FindUnapprovableStep returns the first remaining step of the issue's approval
 // flow that no active workspace member can approve, or nil. People are found as
 // approval notifications find them.
-func FindUnapprovableStep(ctx context.Context, stores *store.Store, workspace, issueName string) (*UnapprovableStep, error) {
+func FindUnapprovableStep(ctx context.Context, stores *store.Store, saas bool, workspace, issueName string) (*UnapprovableStep, error) {
 	projectID, issueUID, err := common.GetProjectIDIssueUID(issueName)
 	if err != nil {
 		return nil, err
@@ -1406,13 +1406,10 @@ func FindUnapprovableStep(ctx context.Context, stores *store.Store, workspace, i
 			if approvable || refusesSelfApproval(project, issue.CreatorEmail, person.Email) {
 				continue
 			}
-			// A project binding outlives leaving the workspace, and sign-in
-			// then fails.
-			member, err := stores.FindWorkspace(ctx, &store.FindWorkspaceMessage{WorkspaceID: &project.Workspace, Email: person.Email, IncludeAllUser: true})
+			approvable, err = canSignIn(ctx, stores, saas, project.Workspace, person.Email)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to check whether %s is a member of workspace %s", person.Email, project.Workspace)
+				return nil, err
 			}
-			approvable = member != nil
 		}
 		if approvable {
 			continue
@@ -1420,6 +1417,21 @@ func FindUnapprovableStep(ctx context.Context, stores *store.Store, workspace, i
 		return &UnapprovableStep{Position: i + 1, Role: roles[i], CreatorHoldsRole: creatorHoldsRole}, nil
 	}
 	return nil, nil
+}
+
+// canSignIn reports whether a person can sign in to the workspace, as login and
+// the OAuth2 grant decide it. Self-hosted sign-in needs no workspace binding:
+// login adds one. SaaS sign-in needs a currently valid binding, and a project
+// binding outlives leaving the workspace.
+func canSignIn(ctx context.Context, stores *store.Store, saas bool, workspace, email string) (bool, error) {
+	if !saas {
+		return true, nil
+	}
+	member, err := stores.FindWorkspace(ctx, &store.FindWorkspaceMessage{WorkspaceID: &workspace, Email: email})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check whether %s is a member of workspace %s", email, workspace)
+	}
+	return member != nil, nil
 }
 
 // NotifyIssueApproved sends the ISSUE_APPROVED webhook event when all approval steps complete.

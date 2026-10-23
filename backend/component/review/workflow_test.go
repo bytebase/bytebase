@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
@@ -1458,6 +1459,7 @@ func TestFindUnapprovableStep(t *testing.T) {
 	}
 	for _, test := range []struct {
 		name  string
+		saas  bool
 		flow  []string
 		setup []func(context.Context, *testing.T, *store.Store)
 		// approved counts the steps approved before the check.
@@ -1541,13 +1543,20 @@ func TestFindUnapprovableStep(t *testing.T) {
 			setup: []func(context.Context, *testing.T, *store.Store){
 				grant("users/creator@example.com", owner),
 				grant(common.FormatServiceAccountEmail("reviewer@example.com"), owner),
-				// A workspace member, so only the principal type can leave them out.
-				grant("users/reviewer@example.com", "roles/workspaceMember"),
 			},
 			want: &UnapprovableStep{Position: 1, Role: owner, CreatorHoldsRole: true},
 		},
 		{
-			name: "the other holder has a project binding but no workspace membership",
+			name: "self-hosted, the other holder has only a project binding",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				grant("users/creator@example.com", owner),
+				grantInProject("users/reviewer@example.com", owner),
+			},
+		},
+		{
+			name: "SaaS, the other holder has only a project binding",
+			saas: true,
 			flow: []string{owner},
 			setup: []func(context.Context, *testing.T, *store.Store){
 				grant("users/creator@example.com", owner),
@@ -1556,21 +1565,32 @@ func TestFindUnapprovableStep(t *testing.T) {
 			want: &UnapprovableStep{Position: 1, Role: owner, CreatorHoldsRole: true},
 		},
 		{
-			name: "the other holder has a project binding, and the workspace admits all users",
+			name: "SaaS, the other holder's workspace binding has expired",
+			saas: true,
 			flow: []string{owner},
 			setup: []func(context.Context, *testing.T, *store.Store){
 				grant("users/creator@example.com", owner),
 				grantInProject("users/reviewer@example.com", owner),
-				grant(common.AllUsers, "roles/workspaceMember"),
+				func(ctx context.Context, t *testing.T, stores *store.Store) {
+					_, err := stores.PatchIamPolicy(ctx, "default", storepb.Policy_WORKSPACE, common.FormatWorkspace("default"), func(policy *storepb.IamPolicy) error {
+						policy.Bindings = append(policy.Bindings, &storepb.Binding{
+							Role:      "roles/workspaceMember",
+							Members:   []string{"users/reviewer@example.com"},
+							Condition: &expr.Expr{Expression: `request.time < timestamp("2020-01-01T00:00:00Z")`},
+						})
+						return nil
+					})
+					require.NoError(t, err)
+				},
 			},
+			want: &UnapprovableStep{Position: 1, Role: owner, CreatorHoldsRole: true},
 		},
 		{
-			// The workspace admits all users, so the membership check passes and
-			// only the principal type leaves the account out.
+			// Self-hosted, where no membership check runs, so only the principal
+			// type can leave the account out.
 			name: "only a service account holds the role",
 			flow: []string{owner},
 			setup: []func(context.Context, *testing.T, *store.Store){
-				grant(common.AllUsers, "roles/workspaceMember"),
 				func(ctx context.Context, t *testing.T, stores *store.Store) {
 					_, err := stores.GetDB().ExecContext(ctx,
 						`INSERT INTO service_account (name, email, workspace, service_key_hash) VALUES ('bot', 'bot@service.bytebase.com', 'default', 'unused')`)
@@ -1609,15 +1629,13 @@ func TestFindUnapprovableStep(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			got, err := FindUnapprovableStep(ctx, stores, "default", common.FormatIssue("project-a", issue.UID))
+			got, err := FindUnapprovableStep(ctx, stores, test.saas, "default", common.FormatIssue("project-a", issue.UID))
 			require.NoError(t, err)
 			require.Equal(t, test.want, got)
 		})
 	}
 }
 
-// A holder the lookup cannot resolve leaves the answer unknown, so the check
-// fails instead of reporting that no one else can approve.
 // The check counts a holder only where the approval check would let them
 // approve: a binding names a typed principal, not an email.
 func TestFindUnapprovableStepAgreesWithTheApprovalCheckOnPrincipalType(t *testing.T) {
@@ -1626,14 +1644,13 @@ func TestFindUnapprovableStepAgreesWithTheApprovalCheckOnPrincipalType(t *testin
 	for member, role := range map[string]string{
 		"users/creator@example.com":                              "roles/projectOwner",
 		common.FormatServiceAccountEmail("reviewer@example.com"): "roles/projectOwner",
-		"users/reviewer@example.com":                             "roles/workspaceMember",
 	} {
 		_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{Workspace: "default", Member: member, Roles: []string{role}})
 		require.NoError(t, err)
 	}
 	_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
 
-	step, err := FindUnapprovableStep(ctx, stores, "default", common.FormatIssue("project-a", issue.UID))
+	step, err := FindUnapprovableStep(ctx, stores, false, "default", common.FormatIssue("project-a", issue.UID))
 	require.NoError(t, err)
 	require.Equal(t, &UnapprovableStep{Position: 1, Role: "roles/projectOwner", CreatorHoldsRole: true}, step)
 
@@ -1651,6 +1668,8 @@ func TestFindUnapprovableStepAgreesWithTheApprovalCheckOnPrincipalType(t *testin
 	require.Equal(t, ReasonApproverRoleRequired, workflowErr.Reason, "the approval check refuses the same person")
 }
 
+// A holder the lookup cannot resolve leaves the answer unknown, so the check
+// fails instead of reporting that no one else can approve.
 func TestFindUnapprovableStepFailsWhenAHolderCannotBeResolved(t *testing.T) {
 	ctx := context.Background()
 	stores := setupWorkflowStore(ctx, t)
@@ -1670,7 +1689,7 @@ func TestFindUnapprovableStepFailsWhenAHolderCannotBeResolved(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	step, err := FindUnapprovableStep(ctx, stores, "default", common.FormatIssue("project-a", issue.UID))
+	step, err := FindUnapprovableStep(ctx, stores, false, "default", common.FormatIssue("project-a", issue.UID))
 	require.ErrorContains(t, err, `failed to parse email from identifier users/`)
 	require.Nil(t, step)
 }
