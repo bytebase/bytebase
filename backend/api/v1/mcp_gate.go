@@ -442,9 +442,9 @@ func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, proce
 	}
 	return nil, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 		"%s is a %v method and this workspace's MCP capability ceiling is %v, which serves %s. "+
-			"Ask a workspace admin to raise the MCP ceiling under Integration > MCP > Access policy, "+
+			"Ask a workspace admin to raise the MCP ceiling under %s, "+
 			"or perform this action signed in to the Bytebase console instead",
-		procedure, class, settings.Capability, describeServedClasses(served)))
+		procedure, class, settings.Capability, describeServedClasses(served), auth.MCPCeilingLocation))
 }
 
 // describeServedClasses renders a mode's serving list for a denial message.
@@ -584,8 +584,6 @@ func grantIssueRefusal(issueType v1pb.Issue_Type) (reason, wayOut string) {
 			v1connect.AccessGrantServiceCreateAccessGrantProcedure)
 		return reason, "Request the access with the request_access_grant tool instead"
 	case v1pb.Issue_ROLE_GRANT:
-		// With no approval template the issue completes on creation and writes
-		// the binding with no human step.
 		reason = "a ROLE_GRANT issue changes the project's IAM policy once approved, and MCP sessions " +
 			"cannot change IAM policy, whatever the approval rules say"
 		return reason, "To run a read-only statement, request an access grant with the request_access_grant tool; " +

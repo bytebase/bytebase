@@ -1445,6 +1445,17 @@ func TestFindUnapprovableStep(t *testing.T) {
 			require.NoError(t, err)
 		}
 	}
+	// grantInProject binds the role in the project policy only, so the member
+	// gets no workspace binding from it.
+	grantInProject := func(member, role string) func(context.Context, *testing.T, *store.Store) {
+		return func(ctx context.Context, t *testing.T, stores *store.Store) {
+			_, err := stores.PatchIamPolicy(ctx, "default", storepb.Policy_PROJECT, common.FormatProject("project-a"), func(policy *storepb.IamPolicy) error {
+				policy.Bindings = append(policy.Bindings, &storepb.Binding{Role: role, Members: []string{member}})
+				return nil
+			})
+			require.NoError(t, err)
+		}
+	}
 	for _, test := range []struct {
 		name  string
 		flow  []string
@@ -1508,6 +1519,55 @@ func TestFindUnapprovableStep(t *testing.T) {
 			flow:     []string{releaser, owner},
 			setup:    []func(context.Context, *testing.T, *store.Store){grant("users/reviewer@example.com", owner)},
 			approved: 1,
+		},
+		{
+			name: "the other holder is deactivated",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				grant("users/creator@example.com", owner),
+				grant("users/reviewer@example.com", owner),
+				func(ctx context.Context, t *testing.T, stores *store.Store) {
+					reviewer, err := stores.GetUserByEmail(ctx, "reviewer@example.com")
+					require.NoError(t, err)
+					_, err = stores.UpdateUser(ctx, reviewer, &store.UpdateUserMessage{Delete: new(true)})
+					require.NoError(t, err)
+				},
+			},
+			want: &UnapprovableStep{Position: 1, Role: owner, CreatorHoldsRole: true},
+		},
+		{
+			name: "the other holder has a project binding but no workspace membership",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				grant("users/creator@example.com", owner),
+				grantInProject("users/reviewer@example.com", owner),
+			},
+			want: &UnapprovableStep{Position: 1, Role: owner, CreatorHoldsRole: true},
+		},
+		{
+			name: "the other holder has a project binding, and the workspace admits all users",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				grant("users/creator@example.com", owner),
+				grantInProject("users/reviewer@example.com", owner),
+				grant(common.AllUsers, "roles/workspaceMember"),
+			},
+		},
+		{
+			name: "only a service account holds the role",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				func(ctx context.Context, t *testing.T, stores *store.Store) {
+					_, err := stores.GetDB().ExecContext(ctx,
+						`INSERT INTO service_account (name, email, workspace, service_key_hash) VALUES ('bot', 'bot@service.bytebase.com', 'default', 'unused')`)
+					require.NoError(t, err)
+					account, err := stores.GetAccountByEmail(ctx, "bot@service.bytebase.com")
+					require.NoError(t, err)
+					require.Equal(t, storepb.PrincipalType_SERVICE_ACCOUNT, account.Type, "the holder must resolve, so the type is what leaves it out")
+				},
+				grant(common.FormatServiceAccountEmail("bot@service.bytebase.com"), owner),
+			},
+			want: &UnapprovableStep{Position: 1, Role: owner},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

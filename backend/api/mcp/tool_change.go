@@ -586,12 +586,11 @@ func formatChangeStepError(err error, defaultCode string, partialRefs map[string
 func formatChangeStepErrorWithHint(err error, defaultCode string, partialRefs map[string]string, hint string) *mcp.CallToolResult {
 	var te *toolError
 	if errors.As(err, &te) && te.Code == "PERMISSION_DENIED" {
-		// Passed through rather than re-derived: re-deriving overwrote a policy
-		// denial's own remedy with the permission advice.
+		// A permission denial keeps its code and the server's words; the step's
+		// hint is about something else.
 		return formatChangeError(&changeError{
 			Code:        "PERMISSION_DENIED",
 			Message:     te.Message,
-			Suggestion:  te.Suggestion,
 			PartialRefs: partialRefs,
 		})
 	}

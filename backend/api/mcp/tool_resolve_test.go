@@ -1,9 +1,12 @@
 package mcp
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -90,22 +93,18 @@ func TestResolve_ProjectInstanceDatabaseAndFilter(t *testing.T) {
 	)
 }
 
-// TestResolve_PolicyDenialGetsNoRoleAdvice covers the resolve door. It answers
-// 403 when the stored ceiling is unserved, which is exactly the case where
-// telling the agent to ask for bb.databases.list would send the person it acts
-// for after a grant that cannot fix a broken setting.
-func TestResolve_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
+// TestResolve_PolicyDenialPassesThrough: an unserved ceiling refuses the lookup,
+// and the refusal names its own way out.
+func TestResolve_PolicyDenialPassesThrough(t *testing.T) {
+	// An unserved ceiling refuses every call, so the project-by-project
+	// listing meets the same refusal.
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "DatabaseService/ListDatabases") {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"message": "/bytebase.v1.DatabaseService/ListDatabases is refused: this workspace's " +
-					"stored MCP capability ceiling is not one this build serves",
-			})
-			return
-		}
-		w.WriteHeader(http.StatusNotFound)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"message": r.URL.Path + " is refused: this workspace's " +
+				"stored MCP capability ceiling is not one this build serves",
+		})
 	})
 	s := newTestServerWithMock(t, handler)
 
@@ -137,4 +136,70 @@ func TestTranslateMetadataError_PassesTheRefusalThrough(t *testing.T) {
 	require.ErrorAs(t, got, &te)
 	require.Equal(t, toolError{Code: "PERMISSION_DENIED", Message: `user does not have permission "bb.databases.getSchema"`}, *te,
 		"an ACL denial names its permission, and nothing is added")
+}
+
+// projectScopedMock refuses the workspace-wide listing, as the API does for a
+// user whose bb.databases.list comes from project roles, and serves each
+// project's own listing.
+func projectScopedMock(databases []map[string]any, projects []string) (http.Handler, func() []string) {
+	var mu sync.Mutex
+	var parents []string
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.Contains(r.URL.Path, "ProjectService/SearchProjects"):
+			page := []map[string]any{}
+			for _, project := range projects {
+				page = append(page, map[string]any{"name": project})
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"projects": page})
+		case strings.Contains(r.URL.Path, "DatabaseService/ListDatabases"):
+			body, _ := io.ReadAll(r.Body)
+			var request struct {
+				Parent string `json:"parent"`
+			}
+			_ = json.Unmarshal(body, &request)
+			mu.Lock()
+			parents = append(parents, request.Parent)
+			mu.Unlock()
+			if strings.HasPrefix(request.Parent, "workspaces/") {
+				w.WriteHeader(http.StatusForbidden)
+				_ = json.NewEncoder(w).Encode(map[string]any{"code": "permission_denied", "message": `user does not have permission "bb.databases.list"`})
+				return
+			}
+			r.Body = io.NopCloser(bytes.NewReader(body))
+			mockListDatabases(databases).ServeHTTP(w, r)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+	return handler, func() []string {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]string(nil), parents...)
+	}
+}
+
+func TestResolve_ListsProjectByProjectWithoutWorkspaceAccess(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("projects/hr/instances/prod-pg/databases/hr_test", "projects/hr/instances/prod-pg", "projects/hr", "POSTGRES", "ds-admin-1"),
+		makeDatabase("projects/fin/instances/prod-pg/databases/ledger", "projects/fin/instances/prod-pg", "projects/fin", "POSTGRES", "ds-admin-1"),
+	}
+	handler, parents := projectScopedMock(databases, []string{"projects/hr", "projects/fin"})
+	s := newTestServerWithMock(t, handler)
+
+	resolved, err := s.resolveDatabase(testContext(), "hr_test", "", "")
+	require.NoError(t, err)
+	require.Equal(t, "projects/hr/instances/prod-pg/databases/hr_test", resolved.resourceName)
+	require.Equal(t, []string{"workspaces/wk-test", "projects/hr", "projects/fin"}, parents())
+}
+
+func TestResolve_KeepsTheWorkspaceRefusalWhenNoProjectIsVisible(t *testing.T) {
+	handler, _ := projectScopedMock(nil, nil)
+	s := newTestServerWithMock(t, handler)
+
+	_, err := s.resolveDatabase(testContext(), "hr_test", "", "")
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Equal(t, toolError{Code: "PERMISSION_DENIED", Message: `user does not have permission "bb.databases.list"`}, *te)
 }

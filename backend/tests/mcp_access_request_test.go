@@ -91,7 +91,7 @@ func TestMCPRequestsAccessWithTheDedicatedTool(t *testing.T) {
 	a.Contains(text, "Requested "+grant.Name+":")
 	a.Contains(text, grant.Issue)
 	// The project's creator is its only owner, and new projects refuse self-approval.
-	a.Contains(text, "No other person can approve it: step 1 of its approval flow needs roles/projectOwner, which only you hold, "+
-		"and this project does not allow self-approval.", text)
+	a.Contains(text, "No other person can approve it: step 1 of its approval flow needs roles/projectOwner, which no other active "+
+		"workspace member holds, and this project does not allow self-approval.", text)
 	a.Contains(text, "grant_masking_exemption", "an unmask request names the exemption tool as the way around")
 }

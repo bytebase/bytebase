@@ -194,6 +194,8 @@ type queryResult struct {
 	Error           string          `json:"error"`
 	Statement       string          `json:"statement"`
 	Masked          []maskingReason `json:"masked"`
+	// PermissionDenied is set when the SQL access check refused the statement.
+	PermissionDenied *struct{} `json:"permissionDenied"`
 }
 
 // maskingReason holds the MaskingReason fields the tool reports.
@@ -234,17 +236,11 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 		if errMsg == "" {
 			errMsg = fmt.Sprintf("HTTP %d", resp.Status)
 		}
-		suggestion := "check your SQL syntax and try again"
-		if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
-			// A refusal that already names its own way out gets none added:
-			// no access grant lifts a workspace setting. MCP sessions cannot
-			// file role requests, so the advice is an access grant.
-			suggestion = ""
-			if !IsPolicyRefusal(errMsg) {
-				suggestion = "if you lack permission to query this database: in a Read-write session, request an access grant " +
-					"for this statement with request_access_grant (the project must allow just-in-time access); " +
-					"otherwise the user requests access in the SQL Editor"
-			}
+		// A refusal at this level gets no advice: no access grant lifts a
+		// missing bb.databases.get, which the ACL checks first, or an MCP policy.
+		suggestion := ""
+		if resp.Status != http.StatusForbidden && resp.Status != http.StatusUnauthorized {
+			suggestion = "check your SQL syntax and try again"
 		}
 		return nil, &toolError{
 			Code:       "QUERY_ERROR",
@@ -268,10 +264,17 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 
 	result := qr.Results[0]
 	if result.Error != "" {
+		suggestion := "check your SQL syntax and try again"
+		if result.PermissionDenied != nil {
+			// An approved access grant lifts this refusal for its statement.
+			// MCP sessions cannot file role requests.
+			suggestion = "in a Read-write session, request an access grant for this statement with request_access_grant " +
+				"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
+		}
 		return nil, &toolError{
 			Code:       "QUERY_ERROR",
 			Message:    result.Error,
-			Suggestion: "check your SQL syntax and try again",
+			Suggestion: suggestion,
 		}
 	}
 
@@ -401,24 +404,4 @@ func parseLatencyMs(latency string) int64 {
 		return 0
 	}
 	return d.Milliseconds()
-}
-
-// IsPolicyRefusal reports whether a 403 came from the MCP enforcement chain
-// rather than from the caller's own RBAC. It matches wording because the verdict
-// crosses a process boundary as an error body and nothing else survives the
-// trip; the producers call this, not a copy of it, in
-// TestMCPRefusalsNameThemselvesToTheQueryTool (backend/api/v1).
-func IsPolicyRefusal(message string) bool {
-	for _, phrase := range []string{
-		"MCP capability ceiling",
-		// Singular, so it also matches the plural the gate uses and the
-		// refusals taken in handlers.
-		"MCP session",
-		"MCP classification",
-	} {
-		if strings.Contains(message, phrase) {
-			return true
-		}
-	}
-	return false
 }

@@ -961,12 +961,11 @@ func TestChange_PermissionDenied_Sheet(t *testing.T) {
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "PERMISSION_DENIED")
 	require.Contains(t, text, "bb.sheets.create")
+	require.NotContains(t, text, "suggestion", "the server's message is the whole answer")
 }
 
-// TestChange_PolicyDenialKeepsItsOwnRemedy is the other half of
-// checkAPIResponse. An MCP policy refusal already says what to do, and no grant
-// lifts a workspace setting, so appending the permission advice would send the
-// agent at a dead end.
+// TestChange_PolicyDenialKeepsItsOwnRemedy: an MCP policy refusal already says
+// what to do, so it reaches the agent unchanged.
 func TestChange_PolicyDenialKeepsItsOwnRemedy(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.sheetStatus = http.StatusForbidden
@@ -1008,6 +1007,7 @@ func TestChange_PermissionDenied_Plan(t *testing.T) {
 	require.Contains(t, text, "PERMISSION_DENIED")
 	require.Contains(t, text, "bb.plans.create")
 	require.Contains(t, text, "sheets/1001") // partialRefs
+	require.NotContains(t, text, "suggestion", "the server's message is the whole answer")
 }
 
 func TestChange_PermissionDenied_Issue(t *testing.T) {
@@ -1029,6 +1029,7 @@ func TestChange_PermissionDenied_Issue(t *testing.T) {
 	require.Contains(t, text, "bb.issues.create")
 	require.Contains(t, text, "sheets/1001") // partialRefs
 	require.Contains(t, text, "plans/2002")  // partialRefs
+	require.NotContains(t, text, "suggestion", "the server's message is the whole answer")
 }
 
 // --- Link construction tests ---

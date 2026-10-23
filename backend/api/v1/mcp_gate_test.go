@@ -1098,7 +1098,7 @@ func TestMCPGateUnderAReadOnlyCeiling(t *testing.T) {
 		require.False(t, got.dispatched)
 		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
 		require.Contains(t, got.err.Error(), "READ_ONLY", "the denial must name the ceiling in force")
-		require.Contains(t, got.err.Error(), "raise the MCP ceiling", "the denial must name the way out")
+		require.Contains(t, got.err.Error(), "raise the MCP ceiling under "+auth.MCPCeilingLocation, "the denial must name the way out")
 		require.True(t, got.auditMarked)
 	})
 }

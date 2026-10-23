@@ -595,8 +595,6 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 	return tokenStr
 }
 
-// The handshake tells the agent which Bytebase account it acts as. Clients
-// also show the model their own sign-in, which can be another account.
 func TestInitializeNamesTheSignedInAccount(t *testing.T) {
 	endpoint, _, _ := newProbeServer(t)
 	token := mintMCPToken(t, "jordan@example.com", "client-A", "ws-test", "mcp:read-write", time.Hour)

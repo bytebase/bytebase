@@ -172,7 +172,7 @@ func TestRequestAccessGrantSaysWhenNoOneCanApprove(t *testing.T) {
 			step:   &review.UnapprovableStep{Position: 1, Role: "roles/projectOwner", CreatorHoldsRole: true},
 			unmask: true,
 			want: "Requested projects/hr/accessGrants/g1: run the statement on projects/hr/instances/prod/databases/hr, unmasked for 4 hours from approval. " +
-				"No other person can approve it: step 1 of its approval flow needs roles/projectOwner, which only you hold, and this project does not allow self-approval.\n" +
+				"No other person can approve it: step 1 of its approval flow needs roles/projectOwner, which no other active workspace member holds, and this project does not allow self-approval.\n" +
 				"Issue: https://bb.example.com/projects/hr/issues/7\n" +
 				"An approver can be added only in the Bytebase console, by granting someone that role. " +
 				"To read the masked values without this request, a project owner can grant a masking exemption with grant_masking_exemption.",
@@ -180,7 +180,7 @@ func TestRequestAccessGrantSaysWhenNoOneCanApprove(t *testing.T) {
 		"no person holds the role": {
 			step: &review.UnapprovableStep{Position: 2, Role: "roles/workspaceDBA"},
 			want: "Requested projects/hr/accessGrants/g1: run the statement on projects/hr/instances/prod/databases/hr for 4 hours from approval. " +
-				"No person can approve it: step 2 of its approval flow needs roles/workspaceDBA, which no person holds.\n" +
+				"No person can approve it: step 2 of its approval flow needs roles/workspaceDBA, which no active workspace member holds.\n" +
 				"Issue: https://bb.example.com/projects/hr/issues/7\n" +
 				"An approver can be added only in the Bytebase console, by granting someone that role.",
 		},

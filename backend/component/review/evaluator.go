@@ -1237,10 +1237,29 @@ func collectStatementTypes(celVarsList []map[string]any) []string {
 	return result
 }
 
-// getApproversForRole returns the people who hold the role in the project or
-// workspace IAM policy, for a notification to mention. A service account or
-// workload identity that holds the role can approve too, but has nobody to notify.
+// getApproversForRole returns the people who hold the role, for a notification
+// to mention.
 func getApproversForRole(ctx context.Context, stores *store.Store, projectID string, role string) ([]webhook.User, error) {
+	people, err := activeRoleHolders(ctx, stores, projectID, role)
+	if err != nil {
+		return nil, err
+	}
+	approvers := make([]webhook.User, 0, len(people))
+	for _, person := range people {
+		approvers = append(approvers, webhook.User{
+			Name:  person.Name,
+			Email: person.Email,
+			Phone: person.Phone,
+		})
+	}
+	return approvers, nil
+}
+
+// activeRoleHolders returns the people who hold the role in the project or
+// workspace IAM policy. A service account or workload identity that holds the
+// role can approve too, but is not a person, and a deactivated account keeps its
+// bindings but cannot sign in.
+func activeRoleHolders(ctx context.Context, stores *store.Store, projectID string, role string) ([]*store.UserMessage, error) {
 	// Get project to determine workspace
 	project, err := stores.GetProjectByResourceID(ctx, projectID)
 	if err != nil {
@@ -1275,21 +1294,14 @@ func getApproversForRole(ctx context.Context, stores *store.Store, projectID str
 		workspaceIAM.Policy,
 	)
 
-	// Convert to webhook.User format, filtering by END_USER principal type
-	approvers := make([]webhook.User, 0, len(users))
+	people := make([]*store.UserMessage, 0, len(users))
 	for _, user := range users {
-		// Only include END_USER principals as approvers
-		if user.Type != storepb.PrincipalType_END_USER {
+		if user.Type != storepb.PrincipalType_END_USER || user.MemberDeleted {
 			continue
 		}
-		approvers = append(approvers, webhook.User{
-			Name:  user.Name,
-			Email: user.Email,
-			Phone: user.Phone,
-		})
+		people = append(people, user)
 	}
-
-	return approvers, nil
+	return people, nil
 }
 
 // NotifyApprovalRequested sends the ISSUE_APPROVAL_REQUESTED webhook event for the next pending approval stage.
@@ -1356,14 +1368,15 @@ type UnapprovableStep struct {
 	Position int
 	// Role is the role the step requires, e.g. "roles/projectOwner".
 	Role string
-	// CreatorHoldsRole is set when the issue's creator is the only person who
-	// holds the role, and the project refuses self-approval.
+	// CreatorHoldsRole is set when the issue's creator holds the role and the
+	// project refuses self-approval.
 	CreatorHoldsRole bool
 }
 
 // FindUnapprovableStep returns the first remaining step of the issue's approval
-// flow that no person can approve, or nil. It finds people as approval
-// notifications do, so a service account that holds the role does not count.
+// flow that no active workspace member can approve, or nil. It finds people as
+// approval notifications do, so a service account that holds the role does not
+// count.
 func FindUnapprovableStep(ctx context.Context, stores *store.Store, workspace, issueName string) (*UnapprovableStep, error) {
 	projectID, issueUID, err := common.GetProjectIDIssueUID(issueName)
 	if err != nil {
@@ -1386,19 +1399,27 @@ func FindUnapprovableStep(ctx context.Context, stores *store.Store, workspace, i
 	approval := issue.Payload.GetApproval()
 	roles := approval.GetApprovalTemplate().GetFlow().GetRoles()
 	for i := len(approval.GetApprovers()); i < len(roles); i++ {
-		people, err := getApproversForRole(ctx, stores, projectID, roles[i])
+		people, err := activeRoleHolders(ctx, stores, projectID, roles[i])
 		if err != nil {
 			return nil, err
 		}
-		creatorHoldsRole, othersHoldRole := false, false
+		approvable, creatorHoldsRole := false, false
 		for _, person := range people {
 			if person.Email == issue.CreatorEmail {
 				creatorHoldsRole = true
-			} else {
-				othersHoldRole = true
 			}
+			if approvable || refusesSelfApproval(project, issue.CreatorEmail, person.Email) {
+				continue
+			}
+			// A project binding outlives leaving the workspace, and sign-in
+			// then fails.
+			member, err := stores.FindWorkspace(ctx, &store.FindWorkspaceMessage{WorkspaceID: &project.Workspace, Email: person.Email, IncludeAllUser: true})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to check whether %s is a member of workspace %s", person.Email, project.Workspace)
+			}
+			approvable = member != nil
 		}
-		if othersHoldRole || (creatorHoldsRole && !refusesSelfApproval(project, issue.CreatorEmail, issue.CreatorEmail)) {
+		if approvable {
 			continue
 		}
 		return &UnapprovableStep{Position: i + 1, Role: roles[i], CreatorHoldsRole: creatorHoldsRole}, nil

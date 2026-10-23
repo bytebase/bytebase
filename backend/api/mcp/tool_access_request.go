@@ -120,9 +120,9 @@ func (s *Server) unapprovableStep(ctx context.Context, issue string) *review.Una
 
 func describeUnapprovableStep(step *review.UnapprovableStep) string {
 	if step.CreatorHoldsRole {
-		return fmt.Sprintf("No other person can approve it: step %d of its approval flow needs %s, which only you hold, and this project does not allow self-approval.", step.Position, step.Role)
+		return fmt.Sprintf("No other person can approve it: step %d of its approval flow needs %s, which no other active workspace member holds, and this project does not allow self-approval.", step.Position, step.Role)
 	}
-	return fmt.Sprintf("No person can approve it: step %d of its approval flow needs %s, which no person holds.", step.Position, step.Role)
+	return fmt.Sprintf("No person can approve it: step %d of its approval flow needs %s, which no active workspace member holds.", step.Position, step.Role)
 }
 
 // wayAroundUnapprovableStep never suggests allowing self-approval: the setting
