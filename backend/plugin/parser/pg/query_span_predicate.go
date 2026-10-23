@@ -1,0 +1,385 @@
+package pg
+
+import (
+	"strings"
+
+	"github.com/bytebase/omni/pg/ast"
+	"github.com/bytebase/omni/pg/catalog"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+)
+
+// collectPredicateColumns records the columns read by the WHERE, JOIN ON,
+// HAVING, and aggregate FILTER conditions of q and of every query nested in
+// it. The database evaluates conditions on unmasked values, so these columns
+// decide which rows come back even when their values are masked.
+func (e *omniQuerySpanExtractor) collectPredicateColumns(q *catalog.Query) {
+	e.collectPredicateColumnsInStack([]*catalog.Query{q}, make(map[*catalog.Query]bool))
+}
+
+func (e *omniQuerySpanExtractor) collectPredicateColumnsInStack(queryStack []*catalog.Query, visited map[*catalog.Query]bool) {
+	q := currentQuery(queryStack)
+	if q == nil || visited[q] {
+		return
+	}
+	visited[q] = true
+
+	for _, cte := range q.CTEList {
+		if cte != nil {
+			e.collectPredicateColumnsInStack(appendQuery(queryStack, cte.Query), visited)
+		}
+	}
+	if q.SetOp != catalog.SetOpNone {
+		e.collectPredicateColumnsInStack(appendQuery(queryStack, q.LArg), visited)
+		e.collectPredicateColumnsInStack(appendQuery(queryStack, q.RArg), visited)
+		return
+	}
+	for _, rte := range q.RangeTable {
+		if rte == nil {
+			continue
+		}
+		if rte.Kind == catalog.RTESubquery {
+			e.collectPredicateColumnsInStack(appendQuery(queryStack, rte.Subquery), visited)
+		}
+		for _, expr := range rte.FuncExprs {
+			e.collectNestedPredicateColumns(queryStack, expr, visited)
+		}
+	}
+	if q.JoinTree != nil {
+		e.collectConditionColumns(queryStack, q.JoinTree.Quals, visited)
+		for _, node := range q.JoinTree.FromList {
+			e.collectJoinConditionColumns(queryStack, node, visited)
+		}
+	}
+	e.collectConditionColumns(queryStack, q.HavingQual, visited)
+	for _, te := range q.TargetList {
+		if te != nil {
+			e.collectNestedPredicateColumns(queryStack, te.Expr, visited)
+		}
+	}
+	e.collectNestedPredicateColumns(queryStack, q.LimitCount, visited)
+	e.collectNestedPredicateColumns(queryStack, q.LimitOffset, visited)
+}
+
+func (e *omniQuerySpanExtractor) collectJoinConditionColumns(queryStack []*catalog.Query, node catalog.JoinNode, visited map[*catalog.Query]bool) {
+	join, ok := node.(*catalog.JoinExprNode)
+	if !ok || join == nil {
+		return
+	}
+	// The analyzer turns USING and NATURAL joins into equality quals.
+	e.collectConditionColumns(queryStack, join.Quals, visited)
+	e.collectJoinConditionColumns(queryStack, join.Left, visited)
+	e.collectJoinConditionColumns(queryStack, join.Right, visited)
+}
+
+// collectConditionColumns records every column condition reads, including the
+// output columns of its subqueries, and the conditions nested in it.
+func (e *omniQuerySpanExtractor) collectConditionColumns(queryStack []*catalog.Query, condition catalog.AnalyzedExpr, visited map[*catalog.Query]bool) {
+	if condition == nil {
+		return
+	}
+	e.walkExprWithVisited(queryStack, condition, e.predicateColumns, make(map[queryExprKey]bool))
+	e.collectNestedPredicateColumns(queryStack, condition, visited)
+}
+
+// collectNestedPredicateColumns records the conditions nested in expr: the
+// FILTER of an aggregate or window function, and those of its subqueries.
+func (e *omniQuerySpanExtractor) collectNestedPredicateColumns(queryStack []*catalog.Query, expr catalog.AnalyzedExpr, visited map[*catalog.Query]bool) {
+	catalog.WalkAnalyzedExpr(expr, func(n catalog.AnalyzedExpr) bool {
+		var filter catalog.AnalyzedExpr
+		switch v := n.(type) {
+		case *catalog.SubLinkExpr:
+			if v.SubQuery != nil {
+				e.collectPredicateColumnsInStack(appendQuery(queryStack, v.SubQuery), visited)
+			}
+		case *catalog.AggExpr:
+			filter = v.AggFilter
+		case *catalog.WindowFuncExpr:
+			filter = v.AggFilter
+		default:
+		}
+		if filter != nil {
+			e.walkExprWithVisited(queryStack, filter, e.predicateColumns, make(map[queryExprKey]bool))
+		}
+		return true
+	})
+}
+
+// collectFallbackPredicateColumns stands in for collectPredicateColumns when
+// analysis fails. Without scopes it over-approximates by name, so that an
+// analysis failure never lets a condition on a masked column through.
+func (e *omniQuerySpanExtractor) collectFallbackPredicateColumns(stmt ast.Node, accesses base.SourceColumnSet) {
+	r := newPredicateNameResolver(stmt)
+	for _, name := range r.usingNames {
+		r.addName(name)
+	}
+	for _, condition := range r.conditions {
+		r.addReferences(condition)
+	}
+	// The joined columns are unknown without scopes, so a NATURAL JOIN reads
+	// every column of both sides.
+	for _, join := range r.naturalJoins {
+		r.addJoinedRelation(join.Larg)
+		r.addJoinedRelation(join.Rarg)
+	}
+	e.recordPredicateNames(r, accesses)
+}
+
+func (e *omniQuerySpanExtractor) recordPredicateNames(r *predicateNameResolver, accesses base.SourceColumnSet) {
+	for resource := range accesses {
+		rel := e.cat.GetRelation(resource.Schema, resource.Table)
+		if rel == nil {
+			continue
+		}
+		table := strings.ToLower(resource.Table)
+		for _, column := range rel.Columns {
+			name := strings.ToLower(column.Name)
+			if r.wholeRows[table] || r.anyTable[name] || r.ofTable[table][name] {
+				e.predicateColumns[base.ColumnResource{
+					Database: resource.Database,
+					Schema:   resource.Schema,
+					Table:    resource.Table,
+					Column:   column.Name,
+				}] = true
+			}
+		}
+	}
+}
+
+// predicateNameResolver resolves the column references of conditions by name.
+// A reference qualified by a table or its alias matches that table's column;
+// any other reference matches the same-named column of every table, and an
+// output name of a subquery or CTE also reads the columns that produce it.
+type predicateNameResolver struct {
+	// The WHERE, JOIN ON, HAVING, and FILTER conditions, USING column names,
+	// and NATURAL joins of the statement, at any depth.
+	conditions   []ast.Node
+	usingNames   []string
+	naturalJoins []*ast.JoinExpr
+	// projections maps an output name to the expressions that produce it. A
+	// subquery or CTE name maps to its whole query, so a whole-row reference
+	// to it reads every column.
+	projections map[string][]ast.Node
+	// relations maps a name or alias in FROM to the relations it may name; an
+	// alias reused across scopes names several.
+	relations map[string]map[string]bool
+	// derived holds the names of subqueries and CTEs.
+	derived map[string]bool
+
+	anyTable  map[string]bool
+	ofTable   map[string]map[string]bool
+	wholeRows map[string]bool
+}
+
+func newPredicateNameResolver(stmt ast.Node) *predicateNameResolver {
+	r := &predicateNameResolver{
+		projections: make(map[string][]ast.Node),
+		relations:   make(map[string]map[string]bool),
+		derived:     make(map[string]bool),
+		anyTable:    make(map[string]bool),
+		ofTable:     make(map[string]map[string]bool),
+		wholeRows:   make(map[string]bool),
+	}
+	project := func(name string, nodes ...ast.Node) {
+		if name != "" {
+			r.projections[strings.ToLower(name)] = append(r.projections[strings.ToLower(name)], nodes...)
+		}
+	}
+	ast.Inspect(stmt, func(n ast.Node) bool {
+		switch v := n.(type) {
+		case *ast.SelectStmt:
+			r.conditions = append(r.conditions, v.WhereClause, v.HavingClause)
+			if v.TargetList != nil {
+				for _, item := range v.TargetList.Items {
+					if rt, ok := item.(*ast.ResTarget); ok {
+						name := rt.Name
+						if name == "" {
+							name = figureResTargetName(rt)
+						}
+						project(name, rt.Val)
+					}
+				}
+			}
+		case *ast.JoinExpr:
+			r.conditions = append(r.conditions, v.Quals)
+			r.usingNames = append(r.usingNames, astStrings(v.UsingClause)...)
+			if v.IsNatural {
+				r.naturalJoins = append(r.naturalJoins, v)
+			}
+		case *ast.FuncCall:
+			r.conditions = append(r.conditions, v.AggFilter)
+		case *ast.CommonTableExpr:
+			r.derived[strings.ToLower(v.Ctename)] = true
+			project(v.Ctename, v.Ctequery)
+			for i, name := range astStrings(v.Aliascolnames) {
+				project(name, outputsAt(v.Ctequery, i)...)
+			}
+		case *ast.RangeSubselect:
+			if v.Alias != nil {
+				r.derived[strings.ToLower(v.Alias.Aliasname)] = true
+				project(v.Alias.Aliasname, v.Subquery)
+				for i, name := range astStrings(v.Alias.Colnames) {
+					project(name, outputsAt(v.Subquery, i)...)
+				}
+			}
+		case *ast.RangeVar:
+			relation := strings.ToLower(v.Relname)
+			r.addRelationName(relation, relation)
+			if v.Alias != nil {
+				r.addRelationName(v.Alias.Aliasname, relation)
+			}
+		default:
+		}
+		return true
+	})
+	return r
+}
+
+func (r *predicateNameResolver) addRelationName(name, relation string) {
+	name = strings.ToLower(name)
+	if name == "" {
+		return
+	}
+	if r.relations[name] == nil {
+		r.relations[name] = make(map[string]bool)
+	}
+	r.relations[name][relation] = true
+}
+
+// relationsNamed returns the tables name may refer to, and the subqueries or
+// CTEs it may refer to instead.
+func (r *predicateNameResolver) relationsNamed(name string) (map[string]bool, []string) {
+	name = strings.ToLower(name)
+	tables := make(map[string]bool)
+	var derived []string
+	if r.derived[name] {
+		derived = append(derived, name)
+	}
+	for relation := range r.relations[name] {
+		if r.derived[relation] {
+			derived = append(derived, relation)
+		} else {
+			tables[relation] = true
+		}
+	}
+	return tables, derived
+}
+
+func (r *predicateNameResolver) addJoinedRelation(node ast.Node) {
+	switch v := node.(type) {
+	case *ast.RangeVar:
+		if v.Alias != nil && v.Alias.Aliasname != "" {
+			r.addWholeRow(v.Alias.Aliasname)
+		} else {
+			r.addWholeRow(v.Relname)
+		}
+	case *ast.RangeSubselect:
+		r.addReferences(v.Subquery)
+	case *ast.JoinExpr:
+		r.addJoinedRelation(v.Larg)
+		r.addJoinedRelation(v.Rarg)
+	default:
+	}
+}
+
+func (r *predicateNameResolver) addReferences(node ast.Node) {
+	ast.Inspect(node, func(n ast.Node) bool {
+		if ref, ok := n.(*ast.ColumnRef); ok {
+			r.addReference(ref)
+		}
+		return true
+	})
+}
+
+func (r *predicateNameResolver) addReference(ref *ast.ColumnRef) {
+	if ref.Fields == nil {
+		return
+	}
+	var fields []string
+	star := false
+	for _, field := range ref.Fields.Items {
+		switch v := field.(type) {
+		case *ast.String:
+			fields = append(fields, v.Str)
+		case *ast.A_Star:
+			star = true
+		default:
+		}
+	}
+	if len(fields) == 0 {
+		return
+	}
+	last := fields[len(fields)-1]
+	// t.* reads every column of t; a bare t may be a column or a whole-row
+	// reference.
+	if star || len(fields) == 1 {
+		r.addWholeRow(last)
+		return
+	}
+	tables, derived := r.relationsNamed(fields[len(fields)-2])
+	for table := range tables {
+		if r.ofTable[table] == nil {
+			r.ofTable[table] = make(map[string]bool)
+		}
+		r.ofTable[table][strings.ToLower(last)] = true
+	}
+	if len(derived) > 0 || len(tables) == 0 {
+		r.addName(last)
+	}
+}
+
+func (r *predicateNameResolver) addWholeRow(name string) {
+	tables, derived := r.relationsNamed(name)
+	for table := range tables {
+		r.wholeRows[table] = true
+	}
+	for _, relation := range derived {
+		r.addName(relation)
+	}
+	r.addName(name)
+}
+
+func (r *predicateNameResolver) addName(name string) {
+	name = strings.ToLower(name)
+	if name == "" || r.anyTable[name] {
+		return
+	}
+	r.anyTable[name] = true
+	for _, projection := range r.projections[name] {
+		r.addReferences(projection)
+	}
+}
+
+// outputsAt returns the expressions that produce the i-th output column of
+// query, or query itself when they cannot be told apart.
+func outputsAt(query ast.Node, i int) []ast.Node {
+	sel, ok := query.(*ast.SelectStmt)
+	if !ok || sel == nil {
+		return []ast.Node{query}
+	}
+	if sel.Op != ast.SETOP_NONE {
+		return append(outputsAt(sel.Larg, i), outputsAt(sel.Rarg, i)...)
+	}
+	if sel.TargetList == nil || i >= len(sel.TargetList.Items) {
+		return []ast.Node{query}
+	}
+	for _, item := range sel.TargetList.Items[:i+1] {
+		if rt, ok := item.(*ast.ResTarget); !ok || isStarTarget(rt) {
+			return []ast.Node{query}
+		}
+	}
+	return []ast.Node{sel.TargetList.Items[i].(*ast.ResTarget).Val}
+}
+
+func astStrings(list *ast.List) []string {
+	if list == nil {
+		return nil
+	}
+	var result []string
+	for _, item := range list.Items {
+		if s, ok := item.(*ast.String); ok {
+			result = append(result, s.Str)
+		}
+	}
+	return result
+}

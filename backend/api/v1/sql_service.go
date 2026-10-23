@@ -833,7 +833,6 @@ func queryRetry(
 	schemaSyncer *schemasync.Syncer,
 	multiStatement bool,
 ) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
-	var sensitivePredicateColumns [][]parserbase.ColumnResource
 	// An explain request carries the bare statements the driver will wrap, so
 	// their spans name the databases the plan describes.
 	spans, err := parserbase.GetQuerySpan(
@@ -866,20 +865,14 @@ func queryRetry(
 		}
 		slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 	}
-	if !queryContext.Explain && !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
-		masker := NewQueryResultMasker(stores)
-		sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
-		if err != nil {
-			return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
-		}
-		slog.Debug("extract sensitive predicate columns", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
-	}
-
 	maskingEnabled := !queryContext.Explain && !queryContext.SkipMasking &&
 		licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil
 	queryContext.MaskingEnabled = maskingEnabled
 
 	if maskingEnabled {
+		if err := refuseSensitivePredicateColumns(ctx, stores, spans, instance, user); err != nil {
+			return nil, nil, time.Duration(0), err
+		}
 		if err := preExecuteMaskingCheck(ctx, stores, instance.Metadata.GetEngine(), database, spans); err != nil {
 			return nil, nil, time.Duration(0), err
 		}
@@ -982,11 +975,11 @@ func queryRetry(
 		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
-		if !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
-			masker := NewQueryResultMasker(stores)
-			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
-			if err != nil {
-				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
+		// Metadata synced after the first span missed columns may surface a
+		// condition the pre-execution check could not see.
+		if maskingEnabled {
+			if err := refuseSensitivePredicateColumns(ctx, stores, spans, instance, user); err != nil {
+				return nil, nil, duration, err
 			}
 		}
 	}
@@ -1017,33 +1010,9 @@ func queryRetry(
 			if err := masker.MaskResults(ctx, spans, results, instance, user); err != nil {
 				return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 			}
-
-			for i, result := range results {
-				if i >= len(sensitivePredicateColumns) {
-					continue
-				}
-				if len(sensitivePredicateColumns[i]) == 0 {
-					continue
-				}
-				result.Error = getSensitivePredicateColumnErrorMessages(sensitivePredicateColumns[i])
-				result.Rows = nil
-				result.RowsCount = 0
-			}
 		}
 	}
 	return results, spans, duration, nil
-}
-
-func getSensitivePredicateColumnErrorMessages(sensitiveColumns []parserbase.ColumnResource) string {
-	var buf bytes.Buffer
-	_, _ = buf.WriteString("Using sensitive columns in WHERE clause is not allowed: ")
-	for j, column := range sensitiveColumns {
-		if j > 0 {
-			_, _ = buf.WriteString(", ")
-		}
-		_, _ = buf.WriteString(column.String())
-	}
-	return buf.String()
 }
 
 // queryRetryStopOnError runs the query and stops on encountering errors.

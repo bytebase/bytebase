@@ -64,10 +64,11 @@ type omniQuerySpanExtractor struct {
 	// funcSourceColumns accumulates table-level access (column="") discovered inside
 	// function bodies. Merged into the top-level QuerySpan.SourceColumns.
 	funcSourceColumns base.SourceColumnSet
-	// funcPredicateColumns accumulates columns used in fallback WHERE/JOIN
-	// conditions. Function body analysis records predicates separately so callers
-	// can decide whether they enter the top-level QuerySpan.PredicateColumns.
-	funcPredicateColumns base.SourceColumnSet
+	// predicateColumns accumulates the columns that decide which rows the
+	// statement returns; it becomes QuerySpan.PredicateColumns. Function body
+	// analysis records predicates separately so callers can decide whether they
+	// enter the top-level set.
+	predicateColumns base.SourceColumnSet
 	// fallbackCTEMap holds CTE definitions during fallback column extraction.
 	// Set by extractFallbackColumns and used by extractColumnsFromRangeVar
 	// to resolve CTE references.
@@ -83,14 +84,14 @@ func newOmniQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx
 		searchPath = []string{"public"}
 	}
 	return &omniQuerySpanExtractor{
-		defaultDatabase:      defaultDatabase,
-		searchPath:           searchPath,
-		gCtx:                 gCtx,
-		metaCache:            make(map[string]*model.DatabaseMetadata),
-		funcBodyCache:        make(map[uint32]*funcBodyAnalysis),
-		funcOrigDefs:         make(map[string]string),
-		funcSourceColumns:    make(base.SourceColumnSet),
-		funcPredicateColumns: make(base.SourceColumnSet),
+		defaultDatabase:   defaultDatabase,
+		searchPath:        searchPath,
+		gCtx:              gCtx,
+		metaCache:         make(map[string]*model.DatabaseMetadata),
+		funcBodyCache:     make(map[uint32]*funcBodyAnalysis),
+		funcOrigDefs:      make(map[string]string),
+		funcSourceColumns: make(base.SourceColumnSet),
+		predicateColumns:  make(base.SourceColumnSet),
 	}
 }
 
@@ -285,13 +286,21 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	queryType, isExplainAnalyze := classifyQueryType(omniStmts[0].AST, allSystems)
 
 	// Step 5: Return early for non-SELECT queries, keeping the tables the
-	// statement touches and no result columns.
+	// statement touches and no result columns. EXPLAIN ANALYZE runs its query
+	// and reports the rows each condition kept, so its conditions still count
+	// as predicates.
 	if queryType != base.Select || isExplainAnalyze {
+		if isExplainAnalyze {
+			if err := e.collectExplainedPredicateColumns(omniStmts[0].AST, accessesMap); err != nil {
+				return nil, err
+			}
+		}
 		return &base.QuerySpan{
-			Type:           queryType,
-			ExplainAnalyze: isExplainAnalyze,
-			SourceColumns:  accessesMap,
-			Results:        []base.QuerySpanResult{},
+			Type:             queryType,
+			ExplainAnalyze:   isExplainAnalyze,
+			SourceColumns:    accessesMap,
+			PredicateColumns: e.predicateColumns,
+			Results:          []base.QuerySpanResult{},
 		}, nil
 	}
 
@@ -310,8 +319,9 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		return nil, errors.Wrapf(err, "failed to initialize catalog")
 	}
 
-	query, err := e.cat.AnalyzeSelectStmt(selStmt)
+	query, err := e.analyzeSelect(selStmt)
 	if err != nil {
+		e.collectFallbackPredicateColumns(selStmt, accessesMap)
 		// Before falling back, try to handle user-defined table-returning functions
 		// that omni's AnalyzeSelectStmt can't resolve (e.g., RETURNS TABLE functions
 		// used as table sources: SELECT * FROM func()).
@@ -320,6 +330,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 				Type:                   base.Select,
 				SourceColumns:          accessesMap,
 				Results:                results,
+				PredicateColumns:       e.predicateColumns,
 				UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 			}, nil
 		}
@@ -329,7 +340,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 			Type:                   base.Select,
 			SourceColumns:          accessesMap,
 			Results:                e.extractFallbackColumns(selStmt),
-			PredicateColumns:       e.funcPredicateColumns,
+			PredicateColumns:       e.predicateColumns,
 			UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 		}, nil
 	}
@@ -338,6 +349,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	// SourceColumns (table-level access) is already captured in accessesMap
 	// from ExtractAccessTables above — no need to re-extract from the query.
 	results := e.extractLineage(query, selStmt)
+	e.collectPredicateColumns(query)
 
 	// Merge columns discovered inside function bodies into the top-level sets.
 	for col := range e.funcSourceColumns {
@@ -347,10 +359,46 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	return &base.QuerySpan{
 		Type:                   base.Select,
 		SourceColumns:          accessesMap,
-		PredicateColumns:       e.funcPredicateColumns,
+		PredicateColumns:       e.predicateColumns,
 		Results:                results,
 		UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 	}, nil
+}
+
+func (e *omniQuerySpanExtractor) collectExplainedPredicateColumns(stmt ast.Node, accesses base.SourceColumnSet) error {
+	explain, ok := stmt.(*ast.ExplainStmt)
+	if !ok {
+		return nil
+	}
+	explained, ok := explain.Query.(*ast.SelectStmt)
+	if !ok {
+		return nil
+	}
+	if err := e.initCatalog(); err != nil {
+		return errors.Wrapf(err, "failed to initialize catalog")
+	}
+	if query, err := e.analyzeSelect(explained); err == nil {
+		e.collectPredicateColumns(query)
+	} else {
+		e.collectFallbackPredicateColumns(explained, accesses)
+	}
+	return nil
+}
+
+// analyzeSelect analyzes sel for lineage. A function the synced schema does not
+// define, such as one from an extension, stays an opaque call over its
+// arguments instead of failing the statement into the parse-tree fallback.
+func (e *omniQuerySpanExtractor) analyzeSelect(sel *ast.SelectStmt) (*catalog.Query, error) {
+	return e.cat.AnalyzeSelectStmtWithOptions(sel, catalog.AnalyzeOptions{OpaqueUnknownFunctions: true})
+}
+
+// outputColumn returns the target entry of q's attNum-th output column. Junk
+// entries follow the output columns, so the position indexes the target list.
+func outputColumn(q *catalog.Query, attNum int) *catalog.TargetEntry {
+	if q == nil || attNum < 1 || attNum > len(q.TargetList) {
+		return nil
+	}
+	return q.TargetList[attNum-1]
 }
 
 // extractLineage extracts the result column lineage from an analyzed query.
@@ -465,20 +513,19 @@ func isUltimatelyPlainColumnWithVisited(q *catalog.Query, expr catalog.AnalyzedE
 		return false
 	}
 	rte := q.RangeTable[v.RangeIdx]
-	colIdx := int(v.AttNum - 1)
 
 	switch rte.Kind {
 	case catalog.RTERelation:
 		return true
 	case catalog.RTESubquery:
-		if rte.Subquery != nil && colIdx >= 0 && colIdx < len(rte.Subquery.TargetList) {
-			return isUltimatelyPlainColumnWithVisited(rte.Subquery, rte.Subquery.TargetList[colIdx].Expr, visited)
+		if te := outputColumn(rte.Subquery, int(v.AttNum)); te != nil {
+			return isUltimatelyPlainColumnWithVisited(rte.Subquery, te.Expr, visited)
 		}
 	case catalog.RTECTE:
 		if rte.CTEIndex >= 0 && rte.CTEIndex < len(q.CTEList) {
 			cte := q.CTEList[rte.CTEIndex]
-			if cte.Query != nil && colIdx >= 0 && colIdx < len(cte.Query.TargetList) {
-				return isUltimatelyPlainColumnWithVisited(cte.Query, cte.Query.TargetList[colIdx].Expr, visited)
+			if te := outputColumn(cte.Query, int(v.AttNum)); te != nil {
+				return isUltimatelyPlainColumnWithVisited(cte.Query, te.Expr, visited)
 			}
 		}
 	default:
@@ -704,28 +751,6 @@ func (e *omniQuerySpanExtractor) walkExprWithVisited(queryStack []*catalog.Query
 				}
 			}
 		}
-	case *catalog.AggExpr:
-		for _, arg := range v.Args {
-			e.walkExprWithVisited(queryStack, arg, result, visited)
-		}
-	case *catalog.OpExpr:
-		e.walkExprWithVisited(queryStack, v.Left, result, visited)
-		e.walkExprWithVisited(queryStack, v.Right, result, visited)
-	case *catalog.BoolExprQ:
-		for _, arg := range v.Args {
-			e.walkExprWithVisited(queryStack, arg, result, visited)
-		}
-	case *catalog.CaseExprQ:
-		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
-		for _, w := range v.When {
-			e.walkExprWithVisited(queryStack, w.Condition, result, visited)
-			e.walkExprWithVisited(queryStack, w.Result, result, visited)
-		}
-		e.walkExprWithVisited(queryStack, v.Default, result, visited)
-	case *catalog.CoalesceExprQ:
-		for _, arg := range v.Args {
-			e.walkExprWithVisited(queryStack, arg, result, visited)
-		}
 	case *catalog.SubLinkExpr:
 		e.walkExprWithVisited(queryStack, v.TestExpr, result, visited)
 		if v.SubQuery != nil {
@@ -736,47 +761,21 @@ func (e *omniQuerySpanExtractor) walkExprWithVisited(queryStack []*catalog.Query
 				}
 			}
 		}
-	case *catalog.RelabelExpr:
-		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
-	case *catalog.CoerceViaIOExpr:
-		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
-	case *catalog.RowExprQ:
-		for _, arg := range v.Args {
-			e.walkExprWithVisited(queryStack, arg, result, visited)
+	case *catalog.SetOpColumnExpr:
+		// q is the set operation. EXCEPT returns only rows of its left branch.
+		branches := []*catalog.Query{q.LArg, q.RArg}
+		if q.SetOp == catalog.SetOpExcept || q.SetOp == catalog.SetOpExceptAll {
+			branches = branches[:1]
 		}
-	case *catalog.WindowFuncExpr:
-		for _, arg := range v.Args {
-			e.walkExprWithVisited(queryStack, arg, result, visited)
+		for _, branch := range branches {
+			if te := outputColumn(branch, int(v.ResNo)); te != nil {
+				e.walkExprWithVisited(appendQuery(queryStack, branch), te.Expr, result, visited)
+			}
 		}
-		e.walkExprWithVisited(queryStack, v.AggFilter, result, visited)
-	case *catalog.NullIfExprQ:
-		for _, arg := range v.Args {
-			e.walkExprWithVisited(queryStack, arg, result, visited)
-		}
-	case *catalog.MinMaxExprQ:
-		for _, arg := range v.Args {
-			e.walkExprWithVisited(queryStack, arg, result, visited)
-		}
-	case *catalog.ArrayExprQ:
-		for _, elem := range v.Elements {
-			e.walkExprWithVisited(queryStack, elem, result, visited)
-		}
-	case *catalog.ScalarArrayOpExpr:
-		e.walkExprWithVisited(queryStack, v.Left, result, visited)
-		e.walkExprWithVisited(queryStack, v.Right, result, visited)
-	case *catalog.CollateExprQ:
-		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
-	case *catalog.NullTestExpr:
-		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
-	case *catalog.BooleanTestExpr:
-		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
-	case *catalog.DistinctExprQ:
-		e.walkExprWithVisited(queryStack, v.Left, result, visited)
-		e.walkExprWithVisited(queryStack, v.Right, result, visited)
-	case *catalog.FieldSelectExprQ:
-		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
-	// ConstExpr, SQLValueFuncExpr, CoerceToDomainValueExpr — no column refs.
 	default:
+		for _, child := range catalog.AnalyzedExprChildren(expr) {
+			e.walkExprWithVisited(queryStack, child, result, visited)
+		}
 	}
 }
 
@@ -840,22 +839,22 @@ func (e *omniQuerySpanExtractor) resolveVar(queryStack []*catalog.Query, v *cata
 		}] = true
 
 	case catalog.RTESubquery:
-		if rte.Subquery == nil {
-			return
-		}
-		if colIdx >= 0 && colIdx < len(rte.Subquery.TargetList) {
-			te := rte.Subquery.TargetList[colIdx]
+		if te := outputColumn(rte.Subquery, int(v.AttNum)); te != nil {
 			e.walkExprWithVisited(appendQuery(effectiveStack, rte.Subquery), te.Expr, result, visited)
 		}
 
 	case catalog.RTECTE:
-		if cte := findCTEForRangeTableEntry(effectiveStack, rte); cte != nil && cte.Query != nil && colIdx >= 0 && colIdx < len(cte.Query.TargetList) {
-			te := cte.Query.TargetList[colIdx]
-			e.walkExprWithVisited(appendQuery(effectiveStack, cte.Query), te.Expr, result, visited)
+		if cte := findCTEForRangeTableEntry(effectiveStack, rte); cte != nil {
+			if te := outputColumn(cte.Query, int(v.AttNum)); te != nil {
+				e.walkExprWithVisited(appendQuery(effectiveStack, cte.Query), te.Expr, result, visited)
+			}
 		}
 
 	case catalog.RTEJoin:
-		// After analysis, VarExprs typically point to base RTEs, not join RTEs.
+		// Only a column that FULL JOIN USING merges is read through the join.
+		if colIdx >= 0 && colIdx < len(rte.JoinAliasVars) {
+			e.walkExprWithVisited(effectiveStack, rte.JoinAliasVars[colIdx], result, visited)
+		}
 
 	case catalog.RTEFunction:
 		// Trace lineage through user-defined function body.
@@ -962,7 +961,7 @@ func (e *omniQuerySpanExtractor) extractFallbackColumns(selStmt *ast.SelectStmt)
 				whereColSet := make(base.SourceColumnSet)
 				analyzer.extractColumnRefsFromExpr(selStmt.WhereClause, fromTables, whereColSet)
 				for k, v := range whereColSet {
-					e.funcPredicateColumns[k] = v
+					e.predicateColumns[k] = v
 				}
 			}
 			return results
