@@ -83,6 +83,11 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 			}
 			continue
 		}
+		if columnsMisalignedWithSpan(spans[i], results[i]) && s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i]) {
+			return errors.Errorf(
+				"masking cannot be applied: the query returned %d columns but Bytebase resolved %d from the synced schema, so the query was not returned",
+				len(results[i].ColumnNames), len(spans[i].Results))
+		}
 		maskers, reasons, err := s.getMaskersForQuerySpan(ctx, m, instance, user, spans[i])
 		if err != nil {
 			return errors.Wrapf(err, "failed to get maskers for query span")
@@ -100,6 +105,18 @@ func maskingBlockedByUnresolvedColumns(span *parserbase.QuerySpan, instance *sto
 		return false
 	}
 	return common.EngineSupportMasking(instance.Metadata.GetEngine())
+}
+
+// columnsMisalignedWithSpan reports whether doMaskResult, which applies the
+// span's maskers by position, would put a value beside the wrong masker or past
+// the last one. A DML or DDL result reports on the command (Affected Rows)
+// rather than projecting span.Results. A result without rows has no values to
+// misplace, and BigQuery returns no column names for one.
+func columnsMisalignedWithSpan(span *parserbase.QuerySpan, result *v1pb.QueryResult) bool {
+	if span.Type == parserbase.DML || span.Type == parserbase.DDL {
+		return false
+	}
+	return len(result.Rows) > 0 && len(result.ColumnNames) != len(span.Results)
 }
 
 // spanTouchesMaskedColumns checks whether any column referenced anywhere in

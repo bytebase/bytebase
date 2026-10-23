@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"testing"
@@ -303,4 +304,32 @@ func TestSensitiveData(t *testing.T) {
 	a.NotEmpty(nonMaskedErrorResp.Msg.Results[0].Error)
 	// The error should NOT be redacted — name is not masked.
 	a.NotContains(nonMaskedErrorResp.Msg.Results[0].Error, "data masking policies")
+
+	// Created directly on the target, after the last schema sync, so the synced
+	// schema does not know the function or how many columns it returns.
+	targetDB, err := sql.Open("pgx", fmt.Sprintf("postgresql://postgres:root-password@%s:%s/%s?sslmode=disable", pgContainer.GetHost(), pgContainer.GetPort(), databaseName))
+	a.NoError(err)
+	defer targetDB.Close()
+	_, err = targetDB.ExecContext(ctx, `CREATE FUNCTION unsynced_rows() RETURNS TABLE(a int, b int) LANGUAGE sql AS 'SELECT 1, 2'`)
+	a.NoError(err)
+
+	// The span lists one placeholder column for the function, so tech_book's
+	// columns would shift onto the wrong maskers and author past the last one.
+	misalignedResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      database.Name,
+		Statement: "SELECT * FROM unsynced_rows() f CROSS JOIN tech_book",
+	}))
+	a.NoError(err)
+	a.Len(misalignedResp.Msg.Results, 1)
+	a.Contains(misalignedResp.Msg.Results[0].Error, "masking cannot be applied: the query returned 5 columns but Bytebase resolved 4")
+	a.Empty(misalignedResp.Msg.Results[0].Rows)
+
+	unmaskedResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      database.Name,
+		Statement: "SELECT * FROM unsynced_rows()",
+	}))
+	a.NoError(err)
+	a.Len(unmaskedResp.Msg.Results, 1)
+	a.Equal([]string{"a", "b"}, unmaskedResp.Msg.Results[0].ColumnNames)
+	a.Len(unmaskedResp.Msg.Results[0].Rows, 1)
 }
