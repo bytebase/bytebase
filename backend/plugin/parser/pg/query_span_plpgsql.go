@@ -152,32 +152,45 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColum
 		return nil, errors.Wrapf(err, "failed to parse SQL function body")
 	}
 
-	// Find the last SELECT statement (SQL functions return the result of the last statement).
-	for i := len(stmts) - 1; i >= 0; i-- {
-		selStmt, ok := stmts[i].AST.(*ast.SelectStmt)
+	// Every statement in the body runs, so each SELECT's conditions count; the
+	// last SELECT returns the function's result.
+	last := -1
+	for i, stmt := range stmts {
+		if _, ok := stmt.AST.(*ast.SelectStmt); ok {
+			last = i
+		}
+	}
+	var result []base.SourceColumnSet
+	for i, stmt := range stmts {
+		selStmt, ok := stmt.AST.(*ast.SelectStmt)
 		if !ok {
 			continue
 		}
+		accesses := e.accessTablesOf(stmt.Text)
 		query, err := e.analyzeSelect(selStmt)
 		if err != nil {
+			e.collectFallbackPredicateColumns(selStmt, accesses)
+			if i != last {
+				continue
+			}
 			// Fall back to parse-tree extraction when analysis fails
 			// (e.g., nested function calls, parameter references).
-			e.collectFallbackPredicateColumns(selStmt, e.accessTablesOf(stmts[i].Text))
 			fallbackResults := e.extractFallbackColumns(selStmt)
-			if len(fallbackResults) > 0 {
-				result := make([]base.SourceColumnSet, len(fallbackResults))
-				for j, fr := range fallbackResults {
-					result[j] = fr.SourceColumns
-				}
-				return result, nil
+			if len(fallbackResults) == 0 {
+				return nil, errors.Wrapf(err, "failed to analyze SQL function body")
 			}
-			return nil, errors.Wrapf(err, "failed to analyze SQL function body")
+			result = make([]base.SourceColumnSet, len(fallbackResults))
+			for j, fr := range fallbackResults {
+				result[j] = fr.SourceColumns
+			}
+			continue
 		}
-		e.collectStatementPredicateColumns(query, selStmt, e.accessTablesOf(stmts[i].Text))
-		return e.extractFuncLineage(query), nil
+		e.collectStatementPredicateColumns(query, selStmt, accesses)
+		if i == last {
+			result = e.extractFuncLineage(query)
+		}
 	}
-
-	return nil, nil
+	return result, nil
 }
 
 func (e *omniQuerySpanExtractor) extractFuncLineage(q *catalog.Query) []base.SourceColumnSet {
@@ -358,10 +371,14 @@ func (a *plpgsqlAnalyzer) walkStmt(node plpgsqlast.Node) {
 			a.walkStmt(s)
 		}
 	case *plpgsqlast.PLWhile:
+		a.handleCondition(stmt.Condition)
 		for _, s := range stmt.Body {
 			a.walkStmt(s)
 		}
 	case *plpgsqlast.PLForI:
+		a.handleCondition(stmt.Lower)
+		a.handleCondition(stmt.Upper)
+		a.handleCondition(stmt.Step)
 		for _, s := range stmt.Body {
 			a.walkStmt(s)
 		}
@@ -376,16 +393,49 @@ func (a *plpgsqlAnalyzer) walkStmt(node plpgsqlast.Node) {
 			a.walkStmt(s)
 		}
 	case *plpgsqlast.PLForEachA:
+		a.handleCondition(stmt.ArrayExpr)
 		for _, s := range stmt.Body {
 			a.walkStmt(s)
 		}
 	case *plpgsqlast.PLBlock:
 		a.walkBlock(stmt)
+	// PERFORM discards its rows but still runs, so how long it takes reveals
+	// what it reads.
+	case *plpgsqlast.PLPerform:
+		a.handleCondition(stmt.Expr)
+	case *plpgsqlast.PLExit:
+		a.handleCondition(stmt.Condition)
+	case *plpgsqlast.PLAssert:
+		a.handleCondition(stmt.Condition)
 	// Skip nodes that don't affect lineage:
-	// PLDynExecute, PLRaise, PLNull, PLCommit, PLRollback, PLPerform,
-	// PLCall, PLOpen, PLFetch, PLClose, PLGetDiag, PLAssert, PLExit
+	// PLDynExecute, PLRaise, PLNull, PLCommit, PLRollback,
+	// PLCall, PLOpen, PLFetch, PLClose, PLGetDiag
 	default:
 	}
+}
+
+// handleCondition records the columns an expression that steers the body
+// reads, directly or through variables: it decides which statements run, and
+// so what the function returns and how long it takes.
+func (a *plpgsqlAnalyzer) handleCondition(expr string) {
+	if strings.TrimSpace(expr) == "" {
+		return
+	}
+	mergeSourceColumnSetInto(a.extractor.predicateColumns, a.analyzeEmbeddedExpr(expr))
+	stmts, err := ParsePg("SELECT " + expr)
+	if err != nil || len(stmts) != 1 {
+		return
+	}
+	ast.Inspect(stmts[0].AST, func(n ast.Node) bool {
+		if ref, ok := n.(*ast.ColumnRef); ok && ref.Fields != nil && len(ref.Fields.Items) == 1 {
+			if name, ok := ref.Fields.Items[0].(*ast.String); ok {
+				if sources, ok := a.scope.get(name.Str); ok {
+					mergeSourceColumnSetInto(a.extractor.predicateColumns, sources)
+				}
+			}
+		}
+		return true
+	})
 }
 
 func (a *plpgsqlAnalyzer) handleAssign(stmt *plpgsqlast.PLAssign) {
@@ -447,11 +497,13 @@ func (a *plpgsqlAnalyzer) handleForS(stmt *plpgsqlast.PLForS) {
 }
 
 func (a *plpgsqlAnalyzer) handleIf(stmt *plpgsqlast.PLIf) {
+	a.handleCondition(stmt.Condition)
 	for _, s := range stmt.ThenBody {
 		a.walkStmt(s)
 	}
 	for _, elsif := range stmt.ElsIfs {
 		if ei, ok := elsif.(*plpgsqlast.PLElsIf); ok {
+			a.handleCondition(ei.Condition)
 			for _, s := range ei.Body {
 				a.walkStmt(s)
 			}
@@ -463,8 +515,10 @@ func (a *plpgsqlAnalyzer) handleIf(stmt *plpgsqlast.PLIf) {
 }
 
 func (a *plpgsqlAnalyzer) handleCase(stmt *plpgsqlast.PLCase) {
+	a.handleCondition(stmt.TestExpr)
 	for _, when := range stmt.Whens {
 		if cw, ok := when.(*plpgsqlast.PLCaseWhen); ok {
+			a.handleCondition(cw.Expr)
 			for _, s := range cw.Body {
 				a.walkStmt(s)
 			}

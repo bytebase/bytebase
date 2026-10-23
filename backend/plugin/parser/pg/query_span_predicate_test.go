@@ -72,7 +72,7 @@ func TestGetQuerySpanPredicateColumns(t *testing.T) {
 	}
 }
 
-func TestGetQuerySpanPredicateColumnsOfFunctionInFrom(t *testing.T) {
+func TestGetQuerySpanPredicateColumnsOfFunctionBodies(t *testing.T) {
 	schema := healthySchema()
 	// * over an unknown function fails analysis of the body that uses it.
 	unanalyzable := "(SELECT * FROM o CROSS JOIN unknown_rows() u) o JOIN t ON t.id = o.id AND t.ssn = guess"
@@ -80,6 +80,11 @@ func TestGetQuerySpanPredicateColumnsOfFunctionInFrom(t *testing.T) {
 		{Name: "probe", Definition: "CREATE FUNCTION public.probe(guess text) RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT t.id FROM t WHERE t.ssn = guess; END; $$"},
 		{Name: "probe_sql", Definition: "CREATE FUNCTION public.probe_sql(guess text) RETURNS SETOF int LANGUAGE sql AS $$ SELECT id FROM t WHERE ssn = guess $$"},
 		{Name: "probe_fixed", Definition: "CREATE FUNCTION public.probe_fixed() RETURNS SETOF int LANGUAGE sql AS $$ SELECT id FROM t WHERE ssn = 'guess' $$"},
+		{Name: "probe_multi", Definition: "CREATE FUNCTION public.probe_multi() RETURNS int LANGUAGE sql AS $$ SELECT pg_sleep(0) FROM t WHERE ssn = 'guess'; SELECT 1 $$"},
+		{Name: "probe_perform", Definition: "CREATE FUNCTION public.probe_perform() RETURNS int LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_sleep(0) FROM t WHERE ssn = 'guess'; RETURN 1; END; $$"},
+		{Name: "probe_if", Definition: "CREATE FUNCTION public.probe_if() RETURNS int LANGUAGE plpgsql AS $$ BEGIN IF (SELECT ssn FROM t LIMIT 1) = 'guess' THEN RETURN 1; END IF; RETURN 0; END; $$"},
+		{Name: "probe_variable", Definition: "CREATE FUNCTION public.probe_variable() RETURNS int LANGUAGE plpgsql AS $$ DECLARE v text; BEGIN SELECT ssn INTO v FROM t WHERE id = 1; IF v = 'guess' THEN RETURN 1; END IF; RETURN 0; END; $$"},
+		{Name: "probe_for", Definition: "CREATE FUNCTION public.probe_for() RETURNS SETOF int LANGUAGE plpgsql AS $$ BEGIN FOR i IN 1..(SELECT ascii(ssn) FROM t LIMIT 1) LOOP RETURN NEXT i; END LOOP; END; $$"},
 		{Name: "probe_join", Definition: "CREATE FUNCTION public.probe_join(guess text) RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT o.id FROM " + unanalyzable + "; END; $$"},
 		{Name: "probe_join_sql", Definition: "CREATE FUNCTION public.probe_join_sql(guess text) RETURNS SETOF int LANGUAGE sql AS $$ SELECT o.id FROM " + unanalyzable + " $$"},
 	}
@@ -90,6 +95,11 @@ func TestGetQuerySpanPredicateColumnsOfFunctionInFrom(t *testing.T) {
 		{"SELECT count(*) AS c FROM probe('guess')", []string{"t.ssn"}},
 		{"SELECT count(*) AS c FROM probe_sql('guess')", []string{"t.ssn"}},
 		{"SELECT count(*) AS c FROM probe_fixed()", []string{"t.ssn"}},
+		{"SELECT probe_multi() AS x", []string{"t.ssn"}},
+		{"SELECT probe_perform() AS x", []string{"t.ssn"}},
+		{"SELECT probe_if() AS x", []string{"t.ssn"}},
+		{"SELECT probe_variable() AS x", []string{"t.id", "t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_for()", []string{"t.ssn"}},
 		{"SELECT count(*) AS c FROM probe_join('guess')", []string{"o.id", "t.id", "t.ssn"}},
 		{"SELECT count(*) AS c FROM probe_join_sql('guess')", []string{"o.id", "t.id", "t.ssn"}},
 	}
