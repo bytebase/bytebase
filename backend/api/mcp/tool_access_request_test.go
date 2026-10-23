@@ -175,7 +175,7 @@ func TestRequestAccessGrantSaysWhenNoOneCanApprove(t *testing.T) {
 				"No other person can approve it: step 1 of its approval flow needs roles/projectOwner, which no other active workspace member holds, and this project does not allow self-approval.\n" +
 				"Issue: https://bb.example.com/projects/hr/issues/7\n" +
 				"An approver can be added only in the Bytebase console, by granting someone that role. " +
-				"To read the masked values without this request, a project owner can grant a masking exemption with grant_masking_exemption.",
+				"If the statement already runs for you with the values masked, a project owner can grant a masking exemption with grant_masking_exemption to read them without this request.",
 		},
 		"no person holds the role": {
 			step: &review.UnapprovableStep{Position: 2, Role: "roles/workspaceDBA"},

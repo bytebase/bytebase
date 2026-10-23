@@ -148,7 +148,7 @@ func usersByMember(ctx context.Context, stores *store.Store, workspace string, m
 				failures = append(failures, err)
 				continue
 			}
-			if user != nil {
+			if user != nil && formatMemberNameByType(user) == member.Member {
 				users = append(users, user)
 			}
 		}
@@ -159,6 +159,12 @@ func usersByMember(ctx context.Context, stores *store.Store, workspace string, m
 	user, err := userByIdentifier(ctx, stores, member, prefix)
 	if err != nil || user == nil {
 		return nil, err
+	}
+	// The permission check matches a member by its typed name
+	// (GetUserIAMPolicyBindings), so an account of another type that shares the
+	// email is not this member.
+	if formatMemberNameByType(user) != member {
+		return nil, nil
 	}
 	return []*store.UserMessage{user}, nil
 }

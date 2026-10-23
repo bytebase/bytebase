@@ -130,7 +130,7 @@ func describeUnapprovableStep(step *review.UnapprovableStep) string {
 func wayAroundUnapprovableStep(unmask bool) string {
 	way := "An approver can be added only in the Bytebase console, by granting someone that role."
 	if unmask {
-		way += " To read the masked values without this request, a project owner can grant a masking exemption with grant_masking_exemption."
+		way += " If the statement already runs for you with the values masked, a project owner can grant a masking exemption with grant_masking_exemption to read them without this request."
 	}
 	return way
 }

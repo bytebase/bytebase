@@ -1536,6 +1536,17 @@ func TestFindUnapprovableStep(t *testing.T) {
 			want: &UnapprovableStep{Position: 1, Role: owner, CreatorHoldsRole: true},
 		},
 		{
+			name: "the other holder is bound under another principal type",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				grant("users/creator@example.com", owner),
+				grant(common.FormatServiceAccountEmail("reviewer@example.com"), owner),
+				// A workspace member, so only the principal type can leave them out.
+				grant("users/reviewer@example.com", "roles/workspaceMember"),
+			},
+			want: &UnapprovableStep{Position: 1, Role: owner, CreatorHoldsRole: true},
+		},
+		{
 			name: "the other holder has a project binding but no workspace membership",
 			flow: []string{owner},
 			setup: []func(context.Context, *testing.T, *store.Store){
@@ -1607,6 +1618,39 @@ func TestFindUnapprovableStep(t *testing.T) {
 
 // A holder the lookup cannot resolve leaves the answer unknown, so the check
 // fails instead of reporting that no one else can approve.
+// The check counts a holder only where the approval check would let them
+// approve: a binding names a typed principal, not an email.
+func TestFindUnapprovableStepAgreesWithTheApprovalCheckOnPrincipalType(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	for member, role := range map[string]string{
+		"users/creator@example.com":                              "roles/projectOwner",
+		common.FormatServiceAccountEmail("reviewer@example.com"): "roles/projectOwner",
+		"users/reviewer@example.com":                             "roles/workspaceMember",
+	} {
+		_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{Workspace: "default", Member: member, Roles: []string{role}})
+		require.NoError(t, err)
+	}
+	_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
+
+	step, err := FindUnapprovableStep(ctx, stores, "default", common.FormatIssue("project-a", issue.UID))
+	require.NoError(t, err)
+	require.Equal(t, &UnapprovableStep{Position: 1, Role: "roles/projectOwner", CreatorHoldsRole: true}, step)
+
+	reviewer, err := stores.GetUserByEmail(ctx, "reviewer@example.com")
+	require.NoError(t, err)
+	_, err = NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Actor:     reviewer,
+		Action:    ActionApprove,
+	})
+	var workflowErr *Error
+	require.ErrorAs(t, err, &workflowErr)
+	require.Equal(t, ReasonApproverRoleRequired, workflowErr.Reason, "the approval check refuses the same person")
+}
+
 func TestFindUnapprovableStepFailsWhenAHolderCannotBeResolved(t *testing.T) {
 	ctx := context.Background()
 	stores := setupWorkflowStore(ctx, t)
