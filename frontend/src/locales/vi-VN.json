@@ -3430,6 +3430,7 @@
     "expire-in": "Hết hạn sau {{time}}",
     "expired": "Đã hết hạn",
     "explain": "Giải thích",
+    "explain-hint": "Hiển thị kế hoạch mà không chạy truy vấn",
     "explore-data": "Khám phá dữ liệu",
     "export-available-via-issue": "Xuất khả dụng qua issue \"{{title}}\"",
     "export-available-via-n-grants": "Xuất khả dụng qua {{count}} cấp quyền truy cập:",

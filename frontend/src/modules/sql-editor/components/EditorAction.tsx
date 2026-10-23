@@ -24,9 +24,13 @@ import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   canCreateSavedQueryInProject,
+  instanceV1AllowsExplain,
   isSavedQueryWritableV1,
   keyboardShortcutStr,
 } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils/iam/permission";
+import { explainQueryOption } from "@/utils/queryPlanEngines";
+import { getDatabaseProject } from "@/utils/v1/database";
 import { AdminModeButton } from "./AdminModeButton";
 import { ChooserGroup } from "./ChooserGroup";
 import { ContainerChooser } from "./ContainerChooser";
@@ -49,7 +53,7 @@ type Props = {
 export function EditorAction({ onExecute }: Props) {
   const { t } = useTranslation();
   const { currentSheet: currentSavedQuery } = useSavedQueryAndTab();
-  const { instance } = useConnectionOfCurrentSQLEditorTab();
+  const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -130,14 +134,15 @@ export function EditorAction({ onExecute }: Props) {
   const showQueryContextSettingPopover =
     !!currentTab && !!instance && !isAdminMode;
 
-  const handleRunQuery = () => {
+  const runQuery = (explain: boolean) => {
     if (!currentTab || !onExecute) return;
     const statement = currentTab.selectedStatement || currentTab.statement;
     onExecute({
       statement,
       connection: { ...currentTab.connection },
       engine: instance.engine,
-      explain: false,
+      explain,
+      ...(explain ? { queryOption: explainQueryOption(instance.engine) } : {}),
       selection: currentTab.editorState.selection,
     });
   };
@@ -184,7 +189,20 @@ export function EditorAction({ onExecute }: Props) {
               disabled={!allowQuery}
               productIntroTarget={RUN_QUERY_PRODUCT_INTRO}
               settingsDisabled={!showQueryContextSettingPopover}
-              onClick={handleRunQuery}
+              onClick={() => runQuery(false)}
+              onExplain={
+                instanceV1AllowsExplain(instance.engine)
+                  ? () => runQuery(true)
+                  : undefined
+              }
+              explainDisabledReason={
+                hasProjectPermissionV2(
+                  getDatabaseProject(database),
+                  "bb.sql.explain"
+                )
+                  ? undefined
+                  : t("sql-editor.query-plan-requires-explain")
+              }
             />
           ))}
 

@@ -59,55 +59,49 @@ context first.
 
 ## 3. Design
 
-### 3.1 Four triggers
+### 3.1 Three triggers
 
 | Trigger | Where the control is | Journey | Executes? |
 |---|---|---|---|
 | Choose **Plan** in the result's view switch | the result pane, beside Table and Vertical | 1, 2 | no |
 | Type `EXPLAIN …`, press **Run** (`Ctrl/Cmd+Enter`) | the editor | 1, 2 | as typed |
 | Choose **Explain**, press `Ctrl/Cmd+E`, or right-click → Explain | Run button's dropdown; keyboard; editor context menu | 3 | **no** |
-| Choose **Explain analyze** | Run button's dropdown | 1, 2 | **yes** |
 
-Both explain actions go in the dropdown Run already has, not on the toolbar.
-Spanner Studio puts "Results only / Explanation only" in exactly that place, and
-none of the four reference products ships a toolbar Explain button. They explain
+**Explain** goes in the dropdown Run already has, not on the toolbar. Spanner
+Studio puts "Results only / Explanation only" in exactly that place, and none of
+the four reference products ships a toolbar Explain button. It explains
 **exactly the statements Run would run** — same selection, same caret rule — so
 there is no second scoping rule to learn. With one refusal: a submission that
 sets session state, such as `SET search_path = tenant; SELECT * FROM orders`,
 cannot be explained statement by statement. `EXPLAIN SET …` is not valid, and
-skipping the `SET` would plan the next statement against the wrong search path.
-The actions say so rather than explaining part of the script — the same rule
-§3.3 applies to the Plan view, stated once and enforced on both paths.
+skipping the `SET` would plan the next statement against the wrong search path,
+so the request is refused rather than explaining part of the script — the same
+rule §3.3 applies to the Plan view.
 
-They are two actions, not one, because the difference is whether your query runs.
-pgAdmin splits them the same way (F7 / Shift+F7). **Explain** never executes:
-given a statement that already says `EXPLAIN ANALYZE`, it refuses and says why,
-rather than running an expensive query behind a control whose whole purpose is
-to avoid running it. **Explain analyze** executes by definition, and asks for a
-machine-readable plan on that single run, so nothing needs re-running afterwards.
+**Explain never executes.** Given a statement that already says `EXPLAIN
+ANALYZE`, it refuses and says why, rather than running an expensive query behind
+a control whose whole purpose is to avoid running it. It asks for the engine's
+machine-readable plan, so the picture comes back in one call.
 
-The mirror case: given a statement that already says plain `EXPLAIN`, **Explain
-analyze** adds `ANALYZE` and the format to the options already there, keeping the
-rest. Replaying it unchanged would return an estimate and never execute, which is
-not what the action promises, and prefixing a second `EXPLAIN` is invalid — so
-it is the same option substitution §3.2 uses for Visualize. Each action does what
-its name says: one refuses to execute, the other insists on it.
+**Explain plans the statement as written, with no limit added.** The result
+limit caps how many rows the editor reads back. It is not part of the query, and
+appending `LIMIT N` would plan a different statement, because `LIMIT` changes
+plan shape. The drivers already leave the limit off on the explain path. A plan
+opened from a result is different: it explains the statement that produced the
+result, including the limit Run added (§3.4).
 
-**Both actions plan the statement Run would execute, limit included.** The
-drivers apply the result limit only when the request is not an explain
-(`pg.go:801-809`, `mysql.go:530-538`), so reusing that path plans the unbounded
-query while Run stops at the limit — and `LIMIT` changes plan shape, so the two
-are different queries. The limited statement has to be carried or reconstructed
-before either action wraps it. It matters twice over for **Explain analyze**,
-which executes: unbounded, an `EXPLAIN ANALYZE` against a large table becomes the
-workload it was meant to diagnose.
-
-**Explain analyze returns a plan, not rows.** On PostgreSQL that is automatic —
-`EXPLAIN ANALYZE` replaces the result set. Spanner's profile mode and SQL
-Server's `SET STATISTICS XML` instead hand back the rows *and* the plan, and the
-explain path skips masking (§3.5), so passing those rows on would show unmasked
-values to a user who is subject to masking. The backend discards them. Same
-action, same output, on every engine.
+**There is no Explain analyze action.** A measured plan comes from typing
+`EXPLAIN ANALYZE` and pressing Run, which executes exactly once and is drawn
+when it names a format we read (§3.2). Desktop clients do pair the two — pgAdmin
+(F7 / Shift+F7), SSMS's estimated and actual plans, SQL Developer's Explain Plan
+and Autotrace — but how an engine measures a plan does not make one control: a
+statement prefix on PostgreSQL, CockroachDB and TiDB; text only on MySQL 8.0.18
+and later; a session setting that returns the rows as well on SQL Server; an API
+mode on Spanner; a hint and `DBMS_XPLAN` on Oracle; nothing on ClickHouse or
+Redshift; and every run already measured on BigQuery, Snowflake and Databricks.
+Built cheaply it would exist for PostgreSQL alone, it would be the one explain
+control that executes — writes included — and it would save only remembering the
+syntax. Revisit if users ask.
 
 Run stays literal: a typed `EXPLAIN ANALYZE` executes, because that is what the
 user typed. What we never do is wrap a statement that already starts with
@@ -139,7 +133,7 @@ rather than to an error.
 
 | Statement Bytebase ran | Result tab shows | `Query()` calls |
 |---|---|---|
-| **Explain** / **Explain analyze** — we build it, so we ask for the engine's machine-readable format | picture where the engine has one (§3.4) | 1 |
+| **Explain** — we build it, so we ask for the engine's machine-readable format | picture where the engine has one (§3.4) | 1 |
 | Typed `EXPLAIN (FORMAT JSON)` | picture, drawn from what came back | 1 — nothing extra |
 | Typed `EXPLAIN (FORMAT XML)` | text for now — see below | 1 |
 | Typed `EXPLAIN` | text, plus a **Visualize** button | 1, +1 only on Visualize |
@@ -159,8 +153,8 @@ The existing link replays the same params with a different format
 and flipping `explain` true instead would have the driver prefix a second
 `EXPLAIN` onto a statement that already starts with one. So Visualize sends that
 statement as an explain request naming the format it wants, and the backend
-substitutes the format rather than prefixing, which is the rule §3.1 already
-sets for every statement that arrives already explaining itself.
+substitutes the format rather than prefixing, as it does for every explain
+request whose statement already explains itself.
 
 Substitution today keeps the planned statement and nothing else: the caller's
 remaining options (`VERBOSE`, `COSTS OFF`) go with the format they came with,
@@ -200,9 +194,9 @@ only way to draw it would be to run the query a second time. One that names a
 format we can read is drawn like any other structured plan — it has already run,
 exactly once, and came back machine-readable, so the drawing rule applies
 unchanged. The user who wants a picture of
-a measured plan uses **Explain analyze** (§3.1), which asks for the structured
-plan on its single run. That keeps the cost rule intact without this design
-rewriting anyone's statement.
+a measured plan types `EXPLAIN (ANALYZE, FORMAT JSON)`, which returns the
+structured plan on its single run. That keeps the cost rule intact without this
+design rewriting anyone's statement.
 
 ### 3.3 Reading the plan
 
@@ -335,16 +329,17 @@ regression.
 
 ### 3.4 Engine differences
 
-| Engine | Plan on a result | Picture | Explain analyze |
+| Engine | Plan on a result | Picture | Measured plan, typed |
 |---|---|---|---|
-| **PostgreSQL** | one `Query()`, on demand, cached | graph | yes — `EXPLAIN (ANALYZE, FORMAT JSON)` |
-| **SQL Server** | one `Query()`, on demand, cached | graph | yes — `SET STATISTICS XML` |
-| **Spanner** | one `Query()`, on demand, cached | graph | yes — profile mode |
-| **MySQL** | one `Query()`, on demand, cached | text | 8.0.18+ only, and text — `EXPLAIN ANALYZE` is TREE and rejects JSON. Below that it is not valid syntax, so the action is disabled with the version as the reason |
-| **Oracle, 7 others** | one `Query()`, on demand, cached | text | no |
+| **PostgreSQL** | one `Query()`, on demand, cached | graph | `EXPLAIN (ANALYZE, FORMAT JSON)`, drawn |
+| **SQL Server** | one `Query()`, on demand, cached | graph | `SET STATISTICS XML ON`, with the rows |
+| **Spanner** | one `Query()`, on demand, cached | graph | none in the editor — profile mode is an API, not SQL |
+| **MySQL** | one `Query()`, on demand, cached | text | `EXPLAIN ANALYZE` from 8.0.18, TREE text only |
+| **Oracle, 7 others** | one `Query()`, on demand, cached | text | per engine, text at most |
 
 A plan opened from a result is always an estimate, on every engine. Measured
-plans come from **Explain analyze** (§3.1), which is a deliberate action.
+plans come from a typed `EXPLAIN ANALYZE` or its engine's equivalent, which is a
+deliberate act (§3.1).
 
 **It explains the statement that ran, limits included.** The driver wraps an
 ordinary query with the result limit but skips that wrapper on the explain path
@@ -389,8 +384,8 @@ would have to profile *every* run — and Spanner documents profiling overhead a
 discourages it for production traffic, while `SET STATISTICS XML` needs
 `SHOWPLAN` on every database the statement touches, so turning it on blindly
 would fail queries the user is authorized to run. Profiling only when asked
-requires a control that says so before the run, which is a second explain action
-on the Run button for a case **Explain analyze** already covers. Out of scope.
+requires a control that says so before the run — the Explain analyze action §3.1
+leaves out. Out of scope.
 
 The pop-up page, its token hand-off and the old link are deleted
 ([#21652](https://github.com/bytebase/bytebase/pull/21652)).
@@ -399,9 +394,9 @@ The pop-up page, its token hand-off and the old link are deleted
 
 **Explain is its own permission** — `bb.sql.explain`, not `bb.sql.select`
 (`sql_service.go:1480`) — so a user can be allowed to run a query and not to plan
-it. For them the Plan option is **disabled with the reason shown**, not hidden:
-hiding it leaves them unable to tell the capability exists or what to ask an
-admin for.
+it. For them the Plan option and Explain in Run's dropdown are **disabled with
+the reason shown**, not hidden: hiding them leaves them unable to tell the
+capability exists or what to ask an admin for.
 
 **Anything that both executes and returns a plan needs both permissions.** A
 typed `EXPLAIN ANALYZE` was classified as its *inner* statement, so it passed on
@@ -411,11 +406,10 @@ them. Both now mark the span as an executed plan, so the statement needs its
 normal ACL, write-target checks included, **and** `bb.sql.explain`
 ([#21642](https://github.com/bytebase/bytebase/pull/21642),
 [#21648](https://github.com/bytebase/bytebase/pull/21648)). SQL Server's settings are read from the parsed `SET` statement,
-not matched as text, so a comment or an option list does not hide them. The
-**Explain analyze** action comes the other way: an explain request is checked
-on `bb.sql.explain` and is safe today only because `validateExplainStatements`
-refuses anything that is not read-only, which is exactly the refusal this
-action has to relax; when it lands it must add the statement's own ACL.
+not matched as text, so a comment or an option list does not hide them. No
+explain request executes — there is no Explain analyze action (§3.1) — so an
+explain request needs `bb.sql.explain` alone, and `validateExplainStatements`
+refuses any planned form that is not read-only.
 
 **Plans are never masked, and that is a privilege, not a safe default.** Explain
 skips masking (`sql_service.go:726`, `:735`). A plan is not row data, but it is
@@ -522,7 +516,7 @@ live servers, September 2026.
 
 ## 6. Status
 
-Checked against `main` on 2026-10-23, after [#21652](https://github.com/bytebase/bytebase/pull/21652).
+Checked against `main` on 2026-10-23, after [#21652](https://github.com/bytebase/bytebase/pull/21652), plus the §3.1 branch below.
 
 **Landed**
 
@@ -559,11 +553,16 @@ Checked against `main` on 2026-10-23, after [#21652](https://github.com/bytebase
   operators ranked in the side panel; the legend on hover; the pop-up page
   deleted ([#21652](https://github.com/bytebase/bytebase/pull/21652)). The
   ranking and the opening view use estimated cost and say so; ranking a
-  measured plan by measured time waits for measured plans, item 2 below.
+  measured plan by measured time waits for measured plans, item 1 below.
+
+- §3.1 — Explain at the top of Run's dropdown, on the statement as written,
+  disabled with the reason without `bb.sql.explain`; it, `Ctrl/Cmd+E` and
+  right-click → Explain, in the editor and the admin terminal, ask for the
+  drawable format, so the picture takes one call. No limit is added to an
+  explain, and there is no Explain analyze action; measured plans come from a
+  typed `EXPLAIN ANALYZE`. §3.1 is closed.
 
 **Not yet, in the order to do them**
 
-1. §3.1 — Explain and Explain analyze in the Run dropdown, planning the limited
-   statement; today every driver's explain path skips the limit.
-2. §3.3 — the rest of the reading changes: warning relevance, measured plans
+1. §3.3 — the rest of the reading changes: warning relevance, measured plans
    with planned vs actual rows, cost share on the tab label.

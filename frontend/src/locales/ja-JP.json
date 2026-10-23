@@ -3430,6 +3430,7 @@
     "expire-in": "{{time}} 後に期限切れ",
     "expired": "期限切れ",
     "explain": "実行計画を表示",
+    "explain-hint": "クエリを実行せずに実行計画を表示します",
     "explore-data": "データを探索",
     "export-available-via-issue": "Issue「{{title}}」によりエクスポート可能",
     "export-available-via-n-grants": "{{count}} 件のアクセス付与によりエクスポート可能:",

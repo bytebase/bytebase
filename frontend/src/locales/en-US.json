@@ -3430,6 +3430,7 @@
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "explain": "Explain",
+    "explain-hint": "Show the plan without running the query",
     "explore-data": "Explore data",
     "export-available-via-issue": "Export available via issue \"{{title}}\"",
     "export-available-via-n-grants": "Export available via {{count}} access grants:",
