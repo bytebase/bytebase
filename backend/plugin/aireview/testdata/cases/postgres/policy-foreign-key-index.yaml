@@ -1,0 +1,80 @@
+description: >-
+  The project policy asks for an index on the referencing columns of every
+  foreign key. order_returns has indexes on id and created_at but none on
+  order_id, and PostgreSQL does not create one for a foreign key. Only the
+  table's indexes show that the policy is broken. order_returns holds 41,000
+  rows, so validating the new key is quick and the policy is the one problem
+  to find.
+engine: POSTGRES
+version: "16.0.4"
+environment: prod
+project_policy: |
+  Every foreign key needs an index whose leading columns are its referencing
+  columns. Create the index before the foreign key.
+statement: |
+  -- Link order returns to their orders.
+  ALTER TABLE order_returns ADD CONSTRAINT order_returns_order_id_fkey FOREIGN KEY (order_id) REFERENCES orders (id);
+schema:
+  name: shop
+  character_set: UTF8
+  collation: en_US.UTF-8
+  owner: shop_owner
+  search_path: '"$user", public'
+  schemas:
+    - name: public
+      owner: pg_database_owner
+      comment: standard public schema
+      tables:
+        - name: orders
+          owner: shop_owner
+          row_count: 48000000
+          data_size: 11811160064
+          index_size: 2147483648
+          columns:
+            - {name: id, position: 1, type: bigint, default: "nextval('public.orders_id_seq'::regclass)"}
+            - {name: customer_id, position: 2, type: bigint}
+            - {name: status, position: 3, type: text}
+            - {name: total, position: 4, type: "numeric(12,2)"}
+            - {name: created_at, position: 5, type: timestamp(6) with time zone, default: "now()"}
+          indexes:
+            - name: orders_pkey
+              expressions: [id]
+              type: btree
+              unique: true
+              primary: true
+              is_constraint: true
+              definition: CREATE UNIQUE INDEX orders_pkey ON public.orders USING btree (id);
+            - name: idx_orders_customer_id
+              expressions: [customer_id]
+              type: btree
+              definition: CREATE INDEX idx_orders_customer_id ON public.orders USING btree (customer_id);
+        - name: order_returns
+          owner: shop_owner
+          row_count: 41000
+          data_size: 5767168
+          index_size: 2129920
+          columns:
+            - {name: id, position: 1, type: bigint, default: "nextval('public.order_returns_id_seq'::regclass)"}
+            - {name: order_id, position: 2, type: bigint}
+            - {name: reason, position: 3, type: text}
+            - {name: created_at, position: 4, type: timestamp(6) with time zone, default: "now()"}
+            - {name: refunded_at, position: 5, type: timestamp(6) with time zone, nullable: true}
+          indexes:
+            - name: order_returns_pkey
+              expressions: [id]
+              type: btree
+              unique: true
+              primary: true
+              is_constraint: true
+              definition: CREATE UNIQUE INDEX order_returns_pkey ON public.order_returns USING btree (id);
+            - name: idx_order_returns_created_at
+              expressions: [created_at]
+              type: btree
+              definition: CREATE INDEX idx_order_returns_created_at ON public.order_returns USING btree (created_at);
+      sequences:
+        - {name: orders_id_seq, data_type: bigint, start: "1", increment: "1", min_value: "1", max_value: "9223372036854775807", cache_size: "1", owner_table: orders, owner_column: id}
+        - {name: order_returns_id_seq, data_type: bigint, start: "1", increment: "1", min_value: "1", max_value: "9223372036854775807", cache_size: "1", owner_table: order_returns, owner_column: id}
+expect:
+  find:
+    - line: 2
+      keywords: [index]
