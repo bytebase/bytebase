@@ -133,7 +133,7 @@ func TestRequestAccessGrantFilesTheRequest(t *testing.T) {
 	require.Equal(t, "Requested projects/hr/accessGrants/g1: run the statement on projects/hr/instances/prod/databases/hr, unmasked, with export for 4 hours from approval. "+
 		"A person approves it in Bytebase before it takes effect.\n"+
 		"Issue: https://bb.example.com/projects/hr/issues/7\n"+
-		"Once it is approved, rerun the statement unchanged with query_database, with the same schema and container.", resultText(t, res))
+		`Once it is approved, pass the statement unchanged, with the same schema and container, to call_api(operationId="SQLService/Export") to export the results, or to query_database to read up to 1000 rows.`, resultText(t, res))
 	output, err := json.Marshal(res.StructuredContent)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"accessGrant":"projects/hr/accessGrants/g1","issue":"projects/hr/issues/7",
@@ -147,7 +147,7 @@ func TestRequestAccessGrantFilesInTheDatabaseProject(t *testing.T) {
 	res := callRequestAccessGrant(t, session, map[string]any{
 		"database":      "instances/prod/databases/ledger",
 		"statement":     "SELECT 1",
-		"export":        true,
+		"unmask":        true,
 		"reason":        "Quarter close",
 		"durationHours": 1,
 	})
@@ -157,7 +157,8 @@ func TestRequestAccessGrantFilesInTheDatabaseProject(t *testing.T) {
 	require.Len(t, requests, 1)
 	require.Equal(t, "projects/finance", requests[0]["parent"], "a workspace instance's database name carries no project")
 	require.Equal(t, "3600s", requests[0]["accessGrant"].(map[string]any)["ttl"])
-	require.Contains(t, resultText(t, res), "run the statement on instances/prod/databases/ledger, with export for 1 hour from approval")
+	require.Contains(t, resultText(t, res), "run the statement on instances/prod/databases/ledger, unmasked for 1 hour from approval")
+	require.Contains(t, resultText(t, res), "Once it is approved, rerun the statement unchanged with query_database, with the same schema and container.")
 }
 
 func TestRequestAccessGrantRefusesADurationBeforeAnyCall(t *testing.T) {

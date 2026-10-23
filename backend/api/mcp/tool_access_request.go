@@ -48,7 +48,7 @@ const requestAccessGrantDescription = `Request an access grant: time-boxed permi
 
 The project must allow just-in-time access. Check allowJustInTimeAccess with call_api(operationId="ProjectService/GetProject") first; a missing field means off, and set_just_in_time_access turns it on.
 
-Clients such as Claude Code ask the user to approve each call of this tool, so do not ask in chat first. Once the request is approved, rerun the statement unchanged with query_database, with the same schema and container; appliedAccessGrant in its result names the grant that applied.`
+Clients such as Claude Code ask the user to approve each call of this tool, so do not ask in chat first. Once the request is approved, rerun the statement unchanged with query_database, with the same schema and container; appliedAccessGrant in its result names the grant that applied. To use an export grant, pass the statement the same way to call_api(operationId="SQLService/Export"); query_database returns at most 1000 rows.`
 
 func (s *Server) registerRequestAccessGrantTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
@@ -96,8 +96,17 @@ func (s *Server) handleRequestAccessGrant(ctx context.Context, _ *mcp.CallToolRe
 		Link:          link,
 	}
 	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf(
-		"Requested %s: %s for %s from approval. A person approves it in Bytebase before it takes effect.\nIssue: %s\nOnce it is approved, rerun the statement unchanged with query_database, with the same schema and container.",
-		grant.Name, describeRequestedAccess(input), hours(input.DurationHours), link)}}}, output, nil
+		"Requested %s: %s for %s from approval. A person approves it in Bytebase before it takes effect.\nIssue: %s\n%s",
+		grant.Name, describeRequestedAccess(input), hours(input.DurationHours), link, useAfterApproval(input.Export))}}}, output, nil
+}
+
+// useAfterApproval says how to run the statement once the grant applies. Only
+// SQLService/Export uses a grant's export, and query_database caps its rows.
+func useAfterApproval(export bool) string {
+	if export {
+		return fmt.Sprintf(`Once it is approved, pass the statement unchanged, with the same schema and container, to call_api(operationId="SQLService/Export") to export the results, or to query_database to read up to %d rows.`, maxQueryLimit)
+	}
+	return "Once it is approved, rerun the statement unchanged with query_database, with the same schema and container."
 }
 
 func hours(n int32) string {
