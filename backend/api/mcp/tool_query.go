@@ -274,8 +274,7 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 			// MCP sessions cannot file role requests, so the only advice is a grant.
 			suggestion = ""
 			if denied := result.PermissionDenied; grantLifts(denied.RequiredPermissions) && withinDatabase(denied.Resources, resolved.resourceName) {
-				suggestion = "in a Read-write session, request an access grant for this statement with request_access_grant " +
-					"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
+				suggestion = grantAdvice(input.Statement, result.Statement)
 			}
 		}
 		return nil, &toolError{
@@ -441,4 +440,18 @@ func withinDatabase(resources []string, database string) bool {
 		}
 	}
 	return true
+}
+
+// grantAdvice names the refused statement when the input was a batch. Query
+// runs a batch one statement at a time and stops at the first refusal
+// (queryRetryStopOnError), and a grant applies only to the exact read-only
+// statement it names (hashAccessGrantQuery).
+func grantAdvice(input, refused string) string {
+	const howTo = "(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
+	refused = strings.TrimSpace(refused)
+	if refused == "" || refused == strings.TrimSpace(input) {
+		return "in a Read-write session, request an access grant for this statement with request_access_grant " + howTo
+	}
+	return fmt.Sprintf("the batch stopped at %q: in a Read-write session, request an access grant for that statement alone "+
+		"with request_access_grant and, once approved, run it by itself %s", refused, howTo)
 }

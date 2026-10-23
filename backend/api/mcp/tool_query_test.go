@@ -740,18 +740,36 @@ func TestQueryDatabase_TableAccessDenialAdvisesAnAccessGrant(t *testing.T) {
 		makeDatabase("projects/hr/instances/prod-pg/databases/employee_db", "projects/hr/instances/prod-pg", "projects/hr", "POSTGRES", "ds-admin-1"),
 	}
 	for name, tt := range map[string]struct {
-		result map[string]any
-		want   string
+		statement string
+		result    map[string]any
+		want      string
 	}{
 		"the access check refused the tables": {
 			result: map[string]any{
-				"error": "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee]",
+				"error":     "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee]",
+				"statement": "SELECT first_name FROM employee",
 				"permissionDenied": map[string]any{
 					"requiredPermissions": []string{"bb.sql.select"},
 					"resources":           []string{"projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee"},
 				},
 			},
 			want: "in a Read-write session, request an access grant for this statement with request_access_grant " +
+				"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor",
+		},
+		// A grant must name a read-only statement and applies only to that exact
+		// statement, so the batch as a whole can neither be granted nor use the grant.
+		"the access check refused a read in a batch that also writes": {
+			statement: "SELECT first_name FROM employee; UPDATE employee SET first_name = 'x'",
+			result: map[string]any{
+				"error":     "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee]",
+				"statement": "SELECT first_name FROM employee;",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.select"},
+					"resources":           []string{"projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee"},
+				},
+			},
+			want: `the batch stopped at "SELECT first_name FROM employee;": in a Read-write session, request an access grant for that statement alone ` +
+				"with request_access_grant and, once approved, run it by itself " +
 				"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor",
 		},
 		"the access check refused a metadata read": {
@@ -816,10 +834,14 @@ func TestQueryDatabase_TableAccessDenialAdvisesAnAccessGrant(t *testing.T) {
 				mockListDatabases(databases).ServeHTTP(w, r)
 			})
 			s := newTestServerWithMock(t, handler)
+			statement := tt.statement
+			if statement == "" {
+				statement = "SELECT first_name FROM employee"
+			}
 
 			result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
 				Database:  "employee_db",
-				Statement: "SELECT first_name FROM employee",
+				Statement: statement,
 			})
 			require.NoError(t, err)
 			require.True(t, result.IsError)
