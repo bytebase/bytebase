@@ -5,7 +5,9 @@ set -o pipefail
 
 E2E_SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$E2E_SKILL_DIR/../../.." && pwd)"
-E2E_RESULTS_ROOT="${E2E_RESULTS_ROOT:-/tmp/e2e-routine}"
+# One results root per checkout: run-dir.sh keeps its CURRENT pointer there,
+# and two worktrees running at once must not take over each other's run.
+E2E_RESULTS_ROOT="${E2E_RESULTS_ROOT:-/tmp/e2e-routine/$(basename "$REPO_ROOT")-$(printf '%s' "$REPO_ROOT" | cksum | cut -d' ' -f1)}"
 E2E_LEDGER_BRANCH="${E2E_LEDGER_BRANCH:-claude/e2e-ledger}"
 
 # The cloud image ships Node 20-22 on PATH; setup-env.sh installs 24 under /opt/node24.
@@ -61,6 +63,23 @@ main_sha() {
     log "fetch of origin/main failed; using HEAD"
     git -C "$REPO_ROOT" rev-parse HEAD
   fi
+}
+
+# What the binary is built from; the e2e tree is excluded because specs are
+# read at run time and an adaptation changes only them.
+PRODUCT_PATHSPEC=(frontend backend proto go.mod go.sum ':!frontend/tests/e2e')
+
+# The main commit the checkout's product files come from (references/ledger.md):
+# HEAD when it is on main, the merge base when the commits above it, and any
+# uncommitted change, touch only the e2e tree or .claude/. Exit 1 when the
+# product files match no main commit.
+tested_sha() {
+  local main base
+  main="$(main_sha)" || return 1
+  base="$(git -C "$REPO_ROOT" merge-base HEAD "$main" 2>/dev/null)" || return 1
+  git -C "$REPO_ROOT" diff --quiet "$base" HEAD -- "${PRODUCT_PATHSPEC[@]}" || return 1
+  [ -z "$(git -C "$REPO_ROOT" status --porcelain -- "${PRODUCT_PATHSPEC[@]}" | head -1)" ] || return 1
+  echo "$base"
 }
 
 run_id_now() { date -u +%Y%m%dT%H%M%SZ; }

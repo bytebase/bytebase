@@ -22,7 +22,7 @@ stamp="$(git rev-parse HEAD) $(git hash-object "$SERVER_BUILD")"
 # Any uncommitted change that can reach the binary invalidates the cached
 # build: the whole frontend tree (package.json, lockfile, Tailwind and Vite
 # config, plugins), not only frontend/src. The e2e specs do not reach it.
-dirty="$(git status --porcelain -- frontend backend proto go.mod go.sum ':!frontend/tests/e2e' | head -1)"
+dirty="$(git status --porcelain -- "${PRODUCT_PATHSPEC[@]}" | head -1)"
 
 timing="$RESULTS/build-timing.txt"
 if [ -x "$BIN" ] && [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$stamp" ] && [ -z "$dirty" ] && [ "${FORCE_BUILD:-0}" != 1 ]; then
@@ -42,8 +42,14 @@ phase() { # phase <name> <cmd...>
   printf '%-16s %5ss\n' "$name" "$dt" | tee -a "$timing" >&2
 }
 
-phase pnpm-install pnpm --dir frontend install --frozen-lockfile
-phase pnpm-release pnpm --dir frontend release
+# pnpm from inside frontend/: corepack picks the version by the working
+# directory, and only there does it see packageManager (pnpm 11). Run from
+# the repo root it falls back to the global pnpm. A node_modules that another
+# pnpm laid out must be rebuilt, and pnpm asks before deleting it, which
+# aborts without a TTY; it is generated, so the build may purge it.
+fe_pnpm() { (cd frontend && pnpm "$@"); }
+phase pnpm-install fe_pnpm install --frozen-lockfile --config.confirmModulesPurge=false
+phase pnpm-release fe_pnpm release
 phase go-build bash "$SERVER_BUILD" "$BIN"
 echo "$stamp" >"$STAMP"
 log "built $BIN from $stamp"
