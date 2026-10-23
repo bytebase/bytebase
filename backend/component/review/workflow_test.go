@@ -1504,7 +1504,7 @@ func TestNonHumanPrincipalApprovesTheStepItsRoleHolds(t *testing.T) {
 		},
 		{
 			name:      "project service account bound in the project policy",
-			actor:     &store.UserMessage{Email: "testdt@project-a.service.bytebase.com", Type: storepb.PrincipalType_SERVICE_ACCOUNT},
+			actor:     &store.UserMessage{Email: "approver@project-a.service.bytebase.com", Type: storepb.PrincipalType_SERVICE_ACCOUNT},
 			inProject: true,
 		},
 		{
