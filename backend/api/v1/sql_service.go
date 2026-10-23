@@ -2044,7 +2044,9 @@ type writeTargetResource struct {
 // Some engines' extractors report auxiliary tables referenced by the change (e.g.
 // the joined/using tables of an UPDATE … JOIN … / DELETE … USING …) alongside the
 // mutated table, others only the primary target; either way this can only ever
-// over-restrict (fail-closed), never under-restrict.
+// over-restrict (fail-closed), never under-restrict. The exception is a SQL Server target
+// left as written (BOT-158, BOT-160): it is checked as a table of that name in the request
+// database.
 //
 // DDL on a non-table object (view/procedure/function/trigger/…) has no table to scope. When
 // such DDL names an EXPLICIT target database (e.g. CREATE VIEW other_db.v), the extractor

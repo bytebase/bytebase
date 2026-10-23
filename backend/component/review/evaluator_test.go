@@ -16,12 +16,11 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 
-	// Registers the BigQuery and SQL Server parser handlers the same way
-	// backend/server ultimate.go does for the server binary; statementTypesFromParser
-	// and ExtractChangedResources resolve through that registry.
+	// Registers the BigQuery parser handlers the same way backend/server
+	// ultimate.go does for the server binary; statementTypesFromParser resolves
+	// through that registry.
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -1159,10 +1158,6 @@ func TestApprovalRuleMatchesOceanBaseSummaryReport(t *testing.T) {
 	}
 }
 
-// TestApprovalRuleMatchesMSSQLAliasTarget routes SQL Server DML through the summary
-// report and the approval matcher with the rule a customer uses for tables with
-// triggers. An aliased UPDATE of a listed table takes that rule; an alias named like a
-// listed table but writing another table does not. BOT-158.
 func TestApprovalRuleMatchesMSSQLAliasTarget(t *testing.T) {
 	strict := &storepb.WorkspaceApprovalSetting_Rule{
 		Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,

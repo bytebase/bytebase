@@ -20,10 +20,6 @@ func init() {
 func extractChangedResources(currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 
-	// The CTE check in resolveDMLWriteTarget matches names under the metadata's case
-	// sensitivity, as prior backup does; nil metadata (tests, unsynced) is case-insensitive.
-	caseSensitive := dbMetadata != nil && dbMetadata.GetIsObjectCaseSensitive()
-
 	var dmlCount, insertCount int
 	var dmlStatements []string
 
@@ -127,13 +123,13 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 
 		case *ast.UpdateStmt:
 			if ref, ok := n.Relation.(*ast.TableRef); ok {
-				addTable(resolveDMLWriteTarget(ref, n.FromClause, n.WithClause, caseSensitive), false)
+				addTable(resolveDMLWriteTarget(ref, n.FromClause, n.WithClause), false)
 			}
 			addDML(omniAST.Text)
 
 		case *ast.DeleteStmt:
 			if ref, ok := n.Relation.(*ast.TableRef); ok {
-				addTable(resolveDMLWriteTarget(ref, n.FromClause, n.WithClause, caseSensitive), false)
+				addTable(resolveDMLWriteTarget(ref, n.FromClause, n.WithClause), false)
 			}
 			addDML(omniAST.Text)
 
@@ -183,23 +179,52 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 	}, nil
 }
 
-// resolveDMLWriteTarget resolves an UPDATE/DELETE target that names a FROM-clause
-// correlation to the aliased physical table, so table-scoped grants and approval rules
-// see the real table. Only an unqualified target can be an alias; SQL Server rejects a
-// correlation name that shares a qualified target's exposed name. The match is exact:
-// synced metadata reports every SQL Server database as case-insensitive, even one with a
-// case-sensitive collation, so folding would bind a target to a different table there.
-// A differently cased alias (BOT-158) and a CTE or derived-table target (BOT-160) are
-// left as written.
-func resolveDMLWriteTarget(target *ast.TableRef, fromClause *ast.List, withClause *ast.WithClause, caseSensitive bool) *ast.TableRef {
-	if target == nil || target.Schema != "" || target.Database != "" || fromClause == nil {
+// resolveDMLWriteTarget returns the table an UPDATE/DELETE target writes. SQL Server binds an
+// unqualified target to the FROM table with that exposed name: its alias, or its own name when
+// it has none. A qualified target names its own table, even when a FROM entry is aliased to its
+// bare name. Synced metadata reports every SQL Server database as case-insensitive, even under a
+// case-sensitive collation, so a target binds only when both collations agree: the FROM match is
+// exact and the CTE check folds case. Other targets stay as written, such as a differently cased
+// name (BOT-158) and a CTE or derived-table target (BOT-160).
+func resolveDMLWriteTarget(target *ast.TableRef, fromClause *ast.List, withClause *ast.WithClause) *ast.TableRef {
+	if target.Schema != "" || target.Database != "" || fromClause == nil {
 		return target
 	}
-	_, physicalRef := findPhysicalTableForAlias(fromClause, &TableReference{Table: target.Object})
-	if physicalRef == nil || isCTETarget(physicalRef, withClause, caseSensitive) {
+	source := tableByExposedName(fromClause, target.Object)
+	if source == nil || isCTETarget(source, withClause, false /* caseSensitive */) {
 		return target
 	}
-	return physicalRef
+	return source
+}
+
+func tableByExposedName(node ast.Node, name string) *ast.TableRef {
+	switch n := node.(type) {
+	case *ast.List:
+		for _, item := range n.Items {
+			if ref := tableByExposedName(item, name); ref != nil {
+				return ref
+			}
+		}
+	case *ast.TableRef:
+		if n.Alias == name || (n.Alias == "" && n.Object == name) {
+			return n
+		}
+	case *ast.AliasedTableRef:
+		// omni wraps an unaliased table that has TABLESAMPLE in an AliasedTableRef.
+		if n.Alias == "" {
+			return tableByExposedName(n.Table, name)
+		}
+		if ref, ok := n.Table.(*ast.TableRef); ok && n.Alias == name {
+			return ref
+		}
+	case *ast.JoinClause:
+		if ref := tableByExposedName(n.Left, name); ref != nil {
+			return ref
+		}
+		return tableByExposedName(n.Right, name)
+	default:
+	}
+	return nil
 }
 
 func omniTableRefTriple(ref *ast.TableRef, defaultDatabase, defaultSchema string) (string, string, string) {

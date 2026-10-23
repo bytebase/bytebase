@@ -97,12 +97,7 @@ func TestWriteTargetsFromChangeSummaryRefusesSkippedStatements(t *testing.T) {
 	require.Nil(t, writeTargetsFromChangeSummary(extract("CREATE OR REPLACE TABLE other_db.t (a INT);")))
 }
 
-// TestMSSQLAliasWriteTargetGrantConditions runs SQL Server DML through the extractor
-// and the write-target handoff the SQL Editor authorizes against, with metadata synced
-// the way production syncs SQL Server (case-insensitive). An aliased target must reach
-// the grant check as its real table, so a grant on the alias name or on another table
-// does not authorize it. BOT-158.
-func TestMSSQLAliasWriteTargetGrantConditions(t *testing.T) {
+func TestMSSQLDMLWriteTargetGrantConditions(t *testing.T) {
 	t.Parallel()
 	dbMeta := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
@@ -148,12 +143,23 @@ func TestMSSQLAliasWriteTargetGrantConditions(t *testing.T) {
 	require.Equal(t, []writeTargetResource{{database: "db", schema: "dbo", table: "Orders"}}, shadowing)
 	require.False(t, authorized(customersGrant, shadowing[0]))
 
-	// An alias of a table in another database is gated by that database, not the request one.
+	// A FROM table in another database, aliased or not, is gated by that database, not the request one.
 	crossDatabase := targets(`UPDATE o SET o.status = 'x' FROM otherdb.dbo.Orders AS o WHERE o.id = 1;`)
 	require.Equal(t, []writeTargetResource{{database: "otherdb", schema: "dbo", table: "Orders"}}, crossDatabase)
 	require.False(t, authorized(ordersGrant, crossDatabase[0]))
+	unaliasedCrossDatabase := targets(`UPDATE Orders SET status = 'x' FROM otherdb.dbo.Orders WHERE Orders.id = 1;`)
+	require.Equal(t, []writeTargetResource{{database: "otherdb", schema: "dbo", table: "Orders"}}, unaliasedCrossDatabase)
+	require.False(t, authorized(ordersGrant, unaliasedCrossDatabase[0]))
 
-	// On a case-sensitive database this writes a real table O, so the target stays as written.
+	otherSchema := targets(`UPDATE Orders SET status = 'x' FROM sales.Orders WHERE Orders.id = 1;`)
+	require.Equal(t, []writeTargetResource{{database: "db", schema: "sales", table: "Orders"}}, otherSchema)
+	require.False(t, authorized(uiOrdersGrant, otherSchema[0]))
+
+	qualified := targets(`UPDATE dbo.Orders SET status = 'x' FROM dbo.Orders AS o JOIN dbo.Customers AS Orders ON Orders.id = o.id WHERE o.id = 1;`)
+	require.Equal(t, []writeTargetResource{{database: "db", schema: "dbo", table: "Orders"}}, qualified)
+	require.False(t, authorized(customersGrant, qualified[0]))
+
+	// Exact match: a case-insensitive database writes Orders here (BOT-158); a case-sensitive one writes table O.
 	caseVariant := targets(`UPDATE O SET status = 'x' FROM dbo.Orders AS o WHERE o.id = 1;`)
 	require.Equal(t, []writeTargetResource{{database: "db", table: "O"}}, caseVariant)
 	require.False(t, authorized(ordersGrant, caseVariant[0]))
