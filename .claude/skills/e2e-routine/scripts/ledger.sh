@@ -32,11 +32,13 @@ last-result) git show "$(read_ref):last-run.json" 2>/dev/null | python3 -c 'impo
 show)     git show "$(read_ref):last-run.json" 2>/dev/null || echo '{}' ;;
 flakes)   git show "$(read_ref):flakes.json" 2>/dev/null || echo '{}' ;;
 last-green)
-  # The attribution baseline (references/ledger.md): the newest green run's
-  # SHA, else the last run's, else main 60 days back. Computed on each call so
-  # a phase never depends on a variable an earlier shell set.
+  # The attribution baseline (references/ledger.md): the newest green run on
+  # main, else the newest run on main, else main 60 days back. Computed on each
+  # call so a phase never depends on a variable an earlier shell set.
   r="$(read_ref)"
-  sha="$(python3 - "$r" <<'PY'
+  main="$(main_ref_strict)" || die "no origin/main to check the ledger against"
+  # Every entry as "<result> <sha>", newest first; on_main judges each one.
+  entries="$(python3 - "$r" <<'PY'
 import json, subprocess, sys
 ref = sys.argv[1]
 def git(*a):
@@ -47,26 +49,38 @@ for path in git("ls-tree", "--name-only", f"{ref}:runs").split():
         runs.append(json.loads(git("show", f"{ref}:runs/{path}")))
     except ValueError:
         pass
-green = [e for e in runs if e.get("result") == "green" and e.get("sha")]
-if green:
-    print(max(green, key=lambda e: (e.get("date", ""), e.get("run_id", "")))["sha"])
-else:
-    try:
-        print(json.loads(git("show", f"{ref}:last-run.json")).get("sha", ""))
-    except ValueError:
-        print("")
+for e in sorted(runs, key=lambda e: (e.get("date", ""), e.get("run_id", "")), reverse=True):
+    if e.get("sha"):
+        print(e.get("result", "?"), e["sha"])
 PY
 )"
-  [ -n "$sha" ] || sha="$(git rev-list -1 --before='60 days ago' "$(main_sha)")"
+  green="" newest=""
+  while read -r result s; do
+    [ -n "$s" ] && on_main "$s" "$main" || continue
+    [ -n "$newest" ] || newest="$s"
+    if [ "$result" = green ]; then green="$s"; break; fi
+  done <<<"$entries"
+  sha="${green:-$newest}"
+  [ -n "$sha" ] || sha="$(git rev-list -1 --before='60 days ago' "$main")"
+  [ -n "$sha" ] || die "no baseline: no ledger entry on main and no main commit 60 days back"
   echo "$sha"
   ;;
 record)
   RESULTS="${2:?results dir}"; note="${3:-}"
   [ -f "$RESULTS/summary.json" ] || die "$RESULTS/summary.json missing; run summarize.py first"
+  sha="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("meta", {}).get("sha", ""))' "$RESULTS/summary.json")"
+  # Only a main commit may enter the ledger (references/ledger.md); a dry run
+  # from a branch records with a warning, since it never reaches the remote.
+  if ! on_main "$sha"; then
+    dry_run || die "run tested ${sha:-no SHA}, which is not a commit on main; not recorded"
+    log "WARNING: ${sha:-no SHA} is not on main; recording on the dry-run ref only"
+  fi
   tmp="$(mktemp -d)"
   if dry_run && has_ref "$dry_ref"; then
     git worktree add -q --detach "$tmp" "$dry_ref"
-  elif fetch_ledger; then
+  elif fetch_ledger || has_ref "$remote_ref"; then
+    # A failed fetch keeps the last fetched ledger rather than starting an
+    # empty one; a push from it is then rejected, never a rewrite.
     git worktree add -q --detach "$tmp" "$remote_ref"
   else
     root="$(git "${ident[@]}" commit-tree "$(git hash-object -t tree /dev/null)" -m "e2e ledger root")"
@@ -94,6 +108,7 @@ else:
 entry = {"run_id": meta.get("run_id"), "sha": sha, "date": day, "result": result, "totals": t,
          "failed": [f"{e['file']}::{e['title']}" for e in s.get("failed", [])],
          "flaky": [f"{e['file']}::{e['title']}" for e in s.get("flaky", [])],
+         "lock_unstable": [f"{e['file']}::{e['title']}" for e in s.get("lock_unstable", [])],
          "infra": s.get("infra"), "note": note, "run_url": run_url}
 os.makedirs(os.path.join(dest, "runs"), exist_ok=True)
 # The run id keeps a retry of the same SHA on the same day from overwriting
@@ -114,7 +129,7 @@ if not os.path.exists(os.path.join(dest, "README.md")):
 print(f"recorded {result} run {entry['run_id']} @ {sha[:7]}")
 PY
   (
-    cd "$tmp" && git add -A && git "${ident[@]}" commit -q -m "e2e ledger: $(date -u +%F) $(git -C "$REPO_ROOT" rev-parse --short HEAD)" \
+    cd "$tmp" && git add -A && git "${ident[@]}" commit -q -m "e2e ledger: $(date -u +%F) ${sha:0:10}" \
       && if dry_run; then
            git update-ref "$dry_ref" HEAD
            log "E2E_LEDGER_PUSH=0: not pushing; recorded on $dry_ref, which ledger.sh reads while E2E_LEDGER_PUSH=0"
