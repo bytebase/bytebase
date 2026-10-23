@@ -345,13 +345,14 @@ describe("QueryPlanDiagram", () => {
     expect(screen.getAllByTestId("plan-node-card")).toHaveLength(3);
   });
 
-  test("opens a plan too deep to read whole at a readable scale, from its root down", () => {
+  test("opens a plan too deep to read whole at a readable scale, on its costliest operator", () => {
     sizeViewport(600, 400);
     renderDiagram();
 
-    // Shown whole, this plan would open at about half size.
+    // Shown whole, this plan would open at about half size. Its costliest
+    // operator is below the root, so the view starts scrolled down to it.
     expect(scaleNow()).toBe(PLAN_READABLE_SCALE);
-    expect(canvasTransform()).toMatch(/translate\([\d.]+px, 0px\)/);
+    expect(canvasTransform()).toMatch(/translate\([\d.-]+px, -[\d.]+px\)/);
     expect(screen.getByTestId("plan-mini-map")).toBeInTheDocument();
   });
 

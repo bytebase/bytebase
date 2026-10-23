@@ -328,38 +328,8 @@ export function planRevealNode(
   return next;
 }
 
-/**
- * The URL fragment naming a plan node, which is what makes one shareable.
- *
- * Ids come from a parser rather than from the user, but they are not promised
- * to stay bare digits and dots, so they are escaped both ways.
- */
-const NODE_FRAGMENT_PREFIX = "node-";
-
-export function planNodeFragment(id: string): string {
-  return `#${NODE_FRAGMENT_PREFIX}${encodeURIComponent(id)}`;
-}
-
-/** The node id a fragment names, or undefined when it names something else. */
-export function planNodeIdFromFragment(
-  fragment: string | undefined
-): string | undefined {
-  if (!fragment) return undefined;
-  const body = fragment.startsWith("#") ? fragment.slice(1) : fragment;
-  if (!body.startsWith(NODE_FRAGMENT_PREFIX)) return undefined;
-  const id = body.slice(NODE_FRAGMENT_PREFIX.length);
-  if (!id) return undefined;
-  try {
-    return decodeURIComponent(id);
-  } catch {
-    // A hand-edited fragment can hold a stray percent sign, which is a bad
-    // fragment rather than a reason to fail the page.
-    return undefined;
-  }
-}
-
-// The standalone visualizer entry never initializes i18n, so number formatting
-// is pinned to one locale rather than following the workspace language.
+// Number formatting is pinned to one locale: the viewer's text arrives through
+// a translate function, and its numbers stay comparable across plans.
 const costFormat = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
@@ -435,40 +405,8 @@ export function planEdgeWidth(
   return Math.round(width * 100) / 100;
 }
 
-export interface PlanTimelineRow extends PlanRow {
-  /** Where the node's first row is ready, as a fraction of the plan's cost. */
-  readonly start: number;
-  /** Where the node's last row is ready, as a fraction of the plan's cost. */
-  readonly end: number;
-  /** The node's self cost as a fraction of the plan's cost. */
-  readonly share: number;
-}
-
-/**
- * Every node as a span from its startup cost to its total cost.
- *
- * Both costs include the node's whole subtree, so a span says how much of the
- * plan's cost a node accounts for and how much of that is paid before its first
- * row. It is not a schedule: siblings each start from their own subtree's cost,
- * so two inputs of a join overlap on this axis while actually running one after
- * the other.
- */
-export function planTimeline(tree: PlanTree): PlanTimelineRow[] {
-  const fraction = (value = 0) =>
-    tree.costBasis <= 0 ? 0 : Math.min(1, Math.max(0, value / tree.costBasis));
-  return planRows(tree.root).map((row) => {
-    const start = fraction(row.node.startupCost);
-    return {
-      ...row,
-      start,
-      end: Math.max(start, fraction(row.node.totalCost)),
-      share: planSelfCostShare(row.node, tree),
-    };
-  });
-}
-
-/** How many operators the summary names before it stops being a summary. */
-export const PLAN_COSTLIEST_LIMIT = 5;
+/** How many operators the side panel ranks before it stops being a summary. */
+export const PLAN_COSTLIEST_LIMIT = 3;
 
 /**
  * The nodes that own the most cost, largest first. A node that adds nothing on
@@ -482,35 +420,6 @@ export function planCostliestNodes(
     .filter((node) => (node.selfCost ?? 0) > 0)
     .sort((a, b) => (b.selfCost ?? 0) - (a.selfCost ?? 0))
     .slice(0, limit);
-}
-
-export interface PlanOperationCost {
-  readonly nodeType: string;
-  readonly count: number;
-  readonly selfCost: number;
-  readonly share: number;
-}
-
-/** Each node type in the plan with what it costs in total, largest first. */
-export function planCostByOperation(tree: PlanTree): PlanOperationCost[] {
-  const totals = new Map<string, { count: number; selfCost: number }>();
-  for (const node of tree.nodes) {
-    const entry = totals.get(node.nodeType) ?? { count: 0, selfCost: 0 };
-    entry.count += 1;
-    entry.selfCost += node.selfCost ?? 0;
-    totals.set(node.nodeType, entry);
-  }
-  return [...totals]
-    .map(([nodeType, entry]) => ({
-      nodeType,
-      count: entry.count,
-      selfCost: entry.selfCost,
-      share:
-        tree.costBasis <= 0 ? 0 : Math.min(1, entry.selfCost / tree.costBasis),
-    }))
-    .sort(
-      (a, b) => b.selfCost - a.selfCost || a.nodeType.localeCompare(b.nodeType)
-    );
 }
 
 /**

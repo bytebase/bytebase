@@ -335,6 +335,29 @@ describe("planOpeningViewport", () => {
     expect(planFitsViewport(layout, size, view)).toBe(false);
   });
 
+  test("centers the focus node when it is given", () => {
+    const tree = parseFixture(hashJoinAggregateSort);
+    const layout = layoutPlan(tree.root);
+    const size = { width: 800, height: 300 };
+    // The orders scan sits at the bottom of the plan, below what opens on the
+    // root.
+    const focus = layout.nodes.find((entry) => entry.node.id === "0.0.0.0");
+    if (!focus) throw new Error("the fixture's orders scan is missing");
+    const view = planOpeningViewport(layout, size, focus.node.id);
+    const center = planNodeCenter(focus);
+
+    expect(view.scale).toBe(PLAN_READABLE_SCALE);
+    expect(view.y).toBeLessThan(0);
+    // Centered, unless that would scroll past the plan's bottom edge.
+    expect(view.y + center.y * view.scale).toBeCloseTo(
+      Math.max(
+        size.height / 2,
+        center.y * view.scale + size.height - layout.height * view.scale
+      ),
+      6
+    );
+  });
+
   test("centers the root across a plan wider than the screen", () => {
     const layout = layoutPlan(bare("0", leaves("0", 12)));
     const size = { width: 600, height: 400 };

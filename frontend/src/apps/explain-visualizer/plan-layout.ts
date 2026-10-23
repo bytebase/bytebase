@@ -1,6 +1,4 @@
 import { hierarchy, tree } from "d3-hierarchy";
-// Deep import: `@/utils` (the barrel) transitively pulls in Monaco, which this
-// standalone entry never loads. `minmax` itself is a leaf math helper.
 import { minmax } from "@/utils/math";
 import type { PlanNode } from "./plan-model";
 
@@ -188,13 +186,14 @@ export function planFitViewport(
 
 /**
  * The view the diagram opens on: the whole plan when its cards are readable at
- * the scale that shows all of it, and otherwise the readable scale from the
- * root down, centered on the root as far as the plan's edges allow. The
- * mini-map then offers the rest.
+ * the scale that shows all of it, and otherwise the readable scale centered on
+ * the focus node, or the root when there is none, as far as the plan's edges
+ * allow. The mini-map then offers the rest.
  */
 export function planOpeningViewport(
   layout: PlanLayout,
-  size: PlanViewportSize
+  size: PlanViewportSize,
+  focusId?: string
 ): PlanViewport {
   const fit = planFitViewport(layout, size);
   if (size.width <= 0 || size.height <= 0) return fit;
@@ -202,15 +201,19 @@ export function planOpeningViewport(
   const scale = PLAN_READABLE_SCALE;
   const width = layout.width * scale;
   const height = layout.height * scale;
-  const [root] = layout.nodes;
-  const rootX = root ? planNodeCenter(root).x * scale : width / 2;
+  const focus =
+    layout.nodes.find((entry) => entry.node.id === focusId) ?? layout.nodes[0];
+  const center = focus ? planNodeCenter(focus) : { x: layout.width / 2, y: 0 };
   return {
     scale,
     x:
       width <= size.width
         ? (size.width - width) / 2
-        : minmax(size.width / 2 - rootX, size.width - width, 0),
-    y: height <= size.height ? (size.height - height) / 2 : 0,
+        : minmax(size.width / 2 - center.x * scale, size.width - width, 0),
+    y:
+      height <= size.height
+        ? (size.height - height) / 2
+        : minmax(size.height / 2 - center.y * scale, size.height - height, 0),
   };
 }
 

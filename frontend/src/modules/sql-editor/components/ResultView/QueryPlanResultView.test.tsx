@@ -11,26 +11,21 @@ vi.mock("@/apps/explain-visualizer/QueryPlanView", () => ({
   QueryPlanView: ({
     planSource,
     textPlanSource,
-    planQuery,
     note,
     translate,
     disallowCopyingData,
-    syncSelectionWithHash,
   }: {
     planSource: string;
     textPlanSource?: string;
-    planQuery?: string;
     note?: React.ReactNode;
     translate: (key: "tab.text") => string;
     disallowCopyingData?: boolean;
-    syncSelectionWithHash?: boolean;
   }) => (
     <div
       data-testid="inline-query-plan"
       data-copy-disabled={disallowCopyingData}
-      data-hash-sync={syncSelectionWithHash}
     >
-      {planQuery}:{planSource}:{textPlanSource}:{translate("tab.text")}
+      {planSource}:{textPlanSource}:{translate("tab.text")}
       {note ? <span>{note}</span> : null}
     </div>
   ),
@@ -56,29 +51,24 @@ describe("QueryPlanResultView", () => {
       <QueryPlanResultView
         engine={Engine.POSTGRES}
         rawPlan="raw plan"
-        initialPlan={{ source: "structured plan", statement: "SELECT 1" }}
+        initialPlan={{ source: "structured plan" }}
         disallowCopyingData
       />
     );
 
     expect(screen.getByTestId("inline-query-plan")).toHaveTextContent(
-      "SELECT 1:structured plan:raw plan:sql-editor.query-plan-viewer.tab.text"
+      "structured plan:raw plan:sql-editor.query-plan-viewer.tab.text"
     );
     expect(screen.queryByRole("tab")).toBeNull();
     expect(screen.getByTestId("inline-query-plan")).toHaveAttribute(
       "data-copy-disabled",
       "true"
     );
-    expect(screen.getByTestId("inline-query-plan")).toHaveAttribute(
-      "data-hash-sync",
-      "false"
-    );
   });
 
   test("loads a drawable plan immediately and opens on its text tab", async () => {
     const loadPlan = vi.fn().mockResolvedValue({
       source: "structured plan",
-      statement: "EXPLAIN SELECT 1",
     });
     render(
       <QueryPlanResultView
@@ -98,7 +88,7 @@ describe("QueryPlanResultView", () => {
   });
 
   test("does not reload when only the loader identity changes", async () => {
-    const plan = { source: "structured plan", statement: "EXPLAIN SELECT 1" };
+    const plan = { source: "structured plan" };
     const first = vi.fn().mockResolvedValue(plan);
     const second = vi.fn().mockResolvedValue(plan);
     const { rerender } = render(
@@ -165,7 +155,7 @@ describe("QueryPlanResultView", () => {
   test("loads a text plan on demand when no picture is available", async () => {
     const loadPlan = vi
       .fn()
-      .mockResolvedValue({ source: "Seq Scan on t", statement: "SELECT 1" });
+      .mockResolvedValue({ source: "Seq Scan on t" });
     render(<QueryPlanResultView rawPlan="" loadPlan={loadPlan} estimated />);
 
     expect(screen.getByText("common.loading")).toBeInTheDocument();
@@ -214,7 +204,7 @@ describe("QueryPlanResultView", () => {
   test("puts the estimate note in the drawable viewer's tab row", async () => {
     const loadPlan = vi
       .fn()
-      .mockResolvedValue({ source: "structured plan", statement: "SELECT 1" });
+      .mockResolvedValue({ source: "structured plan" });
     render(
       <QueryPlanResultView
         engine={Engine.POSTGRES}

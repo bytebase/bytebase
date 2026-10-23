@@ -3469,8 +3469,7 @@
       "copy": {
         "copied": "Copiado",
         "failed": "Error al copiar",
-        "plan": "Copiar plan",
-        "query": "Copiar consulta"
+        "plan": "Copiar plan"
       },
       "details": {
         "select-node": "Selecciona un nodo para ver sus detalles."
@@ -3534,32 +3533,13 @@
         "startup-cost": "Coste inicial",
         "total-cost": "Coste total"
       },
-      "query": {
-        "missing": "La sentencia no se guardó con este plan."
-      },
       "summary": {
-        "added-cost": "Coste añadido",
-        "cost-by-operation": "Coste por operación",
-        "cost-by-operation-description": "Cada tipo de nodo del plan y su coste total.",
-        "cost-ranges": "Rangos de coste",
-        "cost-ranges-description": "Cada nodo abarca desde su coste inicial —el coste antes de su primera fila— hasta su coste total; ambos incluyen todo lo que hay debajo. Los intervalos más oscuros contienen más coste del plan. Los costes no son un calendario: dos entradas de una unión se solapan aquí, pero se ejecutan una tras otra.",
         "costliest": "Operadores más costosos",
-        "costliest-description": "Ordenados por el coste que un nodo añade sobre sus hijos. Cuando una entrada se ejecuta repetidamente, como bajo un bucle anidado, algunos motores cuentan las repeticiones en el nodo que la vuelve a ejecutar y no en la propia entrada.",
-        "count": "Cantidad",
-        "estimate-note": "La sentencia se planificó, pero no se ejecutó, por lo que todas las cifras son estimaciones del optimizador y no mediciones. Las unidades de coste son arbitrarias y solo comparables dentro de este plan.",
-        "estimated-rows-returned": "Filas devueltas estimadas",
-        "no-added-cost": "Ningún nodo de este plan añade un coste estimado propio.",
-        "nodes": "Nodos",
-        "operation": "Operación",
-        "share": "Proporción",
-        "timeline-node": "{{name}}, coste de {{startup}} a {{total}}, {{share}} del coste del plan",
-        "total-estimated-cost": "Coste total estimado"
+        "no-added-cost": "Ningún nodo de este plan añade un coste estimado propio."
       },
       "tab": {
         "diagram": "Diagrama",
-        "grid": "Cuadrícula",
-        "query": "Consulta",
-        "summary": "Resumen",
+        "grid": "Tabla",
         "text": "Texto"
       },
       "totals": {
