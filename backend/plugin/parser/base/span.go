@@ -378,7 +378,7 @@ type GetQuerySpanContext struct {
 	TempTables map[string]*PhysicalTable
 	// PlanOutput is the plan output a SQL Server batch has turned on, carried to
 	// its later statements like TempTables.
-	PlanOutput *PlanOutput
+	PlanOutput PlanOutput
 
 	// Adding the engine information here is a trade-off between the copy-pasted and shared code.
 	// For engines with more different, we implement the getQuerySpan separately.
@@ -389,13 +389,10 @@ type GetQuerySpanContext struct {
 	Engine storepb.Engine
 }
 
-// PlanOutput is what SET SHOWPLAN_* and SET STATISTICS XML or PROFILE turned on
-// in a SQL Server batch. Under Showplan a statement is planned instead of run;
-// under Statistics it runs and returns its plan as well.
-type PlanOutput struct {
-	Showplan   bool
-	Statistics bool
-}
+// PlanOutput is the SQL Server plan options a batch has turned on, keyed by
+// option name as the parser writes it, such as "SHOWPLAN_XML" or "STATISTICS
+// XML". Each stays on until its own SET ... OFF.
+type PlanOutput map[string]bool
 
 // GetDatabaseMetadataFunc is the function to get database metadata.
 // It may return nil metadata and a nil error when Bytebase has not synced the

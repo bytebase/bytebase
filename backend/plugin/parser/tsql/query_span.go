@@ -2,6 +2,7 @@ package tsql
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/mssql/ast"
@@ -34,34 +35,45 @@ func GetQuerySpan(
 	return span, nil
 }
 
-// markPlanOutput records what a SET statement turns on in output and marks the
-// statements a plan comes back for, since reading a plan needs bb.sql.explain.
-// Under SHOWPLAN a read is planned instead of run, so it is an Explain. Under
-// STATISTICS XML or PROFILE a statement runs and returns its plan too, like
-// EXPLAIN ANALYZE. A SET that names either option is marked the same way; any
-// other SET follows the batch's settings like every other statement.
-func markPlanOutput(span *base.QuerySpan, set *ast.SetOptionStmt, output *base.PlanOutput) {
+var (
+	// showplanOptions plan a statement instead of running it.
+	showplanOptions = []string{"SHOWPLAN_ALL", "SHOWPLAN_TEXT", "SHOWPLAN_XML"}
+	// statisticsOptions run a statement and return its plan as well.
+	statisticsOptions = []string{"STATISTICS XML", "STATISTICS PROFILE"}
+)
+
+// markPlanOutput records what a SET statement turns on or off in output and
+// marks the statements a plan comes back for, since reading a plan needs
+// bb.sql.explain. While a SHOWPLAN option is on a read is an Explain; while a
+// STATISTICS option is on a statement is marked like EXPLAIN ANALYZE. A SET
+// that names one of these options is marked the same way, and any other SET
+// follows the batch's options like every other statement.
+func markPlanOutput(span *base.QuerySpan, set *ast.SetOptionStmt, output base.PlanOutput) {
 	if set != nil {
-		on := false
-		if value, ok := set.Value.(*ast.ColumnRef); ok {
-			on = strings.EqualFold(value.Column, "ON")
+		// Anything but OFF counts as on, so an unexpected form costs a check
+		// rather than skipping one.
+		on := true
+		if value, ok := set.Value.(*ast.ColumnRef); ok && strings.EqualFold(value.Column, "OFF") {
+			on = false
 		}
 		for _, option := range set.Options {
-			switch strings.ToUpper(option) {
-			case "SHOWPLAN_ALL", "SHOWPLAN_TEXT", "SHOWPLAN_XML":
-				output.Showplan = on
+			name := strings.ToUpper(option)
+			switch {
+			case slices.Contains(showplanOptions, name):
+				output[name] = on
 				span.Type = base.Explain
-			case "STATISTICS XML", "STATISTICS PROFILE":
-				output.Statistics = on
+			case slices.Contains(statisticsOptions, name):
+				output[name] = on
 				span.ExplainAnalyze = true
 			default:
 			}
 		}
 	}
-	if output.Showplan && span.Type == base.Select {
+	isOn := func(name string) bool { return output[name] }
+	if slices.ContainsFunc(showplanOptions, isOn) && span.Type == base.Select {
 		span.Type = base.Explain
 	}
-	if output.Statistics {
+	if slices.ContainsFunc(statisticsOptions, isOn) {
 		span.ExplainAnalyze = true
 	}
 }

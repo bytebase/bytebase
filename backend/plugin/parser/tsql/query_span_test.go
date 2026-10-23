@@ -176,7 +176,8 @@ func TestGetQuerySpanCyclicViewReference(t *testing.T) {
 
 // TestGetQuerySpanMarksPlanOutput pins which statements of a batch return a
 // plan: a SET that names SHOWPLAN_* or STATISTICS XML or PROFILE, and every
-// statement while one is on, comments and option lists included.
+// statement while one is on, comments and option lists included. Each option
+// stays on until its own OFF.
 func TestGetQuerySpanMarksPlanOutput(t *testing.T) {
 	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{{Name: "db"}})
 	type want struct {
@@ -190,6 +191,8 @@ func TestGetQuerySpanMarksPlanOutput(t *testing.T) {
 		{"SELECT 2", base.Select, true},
 		{"SET NOCOUNT ON", base.Select, true},
 		{"DELETE FROM t", base.DML, true},
+		{"SET STATISTICS PROFILE OFF", base.Select, true},
+		{"SELECT 8", base.Select, true},
 		{"SET STATISTICS XML OFF", base.Select, true},
 		{"SELECT 3", base.Select, false},
 		{"SET STATISTICS IO ON", base.Select, false},
@@ -199,6 +202,7 @@ func TestGetQuerySpanMarksPlanOutput(t *testing.T) {
 		{"SET STATISTICS PROFILE OFF", base.Select, true},
 		{"SET SHOWPLAN_TEXT ON -- z", base.Explain, false},
 		{"SET NOCOUNT OFF", base.Explain, false},
+		{"SET SHOWPLAN_ALL OFF", base.Explain, false},
 		{"SELECT 6", base.Explain, false},
 		{"SET SHOWPLAN_TEXT OFF", base.Explain, false},
 		{"SELECT 7", base.Select, false},

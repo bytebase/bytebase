@@ -236,7 +236,7 @@ func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.
 	}
 	gCtx.Engine = engine
 	gCtx.TempTables = make(map[string]*PhysicalTable)
-	gCtx.PlanOutput = &PlanOutput{}
+	gCtx.PlanOutput = make(PlanOutput)
 	var results []*QuerySpan
 	for _, stmt := range statements {
 		if stmt.Empty {
