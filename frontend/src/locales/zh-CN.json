@@ -22,7 +22,6 @@
     }
   },
   "agent": {
-    "active-only-chats": "查看活跃对话",
     "ai-not-configured": {
       "configure": "配置",
       "contact-admin": "请联系工作区管理员配置 AI。",

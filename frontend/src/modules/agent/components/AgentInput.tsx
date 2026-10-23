@@ -1,24 +1,12 @@
-import {
-  type CSSProperties,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
 import { Button } from "@/components/ui/button";
-import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { Textarea } from "@/components/ui/textarea";
 import { projectNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import type { DomRefSuggestion } from "../dom";
-import { lazyExtractDomRefSuggestions } from "../dom";
 import { runAgentLoop } from "../logic/agentLoop";
 import {
   getAgentAIConfigurationEnabled,
@@ -59,65 +47,16 @@ import { AgentContextPicker } from "./AgentContextPicker";
 // Module-level map — survives across renders.
 const runTokens = new Map<string, number>();
 
-// Module-level request token for dom ref suggestion loading.
-let domRefRequestToken = 0;
-
 const tokenFormatter = new Intl.NumberFormat();
 
 // ---------------------------------------------------------------------------
 // Helper functions
 // ---------------------------------------------------------------------------
 
-const normalizeSearchText = (value?: string) =>
-  value?.toLowerCase().trim() ?? "";
-
-const matchDomRefSuggestion = (suggestion: DomRefSuggestion, query: string) => {
-  if (!query) return true;
-  const normalizedQuery = normalizeSearchText(query);
-  return [
-    suggestion.ref,
-    suggestion.tag,
-    suggestion.role,
-    suggestion.label,
-    suggestion.value,
-  ].some((value) => normalizeSearchText(value).includes(normalizedQuery));
-};
-
-const getDomRefQuery = (
-  text: string,
-  start: number,
-  end: number
-): { query: string; start: number; end: number } | null => {
-  if (start !== end) return null;
-  const prefix = text.slice(0, start);
-  const matches = prefix.match(/(^|\s)@([^\s@]*)$/);
-  if (!matches) return null;
-  return {
-    query: matches[2] ?? "",
-    start: start - matches[2].length - 1,
-    end,
-  };
-};
-
-const formatDomRefSuggestionMeta = (suggestion: DomRefSuggestion) =>
-  [suggestion.tag.toLowerCase(), suggestion.role]
-    .filter((value): value is string => Boolean(value))
-    .join(" · ");
-
 const getCurrentPageSnapshot = () => ({
   path: router.currentRoute.value.fullPath,
   title: document.title,
 });
-
-const buildMentionListStyle = (rect: DOMRect): CSSProperties => ({
-  left: rect.left,
-  top: rect.top - 4,
-  transform: "translateY(-100%)",
-  width: rect.width,
-});
-
-const getMentionListStyleKey = (rect: DOMRect) =>
-  `${rect.left}:${rect.top}:${rect.width}`;
 
 interface RecentActivityEvent {
   actor: string;
@@ -249,12 +188,6 @@ const mergeOverviewEvidence = (
 // Component
 // ---------------------------------------------------------------------------
 
-interface DomRefMentionOption {
-  label: string;
-  value: string;
-  suggestion: DomRefSuggestion;
-}
-
 export function AgentInput() {
   const { t, i18n } = useTranslation();
   // Zustand selectors
@@ -374,19 +307,9 @@ export function AgentInput() {
 
   // Local state
   const [input, setInput] = useState("");
-  const [selectionStart, setSelectionStart] = useState(0);
-  const [selectionEnd, setSelectionEnd] = useState(0);
-  const [domRefSuggestions, setDomRefSuggestions] = useState<
-    DomRefSuggestion[]
-  >([]);
-  const [isMentionOpen, setIsMentionOpen] = useState(false);
-  const [highlightIndex, setHighlightIndex] = useState(0);
-  const [mentionListStyle, setMentionListStyle] =
-    useState<CSSProperties | null>(null);
 
+  const composerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const mentionListRef = useRef<HTMLDivElement>(null);
-  const mentionListStyleKeyRef = useRef<string | null>(null);
 
   // Derived values
   const isInterrupted = Boolean(currentChat?.interrupted);
@@ -485,80 +408,6 @@ export function AgentInput() {
     void blockWhenAIIsNotConfigured(chat.id);
   }, [blockWhenAIIsNotConfigured, currentChatId]);
 
-  // @-mention autocomplete
-  const activeDomRefQuery = useMemo(
-    () => getDomRefQuery(input, selectionStart, selectionEnd),
-    [input, selectionStart, selectionEnd]
-  );
-
-  const filteredSuggestions = useMemo(() => {
-    const query = activeDomRefQuery?.query ?? "";
-    return domRefSuggestions.filter((s) => matchDomRefSuggestion(s, query));
-  }, [domRefSuggestions, activeDomRefQuery]);
-
-  const mentionOptions = useMemo<DomRefMentionOption[]>(
-    () =>
-      filteredSuggestions.map((suggestion) => ({
-        label: `[${suggestion.ref}] ${suggestion.label}`,
-        value: `[${suggestion.ref}]`,
-        suggestion,
-      })),
-    [filteredSuggestions]
-  );
-
-  // Show/hide mention popover
-  const showMention = isMentionOpen && mentionOptions.length > 0;
-
-  useLayoutEffect(() => {
-    if (!showMention) {
-      mentionListStyleKeyRef.current = null;
-      setMentionListStyle(null);
-      return;
-    }
-
-    let isCancelled = false;
-    let frameId = 0;
-
-    const updateMentionListPosition = () => {
-      const rect = textareaRef.current?.getBoundingClientRect();
-      if (!rect) {
-        if (mentionListStyleKeyRef.current !== null) {
-          mentionListStyleKeyRef.current = null;
-          setMentionListStyle(null);
-        }
-      } else {
-        const nextStyleKey = getMentionListStyleKey(rect);
-        if (nextStyleKey !== mentionListStyleKeyRef.current) {
-          mentionListStyleKeyRef.current = nextStyleKey;
-          setMentionListStyle(buildMentionListStyle(rect));
-        }
-      }
-
-      if (!isCancelled) {
-        frameId = requestAnimationFrame(updateMentionListPosition);
-      }
-    };
-
-    updateMentionListPosition();
-
-    return () => {
-      isCancelled = true;
-      cancelAnimationFrame(frameId);
-    };
-  }, [showMention]);
-
-  // Reset highlight when options change
-  useEffect(() => {
-    setHighlightIndex(0);
-  }, [mentionOptions.length]);
-
-  // Close mention menu when chat starts running
-  useEffect(() => {
-    if (isCurrentChatRunning) {
-      setIsMentionOpen(false);
-    }
-  }, [isCurrentChatRunning]);
-
   // Reset input when chat/pendingAsk changes
   useEffect(() => {
     if (
@@ -576,32 +425,6 @@ export function AgentInput() {
     currentPendingAsk?.defaultValue,
   ]);
 
-  // Load dom ref suggestions when @ query is active
-  useEffect(() => {
-    if (!activeDomRefQuery) {
-      setDomRefSuggestions([]);
-      setIsMentionOpen(false);
-      return;
-    }
-    setIsMentionOpen(true);
-
-    // Only load once (when suggestions are empty)
-    if (domRefSuggestions.length > 0) return;
-
-    const requestToken = ++domRefRequestToken;
-    void lazyExtractDomRefSuggestions().then((suggestions) => {
-      if (requestToken !== domRefRequestToken) return;
-      // Verify @ query is still active before updating suggestions
-      const currentQuery = getDomRefQuery(
-        textareaRef.current?.value ?? "",
-        textareaRef.current?.selectionStart ?? 0,
-        textareaRef.current?.selectionEnd ?? 0
-      );
-      if (!currentQuery) return;
-      setDomRefSuggestions(suggestions);
-    });
-  }, [input, selectionStart, selectionEnd]);
-
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -612,59 +435,37 @@ export function AgentInput() {
     const minHeight =
       Number.parseFloat(styles.minHeight) || el.getBoundingClientRect().height;
     const borderHeight = el.offsetHeight - el.clientHeight;
-    const nextHeight = Math.max(minHeight, el.scrollHeight + borderHeight);
+    const desiredHeight = Math.max(minHeight, el.scrollHeight + borderHeight);
+    const composer = composerRef.current;
+    const parent = composer?.parentElement;
+    const composerChrome = composer
+      ? Math.max(0, composer.offsetHeight - el.offsetHeight)
+      : 0;
+    const availableHeight = parent ? parent.clientHeight - composerChrome : 0;
+    const maxHeight =
+      availableHeight > 0
+        ? Math.max(minHeight, availableHeight)
+        : desiredHeight;
+    const nextHeight = Math.min(desiredHeight, maxHeight);
 
     el.style.height = `${nextHeight}px`;
-    el.style.overflowY = "hidden";
+    el.style.overflowY = desiredHeight > maxHeight ? "auto" : "hidden";
   }, []);
 
   useEffect(() => {
     autoResize();
   }, [input, autoResize]);
 
-  // Selection tracking
-  const updateSelection = useCallback(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    setSelectionStart(el.selectionStart ?? 0);
-    setSelectionEnd(el.selectionEnd ?? 0);
-  }, []);
+  useEffect(() => {
+    const composer = composerRef.current;
+    const parent = composer?.parentElement;
+    if (!composer || !parent || typeof ResizeObserver === "undefined") return;
 
-  // Select a mention option
-  const selectMention = useCallback(
-    (option: DomRefMentionOption) => {
-      if (!activeDomRefQuery) return;
-      const before = input.slice(0, activeDomRefQuery.start);
-      const after = input.slice(activeDomRefQuery.end);
-      const newValue = `${before}${option.value} ${after}`;
-      setInput(newValue);
-      setIsMentionOpen(false);
-      setDomRefSuggestions([]);
-
-      // Set cursor after the inserted mention
-      const cursorPos = before.length + option.value.length + 1;
-      requestAnimationFrame(() => {
-        const el = textareaRef.current;
-        if (el) {
-          el.focus();
-          el.setSelectionRange(cursorPos, cursorPos);
-          setSelectionStart(cursorPos);
-          setSelectionEnd(cursorPos);
-        }
-      });
-    },
-    [activeDomRefQuery, input]
-  );
-
-  // Scroll highlighted item into view
-  const scrollHighlightedIntoView = useCallback((index: number) => {
-    requestAnimationFrame(() => {
-      const container = mentionListRef.current;
-      if (!container) return;
-      const items = container.querySelectorAll("[data-mention-option]");
-      items[index]?.scrollIntoView({ block: "nearest" });
-    });
-  }, []);
+    const observer = new ResizeObserver(autoResize);
+    observer.observe(composer);
+    observer.observe(parent);
+    return () => observer.disconnect();
+  }, [autoResize]);
 
   // ---------------------------------------------------------------------------
   // Agent loop execution
@@ -1247,35 +1048,6 @@ export function AgentInput() {
 
   const handleTextareaKeydown = useCallback(
     (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (showMention) {
-        if (event.key === "ArrowDown") {
-          event.preventDefault();
-          const next = Math.min(highlightIndex + 1, mentionOptions.length - 1);
-          setHighlightIndex(next);
-          scrollHighlightedIntoView(next);
-          return;
-        }
-        if (event.key === "ArrowUp") {
-          event.preventDefault();
-          const prev = Math.max(highlightIndex - 1, 0);
-          setHighlightIndex(prev);
-          scrollHighlightedIntoView(prev);
-          return;
-        }
-        if (event.key === "Enter") {
-          event.preventDefault();
-          if (mentionOptions[highlightIndex]) {
-            selectMention(mentionOptions[highlightIndex]);
-          }
-          return;
-        }
-        if (event.key === "Escape") {
-          event.preventDefault();
-          setIsMentionOpen(false);
-          return;
-        }
-      }
-
       if (
         event.key === "Enter" &&
         !event.shiftKey &&
@@ -1287,14 +1059,7 @@ export function AgentInput() {
         void send();
       }
     },
-    [
-      showMention,
-      highlightIndex,
-      mentionOptions,
-      selectMention,
-      scrollHighlightedIntoView,
-      send,
-    ]
+    [send]
   );
 
   // ---------------------------------------------------------------------------
@@ -1302,7 +1067,7 @@ export function AgentInput() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="border-t p-3">
+    <div ref={composerRef} className="border-t p-3">
       {/* Pending ask banner */}
       {currentPendingAsk && (
         <div className="mb-3 rounded-xs bg-warning/10 px-3 py-2 text-xs text-warning">
@@ -1423,64 +1188,9 @@ export function AgentInput() {
               className="block h-9 min-h-9 w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               aria-label={inputPlaceholder}
               disabled={isCurrentChatRunning || isAIConfigurationBlocked}
-              onChange={(e) => {
-                setInput(e.target.value);
-                updateSelection();
-              }}
-              onClick={updateSelection}
-              onKeyUp={updateSelection}
-              onSelect={updateSelection}
+              onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleTextareaKeydown}
             />
-
-            {/* Mention popover */}
-            {showMention &&
-              mentionListStyle &&
-              createPortal(
-                <div
-                  ref={mentionListRef}
-                  data-agent-mention-list
-                  className={`fixed ${LAYER_SURFACE_CLASS} max-h-80 overflow-y-auto rounded-xs border bg-background shadow-lg`}
-                  style={mentionListStyle}
-                >
-                  {mentionOptions.map((option, index) => {
-                    const meta = formatDomRefSuggestionMeta(option.suggestion);
-                    return (
-                      <div
-                        key={option.value}
-                        data-mention-option
-                        className={`cursor-pointer px-3 py-2 ${
-                          index === highlightIndex
-                            ? "bg-accent/10"
-                            : "hover:bg-control-bg"
-                        }`}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          selectMention(option);
-                        }}
-                        onMouseEnter={() => setHighlightIndex(index)}
-                      >
-                        <div className="flex flex-col text-sm">
-                          <div className="flex items-center gap-x-2 text-main">
-                            <span className="font-medium">
-                              [{option.suggestion.ref}]
-                            </span>
-                            <span className="truncate">
-                              {option.suggestion.label}
-                            </span>
-                          </div>
-                          {meta && (
-                            <div className="mt-1 text-xs text-control-light">
-                              {meta}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>,
-                getLayerRoot("agent")
-              )}
           </div>
 
           {loading ? (

@@ -22,7 +22,6 @@
     }
   },
   "agent": {
-    "active-only-chats": "Xem các cuộc trò chuyện đang hoạt động",
     "ai-not-configured": {
       "configure": "Cấu hình",
       "contact-admin": "Liên hệ quản trị viên không gian làm việc để cấu hình AI.",

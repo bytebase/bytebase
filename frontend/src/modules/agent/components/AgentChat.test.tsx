@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -119,6 +119,10 @@ beforeEach(async () => {
   mocks.getSettingByName.mockReturnValue(undefined);
 
   ({ AgentChat } = await import("./AgentChat"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("AgentChat", () => {
@@ -515,6 +519,42 @@ describe("AgentChat", () => {
       "gap-y-2"
     );
     expect(container.querySelector("[data-agent-message-day]")).toBeNull();
+
+    unmount();
+  });
+
+  test("shows yesterday and the local time for a message from yesterday", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-22T04:03:00Z"));
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "How do I connect a database?",
+    });
+    vi.setSystemTime(new Date("2026-10-23T04:03:00Z"));
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const timestamp = container.querySelector("[data-agent-message-timestamp]");
+    expect(timestamp?.textContent).toBe("Yesterday 12:03 PM");
+
+    unmount();
+  });
+
+  test("shows today and the local time for a recent message", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-23T03:03:00Z"));
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "How do I connect a database?",
+    });
+    vi.setSystemTime(new Date("2026-10-23T04:03:00Z"));
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const timestamp = container.querySelector("[data-agent-message-timestamp]");
+    expect(timestamp?.textContent).toBe("Today 11:03 AM");
 
     unmount();
   });

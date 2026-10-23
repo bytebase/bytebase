@@ -308,7 +308,7 @@ export function AgentChat({ className }: AgentChatProps) {
             dateTime={new Date(msg.createdTs).toISOString()}
             data-agent-message-timestamp
           >
-            <HumanizeTs tsMs={msg.createdTs} tooltip={false} />
+            <HumanizeTs tsMs={msg.createdTs} mode="calendar" tooltip={false} />
           </time>
         );
 
