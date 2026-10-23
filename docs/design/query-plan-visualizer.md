@@ -306,7 +306,10 @@ explain statements one at a time on a connection that never saw the `SET`. The
 driver would also prefix a split script blindly, producing an invalid
 `EXPLAIN SET …`. Temporary tables and SQL Server's `USE` break the same way. So
 when a script establishes session state, the statements after it get no Plan
-option.
+option. A result cannot show whether its statement did —
+`SELECT set_config('search_path', …)` returns a row like any read — so Plan is
+offered only where every earlier statement of the run was a plan that did not
+execute.
 Reproducing session context is a larger feature than this design, and a plan for
 the wrong table is worse than no plan.
 

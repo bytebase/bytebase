@@ -76,7 +76,7 @@ import { DetailPanel } from "./DetailPanel";
 import { DocumentJSONView } from "./DocumentJSONView";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
-import { planAvailability } from "./planAvailability";
+import { canReplayStatement, planAvailability } from "./planAvailability";
 import {
   type InlineQueryPlan,
   QueryPlanResultView,
@@ -509,15 +509,11 @@ function SingleResultViewInner({
     plan?.format ===
       QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
   const planInResult = useMemo(() => getInlineQueryPlan(result), [result]);
-  // Replaying this statement is safe only when every earlier statement was
-  // itself a non-executing plan and could not change session state.
   const canReplay =
     isVisualizerEngine(engine) &&
     plan?.format === QueryOption_ExplainFormat.TEXT &&
     !plan.executed &&
-    results
-      .slice(0, resultIndex)
-      .every((earlier) => earlier.queryPlan && !earlier.queryPlan.executed);
+    canReplayStatement(results, resultIndex);
   // Multi-column plans (SQL Server SHOWPLAN_ALL) keep their table unless the
   // XML plan can be loaded for the visualizer.
   const showInlinePlan =

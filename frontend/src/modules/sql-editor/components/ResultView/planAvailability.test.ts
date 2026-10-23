@@ -15,6 +15,14 @@ const affectedRows = () =>
   });
 const noRows = () =>
   create(QueryResultSchema, { statement: "SET search_path = tenant" });
+const setConfig = () =>
+  rows("SELECT set_config('search_path', 'tenant,public', false)");
+const plan = (executed: boolean) =>
+  create(QueryResultSchema, {
+    statement: "EXPLAIN SELECT 1",
+    columnNames: ["QUERY PLAN"],
+    queryPlan: create(QueryResult_QueryPlanSchema, { executed }),
+  });
 
 const offered = (overrides: Partial<Parameters<typeof planAvailability>[0]>) =>
   planAvailability({
@@ -53,17 +61,19 @@ describe("planAvailability", () => {
     expect(offered({ result, results: [result] })).toBe("absent");
   });
 
-  test("is absent after an earlier statement that returned no rows", () => {
-    expect(offered({ results: [noRows(), rows()], resultIndex: 1 })).toBe(
-      "absent"
-    );
-    expect(offered({ results: [affectedRows(), rows()], resultIndex: 1 })).toBe(
+  test("is absent after any earlier statement that executed", () => {
+    for (const earlier of [noRows(), affectedRows(), setConfig(), rows()]) {
+      expect(offered({ results: [earlier, rows()], resultIndex: 1 })).toBe(
+        "absent"
+      );
+    }
+    expect(offered({ results: [plan(true), rows()], resultIndex: 1 })).toBe(
       "absent"
     );
   });
 
-  test("stays offered after earlier statements that returned rows", () => {
-    expect(offered({ results: [rows(), rows()], resultIndex: 1 })).toBe(
+  test("stays offered after earlier plans that did not execute", () => {
+    expect(offered({ results: [plan(false), rows()], resultIndex: 1 })).toBe(
       "offered"
     );
   });

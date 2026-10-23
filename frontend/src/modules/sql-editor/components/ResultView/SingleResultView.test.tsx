@@ -1203,7 +1203,7 @@ describe("SingleResultView plan view", () => {
     expect(screen.queryByText("sql-editor.plan-view")).not.toBeInTheDocument();
   });
 
-  test("offers no Plan after an earlier statement that returned no rows", () => {
+  test("offers no Plan after an earlier statement of the run", () => {
     const setSearchPath = create(QueryResultSchema, {
       statement: "SET search_path = tenant",
     });
