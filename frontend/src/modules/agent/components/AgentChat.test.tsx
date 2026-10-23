@@ -523,7 +523,7 @@ describe("AgentChat", () => {
     unmount();
   });
 
-  test("shows the local date and minute for a message from yesterday", () => {
+  test("shows yesterday and the local time for a message from yesterday", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-22T04:03:00Z"));
     useAgentStore.getState().addMessage({
@@ -536,12 +536,12 @@ describe("AgentChat", () => {
     render();
 
     const timestamp = container.querySelector("[data-agent-message-timestamp]");
-    expect(timestamp?.textContent).toBe("Oct 22, 2026, 12:03 PM");
+    expect(timestamp?.textContent).toBe("Yesterday 12:03 PM");
 
     unmount();
   });
 
-  test("shows the local date and minute for a recent message", () => {
+  test("shows today and the local time for a recent message", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-23T03:03:00Z"));
     useAgentStore.getState().addMessage({
@@ -554,7 +554,7 @@ describe("AgentChat", () => {
     render();
 
     const timestamp = container.querySelector("[data-agent-message-timestamp]");
-    expect(timestamp?.textContent).toBe("Oct 23, 2026, 11:03 AM");
+    expect(timestamp?.textContent).toBe("Today 11:03 AM");
 
     unmount();
   });

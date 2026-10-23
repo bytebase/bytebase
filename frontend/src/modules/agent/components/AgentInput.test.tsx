@@ -209,35 +209,6 @@ const setTextareaValue = (textarea: HTMLTextAreaElement, value: string) => {
   descriptor?.set?.call(textarea, value);
 };
 
-const stubAnimationFrames = () => {
-  let nextFrameId = 0;
-  const callbacks = new Map<number, FrameRequestCallback>();
-
-  vi.stubGlobal(
-    "requestAnimationFrame",
-    vi.fn((callback: FrameRequestCallback) => {
-      const frameId = ++nextFrameId;
-      callbacks.set(frameId, callback);
-      return frameId;
-    })
-  );
-  vi.stubGlobal(
-    "cancelAnimationFrame",
-    vi.fn((frameId: number) => {
-      callbacks.delete(frameId);
-    })
-  );
-
-  return async () => {
-    const currentCallbacks = [...callbacks.values()];
-    callbacks.clear();
-
-    await act(async () => {
-      currentCallbacks.forEach((callback) => callback(performance.now()));
-    });
-  };
-};
-
 beforeEach(async () => {
   vi.stubGlobal("localStorage", createMockStorage());
   const initialState = createAgentStore().getState();
@@ -336,7 +307,10 @@ describe("AgentInput", () => {
   });
 
   test("sends a queued Project Home message in its bound chat once", async () => {
-    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    mocks.runAgentLoop.mockResolvedValue({
+      kind: "completed",
+      totalTokensUsed: 0,
+    });
     const page = { path: "/projects/billing", title: "Billing" };
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/billing", page });
@@ -1693,7 +1667,7 @@ describe("AgentInput", () => {
     }
   });
 
-  test("mounts mention suggestions into the agent layer root", async () => {
+  test("treats @ as ordinary text without loading page-element suggestions", async () => {
     const suggestions: DomRefSuggestion[] = [
       {
         ref: "button.submit",
@@ -1704,6 +1678,7 @@ describe("AgentInput", () => {
       },
     ];
     mocks.lazyExtractDomRefSuggestions.mockResolvedValue(suggestions);
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
 
     const { render, unmount } = renderIntoContainer(<AgentInput />);
 
@@ -1715,11 +1690,28 @@ describe("AgentInput", () => {
 
     await act(async () => {
       setTextareaValue(textarea, "@");
+      textarea.setSelectionRange(1, 1);
       textarea.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
-    const agentRoot = document.getElementById("bb-react-layer-agent");
-    expect(agentRoot?.querySelector("[data-agent-mention-list]")).toBeTruthy();
+    expect(mocks.lazyExtractDomRefSuggestions).not.toHaveBeenCalled();
+    expect(document.body.querySelector("[data-agent-mention-list]")).toBeNull();
+
+    await act(async () => {
+      textarea.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+      );
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(useAgentStore.getState().currentChatId!)
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: "user", content: "@" }),
+      ])
+    );
 
     unmount();
   });
@@ -1786,75 +1778,6 @@ describe("AgentInput", () => {
     expect(inputFooter).toBeInstanceOf(HTMLDivElement);
     expect(inputFooter?.textContent).toContain("Tokens used: 5,678");
     expect(container.textContent).toContain("Continue?");
-
-    unmount();
-  });
-
-  test("repositions mention suggestions when the textarea rect changes", async () => {
-    const suggestions: DomRefSuggestion[] = [
-      {
-        ref: "button.submit",
-        tag: "BUTTON",
-        role: "button",
-        label: "Submit",
-        value: "",
-      },
-    ];
-    mocks.lazyExtractDomRefSuggestions.mockResolvedValue(suggestions);
-    const flushAnimationFrame = stubAnimationFrames();
-
-    const { render, unmount } = renderIntoContainer(<AgentInput />);
-
-    render();
-
-    const textarea = document.body.querySelector(
-      "textarea"
-    ) as HTMLTextAreaElement;
-
-    let rect = {
-      bottom: 234,
-      height: 34,
-      left: 100,
-      right: 400,
-      top: 200,
-      width: 300,
-      x: 100,
-      y: 200,
-      toJSON: () => "",
-    };
-    vi.spyOn(textarea, "getBoundingClientRect").mockImplementation(
-      () => rect as DOMRect
-    );
-
-    await act(async () => {
-      setTextareaValue(textarea, "@");
-      textarea.setSelectionRange(1, 1);
-      textarea.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-
-    const mentionList = document.body.querySelector(
-      "[data-agent-mention-list]"
-    ) as HTMLDivElement;
-    expect(mentionList.style.left).toBe("100px");
-    expect(mentionList.style.top).toBe("196px");
-    expect(mentionList.style.width).toBe("300px");
-
-    rect = {
-      ...rect,
-      bottom: 294,
-      left: 160,
-      right: 440,
-      top: 260,
-      width: 280,
-      x: 160,
-      y: 260,
-    };
-
-    await flushAnimationFrame();
-
-    expect(mentionList.style.left).toBe("160px");
-    expect(mentionList.style.top).toBe("256px");
-    expect(mentionList.style.width).toBe("280px");
 
     unmount();
   });
