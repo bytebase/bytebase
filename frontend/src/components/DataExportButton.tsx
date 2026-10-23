@@ -19,6 +19,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  FormControlGroup,
+  FormControlRow,
+  FormField,
+  FormFieldGroup,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -402,25 +408,19 @@ export function DataExportButton({
               </SheetTitle>
             </SheetHeader>
             <SheetBody>
-              <div className="flex flex-col gap-y-4">
+              <FormFieldGroup>
                 {formContent}
 
-                <div className="flex flex-col gap-y-1">
-                  <label className="text-sm text-control">
-                    {t("export-data.export-rows")}
-                  </label>
+                <FormField title={t("export-data.export-rows")}>
                   <MaxRowCountSelect
                     value={limit}
                     onChange={setLimit}
                     maximum={presetMax}
                     className="h-9"
                   />
-                </div>
+                </FormField>
 
-                <div className="flex flex-col gap-y-1">
-                  <label className="text-sm text-control">
-                    {t("export-data.export-format")}
-                  </label>
+                <FormField title={t("export-data.export-format")}>
                   <Select
                     value={String(format)}
                     onValueChange={(value) => {
@@ -438,43 +438,42 @@ export function DataExportButton({
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </FormField>
 
                 {supportPassword && (
-                  <div className="flex flex-col gap-y-1">
-                    <label className="text-sm text-control">
-                      {t("export-data.password-optional")}
-                    </label>
+                  <FormField title={t("export-data.password-optional")}>
                     <Input
                       type="password"
                       autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
-                    <div className="flex items-center gap-x-2 mt-1">
-                      <Button
-                        type="button"
-                        appearance="outline"
-                        size="sm"
-                        onClick={handleGeneratePassword}
-                      >
-                        <Wand2 className="size-4 mr-1" />
-                        {t("export-data.generate-password")}
-                      </Button>
-                      <Button
-                        type="button"
-                        appearance="outline"
-                        size="sm"
-                        disabled={!password}
-                        onClick={() => void copyPasswordToClipboard(password)}
-                      >
-                        <Copy className="size-4 mr-1" />
-                        {t("common.copy")}
-                      </Button>
-                    </div>
-                  </div>
+                    <FormControlGroup>
+                      <FormControlRow>
+                        <Button
+                          type="button"
+                          appearance="outline"
+                          size="sm"
+                          onClick={handleGeneratePassword}
+                        >
+                          <Wand2 className="size-4 mr-1" />
+                          {t("export-data.generate-password")}
+                        </Button>
+                        <Button
+                          type="button"
+                          appearance="outline"
+                          size="sm"
+                          disabled={!password}
+                          onClick={() => void copyPasswordToClipboard(password)}
+                        >
+                          <Copy className="size-4 mr-1" />
+                          {t("common.copy")}
+                        </Button>
+                      </FormControlRow>
+                    </FormControlGroup>
+                  </FormField>
                 )}
-              </div>
+              </FormFieldGroup>
             </SheetBody>
             <SheetFooter>
               <Button appearance="outline" onClick={() => setShowDrawer(false)}>

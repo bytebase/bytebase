@@ -139,7 +139,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                 title={t(
                   "settings.general.workspace.default-landing-page.self"
                 )}
-                className="gap-y-4"
+                spacing="section"
               >
                 <RadioGroup
                   className="flex-col items-stretch gap-4"

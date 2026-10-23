@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   getOrFetchSettingByName: vi.fn(async () => undefined),
   getSettingByName: vi.fn<() => unknown>(() => undefined),
   upsertSetting: vi.fn(async (_request: unknown) => undefined),
+  useUnsavedChangesGuard: vi.fn(),
 }));
 
 vi.mock("react-i18next", async (importOriginal) => ({
@@ -20,6 +21,10 @@ vi.mock("react-i18next", async (importOriginal) => ({
 
 vi.mock("@/components/FeatureAttention", () => ({
   FeatureAttention: () => null,
+}));
+
+vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
+  useUnsavedChangesGuard: mocks.useUnsavedChangesGuard,
 }));
 
 vi.mock("@/components/ui/tooltip", () => ({
@@ -88,6 +93,7 @@ afterEach(() => {
   mocks.getOrFetchSettingByName.mockClear();
   mocks.getSettingByName.mockClear();
   mocks.upsertSetting.mockClear();
+  mocks.useUnsavedChangesGuard.mockClear();
 });
 
 describe("SemanticTypesPage", () => {
@@ -187,6 +193,61 @@ describe("SemanticTypesPage", () => {
     expect(container.textContent).toContain(
       "settings.sensitive-data.semantic-types.table.title"
     );
+  });
+
+  test("guards navigation while a semantic type is being created or edited", async () => {
+    mocks.getSettingByName.mockReturnValue({
+      value: {
+        value: {
+          case: "semanticType",
+          value: { types: [{ id: "email", title: "Email" }] },
+        },
+      },
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    roots.push(root);
+
+    await act(async () => {
+      root.render(<SemanticTypesPage />);
+      await Promise.resolve();
+    });
+
+    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
+
+    const createButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.create"
+    );
+    act(() => createButton?.click());
+    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(true);
+
+    const cancelButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.querySelector("svg.lucide-undo-2")
+    );
+    act(() => cancelButton?.click());
+    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
+
+    const emailRow = Array.from(container.querySelectorAll("tbody tr")).find(
+      (row) => row.querySelector("td:nth-child(2)")?.textContent === "email"
+    );
+    const editButton = Array.from(
+      emailRow?.querySelectorAll<HTMLButtonElement>("button") ?? []
+    ).at(-1);
+    act(() => editButton?.click());
+    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
+
+    const titleInput = emailRow?.querySelector<HTMLInputElement>(
+      'input[placeholder="settings.sensitive-data.semantic-types.table.title"]'
+    );
+    act(() => {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value"
+      );
+      descriptor?.set?.call(titleInput, "Email address");
+      titleInput?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(true);
   });
 
   test("preserves non-built-in bb-prefixed semantic types when saving", async () => {

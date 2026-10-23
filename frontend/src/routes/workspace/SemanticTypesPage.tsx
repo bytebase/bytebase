@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { FeatureAttention } from "@/components/FeatureAttention";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import {
@@ -36,6 +37,7 @@ import {
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
 import { useSemanticTypes } from "@/hooks/useSemanticTypes";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type {
@@ -318,6 +320,11 @@ export function SemanticTypesPage() {
     }
     return undefined;
   };
+
+  const hasUnsavedChanges = items.some(
+    ({ dirty, mode }) => mode === "CREATE" || (mode === "EDIT" && dirty)
+  );
+  useUnsavedChangesGuard(hasUnsavedChanges);
 
   return (
     <WorkspacePageLayout>
@@ -633,12 +640,17 @@ function MaskingAlgorithmDrawer({
 
         <SheetBody className="p-6">
           {/* Masking type selector */}
-          <div className="mb-6">
-            <label className="text-sm font-medium">
-              {t("settings.sensitive-data.algorithms.table.masking-type")}
-              <span className="text-error ml-0.5">*</span>
-            </label>
-            <div className="grid grid-cols-3 gap-2 mt-2">
+          <FormField
+            className="mb-6"
+            title={
+              <>
+                {t("settings.sensitive-data.algorithms.table.masking-type")}
+                <span className="text-error ml-0.5">*</span>
+              </>
+            }
+            spacing="section"
+          >
+            <div className="grid grid-cols-3 gap-2">
               {maskingTypeOptions.map((opt) => (
                 <Button
                   appearance="secondary"
@@ -655,31 +667,31 @@ function MaskingAlgorithmDrawer({
                 </Button>
               ))}
             </div>
-          </div>
+          </FormField>
 
           <div className="border-t border-control-border pt-6 flex flex-col gap-y-6">
             {maskingType === "full-mask" && (
-              <div>
-                <label className="text-sm font-medium">
-                  {t(
-                    "settings.sensitive-data.algorithms.full-mask.substitution"
-                  )}
-                  <span className="text-error ml-0.5">*</span>
-                </label>
-                <p className="text-sm text-control-placeholder mt-1">
-                  {t(
-                    "settings.sensitive-data.algorithms.full-mask.substitution-label"
-                  )}
-                </p>
+              <FormField
+                title={
+                  <>
+                    {t(
+                      "settings.sensitive-data.algorithms.full-mask.substitution"
+                    )}
+                    <span className="text-error ml-0.5">*</span>
+                  </>
+                }
+                description={t(
+                  "settings.sensitive-data.algorithms.full-mask.substitution-label"
+                )}
+              >
                 <Input
                   value={fullMaskSubstitution}
-                  className="mt-2"
                   placeholder={t(
                     "settings.sensitive-data.algorithms.full-mask.substitution"
                   )}
                   onChange={(e) => setFullMaskSubstitution(e.target.value)}
                 />
-              </div>
+              </FormField>
             )}
 
             {maskingType === "range-mask" && (
@@ -781,45 +793,50 @@ function MaskingAlgorithmDrawer({
             )}
 
             {maskingType === "md5-mask" && (
-              <div>
-                <label className="text-sm font-medium">
-                  {t("settings.sensitive-data.algorithms.md5-mask.salt")}
-                  <span className="text-error ml-0.5">*</span>
-                </label>
-                <p className="text-sm text-control-placeholder mt-1">
-                  {t("settings.sensitive-data.algorithms.md5-mask.salt-label")}
-                </p>
+              <FormField
+                title={
+                  <>
+                    {t("settings.sensitive-data.algorithms.md5-mask.salt")}
+                    <span className="text-error ml-0.5">*</span>
+                  </>
+                }
+                description={t(
+                  "settings.sensitive-data.algorithms.md5-mask.salt-label"
+                )}
+              >
                 <Input
                   value={md5Salt}
-                  className="mt-2"
                   placeholder={t(
                     "settings.sensitive-data.algorithms.md5-mask.salt"
                   )}
                   onChange={(e) => setMd5Salt(e.target.value)}
                 />
-              </div>
+              </FormField>
             )}
 
             {maskingType === "inner-outer-mask" && (
               <>
-                <div>
-                  <label className="text-sm font-medium">
-                    {t(
-                      "settings.sensitive-data.algorithms.inner-outer-mask.type"
-                    )}
-                    <span className="text-error ml-0.5">*</span>
-                  </label>
-                  <p className="text-sm text-control-placeholder mt-1">
-                    {innerOuterType === Algorithm_InnerOuterMask_MaskType.INNER
+                <FormField
+                  title={
+                    <>
+                      {t(
+                        "settings.sensitive-data.algorithms.inner-outer-mask.type"
+                      )}
+                      <span className="text-error ml-0.5">*</span>
+                    </>
+                  }
+                  description={
+                    innerOuterType === Algorithm_InnerOuterMask_MaskType.INNER
                       ? t(
                           "settings.sensitive-data.algorithms.inner-outer-mask.inner-label"
                         )
                       : t(
                           "settings.sensitive-data.algorithms.inner-outer-mask.outer-label"
-                        )}
-                  </p>
+                        )
+                  }
+                >
                   <RadioGroup
-                    className="mt-2 gap-x-4"
+                    className="gap-x-4"
                     value={String(innerOuterType)}
                     onValueChange={(value) =>
                       setInnerOuterType(
@@ -842,7 +859,7 @@ function MaskingAlgorithmDrawer({
                       )}
                     </RadioGroupItem>
                   </RadioGroup>
-                </div>
+                </FormField>
                 <div className="flex gap-x-2 items-end">
                   <div className="flex flex-col gap-y-1">
                     <label className="text-sm font-medium">
