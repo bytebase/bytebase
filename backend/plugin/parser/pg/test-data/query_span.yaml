@@ -1513,7 +1513,17 @@
           schema: public
           table: t2
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: a
 - description: Test For PLpgSQL Function As Table Source
   statement: SELECT * FROM plpgsql_t(1);
   defaultDatabase: db

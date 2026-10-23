@@ -84,6 +84,9 @@ func TestGetQuerySpanPredicateColumnsOfFunctionBodies(t *testing.T) {
 		{Name: "probe_perform", Definition: "CREATE FUNCTION public.probe_perform() RETURNS int LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_sleep(0) FROM t WHERE ssn = 'guess'; RETURN 1; END; $$"},
 		{Name: "probe_if", Definition: "CREATE FUNCTION public.probe_if() RETURNS int LANGUAGE plpgsql AS $$ BEGIN IF (SELECT ssn FROM t LIMIT 1) = 'guess' THEN RETURN 1; END IF; RETURN 0; END; $$"},
 		{Name: "probe_variable", Definition: "CREATE FUNCTION public.probe_variable() RETURNS int LANGUAGE plpgsql AS $$ DECLARE v text; BEGIN SELECT ssn INTO v FROM t WHERE id = 1; IF v = 'guess' THEN RETURN 1; END IF; RETURN 0; END; $$"},
+		{Name: "probe_update", Definition: "CREATE FUNCTION public.probe_update() RETURNS int LANGUAGE sql AS $$ UPDATE t SET id = id WHERE ssn = 'guess'; SELECT 1 $$"},
+		{Name: "probe_exec", Definition: "CREATE FUNCTION public.probe_exec() RETURNS int LANGUAGE plpgsql AS $$ BEGIN DELETE FROM t WHERE ssn = 'guess'; RETURN 1; END; $$"},
+		{Name: "probe_table", Definition: "CREATE FUNCTION public.probe_table() RETURNS TABLE(id int) LANGUAGE sql AS $$ SELECT id FROM t WHERE ssn = 'guess' $$"},
 		{Name: "probe_for", Definition: "CREATE FUNCTION public.probe_for() RETURNS SETOF int LANGUAGE plpgsql AS $$ BEGIN FOR i IN 1..(SELECT ascii(ssn) FROM t LIMIT 1) LOOP RETURN NEXT i; END LOOP; END; $$"},
 		{Name: "probe_join", Definition: "CREATE FUNCTION public.probe_join(guess text) RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT o.id FROM " + unanalyzable + "; END; $$"},
 		{Name: "probe_join_sql", Definition: "CREATE FUNCTION public.probe_join_sql(guess text) RETURNS SETOF int LANGUAGE sql AS $$ SELECT o.id FROM " + unanalyzable + " $$"},
@@ -100,6 +103,10 @@ func TestGetQuerySpanPredicateColumnsOfFunctionBodies(t *testing.T) {
 		{"SELECT probe_if() AS x", []string{"t.ssn"}},
 		{"SELECT probe_variable() AS x", []string{"t.id", "t.ssn"}},
 		{"SELECT count(*) AS c FROM probe_for()", []string{"t.ssn"}},
+		{"SELECT probe_update() AS x", []string{"t.ssn"}},
+		{"SELECT probe_exec() AS x", []string{"t.ssn"}},
+		// * over an unknown function sends the outer query to the fallback.
+		{"SELECT * FROM probe_table() p CROSS JOIN unknown_rows() u", []string{"t.ssn"}},
 		{"SELECT count(*) AS c FROM probe_join('guess')", []string{"o.id", "t.id", "t.ssn"}},
 		{"SELECT count(*) AS c FROM probe_join_sql('guess')", []string{"o.id", "t.id", "t.ssn"}},
 	}

@@ -237,7 +237,8 @@ func (e *omniQuerySpanExtractor) recordPredicateNames(r *predicateNameResolver, 
 // any other reference matches the same-named column of every table, and an
 // output name of a subquery or CTE also reads the columns that produce it.
 type predicateNameResolver struct {
-	// The WHERE, JOIN ON, HAVING, and FILTER conditions, LIMIT and OFFSET,
+	// The WHERE (of SELECT, UPDATE, and DELETE), JOIN ON, HAVING, and FILTER
+	// conditions, LIMIT and OFFSET,
 	// arguments of FROM and set-returning functions, USING column names,
 	// NATURAL joins, and INTERSECT and EXCEPT operations of the statement, at
 	// any depth.
@@ -292,6 +293,10 @@ func newPredicateNameResolver(stmt ast.Node, returnsSet func(name string) bool) 
 					}
 				}
 			}
+		case *ast.UpdateStmt:
+			r.conditions = append(r.conditions, v.WhereClause)
+		case *ast.DeleteStmt:
+			r.conditions = append(r.conditions, v.WhereClause)
 		case *ast.JoinExpr:
 			r.conditions = append(r.conditions, v.Quals)
 			r.usingNames = append(r.usingNames, astStrings(v.UsingClause)...)

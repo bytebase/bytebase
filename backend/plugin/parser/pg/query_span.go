@@ -66,8 +66,8 @@ type omniQuerySpanExtractor struct {
 	funcSourceColumns base.SourceColumnSet
 	// predicateColumns accumulates the columns that decide which rows the
 	// statement returns; it becomes QuerySpan.PredicateColumns. Function body
-	// analysis records predicates separately so callers can decide whether they
-	// enter the top-level set.
+	// analysis collects into a set of its own, cached per function, and merges
+	// it into the caller's.
 	predicateColumns base.SourceColumnSet
 	// fallbackCTEMap holds CTE definitions during fallback column extraction.
 	// Set by extractFallbackColumns and used by extractColumnsFromRangeVar
@@ -861,7 +861,7 @@ func (e *omniQuerySpanExtractor) resolveVar(queryStack []*catalog.Query, v *cata
 		if len(rte.FuncExprs) > 0 {
 			if fc, ok := rte.FuncExprs[0].(*catalog.FuncCallExpr); ok {
 				if proc := e.cat.GetUserProcByOID(fc.FuncOID); proc != nil {
-					bodySets := e.analyzeTableFunctionBody(proc)
+					bodySets := e.analyzeFunctionBody(proc)
 					if colIdx >= 0 && colIdx < len(bodySets) {
 						for k, val := range bodySets[colIdx] {
 							result[k] = val
@@ -1367,7 +1367,7 @@ func (e *omniQuerySpanExtractor) extractColumnsFromRangeFunction(rf *ast.RangeFu
 		if proc := e.lookupUserProcByName(funcName); proc != nil {
 			outNames := getOutputParamNames(proc)
 			if len(outNames) > 0 {
-				bodySets := e.analyzeTableFunctionBody(proc)
+				bodySets := e.analyzeFunctionBody(proc)
 				var results []base.QuerySpanResult
 				for i, name := range outNames {
 					colSet := make(base.SourceColumnSet)
@@ -1529,7 +1529,7 @@ func (e *omniQuerySpanExtractor) tryUserFuncTableSource(selStmt *ast.SelectStmt,
 			if len(outNames) == 0 {
 				continue
 			}
-			bodySets := e.analyzeTableFunctionBody(proc)
+			bodySets := e.analyzeFunctionBody(proc)
 			return e.buildFuncResults(outNames, bodySets, accessesMap)
 		}
 
@@ -1676,7 +1676,7 @@ func (e *omniQuerySpanExtractor) tryMetadataFuncLookup(funcName string, accesses
 	// Use a temporary OID for caching.
 	syntheticProc.OID = uint32(0xFFFF0000 + len(e.funcBodyCache))
 
-	bodySets := e.analyzeTableFunctionBody(syntheticProc)
+	bodySets := e.analyzeFunctionBody(syntheticProc)
 	return e.buildFuncResults(outNames, bodySets, accessesMap)
 }
 

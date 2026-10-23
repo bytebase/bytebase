@@ -29,12 +29,6 @@ func (e *omniQuerySpanExtractor) analyzeFunctionBody(proc *catalog.UserProc) []b
 	return analysis.sourceColumns
 }
 
-func (e *omniQuerySpanExtractor) analyzeTableFunctionBody(proc *catalog.UserProc) []base.SourceColumnSet {
-	analysis := e.analyzeFunctionBodyForProc(proc)
-	e.mergeFunctionSourceTables(analysis.sourceColumns)
-	return analysis.sourceColumns
-}
-
 func (e *omniQuerySpanExtractor) analyzeFunctionBodyForProc(proc *catalog.UserProc) *funcBodyAnalysis {
 	// Check cache.
 	if cached, ok := e.funcBodyCache[proc.OID]; ok {
@@ -162,11 +156,14 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColum
 	}
 	var result []base.SourceColumnSet
 	for i, stmt := range stmts {
+		accesses := e.accessTablesOf(stmt.Text)
 		selStmt, ok := stmt.AST.(*ast.SelectStmt)
 		if !ok {
+			// The analyzer reads SELECT alone, so the conditions of another
+			// statement, which runs too, are matched by name.
+			e.collectFallbackPredicateColumns(stmt.AST, accesses)
 			continue
 		}
-		accesses := e.accessTablesOf(stmt.Text)
 		query, err := e.analyzeSelect(selStmt)
 		if err != nil {
 			e.collectFallbackPredicateColumns(selStmt, accesses)
@@ -472,6 +469,7 @@ func (a *plpgsqlAnalyzer) handleReturnNext(stmt *plpgsqlast.PLReturnNext) {
 
 func (a *plpgsqlAnalyzer) handleExecSQL(stmt *plpgsqlast.PLExecSQL) {
 	if len(stmt.Into) == 0 {
+		a.handleStatementConditions(stmt.SQLText)
 		return
 	}
 	results := a.analyzeEmbeddedSQL(stmt.SQLText)
@@ -480,6 +478,21 @@ func (a *plpgsqlAnalyzer) handleExecSQL(stmt *plpgsqlast.PLExecSQL) {
 			a.scope.merge(varName, results[i])
 		}
 	}
+}
+
+// handleStatementConditions records the conditions of a statement that runs
+// for its effect. The analyzer reads SELECT alone, so another statement's
+// conditions are matched by name.
+func (a *plpgsqlAnalyzer) handleStatementConditions(sql string) {
+	stmts, err := ParsePg(sql)
+	if err != nil || len(stmts) != 1 {
+		return
+	}
+	if _, ok := stmts[0].AST.(*ast.SelectStmt); ok {
+		a.analyzeEmbeddedSQL(sql)
+		return
+	}
+	a.extractor.collectFallbackPredicateColumns(stmts[0].AST, a.extractor.accessTablesOf(sql))
 }
 
 func (a *plpgsqlAnalyzer) handleForS(stmt *plpgsqlast.PLForS) {
