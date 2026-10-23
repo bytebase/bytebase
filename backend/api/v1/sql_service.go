@@ -1990,17 +1990,7 @@ func (s *SQLService) authorizeWriteTargets(
 			envByDatabase[t.database] = env
 		}
 
-		attributes := map[string]any{
-			common.CELAttributeRequestTime:           requestTime,
-			common.CELAttributeResourceDatabase:      databaseFullName,
-			common.CELAttributeResourceEnvironmentID: env,
-		}
-		if !useDatabaseLevel {
-			attributes[common.CELAttributeResourceTableName] = t.table
-			if t.schema != "" {
-				attributes[common.CELAttributeResourceSchemaName] = t.schema
-			}
-		}
+		attributes := writeTargetAttributes(requestTime, databaseFullName, env, t, useDatabaseLevel)
 		allowed, err := s.hasDatabaseAccessRights(ctx, user, perm, attributes, iamPolicies...)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for target %q: %v", deniedResource, err))
@@ -2010,6 +2000,23 @@ func (s *SQLService) authorizeWriteTargets(
 		}
 	}
 	return deniedResources, nil
+}
+
+// writeTargetAttributes returns the attributes a grant condition is evaluated against
+// for write target t; a database-level check carries no table or schema.
+func writeTargetAttributes(requestTime time.Time, databaseFullName, env string, t writeTargetResource, databaseLevel bool) map[string]any {
+	attributes := map[string]any{
+		common.CELAttributeRequestTime:           requestTime,
+		common.CELAttributeResourceDatabase:      databaseFullName,
+		common.CELAttributeResourceEnvironmentID: env,
+	}
+	if !databaseLevel {
+		attributes[common.CELAttributeResourceTableName] = t.table
+		if t.schema != "" {
+			attributes[common.CELAttributeResourceSchemaName] = t.schema
+		}
+	}
+	return attributes
 }
 
 // formatWriteTargetResource renders a denied write target as

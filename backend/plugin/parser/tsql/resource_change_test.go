@@ -3,12 +3,87 @@ package tsql
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
+
+// extractMSSQL runs the MSSQL changed-resource extractor with the given database
+// metadata (nil for the common case-insensitive default) and returns the built
+// projection, which is what the approval and write-authorization paths read; it
+// does not carry the embedded metadata pointer, so it compares cleanly.
+func extractMSSQL(t *testing.T, statement string, dbMeta *model.DatabaseMetadata) *storepb.ChangedResources {
+	t.Helper()
+	stmts, err := base.ParseStatements(storepb.Engine_MSSQL, statement)
+	require.NoError(t, err, statement)
+	got, err := extractChangedResources("DB", "dbo", dbMeta, base.ExtractASTs(stmts), statement)
+	require.NoError(t, err, statement)
+	return got.ChangedResources.Build()
+}
+
+func mssqlChanged(table string) *storepb.ChangedResources {
+	r := model.NewChangedResources(nil)
+	r.AddTable("DB", "dbo", &storepb.ChangedResourceTable{Name: table}, false)
+	return r.Build()
+}
+
+// mssqlMeta builds minimal database metadata carrying only the object case
+// sensitivity the alias resolver reads.
+func mssqlMeta(caseSensitive bool) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(
+		&metadatapb.DatabaseSchemaMetadata{Name: "DB"},
+		nil, nil, storepb.Engine_MSSQL, caseSensitive,
+	)
+}
+
+// A DML target that is an alias declared in the FROM clause resolves to the
+// aliased physical table, so a table-scoped grant or approval rule sees the real
+// table rather than the alias. BOT-158.
+func TestExtractChangedResources_AliasTarget(t *testing.T) {
+	want := mssqlChanged("Orders")
+	require.Equal(t, want, extractMSSQL(t, `UPDATE o SET o.status = 'x' FROM dbo.Orders AS o WHERE o.id = 1;`, nil))
+	require.Equal(t, want, extractMSSQL(t, `DELETE o FROM dbo.Orders AS o WHERE o.id = 1;`, nil))
+	require.Equal(t, want, extractMSSQL(t, `UPDATE o SET status = 'x' FROM dbo.Orders o WHERE o.id = 1;`, nil))
+	// The aliased target may sit on either side of a JOIN, or beside an APPLY.
+	require.Equal(t, want, extractMSSQL(t,
+		`UPDATE o SET o.status = 'x' FROM dbo.Customers AS c JOIN dbo.Orders AS o ON o.id = c.id WHERE c.id = 1;`, nil))
+	require.Equal(t, want, extractMSSQL(t,
+		`UPDATE o SET o.status = 'x' FROM dbo.Orders AS o CROSS APPLY (SELECT TOP 1 c.id FROM dbo.Customers AS c WHERE c.id = o.id) AS a WHERE o.id = 1;`, nil))
+}
+
+// Production metadata reports every SQL Server database as case-insensitive, even one
+// with a case-sensitive collation, where `UPDATE O ... FROM dbo.Orders AS o` writes a
+// real table O. So alias matching is exact: a differently cased target is left as
+// written rather than bound to another table.
+func TestExtractChangedResources_AliasMatchIsExact(t *testing.T) {
+	const stmt = `UPDATE O SET status = 'x' FROM dbo.Orders AS o WHERE o.id = 1;`
+	require.Equal(t, mssqlChanged("O"), extractMSSQL(t, stmt, mssqlMeta(false)))
+	require.Equal(t, mssqlChanged("O"), extractMSSQL(t, stmt, mssqlMeta(true)))
+
+	require.Equal(t, mssqlChanged("Orders"), extractMSSQL(t,
+		`UPDATE o SET status = 'x' FROM dbo.Orders AS o WHERE o.id = 1;`, mssqlMeta(false)))
+}
+
+// A schema-qualified target is never an alias (SQL Server rejects a correlation
+// name that shares a qualified target's exposed name), so an unrelated FROM alias
+// must not rebind it.
+func TestExtractChangedResources_QualifiedTargetNotAlias(t *testing.T) {
+	require.Equal(t, mssqlChanged("Orders"), extractMSSQL(t,
+		`UPDATE dbo.Orders SET status = 'x' FROM dbo.Customers AS c WHERE c.id = dbo.Orders.id;`, nil))
+}
+
+// An alias that resolves to a CTE, or to a derived table, is not a physical
+// table: it is left as written (the deferred CTE/derived gap), never recorded as
+// the CTE/derived name promoted to a base table.
+func TestExtractChangedResources_AliasToCTEOrDerivedNotPhysical(t *testing.T) {
+	require.Equal(t, mssqlChanged("x"), extractMSSQL(t,
+		`WITH c AS (SELECT id, status FROM dbo.Orders) UPDATE x SET status = 'v' FROM c AS x WHERE x.id = 1;`, nil))
+	require.Equal(t, mssqlChanged("d"), extractMSSQL(t,
+		`UPDATE d SET status = 'x' FROM (SELECT * FROM dbo.Orders) AS d WHERE d.id = 1;`, nil))
+}
 
 func TestExtractChangedResources(t *testing.T) {
 	statement := `CREATE TABLE t1 (c1 INT);

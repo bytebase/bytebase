@@ -20,6 +20,10 @@ func init() {
 func extractChangedResources(currentDatabase string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
 	changedResources := model.NewChangedResources(dbMetadata)
 
+	// The CTE check in resolveDMLWriteTarget matches names under the metadata's case
+	// sensitivity, as prior backup does; nil metadata (tests, unsynced) is case-insensitive.
+	caseSensitive := dbMetadata != nil && dbMetadata.GetIsObjectCaseSensitive()
+
 	var dmlCount, insertCount int
 	var dmlStatements []string
 
@@ -123,13 +127,13 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 
 		case *ast.UpdateStmt:
 			if ref, ok := n.Relation.(*ast.TableRef); ok {
-				addTable(ref, false)
+				addTable(resolveDMLWriteTarget(ref, n.FromClause, n.WithClause, caseSensitive), false)
 			}
 			addDML(omniAST.Text)
 
 		case *ast.DeleteStmt:
 			if ref, ok := n.Relation.(*ast.TableRef); ok {
-				addTable(ref, false)
+				addTable(resolveDMLWriteTarget(ref, n.FromClause, n.WithClause, caseSensitive), false)
 			}
 			addDML(omniAST.Text)
 
@@ -177,6 +181,25 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 		DMLCount:         dmlCount,
 		InsertCount:      insertCount,
 	}, nil
+}
+
+// resolveDMLWriteTarget resolves an UPDATE/DELETE target that names a FROM-clause
+// correlation to the aliased physical table, so table-scoped grants and approval rules
+// see the real table. Only an unqualified target can be an alias; SQL Server rejects a
+// correlation name that shares a qualified target's exposed name. The match is exact:
+// synced metadata reports every SQL Server database as case-insensitive, even one with a
+// case-sensitive collation, so folding would bind a target to a different table there.
+// A differently cased alias (BOT-158) and a CTE or derived-table target (BOT-160) are
+// left as written.
+func resolveDMLWriteTarget(target *ast.TableRef, fromClause *ast.List, withClause *ast.WithClause, caseSensitive bool) *ast.TableRef {
+	if target == nil || target.Schema != "" || target.Database != "" || fromClause == nil {
+		return target
+	}
+	_, physicalRef := findPhysicalTableForAlias(fromClause, &TableReference{Table: target.Object})
+	if physicalRef == nil || isCTETarget(physicalRef, withClause, caseSensitive) {
+		return target
+	}
+	return physicalRef
 }
 
 func omniTableRefTriple(ref *ast.TableRef, defaultDatabase, defaultSchema string) (string, string, string) {
