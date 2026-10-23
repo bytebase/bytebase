@@ -981,6 +981,7 @@
     "password-optional": "Mã hóa bằng mật khẩu (Tùy chọn)"
   },
   "gitops": {
+    "back-to-releases": "Quay lại Bản phát hành",
     "checklist": {
       "database-group-recommendation": "Đối với các cơ sở dữ liệu có cùng schema, nhóm cơ sở dữ liệu cho phép bạn migration tất cả cùng lúc trong một thay đổi. Chỉ cần định nghĩa nhóm một lần và tái sử dụng trong các lần migration mà không cần chọn từng cơ sở dữ liệu mỗi lần.",
       "external-url": "URL bên ngoài",
@@ -996,7 +997,6 @@
       "description-git": "Schema cơ sở dữ liệu của bạn được lưu trữ trong Git cùng với mã nguồn ứng dụng. Pull request sẽ kích hoạt SQL review, và việc merge vào nhánh đích sẽ tự động tạo rollout.",
       "title": "GitOps là gì"
     },
-    "self": "GitOps",
     "test-setup": {
       "description": "Xác minh workflow hoạt động đầy đủ với một tệp migration mẫu.",
       "naming-convention": "Các tệp migration được áp dụng theo thứ tự từ điển. Sử dụng tiền tố timestamp hoặc số thứ tự, ví dụ: 20240101000000_create_table.sql. Thêm _ddl hoặc _dml để chỉ loại thay đổi.",
@@ -1823,6 +1823,7 @@
       "review-waiting": "Đang chờ {{role}}",
       "run": "Chạy"
     },
+    "list-description": "Các yêu cầu thay đổi được tạo trong giao diện và tiến độ triển khai của chúng.",
     "meta": {
       "created-by": "Tạo bởi {{user}}"
     },
@@ -2009,8 +2010,11 @@
       "reopen-confirm": "Mở lại kế hoạch này?",
       "reopen-review-confirm": "Mở lại đợt xem xét này?"
     },
+    "status-scope": {
+      "description": "Lọc theo trạng thái hiện tại của các tác vụ trong kế hoạch",
+      "waiting": "Đang chờ"
+    },
     "submit-review-anyway": "Vẫn gửi",
-    "subtitle": "Soạn thảo các thay đổi cơ sở dữ liệu và chạy các bước kiểm tra sơ bộ trước khi tạo vấn đề để phê duyệt.",
     "summary": {
       "last-approved-by": "Phê duyệt gần nhất bởi {{name}}",
       "n-changes": "{{n}} thay đổi",
@@ -2358,17 +2362,24 @@
   "release": {
     "and-n-more-files": "và {{count}} tệp khác",
     "change-tip": "Thay đổi này được liên kết với một artifact phát hành.",
-    "file": "Tệp phát hành",
+    "empty": {
+      "description": "Các thay đổi mà pipeline CI của bạn phát hành lên Bytebase sẽ hiển thị ở đây cùng tiến độ triển khai.",
+      "read-guide": "Đọc hướng dẫn GitOps",
+      "set-up": "Thiết lập GitOps",
+      "title": "Chưa có thay đổi GitOps nào"
+    },
     "file-type": {
       "declarative": "Khai báo",
       "unspecified": "Không xác định",
       "versioned": "Có phiên bản"
     },
     "files": "Tệp",
+    "gitops-setup": "Thiết lập GitOps",
+    "list-description": "Các thay đổi được phát hành qua GitOps và tiến độ triển khai của chúng.",
     "not-found": "Không tìm thấy bản phát hành",
     "releases": "Bản phát hành",
-    "total-files": "Tổng số {{}} tệp",
-    "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps.",
+    "self": "Bản phát hành",
+    "source": "Nguồn",
     "vcs-source": "Nguồn VCS",
     "vcs-type": {
       "unspecified": "VCS không xác định"

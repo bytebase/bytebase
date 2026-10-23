@@ -603,6 +603,7 @@ export class BytebaseApiClient {
   // the real ids here rather than assuming the ids they would have chosen.
   async getPlan(planName: string): Promise<{
     name: string;
+    title: string;
     hasRollout: boolean;
     issue: string;
     state: string;
@@ -612,6 +613,63 @@ export class BytebaseApiClient {
     }[];
   }> {
     return this.request("GET", `/v1/${planName}`);
+  }
+
+  async listPlans(project: string, filter: string): Promise<{ name: string; title: string }[]> {
+    const resp = await this.request<{ plans?: { name: string; title: string }[] }>(
+      "GET",
+      `/v1/${project}/plans?pageSize=100&filter=${encodeURIComponent(filter)}`,
+    );
+    return resp.plans ?? [];
+  }
+
+  // A GitOps Plan: one change spec that references a release instead of a sheet.
+  async createReleasePlan(project: string, title: string, spec: { id: string; targets: string[]; release: string }): Promise<{ name: string }> {
+    return this.request<{ name: string }>("POST", `/v1/${project}/plans`, {
+      title,
+      specs: [{ id: spec.id, changeDatabaseConfig: { targets: spec.targets, release: spec.release } }],
+    });
+  }
+
+  // Releases
+  async createRelease(
+    project: string,
+    release: { files: { path: string; version: string; statement: string }[]; vcsSource: { vcsType: string; url: string } },
+  ): Promise<{ name: string }> {
+    return this.request<{ name: string }>("POST", `/v1/${project}/releases`, {
+      type: "VERSIONED",
+      files: release.files.map((f) => ({
+        path: f.path,
+        version: f.version,
+        statement: Buffer.from(f.statement).toString("base64"),
+      })),
+      vcsSource: release.vcsSource,
+    });
+  }
+
+  // Rollouts
+  async createRollout(planName: string): Promise<{ name: string }> {
+    return this.request<{ name: string }>("POST", `/v1/${planName}/rollout`, {});
+  }
+
+  async getRollout(planName: string): Promise<{ stages?: { name: string; tasks?: { name: string }[] }[] }> {
+    return this.request("GET", `/v1/${planName}/rollout`);
+  }
+
+  async batchRunTasks(stage: string, tasks: string[]): Promise<void> {
+    await this.request("POST", `/v1/${stage}/tasks:batchRun`, { tasks });
+  }
+
+  async closePlan(planName: string): Promise<void> {
+    await this.request("PATCH", `/v1/${planName}?updateMask=state`, { state: "DELETED" });
+  }
+
+  async deleteRelease(releaseName: string): Promise<void> {
+    await this.request("DELETE", `/v1/${releaseName}`);
+  }
+
+  async deleteProject(project: string): Promise<void> {
+    await this.request("DELETE", `/v1/${project}`);
   }
 
   async runPlanChecks(planName: string): Promise<void> {
