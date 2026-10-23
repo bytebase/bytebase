@@ -34,6 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { FormField } from "@/components/ui/form";
 import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SearchInput } from "@/components/ui/search-input";
@@ -50,6 +51,7 @@ import { Table } from "@/components/ui/table";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useProjectByName } from "@/hooks/useProjectByName";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { saveInitialSQL } from "@/lib/plan/initialSQLStorage";
 import { applyPlanTitleToQuery } from "@/lib/plan/title";
 import { cn } from "@/lib/utils";
@@ -175,35 +177,10 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     setSourceSchemaString("");
   }, [projectId]);
 
-  // Route change guard: warn when leaving with unsaved raw SQL
-  useEffect(() => {
-    const shouldGuard =
-      sourceSchemaType === SourceSchemaType.RAW_SQL &&
-      rawSQLState.statement !== "";
-    if (!shouldGuard) return;
-
-    // Guard browser/tab unload
-    const beforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", beforeUnload);
-
-    // Guard in-app router navigation
-    const removeRouterGuard = router.beforeEach((_to, _from, next) => {
-      const answer = window.confirm(t("common.leave-without-saving"));
-      if (answer) {
-        next();
-      } else {
-        next(false);
-      }
-    });
-
-    return () => {
-      window.removeEventListener("beforeunload", beforeUnload);
-      removeRouterGuard();
-    };
-  }, [sourceSchemaType, rawSQLState.statement, t]);
+  useUnsavedChangesGuard(
+    sourceSchemaType === SourceSchemaType.RAW_SQL &&
+      rawSQLState.statement !== ""
+  );
 
   // Target databases state (lifted up so we can access from step controls)
   const [selectedDatabaseNameList, setSelectedDatabaseNameList] = useState<
@@ -668,11 +645,11 @@ function DatabaseSchemaSelector({
           allowedEngineTypeList={ALLOWED_ENGINES}
         />
       </div>
-      <div className="w-full flex flex-col gap-y-2">
-        <div className="text-sm">
-          {t("common.changelog")}
-          <div className="textinfolabel">{t("changelog.select")}</div>
-        </div>
+      <FormField
+        className="w-full"
+        title={t("common.changelog")}
+        description={t("changelog.select")}
+      >
         <div className="w-full flex flex-row justify-start items-center relative">
           <ChangelogSelector
             database={databaseName}
@@ -680,7 +657,7 @@ function DatabaseSchemaSelector({
             onChange={handleChangelogChange}
           />
         </div>
-      </div>
+      </FormField>
     </div>
   );
 }

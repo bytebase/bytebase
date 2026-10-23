@@ -15,6 +15,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  FormControlGroup,
+  FormField,
+  FormFieldGroup,
+  FormSection,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
@@ -1181,54 +1187,51 @@ export function IDPDetailPage() {
 
       <div className="divide-y divide-block-border">
         {/* General Section */}
-        <div className="pb-6 lg:flex">
-          <div className="text-left lg:w-1/4">
-            <h1 className="text-2xl font-bold">{t("common.general")}</h1>
-          </div>
-          <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
-            <div>
-              <p className="text-base font-semibold text-main mb-2">
-                {t("common.type")}
-              </p>
+        <FormSection title={t("common.general")}>
+          <FormFieldGroup>
+            <FormField
+              title={t("common.type")}
+              description={t("settings.sso.form.provider-type-readonly-hint")}
+            >
               <div className="flex items-center gap-x-3 p-3 bg-control-bg rounded-xs">
                 <ProviderIcon className="w-5 h-5 text-control-light" />
                 <span className="text-base font-medium text-main">
                   {identityProviderTypeToString(localIdp.type)}
                 </span>
               </div>
-              <p className="text-sm text-control-light mt-1">
-                {t("settings.sso.form.provider-type-readonly-hint")}
-              </p>
-            </div>
+            </FormField>
 
-            <div>
-              <p className="text-base font-semibold mb-2">
-                {t("settings.sso.form.name")}{" "}
-                <span className="text-error">*</span>
-              </p>
-              <Input
-                value={localIdp.title}
-                disabled={!allowEdit}
-                onChange={(e) =>
-                  setLocalIdp({ ...localIdp, title: e.target.value })
-                }
-                placeholder={t("settings.sso.form.name-description")}
-                maxLength={200}
-              />
-              <div className="mt-1">
+            <FormField
+              title={
+                <>
+                  {t("settings.sso.form.name")}{" "}
+                  <span className="text-error">*</span>
+                </>
+              }
+            >
+              <FormControlGroup>
+                <Input
+                  value={localIdp.title}
+                  disabled={!allowEdit}
+                  onChange={(e) =>
+                    setLocalIdp({ ...localIdp, title: e.target.value })
+                  }
+                  placeholder={t("settings.sso.form.name-description")}
+                  maxLength={200}
+                />
                 <ResourceIdField
                   suffix
                   resourceName="SSO"
                   readonly={true}
                   value={resourceId}
                 />
-              </div>
-            </div>
+              </FormControlGroup>
+            </FormField>
 
-            <div>
-              <p className="text-base font-semibold text-main mb-2">
-                {t("settings.sso.form.domain")}
-              </p>
+            <FormField
+              title={t("settings.sso.form.domain")}
+              description={t("settings.sso.form.domain-optional-hint")}
+            >
               <Input
                 value={localIdp.domain}
                 disabled={!allowEdit}
@@ -1237,62 +1240,47 @@ export function IDPDetailPage() {
                 }
                 placeholder={t("settings.sso.form.domain-description")}
               />
-              <p className="text-sm text-control-light mt-1">
-                {t("settings.sso.form.domain-optional-hint")}
-              </p>
-            </div>
-          </div>
-        </div>
+            </FormField>
+          </FormFieldGroup>
+        </FormSection>
 
         {/* Configuration Section */}
-        <div className="py-6 lg:flex">
-          <div className="text-left lg:w-1/4">
-            <h1 className="text-2xl font-bold">
-              {t("settings.sso.form.configuration")}
-            </h1>
-            <p className="text-base text-control-light mt-3">
-              {t("settings.sso.form.configuration-description")}
-            </p>
-          </div>
-          <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
-            <ProviderConfigForm
-              providerType={localIdp.type}
-              configForOAuth2={configForOAuth2}
-              configForOIDC={configForOIDC}
-              configForLDAP={configForLDAP}
-              scopesString={scopesString}
-              isEditMode={true}
-              onUpdateOAuth2={handleOAuth2Update}
-              onUpdateOIDC={handleOIDCUpdate}
-              onUpdateLDAP={handleLDAPUpdate}
-              onUpdateScopes={setScopesString}
-            />
-          </div>
-        </div>
+        <FormSection
+          title={t("settings.sso.form.configuration")}
+          description={t("settings.sso.form.configuration-description")}
+        >
+          <ProviderConfigForm
+            providerType={localIdp.type}
+            configForOAuth2={configForOAuth2}
+            configForOIDC={configForOIDC}
+            configForLDAP={configForLDAP}
+            scopesString={scopesString}
+            isEditMode={true}
+            onUpdateOAuth2={handleOAuth2Update}
+            onUpdateOIDC={handleOIDCUpdate}
+            onUpdateLDAP={handleLDAPUpdate}
+            onUpdateScopes={setScopesString}
+          />
+        </FormSection>
 
         {/* User Information Mapping Section */}
-        <div className="py-6 lg:flex">
-          <div className="text-left lg:w-1/4">
-            <h1 className="text-2xl font-bold">
-              {t("settings.sso.form.user-information-mapping")}
-            </h1>
-            <p className="text-base text-control-light mt-3">
-              {t("settings.sso.form.user-information-mapping-description")}
-            </p>
-          </div>
-          <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
+        <FormSection
+          title={t("settings.sso.form.user-information-mapping")}
+          description={t(
+            "settings.sso.form.user-information-mapping-description"
+          )}
+        >
+          <FormFieldGroup>
             <FieldMappingForm
               providerType={localIdp.type}
               fieldMapping={fieldMapping}
               onChange={setFieldMapping}
             />
-            <div>
-              {builtIdp && (
-                <TestConnectionButton idp={builtIdp} disabled={!isFormValid} />
-              )}
-            </div>
-          </div>
-        </div>
+            {builtIdp && (
+              <TestConnectionButton idp={builtIdp} disabled={!isFormValid} />
+            )}
+          </FormFieldGroup>
+        </FormSection>
 
         {/* Actions Section */}
         <div className="py-6">

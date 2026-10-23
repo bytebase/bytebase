@@ -6,6 +6,7 @@ import { ExprEditor } from "@/components/ExprEditor";
 import { MatchedDatabaseView } from "@/components/MatchedDatabaseView";
 import { ResourceIdField } from "@/components/ResourceIdField";
 import { Button } from "@/components/ui/button";
+import { FormControlGroup, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
 import {
@@ -199,15 +200,14 @@ export function DatabaseGroupForm({
   return (
     <div className={`flex-1 flex flex-col ${className ?? ""}`}>
       <div className="flex-1 mb-6">
-        <div className="w-full">
-          <p className="font-medium text-main mb-2">{t("common.name")}</p>
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            disabled={readonly}
-            maxLength={200}
-          />
-          <div className="mt-2">
+        <FormField title={t("common.name")}>
+          <FormControlGroup>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              disabled={readonly}
+              maxLength={200}
+            />
             <ResourceIdField
               suffix
               value={resourceId}
@@ -218,8 +218,8 @@ export function DatabaseGroupForm({
               onChange={setResourceId}
               onValidationChange={setResourceIdValid}
             />
-          </div>
-        </div>
+          </FormControlGroup>
+        </FormField>
 
         <hr className="my-6" />
 

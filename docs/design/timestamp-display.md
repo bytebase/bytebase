@@ -35,7 +35,9 @@ audit request.
   **exactly when**. Display: absolute date-time, always.
 
 Surfaces that are neither literally a queue nor a record (activity feeds, "created N ago" meta,
-sync freshness, agent chat) are freshness-first readings and follow the work-queue rendering.
+sync freshness) are freshness-first readings and follow the work-queue rendering by default. Agent
+chat uses a calendar-day reading: today and yesterday show their local time with a day label;
+older messages show the local date and minute without requiring hover.
 
 The queue/history split covers *record* timestamps — times of things that already happened. A
 **future-pointing time** is a third kind:
@@ -94,8 +96,9 @@ Consequence accepted: queue rows aged 1–29 days still read "x days ago". Rejec
 7-day thresholds (would kill the complained-about string sooner, but diverge from the familiar
 GitHub behavior).
 
-**D4 — Scope: switch everywhere + history-view carve-out.**
-`HumanizeTs` itself gains the 30-day switch, so every freshness-first surface behaves GitHub-style.
+**D4 — Scope: default switch + explicit absolute modes.**
+`HumanizeTs` itself gains the 30-day switch, so freshness-first surfaces behave GitHub-style by
+default. Agent chat explicitly uses the calendar-day mode for all messages, regardless of age.
 The history views — database changelog, revision table, task-run history — flip to **absolute
 date-time always**, consistent with the audit log. They are records of execution, not queues.
 
@@ -172,7 +175,7 @@ Every current `HumanizeTs` call site, classified under the principle:
 | Deploy current status (latest-run times) | `routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx`, `DeployLatestTaskRunInfo.tsx` | Freshness | 30d switch |
 | **Scheduled rollout pill** | `DeployTaskHeader.tsx` (task pinned to a run time) | **Operational** | **Absolute + timezone** |
 | Schema sync status | `modules/sql-editor/components/SchemaPane/SyncSchemaButton.tsx`, `routes/project/ProjectSyncSchemaPage.tsx`, `components/database/DatabaseOverviewInfo.tsx` | Freshness | 30d switch |
-| Agent chat | `modules/agent/components/AgentWindow.tsx` | Feed | 30d switch |
+| Agent chat | `modules/agent/components/AgentChat.tsx` | Feed | Today/Yesterday with local time, then local date and minute — calendar mode |
 | Plan-check run time | `components/plan-check/PlanCheckSection.tsx` (bare `toLocaleString()` today — adopts `HumanizeTs`) | Freshness | 30d switch |
 | AI review run finish time | `routes/project/plan-detail/components/PlanDetailAIReview.tsx` | Freshness | 30d switch |
 | Access-grant creation time | `routes/project/ProjectAccessGrantsPage.tsx` (`AccessGrantRow`; full absolute today — adopts `HumanizeTs`). Shares the operational form with the expiration beside it: two dates in one row read in one format, and consistency outranks the freshness a relative age would add. The row's status, statement, creator and databases carry what a reader acts on — the status turns Expired by itself — so the dates take none of the spare width, and when the table is narrower than the defaults together they give way first, down to the timestamp minimum, then the statement, the creator and the databases, with the status last. A narrow screen cuts each date's time and zone and keeps its day; the full date-time stays on the hover | Operational | Operational (D6 tooltip) |

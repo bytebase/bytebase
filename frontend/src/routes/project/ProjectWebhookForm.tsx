@@ -26,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -374,11 +375,8 @@ export function ProjectWebhookForm({
         <div className="flex flex-col gap-y-4">
           {/* Destination type selector (create only) */}
           {create && (
-            <div>
-              <label
-                className="block font-medium text-main"
-                htmlFor="webhook-destination"
-              >
+            <FormField title={t("project.webhook.destination")}>
+              <label className="sr-only" htmlFor="webhook-destination">
                 {t("project.webhook.destination")}{" "}
                 <span className="text-error">*</span>
               </label>
@@ -388,7 +386,7 @@ export function ProjectWebhookForm({
                   if (value) updateField("type", Number(value));
                 }}
               >
-                <SelectTrigger id="webhook-destination" className="mt-1 w-full">
+                <SelectTrigger id="webhook-destination" className="w-full">
                   <SelectValue>
                     {
                       webhookTypeItemList.find(
@@ -408,47 +406,55 @@ export function ProjectWebhookForm({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </FormField>
           )}
 
           {/* Name */}
-          <div>
-            <label className="font-medium text-main">
-              {t("common.name")} <span className="text-error">*</span>
-            </label>
+          <FormField
+            title={
+              <>
+                {t("common.name")} <span className="text-error">*</span>
+              </>
+            }
+          >
             <Input
-              className="mt-1 w-full"
+              className="w-full"
               placeholder={`${selectedWebhook?.name ?? "My"} Webhook`}
               value={state.title}
               onChange={(e) => updateField("title", e.target.value)}
               disabled={!allowEdit}
             />
-          </div>
+          </FormField>
 
           {/* URL */}
-          <div>
-            <label className="font-medium text-main">
-              {t("project.webhook.webhook-url")}{" "}
-              <span className="text-error">*</span>
-            </label>
-            <div className="mt-1 text-sm text-control-light">
-              {t("project.webhook.creation.desc", {
-                destination: selectedWebhook?.name,
-              })}{" "}
-              <a
-                href={selectedWebhook?.docUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="normal-link"
-              >
-                {t("project.webhook.creation.view-doc", {
+          <FormField
+            title={
+              <>
+                {t("project.webhook.webhook-url")}{" "}
+                <span className="text-error">*</span>
+              </>
+            }
+            description={
+              <>
+                {t("project.webhook.creation.desc", {
                   destination: selectedWebhook?.name,
-                })}
-              </a>
-              .
-            </div>
+                })}{" "}
+                <a
+                  href={selectedWebhook?.docUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="normal-link"
+                >
+                  {t("project.webhook.creation.view-doc", {
+                    destination: selectedWebhook?.name,
+                  })}
+                </a>
+                .
+              </>
+            }
+          >
             <Input
-              className="mt-1 w-full"
+              className="w-full"
               placeholder={selectedWebhook?.urlPlaceholder}
               value={state.url}
               onChange={(e) => updateField("url", e.target.value)}
@@ -459,7 +465,7 @@ export function ProjectWebhookForm({
                 {t("project.webhook.url-hidden")}
               </div>
             )}
-          </div>
+          </FormField>
 
           {/* Triggering activities */}
           <div>

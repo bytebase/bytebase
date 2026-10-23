@@ -57,6 +57,8 @@ The product spacing vocabulary is 4, 6, 8, 12, 16, 24, and 32px.
 | --- | ---: |
 | Icon and adjacent label | 4-6px, according to control size |
 | Sibling controls and buttons | 8px |
+| Field title and its direct description | 0px |
+| Section title and its direct description | 8px |
 | Form label/title and its control | 6px |
 | Controls within one field | 8px |
 | Related content within a section | 16px |
@@ -185,9 +187,23 @@ behavior:
 ```
 
 - A field has 6px between its label/title region and control.
+- A field title and its concise description have no added gap; the description
+  follows the title directly. With a description, the 6px field gap is between
+  the description and the control. Without one, it is between the title and
+  the control.
 - Controls belonging to one field have 8px between them.
 - A field group has 24px between fields.
 - A section has 24px vertical padding and 16px internal rhythm.
+- A section title and its description have 8px between them. When a section
+  header and content stack, they have 16px between them. The default section
+  layout puts them side by side on large screens, so that vertical separation
+  applies only while stacked; `single-column` always uses it.
+- `FormSection`, `FormFieldGroup`, and `FormField` own these measurements.
+  Consumers MUST NOT add `gap-*`, `space-*`, or margin spacers to change their
+  title/description/control rhythm. Use `FormField spacing="section"` for a
+  field whose substantial control region needs 16px separation, and
+  `FormFieldGroup density="compact"` for the documented 16px dense-form
+  rhythm.
 - On large screens, a section header uses 25% of the section width and content
   uses the remainder. On smaller screens, they stack with 16px separation.
 - A page that reads as one column uses `FormSection layout="single-column"`: the
