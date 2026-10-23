@@ -20,8 +20,10 @@ The bundled Helm chart still deploys a single replica by default, so HA rollouts
    - Take the backup or snapshot your standard operating procedure requires before upgrading Bytebase.
 4. **Confirm shared configuration is consistent.**
    - Every HA replica should start with `--ha`, use the same `PG_URL`, and keep the same external URL during the upgrade.
-5. **Make sure health checks cannot stop a migrating server.**
-   - Bytebase opens its HTTP port only after metadata migrations finish. A liveness probe, load balancer health check, or deploy timeout shorter than the migration sends SIGTERM mid-upgrade. Check `/healthz` for readiness only, or give the health check a grace period above the expected migration time.
+5. **Make sure nothing stops a migrating server.**
+   - Bytebase opens its HTTP port only after metadata migrations finish, so `/healthz` fails until then.
+   - A readiness probe or a load balancer health check that only removes the server from traffic is safe.
+   - A liveness probe, an orchestrator that replaces unhealthy tasks (such as an ECS service behind a load balancer), or a deploy that rolls back on timeout (such as `helm upgrade --atomic`) sends SIGTERM mid-upgrade. Give each a grace period or timeout above the expected migration time.
 
 ## Helm chart behavior during upgrades
 
