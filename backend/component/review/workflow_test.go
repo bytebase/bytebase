@@ -1554,16 +1554,19 @@ func TestFindUnapprovableStep(t *testing.T) {
 			},
 		},
 		{
+			// The workspace admits all users, so the membership check passes and
+			// only the principal type leaves the account out.
 			name: "only a service account holds the role",
 			flow: []string{owner},
 			setup: []func(context.Context, *testing.T, *store.Store){
+				grant(common.AllUsers, "roles/workspaceMember"),
 				func(ctx context.Context, t *testing.T, stores *store.Store) {
 					_, err := stores.GetDB().ExecContext(ctx,
 						`INSERT INTO service_account (name, email, workspace, service_key_hash) VALUES ('bot', 'bot@service.bytebase.com', 'default', 'unused')`)
 					require.NoError(t, err)
 					account, err := stores.GetAccountByEmail(ctx, "bot@service.bytebase.com")
 					require.NoError(t, err)
-					require.Equal(t, storepb.PrincipalType_SERVICE_ACCOUNT, account.Type, "the holder must resolve, so the type is what leaves it out")
+					require.Equal(t, storepb.PrincipalType_SERVICE_ACCOUNT, account.Type, "the holder must resolve to an account")
 				},
 				grant(common.FormatServiceAccountEmail("bot@service.bytebase.com"), owner),
 			},

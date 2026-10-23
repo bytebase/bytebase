@@ -106,37 +106,11 @@ func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEn
 		}
 	}
 
-	databases, err := s.listDatabasesIn(ctx, fmt.Sprintf("workspaces/%s", workspaceID), filter)
-	var refusal *toolError
-	if !errors.As(err, &refusal) || refusal.Code != "PERMISSION_DENIED" {
-		return databases, err
-	}
-	// Listing the workspace takes bb.databases.list there, and a project role
-	// grants it only in its own project, so list the user's projects one by one.
-	projects, err := s.searchProjects(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if len(projects) == 0 {
-		return nil, refusal
-	}
-	databases = nil
-	for _, project := range projects {
-		inProject, err := s.listDatabasesIn(ctx, project, filter)
-		if err != nil {
-			return nil, err
-		}
-		databases = append(databases, inProject...)
-	}
-	return databases, nil
-}
-
-func (s *Server) listDatabasesIn(ctx context.Context, parent, filter string) ([]databaseEntry, error) {
 	var databases []databaseEntry
 	pageToken := ""
 	for {
 		body := map[string]any{
-			"parent":   parent,
+			"parent":   fmt.Sprintf("workspaces/%s", workspaceID),
 			"filter":   filter,
 			"pageSize": 1000,
 		}
@@ -163,42 +137,6 @@ func (s *Server) listDatabasesIn(ctx context.Context, parent, filter string) ([]
 		pageToken = listResp.NextPageToken
 	}
 	return databases, nil
-}
-
-// searchProjects names the projects the user can see.
-func (s *Server) searchProjects(ctx context.Context) ([]string, error) {
-	var names []string
-	pageToken := ""
-	for {
-		body := map[string]any{"pageSize": 1000}
-		if pageToken != "" {
-			body["pageToken"] = pageToken
-		}
-		resp, err := s.apiRequest(ctx, "/bytebase.v1.ProjectService/SearchProjects", body)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to search projects")
-		}
-		if err := checkAPIResponse(resp, "search projects", "bb.projects.get"); err != nil {
-			return nil, err
-		}
-		var page struct {
-			Projects []struct {
-				Name string `json:"name"`
-			} `json:"projects"`
-			NextPageToken string `json:"nextPageToken"`
-		}
-		if err := json.Unmarshal(resp.Body, &page); err != nil {
-			return nil, errors.Wrap(err, "failed to parse project search")
-		}
-		for _, project := range page.Projects {
-			names = append(names, project.Name)
-		}
-		if page.NextPageToken == "" {
-			break
-		}
-		pageToken = page.NextPageToken
-	}
-	return names, nil
 }
 
 // matchDatabases applies tiered matching (exact > case-insensitive > substring) and

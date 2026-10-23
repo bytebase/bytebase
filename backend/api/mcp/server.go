@@ -206,13 +206,15 @@ func negotiateLegacyProtocol(next mcp.MethodHandler) mcp.MethodHandler {
 	}
 }
 
-// nameSignedInAccount names the session's Bytebase account in the initialize
-// instructions: clients also show the model other accounts, such as their own sign-in.
+// nameSignedInAccount opens the initialize instructions with the session's
+// Bytebase account: clients also show the model other accounts, such as their
+// own sign-in. It goes first, so a client that cuts long instructions keeps it.
 func nameSignedInAccount(next mcp.MethodHandler) mcp.MethodHandler {
 	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 		result, err := next(ctx, method, req)
 		if initialized, ok := result.(*mcp.InitializeResult); ok {
-			initialized.Instructions = fmt.Sprintf(`This session acts as the Bytebase account %s: every tool call runs with its permissions, and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`, getUserEmail(ctx))
+			account := fmt.Sprintf(`This session acts as the Bytebase account %s: every tool call runs with its permissions, and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`, getUserEmail(ctx))
+			initialized.Instructions = strings.TrimSpace(account + "\n\n" + initialized.Instructions)
 		}
 		return result, err
 	}

@@ -754,6 +754,28 @@ func TestQueryDatabase_TableAccessDenialAdvisesAnAccessGrant(t *testing.T) {
 			want: "in a Read-write session, request an access grant for this statement with request_access_grant " +
 				"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor",
 		},
+		"the access check refused a metadata read": {
+			result: map[string]any{
+				"error":            "permission_denied: permission denied to access resources: projects/hr/instances/prod-pg/databases/employee_db",
+				"permissionDenied": map[string]any{"requiredPermissions": []string{"bb.sql.info"}},
+			},
+			want: "in a Read-write session, request an access grant for this statement with request_access_grant " +
+				"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor",
+		},
+		// No grant lifts these: a grant's statement must be read-only, and a
+		// granted target still needs bb.sql.explain from IAM.
+		"the access check refused a write": {
+			result: map[string]any{
+				"error":            "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee]",
+				"permissionDenied": map[string]any{"requiredPermissions": []string{"bb.sql.dml"}},
+			},
+		},
+		"the access check refused an EXPLAIN": {
+			result: map[string]any{
+				"error":            "permission_denied: permission denied to access resources: projects/hr/instances/prod-pg/databases/employee_db",
+				"permissionDenied": map[string]any{"requiredPermissions": []string{"bb.sql.explain"}},
+			},
+		},
 		"a statement the engine rejected": {
 			result: map[string]any{"error": `syntax error at or near "SELEC"`},
 			want:   "check your SQL syntax and try again",

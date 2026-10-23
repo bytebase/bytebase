@@ -10,6 +10,8 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common/permission"
 )
 
 const (
@@ -195,7 +197,9 @@ type queryResult struct {
 	Statement       string          `json:"statement"`
 	Masked          []maskingReason `json:"masked"`
 	// PermissionDenied is set when the SQL access check refused the statement.
-	PermissionDenied *struct{} `json:"permissionDenied"`
+	PermissionDenied *struct {
+		RequiredPermissions []permission.Permission `json:"requiredPermissions"`
+	} `json:"permissionDenied"`
 }
 
 // maskingReason holds the MaskingReason fields the tool reports.
@@ -266,10 +270,13 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 	if result.Error != "" {
 		suggestion := "check your SQL syntax and try again"
 		if result.PermissionDenied != nil {
-			// An approved access grant lifts this refusal for its statement.
-			// MCP sessions cannot file role requests.
-			suggestion = "in a Read-write session, request an access grant for this statement with request_access_grant " +
-				"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
+			// MCP sessions cannot file role requests, so the only advice is an
+			// access grant, and only where one lifts the refusal.
+			suggestion = ""
+			if grantLifts(result.PermissionDenied.RequiredPermissions) {
+				suggestion = "in a Read-write session, request an access grant for this statement with request_access_grant " +
+					"(the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
+			}
 		}
 		return nil, &toolError{
 			Code:       "QUERY_ERROR",
@@ -404,4 +411,20 @@ func parseLatencyMs(latency string) int64 {
 		return 0
 	}
 	return d.Milliseconds()
+}
+
+// grantLifts reports whether an approved access grant lifts a refusal that
+// required these permissions. A grant covers reading its read-only statement;
+// it never lifts bb.sql.explain (SQLService.accessCheckWithGrantedTargets), and
+// writes and DDL cannot be granted at all.
+func grantLifts(required []permission.Permission) bool {
+	if len(required) == 0 {
+		return false
+	}
+	for _, p := range required {
+		if p != permission.SQLSelect && p != permission.SQLInfo {
+			return false
+		}
+	}
+	return true
 }
