@@ -4,11 +4,15 @@ Playwright-based end-to-end tests for Bytebase. Starts a disposable Bytebase ser
 
 ## Prerequisites
 
-1. **Bytebase binary with embedded frontend:**
+1. **Bytebase binary with embedded frontend**, from the repository root:
    ```bash
-   pnpm --dir frontend release
-   go build -tags embed_frontend -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go
+   (cd frontend && pnpm release)
+   bash frontend/tests/e2e/build-server.sh
    ```
+   `build-server.sh` builds a dev binary, so the dev license validates, with
+   dev-only product switches set to their release values: the suite tests what
+   release builds ship. Today that switch is SQL review V2, which a plain dev
+   build turns on; the suite covers SQL review V1.
 
 2. **`psql` client** on PATH — required for DDL setup (the Bytebase query API is read-only; tests connect directly to the sample Postgres via Unix socket).
 
