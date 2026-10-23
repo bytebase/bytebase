@@ -15,13 +15,29 @@ export const PLAN_NODE_HEIGHT = 96;
 
 /**
  * Indent per nesting level for the surfaces that list the plan as rows. Every
- * level indents, so a row's tree guides line up with its ancestors' at any
- * depth; a capped indent would put two depths in one column.
+ * level of a plan indents by the same step, so a row's tree guides line up
+ * with its ancestors' at any depth. A plan too deep for the full step within
+ * `PLAN_MAX_INDENT` gets a narrower one, which leaves the node column room
+ * for the names.
  */
 export const PLAN_INDENT_STEP = 12;
+const PLAN_MAX_INDENT = 144;
+const PLAN_MIN_INDENT_STEP = 2;
 
-export function planIndentPixels(depth: number): number {
-  return Math.max(depth, 0) * PLAN_INDENT_STEP;
+/** The indent step for a plan whose deepest row is `maxDepth` levels down. */
+export function planIndentStep(maxDepth: number): number {
+  if (maxDepth <= 0) return PLAN_INDENT_STEP;
+  return Math.max(
+    PLAN_MIN_INDENT_STEP,
+    Math.min(PLAN_INDENT_STEP, Math.floor(PLAN_MAX_INDENT / maxDepth))
+  );
+}
+
+export function planIndentPixels(
+  depth: number,
+  step: number = PLAN_INDENT_STEP
+): number {
+  return Math.max(depth, 0) * step;
 }
 
 const COLUMN_GAP = 32;

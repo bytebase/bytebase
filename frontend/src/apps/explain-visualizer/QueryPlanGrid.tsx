@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useQueryPlanTranslation } from "./plan-i18n";
-import { PLAN_INDENT_STEP, planIndentPixels } from "./plan-layout";
+import { planIndentPixels, planIndentStep } from "./plan-layout";
 import {
   formatPlanCost,
   formatPlanCount,
@@ -44,8 +44,10 @@ const GUIDE_LINE_CLASS = "absolute bg-control-border";
  */
 function PlanTreeGuides({
   branchContinues,
+  step,
 }: {
   branchContinues: readonly boolean[];
+  step: number;
 }) {
   if (branchContinues.length === 0) return null;
   return (
@@ -67,7 +69,7 @@ function PlanTreeGuides({
             // A level has no identity apart from its position in the indent.
             key={index}
             className="relative shrink-0"
-            style={{ width: PLAN_INDENT_STEP }}
+            style={{ width: step }}
           >
             {vertical ? (
               <span
@@ -103,6 +105,7 @@ const PlanGridRow = memo(function PlanGridRow({
   row: { node, depth, branchContinues },
   index,
   tree,
+  step,
   selected,
   tabStop,
   onSelect,
@@ -111,6 +114,8 @@ const PlanGridRow = memo(function PlanGridRow({
   row: PlanRow;
   index: number;
   tree: PlanTree;
+  /** The plan's indent step, shared by every row so the guides line up. */
+  step: number;
   selected: boolean;
   tabStop: boolean;
   onSelect: (id: string) => void;
@@ -138,11 +143,11 @@ const PlanGridRow = memo(function PlanGridRow({
       </TableCell>
 
       <TableCell className="relative py-2">
-        <PlanTreeGuides branchContinues={branchContinues} />
+        <PlanTreeGuides branchContinues={branchContinues} step={step} />
         <div
           data-testid="plan-grid-node"
           className="relative flex min-w-0 items-baseline gap-2"
-          style={{ paddingLeft: planIndentPixels(depth) }}
+          style={{ paddingLeft: planIndentPixels(depth, step) }}
         >
           <span
             data-testid="plan-grid-node-type"
@@ -200,6 +205,10 @@ const PlanGridRow = memo(function PlanGridRow({
 export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
   const translate = useQueryPlanTranslation();
   const rows = useMemo(() => planRows(tree.root), [tree]);
+  const step = useMemo(
+    () => planIndentStep(Math.max(0, ...rows.map((row) => row.depth))),
+    [rows]
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // The selection can be chosen beside the table, from the ranking or the
@@ -323,6 +332,7 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
               row={row}
               index={index}
               tree={tree}
+              step={step}
               selected={row.node.id === selectedId}
               tabStop={row.node.id === tabStopId}
               onSelect={onSelect}

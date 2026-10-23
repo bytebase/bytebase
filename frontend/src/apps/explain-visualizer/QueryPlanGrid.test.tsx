@@ -297,6 +297,27 @@ describe("QueryPlanGrid", () => {
     }
   });
 
+  test("narrows every row's indent alike for a very deep plan", () => {
+    const chain = (depth: number): unknown => ({
+      "Node Type": `Level ${depth}`,
+      "Startup Cost": 0,
+      "Total Cost": 1,
+      "Plan Rows": 1,
+      "Plan Width": 1,
+      ...(depth < 30 ? { Plans: [chain(depth + 1)] } : {}),
+    });
+    renderGrid({ tree: treeFrom([{ Plan: chain(0) }]) });
+
+    // Thirty levels at the full step would take 360px of the node column.
+    const nodeCells = screen.getAllByTestId("plan-grid-node");
+    expect(nodeCells[30].style.paddingLeft).toBe("120px");
+    expect(nodeCells[1].style.paddingLeft).toBe("4px");
+    const deepest = screen.getAllByTestId("plan-grid-guides").at(-1);
+    for (const cell of Array.from(deepest?.children ?? [])) {
+      expect((cell as HTMLElement).style.width).toBe("4px");
+    }
+  });
+
   test("brings the selected row on screen when the selection changes", () => {
     // jsdom lays nothing out, so it has no scrollIntoView to observe.
     const scrollIntoView = vi.fn();

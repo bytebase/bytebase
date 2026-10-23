@@ -9,6 +9,7 @@ import {
   planFitsViewport,
   planFitViewport,
   planIndentPixels,
+  planIndentStep,
   planMiniMap,
   planNodeCenter,
   planNodeOnScreen,
@@ -184,9 +185,24 @@ describe("layoutPlan with collapsed subtrees", () => {
 
 describe("planIndentPixels", () => {
   test("steps with depth at every level", () => {
-    expect([0, 1, 2, 6, 7, 30].map(planIndentPixels)).toEqual([
-      0, 12, 24, 72, 84, 360,
-    ]);
+    expect([0, 1, 2, 6, 7, 30].map((depth) => planIndentPixels(depth))).toEqual(
+      [0, 12, 24, 72, 84, 360]
+    );
+    expect(planIndentPixels(30, 4)).toBe(120);
+  });
+});
+
+describe("planIndentStep", () => {
+  test("keeps the full step while the plan's indent fits", () => {
+    expect([0, 1, 7, 12].map(planIndentStep)).toEqual([12, 12, 12, 12]);
+  });
+
+  test("narrows the step so a deep plan's indent stays bounded", () => {
+    expect(planIndentStep(13)).toBe(11);
+    expect(planIndentStep(30)).toBe(4);
+    expect(30 * planIndentStep(30)).toBeLessThanOrEqual(144);
+    // Past the narrowest step the guides still line up; the indent grows.
+    expect(planIndentStep(500)).toBe(2);
   });
 });
 
