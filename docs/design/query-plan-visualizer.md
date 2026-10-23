@@ -402,16 +402,19 @@ it. For them the Plan option is **disabled with the reason shown**, not hidden:
 hiding it leaves them unable to tell the capability exists or what to ask an
 admin for.
 
-**Anything that both executes and returns a plan needs both permissions**, and
-today neither route does. A typed `EXPLAIN ANALYZE` is classified as its *inner*
-statement (`pg/query_type.go:47`), so it passes on `bb.sql.select` alone and
-still returns a plan. The **Explain analyze** action comes the other way: an
-explain request has no query spans, so the check falls to
-`bb.sql.explain` alone (`sql_service.go:1450-1458`) — safe today only because
-`validateExplainStatements` refuses anything that is not read-only, which is
-exactly the refusal this action has to relax. Both routes must require the
-underlying statement's normal ACL, write-target checks included, **and**
-`bb.sql.explain`.
+**Anything that both executes and returns a plan needs both permissions.** A
+typed `EXPLAIN ANALYZE` was classified as its *inner* statement, so it passed on
+`bb.sql.select` alone and still returned a plan; SQL Server's `SET STATISTICS
+XML ON` and `SET STATISTICS PROFILE ON` did the same for every statement after
+them. Both now mark the span as an executed plan, so the statement needs its
+normal ACL, write-target checks included, **and** `bb.sql.explain`
+([#21642](https://github.com/bytebase/bytebase/pull/21642),
+[#21648](https://github.com/bytebase/bytebase/pull/21648)). SQL Server's settings are read from the parsed `SET` statement,
+not matched as text, so a comment or an option list does not hide them. The
+**Explain analyze** action comes the other way: an explain request is checked
+on `bb.sql.explain` and is safe today only because `validateExplainStatements`
+refuses anything that is not read-only, which is exactly the refusal this
+action has to relax; when it lands it must add the statement's own ACL.
 
 **Plans are never masked, and that is a privilege, not a safe default.** Explain
 skips masking (`sql_service.go:726`, `:735`). A plan is not row data, but it is
@@ -518,7 +521,7 @@ live servers, September 2026.
 
 ## 6. Status
 
-Checked against `main` on 2026-10-22.
+Checked against `main` on 2026-10-23.
 
 **Landed**
 
@@ -540,9 +543,11 @@ Checked against `main` on 2026-10-22.
   ([#21642](https://github.com/bytebase/bytebase/pull/21642)); the Plan option
   is disabled with the reason, a load can be cancelled, and a plan past the
   node cap is shown as text
-  ([#21646](https://github.com/bytebase/bytebase/pull/21646)). What remains
-  of §3.5: SQL Server's `SET STATISTICS XML ON` route still passes on
-  `bb.sql.select` alone.
+  ([#21646](https://github.com/bytebase/bytebase/pull/21646)); SQL Server's
+  `SET STATISTICS XML` and `PROFILE` need `bb.sql.explain` as well as the
+  statement's own permission, and its SHOWPLAN settings are read from the
+  parsed statement ([#21648](https://github.com/bytebase/bytebase/pull/21648)).
+  §3.5 is closed.
 - §3.2/§3.3 — Plan in the result pane's view switch on an ordinary result,
   planning the executed statement, with the estimate wording from §3.4, the
   choice remembered per editor tab
