@@ -1812,6 +1812,10 @@
       "gate-review-approved": "变更已批准",
       "gate-review-pending": "审批中",
       "gate-review-rejected": "请求变更",
+      "gate-threads-open-sub": "解决所有讨论后才会创建发布",
+      "gate-threads-open_one": "{{count}} 个未解决的讨论",
+      "gate-threads-open_other": "{{count}} 个未解决的讨论",
+      "gate-threads-resolved": "所有讨论已解决",
       "incomplete": "不完整",
       "preparing-rollout": "正在准备发布…",
       "rejected": "已拒绝",
@@ -1842,6 +1846,7 @@
       "create-rollout-action": "手动创建发布",
       "deploy-description": "当所有检查都通过且工单审批完成后，Bytebase 会自动创建发布。",
       "deploy-description-gitops": "此计划已就绪，可以发布。创建一个发布以部署关联的 Release。",
+      "deploy-description-v2": "当所有检查都通过、所有讨论都已解决且工单审批完成后，Bytebase 会自动创建发布。",
       "hide-details": "隐藏详情",
       "review-description": "提交审批以继续",
       "show-details": "显示详情"
@@ -1879,6 +1884,7 @@
       "footer": {
         "all-gates-passed": "所有条件已满足",
         "approved-but-checks-failed": "审批已通过，但变更检查失败",
+        "approved-but-threads-open": "审批已通过，但还有未解决的讨论",
         "auto-rollout-after-approval": "审批通过后将自动创建发布",
         "blocked-by-rejection": "已被拒绝的审批阻塞 — 请先处理上方反馈",
         "bypass-and-deploy": "跳过并发布",
@@ -1889,6 +1895,10 @@
         "confirm-checks-running": "检查仍在运行",
         "confirm-review-not-approved": "审批尚未通过",
         "confirm-review-rejected": "审批已被拒绝",
+        "confirm-rule-review-unknown": "SQL 审核状态未知",
+        "confirm-threads-unknown": "讨论状态未知",
+        "confirm-unresolved-threads_one": "{{count}} 个未解决的讨论",
+        "confirm-unresolved-threads_other": "{{count}} 个未解决的讨论",
         "creating-rollout-automatically": "正在自动创建发布...",
         "errors-passed-not-created_one": "{{count}} 项错误，{{passed}} 项通过。未自动创建发布。",
         "errors-passed-not-created_other": "{{count}} 项错误，{{passed}} 项通过。未自动创建发布。",
@@ -1902,6 +1912,8 @@
         "rollout-auto-creates": "审批通过后自动创建发布",
         "rollout-blocked-by-failed-checks": "在检查通过前不会自动创建发布",
         "rollout-not-created": "发布未自动创建",
+        "threads-open-not-created_one": "{{count}} 个未解决的讨论。未自动创建发布。",
+        "threads-open-not-created_other": "{{count}} 个未解决的讨论。未自动创建发布。",
         "waiting-on-review": "等待审批"
       },
       "last-plan-editor-cannot-approve": "由于您最后修改了该计划，因此无法审批此工单。请由其他审批人进行审批。",
@@ -1943,6 +1955,7 @@
         "resolve": "解决",
         "resolve-thread": "解决线程",
         "resolved": "已解决",
+        "rule": "规则",
         "threads-on-line_one": "此行有 {{count}} 个讨论",
         "threads-on-line_other": "此行有 {{count}} 个讨论",
         "walker": {
@@ -1961,6 +1974,16 @@
       "description_one": "回滚发布 #{{rolloutId}} 中选中的 1 个任务。",
       "description_other": "回滚发布 #{{rolloutId}} 中选中的 {{count}} 个任务。",
       "title": "回滚发布 #{{rolloutId}}"
+    },
+    "rule-review": {
+      "failed": "SQL 审核失败",
+      "load-failed": "无法加载 SQL 审核状态。",
+      "no-open-findings": "没有未解决的问题",
+      "not-run": "SQL 审核未运行",
+      "open-findings_one": "{{count}} 个未解决的问题",
+      "open-findings_other": "{{count}} 个未解决的问题",
+      "queued": "SQL 审核排队中",
+      "running": "SQL 审核运行中"
     },
     "run": "重新检查",
     "select-isolation-level": "选择隔离级别",

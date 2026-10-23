@@ -63,7 +63,8 @@ message IssueCommentPayload {
   // reviewer posted it, what it was judged against, its priority, and the
   // databases it applies to. Results from the same reviewer are superseded
   // together: when a run completes, it resolves every OPEN root of its type
-  // in the transaction that posts the new results.
+  // and marks every earlier root of its type superseded, in the transaction
+  // that posts the new results.
   message ReviewMetadata {
     // Priority says what resolving the thread means. It has no bearing on
     // blocking: an OPEN root thread blocks whatever its priority, and a
@@ -91,6 +92,10 @@ message IssueCommentPayload {
     // renderer collapses it when it equals the spec's target set.
     // Format: instances/{instance}/databases/{database}
     repeated string targets = 4;
+    // A later run of the same reviewer has completed, so the result is not
+    // from the latest review. Set by that run whatever the thread state, and
+    // never cleared.
+    bool superseded = 5;
   }
 
   // StatementAnchor records the anchored statement revision and range.

@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import { ReviewRun_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   ReviewPriorityBadge,
+  ReviewRule,
   ReviewTargets,
   useCommentAuthor,
 } from "./ReviewResult";
@@ -169,6 +171,9 @@ export function ThreadComment({
               />
             </div>
           )
+        )}
+        {review?.runType === ReviewRun_Type.RULE && (
+          <ReviewRule ruleType={review.ruleType} />
         )}
       </div>
     </div>

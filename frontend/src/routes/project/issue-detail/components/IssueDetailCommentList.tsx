@@ -35,6 +35,7 @@ import {
   type IssueComment,
   type IssueComment_ReviewMetadata,
   IssueSchema,
+  ReviewRun_Type,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
@@ -44,6 +45,7 @@ import { PlanSpecChangeReference } from "../../plan-detail/components/PlanChange
 import {
   ReviewerIcon,
   ReviewPriorityBadge,
+  ReviewRule,
   ReviewTargets,
   reviewerName,
 } from "../../plan-detail/components/threads/ReviewResult";
@@ -589,6 +591,9 @@ function ReviewResultActivityRow({
         <div className="flex flex-col gap-y-2">
           <ReviewTargets spec={spec} targets={review.targets} />
           {body}
+          {review.runType === ReviewRun_Type.RULE && (
+            <ReviewRule ruleType={review.ruleType} />
+          )}
         </div>
       }
       header={

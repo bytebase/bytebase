@@ -3687,6 +3687,7 @@ What a review result carries beyond its text.
 | rule_type | [ReviewRuleType](#bytebase-v1-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority) |  |  |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Format: instances/{instance}/databases/{database} |
+| superseded | [bool](#bool) |  | A later run of the same reviewer has completed, so the result is not from the latest review, whatever its thread state. |
 
 
 
@@ -3842,6 +3843,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the current run was triggered. Reset on every re-run. |
 | end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the run reached a terminal status. Unset while AVAILABLE or RUNNING. |
 | error | [string](#string) |  | Fatal execution error, set if and only if status is FAILED: the review failed to execute (a platform problem, never the SQL — SQL problems are review results on a DONE run). |
+| outdated | [bool](#bool) |  | Whether the plan&#39;s SQL changed after this run started, so the run reviews an earlier version of it. The server starts a new run before it creates the rollout automatically. |
 
 
 

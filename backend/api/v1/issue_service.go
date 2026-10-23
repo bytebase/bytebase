@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -38,6 +39,7 @@ type IssueService struct {
 	bus            *bus.Bus
 	licenseService *enterprise.LicenseService
 	iamManager     *iam.Manager
+	profile        *config.Profile
 	reviewWorkflow *review.Workflow
 }
 
@@ -48,6 +50,7 @@ func NewIssueService(
 	bus *bus.Bus,
 	licenseService *enterprise.LicenseService,
 	iamManager *iam.Manager,
+	profile *config.Profile,
 ) *IssueService {
 	return &IssueService{
 		store:          store,
@@ -55,6 +58,7 @@ func NewIssueService(
 		bus:            bus,
 		licenseService: licenseService,
 		iamManager:     iamManager,
+		profile:        profile,
 		reviewWorkflow: review.NewWorkflow(store),
 	}
 }
@@ -521,6 +525,11 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 	}
 
+	// The review starts before the workflow, whose approval check can create
+	// the rollout: a slot already in place holds it until the review is done.
+	if created {
+		startRuleReview(ctx, s.profile, s.store, s.bus, issue)
+	}
 	if created && !issue.Payload.GetDraft() {
 		issue, err = startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)
 		if err != nil {
@@ -1407,6 +1416,9 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 
 	if err := s.store.UpdateIssueComment(ctx, update); err != nil {
 		return nil, issueCommentError(err)
+	}
+	if s.profile.SQLReviewV2 && update.ThreadState != nil && *update.ThreadState == store.ThreadStateResolved {
+		requestRolloutCheck(ctx, s.store, s.bus, parentProjectID, parentIssueUID)
 	}
 	issueComment, err = s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: parentProjectID, ResourceID: &issueCommentID})
 	if err != nil {

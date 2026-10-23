@@ -2,12 +2,16 @@ package v1
 
 import (
 	"context"
+	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
@@ -22,7 +26,8 @@ const (
 	reviewRunIDAI   = "ai"
 )
 
-// GetReviewRun returns the run in a review slot as stored.
+// GetReviewRun returns the run in a review slot as stored, and whether the
+// plan's SQL changed after it started.
 func (s *IssueService) GetReviewRun(ctx context.Context, req *connect.Request[v1pb.GetReviewRunRequest]) (*connect.Response[v1pb.ReviewRun], error) {
 	projectID, issueUID, reviewRunID, err := common.GetProjectIDIssueUIDReviewRunID(req.Msg.Name)
 	if err != nil {
@@ -40,7 +45,36 @@ func (s *IssueService) GetReviewRun(ctx context.Context, req *connect.Request[v1
 	if reviewRun == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("review run %q not found", req.Msg.Name))
 	}
-	return connect.NewResponse(convertToReviewRun(reviewRun)), nil
+	converted := convertToReviewRun(reviewRun)
+	converted.Outdated, err = reviewRunOutdated(ctx, s.store, reviewRun)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	return connect.NewResponse(converted), nil
+}
+
+// reviewRunOutdated reports whether the run's approval input version is no
+// longer its issue's plan's: the plan's SQL changed after the run started.
+func reviewRunOutdated(ctx context.Context, stores *store.Store, reviewRun *store.ReviewRunMessage) (bool, error) {
+	issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ProjectIDs: []string{reviewRun.ProjectID},
+		UID:        &reviewRun.IssueUID,
+	})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get issue")
+	}
+	if issue == nil || issue.PlanUID == nil {
+		return false, nil
+	}
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: reviewRun.ProjectID, UID: issue.PlanUID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get plan")
+	}
+	if plan == nil {
+		return false, nil
+	}
+	return reviewRun.Payload.GetApprovalInputVersion() != plan.Config.GetApprovalInputVersion(), nil
 }
 
 // RunReview triggers a review run. The slot is reset unconditionally: a
@@ -55,6 +89,9 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 	if !ok {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown reviewer type %q", reviewRunID))
 	}
+	if reviewType == store.ReviewRunTypeRule && !s.profile.SQLReviewV2 {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("the standard rule review is not available on this server yet"))
+	}
 
 	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
@@ -67,42 +104,10 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 	if issue == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue %d not found in project %s", issueUID, projectID))
 	}
-	if issue.Status != storepb.Issue_OPEN {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("review runs only on an open issue; issue is %s", issue.Status))
-	}
-	if issue.PlanUID == nil {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("issue %d has no SQL to review", issueUID))
-	}
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: issue.PlanUID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
-	}
-	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", *issue.PlanUID, projectID))
-	}
-	if plan.Config.GetHasRollout() {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("the plan already has a rollout; its SQL is frozen"))
-	}
-
 	// Applicability: the review type must apply to this issue right now — a
 	// slot for an inapplicable type must not exist, so it is not created.
-	project, err := s.store.GetProjectByResourceID(ctx, projectID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", projectID))
-	}
-	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, s.store, plan, nil)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database group for plan"))
-	}
-	targets, err := plancheck.DeriveReviewTargets(ctx, s.store, project, plan, databaseGroup)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to derive review targets"))
-	}
-	if len(targets) == 0 {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("the plan has no reviewable SQL"))
+	if err := checkReviewable(ctx, s.store, issue); err != nil {
+		return nil, err
 	}
 	if reviewType == store.ReviewRunTypeAI {
 		aiSetting, err := s.store.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
@@ -125,6 +130,91 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 	s.bus.ReviewRunTickleChan <- 0
 
 	return connect.NewResponse(convertToReviewRun(reviewRun)), nil
+}
+
+// checkReviewable refuses a review the issue cannot have now: the issue must
+// be open, and its plan's SQL must be unfrozen by a rollout and reach at least
+// one reviewable target.
+func checkReviewable(ctx context.Context, stores *store.Store, issue *store.IssueMessage) error {
+	if issue.Status != storepb.Issue_OPEN {
+		return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("review runs only on an open issue; issue is %s", issue.Status))
+	}
+	if issue.PlanUID == nil {
+		return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("issue %d has no SQL to review", issue.UID))
+	}
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
+	}
+	if plan == nil {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", *issue.PlanUID, issue.ProjectID))
+	}
+	if plan.Config.GetHasRollout() {
+		return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("the plan already has a rollout; its SQL is frozen"))
+	}
+	project, err := stores.GetProjectByResourceID(ctx, issue.ProjectID)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+	}
+	if project == nil {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
+	}
+	hasTargets, err := plancheck.HasReviewTargets(ctx, stores, project, plan)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, err)
+	}
+	if !hasTargets {
+		return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("the plan has no reviewable SQL"))
+	}
+	return nil
+}
+
+// startRuleReview starts the standard rule review of the issue where SQL
+// Review V2 is on, at the points the plan checks run. It never fails its
+// caller: an issue the review does not apply to is skipped, and a failure is
+// logged.
+func startRuleReview(ctx context.Context, profile *config.Profile, stores *store.Store, b *bus.Bus, issue *store.IssueMessage) {
+	if !profile.SQLReviewV2 || issue == nil || issue.Type != storepb.Issue_DATABASE_CHANGE {
+		return
+	}
+	if err := checkReviewable(ctx, stores, issue); err != nil {
+		if connect.CodeOf(err) != connect.CodeFailedPrecondition {
+			slog.Warn("failed to start the standard rule review",
+				slog.String("project", issue.ProjectID),
+				slog.Int64("issue_id", issue.UID),
+				log.BBError(err))
+		}
+		return
+	}
+	if _, err := stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule); err != nil {
+		slog.Error("failed to start the standard rule review",
+			slog.String("project", issue.ProjectID),
+			slog.Int64("issue_id", issue.UID),
+			log.BBError(err))
+		return
+	}
+	b.ReviewRunTickleChan <- 0
+}
+
+// requestRolloutCheck asks the rollout creator to look at the issue's plan
+// again. Under SQL Review V2 open threads hold the automatic rollout, so
+// resolving one can release it.
+func requestRolloutCheck(ctx context.Context, stores *store.Store, b *bus.Bus, projectID string, issueUID int64) {
+	issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectID}, UID: &issueUID})
+	if err != nil {
+		slog.Warn("failed to get the issue to check its rollout",
+			slog.String("project", projectID),
+			slog.Int64("issue_id", issueUID),
+			log.BBError(err))
+		return
+	}
+	if issue == nil || issue.PlanUID == nil {
+		return
+	}
+	select {
+	case b.RolloutCreationChan <- bus.PlanRef{ProjectID: projectID, PlanID: *issue.PlanUID}:
+	case <-ctx.Done():
+	}
 }
 
 // reviewRunTypeFromID maps a review run resource ID to the stored reviewer

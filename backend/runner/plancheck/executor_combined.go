@@ -15,6 +15,9 @@ type CombinedExecutor struct {
 	store        *store.Store
 	sheetManager *sheet.Manager
 	dbFactory    *dbfactory.DBFactory
+	// ruleReviewCovers reports whether SQL Review V2's standard rule review
+	// covers an engine; nil where SQL Review V2 is off.
+	ruleReviewCovers func(storepb.Engine) bool
 }
 
 // NewCombinedExecutor creates a combined executor.
@@ -22,11 +25,13 @@ func NewCombinedExecutor(
 	store *store.Store,
 	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
+	ruleReviewCovers func(storepb.Engine) bool,
 ) *CombinedExecutor {
 	return &CombinedExecutor{
-		store:        store,
-		sheetManager: sheetManager,
-		dbFactory:    dbFactory,
+		store:            store,
+		sheetManager:     sheetManager,
+		dbFactory:        dbFactory,
+		ruleReviewCovers: ruleReviewCovers,
 	}
 }
 
@@ -35,6 +40,9 @@ func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *CheckTarget
 	var allResults []*storepb.PlanCheckRunResult_Result
 
 	for _, checkType := range target.Types {
+		if e.supersededBySQLReviewV2(ctx, target, checkType) {
+			continue
+		}
 		results, err := e.runCheck(ctx, target, checkType)
 		if err != nil {
 			// Add error result for this target/type, continue to next
@@ -59,6 +67,23 @@ func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *CheckTarget
 	}
 
 	return allResults, nil
+}
+
+// supersededBySQLReviewV2 reports whether the standard rule review replaces
+// the check where SQL Review V2 is on: only the SQL review advice, and only on
+// an engine the rule review covers; V1 keeps advising the others. The gh-ost
+// check stays, since it dry-runs the migration against the instance, which
+// the ONLINE_MIGRATION rule, reading the SQL alone, cannot.
+func (e *CombinedExecutor) supersededBySQLReviewV2(ctx context.Context, target *CheckTarget, checkType storepb.PlanCheckType) bool {
+	if e.ruleReviewCovers == nil || checkType != storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE {
+		return false
+	}
+	instance, _, err := ResolveDatabaseTarget(ctx, e.store, target.Target)
+	if err != nil {
+		// The advice runs, and reports the target it cannot resolve.
+		return false
+	}
+	return e.ruleReviewCovers(instance.Metadata.GetEngine())
 }
 
 func (e *CombinedExecutor) runCheck(ctx context.Context, target *CheckTarget, checkType storepb.PlanCheckType) ([]*storepb.PlanCheckRunResult_Result, error) {

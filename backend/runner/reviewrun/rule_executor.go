@@ -71,6 +71,9 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 			return nil, err
 		}
 		target, err := e.resolveReviewTarget(ctx, project, checkTarget)
+		if errors.Is(err, errNoRuleReviewer) {
+			continue
+		}
 		if err != nil {
 			unitErrs = append(unitErrs, errors.Wrapf(err, "%s", checkTarget.Target))
 			continue
@@ -137,15 +140,22 @@ func (u *reviewUnit) failures(err error) []error {
 	return errs
 }
 
+// errNoRuleReviewer marks a target whose engine has no standard rule review.
+var errNoRuleReviewer = errors.New("the engine has no standard rule reviewer")
+
 // resolveReviewTarget gathers the inputs the engine cannot derive from the
 // SQL: the synced schema, and the instance facts the review contract lists.
-// A database whose schema is not synced cannot be reviewed.
+// A database whose schema is not synced cannot be reviewed. A target on an
+// engine with no reviewer returns errNoRuleReviewer before its schema is read.
 func (e *RuleExecutor) resolveReviewTarget(ctx context.Context, project *store.ProjectMessage, checkTarget *plancheck.CheckTarget) (*reviewTarget, error) {
 	instance, database, err := plancheck.ResolveDatabaseTarget(ctx, e.store, checkTarget.Target)
 	if err != nil {
 		return nil, err
 	}
 	engine := instance.Metadata.GetEngine()
+	if _, ok := e.reviewFuncs[engine]; !ok {
+		return nil, errNoRuleReviewer
+	}
 	dbSchema, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		Workspace:    instance.Workspace,
 		InstanceID:   database.InstanceID,

@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { IssueComment_ReviewMetadata_Priority } from "@/types/proto-es/v1/issue_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
   Plan_SpecSchema,
@@ -25,7 +26,11 @@ vi.mock("../PlanTargetDisplay", () => ({
   ),
 }));
 
-import { ReviewPriorityBadge, ReviewTargets } from "./ReviewResult";
+import {
+  ReviewPriorityBadge,
+  ReviewRule,
+  ReviewTargets,
+} from "./ReviewResult";
 
 afterEach(cleanup);
 
@@ -69,6 +74,26 @@ describe("ReviewPriorityBadge", () => {
       />
     );
     expect(container.innerHTML).toBe("");
+  });
+});
+
+describe("ReviewRule", () => {
+  test("names the standard rule in the reader's language", () => {
+    const { getByTestId } = render(
+      <ReviewRule ruleType={ReviewRuleType.REQUIRE_WHERE} />
+    );
+    const rule = getByTestId("review-rule");
+    expect(rule.firstElementChild?.textContent).toBe("plan.review.thread.rule");
+    expect(rule.lastElementChild?.textContent).toBe(
+      "sql-review.standard-rules.rule.require-where.title"
+    );
+  });
+
+  test("shows nothing for an unspecified rule", () => {
+    const { container } = render(
+      <ReviewRule ruleType={ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED} />
+    );
+    expect(container).toBeEmptyDOMElement();
   });
 });
 

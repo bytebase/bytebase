@@ -6254,6 +6254,14 @@ instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the
 executor or by the reaper. </p></td>
                 </tr>
               
+                <tr>
+                  <td>approval_input_version</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The plan&#39;s PlanConfig.approval_input_version when the slot was reset: the
+version of the plan&#39;s SQL this run reviews. Completion keeps it. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -6545,7 +6553,7 @@ change. </p></td>
         
       
         <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</h3>
-        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. Results from the same reviewer are superseded</p><p>together: when a run completes, it resolves every OPEN root of its type</p><p>in the transaction that posts the new results.</p>
+        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. Results from the same reviewer are superseded</p><p>together: when a run completes, it resolves every OPEN root of its type</p><p>and marks every earlier root of its type superseded, in the transaction</p><p>that posts the new results.</p>
 
         
           <table class="field-table">
@@ -6584,6 +6592,15 @@ them. </p></td>
                   <td><p>Every database the result applies to, sorted. Always complete; the
 renderer collapses it when it equals the spec&#39;s target set.
 Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>superseded</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>A later run of the same reviewer has completed, so the result is not
+from the latest review. Set by that run whatever the thread state, and
+never cleared. </p></td>
                 </tr>
               
             </tbody>

@@ -2,9 +2,11 @@ import type { TFunction } from "i18next";
 import { Bot, ListChecks } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { standardRuleText } from "@/components/sql-review/standardRules";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Badge, type BadgeProps, badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useUserByIdentifier } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 import { isValidDatabaseName, unknownUser } from "@/types";
@@ -14,6 +16,7 @@ import {
   ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { PlanTargetDisplay } from "../PlanTargetDisplay";
 
@@ -117,6 +120,30 @@ function priorityStyle(
     default:
       return undefined;
   }
+}
+
+// The standard rule a rule review result reports, in the reader's language,
+// with what the rule checks on hover. An AI result names its rule in its text.
+export function ReviewRule({ ruleType }: { ruleType: ReviewRuleType }) {
+  const { t } = useTranslation();
+  if (ruleType === ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED) return null;
+  const { title, description } = standardRuleText(t, ruleType);
+  return (
+    <div
+      className="flex min-w-0 items-baseline gap-x-2 text-xs"
+      data-testid="review-rule"
+    >
+      <span className="shrink-0 text-control-light">
+        {t("plan.review.thread.rule")}
+      </span>
+      <Tooltip
+        content={description}
+        render={<span className="min-w-0 text-control" tabIndex={0} />}
+      >
+        {title}
+      </Tooltip>
+    </div>
+  );
 }
 
 // The databases a review result applies to. A result without targets has

@@ -9,6 +9,7 @@ import {
   IssueSchema,
   ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 
 const ISSUE = "projects/p/issues/1";
 
@@ -153,6 +154,23 @@ describe("IssueDetailCommentList", () => {
     expect(screen.getByTestId("review-priority").textContent).toBe("P1");
     expect(screen.getByTestId("review-targets").textContent).toContain(
       "instances/i/databases/d"
+    );
+  });
+
+  test("names the standard rule of a RULE result", () => {
+    const rule = comment("rule", true);
+    if (rule.reviewMetadata) {
+      rule.reviewMetadata.runType = ReviewRun_Type.RULE;
+      rule.reviewMetadata.ruleType = ReviewRuleType.REQUIRE_WHERE;
+    }
+    mocks.comments = [rule];
+    render(<IssueDetailCommentList />);
+
+    expect(screen.getByTestId("row-header").textContent).toContain(
+      "sql-review.standard-rules.self"
+    );
+    expect(screen.getByTestId("review-rule").textContent).toContain(
+      "sql-review.standard-rules.rule.require-where.title"
     );
   });
 

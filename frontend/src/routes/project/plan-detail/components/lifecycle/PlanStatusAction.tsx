@@ -1,8 +1,8 @@
 // The header's read-only "Plan status" control, shown when the current user does
 // not own the next action (observer, not-your-turn) or the plan is in a pre-deploy
 // blocker state. The trigger names the blocker; clicking opens a details panel
-// styled after GitHub's merge box — two collapsible gate rows (Review, Plan
-// checks), each a status icon + headline + subtext. The detail is ours: Review
+// styled after GitHub's merge box — gate rows (Review, Plan checks, and under
+// SQL Review V2 the open threads), each a status icon + headline + subtext. The detail is ours: Review
 // expands to the (compact) approval flow; Plan checks expands to a severity
 // breakdown with a "View Details" link into the existing plan-check drawer. The
 // footer shows at most one state-dependent action: re-request review when
@@ -16,6 +16,7 @@ import {
   CircleX,
   Clock3,
   Loader2,
+  MessagesSquare,
 } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -37,6 +38,7 @@ import { userNamePrefix } from "@/stores/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { RequestIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { useSqlReviewV2 } from "../../hooks/useSqlReviewV2";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import type { PlanCheckSummary } from "../../utils/phaseSummary";
 import { BypassAndDeploySheet, useBypassDeploy } from "../review/bypassDeploy";
@@ -61,6 +63,7 @@ export function PlanStatusAction({
   const [open, setOpen] = useState(false);
   const [checksDrawerOpen, setChecksDrawerOpen] = useState(false);
   const bypass = useBypassDeploy(issue, page.plan);
+  const sqlReview = useSqlReviewV2();
   const tone = getPlanStatusTone(reason);
   // Only the Review gate expands (to the approval flow); Checks is a static row
   // with a View Details link. Open Review by default when it is the active gate.
@@ -81,6 +84,10 @@ export function PlanStatusAction({
         return t("plan.lifecycle.rejected");
       case "checks-failing":
         return t("plan.lifecycle.checks-failing");
+      case "threads-open":
+        return t("plan.summary.n-unresolved-threads", {
+          count: bypass.unresolvedThreads,
+        });
     }
   })();
 
@@ -120,6 +127,9 @@ export function PlanStatusAction({
               }}
               summary={bypass.planCheckSummary}
             />
+            {sqlReview && (
+              <ThreadsGateRow count={sqlReview.unresolvedThreads} />
+            )}
           </div>
           <PlanStatusFooter
             bypass={bypass}
@@ -442,5 +452,29 @@ function BypassAction({
       {bypass.creating && <Loader2 className="size-3 animate-spin" />}
       {t("plan.review.footer.bypass-and-deploy")}
     </Button>
+  );
+}
+
+/* -------------------------- threads gate (ours) ------------------------- */
+
+// Under SQL Review V2 every open thread holds the automatic rollout.
+function ThreadsGateRow({ count }: { count: number }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      {count > 0 ? (
+        <MessagesSquare className="size-5 shrink-0 text-warning" />
+      ) : (
+        <CircleCheck className="size-5 shrink-0 text-success" />
+      )}
+      <GateLabel
+        subtitle={count > 0 ? t("plan.lifecycle.gate-threads-open-sub") : ""}
+        title={
+          count > 0
+            ? t("plan.lifecycle.gate-threads-open", { count })
+            : t("plan.lifecycle.gate-threads-resolved")
+        }
+      />
+    </div>
   );
 }

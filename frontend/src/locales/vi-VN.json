@@ -1812,6 +1812,10 @@
       "gate-review-approved": "Đã duyệt thay đổi",
       "gate-review-pending": "Đang xem xét",
       "gate-review-rejected": "Yêu cầu thay đổi",
+      "gate-threads-open-sub": "Giải quyết mọi luồng để tạo rollout",
+      "gate-threads-open_one": "{{count}} luồng chưa giải quyết",
+      "gate-threads-open_other": "{{count}} luồng chưa giải quyết",
+      "gate-threads-resolved": "Tất cả luồng đã được giải quyết",
       "incomplete": "Chưa hoàn tất",
       "preparing-rollout": "Đang chuẩn bị triển khai…",
       "rejected": "Đã từ chối",
@@ -1842,6 +1846,7 @@
       "create-rollout-action": "Tạo rollout thủ công",
       "deploy-description": "Bytebase sẽ tự động tạo rollout khi tất cả kiểm tra đều đạt và issue đã được phê duyệt.",
       "deploy-description-gitops": "Kế hoạch này đã sẵn sàng để triển khai. Tạo một rollout để triển khai bản phát hành được liên kết.",
+      "deploy-description-v2": "Bytebase sẽ tự động tạo rollout khi tất cả kiểm tra đều đạt, mọi luồng đã được giải quyết và issue đã được phê duyệt.",
       "hide-details": "Ẩn chi tiết",
       "review-description": "Gửi để xem xét để tiếp tục",
       "show-details": "Hiển thị chi tiết"
@@ -1879,6 +1884,7 @@
       "footer": {
         "all-gates-passed": "Đã đạt mọi điều kiện",
         "approved-but-checks-failed": "Xét duyệt đã được phê duyệt, nhưng kiểm tra kế hoạch thất bại",
+        "approved-but-threads-open": "Xét duyệt đã được phê duyệt, nhưng còn luồng chưa giải quyết",
         "auto-rollout-after-approval": "bản triển khai được tạo tự động sau khi phê duyệt",
         "blocked-by-rejection": "Bị chặn bởi xét duyệt đã từ chối — hãy xử lý phản hồi ở trên để tiếp tục",
         "bypass-and-deploy": "Bỏ qua và triển khai",
@@ -1889,6 +1895,10 @@
         "confirm-checks-running": "Kiểm tra kế hoạch đang chạy",
         "confirm-review-not-approved": "Đánh giá chưa được phê duyệt",
         "confirm-review-rejected": "Đánh giá bị từ chối",
+        "confirm-rule-review-unknown": "Không rõ trạng thái đánh giá SQL",
+        "confirm-threads-unknown": "Không rõ trạng thái luồng",
+        "confirm-unresolved-threads_one": "{{count}} luồng chưa giải quyết",
+        "confirm-unresolved-threads_other": "{{count}} luồng chưa giải quyết",
         "creating-rollout-automatically": "đang tự động tạo bản triển khai...",
         "errors-passed-not-created_one": "{{count}} lỗi, {{passed}} đạt. Bản triển khai không được tạo tự động.",
         "errors-passed-not-created_other": "{{count}} lỗi, {{passed}} đạt. Bản triển khai không được tạo tự động.",
@@ -1902,6 +1912,8 @@
         "rollout-auto-creates": "Bản triển khai tự động tạo sau khi phê duyệt",
         "rollout-blocked-by-failed-checks": "bản triển khai sẽ không được tạo tự động cho đến khi các kiểm tra đạt",
         "rollout-not-created": "Bản triển khai chưa được tạo tự động",
+        "threads-open-not-created_one": "{{count}} luồng chưa giải quyết. Bản triển khai không được tạo tự động.",
+        "threads-open-not-created_other": "{{count}} luồng chưa giải quyết. Bản triển khai không được tạo tự động.",
         "waiting-on-review": "Đang chờ xét duyệt"
       },
       "last-plan-editor-cannot-approve": "Bạn không thể phê duyệt issue này vì bạn là người thay đổi kế hoạch gần đây nhất. Một người xét duyệt khác phải phê duyệt issue này.",
@@ -1943,6 +1955,7 @@
         "resolve": "Giải quyết",
         "resolve-thread": "Giải quyết luồng",
         "resolved": "Đã giải quyết",
+        "rule": "Quy tắc",
         "threads-on-line_one": "{{count}} chủ đề trên dòng này",
         "threads-on-line_other": "{{count}} chủ đề trên dòng này",
         "walker": {
@@ -1961,6 +1974,16 @@
       "description_one": "Hoàn tác 1 tác vụ đã chọn từ bản triển khai #{{rolloutId}}.",
       "description_other": "Hoàn tác {{count}} tác vụ đã chọn từ bản triển khai #{{rolloutId}}.",
       "title": "Hoàn tác bản triển khai #{{rolloutId}}"
+    },
+    "rule-review": {
+      "failed": "Đánh giá SQL thất bại",
+      "load-failed": "Không thể tải trạng thái đánh giá SQL.",
+      "no-open-findings": "Không có phát hiện chưa giải quyết",
+      "not-run": "Chưa chạy đánh giá SQL",
+      "open-findings_one": "{{count}} phát hiện chưa giải quyết",
+      "open-findings_other": "{{count}} phát hiện chưa giải quyết",
+      "queued": "Đánh giá SQL đang chờ",
+      "running": "Đang đánh giá SQL"
     },
     "run": "Kiểm tra lại",
     "select-isolation-level": "Chọn mức độ cô lập",

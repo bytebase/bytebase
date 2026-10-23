@@ -12,6 +12,7 @@ import {
   IssueComment_ReviewSubmissionSchema,
   IssueCommentSchema,
   IssueSchema,
+  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
@@ -153,6 +154,19 @@ describe("canEditIssueComment", () => {
     expect(canEditIssueComment(own, project)).toBe(true);
     expect(canEditIssueComment(reviewSubmission, project)).toBe(false);
     expect(canEditIssueComment(own, undefined)).toBe(false);
+  });
+
+  test("a review result is never editable: its text is the reviewer's", () => {
+    mocks.hasPermission.mockImplementation(
+      (_project: unknown, permission: unknown) =>
+        permission === "bb.issueComments.update"
+    );
+    const result = create(IssueCommentSchema, {
+      name: "projects/p1/issues/1/issueComments/10",
+      comment: "DELETE FROM employee has no WHERE clause",
+      reviewMetadata: { runType: ReviewRun_Type.RULE },
+    });
+    expect(canEditIssueComment(result, project)).toBe(false);
   });
 });
 

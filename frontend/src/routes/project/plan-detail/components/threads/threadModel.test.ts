@@ -3,8 +3,10 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { describe, expect, test } from "vitest";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
+  IssueComment_ReviewMetadataSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
+  ReviewRun_Type,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -14,7 +16,6 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import { current, OUTDATED, UNAVAILABLE } from "./placement/place";
 import {
-  anchorLineRange,
   buildWholeLineAnchor,
   completePreviewLineCount,
   countPlacedUnresolvedBySpec,
@@ -203,28 +204,6 @@ describe("resolveAnchorState", () => {
   });
 });
 
-describe("anchorLineRange", () => {
-  test("whole-line anchors include the end line", () => {
-    expect(anchorLineRange(anchor(8, 10))).toEqual({
-      startLine: 8,
-      endLine: 10,
-    });
-  });
-
-  test("code-point ranges ending at column 1 stop on the previous line", () => {
-    const precise = create(StatementAnchorSchema, {
-      startPosition: create(PositionSchema, { line: 3, column: 2 }),
-      endPosition: create(PositionSchema, { line: 5, column: 1 }),
-    });
-    expect(anchorLineRange(precise)).toEqual({ startLine: 3, endLine: 4 });
-  });
-
-  test("rejects malformed anchors", () => {
-    expect(anchorLineRange(create(StatementAnchorSchema))).toBeUndefined();
-    expect(anchorLineRange(anchor(5, 2))).toBeUndefined();
-  });
-});
-
 describe("buildWholeLineAnchor", () => {
   test("orders the lines and uses zero columns", () => {
     const built = buildWholeLineAnchor({
@@ -312,6 +291,59 @@ describe("editor placement", () => {
       "root open-early-old",
       "root open-early-new",
     ]);
+  });
+});
+
+describe("editor placement of review results", () => {
+  const result = (
+    id: string,
+    runType: ReviewRun_Type,
+    opts: { superseded?: boolean; resolved?: boolean } = {}
+  ) => {
+    const comment = root(id, { anchor: anchor(2, 2), resolved: opts.resolved });
+    comment.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+      runType,
+      superseded: opts.superseded ?? false,
+    });
+    return comment;
+  };
+  const placedNames = (comments: ReturnType<typeof root>[]) =>
+    selectEditorThreads(groupThreads(comments), {
+      specId: "spec-1",
+      sheetSha256: SHA,
+    }).map((entry) => entry.thread.root.comment);
+
+  test("shows the latest standard rule review, resolved or not", () => {
+    expect(
+      placedNames([
+        result("latest-open", ReviewRun_Type.RULE),
+        result("latest-resolved", ReviewRun_Type.RULE, { resolved: true }),
+        result("earlier", ReviewRun_Type.RULE, {
+          superseded: true,
+          resolved: true,
+        }),
+      ])
+    ).toEqual(["root latest-open", "root latest-resolved"]);
+  });
+
+  test("keeps a superseded result someone reopened, since it holds the rollout", () => {
+    expect(
+      placedNames([
+        result("reopened", ReviewRun_Type.RULE, { superseded: true }),
+      ])
+    ).toEqual(["root reopened"]);
+  });
+
+  test("leaves AI results and human threads as they are", () => {
+    expect(
+      placedNames([
+        result("ai-earlier", ReviewRun_Type.AI, {
+          superseded: true,
+          resolved: true,
+        }),
+        root("human", { anchor: anchor(2, 2), resolved: true }),
+      ])
+    ).toEqual(["root ai-earlier", "root human"]);
   });
 });
 

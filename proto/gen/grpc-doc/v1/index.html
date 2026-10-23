@@ -11199,6 +11199,14 @@ Never accepted on create or update. </p></td>
 Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
+                <tr>
+                  <td>superseded</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>A later run of the same reviewer has completed, so the result is not
+from the latest review, whatever its thread state. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -11568,6 +11576,15 @@ RUNNING. </p></td>
                   <td><p>Fatal execution error, set if and only if status is FAILED: the review
 failed to execute (a platform problem, never the SQL — SQL problems are
 review results on a DONE run). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>outdated</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the plan&#39;s SQL changed after this run started, so the run
+reviews an earlier version of it. The server starts a new run before it
+creates the rollout automatically. </p></td>
                 </tr>
               
             </tbody>

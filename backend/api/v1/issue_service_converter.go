@@ -187,10 +187,11 @@ func convertToIssueComments(issueName string, issueComments []*store.IssueCommen
 // enums; TestReviewRuleTypeEnumsMirror holds the rule numbering together.
 func convertToIssueCommentReviewMetadata(metadata *storepb.IssueCommentPayload_ReviewMetadata) *v1pb.IssueComment_ReviewMetadata {
 	return &v1pb.IssueComment_ReviewMetadata{
-		RunType:  convertToReviewRunType(metadata.RunType.String()),
-		RuleType: v1pb.ReviewRuleType(metadata.RuleType),
-		Priority: v1pb.IssueComment_ReviewMetadata_Priority(metadata.Priority),
-		Targets:  metadata.Targets,
+		RunType:    convertToReviewRunType(metadata.RunType.String()),
+		RuleType:   v1pb.ReviewRuleType(metadata.RuleType),
+		Priority:   v1pb.IssueComment_ReviewMetadata_Priority(metadata.Priority),
+		Targets:    metadata.Targets,
+		Superseded: metadata.Superseded,
 	}
 }
 

@@ -10,6 +10,7 @@ import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
   type IssueComment,
   IssueComment_ThreadState,
+  ReviewRun_Type,
   type StatementAnchor,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -125,25 +126,6 @@ export function resolveAnchorState(
   return trivialPlacement(anchor, targetSha256OfSpec(spec))?.state ?? "PENDING";
 }
 
-// Whole-line anchors use zero columns and an inclusive end line. A
-// code-point range is end-exclusive, so an end at column 1 of a later line
-// covers nothing on that line.
-export function anchorLineRange(
-  anchor: StatementAnchor
-): LineRange | undefined {
-  const start = anchor.startPosition;
-  const end = anchor.endPosition;
-  if (!start || !end || start.line < 1 || end.line < start.line) {
-    return undefined;
-  }
-  const wholeLine = start.column === 0 && end.column === 0;
-  const endLine =
-    !wholeLine && end.column === 1 && end.line > start.line
-      ? end.line - 1
-      : end.line;
-  return { startLine: start.line, endLine: Math.max(endLine, start.line) };
-}
-
 // A truncated preview may end in the middle of a line, including the empty
 // line after a trailing newline. Only preceding lines have complete content.
 export const completePreviewLineCount = (
@@ -211,6 +193,14 @@ const compareEditorThreads = (a: EditorThread, b: EditorThread): number =>
   a.range.endLine - b.range.endLine ||
   compareByCreateTime(a.thread.root, b.thread.root);
 
+// The statement shows only the latest standard rule review. A result a later
+// run superseded stays in the timeline, unless someone reopened it, since an
+// open thread holds the rollout.
+const isSupersededRuleResult = (root: IssueComment): boolean =>
+  root.reviewMetadata?.runType === ReviewRun_Type.RULE &&
+  root.reviewMetadata.superseded &&
+  root.threadState !== IssueComment_ThreadState.OPEN;
+
 // Threads shown in the displayed statement, ordered by start line, then
 // oldest first. A computed placement decides: CURRENT threads sit at their
 // mapped range, which may differ from the anchor's when edits above shifted
@@ -228,6 +218,7 @@ export function selectEditorThreads(
     const anchor = thread.root.statementAnchor;
     if (!anchor) continue;
     if (anchor.spec !== target.specId) continue;
+    if (isSupersededRuleResult(thread.root)) continue;
     const placement =
       placements.get(thread.root.name) ??
       trivialPlacement(anchor, target.sheetSha256);

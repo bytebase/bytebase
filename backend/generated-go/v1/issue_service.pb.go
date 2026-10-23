@@ -2212,7 +2212,11 @@ type ReviewRun struct {
 	// Fatal execution error, set if and only if status is FAILED: the review
 	// failed to execute (a platform problem, never the SQL — SQL problems are
 	// review results on a DONE run).
-	Error         string `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	Error string `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	// Whether the plan's SQL changed after this run started, so the run
+	// reviews an earlier version of it. The server starts a new run before it
+	// creates the rollout automatically.
+	Outdated      bool `protobuf:"varint,7,opt,name=outdated,proto3" json:"outdated,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2287,6 +2291,13 @@ func (x *ReviewRun) GetError() string {
 		return x.Error
 	}
 	return ""
+}
+
+func (x *ReviewRun) GetOutdated() bool {
+	if x != nil {
+		return x.Outdated
+	}
+	return false
 }
 
 type GetReviewRunRequest struct {
@@ -2445,7 +2456,10 @@ type IssueComment_ReviewMetadata struct {
 	Priority IssueComment_ReviewMetadata_Priority `protobuf:"varint,3,opt,name=priority,proto3,enum=bytebase.v1.IssueComment_ReviewMetadata_Priority" json:"priority,omitempty"`
 	// Every database the result applies to, sorted.
 	// Format: instances/{instance}/databases/{database}
-	Targets       []string `protobuf:"bytes,4,rep,name=targets,proto3" json:"targets,omitempty"`
+	Targets []string `protobuf:"bytes,4,rep,name=targets,proto3" json:"targets,omitempty"`
+	// A later run of the same reviewer has completed, so the result is not
+	// from the latest review, whatever its thread state.
+	Superseded    bool `protobuf:"varint,5,opt,name=superseded,proto3" json:"superseded,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2506,6 +2520,13 @@ func (x *IssueComment_ReviewMetadata) GetTargets() []string {
 		return x.Targets
 	}
 	return nil
+}
+
+func (x *IssueComment_ReviewMetadata) GetSuperseded() bool {
+	if x != nil {
+		return x.Superseded
+	}
+	return false
 }
 
 // Approval event information.
@@ -2882,7 +2903,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\rissue_comment\x18\x02 \x01(\v2\x19.bytebase.v1.IssueCommentR\fissueComment\x12@\n" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\xd6\x0f\n" +
+	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\xf6\x0f\n" +
 	"\fIssueComment\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
 	"\acomment\x18\x02 \x01(\tB\t\xbaH\x06r\x04\x18\x80\x80\x04R\acomment\x12\x18\n" +
@@ -2900,12 +2921,15 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\fissue_update\x18\b \x01(\v2%.bytebase.v1.IssueComment.IssueUpdateH\x00R\vissueUpdate\x12G\n" +
 	"\vplan_update\x18\f \x01(\v2$.bytebase.v1.IssueComment.PlanUpdateH\x00R\n" +
 	"planUpdate\x12Y\n" +
-	"\x11review_submission\x18\r \x01(\v2*.bytebase.v1.IssueComment.ReviewSubmissionH\x00R\x10reviewSubmission\x1a\xa9\x02\n" +
+	"\x11review_submission\x18\r \x01(\v2*.bytebase.v1.IssueComment.ReviewSubmissionH\x00R\x10reviewSubmission\x1a\xc9\x02\n" +
 	"\x0eReviewMetadata\x126\n" +
 	"\brun_type\x18\x01 \x01(\x0e2\x1b.bytebase.v1.ReviewRun.TypeR\arunType\x128\n" +
 	"\trule_type\x18\x02 \x01(\x0e2\x1b.bytebase.v1.ReviewRuleTypeR\bruleType\x12M\n" +
 	"\bpriority\x18\x03 \x01(\x0e21.bytebase.v1.IssueComment.ReviewMetadata.PriorityR\bpriority\x12\x18\n" +
-	"\atargets\x18\x04 \x03(\tR\atargets\"<\n" +
+	"\atargets\x18\x04 \x03(\tR\atargets\x12\x1e\n" +
+	"\n" +
+	"superseded\x18\x05 \x01(\bR\n" +
+	"superseded\"<\n" +
 	"\bPriority\x12\x18\n" +
 	"\x14PRIORITY_UNSPECIFIED\x10\x00\x12\x06\n" +
 	"\x02P0\x10\x01\x12\x06\n" +
@@ -2954,7 +2978,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x04spec\x18\x01 \x01(\tR\x04spec\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12<\n" +
 	"\x0estart_position\x18\x03 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
-	"\fend_position\x18\x04 \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"\x85\x04\n" +
+	"\fend_position\x18\x04 \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"\xa6\x04\n" +
 	"\tReviewRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x124\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1b.bytebase.v1.ReviewRun.TypeB\x03\xe0A\x03R\x04type\x12:\n" +
@@ -2962,7 +2986,8 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12:\n" +
 	"\bend_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\aendTime\x12\x19\n" +
-	"\x05error\x18\x06 \x01(\tB\x03\xe0A\x03R\x05error\".\n" +
+	"\x05error\x18\x06 \x01(\tB\x03\xe0A\x03R\x05error\x12\x1f\n" +
+	"\boutdated\x18\a \x01(\bB\x03\xe0A\x03R\boutdated\".\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04RULE\x10\x01\x12\x06\n" +
