@@ -165,10 +165,12 @@ func (e *omniQuerySpanExtractor) collectNestedPredicateColumns(queryStack []*cat
 
 // analyzeFunctionsCalledIn analyzes the body of every user function node calls,
 // which merges the body's predicates, as walkExpr does for an analyzed call.
+// Without argument types the overload is unknown, so every one of the name is
+// analyzed.
 func (e *omniQuerySpanExtractor) analyzeFunctionsCalledIn(node ast.Node) {
 	ast.Inspect(node, func(n ast.Node) bool {
 		if call, ok := n.(*ast.FuncCall); ok {
-			if proc := e.userProcNamed(astStrings(call.Funcname)); proc != nil {
+			for _, proc := range e.userProcsNamed(astStrings(call.Funcname)) {
 				e.analyzeFunctionBody(proc)
 			}
 		}
@@ -176,29 +178,37 @@ func (e *omniQuerySpanExtractor) analyzeFunctionsCalledIn(node ast.Node) {
 	})
 }
 
-// userProcNamed returns the user function a possibly schema-qualified name
-// names.
-func (e *omniQuerySpanExtractor) userProcNamed(names []string) *catalog.UserProc {
+// userProcsNamed returns every user function, overloads included, that a
+// possibly schema-qualified name may call.
+func (e *omniQuerySpanExtractor) userProcsNamed(names []string) []*catalog.UserProc {
 	if len(names) == 0 {
 		return nil
 	}
 	name := names[len(names)-1]
-	if len(names) == 1 {
-		return e.lookupUserProcByName(name)
+	schemas := e.searchPath
+	if len(names) > 1 {
+		schemas = []string{names[len(names)-2]}
 	}
-	for _, row := range e.cat.QueryPgProc(names[len(names)-2]) {
-		if strings.EqualFold(row.ProName, name) {
-			return e.cat.GetUserProcByOID(row.OID)
+	var procs []*catalog.UserProc
+	for _, schema := range schemas {
+		for _, row := range e.cat.QueryPgProc(schema) {
+			if strings.EqualFold(row.ProName, name) {
+				if proc := e.cat.GetUserProcByOID(row.OID); proc != nil {
+					procs = append(procs, proc)
+				}
+			}
 		}
 	}
-	return nil
+	return procs
 }
 
 // namedFunctionReturnsSet reports whether a function of that name is known to
 // return a set.
 func (e *omniQuerySpanExtractor) namedFunctionReturnsSet(name string) bool {
-	if proc := e.lookupUserProcByName(name); proc != nil {
-		return proc.RetSet
+	for _, proc := range e.userProcsNamed([]string{name}) {
+		if proc.RetSet {
+			return true
+		}
 	}
 	for _, proc := range e.cat.LookupProcByName(strings.ToLower(name)) {
 		if proc.RetSet {

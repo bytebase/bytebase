@@ -51,11 +51,14 @@ func (e *omniQuerySpanExtractor) analyzeFunctionBodyForProc(proc *catalog.UserPr
 		e.predicateColumns = outerPredicateColumns
 	}()
 
-	// If the function body was stubbed during catalog loading (to avoid type
-	// validation errors), use the original body from metadata instead.
+	// The catalog keeps each overload's own body. A function it could not
+	// install is a stand-in with a placeholder body, so its body comes from the
+	// snapshot.
 	body := proc.Body
-	if origBody, ok := e.funcOrigDefs[strings.ToLower(proc.Name)]; ok && origBody != "" {
-		body = origBody
+	if proc.Schema != nil && e.standInFuncs[strings.ToLower(proc.Schema.Name+"."+proc.Name)] {
+		if origBody, ok := e.funcOrigDefs[strings.ToLower(proc.Name)]; ok && origBody != "" {
+			body = origBody
+		}
 	}
 
 	var result []base.SourceColumnSet
@@ -402,12 +405,17 @@ func (a *plpgsqlAnalyzer) walkStmt(node plpgsqlast.Node) {
 		a.handleCondition(stmt.Expr)
 	case *plpgsqlast.PLDynExecute:
 		a.handleDynExecute(stmt)
+	// RAISE puts the values of its parameters in the message the caller sees.
+	case *plpgsqlast.PLRaise:
+		for _, param := range stmt.Params {
+			a.handleCondition(param)
+		}
 	case *plpgsqlast.PLExit:
 		a.handleCondition(stmt.Condition)
 	case *plpgsqlast.PLAssert:
 		a.handleCondition(stmt.Condition)
 	// Skip nodes that don't affect lineage:
-	// PLRaise, PLNull, PLCommit, PLRollback,
+	// PLNull, PLCommit, PLRollback,
 	// PLCall, PLOpen, PLFetch, PLClose, PLGetDiag
 	default:
 	}

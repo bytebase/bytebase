@@ -57,10 +57,12 @@ type omniQuerySpanExtractor struct {
 	metaCache     map[string]*model.DatabaseMetadata
 	cat           *catalog.Catalog
 	funcBodyCache map[uint32]*funcBodyAnalysis
-	// funcOrigDefs stores the original (non-stubbed) function definitions keyed
-	// by lowercase function name. Used by analyzeFunctionBody to get the real
-	// body when it was stubbed during catalog loading.
+	// funcOrigDefs stores the function bodies of the snapshot keyed by
+	// lowercase function name. Used by analyzeFunctionBody for a function the
+	// catalog installed as a stand-in, listed in standInFuncs by lowercase
+	// "schema.name".
 	funcOrigDefs map[string]string
+	standInFuncs map[string]bool
 	// funcSourceColumns accumulates table-level access (column="") discovered inside
 	// function bodies. Merged into the top-level QuerySpan.SourceColumns.
 	funcSourceColumns base.SourceColumnSet
@@ -90,6 +92,7 @@ func newOmniQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx
 		metaCache:         make(map[string]*model.DatabaseMetadata),
 		funcBodyCache:     make(map[uint32]*funcBodyAnalysis),
 		funcOrigDefs:      make(map[string]string),
+		standInFuncs:      make(map[string]bool),
 		funcSourceColumns: make(base.SourceColumnSet),
 		predicateColumns:  make(base.SourceColumnSet),
 	}
@@ -127,6 +130,12 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 	report, err := e.cat.LoadMetadata(e.ctx, meta.GetProto(), catalog.LoadMetadataOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to load the catalog for %q", e.defaultDatabase)
+	}
+	for key := range report.Degraded {
+		if name, ok := strings.CutPrefix(key, "func:"); ok {
+			name, _, _ = strings.Cut(name, "|")
+			e.standInFuncs[strings.ToLower(name)] = true
+		}
 	}
 	if len(report.Degraded) > 0 || len(report.Missing) > 0 {
 		slog.Debug("catalog loaded with stand-ins",
@@ -290,17 +299,22 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	// and reports the rows each condition kept, so its conditions still count
 	// as predicates.
 	if queryType != base.Select || isExplainAnalyze {
+		var unresolved *base.UnresolvedColumnsError
 		if isExplainAnalyze {
 			if err := e.collectExplainedPredicateColumns(omniStmts[0].AST, accessesMap); err != nil {
 				return nil, err
 			}
+			// Columns a stale snapshot lacks can hide a condition, so the
+			// caller syncs before running it, as for the SELECT itself.
+			unresolved = e.unresolvedColumnsError(accessesMap)
 		}
 		return &base.QuerySpan{
-			Type:             queryType,
-			ExplainAnalyze:   isExplainAnalyze,
-			SourceColumns:    accessesMap,
-			PredicateColumns: e.predicateColumns,
-			Results:          []base.QuerySpanResult{},
+			Type:                   queryType,
+			ExplainAnalyze:         isExplainAnalyze,
+			SourceColumns:          accessesMap,
+			PredicateColumns:       e.predicateColumns,
+			Results:                []base.QuerySpanResult{},
+			UnresolvedColumnsError: unresolved,
 		}, nil
 	}
 
