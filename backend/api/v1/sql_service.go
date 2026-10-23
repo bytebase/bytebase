@@ -602,12 +602,19 @@ func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, inst
 	}
 
 	for _, span := range spans {
-		span.SourceColumns = generateNewSourceColumnSet(instance.Metadata.GetEngine(), span.SourceColumns, schema)
-		for _, result := range span.Results {
-			result.SourceColumns = generateNewSourceColumnSet(instance.Metadata.GetEngine(), result.SourceColumns, schema)
-		}
+		remapBackupTableColumns(instance.Metadata.GetEngine(), span, schema)
 	}
 	return nil
+}
+
+// remapBackupTableColumns points the columns span reads from backup tables at
+// the source columns, whose masking policies apply to the backups too.
+func remapBackupTableColumns(engine storepb.Engine, span *parserbase.QuerySpan, schema *model.SchemaMetadata) {
+	span.SourceColumns = generateNewSourceColumnSet(engine, span.SourceColumns, schema)
+	span.PredicateColumns = generateNewSourceColumnSet(engine, span.PredicateColumns, schema)
+	for i := range span.Results {
+		span.Results[i].SourceColumns = generateNewSourceColumnSet(engine, span.Results[i].SourceColumns, schema)
+	}
 }
 
 func generateNewSourceColumnSet(engine storepb.Engine, origin parserbase.SourceColumnSet, schema *model.SchemaMetadata) parserbase.SourceColumnSet {

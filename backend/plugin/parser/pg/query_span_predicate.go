@@ -9,9 +9,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// collectPredicateColumns records the columns read by the WHERE, JOIN ON,
-// HAVING, and aggregate FILTER conditions of q and of every query nested in
-// it. The database evaluates conditions on unmasked values, so these columns
+// collectPredicateColumns records the columns that decide which rows q and
+// every query nested in it return: those read by WHERE, JOIN ON, HAVING, and
+// aggregate FILTER conditions, LIMIT and OFFSET, and the arguments of
+// set-returning functions. The database evaluates conditions on unmasked values, so these columns
 // decide which rows come back even when their values are masked.
 func (e *omniQuerySpanExtractor) collectPredicateColumns(q *catalog.Query) {
 	e.collectPredicateColumnsInStack([]*catalog.Query{q}, make(map[*catalog.Query]bool))
@@ -54,14 +55,19 @@ func (e *omniQuerySpanExtractor) collectPredicateColumnsInStack(queryStack []*ca
 			e.collectPredicateColumnsInStack(appendQuery(queryStack, rte.Subquery), visited)
 		}
 		for _, expr := range rte.FuncExprs {
-			// The conditions in the body of a function in FROM decide which
-			// rows it returns.
-			if call, ok := expr.(*catalog.FuncCallExpr); ok {
-				if proc := e.cat.GetUserProcByOID(call.FuncOID); proc != nil {
-					e.analyzeFunctionBody(proc)
-				}
+			// A function in FROM returns the rows its arguments and the
+			// conditions in its body ask for.
+			call, ok := expr.(*catalog.FuncCallExpr)
+			if !ok {
+				e.collectConditionColumns(queryStack, expr, visited)
+				continue
 			}
-			e.collectNestedPredicateColumns(queryStack, expr, visited)
+			for _, arg := range call.Args {
+				e.collectConditionColumns(queryStack, arg, visited)
+			}
+			if proc := e.cat.GetUserProcByOID(call.FuncOID); proc != nil {
+				e.analyzeFunctionBody(proc)
+			}
 		}
 	}
 	if q.JoinTree != nil {
@@ -76,8 +82,8 @@ func (e *omniQuerySpanExtractor) collectPredicateColumnsInStack(queryStack []*ca
 			e.collectNestedPredicateColumns(queryStack, te.Expr, visited)
 		}
 	}
-	e.collectNestedPredicateColumns(queryStack, q.LimitCount, visited)
-	e.collectNestedPredicateColumns(queryStack, q.LimitOffset, visited)
+	e.collectConditionColumns(queryStack, q.LimitCount, visited)
+	e.collectConditionColumns(queryStack, q.LimitOffset, visited)
 }
 
 func (e *omniQuerySpanExtractor) collectJoinConditionColumns(queryStack []*catalog.Query, node catalog.JoinNode, visited map[*catalog.Query]bool) {
@@ -102,26 +108,46 @@ func (e *omniQuerySpanExtractor) collectConditionColumns(queryStack []*catalog.Q
 }
 
 // collectNestedPredicateColumns records the conditions nested in expr: the
-// FILTER of an aggregate or window function, and those of its subqueries.
+// FILTER of an aggregate or window function, the arguments of a set-returning
+// function, which decide how many rows it returns, and the conditions of its
+// subqueries.
 func (e *omniQuerySpanExtractor) collectNestedPredicateColumns(queryStack []*catalog.Query, expr catalog.AnalyzedExpr, visited map[*catalog.Query]bool) {
 	catalog.WalkAnalyzedExpr(expr, func(n catalog.AnalyzedExpr) bool {
-		var filter catalog.AnalyzedExpr
+		var inputs []catalog.AnalyzedExpr
 		switch v := n.(type) {
 		case *catalog.SubLinkExpr:
 			if v.SubQuery != nil {
 				e.collectPredicateColumnsInStack(appendQuery(queryStack, v.SubQuery), visited)
 			}
 		case *catalog.AggExpr:
-			filter = v.AggFilter
+			inputs = []catalog.AnalyzedExpr{v.AggFilter}
 		case *catalog.WindowFuncExpr:
-			filter = v.AggFilter
+			inputs = []catalog.AnalyzedExpr{v.AggFilter}
+		case *catalog.FuncCallExpr:
+			if e.returnsSet(v.FuncOID) {
+				inputs = v.Args
+			}
 		default:
 		}
-		if filter != nil {
-			e.walkExprWithVisited(queryStack, filter, e.predicateColumns, make(map[queryExprKey]bool))
+		for _, input := range inputs {
+			if input != nil {
+				e.walkExprWithVisited(queryStack, input, e.predicateColumns, make(map[queryExprKey]bool))
+			}
 		}
 		return true
 	})
+}
+
+// returnsSet reports whether the function is known to return a set. An
+// unknown function, analyzed opaquely, is not.
+func (e *omniQuerySpanExtractor) returnsSet(oid uint32) bool {
+	if proc := e.cat.GetUserProcByOID(oid); proc != nil {
+		return proc.RetSet
+	}
+	if proc := e.cat.LookupProcByOID(oid); proc != nil {
+		return proc.RetSet
+	}
+	return false
 }
 
 // collectFallbackPredicateColumns stands in for collectPredicateColumns when

@@ -162,6 +162,7 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColum
 		if err != nil {
 			// Fall back to parse-tree extraction when analysis fails
 			// (e.g., nested function calls, parameter references).
+			e.collectFallbackPredicateColumns(selStmt, e.accessTablesOf(stmts[i].Text))
 			fallbackResults := e.extractFallbackColumns(selStmt)
 			if len(fallbackResults) > 0 {
 				result := make([]base.SourceColumnSet, len(fallbackResults))
@@ -478,7 +479,7 @@ func (a *plpgsqlAnalyzer) analyzeEmbeddedSQL(sql string) []base.SourceColumnSet 
 
 	// Always collect access tables from embedded SQL for the top-level QuerySpan,
 	// regardless of whether full analysis succeeds.
-	a.collectAccessTablesFromSQL(substituted)
+	accesses := a.collectAccessTablesFromSQL(substituted)
 
 	stmts, err := ParsePg(substituted)
 	if err != nil {
@@ -498,6 +499,7 @@ func (a *plpgsqlAnalyzer) analyzeEmbeddedSQL(sql string) []base.SourceColumnSet 
 		// When full analysis fails (e.g., type mismatches with aggregate functions),
 		// fall back to extracting column references from the parse tree and resolving
 		// them against known tables in the catalog.
+		a.extractor.collectFallbackPredicateColumns(selStmt, accesses)
 		return a.fallbackExtractLineage(sql, selStmt)
 	}
 
@@ -657,25 +659,36 @@ func extractBaseVarName(target string) string {
 	return target
 }
 
-// collectAccessTablesFromSQL extracts all table/column references from embedded SQL
-// and adds them to the extractor's funcSourceColumns. This works even when
-// AnalyzeSelectStmt fails, because it uses the AST-level ExtractAccessTables.
-func (a *plpgsqlAnalyzer) collectAccessTablesFromSQL(sql string) {
+// collectAccessTablesFromSQL extracts all table/column references from embedded SQL,
+// adds them to the extractor's funcSourceColumns, and returns them. This works even
+// when AnalyzeSelectStmt fails, because it uses the AST-level ExtractAccessTables.
+func (a *plpgsqlAnalyzer) collectAccessTablesFromSQL(sql string) base.SourceColumnSet {
+	accesses := a.extractor.accessTablesOf(sql)
+	for resource := range accesses {
+		a.extractor.funcSourceColumns[resource] = true
+	}
+	return accesses
+}
+
+// accessTablesOf returns the tables sql reads, or none when it cannot tell.
+func (e *omniQuerySpanExtractor) accessTablesOf(sql string) base.SourceColumnSet {
+	accesses := make(base.SourceColumnSet)
 	accessTables, err := ExtractAccessTables(sql, ExtractAccessTablesOption{
-		DefaultDatabase:        a.extractor.defaultDatabase,
-		DefaultSchema:          a.extractor.searchPath[0],
-		SearchPath:             a.extractor.searchPath,
-		GetDatabaseMetadata:    a.extractor.gCtx.GetDatabaseMetadataFunc,
-		Ctx:                    a.extractor.ctx,
-		InstanceID:             a.extractor.gCtx.InstanceID,
+		DefaultDatabase:        e.defaultDatabase,
+		DefaultSchema:          e.searchPath[0],
+		SearchPath:             e.searchPath,
+		GetDatabaseMetadata:    e.gCtx.GetDatabaseMetadataFunc,
+		Ctx:                    e.ctx,
+		InstanceID:             e.gCtx.InstanceID,
 		SkipMetadataValidation: false,
 	})
 	if err != nil {
-		return
+		return accesses
 	}
 	for _, resource := range accessTables {
-		a.extractor.funcSourceColumns[resource] = true
+		accesses[resource] = true
 	}
+	return accesses
 }
 
 func (a *plpgsqlAnalyzer) mergeReturnResults(nCols int) []base.SourceColumnSet {

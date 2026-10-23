@@ -54,6 +54,10 @@ func TestGetQuerySpanPredicateColumns(t *testing.T) {
 		{"natural join", "SELECT 1 FROM t NATURAL JOIN (SELECT '1'::text AS ssn) x", []string{"t.ssn"}},
 		{"full join using", "SELECT id FROM t FULL JOIN o USING (id) WHERE id > 0", []string{"o.id", "t.id"}},
 		{"limit subquery", "SELECT id FROM t LIMIT (SELECT count(*) FROM t WHERE ssn = '1')", []string{"t.ssn"}},
+		{"limit value", "SELECT id FROM t LIMIT (SELECT CASE WHEN ssn = 'guess' THEN 1 ELSE 0 END FROM t LIMIT 1)", []string{"t.ssn"}},
+		{"set-returning function in from", "SELECT count(*) AS c FROM t CROSS JOIN LATERAL generate_series(1, ascii(substr(t.ssn, 1, 1)))", []string{"t.ssn"}},
+		{"set-returning function in select list", "SELECT generate_series(1, ascii(substr(ssn, 1, 1))) AS g FROM t", []string{"t.ssn"}},
+		{"scalar function in select list", "SELECT upper(ssn) AS u FROM t", []string{}},
 		{"unknown function", "SELECT id FROM t WHERE levenshtein(ssn, 'a') > 0", []string{"t.ssn"}},
 		{"unknown function in from", "SELECT t.id FROM t, LATERAL unknown_rows(t.ssn) f WHERE f.a = 1", []string{"t.ssn"}},
 		{"select list only", "SELECT ssn FROM t", []string{}},
@@ -69,17 +73,27 @@ func TestGetQuerySpanPredicateColumns(t *testing.T) {
 
 func TestGetQuerySpanPredicateColumnsOfFunctionInFrom(t *testing.T) {
 	schema := healthySchema()
+	// * over an unknown function fails analysis of the body that uses it.
+	unanalyzable := "(SELECT * FROM o CROSS JOIN unknown_rows() u) o JOIN t ON t.id = o.id AND t.ssn = guess"
 	schema.Schemas[0].Functions = []*metadatapb.FunctionMetadata{
 		{Name: "probe", Definition: "CREATE FUNCTION public.probe(guess text) RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT t.id FROM t WHERE t.ssn = guess; END; $$"},
 		{Name: "probe_sql", Definition: "CREATE FUNCTION public.probe_sql(guess text) RETURNS SETOF int LANGUAGE sql AS $$ SELECT id FROM t WHERE ssn = guess $$"},
+		{Name: "probe_join", Definition: "CREATE FUNCTION public.probe_join(guess text) RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT o.id FROM " + unanalyzable + "; END; $$"},
+		{Name: "probe_join_sql", Definition: "CREATE FUNCTION public.probe_join_sql(guess text) RETURNS SETOF int LANGUAGE sql AS $$ SELECT o.id FROM " + unanalyzable + " $$"},
 	}
-	for _, statement := range []string{
-		"SELECT count(*) AS c FROM probe('guess')",
-		"SELECT count(*) AS c FROM probe_sql('guess')",
-	} {
-		t.Run(statement, func(t *testing.T) {
-			span := spanFor(t, statement, schema)
-			require.Equal(t, []string{"t.ssn"}, predicateColumnNames(span.PredicateColumns))
+	testCases := []struct {
+		statement string
+		want      []string
+	}{
+		{"SELECT count(*) AS c FROM probe('guess')", []string{"t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_sql('guess')", []string{"t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_join('guess')", []string{"o.id", "t.id", "t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_join_sql('guess')", []string{"o.id", "t.id", "t.ssn"}},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.statement, func(t *testing.T) {
+			span := spanFor(t, tc.statement, schema)
+			require.Equal(t, tc.want, predicateColumnNames(span.PredicateColumns))
 		})
 	}
 }

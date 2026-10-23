@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -16,6 +17,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func TestSQLIAMDatabaseResourceUsesCanonicalInstanceScope(t *testing.T) {
@@ -641,4 +643,28 @@ func TestExplainOfAWriteNamesItsTables(t *testing.T) {
 	call := &parserbase.QuerySpan{Type: parserbase.DML, SourceColumns: parserbase.SourceColumnSet{}}
 	require.NoError(t, f.check(ctx, "explain-a@example.com", true, "CALL p()", call))
 	requireExplainDenied(t, f.check(ctx, "select-a@example.com", true, "CALL p()", call), permission.SQLExplain, "instances/test/databases/db_a")
+}
+
+func TestRemapBackupTableColumns(t *testing.T) {
+	dbMeta := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES),
+			Tables: []*metadatapb.TableMetadata{{Name: "bak_t", Comment: "bytebase, source table (public, t)"}},
+		}},
+	}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	backup := parserbase.ColumnResource{Database: "db", Schema: common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES), Table: "bak_t", Column: "secret"}
+	source := parserbase.ColumnResource{Database: "db", Schema: "public", Table: "t", Column: "secret"}
+	span := &parserbase.QuerySpan{
+		SourceColumns:    parserbase.SourceColumnSet{backup: true},
+		PredicateColumns: parserbase.SourceColumnSet{backup: true},
+		Results:          []parserbase.QuerySpanResult{{Name: "secret", SourceColumns: parserbase.SourceColumnSet{backup: true}}},
+	}
+
+	remapBackupTableColumns(storepb.Engine_POSTGRES, span, getSchemaMetadata(storepb.Engine_POSTGRES, dbMeta))
+
+	want := parserbase.SourceColumnSet{source: true}
+	require.Equal(t, want, span.SourceColumns)
+	require.Equal(t, want, span.PredicateColumns)
+	require.Equal(t, want, span.Results[0].SourceColumns)
 }
