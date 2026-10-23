@@ -63,7 +63,8 @@ export const PLAN_STATUS_SCOPE_TASK_STATUSES = {
   FAILED: ["FAILED"],
   RUNNING: ["RUNNING"],
   WAITING: ["NOT_STARTED", "PENDING"],
-  DONE: ["DONE"],
+  // A skipped task is finished, as in rollout completion.
+  DONE: ["DONE", "SKIPPED"],
 } as const satisfies Record<string, readonly string[]>;
 
 export type PlanStatusScopeValue = keyof typeof PLAN_STATUS_SCOPE_TASK_STATUSES;

@@ -55,6 +55,17 @@ describe("buildPlanFindBySearchParams", () => {
     expect(find.taskStatuses).toEqual(["NOT_STARTED", "PENDING", "FAILED"]);
   });
 
+  test("counts skipped tasks as done", () => {
+    const find = buildPlanFindBySearchParams({
+      query: "",
+      scopes: [
+        { id: "project", value: "p" },
+        { id: "status", value: "DONE" },
+      ],
+    });
+    expect(find.taskStatuses).toEqual(["DONE", "SKIPPED"]);
+  });
+
   test("reads the release and created scopes", () => {
     const find = buildPlanFindBySearchParams(
       {
