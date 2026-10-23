@@ -26,7 +26,7 @@ if [ "$(grep -c '^[[:space:]]*p\.SQLReviewV2 = true$' "$profile")" != 1 ]; then
   exit 1
 fi
 sed 's/^\([[:space:]]*\)p\.SQLReviewV2 = true$/\1p.SQLReviewV2 = false/' "$profile" >"$overlay_dir/profile_dev.go"
-python3 -c 'import json, sys; json.dump({"Replace": {sys.argv[1]: sys.argv[2]}}, open(sys.argv[3], "w"))' \
+node -e 'require("fs").writeFileSync(process.argv[3], JSON.stringify({ Replace: { [process.argv[1]]: process.argv[2] } }))' \
   "$profile" "$overlay_dir/profile_dev.go" "$overlay_dir/overlay.json"
 
 cpus="$(nproc 2>/dev/null || sysctl -n hw.ncpu)"
