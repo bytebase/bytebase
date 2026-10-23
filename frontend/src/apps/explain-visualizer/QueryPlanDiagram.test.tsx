@@ -5,7 +5,11 @@ import hashJoinAggregateSort from "./test-data/postgres/hash-join-aggregate-sort
 import seqScanFilter from "./test-data/postgres/seq-scan-filter.json";
 import spannerHashJoin from "./test-data/spanner/hash-join.json";
 import { parseMssqlPlan } from "./mssql-plan";
-import { PLAN_READABLE_SCALE } from "./plan-layout";
+import {
+  layoutPlan,
+  PLAN_READABLE_SCALE,
+  planOpeningViewport,
+} from "./plan-layout";
 import {
   PLAN_EDGE_MAX_WIDTH,
   PLAN_EDGE_MIN_WIDTH,
@@ -345,13 +349,14 @@ describe("QueryPlanDiagram", () => {
     expect(screen.getAllByTestId("plan-node-card")).toHaveLength(3);
   });
 
-  test("opens a plan too deep to read whole at a readable scale, from its root down", () => {
+  test("opens a plan too deep to read whole at a readable scale, on its costliest operator", () => {
     sizeViewport(600, 400);
     renderDiagram();
 
-    // Shown whole, this plan would open at about half size.
+    // Shown whole, this plan would open at about half size. Its costliest
+    // operator is below the root, so the view starts scrolled down to it.
     expect(scaleNow()).toBe(PLAN_READABLE_SCALE);
-    expect(canvasTransform()).toMatch(/translate\([\d.]+px, 0px\)/);
+    expect(canvasTransform()).toMatch(/translate\([\d.-]+px, -[\d.]+px\)/);
     expect(screen.getByTestId("plan-mini-map")).toBeInTheDocument();
   });
 
@@ -361,6 +366,32 @@ describe("QueryPlanDiagram", () => {
 
     expect(scaleNow()).toBe(1);
     expect(screen.queryByTestId("plan-mini-map")).toBeNull();
+  });
+
+  test("opens on the collapsed card that hides the costliest operator", () => {
+    sizeViewport(300, 150);
+    const plan = tree();
+    const { rerender } = renderDiagram({ tree: plan });
+    // The orders scan, 0.0.0.0, is the costliest; fold its parent away.
+    const collapsed = new Set(["0.0.0"]);
+    rerender(
+      <QueryPlanDiagram
+        tree={plan}
+        selectedId="0.0.0"
+        onSelect={() => undefined}
+        highlight="off"
+        collapsedIds={collapsed}
+        onToggleCollapse={() => undefined}
+      />
+    );
+
+    const layout = layoutPlan(plan.root, collapsed);
+    const size = { width: 300, height: 150 };
+    const onCard = planOpeningViewport(layout, size, "0.0.0");
+    expect(onCard).not.toEqual(planOpeningViewport(layout, size));
+    expect(canvasTransform()).toBe(
+      `translate(${onCard.x}px, ${onCard.y}px) scale(${onCard.scale})`
+    );
   });
 
   test("keeps showing the whole plan after Fit to view when it re-lays out", () => {

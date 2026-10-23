@@ -49,18 +49,16 @@ export function QueryPlanNodeDetails({ node }: Props) {
   const translate = useQueryPlanTranslation();
   if (!node) {
     return (
-      <div className="flex h-full items-center justify-center p-4">
-        <p className="text-sm leading-5 text-control-light">
-          {translate("details.select-node")}
-        </p>
-      </div>
+      <p className="text-sm leading-5 text-control-light">
+        {translate("details.select-node")}
+      </p>
     );
   }
 
   const metrics = nodeMetrics(node, translate);
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-auto p-4 gap-4">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 className="text-base leading-6 font-semibold text-main">
           {node.nodeType}

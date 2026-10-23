@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -9,11 +9,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useQueryPlanTranslation } from "./plan-i18n";
-import {
-  PLAN_INDENT_STEP,
-  planGuideLevels,
-  planIndentPixels,
-} from "./plan-layout";
+import { planIndentPixels, planIndentStep } from "./plan-layout";
 import {
   formatPlanCost,
   formatPlanCount,
@@ -48,19 +44,20 @@ const GUIDE_LINE_CLASS = "absolute bg-control-border";
  */
 function PlanTreeGuides({
   branchContinues,
+  step,
 }: {
   branchContinues: readonly boolean[];
+  step: number;
 }) {
-  const levels = planGuideLevels(branchContinues);
-  if (levels.length === 0) return null;
+  if (branchContinues.length === 0) return null;
   return (
     <span
       aria-hidden="true"
       data-testid="plan-grid-guides"
       className="pointer-events-none absolute inset-y-0 left-4 flex"
     >
-      {levels.map((continues, index) => {
-        const last = index === levels.length - 1;
+      {branchContinues.map((continues, index) => {
+        const last = index === branchContinues.length - 1;
         // Every level but the last is a pass-through: a line only where an
         // ancestor still has rows to come. The last level turns into the row,
         // so it always arrives from above and carries on only when a sibling
@@ -72,7 +69,7 @@ function PlanTreeGuides({
             // A level has no identity apart from its position in the indent.
             key={index}
             className="relative shrink-0"
-            style={{ width: PLAN_INDENT_STEP }}
+            style={{ width: step }}
           >
             {vertical ? (
               <span
@@ -108,6 +105,7 @@ const PlanGridRow = memo(function PlanGridRow({
   row: { node, depth, branchContinues },
   index,
   tree,
+  step,
   selected,
   tabStop,
   onSelect,
@@ -116,6 +114,8 @@ const PlanGridRow = memo(function PlanGridRow({
   row: PlanRow;
   index: number;
   tree: PlanTree;
+  /** The plan's indent step, shared by every row so the guides line up. */
+  step: number;
   selected: boolean;
   tabStop: boolean;
   onSelect: (id: string) => void;
@@ -143,11 +143,11 @@ const PlanGridRow = memo(function PlanGridRow({
       </TableCell>
 
       <TableCell className="relative py-2">
-        <PlanTreeGuides branchContinues={branchContinues} />
+        <PlanTreeGuides branchContinues={branchContinues} step={step} />
         <div
           data-testid="plan-grid-node"
           className="relative flex min-w-0 items-baseline gap-2"
-          style={{ paddingLeft: planIndentPixels(depth) }}
+          style={{ paddingLeft: planIndentPixels(depth, step) }}
         >
           <span
             data-testid="plan-grid-node-type"
@@ -205,6 +205,19 @@ const PlanGridRow = memo(function PlanGridRow({
 export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
   const translate = useQueryPlanTranslation();
   const rows = useMemo(() => planRows(tree.root), [tree]);
+  const step = useMemo(
+    () => planIndentStep(Math.max(0, ...rows.map((row) => row.depth))),
+    [rows]
+  );
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // The selection can be chosen beside the table, from the ranking or the
+  // diagram, so the table brings it on screen rather than leaving it below.
+  useEffect(() => {
+    scrollRef.current
+      ?.querySelector('[aria-selected="true"]')
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [selectedId]);
 
   // Roving tab stop: Tab reaches the grid once and the arrow keys move within
   // it, rather than making every row of a 30-node plan its own tab stop.
@@ -252,6 +265,7 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
 
   return (
     <div
+      ref={scrollRef}
       data-testid="plan-grid-scroll"
       className="min-h-0 w-full flex-1 overflow-auto"
     >
@@ -318,6 +332,7 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
               row={row}
               index={index}
               tree={tree}
+              step={step}
               selected={row.node.id === selectedId}
               tabStop={row.node.id === tabStopId}
               onSelect={onSelect}

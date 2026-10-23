@@ -17,8 +17,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-// Deep import: `@/utils` (the barrel) transitively pulls in Monaco, which this
-// standalone entry never loads. `minmax` itself is a leaf math helper.
 import { minmax } from "@/utils/math";
 import { PLAN_MINI_MAP_BOX, PlanMiniMap } from "./PlanMiniMap";
 import { type QueryPlanTranslate, useQueryPlanTranslation } from "./plan-i18n";
@@ -45,6 +43,8 @@ import {
   type PlanHighlightMode,
   type PlanNode,
   type PlanTree,
+  planCollapsedAncestor,
+  planCostliestNodes,
   planDescendantCount,
   planEdgeWidth,
   planHighlightIntensity,
@@ -270,6 +270,14 @@ export function QueryPlanDiagram({
     [zoomAt]
   );
 
+  // The diagram opens on the operator that adds the most cost, which is where
+  // reading a slow plan starts. A collapse that hides it takes its place, as it
+  // takes the selection.
+  const costliestId = useMemo(() => planCostliestNodes(tree, 1)[0]?.id, [tree]);
+  const focusId =
+    planCollapsedAncestor(tree.root, collapsedIds, costliestId)?.id ??
+    costliestId;
+
   const placeView = useCallback(
     (placed: PlacedView) => {
       placedViewRef.current = placed;
@@ -277,10 +285,10 @@ export function QueryPlanDiagram({
       setView(
         placed === "whole"
           ? planFitViewport(layout, measured)
-          : planOpeningViewport(layout, measured)
+          : planOpeningViewport(layout, measured, focusId)
       );
     },
-    [layout, measure]
+    [layout, measure, focusId]
   );
 
   const panTo = useCallback((point: { x: number; y: number }) => {

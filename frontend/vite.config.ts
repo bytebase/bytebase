@@ -97,7 +97,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
-        "explain-visualizer": resolve(__dirname, "explain-visualizer.html"),
       },
       output: {
         manualChunks: (id) => {
