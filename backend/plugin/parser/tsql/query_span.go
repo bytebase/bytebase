@@ -38,7 +38,8 @@ func GetQuerySpan(
 // statements a plan comes back for, since reading a plan needs bb.sql.explain.
 // Under SHOWPLAN a read is planned instead of run, so it is an Explain. Under
 // STATISTICS XML or PROFILE a statement runs and returns its plan too, like
-// EXPLAIN ANALYZE. A SET that names either option is marked the same way.
+// EXPLAIN ANALYZE. A SET that names either option is marked the same way; any
+// other SET follows the batch's settings like every other statement.
 func markPlanOutput(span *base.QuerySpan, set *ast.SetOptionStmt, output *base.PlanOutput) {
 	if set != nil {
 		on := false
@@ -56,7 +57,6 @@ func markPlanOutput(span *base.QuerySpan, set *ast.SetOptionStmt, output *base.P
 			default:
 			}
 		}
-		return
 	}
 	if output.Showplan && span.Type == base.Select {
 		span.Type = base.Explain
