@@ -892,11 +892,15 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.Project.ExportDestination"><span class="badge">M</span>Project.ExportDestination</a>
+                  <a href="#bytebase.store.Project.ExportSetting"><span class="badge">M</span>Project.ExportSetting</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.store.Project.LabelsEntry"><span class="badge">M</span>Project.LabelsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Project.SharePointDestination"><span class="badge">M</span>Project.SharePointDestination</a>
                 </li>
               
               
@@ -1211,6 +1215,10 @@
               
                 <li>
                   <a href="#bytebase.store.EnvironmentSetting.Environment.TagsEntry"><span class="badge">M</span>EnvironmentSetting.Environment.TagsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ExportSetting"><span class="badge">M</span>ExportSetting</a>
                 </li>
               
                 <li>
@@ -7453,7 +7461,8 @@ resource.instance_id == &#34;local&#34; &amp;&amp; resource.database_name == &#3
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>workspace-level policy
-Disable exporting data in the SQL editor. </p></td>
+Disallow local export download. Exports can then only be delivered to an
+export destination. </p></td>
                 </tr>
               
                 <tr>
@@ -7919,10 +7928,10 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                 </tr>
               
                 <tr>
-                  <td>export_destination</td>
-                  <td><a href="#bytebase.store.Project.ExportDestination">Project.ExportDestination</a></td>
+                  <td>export_setting</td>
+                  <td><a href="#bytebase.store.Project.ExportSetting">Project.ExportSetting</a></td>
                   <td></td>
-                  <td><p>The destination that receives this project&#39;s exports. </p></td>
+                  <td><p>Destinations offered for this project&#39;s exports. </p></td>
                 </tr>
               
             </tbody>
@@ -7956,7 +7965,7 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
 
         
       
-        <h3 id="bytebase.store.Project.ExportDestination">Project.ExportDestination</h3>
+        <h3 id="bytebase.store.Project.ExportSetting">Project.ExportSetting</h3>
         <p></p>
 
         
@@ -7967,37 +7976,8 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
             <tbody>
               
                 <tr>
-                  <td>sharepoint_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The canonical URL of a SharePoint document library root or folder. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>site_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Display names resolved when the URL was saved. Exports resolve the URL
-again rather than trusting these. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>library_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>folder_path</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>web_url</td>
-                  <td><a href="#string">string</a></td>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.store.Project.SharePointDestination">Project.SharePointDestination</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -8031,6 +8011,30 @@ again rather than trusting these. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Project.SharePointDestination">Project.SharePointDestination</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The canonical URL of a SharePoint document library root or folder. </p></td>
                 </tr>
               
             </tbody>
@@ -10676,6 +10680,30 @@ are /[a-z][0-9]-/. </p></td>
 
         
       
+        <h3 id="bytebase.store.ExportSetting">ExportSetting</h3>
+        <p>ExportSetting holds each export destination provider's credentials.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.store.SharePointSetting">SharePointSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.MCPSetting">MCPSetting</h3>
         <p>MCPSetting is what an MCP (Model Context Protocol) session may do in this</p><p>workspace. It is its own setting rather than a field of the workspace profile</p><p>because the set grows, and because the /mcp kill switch reads it on every</p><p>request and should not share a row — or a parse failure — with branding and</p><p>sign-in configuration.</p>
 
@@ -11168,13 +11196,6 @@ once at rotation and never stored. SHA-256 rather than a slow KDF because the
 token is 122 bits of crypto/rand, not a human-chosen secret. </p></td>
                 </tr>
               
-                <tr>
-                  <td>disable_local_export_download</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Disable Local Export Download. Enforced regardless of the license. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -11599,7 +11620,7 @@ frontend-only concept that seeds these colors; the store only holds them. </p></
               </tr>
             
               <tr>
-                <td>SHAREPOINT</td>
+                <td>EXPORT</td>
                 <td>11</td>
                 <td><p></p></td>
               </tr>

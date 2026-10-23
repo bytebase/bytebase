@@ -147,16 +147,16 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 				},
 			},
 		}, nil
-	case storepb.SettingName_SHAREPOINT:
-		storeValue, ok := setting.Value.(*storepb.SharePointSetting)
+	case storepb.SettingName_EXPORT:
+		storeValue, ok := setting.Value.(*storepb.ExportSetting)
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.SettingValue{
-				Value: &v1pb.SettingValue_Sharepoint{
-					Sharepoint: convertToSharePointSetting(storeValue),
+				Value: &v1pb.SettingValue_Export{
+					Export: convertToExportSetting(storeValue),
 				},
 			},
 		}, nil
@@ -203,8 +203,8 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_EMAIL
 	case storepb.SettingName_MCP:
 		return v1pb.Setting_MCP
-	case storepb.SettingName_SHAREPOINT:
-		return v1pb.Setting_SHAREPOINT
+	case storepb.SettingName_EXPORT:
+		return v1pb.Setting_EXPORT
 	case storepb.SettingName_SYSTEM:
 		// Backend-only setting, not exposed in v1 API
 	default:
@@ -236,8 +236,8 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 		return storepb.SettingName_EMAIL
 	case v1pb.Setting_MCP:
 		return storepb.SettingName_MCP
-	case v1pb.Setting_SHAREPOINT:
-		return storepb.SettingName_SHAREPOINT
+	case v1pb.Setting_EXPORT:
+		return storepb.SettingName_EXPORT
 	default:
 		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
 	}
@@ -308,13 +308,12 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		// by WorkspaceService.RotateDirectorySyncToken. Callers of UpdateSetting
 		// must not be able to choose it, so nothing is carried over here — the
 		// update path preserves the stored hash instead.
-		PasswordRestriction:        convertToStorePasswordRestriction(v1Setting.PasswordRestriction),
-		EnableDebug:                v1Setting.EnableDebug,
-		SqlResultSize:              v1Setting.SqlResultSize,
-		QueryTimeout:               v1Setting.QueryTimeout,
-		SqlEditorThemeId:           v1Setting.SqlEditorThemeId,
-		SqlEditorCustomTheme:       convertToStoreSQLEditorThemeSetting(v1Setting.SqlEditorCustomTheme),
-		DisableLocalExportDownload: v1Setting.DisableLocalExportDownload,
+		PasswordRestriction:  convertToStorePasswordRestriction(v1Setting.PasswordRestriction),
+		EnableDebug:          v1Setting.EnableDebug,
+		SqlResultSize:        v1Setting.SqlResultSize,
+		QueryTimeout:         v1Setting.QueryTimeout,
+		SqlEditorThemeId:     v1Setting.SqlEditorThemeId,
+		SqlEditorCustomTheme: convertToStoreSQLEditorThemeSetting(v1Setting.SqlEditorCustomTheme),
 	}
 
 	// Convert announcement if present. The store only holds the theme colors.
@@ -393,7 +392,6 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		QueryTimeout:                 storeSetting.QueryTimeout,
 		SqlEditorThemeId:             storeSetting.SqlEditorThemeId,
 		SqlEditorCustomTheme:         convertToV1SQLEditorThemeSetting(storeSetting.SqlEditorCustomTheme),
-		DisableLocalExportDownload:   storeSetting.DisableLocalExportDownload,
 	}
 }
 
@@ -888,7 +886,18 @@ func convertToAISetting(storeSetting *storepb.AISetting) *v1pb.AISetting {
 	}
 }
 
+func convertExportSetting(v1Setting *v1pb.ExportSetting) *storepb.ExportSetting {
+	return &storepb.ExportSetting{Sharepoint: convertSharePointSetting(v1Setting.GetSharepoint())}
+}
+
+func convertToExportSetting(storeSetting *storepb.ExportSetting) *v1pb.ExportSetting {
+	return &v1pb.ExportSetting{Sharepoint: convertToSharePointSetting(storeSetting.GetSharepoint())}
+}
+
 func convertSharePointSetting(v1Setting *v1pb.SharePointSetting) *storepb.SharePointSetting {
+	if v1Setting == nil {
+		return nil
+	}
 	return &storepb.SharePointSetting{
 		TenantId:     v1Setting.GetTenantId(),
 		ClientId:     v1Setting.GetClientId(),
@@ -897,6 +906,9 @@ func convertSharePointSetting(v1Setting *v1pb.SharePointSetting) *storepb.ShareP
 }
 
 func convertToSharePointSetting(storeSetting *storepb.SharePointSetting) *v1pb.SharePointSetting {
+	if storeSetting == nil {
+		return nil
+	}
 	return &v1pb.SharePointSetting{
 		TenantId:        storeSetting.GetTenantId(),
 		ClientId:        storeSetting.GetClientId(),

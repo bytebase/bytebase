@@ -1,7 +1,7 @@
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { sqlServiceClientConnect } from "@/api";
 import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
-import { ExportRequest_Delivery } from "@/types/proto-es/v1/sql_service_pb";
+import { ExportDelivery } from "@/types/proto-es/v1/common_pb";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import type { AppSliceCreator, SQLSlice } from "./types";
 
@@ -39,14 +39,8 @@ export const createSQLSlice: AppSliceCreator<SQLSlice> = () => ({
     const response = await sqlServiceClientConnect.export(params, {
       contextValues: createContextValues()
         .set(ignoredCodesContextKey, [Code.PermissionDenied])
-        .set(
-          silentContextKey,
-          params.delivery === ExportRequest_Delivery.SHAREPOINT
-        ),
+        .set(silentContextKey, params.delivery === ExportDelivery.SHAREPOINT),
     });
-    return {
-      content: response.content,
-      sharepointDelivery: response.sharepointDelivery,
-    };
+    return { content: response.content, uri: response.uri };
   },
 });

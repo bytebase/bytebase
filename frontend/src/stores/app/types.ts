@@ -85,7 +85,6 @@ import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type {
   ExportRequest,
   QueryRequest,
-  SharePointDelivery,
 } from "@/types/proto-es/v1/sql_service_pb";
 import type {
   BillingInterval,
@@ -1051,10 +1050,11 @@ export type SQLSlice = {
   exportData: (params: ExportRequest) => Promise<ExportDataResult>;
 };
 
-// `content` is empty when the export was delivered to SharePoint.
+// For a destination delivery, `uri` locates the delivered folder and
+// `content` is empty.
 export type ExportDataResult = {
   content: Uint8Array;
-  sharepointDelivery?: SharePointDelivery;
+  uri: string;
 };
 
 export interface GetOrFetchDatabaseMetadataParams {

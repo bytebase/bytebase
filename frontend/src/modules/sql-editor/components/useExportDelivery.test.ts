@@ -1,21 +1,15 @@
-import { create } from "@bufbuild/protobuf";
 import { describe, expect, test, vi } from "vitest";
-import { SharePointLocationSchema } from "@/types/proto-es/v1/project_service_pb";
-import { ExportRequest_Delivery } from "@/types/proto-es/v1/sql_service_pb";
+import { ExportDelivery } from "@/types/proto-es/v1/common_pb";
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
 vi.mock("@/hooks/useAppState", () => ({ usePlanFeature: () => true }));
 vi.mock("@/hooks/useProjectByName", () => ({ useProjectByName: vi.fn() }));
+vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
+  useSQLEditorQueryDataPolicy: vi.fn(),
+}));
 vi.mock("@/stores/app", () => ({ useAppStore: vi.fn() }));
 
 import { resolveExportDelivery } from "./useExportDelivery";
 
-const destination = create(SharePointLocationSchema, {
-  siteName: "Finance",
-  libraryName: "Documents",
-});
 const url = "https://contoso.sharepoint.com/sites/Finance/Shared%20Documents";
 
 describe("resolveExportDelivery", () => {
@@ -24,27 +18,22 @@ describe("resolveExportDelivery", () => {
       resolveExportDelivery({
         hasSharePointFeature: true,
         sharepointUrl: url,
-        destination,
-        localDownloadDisabled: false,
+        disableExport: false,
       })
     ).toEqual({
-      deliveries: [
-        ExportRequest_Delivery.SHAREPOINT,
-        ExportRequest_Delivery.LOCAL,
-      ],
-      destination,
+      deliveries: [ExportDelivery.SHAREPOINT, ExportDelivery.LOCAL],
+      sharepointUrl: url,
     });
   });
 
-  test("offers only SharePoint when local download is disabled", () => {
+  test("offers only SharePoint when disableExport is on", () => {
     expect(
       resolveExportDelivery({
         hasSharePointFeature: true,
         sharepointUrl: url,
-        destination,
-        localDownloadDisabled: true,
-      }).deliveries
-    ).toEqual([ExportRequest_Delivery.SHAREPOINT]);
+        disableExport: true,
+      })
+    ).toEqual({ deliveries: [ExportDelivery.SHAREPOINT], sharepointUrl: url });
   });
 
   test("offers only local download without a destination or the feature", () => {
@@ -52,30 +41,20 @@ describe("resolveExportDelivery", () => {
       { hasSharePointFeature: true, sharepointUrl: "" },
       { hasSharePointFeature: false, sharepointUrl: url },
     ]) {
-      expect(
-        resolveExportDelivery({
-          ...input,
-          destination,
-          localDownloadDisabled: false,
-        })
-      ).toEqual({ deliveries: [ExportRequest_Delivery.LOCAL] });
+      expect(resolveExportDelivery({ ...input, disableExport: false })).toEqual(
+        { deliveries: [ExportDelivery.LOCAL] }
+      );
     }
   });
 
-  test("explains why export is unavailable when no delivery remains", () => {
-    expect(
-      resolveExportDelivery({
-        hasSharePointFeature: true,
-        sharepointUrl: "",
-        localDownloadDisabled: true,
-      })
-    ).toEqual({ deliveries: [], unavailableReason: "NO_DESTINATION" });
-    expect(
-      resolveExportDelivery({
-        hasSharePointFeature: false,
-        sharepointUrl: url,
-        localDownloadDisabled: true,
-      })
-    ).toEqual({ deliveries: [], unavailableReason: "FEATURE_UNAVAILABLE" });
+  test("offers nothing when disableExport is on and SharePoint is not offered", () => {
+    for (const input of [
+      { hasSharePointFeature: true, sharepointUrl: "" },
+      { hasSharePointFeature: false, sharepointUrl: url },
+    ]) {
+      expect(resolveExportDelivery({ ...input, disableExport: true })).toEqual({
+        deliveries: [],
+      });
+    }
   });
 });

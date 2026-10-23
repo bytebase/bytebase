@@ -39,6 +39,7 @@
   
     - [ApprovalStatus](#bytebase-v1-ApprovalStatus)
     - [Engine](#bytebase-v1-Engine)
+    - [ExportDelivery](#bytebase-v1-ExportDelivery)
     - [ExportFormat](#bytebase-v1-ExportFormat)
     - [IssueStatus](#bytebase-v1-IssueStatus)
     - [RiskLevel](#bytebase-v1-RiskLevel)
@@ -132,11 +133,9 @@
     - [RowValue](#bytebase-v1-RowValue)
     - [RowValue.Timestamp](#bytebase-v1-RowValue-Timestamp)
     - [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ)
-    - [SharePointDelivery](#bytebase-v1-SharePointDelivery)
   
     - [Advice.Level](#bytebase-v1-Advice-Level)
     - [Advice.RuleType](#bytebase-v1-Advice-RuleType)
-    - [ExportRequest.Delivery](#bytebase-v1-ExportRequest-Delivery)
     - [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.CommandError.Type](#bytebase-v1-QueryResult-CommandError-Type)
@@ -247,6 +246,7 @@
     - [EnvironmentSetting](#bytebase-v1-EnvironmentSetting)
     - [EnvironmentSetting.Environment](#bytebase-v1-EnvironmentSetting-Environment)
     - [EnvironmentSetting.Environment.TagsEntry](#bytebase-v1-EnvironmentSetting-Environment-TagsEntry)
+    - [ExportSetting](#bytebase-v1-ExportSetting)
     - [GetSettingRequest](#bytebase-v1-GetSettingRequest)
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
@@ -625,18 +625,18 @@
     - [BatchGetProjectsResponse](#bytebase-v1-BatchGetProjectsResponse)
     - [CreateProjectRequest](#bytebase-v1-CreateProjectRequest)
     - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
-    - [ExportDestination](#bytebase-v1-ExportDestination)
     - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
     - [Label](#bytebase-v1-Label)
     - [ListProjectsRequest](#bytebase-v1-ListProjectsRequest)
     - [ListProjectsResponse](#bytebase-v1-ListProjectsResponse)
     - [Project](#bytebase-v1-Project)
     - [Project.ExecutionRetryPolicy](#bytebase-v1-Project-ExecutionRetryPolicy)
+    - [Project.ExportSetting](#bytebase-v1-Project-ExportSetting)
     - [Project.LabelsEntry](#bytebase-v1-Project-LabelsEntry)
     - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
     - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
     - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
-    - [SharePointLocation](#bytebase-v1-SharePointLocation)
+    - [SharePointDestination](#bytebase-v1-SharePointDestination)
     - [TestWebhookRequest](#bytebase-v1-TestWebhookRequest)
     - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
     - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
@@ -1289,6 +1289,19 @@ Database engine type.
 | COSMOSDB | 23 | Azure Cosmos DB multi-model database. |
 | TRINO | 24 | Trino distributed SQL query engine. |
 | CASSANDRA | 25 | Apache Cassandra NoSQL database. |
+
+
+
+<a name="bytebase-v1-ExportDelivery"></a>
+
+### ExportDelivery
+Where an export is delivered.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EXPORT_DELIVERY_UNSPECIFIED | 0 | Treated as LOCAL. |
+| LOCAL | 1 | Return the export in the response. |
+| SHAREPOINT | 2 | Upload the export to the project&#39;s SharePoint export destination. |
 
 
 
@@ -2528,7 +2541,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | data_source_id | [string](#string) |  | The id of data source. If omitted, Export resolves the data source server-side by using the single read-only data source when exactly one exists, or the admin data source otherwise. It can also be set explicitly to export from the admin data source or a specific read-only data source. |
 | schema | [string](#string) | optional | The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres. |
 | container | [string](#string) | optional | Container is the container name to execute the query against, used for CosmosDB only. |
-| delivery | [ExportRequest.Delivery](#bytebase-v1-ExportRequest-Delivery) |  | Where the export is delivered. |
+| delivery | [ExportDelivery](#bytebase-v1-ExportDelivery) |  | Where the export is delivered. LOCAL is rejected when the workspace query data policy disables export. |
 
 
 
@@ -2545,7 +2558,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | ----- | ---- | ----- | ----------- |
 | content | [bytes](#bytes) |  | The export file content. |
 | applied_access_grant | [string](#string) |  | The just-in-time access grant applied to this export, if any. Format: projects/{project}/accessGrants/{accessGrant}. Empty when the user was authorized through normal ACL rather than a grant. |
-| sharepoint_delivery | [SharePointDelivery](#bytebase-v1-SharePointDelivery) |  | Set when the export was delivered to SharePoint. content is then empty. |
+| uri | [string](#string) |  | Set when the export was delivered to an export destination: the absolute location of the folder or key prefix created for this export, for example https://… for SharePoint or s3://bucket/prefix for S3. content is then empty. |
 
 
 
@@ -2827,22 +2840,6 @@ Syntax error with position information for editor highlighting
 
 
 
-
-<a name="bytebase-v1-SharePointDelivery"></a>
-
-### SharePointDelivery
-The result of delivering an export to SharePoint.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| folder_name | [string](#string) |  | The name of the folder created in the destination for this export. |
-| web_url | [string](#string) |  | The URL of that folder. |
-
-
-
-
-
  
 
 
@@ -2870,19 +2867,6 @@ RuleType indicates the source of the linting rule.
 | RULE_TYPE_UNSPECIFIED | 0 | Unspecified rule type. |
 | PARSER_BASED | 1 | Parser-based rule enforced by the built-in SQL parser. These are non-configurable, mandatory checks for schema health. |
 | AI_POWERED | 2 | AI-powered rule defined by user in natural language. These are custom, flexible checks powered by AI models. |
-
-
-
-<a name="bytebase-v1-ExportRequest-Delivery"></a>
-
-### ExportRequest.Delivery
-Delivery is where an export is delivered.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DELIVERY_UNSPECIFIED | 0 | Treated as LOCAL. |
-| LOCAL | 1 | Return the export as a zip file in the response. |
-| SHAREPOINT | 2 | Upload the export files to the project&#39;s SharePoint export destination. |
 
 
 
@@ -4610,6 +4594,21 @@ IssueService manages issues for tracking database changes and tasks.
 
 
 
+<a name="bytebase-v1-ExportSetting"></a>
+
+### ExportSetting
+ExportSetting holds each export destination provider&#39;s credentials.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sharepoint | [SharePointSetting](#bytebase-v1-SharePointSetting) |  | Unset when SharePoint is not configured. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetSettingRequest"></a>
 
 ### GetSettingRequest
@@ -4782,7 +4781,7 @@ The data in setting value.
 | environment | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
 | email | [EmailSetting](#bytebase-v1-EmailSetting) |  |  |
 | mcp | [MCPSetting](#bytebase-v1-MCPSetting) |  |  |
-| sharepoint | [SharePointSetting](#bytebase-v1-SharePointSetting) |  |  |
+| export | [ExportSetting](#bytebase-v1-ExportSetting) |  |  |
 
 
 
@@ -4932,7 +4931,6 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-v1-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for request role. Deprecated: use just-in-time access request flows instead. |
 | directory_sync_token_configured | [bool](#bool) |  | Whether a directory sync token has been generated for this workspace. The token itself is never returned; this only lets the UI decide between offering &#34;generate&#34; and &#34;regenerate&#34;. |
-| disable_local_export_download | [bool](#bool) |  | Disable Local Export Download. Exports can then only be delivered to the project&#39;s export destination. It stays in effect if the workspace license no longer includes FEATURE_SHAREPOINT_EXPORT; only changing it requires the license. |
 
 
 
@@ -5077,7 +5075,7 @@ value.mcp.capability out of the update mask, is rejected.
 | ENVIRONMENT | 7 |  |
 | EMAIL | 8 |  |
 | MCP | 9 |  |
-| SHAREPOINT | 10 |  |
+| EXPORT | 10 |  |
 
 
 
@@ -10094,7 +10092,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | maximum_result_rows | [int32](#int32) |  | Support both project-level and workspace-level. The maximum number of rows to return in the SQL editor. The default value &lt;= 0, means no limit. |
-| disable_export | [bool](#bool) |  | workspace-level policy Disable data export in the SQL editor. |
+| disable_export | [bool](#bool) |  | workspace-level policy Disallow local export download. Exports can then only be delivered to an export destination, even when an export access grant covers them. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results in the SQL editor. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. If true, users can select the admin data source or read-only data source If false, 1. when read-only data source is configured, users&#39;re force to use the read-only data source 2. otherwise fallback to use the admin data source. |
 
@@ -10380,23 +10378,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
-<a name="bytebase-v1-ExportDestination"></a>
-
-### ExportDestination
-The destination that receives a project&#39;s exports. Readers of a delivered
-file are governed by the destination&#39;s own permissions.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sharepoint_url | [string](#string) |  | The URL of a SharePoint document library root or folder. Browser URLs are normalized to the canonical URL. Empty means the project has no destination. |
-| sharepoint_location | [SharePointLocation](#bytebase-v1-SharePointLocation) |  | The location the URL resolved to when it was saved. Resolving proves only that the destination is readable; the first export proves Bytebase can write to it. |
-
-
-
-
-
-
 <a name="bytebase-v1-GetProjectRequest"></a>
 
 ### GetProjectRequest
@@ -10494,7 +10475,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | allow_request_role | [bool](#bool) |  |  |
 | allow_just_in_time_access | [bool](#bool) |  | Once enabled, users can request and use the just-in-time access in the SQL Editor. |
 | allow_last_plan_editor_approval | [bool](#bool) |  | Whether to allow the last Plan editor to approve a database change issue. |
-| export_destination | [ExportDestination](#bytebase-v1-ExportDestination) |  | The destination that receives this project&#39;s exports. Updating it requires the workspace SharePoint setting, because the URL is resolved on save. |
+| export_setting | [Project.ExportSetting](#bytebase-v1-Project-ExportSetting) |  | Export configuration for this project. |
 
 
 
@@ -10510,6 +10491,21 @@ Execution retry policy configuration.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | maximum_retries | [int32](#int32) |  | The maximum number of retries for lock timeout errors. |
+
+
+
+
+
+
+<a name="bytebase-v1-Project-ExportSetting"></a>
+
+### Project.ExportSetting
+Destinations offered for this project&#39;s exports, at most one per provider.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sharepoint | [SharePointDestination](#bytebase-v1-SharePointDestination) |  | Unset when the project has no SharePoint destination. |
 
 
 
@@ -10588,18 +10584,15 @@ When paginating, all other parameters provided to `SearchProjects` must match th
 
 
 
-<a name="bytebase-v1-SharePointLocation"></a>
+<a name="bytebase-v1-SharePointDestination"></a>
 
-### SharePointLocation
-A SharePoint document library root or folder.
+### SharePointDestination
+A SharePoint document library root or folder that receives exports.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| site_name | [string](#string) |  | The display name of the site. |
-| library_name | [string](#string) |  | The display name of the document library. |
-| folder_path | [string](#string) |  | The folder path within the library. Empty for the library root. |
-| web_url | [string](#string) |  | The URL of the library root or folder. |
+| url | [string](#string) |  | The URL of the library root or folder. Normalized to its canonical form and resolved with the workspace credentials on save. |
 
 
 

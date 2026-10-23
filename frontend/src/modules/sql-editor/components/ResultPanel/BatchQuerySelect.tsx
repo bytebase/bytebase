@@ -30,12 +30,9 @@ import {
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
-import { ExportFormat } from "@/types/proto-es/v1/common_pb";
+import { ExportDelivery, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import {
-  ExportRequest_Delivery,
-  ExportRequestSchema,
-} from "@/types/proto-es/v1/sql_service_pb";
+import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import type { SQLEditorDatabaseQueryContext } from "@/types/sqlEditor/tab";
 import { DEFAULT_ENVIRONMENT_COLOR } from "@/types/v1/environment";
 import {
@@ -169,14 +166,11 @@ export function BatchQuerySelect({
     return "";
   }, [contextsByDatabase]);
 
-  // Per-DB grant lookup. When the policy disables direct export, the
-  // hook reports which of the queried DBs are covered by an active
-  // export grant (matched) and which are not (unmatched). Both lists
-  // feed the partial-coverage UX: Export operates on the matched set
-  // only, Request Export pre-seeds the unmatched set.
+  // Per-DB grant lookup. When the policy disables export, the hook reports
+  // which of the queried DBs are covered by an active export grant; Request
+  // Export pre-seeds the uncovered set.
   const policyAllowsExport = !queryDataPolicy?.disableExport;
   const {
-    matchedDatabases,
     unmatchedDatabases,
     tooltip: exportTooltip,
     loading: grantLoading,
@@ -200,33 +194,16 @@ export function BatchQuerySelect({
     }),
   });
 
-  // When the policy allows export, every queried DB is authorized;
-  // otherwise only the JIT-matched subset. The Export drawer's
-  // `DatabaseTableView` is filtered to this list so users can't
-  // physically pick an unauthorized DB — eliminating the partial-
-  // failure toast storm.
-  const exportableDatabaseNames = policyAllowsExport
-    ? queriedDatabaseNames
-    : matchedDatabases;
-  const exportableDatabaseList = useMemo(
-    () => exportableDatabaseNames.map((name) => getDatabaseByName(name)),
-    [exportableDatabaseNames, getDatabaseByName]
+  // disableExport removes only local download, which no grant restores, so
+  // every offered delivery covers every queried DB.
+  const queriedDatabaseList = useMemo(
+    () => queriedDatabaseNames.map((name) => getDatabaseByName(name)),
+    [queriedDatabaseNames, getDatabaseByName]
   );
-
-  const showExport = exportableDatabaseNames.length > 0;
+  const showExport = exportDelivery.deliveries.length > 0;
   // Surface "Request Export" whenever the batch contains uncovered DBs.
-  // Visible alongside Export in the partial-coverage case (e.g. 2 of 5
-  // covered) so users can request grants for the missing ones without
-  // losing the immediate export of the covered set.
   const showRequestExport =
     !policyAllowsExport && unmatchedDatabases.length > 0;
-  // Partial-coverage flag: some matched, some not. Drives the Export
-  // button label change from "Batch export" to "Partial batch export"
-  // so the user knows up-front the action operates on a strict subset.
-  const isPartialExport =
-    showExport &&
-    !policyAllowsExport &&
-    matchedDatabases.length < queriedDatabaseNames.length;
 
   const handleCloseSingleResultView = (item: BatchQueryItem) => {
     const contexts = currentTab?.databaseQueryContexts?.get(item.database.name);
@@ -285,26 +262,22 @@ export function BatchQuerySelect({
   const handleExport = ({ options, resolve }: DataExportRequest) => {
     void (async () => {
       // === Prod path: per-database backend Export RPC ===
-      const toSharePoint =
-        options.delivery === ExportRequest_Delivery.SHAREPOINT;
+      const toSharePoint = options.delivery === ExportDelivery.SHAREPOINT;
       const contents: DownloadContent[] = [];
       const deliveries: SharePointDeliveryResult[] = [];
       const tabsState = getSQLEditorTabsState();
       const tab = tabsState.tabsById.get(tabsState.currentTabId);
-      // Defensive intersect — the drawer already filters to authorized
-      // DBs, but if a stale name lingers in `selectedDatabaseNames` we
-      // skip it here rather than firing a doomed backend call that
-      // would produce a "failed for db" toast.
-      const exportableSet = new Set(exportableDatabaseNames);
+      // Skips a stale selection whose result tab has since been closed.
+      const queriedSet = new Set(queriedDatabaseNames);
       for (const databaseName of Array.from(selectedDatabaseNames)) {
-        if (!exportableSet.has(databaseName)) continue;
+        if (!queriedSet.has(databaseName)) continue;
         const database = getDatabaseByName(databaseName);
         const { instanceName, databaseName: shortName } =
           extractDatabaseResourceName(database.name);
         const context = head(tab?.databaseQueryContexts?.get(databaseName));
         if (!context) continue;
         try {
-          const { content, sharepointDelivery } = await exportData(
+          const { content, uri } = await exportData(
             create(ExportRequestSchema, {
               name: databaseName,
               ...(context.params.connection.dataSourceId
@@ -324,8 +297,8 @@ export function BatchQuerySelect({
             deliveries.push(
               toDeliveredSharePointResult(
                 `${instanceName}/${shortName}`,
-                sharepointDelivery,
-                exportDelivery.destination?.webUrl ?? ""
+                uri,
+                exportDelivery.sharepointUrl ?? ""
               )
             );
             continue;
@@ -385,13 +358,6 @@ export function BatchQuerySelect({
         </Tooltip>
       )}
 
-      {/*
-        Partial-coverage UX: when the policy disables export and only a
-        subset of the queried DBs has an active grant, both buttons can
-        appear — Export operates on the covered set, Request Export
-        pre-seeds the uncovered set so the user can extend coverage
-        without losing the immediate export.
-      */}
       <div className="mb-2 flex flex-row flex-wrap items-center gap-2">
         <ExportGrantLookupStatus
           loading={grantLoading}
@@ -404,14 +370,9 @@ export function BatchQuerySelect({
             viewMode="DRAWER"
             supportFormats={supportFormats}
             supportPassword
-            text={
-              isPartialExport
-                ? t("sql-editor.batch-export.partial")
-                : t("sql-editor.batch-export.self")
-            }
-            // Surface the grant-bypass explanation when the export is
-            // only available because of a JIT grant; otherwise keep the
-            // long-standing "select at most N databases" hint.
+            text={t("sql-editor.batch-export.self")}
+            // Surface the grant explanation when one matched; otherwise keep
+            // the long-standing "select at most N databases" hint.
             tooltip={
               exportTooltip ??
               t("sql-editor.batch-export.tooltip", { max: MAX_EXPORT })
@@ -419,8 +380,7 @@ export function BatchQuerySelect({
             validate={validateExport}
             maximumExportCount={queryDataPolicy.maximumResultRows}
             deliveries={exportDelivery.deliveries}
-            sharepointDestination={exportDelivery.destination}
-            unavailableMessage={exportDelivery.unavailableMessage}
+            sharepointUrl={exportDelivery.sharepointUrl}
             onExport={handleExport}
             formContent={
               <div className="w-full flex flex-col gap-y-2">
@@ -433,13 +393,8 @@ export function BatchQuerySelect({
                     {t("sql-editor.batch-export.tooltip", { max: MAX_EXPORT })}
                   </span>
                 </div>
-                {/*
-                  Filtered to `exportableDatabaseList` so users can only
-                  check authorized DBs. Unauthorized ones are routed to
-                  the Request Export button next to this one.
-                */}
                 <DatabaseTableView
-                  databases={exportableDatabaseList}
+                  databases={queriedDatabaseList}
                   mode="PROJECT"
                   selectedNames={selectedDatabaseNames}
                   onSelectedNamesChange={setSelectedDatabaseNames}

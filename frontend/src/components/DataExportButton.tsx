@@ -44,12 +44,9 @@ import {
 } from "@/components/ui/sheet";
 import { Tooltip } from "@/components/ui/tooltip";
 import { writeTextToClipboard } from "@/lib/clipboard";
-import { formatSharePointLocation } from "@/lib/sharepoint";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
-import { ExportFormat } from "@/types/proto-es/v1/common_pb";
-import type { SharePointLocation } from "@/types/proto-es/v1/project_service_pb";
-import { ExportRequest_Delivery } from "@/types/proto-es/v1/sql_service_pb";
+import { ExportDelivery, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { MaxRowCountSelect } from "./MaxRowCountSelect";
 import {
   type SharePointDeliveryResult,
@@ -66,7 +63,7 @@ export interface ExportOption {
   format: ExportFormat;
   // Applies only to LOCAL delivery.
   password: string;
-  delivery: ExportRequest_Delivery;
+  delivery: ExportDelivery;
 }
 
 // Local exports resolve with the files to download; SharePoint exports resolve
@@ -97,15 +94,14 @@ interface DataExportButtonProps {
   /** Custom form content rendered above the row-count / format / password fields in DRAWER mode. */
   formContent?: ReactNode;
   /** Offered deliveries in DRAWER mode; the first is the default. Empty disables export. */
-  deliveries?: ExportRequest_Delivery[];
-  sharepointDestination?: SharePointLocation;
-  /** Explains why export is disabled when `deliveries` is empty. */
-  unavailableMessage?: string;
+  deliveries?: ExportDelivery[];
+  /** The project's SharePoint destination URL, shown beside that delivery. */
+  sharepointUrl?: string;
   onExport: (req: DataExportRequest) => void;
   className?: string;
 }
 
-const LOCAL_ONLY = [ExportRequest_Delivery.LOCAL];
+const LOCAL_ONLY = [ExportDelivery.LOCAL];
 
 const SIZE_TO_BUTTON: Record<Size, ButtonProps["size"]> = {
   tiny: "xs",
@@ -220,8 +216,7 @@ export function DataExportButton({
   maximumExportCount = Number.MAX_VALUE,
   formContent,
   deliveries = LOCAL_ONLY,
-  sharepointDestination,
-  unavailableMessage,
+  sharepointUrl,
   onExport,
   className,
 }: DataExportButtonProps) {
@@ -244,16 +239,16 @@ export function DataExportButton({
   const [limit, setLimit] = useState<number>(defaultLimit);
   const [format, setFormat] = useState<ExportFormat>(supportFormats[0]);
   const [password, setPassword] = useState("");
-  const [delivery, setDelivery] = useState<ExportRequest_Delivery>(
-    deliveries[0] ?? ExportRequest_Delivery.LOCAL
+  const [delivery, setDelivery] = useState<ExportDelivery>(
+    deliveries[0] ?? ExportDelivery.LOCAL
   );
-  const isLocalDelivery = delivery !== ExportRequest_Delivery.SHAREPOINT;
+  const isLocalDelivery = delivery !== ExportDelivery.SHAREPOINT;
 
   const resetForm = useCallback(() => {
     setLimit(defaultLimit);
     setFormat(supportFormats[0]);
     setPassword("");
-    setDelivery(deliveries[0] ?? ExportRequest_Delivery.LOCAL);
+    setDelivery(deliveries[0] ?? ExportDelivery.LOCAL);
   }, [defaultLimit, supportFormats, deliveries]);
 
   // Reset form whenever the drawer transitions to OPEN. Depending on
@@ -439,10 +434,7 @@ export function DataExportButton({
       {viewMode === "DROPDOWN" ? (
         dropdownTrigger
       ) : (
-        <Tooltip
-          content={exportUnavailable ? unavailableMessage : tooltip}
-          side="bottom"
-        >
+        <Tooltip content={tooltip} side="bottom">
           {triggerButton}
         </Tooltip>
       )}
@@ -466,25 +458,25 @@ export function DataExportButton({
                       className="flex-col items-start gap-y-2"
                       value={String(delivery)}
                       onValueChange={(value) =>
-                        setDelivery(Number(value) as ExportRequest_Delivery)
+                        setDelivery(Number(value) as ExportDelivery)
                       }
                     >
                       {deliveries.map((option) => (
                         <RadioGroupItem key={option} value={String(option)}>
                           <DeliveryLabel
                             delivery={option}
-                            destination={sharepointDestination}
+                            sharepointUrl={sharepointUrl}
                           />
                         </RadioGroupItem>
                       ))}
                     </RadioGroup>
                   </FormField>
                 ) : (
-                  delivery === ExportRequest_Delivery.SHAREPOINT && (
+                  delivery === ExportDelivery.SHAREPOINT && (
                     <FormField title={t("export-data.delivery.self")}>
                       <DeliveryLabel
                         delivery={delivery}
-                        destination={sharepointDestination}
+                        sharepointUrl={sharepointUrl}
                       />
                     </FormField>
                   )
@@ -625,21 +617,21 @@ export function DataExportButton({
 
 function DeliveryLabel({
   delivery,
-  destination,
+  sharepointUrl,
 }: {
-  delivery: ExportRequest_Delivery;
-  destination?: SharePointLocation;
+  delivery: ExportDelivery;
+  sharepointUrl?: string;
 }) {
   const { t } = useTranslation();
-  if (delivery !== ExportRequest_Delivery.SHAREPOINT) {
+  if (delivery !== ExportDelivery.SHAREPOINT) {
     return <span>{t("export-data.delivery.local")}</span>;
   }
   return (
     <span className="flex flex-col">
       <span>{t("export-data.delivery.sharepoint")}</span>
-      {destination && (
+      {sharepointUrl && (
         <span className="break-all text-xs text-control-light">
-          {formatSharePointLocation(destination)}
+          {sharepointUrl}
         </span>
       )}
     </span>

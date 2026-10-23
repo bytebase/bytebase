@@ -993,10 +993,6 @@
         "failed": "失败",
         "unconfirmed": "未确认"
       }
-    },
-    "unavailable": {
-      "feature-unavailable": "此工作空间已禁用本地下载导出文件，且当前方案不包含 SharePoint 发送。",
-      "no-destination": "此工作空间已禁用本地下载导出文件，且此项目没有 SharePoint 导出目标。项目所有者可以在项目设置中配置。"
     }
   },
   "gitops": {
@@ -2235,8 +2231,6 @@
       "confirm-delete-project": "删除「{{name}}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。",
       "export-destination": {
         "description": "SharePoint 文档库或其中某个文件夹的 URL。此项目的导出文件会上传到这里，由 SharePoint 权限决定谁可以打开。",
-        "found": "已找到",
-        "found-description": "Bytebase 可以读取此目标。首次导出会确认它是否可以写入。",
         "placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
         "self": "导出目标",
         "update-failed": "导出目标未保存"
@@ -2728,8 +2722,8 @@
         },
         "data-copy": "启用复制数据",
         "data-export": {
-          "description": "关闭后，用户无法直接导出查询结果。在启用访问授权的项目中，用户仍可点击“申请导出”提交访问授权申请，审批通过后即可导出。",
-          "self": "允许无需审批导出数据"
+          "description": "关闭后，导出文件只能发送到项目的导出目标，未配置导出目标的项目无法导出。已获批的导出访问授权（包括通过“申请导出”申请的授权）也不会恢复本地下载。除非限制了数据复制，用户仍可复制可见的查询结果。",
+          "self": "允许本地下载导出文件"
         },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "工作区的默认视图已更改为 SQL 编辑器。",
@@ -2783,10 +2777,6 @@
           "description": "未检测到用户活动时的会话过期时间。用户达到限制时将被强制退出登录。",
           "hours": "小时",
           "self": "非活动会话超时"
-        },
-        "local-export-download": {
-          "description": "关闭后，导出文件只会发送到项目的 SharePoint 导出目标，未配置导出目标的项目无法导出。除非限制了数据复制，用户仍可复制可见的查询结果。",
-          "self": "允许本地下载导出文件"
         },
         "log": "日志",
         "logo": "Logo",
@@ -3407,7 +3397,6 @@
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-export": {
       "failed-for-db": "无法导出 {{db}} 的数据",
-      "partial": "部分批量导出",
       "self": "批量导出",
       "tooltip": "最多选择 {{max}} 个数据库，批量导出最后一次执行的查询结果"
     },

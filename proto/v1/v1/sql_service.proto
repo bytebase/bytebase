@@ -488,18 +488,9 @@ message ExportRequest {
   // CosmosDB only.
   optional string container = 9;
 
-  // Where the export is delivered.
-  Delivery delivery = 10;
-
-  // Delivery is where an export is delivered.
-  enum Delivery {
-    // Treated as LOCAL.
-    DELIVERY_UNSPECIFIED = 0;
-    // Return the export as a zip file in the response.
-    LOCAL = 1;
-    // Upload the export files to the project's SharePoint export destination.
-    SHAREPOINT = 2;
-  }
+  // Where the export is delivered. LOCAL is rejected when the workspace query
+  // data policy disables export.
+  ExportDelivery delivery = 10;
 }
 
 message ExportResponse {
@@ -511,15 +502,8 @@ message ExportResponse {
   // Empty when the user was authorized through normal ACL rather than a grant.
   string applied_access_grant = 2;
 
-  // Set when the export was delivered to SharePoint. content is then empty.
-  SharePointDelivery sharepoint_delivery = 3;
-}
-
-// The result of delivering an export to SharePoint.
-message SharePointDelivery {
-  // The name of the folder created in the destination for this export.
-  string folder_name = 1;
-
-  // The URL of that folder.
-  string web_url = 2;
+  // Set when the export was delivered to an export destination: the absolute
+  // location of the folder or key prefix created for this export, for example
+  // https://… for SharePoint or s3://bucket/prefix for S3. content is then empty.
+  string uri = 3;
 }

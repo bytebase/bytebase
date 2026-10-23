@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
+  Setting_SettingName,
   type SettingValue,
   type SharePointSetting,
   SharePointSettingSchema,
@@ -12,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   hasFeature: true,
   upsertSetting: vi.fn(
     async (_params: {
+      name: Setting_SettingName;
       value: SettingValue;
       updateMask: { paths: string[] };
     }) => undefined
@@ -37,7 +39,9 @@ vi.mock("@/stores/app", () => {
     settingsByName: {},
     getSettingByName: () =>
       mocks.stored && {
-        value: { value: { case: "sharepoint", value: mocks.stored } },
+        value: {
+          value: { case: "export", value: { sharepoint: mocks.stored } },
+        },
       },
     getOrFetchSettingByName: async () => undefined,
     upsertSetting: mocks.upsertSetting,
@@ -66,7 +70,7 @@ describe("buildSharePointUpdate", () => {
       clientId: "client",
       clientSecret: undefined,
     });
-    expect(paths).toEqual(["value.sharepoint.tenant_id"]);
+    expect(paths).toEqual(["value.export.sharepoint.tenant_id"]);
     expect(setting.tenantId).toBe("tenant-2");
     expect(setting.clientSecret).toBe("");
   });
@@ -78,7 +82,7 @@ describe("buildSharePointUpdate", () => {
         clientId: "client",
         clientSecret: "new-secret",
       }).paths
-    ).toEqual(["value.sharepoint.client_secret"]);
+    ).toEqual(["value.export.sharepoint.client_secret"]);
   });
 });
 
@@ -109,10 +113,13 @@ describe("SharePointPage", () => {
 
     await waitFor(() => expect(mocks.upsertSetting).toHaveBeenCalled());
     const params = mocks.upsertSetting.mock.calls[0][0];
-    expect(params.updateMask.paths).toEqual(["value.sharepoint.client_id"]);
+    expect(params.name).toBe(Setting_SettingName.EXPORT);
+    expect(params.updateMask.paths).toEqual([
+      "value.export.sharepoint.client_id",
+    ]);
     expect(params.value.value).toMatchObject({
-      case: "sharepoint",
-      value: { clientId: "client-2" },
+      case: "export",
+      value: { sharepoint: { clientId: "client-2" } },
     });
   });
 

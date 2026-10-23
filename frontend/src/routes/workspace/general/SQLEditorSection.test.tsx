@@ -20,7 +20,6 @@ const mocks = vi.hoisted(() => {
           },
       sqlResultSize: 0n,
       queryTimeout: undefined as undefined | { seconds: bigint },
-      disableLocalExportDownload: false,
     },
     policy: {
       disableExport: false,
@@ -32,7 +31,6 @@ const mocks = vi.hoisted(() => {
       async (_params: {
         payload: {
           sqlEditorThemeId?: string;
-          disableLocalExportDownload?: boolean;
           sqlEditorCustomTheme?: {
             id: string;
             name: string;
@@ -45,6 +43,7 @@ const mocks = vi.hoisted(() => {
     upsertPolicy: vi.fn(async (_params: unknown) => {}),
     getOrFetchPolicyByParentAndType: vi.fn(async (_params: unknown) => {}),
     hasWorkspacePermissionV2: vi.fn((_permission: string) => true),
+    hasPlanFeature: vi.fn((_feature: unknown) => true),
   };
 });
 
@@ -68,7 +67,7 @@ vi.mock("@/utils", () => ({
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
-  usePlanFeature: () => true,
+  usePlanFeature: mocks.hasPlanFeature,
   useWorkspaceResourceName: () => "workspaces/-",
 }));
 
@@ -170,6 +169,7 @@ vi.mock("@/stores", () => ({
 
 import { SQLEditorSection } from "./SQLEditorSection";
 import type { SectionHandle } from "./useSettingSection";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -188,7 +188,6 @@ beforeEach(() => {
   mocks.profile.sqlEditorCustomTheme = undefined;
   mocks.profile.sqlResultSize = 0n;
   mocks.profile.queryTimeout = undefined;
-  mocks.profile.disableLocalExportDownload = false;
   mocks.policy.disableExport = false;
   mocks.policy.disableCopyData = false;
   mocks.policy.allowAdminDataSource = false;
@@ -196,6 +195,7 @@ beforeEach(() => {
   mocks.updateWorkspaceProfile.mockClear();
   mocks.upsertPolicy.mockClear();
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
+  mocks.hasPlanFeature.mockImplementation(() => true);
 });
 
 afterEach(() => {
@@ -359,65 +359,7 @@ describe("SQLEditorSection theme", () => {
   });
 });
 
-// The data-export policy is stored as `disableExport`, while the control names
-// the inverse allowed state. Keep that inversion and its explanatory copy in
-// sync.
-describe("SQLEditorSection data-export policy toggle", () => {
-  function renderSection() {
-    const ref = createRef<SectionHandle>();
-    render(
-      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
-    );
-    return ref;
-  }
-
-  function exportSwitch(): HTMLElement {
-    // The switch renders inside the FormField title span, as a sibling of
-    // the label text (SQLEditorSection.tsx) — scope by that span.
-    const span = Array.from(container.querySelectorAll("span")).find((s) =>
-      s.textContent?.includes("settings.general.workspace.data-export.self")
-    );
-    expect(span).toBeTruthy();
-    const control = span?.querySelector<HTMLElement>('[role="switch"]');
-    expect(control).toBeTruthy();
-    return control as HTMLElement;
-  }
-
-  test("renders the retitled label with its description", () => {
-    renderSection();
-    expect(container.textContent).toContain(
-      "settings.general.workspace.data-export.self"
-    );
-    expect(container.textContent).toContain(
-      "settings.general.workspace.data-export.description"
-    );
-  });
-
-  test("export allowed without approval (disableExport=false) renders checked", () => {
-    mocks.policy.disableExport = false;
-    renderSection();
-    expect(exportSwitch().getAttribute("aria-checked")).toBe("true");
-  });
-
-  test("approval-gated export (disableExport=true) renders unchecked", () => {
-    mocks.policy.disableExport = true;
-    renderSection();
-    expect(exportSwitch().getAttribute("aria-checked")).toBe("false");
-  });
-
-  test("toggling the switch marks the section dirty for the Update bar", () => {
-    mocks.policy.disableExport = false;
-    const ref = renderSection();
-    expect(ref.current?.isDirty()).toBe(false);
-    act(() => {
-      exportSwitch().click();
-    });
-    expect(ref.current?.isDirty()).toBe(true);
-    expect(exportSwitch().getAttribute("aria-checked")).toBe("false");
-  });
-});
-
-// Stored as `disableLocalExportDownload`; the switch names the allowed state.
+// Local export download is stored inverted as the policy's `disableExport`.
 describe("SQLEditorSection local export download toggle", () => {
   function renderSection() {
     const ref = createRef<SectionHandle>();
@@ -428,9 +370,10 @@ describe("SQLEditorSection local export download toggle", () => {
   }
 
   function localDownloadSwitch(): HTMLElement {
+    // The switch renders inside the FormField title span, beside the label.
     const span = Array.from(container.querySelectorAll("span")).find((s) =>
       s.textContent?.includes(
-        "settings.general.workspace.local-export-download.self"
+        "settings.general.workspace.data-export.self"
       )
     );
     const control = span?.querySelector<HTMLElement>('[role="switch"]');
@@ -438,22 +381,23 @@ describe("SQLEditorSection local export download toggle", () => {
     return control as HTMLElement;
   }
 
-  test("renders checked while local download is allowed", () => {
+  test("renders checked while disableExport is off", () => {
     renderSection();
     expect(localDownloadSwitch().getAttribute("aria-checked")).toBe("true");
     expect(container.textContent).toContain(
-      "settings.general.workspace.local-export-download.description"
+      "settings.general.workspace.data-export.description"
     );
   });
 
-  test("renders unchecked when local download is disabled", () => {
-    mocks.profile.disableLocalExportDownload = true;
+  test("renders unchecked when disableExport is on", () => {
+    mocks.policy.disableExport = true;
     renderSection();
     expect(localDownloadSwitch().getAttribute("aria-checked")).toBe("false");
   });
 
-  test("turning it off disables local download in the workspace profile", async () => {
+  test("turning it off saves disableExport in the query data policy", async () => {
     const ref = renderSection();
+    expect(ref.current?.isDirty()).toBe(false);
     act(() => {
       localDownloadSwitch().click();
     });
@@ -461,12 +405,24 @@ describe("SQLEditorSection local export download toggle", () => {
     await act(async () => {
       await ref.current?.update();
     });
-    expect(mocks.updateWorkspaceProfile).toHaveBeenCalledWith({
-      payload: { disableLocalExportDownload: true },
-      updateMask: expect.objectContaining({
-        paths: ["value.workspace_profile.disable_local_export_download"],
-      }),
-    });
-    expect(mocks.upsertPolicy).not.toHaveBeenCalled();
+    expect(mocks.upsertPolicy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        policy: expect.objectContaining({
+          policy: expect.objectContaining({
+            case: "queryDataPolicy",
+            value: expect.objectContaining({ disableExport: true }),
+          }),
+        }),
+      })
+    );
+    expect(mocks.updateWorkspaceProfile).not.toHaveBeenCalled();
+  });
+
+  test("cannot be changed without the query policy feature", () => {
+    mocks.hasPlanFeature.mockImplementation(
+      (feature) => feature !== PlanFeature.FEATURE_QUERY_POLICY
+    );
+    renderSection();
+    expect(localDownloadSwitch()).toHaveAttribute("data-disabled");
   });
 });

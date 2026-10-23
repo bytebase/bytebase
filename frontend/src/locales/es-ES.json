@@ -993,10 +993,6 @@
         "failed": "Error",
         "unconfirmed": "Sin confirmar"
       }
-    },
-    "unavailable": {
-      "feature-unavailable": "La descarga local de exportaciones está desactivada en este espacio de trabajo y el plan actual no incluye la entrega a SharePoint.",
-      "no-destination": "La descarga local de exportaciones está desactivada en este espacio de trabajo y este proyecto no tiene un destino de exportación de SharePoint. Un propietario del proyecto puede configurarlo en los ajustes del proyecto."
     }
   },
   "gitops": {
@@ -2235,8 +2231,6 @@
       "confirm-delete-project": "Eliminar \"{{name}}\" eliminará permanentemente el proyecto y todos los datos asociados, incluidos issues, configuraciones e historial. Todas las bases de datos de este proyecto se moverán al proyecto predeterminado. Esta acción no se puede deshacer.",
       "export-destination": {
         "description": "La URL de SharePoint de una biblioteca de documentos o de una carpeta dentro de ella. Las exportaciones de este proyecto se suben allí, y los permisos de SharePoint deciden quién puede abrirlas.",
-        "found": "Encontrado",
-        "found-description": "Bytebase puede leer este destino. La primera exportación confirma si puede escribir en él.",
         "placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
         "self": "Destino de exportación",
         "update-failed": "No se guardó el destino de exportación"
@@ -2728,8 +2722,8 @@
         },
         "data-copy": "Habilitar la copia de datos",
         "data-export": {
-          "description": "Si está deshabilitado, los usuarios no pueden exportar directamente los resultados de las consultas. En los proyectos que permiten concesiones de acceso, aún pueden pulsar \"Solicitar exportación\" para enviar una solicitud de concesión de acceso y exportar tras la aprobación.",
-          "self": "Permitir la exportación de datos sin aprobación"
+          "description": "Si se desactiva, las exportaciones solo pueden entregarse en el destino de exportación del proyecto, y los proyectos sin destino no pueden exportar. Una concesión de acceso de exportación aprobada, incluida una solicitada con \"Solicitar exportación\", no restablece la descarga local. Los usuarios aún pueden copiar los resultados de consulta visibles, salvo que la copia de datos esté restringida.",
+          "self": "Permitir la descarga local de exportaciones"
         },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",
@@ -2783,10 +2777,6 @@
           "description": "Tiempo de expiración de la sesión si no se detecta actividad del usuario. Los usuarios serán forzados a cerrar sesión cuando alcancen el límite.",
           "hours": "Horas",
           "self": "Tiempo de espera de sesión inactiva"
-        },
-        "local-export-download": {
-          "description": "Si se desactiva, las exportaciones solo se entregan en el destino de exportación de SharePoint del proyecto, y los proyectos sin destino no pueden exportar. Los usuarios aún pueden copiar los resultados de consulta visibles, salvo que la copia de datos esté restringida.",
-          "self": "Permitir la descarga local de exportaciones"
         },
         "log": "Registro",
         "logo": "Logotipo",
@@ -3407,7 +3397,6 @@
     "and-n-more-databases": "y {{n}} bases de datos más",
     "batch-export": {
       "failed-for-db": "No se pudieron exportar los datos de {{db}}",
-      "partial": "Exportación parcial por lotes",
       "self": "Exportación por lotes",
       "tooltip": "Seleccione como máximo {{max}} bases de datos para exportar por lotes los resultados de las últimas consultas"
     },

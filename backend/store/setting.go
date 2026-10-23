@@ -47,8 +47,8 @@ func getSettingMessage(name storepb.SettingName) (proto.Message, error) {
 		return &storepb.EmailSetting{}, nil
 	case storepb.SettingName_MCP:
 		return &storepb.MCPSetting{}, nil
-	case storepb.SettingName_SHAREPOINT:
-		return &storepb.SharePointSetting{}, nil
+	case storepb.SettingName_EXPORT:
+		return &storepb.ExportSetting{}, nil
 	default:
 		return nil, errors.Errorf("unknown setting name: %v", name)
 	}
@@ -252,19 +252,20 @@ func aiSettingValue(setting *SettingMessage) (*storepb.AISetting, error) {
 	return val, nil
 }
 
-// GetSharePointSetting gets the workspace's SharePoint application. Workspace
-// creation does not seed this row, so a missing row returns an empty setting.
-func (s *Store) GetSharePointSetting(ctx context.Context, workspaceID string) (*storepb.SharePointSetting, error) {
-	setting, err := s.GetSetting(ctx, workspaceID, storepb.SettingName_SHAREPOINT)
+// GetExportSetting gets the workspace's export destination credentials.
+// Workspace creation does not seed this row, so a missing row returns an empty
+// setting.
+func (s *Store) GetExportSetting(ctx context.Context, workspaceID string) (*storepb.ExportSetting, error) {
+	setting, err := s.GetSetting(ctx, workspaceID, storepb.SettingName_EXPORT)
 	if err != nil {
 		return nil, err
 	}
 	if setting == nil {
-		return &storepb.SharePointSetting{}, nil
+		return &storepb.ExportSetting{}, nil
 	}
-	val, ok := setting.Value.(*storepb.SharePointSetting)
+	val, ok := setting.Value.(*storepb.ExportSetting)
 	if !ok {
-		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_SHAREPOINT)
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_EXPORT)
 	}
 	return val, nil
 }

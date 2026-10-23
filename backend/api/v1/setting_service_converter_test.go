@@ -41,23 +41,25 @@ func TestConvertAISetting(t *testing.T) {
 	require.False(t, convertToAISetting(&storepb.AISetting{Enabled: true}).SqlReviewEnabled, "the review is off until it is switched on")
 }
 
-func TestConvertSharePointSettingNeverReturnsSecret(t *testing.T) {
+func TestConvertExportSettingNeverReturnsSecret(t *testing.T) {
 	t.Parallel()
 
-	stored := convertSharePointSetting(&v1pb.SharePointSetting{
+	stored := convertExportSetting(&v1pb.ExportSetting{Sharepoint: &v1pb.SharePointSetting{
 		TenantId:        "tenant",
 		ClientId:        "client",
 		ClientSecret:    "secret",
 		ClientSecretSet: false,
-	})
-	require.True(t, proto.Equal(&storepb.SharePointSetting{TenantId: "tenant", ClientId: "client", ClientSecret: "secret"}, stored))
+	}})
+	require.True(t, proto.Equal(&storepb.ExportSetting{Sharepoint: &storepb.SharePointSetting{TenantId: "tenant", ClientId: "client", ClientSecret: "secret"}}, stored))
 
-	setting, err := convertToSettingMessage(&store.SettingMessage{Name: storepb.SettingName_SHAREPOINT, Value: stored})
+	setting, err := convertToSettingMessage(&store.SettingMessage{Name: storepb.SettingName_EXPORT, Value: stored})
 	require.NoError(t, err)
-	require.Equal(t, "settings/SHAREPOINT", setting.Name)
-	require.True(t, proto.Equal(&v1pb.SharePointSetting{TenantId: "tenant", ClientId: "client", ClientSecretSet: true}, setting.Value.GetSharepoint()))
+	require.Equal(t, "settings/EXPORT", setting.Name)
+	require.True(t, proto.Equal(&v1pb.ExportSetting{Sharepoint: &v1pb.SharePointSetting{TenantId: "tenant", ClientId: "client", ClientSecretSet: true}}, setting.Value.GetExport()))
 
 	require.False(t, convertToSharePointSetting(&storepb.SharePointSetting{TenantId: "tenant"}).ClientSecretSet)
+	require.Nil(t, convertExportSetting(nil).Sharepoint)
+	require.Nil(t, convertToExportSetting(&storepb.ExportSetting{}).Sharepoint, "unset when SharePoint is not configured")
 }
 
 func TestSettingNameMappingRoundTrips(t *testing.T) {
@@ -67,12 +69,4 @@ func TestSettingNameMappingRoundTrips(t *testing.T) {
 		v1Name := v1pb.Setting_SettingName(value)
 		require.Equal(t, v1Name, convertStoreSettingNameToV1(convertV1SettingNameToStore(v1Name)), name)
 	}
-}
-
-func TestConvertWorkspaceProfileDisableLocalExportDownload(t *testing.T) {
-	t.Parallel()
-
-	stored := convertWorkspaceProfileSetting(&v1pb.WorkspaceProfileSetting{DisableLocalExportDownload: true})
-	require.True(t, stored.DisableLocalExportDownload)
-	require.True(t, convertToWorkspaceProfileSetting(stored).DisableLocalExportDownload)
 }

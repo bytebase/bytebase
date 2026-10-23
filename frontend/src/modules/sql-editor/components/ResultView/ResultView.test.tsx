@@ -3,21 +3,27 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { SQLEditorQueryParams } from "@/types";
-import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
-  ExportRequest_Delivery,
-  QueryResultSchema,
-} from "@/types/proto-es/v1/sql_service_pb";
+  Engine,
+  ExportDelivery,
+  ExportFormat,
+} from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { QueryResultSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { ResultView } from "./ResultView";
 
-const { exportData, exportRequest } = vi.hoisted(() => ({
+const { exportData, exportRequest, exportDelivery, grant } = vi.hoisted(() => ({
   exportData: vi.fn(),
   exportRequest: {
     delivery: 1,
     resolve: (_outcome: unknown) => {},
     reject: (_reason: unknown) => {},
   },
+  exportDelivery: {
+    deliveries: [] as number[],
+    sharepointUrl: undefined as string | undefined,
+  },
+  grant: { unmatchedDatabases: [] as string[] },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -33,7 +39,7 @@ vi.mock("@/components/DataExportButton", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/components/RequestExportButton", () => ({
-  RequestExportButton: () => null,
+  RequestExportButton: () => <span data-testid="request-export" />,
 }));
 
 vi.mock("@/modules/sql-editor/components/RequestQueryButton", () => ({
@@ -44,7 +50,7 @@ vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
   useExportGrantBypass: () => ({
     loading: false,
     failedDatabases: [],
-    unmatchedDatabases: [],
+    unmatchedDatabases: grant.unmatchedDatabases,
     retry: vi.fn(),
     grantName: undefined,
     tooltip: undefined,
@@ -52,10 +58,7 @@ vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/components/useExportDelivery", () => ({
-  useExportDelivery: () => ({
-    deliveries: [2, 1],
-    destination: { webUrl: "https://contoso.sharepoint.com/sites/x/Exports" },
-  }),
+  useExportDelivery: () => exportDelivery,
 }));
 
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
@@ -112,10 +115,20 @@ vi.mock("./ErrorView", () => ({
 }));
 
 vi.mock("./SingleResultView", () => ({
-  SingleResultView: ({ onExport }: { onExport: (request: unknown) => void }) => (
-    <button
-      type="button"
-      onClick={() =>
+  SingleResultView: ({
+    onExport,
+    showExport,
+    requestExportSlot,
+  }: {
+    onExport: (request: unknown) => void;
+    showExport: boolean;
+    requestExportSlot?: React.ReactNode;
+  }) => (
+    <>
+      <button
+        type="button"
+        data-show-export={String(showExport)}
+        onClick={() =>
         onExport({
           options: {
             format: ExportFormat.CSV,
@@ -131,6 +144,8 @@ vi.mock("./SingleResultView", () => ({
     >
       export
     </button>
+      {requestExportSlot}
+    </>
   ),
 }));
 
@@ -154,10 +169,14 @@ const database = {
 describe("ResultView", () => {
   beforeEach(() => {
     exportData.mockReset();
-    exportData.mockResolvedValue({ content: new Uint8Array() });
-    exportRequest.delivery = ExportRequest_Delivery.LOCAL;
+    exportData.mockResolvedValue({ content: new Uint8Array(), uri: "" });
+    exportRequest.delivery = ExportDelivery.LOCAL;
     exportRequest.resolve = vi.fn();
     exportRequest.reject = vi.fn();
+    exportDelivery.deliveries = [ExportDelivery.SHAREPOINT, ExportDelivery.LOCAL];
+    exportDelivery.sharepointUrl =
+      "https://contoso.sharepoint.com/sites/x/Exports";
+    grant.unmatchedDatabases = [];
   });
 
   const singleResultSet = {
@@ -171,6 +190,54 @@ describe("ResultView", () => {
     );
 
     expect(container.firstElementChild).toHaveClass("ph-no-capture");
+  });
+
+  test("hides export when no delivery is offered", () => {
+    exportDelivery.deliveries = [];
+    exportDelivery.sharepointUrl = undefined;
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={singleResultSet}
+      />
+    );
+    expect(screen.getByRole("button", { name: "export" })).toHaveAttribute(
+      "data-show-export",
+      "false"
+    );
+  });
+
+  test("shows export when only SharePoint is offered", () => {
+    exportDelivery.deliveries = [ExportDelivery.SHAREPOINT];
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={singleResultSet}
+      />
+    );
+    expect(screen.getByRole("button", { name: "export" })).toHaveAttribute(
+      "data-show-export",
+      "true"
+    );
+  });
+
+  test("keeps Request export beside a SharePoint-only export", () => {
+    exportDelivery.deliveries = [ExportDelivery.SHAREPOINT];
+    grant.unmatchedDatabases = [database.name];
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={singleResultSet}
+      />
+    );
+    expect(screen.getByRole("button", { name: "export" })).toHaveAttribute(
+      "data-show-export",
+      "true"
+    );
+    expect(screen.getByTestId("request-export")).toBeInTheDocument();
   });
 
   test("includes the selected CosmosDB container in export requests", async () => {
@@ -206,10 +273,10 @@ describe("ResultView", () => {
   });
 
   test("resolves a SharePoint export with its delivered folder", async () => {
-    exportRequest.delivery = ExportRequest_Delivery.SHAREPOINT;
+    exportRequest.delivery = ExportDelivery.SHAREPOINT;
     exportData.mockResolvedValue({
       content: new Uint8Array(),
-      sharepointDelivery: { folderName: "20261022-main", webUrl: "https://f" },
+      uri: "https://contoso.sharepoint.com/sites/x/Exports/20261022-main",
     });
     render(
       <ResultView
@@ -227,19 +294,18 @@ describe("ResultView", () => {
           {
             database: "main",
             status: "DELIVERED",
-            folderName: "20261022-main",
-            webUrl: "https://f",
+            uri: "https://contoso.sharepoint.com/sites/x/Exports/20261022-main",
           },
         ],
       });
     });
     expect(exportData).toHaveBeenCalledWith(
-      expect.objectContaining({ delivery: ExportRequest_Delivery.SHAREPOINT })
+      expect.objectContaining({ delivery: ExportDelivery.SHAREPOINT })
     );
   });
 
   test("reports an unconfirmed SharePoint delivery instead of rejecting", async () => {
-    exportRequest.delivery = ExportRequest_Delivery.SHAREPOINT;
+    exportRequest.delivery = ExportDelivery.SHAREPOINT;
     exportData.mockRejectedValue(
       new ConnectError("could not be confirmed", Code.Unavailable)
     );

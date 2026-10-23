@@ -13,12 +13,8 @@ The single configured Export Destination for a project's exports. Its readers ar
 _Avoid_: User export folder
 
 **Local Export Download**:
-Delivery of an exported file from Bytebase to the caller's machine. This is distinct from viewing query results in SQL Editor or accessing a file already delivered to an Export Destination.
+Delivery of an exported file from Bytebase to the caller's machine. This is distinct from viewing query results in SQL Editor or accessing a file already delivered to an Export Destination. The workspace query data policy's `disable_export` disallows it, and no export access grant overrides that.
 _Avoid_: Query access
-
-**Export Approval**:
-The workspace requirement that an export be authorized by an approved access grant. It governs whether an export may run, independently of where the export is delivered.
-_Avoid_: Disable export
 
 **Workspace**:
 The top-level collaboration boundary that contains projects, database connections, environments, users, and policies.

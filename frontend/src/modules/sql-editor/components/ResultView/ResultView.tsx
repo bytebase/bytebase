@@ -28,15 +28,13 @@ import { useAppStore } from "@/stores/app";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import {
+  ExportDelivery,
   ExportFormat,
   type PermissionDeniedDetail,
 } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
-import {
-  ExportRequest_Delivery,
-  ExportRequestSchema,
-} from "@/types/proto-es/v1/sql_service_pb";
+import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import {
   extractDatabaseResourceName,
@@ -140,7 +138,6 @@ export function ResultView({
   // Export discovery is independent of the grant applied during Query, which
   // may permit unmasking without export.
   const {
-    grantName: exportGrantName,
     tooltip: exportTooltip,
     loading: grantLoading,
     failedDatabases,
@@ -159,13 +156,15 @@ export function ResultView({
     ],
   });
 
-  const showExport = !queryDataPolicy?.disableExport || !!exportGrantName;
+  // disableExport removes only local download, which no grant restores;
+  // a destination delivery stays offered either way.
   const exportDelivery = useExportDelivery(database.project);
+  const showExport = exportDelivery.deliveries.length > 0;
 
-  // When direct export is unavailable, offer a "Request export" affordance that
+  // While the policy disables export, offer a "Request export" affordance that
   // opens the access-grant drawer (pre-filled with this database, statement,
-  // and unmask + export checked). The button self-hides when the project
-  // doesn't allow just-in-time access.
+  // and export checked). The button self-hides when the project doesn't allow
+  // just-in-time access.
   const requestExportButton =
     grantLoading || failedDatabases.length > 0 ? (
       <ExportGrantLookupStatus
@@ -204,38 +203,36 @@ export function ResultView({
   ) => {
     const { options, resolve, reject, statement } = req;
     const { databaseName } = extractDatabaseResourceName(database.name);
-    const toSharePoint = options.delivery === ExportRequest_Delivery.SHAREPOINT;
+    const toSharePoint = options.delivery === ExportDelivery.SHAREPOINT;
 
     // === Prod path: backend Export RPC ===
     const tabsState = getSQLEditorTabsState();
     const admin =
       tabsState.tabsById.get(tabsState.currentTabId)?.mode === "ADMIN";
     try {
-      const { content, sharepointDelivery } = await useAppStore
-        .getState()
-        .exportData(
-          create(ExportRequestSchema, {
-            name: database.name,
-            ...(executeParams.connection.dataSourceId
-              ? { dataSourceId: executeParams.connection.dataSourceId }
-              : {}),
-            format: options.format,
-            statement,
-            limit: options.limit,
-            admin,
-            password: options.password,
-            schema: executeParams.connection.schema,
-            container: executeParams.connection.table,
-            delivery: options.delivery,
-          })
-        );
+      const { content, uri } = await useAppStore.getState().exportData(
+        create(ExportRequestSchema, {
+          name: database.name,
+          ...(executeParams.connection.dataSourceId
+            ? { dataSourceId: executeParams.connection.dataSourceId }
+            : {}),
+          format: options.format,
+          statement,
+          limit: options.limit,
+          admin,
+          password: options.password,
+          schema: executeParams.connection.schema,
+          container: executeParams.connection.table,
+          delivery: options.delivery,
+        })
+      );
       if (toSharePoint) {
         resolve({
           sharepoint: [
             toDeliveredSharePointResult(
               databaseName,
-              sharepointDelivery,
-              exportDelivery.destination?.webUrl ?? ""
+              uri,
+              exportDelivery.sharepointUrl ?? ""
             ),
           ],
         });
@@ -303,9 +300,7 @@ export function ResultView({
                 exportDelivery={exportDelivery}
                 maximumExportCount={queryDataPolicy?.maximumResultRows}
                 onExport={handleExport}
-                requestExportSlot={
-                  !showExport ? requestExportButton : undefined
-                }
+                requestExportSlot={requestExportButton}
                 compact={compact}
                 presentation={presentation}
               />
@@ -335,8 +330,8 @@ export function ResultView({
                     </Tooltip>
                   ))}
                 </TabsList>
-                {showExport ? (
-                  <div className="mb-1">
+                <div className="mb-1 flex items-center gap-x-2">
+                  {showExport && (
                     <DataExportButton
                       size="sm"
                       disabled={false}
@@ -345,8 +340,7 @@ export function ResultView({
                       supportPassword
                       tooltip={exportTooltip}
                       deliveries={exportDelivery.deliveries}
-                      sharepointDestination={exportDelivery.destination}
-                      unavailableMessage={exportDelivery.unavailableMessage}
+                      sharepointUrl={exportDelivery.sharepointUrl}
                       maximumExportCount={queryDataPolicy?.maximumResultRows}
                       onExport={(req) =>
                         handleExport({
@@ -355,10 +349,9 @@ export function ResultView({
                         })
                       }
                     />
-                  </div>
-                ) : (
-                  <div className="mb-1">{requestExportButton}</div>
-                )}
+                  )}
+                  {requestExportButton}
+                </div>
               </div>
               {filteredResults.map((result, i) => (
                 <TabsPanel

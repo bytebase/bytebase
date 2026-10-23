@@ -3,9 +3,10 @@
 // The export path was rewritten: the client-side `sql-download` formatter
 // library was deleted and export now goes through the backend Export RPC. A
 // workspace `DATA_QUERY` policy (`disableExport`) gates the toolbar's Export
-// button; when export is disabled but the project allows access grants,
-// a "Request export" affordance replaces it, and an active export grant
-// for the EXACT statement re-enables the real Export button.
+// button by disallowing local download; when export is disabled but the
+// project allows access grants, a "Request export" affordance replaces it. An
+// active export grant does not restore local download, so with no export
+// destination configured the granted statement shows neither control.
 //
 // One file per sub-area (the repo convention): all export CUJs live here as
 // describe blocks with describe-scoped setup, and the bug-lock is inlined
@@ -19,7 +20,7 @@
 //   - Gated + JIT on: C2 Request export, C3/C4 drawer pre-fill (export only)
 //   - Gated + JIT off: C8 no affordance
 //   - Multi-statement: C10 one affordance above the tabs
-//   - Active export grant: C7 exact-match re-enable, C5 badge, C6 filter
+//   - Active export grant: C7 no local download under the grant, C5 badge, C6 filter
 //   - Masking ↔ export security: no-leak without grant, reveal with grant
 //   - BUG (BYT-9656): re-request of a revoked grant drops the Export pre-fill
 //
@@ -406,7 +407,7 @@ test.describe("Multi-statement result export affordance (C10)", () => {
   });
 });
 
-// --- Active export grant re-enables Export for its exact statement (C7),
+// --- Active export grant: no local download for its exact statement (C7),
 //     surfaces an Export badge (C5), and is filterable (C6) ----------------
 
 test.describe("Active export grant (C5, C6, C7)", () => {
@@ -441,42 +442,16 @@ test.describe("Active export grant (C5, C6, C7)", () => {
     await page.waitForTimeout(1000);
   });
 
-  test("the granted statement re-enables Export AND exporting under the grant succeeds (C7)", async () => {
+  test("the granted statement does not restore local download (C7)", async () => {
     await sqlEditor.runPreparedQuery(GRANTED_STATEMENT);
 
-    const exportButton = page.getByRole("button", { name: /^Export$/ }).first();
-    await expect(exportButton).toBeVisible({ timeout: 10_000 });
+    // The grant matches, so "Request export" is gone; the project has no
+    // export destination, so Export is hidden too.
     await expect(
-      sqlEditor.requestExportButton,
-    ).toHaveCount(0);
-
-    await exportButton.hover();
-    // The tooltip attributes the export to the grant. #20513 made the headline
-    // "Export available via issue \"<title>\"" when the grant has an approval
-    // issue (ours does), falling back to "Export enabled by access grant"
-    // otherwise (or before the issue title resolves) — accept either.
-    await expect(
-      page.getByText(/Export (available via issue|enabled by access grant)/),
-    ).toBeVisible({ timeout: 5000 });
-
-    // Not just "the button shows" — actually export. Under disableExport=true the
-    // backend must honor the export grant, so Confirm fires a successful Export
-    // RPC. (We can't read ExportResponse.applied_access_grant here: the Export RPC
-    // uses the Connect protobuf codec, so the response body is binary protobuf —
-    // the zip-bearing ExportResponse — not JSON. The grant-vs-ACL authorization is
-    // a backend concern covered by backend tests; here we prove the UI exports
-    // end-to-end under the grant.)
-    const drawer = await openExportDrawer();
-    const exportResponse = page.waitForResponse(
-      (r) => r.url().includes("SQLService/Export"),
-      { timeout: 20_000 },
-    );
-    await drawer.getByRole("button", { name: "Confirm", exact: true }).click();
-    const resp = await exportResponse;
-    expect(
-      resp.ok(),
-      "exporting under an active export grant must succeed",
-    ).toBeTruthy();
+      page.getByRole("button", { name: "Copy", exact: true }).first(),
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(sqlEditor.requestExportButton).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Export$/ })).toHaveCount(0);
   });
 
   test("running a DIFFERENT statement keeps export gated (Request export, no Export) (C7)", async () => {

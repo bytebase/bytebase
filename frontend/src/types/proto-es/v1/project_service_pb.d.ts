@@ -592,12 +592,11 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
   allowLastPlanEditorApproval: boolean;
 
   /**
-   * The destination that receives this project's exports. Updating it requires
-   * the workspace SharePoint setting, because the URL is resolved on save.
+   * Export configuration for this project.
    *
-   * @generated from field: bytebase.v1.ExportDestination export_destination = 25;
+   * @generated from field: bytebase.v1.Project.ExportSetting export_setting = 25;
    */
-  exportDestination?: ExportDestination | undefined;
+  exportSetting?: Project_ExportSetting | undefined;
 };
 
 /**
@@ -625,6 +624,26 @@ export declare type Project_ExecutionRetryPolicy = Message<"bytebase.v1.Project.
  * Use `create(Project_ExecutionRetryPolicySchema)` to create a new message.
  */
 export declare const Project_ExecutionRetryPolicySchema: GenMessage<Project_ExecutionRetryPolicy>;
+
+/**
+ * Destinations offered for this project's exports, at most one per provider.
+ *
+ * @generated from message bytebase.v1.Project.ExportSetting
+ */
+export declare type Project_ExportSetting = Message<"bytebase.v1.Project.ExportSetting"> & {
+  /**
+   * Unset when the project has no SharePoint destination.
+   *
+   * @generated from field: bytebase.v1.SharePointDestination sharepoint = 1;
+   */
+  sharepoint?: SharePointDestination | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.Project.ExportSetting.
+ * Use `create(Project_ExportSettingSchema)` to create a new message.
+ */
+export declare const Project_ExportSettingSchema: GenMessage<Project_ExportSetting>;
 
 /**
  * @generated from message bytebase.v1.AddWebhookRequest
@@ -752,76 +771,25 @@ export declare type TestWebhookResponse = Message<"bytebase.v1.TestWebhookRespon
 export declare const TestWebhookResponseSchema: GenMessage<TestWebhookResponse>;
 
 /**
- * The destination that receives a project's exports. Readers of a delivered
- * file are governed by the destination's own permissions.
+ * A SharePoint document library root or folder that receives exports.
  *
- * @generated from message bytebase.v1.ExportDestination
+ * @generated from message bytebase.v1.SharePointDestination
  */
-export declare type ExportDestination = Message<"bytebase.v1.ExportDestination"> & {
+export declare type SharePointDestination = Message<"bytebase.v1.SharePointDestination"> & {
   /**
-   * The URL of a SharePoint document library root or folder. Browser URLs are
-   * normalized to the canonical URL. Empty means the project has no destination.
+   * The URL of the library root or folder. Normalized to its canonical form
+   * and resolved with the workspace credentials on save.
    *
-   * @generated from field: string sharepoint_url = 1;
+   * @generated from field: string url = 1;
    */
-  sharepointUrl: string;
-
-  /**
-   * The location the URL resolved to when it was saved. Resolving proves only
-   * that the destination is readable; the first export proves Bytebase can
-   * write to it.
-   *
-   * @generated from field: bytebase.v1.SharePointLocation sharepoint_location = 2;
-   */
-  sharepointLocation?: SharePointLocation | undefined;
+  url: string;
 };
 
 /**
- * Describes the message bytebase.v1.ExportDestination.
- * Use `create(ExportDestinationSchema)` to create a new message.
+ * Describes the message bytebase.v1.SharePointDestination.
+ * Use `create(SharePointDestinationSchema)` to create a new message.
  */
-export declare const ExportDestinationSchema: GenMessage<ExportDestination>;
-
-/**
- * A SharePoint document library root or folder.
- *
- * @generated from message bytebase.v1.SharePointLocation
- */
-export declare type SharePointLocation = Message<"bytebase.v1.SharePointLocation"> & {
-  /**
-   * The display name of the site.
-   *
-   * @generated from field: string site_name = 1;
-   */
-  siteName: string;
-
-  /**
-   * The display name of the document library.
-   *
-   * @generated from field: string library_name = 2;
-   */
-  libraryName: string;
-
-  /**
-   * The folder path within the library. Empty for the library root.
-   *
-   * @generated from field: string folder_path = 3;
-   */
-  folderPath: string;
-
-  /**
-   * The URL of the library root or folder.
-   *
-   * @generated from field: string web_url = 4;
-   */
-  webUrl: string;
-};
-
-/**
- * Describes the message bytebase.v1.SharePointLocation.
- * Use `create(SharePointLocationSchema)` to create a new message.
- */
-export declare const SharePointLocationSchema: GenMessage<SharePointLocation>;
+export declare const SharePointDestinationSchema: GenMessage<SharePointDestination>;
 
 /**
  * @generated from message bytebase.v1.Webhook

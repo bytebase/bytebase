@@ -205,9 +205,9 @@ export enum Setting_SettingName {
   MCP = 9,
 
   /**
-   * @generated from enum value: SHAREPOINT = 10;
+   * @generated from enum value: EXPORT = 10;
    */
-  SHAREPOINT = 10,
+  EXPORT = 10,
 }
 
 /**
@@ -280,10 +280,10 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
     case: "mcp";
   } | {
     /**
-     * @generated from field: bytebase.v1.SharePointSetting sharepoint = 10;
+     * @generated from field: bytebase.v1.ExportSetting export = 10;
      */
-    value: SharePointSetting;
-    case: "sharepoint";
+    value: ExportSetting;
+    case: "export";
   } | { case: undefined; value?: undefined };
 };
 
@@ -292,6 +292,26 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
  * Use `create(SettingValueSchema)` to create a new message.
  */
 export declare const SettingValueSchema: GenMessage<SettingValue>;
+
+/**
+ * ExportSetting holds each export destination provider's credentials.
+ *
+ * @generated from message bytebase.v1.ExportSetting
+ */
+export declare type ExportSetting = Message<"bytebase.v1.ExportSetting"> & {
+  /**
+   * Unset when SharePoint is not configured.
+   *
+   * @generated from field: bytebase.v1.SharePointSetting sharepoint = 1;
+   */
+  sharepoint?: SharePointSetting | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.ExportSetting.
+ * Use `create(ExportSettingSchema)` to create a new message.
+ */
+export declare const ExportSettingSchema: GenMessage<ExportSetting>;
 
 /**
  * SharePointSetting is the Microsoft Entra application that delivers exports to
@@ -731,16 +751,6 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool directory_sync_token_configured = 27;
    */
   directorySyncTokenConfigured: boolean;
-
-  /**
-   * Disable Local Export Download. Exports can then only be delivered to the
-   * project's export destination. It stays in effect if the workspace license
-   * no longer includes FEATURE_SHAREPOINT_EXPORT; only changing it requires
-   * the license.
-   *
-   * @generated from field: bool disable_local_export_download = 28;
-   */
-  disableLocalExportDownload: boolean;
 };
 
 /**

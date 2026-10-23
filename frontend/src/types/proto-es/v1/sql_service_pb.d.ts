@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, NullValue, Timestamp, Value } from "@bufbuild/protobuf/wkt";
-import type { ExportFormat, PermissionDeniedDetail, Position } from "./common_pb";
+import type { ExportDelivery, ExportFormat, PermissionDeniedDetail, Position } from "./common_pb";
 import type { GetQueryHistoryRequestSchema, ListQueryHistoriesRequestSchema, ListQueryHistoriesResponseSchema, QueryHistorySchema, SearchQueryHistoriesRequestSchema, SearchQueryHistoriesResponseSchema } from "./query_history_service_pb";
 
 /**
@@ -1133,11 +1133,12 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
   container?: string | undefined;
 
   /**
-   * Where the export is delivered.
+   * Where the export is delivered. LOCAL is rejected when the workspace query
+   * data policy disables export.
    *
-   * @generated from field: bytebase.v1.ExportRequest.Delivery delivery = 10;
+   * @generated from field: bytebase.v1.ExportDelivery delivery = 10;
    */
-  delivery: ExportRequest_Delivery;
+  delivery: ExportDelivery;
 };
 
 /**
@@ -1145,39 +1146,6 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
  * Use `create(ExportRequestSchema)` to create a new message.
  */
 export declare const ExportRequestSchema: GenMessage<ExportRequest>;
-
-/**
- * Delivery is where an export is delivered.
- *
- * @generated from enum bytebase.v1.ExportRequest.Delivery
- */
-export enum ExportRequest_Delivery {
-  /**
-   * Treated as LOCAL.
-   *
-   * @generated from enum value: DELIVERY_UNSPECIFIED = 0;
-   */
-  DELIVERY_UNSPECIFIED = 0,
-
-  /**
-   * Return the export as a zip file in the response.
-   *
-   * @generated from enum value: LOCAL = 1;
-   */
-  LOCAL = 1,
-
-  /**
-   * Upload the export files to the project's SharePoint export destination.
-   *
-   * @generated from enum value: SHAREPOINT = 2;
-   */
-  SHAREPOINT = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.ExportRequest.Delivery.
- */
-export declare const ExportRequest_DeliverySchema: GenEnum<ExportRequest_Delivery>;
 
 /**
  * @generated from message bytebase.v1.ExportResponse
@@ -1200,11 +1168,13 @@ export declare type ExportResponse = Message<"bytebase.v1.ExportResponse"> & {
   appliedAccessGrant: string;
 
   /**
-   * Set when the export was delivered to SharePoint. content is then empty.
+   * Set when the export was delivered to an export destination: the absolute
+   * location of the folder or key prefix created for this export, for example
+   * https://… for SharePoint or s3://bucket/prefix for S3. content is then empty.
    *
-   * @generated from field: bytebase.v1.SharePointDelivery sharepoint_delivery = 3;
+   * @generated from field: string uri = 3;
    */
-  sharepointDelivery?: SharePointDelivery | undefined;
+  uri: string;
 };
 
 /**
@@ -1212,33 +1182,6 @@ export declare type ExportResponse = Message<"bytebase.v1.ExportResponse"> & {
  * Use `create(ExportResponseSchema)` to create a new message.
  */
 export declare const ExportResponseSchema: GenMessage<ExportResponse>;
-
-/**
- * The result of delivering an export to SharePoint.
- *
- * @generated from message bytebase.v1.SharePointDelivery
- */
-export declare type SharePointDelivery = Message<"bytebase.v1.SharePointDelivery"> & {
-  /**
-   * The name of the folder created in the destination for this export.
-   *
-   * @generated from field: string folder_name = 1;
-   */
-  folderName: string;
-
-  /**
-   * The URL of that folder.
-   *
-   * @generated from field: string web_url = 2;
-   */
-  webUrl: string;
-};
-
-/**
- * Describes the message bytebase.v1.SharePointDelivery.
- * Use `create(SharePointDeliverySchema)` to create a new message.
- */
-export declare const SharePointDeliverySchema: GenMessage<SharePointDelivery>;
 
 /**
  * SQLService executes SQL queries and manages query operations.

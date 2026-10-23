@@ -3,11 +3,10 @@ import { create } from "@bufbuild/protobuf";
 import type { ContextValues } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { silentContextKey } from "@/api/context-key";
+import { ExportDelivery } from "@/types/proto-es/v1/common_pb";
 import {
-  ExportRequest_Delivery,
   ExportRequestSchema,
   ExportResponseSchema,
-  SharePointDeliverySchema,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { createSQLSlice } from "./sql";
 
@@ -34,29 +33,22 @@ describe("exportData", () => {
     mocks.export.mockResolvedValue(create(ExportResponseSchema, { content }));
 
     const result = await slice().exportData(
-      create(ExportRequestSchema, { delivery: ExportRequest_Delivery.LOCAL })
+      create(ExportRequestSchema, { delivery: ExportDelivery.LOCAL })
     );
 
-    expect(result).toEqual({ content, sharepointDelivery: undefined });
+    expect(result).toEqual({ content, uri: "" });
     expect(contextValuesOfLastCall().get(silentContextKey)).toBe(false);
   });
 
-  test("returns the SharePoint delivery and leaves failures to the export result", async () => {
-    const sharepointDelivery = create(SharePointDeliverySchema, {
-      folderName: "20261022-main",
-      webUrl: "https://folder",
-    });
-    mocks.export.mockResolvedValue(
-      create(ExportResponseSchema, { sharepointDelivery })
-    );
+  test("returns the delivered folder URI and leaves failures to the export result", async () => {
+    const uri = "https://contoso.sharepoint.com/sites/Finance/Exports/20261022";
+    mocks.export.mockResolvedValue(create(ExportResponseSchema, { uri }));
 
     const result = await slice().exportData(
-      create(ExportRequestSchema, {
-        delivery: ExportRequest_Delivery.SHAREPOINT,
-      })
+      create(ExportRequestSchema, { delivery: ExportDelivery.SHAREPOINT })
     );
 
-    expect(result.sharepointDelivery).toEqual(sharepointDelivery);
+    expect(result).toEqual({ content: new Uint8Array(), uri });
     expect(contextValuesOfLastCall().get(silentContextKey)).toBe(true);
   });
 });

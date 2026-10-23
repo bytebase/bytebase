@@ -273,6 +273,19 @@ func (x *Project_ExecutionRetryPolicy) Equal(y *Project_ExecutionRetryPolicy) bo
 	return true
 }
 
+func (x *Project_ExportSetting) Equal(y *Project_ExportSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if !x.Sharepoint.Equal(y.Sharepoint) {
+		return false
+	}
+	return true
+}
+
 func (x *Project) Equal(y *Project) bool {
 	if x == y {
 		return true
@@ -359,7 +372,7 @@ func (x *Project) Equal(y *Project) bool {
 	if x.AllowLastPlanEditorApproval != y.AllowLastPlanEditorApproval {
 		return false
 	}
-	if !x.ExportDestination.Equal(y.ExportDestination) {
+	if !x.ExportSetting.Equal(y.ExportSetting) {
 		return false
 	}
 	return true
@@ -446,39 +459,14 @@ func (x *TestWebhookResponse) Equal(y *TestWebhookResponse) bool {
 	return true
 }
 
-func (x *ExportDestination) Equal(y *ExportDestination) bool {
+func (x *SharePointDestination) Equal(y *SharePointDestination) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.SharepointUrl != y.SharepointUrl {
-		return false
-	}
-	if !x.SharepointLocation.Equal(y.SharepointLocation) {
-		return false
-	}
-	return true
-}
-
-func (x *SharePointLocation) Equal(y *SharePointLocation) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.SiteName != y.SiteName {
-		return false
-	}
-	if x.LibraryName != y.LibraryName {
-		return false
-	}
-	if x.FolderPath != y.FolderPath {
-		return false
-	}
-	if x.WebUrl != y.WebUrl {
+	if x.Url != y.Url {
 		return false
 	}
 	return true

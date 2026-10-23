@@ -1,65 +1,51 @@
 import { useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import { usePlanFeature } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
+import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useAppStore } from "@/stores/app";
-import type { SharePointLocation } from "@/types/proto-es/v1/project_service_pb";
-import { ExportRequest_Delivery } from "@/types/proto-es/v1/sql_service_pb";
+import { ExportDelivery } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
-export type ExportDeliveryUnavailableReason =
-  | "NO_DESTINATION"
-  | "FEATURE_UNAVAILABLE";
-
 export interface ExportDeliveryAvailability {
-  // The offered deliveries; the first is the default.
-  deliveries: ExportRequest_Delivery[];
-  destination?: SharePointLocation;
-  unavailableReason?: ExportDeliveryUnavailableReason;
+  // The offered deliveries; the first is the default. Empty means the caller
+  // hides export.
+  deliveries: ExportDelivery[];
+  // Set only when SharePoint is offered.
+  sharepointUrl?: string;
 }
 
+// An export access grant never adds a delivery: local download follows only
+// the workspace's disableExport, and destinations need no grant.
 export function resolveExportDelivery({
   hasSharePointFeature,
   sharepointUrl,
-  destination,
-  localDownloadDisabled,
+  disableExport,
 }: {
   hasSharePointFeature: boolean;
   sharepointUrl: string;
-  destination?: SharePointLocation;
-  localDownloadDisabled: boolean;
+  disableExport: boolean;
 }): ExportDeliveryAvailability {
-  const deliveries: ExportRequest_Delivery[] = [];
+  const deliveries: ExportDelivery[] = [];
   const canDeliverToSharePoint = hasSharePointFeature && sharepointUrl !== "";
   if (canDeliverToSharePoint) {
-    deliveries.push(ExportRequest_Delivery.SHAREPOINT);
+    deliveries.push(ExportDelivery.SHAREPOINT);
   }
-  if (!localDownloadDisabled) {
-    deliveries.push(ExportRequest_Delivery.LOCAL);
+  if (!disableExport) {
+    deliveries.push(ExportDelivery.LOCAL);
   }
-  if (deliveries.length === 0) {
-    return {
-      deliveries,
-      unavailableReason: sharepointUrl
-        ? "FEATURE_UNAVAILABLE"
-        : "NO_DESTINATION",
-    };
-  }
-  return {
-    deliveries,
-    destination: canDeliverToSharePoint ? destination : undefined,
-  };
+  return canDeliverToSharePoint
+    ? { deliveries, sharepointUrl }
+    : { deliveries };
 }
 
 export function useExportDelivery(projectName: string) {
-  const { t } = useTranslation();
   const project = useProjectByName(projectName);
   const hasSharePointFeature = usePlanFeature(
     PlanFeature.FEATURE_SHAREPOINT_EXPORT
   );
-  const localDownloadDisabled = useAppStore(
-    (s) => s.getWorkspaceProfile().disableLocalExportDownload
-  );
+  // The server enforces disableExport without a license check, so it is read
+  // regardless of FEATURE_QUERY_POLICY.
+  const { disableExport } = useSQLEditorQueryDataPolicy(projectName);
 
   useEffect(() => {
     if (!projectName) return;
@@ -69,19 +55,11 @@ export function useExportDelivery(projectName: string) {
       .catch(() => undefined);
   }, [projectName]);
 
-  const availability = resolveExportDelivery({
+  return resolveExportDelivery({
     hasSharePointFeature,
-    sharepointUrl: project.exportDestination?.sharepointUrl ?? "",
-    destination: project.exportDestination?.sharepointLocation,
-    localDownloadDisabled,
+    sharepointUrl: project.exportSetting?.sharepoint?.url ?? "",
+    disableExport,
   });
-  const unavailableMessage =
-    availability.unavailableReason === "NO_DESTINATION"
-      ? t("export-data.unavailable.no-destination")
-      : availability.unavailableReason === "FEATURE_UNAVAILABLE"
-        ? t("export-data.unavailable.feature-unavailable")
-        : undefined;
-  return { ...availability, unavailableMessage };
 }
 
 export type ExportDeliveryState = ReturnType<typeof useExportDelivery>;

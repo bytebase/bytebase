@@ -182,8 +182,9 @@
     - [Label](#bytebase-store-Label)
     - [Project](#bytebase-store-Project)
     - [Project.ExecutionRetryPolicy](#bytebase-store-Project-ExecutionRetryPolicy)
-    - [Project.ExportDestination](#bytebase-store-Project-ExportDestination)
+    - [Project.ExportSetting](#bytebase-store-Project-ExportSetting)
     - [Project.LabelsEntry](#bytebase-store-Project-LabelsEntry)
+    - [Project.SharePointDestination](#bytebase-store-Project-SharePointDestination)
   
 - [store/project_webhook.proto](#store_project_webhook-proto)
     - [Activity](#bytebase-store-Activity)
@@ -258,6 +259,7 @@
     - [EnvironmentSetting](#bytebase-store-EnvironmentSetting)
     - [EnvironmentSetting.Environment](#bytebase-store-EnvironmentSetting-Environment)
     - [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry)
+    - [ExportSetting](#bytebase-store-ExportSetting)
     - [MCPSetting](#bytebase-store-MCPSetting)
     - [SQLEditorThemeSetting](#bytebase-store-SQLEditorThemeSetting)
     - [SQLEditorThemeSetting.TokensEntry](#bytebase-store-SQLEditorThemeSetting-TokensEntry)
@@ -2738,7 +2740,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| disable_export | [bool](#bool) |  | workspace-level policy Disable exporting data in the SQL editor. |
+| disable_export | [bool](#bool) |  | workspace-level policy Disallow local export download. Exports can then only be delivered to an export destination. |
 | maximum_result_rows | [int32](#int32) |  | Support both project-level and workspace-level. The maximum number of rows to return in the SQL editor. The default value &lt;= 0, means no limit. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying data. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. |
@@ -2921,7 +2923,7 @@ Project contains settings and configuration for a Bytebase project.
 | data_classification_config_id | [string](#string) |  | The data classification configuration ID for the project. |
 | allow_just_in_time_access | [bool](#bool) |  | Once enabled, users can request and use the just-in-time access in the SQL Editor. |
 | allow_last_plan_editor_approval | [bool](#bool) |  | Whether to allow the last Plan editor to approve a database change issue. |
-| export_destination | [Project.ExportDestination](#bytebase-store-Project-ExportDestination) |  | The destination that receives this project&#39;s exports. |
+| export_setting | [Project.ExportSetting](#bytebase-store-Project-ExportSetting) |  | Destinations offered for this project&#39;s exports. |
 
 
 
@@ -2943,19 +2945,15 @@ ExecutionRetryPolicy defines retry behavior for failed task executions.
 
 
 
-<a name="bytebase-store-Project-ExportDestination"></a>
+<a name="bytebase-store-Project-ExportSetting"></a>
 
-### Project.ExportDestination
+### Project.ExportSetting
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sharepoint_url | [string](#string) |  | The canonical URL of a SharePoint document library root or folder. |
-| site_name | [string](#string) |  | Display names resolved when the URL was saved. Exports resolve the URL again rather than trusting these. |
-| library_name | [string](#string) |  |  |
-| folder_path | [string](#string) |  |  |
-| web_url | [string](#string) |  |  |
+| sharepoint | [Project.SharePointDestination](#bytebase-store-Project-SharePointDestination) |  |  |
 
 
 
@@ -2972,6 +2970,21 @@ ExecutionRetryPolicy defines retry behavior for failed task executions.
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-Project-SharePointDestination"></a>
+
+### Project.SharePointDestination
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| url | [string](#string) |  | The canonical URL of a SharePoint document library root or folder. |
 
 
 
@@ -4088,6 +4101,21 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 
 
 
+<a name="bytebase-store-ExportSetting"></a>
+
+### ExportSetting
+ExportSetting holds each export destination provider&#39;s credentials.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sharepoint | [SharePointSetting](#bytebase-store-SharePointSetting) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-MCPSetting"></a>
 
 ### MCPSetting
@@ -4272,7 +4300,6 @@ SharePoint.
 | sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-store-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for request role. Deprecated: use just-in-time access request flows instead. |
 | directory_sync_token_hash | [string](#string) |  | Hex-encoded SHA-256 of the SCIM directory sync token. The plaintext is shown once at rotation and never stored. SHA-256 rather than a slow KDF because the token is 122 bits of crypto/rand, not a human-chosen secret. |
-| disable_local_export_download | [bool](#bool) |  | Disable Local Export Download. Enforced regardless of the license. |
 
 
 
@@ -4436,7 +4463,7 @@ Capability is the ceiling: a session runs at this level or lower.
 | ENVIRONMENT | 8 |  |
 | EMAIL | 9 |  |
 | MCP | 10 |  |
-| SHAREPOINT | 11 |  |
+| EXPORT | 11 |  |
 
 
 

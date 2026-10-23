@@ -576,7 +576,8 @@ func (x *IamPolicy) GetBindings() []*Binding {
 type QueryDataPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// workspace-level policy
-	// Disable exporting data in the SQL editor.
+	// Disallow local export download. Exports can then only be delivered to an
+	// export destination.
 	DisableExport bool `protobuf:"varint,2,opt,name=disable_export,json=disableExport,proto3" json:"disable_export,omitempty"`
 	// Support both project-level and workspace-level.
 	// The maximum number of rows to return in the SQL editor.

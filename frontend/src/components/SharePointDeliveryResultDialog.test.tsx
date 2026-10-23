@@ -37,14 +37,23 @@ describe("toFailedSharePointDelivery", () => {
 });
 
 describe("toDeliveredSharePointResult", () => {
-  test("links to the destination when the response has no delivery", () => {
+  test("uses the delivered folder URI", () => {
     expect(
-      toDeliveredSharePointResult("db", undefined, "https://destination")
+      toDeliveredSharePointResult("db", "https://folder", "https://destination")
     ).toEqual({
       database: "db",
       status: "DELIVERED",
-      folderName: "",
-      webUrl: "https://destination",
+      uri: "https://folder",
+    });
+  });
+
+  test("links to the destination when the response has no URI", () => {
+    expect(
+      toDeliveredSharePointResult("db", "", "https://destination")
+    ).toEqual({
+      database: "db",
+      status: "DELIVERED",
+      uri: "https://destination",
     });
   });
 });
@@ -57,8 +66,7 @@ describe("SharePointDeliveryResultDialog", () => {
           {
             database: "a",
             status: "DELIVERED",
-            folderName: "20261022-a",
-            webUrl: "https://a",
+            uri: "https://contoso.sharepoint.com/Exports/20261022-a",
           },
           { database: "b", status: "FAILED", reason: "not found" },
           { database: "c", status: "UNCONFIRMED", reason: "files may exist" },
@@ -70,10 +78,15 @@ describe("SharePointDeliveryResultDialog", () => {
     expect(
       screen.getByText("export-data.sharepoint.result-title")
     ).toBeInTheDocument();
-    expect(screen.getByText("20261022-a")).toBeInTheDocument();
+    expect(
+      screen.getByText("https://contoso.sharepoint.com/Exports/20261022-a")
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "export-data.sharepoint.open" })
-    ).toHaveAttribute("href", "https://a");
+    ).toHaveAttribute(
+      "href",
+      "https://contoso.sharepoint.com/Exports/20261022-a"
+    );
     expect(screen.getByText("not found")).toBeInTheDocument();
     expect(screen.getByText("files may exist")).toBeInTheDocument();
     expect(
@@ -85,12 +98,7 @@ describe("SharePointDeliveryResultDialog", () => {
     render(
       <SharePointDeliveryResultDialog
         results={[
-          {
-            database: "a",
-            status: "DELIVERED",
-            folderName: "f",
-            webUrl: "https://a",
-          },
+          { database: "a", status: "DELIVERED", uri: "https://a" },
         ]}
         onClose={vi.fn()}
       />

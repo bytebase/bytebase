@@ -53,15 +53,16 @@ multiple SharePoint sites using the workspace's shared application identity.
 Bytebase does not select a different destination based on the exporting user.
 Multiple Microsoft tenants or independently configured application identities are not
 implied by support for multiple sites. Configuring SharePoint does not
-itself disable local downloads. A workspace setting controls whether Local
-Export Download is allowed; when disabled, a project without a destination
-cannot export. This setting is separate from the existing Export Approval
-setting. Approval decides whether an export may run; the switch decides where
-it is delivered. An approved export is delivered only to an allowed destination.
-The Export API enforces both checks; hiding the UI is not enforcement. Export
-Approval is currently enforced only in the UI, tracked in BOT-157.
-Disabling Local Export Download stays in effect if the workspace license no
-longer includes the feature; only changing the setting requires the license.
+itself disable local downloads. The workspace query data policy's existing
+`disable_export` switch now decides whether Local Export Download is allowed;
+when it disallows local download, a project without a destination cannot
+export. This replaces its earlier Export Approval meaning: an approved export
+access grant no longer unlocks local download, and destination deliveries need
+no grant. A second switch beside it was rejected because two export switches
+would need their combinations explained. The Export API enforces the switch for
+every caller, including MCP; hiding the UI is not enforcement. The switch stays
+in effect if the workspace license lapses; only changing it requires the
+license.
 
 Bytebase is neutral about how customers isolate projects. It uses whatever
 library root or folder is configured and does not recommend one structure or
@@ -96,9 +97,8 @@ export and its retries upload to the captured folder. The audit log records the
 actual destination.
 
 Delivery is confirmed only when every file of the export is confirmed. Confirmed
-delivery returns the export subfolder name and an Open in SharePoint link to it.
-Delivery
-success does not imply that the exporting user can read the file; SharePoint
+delivery returns the URL of the export subfolder. Delivery success does not
+imply that the exporting user can read the file; SharePoint
 enforces that user's access independently, and Bytebase does not grant access.
 
 If an upload response is lost, Bytebase attempts bounded reconciliation against
@@ -106,9 +106,9 @@ the same export file names. If delivery remains uncertain, Bytebase reports that
 delivery could not be confirmed and files may exist in SharePoint. It does
 not claim that no file was created.
 
-Before returning local export bytes, Bytebase rechecks the workspace's local
-download switch. If local downloads have been disabled since the export started,
-Bytebase blocks delivery without silently redirecting the file to SharePoint.
+Bytebase checks `disable_export` once, before the query runs. A change made
+while an export is running applies to the next export. A rejected local
+download is never redirected to SharePoint.
 
 Internal upload retries reuse the generated files, file names, and captured
 destination without rerunning the query. A new Export action starts a new export
@@ -119,8 +119,8 @@ client-secret authentication. It does not require AKS or another platform
 identity provider. Bytebase Cloud support, workload identity federation, and
 certificate authentication are outside the initial scope.
 
-The client secret is configured in workspace settings through a write-only
-field. Workspace credential configuration uses the existing
+The client secret is configured in the workspace export setting through a
+write-only field. Workspace credential configuration uses the existing
 `bb.settings.set` permission, following other workspace integrations. Workspace
 Admin and Workspace DBA have that permission by default; custom roles can
 delegate it with its existing broader settings authority.
@@ -129,9 +129,9 @@ A destination is configured as the full SharePoint URL of a library root or a
 folder, which carries the site and hostname. Administrators may paste a browser
 URL, including a library view with an `id` parameter or a copied folder link;
 Bytebase normalizes it to the canonical URL and resolves it on save, rejecting a
-URL that does not resolve. It stores the URL with the resolved site, library,
-and folder names, which are displayed for confirmation. A SharePoint browsing
-picker is outside the initial scope.
+URL that does not resolve. It stores and returns only the canonical URL; resolved
+names go stale on rename and are not kept. A SharePoint browsing picker is
+outside the initial scope.
 
 Bytebase resolves the stored URL at each export rather than pinning item IDs.
 Renaming or moving the folder makes exports fail as not found; a folder
@@ -146,9 +146,8 @@ When both destinations are available, Export defaults to SharePoint and offers
 local download as an explicit alternative. Disabling local downloads removes
 that alternative.
 
-Destination validation in the initial release only resolves the configured URL
-and displays the site, library, and folder names. A destination that resolves is
-labeled as found, not verified: the application can read a library root it
+Destination validation in the initial release only resolves the configured URL.
+A destination that resolves is accepted, not verified: the application can read a library root it
 cannot write to, so a successful read does not prove upload access. The first
 export is the actual write check. SharePoint does not distinguish a missing
 destination from one Bytebase cannot access, so errors report both

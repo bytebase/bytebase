@@ -9,27 +9,22 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { SharePointDelivery } from "@/types/proto-es/v1/sql_service_pb";
 
 export type SharePointDeliveryResult = {
   database: string;
 } & (
-  | { status: "DELIVERED"; folderName: string; webUrl: string }
+  | { status: "DELIVERED"; uri: string }
   | { status: "FAILED" | "UNCONFIRMED"; reason: string }
 );
 
-// Falls back to the destination URL when the response omits the delivery.
+// `uri` is the folder created for this export; falls back to the destination
+// URL when the response omits it.
 export function toDeliveredSharePointResult(
   database: string,
-  delivery: SharePointDelivery | undefined,
-  destinationWebUrl: string
+  uri: string,
+  destinationUrl: string
 ): SharePointDeliveryResult {
-  return {
-    database,
-    status: "DELIVERED",
-    folderName: delivery?.folderName ?? "",
-    webUrl: delivery?.webUrl || destinationWebUrl,
-  };
+  return { database, status: "DELIVERED", uri: uri || destinationUrl };
 }
 
 // The Export API reports a delivery it could not confirm as UNAVAILABLE.
@@ -88,15 +83,13 @@ export function SharePointDeliveryResultDialog({ results, onClose }: Props) {
                   <DeliveryStatusBadge status={result.status} />
                 </div>
                 {result.status === "DELIVERED" ? (
-                  <>
-                    {result.folderName && (
+                  result.uri && (
+                    <>
                       <span className="break-all text-control-light">
-                        {result.folderName}
+                        {result.uri}
                       </span>
-                    )}
-                    {result.webUrl && (
                       <a
-                        href={result.webUrl}
+                        href={result.uri}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex w-fit items-center gap-x-1 text-accent hover:underline"
@@ -104,8 +97,8 @@ export function SharePointDeliveryResultDialog({ results, onClose }: Props) {
                         {t("export-data.sharepoint.open")}
                         <ExternalLink className="size-3" />
                       </a>
-                    )}
-                  </>
+                    </>
+                  )
                 ) : (
                   <span className="break-words text-control-light">
                     {result.reason}

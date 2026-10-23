@@ -4805,9 +4805,11 @@ paths:
                      CosmosDB only.
                 delivery:
                   allOf:
-                    - $ref: '#/components/schemas/bytebase.v1.ExportRequest.Delivery'
+                    - $ref: '#/components/schemas/bytebase.v1.ExportDelivery'
                   title: delivery
-                  description: Where the export is delivered.
+                  description: |-
+                    Where the export is delivered. LOCAL is rejected when the workspace query
+                     data policy disables export.
               title: ExportRequest
               additionalProperties: false
         required: true
@@ -10132,9 +10134,11 @@ paths:
                      CosmosDB only.
                 delivery:
                   allOf:
-                    - $ref: '#/components/schemas/bytebase.v1.ExportRequest.Delivery'
+                    - $ref: '#/components/schemas/bytebase.v1.ExportDelivery'
                   title: delivery
-                  description: Where the export is delivered.
+                  description: |-
+                    Where the export is delivered. LOCAL is rejected when the workspace query
+                     data policy disables export.
               title: ExportRequest
               additionalProperties: false
         required: true
@@ -20933,29 +20937,14 @@ components:
       title: ExportAuditLogsResponse
       additionalProperties: false
       description: Response message for exporting audit logs.
-    bytebase.v1.ExportDestination:
-      type: object
-      properties:
-        sharepointUrl:
-          type: string
-          title: sharepoint_url
-          description: |-
-            The URL of a SharePoint document library root or folder. Browser URLs are
-             normalized to the canonical URL. Empty means the project has no destination.
-        sharepointLocation:
-          allOf:
-            - $ref: '#/components/schemas/bytebase.v1.SharePointLocation'
-          title: sharepoint_location
-          description: |-
-            The location the URL resolved to when it was saved. Resolving proves only
-             that the destination is readable; the first export proves Bytebase can
-             write to it.
-          readOnly: true
-      title: ExportDestination
-      additionalProperties: false
-      description: |-
-        The destination that receives a project's exports. Readers of a delivered
-         file are governed by the destination's own permissions.
+    bytebase.v1.ExportDelivery:
+      type: string
+      title: ExportDelivery
+      enum:
+        - EXPORT_DELIVERY_UNSPECIFIED
+        - LOCAL
+        - SHAREPOINT
+      description: Where an export is delivered.
     bytebase.v1.ExportFormat:
       type: string
       title: ExportFormat
@@ -21027,21 +21016,15 @@ components:
              CosmosDB only.
         delivery:
           allOf:
-            - $ref: '#/components/schemas/bytebase.v1.ExportRequest.Delivery'
+            - $ref: '#/components/schemas/bytebase.v1.ExportDelivery'
           title: delivery
-          description: Where the export is delivered.
+          description: |-
+            Where the export is delivered. LOCAL is rejected when the workspace query
+             data policy disables export.
       title: ExportRequest
       required:
         - name
       additionalProperties: false
-    bytebase.v1.ExportRequest.Delivery:
-      type: string
-      title: Delivery
-      enum:
-        - DELIVERY_UNSPECIFIED
-        - LOCAL
-        - SHAREPOINT
-      description: Delivery is where an export is delivered.
     bytebase.v1.ExportResponse:
       type: object
       properties:
@@ -21057,13 +21040,26 @@ components:
             The just-in-time access grant applied to this export, if any.
              Format: projects/{project}/accessGrants/{accessGrant}.
              Empty when the user was authorized through normal ACL rather than a grant.
-        sharepointDelivery:
-          allOf:
-            - $ref: '#/components/schemas/bytebase.v1.SharePointDelivery'
-          title: sharepoint_delivery
-          description: Set when the export was delivered to SharePoint. content is then empty.
+        uri:
+          type: string
+          title: uri
+          description: |-
+            Set when the export was delivered to an export destination: the absolute
+             location of the folder or key prefix created for this export, for example
+             https://… for SharePoint or s3://bucket/prefix for S3. content is then empty.
       title: ExportResponse
       additionalProperties: false
+    bytebase.v1.ExportSetting:
+      type: object
+      properties:
+        sharepoint:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.SharePointSetting'
+          title: sharepoint
+          description: Unset when SharePoint is not configured.
+      title: ExportSetting
+      additionalProperties: false
+      description: ExportSetting holds each export destination provider's credentials.
     bytebase.v1.ExportVCSProviderUsersRequest:
       type: object
       title: ExportVCSProviderUsersRequest
@@ -26055,13 +26051,11 @@ components:
           type: boolean
           title: allow_last_plan_editor_approval
           description: Whether to allow the last Plan editor to approve a database change issue.
-        exportDestination:
+        exportSetting:
           allOf:
-            - $ref: '#/components/schemas/bytebase.v1.ExportDestination'
-          title: export_destination
-          description: |-
-            The destination that receives this project's exports. Updating it requires
-             the workspace SharePoint setting, because the URL is resolved on save.
+            - $ref: '#/components/schemas/bytebase.v1.Project.ExportSetting'
+          title: export_setting
+          description: Export configuration for this project.
       title: Project
       additionalProperties: false
     bytebase.v1.Project.ExecutionRetryPolicy:
@@ -26075,6 +26069,17 @@ components:
       title: ExecutionRetryPolicy
       additionalProperties: false
       description: Execution retry policy configuration.
+    bytebase.v1.Project.ExportSetting:
+      type: object
+      properties:
+        sharepoint:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.SharePointDestination'
+          title: sharepoint
+          description: Unset when the project has no SharePoint destination.
+      title: ExportSetting
+      additionalProperties: false
+      description: Destinations offered for this project's exports, at most one per provider.
     bytebase.v1.PurchaseBillingMethod:
       type: object
       properties:
@@ -26195,7 +26200,8 @@ components:
           title: disable_export
           description: |-
             workspace-level policy
-             Disable data export in the SQL editor.
+             Disallow local export download. Exports can then only be delivered to an
+             export destination, even when an export access grant covers them.
         disableCopyData:
           type: boolean
           title: disable_copy_data
@@ -28919,7 +28925,7 @@ components:
         - ENVIRONMENT
         - EMAIL
         - MCP
-        - SHAREPOINT
+        - EXPORT
     bytebase.v1.SettingValue:
       type: object
       anyOf:
@@ -28960,6 +28966,13 @@ components:
           title: environment
         - type: object
           properties:
+            export:
+              allOf:
+                - $ref: '#/components/schemas/bytebase.v1.ExportSetting'
+              title: export
+          title: export
+        - type: object
+          properties:
             mcp:
               allOf:
                 - $ref: '#/components/schemas/bytebase.v1.MCPSetting'
@@ -28972,13 +28985,6 @@ components:
                 - $ref: '#/components/schemas/bytebase.v1.SemanticTypeSetting'
               title: semantic_type
           title: semantic_type
-        - type: object
-          properties:
-            sharepoint:
-              allOf:
-                - $ref: '#/components/schemas/bytebase.v1.SharePointSetting'
-              title: sharepoint
-          title: sharepoint
         - type: object
           properties:
             workspaceApproval:
@@ -29008,11 +29014,11 @@ components:
               - required:
                   - environment
               - required:
+                  - export
+              - required:
                   - mcp
               - required:
                   - semanticType
-              - required:
-                  - sharepoint
               - required:
                   - workspaceApproval
               - required:
@@ -29030,53 +29036,29 @@ components:
                 - required:
                     - environment
                 - required:
+                    - export
+                - required:
                     - mcp
                 - required:
                     - semanticType
-                - required:
-                    - sharepoint
                 - required:
                     - workspaceApproval
                 - required:
                     - workspaceProfile
       title: SettingValue
       description: The data in setting value.
-    bytebase.v1.SharePointDelivery:
+    bytebase.v1.SharePointDestination:
       type: object
       properties:
-        folderName:
+        url:
           type: string
-          title: folder_name
-          description: The name of the folder created in the destination for this export.
-        webUrl:
-          type: string
-          title: web_url
-          description: The URL of that folder.
-      title: SharePointDelivery
+          title: url
+          description: |-
+            The URL of the library root or folder. Normalized to its canonical form
+             and resolved with the workspace credentials on save.
+      title: SharePointDestination
       additionalProperties: false
-      description: The result of delivering an export to SharePoint.
-    bytebase.v1.SharePointLocation:
-      type: object
-      properties:
-        siteName:
-          type: string
-          title: site_name
-          description: The display name of the site.
-        libraryName:
-          type: string
-          title: library_name
-          description: The display name of the document library.
-        folderPath:
-          type: string
-          title: folder_path
-          description: The folder path within the library. Empty for the library root.
-        webUrl:
-          type: string
-          title: web_url
-          description: The URL of the library root or folder.
-      title: SharePointLocation
-      additionalProperties: false
-      description: A SharePoint document library root or folder.
+      description: A SharePoint document library root or folder that receives exports.
     bytebase.v1.SharePointSetting:
       type: object
       properties:
@@ -32144,14 +32126,6 @@ components:
              The token itself is never returned; this only lets the UI decide between
              offering "generate" and "regenerate".
           readOnly: true
-        disableLocalExportDownload:
-          type: boolean
-          title: disable_local_export_download
-          description: |-
-            Disable Local Export Download. Exports can then only be delivered to the
-             project's export destination. It stays in effect if the workspace license
-             no longer includes FEATURE_SHAREPOINT_EXPORT; only changing it requires
-             the license.
       title: WorkspaceProfileSetting
       additionalProperties: false
     bytebase.v1.WorkspaceProfileSetting.PasswordRestriction:

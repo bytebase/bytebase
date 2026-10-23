@@ -117,8 +117,8 @@ export interface SingleResultViewProps {
   exportDelivery?: ExportDeliveryState;
   maximumExportCount?: number;
   onExport?: (req: DataExportRequest & { statement: string }) => void;
-  // Rendered in the toolbar when `showExport` is false — e.g. a
-  // "Request export" affordance when the policy disables direct export.
+  // Rendered in the toolbar after the export button — e.g. a "Request export"
+  // affordance when the policy disables export.
   requestExportSlot?: ReactNode;
   // Compact layout (fixed-height, non-growing body) used by the terminal /
   // admin result panel. Defaults to the flex-grow saved query layout.
@@ -750,7 +750,7 @@ function SingleResultViewInner({
               {!disallowCopyingData && rows.length > 0 && !isJSONView && (
                 <CopyAllButton />
               )}
-              {showExport ? (
+              {showExport && (
                 <DataExportButton
                   size="sm"
                   disabled={!result || isEmpty(result)}
@@ -759,15 +759,13 @@ function SingleResultViewInner({
                   supportPassword
                   tooltip={exportTooltip}
                   deliveries={exportDelivery?.deliveries}
-                  sharepointDestination={exportDelivery?.destination}
-                  unavailableMessage={exportDelivery?.unavailableMessage}
+                  sharepointUrl={exportDelivery?.sharepointUrl}
                   maximumExportCount={maximumExportCount}
                   formContent={<DatabaseInfo database={database} />}
                   onExport={handleExport}
                 />
-              ) : (
-                requestExportSlot
               )}
+              {requestExportSlot}
             </div>
             {!isJSONView && <SelectionCopyTooltips />}
           </div>

@@ -53,9 +53,9 @@ import {
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Label } from "@/types/proto-es/v1/project_service_pb";
 import {
-  ExportDestinationSchema,
   LabelSchema,
   Project_ExecutionRetryPolicySchema,
+  Project_ExportSettingSchema,
 } from "@/types/proto-es/v1/project_service_pb";
 import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -222,7 +222,7 @@ export function ProjectSettingsPage() {
   // Export destination state
   // -----------------------------------------------------------------------
   const savedExportDestinationUrl =
-    project?.exportDestination?.sharepointUrl ?? "";
+    project?.exportSetting?.sharepoint?.url ?? "";
   const [exportDestinationUrl, setExportDestinationUrl] = useState(
     savedExportDestinationUrl
   );
@@ -585,16 +585,20 @@ export function ProjectSettingsPage() {
       if (nextExportDestinationUrl !== savedExportDestinationUrl) {
         try {
           const destinationPatch = cloneDeep(project);
-          destinationPatch.exportDestination = create(ExportDestinationSchema, {
-            sharepointUrl: nextExportDestinationUrl,
-          });
+          // An unset sharepoint clears the destination.
+          destinationPatch.exportSetting = create(
+            Project_ExportSettingSchema,
+            nextExportDestinationUrl
+              ? { sharepoint: { url: nextExportDestinationUrl } }
+              : {}
+          );
           const updatedProject = await useAppStore
             .getState()
-            .updateProject(destinationPatch, ["export_destination"], {
+            .updateProject(destinationPatch, ["export_setting"], {
               byCaller: true,
             });
           setExportDestinationUrl(
-            updatedProject.exportDestination?.sharepointUrl ?? ""
+            updatedProject.exportSetting?.sharepoint?.url ?? ""
           );
         } catch (error) {
           setExportDestinationError(
@@ -910,8 +914,6 @@ export function ProjectSettingsPage() {
               onChange={handleExportDestinationChange}
               disabled={!canUpdateProject || !hasSharePointExportFeature}
               canClear={canUpdateProject}
-              savedUrl={savedExportDestinationUrl}
-              savedLocation={project.exportDestination?.sharepointLocation}
               error={exportDestinationError}
             />
 

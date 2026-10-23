@@ -381,16 +381,18 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 			}
 			projectSettings.Labels = req.Msg.Project.Labels
 			patch.Setting = projectSettings
-		case "export_destination":
-			rawURL := strings.TrimSpace(req.Msg.Project.GetExportDestination().GetSharepointUrl())
+		case "export_setting":
+			rawURL := strings.TrimSpace(req.Msg.Project.GetExportSetting().GetSharepoint().GetUrl())
 			if rawURL == "" {
-				projectSettings.ExportDestination = nil
+				projectSettings.ExportSetting = nil
 			} else {
-				destination, err := s.resolveExportDestination(ctx, project.Workspace, rawURL)
+				canonicalURL, err := s.resolveSharePointDestination(ctx, project.Workspace, rawURL)
 				if err != nil {
 					return nil, err
 				}
-				projectSettings.ExportDestination = destination
+				projectSettings.ExportSetting = &storepb.Project_ExportSetting{
+					Sharepoint: &storepb.Project_SharePointDestination{Url: canonicalURL},
+				}
 			}
 			patch.Setting = projectSettings
 		default:
@@ -408,31 +410,31 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 	return connect.NewResponse(convertToProject(project)), nil
 }
 
-func (s *ProjectService) resolveExportDestination(ctx context.Context, workspaceID, rawURL string) (*storepb.Project_ExportDestination, error) {
+func (s *ProjectService) resolveSharePointDestination(ctx context.Context, workspaceID, rawURL string) (string, error) {
 	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_SHAREPOINT_EXPORT); err != nil {
-		return nil, connect.NewError(connect.CodePermissionDenied, err)
+		return "", connect.NewError(connect.CodePermissionDenied, err)
 	}
-	setting, err := s.store.GetSharePointSetting(ctx, workspaceID)
+	setting, err := s.store.GetExportSetting(ctx, workspaceID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get SharePoint setting"))
+		return "", connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get export setting"))
 	}
 	newClient := s.newSharePointClient
 	if newClient == nil {
 		newClient = sharepoint.NewClient
 	}
-	return resolveSharePointDestination(ctx, rawURL, setting, newClient)
+	return resolveSharePointURL(ctx, rawURL, setting.GetSharepoint(), newClient)
 }
 
-// resolveSharePointDestination normalizes rawURL and resolves it with the
-// workspace's SharePoint application. Resolving proves only that the
-// destination is readable, so it is stored as found, not verified.
-func resolveSharePointDestination(ctx context.Context, rawURL string, setting *storepb.SharePointSetting, newClient func(sharepoint.Config) (sharepoint.Client, error)) (*storepb.Project_ExportDestination, error) {
+// resolveSharePointURL normalizes rawURL and resolves it with the workspace's
+// SharePoint application, returning the canonical URL. Resolving proves only
+// that the destination is readable, not that exports can be written to it.
+func resolveSharePointURL(ctx context.Context, rawURL string, setting *storepb.SharePointSetting, newClient func(sharepoint.Config) (sharepoint.Client, error)) (string, error) {
 	canonicalURL, err := sharepoint.NormalizeURL(rawURL)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return "", connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	if setting.GetTenantId() == "" || setting.GetClientId() == "" || setting.GetClientSecret() == "" {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("SharePoint is not configured for this workspace"))
+		return "", connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("SharePoint is not configured for this workspace"))
 	}
 	client, err := newClient(sharepoint.Config{
 		TenantID:     setting.GetTenantId(),
@@ -440,26 +442,19 @@ func resolveSharePointDestination(ctx context.Context, rawURL string, setting *s
 		ClientSecret: setting.GetClientSecret(),
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create SharePoint client"))
+		return "", connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create SharePoint client"))
 	}
-	location, err := client.Resolve(ctx, canonicalURL)
-	if err != nil {
+	if _, err := client.Resolve(ctx, canonicalURL); err != nil {
 		switch {
 		case errors.Is(err, sharepoint.ErrNotFoundOrNoAccess):
-			return nil, connect.NewError(connect.CodeFailedPrecondition, sharepoint.ErrNotFoundOrNoAccess)
+			return "", connect.NewError(connect.CodeFailedPrecondition, sharepoint.ErrNotFoundOrNoAccess)
 		case errors.Is(err, sharepoint.ErrCredential):
-			return nil, connect.NewError(connect.CodeFailedPrecondition, sharepoint.ErrCredential)
+			return "", connect.NewError(connect.CodeFailedPrecondition, sharepoint.ErrCredential)
 		default:
-			return nil, connect.NewError(connect.CodeUnavailable, errors.Wrap(err, "failed to resolve the SharePoint destination"))
+			return "", connect.NewError(connect.CodeUnavailable, errors.Wrap(err, "failed to resolve the SharePoint destination"))
 		}
 	}
-	return &storepb.Project_ExportDestination{
-		SharepointUrl: canonicalURL,
-		SiteName:      location.SiteName,
-		LibraryName:   location.LibraryName,
-		FolderPath:    location.FolderPath,
-		WebUrl:        location.WebURL,
-	}, nil
+	return canonicalURL, nil
 }
 
 // DeleteProject deletes a project.

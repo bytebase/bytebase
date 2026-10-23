@@ -1,9 +1,6 @@
-import { create } from "@bufbuild/protobuf";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { ExportFormat } from "@/types/proto-es/v1/common_pb";
-import { SharePointLocationSchema } from "@/types/proto-es/v1/project_service_pb";
-import { ExportRequest_Delivery } from "@/types/proto-es/v1/sql_service_pb";
+import { ExportDelivery, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { type DataExportRequest, DataExportButton } from "./DataExportButton";
 
 vi.mock("react-i18next", () => ({
@@ -16,23 +13,20 @@ vi.mock("./MaxRowCountSelect", () => ({
   MaxRowCountSelect: () => null,
 }));
 
-const destination = create(SharePointLocationSchema, {
-  siteName: "Finance",
-  libraryName: "Documents",
-  folderPath: "Exports",
-});
+const sharepointUrl =
+  "https://contoso.sharepoint.com/sites/Finance/Shared%20Documents/Exports";
+const folderUri = `${sharepointUrl}/20261022-main`;
 
 const onExport = vi.fn<(request: DataExportRequest) => void>();
 
-const renderButton = (deliveries: ExportRequest_Delivery[]) =>
+const renderButton = (deliveries: ExportDelivery[]) =>
   render(
     <DataExportButton
       viewMode="DRAWER"
       supportFormats={[ExportFormat.CSV]}
       supportPassword
       deliveries={deliveries}
-      sharepointDestination={destination}
-      unavailableMessage="export unavailable"
+      sharepointUrl={sharepointUrl}
       onExport={onExport}
     />
   );
@@ -46,15 +40,13 @@ describe("DataExportButton delivery", () => {
   });
 
   test("defaults to SharePoint and hides the zip password for it", () => {
-    renderButton([ExportRequest_Delivery.SHAREPOINT, ExportRequest_Delivery.LOCAL]);
+    renderButton([ExportDelivery.SHAREPOINT, ExportDelivery.LOCAL]);
     openDrawer();
 
     const radios = screen.getAllByRole("radio");
     expect(radios).toHaveLength(2);
     expect(radios[0]).toHaveAttribute("aria-checked", "true");
-    expect(
-      screen.getByText("Finance / Documents / Exports")
-    ).toBeInTheDocument();
+    expect(screen.getByText(sharepointUrl)).toBeInTheDocument();
     expect(
       screen.queryByLabelText("export-data.password-optional")
     ).not.toBeInTheDocument();
@@ -67,23 +59,19 @@ describe("DataExportButton delivery", () => {
 
   test("shows the delivered folder instead of downloading", async () => {
     onExport.mockImplementation(({ options, resolve }) => {
-      expect(options.delivery).toBe(ExportRequest_Delivery.SHAREPOINT);
+      expect(options.delivery).toBe(ExportDelivery.SHAREPOINT);
       expect(options.password).toBe("");
       resolve({
-        sharepoint: [
-          {
-            database: "main",
-            status: "DELIVERED",
-            folderName: "20261022-main",
-            webUrl: "https://folder",
-          },
-        ],
+        sharepoint: [{ database: "main", status: "DELIVERED", uri: folderUri }],
       });
     });
-    renderButton([ExportRequest_Delivery.SHAREPOINT]);
+    renderButton([ExportDelivery.SHAREPOINT]);
     openDrawer();
 
     expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(
+      screen.queryByLabelText("export-data.password-optional")
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "common.confirm" }));
 
     await waitFor(() => {
@@ -91,10 +79,23 @@ describe("DataExportButton delivery", () => {
         screen.getByText("export-data.sharepoint.delivered-title")
       ).toBeInTheDocument();
     });
-    expect(screen.getByText("20261022-main")).toBeInTheDocument();
+    expect(screen.getByText(folderUri)).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "export-data.sharepoint.open" })
-    ).toHaveAttribute("href", "https://folder");
+    ).toHaveAttribute("href", folderUri);
+  });
+
+  test("offers local download alone with the zip password", () => {
+    renderButton([ExportDelivery.LOCAL]);
+    openDrawer();
+
+    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(
+      screen.queryByText("export-data.delivery.self")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByLabelText("export-data.password-optional")
+    ).toBeInTheDocument();
   });
 
   test("disables export when no delivery is available", () => {

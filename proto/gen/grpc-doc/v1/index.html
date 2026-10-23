@@ -310,6 +310,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ExportDelivery"><span class="badge">E</span>ExportDelivery</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ExportFormat"><span class="badge">E</span>ExportFormat</a>
                 </li>
               
@@ -673,10 +677,6 @@
                   <a href="#bytebase.v1.RowValue.TimestampTZ"><span class="badge">M</span>RowValue.TimestampTZ</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.v1.SharePointDelivery"><span class="badge">M</span>SharePointDelivery</a>
-                </li>
-              
               
                 <li>
                   <a href="#bytebase.v1.Advice.Level"><span class="badge">E</span>Advice.Level</a>
@@ -684,10 +684,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Advice.RuleType"><span class="badge">E</span>Advice.RuleType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ExportRequest.Delivery"><span class="badge">E</span>ExportRequest.Delivery</a>
                 </li>
               
                 <li>
@@ -1119,6 +1115,10 @@
               
                 <li>
                   <a href="#bytebase.v1.EnvironmentSetting.Environment.TagsEntry"><span class="badge">M</span>EnvironmentSetting.Environment.TagsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ExportSetting"><span class="badge">M</span>ExportSetting</a>
                 </li>
               
                 <li>
@@ -2573,10 +2573,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ExportDestination"><span class="badge">M</span>ExportDestination</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetProjectRequest"><span class="badge">M</span>GetProjectRequest</a>
                 </li>
               
@@ -2601,6 +2597,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Project.ExportSetting"><span class="badge">M</span>Project.ExportSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Project.LabelsEntry"><span class="badge">M</span>Project.LabelsEntry</a>
                 </li>
               
@@ -2617,7 +2617,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SharePointLocation"><span class="badge">M</span>SharePointLocation</a>
+                  <a href="#bytebase.v1.SharePointDestination"><span class="badge">M</span>SharePointDestination</a>
                 </li>
               
                 <li>
@@ -4628,6 +4628,35 @@ Examples:
                 <td>CASSANDRA</td>
                 <td>25</td>
                 <td><p>Apache Cassandra NoSQL database.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.ExportDelivery">ExportDelivery</h3>
+        <p>Where an export is delivered.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>EXPORT_DELIVERY_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Treated as LOCAL.</p></td>
+              </tr>
+            
+              <tr>
+                <td>LOCAL</td>
+                <td>1</td>
+                <td><p>Return the export in the response.</p></td>
+              </tr>
+            
+              <tr>
+                <td>SHAREPOINT</td>
+                <td>2</td>
+                <td><p>Upload the export to the project&#39;s SharePoint export destination.</p></td>
               </tr>
             
           </tbody>
@@ -8014,9 +8043,10 @@ CosmosDB only. </p></td>
               
                 <tr>
                   <td>delivery</td>
-                  <td><a href="#bytebase.v1.ExportRequest.Delivery">ExportRequest.Delivery</a></td>
+                  <td><a href="#bytebase.v1.ExportDelivery">ExportDelivery</a></td>
                   <td></td>
-                  <td><p>Where the export is delivered. </p></td>
+                  <td><p>Where the export is delivered. LOCAL is rejected when the workspace query
+data policy disables export. </p></td>
                 </tr>
               
             </tbody>
@@ -8053,10 +8083,12 @@ Empty when the user was authorized through normal ACL rather than a grant. </p><
                 </tr>
               
                 <tr>
-                  <td>sharepoint_delivery</td>
-                  <td><a href="#bytebase.v1.SharePointDelivery">SharePointDelivery</a></td>
+                  <td>uri</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Set when the export was delivered to SharePoint. content is then empty. </p></td>
+                  <td><p>Set when the export was delivered to an export destination: the absolute
+location of the folder or key prefix created for this export, for example
+https://… for SharePoint or s3://bucket/prefix for S3. content is then empty. </p></td>
                 </tr>
               
             </tbody>
@@ -8863,37 +8895,6 @@ time.Time.Zone() </p></td>
 
         
       
-        <h3 id="bytebase.v1.SharePointDelivery">SharePointDelivery</h3>
-        <p>The result of delivering an export to SharePoint.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>folder_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the folder created in the destination for this export. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>web_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The URL of that folder. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
 
       
         <h3 id="bytebase.v1.Advice.Level">Advice.Level</h3>
@@ -8957,35 +8958,6 @@ These are non-configurable, mandatory checks for schema health.</p></td>
                 <td>2</td>
                 <td><p>AI-powered rule defined by user in natural language.
 These are custom, flexible checks powered by AI models.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.ExportRequest.Delivery">ExportRequest.Delivery</h3>
-        <p>Delivery is where an export is delivered.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DELIVERY_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Treated as LOCAL.</p></td>
-              </tr>
-            
-              <tr>
-                <td>LOCAL</td>
-                <td>1</td>
-                <td><p>Return the export as a zip file in the response.</p></td>
-              </tr>
-            
-              <tr>
-                <td>SHAREPOINT</td>
-                <td>2</td>
-                <td><p>Upload the export files to the project&#39;s SharePoint export destination.</p></td>
               </tr>
             
           </tbody>
@@ -13598,6 +13570,30 @@ are /[a-z][0-9]-/. </p></td>
 
         
       
+        <h3 id="bytebase.v1.ExportSetting">ExportSetting</h3>
+        <p>ExportSetting holds each export destination provider's credentials.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.v1.SharePointSetting">SharePointSetting</a></td>
+                  <td></td>
+                  <td><p>Unset when SharePoint is not configured. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.GetSettingRequest">GetSettingRequest</h3>
         <p>The request message for getting a setting.</p>
 
@@ -13965,8 +13961,8 @@ Example: &#34;settings/SEMANTIC_TYPES&#34; </p></td>
                 </tr>
               
                 <tr>
-                  <td>sharepoint</td>
-                  <td><a href="#bytebase.v1.SharePointSetting">SharePointSetting</a></td>
+                  <td>export</td>
+                  <td><a href="#bytebase.v1.ExportSetting">ExportSetting</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -14413,16 +14409,6 @@ The token itself is never returned; this only lets the UI decide between
 offering &#34;generate&#34; and &#34;regenerate&#34;. </p></td>
                 </tr>
               
-                <tr>
-                  <td>disable_local_export_download</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Disable Local Export Download. Exports can then only be delivered to the
-project&#39;s export destination. It stays in effect if the workspace license
-no longer includes FEATURE_SHAREPOINT_EXPORT; only changing it requires
-the license. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -14805,7 +14791,7 @@ database session is opened read-only as well.</p></td>
               </tr>
             
               <tr>
-                <td>SHAREPOINT</td>
+                <td>EXPORT</td>
                 <td>10</td>
                 <td><p></p></td>
               </tr>
@@ -28808,7 +28794,8 @@ The default value &lt;= 0, means no limit. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>workspace-level policy
-Disable data export in the SQL editor. </p></td>
+Disallow local export download. Exports can then only be delivered to an
+export destination, even when an export access grant covers them. </p></td>
                 </tr>
               
                 <tr>
@@ -29512,40 +29499,6 @@ When purge=false (soft delete/archive), the project and its databases/issues rem
 
         
       
-        <h3 id="bytebase.v1.ExportDestination">ExportDestination</h3>
-        <p>The destination that receives a project's exports. Readers of a delivered</p><p>file are governed by the destination's own permissions.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>sharepoint_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The URL of a SharePoint document library root or folder. Browser URLs are
-normalized to the canonical URL. Empty means the project has no destination. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sharepoint_location</td>
-                  <td><a href="#bytebase.v1.SharePointLocation">SharePointLocation</a></td>
-                  <td></td>
-                  <td><p>The location the URL resolved to when it was saved. Resolving proves only
-that the destination is readable; the first export proves Bytebase can
-write to it. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetProjectRequest">GetProjectRequest</h3>
         <p></p>
 
@@ -29864,11 +29817,10 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                 </tr>
               
                 <tr>
-                  <td>export_destination</td>
-                  <td><a href="#bytebase.v1.ExportDestination">ExportDestination</a></td>
+                  <td>export_setting</td>
+                  <td><a href="#bytebase.v1.Project.ExportSetting">Project.ExportSetting</a></td>
                   <td></td>
-                  <td><p>The destination that receives this project&#39;s exports. Updating it requires
-the workspace SharePoint setting, because the URL is resolved on save. </p></td>
+                  <td><p>Export configuration for this project. </p></td>
                 </tr>
               
             </tbody>
@@ -29893,6 +29845,30 @@ the workspace SharePoint setting, because the URL is resolved on save. </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>The maximum number of retries for lock timeout errors. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Project.ExportSetting">Project.ExportSetting</h3>
+        <p>Destinations offered for this project's exports, at most one per provider.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.v1.SharePointDestination">SharePointDestination</a></td>
+                  <td></td>
+                  <td><p>Unset when the project has no SharePoint destination. </p></td>
                 </tr>
               
             </tbody>
@@ -30076,8 +30052,8 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
-        <h3 id="bytebase.v1.SharePointLocation">SharePointLocation</h3>
-        <p>A SharePoint document library root or folder.</p>
+        <h3 id="bytebase.v1.SharePointDestination">SharePointDestination</h3>
+        <p>A SharePoint document library root or folder that receives exports.</p>
 
         
           <table class="field-table">
@@ -30087,31 +30063,11 @@ If this field is omitted, there are no subsequent pages. </p></td>
             <tbody>
               
                 <tr>
-                  <td>site_name</td>
+                  <td>url</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The display name of the site. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>library_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The display name of the document library. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>folder_path</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The folder path within the library. Empty for the library root. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>web_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The URL of the library root or folder. </p></td>
+                  <td><p>The URL of the library root or folder. Normalized to its canonical form
+and resolved with the workspace credentials on save. </p></td>
                 </tr>
               
             </tbody>

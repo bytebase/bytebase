@@ -318,8 +318,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		storeSettingValue = storeSemanticTypeSetting
 	case storepb.SettingName_AI:
 		return s.updateAISetting(ctx, request, workspaceID)
-	case storepb.SettingName_SHAREPOINT:
-		return s.updateSharePointSetting(ctx, request, workspaceID)
+	case storepb.SettingName_EXPORT:
+		return s.updateExportSetting(ctx, request, workspaceID)
 	case storepb.SettingName_ENVIRONMENT:
 		if serr := s.validateEnvironments(ctx, workspaceID, request.Msg.Setting.Value.GetEnvironment().GetEnvironments()); serr != nil {
 			return nil, serr
@@ -576,10 +576,10 @@ func mergeAISetting(stored, payload *storepb.AISetting, paths []string) (*storep
 	return merged, nil
 }
 
-// updateSharePointSetting merges the update mask onto the locked SharePoint
-// setting row, as updateAISetting does. Workspace creation does not seed this
-// row, so a missing row starts empty.
-func (s *SettingService) updateSharePointSetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string) (*connect.Response[v1pb.Setting], error) {
+// updateExportSetting merges the update mask onto the locked EXPORT setting
+// row, as updateAISetting does. Workspace creation does not seed this row, so a
+// missing row starts empty.
+func (s *SettingService) updateExportSetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string) (*connect.Response[v1pb.Setting], error) {
 	if s.profile.SaaS {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("SharePoint export is not available in Bytebase Cloud"))
 	}
@@ -589,28 +589,28 @@ func (s *SettingService) updateSharePointSetting(ctx context.Context, request *c
 	if request.Msg.UpdateMask == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 	}
-	payload := convertSharePointSetting(request.Msg.Setting.Value.GetSharepoint())
+	payload := convertExportSetting(request.Msg.Setting.Value.GetExport())
 	paths := request.Msg.UpdateMask.Paths
 
 	if request.Msg.ValidateOnly {
-		stored := &storepb.SharePointSetting{}
-		existing, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_SHAREPOINT)
+		stored := &storepb.ExportSetting{}
+		existing, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_EXPORT)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find SharePoint setting: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find export setting: %v", err))
 		}
 		if existing != nil {
-			value, ok := existing.Value.(*storepb.SharePointSetting)
+			value, ok := existing.Value.(*storepb.ExportSetting)
 			if !ok {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_SHAREPOINT))
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_EXPORT))
 			}
 			stored = value
 		}
-		merged, err := mergeSharePointSetting(stored, payload, paths)
+		merged, err := mergeExportSetting(stored, payload, paths)
 		if err != nil {
 			return nil, err
 		}
 		settingMessage, err := convertToSettingMessage(&store.SettingMessage{
-			Name:      storepb.SettingName_SHAREPOINT,
+			Name:      storepb.SettingName_EXPORT,
 			Workspace: workspaceID,
 			Value:     merged,
 		})
@@ -620,23 +620,23 @@ func (s *SettingService) updateSharePointSetting(ctx context.Context, request *c
 		return connect.NewResponse(settingMessage), nil
 	}
 
-	var lockedBefore *storepb.SharePointSetting
-	setting, err := s.store.UpsertSettingAtomic(ctx, workspaceID, storepb.SettingName_SHAREPOINT, func(current proto.Message, existed bool) (proto.Message, error) {
-		stored, ok := current.(*storepb.SharePointSetting)
+	var lockedBefore *storepb.ExportSetting
+	setting, err := s.store.UpsertSettingAtomic(ctx, workspaceID, storepb.SettingName_EXPORT, func(current proto.Message, existed bool) (proto.Message, error) {
+		stored, ok := current.(*storepb.ExportSetting)
 		if !ok {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_SHAREPOINT))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_EXPORT))
 		}
 		if existed {
 			lockedBefore = stored
 		}
-		return mergeSharePointSetting(stored, payload, paths)
+		return mergeExportSetting(stored, payload, paths)
 	}, nil)
 
 	// The audit before-image is the locked row the merge ran against; a save
 	// that fails validation is audited too.
 	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
 		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
-			Name:      storepb.SettingName_SHAREPOINT,
+			Name:      storepb.SettingName_EXPORT,
 			Workspace: workspaceID,
 			Value:     lockedBefore,
 		})
@@ -664,33 +664,38 @@ func (s *SettingService) updateSharePointSetting(ctx context.Context, request *c
 	return connect.NewResponse(settingMessage), nil
 }
 
-// mergeSharePointSetting applies the update mask to a copy of stored and
-// validates the result. An empty client secret keeps the stored one, because
-// the secret is never returned for a client to send back. Clearing both IDs
+// mergeExportSetting applies the update mask to a copy of stored and validates
+// the result. An empty client secret keeps the stored one, because the secret
+// is never returned for a client to send back. Clearing both SharePoint IDs
 // removes the application, secret included.
-func mergeSharePointSetting(stored, payload *storepb.SharePointSetting, paths []string) (*storepb.SharePointSetting, error) {
+func mergeExportSetting(stored, payload *storepb.ExportSetting, paths []string) (*storepb.ExportSetting, error) {
 	merged := proto.CloneOf(stored)
+	sharePoint := proto.CloneOf(stored.GetSharepoint())
+	if sharePoint == nil {
+		sharePoint = &storepb.SharePointSetting{}
+	}
 	for _, path := range paths {
 		switch path {
-		case "value.sharepoint.tenant_id":
-			merged.TenantId = strings.TrimSpace(payload.GetTenantId())
-		case "value.sharepoint.client_id":
-			merged.ClientId = strings.TrimSpace(payload.GetClientId())
-		case "value.sharepoint.client_secret":
-			if payload.GetClientSecret() != "" {
-				merged.ClientSecret = payload.GetClientSecret()
+		case "value.export.sharepoint.tenant_id":
+			sharePoint.TenantId = strings.TrimSpace(payload.GetSharepoint().GetTenantId())
+		case "value.export.sharepoint.client_id":
+			sharePoint.ClientId = strings.TrimSpace(payload.GetSharepoint().GetClientId())
+		case "value.export.sharepoint.client_secret":
+			if secret := payload.GetSharepoint().GetClientSecret(); secret != "" {
+				sharePoint.ClientSecret = secret
 			}
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 		}
 	}
-	if merged.TenantId == "" && merged.ClientId == "" {
-		merged.ClientSecret = ""
+	if sharePoint.TenantId == "" && sharePoint.ClientId == "" {
+		merged.Sharepoint = nil
 		return merged, nil
 	}
-	if merged.TenantId == "" || merged.ClientId == "" || merged.ClientSecret == "" {
+	if sharePoint.TenantId == "" || sharePoint.ClientId == "" || sharePoint.ClientSecret == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("tenant ID, client ID, and client secret are all required"))
 	}
+	merged.Sharepoint = sharePoint
 	return merged, nil
 }
 
@@ -904,10 +909,6 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 	if err := s.preflightWorkspaceProfilePaths(ctx, workspaceID, request, payload); err != nil {
 		return nil, err
 	}
-	var localExportDownloadFeatureErr error
-	if slices.Contains(request.Msg.UpdateMask.Paths, "value.workspace_profile.disable_local_export_download") {
-		localExportDownloadFeatureErr = s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_SHAREPOINT_EXPORT)
-	}
 	var lockedBefore *storepb.WorkspaceProfileSetting
 	apply := func(current proto.Message) (proto.Message, error) {
 		oldSetting, ok := current.(*storepb.WorkspaceProfileSetting)
@@ -918,9 +919,6 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		// not the possibly stale pre-lock snapshot captured by UpdateSetting.
 		lockedBefore = proto.CloneOf(oldSetting)
 		if err := mergeWorkspaceProfilePaths(request, payload, oldSetting); err != nil {
-			return nil, err
-		}
-		if err := checkLocalExportDownloadChange(lockedBefore, oldSetting, localExportDownloadFeatureErr); err != nil {
 			return nil, err
 		}
 		if len(oldSetting.Domains) == 0 && oldSetting.EnforceIdentityDomain {
@@ -1164,16 +1162,6 @@ func (s *SettingService) preflightWorkspaceProfilePaths(ctx context.Context, wor
 	return nil
 }
 
-// checkLocalExportDownloadChange requires the license only to change the
-// local export download switch, so a disabled switch stays in effect after the
-// license lapses. It compares against the locked row, not the request.
-func checkLocalExportDownloadChange(before, after *storepb.WorkspaceProfileSetting, featureErr error) error {
-	if featureErr == nil || before.GetDisableLocalExportDownload() == after.GetDisableLocalExportDownload() {
-		return nil
-	}
-	return connect.NewError(connect.CodePermissionDenied, featureErr)
-}
-
 // mergeWorkspaceProfilePaths applies the request's update-mask paths onto
 // oldSetting. It is pure apart from directory-sync token generation: it
 // performs no database or license reads — those ran in
@@ -1247,8 +1235,6 @@ func mergeWorkspaceProfilePaths(request *connect.Request[v1pb.UpdateSettingReque
 				return err
 			}
 			oldSetting.SqlEditorCustomTheme = payload.SqlEditorCustomTheme
-		case "value.workspace_profile.disable_local_export_download":
-			oldSetting.DisableLocalExportDownload = payload.DisableLocalExportDownload
 		default:
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 		}

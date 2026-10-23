@@ -17,6 +17,7 @@ import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
+  ExportSettingSchema,
   Setting_SettingName,
   SettingValueSchema,
   type SharePointSetting,
@@ -25,16 +26,17 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
-const MASK_PREFIX = "value.sharepoint";
+const MASK_PREFIX = "value.export.sharepoint";
 
 function getStoredSharePointSetting(): SharePointSetting {
   const setting = useAppStore
     .getState()
-    .getSettingByName(Setting_SettingName.SHAREPOINT);
-  if (setting?.value?.value?.case !== "sharepoint") {
+    .getSettingByName(Setting_SettingName.EXPORT);
+  const value = setting?.value?.value;
+  if (value?.case !== "export" || !value.value.sharepoint) {
     return create(SharePointSettingSchema, {});
   }
-  return setting.value.value.value;
+  return value.value.sharepoint;
 }
 
 export interface SharePointDraft {
@@ -74,7 +76,7 @@ export function SharePointPage() {
   useEffect(() => {
     void useAppStore
       .getState()
-      .getOrFetchSettingByName(Setting_SettingName.SHAREPOINT, true)
+      .getOrFetchSettingByName(Setting_SettingName.EXPORT, true)
       .finally(() => setInitialized(true));
   }, []);
 
@@ -136,9 +138,12 @@ function SharePointForm({
     setSaving(true);
     try {
       await useAppStore.getState().upsertSetting({
-        name: Setting_SettingName.SHAREPOINT,
+        name: Setting_SettingName.EXPORT,
         value: create(SettingValueSchema, {
-          value: { case: "sharepoint", value: update.setting },
+          value: {
+            case: "export",
+            value: create(ExportSettingSchema, { sharepoint: update.setting }),
+          },
         }),
         updateMask: create(FieldMaskSchema, { paths: update.paths }),
       });

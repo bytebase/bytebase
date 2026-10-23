@@ -269,3 +269,13 @@ message PermissionDeniedDetail {
   // The resources the user was trying to access.
   repeated string resources = 3;
 }
+
+// Where an export is delivered.
+enum ExportDelivery {
+  // Treated as LOCAL.
+  EXPORT_DELIVERY_UNSPECIFIED = 0;
+  // Return the export in the response.
+  LOCAL = 1;
+  // Upload the export to the project's SharePoint export destination.
+  SHAREPOINT = 2;
+}

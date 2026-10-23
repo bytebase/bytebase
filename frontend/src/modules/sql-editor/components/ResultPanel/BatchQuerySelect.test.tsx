@@ -2,9 +2,8 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Engine, ExportDelivery } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { ExportRequest_Delivery } from "@/types/proto-es/v1/sql_service_pb";
 import { BatchQuerySelect } from "./BatchQuerySelect";
 
 (
@@ -23,7 +22,9 @@ const mocks = vi.hoisted(() => ({
     tags: {},
   },
   deleteDatabaseQueryContext: vi.fn(),
-  disableExport: true,
+  deliveries: [] as number[],
+  disableExport: false,
+  unmatchedDatabases: [] as string[],
   exportData: vi.fn(),
   resolveExport: vi.fn(),
 }));
@@ -106,14 +107,16 @@ vi.mock("@/components/ui/ellipsis-text", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/components/RequestExportButton", () => ({
-  RequestExportButton: () => null,
+  RequestExportButton: ({ targets }: { targets: string[] }) => (
+    <span data-testid="request-export">{targets.join(",")}</span>
+  ),
 }));
 
 vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
   useExportGrantBypass: () => ({
     loading: false,
     failedDatabases: [],
-    unmatchedDatabases: [],
+    unmatchedDatabases: mocks.unmatchedDatabases,
     retry: vi.fn(),
     matchedDatabases: [],
     tooltip: undefined,
@@ -122,8 +125,8 @@ vi.mock("@/modules/sql-editor/components/useExportGrantBypass", () => ({
 
 vi.mock("@/modules/sql-editor/components/useExportDelivery", () => ({
   useExportDelivery: () => ({
-    deliveries: [2, 1],
-    destination: { webUrl: "https://contoso.sharepoint.com/sites/x/Exports" },
+    deliveries: mocks.deliveries,
+    sharepointUrl: "https://contoso.sharepoint.com/sites/x/Exports",
   }),
 }));
 
@@ -245,7 +248,9 @@ describe("BatchQuerySelect", () => {
     act(() => root.unmount());
     container.remove();
     vi.clearAllMocks();
-    mocks.disableExport = true;
+    mocks.deliveries = [];
+    mocks.disableExport = false;
+    mocks.unmatchedDatabases = [];
   });
 
   const render = () => {
@@ -279,17 +284,32 @@ describe("BatchQuerySelect", () => {
     expect(buttons[1].className).toContain("shrink-0");
   });
 
+  it("hides batch export when no delivery is offered", () => {
+    render();
+
+    expect(
+      container.querySelector('[data-testid="batch-export"]')
+    ).toBeNull();
+  });
+
   it("reports each database's SharePoint delivery separately", async () => {
-    mocks.disableExport = false;
+    // disableExport is on and no grant matched: SharePoint still covers every
+    // queried database, and Request export stays offered for the uncovered.
+    mocks.disableExport = true;
+    mocks.deliveries = [ExportDelivery.SHAREPOINT];
+    mocks.unmatchedDatabases = [cellA.name];
     mocks.exportData
       .mockResolvedValueOnce({
         content: new Uint8Array(),
-        sharepointDelivery: { folderName: "folder-a", webUrl: "https://a" },
+        uri: "https://contoso.sharepoint.com/sites/x/Exports/folder-a",
       })
       .mockRejectedValueOnce(
         new ConnectError("destination not found", Code.FailedPrecondition)
       );
     render();
+    expect(
+      container.querySelector('[data-testid="request-export"]')?.textContent
+    ).toBe(cellA.name);
 
     act(() => {
       container
@@ -308,8 +328,7 @@ describe("BatchQuerySelect", () => {
           {
             database: "cell-a/linear",
             status: "DELIVERED",
-            folderName: "folder-a",
-            webUrl: "https://a",
+            uri: "https://contoso.sharepoint.com/sites/x/Exports/folder-a",
           },
           {
             database: "cell-b/linear",
@@ -320,7 +339,7 @@ describe("BatchQuerySelect", () => {
       });
     });
     expect(mocks.exportData).toHaveBeenCalledWith(
-      expect.objectContaining({ delivery: ExportRequest_Delivery.SHAREPOINT })
+      expect.objectContaining({ delivery: ExportDelivery.SHAREPOINT })
     );
   });
 });

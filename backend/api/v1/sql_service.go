@@ -1199,10 +1199,6 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		return nil, err
 	}
 
-	queryRestriction := getEffectiveQueryDataPolicy(ctx, s.store, s.licenseService, request.Limit, database.ProjectID)
-	if err := checkExportApproval(queryRestriction, accessGrant); err != nil {
-		return nil, err
-	}
 	sharePointTarget, err := s.prepareExportDelivery(ctx, request, database)
 	if err != nil {
 		return nil, err
@@ -1216,7 +1212,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	if accessGrant != nil {
 		skipMasking = accessGrant.Payload.Unmask
 	}
-	files, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, queryRestriction, request, user, instance, database, optionalAccessCheck, s.schemaSyncer, dataSource, skipMasking)
+	files, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, optionalAccessCheck, s.schemaSyncer, dataSource, skipMasking)
 
 	s.createQueryHistory(instance, database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
 
@@ -1228,7 +1224,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		return nil, connect.NewError(connect.CodeInternal, exportErr)
 	}
 
-	exportResponse, err := s.deliverExport(ctx, sharePointTarget, user, database, files, request, exportTime)
+	exportResponse, err := deliverExport(ctx, sharePointTarget, user, database, files, request, exportTime)
 	if err != nil {
 		return nil, err
 	}
@@ -1246,7 +1242,6 @@ func doExport(
 	stores *store.Store,
 	dbFactory *dbfactory.DBFactory,
 	licenseService *enterprise.LicenseService,
-	queryRestriction *store.EffectiveQueryDataPolicy,
 	request *v1pb.ExportRequest,
 	user *store.UserMessage,
 	instance *store.InstanceMessage,
@@ -1278,6 +1273,13 @@ func doExport(
 		}
 		defer conn.Close()
 	}
+	queryRestriction := getEffectiveQueryDataPolicy(
+		ctx,
+		stores,
+		licenseService,
+		request.Limit,
+		database.ProjectID,
+	)
 	queryContext := buildExportQueryContext(queryRestriction, user.Email, request.Schema, request.GetContainer(), skipMasking)
 	queryContext.DataSourceType = dataSource.GetType()
 

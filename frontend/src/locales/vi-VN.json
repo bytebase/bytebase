@@ -993,10 +993,6 @@
         "failed": "Thất bại",
         "unconfirmed": "Chưa xác nhận"
       }
-    },
-    "unavailable": {
-      "feature-unavailable": "Không gian làm việc này đã tắt tải bản xuất về máy, và gói hiện tại không bao gồm gửi đến SharePoint.",
-      "no-destination": "Không gian làm việc này đã tắt tải bản xuất về máy, và dự án này chưa có đích xuất SharePoint. Chủ sở hữu dự án có thể đặt đích trong cài đặt dự án."
     }
   },
   "gitops": {
@@ -2235,8 +2231,6 @@
       "confirm-delete-project": "Việc xóa \"{{name}}\" sẽ xóa vĩnh viễn dự án và tất cả dữ liệu liên quan bao gồm issue, cấu hình và lịch sử. Tất cả cơ sở dữ liệu trong dự án này sẽ được chuyển sang dự án mặc định. Hành động này không thể hoàn tác.",
       "export-destination": {
         "description": "URL SharePoint của một thư viện tài liệu hoặc một thư mục trong đó. Bản xuất của dự án này được tải lên đó, và quyền SharePoint quyết định ai có thể mở chúng.",
-        "found": "Đã tìm thấy",
-        "found-description": "Bytebase có thể đọc đích này. Lần xuất đầu tiên sẽ xác nhận việc ghi vào đó.",
         "placeholder": "https://contoso.sharepoint.com/sites/Finance/Shared Documents/Exports",
         "self": "Đích xuất",
         "update-failed": "Chưa lưu đích xuất"
@@ -2728,8 +2722,8 @@
         },
         "data-copy": "Bật sao chép dữ liệu",
         "data-export": {
-          "description": "Khi tắt, người dùng không thể xuất trực tiếp kết quả truy vấn. Trong các dự án cho phép cấp quyền truy cập, người dùng vẫn có thể nhấn \"Yêu cầu xuất dữ liệu\" để gửi yêu cầu cấp quyền truy cập và xuất sau khi được phê duyệt.",
-          "self": "Cho phép xuất dữ liệu mà không cần phê duyệt"
+          "description": "Khi tắt, bản xuất chỉ có thể được gửi đến đích xuất của dự án, và dự án không có đích xuất sẽ không thể xuất. Cấp quyền truy cập xuất đã được phê duyệt, kể cả khi yêu cầu qua \"Yêu cầu xuất dữ liệu\", cũng không cho phép tải bản xuất về máy. Người dùng vẫn có thể sao chép kết quả truy vấn đang hiển thị, trừ khi việc sao chép dữ liệu bị hạn chế.",
+          "self": "Cho phép tải bản xuất về máy"
         },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "Chế độ xem mặc định của không gian làm việc đã được thay đổi thành SQL Editor.",
@@ -2783,10 +2777,6 @@
           "description": "Thời gian hết hạn phiên nếu không phát hiện hoạt động từ người dùng. Người dùng sẽ bị buộc phải đăng xuất khi đạt đến giới hạn.",
           "hours": "Giờ",
           "self": "Thời gian chờ phiên không hoạt động"
-        },
-        "local-export-download": {
-          "description": "Khi tắt, bản xuất chỉ được gửi đến đích xuất SharePoint của dự án, và dự án không có đích xuất sẽ không thể xuất. Người dùng vẫn có thể sao chép kết quả truy vấn đang hiển thị, trừ khi việc sao chép dữ liệu bị hạn chế.",
-          "self": "Cho phép tải bản xuất về máy"
         },
         "log": "Nhật ký",
         "logo": "Logo",
@@ -3407,7 +3397,6 @@
     "and-n-more-databases": "và {{n}} cơ sở dữ liệu khác",
     "batch-export": {
       "failed-for-db": "Không xuất được dữ liệu cho {{db}}",
-      "partial": "Xuất hàng loạt một phần",
       "self": "Xuất hàng loạt",
       "tooltip": "Chọn tối đa {{max}} cơ sở dữ liệu để xuất hàng loạt kết quả truy vấn mới nhất"
     },

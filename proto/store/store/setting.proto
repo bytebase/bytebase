@@ -23,7 +23,12 @@ enum SettingName {
   ENVIRONMENT = 8;
   EMAIL = 9;
   MCP = 10;
-  SHAREPOINT = 11;
+  EXPORT = 11;
+}
+
+// ExportSetting holds each export destination provider's credentials.
+message ExportSetting {
+  SharePointSetting sharepoint = 1;
 }
 
 // SharePointSetting is the Microsoft Entra application that delivers exports to
@@ -177,9 +182,6 @@ message WorkspaceProfileSetting {
   // once at rotation and never stored. SHA-256 rather than a slow KDF because the
   // token is 122 bits of crypto/rand, not a human-chosen secret.
   string directory_sync_token_hash = 27;
-
-  // Disable Local Export Download. Enforced regardless of the license.
-  bool disable_local_export_download = 28;
 }
 
 // MCPSetting is what an MCP (Model Context Protocol) session may do in this

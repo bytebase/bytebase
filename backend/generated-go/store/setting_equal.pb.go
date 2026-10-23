@@ -9,6 +9,19 @@ import (
 	proto "google.golang.org/protobuf/proto"
 )
 
+func (x *ExportSetting) Equal(y *ExportSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if !x.Sharepoint.Equal(y.Sharepoint) {
+		return false
+	}
+	return true
+}
+
 func (x *SharePointSetting) Equal(y *SharePointSetting) bool {
 	if x == y {
 		return true
@@ -193,9 +206,6 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 		return false
 	}
 	if x.DirectorySyncTokenHash != y.DirectorySyncTokenHash {
-		return false
-	}
-	if x.DisableLocalExportDownload != y.DisableLocalExportDownload {
 		return false
 	}
 	return true
