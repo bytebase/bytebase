@@ -103,6 +103,7 @@ func TestGetQuerySpanPredicateColumnsOfFunctionBodies(t *testing.T) {
 		{Name: "probe_discard", Definition: "CREATE FUNCTION public.probe_discard() RETURNS int LANGUAGE sql AS $$ SELECT pg_sleep(CASE WHEN ssn = 'guess' THEN 0 ELSE 0 END) FROM t; SELECT 1 $$"},
 		{Name: "probe_declare", Definition: "CREATE FUNCTION public.probe_declare() RETURNS int LANGUAGE plpgsql AS $$ DECLARE v text := (SELECT ssn FROM t LIMIT 1); BEGIN RAISE EXCEPTION '%', v; END; $$"},
 		{Name: "proc_check", Definition: "CREATE PROCEDURE public.proc_check(x text) LANGUAGE plpgsql AS $$ BEGIN IF x = 'guess' THEN RAISE EXCEPTION 'hit'; END IF; END; $$"},
+		{Name: "probe_call_subquery", Definition: "CREATE FUNCTION public.probe_call_subquery() RETURNS int LANGUAGE plpgsql AS $$ BEGIN CALL proc_check((SELECT ssn FROM t LIMIT 1)); RETURN 1; END; $$"},
 		{Name: "probe_call", Definition: "CREATE FUNCTION public.probe_call() RETURNS int LANGUAGE plpgsql AS $$ DECLARE v text; BEGIN SELECT ssn INTO v FROM t LIMIT 1; CALL proc_check(v); RETURN 1; END; $$"},
 		// The last SELECT reads a table the snapshot lacks, so the body fails analysis.
 		{Name: "probe_failing", Definition: "CREATE FUNCTION public.probe_failing() RETURNS SETOF record LANGUAGE sql AS $$ SELECT pg_sleep(0) FROM t WHERE ssn = 'guess'; SELECT * FROM missing_tbl $$"},
@@ -130,6 +131,7 @@ func TestGetQuerySpanPredicateColumnsOfFunctionBodies(t *testing.T) {
 		{"SELECT probe_discard() AS x", []string{"t.ssn"}},
 		{"SELECT probe_declare() AS x", []string{"t.ssn"}},
 		{"SELECT probe_call() AS x", []string{"t.ssn"}},
+		{"SELECT probe_call_subquery() AS x", []string{"t.ssn"}},
 		{"SELECT count(*) AS c FROM probe_failing() AS f(a int)", []string{"t.ssn"}},
 		{"SELECT probe_over('guess') AS b", []string{"t.ssn"}},
 		{"SELECT probe_over(1) AS b", []string{}},
@@ -202,6 +204,16 @@ func TestGetQuerySpanResultLineageOfFunctionBodies(t *testing.T) {
 			require.Equal(t, tc.want, predicateColumnNames(span.Results[0].SourceColumns))
 		})
 	}
+}
+
+func TestGetQuerySpanKeepsSQLBodyAccesses(t *testing.T) {
+	schema := degradedSchema()
+	schema.Schemas[0].Functions = []*metadatapb.FunctionMetadata{
+		{Name: "probe_sql", Definition: "CREATE FUNCTION public.probe_sql() RETURNS int LANGUAGE sql AS $$ SELECT 1 FROM t WHERE secret = 'guess' $$"},
+	}
+	span := spanFor(t, "SELECT probe_sql() AS x", schema)
+	require.Contains(t, span.SourceColumns, base.ColumnResource{Database: "db", Schema: "public", Table: "t"})
+	require.NotNil(t, span.UnresolvedColumnsError, "t, read only in the body's condition, was synced with no columns")
 }
 
 func TestGetQuerySpanFallbackKeepsFunctionAccesses(t *testing.T) {

@@ -192,6 +192,8 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColum
 			continue
 		}
 		accesses := e.accessTablesOf(stmt.Text)
+		// The caller reads what the body reads, whether or not the result shows it.
+		mergeSourceColumnSetInto(e.funcSourceColumns, accesses)
 		selStmt, ok := stmt.AST.(*ast.SelectStmt)
 		if !ok {
 			// The analyzer reads SELECT alone, so another statement's conditions
@@ -549,7 +551,17 @@ func (a *plpgsqlAnalyzer) handleCall(stmt *plpgsqlast.PLCall) {
 	for _, proc := range a.extractor.userProcsNamed(astStrings(call.Funccall.Funcname)) {
 		a.extractor.analyzeFunctionBody(proc)
 	}
-	a.addScopeReferences(call.Funccall.Args)
+	if call.Funccall.Args == nil {
+		return
+	}
+	for _, arg := range call.Funccall.Args.Items {
+		loc := ast.NodeLoc(arg)
+		if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(stmt.SQLText) {
+			a.handleCondition(stmt.SQLText[loc.Start:loc.End])
+			continue
+		}
+		a.addScopeReferences(arg)
+	}
 }
 
 func (a *plpgsqlAnalyzer) handleAssign(stmt *plpgsqlast.PLAssign) {
