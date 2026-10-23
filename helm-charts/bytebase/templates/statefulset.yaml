@@ -179,13 +179,16 @@ spec:
           {{- if $resources }}
           resources: {{- toYaml $resources | nindent 12 }}
           {{- end }}
-          livenessProbe:
+          # Bytebase opens this port only after metadata migrations finish, which can take a long
+          # time on a large metadata database. A liveness probe would restart the pod mid-upgrade,
+          # so readiness is the only probe.
+          readinessProbe:
             httpGet:
               path: /healthz
               port: {{ $port }}
-            initialDelaySeconds: 300
-            periodSeconds: 300
-            timeoutSeconds: 60
+            {{- with .Values.bytebase.readinessProbe }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           volumeMounts:
             - mountPath: {{ $data }}
               {{- if $persistenceExistingClaim }}

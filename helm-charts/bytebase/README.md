@@ -97,6 +97,8 @@ helm -n <YOUR_NAMESPACE> \
 upgrade bytebase-release bytebase-repo/bytebase
 ```
 
+Bytebase migrates its metadata database at startup and opens its port only after the migration finishes, which can take a long time on a large metadata database. The chart sets only a readiness probe on `/healthz`, so the pod stays unready during the migration instead of being restarted. If you pass `--wait` or `--atomic` to `helm upgrade`, set `--timeout` above the expected migration time. Helm's default is `5m`, and `--atomic` rolls the release back to the previous Bytebase version when it expires, which does not support the migrated metadata database.
+
 ## Parameters
 
 |                        Parameter                         |                                                                                                                Description                                                                                                                 |                         Default Value                          |
@@ -129,6 +131,9 @@ upgrade bytebase-release bytebase-repo/bytebase
 |               `bytebase.extraSecretMounts`               |                                                                               Additional Bytebase secret mounts. Defined as an array of volumeMount objects.                                                                               |                               []                               |
 |                 `bytebase.extraVolumes`                  |                                                                                    Additional Bytebase volumes. Defined as an array of volume objects.                                                                                     |                               []                               |
 |                 `bytebase.podAnnotations`                 |                                                                                       Annotations added to the Bytebase pod. Useful for metrics scrapers.                                                                                       |                               {}                               |
+|        `bytebase.readinessProbe.periodSeconds`           |                                                                 How often the readiness probe calls `/healthz`. Other probe timing fields such as `initialDelaySeconds` and `successThreshold` are also accepted.                                                                 |                               10                               |
+|        `bytebase.readinessProbe.timeoutSeconds`          |                                                                                      Seconds before a single `/healthz` call times out.                                                                                       |                               10                               |
+|       `bytebase.readinessProbe.failureThreshold`         |                                                                          Consecutive failed calls before the pod is marked unready and removed from the Service.                                                                          |                               3                                |
 
 **If you enable bytebase persistence, you should provide storageClass and storage to bytebase to request a PVC, or provide the already existed PVC by existingClaim.**
 
