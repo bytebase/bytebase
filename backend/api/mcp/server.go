@@ -82,7 +82,7 @@ func NewServer(stores *store.Store, profile *config.Profile, secret string, inte
 		return nil, err
 	}
 	s.findUnapprovableStep = func(ctx context.Context, workspace, issueName string) (*review.UnapprovableStep, error) {
-		return review.FindUnapprovableStep(ctx, stores, profile.SaaS, workspace, issueName)
+		return review.FindUnapprovableStep(ctx, stores, workspace, issueName)
 	}
 	return s, nil
 }
