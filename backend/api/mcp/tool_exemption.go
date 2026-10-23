@@ -27,15 +27,15 @@ import (
 
 // GrantMaskingExemptionInput is the input for the grant_masking_exemption tool.
 type GrantMaskingExemptionInput struct {
-	Project      string `json:"project"`
-	Member       string `json:"member"`
-	Database     string `json:"database,omitempty"`
-	AllDatabases bool   `json:"allDatabases,omitempty"`
-	Schema       string `json:"schema,omitempty"`
-	Table        string `json:"table,omitempty"`
-	Column       string `json:"column,omitempty"`
-	ExpireTime   string `json:"expireTime,omitempty"`
-	Reason       string `json:"reason,omitempty"`
+	Project      string   `json:"project"`
+	Member       string   `json:"member"`
+	Database     string   `json:"database,omitempty"`
+	AllDatabases bool     `json:"allDatabases,omitempty"`
+	Schema       string   `json:"schema,omitempty"`
+	Table        string   `json:"table,omitempty"`
+	Columns      []string `json:"columns,omitempty"`
+	ExpireTime   string   `json:"expireTime,omitempty"`
+	Reason       string   `json:"reason,omitempty"`
 }
 
 // RevokeMaskingExemptionInput is the input for the revoke_masking_exemption tool.
@@ -53,7 +53,7 @@ type MaskingExemptionOutput struct {
 	Link      string `json:"link"`
 }
 
-const grantMaskingExemptionDescription = `Exempt one member from data masking in a Bytebase project, for one database (optionally one schema, table or column) or for every database in the project. The user confirms the exemption in this client first.
+const grantMaskingExemptionDescription = `Exempt one member from data masking in a Bytebase project, for one database (optionally one schema, table, or columns of one table) or for every database in the project. The user confirms the exemption in this client first.
 
 | Parameter    | Required | Description |
 |--------------|----------|-------------|
@@ -63,13 +63,13 @@ const grantMaskingExemptionDescription = `Exempt one member from data masking in
 | allDatabases | One of   | true for every database in the project, current and future |
 | schema       | No       | Narrow to one schema (needs database) |
 | table        | No       | Narrow to one table (needs database) |
-| column       | No       | Narrow to one column (needs table) |
+| columns      | No       | Narrow to these columns of the table, e.g. ["first_name", "last_name"] (needs table) |
 | expireTime   | No       | RFC 3339 time the exemption ends, e.g. "2026-10-27T00:00:00Z"; without it, it does not expire |
 | reason       | No       | Why, recorded with the exemption |
 
 An exemption is a standing policy change: the member then sees the covered data unmasked in query and export results. For a one-off query, request an access grant instead with request_access_grant.
 
-The tool adds one exemption and leaves every other entry as it is. It shows the user the member, the scope, the expiry and the effect, and asks them to confirm in a form; it writes only when they accept. A client that cannot show the form gets the project's masking exemption page, to grant it in the Bytebase console instead. Do not ask in chat first: the form is the question.
+The tool adds one exemption and leaves every other entry as it is. For several columns of one table, pass them together in columns, so the user confirms once. It shows the user the member, the scope, the expiry and the effect, and asks them to confirm in a form; it writes only when they accept. A client that cannot show the form gets the project's masking exemption page, to grant it in the Bytebase console instead. Do not ask in chat first: the form is the question.
 
 The same permissions apply as in the console. This and revoke_masking_exemption are the only ways to change exemptions over MCP; call_api refuses OrgPolicyService/UpdatePolicy.`
 
@@ -115,9 +115,11 @@ func maskingExemptionPolicyName(project string) string {
 
 // exemptionGrant is a validated grant_masking_exemption request.
 type exemptionGrant struct {
-	project, member                         string
-	database, instanceID, databaseName      string
-	schema, table, column, expireTime, note string
+	project, member                    string
+	database, instanceID, databaseName string
+	schema, table                      string
+	columns                            []string
+	expireTime, note                   string
 }
 
 func parseExemptionGrant(input GrantMaskingExemptionInput) (*exemptionGrant, error) {
@@ -133,7 +135,7 @@ func parseExemptionGrant(input GrantMaskingExemptionInput) (*exemptionGrant, err
 	}
 	g := &exemptionGrant{
 		project: input.Project, member: input.Member,
-		schema: input.Schema, table: input.Table, column: input.Column, note: input.Reason,
+		schema: input.Schema, table: input.Table, columns: input.Columns, note: input.Reason,
 	}
 	switch {
 	case input.Database != "" && input.AllDatabases:
@@ -149,12 +151,12 @@ func parseExemptionGrant(input GrantMaskingExemptionInput) (*exemptionGrant, err
 		}
 		g.database, g.instanceID, g.databaseName = input.Database, instanceID, databaseName
 	default:
-		if input.Schema != "" || input.Table != "" || input.Column != "" {
-			return nil, invalid("schema, table and column narrow one database, so they need database", "")
+		if input.Schema != "" || input.Table != "" || len(input.Columns) > 0 {
+			return nil, invalid("schema, table and columns narrow one database, so they need database", "")
 		}
 	}
-	if input.Column != "" && input.Table == "" {
-		return nil, invalid("column needs table", "pass the table the column belongs to")
+	if len(input.Columns) > 0 && input.Table == "" {
+		return nil, invalid("columns need table", "pass the table the columns belong to")
 	}
 	if input.ExpireTime != "" {
 		expireTime, err := time.Parse(time.RFC3339, input.ExpireTime)
@@ -201,11 +203,15 @@ func (g *exemptionGrant) condition() string {
 		for _, narrowing := range []struct{ attribute, value string }{
 			{"resource.schema_name", g.schema},
 			{"resource.table_name", g.table},
-			{"resource.column_name", g.column},
 		} {
 			if narrowing.value != "" {
 				scope = append(scope, narrowing.attribute+" == "+strconv.Quote(narrowing.value))
 			}
+		}
+		if len(g.columns) == 1 {
+			scope = append(scope, "resource.column_name == "+strconv.Quote(g.columns[0]))
+		} else if len(g.columns) > 1 {
+			scope = append(scope, "resource.column_name in ["+quoteAll(g.columns)+"]")
 		}
 		parts = append(parts, "("+strings.Join(scope, " && ")+")")
 	}
@@ -472,12 +478,12 @@ func describeExemptionGrant(ctx context.Context, g *exemptionGrant) string {
 // comes before it, where a cut keeps the broader reading.
 func describeNarrowing(g *exemptionGrant) string {
 	switch {
-	case g.schema == "" && g.column != "":
-		return fmt.Sprintf("any schema, column %q in %q", g.column, g.table)
+	case g.schema == "" && len(g.columns) > 0:
+		return "any schema, " + describeColumns(g.columns, strconv.Quote(g.table))
 	case g.schema == "" && g.table != "":
 		return fmt.Sprintf("any schema, table %q", g.table)
-	case g.column != "":
-		return fmt.Sprintf("column %q in %q.%q", g.column, g.schema, g.table)
+	case len(g.columns) > 0:
+		return describeColumns(g.columns, fmt.Sprintf("%q.%q", g.schema, g.table))
 	case g.table != "":
 		return fmt.Sprintf("table %q.%q", g.schema, g.table)
 	case g.schema != "":
@@ -485,6 +491,15 @@ func describeNarrowing(g *exemptionGrant) string {
 	default:
 		return "all tables"
 	}
+}
+
+// describeColumns names the columns in table. Several columns are counted
+// before they are named, so a cut line still shows how many the grant covers.
+func describeColumns(columns []string, table string) string {
+	if len(columns) == 1 {
+		return fmt.Sprintf("column %q in %s", columns[0], table)
+	}
+	return fmt.Sprintf("%d columns in %s: %s", len(columns), table, quoteAll(columns))
 }
 
 // describeExemptionRevoke builds the revoke's confirmation message.
