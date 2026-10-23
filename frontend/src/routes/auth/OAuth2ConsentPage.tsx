@@ -363,8 +363,10 @@ export function OAuth2ConsentPage() {
 
   return (
     // An interstitial centered on the whole viewport: the card keeps one width
-    // wherever it fits and narrows only on narrower screens. SplashLayout's
-    // half-width column would narrow it on screens 1024px to 1727px wide.
+    // wherever it fits and narrows only on narrower screens. It stays outside
+    // SplashLayout, whose column reserves `pb-24` for an AuthFooter this page
+    // does not render and widens the gutter to 24px from sm, while the e2e
+    // spec pins a 16px gutter at every width.
     <div className="min-h-screen flex flex-col items-center justify-center gap-8 px-4 py-8">
       <BytebaseLogo />
       <div
