@@ -57,8 +57,7 @@ func ClassifyMCPCeiling(settings *storepb.MCPSetting, err error) MCPCeilingVerdi
 	}
 }
 
-// MCPCeilingLocation is where a workspace admin changes the ceiling in the
-// console. Every refusal names it, so one constant keeps the copies in step.
+// MCPCeilingLocation is where an admin changes the ceiling; every refusal names it.
 const MCPCeilingLocation = "Integration > MCP > Access policy"
 
 // Refusal is what a door tells the caller it is refusing: what is wrong with

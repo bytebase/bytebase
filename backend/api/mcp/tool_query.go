@@ -270,8 +270,7 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, i
 	if result.Error != "" {
 		suggestion := "check your SQL syntax and try again"
 		if result.PermissionDenied != nil {
-			// MCP sessions cannot file role requests, so the only advice is an
-			// access grant, and only where one lifts the refusal.
+			// MCP sessions cannot file role requests, so the only advice is a grant.
 			suggestion = ""
 			if grantLifts(result.PermissionDenied.RequiredPermissions) {
 				suggestion = "in a Read-write session, request an access grant for this statement with request_access_grant " +
@@ -414,9 +413,8 @@ func parseLatencyMs(latency string) int64 {
 }
 
 // grantLifts reports whether an approved access grant lifts a refusal that
-// required these permissions. A grant covers reading its read-only statement;
-// it never lifts bb.sql.explain (SQLService.accessCheckWithGrantedTargets), and
-// writes and DDL cannot be granted at all.
+// required these permissions. Writes and DDL cannot be granted, and a granted
+// target still needs bb.sql.explain (SQLService.accessCheckWithGrantedTargets).
 func grantLifts(required []permission.Permission) bool {
 	if len(required) == 0 {
 		return false

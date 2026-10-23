@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -603,4 +604,33 @@ func TestInitializeNamesTheSignedInAccount(t *testing.T) {
 	require.Equal(t, `This session acts as the Bytebase account jordan@example.com: every tool call runs with its permissions, `+
 		`and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`,
 		session.InitializeResult().Instructions)
+}
+
+// A second initialize on an open session is refused by the SDK with no result,
+// which the instructions middleware must pass through untouched.
+func TestDuplicateInitializeIsRefusedAndTheServerKeepsServing(t *testing.T) {
+	endpoint, _, _ := newProbeServer(t)
+	token := mintMCPToken(t, "jordan@example.com", "client-A", "ws-test", "mcp:read-write", time.Hour)
+	session := connectLegacy(t, endpoint, token, nil)
+
+	body := `{"jsonrpc":"2.0","id":99,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"dup","version":"0"}}}`
+	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	req.Header.Set("Mcp-Session-Id", session.ID())
+	req.Header.Set("Mcp-Protocol-Version", session.InitializeResult().ProtocolVersion)
+	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	reply, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Contains(t, string(reply), `"error"`)
+	require.Contains(t, string(reply), "duplicate", "the SDK refuses the second initialize")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, err = session.ListTools(ctx, nil)
+	require.NoError(t, err, "the session must keep serving after the refused initialize")
 }

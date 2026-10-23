@@ -212,7 +212,9 @@ func negotiateLegacyProtocol(next mcp.MethodHandler) mcp.MethodHandler {
 func nameSignedInAccount(next mcp.MethodHandler) mcp.MethodHandler {
 	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 		result, err := next(ctx, method, req)
-		if initialized, ok := result.(*mcp.InitializeResult); ok {
+		// The SDK refuses a second initialize on a session with a nil result,
+		// and a panic here would end the process.
+		if initialized, ok := result.(*mcp.InitializeResult); ok && initialized != nil {
 			account := fmt.Sprintf(`This session acts as the Bytebase account %s: every tool call runs with its permissions, and "you" in tool results means it. The user may have other accounts with other emails, such as the client's own sign-in.`, getUserEmail(ctx))
 			initialized.Instructions = strings.TrimSpace(account + "\n\n" + initialized.Instructions)
 		}

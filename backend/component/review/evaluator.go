@@ -1256,9 +1256,8 @@ func getApproversForRole(ctx context.Context, stores *store.Store, projectID str
 }
 
 // activeRoleHolders returns the people who hold the role in the project or
-// workspace IAM policy. A service account or workload identity that holds the
-// role can approve too, but is not a person, and a deactivated account keeps its
-// bindings but cannot sign in.
+// workspace IAM policy. Service accounts and workload identities can approve but
+// are not people; a deactivated account keeps its bindings but cannot sign in.
 func activeRoleHolders(ctx context.Context, stores *store.Store, projectID string, role string) ([]*store.UserMessage, error) {
 	// Get project to determine workspace
 	project, err := stores.GetProjectByResourceID(ctx, projectID)
@@ -1374,9 +1373,8 @@ type UnapprovableStep struct {
 }
 
 // FindUnapprovableStep returns the first remaining step of the issue's approval
-// flow that no active workspace member can approve, or nil. It finds people as
-// approval notifications do, so a service account that holds the role does not
-// count.
+// flow that no active workspace member can approve, or nil. People are found as
+// approval notifications find them.
 func FindUnapprovableStep(ctx context.Context, stores *store.Store, workspace, issueName string) (*UnapprovableStep, error) {
 	projectID, issueUID, err := common.GetProjectIDIssueUID(issueName)
 	if err != nil {
