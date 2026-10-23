@@ -626,36 +626,44 @@ export function AgentWindow() {
 
   const archiveChat = useCallback(
     (chatId: string) => {
-      const chat = useAgentStore.getState().chats.find((c) => c.id === chatId);
+      const store = useAgentStore.getState();
+      const chat = store.chats.find((c) => c.id === chatId);
       if (!chat || chat.archived) return;
-      useAgentStore.getState().archiveChat(chat.id);
-      ensureCurrentChatMatchesDisplayedMode({
-        allowCreateWhenEmpty: false,
-      });
+      const wasCurrentChat = store.currentChatId === chat.id;
+      store.archiveChat(chat.id);
+      if (wasCurrentChat) {
+        ensureCurrentChatMatchesDisplayedMode({ allowCreateWhenEmpty: false });
+      }
     },
     [ensureCurrentChatMatchesDisplayedMode]
   );
 
   const unarchiveChat = useCallback(
     (chatId: string) => {
-      const chat = useAgentStore.getState().chats.find((c) => c.id === chatId);
+      const store = useAgentStore.getState();
+      const chat = store.chats.find((c) => c.id === chatId);
       if (!chat?.archived) return;
-      useAgentStore.getState().unarchiveChat(chat.id);
-      ensureCurrentChatMatchesDisplayedMode({
-        allowCreateWhenEmpty: false,
-      });
+      const wasCurrentChat = store.currentChatId === chat.id;
+      store.unarchiveChat(chat.id);
+      if (wasCurrentChat) {
+        ensureCurrentChatMatchesDisplayedMode({ allowCreateWhenEmpty: false });
+      }
     },
     [ensureCurrentChatMatchesDisplayedMode]
   );
 
   const archiveAllChats = useCallback(() => {
     if (isArchiveAllDisabled) return;
-    const archivedCount = useAgentStore.getState().archiveAllActiveChats();
+    const store = useAgentStore.getState();
+    const currentChatWasActive = store.chats.some(
+      (chat) => chat.id === store.currentChatId && !chat.archived
+    );
+    const archivedCount = store.archiveAllActiveChats();
     if (archivedCount === 0) return;
-    cancelRenameCurrentChat();
-    ensureCurrentChatMatchesDisplayedMode({
-      allowCreateWhenEmpty: false,
-    });
+    if (currentChatWasActive) {
+      cancelRenameCurrentChat();
+      ensureCurrentChatMatchesDisplayedMode({ allowCreateWhenEmpty: false });
+    }
   }, [
     cancelRenameCurrentChat,
     ensureCurrentChatMatchesDisplayedMode,
@@ -664,14 +672,16 @@ export function AgentWindow() {
 
   const unarchiveAllChats = useCallback(() => {
     if (isUnarchiveAllDisabled) return;
-    const unarchivedCount = useAgentStore
-      .getState()
-      .unarchiveAllArchivedChats();
+    const store = useAgentStore.getState();
+    const currentChatWasArchived = store.chats.some(
+      (chat) => chat.id === store.currentChatId && chat.archived
+    );
+    const unarchivedCount = store.unarchiveAllArchivedChats();
     if (unarchivedCount === 0) return;
-    cancelRenameCurrentChat();
-    ensureCurrentChatMatchesDisplayedMode({
-      allowCreateWhenEmpty: false,
-    });
+    if (currentChatWasArchived) {
+      cancelRenameCurrentChat();
+      ensureCurrentChatMatchesDisplayedMode({ allowCreateWhenEmpty: false });
+    }
   }, [
     cancelRenameCurrentChat,
     ensureCurrentChatMatchesDisplayedMode,
@@ -680,13 +690,17 @@ export function AgentWindow() {
 
   const deleteAllArchivedChats = useCallback(() => {
     if (isDeleteAllDisabled) return;
-    const deletedCount = useAgentStore.getState().deleteAllArchivedChats();
+    const store = useAgentStore.getState();
+    const currentChatWasArchived = store.chats.some(
+      (chat) => chat.id === store.currentChatId && chat.archived
+    );
+    const deletedCount = store.deleteAllArchivedChats();
     if (deletedCount === 0) return;
-    cancelRenameCurrentChat();
     setIsDeleteAllArchivedChatsDialogOpen(false);
-    ensureCurrentChatMatchesDisplayedMode({
-      allowCreateWhenEmpty: false,
-    });
+    if (currentChatWasArchived) {
+      cancelRenameCurrentChat();
+      ensureCurrentChatMatchesDisplayedMode({ allowCreateWhenEmpty: false });
+    }
   }, [
     cancelRenameCurrentChat,
     ensureCurrentChatMatchesDisplayedMode,
@@ -698,10 +712,11 @@ export function AgentWindow() {
       const store = useAgentStore.getState();
       const chat = store.chats.find((c) => c.id === chatId);
       if (!chat) return;
+      const wasCurrentChat = store.currentChatId === chat.id;
       store.deleteChat(chat.id);
-      ensureCurrentChatMatchesDisplayedMode({
-        allowCreateWhenEmpty: false,
-      });
+      if (wasCurrentChat) {
+        ensureCurrentChatMatchesDisplayedMode({ allowCreateWhenEmpty: false });
+      }
     },
     [ensureCurrentChatMatchesDisplayedMode]
   );

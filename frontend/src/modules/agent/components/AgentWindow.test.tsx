@@ -452,6 +452,219 @@ describe("AgentWindow", () => {
     }
   });
 
+  test("keeps an unrelated active conversation selected when restoring and deleting archived chats", async () => {
+    useAgentStore.setState({ size: { width: 750, height: 450 } });
+    const activeChatId = useAgentStore.getState().currentChatId!;
+    const restoredChat = useAgentStore.getState().createChat({
+      title: "Restore analytics",
+      archived: true,
+      select: false,
+    });
+    const deletedChat = useAgentStore.getState().createChat({
+      title: "Delete analytics",
+      archived: true,
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const rail = document.body.querySelector("[data-agent-compact-rail]");
+      act(() =>
+        (
+          rail?.querySelector(
+            '[aria-label="agent.archived-only-chats"]'
+          ) as HTMLButtonElement
+        ).click()
+      );
+
+      const openRowMenu = async (chatId: string) => {
+        const menuButton = document.body.querySelector(
+          `[data-agent-chat-row="${chatId}"] [data-agent-archived-chat-menu]`
+        ) as HTMLButtonElement;
+        await act(async () => {
+          menuButton.click();
+          await Promise.resolve();
+        });
+      };
+
+      await openRowMenu(restoredChat.id);
+      act(() =>
+        (
+          getLayerRoot("agent").querySelector(
+            "[data-agent-unarchive-chat]"
+          ) as HTMLElement
+        ).click()
+      );
+      expect(useAgentStore.getState().getChat(restoredChat.id)?.archived).toBe(
+        false
+      );
+      expect(useAgentStore.getState().currentChatId).toBe(activeChatId);
+
+      await openRowMenu(deletedChat.id);
+      act(() =>
+        (
+          getLayerRoot("agent").querySelector(
+            "[data-agent-delete-chat]"
+          ) as HTMLElement
+        ).click()
+      );
+      const confirmation = getLayerRoot("agent").querySelector(
+        "[data-agent-dialog-content]"
+      ) as HTMLElement;
+      const confirmButton = Array.from(
+        confirmation.querySelectorAll("button")
+      ).find((button) => button.textContent === "common.confirm");
+      act(() => confirmButton?.click());
+
+      expect(useAgentStore.getState().getChat(deletedChat.id)).toBeNull();
+      expect(useAgentStore.getState().currentChatId).toBe(activeChatId);
+
+      act(() =>
+        (
+          rail?.querySelector('[aria-label="agent.chat-list-label"]') as HTMLButtonElement
+        ).click()
+      );
+      expect(
+        document.body.querySelector(
+          `[data-agent-chat-row="${activeChatId}"] [aria-current="true"]`
+        )
+      ).toBeInstanceOf(HTMLButtonElement);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("keeps an unrelated active conversation selected when unarchiving all chats", async () => {
+    useAgentStore.setState({ size: { width: 750, height: 450 } });
+    const activeChatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.getState().createChat({
+      title: "Archived analytics",
+      archived: true,
+      select: false,
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      act(() =>
+        (
+          document.body.querySelector(
+            '[data-agent-compact-rail] [aria-label="agent.archived-only-chats"]'
+          ) as HTMLButtonElement
+        ).click()
+      );
+      const menuButton = document.body.querySelector(
+        '[data-agent-chat-sidebar-actions] [aria-label="common.more"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        menuButton.click();
+        await Promise.resolve();
+      });
+      act(() =>
+        (
+          getLayerRoot("agent").querySelector(
+            "[data-agent-unarchive-all-chats]"
+          ) as HTMLElement
+        ).click()
+      );
+
+      expect(useAgentStore.getState().currentChatId).toBe(activeChatId);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("keeps an unrelated active conversation selected when deleting all archived chats", async () => {
+    useAgentStore.setState({ size: { width: 750, height: 450 } });
+    const activeChatId = useAgentStore.getState().currentChatId!;
+    const archivedChat = useAgentStore.getState().createChat({
+      title: "Archived analytics",
+      archived: true,
+      select: false,
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      act(() =>
+        (
+          document.body.querySelector(
+            '[data-agent-compact-rail] [aria-label="agent.archived-only-chats"]'
+          ) as HTMLButtonElement
+        ).click()
+      );
+      const menuButton = document.body.querySelector(
+        '[data-agent-chat-sidebar-actions] [aria-label="common.more"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        menuButton.click();
+        await Promise.resolve();
+      });
+      act(() =>
+        (
+          getLayerRoot("agent").querySelector(
+            "[data-agent-delete-all-chats]"
+          ) as HTMLElement
+        ).click()
+      );
+      const confirmation = getLayerRoot("agent").querySelector(
+        "[data-agent-dialog-content]"
+      ) as HTMLElement;
+      const confirmButton = Array.from(
+        confirmation.querySelectorAll("button")
+      ).find((button) => button.textContent === "common.confirm");
+      act(() => confirmButton?.click());
+
+      expect(useAgentStore.getState().getChat(archivedChat.id)).toBeNull();
+      expect(useAgentStore.getState().currentChatId).toBe(activeChatId);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("keeps an unrelated archived conversation selected when archiving active chats", async () => {
+    useAgentStore.setState({ size: { width: 750, height: 450 } });
+    const firstActiveChatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.getState().createChat({
+      title: "Second active",
+      select: false,
+    });
+    const archivedChat = useAgentStore.getState().createChat({
+      title: "Archived analytics",
+      archived: true,
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const archiveButton = document.body.querySelector(
+        `[data-agent-chat-row="${firstActiveChatId}"] [data-agent-archive-chat]`
+      ) as HTMLButtonElement;
+      act(() => archiveButton.click());
+      expect(useAgentStore.getState().currentChatId).toBe(archivedChat.id);
+
+      const menuButton = document.body.querySelector(
+        '[data-agent-chat-sidebar-actions] [aria-label="common.more"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        menuButton.click();
+        await Promise.resolve();
+      });
+      act(() =>
+        (
+          getLayerRoot("agent").querySelector(
+            "[data-agent-archive-all-chats]"
+          ) as HTMLElement
+        ).click()
+      );
+      expect(useAgentStore.getState().currentChatId).toBe(archivedChat.id);
+    } finally {
+      unmount();
+    }
+  });
+
   test("does not reveal the compact drawer when resizing an archived large list", async () => {
     useAgentStore.setState({ size: { width: 750, height: 450 } });
     const archivedChat = useAgentStore.getState().createChat({
