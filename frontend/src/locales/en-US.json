@@ -3456,12 +3456,16 @@
     "open-in-new-tab": "Open in new tab",
     "opened-from-link": "Opened from link",
     "pending-query": "Pending query",
+    "plan-estimated": "Estimated",
+    "plan-view": "Plan",
     "previous-row": "Previous Row",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },
     "query-history-not-found": "Query history not found or no longer accessible",
+    "query-plan-estimated": "A new plan, made just now. It may differ from the plan that ran.",
     "query-plan-load-failed": "Failed to load the query plan",
+    "query-plan-requires-explain": "Needs the bb.sql.explain permission on this project",
     "query-plan-viewer": {
       "copy": {
         "copied": "Copied",
@@ -3496,6 +3500,7 @@
         "spanner-invalid": "The query plan is not valid JSON. A Spanner query plan is expected.",
         "spanner-no-plan": "The query plan JSON does not contain a \"planNodes\" list with an operator at its root.",
         "too-deep": "The query plan is nested too deeply for this visualizer to draw.",
+        "too-many-nodes": "The query plan has more operators than this visualizer draws, so it is shown as text.",
         "unreadable": "This query plan could not be read"
       },
       "grid": {

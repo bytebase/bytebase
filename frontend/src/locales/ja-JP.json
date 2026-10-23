@@ -3456,12 +3456,16 @@
     "open-in-new-tab": "新しいタブで開く",
     "opened-from-link": "リンクから開く",
     "pending-query": "保留中のクエリ",
+    "plan-estimated": "推定",
+    "plan-view": "プラン",
     "previous-row": "前の行",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
     },
     "query-history-not-found": "クエリ履歴が見つからないか、アクセスできなくなりました",
+    "query-plan-estimated": "たった今作成された新しいプランです。実行時のプランとは異なる場合があります。",
     "query-plan-load-failed": "クエリプランの読み込みに失敗しました",
+    "query-plan-requires-explain": "このプロジェクトで bb.sql.explain 権限が必要です",
     "query-plan-viewer": {
       "copy": {
         "copied": "コピーしました",
@@ -3496,6 +3500,7 @@
         "spanner-invalid": "クエリプランが有効な JSON ではありません。Spanner クエリプランが必要です。",
         "spanner-no-plan": "クエリプラン JSON に、ルートがオペレーターである \"planNodes\" リストがありません。",
         "too-deep": "クエリプランの入れ子が深すぎるため、このビジュアライザーでは描画できません。",
+        "too-many-nodes": "クエリプランの演算子数がこのビジュアライザーで描画できる数を超えているため、テキストで表示します。",
         "unreadable": "このクエリプランを読み取れませんでした"
       },
       "grid": {

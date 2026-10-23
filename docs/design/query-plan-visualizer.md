@@ -357,9 +357,12 @@ ran. SQL Server and Spanner did not until
 [#21481](https://github.com/bytebase/bytebase/pull/21481); the timed-out case
 still waits on the timeout response carrying its statement.
 
-**Say which one it is, in words.** Measured and estimated carry a badge, and an
-estimated plan says *"A new plan, made just now. It may differ from the plan that
-ran."* A timestamp alone is not enough: the plan sits in the Plan view of the
+**Say which one it is.** Measured and estimated carry a one-word badge at the
+end of the viewer's tab row, and the estimated badge's tooltip says *"A new
+plan, made just now. It may differ from the plan that ran."* The words are a
+hover away rather than a line of their own because vertical space in the result
+pane is scarce, and the pane already says "estimated" in the diagram header and
+the summary. A timestamp alone is not enough: the plan sits in the Plan view of the
 result of the query that was slow, so everything about its placement says it
 explains that run. It may not — PostgreSQL chooses a plan from current
 statistics, and if the slow run was caused by stale statistics that have since
@@ -530,19 +533,24 @@ Checked against `main` on 2026-10-22.
   ([#21619](https://github.com/bytebase/bytebase/pull/21619)); explain is
   required on every database the statement references, with a database in
   another project failing closed, and a typed `EXPLAIN ANALYZE` needs the inner
-  statement's permission as well. What remains of §3.5: SQL Server's
-  `SET STATISTICS XML ON` route still passes on `bb.sql.select` alone, and the
-  Plan view items — disabled with the reason shown, skeleton and cancel, the
-  node cap — ride with item 1.
+  statement's permission as well
+  ([#21642](https://github.com/bytebase/bytebase/pull/21642)); the Plan option
+  is disabled with the reason, a load can be cancelled, and a plan past the
+  node cap is shown as text
+  ([#21646](https://github.com/bytebase/bytebase/pull/21646)). What remains
+  of §3.5: SQL Server's `SET STATISTICS XML ON` route still passes on
+  `bb.sql.select` alone.
+- §3.2/§3.3 — Plan in the result pane's view switch on an ordinary result,
+  planning the executed statement, with the estimate wording from §3.4, the
+  choice remembered per editor tab
+  ([#21646](https://github.com/bytebase/bytebase/pull/21646)).
 
 **Not yet, in the order to do them**
 
-1. §3.2/§3.3 — Plan in the result pane's view switch on an ordinary result,
-   planning the executed statement, with the estimate wording from §3.4.
-2. §3.1 — Explain and Explain analyze in the Run dropdown, planning the limited
+1. §3.1 — Explain and Explain analyze in the Run dropdown, planning the limited
    statement; today every driver's explain path skips the limit.
-3. §3.3 — the reading changes: summary panel always visible, graph opening on
+2. §3.3 — the reading changes: summary panel always visible, graph opening on
    the costliest operator, View SQL, warning relevance, measured plans with
    planned vs actual rows, cost share on the tab label.
-4. §3.4 — delete the pop-up page (`frontend/explain-visualizer.html`), which
+3. §3.4 — delete the pop-up page (`frontend/explain-visualizer.html`), which
    nothing links to any more.

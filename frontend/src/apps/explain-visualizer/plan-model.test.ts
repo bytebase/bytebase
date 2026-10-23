@@ -12,6 +12,7 @@ import {
   PLAN_EDGE_MAX_WIDTH,
   PLAN_EDGE_MIN_WIDTH,
   PLAN_TOO_DEEP_MESSAGE,
+  PLAN_TOO_MANY_NODES_MESSAGE,
   type PlanNode,
   type PlanProperty,
   type PlanTree,
@@ -146,6 +147,12 @@ describe("parseWithDepthLimit", () => {
       "0",
       "0.0",
     ]);
+  });
+
+  test("turns a tree with more operators than the cap into the node-cap message", () => {
+    const children = Array.from({ length: 1001 }, (_, i) => bareNode(`0.${i}`));
+    const result = parseWithDepthLimit(() => bareNode("0", children));
+    expect(result).toEqual({ ok: false, message: PLAN_TOO_MANY_NODES_MESSAGE });
   });
 
   test("turns a build that went too deep into the depth message", () => {

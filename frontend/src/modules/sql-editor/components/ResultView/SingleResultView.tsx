@@ -6,6 +6,9 @@ import {
   BracesIcon,
   CopyIcon,
   InfoIcon,
+  type LucideIcon,
+  NetworkIcon,
+  Rows3Icon,
   Table2Icon,
   XIcon,
 } from "lucide-react";
@@ -27,7 +30,10 @@ import {
 } from "@/components/DataExportButton";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import {
+  SegmentedControl,
+  type SegmentedControlOption,
+} from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
@@ -37,6 +43,7 @@ import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEd
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useSQLEditorTabState } from "@/modules/sql-editor/store/tab";
 import type {
+  ResultLayout,
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
 } from "@/types";
@@ -50,8 +57,8 @@ import {
 import {
   isVisualizerEngine,
   VISUALIZER_EXPLAIN_FORMATS,
-  type VisualizerEngine,
 } from "@/utils/explainToken";
+import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import {
   flattenElasticsearchSearchResult,
   flattenNoSQLQueryResult,
@@ -59,7 +66,8 @@ import {
   isNoSQLQueryResult,
 } from "@/utils/sqlResult";
 import { STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW } from "@/utils/storage-keys";
-import { getInstanceResource } from "@/utils/v1/database";
+import { getDatabaseProject, getInstanceResource } from "@/utils/v1/database";
+import { instanceV1AllowsExplain } from "@/utils/v1/instance";
 import { compareQueryRowValues, extractSQLRowValuePlain } from "@/utils/v1/sql";
 import { CopyAllButton } from "./CopyAllButton";
 import { SQLResultViewProvider } from "./context";
@@ -68,6 +76,7 @@ import { DetailPanel } from "./DetailPanel";
 import { DocumentJSONView } from "./DocumentJSONView";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
+import { planAvailability } from "./planAvailability";
 import {
   type InlineQueryPlan,
   QueryPlanResultView,
@@ -329,7 +338,100 @@ function SingleResultViewInner({
     VirtualDataTableHandle | VirtualDataBlockHandle | null
   >(null);
 
-  const [vertical, setVertical] = useState(false);
+  // The view switch's choice is remembered per editor tab, so the next run in
+  // this tab opens the same way.
+  const rememberedLayout = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.resultLayout
+  );
+  const updateCurrentTab = useSQLEditorTabState((s) => s.updateCurrentTab);
+  const [chosenLayout, setChosenLayout] = useState<ResultLayout>(
+    rememberedLayout ?? "TABLE"
+  );
+  const setLayout = useCallback(
+    (next: ResultLayout) => {
+      setChosenLayout(next);
+      updateCurrentTab({ resultLayout: next });
+    },
+    [updateCurrentTab]
+  );
+  const planOption = planAvailability({
+    result,
+    results,
+    resultIndex,
+    engineExplains: instanceV1AllowsExplain(engine),
+    canExplain: hasProjectPermissionV2(
+      getDatabaseProject(database),
+      "bb.sql.explain"
+    ),
+  });
+  // A remembered Plan choice falls back to the table where this result offers
+  // no plan.
+  const layout: ResultLayout =
+    chosenLayout === "PLAN" && planOption !== "offered"
+      ? "TABLE"
+      : chosenLayout;
+  const vertical = layout === "VERTICAL";
+  // The plan fetched for this result, kept so switching views does not fetch
+  // it again.
+  const [planCache, setPlanCache] = useState<{
+    result: QueryResult;
+    plan: InlineQueryPlan;
+  }>();
+  const resultPlan = planCache?.result === result ? planCache.plan : undefined;
+  const loadResultPlan = useCallback(
+    async (signal: AbortSignal) => {
+      const loaded = await explainStatement(
+        database,
+        params,
+        result.statement,
+        runQuery,
+        engine,
+        signal
+      );
+      if (loaded) setPlanCache({ result, plan: loaded });
+      return loaded;
+    },
+    [database, engine, params, result, runQuery]
+  );
+  // Document and search engines keep their own view controls; the SQL
+  // engines get the one switch with Table, Vertical and Plan.
+  const sqlLayoutSwitch = !supportsDocumentJSONView && !supportsTableViewToggle;
+  const layoutOptions = useMemo(() => {
+    const options: SegmentedControlOption<ResultLayout>[] = [
+      {
+        value: "TABLE",
+        label: (
+          <SegmentIcon icon={Table2Icon} label={t("sql-editor.table-view")} />
+        ),
+        tooltip: t("sql-editor.table-view"),
+      },
+      {
+        value: "VERTICAL",
+        label: (
+          <SegmentIcon
+            icon={Rows3Icon}
+            label={t("sql-editor.vertical-display")}
+          />
+        ),
+        tooltip: t("sql-editor.vertical-display"),
+      },
+    ];
+    if (planOption !== "absent") {
+      const needsPermission = planOption === "needs-permission";
+      options.push({
+        value: "PLAN",
+        label: (
+          <SegmentIcon icon={NetworkIcon} label={t("sql-editor.plan-view")} />
+        ),
+        tooltip: needsPermission
+          ? t("sql-editor.query-plan-requires-explain")
+          : t("sql-editor.plan-view"),
+        disabled: needsPermission,
+      });
+    }
+    return options;
+  }, [planOption, t]);
+
   const {
     params: searchParams,
     setParams: setSearchParams,
@@ -406,7 +508,7 @@ function SingleResultViewInner({
     isVisualizerEngine(engine) &&
     plan?.format ===
       QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
-  const resultPlan = useMemo(() => getInlineQueryPlan(result), [result]);
+  const planInResult = useMemo(() => getInlineQueryPlan(result), [result]);
   // Replaying this statement is safe only when every earlier statement was
   // itself a non-executing plan and could not change session state.
   const canReplay =
@@ -421,14 +523,15 @@ function SingleResultViewInner({
   const showInlinePlan =
     !!plan && (result.columnNames.length === 1 || canReplay);
   const loadPlan = useCallback(
-    () =>
+    (signal: AbortSignal) =>
       isVisualizerEngine(engine)
-        ? getInlineQueryPlanForStatement(
+        ? explainStatement(
             database,
             params,
             result.statement,
             runQuery,
-            engine
+            engine,
+            signal
           )
         : Promise.resolve(undefined),
     [database, engine, params, result.statement, runQuery]
@@ -510,8 +613,8 @@ function SingleResultViewInner({
           >
             <QueryPlanResultView
               key={`${database.name}\n${engine}\n${result.statement}`}
-              rawPlan={resultPlan?.source ?? ""}
-              initialPlan={planInRows ? resultPlan : undefined}
+              rawPlan={planInResult?.source ?? ""}
+              initialPlan={planInRows ? planInResult : undefined}
               engine={isVisualizerEngine(engine) ? engine : undefined}
               loadPlan={canReplay ? loadPlan : undefined}
               disallowCopyingData={disallowCopyingData}
@@ -574,24 +677,20 @@ function SingleResultViewInner({
                     {
                       value: "TABLE",
                       label: (
-                        <span className="flex h-[26px] w-7 items-center justify-center">
-                          <Table2Icon className="size-4" aria-hidden />
-                          <span className="sr-only">
-                            {t("sql-editor.table-view")}
-                          </span>
-                        </span>
+                        <SegmentIcon
+                          icon={Table2Icon}
+                          label={t("sql-editor.table-view")}
+                        />
                       ),
                       tooltip: t("sql-editor.table-view"),
                     },
                     {
                       value: "JSON",
                       label: (
-                        <span className="flex h-[26px] w-7 items-center justify-center">
-                          <BracesIcon className="size-4" aria-hidden />
-                          <span className="sr-only">
-                            {t("sql-editor.json-view")}
-                          </span>
-                        </span>
+                        <SegmentIcon
+                          icon={BracesIcon}
+                          label={t("sql-editor.json-view")}
+                        />
                       ),
                       tooltip: t("sql-editor.json-view"),
                     },
@@ -613,13 +712,30 @@ function SingleResultViewInner({
                   </span>
                 </div>
               ) : null}
-              {!isJSONView && (
-                <div className="flex items-center gap-x-1">
-                  <Switch checked={vertical} onCheckedChange={setVertical} />
-                  <span className="whitespace-nowrap text-sm text-control-light">
-                    {t("sql-editor.vertical-display")}
-                  </span>
-                </div>
+              {sqlLayoutSwitch ? (
+                <SegmentedControl<ResultLayout>
+                  value={layout}
+                  options={layoutOptions}
+                  onValueChange={setLayout}
+                  ariaLabel={t("sql-editor.result-view-mode")}
+                  appearance="soft"
+                  className="flex-nowrap"
+                  size="xs"
+                />
+              ) : (
+                !isJSONView && (
+                  <div className="flex items-center gap-x-1">
+                    <Switch
+                      checked={vertical}
+                      onCheckedChange={(checked) =>
+                        setLayout(checked ? "VERTICAL" : "TABLE")
+                      }
+                    />
+                    <span className="whitespace-nowrap text-sm text-control-light">
+                      {t("sql-editor.vertical-display")}
+                    </span>
+                  </div>
+                )
               )}
               {!disallowCopyingData && rows.length > 0 && isJSONView && (
                 <Button
@@ -664,6 +780,24 @@ function SingleResultViewInner({
               activeMatchIndex={documentSearchActiveIndex}
               onMatchCountChange={setDocumentSearchMatchCount}
             />
+          ) : layout === "PLAN" ? (
+            <div
+              className={cn(
+                "w-full flex flex-col",
+                compact ? "h-80 overflow-hidden" : "flex-1 min-h-0"
+              )}
+            >
+              <QueryPlanResultView
+                key={planViewKey(result)}
+                rawPlan=""
+                initialPlan={resultPlan}
+                engine={isVisualizerEngine(engine) ? engine : undefined}
+                loadPlan={loadResultPlan}
+                estimated
+                onCancel={() => setLayout("TABLE")}
+                disallowCopyingData={disallowCopyingData}
+              />
+            </div>
           ) : (
             <div
               className={cn(
@@ -820,6 +954,33 @@ function useLocalStorageBoolean(
   return [value, update];
 }
 
+function SegmentIcon({
+  icon: Icon,
+  label,
+}: {
+  icon: LucideIcon;
+  label: string;
+}) {
+  return (
+    <span className="flex w-7 items-center justify-center py-1">
+      <Icon className="size-4" aria-hidden />
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
+// A plan view is keyed by the result it belongs to, so a re-run of the same
+// statement gets a fresh view and a fresh plan.
+const planViewKeys = new WeakMap<QueryResult, string>();
+function planViewKey(result: QueryResult): string {
+  let key = planViewKeys.get(result);
+  if (!key) {
+    key = uuidv4();
+    planViewKeys.set(result, key);
+  }
+  return key;
+}
+
 function DatabaseInfo({ database }: { database: Database }) {
   const { t } = useTranslation();
   return (
@@ -845,16 +1006,22 @@ function getInlineQueryPlan(result: QueryResult): InlineQueryPlan | undefined {
   return { statement, source };
 }
 
-async function getInlineQueryPlanForStatement(
+// explainStatement asks the engine for the plan of a statement as it ran, in
+// the format the visualizer draws where there is one and the engine's default
+// otherwise. The signal cancels the request. The plan carries the statement
+// itself, limit and all, for the viewer to show.
+async function explainStatement(
   database: Database,
   params: SQLEditorQueryParams,
   statement: string,
   runQuery: ReturnType<typeof useExecuteSQL>["runQuery"],
-  engine: VisualizerEngine
+  engine: Engine,
+  signal?: AbortSignal
 ): Promise<InlineQueryPlan | undefined> {
   if (!statement) return undefined;
-  const explainFormat =
-    QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
+  const explainFormat = isVisualizerEngine(engine)
+    ? QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]]
+    : QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED;
   const context: SQLEditorDatabaseQueryContext = {
     id: uuidv4(),
     params: {
@@ -865,8 +1032,16 @@ async function getInlineQueryPlanForStatement(
     },
     status: "PENDING",
   };
-  await runQuery(database, context);
-  const result = context.resultSet?.results[0];
+  const run = runQuery(database, context);
+  signal?.addEventListener("abort", () => context.abortController?.abort(), {
+    once: true,
+  });
+  await run;
+  const resultSet = context.resultSet;
+  if (resultSet?.error) throw new Error(resultSet.error);
+  const result = resultSet?.results[0];
   if (!result) return undefined;
-  return getInlineQueryPlan(result);
+  if (result.error) throw new Error(result.error);
+  const plan = getInlineQueryPlan(result);
+  return plan && { ...plan, statement };
 }

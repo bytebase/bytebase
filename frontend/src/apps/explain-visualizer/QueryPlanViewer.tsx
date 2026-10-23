@@ -41,6 +41,8 @@ interface Props {
   /** The plan output shown on the text tab, when it differs from rawPlan. */
   readonly textPlan?: string;
   readonly query?: string;
+  /** Shown at the end of the tab row, such as a reminder that the plan is an estimate. */
+  readonly note?: ReactNode;
   readonly disallowCopyingData?: boolean;
   readonly syncSelectionWithHash?: boolean;
 }
@@ -322,6 +324,7 @@ export function QueryPlanViewer({
   rawPlan,
   textPlan = rawPlan,
   query,
+  note,
   disallowCopyingData = false,
   syncSelectionWithHash = true,
 }: Props) {
@@ -427,6 +430,11 @@ export function QueryPlanViewer({
           <TabsTrigger value="summary">{translate("tab.summary")}</TabsTrigger>
         ) : null}
         <TabsTrigger value="query">{translate("tab.query")}</TabsTrigger>
+        {note ? (
+          <span className="ml-auto self-center text-sm text-control-light">
+            {note}
+          </span>
+        ) : null}
       </TabsList>
 
       <TabsPanel

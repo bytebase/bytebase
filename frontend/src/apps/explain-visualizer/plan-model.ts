@@ -101,10 +101,25 @@ export function checkPlanDepth(depth: number) {
   if (depth > PLAN_MAX_DEPTH) throw PLAN_TOO_DEEP;
 }
 
-/** A parser's tree from `build`, or the depth message when it went too deep. */
+/**
+ * Past this many operators the diagram is unreadable and its layout slow, so
+ * the plan is shown as text instead. SSMS degrades the same way, at 2 MB.
+ */
+const PLAN_MAX_NODES = 1000;
+
+export const PLAN_TOO_MANY_NODES_MESSAGE = `The query plan has more than ${PLAN_MAX_NODES} operators, which is more than this visualizer draws.`;
+
+/**
+ * A parser's tree from `build`, or the depth message when it went too deep or
+ * the node-cap message when it is too large to draw.
+ */
 export function parseWithDepthLimit(build: () => PlanNode): PlanParseResult {
   try {
-    return { ok: true, tree: buildPlanTree(build()) };
+    const tree = buildPlanTree(build());
+    if (tree.nodes.length > PLAN_MAX_NODES) {
+      return { ok: false, message: PLAN_TOO_MANY_NODES_MESSAGE };
+    }
+    return { ok: true, tree };
   } catch (error) {
     if (error !== PLAN_TOO_DEEP) throw error;
     return { ok: false, message: PLAN_TOO_DEEP_MESSAGE };

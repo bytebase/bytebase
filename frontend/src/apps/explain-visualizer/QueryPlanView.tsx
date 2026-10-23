@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { Alert } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -15,7 +15,11 @@ import {
   type QueryPlanTranslationKey,
   useQueryPlanTranslation,
 } from "./plan-i18n";
-import { PLAN_TOO_DEEP_MESSAGE, type PlanParseResult } from "./plan-model";
+import {
+  PLAN_TOO_DEEP_MESSAGE,
+  PLAN_TOO_MANY_NODES_MESSAGE,
+  type PlanParseResult,
+} from "./plan-model";
 import {
   POSTGRES_PLAN_EMPTY_MESSAGE,
   POSTGRES_PLAN_INVALID_JSON_MESSAGE,
@@ -42,6 +46,7 @@ const STATUS_CLASS =
 
 const PARSE_ERROR_KEYS = new Map<string, QueryPlanTranslationKey>([
   [PLAN_TOO_DEEP_MESSAGE, "error.too-deep"],
+  [PLAN_TOO_MANY_NODES_MESSAGE, "error.too-many-nodes"],
   [POSTGRES_PLAN_EMPTY_MESSAGE, "error.postgres-empty"],
   [POSTGRES_PLAN_INVALID_JSON_MESSAGE, "error.postgres-invalid"],
   [POSTGRES_PLAN_NO_PLAN_MESSAGE, "error.postgres-no-plan"],
@@ -59,6 +64,7 @@ interface Props {
   planSource: string;
   textPlanSource?: string;
   planQuery?: string;
+  note?: ReactNode;
   translate?: QueryPlanTranslate;
   disallowCopyingData?: boolean;
   syncSelectionWithHash?: boolean;
@@ -69,6 +75,7 @@ function QueryPlanViewContent({
   planSource,
   textPlanSource,
   planQuery,
+  note,
   disallowCopyingData = false,
   syncSelectionWithHash,
 }: Props) {
@@ -103,6 +110,7 @@ function QueryPlanViewContent({
       rawPlan={planSource}
       textPlan={textPlanSource}
       query={planQuery}
+      note={note}
       disallowCopyingData={disallowCopyingData}
       syncSelectionWithHash={syncSelectionWithHash}
     />
