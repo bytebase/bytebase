@@ -11,7 +11,7 @@ src/modules/agent/
 ├── logic/
 │   ├── agentLoop.ts  # Tool-call loop and retry behavior
 │   ├── context.ts    # Page and application context extraction
-│   ├── prompt.ts     # System prompt and maintained service directory
+│   ├── prompt.ts     # System prompt
 │   ├── skills/       # On-demand workflow guides exposed by get_skill
 │   └── tools/        # API, navigation, page-state, and DOM tool implementations
 ├── store/            # Zustand state for the agent window and conversation
@@ -42,12 +42,15 @@ pnpm --dir frontend run prepare
 
 The generator reads `backend/api/mcp/gen/openapi.yaml` and writes `logic/tools/gen/openapi-index.ts`. Do not edit the generated file manually.
 
-`logic/prompt.ts` contains a compact, manually maintained `serviceDirectory`. Update it when the generator reports uncovered services or when discovery terminology is insufficient. Keep descriptions short and user-facing; the generated index remains the endpoint source of truth.
+`search_api(query="...")` searches generated OpenAPI metadata and returns a
+small ranked endpoint set. The generated index remains the endpoint source of
+truth; do not duplicate a service catalogue in `logic/prompt.ts`.
 
 ## Extending the agent
 
 - Add a workflow guide in `logic/skills/` and register it in `logic/skills/index.ts`.
 - Add tool implementation and tests under `logic/tools/`, then register it in `logic/tools/index.ts`.
-- Keep API discovery in `searchApi.ts`; do not hardcode broad endpoint inventories into the prompt.
+- Keep API discovery in `searchApi.ts`; update its semantic-search tests when
+  changing generated endpoint metadata.
 - Use the Zustand store in `store/agent.ts`; do not introduce a second state system.
 - Run focused Vitest for the touched agent subtree, then the standard frontend verification sequence.

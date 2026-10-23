@@ -48,6 +48,11 @@
     "delete-all-chats-confirmation": "确定要删除所有已归档对话吗？此操作无法撤销。",
     "delete-chat": "删除对话",
     "delete-chat-confirmation": "确定要删除此对话吗？此操作无法撤销。",
+    "evidence": {
+      "database": "数据库",
+      "issue": "issue",
+      "references": "依据"
+    },
     "input-keyboard-hint": "按 Enter 发送 · 按 Shift+Enter 换行",
     "input-placeholder": "向 AI 提问...",
     "interrupted": "已中断",

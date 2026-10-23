@@ -8,6 +8,11 @@ vi.mock("../skills", () => ({
 vi.mock("./callApi", () => ({
   callApi: vi.fn(async () => "call_api"),
 }));
+vi.mock("./databaseOverview", () => ({
+  createDatabaseOverviewTool: vi.fn(() =>
+    vi.fn(async () => "database_overview")
+  ),
+}));
 vi.mock("./domAction", () => ({
   createDomActionTool: vi.fn(() => vi.fn(async () => "dom_action")),
 }));
@@ -19,6 +24,22 @@ vi.mock("./pageState", () => ({
 }));
 vi.mock("./projectOpenIssues", () => ({
   createProjectOpenIssuesTool: vi.fn(() => vi.fn(async () => "project_issues")),
+}));
+vi.mock("./projectOverview", () => ({
+  createProjectOverviewTool: vi.fn(() => vi.fn(async () => "project_overview")),
+}));
+vi.mock("./projectGovernanceOverview", () => ({
+  createProjectGovernanceOverviewTool: vi.fn(() =>
+    vi.fn(async () => "project_governance_overview")
+  ),
+}));
+vi.mock("./issueOverview", () => ({
+  createIssueOverviewTool: vi.fn(() => vi.fn(async () => "issue_overview")),
+}));
+vi.mock("./workspaceOverview", () => ({
+  createWorkspaceOverviewTool: vi.fn(() =>
+    vi.fn(async () => "workspace_overview")
+  ),
 }));
 vi.mock("./projectRecentActivity", () => ({
   createProjectRecentActivityTool: vi.fn(() =>
@@ -41,11 +62,16 @@ vi.mock("./searchApi", () => ({
 
 import { createToolExecutor, getToolDefinitions } from ".";
 import { callApi } from "./callApi";
+import { createDatabaseOverviewTool } from "./databaseOverview";
 import { createDomActionTool } from "./domAction";
+import { createIssueOverviewTool } from "./issueOverview";
 import { createNavigateTool } from "./navigate";
+import { createProjectGovernanceOverviewTool } from "./projectGovernanceOverview";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
+import { createProjectOverviewTool } from "./projectOverview";
 import { createProjectRecentActivityTool } from "./projectRecentActivity";
 import { createWorkspaceAttentionTool } from "./workspaceAttention";
+import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
 
 describe("agent tools navigate", () => {
@@ -142,6 +168,11 @@ describe("agent tools read-only mode", () => {
       getToolDefinitions({ runMode: "read-only" }).map((tool) => tool.name)
     ).toEqual([
       "get_page_state",
+      "get_project_overview",
+      "get_project_governance_overview",
+      "get_issue_overview",
+      "get_database_overview",
+      "get_workspace_overview",
       "get_project_open_issues",
       "get_project_recent_activity",
       "get_workspace_attention",
@@ -161,6 +192,161 @@ describe("agent tools read-only mode", () => {
     );
     expect(getToolDefinitions().map((tool) => tool.name)).not.toContain(
       "get_workspace_attention"
+    );
+    expect(getToolDefinitions().map((tool) => tool.name)).toContain(
+      "get_project_overview"
+    );
+    expect(getToolDefinitions().map((tool) => tool.name)).toContain(
+      "get_project_governance_overview"
+    );
+    expect(getToolDefinitions().map((tool) => tool.name)).toContain(
+      "get_issue_overview"
+    );
+    expect(getToolDefinitions().map((tool) => tool.name)).toContain(
+      "get_database_overview"
+    );
+  });
+
+  test("uses the chat-bound project for a generic overview lookup", async () => {
+    const overviewTool = vi.fn(async () => "project_overview");
+    vi.mocked(createProjectOverviewTool).mockReturnValue(overviewTool);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      runMode: "read-only",
+    });
+
+    await expect(
+      executeTool("get_project_overview", {}, "tool-project-overview")
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: "project_overview",
+    });
+    expect(createProjectOverviewTool).toHaveBeenCalledWith({
+      projectName: "projects/sample",
+    });
+    expect(overviewTool).toHaveBeenCalledWith();
+  });
+
+  test("uses the chat-bound workspace for a generic overview lookup", async () => {
+    const overviewTool = vi.fn(async () => "workspace_overview");
+    vi.mocked(createWorkspaceOverviewTool).mockReturnValue(overviewTool);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "workspaces/default",
+      runMode: "read-only",
+    });
+
+    await expect(
+      executeTool("get_workspace_overview", {}, "tool-workspace-overview")
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: "workspace_overview",
+    });
+    expect(createWorkspaceOverviewTool).toHaveBeenCalledWith({
+      workspaceName: "workspaces/default",
+    });
+    expect(overviewTool).toHaveBeenCalledWith();
+  });
+
+  test("uses the chat-bound project for a governance overview lookup", async () => {
+    const governanceTool = vi.fn(async () => "project_governance_overview");
+    vi.mocked(createProjectGovernanceOverviewTool).mockReturnValue(
+      governanceTool
+    );
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      runMode: "read-only",
+    });
+
+    await expect(
+      executeTool(
+        "get_project_governance_overview",
+        {},
+        "tool-project-governance-overview"
+      )
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: "project_governance_overview",
+    });
+    expect(createProjectGovernanceOverviewTool).toHaveBeenCalledWith({
+      projectName: "projects/sample",
+    });
+    expect(governanceTool).toHaveBeenCalledWith();
+  });
+
+  test("passes only the requested Issue name to a chat-bound Issue overview", async () => {
+    const issueOverviewTool = vi.fn(async () => "issue_overview");
+    vi.mocked(createIssueOverviewTool).mockReturnValue(issueOverviewTool);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      runMode: "read-only",
+    });
+
+    await expect(
+      executeTool(
+        "get_issue_overview",
+        { issueName: "projects/sample/issues/42" },
+        "tool-issue-overview"
+      )
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: "issue_overview",
+    });
+    expect(createIssueOverviewTool).toHaveBeenCalledWith({
+      projectName: "projects/sample",
+    });
+    expect(issueOverviewTool).toHaveBeenCalledWith({
+      issueName: "projects/sample/issues/42",
+    });
+  });
+
+  test("passes only the requested database name to a chat-bound database overview", async () => {
+    const databaseOverviewTool = vi.fn(async () => "database_overview");
+    vi.mocked(createDatabaseOverviewTool).mockReturnValue(databaseOverviewTool);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      runMode: "read-only",
+    });
+
+    await expect(
+      executeTool(
+        "get_database_overview",
+        {
+          databaseName: "projects/sample/instances/prod/databases/application",
+        },
+        "tool-database-overview"
+      )
+    ).resolves.toEqual({
+      kind: "tool_result",
+      result: "database_overview",
+    });
+    expect(createDatabaseOverviewTool).toHaveBeenCalledWith({
+      projectName: "projects/sample",
+    });
+    expect(databaseOverviewTool).toHaveBeenCalledWith({
+      databaseName: "projects/sample/instances/prod/databases/application",
+    });
+  });
+
+  test("describes the database backup field as prior-DML-backup readiness", () => {
+    const databaseOverview = getToolDefinitions().find(
+      (tool) => tool.name === "get_database_overview"
+    );
+
+    expect(databaseOverview?.description).toContain(
+      "DML prior-backup readiness"
+    );
+    expect(databaseOverview?.description).toContain(
+      "does not inspect existing backups or recovery points"
+    );
+  });
+
+  test("does not equate an absent review run with review configuration", () => {
+    const issueOverview = getToolDefinitions().find(
+      (tool) => tool.name === "get_issue_overview"
+    );
+
+    expect(issueOverview?.description).toContain(
+      "does not establish whether that review is configured or applicable"
     );
   });
 

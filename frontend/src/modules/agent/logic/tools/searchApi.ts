@@ -13,6 +13,7 @@ export interface SearchApiArgs {
   operationId?: string;
   schema?: string;
   service?: string;
+  query?: string;
 }
 
 const TYPE_DESCRIPTIONS: Record<string, string> = {
@@ -72,6 +73,30 @@ class OpenAPIIndex {
 }
 
 const index = new OpenAPIIndex();
+
+const SEARCH_STOP_WORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "for",
+  "from",
+  "in",
+  "my",
+  "of",
+  "on",
+  "the",
+  "this",
+  "to",
+  "with",
+]);
+
+const searchTokens = (value: string) =>
+  (
+    value
+      .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+      .toLowerCase()
+      .match(/[a-z0-9]+/g) ?? []
+  ).filter((token) => token.length > 1 && !SEARCH_STOP_WORDS.has(token));
 
 function getSchemaNameFromRef(schemaRef: string): string {
   const parts = schemaRef.split("/");
@@ -220,6 +245,85 @@ function getSchemaProps(schemaRef: string): PropertyInfo[] | undefined {
   return info.properties;
 }
 
+function scoreEndpoint(endpoint: EndpointInfo, queryTokens: string[]): number {
+  const primaryTokens = new Set(
+    searchTokens(
+      [
+        endpoint.service,
+        endpoint.method,
+        endpoint.operationId,
+        endpoint.summary,
+      ].join(" ")
+    )
+  );
+  const schemaTokens = new Set(
+    [endpoint.requestSchemaRef, endpoint.responseSchemaRef]
+      .flatMap((schemaRef) =>
+        (getSchemaProps(schemaRef) ?? []).flatMap((property) => [
+          property.name,
+          property.description ?? "",
+          property.type,
+        ])
+      )
+      .flatMap(searchTokens)
+  );
+  const descriptionTokens = new Set(searchTokens(endpoint.description));
+
+  let score = 0;
+  for (const queryToken of queryTokens) {
+    if (primaryTokens.has(queryToken)) {
+      score += 8;
+    } else if (
+      [...primaryTokens].some(
+        (token) => token.startsWith(queryToken) || queryToken.startsWith(token)
+      )
+    ) {
+      score += 5;
+    } else if (schemaTokens.has(queryToken)) {
+      score += 3;
+    } else if (descriptionTokens.has(queryToken)) {
+      score += 2;
+    }
+  }
+  return score;
+}
+
+function formatSearchResults(query: string): string {
+  const queryTokens = searchTokens(query);
+  if (queryTokens.length === 0) {
+    return formatServiceList();
+  }
+
+  const matches = endpoints
+    .map((endpoint) => ({
+      endpoint,
+      score: scoreEndpoint(endpoint, queryTokens),
+    }))
+    .filter(({ score }) => score > 0)
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.endpoint.service.localeCompare(b.endpoint.service) ||
+        a.endpoint.method.localeCompare(b.endpoint.method)
+    )
+    .slice(0, 5);
+
+  if (matches.length === 0) {
+    return `No endpoints match "${query}". Try a shorter query or browse a service with search_api(service="...").`;
+  }
+
+  return [
+    "## Matching endpoints",
+    "",
+    ...matches.map(
+      ({ endpoint }, index) =>
+        `${index + 1}. ${endpoint.service}/${endpoint.method}\n   ${endpoint.summary}`
+    ),
+    "",
+    'Inspect a candidate with search_api(operationId="Service/Method") before calling it.',
+  ].join("\n");
+}
+
 function formatEndpointDetail(operationId: string): string {
   const ep = index.getEndpoint(operationId);
   if (!ep) {
@@ -305,10 +409,14 @@ function formatSchemaDetail(schemaName: string): string {
 // --- Main search_api handler ---
 
 export async function searchApi(args: SearchApiArgs): Promise<string> {
-  const { operationId, schema, service } = args;
+  const { operationId, query, schema, service } = args;
 
   if (operationId) {
     return formatEndpointDetail(operationId);
+  }
+
+  if (query) {
+    return formatSearchResults(query);
   }
 
   if (schema) {

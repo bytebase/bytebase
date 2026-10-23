@@ -2,6 +2,10 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+} from "@/app/router/handles";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
@@ -169,6 +173,283 @@ describe("AgentChat", () => {
     expect(link).toBeInstanceOf(HTMLElement);
     expect(link?.className).toContain("break-all");
 
+    unmount();
+  });
+
+  test("shows member-clicked evidence links below an evidence-backed answer", () => {
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: "The project is ready for its next governed change.",
+      metadata: {
+        evidence: {
+          project: "projects/orders",
+          references: [
+            {
+              kind: "issue",
+              name: "projects/orders/issues/42",
+              title: "Add customer table",
+            },
+            {
+              kind: "database",
+              name: "projects/orders/instances/prod/databases/orders",
+            },
+          ],
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const evidenceTrigger = Array.from(
+      container.querySelectorAll("button")
+    ).find(
+      (button) => button.textContent === "agent.evidence.references"
+    );
+    expect(evidenceTrigger).toBeInstanceOf(HTMLElement);
+
+    act(() => {
+      evidenceTrigger?.click();
+    });
+
+    const issueLink = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent === "Add customer table"
+    );
+    const databaseLink = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent === "orders"
+    );
+    expect(issueLink).toBeInstanceOf(HTMLElement);
+    expect(databaseLink).toBeInstanceOf(HTMLElement);
+
+    act(() => {
+      issueLink?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: { projectId: "orders", issueId: "42" },
+    });
+
+    act(() => {
+      databaseLink?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: {
+        projectId: "orders",
+        instanceId: "prod",
+        databaseName: "orders",
+      },
+      query: { parent: "projects/orders/instances/prod" },
+    });
+
+    unmount();
+  });
+
+  test("preserves the workspace-instance parent in a database evidence link", () => {
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: "The database is ready for its next governed change.",
+      metadata: {
+        evidence: {
+          project: "projects/orders",
+          references: [
+            {
+              kind: "database",
+              name: "instances/prod/databases/orders",
+            },
+          ],
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const evidenceTrigger = Array.from(
+      container.querySelectorAll("button")
+    ).find(
+      (button) => button.textContent === "agent.evidence.references"
+    );
+    act(() => {
+      evidenceTrigger?.click();
+    });
+
+    const databaseLink = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent === "orders"
+    );
+    expect(databaseLink).toBeInstanceOf(HTMLElement);
+
+    act(() => {
+      databaseLink?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: {
+        projectId: "orders",
+        instanceId: "prod",
+        databaseName: "orders",
+      },
+      query: { parent: "instances/prod" },
+    });
+
+    unmount();
+  });
+
+  test("omits evidence references outside the evidence project", () => {
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: "The project is ready for its next governed change.",
+      metadata: {
+        evidence: {
+          project: "projects/orders",
+          references: [
+            {
+              kind: "issue",
+              name: "projects/payroll/issues/42",
+              title: "Update payroll schema",
+            },
+            {
+              kind: "database",
+              name: "projects/orders/instances/prod/databases/orders",
+            },
+          ],
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const evidenceTrigger = Array.from(
+      container.querySelectorAll("button")
+    ).find(
+      (button) => button.textContent === "agent.evidence.references"
+    );
+    act(() => {
+      evidenceTrigger?.click();
+    });
+
+    expect(container.textContent).toContain("orders");
+    expect(container.textContent).not.toContain("Update payroll schema");
+
+    unmount();
+  });
+
+  test("links workspace issue evidence to its project", () => {
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: "One issue needs your review.",
+      metadata: {
+        evidence: {
+          workspace: "workspaces/default",
+          references: [
+            {
+              kind: "issue",
+              name: "projects/orders/issues/42",
+              title: "Add customer table",
+            },
+            {
+              kind: "database",
+              name: "projects/orders/instances/prod/databases/orders",
+            },
+          ],
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const evidenceTrigger = Array.from(
+      container.querySelectorAll("button")
+    ).find(
+      (button) => button.textContent === "agent.evidence.references"
+    );
+    act(() => {
+      evidenceTrigger?.click();
+    });
+
+    const issueLink = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent === "Add customer table"
+    );
+    expect(issueLink).toBeInstanceOf(HTMLElement);
+    expect(container.textContent).not.toContain("database: orders");
+
+    act(() => {
+      issueLink?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: { projectId: "orders", issueId: "42" },
+    });
+
+    unmount();
+  });
+
+  test("renders deduplicated references from separately scoped overviews", () => {
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: "The workspace and project both have relevant activity.",
+      metadata: {
+        evidence: [
+          {
+            workspace: "workspaces/default",
+            references: [
+              {
+                kind: "issue",
+                name: "projects/billing/issues/7",
+                title: "Billing approval",
+              },
+              {
+                kind: "database",
+                name: "projects/orders/instances/prod/databases/ignored",
+              },
+            ],
+          },
+          {
+            project: "projects/orders",
+            references: [
+              {
+                kind: "database",
+                name: "projects/orders/instances/prod/databases/orders",
+              },
+              {
+                kind: "issue",
+                name: "projects/billing/issues/7",
+                title: "Out-of-scope issue",
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const evidenceTrigger = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "agent.evidence.references"
+    );
+    act(() => {
+      evidenceTrigger?.click();
+    });
+
+    expect(container.textContent).toContain("Billing approval");
+    expect(container.textContent).toContain("database: orders");
+    expect(container.textContent).not.toContain("Out-of-scope issue");
+    expect(container.textContent).not.toContain("database: ignored");
+    expect(
+      Array.from(container.querySelectorAll("a")).filter(
+        (link) => link.textContent === "Billing approval"
+      )
+    ).toHaveLength(1);
     unmount();
   });
 

@@ -48,6 +48,11 @@
     "delete-all-chats-confirmation": "Are you sure you want to delete all archived chats? This action cannot be undone.",
     "delete-chat": "Delete chat",
     "delete-chat-confirmation": "Are you sure you want to delete this chat? This action cannot be undone.",
+    "evidence": {
+      "database": "database",
+      "issue": "issue",
+      "references": "Evidence"
+    },
     "input-keyboard-hint": "Enter to send · Shift+Enter for a new line",
     "input-placeholder": "Ask AI anything...",
     "interrupted": "Interrupted",

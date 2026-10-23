@@ -1,5 +1,6 @@
 // @vitest-environment node
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { silentContextKey } from "@/api/context-key";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 
@@ -7,6 +8,16 @@ const state = {
   currentUser: { name: "users/ed@bytebase.com" },
   listIssues: vi.fn(),
 };
+
+const mocks = vi.hoisted(() => ({
+  searchIssues: vi.fn(),
+}));
+
+vi.mock("@/api", () => ({
+  issueServiceClientConnect: {
+    searchIssues: mocks.searchIssues,
+  },
+}));
 
 vi.mock("@/stores/app", () => ({
   useAppStore: {
@@ -27,9 +38,28 @@ const issue = (values: Partial<Issue>): Issue =>
   }) as Issue;
 
 describe("projectOpenIssues", () => {
-  test("lists the current member's open Project issues without navigating", async () => {
+  beforeEach(() => {
     state.listIssues.mockReset();
-    state.listIssues
+    mocks.searchIssues.mockReset();
+  });
+
+  test("uses silent unhydrated issue searches for best-effort discovery", async () => {
+    mocks.searchIssues.mockResolvedValue({
+      nextPageToken: "",
+      issues: [],
+    });
+
+    await createProjectOpenIssuesTool({ projectName: "projects/sample" })();
+
+    expect(mocks.searchIssues).toHaveBeenCalledTimes(2);
+    expect(state.listIssues).not.toHaveBeenCalled();
+    for (const [, options] of mocks.searchIssues.mock.calls) {
+      expect(options?.contextValues.get(silentContextKey)).toBe(true);
+    }
+  });
+
+  test("lists the current member's open Project issues without navigating", async () => {
+    mocks.searchIssues
       .mockResolvedValueOnce({
         nextPageToken: "",
         issues: [issue({ name: "projects/sample/issues/review" })],
@@ -46,27 +76,27 @@ describe("projectOpenIssues", () => {
       await createProjectOpenIssuesTool({ projectName: "projects/sample" })()
     );
 
-    expect(state.listIssues).toHaveBeenNthCalledWith(1, {
-      find: {
-        project: "projects/sample",
-        query: "",
-        currentApprover: "users/ed@bytebase.com",
-        statusList: [IssueStatus.OPEN],
-        approvalStatus: ApprovalStatus.PENDING,
+    expect(mocks.searchIssues).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        parent: "projects/sample",
+        filter:
+          'current_approver == "users/ed@bytebase.com" && approval_status == "PENDING" && status in ["OPEN"]',
         orderBy: "update_time desc",
-      },
-      pageSize: 10,
-    });
-    expect(state.listIssues).toHaveBeenNthCalledWith(2, {
-      find: {
-        project: "projects/sample",
-        query: "",
-        creator: "users/ed@bytebase.com",
-        statusList: [IssueStatus.OPEN],
+        pageSize: 10,
+      }),
+      expect.anything()
+    );
+    expect(mocks.searchIssues).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        parent: "projects/sample",
+        filter: 'creator == "users/ed@bytebase.com" && status in ["OPEN"]',
         orderBy: "update_time desc",
-      },
-      pageSize: 10,
-    });
+        pageSize: 10,
+      }),
+      expect.anything()
+    );
     expect(result).toEqual({
       project: "projects/sample",
       issues: [
@@ -88,8 +118,6 @@ describe("projectOpenIssues", () => {
   });
 
   test("refuses to query a chat that is not bound to a Project", async () => {
-    state.listIssues.mockReset();
-
     const result = JSON.parse(
       await createProjectOpenIssuesTool({ projectName: "workspaces/default" })()
     );
@@ -97,12 +125,11 @@ describe("projectOpenIssues", () => {
     expect(result).toEqual({
       error: "This starter is not bound to a Project.",
     });
-    expect(state.listIssues).not.toHaveBeenCalled();
+    expect(mocks.searchIssues).not.toHaveBeenCalled();
   });
 
   test("marks the result partial when either Issue query has another page", async () => {
-    state.listIssues.mockReset();
-    state.listIssues
+    mocks.searchIssues
       .mockResolvedValueOnce({
         nextPageToken: "next-review-page",
         issues: [issue({ name: "projects/sample/issues/review" })],

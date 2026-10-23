@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { silentContextKey } from "@/api/context-key";
 import {
   IssueSchema,
   SearchIssuesRequestSchema,
@@ -78,7 +79,8 @@ describe("createWorkspaceAttentionTool", () => {
           'current_approver == "users/ed@bytebase.com" && approval_status == "PENDING" && status in ["OPEN"]',
         orderBy: "update_time desc",
         pageSize: 5,
-      })
+      }),
+      expect.objectContaining({ contextValues: expect.anything() })
     );
     expect(mocks.searchIssues).toHaveBeenNthCalledWith(
       2,
@@ -87,8 +89,15 @@ describe("createWorkspaceAttentionTool", () => {
         filter: 'creator == "users/ed@bytebase.com" && status in ["OPEN"]',
         orderBy: "update_time desc",
         pageSize: 5,
-      })
+      }),
+      expect.objectContaining({ contextValues: expect.anything() })
     );
+    expect(
+      mocks.searchIssues.mock.calls[0][1].contextValues.get(silentContextKey)
+    ).toBe(true);
+    expect(
+      mocks.searchIssues.mock.calls[1][1].contextValues.get(silentContextKey)
+    ).toBe(true);
   });
 
   test("refuses an unbound workspace without searching Issues", async () => {

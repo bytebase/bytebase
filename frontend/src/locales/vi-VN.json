@@ -48,6 +48,11 @@
     "delete-all-chats-confirmation": "Bạn có chắc chắn muốn xóa tất cả cuộc trò chuyện đã lưu trữ không? Hành động này không thể hoàn tác.",
     "delete-chat": "Xóa cuộc trò chuyện",
     "delete-chat-confirmation": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.",
+    "evidence": {
+      "database": "cơ sở dữ liệu",
+      "issue": "issue",
+      "references": "Bằng chứng"
+    },
     "input-keyboard-hint": "Enter để gửi · Shift+Enter để xuống dòng",
     "input-placeholder": "Hỏi AI bất cứ điều gì...",
     "interrupted": "Bị gián đoạn",
