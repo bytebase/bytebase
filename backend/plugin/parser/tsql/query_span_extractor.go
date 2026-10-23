@@ -432,6 +432,8 @@ type omniQuerySpanExtractor struct {
 	*querySpanExtractor
 	// source is the original SQL text, used to slice expression names via Loc.
 	source string
+	// setOption is the statement when it is a SET of session options.
+	setOption *ast.SetOptionStmt
 }
 
 func newOmniQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *omniQuerySpanExtractor {
@@ -485,6 +487,9 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	// side-effect. Non-table DECLARE (plain scalar variables) is a no-op.
 	if d, ok := root.(*ast.DeclareStmt); ok {
 		populateOmniTempTables(d, q.gCtx.TempTables)
+	}
+	if set, ok := root.(*ast.SetOptionStmt); ok {
+		q.setOption = set
 	}
 	if c, ok := root.(*ast.CreateTableStmt); ok {
 		populateOmniCreateTempTable(c, q.gCtx.TempTables)

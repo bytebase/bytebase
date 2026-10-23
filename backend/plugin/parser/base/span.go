@@ -376,6 +376,9 @@ type GetQuerySpanContext struct {
 	// TempTables is the temporary tables created in the query span.
 	// It's used to store the temporary tables declared in one batch for SQL Server.
 	TempTables map[string]*PhysicalTable
+	// PlanOutput is the plan output a SQL Server batch has turned on, carried to
+	// its later statements like TempTables.
+	PlanOutput PlanOutput
 
 	// Adding the engine information here is a trade-off between the copy-pasted and shared code.
 	// For engines with more different, we implement the getQuerySpan separately.
@@ -385,6 +388,11 @@ type GetQuerySpanContext struct {
 	// We'll deal this field in the base.GetQuerySpan.
 	Engine storepb.Engine
 }
+
+// PlanOutput is the SQL Server plan options a batch has turned on, keyed by
+// option name as the parser writes it, such as "SHOWPLAN_XML" or "STATISTICS
+// XML". Each stays on until its own SET ... OFF.
+type PlanOutput map[string]bool
 
 // GetDatabaseMetadataFunc is the function to get database metadata.
 // It may return nil metadata and a nil error when Bytebase has not synced the

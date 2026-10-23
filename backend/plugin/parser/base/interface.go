@@ -3,7 +3,6 @@ package base
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -237,13 +236,12 @@ func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.
 	}
 	gCtx.Engine = engine
 	gCtx.TempTables = make(map[string]*PhysicalTable)
+	gCtx.PlanOutput = make(PlanOutput)
 	var results []*QuerySpan
-	var nonEmptyStatements []Statement
 	for _, stmt := range statements {
 		if stmt.Empty {
 			continue
 		}
-		nonEmptyStatements = append(nonEmptyStatements, stmt)
 		result, err := f(ctx, gCtx, stmt, database, schema, ignoreCaseSensitive)
 		if err != nil {
 			// Try to unwrap the error to see if it's a ResourceNotFoundError to decrease the error noise.
@@ -259,9 +257,6 @@ func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.
 			return nil, err
 		}
 		results = append(results, result)
-	}
-	if engine == storepb.Engine_MSSQL {
-		tsqlRecognizeExplainType(results, nonEmptyStatements)
 	}
 	return results, nil
 }
@@ -429,48 +424,6 @@ func SplitSearchPath(statement string) (string, string) {
 		return "", statement
 	}
 	return setup, rest
-}
-
-// REFACTOR(zp): Put it here to avoid circular import for now.
-var (
-	showplanReg = regexp.MustCompile(`(?mi)^\s*SET\s+SHOWPLAN_(ALL|XML|TEXT)\s+(?P<status>(ON|OFF))\s*;?$`)
-)
-
-// tsqlRecognizeExplainType walks the spans, and rewrite the select type to explain type if previous statement is SET SHOWPLAN_ALL.
-func tsqlRecognizeExplainType(spans []*QuerySpan, stmts []Statement) {
-	if len(spans) != len(stmts) {
-		return
-	}
-	on := false
-	for i := range spans {
-		matches := showplanReg.FindStringSubmatch(stmts[i].Text)
-		if matches != nil {
-			for k, name := range showplanReg.SubexpNames() {
-				if k != 0 && name == "status" {
-					switch strings.ToLower(matches[k]) {
-					case "on":
-						on = true
-					case "off":
-						on = false
-					default:
-						// Unknown status, keep default value
-					}
-				}
-			}
-		}
-		if on {
-			if matches != nil {
-				spans[i].Type = Explain
-			} else if spans[i].Type == Select {
-				spans[i].Type = Explain
-			}
-		} else {
-			// SET SHOW_PLANALL OFF, this statement is explain either.
-			if matches != nil {
-				spans[i].Type = Explain
-			}
-		}
-	}
 }
 
 type StatementRangeContext struct{}
