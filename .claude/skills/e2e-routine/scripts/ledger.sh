@@ -36,28 +36,33 @@ last-green)
   # main, else the newest run on main, else main 60 days back. Computed on each
   # call so a phase never depends on a variable an earlier shell set.
   r="$(read_ref)"
-  main="$(main_sha)"
-  sha="$(python3 - "$r" "$main" <<'PY'
+  main="$(main_ref_strict)" || die "no origin/main to check the ledger against"
+  # Every entry as "<result> <sha>", newest first; on_main judges each one.
+  entries="$(python3 - "$r" <<'PY'
 import json, subprocess, sys
-ref, main = sys.argv[1:3]
+ref = sys.argv[1]
 def git(*a):
-    return subprocess.run(["git", *a], capture_output=True, text=True)
-def on_main(sha):
-    # Fails for a SHA this clone does not have, too: an entry written before
-    # the ledger kept only main commits can name one GitHub never had.
-    return bool(sha) and git("merge-base", "--is-ancestor", sha, main).returncode == 0
+    return subprocess.run(["git", *a], capture_output=True, text=True).stdout
 runs = []
-for path in git("ls-tree", "--name-only", f"{ref}:runs").stdout.split():
+for path in git("ls-tree", "--name-only", f"{ref}:runs").split():
     try:
-        runs.append(json.loads(git("show", f"{ref}:runs/{path}").stdout))
+        runs.append(json.loads(git("show", f"{ref}:runs/{path}")))
     except ValueError:
         pass
-runs = sorted((e for e in runs if on_main(e.get("sha"))), key=lambda e: (e.get("date", ""), e.get("run_id", "")))
-green = [e for e in runs if e.get("result") == "green"]
-print((green or runs)[-1]["sha"] if runs else "")
+for e in sorted(runs, key=lambda e: (e.get("date", ""), e.get("run_id", "")), reverse=True):
+    if e.get("sha"):
+        print(e.get("result", "?"), e["sha"])
 PY
 )"
+  green="" newest=""
+  while read -r result s; do
+    [ -n "$s" ] && on_main "$s" "$main" || continue
+    [ -n "$newest" ] || newest="$s"
+    if [ "$result" = green ]; then green="$s"; break; fi
+  done <<<"$entries"
+  sha="${green:-$newest}"
   [ -n "$sha" ] || sha="$(git rev-list -1 --before='60 days ago' "$main")"
+  [ -n "$sha" ] || die "no baseline: no ledger entry on main and no main commit 60 days back"
   echo "$sha"
   ;;
 record)
@@ -66,14 +71,16 @@ record)
   sha="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("meta", {}).get("sha", ""))' "$RESULTS/summary.json")"
   # Only a main commit may enter the ledger (references/ledger.md); a dry run
   # from a branch records with a warning, since it never reaches the remote.
-  if ! git merge-base --is-ancestor "$sha" "$(main_sha)" 2>/dev/null; then
+  if ! on_main "$sha"; then
     dry_run || die "run tested ${sha:-no SHA}, which is not a commit on main; not recorded"
     log "WARNING: ${sha:-no SHA} is not on main; recording on the dry-run ref only"
   fi
   tmp="$(mktemp -d)"
   if dry_run && has_ref "$dry_ref"; then
     git worktree add -q --detach "$tmp" "$dry_ref"
-  elif fetch_ledger; then
+  elif fetch_ledger || has_ref "$remote_ref"; then
+    # A failed fetch keeps the last fetched ledger rather than starting an
+    # empty one; a push from it is then rejected, never a rewrite.
     git worktree add -q --detach "$tmp" "$remote_ref"
   else
     root="$(git "${ident[@]}" commit-tree "$(git hash-object -t tree /dev/null)" -m "e2e ledger root")"

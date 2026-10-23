@@ -54,8 +54,9 @@ e2e_license_available() {
   if e2e_license >/dev/null 2>&1; then echo yes; else echo no; fi
 }
 
-# origin/main as fetched now. When the fetch fails it is HEAD, never an older
-# origin/main left by an earlier fetch, which would test or skip a stale SHA.
+# The commit to test: origin/main as fetched now. When the fetch fails it is
+# HEAD, never an older origin/main left by an earlier fetch, which would test
+# or skip a stale SHA. Not for "is X on main": see main_ref_strict.
 main_sha() {
   if git -C "$REPO_ROOT" fetch -q origin main 2>/dev/null; then
     git -C "$REPO_ROOT" rev-parse origin/main
@@ -63,6 +64,42 @@ main_sha() {
     log "fetch of origin/main failed; using HEAD"
     git -C "$REPO_ROOT" rev-parse HEAD
   fi
+}
+
+# The main to judge membership against (references/ledger.md): fetched now,
+# else the local origin/main, since an older main is still main. Never HEAD,
+# which would let any branch pass. Exit 1 when there is no origin/main at all.
+main_ref_strict() {
+  git -C "$REPO_ROOT" fetch -q origin main 2>/dev/null \
+    || log "fetch of origin/main failed; checking against the local origin/main"
+  git -C "$REPO_ROOT" rev-parse -q --verify 'origin/main^{commit}'
+}
+
+# A shallow clone lacks the history that ancestry checks and attribution
+# need; deepen it once to E2E_HISTORY_DAYS of main.
+ensure_history() {
+  [ "$(git -C "$REPO_ROOT" rev-parse --is-shallow-repository 2>/dev/null)" = true ] || return 0
+  git -C "$REPO_ROOT" fetch -q --shallow-since="${E2E_HISTORY_DAYS:-120} days ago" origin main 2>/dev/null \
+    || log "could not deepen the shallow clone; older ledger entries may not resolve"
+}
+
+# on_main <sha> [main]: the SHA is a commit on main. A SHA this clone lacks is
+# fetched first (GitHub serves any published commit), so an absent object is
+# never read as "not on main"; one GitHub does not have fails. In a shallow
+# clone a fetched commit is not yet linked to main, so main is deepened to
+# just before the commit's date and the check is made again.
+on_main() {
+  local sha="$1" main="${2:-}" when
+  [ -n "$sha" ] || return 1
+  [ -n "$main" ] || main="$(main_ref_strict)" || return 1
+  ensure_history
+  git -C "$REPO_ROOT" cat-file -e "$sha^{commit}" 2>/dev/null \
+    || git -C "$REPO_ROOT" fetch -q origin "$sha" 2>/dev/null || return 1
+  git -C "$REPO_ROOT" merge-base --is-ancestor "$sha" "$main" && return 0
+  [ "$(git -C "$REPO_ROOT" rev-parse --is-shallow-repository 2>/dev/null)" = true ] || return 1
+  when="$(git -C "$REPO_ROOT" log -1 --format=%ct "$sha")" || return 1
+  git -C "$REPO_ROOT" fetch -q --shallow-since="$((when - 86400))" origin main 2>/dev/null || return 1
+  git -C "$REPO_ROOT" merge-base --is-ancestor "$sha" "$main"
 }
 
 # What the binary is built from; the e2e tree is excluded because specs are
@@ -75,7 +112,8 @@ PRODUCT_PATHSPEC=(frontend backend proto go.mod go.sum ':!frontend/tests/e2e')
 # product files match no main commit.
 tested_sha() {
   local main base
-  main="$(main_sha)" || return 1
+  main="$(main_ref_strict)" || return 1
+  ensure_history
   base="$(git -C "$REPO_ROOT" merge-base HEAD "$main" 2>/dev/null)" || return 1
   git -C "$REPO_ROOT" diff --quiet "$base" HEAD -- "${PRODUCT_PATHSPEC[@]}" || return 1
   [ -z "$(git -C "$REPO_ROOT" status --porcelain -- "${PRODUCT_PATHSPEC[@]}" | head -1)" ] || return 1
