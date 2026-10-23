@@ -3455,12 +3455,16 @@
     "open-in-new-tab": "Abrir en nueva pestaña",
     "opened-from-link": "Abierto desde enlace",
     "pending-query": "Consulta pendiente",
+    "plan-estimated": "Estimado",
+    "plan-view": "Plan",
     "previous-row": "Fila anterior",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."
     },
     "query-history-not-found": "Historial de consultas no encontrado o ya no accesible",
+    "query-plan-estimated": "Un plan nuevo, calculado ahora mismo. Puede diferir del plan que se ejecutó.",
     "query-plan-load-failed": "No se pudo cargar el plan de consulta",
+    "query-plan-requires-explain": "Requiere el permiso bb.sql.explain en este proyecto",
     "query-plan-viewer": {
       "copy": {
         "copied": "Copiado",
@@ -3495,6 +3499,7 @@
         "spanner-invalid": "El plan de consulta no es JSON válido. Se espera un plan de consulta de Spanner.",
         "spanner-no-plan": "El JSON del plan de consulta no contiene una lista \"planNodes\" con un operador en la raíz.",
         "too-deep": "El plan de consulta está demasiado anidado para que este visualizador pueda dibujarlo.",
+        "too-many-nodes": "El plan de consulta tiene más operadores de los que este visualizador dibuja, así que se muestra como texto.",
         "unreadable": "No se pudo leer este plan de consulta"
       },
       "grid": {

@@ -65,6 +65,12 @@ const {
   };
 });
 
+const { explainPermission, tabState, updateCurrentTab } = vi.hoisted(() => ({
+  explainPermission: { granted: true },
+  tabState: { resultLayout: undefined as string | undefined },
+  updateCurrentTab: vi.fn(),
+}));
+
 vi.mock("react-i18next", () => ({
   initReactI18next: {
     init: vi.fn(),
@@ -190,13 +196,26 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
   useSQLEditorTabState: (
     selector: (state: {
       currentTabId: string;
-      tabsById: Map<string, { mode: string }>;
+      tabsById: Map<string, { mode: string; resultLayout?: string }>;
+      updateCurrentTab: typeof updateCurrentTab;
     }) => unknown
   ) =>
     selector({
       currentTabId: "tab-1",
-      tabsById: new Map([["tab-1", { mode: "READ_ONLY" }]]),
+      tabsById: new Map([
+        ["tab-1", { mode: "READ_ONLY", resultLayout: tabState.resultLayout }],
+      ]),
+      updateCurrentTab,
     }),
+}));
+
+vi.mock("@/utils/iam/permission", () => ({
+  hasProjectPermissionV2: () => explainPermission.granted,
+}));
+
+vi.mock("@/utils/v1/instance", () => ({
+  instanceV1AllowsExplain: (engine: Engine) =>
+    engine === Engine.POSTGRES || engine === Engine.MYSQL,
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -210,6 +229,7 @@ vi.mock("@/utils/util", () => ({
 }));
 
 vi.mock("@/utils/v1/database", () => ({
+  getDatabaseProject: (database: Database) => ({ name: database.project }),
   getInstanceResource: (database: Database) => database.instanceResource,
 }));
 
@@ -1105,5 +1125,106 @@ describe("SingleResultView explain visualizer", () => {
     );
 
     expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+  });
+});
+
+const rowsResult = (statement = "SELECT * FROM t") =>
+  create(QueryResultSchema, {
+    statement,
+    columnNames: ["id"],
+    columnTypeNames: ["INT"],
+    rows: [
+      create(QueryRowSchema, {
+        values: [
+          create(RowValueSchema, { kind: { case: "stringValue", value: "1" } }),
+        ],
+      }),
+    ],
+  });
+
+describe("SingleResultView plan view", () => {
+  beforeEach(() => {
+    explainPermission.granted = true;
+    tabState.resultLayout = undefined;
+    updateCurrentTab.mockClear();
+  });
+
+  const renderRows = (
+    engine: Engine,
+    overrides: Partial<React.ComponentProps<typeof SingleResultView>> = {}
+  ) =>
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{ ...params, engine, statement: "SELECT * FROM t" }}
+        database={databaseForEngine(engine)}
+        result={rowsResult()}
+        showExport={false}
+        {...overrides}
+      />
+    );
+
+  test("offers Plan beside Table and Vertical and shows the plan in place", () => {
+    renderRows(Engine.POSTGRES);
+
+    expect(screen.getByText("sql-editor.table-view")).toHaveClass("sr-only");
+    expect(screen.getByText("sql-editor.vertical-display")).toHaveClass(
+      "sr-only"
+    );
+    expect(screen.getByText("sql-editor.plan-view")).toHaveClass("sr-only");
+    expect(screen.getByTestId("result-table")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("sql-editor.plan-view"));
+
+    expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+    expect(screen.queryByTestId("result-table")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "common.plan" })).toBeEnabled();
+    expect(updateCurrentTab).toHaveBeenCalledWith({ resultLayout: "PLAN" });
+
+    fireEvent.click(screen.getByText("sql-editor.table-view"));
+    expect(screen.getByTestId("result-table")).toBeInTheDocument();
+  });
+
+  test("disables Plan when the user lacks the explain permission", () => {
+    explainPermission.granted = false;
+    renderRows(Engine.POSTGRES);
+
+    expect(
+      screen.getByRole("radio", { name: "sql-editor.plan-view" })
+    ).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(screen.getByText("sql-editor.plan-view"));
+    expect(screen.getByTestId("result-table")).toBeInTheDocument();
+  });
+
+  test("offers no Plan on an engine that cannot explain", () => {
+    renderRows(Engine.REDIS);
+
+    expect(screen.getByText("sql-editor.vertical-display")).toBeInTheDocument();
+    expect(screen.queryByText("sql-editor.plan-view")).not.toBeInTheDocument();
+  });
+
+  test("offers no Plan after an earlier statement of the run", () => {
+    const setSearchPath = create(QueryResultSchema, {
+      statement: "SET search_path = tenant",
+    });
+    renderRows(Engine.POSTGRES, {
+      results: [setSearchPath, rowsResult()],
+      resultIndex: 1,
+    });
+
+    expect(screen.queryByText("sql-editor.plan-view")).not.toBeInTheDocument();
+  });
+
+  test("opens on the remembered Plan choice, falling back where nothing can be planned", () => {
+    tabState.resultLayout = "PLAN";
+    const { unmount } = renderRows(Engine.POSTGRES);
+    expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+    unmount();
+
+    renderRows(Engine.REDIS);
+    expect(screen.getByTestId("result-table")).toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", { name: "sql-editor.table-view" })
+    ).toHaveAttribute("aria-checked", "true");
   });
 });

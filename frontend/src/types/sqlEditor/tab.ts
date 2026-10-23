@@ -68,6 +68,11 @@ export type SQLEditorDatabaseQueryContext = {
   resultSet?: SQLResultSetV1;
 };
 
+// How the result pane shows a result set: rows as a table, one row per block,
+// or the statement's query plan. Remembered per tab, so the next run opens the
+// same way.
+export type ResultLayout = "TABLE" | "VERTICAL" | "PLAN";
+
 export type SQLEditorTab = {
   // basic fields
   id: string; // uuid
@@ -78,6 +83,7 @@ export type SQLEditorTab = {
   statement: string; // local editing statement, might be out-of-sync to ref sheet's statement
   selectedStatement: string;
   mode: SQLEditorTabMode;
+  resultLayout?: ResultLayout;
   dataExplorer?: DataExplorerState;
 
   // SQL query related fields

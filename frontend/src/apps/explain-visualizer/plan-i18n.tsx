@@ -36,6 +36,8 @@ const ENGLISH = {
     'The query plan JSON does not contain a "planNodes" list with an operator at its root.',
   "error.too-deep":
     "The query plan is nested too deeply for this visualizer to draw.",
+  "error.too-many-nodes":
+    "The query plan has more operators than this visualizer draws, so it is shown as text.",
   "error.unreadable": "This query plan could not be read",
   "grid.added-cost": "Added cost",
   "grid.added-cost-hint":

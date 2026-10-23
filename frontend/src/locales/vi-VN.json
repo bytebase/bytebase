@@ -3455,12 +3455,16 @@
     "open-in-new-tab": "Mở trong tab mới",
     "opened-from-link": "Mở từ liên kết",
     "pending-query": "Đang chờ truy vấn",
+    "plan-estimated": "Ước tính",
+    "plan-view": "Kế hoạch",
     "previous-row": "Dòng trước",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
     },
     "query-history-not-found": "Không tìm thấy lịch sử truy vấn hoặc không còn truy cập được",
+    "query-plan-estimated": "Một kế hoạch mới, vừa được tạo. Có thể khác với kế hoạch đã chạy.",
     "query-plan-load-failed": "Không tải được kế hoạch truy vấn",
+    "query-plan-requires-explain": "Cần quyền bb.sql.explain trên dự án này",
     "query-plan-viewer": {
       "copy": {
         "copied": "Đã sao chép",
@@ -3495,6 +3499,7 @@
         "spanner-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần một kế hoạch truy vấn Spanner.",
         "spanner-no-plan": "JSON của kế hoạch truy vấn không chứa danh sách \"planNodes\" có toán tử ở gốc.",
         "too-deep": "Kế hoạch truy vấn lồng quá sâu để trình trực quan hóa này có thể vẽ.",
+        "too-many-nodes": "Kế hoạch truy vấn có nhiều toán tử hơn mức trình trực quan hóa này vẽ được, nên được hiển thị dưới dạng văn bản.",
         "unreadable": "Không thể đọc kế hoạch truy vấn này"
       },
       "grid": {

@@ -505,4 +505,14 @@ describe("QueryPlanViewer", () => {
       screen.getByRole("button", { name: /Bitmap Index Scan/ })
     ).toHaveAttribute("aria-pressed", "true");
   });
+
+  test("shows a note at the end of the tab row", () => {
+    render(
+      <QueryPlanViewer tree={tree()} rawPlan={rawPlan} note="Estimated now" />
+    );
+
+    const note = screen.getByText("Estimated now");
+    expect(note).toHaveClass("ml-auto");
+    expect(note.closest('[role="tablist"]')).not.toBeNull();
+  });
 });

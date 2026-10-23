@@ -3455,12 +3455,16 @@
     "open-in-new-tab": "在新选项卡中打开",
     "opened-from-link": "从链接打开",
     "pending-query": "待处理查询",
+    "plan-estimated": "预估",
+    "plan-view": "执行计划",
     "previous-row": "上一行",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。"
     },
     "query-history-not-found": "查询历史记录不存在或已无法访问",
+    "query-plan-estimated": "这是刚刚生成的新计划，可能与实际运行时的计划不同。",
     "query-plan-load-failed": "加载查询计划失败",
+    "query-plan-requires-explain": "需要此项目的 bb.sql.explain 权限",
     "query-plan-viewer": {
       "copy": {
         "copied": "已复制",
@@ -3495,6 +3499,7 @@
         "spanner-invalid": "查询计划不是有效的 JSON。需要 Spanner 查询计划。",
         "spanner-no-plan": "查询计划 JSON 不包含根节点为操作符的 \"planNodes\" 列表。",
         "too-deep": "查询计划嵌套过深，此可视化工具无法绘制。",
+        "too-many-nodes": "查询计划的算子数量超过此可视化工具可绘制的上限，已改为文本展示。",
         "unreadable": "无法读取此查询计划"
       },
       "grid": {
