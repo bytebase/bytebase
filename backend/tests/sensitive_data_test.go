@@ -367,14 +367,39 @@ func TestSensitiveData(t *testing.T) {
 	a.Len(batchResp.Msg.Results[0].Rows, 3)
 	a.Contains(batchResp.Msg.Results[1].Error, refusedPredicate)
 
+	// Created directly on the target, after the last schema sync, so the synced
+	// schema does not know the function or how many columns it returns.
+	targetDB, err := sql.Open("pgx", fmt.Sprintf("postgresql://postgres:root-password@%s:%s/%s?sslmode=disable", pgContainer.GetHost(), pgContainer.GetPort(), databaseName))
+	a.NoError(err)
+	defer targetDB.Close()
+	_, err = targetDB.ExecContext(ctx, `CREATE FUNCTION unsynced_rows() RETURNS TABLE(a int, b int) LANGUAGE sql AS 'SELECT 1, 2'`)
+	a.NoError(err)
+
+	// The span lists one placeholder column for the function, so tech_book's
+	// columns would shift onto the wrong maskers and author past the last one.
+	misalignedResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      database.Name,
+		Statement: "SELECT * FROM unsynced_rows() f CROSS JOIN tech_book",
+	}))
+	a.NoError(err)
+	a.Len(misalignedResp.Msg.Results, 1)
+	a.Contains(misalignedResp.Msg.Results[0].Error, "masking cannot be applied: the query returned 5 columns but Bytebase resolved 4")
+	a.Empty(misalignedResp.Msg.Results[0].Rows)
+
+	unmaskedResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      database.Name,
+		Statement: "SELECT * FROM unsynced_rows()",
+	}))
+	a.NoError(err)
+	a.Len(unmaskedResp.Msg.Results, 1)
+	a.Equal([]string{"a", "b"}, unmaskedResp.Msg.Results[0].ColumnNames)
+	a.Len(unmaskedResp.Msg.Results[0].Rows, 1)
+
 	// ghost synced with no columns. A column added outside Bytebase is masked by
 	// name once it syncs, so the condition on it must be refused before the
-	// query runs: a run would take the 30 seconds pg_sleep asks for.
-	target, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		pgContainer.GetHost(), pgContainer.GetPort(), pgContainer.GetUsername(), pgContainer.GetPassword(), databaseName))
-	a.NoError(err)
-	defer target.Close()
-	_, err = target.ExecContext(ctx, "ALTER TABLE ghost ADD COLUMN ghost_secret text; INSERT INTO ghost VALUES ('x')")
+	// query runs: a run would take the 30 seconds pg_sleep asks for. The query
+	// syncs the database, so it comes after the unsynced_rows checks.
+	_, err = targetDB.ExecContext(ctx, "ALTER TABLE ghost ADD COLUMN ghost_secret text; INSERT INTO ghost VALUES ('x')")
 	a.NoError(err)
 	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{Name: "workspaces/-"}))
 	a.NoError(err)
