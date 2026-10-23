@@ -835,27 +835,9 @@ func queryRetry(
 ) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
 	// An explain request carries the bare statements the driver will wrap, so
 	// their spans name the databases the plan describes.
-	spans, err := parserbase.GetQuerySpan(
-		ctx,
-		parserbase.GetQuerySpanContext{
-			InstanceID:                    instance.ResourceID,
-			GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
-			ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
-			GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
-		},
-		instance.Metadata.GetEngine(),
-		statements,
-		database.DatabaseName,
-		queryContext.Schema,
-		!store.IsObjectCaseSensitive(instance),
-	)
+	spans, err := buildQuerySpans(ctx, stores, instance, database, statements, queryContext.Schema)
 	if err != nil {
 		return nil, nil, time.Duration(0), err
-	}
-	// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
-	// If err != nil, this function will return the original spans.
-	if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
-		slog.Debug("failed to replace backup table with source", log.BBError(err))
 	}
 	if optionalAccessCheck != nil {
 		// A smuggled write (EXPLAIN ANALYZE of a write) is refused earlier, in
@@ -870,6 +852,18 @@ func queryRetry(
 	queryContext.MaskingEnabled = maskingEnabled
 
 	if maskingEnabled {
+		// Columns a stale snapshot lacks can hide a condition from the predicate
+		// check, so sync before execution. MaskResults refuses the result if the
+		// columns stay unresolved. Permanently empty tables re-sync on every query
+		// until BYT-10074 adds throttling.
+		if unresolved := unresolvedColumnDatabases(spans, instance); len(unresolved) > 0 {
+			if err := syncDatabaseMetadata(ctx, stores, schemaSyncer, instance, unresolved); err != nil {
+				return nil, nil, time.Duration(0), err
+			}
+			if spans, err = buildQuerySpans(ctx, stores, instance, database, statements, queryContext.Schema); err != nil {
+				return nil, nil, time.Duration(0), err
+			}
+		}
 		if err := refuseSensitivePredicateColumns(ctx, stores, spans, instance, user); err != nil {
 			return nil, nil, time.Duration(0), err
 		}
@@ -906,21 +900,7 @@ func queryRetry(
 
 	syncDatabaseMap := make(map[string]bool)
 	for i, r := range results {
-		if i >= len(spans) {
-			continue
-		}
-		// Re-sync even for error results: MaskResults also refuses partial rows.
-		// Permanently empty tables re-sync on every query until BYT-10074 adds throttling.
-		if maskingEnabled && maskingBlockedByUnresolvedColumns(spans[i], instance) {
-			for _, dbName := range spans[i].UnresolvedColumnsError.Databases() {
-				slog.Debug("database metadata need to sync: unresolved columns",
-					slog.String("instance", instance.ResourceID),
-					slog.String("database", dbName),
-					slog.String("detail", spans[i].UnresolvedColumnsError.Error()))
-				syncDatabaseMap[dbName] = true
-			}
-		}
-		if r.Error != "" {
+		if i >= len(spans) || r.Error != "" {
 			continue
 		}
 		if spans[i].NotFoundError != nil {
@@ -931,52 +911,19 @@ func queryRetry(
 		}
 	}
 
-	// Sync database metadata.
-	for accessDatabaseName := range syncDatabaseMap {
-		slog.Debug("sync database metadata", slog.String("instance", instance.ResourceID), slog.String("database", accessDatabaseName))
-		d, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
-		if err != nil {
-			return nil, nil, duration, err
-		}
-		if d == nil {
-			// Leave the span error in place so masking can reject an untracked database.
-			slog.Debug("skip metadata sync: database not tracked",
-				slog.String("instance", instance.ResourceID),
-				slog.String("database", accessDatabaseName))
-			continue
-		}
-		if err := schemaSyncer.SyncDatabaseSchema(ctx, d); err != nil {
-			return nil, nil, duration, errors.Wrapf(err, "failed to sync database schema for database %q", accessDatabaseName)
-		}
+	if err := syncDatabaseMetadata(ctx, stores, schemaSyncer, instance, syncDatabaseMap); err != nil {
+		return nil, nil, duration, err
 	}
 
 	// Retry getting query span.
 	if len(syncDatabaseMap) > 0 {
 		slog.Debug("retry query after sync metadata", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
-		spans, err = parserbase.GetQuerySpan(
-			ctx,
-			parserbase.GetQuerySpanContext{
-				InstanceID:                    instance.ResourceID,
-				GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
-				ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
-				GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
-			},
-			instance.Metadata.GetEngine(),
-			statements,
-			database.DatabaseName,
-			queryContext.Schema,
-			!store.IsObjectCaseSensitive(instance),
-		)
+		spans, err = buildQuerySpans(ctx, stores, instance, database, statements, queryContext.Schema)
 		if err != nil {
 			return nil, nil, time.Duration(0), err
 		}
-		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
-		// If err != nil, this function will return the original spans.
-		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
-			slog.Debug("failed to replace backup table with source", log.BBError(err))
-		}
-		// Metadata synced after the first span missed columns may surface a
-		// condition the pre-execution check could not see.
+		// A table the first span did not find may surface a condition the
+		// pre-execution check could not see.
 		if maskingEnabled {
 			if err := refuseSensitivePredicateColumns(ctx, stores, spans, instance, user); err != nil {
 				return nil, nil, duration, err
@@ -1013,6 +960,80 @@ func queryRetry(
 		}
 	}
 	return results, spans, duration, nil
+}
+
+// buildQuerySpans analyzes statements for access checks and masking.
+func buildQuerySpans(
+	ctx context.Context,
+	stores *store.Store,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	statements []parserbase.Statement,
+	schema string,
+) ([]*parserbase.QuerySpan, error) {
+	spans, err := parserbase.GetQuerySpan(
+		ctx,
+		parserbase.GetQuerySpanContext{
+			InstanceID:                    instance.ResourceID,
+			GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
+			ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
+			GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
+		},
+		instance.Metadata.GetEngine(),
+		statements,
+		database.DatabaseName,
+		schema,
+		!store.IsObjectCaseSensitive(instance),
+	)
+	if err != nil {
+		return nil, err
+	}
+	// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
+	// If err != nil, this function will return the original spans.
+	if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
+		slog.Debug("failed to replace backup table with source", log.BBError(err))
+	}
+	return spans, nil
+}
+
+// unresolvedColumnDatabases returns the databases whose stale metadata keeps
+// masking from resolving a span's columns.
+func unresolvedColumnDatabases(spans []*parserbase.QuerySpan, instance *store.InstanceMessage) map[string]bool {
+	databases := make(map[string]bool)
+	for _, span := range spans {
+		if !maskingBlockedByUnresolvedColumns(span, instance) {
+			continue
+		}
+		for _, name := range span.UnresolvedColumnsError.Databases() {
+			slog.Debug("database metadata need to sync: unresolved columns",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", name),
+				slog.String("detail", span.UnresolvedColumnsError.Error()))
+			databases[name] = true
+		}
+	}
+	return databases
+}
+
+func syncDatabaseMetadata(ctx context.Context, stores *store.Store, schemaSyncer *schemasync.Syncer, instance *store.InstanceMessage, databaseNames map[string]bool) error {
+	for name := range databaseNames {
+		slog.Debug("sync database metadata", slog.String("instance", instance.ResourceID), slog.String("database", name))
+		d, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), InstanceID: &instance.ResourceID, DatabaseName: &name})
+		if err != nil {
+			return err
+		}
+		if d == nil {
+			// Leave the span error in place so masking can reject an untracked database.
+			slog.Debug("skip metadata sync: database not tracked",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", name))
+			continue
+		}
+		if err := schemaSyncer.SyncDatabaseSchema(ctx, d); err != nil {
+			return errors.Wrapf(err, "failed to sync database schema for database %q", name)
+		}
+	}
+	return nil
 }
 
 // queryRetryStopOnError runs the query and stops on encountering errors.

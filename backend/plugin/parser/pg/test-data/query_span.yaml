@@ -1552,7 +1552,12 @@
           schema: public
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: a
 - description: Test For Cascade Function As Table Source
   statement: SELECT * FROM cascade_t(1);
   defaultDatabase: db

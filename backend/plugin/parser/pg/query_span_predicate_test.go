@@ -46,6 +46,9 @@ func TestGetQuerySpanPredicateColumns(t *testing.T) {
 		{"cte", "WITH c AS (SELECT id FROM t WHERE ssn = '1') SELECT id FROM c", []string{"t.ssn"}},
 		{"cte output", "WITH c AS (SELECT id, ssn FROM t) SELECT id FROM c WHERE ssn = '1'", []string{"t.ssn"}},
 		{"set operation arm", "SELECT id FROM t WHERE ssn = '1' UNION SELECT id FROM o", []string{"t.ssn"}},
+		{"except filters by the other branch", "SELECT 'guess' AS x EXCEPT SELECT ssn FROM t", []string{"t.ssn"}},
+		{"intersect filters by the other branch", "SELECT 'guess' AS x INTERSECT ALL SELECT ssn FROM t", []string{"t.ssn"}},
+		{"union filters nothing", "SELECT 'guess' AS x UNION SELECT ssn FROM t", []string{}},
 		{"explain analyze", "EXPLAIN ANALYZE SELECT id FROM t WHERE ssn = '1'", []string{"t.ssn"}},
 		{"aggregate filter", "SELECT sum(id) FILTER (WHERE ssn = '1') AS x FROM t", []string{"t.ssn"}},
 		{"natural join", "SELECT 1 FROM t NATURAL JOIN (SELECT '1'::text AS ssn) x", []string{"t.ssn"}},
@@ -60,6 +63,23 @@ func TestGetQuerySpanPredicateColumns(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			span := spanFor(t, tc.statement, healthySchema())
 			require.Equal(t, tc.want, predicateColumnNames(span.PredicateColumns))
+		})
+	}
+}
+
+func TestGetQuerySpanPredicateColumnsOfFunctionInFrom(t *testing.T) {
+	schema := healthySchema()
+	schema.Schemas[0].Functions = []*metadatapb.FunctionMetadata{
+		{Name: "probe", Definition: "CREATE FUNCTION public.probe(guess text) RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT t.id FROM t WHERE t.ssn = guess; END; $$"},
+		{Name: "probe_sql", Definition: "CREATE FUNCTION public.probe_sql(guess text) RETURNS SETOF int LANGUAGE sql AS $$ SELECT id FROM t WHERE ssn = guess $$"},
+	}
+	for _, statement := range []string{
+		"SELECT count(*) AS c FROM probe('guess')",
+		"SELECT count(*) AS c FROM probe_sql('guess')",
+	} {
+		t.Run(statement, func(t *testing.T) {
+			span := spanFor(t, statement, schema)
+			require.Equal(t, []string{"t.ssn"}, predicateColumnNames(span.PredicateColumns))
 		})
 	}
 }
@@ -118,6 +138,9 @@ func TestCollectFallbackPredicateColumns(t *testing.T) {
 		{"aggregate filter", "SELECT count(*) FILTER (WHERE ssn = '1') FROM t", []string{"t.ssn"}},
 		{"natural join reads both sides", "SELECT 1 FROM o NATURAL JOIN (SELECT id FROM t) x", []string{"o.amt", "o.id", "t.id"}},
 		{"select list only", "SELECT ssn FROM t", []string{}},
+		{"except filters by the other branch", "SELECT 'guess' EXCEPT SELECT ssn FROM t", []string{"t.ssn"}},
+		{"intersect over star", "SELECT 1, 'a', 'b' INTERSECT SELECT * FROM t", []string{"t.email", "t.id", "t.ssn"}},
+		{"union filters nothing", "SELECT 'guess' UNION SELECT ssn FROM t", []string{}},
 	}
 	accesses := base.SourceColumnSet{
 		{Database: "db", Schema: "public", Table: "t"}: true,

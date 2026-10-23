@@ -2,15 +2,19 @@ package tests
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -91,6 +95,7 @@ func TestSensitiveData(t *testing.T) {
 				name varchar(220),
 				author varchar(220)
 			);
+			CREATE TABLE ghost();
 		`
 		insertData = `
 			INSERT INTO tech_book VALUES
@@ -361,4 +366,43 @@ func TestSensitiveData(t *testing.T) {
 	a.Empty(batchResp.Msg.Results[0].Error)
 	a.Len(batchResp.Msg.Results[0].Rows, 3)
 	a.Contains(batchResp.Msg.Results[1].Error, refusedPredicate)
+
+	// ghost synced with no columns. A column added outside Bytebase is masked by
+	// name once it syncs, so the condition on it must be refused before the
+	// query runs: a run would take the 30 seconds pg_sleep asks for.
+	target, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		pgContainer.GetHost(), pgContainer.GetPort(), pgContainer.GetUsername(), pgContainer.GetPassword(), databaseName))
+	a.NoError(err)
+	defer target.Close()
+	_, err = target.ExecContext(ctx, "ALTER TABLE ghost ADD COLUMN ghost_secret text; INSERT INTO ghost VALUES ('x')")
+	a.NoError(err)
+	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{Name: "workspaces/-"}))
+	a.NoError(err)
+	_, err = ctl.orgPolicyServiceClient.UpdatePolicy(ctx, connect.NewRequest(&v1pb.UpdatePolicyRequest{
+		Policy: &v1pb.Policy{
+			Name: workspace.Msg.Name + "/policies/masking_rule",
+			Type: v1pb.PolicyType_MASKING_RULE,
+			Policy: &v1pb.Policy_MaskingRulePolicy{
+				MaskingRulePolicy: &v1pb.MaskingRulePolicy{
+					Rules: []*v1pb.MaskingRulePolicy_MaskingRule{{
+						Id:           "6b1e7c2a-3f4d-4e5a-9b8c-0d1e2f3a4b5c",
+						Condition:    &expr.Expr{Expression: `resource.column_name == "ghost_secret"`},
+						SemanticType: "default",
+					}},
+				},
+			},
+		},
+		AllowMissing: true,
+		UpdateMask:   &fieldmaskpb.FieldMask{Paths: []string{"masking_rule_policy"}},
+	}))
+	a.NoError(err)
+	start := time.Now()
+	ghostResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      database.Name,
+		Statement: "SELECT 1 FROM ghost WHERE ghost_secret = 'x' AND pg_sleep(30) IS NOT NULL",
+	}))
+	a.NoError(err)
+	a.Less(time.Since(start), 20*time.Second)
+	a.Len(ghostResp.Msg.Results, 1)
+	a.Contains(ghostResp.Msg.Results[0].Error, refusedPredicate)
 }

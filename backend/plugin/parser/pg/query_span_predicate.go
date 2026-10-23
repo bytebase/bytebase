@@ -30,8 +30,20 @@ func (e *omniQuerySpanExtractor) collectPredicateColumnsInStack(queryStack []*ca
 		}
 	}
 	if q.SetOp != catalog.SetOpNone {
-		e.collectPredicateColumnsInStack(appendQuery(queryStack, q.LArg), visited)
-		e.collectPredicateColumnsInStack(appendQuery(queryStack, q.RArg), visited)
+		// INTERSECT and EXCEPT keep a row by whether the other branch has it,
+		// so their branches' output columns decide which rows come back.
+		filters := q.SetOp == catalog.SetOpIntersect || q.SetOp == catalog.SetOpIntersectAll ||
+			q.SetOp == catalog.SetOpExcept || q.SetOp == catalog.SetOpExceptAll
+		for _, branch := range []*catalog.Query{q.LArg, q.RArg} {
+			if filters && branch != nil {
+				for _, te := range branch.TargetList {
+					if te != nil && !te.ResJunk {
+						e.walkExprWithVisited(appendQuery(queryStack, branch), te.Expr, e.predicateColumns, make(map[queryExprKey]bool))
+					}
+				}
+			}
+			e.collectPredicateColumnsInStack(appendQuery(queryStack, branch), visited)
+		}
 		return
 	}
 	for _, rte := range q.RangeTable {
@@ -42,6 +54,13 @@ func (e *omniQuerySpanExtractor) collectPredicateColumnsInStack(queryStack []*ca
 			e.collectPredicateColumnsInStack(appendQuery(queryStack, rte.Subquery), visited)
 		}
 		for _, expr := range rte.FuncExprs {
+			// The conditions in the body of a function in FROM decide which
+			// rows it returns.
+			if call, ok := expr.(*catalog.FuncCallExpr); ok {
+				if proc := e.cat.GetUserProcByOID(call.FuncOID); proc != nil {
+					e.analyzeFunctionBody(proc)
+				}
+			}
 			e.collectNestedPredicateColumns(queryStack, expr, visited)
 		}
 	}
@@ -122,6 +141,9 @@ func (e *omniQuerySpanExtractor) collectFallbackPredicateColumns(stmt ast.Node, 
 		r.addJoinedRelation(join.Larg)
 		r.addJoinedRelation(join.Rarg)
 	}
+	for _, setOperation := range r.filteringSetOperations {
+		r.addSetOperationOutputs(setOperation)
+	}
 	e.recordPredicateNames(r, accesses)
 }
 
@@ -152,10 +174,12 @@ func (e *omniQuerySpanExtractor) recordPredicateNames(r *predicateNameResolver, 
 // output name of a subquery or CTE also reads the columns that produce it.
 type predicateNameResolver struct {
 	// The WHERE, JOIN ON, HAVING, and FILTER conditions, USING column names,
-	// and NATURAL joins of the statement, at any depth.
-	conditions   []ast.Node
-	usingNames   []string
-	naturalJoins []*ast.JoinExpr
+	// NATURAL joins, and INTERSECT and EXCEPT operations of the statement, at
+	// any depth.
+	conditions             []ast.Node
+	usingNames             []string
+	naturalJoins           []*ast.JoinExpr
+	filteringSetOperations []*ast.SelectStmt
 	// projections maps an output name to the expressions that produce it. A
 	// subquery or CTE name maps to its whole query, so a whole-row reference
 	// to it reads every column.
@@ -189,6 +213,9 @@ func newPredicateNameResolver(stmt ast.Node) *predicateNameResolver {
 		switch v := n.(type) {
 		case *ast.SelectStmt:
 			r.conditions = append(r.conditions, v.WhereClause, v.HavingClause)
+			if v.Op == ast.SETOP_INTERSECT || v.Op == ast.SETOP_EXCEPT {
+				r.filteringSetOperations = append(r.filteringSetOperations, v)
+			}
 			if v.TargetList != nil {
 				for _, item := range v.TargetList.Items {
 					if rt, ok := item.(*ast.ResTarget); ok {
@@ -263,6 +290,37 @@ func (r *predicateNameResolver) relationsNamed(name string) (map[string]bool, []
 		}
 	}
 	return tables, derived
+}
+
+// addSetOperationOutputs adds the outputs of every branch of sel, which an
+// INTERSECT or EXCEPT compares.
+func (r *predicateNameResolver) addSetOperationOutputs(sel *ast.SelectStmt) {
+	if sel == nil {
+		return
+	}
+	if sel.Op != ast.SETOP_NONE {
+		r.addSetOperationOutputs(sel.Larg)
+		r.addSetOperationOutputs(sel.Rarg)
+		return
+	}
+	if sel.TargetList == nil {
+		return
+	}
+	for _, item := range sel.TargetList.Items {
+		rt, ok := item.(*ast.ResTarget)
+		if !ok {
+			continue
+		}
+		if !isStarTarget(rt) {
+			r.addReferences(rt.Val)
+			continue
+		}
+		if sel.FromClause != nil {
+			for _, from := range sel.FromClause.Items {
+				r.addJoinedRelation(from)
+			}
+		}
+	}
 }
 
 func (r *predicateNameResolver) addJoinedRelation(node ast.Node) {
