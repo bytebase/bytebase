@@ -238,7 +238,18 @@ func (s *Server) registerTools() {
 	s.registerDecideIssueTool()
 	s.registerSetJustInTimeAccessTool()
 	s.registerMaskingExemptionTools()
+	s.registerRequestAccessGrantTool()
 	s.registerReauthorizeTool()
+}
+
+// requiresUserInteraction marks a tool whose every call Claude Code shows its
+// user in a permission prompt, even in auto and bypassPermissions modes and
+// despite allow rules. In dontAsk mode, and through --permission-prompt-tool,
+// Claude Code denies the call instead
+// (https://code.claude.com/docs/en/mcp#require-approval-for-a-specific-tool).
+// Other clients ignore the key.
+func requiresUserInteraction() mcp.Meta {
+	return mcp.Meta{"anthropic/requiresUserInteraction": true}
 }
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.

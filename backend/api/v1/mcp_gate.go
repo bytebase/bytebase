@@ -582,7 +582,7 @@ func grantIssueRefusal(issueType v1pb.Issue_Type) (reason, wayOut string) {
 	case v1pb.Issue_ACCESS_GRANT:
 		reason = fmt.Sprintf("an ACCESS_GRANT issue is filed by %s, not created directly",
 			v1connect.AccessGrantServiceCreateAccessGrantProcedure)
-		return reason, "Request the access with that method instead"
+		return reason, "Request the access with the request_access_grant tool instead"
 	default:
 		return fmt.Sprintf(
 			"a %v issue completes on creation whenever the workspace approval rule produces no template, "+
