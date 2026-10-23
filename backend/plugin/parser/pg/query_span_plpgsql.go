@@ -173,6 +173,7 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColum
 			}
 			return nil, errors.Wrapf(err, "failed to analyze SQL function body")
 		}
+		e.collectStatementPredicateColumns(query, selStmt, e.accessTablesOf(stmts[i].Text))
 		return e.extractFuncLineage(query), nil
 	}
 
@@ -503,7 +504,7 @@ func (a *plpgsqlAnalyzer) analyzeEmbeddedSQL(sql string) []base.SourceColumnSet 
 		return a.fallbackExtractLineage(sql, selStmt)
 	}
 
-	a.extractor.collectPredicateColumns(query)
+	a.extractor.collectStatementPredicateColumns(query, selStmt, accesses)
 
 	results := a.extractor.extractFuncLineage(query)
 

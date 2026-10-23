@@ -18,6 +18,30 @@ func (e *omniQuerySpanExtractor) collectPredicateColumns(q *catalog.Query) {
 	e.collectPredicateColumnsInStack([]*catalog.Query{q}, make(map[*catalog.Query]bool))
 }
 
+// collectStatementPredicateColumns records the predicate columns of sel,
+// analyzed as query, that reads accesses.
+func (e *omniQuerySpanExtractor) collectStatementPredicateColumns(query *catalog.Query, sel *ast.SelectStmt, accesses base.SourceColumnSet) {
+	e.collectPredicateColumns(query)
+	// The analyzer leaves a set operation's LIMIT and OFFSET out of its tree,
+	// so they are resolved by name.
+	r := newPredicateNameResolver(sel, e.namedFunctionReturnsSet)
+	limited := false
+	ast.Inspect(sel, func(n ast.Node) bool {
+		if v, ok := n.(*ast.SelectStmt); ok && v.Op != ast.SETOP_NONE {
+			for _, limit := range []ast.Node{v.LimitCount, v.LimitOffset} {
+				if limit != nil {
+					r.addReferences(limit)
+					limited = true
+				}
+			}
+		}
+		return true
+	})
+	if limited {
+		e.recordPredicateNames(r, accesses)
+	}
+}
+
 func (e *omniQuerySpanExtractor) collectPredicateColumnsInStack(queryStack []*catalog.Query, visited map[*catalog.Query]bool) {
 	q := currentQuery(queryStack)
 	if q == nil || visited[q] {
@@ -30,6 +54,8 @@ func (e *omniQuerySpanExtractor) collectPredicateColumnsInStack(queryStack []*ca
 			e.collectPredicateColumnsInStack(appendQuery(queryStack, cte.Query), visited)
 		}
 	}
+	e.collectConditionColumns(queryStack, q.LimitCount, visited)
+	e.collectConditionColumns(queryStack, q.LimitOffset, visited)
 	if q.SetOp != catalog.SetOpNone {
 		// INTERSECT and EXCEPT keep a row by whether the other branch has it,
 		// so their branches' output columns decide which rows come back.
@@ -82,8 +108,6 @@ func (e *omniQuerySpanExtractor) collectPredicateColumnsInStack(queryStack []*ca
 			e.collectNestedPredicateColumns(queryStack, te.Expr, visited)
 		}
 	}
-	e.collectConditionColumns(queryStack, q.LimitCount, visited)
-	e.collectConditionColumns(queryStack, q.LimitOffset, visited)
 }
 
 func (e *omniQuerySpanExtractor) collectJoinConditionColumns(queryStack []*catalog.Query, node catalog.JoinNode, visited map[*catalog.Query]bool) {
@@ -138,6 +162,20 @@ func (e *omniQuerySpanExtractor) collectNestedPredicateColumns(queryStack []*cat
 	})
 }
 
+// namedFunctionReturnsSet reports whether a function of that name is known to
+// return a set.
+func (e *omniQuerySpanExtractor) namedFunctionReturnsSet(name string) bool {
+	if proc := e.lookupUserProcByName(name); proc != nil {
+		return proc.RetSet
+	}
+	for _, proc := range e.cat.LookupProcByName(strings.ToLower(name)) {
+		if proc.RetSet {
+			return true
+		}
+	}
+	return false
+}
+
 // returnsSet reports whether the function is known to return a set. An
 // unknown function, analyzed opaquely, is not.
 func (e *omniQuerySpanExtractor) returnsSet(oid uint32) bool {
@@ -154,7 +192,7 @@ func (e *omniQuerySpanExtractor) returnsSet(oid uint32) bool {
 // analysis fails. Without scopes it over-approximates by name, so that an
 // analysis failure never lets a condition on a masked column through.
 func (e *omniQuerySpanExtractor) collectFallbackPredicateColumns(stmt ast.Node, accesses base.SourceColumnSet) {
-	r := newPredicateNameResolver(stmt)
+	r := newPredicateNameResolver(stmt, e.namedFunctionReturnsSet)
 	for _, name := range r.usingNames {
 		r.addName(name)
 	}
@@ -199,7 +237,8 @@ func (e *omniQuerySpanExtractor) recordPredicateNames(r *predicateNameResolver, 
 // any other reference matches the same-named column of every table, and an
 // output name of a subquery or CTE also reads the columns that produce it.
 type predicateNameResolver struct {
-	// The WHERE, JOIN ON, HAVING, and FILTER conditions, USING column names,
+	// The WHERE, JOIN ON, HAVING, and FILTER conditions, LIMIT and OFFSET,
+	// arguments of FROM and set-returning functions, USING column names,
 	// NATURAL joins, and INTERSECT and EXCEPT operations of the statement, at
 	// any depth.
 	conditions             []ast.Node
@@ -221,7 +260,7 @@ type predicateNameResolver struct {
 	wholeRows map[string]bool
 }
 
-func newPredicateNameResolver(stmt ast.Node) *predicateNameResolver {
+func newPredicateNameResolver(stmt ast.Node, returnsSet func(name string) bool) *predicateNameResolver {
 	r := &predicateNameResolver{
 		projections: make(map[string][]ast.Node),
 		relations:   make(map[string]map[string]bool),
@@ -238,7 +277,7 @@ func newPredicateNameResolver(stmt ast.Node) *predicateNameResolver {
 	ast.Inspect(stmt, func(n ast.Node) bool {
 		switch v := n.(type) {
 		case *ast.SelectStmt:
-			r.conditions = append(r.conditions, v.WhereClause, v.HavingClause)
+			r.conditions = append(r.conditions, v.WhereClause, v.HavingClause, v.LimitCount, v.LimitOffset)
 			if v.Op == ast.SETOP_INTERSECT || v.Op == ast.SETOP_EXCEPT {
 				r.filteringSetOperations = append(r.filteringSetOperations, v)
 			}
@@ -261,6 +300,12 @@ func newPredicateNameResolver(stmt ast.Node) *predicateNameResolver {
 			}
 		case *ast.FuncCall:
 			r.conditions = append(r.conditions, v.AggFilter)
+			if names := astStrings(v.Funcname); len(names) > 0 && returnsSet(names[len(names)-1]) {
+				r.conditions = append(r.conditions, v.Args)
+			}
+		case *ast.RangeFunction:
+			// A function in FROM returns the rows its arguments ask for.
+			r.conditions = append(r.conditions, v.Functions)
 		case *ast.CommonTableExpr:
 			r.derived[strings.ToLower(v.Ctename)] = true
 			project(v.Ctename, v.Ctequery)

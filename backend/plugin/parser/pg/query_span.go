@@ -349,7 +349,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	// SourceColumns (table-level access) is already captured in accessesMap
 	// from ExtractAccessTables above — no need to re-extract from the query.
 	results := e.extractLineage(query, selStmt)
-	e.collectPredicateColumns(query)
+	e.collectStatementPredicateColumns(query, selStmt, accessesMap)
 
 	// Merge columns discovered inside function bodies into the top-level sets.
 	for col := range e.funcSourceColumns {
@@ -378,7 +378,7 @@ func (e *omniQuerySpanExtractor) collectExplainedPredicateColumns(stmt ast.Node,
 		return errors.Wrapf(err, "failed to initialize catalog")
 	}
 	if query, err := e.analyzeSelect(explained); err == nil {
-		e.collectPredicateColumns(query)
+		e.collectStatementPredicateColumns(query, explained, accesses)
 	} else {
 		e.collectFallbackPredicateColumns(explained, accesses)
 	}
