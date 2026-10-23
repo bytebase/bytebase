@@ -10,6 +10,60 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
+// extractMSSQL returns the built projection: what approval and write authorization read,
+// without the embedded metadata pointer.
+func extractMSSQL(t *testing.T, statement string) *storepb.ChangedResources {
+	t.Helper()
+	stmts, err := base.ParseStatements(storepb.Engine_MSSQL, statement)
+	require.NoError(t, err, statement)
+	got, err := extractChangedResources("DB", "dbo", nil /* dbMetadata */, base.ExtractASTs(stmts), statement)
+	require.NoError(t, err, statement)
+	return got.ChangedResources.Build()
+}
+
+func TestExtractChangedResources_DMLWriteTarget(t *testing.T) {
+	tests := []struct {
+		name      string
+		statement string
+		database  string
+		schema    string
+		table     string
+	}{
+		{"alias", `UPDATE o SET o.status = 'x' FROM dbo.Orders AS o WHERE o.id = 1;`, "DB", "dbo", "Orders"},
+		{"alias without AS", `UPDATE o SET status = 'x' FROM dbo.Orders o WHERE o.id = 1;`, "DB", "dbo", "Orders"},
+		{"alias in DELETE", `DELETE o FROM dbo.Orders AS o WHERE o.id = 1;`, "DB", "dbo", "Orders"},
+		{"alias on the right of a JOIN", `UPDATE o SET o.status = 'x' FROM dbo.Customers AS c JOIN dbo.Orders AS o ON o.id = c.id WHERE c.id = 1;`, "DB", "dbo", "Orders"},
+		{"alias beside an APPLY", `UPDATE o SET o.status = 'x' FROM dbo.Orders AS o CROSS APPLY (SELECT TOP 1 c.id FROM dbo.Customers AS c WHERE c.id = o.id) AS a WHERE o.id = 1;`, "DB", "dbo", "Orders"},
+		{"alias shadows a table of its name", `UPDATE Customers SET status = 'x' FROM dbo.Orders AS Customers WHERE Customers.id = 1;`, "DB", "dbo", "Orders"},
+		{"alias of a table in another database", `UPDATE o SET o.status = 'x' FROM otherdb.dbo.Orders AS o WHERE o.id = 1;`, "otherdb", "dbo", "Orders"},
+		{"unaliased table in another database", `UPDATE Orders SET status = 'x' FROM otherdb.dbo.Orders WHERE Orders.id = 1;`, "otherdb", "dbo", "Orders"},
+		{"unaliased table in another schema", `UPDATE Orders SET status = 'x' FROM sales.Orders WHERE Orders.id = 1;`, "DB", "sales", "Orders"},
+		{"unaliased table in DELETE FROM", `DELETE FROM Orders FROM otherdb.dbo.Orders WHERE Orders.id = 1;`, "otherdb", "dbo", "Orders"},
+		{"unaliased join operand", `UPDATE Orders SET status = 'x' FROM dbo.Customers AS c LEFT JOIN otherdb.dbo.Orders ON c.id = Orders.id WHERE c.id = 1;`, "otherdb", "dbo", "Orders"},
+		{"unaliased sampled table", `UPDATE Orders SET status = 'x' FROM otherdb.dbo.Orders TABLESAMPLE (100 PERCENT) WHERE Orders.id = 1;`, "otherdb", "dbo", "Orders"},
+		{"aliased table hides its own name", `UPDATE Orders SET status = 'x' FROM otherdb.dbo.Orders AS x WHERE x.id = 1;`, "DB", "dbo", "Orders"},
+		{"qualified target ignores an alias of its bare name", `UPDATE dbo.Orders SET status = 'x' FROM dbo.Orders AS o JOIN dbo.Customers AS Orders ON Orders.id = o.id WHERE o.id = 1;`, "DB", "dbo", "Orders"},
+		{"qualified DELETE target ignores an alias of its bare name", `DELETE dbo.Orders FROM dbo.Orders AS o JOIN dbo.Customers AS Orders ON Orders.id = o.id WHERE o.id = 1;`, "DB", "dbo", "Orders"},
+		{"qualified target in another database ignores an alias of its bare name", `UPDATE otherdb.dbo.Orders SET status = 'x' FROM otherdb.dbo.Orders AS o JOIN dbo.Customers AS Orders ON Orders.id = o.id WHERE o.id = 1;`, "otherdb", "dbo", "Orders"},
+		// The server part is dropped, as for any linked-server name (BYT-10235).
+		{"server-qualified target ignores an alias of its bare name", `UPDATE srv...Orders SET status = 'x' FROM srv...Orders AS t JOIN dbo.Customers AS Orders ON Orders.id = t.id WHERE t.id = 1;`, "DB", "dbo", "Orders"},
+		// A case-insensitive database binds the next two to the FROM table (BOT-158); a
+		// case-sensitive one does not.
+		{"differently cased alias stays as written", `UPDATE O SET status = 'x' FROM dbo.Orders AS o WHERE o.id = 1;`, "DB", "dbo", "O"},
+		{"differently cased table name stays as written", `UPDATE ORDERS SET status = 'x' FROM otherdb.dbo.Orders WHERE Orders.id = 1;`, "DB", "dbo", "ORDERS"},
+		{"alias of a CTE stays as written", `WITH c AS (SELECT id, status FROM dbo.Orders) UPDATE x SET status = 'v' FROM c AS x WHERE x.id = 1;`, "DB", "dbo", "x"},
+		{"alias of a differently cased CTE name stays as written", `WITH c AS (SELECT id, status FROM dbo.Orders) UPDATE x SET status = 'v' FROM C AS x WHERE x.id = 1;`, "DB", "dbo", "x"},
+		{"alias of a derived table stays as written", `UPDATE d SET status = 'x' FROM (SELECT * FROM dbo.Orders) AS d WHERE d.id = 1;`, "DB", "dbo", "d"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			want := model.NewChangedResources(nil)
+			want.AddTable(tt.database, tt.schema, &storepb.ChangedResourceTable{Name: tt.table}, false)
+			require.Equal(t, want.Build(), extractMSSQL(t, tt.statement))
+		})
+	}
+}
+
 func TestExtractChangedResources(t *testing.T) {
 	statement := `CREATE TABLE t1 (c1 INT);
 	DROP TABLE t1;
