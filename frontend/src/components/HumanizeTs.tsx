@@ -21,8 +21,7 @@ import {
  *
  * - `queue` — freshness-first work queues and feeds: relative age, switching to
  *   an absolute date at 30 days.
- * - `compact` — history rows scanned to locate a record: date and time to the
- *   minute.
+ * - `compact` — local date and time to the minute, without seconds or timezone.
  * - `operational` — a future time the reader acts on, so the timezone is named
  *   in the visible string rather than left to a hover.
  * - `datetime` — a record whose time is the evidence: full precision inline.

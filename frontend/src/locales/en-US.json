@@ -22,7 +22,6 @@
     }
   },
   "agent": {
-    "active-only-chats": "View active chats",
     "ai-not-configured": {
       "configure": "Configure",
       "contact-admin": "Contact your workspace admin to configure AI.",

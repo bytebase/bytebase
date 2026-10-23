@@ -22,7 +22,6 @@
     }
   },
   "agent": {
-    "active-only-chats": "アクティブなチャットを表示",
     "ai-not-configured": {
       "configure": "設定",
       "contact-admin": "ワークスペース管理者に AI の設定を依頼してください。",

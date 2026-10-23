@@ -1384,16 +1384,79 @@ describe("AgentInput", () => {
     unmount();
   });
 
-  test("grows without a maximum height", () => {
+  test("caps textarea growth at the available composer height", () => {
     const { container, render, unmount } = renderIntoContainer(<AgentInput />);
 
     render();
 
     const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
+    const composer = container.querySelector(
+      "[data-agent-input-row]"
+    )?.parentElement as HTMLDivElement;
     Object.defineProperties(textarea, {
       clientHeight: { configurable: true, value: 32 },
       offsetHeight: { configurable: true, value: 34 },
       scrollHeight: { configurable: true, value: 200 },
+    });
+    Object.defineProperties(composer, {
+      offsetHeight: { configurable: true, value: 90 },
+    });
+    Object.defineProperties(container, {
+      clientHeight: { configurable: true, value: 150 },
+    });
+    const getComputedStyleSpy = vi
+      .spyOn(window, "getComputedStyle")
+      .mockReturnValue({ minHeight: "34px" } as CSSStyleDeclaration);
+
+    act(() => {
+      setTextareaValue(textarea, "a\nb\nc\nd\ne\nf\ng");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(textarea.style.height).toBe("94px");
+    expect(textarea.style.overflowY).toBe("auto");
+    getComputedStyleSpy.mockRestore();
+    unmount();
+  });
+
+  test("updates the textarea cap when the chat pane height changes", () => {
+    let resizeCallback: ResizeObserverCallback | undefined;
+    let observedElement: Element | undefined;
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          resizeCallback = callback;
+        }
+
+        observe(element: Element) {
+          observedElement = element;
+        }
+
+        disconnect() {}
+      }
+    );
+
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+    let chatPaneHeight = 300;
+    Object.defineProperty(container, "clientHeight", {
+      configurable: true,
+      get: () => chatPaneHeight,
+    });
+
+    render();
+
+    const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
+    const composer = container.querySelector(
+      "[data-agent-input-row]"
+    )?.parentElement as HTMLDivElement;
+    Object.defineProperties(textarea, {
+      clientHeight: { configurable: true, value: 32 },
+      offsetHeight: { configurable: true, value: 34 },
+      scrollHeight: { configurable: true, value: 200 },
+    });
+    Object.defineProperties(composer, {
+      offsetHeight: { configurable: true, value: 90 },
     });
     const getComputedStyleSpy = vi
       .spyOn(window, "getComputedStyle")
@@ -1406,7 +1469,90 @@ describe("AgentInput", () => {
 
     expect(textarea.style.height).toBe("202px");
     expect(textarea.style.overflowY).toBe("hidden");
+    expect(resizeCallback).toBeTypeOf("function");
+    expect(observedElement).toBe(container);
+
+    chatPaneHeight = 150;
+    act(() => {
+      resizeCallback?.([], {} as ResizeObserver);
+    });
+
+    expect(textarea.style.height).toBe("94px");
+    expect(textarea.style.overflowY).toBe("auto");
     getComputedStyleSpy.mockRestore();
     unmount();
+  });
+
+  test("shrinks the textarea when composer chrome grows", () => {
+    let resizeCallback: ResizeObserverCallback | undefined;
+    const observedElements = new Set<Element>();
+    const disconnect = vi.fn();
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          resizeCallback = callback;
+        }
+
+        observe(element: Element) {
+          observedElements.add(element);
+        }
+
+        disconnect() {
+          disconnect();
+        }
+      }
+    );
+
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+    Object.defineProperty(container, "clientHeight", {
+      configurable: true,
+      value: 300,
+    });
+
+    render();
+
+    const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
+    const composer = container.querySelector(
+      "[data-agent-input-row]"
+    )?.parentElement as HTMLDivElement;
+    let composerHeight = 90;
+    Object.defineProperties(textarea, {
+      clientHeight: { configurable: true, value: 32 },
+      offsetHeight: { configurable: true, value: 34 },
+      scrollHeight: { configurable: true, value: 200 },
+    });
+    Object.defineProperty(composer, "offsetHeight", {
+      configurable: true,
+      get: () => composerHeight,
+    });
+    const getComputedStyleSpy = vi
+      .spyOn(window, "getComputedStyle")
+      .mockReturnValue({ minHeight: "34px" } as CSSStyleDeclaration);
+
+    try {
+      act(() => {
+        setTextareaValue(textarea, "a\nb\nc\nd\ne\nf\ng");
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+
+      expect(textarea.style.height).toBe("202px");
+      expect(textarea.style.overflowY).toBe("hidden");
+
+      composerHeight = 240;
+      act(() => {
+        if (observedElements.has(composer)) {
+          resizeCallback?.([], {} as ResizeObserver);
+        }
+      });
+
+      expect(textarea.style.height).toBe("94px");
+      expect(textarea.style.overflowY).toBe("auto");
+    } finally {
+      getComputedStyleSpy.mockRestore();
+      unmount();
+    }
+
+    expect(disconnect).toHaveBeenCalledOnce();
   });
 });

@@ -337,6 +337,7 @@ export function AgentInput() {
   const [mentionListStyle, setMentionListStyle] =
     useState<CSSProperties | null>(null);
 
+  const composerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mentionListRef = useRef<HTMLDivElement>(null);
   const mentionListStyleKeyRef = useRef<string | null>(null);
@@ -565,15 +566,37 @@ export function AgentInput() {
     const minHeight =
       Number.parseFloat(styles.minHeight) || el.getBoundingClientRect().height;
     const borderHeight = el.offsetHeight - el.clientHeight;
-    const nextHeight = Math.max(minHeight, el.scrollHeight + borderHeight);
+    const desiredHeight = Math.max(minHeight, el.scrollHeight + borderHeight);
+    const composer = composerRef.current;
+    const parent = composer?.parentElement;
+    const composerChrome = composer
+      ? Math.max(0, composer.offsetHeight - el.offsetHeight)
+      : 0;
+    const availableHeight = parent ? parent.clientHeight - composerChrome : 0;
+    const maxHeight =
+      availableHeight > 0
+        ? Math.max(minHeight, availableHeight)
+        : desiredHeight;
+    const nextHeight = Math.min(desiredHeight, maxHeight);
 
     el.style.height = `${nextHeight}px`;
-    el.style.overflowY = "hidden";
+    el.style.overflowY = desiredHeight > maxHeight ? "auto" : "hidden";
   }, []);
 
   useEffect(() => {
     autoResize();
   }, [input, autoResize]);
+
+  useEffect(() => {
+    const composer = composerRef.current;
+    const parent = composer?.parentElement;
+    if (!composer || !parent || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(autoResize);
+    observer.observe(composer);
+    observer.observe(parent);
+    return () => observer.disconnect();
+  }, [autoResize]);
 
   // Selection tracking
   const updateSelection = useCallback(() => {
@@ -1233,7 +1256,7 @@ export function AgentInput() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="border-t p-3">
+    <div ref={composerRef} className="border-t p-3">
       {/* Pending ask banner */}
       {currentPendingAsk && (
         <div className="mb-3 rounded-xs bg-warning/10 px-3 py-2 text-xs text-warning">

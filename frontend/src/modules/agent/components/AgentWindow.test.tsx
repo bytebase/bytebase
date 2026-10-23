@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { getLayerRoot } from "@/components/ui/layer";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
@@ -228,49 +229,460 @@ describe("AgentWindow", () => {
     }
   });
 
-  test("keeps the full chat sidebar when the agent window has room for it", () => {
+  test("shows navigation rail, chat list, and conversation together when the agent window has room", () => {
     useAgentStore.setState({ size: { width: 750, height: 450 } });
 
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
     render();
 
-    expect(
-      document.body.querySelector("[data-agent-chat-sidebar]")
-    ).toBeInstanceOf(HTMLElement);
-    expect(
-      document.body.querySelector("[data-agent-compact-rail]")
-    ).toBeNull();
-
-    unmount();
+    try {
+      const body = document.body.querySelector("[data-agent-window-body]");
+      const rail = body?.querySelector("[data-agent-compact-rail]");
+      const list = body?.querySelector("[data-agent-chat-sidebar]");
+      const panels = body?.querySelector("[data-agent-chat-panels]");
+      expect(rail).toBeInstanceOf(HTMLElement);
+      expect(list).toBeInstanceOf(HTMLElement);
+      expect(panels).toBeInstanceOf(HTMLElement);
+      expect(rail).not.toContainElement(list as HTMLElement);
+      expect(body?.querySelector("[data-agent-compact-drawer]")).toBeNull();
+    } finally {
+      unmount();
+    }
   });
 
-  test("renders the compact drawer outside the clipped rail panel", async () => {
-    useAgentStore.setState({ size: { width: 700, height: 450 } });
+  test("switches the persistent chat list between active and archived chats from the rail", () => {
+    useAgentStore.setState({ size: { width: 750, height: 450 } });
+    const archivedChat = useAgentStore.getState().createChat({
+      title: "Archived analytics",
+      context: "projects/analytics",
+      archived: true,
+      select: false,
+    });
+    const activeChatId = useAgentStore.getState().currentChatId!;
 
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
     render();
 
-    const listButton = document.body.querySelector(
-      'button[aria-label="agent.chat-list-label"]'
-    ) as HTMLButtonElement;
-    await act(async () => {
-      listButton.click();
-      await Promise.resolve();
+    try {
+      const rail = document.body.querySelector("[data-agent-compact-rail]");
+      const archiveButton = rail?.querySelector(
+        '[aria-label="agent.archived-only-chats"]'
+      ) as HTMLButtonElement;
+      const chatsButton = rail?.querySelector(
+        '[aria-label="agent.chat-list-label"]'
+      ) as HTMLButtonElement;
+      expect(archiveButton).toBeInstanceOf(HTMLButtonElement);
+      expect(chatsButton).toBeInstanceOf(HTMLButtonElement);
+
+      act(() => archiveButton.click());
+      const archivedList = document.body.querySelector(
+        "[data-agent-chat-sidebar]"
+      );
+      expect(archivedList?.textContent).toContain("agent.archived-only-chats");
+      expect(
+        archivedList?.querySelector(`[data-agent-chat-row="${archivedChat.id}"]`)
+      ).toBeInstanceOf(HTMLElement);
+      expect(
+        archivedList?.querySelector(`[data-agent-chat-row="${activeChatId}"]`)
+      ).toBeNull();
+      expect(archivedList?.querySelector('[aria-label="agent.new-chat"]')).toBeNull();
+      expect(archivedList?.querySelector("[data-agent-new-chat-for-context]")).toBeNull();
+
+      act(() => chatsButton.click());
+      const activeList = document.body.querySelector("[data-agent-chat-sidebar]");
+      expect(activeList?.querySelector(`[data-agent-chat-row="${activeChatId}"]`)).toBeInstanceOf(
+        HTMLElement
+      );
+      expect(activeList?.querySelector(`[data-agent-chat-row="${archivedChat.id}"]`)).toBeNull();
+      expect(document.body.querySelector("[data-agent-compact-drawer]")).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test.each([
+    ["large", 750],
+    ["compact", 700],
+  ])("highlights the selected %s rail destination", async (_name, width) => {
+    useAgentStore.setState({ size: { width, height: 450 } });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const rail = document.body.querySelector("[data-agent-compact-rail]");
+      const chatsButton = rail?.querySelector(
+        '[aria-label="agent.chat-list-label"]'
+      ) as HTMLButtonElement;
+      const archiveButton = rail?.querySelector(
+        '[aria-label="agent.archived-only-chats"]'
+      ) as HTMLButtonElement;
+
+      if (width === 750) {
+        expect(chatsButton).toHaveAttribute("aria-current", "page");
+      } else {
+        expect(chatsButton).not.toHaveAttribute("aria-current");
+      }
+      expect(archiveButton).not.toHaveAttribute("aria-current");
+
+      act(() => archiveButton.click());
+      expect(chatsButton).not.toHaveAttribute("aria-current");
+      expect(archiveButton).toHaveAttribute("aria-current", "page");
+
+      if (width === 700) {
+        const closeButton = document.body.querySelector(
+          '[data-agent-compact-drawer] [aria-label="agent.close"]'
+        ) as HTMLButtonElement;
+        await act(async () => {
+          closeButton.click();
+          await Promise.resolve();
+        });
+        expect(archiveButton).not.toHaveAttribute("aria-current");
+      }
+    } finally {
+      unmount();
+    }
+  });
+
+  test.each([
+    ["large", 750],
+    ["compact", 700],
+  ])("creates an active chat from the archived %s rail", async (_name, width) => {
+    useAgentStore.setState({ size: { width, height: 450 } });
+    const archivedChat = useAgentStore.getState().createChat({
+      title: "Archived analytics",
+      context: "projects/analytics",
+      archived: true,
+      select: false,
+    });
+    const previousChatId = useAgentStore.getState().currentChatId;
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const rail = document.body.querySelector("[data-agent-compact-rail]");
+      const archiveButton = rail?.querySelector(
+        '[aria-label="agent.archived-only-chats"]'
+      ) as HTMLButtonElement;
+      const newChatButton = rail?.querySelector(
+        '[aria-label="agent.new-chat"]'
+      ) as HTMLButtonElement;
+      expect(newChatButton).toBeInstanceOf(HTMLButtonElement);
+
+      act(() => archiveButton.click());
+      expect(rail?.querySelector('[aria-label="agent.new-chat"]')).toBe(
+        newChatButton
+      );
+
+      await act(async () => {
+        newChatButton.click();
+        await Promise.resolve();
+      });
+
+      const currentChatId = useAgentStore.getState().currentChatId;
+      expect(currentChatId).not.toBe(previousChatId);
+      expect(useAgentStore.getState().getChat(currentChatId!)?.archived).toBe(
+        false
+      );
+      if (width === 750) {
+        const list = document.body.querySelector("[data-agent-chat-sidebar]");
+        expect(list?.querySelector(`[data-agent-chat-row="${currentChatId}"]`)).toBeInstanceOf(
+          HTMLElement
+        );
+        expect(list?.querySelector(`[data-agent-chat-row="${archivedChat.id}"]`)).toBeNull();
+      } else {
+        expect(document.body.querySelector("[data-agent-compact-drawer]")).toBeNull();
+        const chatsButton = rail?.querySelector(
+          '[aria-label="agent.chat-list-label"]'
+        ) as HTMLButtonElement;
+        await act(async () => {
+          chatsButton.click();
+          await Promise.resolve();
+        });
+        expect(
+          document.body.querySelector(
+            `[data-agent-compact-drawer] [data-agent-chat-row="${currentChatId}"]`
+          )
+        ).toBeInstanceOf(HTMLElement);
+      }
+    } finally {
+      unmount();
+    }
+  });
+
+  test("keeps the current conversation selected while the large rail switches list modes", () => {
+    useAgentStore.setState({ size: { width: 750, height: 450 } });
+    const activeChatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.getState().createChat({
+      title: "Archived analytics",
+      context: "projects/analytics",
+      archived: true,
+      select: false,
     });
 
-    const drawer = document.body.querySelector(
-      "[data-agent-compact-drawer]"
-    );
-    const body = document.body.querySelector("[data-agent-window-body]");
-    expect(drawer?.parentElement).toBe(body);
-    expect(
-      document.body.querySelector("[data-agent-compact-rail]")
-    ).toBeInstanceOf(HTMLElement);
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
 
-    unmount();
+    try {
+      const rail = document.body.querySelector("[data-agent-compact-rail]");
+      const archiveButton = rail?.querySelector(
+        '[aria-label="agent.archived-only-chats"]'
+      ) as HTMLButtonElement;
+      const chatsButton = rail?.querySelector(
+        '[aria-label="agent.chat-list-label"]'
+      ) as HTMLButtonElement;
+
+      act(() => archiveButton.click());
+      expect(useAgentStore.getState().currentChatId).toBe(activeChatId);
+      expect(document.body.querySelector("[data-agent-chat-panels]")).not.toHaveAttribute(
+        "aria-hidden"
+      );
+      expect(document.body.querySelector("[data-agent-compact-drawer]")).toBeNull();
+
+      act(() => chatsButton.click());
+      expect(useAgentStore.getState().currentChatId).toBe(activeChatId);
+      expect(
+        document.body.querySelector(
+          `[data-agent-chat-row="${activeChatId}"] [aria-current="true"]`
+        )
+      ).toBeInstanceOf(HTMLButtonElement);
+    } finally {
+      unmount();
+    }
   });
 
-  test("layers the compact drawer above the chat panel and composer", async () => {
+  test("does not reveal the compact drawer when resizing an archived large list", async () => {
+    useAgentStore.setState({ size: { width: 750, height: 450 } });
+    const archivedChat = useAgentStore.getState().createChat({
+      title: "Archived analytics",
+      context: "projects/analytics",
+      archived: true,
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const archiveButton = document.body.querySelector(
+        '[data-agent-compact-rail] [aria-label="agent.archived-only-chats"]'
+      ) as HTMLButtonElement;
+      act(() => archiveButton.click());
+      expect(document.body.querySelector("[data-agent-chat-sidebar]")).toBeInstanceOf(
+        HTMLElement
+      );
+
+      act(() => useAgentStore.setState({ size: { width: 700, height: 450 } }));
+      expect(document.body.querySelector("[data-agent-chat-sidebar]")).toBeNull();
+      expect(document.body.querySelector("[data-agent-compact-drawer]")).toBeNull();
+      expect(document.body.querySelector("[data-agent-chat-panels]")).not.toHaveAttribute(
+        "aria-hidden"
+      );
+
+      await act(async () => {
+        archiveButton.click();
+        await Promise.resolve();
+      });
+      expect(
+        document.body.querySelector(
+          `[data-agent-compact-drawer] [data-agent-chat-row="${archivedChat.id}"]`
+        )
+      ).toBeInstanceOf(HTMLElement);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("offers Restore and Delete in one archived chat row menu", async () => {
+    useAgentStore.setState({ size: { width: 750, height: 450 } });
+    const archivedChat = useAgentStore.getState().createChat({
+      title: "Archived analytics",
+      context: "projects/analytics",
+      archived: true,
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const archiveButton = document.body.querySelector(
+        '[data-agent-compact-rail] [aria-label="agent.archived-only-chats"]'
+      ) as HTMLButtonElement;
+      expect(archiveButton).toBeInstanceOf(HTMLButtonElement);
+      act(() => archiveButton.click());
+
+      const list = document.body.querySelector("[data-agent-chat-sidebar]");
+      const row = list?.querySelector(
+        `[data-agent-chat-row="${archivedChat.id}"]`
+      );
+      const menuButton = row?.querySelector(
+        "[data-agent-archived-chat-menu]"
+      ) as HTMLButtonElement;
+      expect(menuButton).toBeInstanceOf(HTMLButtonElement);
+      expect(row?.querySelector("[data-agent-unarchive-chat]")).toBeNull();
+      expect(row?.querySelector("[data-agent-delete-chat]")).toBeNull();
+      expect(list?.querySelector('[aria-label="agent.new-chat"]')).toBeNull();
+      expect(list?.querySelector("[data-agent-new-chat-for-context]")).toBeNull();
+
+      await act(async () => {
+        menuButton.dispatchEvent(
+          new MouseEvent("click", { bubbles: true, cancelable: true })
+        );
+        await Promise.resolve();
+      });
+
+      const agentRoot = getLayerRoot("agent");
+      expect(
+        agentRoot.querySelector("[data-agent-unarchive-chat]")
+      ).toBeInstanceOf(HTMLElement);
+      expect(agentRoot.querySelector("[data-agent-delete-chat]")).toBeInstanceOf(
+        HTMLElement
+      );
+    } finally {
+      unmount();
+    }
+  });
+
+  test("deletes an archived chat from the compact drawer row menu", async () => {
+    useAgentStore.setState({ size: { width: 700, height: 450 } });
+    const archivedChat = useAgentStore.getState().createChat({
+      title: "Delete archived analytics",
+      context: "projects/analytics",
+      archived: true,
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const archiveButton = document.body.querySelector(
+        '[data-agent-compact-rail] [aria-label="agent.archived-only-chats"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        archiveButton.click();
+        await Promise.resolve();
+      });
+
+      const drawer = document.body.querySelector(
+        "[data-agent-compact-drawer]"
+      ) as HTMLElement;
+      const row = drawer.querySelector(
+        `[data-agent-chat-row="${archivedChat.id}"]`
+      ) as HTMLElement;
+      expect(row).toBeInstanceOf(HTMLElement);
+      const menuButton = row.querySelector(
+        "[data-agent-archived-chat-menu]"
+      ) as HTMLButtonElement;
+      await act(async () => {
+        menuButton.click();
+        await Promise.resolve();
+      });
+
+      const deleteButton = getLayerRoot("agent").querySelector(
+        "[data-agent-delete-chat]"
+      ) as HTMLElement;
+      expect(deleteButton).toBeInstanceOf(HTMLElement);
+      await act(async () => {
+        deleteButton.click();
+        await Promise.resolve();
+      });
+
+      const confirmation = getLayerRoot("agent").querySelector(
+        "[data-agent-dialog-content]"
+      ) as HTMLElement;
+      expect(confirmation?.textContent).toContain(
+        "agent.delete-chat-confirmation"
+      );
+      const confirmButton = Array.from(confirmation.querySelectorAll("button")).find(
+        (button) => button.textContent === "common.confirm"
+      );
+      act(() => confirmButton?.click());
+
+      expect(useAgentStore.getState().getChat(archivedChat.id)).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test("renders the compact drawer as a bounded dialog", async () => {
+    useAgentStore.setState({ size: { width: 700, height: 450 } });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const listButton = document.body.querySelector(
+        'button[aria-label="agent.chat-list-label"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        listButton.click();
+        await Promise.resolve();
+      });
+
+      const drawer = document.body.querySelector(
+        "[data-agent-compact-drawer]"
+      ) as HTMLElement;
+      const body = document.body.querySelector(
+        "[data-agent-window-body]"
+      ) as HTMLDivElement;
+      expect(body).toContainElement(drawer);
+      expect(drawer).toHaveAttribute("role", "dialog");
+      expect(
+        document.body.querySelector("[data-agent-chat-panels]")
+      ).toHaveAttribute("aria-hidden", "true");
+      expect(
+        document.body.querySelector("[data-agent-chat-panels]")
+      ).toHaveAttribute("inert");
+      expect(
+        document.body.querySelector("[data-agent-window-header]")
+      ).toHaveAttribute("inert");
+      expect(
+        document.body.querySelector("[data-agent-compact-header-overlay]")
+      ).toBeNull();
+      expect(
+        document.body.querySelector("[data-agent-window-resize-zone]")
+      ).toBeNull();
+      expect(
+        document.body.querySelector("[data-agent-compact-rail]")
+      ).toBeInstanceOf(HTMLElement);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("keeps an active critical layer accessible while the compact drawer is open", async () => {
+    useAgentStore.setState({ size: { width: 700, height: 450 } });
+    const criticalRoot = getLayerRoot("critical");
+    const criticalAction = document.createElement("button");
+    criticalAction.textContent = "Critical action";
+    criticalRoot.appendChild(criticalAction);
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const listButton = document.body.querySelector(
+        'button[aria-label="agent.chat-list-label"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        listButton.click();
+        await Promise.resolve();
+      });
+
+      await vi.waitFor(() => {
+        expect(criticalRoot).not.toHaveAttribute("aria-hidden");
+        expect(criticalRoot).not.toHaveAttribute("inert");
+        expect(criticalRoot).not.toHaveAttribute("data-base-ui-inert");
+      });
+    } finally {
+      unmount();
+    }
+  });
+
+  test("returns focus to the compact rail after Escape closes its drawer", async () => {
     useAgentStore.setState({ size: { width: 700, height: 450 } });
 
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
@@ -279,32 +691,104 @@ describe("AgentWindow", () => {
     const listButton = document.body.querySelector(
       'button[aria-label="agent.chat-list-label"]'
     ) as HTMLButtonElement;
+    listButton.focus();
     await act(async () => {
       listButton.click();
       await Promise.resolve();
     });
 
     try {
-      const body = document.body.querySelector("[data-agent-window-body]");
-      const panels = document.body.querySelector("[data-agent-chat-panels]");
       const drawer = document.body.querySelector(
         "[data-agent-compact-drawer]"
-      );
-      const overlay = document.body.querySelector(
-        "[data-agent-compact-overlay]"
-      );
-      const input = document.body.querySelector('[data-testid="agent-input"]');
+      ) as HTMLElement;
+      expect(listButton.isConnected).toBe(true);
+      expect(drawer).toContainElement(document.activeElement as HTMLElement);
 
-      expect(panels?.parentElement).toBe(body);
-      expect(panels?.contains(input)).toBe(true);
-      expect(panels?.className).toContain("relative");
-      expect(panels?.className).toContain("z-0");
-      expect(overlay?.parentElement).toBe(body);
-      expect(overlay?.className).toContain("absolute");
-      expect(overlay?.className).toContain("inset-0");
-      expect(overlay?.className).toContain("z-1");
-      expect(drawer?.parentElement).toBe(body);
-      expect(drawer?.className).toContain("z-2");
+      await act(async () => {
+        document.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+        );
+        await Promise.resolve();
+      });
+
+      expect(
+        document.body.querySelector("[data-agent-compact-drawer]")
+      ).toBeNull();
+      expect(document.activeElement).toBe(listButton);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("closes the compact chat list after selecting another conversation", async () => {
+    useAgentStore.setState({ size: { width: 700, height: 450 } });
+    const otherChat = useAgentStore.getState().createChat({
+      title: "Review analytics",
+      context: "projects/analytics",
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const listButton = document.body.querySelector(
+        '[data-agent-compact-rail] [aria-label="agent.chat-list-label"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        listButton.click();
+        await Promise.resolve();
+      });
+      expect(document.body.querySelector("[data-agent-compact-drawer]")).toBeInstanceOf(
+        HTMLElement
+      );
+
+      const rowButton = document.body.querySelector(
+        `[data-agent-compact-drawer] [data-agent-chat-row="${otherChat.id}"] button`
+      ) as HTMLButtonElement;
+      act(() => rowButton.click());
+
+      expect(useAgentStore.getState().currentChatId).toBe(otherChat.id);
+      expect(document.body.querySelector("[data-agent-compact-drawer]")).toBeNull();
+      expect(document.body.querySelector("[data-agent-chat-panels]")).toBeInstanceOf(
+        HTMLElement
+      );
+    } finally {
+      unmount();
+    }
+  });
+
+  test("closes the compact chat list after creating a chat in a context group", async () => {
+    useAgentStore.setState({ size: { width: 700, height: 450 } });
+    useAgentStore.getState().createChat({
+      title: "Previous analytics",
+      context: "projects/analytics",
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const listButton = document.body.querySelector(
+        '[data-agent-compact-rail] [aria-label="agent.chat-list-label"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        listButton.click();
+        await Promise.resolve();
+      });
+
+      const newChatButton = document.body.querySelector(
+        '[data-agent-compact-drawer] [data-agent-new-chat-for-context="projects/analytics"]'
+      ) as HTMLButtonElement;
+      act(() => newChatButton.click());
+
+      const chatId = useAgentStore.getState().currentChatId!;
+      expect(useAgentStore.getState().getChat(chatId)?.context).toBe(
+        "projects/analytics"
+      );
+      expect(useAgentStore.getState().getMessages(chatId)).toEqual([]);
+      expect(document.body.querySelector("[data-agent-compact-drawer]")).toBeNull();
     } finally {
       unmount();
     }
@@ -371,6 +855,51 @@ describe("AgentWindow", () => {
     expect(
       document.body.querySelector("[data-agent-mobile-conversation]")
     ).toBeInstanceOf(HTMLDivElement);
+
+    unmount();
+  });
+
+  test("returns an archived mobile conversation to archived chats", () => {
+    useAgentStore.setState({ size: { width: 479, height: 450 } });
+    const activeChatId = useAgentStore.getState().currentChatId!;
+    const archivedChat = useAgentStore.getState().createChat({
+      title: "Archived mobile chat",
+      archived: true,
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    const conversationBack = document.body.querySelector(
+      '[aria-label="agent.chat-list-label"]'
+    ) as HTMLButtonElement;
+    act(() => conversationBack.click());
+
+    const archiveButton = document.body.querySelector(
+      '[aria-label="agent.archived-only-chats"]'
+    ) as HTMLButtonElement;
+    act(() => archiveButton.click());
+
+    const archivedChatButton = document.body.querySelector(
+      `[data-agent-chat-row="${archivedChat.id}"] button`
+    ) as HTMLButtonElement;
+    act(() => archivedChatButton.click());
+
+    const archivedConversationBack = document.body.querySelector(
+      '[aria-label="agent.chat-list-label"]'
+    ) as HTMLButtonElement;
+    act(() => archivedConversationBack.click());
+
+    expect(
+      document.body.querySelector("[data-agent-mobile-chat-list]")
+    ).toBeInstanceOf(HTMLDivElement);
+    expect(
+      document.body.querySelector(`[data-agent-chat-row="${archivedChat.id}"]`)
+    ).toBeInstanceOf(HTMLDivElement);
+    expect(
+      document.body.querySelector(`[data-agent-chat-row="${activeChatId}"]`)
+    ).toBeNull();
 
     unmount();
   });
@@ -533,6 +1062,250 @@ describe("AgentWindow", () => {
     unmount();
   });
 
+  test.each([
+    { name: "large sidebar", width: 750, listSelector: "[data-agent-chat-sidebar]" },
+    { name: "compact drawer", width: 700, listSelector: "[data-agent-compact-drawer]" },
+    { name: "mobile chat list", width: 479, listSelector: "[data-agent-mobile-chat-list]" },
+  ])("exposes full clipped group and chat titles in the $name", async ({
+    width,
+    listSelector,
+  }) => {
+    useAgentStore.setState({ size: { width, height: 450 } });
+    const longTitle =
+      "How do I connect the orders database and review every pending change?";
+    const chat = useAgentStore.getState().createChat({
+      title: longTitle,
+      context: "projects/orders",
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      if (width === 700) {
+        const listButton = document.body.querySelector(
+          '[data-agent-compact-rail] [aria-label="agent.chat-list-label"]'
+        ) as HTMLButtonElement;
+        await act(async () => {
+          listButton.click();
+          await Promise.resolve();
+        });
+      } else if (width === 479) {
+        const backButton = document.body.querySelector(
+          '[aria-label="agent.chat-list-label"]'
+        ) as HTMLButtonElement;
+        act(() => backButton.click());
+      }
+
+      const list = document.body.querySelector(listSelector) as HTMLElement;
+      const groupToggle = list.querySelector(
+        '[data-agent-chat-group-toggle="projects/orders"]'
+      ) as HTMLButtonElement;
+      const chatButton = list.querySelector(
+        `[data-agent-chat-row="${chat.id}"] button`
+      ) as HTMLButtonElement;
+      expect(groupToggle).toHaveAttribute("title", "Order service");
+      expect(chatButton).toHaveAttribute("title", longTitle);
+    } finally {
+      unmount();
+    }
+  });
+
+  test.each([
+    { name: "large sidebar", width: 750, listSelector: "[data-agent-chat-sidebar]" },
+    { name: "compact drawer", width: 700, listSelector: "[data-agent-compact-drawer]" },
+    { name: "mobile chat list", width: 479, listSelector: "[data-agent-mobile-chat-list]" },
+  ])("uses the full chat-list width for group and chat rows in the $name", async ({
+    width,
+    listSelector,
+  }) => {
+    useAgentStore.setState({ size: { width, height: 450 } });
+    const chat = useAgentStore.getState().createChat({
+      title: "Inspect analytics",
+      context: "projects/analytics",
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      if (width === 700) {
+        const listButton = document.body.querySelector(
+          '[data-agent-compact-rail] [aria-label="agent.chat-list-label"]'
+        ) as HTMLButtonElement;
+        await act(async () => {
+          listButton.click();
+          await Promise.resolve();
+        });
+      } else if (width === 479) {
+        const backButton = document.body.querySelector(
+          '[aria-label="agent.chat-list-label"]'
+        ) as HTMLButtonElement;
+        act(() => backButton.click());
+      }
+
+      const list = document.body.querySelector(listSelector) as HTMLElement;
+      const header = list.querySelector(
+        '[data-agent-chat-group-header="projects/analytics"]'
+      ) as HTMLElement;
+      const children = list.querySelector(
+        '[data-agent-chat-group-children="projects/analytics"]'
+      ) as HTMLElement;
+      const row = children.querySelector(
+        `[data-agent-chat-row="${chat.id}"]`
+      ) as HTMLElement;
+
+      expect(header).toHaveClass("w-full");
+      expect(header).not.toHaveClass("px-2");
+      expect(children).not.toHaveClass("pl-7");
+      expect(row).toHaveClass("w-full");
+      expect(row).toHaveClass("pl-5");
+    } finally {
+      unmount();
+    }
+  });
+
+  test("toggles a group in the full chat sidebar", () => {
+    const chat = useAgentStore.getState().createChat({
+      title: "Investigate analytics",
+      context: "projects/analytics",
+      select: false,
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const toggle = document.body.querySelector(
+        '[data-agent-chat-group-toggle="projects/analytics"]'
+      ) as HTMLButtonElement;
+      const header = document.body.querySelector(
+        '[data-agent-chat-group-header="projects/analytics"]'
+      ) as HTMLDivElement;
+      expect(toggle).toHaveAttribute("aria-expanded", "true");
+      const children = document.body.querySelector(
+        '[data-agent-chat-group-children="projects/analytics"]'
+      ) as HTMLDivElement;
+      const chatRow = document.body.querySelector(
+        `[data-agent-chat-row="${chat.id}"]`
+      ) as HTMLDivElement;
+      expect(header).toContainElement(toggle);
+      expect(header).not.toContainElement(children);
+      expect(children).not.toHaveClass("ml-8", "pl-4");
+      expect(children).toContainElement(chatRow);
+      expect(chatRow).toHaveClass("w-full", "py-2");
+      expect(toggle.querySelector("svg.lucide-folder-open")).toBeInstanceOf(
+        SVGElement
+      );
+      expect(toggle.querySelector("svg.lucide-chevron-right")).toBeNull();
+
+      act(() => toggle.click());
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      expect(toggle.querySelector("svg.lucide-folder")).toBeInstanceOf(
+        SVGElement
+      );
+      expect(toggle.querySelector("svg.lucide-folder-open")).toBeNull();
+      expect(
+        document.body.querySelector(`[data-agent-chat-row="${chat.id}"]`)
+      ).toBeNull();
+
+      act(() => toggle.click());
+      expect(toggle).toHaveAttribute("aria-expanded", "true");
+      expect(toggle.querySelector("svg.lucide-folder-open")).toBeInstanceOf(
+        SVGElement
+      );
+      expect(
+        document.body.querySelector(`[data-agent-chat-row="${chat.id}"]`)
+      ).toBeInstanceOf(HTMLDivElement);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("toggles a group in the compact chat drawer", async () => {
+    useAgentStore.setState({ size: { width: 700, height: 450 } });
+    const chat = useAgentStore.getState().createChat({
+      title: "Investigate analytics",
+      context: "projects/analytics",
+      select: false,
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const listButton = document.body.querySelector(
+        'button[aria-label="agent.chat-list-label"]'
+      ) as HTMLButtonElement;
+      await act(async () => {
+        listButton.click();
+        await Promise.resolve();
+      });
+
+      const drawer = document.body.querySelector(
+        "[data-agent-compact-drawer]"
+      ) as HTMLElement;
+      expect(drawer).toBeInstanceOf(HTMLElement);
+      const toggle = drawer.querySelector(
+        '[data-agent-chat-group-toggle="projects/analytics"]'
+      ) as HTMLButtonElement;
+      expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+      act(() => toggle.click());
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      expect(drawer.querySelector(`[data-agent-chat-row="${chat.id}"]`)).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test("toggles a group in the mobile chat list", () => {
+    useAgentStore.setState({ size: { width: 479, height: 450 } });
+    const chat = useAgentStore.getState().createChat({
+      title: "Investigate analytics",
+      context: "projects/analytics",
+      select: false,
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const back = document.body.querySelector(
+        '[aria-label="agent.chat-list-label"]'
+      ) as HTMLButtonElement;
+      act(() => back.click());
+
+      const list = document.body.querySelector(
+        "[data-agent-mobile-chat-list]"
+      ) as HTMLDivElement;
+      expect(list).toBeInstanceOf(HTMLDivElement);
+      const toggle = list.querySelector(
+        '[data-agent-chat-group-toggle="projects/analytics"]'
+      ) as HTMLButtonElement;
+      const header = list.querySelector(
+        '[data-agent-chat-group-header="projects/analytics"]'
+      ) as HTMLDivElement;
+      expect(toggle).toHaveAttribute("aria-expanded", "true");
+      const children = list.querySelector(
+        '[data-agent-chat-group-children="projects/analytics"]'
+      ) as HTMLDivElement;
+      const chatRow = list.querySelector(
+        `[data-agent-chat-row="${chat.id}"]`
+      ) as HTMLDivElement;
+      expect(header).toContainElement(toggle);
+      expect(header).not.toContainElement(children);
+      expect(children).not.toHaveClass("ml-8", "pl-4");
+      expect(children).toContainElement(chatRow);
+      expect(chatRow).toHaveClass("w-full", "py-2");
+
+      act(() => toggle.click());
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      expect(list.querySelector(`[data-agent-chat-row="${chat.id}"]`)).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
   test("creates a new chat in the selected context group", async () => {
     const store = useAgentStore.getState();
     store.createChat({
@@ -549,6 +1322,12 @@ describe("AgentWindow", () => {
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
     render();
 
+    const workspaceToggle = document.body.querySelector(
+      '[data-agent-chat-group-toggle="workspaces/acme"]'
+    ) as HTMLButtonElement;
+    act(() => workspaceToggle.click());
+    expect(workspaceToggle).toHaveAttribute("aria-expanded", "false");
+
     const workspaceButton = document.body.querySelector(
       '[data-agent-new-chat-for-context="workspaces/acme"]'
     ) as HTMLButtonElement | null;
@@ -560,6 +1339,16 @@ describe("AgentWindow", () => {
       "workspaces/acme"
     );
     expect(useAgentStore.getState().getMessages(workspaceChatId)).toEqual([]);
+    expect(
+      document.body.querySelector(
+        '[data-agent-chat-group-toggle="workspaces/acme"]'
+      )
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(
+      document.body.querySelector(
+        `[data-agent-chat-row="${workspaceChatId}"]`
+      )
+    ).toBeInstanceOf(HTMLDivElement);
 
     const projectButton = document.body.querySelector(
       '[data-agent-new-chat-for-context="projects/analytics"]'
@@ -579,6 +1368,40 @@ describe("AgentWindow", () => {
     unmount();
   });
 
+  test.each([
+    ["large", 750],
+    ["mobile", 470],
+  ])("gives the %s group new-chat button a stronger hover background", (_layout, width) => {
+    useAgentStore.setState({ size: { width, height: 450 } });
+    useAgentStore.getState().createChat({
+      title: "Analytics chat",
+      context: "projects/analytics",
+      select: false,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      if (width === 470) {
+        const backButton = document.body.querySelector(
+          '[aria-label="agent.chat-list-label"]'
+        ) as HTMLButtonElement;
+        act(() => backButton.click());
+      }
+
+      const groupHeader = document.body.querySelector(
+        '[data-agent-chat-group-header="projects/analytics"]'
+      );
+      const newChatButton = groupHeader?.querySelector(
+        '[data-agent-new-chat-for-context="projects/analytics"]'
+      );
+      expect(newChatButton).toHaveClass("hover:bg-control/25");
+    } finally {
+      unmount();
+    }
+  });
+
   test("hides new-chat actions from the archived full sidebar", async () => {
     useAgentStore.setState({ size: { width: 750, height: 450 } });
     useAgentStore.getState().createChat({
@@ -591,24 +1414,11 @@ describe("AgentWindow", () => {
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
     render();
 
-    const moreButton = document.body.querySelector(
-      "[aria-label='common.more']"
+    const archiveButton = document.body.querySelector(
+      '[data-agent-compact-rail] [aria-label="agent.archived-only-chats"]'
     ) as HTMLButtonElement;
-    act(() => {
-      moreButton.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-    });
-
-    const archivedModeButton = document.body.querySelector(
-      "[data-agent-chat-list-mode]"
-    ) as HTMLDivElement;
-    await act(async () => {
-      archivedModeButton.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-      await Promise.resolve();
-    });
+    expect(archiveButton).toBeInstanceOf(HTMLButtonElement);
+    act(() => archiveButton.click());
 
     try {
       const actions = document.body.querySelector(
@@ -630,7 +1440,114 @@ describe("AgentWindow", () => {
     }
   });
 
-  test("hides the compact rail new-chat action while viewing archived chats", async () => {
+  test("only offers the destructive Archive all action in the active list menu", async () => {
+    useAgentStore.setState({ size: { width: 750, height: 450 } });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const list = document.body.querySelector("[data-agent-chat-sidebar]");
+      const menuButton = list?.querySelector(
+        '[data-agent-chat-sidebar-actions] [aria-label="common.more"]'
+      ) as HTMLButtonElement;
+      expect(menuButton).toBeInstanceOf(HTMLButtonElement);
+
+      await act(async () => {
+        menuButton.click();
+        await Promise.resolve();
+      });
+
+      const menu = getLayerRoot("agent").querySelector(
+        "[data-agent-dropdown-menu-content]"
+      ) as HTMLElement;
+      expect(menu).toBeInstanceOf(HTMLElement);
+      expect(menu.querySelectorAll('[role="menuitem"]')).toHaveLength(1);
+      expect(menu.querySelector("[data-agent-archive-all-chats]")).toHaveClass(
+        "text-error"
+      );
+      expect(menu.querySelector("[data-agent-chat-list-mode]")).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test("only offers Unarchive all and Delete all in the archived list menu", async () => {
+    useAgentStore.setState({ size: { width: 750, height: 450 } });
+    useAgentStore.getState().createChat({
+      title: "Archived analytics",
+      context: "projects/analytics",
+      archived: true,
+      select: false,
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const archiveButton = document.body.querySelector(
+        '[data-agent-compact-rail] [aria-label="agent.archived-only-chats"]'
+      ) as HTMLButtonElement;
+      act(() => archiveButton.click());
+      const list = document.body.querySelector("[data-agent-chat-sidebar]");
+      const menuButton = list?.querySelector(
+        '[data-agent-chat-sidebar-actions] [aria-label="common.more"]'
+      ) as HTMLButtonElement;
+      expect(menuButton).toBeInstanceOf(HTMLButtonElement);
+
+      await act(async () => {
+        menuButton.click();
+        await Promise.resolve();
+      });
+
+      const menu = getLayerRoot("agent").querySelector(
+        "[data-agent-dropdown-menu-content]"
+      ) as HTMLElement;
+      expect(menu).toBeInstanceOf(HTMLElement);
+      expect(menu.querySelectorAll('[role="menuitem"]')).toHaveLength(2);
+      expect(menu.querySelector("[data-agent-unarchive-all-chats]")).toBeInstanceOf(
+        HTMLElement
+      );
+      expect(menu.querySelector("[data-agent-delete-all-chats]")).toHaveClass(
+        "text-error"
+      );
+      expect(menu.querySelector("[data-agent-chat-list-mode]")).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test("toggles a group in archived chats", async () => {
+    const chat = useAgentStore.getState().createChat({
+      title: "Archived analytics",
+      context: "projects/analytics",
+      archived: true,
+      select: false,
+    });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      const archiveButton = document.body.querySelector(
+        '[data-agent-compact-rail] [aria-label="agent.archived-only-chats"]'
+      ) as HTMLButtonElement;
+      expect(archiveButton).toBeInstanceOf(HTMLButtonElement);
+      act(() => archiveButton.click());
+
+      const toggle = document.body.querySelector(
+        '[data-agent-chat-group-toggle="projects/analytics"]'
+      ) as HTMLButtonElement;
+      expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+      act(() => toggle.click());
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      expect(
+        document.body.querySelector(`[data-agent-chat-row="${chat.id}"]`)
+      ).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test("keeps the compact rail new-chat action while viewing archived chats", async () => {
     useAgentStore.setState({ size: { width: 700, height: 450 } });
     useAgentStore.getState().createChat({
       title: "Archived analytics",
@@ -654,7 +1571,7 @@ describe("AgentWindow", () => {
       const rail = document.body.querySelector("[data-agent-compact-rail]");
       expect(
         rail?.querySelector("[aria-label='agent.new-chat']")
-      ).toBeNull();
+      ).toBeInstanceOf(HTMLButtonElement);
       expect(
         document.body.querySelector(
           '[data-agent-new-chat-for-context="projects/analytics"]'
@@ -873,62 +1790,61 @@ describe("AgentWindow", () => {
 
     render();
 
-    const moreButton = document.body.querySelector(
-      "[aria-label='common.more']"
-    ) as HTMLButtonElement | null;
+    try {
+      const archiveButton = document.body.querySelector(
+        '[data-agent-compact-rail] [aria-label="agent.archived-only-chats"]'
+      ) as HTMLButtonElement;
+      expect(archiveButton).toBeInstanceOf(HTMLButtonElement);
+      act(() => archiveButton.click());
 
-    act(() => {
-      moreButton?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
+      const row = document.body.querySelector(
+        `[data-agent-chat-row="${archivedChat.id}"]`
       );
-    });
+      const menuButton = row?.querySelector(
+        "[data-agent-archived-chat-menu]"
+      ) as HTMLButtonElement;
+      expect(menuButton).toBeInstanceOf(HTMLButtonElement);
+      await act(async () => {
+        menuButton.dispatchEvent(
+          new MouseEvent("click", { bubbles: true, cancelable: true })
+        );
+        await Promise.resolve();
+      });
 
-    const agentRoot = document.getElementById("bb-react-layer-agent");
-    const overlayRoot = document.getElementById("bb-react-layer-overlay");
-
-    expect(
-      agentRoot?.querySelector("[data-agent-dropdown-menu-content]")
-    ).toBeInstanceOf(HTMLDivElement);
-    expect(
-      agentRoot?.querySelector("[data-agent-chat-list-mode]")
-    ).toBeInstanceOf(HTMLDivElement);
-    expect(
-      overlayRoot?.querySelector("[data-agent-dropdown-menu-content]") ?? null
-    ).toBeNull();
-
-    const archivedModeButton = document.body.querySelector(
-      "[data-agent-chat-list-mode]"
-    ) as HTMLDivElement | null;
-
-    await act(async () => {
-      archivedModeButton?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
+      const agentRoot = document.getElementById("bb-react-layer-agent");
+      const overlayRoot = document.getElementById("bb-react-layer-overlay");
+      expect(
+        agentRoot?.querySelector("[data-agent-dropdown-menu-content]")
+      ).toBeInstanceOf(HTMLDivElement);
+      expect(agentRoot?.querySelector("[data-agent-delete-chat]")).toBeInstanceOf(
+        HTMLElement
       );
-      await Promise.resolve();
-    });
+      expect(
+        overlayRoot?.querySelector("[data-agent-dropdown-menu-content]") ?? null
+      ).toBeNull();
 
-    const deleteButton = document.body.querySelector(
-      "[data-agent-delete-chat]"
-    ) as HTMLButtonElement | null;
+      const deleteButton = agentRoot?.querySelector(
+        "[data-agent-delete-chat]"
+      ) as HTMLElement;
+      await act(async () => {
+        deleteButton.dispatchEvent(
+          new MouseEvent("click", { bubbles: true, cancelable: true })
+        );
+        await Promise.resolve();
+      });
 
-    await act(async () => {
-      deleteButton?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
+      expect(
+        agentRoot?.querySelector("[data-agent-dialog-content]")
+      ).toBeInstanceOf(HTMLDivElement);
+      expect(agentRoot?.textContent?.includes("agent.delete-chat-confirmation")).toBe(
+        true
       );
-      await Promise.resolve();
-    });
-
-    expect(
-      agentRoot?.querySelector("[data-agent-dialog-content]")
-    ).toBeInstanceOf(HTMLDivElement);
-    expect(
-      agentRoot?.textContent?.includes("agent.delete-chat-confirmation")
-    ).toBe(true);
-    expect(
-      overlayRoot?.querySelector("[data-agent-dialog-content]") ?? null
-    ).toBeNull();
-
-    unmount();
+      expect(
+        overlayRoot?.querySelector("[data-agent-dialog-content]") ?? null
+      ).toBeNull();
+    } finally {
+      unmount();
+    }
   });
 
   test("mounts agent tooltip content into the agent layer root", async () => {
@@ -996,53 +1912,52 @@ describe("AgentWindow", () => {
 
     render();
 
-    const moreButton = document.body.querySelector(
-      "[aria-label='common.more']"
-    ) as HTMLButtonElement | null;
+    try {
+      const archiveButton = document.body.querySelector(
+        '[data-agent-compact-rail] [aria-label="agent.archived-only-chats"]'
+      ) as HTMLButtonElement;
+      expect(archiveButton).toBeInstanceOf(HTMLButtonElement);
+      act(() => archiveButton.click());
 
-    act(() => {
-      moreButton?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
+      const firstRow = document.body.querySelector(
+        `[data-agent-chat-row="${firstArchivedChat.id}"]`
       );
-    });
+      const menuButton = firstRow?.querySelector(
+        "[data-agent-archived-chat-menu]"
+      ) as HTMLButtonElement;
+      expect(menuButton).toBeInstanceOf(HTMLButtonElement);
+      await act(async () => {
+        menuButton.dispatchEvent(
+          new MouseEvent("click", { bubbles: true, cancelable: true })
+        );
+        await Promise.resolve();
+      });
 
-    const archivedModeButton = document.body.querySelector(
-      "[data-agent-chat-list-mode]"
-    ) as HTMLDivElement | null;
+      const deleteButton = document.body.querySelector(
+        "[data-agent-delete-chat]"
+      ) as HTMLElement;
+      expect(deleteButton).toBeInstanceOf(HTMLElement);
+      act(() => {
+        deleteButton.dispatchEvent(
+          new MouseEvent("click", { bubbles: true, cancelable: true })
+        );
+      });
 
-    await act(async () => {
-      archivedModeButton?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-      await Promise.resolve();
-    });
+      const confirmButton = Array.from(
+        document.body.querySelectorAll("button")
+      ).find((button) => button.textContent === "common.confirm");
 
-    const deleteButtons = Array.from(
-      document.body.querySelectorAll("[data-agent-delete-chat]")
-    ) as HTMLButtonElement[];
+      act(() => {
+        confirmButton?.dispatchEvent(
+          new MouseEvent("click", { bubbles: true, cancelable: true })
+        );
+      });
 
-    expect(deleteButtons).toHaveLength(2);
-
-    act(() => {
-      deleteButtons[0]?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-    });
-
-    const confirmButton = Array.from(
-      document.body.querySelectorAll("button")
-    ).find((button) => button.textContent === "common.confirm");
-
-    act(() => {
-      confirmButton?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true })
-      );
-    });
-
-    expect(useAgentStore.getState().getChat(firstArchivedChat.id)).toBeNull();
-    expect(useAgentStore.getState().currentChatId).toBe(secondArchivedChat.id);
-
-    unmount();
+      expect(useAgentStore.getState().getChat(firstArchivedChat.id)).toBeNull();
+      expect(useAgentStore.getState().currentChatId).toBe(secondArchivedChat.id);
+    } finally {
+      unmount();
+    }
   });
 
   test("keeps the running chat selected when archiving it from the active list", () => {
