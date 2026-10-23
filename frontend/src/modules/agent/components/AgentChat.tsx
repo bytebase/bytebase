@@ -26,6 +26,7 @@ import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
 import type {
+  AgentAnswerEvidence,
   AgentEvidence,
   AgentEvidenceReference,
   AgentMessage,
@@ -63,8 +64,8 @@ type ResolvedEvidenceReference = {
       };
 };
 
-function resolveEvidenceReferences(
-  evidence: AgentEvidence | undefined
+function resolveScopedEvidenceReferences(
+  evidence: AgentEvidence
 ): ResolvedEvidenceReference[] {
   if (!evidence || !Array.isArray(evidence.references)) {
     return [];
@@ -135,7 +136,26 @@ function resolveEvidenceReferences(
   return resolved;
 }
 
-function EvidenceReferences({ evidence }: { evidence?: AgentEvidence }) {
+function resolveEvidenceReferences(
+  evidence: AgentAnswerEvidence | undefined
+): ResolvedEvidenceReference[] {
+  const groups = Array.isArray(evidence)
+    ? evidence
+    : evidence
+      ? [evidence]
+      : [];
+  const seen = new Set<string>();
+  return groups.flatMap((group) =>
+    resolveScopedEvidenceReferences(group).filter(({ reference }) => {
+      const key = `${reference.kind}:${reference.name}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+  );
+}
+
+function EvidenceReferences({ evidence }: { evidence?: AgentAnswerEvidence }) {
   const { t } = useTranslation();
   const references = resolveEvidenceReferences(evidence);
   const labels = {

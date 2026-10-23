@@ -1,5 +1,6 @@
 // @vitest-environment node
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { silentContextKey } from "@/api/context-key";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { type Issue, Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 
@@ -8,6 +9,16 @@ const state = {
   fetchDatabases: vi.fn(),
   listIssues: vi.fn(),
 };
+
+const mocks = vi.hoisted(() => ({
+  searchIssues: vi.fn(),
+}));
+
+vi.mock("@/api", () => ({
+  issueServiceClientConnect: {
+    searchIssues: mocks.searchIssues,
+  },
+}));
 
 vi.mock("@/stores/app", () => ({
   useAppStore: {
@@ -32,10 +43,33 @@ const issue = (values: Partial<Issue>): Issue =>
   }) as Issue;
 
 describe("projectOverview", () => {
-  test("collects bounded project evidence from the chat-bound project", async () => {
+  beforeEach(() => {
     state.listIssues.mockReset();
     state.fetchDatabases.mockReset();
-    state.listIssues
+    mocks.searchIssues.mockReset();
+  });
+
+  test("uses silent unhydrated issue searches for every issue facet", async () => {
+    state.fetchDatabases.mockResolvedValue({
+      nextPageToken: "",
+      databases: [],
+    });
+    mocks.searchIssues.mockResolvedValue({
+      nextPageToken: "",
+      issues: [],
+    });
+
+    await collectProjectOverview("projects/sample");
+
+    expect(mocks.searchIssues).toHaveBeenCalledTimes(3);
+    expect(state.listIssues).not.toHaveBeenCalled();
+    for (const [, options] of mocks.searchIssues.mock.calls) {
+      expect(options?.contextValues.get(silentContextKey)).toBe(true);
+    }
+  });
+
+  test("collects bounded project evidence from the chat-bound project", async () => {
+    mocks.searchIssues
       .mockResolvedValueOnce({
         nextPageToken: "",
         issues: [issue({ name: "projects/sample/issues/review" })],
@@ -70,37 +104,37 @@ describe("projectOverview", () => {
       pageSize: 3,
       silent: true,
     });
-    expect(state.listIssues).toHaveBeenNthCalledWith(1, {
-      find: {
-        project: "projects/sample",
-        query: "",
-        currentApprover: "users/ed@bytebase.com",
-        statusList: [IssueStatus.OPEN],
-        approvalStatus: ApprovalStatus.PENDING,
+    expect(mocks.searchIssues).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        parent: "projects/sample",
+        filter:
+          'current_approver == "users/ed@bytebase.com" && approval_status == "PENDING" && status in ["OPEN"]',
         orderBy: "update_time desc",
-      },
-      pageSize: 10,
-    });
-    expect(state.listIssues).toHaveBeenNthCalledWith(2, {
-      find: {
-        project: "projects/sample",
-        query: "",
-        creator: "users/ed@bytebase.com",
-        statusList: [IssueStatus.OPEN],
+        pageSize: 10,
+      }),
+      expect.anything()
+    );
+    expect(mocks.searchIssues).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        parent: "projects/sample",
+        filter: 'creator == "users/ed@bytebase.com" && status in ["OPEN"]',
         orderBy: "update_time desc",
-      },
-      pageSize: 10,
-    });
-    expect(state.listIssues).toHaveBeenNthCalledWith(3, {
-      find: {
-        project: "projects/sample",
-        query: "",
-        typeList: [Issue_Type.DATABASE_CHANGE],
-        statusList: [IssueStatus.OPEN],
+        pageSize: 10,
+      }),
+      expect.anything()
+    );
+    expect(mocks.searchIssues).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        parent: "projects/sample",
+        filter: 'status in ["OPEN"] && type in ["DATABASE_CHANGE"]',
         orderBy: "update_time desc",
-      },
-      pageSize: 5,
-    });
+        pageSize: 5,
+      }),
+      expect.anything()
+    );
     expect(evidence).toEqual({
       project: "projects/sample",
       evidence: {
@@ -168,9 +202,7 @@ describe("projectOverview", () => {
   });
 
   test("keeps successful facets when another bounded lookup is incomplete", async () => {
-    state.listIssues.mockReset();
-    state.fetchDatabases.mockReset();
-    state.listIssues
+    mocks.searchIssues
       .mockRejectedValueOnce(new Error("approval lookup failed"))
       .mockResolvedValueOnce({
         nextPageToken: "",
@@ -233,18 +265,15 @@ describe("projectOverview", () => {
   });
 
   test("refuses to inspect a chat that is not bound to a project", async () => {
-    state.listIssues.mockReset();
-    state.fetchDatabases.mockReset();
-
     await expect(
       collectProjectOverview("workspaces/default")
     ).resolves.toBeNull();
     expect(state.fetchDatabases).not.toHaveBeenCalled();
-    expect(state.listIssues).not.toHaveBeenCalled();
+    expect(mocks.searchIssues).not.toHaveBeenCalled();
   });
 
   test("returns a project-bound JSON snapshot for the Agent", async () => {
-    state.listIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
+    mocks.searchIssues.mockResolvedValue({ nextPageToken: "", issues: [] });
     state.fetchDatabases.mockResolvedValue({
       nextPageToken: "",
       databases: [],

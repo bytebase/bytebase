@@ -1,6 +1,14 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { issueServiceClientConnect } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { useAppStore } from "@/stores/app";
+import { buildIssueFilter } from "@/stores/app/issue";
 import { IssueStatus } from "@/types/proto-es/v1/common_pb";
-import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  Issue_Type,
+  SearchIssuesRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { AgentEvidence, AgentEvidenceReference } from "../types";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
 
@@ -128,7 +136,7 @@ export async function collectProjectOverview(
     return null;
   }
 
-  const { fetchDatabases, listIssues } = useAppStore.getState();
+  const { fetchDatabases } = useAppStore.getState();
   const results = await Promise.allSettled([
     createProjectOpenIssuesTool({ projectName })(),
     fetchDatabases({
@@ -136,16 +144,20 @@ export async function collectProjectOverview(
       pageSize: DATABASE_PAGE_SIZE,
       silent: true,
     }),
-    listIssues({
-      find: {
-        project: projectName,
-        query: "",
-        typeList: [Issue_Type.DATABASE_CHANGE],
-        statusList: [IssueStatus.OPEN],
+    issueServiceClientConnect.searchIssues(
+      create(SearchIssuesRequestSchema, {
+        parent: projectName,
+        filter: buildIssueFilter({
+          project: projectName,
+          query: "",
+          typeList: [Issue_Type.DATABASE_CHANGE],
+          statusList: [IssueStatus.OPEN],
+        }),
         orderBy: "update_time desc",
-      },
-      pageSize: DATABASE_CHANGE_PAGE_SIZE,
-    }),
+        pageSize: DATABASE_CHANGE_PAGE_SIZE,
+      }),
+      { contextValues: createContextValues().set(silentContextKey, true) }
+    ),
   ]);
 
   const personalIssues =

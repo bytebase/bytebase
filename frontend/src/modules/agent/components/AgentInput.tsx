@@ -40,6 +40,7 @@ import { getRecentActivity } from "../logic/tools/recentActivity";
 import { createWorkspaceAttentionTool } from "../logic/tools/workspaceAttention";
 import { extractWorkspaceOverviewEvidence } from "../logic/tools/workspaceOverview";
 import type {
+  AgentAnswerEvidence,
   AgentAskUserOption,
   AgentEvidence,
   AgentRunMode,
@@ -208,6 +209,40 @@ const parseAttentionResult = (value: string): AttentionResult => {
   } catch {
     return { issues: [], partial: false, error: "invalid result" };
   }
+};
+
+const mergeOverviewEvidence = (
+  current: AgentAnswerEvidence | undefined,
+  next: AgentEvidence | undefined
+): AgentAnswerEvidence | undefined => {
+  if (!next || next.references.length === 0) return current;
+  if (!current) return next;
+
+  const groups = Array.isArray(current) ? current : [current];
+  const matchingIndex = groups.findIndex(
+    (group) =>
+      group.project === next.project && group.workspace === next.workspace
+  );
+  if (matchingIndex < 0) return [...groups, next];
+
+  const existing = groups[matchingIndex];
+  const seen = new Set(
+    existing.references.map(
+      (reference) => `${reference.kind}:${reference.name}`
+    )
+  );
+  const references = [...existing.references];
+  for (const reference of next.references) {
+    const key = `${reference.kind}:${reference.name}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    references.push(reference);
+  }
+  const merged = { ...existing, references };
+  if (!Array.isArray(current)) return merged;
+  return groups.map((group, index) =>
+    index === matchingIndex ? merged : group
+  );
 };
 
 // ---------------------------------------------------------------------------
@@ -717,7 +752,7 @@ export function AgentInput() {
         },
       });
       const toolNamesByCallId = new Map<string, string>();
-      let overviewEvidence: AgentEvidence | undefined;
+      let overviewEvidence: AgentAnswerEvidence | undefined;
 
       try {
         const outcome = await runAgentLoop(
@@ -741,13 +776,25 @@ export function AgentInput() {
             onToolResult: (toolCallId, result) => {
               const toolName = toolNamesByCallId.get(toolCallId);
               if (toolName === "get_project_overview") {
-                overviewEvidence = extractProjectOverviewEvidence(result);
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractProjectOverviewEvidence(result)
+                );
               } else if (toolName === "get_issue_overview") {
-                overviewEvidence = extractIssueOverviewEvidence(result);
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractIssueOverviewEvidence(result)
+                );
               } else if (toolName === "get_database_overview") {
-                overviewEvidence = extractDatabaseOverviewEvidence(result);
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractDatabaseOverviewEvidence(result)
+                );
               } else if (toolName === "get_workspace_overview") {
-                overviewEvidence = extractWorkspaceOverviewEvidence(result);
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractWorkspaceOverviewEvidence(result)
+                );
               }
               useAgentStore.getState().addMessage({
                 chatId,

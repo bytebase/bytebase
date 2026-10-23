@@ -77,6 +77,24 @@ describe("buildSystemPrompt", () => {
     expect(prompt).not.toContain("<project_readiness_evidence>");
   });
 
+  test.each([
+    ["project", "projects/orders"],
+    ["workspace", "workspaces/default"],
+  ])("requires complete %s facets before claiming absence", (_, context) => {
+    const prompt = buildSystemPrompt({
+      path: "/landing",
+      title: "Home",
+      context,
+    });
+
+    expect(prompt).toContain(
+      "Do not claim a resource or issue is absent unless its facet is available, partial is false, and it is empty"
+    );
+    expect(prompt).toContain(
+      "A partial or unavailable facet cannot establish absence"
+    );
+  });
+
   test("asks the Agent to inspect project governance before describing it", () => {
     const prompt = buildSystemPrompt({
       path: "/projects/orders",

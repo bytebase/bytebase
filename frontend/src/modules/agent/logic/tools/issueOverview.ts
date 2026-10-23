@@ -61,7 +61,8 @@ type IssueOverview = {
         resultCounts: { success: number; warning: number; error: number };
       }>
     | Unavailable
-    | NotConfigured;
+    | NotConfigured
+    | NotStarted;
   reviews: { rule: ReviewFacet; ai: ReviewFacet };
   rollout:
     | Available<{ name: string; stageCount: number }>
@@ -307,7 +308,7 @@ export async function collectIssueOverview(
           }
         : { status: "unavailable" as const }
       : isNotFound(planCheckResult.reason)
-        ? { status: "not_configured" as const }
+        ? { status: "not_started" as const }
         : { status: "unavailable" as const };
   const reviews = {
     rule: parseReviewResult(ruleReviewResult, `${issue.name}/reviewRuns/rule`),

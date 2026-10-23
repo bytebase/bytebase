@@ -221,7 +221,7 @@ describe("issueOverview", () => {
     expect(mocks.listTaskRuns).not.toHaveBeenCalled();
   });
 
-  test("treats missing checks as not configured and missing review runs as not started", async () => {
+  test("treats missing plan-check and review runs as not started", async () => {
     mocks.getIssue.mockResolvedValue({
       name: issueName,
       title: "Add customer table",
@@ -246,7 +246,7 @@ describe("issueOverview", () => {
       collectIssueOverview("projects/orders", issueName)
     ).resolves.toMatchObject({
       plan: { status: "available", hasRollout: false },
-      planCheck: { status: "not_configured" },
+      planCheck: { status: "not_started" },
       reviews: {
         rule: { status: "not_started" },
         ai: { status: "not_started" },

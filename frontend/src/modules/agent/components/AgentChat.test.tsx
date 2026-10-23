@@ -390,6 +390,65 @@ describe("AgentChat", () => {
     unmount();
   });
 
+  test("renders deduplicated references from separately scoped overviews", () => {
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: "The workspace and project both have relevant activity.",
+      metadata: {
+        evidence: [
+          {
+            workspace: "workspaces/default",
+            references: [
+              {
+                kind: "issue",
+                name: "projects/billing/issues/7",
+                title: "Billing approval",
+              },
+              {
+                kind: "database",
+                name: "projects/orders/instances/prod/databases/ignored",
+              },
+            ],
+          },
+          {
+            project: "projects/orders",
+            references: [
+              {
+                kind: "database",
+                name: "projects/orders/instances/prod/databases/orders",
+              },
+              {
+                kind: "issue",
+                name: "projects/billing/issues/7",
+                title: "Out-of-scope issue",
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const evidenceTrigger = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "agent.evidence.references"
+    );
+    act(() => {
+      evidenceTrigger?.click();
+    });
+
+    expect(container.textContent).toContain("Billing approval");
+    expect(container.textContent).toContain("database: orders");
+    expect(container.textContent).not.toContain("Out-of-scope issue");
+    expect(container.textContent).not.toContain("database: ignored");
+    expect(
+      Array.from(container.querySelectorAll("a")).filter(
+        (link) => link.textContent === "Billing approval"
+      )
+    ).toHaveLength(1);
+    unmount();
+  });
+
   test("sizes user and assistant message bubbles to their content", () => {
     useAgentStore.getState().addMessage({
       role: "user",

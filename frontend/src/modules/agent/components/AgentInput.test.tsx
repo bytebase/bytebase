@@ -80,7 +80,8 @@ function createMockStorage(): Storage {
   };
 }
 
-vi.mock("react-i18next", () => ({
+vi.mock("react-i18next", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-i18next")>()),
   useTranslation: mocks.useTranslation,
 }));
 
@@ -765,6 +766,192 @@ describe("AgentInput", () => {
         },
       ],
     });
+    view.unmount();
+  });
+
+  test("retains deduplicated references from multiple overviews in one answer", async () => {
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            { id: "project", name: "get_project_overview", arguments: "{}" },
+            { id: "issue", name: "get_issue_overview", arguments: "{}" },
+          ],
+        });
+        callbacks.onToolResult(
+          "project",
+          JSON.stringify({
+            evidence: {
+              project: "projects/orders",
+              references: [
+                {
+                  kind: "database",
+                  name: "projects/orders/instances/prod/databases/orders",
+                },
+                {
+                  kind: "issue",
+                  name: "projects/orders/issues/42",
+                  title: "Add customer table",
+                },
+              ],
+            },
+          })
+        );
+        callbacks.onToolResult(
+          "issue",
+          JSON.stringify({
+            evidence: {
+              project: "projects/orders",
+              references: [
+                {
+                  kind: "issue",
+                  name: "projects/orders/issues/42",
+                  title: "Add customer table",
+                },
+                {
+                  kind: "issue",
+                  name: "projects/orders/issues/43",
+                  title: "Add invoice table",
+                },
+              ],
+            },
+          })
+        );
+        callbacks.onText("Two changes are in progress.");
+        return { kind: "completed", totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/projects/orders", title: "Orders" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "Summarize this project and its issues",
+      page,
+      runMode: "read-only",
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find((message) => message.content === "Two changes are in progress.")
+        ?.metadata?.evidence
+    ).toEqual({
+      project: "projects/orders",
+      references: [
+        {
+          kind: "database",
+          name: "projects/orders/instances/prod/databases/orders",
+        },
+        {
+          kind: "issue",
+          name: "projects/orders/issues/42",
+          title: "Add customer table",
+        },
+        {
+          kind: "issue",
+          name: "projects/orders/issues/43",
+          title: "Add invoice table",
+        },
+      ],
+    });
+    view.unmount();
+  });
+
+  test("keeps distinct project and workspace evidence scopes separate", async () => {
+    mocks.runAgentLoop.mockImplementation(
+      async (_history, _tools, _executor, callbacks) => {
+        callbacks.onAssistantMessage({
+          toolCalls: [
+            { id: "workspace", name: "get_workspace_overview", arguments: "{}" },
+            { id: "project", name: "get_project_overview", arguments: "{}" },
+          ],
+        });
+        callbacks.onToolResult(
+          "workspace",
+          JSON.stringify({
+            evidence: {
+              workspace: "workspaces/demo",
+              references: [
+                {
+                  kind: "issue",
+                  name: "projects/billing/issues/7",
+                  title: "Billing approval",
+                },
+              ],
+            },
+          })
+        );
+        callbacks.onToolResult(
+          "project",
+          JSON.stringify({
+            evidence: {
+              project: "projects/orders",
+              references: [
+                {
+                  kind: "database",
+                  name: "projects/orders/instances/prod/databases/orders",
+                },
+              ],
+            },
+          })
+        );
+        callbacks.onText("Recent activity spans the workspace and project.");
+        return { kind: "completed", totalTokensUsed: 0 };
+      }
+    );
+    const page = { path: "/landing", title: "Workspace" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/demo", page });
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "Summarize recent work",
+      page,
+      runMode: "read-only",
+    });
+
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+    });
+
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(chat.id)
+        .find(
+          (message) =>
+            message.content === "Recent activity spans the workspace and project."
+        )?.metadata?.evidence
+    ).toEqual([
+      {
+        workspace: "workspaces/demo",
+        references: [
+          {
+            kind: "issue",
+            name: "projects/billing/issues/7",
+            title: "Billing approval",
+          },
+        ],
+      },
+      {
+        project: "projects/orders",
+        references: [
+          {
+            kind: "database",
+            name: "projects/orders/instances/prod/databases/orders",
+          },
+        ],
+      },
+    ]);
     view.unmount();
   });
 

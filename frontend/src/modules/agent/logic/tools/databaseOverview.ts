@@ -1,6 +1,8 @@
 import { create } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { createContextValues } from "@connectrpc/connect";
 import { databaseServiceClientConnect } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import {
   databaseNamePrefix,
   getNameParentTokens,
@@ -160,7 +162,8 @@ export async function collectDatabaseOverview(
 
   try {
     const database = await databaseServiceClientConnect.getDatabase(
-      create(GetDatabaseRequestSchema, { name: databaseName })
+      create(GetDatabaseRequestSchema, { name: databaseName }),
+      { contextValues: createContextValues().set(silentContextKey, true) }
     );
     if (
       database.name !== databaseName ||

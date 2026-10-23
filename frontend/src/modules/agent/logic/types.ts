@@ -44,13 +44,15 @@ export interface AgentEvidence {
   references: AgentEvidenceReference[];
 }
 
+export type AgentAnswerEvidence = AgentEvidence | AgentEvidence[];
+
 export interface AgentMessageMetadata {
   route?: string;
   pending?: boolean;
   hidden?: boolean;
   error?: string;
   runId?: string;
-  evidence?: AgentEvidence;
+  evidence?: AgentAnswerEvidence;
 }
 
 export interface AgentMessage extends Message {

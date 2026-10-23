@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { silentContextKey } from "@/api/context-key";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import { SyncStatus } from "@/types/proto-es/v1/database_service_pb";
 
@@ -87,8 +88,12 @@ describe("databaseOverview", () => {
       },
     });
     expect(mocks.getDatabase).toHaveBeenCalledWith(
-      expect.objectContaining({ name: databaseName })
+      expect.objectContaining({ name: databaseName }),
+      expect.objectContaining({ contextValues: expect.anything() })
     );
+    expect(
+      mocks.getDatabase.mock.calls[0][1]?.contextValues.get(silentContextKey)
+    ).toBe(true);
   });
 
   test("rejects a database outside the chat-bound project before calling the API", async () => {
@@ -130,7 +135,8 @@ describe("databaseOverview", () => {
       },
     });
     expect(mocks.getDatabase).toHaveBeenCalledWith(
-      expect.objectContaining({ name: workspaceInstanceDatabaseName })
+      expect.objectContaining({ name: workspaceInstanceDatabaseName }),
+      expect.anything()
     );
   });
 
