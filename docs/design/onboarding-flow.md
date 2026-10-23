@@ -248,7 +248,7 @@ file, which a follow-up may play with the site's `RivePlayer` (`rive.wasm` self-
 lazy-loaded on the setup route only, one frame under reduced motion); the query and exploring
 pictures are composed for the panel and stay still. Every picture takes 70% of the panel's column,
 never under 512px or over 800px, and never taller than the window; the drawn ones scale as one, so a
-wide screen gets the same picture larger. The rocket illustration stays on sign-in and sign-up. Rejected: a constant stage
+wide screen gets the same picture larger. Sign-in and sign-up render in one centered column with no illustration. Rejected: a constant stage
 (the panel teaches nothing); the website's closing slogan, or its brand art alone, on screen 1
 (decoration beside a form that already has its heading); for screen 3, a diagram of instance,
 database and project as labelled boxes (it read as a lesson in three words at once); for screen 4,
@@ -421,7 +421,7 @@ returns to the same screen with the draft.
 |---|---|
 | `frontend/src/routes/auth/WorkspaceSetupPage.tsx` | Rewrite as four screens with the local draft, validation under each field, and the single commit at Finish. Finish navigates to the project home, as the wizard has since [#21572]. |
 | `frontend/src/routes/auth/WorkspaceSetupQuestionnaireStep.tsx` | Retire; the goal moves to screen 2 and the team question is removed. |
-| `frontend/src/app/layouts/SplashLayout.tsx` | Setup variant: a panel slot instead of the fixed illustration. |
+| `frontend/src/app/layouts/SplashLayout.tsx` | Setup variant: a panel slot in the left column; every other auth route renders in one centered column with no illustration. |
 | `frontend/src/routes/auth/workspace-setup/` (new) | Beside the route that is their only consumer: screen components, the left panel (the workspace preview, the project with its instances, the project's members, a still frame from bytebase.com's hero Rive file and two pictures composed for the panel), the chips input, whose text field keeps the shared `Input`'s `xs` size, the chips' text size, and only drops its border. The screens use the shared `StepIndicator`, `RadioGroup` and form primitives, with each validation message under its field. |
 | `frontend/src/modules/workspace-setup-guide/` | Take the goal and the team size from the wizard; store "just exploring" as a goal of its own, which uses the query journey; mark "explore database" done on arrival with the sample; start at "Connect instance" on the own-instance path; show the team step only above "Just me". |
 | `frontend/src/routes/project/projectHomeNextSteps.ts` | Take the goal as an input. With a database present, "Query a database" comes before "Change a database" for the query goal and for "just exploring"; the order is unchanged otherwise. |
