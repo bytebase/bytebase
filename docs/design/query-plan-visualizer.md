@@ -239,7 +239,7 @@ twice. There, Plan shows the plan as text, and nothing else.
    includes its children and is reported per loop, so ranking the raw number
    just finds the root. Subtract the children and multiply out the loops, per
    engine — which is what the model already does for estimates by ranking
-   `selfCost` (`plan-model.ts:467-468`), and the measured side has to match it
+   `selfCost` (`planCostliestNodes`), and the measured side has to match it
    before any percentage or opening zoom is shown.
 2. **Graph** — opens zoomed on the costliest operator, not the root; long
    single-child chains fold into one box with a count. Nodes show their share of
@@ -266,23 +266,24 @@ twice. There, Plan shows the plan as text, and nothing else.
 The pane is already big enough: [#21459](https://github.com/bytebase/bytebase/pull/21459)
 shipped Maximize, a remembered height and the sidebar stepping aside.
 
-**What changes from today's viewer.** The pop-up page offers five tabs —
-Diagram, Grid, Summary, Raw plan, Query. Five tabs for one plan is three too
-many: Summary is the answer most readers want and should not be hidden behind a
-tab, and Query duplicates the editor they came from.
+**What changes from the pop-up viewer.** The pop-up page offered five tabs —
+Diagram, Grid, Summary, Raw plan, Query. Five tabs for one plan is two too many:
+Summary is the answer most readers want and should not be hidden behind a tab,
+and Query duplicates what the result pane already shows.
 
-| Today | Becomes |
+| Pop-up | Becomes |
 |---|---|
-| Diagram | **Graph**, opening on the costliest operator instead of the root |
+| Diagram | **Diagram**, the tab the viewer opens on, centered on the costliest operator instead of the root, which starts selected |
 | Grid | **Table** |
-| Summary (tab, only when the plan has costs) | **always-visible panel** beside the graph |
-| Raw plan | the **Text** tab, beside Plan |
-| Query | becomes a **View SQL** disclosure in the Plan view |
+| Summary (tab, only when the plan has costs) | the three costliest operators, ranked, at the top of the **side panel** beside the diagram and the table; the cost timeline and per-operation table are dropped |
+| Raw plan | the **Text** tab |
+| Query | dropped: the result pane's status bar shows the statement that ran, limit and all, with a copy control |
 
-View SQL is not a tooltip. The editor may have moved on since the result was
-produced, so the statement a plan belongs to has to be readable somewhere — and
-selectable and copyable, which a hover tooltip is not, least of all for a long
-statement.
+The statement a plan belongs to still has to be readable, selectable and
+copyable, because the editor may have moved on since the result was produced.
+The status bar under the Plan view already does that, so the viewer does not
+repeat it. What the diagram's bars and edges encode is a hover away on the
+totals line rather than a line of its own, since the result pane is short.
 
 The view switch's choice — Table, Vertical, Plan or Text — is remembered per
 editor tab, like the result pane's height, so comparing two runs does not mean
@@ -350,7 +351,7 @@ ordinary query with the result limit but skips that wrapper on the explain path
 (`pg.go:801-809`), so explaining the original text would plan an unbounded query
 when the user ran a bounded one — and PostgreSQL plans for `LIMIT`, so the two
 differ, not just in cost but in shape. The plan request and its cache carry the
-executed statement and its connection context, and View SQL shows that statement,
+executed statement and its connection context, and the status bar shows that statement,
 limit and all. The estimate badge is about statistics moving; it must not quietly
 cover a different query.
 
@@ -391,8 +392,8 @@ would fail queries the user is authorized to run. Profiling only when asked
 requires a control that says so before the run, which is a second explain action
 on the Run button for a case **Explain analyze** already covers. Out of scope.
 
-Once the Plan view matches the pop-up page, delete the page, its token hand-off
-and the old link.
+The pop-up page, its token hand-off and the old link are deleted
+([#21652](https://github.com/bytebase/bytebase/pull/21652)).
 
 ### 3.5 Permissions, masking and limits
 
@@ -402,16 +403,19 @@ it. For them the Plan option is **disabled with the reason shown**, not hidden:
 hiding it leaves them unable to tell the capability exists or what to ask an
 admin for.
 
-**Anything that both executes and returns a plan needs both permissions**, and
-today neither route does. A typed `EXPLAIN ANALYZE` is classified as its *inner*
-statement (`pg/query_type.go:47`), so it passes on `bb.sql.select` alone and
-still returns a plan. The **Explain analyze** action comes the other way: an
-explain request has no query spans, so the check falls to
-`bb.sql.explain` alone (`sql_service.go:1450-1458`) — safe today only because
-`validateExplainStatements` refuses anything that is not read-only, which is
-exactly the refusal this action has to relax. Both routes must require the
-underlying statement's normal ACL, write-target checks included, **and**
-`bb.sql.explain`.
+**Anything that both executes and returns a plan needs both permissions.** A
+typed `EXPLAIN ANALYZE` was classified as its *inner* statement, so it passed on
+`bb.sql.select` alone and still returned a plan; SQL Server's `SET STATISTICS
+XML ON` and `SET STATISTICS PROFILE ON` did the same for every statement after
+them. Both now mark the span as an executed plan, so the statement needs its
+normal ACL, write-target checks included, **and** `bb.sql.explain`
+([#21642](https://github.com/bytebase/bytebase/pull/21642),
+[#21648](https://github.com/bytebase/bytebase/pull/21648)). SQL Server's settings are read from the parsed `SET` statement,
+not matched as text, so a comment or an option list does not hide them. The
+**Explain analyze** action comes the other way: an explain request is checked
+on `bb.sql.explain` and is safe today only because `validateExplainStatements`
+refuses anything that is not read-only, which is exactly the refusal this
+action has to relax; when it lands it must add the statement's own ACL.
 
 **Plans are never masked, and that is a privilege, not a safe default.** Explain
 skips masking (`sql_service.go:726`, `:735`). A plan is not row data, but it is
@@ -518,7 +522,7 @@ live servers, September 2026.
 
 ## 6. Status
 
-Checked against `main` on 2026-10-22.
+Checked against `main` on 2026-10-23, after [#21652](https://github.com/bytebase/bytebase/pull/21652).
 
 **Landed**
 
@@ -540,20 +544,26 @@ Checked against `main` on 2026-10-22.
   ([#21642](https://github.com/bytebase/bytebase/pull/21642)); the Plan option
   is disabled with the reason, a load can be cancelled, and a plan past the
   node cap is shown as text
-  ([#21646](https://github.com/bytebase/bytebase/pull/21646)). What remains
-  of §3.5: SQL Server's `SET STATISTICS XML ON` route still passes on
-  `bb.sql.select` alone.
+  ([#21646](https://github.com/bytebase/bytebase/pull/21646)); SQL Server's
+  `SET STATISTICS XML` and `PROFILE` need `bb.sql.explain` as well as the
+  statement's own permission, and its SHOWPLAN settings are read from the
+  parsed statement ([#21648](https://github.com/bytebase/bytebase/pull/21648)).
+  §3.5 is closed.
 - §3.2/§3.3 — Plan in the result pane's view switch on an ordinary result,
   planning the executed statement, with the estimate wording from §3.4, the
   choice remembered per editor tab
   ([#21646](https://github.com/bytebase/bytebase/pull/21646)).
 
+- §3.3/§3.4 — the viewer opens on the diagram, centered on the costliest
+  operator; three tabs (Diagram, Table, Text) instead of five; the costliest
+  operators ranked in the side panel; the legend on hover; the pop-up page
+  deleted ([#21652](https://github.com/bytebase/bytebase/pull/21652)). The
+  ranking and the opening view use estimated cost and say so; ranking a
+  measured plan by measured time waits for measured plans, item 2 below.
+
 **Not yet, in the order to do them**
 
 1. §3.1 — Explain and Explain analyze in the Run dropdown, planning the limited
    statement; today every driver's explain path skips the limit.
-2. §3.3 — the reading changes: summary panel always visible, graph opening on
-   the costliest operator, View SQL, warning relevance, measured plans with
-   planned vs actual rows, cost share on the tab label.
-3. §3.4 — delete the pop-up page (`frontend/explain-visualizer.html`), which
-   nothing links to any more.
+2. §3.3 — the rest of the reading changes: warning relevance, measured plans
+   with planned vs actual rows, cost share on the tab label.

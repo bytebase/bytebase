@@ -13,7 +13,7 @@ This file provides additional guidance to AI coding assistants working under `./
 
 - All user-facing UI text belongs in `src/locales/` and is consumed through `useTranslation()` from `react-i18next`.
 - Locale files must not contain empty JSON objects; remove them when encountered.
-- `src/apps/explain-visualizer/` is exempt and writes its text inline: the entry never initializes i18n, and doing so would pull every locale bundle into a standalone page that today ships 208 KB. Number formatting there is pinned to `en-US` for the same reason. Text in the main app that merely refers to the visualizer, such as the SQL editor's failure toasts, still belongs in `src/locales/`.
+- The query plan viewer in `src/apps/explain-visualizer/` takes its text through a `translate` prop, which the SQL Editor fills from `sql-editor.query-plan-viewer.*` in `src/locales/`; `plan-i18n.tsx` holds the English defaults. Number formatting there is pinned to `en-US`.
 
 ## UX contract
 
@@ -42,7 +42,7 @@ Use route ownership as the primary organization axis. Do not add a generic `feat
 | `src/hooks/` and `src/lib/` | Cross-cutting hooks and framework-neutral helpers only |
 | `src/types/` and `src/utils/` | Existing cross-module contracts and compatibility utilities; prefer owner-local code for new work |
 | `src/types/proto-es/` | Generated protobuf output; do not edit manually |
-| `src/apps/explain-visualizer/` | Isolated secondary entrypoint for the query-plan viewer opened in its own tab |
+| `src/apps/explain-visualizer/` | The query plan viewer the SQL Editor result pane renders |
 
 ### Placement and dependency rules
 
@@ -52,7 +52,6 @@ Use route ownership as the primary organization axis. Do not add a generic `feat
 - Put a large reusable workflow in `src/modules/<name>/`; do not spread one subsystem across `components` and `stores`.
 - Shared code and modules must not import from `src/routes/`. Move the shared implementation to its actual owner instead.
 - Prefer direct owner imports such as `@/modules/sql-editor/store` over broad barrels when the owner is known.
-- `src/apps/explain-visualizer/` must not use primitives backed by `styles.stylex.ts`. The build appends StyleX's rules to the main app's CSS asset only (`cssInjectionTarget` in `vite.config.ts`), so a StyleX-sized control renders unstyled in that entry.
 - Historical migration plans under `docs/` describe old paths and are not current architecture guidance.
 - `CLAUDE.md` files only import their adjacent `AGENTS.md`; update `AGENTS.md` as the source of truth.
 

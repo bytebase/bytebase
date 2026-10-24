@@ -3479,8 +3479,7 @@
       "copy": {
         "copied": "Copied",
         "failed": "Copy failed",
-        "plan": "Copy plan",
-        "query": "Copy query"
+        "plan": "Copy plan"
       },
       "details": {
         "select-node": "Select a node to see its details."
@@ -3544,32 +3543,13 @@
         "startup-cost": "Startup cost",
         "total-cost": "Total cost"
       },
-      "query": {
-        "missing": "The statement was not captured with this plan."
-      },
       "summary": {
-        "added-cost": "Added cost",
-        "cost-by-operation": "Cost by operation",
-        "cost-by-operation-description": "Every node type in the plan and what it costs in total.",
-        "cost-ranges": "Cost ranges",
-        "cost-ranges-description": "Each node spans its startup cost — the cost before its first row — to its total cost, both of which include everything below it. Darker spans carry more of the plan's cost. Costs are not a schedule: two inputs of a join overlap here but run one after the other.",
-        "costliest": "Costliest operators",
-        "costliest-description": "Ranked by the cost a node adds on top of its children. Where an input runs repeatedly, as under a nested loop, some engines count the repeats in the node that reruns it rather than in the input itself.",
-        "count": "Count",
-        "estimate-note": "The statement was planned but not run, so every figure here is an optimizer estimate rather than a measurement. Cost units are arbitrary and comparable only within this plan.",
-        "estimated-rows-returned": "Estimated rows returned",
-        "no-added-cost": "No node in this plan adds an estimated cost of its own.",
-        "nodes": "Nodes",
-        "operation": "Operation",
-        "share": "Share",
-        "timeline-node": "{{name}}, cost {{startup}} to {{total}}, {{share}} of plan cost",
-        "total-estimated-cost": "Total estimated cost"
+        "costliest": "Costliest by estimated cost",
+        "no-added-cost": "No node in this plan adds an estimated cost of its own."
       },
       "tab": {
         "diagram": "Diagram",
-        "grid": "Grid",
-        "query": "Query",
-        "summary": "Summary",
+        "grid": "Table",
         "text": "Text"
       },
       "totals": {

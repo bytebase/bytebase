@@ -54,11 +54,11 @@ import {
   QueryOptionSchema,
   type QueryResult,
 } from "@/types/proto-es/v1/sql_service_pb";
+import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import {
   isVisualizerEngine,
   VISUALIZER_EXPLAIN_FORMATS,
-} from "@/utils/explainToken";
-import { hasProjectPermissionV2 } from "@/utils/iam/permission";
+} from "@/utils/queryPlanEngines";
 import {
   flattenElasticsearchSearchResult,
   flattenNoSQLQueryResult,
@@ -988,8 +988,6 @@ function DatabaseInfo({ database }: { database: Database }) {
 }
 
 function getInlineQueryPlan(result: QueryResult): InlineQueryPlan | undefined {
-  const { statement } = result;
-  if (!statement) return undefined;
   const lines = result.rows.map((row) =>
     row.values.map((value) => String(extractSQLRowValuePlain(value)))
   );
@@ -999,13 +997,12 @@ function getInlineQueryPlan(result: QueryResult): InlineQueryPlan | undefined {
       ? [result.columnNames, ...lines].map((line) => line.join("\t")).join("\n")
       : lines.map((line) => line[0]).join("\n");
   if (!source) return undefined;
-  return { statement, source };
+  return { source };
 }
 
 // explainStatement asks the engine for the plan of a statement as it ran, in
 // the format the visualizer draws where there is one and the engine's default
-// otherwise. The signal cancels the request. The plan carries the statement
-// itself, limit and all, for the viewer to show.
+// otherwise. The signal cancels the request.
 async function explainStatement(
   database: Database,
   params: SQLEditorQueryParams,
@@ -1038,6 +1035,5 @@ async function explainStatement(
   const result = resultSet?.results[0];
   if (!result) return undefined;
   if (result.error) throw new Error(result.error);
-  const plan = getInlineQueryPlan(result);
-  return plan && { ...plan, statement };
+  return getInlineQueryPlan(result);
 }

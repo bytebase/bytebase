@@ -18,7 +18,6 @@ const sharedPrimitivePrefix = "src/components/ui/";
 const lifecycleStampPath =
   "src/routes/project/plan-detail/components/lifecycle/LifecycleStamp.tsx";
 
-const legacyIgnoredPrefixes = ["src/apps/explain-visualizer/"];
 const generatedPrefixes = ["src/types/proto-es/"];
 const nativeControls = new Set(["button", "input", "select", "textarea"]);
 const rawColorFamilies = [
@@ -77,9 +76,6 @@ const literalColorPattern = /#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\s*\(/gi;
 const cssRadiusPropertyPattern = /^border(?:-[a-z]+)*-radius$/;
 const inlineRadiusPropertyPattern = /^border(?:[A-Z][a-z]*)*Radius$/;
 const dashedInlineRadiusPropertyPattern = /^border(?:-[a-z]+)*-radius$/;
-
-const isLegacyIgnoredPath = (path) =>
-  legacyIgnoredPrefixes.some((prefix) => path.startsWith(prefix));
 
 const isGeneratedPath = (path) =>
   generatedPrefixes.some((prefix) => path.startsWith(prefix));
@@ -304,9 +300,6 @@ export function scanSource(source, path) {
   const scanTokenValue = (value) => {
     for (const token of classTokens(value)) {
       for (const rule of rulesForToken(token)) {
-        if (isLegacyIgnoredPath(path) && rule !== "no-off-scale-radius") {
-          continue;
-        }
         addViolation(counts, path, rule, token);
       }
     }

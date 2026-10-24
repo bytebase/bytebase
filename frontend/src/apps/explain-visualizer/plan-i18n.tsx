@@ -4,7 +4,6 @@ const ENGLISH = {
   "copy.copied": "Copied",
   "copy.failed": "Copy failed",
   "copy.plan": "Copy plan",
-  "copy.query": "Copy query",
   "details.select-node": "Select a node to see its details.",
   "diagram.collapse": "Collapse {{count}} nodes under {{node}}",
   "diagram.cost": "cost {{cost}}",
@@ -67,33 +66,11 @@ const ENGLISH = {
   "metric.row-width": "Row width",
   "metric.startup-cost": "Startup cost",
   "metric.total-cost": "Total cost",
-  "query.missing": "The statement was not captured with this plan.",
-  "summary.added-cost": "Added cost",
-  "summary.cost-by-operation": "Cost by operation",
-  "summary.cost-by-operation-description":
-    "Every node type in the plan and what it costs in total.",
-  "summary.cost-ranges": "Cost ranges",
-  "summary.cost-ranges-description":
-    "Each node spans its startup cost — the cost before its first row — to its total cost, both of which include everything below it. Darker spans carry more of the plan's cost. Costs are not a schedule: two inputs of a join overlap here but run one after the other.",
-  "summary.costliest": "Costliest operators",
-  "summary.costliest-description":
-    "Ranked by the cost a node adds on top of its children. Where an input runs repeatedly, as under a nested loop, some engines count the repeats in the node that reruns it rather than in the input itself.",
-  "summary.count": "Count",
-  "summary.estimate-note":
-    "The statement was planned but not run, so every figure here is an optimizer estimate rather than a measurement. Cost units are arbitrary and comparable only within this plan.",
-  "summary.estimated-rows-returned": "Estimated rows returned",
+  "summary.costliest": "Costliest by estimated cost",
   "summary.no-added-cost":
     "No node in this plan adds an estimated cost of its own.",
-  "summary.nodes": "Nodes",
-  "summary.operation": "Operation",
-  "summary.share": "Share",
-  "summary.timeline-node":
-    "{{name}}, cost {{startup}} to {{total}}, {{share}} of plan cost",
-  "summary.total-estimated-cost": "Total estimated cost",
   "tab.diagram": "Diagram",
-  "tab.grid": "Grid",
-  "tab.query": "Query",
-  "tab.summary": "Summary",
+  "tab.grid": "Table",
   "tab.text": "Text",
   "totals.estimated-cost": "estimated cost {{cost}}",
   "totals.nodes": "{{count}} nodes",

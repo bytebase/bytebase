@@ -5,16 +5,16 @@ Status: implemented in this PR · 2026-10-12
 A custom approval step whose role is held only by service accounts shows "No reviewers" on the
 plan page, and the code comment beside that string says the step can never be approved. Both are
 wrong: the backend already lets a service account or workload identity approve any step whose role
-it holds, and QVC's ServiceNow integration does exactly that. The review UI applies a display
+it holds, and a customer's ServiceNow integration does exactly that. The review UI applies a display
 filter the authorization model does not have. **A principal that holds a step's role is an
 approver whatever its type: the review surfaces list it, name it, and attribute its decision the
 same way they do for a person. Notifications stay human-only.**
 
 ## Problem
 
-QVC (2026-10-08) ends every change's approval flow with a custom role "ServiceNow Approver" held
-by two service accounts: a workspace account `bytebase-integration-service` bound at workspace and
-project level, and a project account `testdt` bound at project level. The plan page shows the step
+A customer (2026-10-08) ends every change's approval flow with a custom role "ServiceNow Approver" held
+by two service accounts: a workspace account `integration` bound at workspace and
+project level, and a project account `approver` bound at project level. The plan page shows the step
 as "No reviewers", so the customer asked whether the flow is supported at all.
 
 Reproduced on a throwaway 3.24-dev instance with the same shape (Developer → Workspace DBA →
@@ -26,14 +26,14 @@ body:
 | Reviewer line under a pending or current step | "No reviewers" | `ReviewApprovalFlow.tsx` `NodeReviewers`; comment claims the step "can never be approved" (BYT-9711) |
 | Folded-pending popover row | avatars omitted silently | `PendingPopoverRow`, `candidates.length > 0` guard |
 | Header "Review in progress" popover | "No reviewers" | `PlanStatusAction.tsx` → `ReviewApprovalFlow compact` |
-| "Approved by …" after the SA approves via API | `Approved by bytebase-integration-service` (email local part, no title, no account-type mark) | `FlowNode` subtitle, `ApprovedPopoverRow`, `ChipAvatars`: `getUserByIdentifier` misses, `unknownUser(principal)` fills in |
-| Activity row for the approval comment | `bytebase-integration-service approved issue` | `IssueCommentActivity.tsx` `IssueCommentHeader`, same fallback |
-| Collapsed REVIEW summary | `Last approved by bytebase-integration-service` | `phaseSummary.ts`: local part for every principal, humans included |
+| "Approved by …" after the SA approves via API | `Approved by integration` (email local part, no title, no account-type mark) | `FlowNode` subtitle, `ApprovedPopoverRow`, `ChipAvatars`: `getUserByIdentifier` misses, `unknownUser(principal)` fills in |
+| Activity row for the approval comment | `integration approved issue` | `IssueCommentActivity.tsx` `IssueCommentHeader`, same fallback |
+| Collapsed REVIEW summary | `Last approved by integration` | `phaseSummary.ts`: local part for every principal, humans included |
 | Legacy issue page (grant issues) | approver hidden: "Approved by" followed by nothing; candidates filtered to humans | `IssueDetailApprovalFlow.tsx` `ApprovalUserText` returns null for non-`USER`; `useApprovalStep` filters `AccountType.USER` |
 
 The authorization side is consistent and needs no change. `canReview` in
 `backend/component/review/workflow.go` resolves roles through `GetUserFormattedRolesMap`, which
-matches `serviceAccounts/{email}` and `workloadIdentities/{email}` members directly. The three QVC
+matches `serviceAccounts/{email}` and `workloadIdentities/{email}` members directly. The customer's three
 binding shapes all pass. The approval is recorded as `users/<sa-email>`
 (`common.FormatUserEmail(actor.Email)`), the approval comment's creator is the SA email, the
 webhook actor is the SA's `UserMessage`, and the audit log names the actor
@@ -126,7 +126,7 @@ string. Nothing needs the type in the string, because the email suffix already c
 codebase has two conventions and this field belongs to the first: attribution fields
 (`issue.creator`, `plan.creator`, `plan.last_plan_editor`, comment creators) are `users/<email>`
 for every actor, while policy members and the audit-log actor carry the typed prefix. A new format
-would need a backfill for every SA approval already stored (QVC's included) and dual-format
+would need a backfill for every SA approval already stored (the customer's included) and dual-format
 readers forever, for no information gain.
 
 **D6 · Notifications are unchanged.** `getApproversForRole` keeps `END_USER` only and

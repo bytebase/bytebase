@@ -11,11 +11,10 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { VisualizerEngine } from "@/utils/explainToken";
+import type { VisualizerEngine } from "@/utils/queryPlanEngines";
 
 export interface InlineQueryPlan {
   source: string;
-  statement: string;
 }
 
 /** Fetches the plan; the signal fires when the reader cancels the load. */
@@ -146,11 +145,9 @@ export function QueryPlanResultView({
         engine={engine}
         planSource={plan.source}
         textPlanSource={rawPlan || undefined}
-        planQuery={plan.statement}
         note={estimateNote}
         translate={translatePlan}
         disallowCopyingData={disallowCopyingData}
-        syncSelectionWithHash={false}
       />
     );
   }

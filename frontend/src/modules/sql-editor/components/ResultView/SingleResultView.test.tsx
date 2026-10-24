@@ -280,9 +280,9 @@ vi.mock("./QueryPlanResultView", () => ({
     disallowCopyingData,
   }: {
     rawPlan: string;
-    initialPlan?: { source: string; statement: string };
+    initialPlan?: { source: string };
     loadPlan?: () => Promise<
-      { source: string; statement: string } | undefined
+      { source: string } | undefined
     >;
     disallowCopyingData?: boolean;
   }) => {

@@ -581,7 +581,7 @@ test.describe("E2E Masking Verification", () => {
 // with stock cel-go (masking_evaluator.go:237) — the OR-group MUST be wrapped:
 //   request.time < T && ((res1) || (res2))
 // If it isn't, the time bound attaches only to the LAST branch and every earlier
-// resource is served unmasked forever (the GovTech incident). #20683 fixed the
+// resource is served unmasked forever. #20683 fixed the
 // create-page builder and #20687 shared it with GrantAccessDialog (BYT-9791).
 //
 // These verify the contract end-to-end through the real masking evaluator and SQL

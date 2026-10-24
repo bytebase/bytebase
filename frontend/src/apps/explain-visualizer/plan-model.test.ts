@@ -18,18 +18,14 @@ import {
   type PlanTree,
   parseWithDepthLimit,
   planCollapsedAncestor,
-  planCostByOperation,
   planCostliestNodes,
   planDescendantCount,
   planEdgeWidth,
   planHighlightIntensity,
-  planNodeFragment,
-  planNodeIdFromFragment,
   planRevealNode,
   planRows,
   planSelfCost,
   planSelfCostShare,
-  planTimeline,
 } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
 import cteNestedLoopInitplan from "./test-data/postgres/cte-nested-loop-initplan.json";
@@ -423,28 +419,6 @@ describe("planRevealNode", () => {
   });
 });
 
-describe("plan node fragments", () => {
-  test("round-trips a node id through the fragment that names it", () => {
-    expect(planNodeFragment("0.1.1")).toBe("#node-0.1.1");
-    expect(planNodeIdFromFragment(planNodeFragment("0.1.1"))).toBe("0.1.1");
-    expect(planNodeIdFromFragment("node-0")).toBe("0");
-  });
-
-  test("ignores a fragment that does not name a node", () => {
-    expect(planNodeIdFromFragment(undefined)).toBeUndefined();
-    expect(planNodeIdFromFragment("")).toBeUndefined();
-    expect(planNodeIdFromFragment("#")).toBeUndefined();
-    expect(planNodeIdFromFragment("#node-")).toBeUndefined();
-    expect(planNodeIdFromFragment("#section-2")).toBeUndefined();
-    expect(planNodeIdFromFragment("#node-%")).toBeUndefined();
-  });
-
-  test("escapes an id that is not plain fragment text", () => {
-    expect(planNodeFragment("a b#c")).toBe("#node-a%20b%23c");
-    expect(planNodeIdFromFragment(planNodeFragment("a b#c"))).toBe("a b#c");
-  });
-});
-
 describe("costBasis", () => {
   test("is the root's total cost, which the self costs add back up to", () => {
     const tree = parseFixture(hashJoinAggregateSort);
@@ -526,67 +500,6 @@ describe("planEdgeWidth", () => {
   });
 });
 
-describe("planTimeline", () => {
-  test("spans each node from its startup cost to its total cost", () => {
-    const tree = parseFixture(hashJoinAggregateSort);
-    const rows = planTimeline(tree);
-    const basis = tree.costBasis;
-
-    expect(rows.map((row) => row.node.id)).toEqual(
-      tree.nodes.map((entry) => entry.id)
-    );
-
-    const join = rows[2];
-    expect(join.node.nodeType).toBe("Hash Join");
-    expect(join.start).toBeCloseTo(140.5 / basis, 6);
-    expect(join.end).toBeCloseTo(1090.86 / basis, 6);
-    expect(join.share).toBeCloseTo(193.86 / basis, 6);
-  });
-
-  test("keeps every span inside the axis, Limit plans included", () => {
-    for (const fixture of [
-      hashJoinAggregateSort,
-      cteNestedLoopInitplan,
-      seqScanFilter,
-    ]) {
-      for (const row of planTimeline(parseFixture(fixture))) {
-        expect(row.start).toBeGreaterThanOrEqual(0);
-        expect(row.end).toBeLessThanOrEqual(1);
-        expect(row.end).toBeGreaterThanOrEqual(row.start);
-      }
-    }
-  });
-
-  test("carries the nesting depth so the rows can be indented", () => {
-    const tree = parseFixture(cteNestedLoopInitplan);
-    expect(planTimeline(tree).map((row) => row.depth)).toEqual([
-      0, 1, 2, 1, 2, 2,
-    ]);
-  });
-
-  test("collapses to the origin when the planner costs the plan at zero", () => {
-    const tree = buildPlanTree(node("0", {}, [node("0.0")]));
-    expect(planTimeline(tree)).toEqual([
-      {
-        node: tree.nodes[0],
-        depth: 0,
-        branchContinues: [],
-        start: 0,
-        end: 0,
-        share: 0,
-      },
-      {
-        node: tree.nodes[1],
-        depth: 1,
-        branchContinues: [false],
-        start: 0,
-        end: 0,
-        share: 0,
-      },
-    ]);
-  });
-});
-
 describe("planCostliestNodes", () => {
   test("ranks by the cost a node adds on top of its children", () => {
     const tree = parseFixture(hashJoinAggregateSort);
@@ -596,8 +509,6 @@ describe("planCostliestNodes", () => {
       ["Seq Scan", "orders"],
       ["HashAggregate", "c.region"],
       ["Hash Join", "(o.customer_id = c.id)"],
-      ["Seq Scan", "customers"],
-      ["Sort", "(count(*)) DESC"],
     ]);
   });
 
@@ -613,36 +524,5 @@ describe("planCostliestNodes", () => {
 
   test("is empty for a plan the planner costs at nothing", () => {
     expect(planCostliestNodes(buildPlanTree(node("0")))).toEqual([]);
-  });
-});
-
-describe("planCostByOperation", () => {
-  test("sums each node type's own cost and ranks the types", () => {
-    const tree = parseFixture(hashJoinAggregateSort);
-    const operations = planCostByOperation(tree);
-
-    expect(operations.map((entry) => entry.nodeType)).toEqual([
-      "Seq Scan",
-      "HashAggregate",
-      "Hash Join",
-      "Sort",
-      "Hash",
-    ]);
-    expect(operations[0]).toMatchObject({ nodeType: "Seq Scan", count: 2 });
-    expect(operations[0].selfCost).toBeCloseTo(897, 5);
-    expect(operations[0].share).toBeCloseTo(897 / 1465.93, 6);
-    expect(operations.reduce((sum, entry) => sum + entry.count, 0)).toBe(
-      tree.nodes.length
-    );
-  });
-
-  test("lists a zero-cost plan's operations without a share", () => {
-    const tree = buildPlanTree(
-      node("0", { nodeType: "Limit" }, [node("0.0", { nodeType: "Seq Scan" })])
-    );
-    expect(planCostByOperation(tree)).toEqual([
-      { nodeType: "Limit", count: 1, selfCost: 0, share: 0 },
-      { nodeType: "Seq Scan", count: 1, selfCost: 0, share: 0 },
-    ]);
   });
 });

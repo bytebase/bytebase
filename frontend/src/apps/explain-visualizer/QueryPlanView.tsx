@@ -2,7 +2,7 @@ import { type ReactNode, useMemo } from "react";
 import { Alert } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { VisualizerEngine } from "@/utils/explainToken";
+import type { VisualizerEngine } from "@/utils/queryPlanEngines";
 import {
   MSSQL_PLAN_EMPTY_MESSAGE,
   MSSQL_PLAN_INVALID_XML_MESSAGE,
@@ -63,21 +63,17 @@ interface Props {
   engine: VisualizerEngine;
   planSource: string;
   textPlanSource?: string;
-  planQuery?: string;
   note?: ReactNode;
   translate?: QueryPlanTranslate;
   disallowCopyingData?: boolean;
-  syncSelectionWithHash?: boolean;
 }
 
 function QueryPlanViewContent({
   engine,
   planSource,
   textPlanSource,
-  planQuery,
   note,
   disallowCopyingData = false,
-  syncSelectionWithHash,
 }: Props) {
   const translate = useQueryPlanTranslation();
   const result = useMemo(
@@ -109,10 +105,8 @@ function QueryPlanViewContent({
       tree={result.tree}
       rawPlan={planSource}
       textPlan={textPlanSource}
-      query={planQuery}
       note={note}
       disallowCopyingData={disallowCopyingData}
-      syncSelectionWithHash={syncSelectionWithHash}
     />
   );
 }

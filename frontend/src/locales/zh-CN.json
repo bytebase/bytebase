@@ -3479,8 +3479,7 @@
       "copy": {
         "copied": "已复制",
         "failed": "复制失败",
-        "plan": "复制计划",
-        "query": "复制查询"
+        "plan": "复制计划"
       },
       "details": {
         "select-node": "选择节点以查看详情。"
@@ -3544,32 +3543,13 @@
         "startup-cost": "启动成本",
         "total-cost": "总成本"
       },
-      "query": {
-        "missing": "此计划未记录对应语句。"
-      },
       "summary": {
-        "added-cost": "新增成本",
-        "cost-by-operation": "按操作统计成本",
-        "cost-by-operation-description": "计划中每种节点类型及其总成本。",
-        "cost-ranges": "成本范围",
-        "cost-ranges-description": "每个节点从启动成本（返回第一行前的成本）延伸到总成本，两者都包含其下所有节点。颜色越深表示承担的计划成本越高。成本并非执行时间表：连接的两个输入会在此重叠，但实际依次执行。",
-        "costliest": "成本最高的操作符",
-        "costliest-description": "按节点在其子节点之上增加的成本排序。当输入重复执行时（如嵌套循环），某些引擎会将重复成本计入重新运行该输入的节点，而不是输入本身。",
-        "count": "数量",
-        "estimate-note": "语句已规划但未执行，因此此处所有数据都是优化器估算值，而非测量值。成本单位是任意的，只能在此计划内比较。",
-        "estimated-rows-returned": "预计返回行数",
-        "no-added-cost": "此计划中没有节点自身增加预计成本。",
-        "nodes": "节点",
-        "operation": "操作",
-        "share": "占比",
-        "timeline-node": "{{name}}，成本 {{startup}} 到 {{total}}，占计划成本的 {{share}}",
-        "total-estimated-cost": "预计总成本"
+        "costliest": "按预估成本最高的操作符",
+        "no-added-cost": "此计划中没有节点自身增加预计成本。"
       },
       "tab": {
         "diagram": "图表",
-        "grid": "网格",
-        "query": "查询",
-        "summary": "摘要",
+        "grid": "表格",
         "text": "文本"
       },
       "totals": {
