@@ -54,7 +54,7 @@
       "references": "Evidencia"
     },
     "input-keyboard-hint": "Enter para enviar · Shift+Enter para un salto de línea",
-    "input-placeholder": "Pregunta algo a la IA...",
+    "input-placeholder": "Pregunta a la IA o escribe @ para seleccionar un recurso",
     "interrupted": "Interrumpido",
     "interrupted-retry-hint": "La conversación fue interrumpida. Puede reintentar o enviar un nuevo mensaje.",
     "landing-starters": {
@@ -91,6 +91,7 @@
       "summary": "Estos issues requieren tu atención en este proyecto:",
       "unavailable": "No se pueden cargar los elementos que necesitan tu atención en este proyecto."
     },
+    "project-reference-unavailable": "Este proyecto ya no está disponible o no tienes acceso a él.",
     "recent-activity": {
       "checking": "Comprobando la actividad reciente...",
       "empty": "No se registró actividad importante en los últimos 3 días.",
@@ -102,6 +103,15 @@
     },
     "rename-chat-placeholder": "Ingrese el nombre del chat",
     "reply": "Responder",
+    "resource-picker": {
+      "add-context": "Añadir contexto",
+      "load-error": "No se pudieron cargar los proyectos.",
+      "no-projects": "No se encontraron proyectos accesibles",
+      "one-reference-per-message": "Solo se permite una referencia por mensaje. Envía otra pregunta para consultar otro recurso.",
+      "projects": "Proyectos",
+      "retry": "Reintentar",
+      "search-projects": "Buscar proyectos"
+    },
     "result": "Resultado",
     "retry-last-chat-turn": "Reintentar",
     "self": "Asistente",
@@ -1659,7 +1669,7 @@
     }
   },
   "landing": {
-    "ai-placeholder": "Pregunta a la IA sobre la configuración del espacio de trabajo, los proyectos o el acceso",
+    "ai-placeholder": "Pregunta sobre este espacio de trabajo o escribe @ para seleccionar un recurso",
     "ai-setup": {
       "action": "Configurar IA",
       "description": "Configura un proveedor y un modelo para usar la IA en este espacio de trabajo.",
@@ -2114,7 +2124,7 @@
     "home": {
       "active-issues": "Tus solicitudes activas",
       "active-issues-unavailable": "No puedes ver las solicitudes de este proyecto.",
-      "ai-placeholder": "Pide a la IA que consulte, cambie o configure este proyecto",
+      "ai-placeholder": "Pregunta sobre este proyecto o escribe @ para seleccionar un recurso",
       "archived-description": "Este proyecto está archivado y es de solo lectura.",
       "change-database": "Cambiar una base de datos",
       "change-database-description": "Planifica un cambio de base de datos controlado en este proyecto.",

@@ -22,4 +22,21 @@ describe("searchApi", () => {
       /^## Matching endpoints\n\n1\. ProjectService\/GetIamPolicy/m
     );
   });
+
+  test("shows all supported parent scopes when inspecting a listing endpoint", async () => {
+    const result = await searchApi({
+      operationId: "DatabaseService/ListDatabases",
+    });
+
+    expect(result).toContain("projects/{project}: list databases in a project");
+    expect(result).toContain(
+      "workspaces/{id}: list databases in the workspace"
+    );
+    expect(result).toContain(
+      "instances/{instance}: list databases in an instance"
+    );
+    expect(result).toContain(
+      "projects/{project}/instances/{instance}: list databases in a project instance"
+    );
+  });
 });

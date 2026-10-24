@@ -3,6 +3,32 @@ import { describe, expect, test } from "vitest";
 import { buildSystemPrompt } from "./prompt";
 
 describe("buildSystemPrompt", () => {
+  test("uses a selected project for one turn without narrowing normal API calls", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/original",
+      title: "Original project",
+      context: "projects/original",
+      referencedProject: "projects/referenced",
+      runMode: "read-only",
+    });
+
+    expect(prompt).toContain("Chat context: projects/original");
+    expect(prompt).toContain(
+      "Referenced project for this turn: projects/referenced"
+    );
+    expect(prompt).toContain(
+      "bounded project tools target the referenced project"
+    );
+    expect(prompt).toContain("This is not a chat context change");
+    expect(prompt).toContain("matching the referenced project");
+    expect(prompt).toContain("search_api");
+    expect(prompt).toContain("call_api");
+    expect(prompt).toContain("existing permissions and may change data");
+    expect(prompt).toContain("only make changes when the user explicitly asks");
+    expect(prompt).not.toContain("Do not navigate, call APIs");
+    expect(prompt).not.toContain("Either works for mutations");
+  });
+
   test("names the chat context separately from the live page", () => {
     const prompt = buildSystemPrompt({
       path: "/projects/other/issues",
@@ -23,6 +49,34 @@ describe("buildSystemPrompt", () => {
         context: "workspaces/demo",
       })
     ).toContain("Chat context: workspaces/demo");
+  });
+
+  test("does not carry a past project reference into an unqualified workspace follow-up", () => {
+    const prompt = buildSystemPrompt({
+      path: "/landing",
+      title: "Workspace",
+      context: "workspaces/demo",
+    });
+
+    expect(prompt).toContain(
+      "A selected resource in an earlier user message does not scope this turn"
+    );
+    expect(prompt).toContain(
+      "Do not infer a project from prior conversation when the current message has no project reference or explicit project name"
+    );
+    expect(prompt).toContain(
+      "For an unqualified list or count in a workspace-bound chat, use the whole chat workspace"
+    );
+    expect(prompt).toContain("ListDatabases supports parent=workspaces/{id}");
+    expect(prompt).toContain(
+      "follow every page token before reporting an exact total"
+    );
+    expect(prompt).toContain(
+      "ask which project only when the member requests a project-specific result without identifying one"
+    );
+    expect(prompt).not.toContain(
+      "if it is a workspace and the request requires a specific project, ask which project"
+    );
   });
 
   test("teaches the ref-based DOM workflow", () => {
@@ -48,6 +102,7 @@ describe("buildSystemPrompt", () => {
 
     expect(prompt).toContain("Stay on the current page");
     expect(prompt).toContain("Do not navigate");
+    expect(prompt).toContain("Do not navigate, call APIs");
     expect(prompt).toContain("get_project_open_issues");
     expect(prompt).toContain("get_project_overview");
     expect(prompt).toContain("get_project_governance_overview");

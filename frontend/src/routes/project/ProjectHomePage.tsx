@@ -4,7 +4,6 @@ import {
   ChevronRight,
   Database,
   PlugZap,
-  Send,
   SquareTerminal,
   UsersRound,
   Workflow,
@@ -29,7 +28,6 @@ import { IssueStatusIcon } from "@/components/IssueStatusIcon";
 import { ProjectPageLayout } from "@/components/ProjectPageLayout";
 import { RouterLink } from "@/components/RouterLink";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { usePlanFeature } from "@/hooks/useAppState";
 import {
   PREPARE_DATABASE_PRODUCT_INTRO,
@@ -37,12 +35,8 @@ import {
   PRODUCT_INTRO_QUERY_KEY,
   PRODUCT_INTRO_TIP_QUERY_KEY,
 } from "@/lib/productIntro";
-import { LandingStarterSelector } from "@/modules/agent/components/LandingStarterSelector";
+import { LandingAgentComposer } from "@/modules/agent/components/LandingAgentComposer";
 import { getLandingStarterIds } from "@/modules/agent/logic/landingStarters";
-import {
-  selectHasRunningChat,
-  useAgentStore,
-} from "@/modules/agent/store/agent";
 import { readSelectedGuideScenarioId } from "@/modules/workspace-setup-guide/selection";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types/iam";
@@ -140,11 +134,6 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   const isSaaSMode = useAppStore((state) => state.isSaaSMode());
   const showAgentChat = aiEnabled && isSaaSOrDev(isSaaSMode);
   const hasAuditLogFeature = usePlanFeature(PlanFeature.FEATURE_AUDIT_LOG);
-  const hasRunningChat = useAgentStore(selectHasRunningChat);
-  const hasQueuedMessage = useAgentStore(
-    (state) => state.queuedUserMessage !== null
-  );
-  const [aiPrompt, setAiPrompt] = useState("");
   const [discoveryRefreshToken, setDiscoveryRefreshToken] = useState(0);
   const fetchDatabases = useAppStore((state) => state.fetchDatabases);
   const fetchInstanceList = useAppStore((state) => state.fetchInstanceList);
@@ -164,7 +153,6 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   );
   const member = useAppStore((state) => state.currentUser?.email ?? "");
   const memberName = useAppStore((state) => state.currentUser?.name ?? "");
-  useEffect(() => setAiPrompt(""), [projectName]);
   const { missedPermissions } = useComponentPermissionState({
     permissions: HOME_PERMISSIONS,
     project,
@@ -636,52 +624,6 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
     );
   }
 
-  const sendAIMessage = () => {
-    const text = aiPrompt.trim();
-    if (!text || !aiEnabled) return;
-    const store = useAgentStore.getState();
-    if (selectHasRunningChat(store) || store.queuedUserMessage) return;
-    const page = {
-      path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
-      title: document.title,
-    };
-    const chat = store.selectOrCreateChatForContext(
-      project.name,
-      page,
-      workspaceName
-    );
-    if (!chat) return;
-    store.queueUserMessage({ chatId: chat.id, text, page });
-    store.open();
-    setAiPrompt("");
-  };
-
-  const sendLandingStarter = (
-    starterId: (typeof landingStarterIds)[number]
-  ) => {
-    if (!aiEnabled) return;
-    const store = useAgentStore.getState();
-    if (selectHasRunningChat(store) || store.queuedUserMessage) return;
-    const page = {
-      path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
-      title: document.title,
-    };
-    const chat = store.selectOrCreateChatForContext(
-      project.name,
-      page,
-      workspaceName
-    );
-    if (!chat) return;
-    store.queueUserMessage({
-      chatId: chat.id,
-      text: t(`agent.landing-starters.${starterId}`),
-      page,
-      runMode: "read-only",
-      starterId,
-    });
-    store.open();
-  };
-
   return (
     <ProjectPageLayout>
       <header className="min-w-0">
@@ -694,60 +636,14 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
       </header>
 
       {showAgentChat && (
-        <form
-          className="min-w-0 rounded-sm border border-accent/60 bg-background focus-within:border-accent focus-within:ring-1 focus-within:ring-accent"
-          onSubmit={(event) => {
-            event.preventDefault();
-            sendAIMessage();
-          }}
-        >
-          {!aiPrompt.trim() && (
-            <div className="px-3 pt-2">
-              <LandingStarterSelector
-                starterIds={landingStarterIds}
-                disabled={hasRunningChat || hasQueuedMessage}
-                onSelect={sendLandingStarter}
-              />
-            </div>
-          )}
-          <Textarea
-            size="md"
-            rows={2}
-            value={aiPrompt}
-            aria-label={t("project.home.ai-placeholder")}
-            placeholder={`${t("project.home.ai-placeholder")} · ${t("agent.input-keyboard-hint")}`}
-            className="min-h-20 resize-none border-0 focus:border-0 focus:ring-0"
-            onChange={(event) => setAiPrompt(event.target.value)}
-            onKeyDown={(event) => {
-              if (
-                event.key === "Enter" &&
-                !event.shiftKey &&
-                !event.altKey &&
-                !event.ctrlKey &&
-                !event.metaKey &&
-                !event.nativeEvent.isComposing
-              ) {
-                event.preventDefault();
-                sendAIMessage();
-              }
-            }}
-          />
-          <div className="flex flex-wrap items-end justify-between gap-2 px-3 pb-3">
-            <div className="flex min-w-0 flex-1 items-center text-xs text-control-light">
-              <span className="min-w-0 max-w-full truncate">
-                {t("agent.context")}: {project.title}
-              </span>
-            </div>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={!aiPrompt.trim() || hasRunningChat || hasQueuedMessage}
-            >
-              <Send className="size-4" />
-              {t("agent.send")}
-            </Button>
-          </div>
-        </form>
+        <LandingAgentComposer
+          key={`${workspaceName}:${project.name}`}
+          contextName={project.name}
+          contextTitle={project.title}
+          workspaceName={workspaceName}
+          placeholder={t("project.home.ai-placeholder")}
+          starterIds={landingStarterIds}
+        />
       )}
 
       {nextSteps.length > 0 && (

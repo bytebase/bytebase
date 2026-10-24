@@ -54,7 +54,7 @@
       "references": "Evidence"
     },
     "input-keyboard-hint": "Enter to send · Shift+Enter for a new line",
-    "input-placeholder": "Ask AI anything...",
+    "input-placeholder": "Ask AI anything or type @ to select a resource",
     "interrupted": "Interrupted",
     "interrupted-retry-hint": "The conversation was interrupted. You can retry or send a new message.",
     "landing-starters": {
@@ -91,6 +91,7 @@
       "summary": "These issues need your attention in this project:",
       "unavailable": "Unable to load items needing your attention in this project."
     },
+    "project-reference-unavailable": "This project is no longer available or you do not have access to it.",
     "recent-activity": {
       "checking": "Checking recent activity...",
       "empty": "No meaningful activity was recorded in the last 3 days.",
@@ -102,6 +103,15 @@
     },
     "rename-chat-placeholder": "Enter chat name",
     "reply": "Reply",
+    "resource-picker": {
+      "add-context": "Add context",
+      "load-error": "Could not load projects.",
+      "no-projects": "No accessible projects found",
+      "one-reference-per-message": "Only one reference per message. Send a separate question for another resource.",
+      "projects": "Projects",
+      "retry": "Retry",
+      "search-projects": "Search projects"
+    },
     "result": "Result",
     "retry-last-chat-turn": "Retry",
     "self": "Agent",
@@ -1659,7 +1669,7 @@
     }
   },
   "landing": {
-    "ai-placeholder": "Ask AI about workspace setup, projects, or access",
+    "ai-placeholder": "Ask about this workspace or type @ to select a resource",
     "ai-setup": {
       "action": "Configure AI",
       "description": "Configure a provider and model to use AI in this workspace.",
@@ -2114,7 +2124,7 @@
     "home": {
       "active-issues": "Your active issues",
       "active-issues-unavailable": "Issues are not available to you in this project.",
-      "ai-placeholder": "Ask AI to query, change, or set up this project",
+      "ai-placeholder": "Ask about this project or type @ to select a resource",
       "archived-description": "This project is archived and read-only.",
       "change-database": "Change a database",
       "change-database-description": "Plan a governed database change in this project.",
