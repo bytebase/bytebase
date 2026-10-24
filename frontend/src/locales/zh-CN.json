@@ -54,7 +54,7 @@
       "references": "依据"
     },
     "input-keyboard-hint": "按 Enter 发送 · 按 Shift+Enter 换行",
-    "input-placeholder": "向 AI 提问...",
+    "input-placeholder": "向 AI 提问，或输入 @ 选择资源",
     "interrupted": "已中断",
     "interrupted-retry-hint": "对话已中断。您可以重试或发送新消息。",
     "landing-starters": {
@@ -91,6 +91,7 @@
       "summary": "此项目中的这些 issue 需要你关注：",
       "unavailable": "无法加载此项目中需要你关注的事项。"
     },
+    "project-reference-unavailable": "此项目已不可用，或你没有访问权限。",
     "recent-activity": {
       "checking": "正在检查最近活动...",
       "empty": "过去 3 天内没有记录到重要活动。",
@@ -102,6 +103,15 @@
     },
     "rename-chat-placeholder": "输入对话名称",
     "reply": "回复",
+    "resource-picker": {
+      "add-context": "添加上下文",
+      "load-error": "无法加载项目。",
+      "no-projects": "未找到可访问的项目",
+      "one-reference-per-message": "每条消息只能引用一个资源。如需询问其他资源，请另发一条消息。",
+      "projects": "项目",
+      "retry": "重试",
+      "search-projects": "搜索项目"
+    },
     "result": "结果",
     "retry-last-chat-turn": "重试",
     "self": "助手",
@@ -1659,7 +1669,7 @@
     }
   },
   "landing": {
-    "ai-placeholder": "向 AI 询问工作区设置、项目或访问权限",
+    "ai-placeholder": "询问此工作区，或输入 @ 选择资源",
     "ai-setup": {
       "action": "配置 AI",
       "description": "配置服务提供方和模型，以在此工作区使用 AI。",
@@ -2114,7 +2124,7 @@
     "home": {
       "active-issues": "你的待处理工单",
       "active-issues-unavailable": "你无法查看此项目的工单。",
-      "ai-placeholder": "询问 AI 如何查询、更改或设置此项目",
+      "ai-placeholder": "询问此项目，或输入 @ 选择资源",
       "archived-description": "此项目已归档，处于只读状态。",
       "change-database": "变更数据库",
       "change-database-description": "在此项目中规划受管控的数据库变更。",

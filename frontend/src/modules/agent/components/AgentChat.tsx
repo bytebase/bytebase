@@ -25,6 +25,10 @@ import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
+import {
+  formatResourceMention,
+  normalizeAgentResourceReference,
+} from "../logic/resourceMention";
 import type {
   AgentAnswerEvidence,
   AgentEvidence,
@@ -296,6 +300,23 @@ export function AgentChat({ className }: AgentChatProps) {
     >
       {displayMessages.map((msg) => {
         const isPending = msg.metadata?.pending === true;
+        const reference =
+          msg.role === "user"
+            ? normalizeAgentResourceReference(msg.metadata?.resourceReference)
+            : undefined;
+        const content = msg.content ?? "";
+        const mentionText = reference
+          ? formatResourceMention(reference.label)
+          : "";
+        const firstMentionIndex = mentionText
+          ? content.indexOf(mentionText)
+          : -1;
+        const mentionIndex =
+          firstMentionIndex >= 0 &&
+          content.indexOf(mentionText, firstMentionIndex + mentionText.length) <
+            0
+            ? firstMentionIndex
+            : -1;
         const showTimestamp =
           msg.role === "user" ||
           (msg.role === "assistant" &&
@@ -316,8 +337,31 @@ export function AgentChat({ className }: AgentChatProps) {
           <div key={msg.id}>
             {msg.role === "user" ? (
               <div className="flex flex-col items-end">
-                <div className="w-fit max-w-full rounded-sm bg-info/10 px-3 py-2 text-sm">
-                  {msg.content}
+                <div className="flex w-fit max-w-full flex-col gap-y-1 rounded-sm bg-info/10 px-3 py-2 text-sm">
+                  <span>
+                    {mentionIndex < 0 ? (
+                      content
+                    ) : (
+                      <>
+                        {content.slice(0, mentionIndex)}
+                        <span
+                          className="font-medium text-accent"
+                          data-agent-message-mention
+                        >
+                          {mentionText}
+                        </span>
+                        {content.slice(mentionIndex + mentionText.length)}
+                      </>
+                    )}
+                  </span>
+                  {reference?.kind === "project" && firstMentionIndex < 0 && (
+                    <span
+                      className="text-xs text-control-light"
+                      data-agent-resource-reference
+                    >
+                      {t("common.project")}: {reference.label}
+                    </span>
+                  )}
                 </div>
                 {showTimestamp && timestamp}
               </div>

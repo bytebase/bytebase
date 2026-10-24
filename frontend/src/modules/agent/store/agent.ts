@@ -2,14 +2,28 @@ import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { getResourceId, workspaceNamePrefix } from "@/lib/resourceName";
+import {
+  getNameParentTokens,
+  projectNamePrefix,
+} from "@/stores/modules/v1/common";
 import type { LandingStarterId } from "../logic/landingStarters";
+import {
+  formatResourceMention,
+  getMentionTriggerRange,
+  insertResourceMention,
+  isResourceMentionRange,
+  normalizeAgentResourceReference,
+} from "../logic/resourceMention";
 import type {
   AgentAskUserResponse,
   AgentChat,
   AgentChatSnapshot,
   AgentChatStatus,
+  AgentDraft,
+  AgentMentionRange,
   AgentMessage,
   AgentPendingAsk,
+  AgentResourceReference,
   AgentRunMode,
   Message,
   ToolCall,
@@ -40,6 +54,8 @@ interface PersistedAgentState {
   chats: AgentChat[];
   messagesByChatId: Record<string, AgentMessage[]>;
   pendingAskByChatId: Record<string, AgentPendingAsk>;
+  draftsByChatId: Record<string, AgentDraft>;
+  queuedUserMessage: QueuedUserMessage | null;
 }
 
 interface CreateChatOptions {
@@ -56,15 +72,20 @@ interface AddMessageOptions extends Message {
   metadata?: AgentMessage["metadata"];
 }
 
-interface QueuedUserMessage {
+export interface QueuedUserMessage {
+  id: string;
   chatId: string;
   text: string;
   page: AgentChatSnapshot;
   runMode?: AgentRunMode;
   starterId?: LandingStarterId;
+  resourceReference?: AgentResourceReference;
 }
 
+type QueueUserMessageInput = Omit<QueuedUserMessage, "id">;
+
 const DEFAULT_CHAT_STATUS: AgentChatStatus = "idle";
+const DRAFT_PERSIST_DELAY_MS = 250;
 
 // --- Pure helper functions ---
 
@@ -101,7 +122,124 @@ const getChatTitleFromMessage = (content?: string) => {
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+const normalizeDraft = (raw: unknown): AgentDraft | null => {
+  if (!isRecord(raw) || typeof raw.text !== "string") return null;
+  const project = isRecord(raw.project) ? raw.project : {};
+  const projectName =
+    typeof project.name === "string" ? project.name.trim() : "";
+  const projectTitle =
+    typeof project.title === "string" ? project.title.trim() : "";
+  const normalizedProject =
+    projectTitle && getNameParentTokens(projectName, [projectNamePrefix]).length
+      ? { name: projectName, title: projectTitle }
+      : undefined;
+  const normalizedResource = normalizeAgentResourceReference(raw.resource);
+  const resource =
+    normalizedResource &&
+    (!normalizedProject ||
+      normalizedProject.name === normalizedResource.project)
+      ? normalizedResource
+      : normalizedProject
+        ? {
+            kind: "project" as const,
+            name: normalizedProject.name,
+            project: normalizedProject.name,
+            label: normalizedProject.title,
+          }
+        : undefined;
+  if (!resource) return { text: raw.text };
+
+  let text = raw.text;
+  let mention: AgentMentionRange | null = null;
+  if (isRecord(raw.mention)) {
+    const { start, end } = raw.mention;
+    if (typeof start === "number" && typeof end === "number") {
+      const candidate = { start, end };
+      if (isResourceMentionRange(text, candidate, resource.label)) {
+        mention = candidate;
+      }
+    }
+    if (!mention) return { text };
+  } else if (raw.mention !== undefined) {
+    return { text };
+  } else {
+    const token = formatResourceMention(resource.label);
+    let start = text.lastIndexOf(token);
+    while (start >= 0) {
+      const candidate = { start, end: start + token.length };
+      if (isResourceMentionRange(text, candidate, resource.label)) {
+        mention = candidate;
+        break;
+      }
+      if (start === 0) break;
+      start = text.lastIndexOf(token, start - 1);
+    }
+    if (!mention) {
+      const trigger = getMentionTriggerRange(text, text.length);
+      const prefix = trigger
+        ? text
+        : text && !/\s$/u.test(text)
+          ? `${text} @`
+          : `${text}@`;
+      const inserted = insertResourceMention(
+        prefix,
+        trigger ?? getMentionTriggerRange(prefix, prefix.length),
+        resource.label
+      );
+      if (!inserted) return { text: raw.text };
+      text = inserted.text;
+      mention = inserted.mention;
+    }
+  }
+  if (!mention) return { text };
+
+  return {
+    text,
+    ...(normalizedProject ? { project: normalizedProject } : {}),
+    resource,
+    mention,
+  };
+};
+
+const normalizeQueuedUserMessage = (
+  raw: unknown,
+  chatIds: Set<string>
+): QueuedUserMessage | null => {
+  if (
+    !isRecord(raw) ||
+    typeof raw.id !== "string" ||
+    !raw.id ||
+    typeof raw.chatId !== "string" ||
+    !chatIds.has(raw.chatId) ||
+    typeof raw.text !== "string" ||
+    !raw.text.trim() ||
+    !isRecord(raw.page) ||
+    typeof raw.page.path !== "string" ||
+    typeof raw.page.title !== "string"
+  ) {
+    return null;
+  }
+  const resourceReference = normalizeAgentResourceReference(
+    raw.resourceReference
+  );
+  return {
+    id: raw.id,
+    chatId: raw.chatId,
+    text: raw.text,
+    page: { path: raw.page.path, title: raw.page.title },
+    runMode:
+      raw.runMode === "default" || raw.runMode === "read-only"
+        ? raw.runMode
+        : undefined,
+    starterId:
+      typeof raw.starterId === "string"
+        ? (raw.starterId as LandingStarterId)
+        : undefined,
+    ...(resourceReference ? { resourceReference } : {}),
+  };
 };
 
 const normalizeMessage = (
@@ -133,7 +271,12 @@ const normalizeMessage = (
     toolCallId:
       typeof message.toolCallId === "string" ? message.toolCallId : undefined,
     metadata: isRecord(message.metadata)
-      ? { ...(message.metadata as AgentMessage["metadata"]) }
+      ? {
+          ...(message.metadata as AgentMessage["metadata"]),
+          resourceReference: normalizeAgentResourceReference(
+            message.metadata.resourceReference
+          ),
+        }
       : undefined,
   };
 };
@@ -269,6 +412,8 @@ const createEmptyPersistedState = (): PersistedAgentState => ({
   chats: [],
   messagesByChatId: {},
   pendingAskByChatId: {},
+  draftsByChatId: {},
+  queuedUserMessage: null,
 });
 
 const normalizePersistedState = (raw: unknown): PersistedAgentState => {
@@ -291,10 +436,14 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     : isRecord(raw.pendingAskByThreadId)
       ? raw.pendingAskByThreadId
       : {};
+  const rawDraftsByChatId = isRecord(raw.draftsByChatId)
+    ? raw.draftsByChatId
+    : {};
 
   const chats = rawChats.map((chat) => normalizeChat(chat));
   const messagesByChatId: Record<string, AgentMessage[]> = {};
   const pendingAskByChatId: Record<string, AgentPendingAsk> = {};
+  const draftsByChatId: Record<string, AgentDraft> = {};
 
   for (const chat of chats) {
     const rawMessages: unknown[] = Array.isArray(rawMessagesByChatId[chat.id])
@@ -334,7 +483,16 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     }
 
     messagesByChatId[chat.id] = messages;
+    const draft = normalizeDraft(rawDraftsByChatId[chat.id]);
+    if (draft && (draft.text || draft.project || draft.resource)) {
+      draftsByChatId[chat.id] = draft;
+    }
   }
+
+  const queuedUserMessage = normalizeQueuedUserMessage(
+    raw.queuedUserMessage,
+    new Set(chats.map((chat) => chat.id))
+  );
 
   const hasCurrentChatId = Object.prototype.hasOwnProperty.call(
     raw,
@@ -362,6 +520,8 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     chats,
     messagesByChatId,
     pendingAskByChatId,
+    draftsByChatId,
+    queuedUserMessage,
   };
 };
 
@@ -379,6 +539,7 @@ export interface AgentState {
   chats: AgentChat[];
   messagesByChatId: Record<string, AgentMessage[]>;
   pendingAskByChatId: Record<string, AgentPendingAsk>;
+  draftsByChatId: Record<string, AgentDraft>;
   currentChatId: string | null;
   abortControllersByChatId: Record<string, AbortController>;
   queuedUserMessage: QueuedUserMessage | null;
@@ -394,9 +555,15 @@ export interface AgentState {
 
   // Chat CRUD
   createChat: (options?: CreateChatOptions) => AgentChat;
-  queueUserMessage: (message: QueuedUserMessage) => void;
+  queueUserMessage: (message: QueueUserMessageInput) => void;
   takeQueuedUserMessage: (chatId: string) => QueuedUserMessage | null;
   finishQueuedUserMessage: (chatId: string) => void;
+  commitQueuedUserMessage: (
+    chatId: string
+  ) => { queued: QueuedUserMessage; message: AgentMessage } | null;
+  getDraft: (chatId?: string | null) => AgentDraft;
+  setDraft: (chatId: string, draft: AgentDraft) => void;
+  clearDraft: (chatId: string) => void;
   ensureCurrentChat: (
     page?: AgentChatSnapshot,
     context?: string,
@@ -644,6 +811,15 @@ const getPersistedStateForChats = (
         return pendingAsk ? [[chat.id, pendingAsk]] : [];
       })
     ),
+    draftsByChatId: Object.fromEntries(
+      chats.flatMap((chat) => {
+        const draft = state.draftsByChatId[chat.id];
+        return draft ? [[chat.id, draft]] : [];
+      })
+    ),
+    queuedUserMessage: chatIds.has(state.queuedUserMessage?.chatId ?? "")
+      ? state.queuedUserMessage
+      : null,
   };
 };
 
@@ -668,6 +844,12 @@ const mergePersistedStates = (
     ...existing.pendingAskByChatId,
     ...incoming.pendingAskByChatId,
   };
+  const draftsByChatId = {
+    ...existing.draftsByChatId,
+    ...incoming.draftsByChatId,
+  };
+  const queuedUserMessage =
+    existing.queuedUserMessage ?? incoming.queuedUserMessage;
   return {
     currentChatId:
       existing.currentChatId && chatsById.has(existing.currentChatId)
@@ -676,6 +858,8 @@ const mergePersistedStates = (
     chats,
     messagesByChatId,
     pendingAskByChatId,
+    draftsByChatId,
+    queuedUserMessage,
   };
 };
 
@@ -738,6 +922,8 @@ const loadInitialState = (): {
   chats: AgentChat[];
   messagesByChatId: Record<string, AgentMessage[]>;
   pendingAskByChatId: Record<string, AgentPendingAsk>;
+  draftsByChatId: Record<string, AgentDraft>;
+  queuedUserMessage: QueuedUserMessage | null;
   currentChatId: string | null;
 } => {
   return ensureCurrentChat(createEmptyPersistedState());
@@ -746,6 +932,14 @@ const loadInitialState = (): {
 export const createAgentStore = () => {
   const initial = loadInitialState();
   const initialWindowState = getInitialWindowState();
+  const lastSerializedByWorkspace = new Map<string, string>();
+  let draftPersistTimer: ReturnType<typeof setTimeout> | null = null;
+  const clearDraftPersistTimer = () => {
+    if (draftPersistTimer !== null) {
+      clearTimeout(draftPersistTimer);
+      draftPersistTimer = null;
+    }
+  };
 
   const store = create<AgentState>()(
     immer((set, get) => {
@@ -780,9 +974,10 @@ export const createAgentStore = () => {
         chats: initial.chats,
         messagesByChatId: initial.messagesByChatId,
         pendingAskByChatId: initial.pendingAskByChatId,
+        draftsByChatId: initial.draftsByChatId,
         currentChatId: initial.currentChatId,
         abortControllersByChatId: {},
-        queuedUserMessage: null,
+        queuedUserMessage: initial.queuedUserMessage,
         queuedUserMessageInFlight: false,
 
         // UI actions
@@ -828,6 +1023,29 @@ export const createAgentStore = () => {
           if (!id) return null;
           return get().pendingAskByChatId[id] ?? null;
         },
+
+        getDraft: (chatId) => {
+          const id = chatId ?? get().currentChatId;
+          return (id ? get().draftsByChatId[id] : undefined) ?? { text: "" };
+        },
+
+        setDraft: (chatId, draft) => {
+          if (!_getChat(chatId)) return;
+          const normalized = normalizeDraft(draft);
+          if (!normalized) return;
+          set((state) => {
+            if (normalized.text || normalized.project || normalized.resource) {
+              state.draftsByChatId[chatId] = normalized;
+            } else {
+              delete state.draftsByChatId[chatId];
+            }
+          });
+        },
+
+        clearDraft: (chatId) =>
+          set((state) => {
+            delete state.draftsByChatId[chatId];
+          }),
 
         getAbortController: (chatId) => {
           if (!chatId) return null;
@@ -886,11 +1104,19 @@ export const createAgentStore = () => {
           return chat;
         },
 
-        queueUserMessage: (message) =>
+        queueUserMessage: (message) => {
+          const resourceReference = normalizeAgentResourceReference(
+            message.resourceReference
+          );
           set((state) => {
-            state.queuedUserMessage = message;
+            state.queuedUserMessage = {
+              ...message,
+              id: uuidv4(),
+              ...(resourceReference ? { resourceReference } : {}),
+            };
             state.queuedUserMessageInFlight = false;
-          }),
+          });
+        },
 
         takeQueuedUserMessage: (chatId) => {
           const message = get().queuedUserMessage;
@@ -909,6 +1135,54 @@ export const createAgentStore = () => {
             state.queuedUserMessage = null;
             state.queuedUserMessageInFlight = false;
           }),
+
+        commitQueuedUserMessage: (chatId) => {
+          const queued = get().queuedUserMessage;
+          if (!queued || queued.chatId !== chatId || !_getChat(chatId)) {
+            return null;
+          }
+
+          let message: AgentMessage | null = null;
+          set((state) => {
+            const queued = state.queuedUserMessage;
+            if (!queued || queued.chatId !== chatId) return;
+            const chatMessages = state.messagesByChatId[chatId] ?? [];
+            state.messagesByChatId[chatId] = chatMessages;
+            const existing = chatMessages.find(
+              (candidate) => candidate.id === queued.id
+            );
+            if (existing) {
+              if (existing.role !== "user") return;
+              message = { ...existing } as AgentMessage;
+            } else {
+              const committed: AgentMessage = {
+                id: queued.id,
+                chatId,
+                createdTs: Date.now(),
+                role: "user",
+                content: queued.text,
+                metadata: queued.resourceReference
+                  ? { resourceReference: queued.resourceReference }
+                  : undefined,
+              };
+              chatMessages.push(committed);
+              message = committed;
+              const chat = state.chats.find(
+                (candidate) => candidate.id === chatId
+              );
+              if (chat) {
+                if (!chat.title)
+                  chat.title = getChatTitleFromMessage(queued.text);
+                chat.lastError = null;
+                chat.requiresAIConfiguration = false;
+                chat.interrupted = false;
+                chat.updatedTs = committed.createdTs;
+              }
+            }
+            state.queuedUserMessageInFlight = true;
+          });
+          return message ? { queued, message } : null;
+        },
 
         ensureCurrentChat: (page, context, workspaceName) => {
           const existing = _getChat(get().currentChatId);
@@ -1147,7 +1421,12 @@ export const createAgentStore = () => {
             state.chats = state.chats.filter((c) => c.id !== chatId);
             delete state.messagesByChatId[chatId];
             delete state.pendingAskByChatId[chatId];
+            delete state.draftsByChatId[chatId];
             delete state.abortControllersByChatId[chatId];
+            if (state.queuedUserMessage?.chatId === chatId) {
+              state.queuedUserMessage = null;
+              state.queuedUserMessageInFlight = false;
+            }
             if (state.currentChatId === chatId) {
               // Select next available chat
               const ordered = [...state.chats].sort((a, b) => {
@@ -1189,7 +1468,16 @@ export const createAgentStore = () => {
             for (const chatId of deletedChatIds) {
               delete state.messagesByChatId[chatId];
               delete state.pendingAskByChatId[chatId];
+              delete state.draftsByChatId[chatId];
               delete state.abortControllersByChatId[chatId];
+            }
+
+            if (
+              state.queuedUserMessage &&
+              deletedChatIds.has(state.queuedUserMessage.chatId)
+            ) {
+              state.queuedUserMessage = null;
+              state.queuedUserMessageInFlight = false;
             }
 
             state.chats = state.chats.filter(
@@ -1290,6 +1578,19 @@ export const createAgentStore = () => {
               if (status !== "awaiting_user") {
                 delete state.pendingAskByChatId[chatId];
               }
+              if (
+                status !== "running" &&
+                status !== "awaiting_user" &&
+                state.queuedUserMessage?.chatId === chatId &&
+                state.messagesByChatId[chatId]?.some(
+                  (message) =>
+                    message.id === state.queuedUserMessage?.id &&
+                    message.role === "user"
+                )
+              ) {
+                state.queuedUserMessage = null;
+                state.queuedUserMessageInFlight = false;
+              }
               _touchChatInDraft(state.chats, chatId);
             }
           });
@@ -1333,6 +1634,19 @@ export const createAgentStore = () => {
         setPendingAsk: (chatId, pendingAsk) => {
           set((state) => {
             state.pendingAskByChatId[chatId] = pendingAsk;
+            if (
+              state.chats.find((chat) => chat.id === chatId)?.status ===
+                "awaiting_user" &&
+              state.queuedUserMessage?.chatId === chatId &&
+              state.messagesByChatId[chatId]?.some(
+                (message) =>
+                  message.id === state.queuedUserMessage?.id &&
+                  message.role === "user"
+              )
+            ) {
+              state.queuedUserMessage = null;
+              state.queuedUserMessageInFlight = false;
+            }
             _touchChatInDraft(state.chats, chatId);
           });
           return pendingAsk;
@@ -1433,9 +1747,10 @@ export const createAgentStore = () => {
             draft.chats = persistedState.chats;
             draft.messagesByChatId = persistedState.messagesByChatId;
             draft.pendingAskByChatId = persistedState.pendingAskByChatId;
+            draft.draftsByChatId = persistedState.draftsByChatId;
             draft.currentChatId = persistedState.currentChatId;
             draft.abortControllersByChatId = {};
-            draft.queuedUserMessage = null;
+            draft.queuedUserMessage = persistedState.queuedUserMessage;
             draft.queuedUserMessageInFlight = false;
           });
           get().loadWindowState();
@@ -1518,6 +1833,7 @@ export const createAgentStore = () => {
         },
 
         saveState: () => {
+          clearDraftPersistTimer();
           const storage = getSafeStorage();
           const workspaceName = get().workspaceName;
           const key = workspaceName
@@ -1530,8 +1846,12 @@ export const createAgentStore = () => {
             chats: state.chats,
             messagesByChatId: state.messagesByChatId,
             pendingAskByChatId: state.pendingAskByChatId,
+            draftsByChatId: state.draftsByChatId,
+            queuedUserMessage: state.queuedUserMessage,
           };
-          storage.setItem(key, JSON.stringify(persistedState));
+          const serialized = JSON.stringify(persistedState);
+          lastSerializedByWorkspace.set(key, serialized);
+          storage.setItem(key, serialized);
         },
 
         loadState: () => {
@@ -1546,19 +1866,17 @@ export const createAgentStore = () => {
             draft.chats = state.chats;
             draft.messagesByChatId = state.messagesByChatId;
             draft.pendingAskByChatId = state.pendingAskByChatId;
+            draft.draftsByChatId = state.draftsByChatId;
             draft.currentChatId = state.currentChatId;
+            draft.queuedUserMessage = state.queuedUserMessage;
+            draft.queuedUserMessageInFlight = false;
           });
         },
       };
     })
   );
 
-  // Auto-persist on state changes
-  // Auto-persist only the chat state slice (not UI/window state).
-  // Uses a serialization check to avoid redundant writes during
-  // layout-only changes such as resizing.
-  const lastSerializedByWorkspace = new Map<string, string>();
-  store.subscribe((state) => {
+  const persistState = (state: AgentState) => {
     const storage = getSafeStorage();
     const workspaceName = state.workspaceName;
     const key = workspaceName
@@ -1572,11 +1890,35 @@ export const createAgentStore = () => {
       chats: state.chats,
       messagesByChatId: state.messagesByChatId,
       pendingAskByChatId: state.pendingAskByChatId,
+      draftsByChatId: state.draftsByChatId,
+      queuedUserMessage: state.queuedUserMessage,
     };
     const serialized = JSON.stringify(persistedState);
     if (serialized !== lastSerializedByWorkspace.get(key)) {
       lastSerializedByWorkspace.set(key, serialized);
       storage.setItem(key, serialized);
+    }
+  };
+
+  store.subscribe((state, previousState) => {
+    const nonDraftStateChanged =
+      state.workspaceName !== previousState.workspaceName ||
+      state.currentChatId !== previousState.currentChatId ||
+      state.chats !== previousState.chats ||
+      state.messagesByChatId !== previousState.messagesByChatId ||
+      state.pendingAskByChatId !== previousState.pendingAskByChatId ||
+      state.queuedUserMessage !== previousState.queuedUserMessage;
+    const draftChanged = state.draftsByChatId !== previousState.draftsByChatId;
+    if (!nonDraftStateChanged && !draftChanged) return;
+
+    clearDraftPersistTimer();
+    if (!nonDraftStateChanged && draftChanged) {
+      draftPersistTimer = setTimeout(() => {
+        draftPersistTimer = null;
+        persistState(store.getState());
+      }, DRAFT_PERSIST_DELAY_MS);
+    } else {
+      persistState(state);
     }
   });
 
@@ -1588,3 +1930,9 @@ export const createAgentStore = () => {
 // useAgentStore(selector) to subscribe React components to state slices.
 // Also callable outside React via useAgentStore.getState().
 export const useAgentStore = createAgentStore();
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", () =>
+    useAgentStore.getState().saveState()
+  );
+}

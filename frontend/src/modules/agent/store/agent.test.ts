@@ -234,9 +234,11 @@ describe("useAgentStore (Zustand)", () => {
     s(store).queueUserMessage(message);
 
     expect(s(store).takeQueuedUserMessage("other-chat")).toBeNull();
-    expect(s(store).takeQueuedUserMessage(chat.id)).toEqual(message);
+    const queued = s(store).takeQueuedUserMessage(chat.id);
+    expect(queued).toMatchObject(message);
+    expect(queued?.id).toBeTruthy();
     expect(s(store).takeQueuedUserMessage(chat.id)).toBeNull();
-    expect(s(store).queuedUserMessage).toEqual(message);
+    expect(s(store).queuedUserMessage).toEqual(queued);
     s(store).finishQueuedUserMessage(chat.id);
     expect(s(store).queuedUserMessage).toBeNull();
   });
@@ -1096,5 +1098,357 @@ describe("useAgentStore (Zustand)", () => {
     expect(secondController.signal.aborted).toBe(false);
     expect(s(store).isChatRunning(firstChatId)).toBe(false);
     expect(s(store).isChatRunning(secondChat.id)).toBe(true);
+  });
+
+  test("restores a separate draft for each chat after switching and remounting", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const firstChatId = s(store).currentChatId!;
+    const secondChat = s(store).createChat({ context: "projects/billing" });
+    s(store).setDraft(firstChatId, {
+      text: "Check @",
+      project: { name: "projects/orders", title: "Orders" },
+    });
+    s(store).setDraft(secondChat.id, { text: "Explain billing" });
+
+    s(store).setCurrentChat(firstChatId);
+    expect(s(store).getDraft(firstChatId).text).toBe("Check @Orders ");
+    expect(s(store).getDraft(secondChat.id).text).toBe("Explain billing");
+
+    const remounted = createAgentStore();
+    s(remounted).setWorkspaceName("workspaces/acme");
+    expect(s(remounted).getDraft(firstChatId)).toEqual({
+      text: "Check @Orders ",
+      project: { name: "projects/orders", title: "Orders" },
+      resource: {
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+        label: "Orders",
+      },
+      mention: { start: 6, end: 13 },
+    });
+    expect(s(remounted).getDraft(secondChat.id)).toEqual({
+      text: "Explain billing",
+    });
+  });
+
+  test("keeps drafts inside their workspace and removes them with deleted chats", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/alpha");
+    const alphaChat = s(store).currentChatId!;
+    s(store).setDraft(alphaChat, { text: "Alpha draft" });
+
+    s(store).setWorkspaceName("workspaces/beta");
+    expect(s(store).getDraft()).toEqual({ text: "" });
+    s(store).setWorkspaceName("workspaces/alpha");
+    expect(s(store).getDraft(alphaChat).text).toBe("Alpha draft");
+
+    s(store).deleteChat(alphaChat);
+    expect(s(store).getDraft(alphaChat)).toEqual({ text: "" });
+    expect(s(store).draftsByChatId[alphaChat]).toBeUndefined();
+  });
+
+  test("drops malformed cached drafts and references without disturbing legacy chats", () => {
+    localStorage.setItem(
+      getAgentStateKey("workspaces/acme"),
+      JSON.stringify({
+        currentChatId: "chat-1",
+        chats: [
+          { id: "chat-1", title: "Existing", createdTs: 1, updatedTs: 2 },
+        ],
+        messagesByChatId: {
+          "chat-1": [
+            {
+              id: "turn-1",
+              chatId: "chat-1",
+              role: "user",
+              content: "Existing question",
+              createdTs: 2,
+              metadata: {
+                resourceReference: {
+                  kind: "issue",
+                  name: "projects/other/issues/1",
+                  project: "projects/orders",
+                  label: "Wrong owner",
+                },
+              },
+            },
+          ],
+        },
+        draftsByChatId: {
+          "chat-1": {
+            text: "Safe draft",
+            project: { name: "projects/", title: "Invalid" },
+            resource: {
+              kind: "database",
+              name: "not/a/database",
+              project: "projects/orders",
+              label: "Invalid",
+            },
+          },
+          "missing-chat": { text: "Orphaned" },
+        },
+      })
+    );
+
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    expect(s(store).getChat("chat-1")?.title).toBe("Existing");
+    expect(s(store).getDraft("chat-1")).toEqual({ text: "Safe draft" });
+    expect(s(store).draftsByChatId["missing-chat"]).toBeUndefined();
+    expect(
+      s(store).getMessages("chat-1")[0].metadata?.resourceReference
+    ).toBeUndefined();
+  });
+
+  test("restores an unconsumed queued turn and resumes its committed user turn after reload", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chat = s(store).createChat({ context: "projects/orders" });
+    s(store).queueUserMessage({
+      chatId: chat.id,
+      text: "Review this issue",
+      page: { path: "/projects/orders", title: "Orders" },
+      resourceReference: {
+        kind: "issue",
+        name: "projects/orders/issues/12",
+        project: "projects/orders",
+        label: "Issue 12",
+      },
+    });
+
+    const remounted = createAgentStore();
+    s(remounted).setWorkspaceName("workspaces/acme");
+    expect(s(remounted).queuedUserMessage?.id).toBeTruthy();
+    const committed = s(remounted).commitQueuedUserMessage(chat.id);
+    expect(committed?.message.id).toBe(committed?.queued.id);
+    expect(committed?.message.metadata?.resourceReference?.name).toBe(
+      "projects/orders/issues/12"
+    );
+    expect(s(remounted).queuedUserMessage?.id).toBe(committed?.message.id);
+    expect(
+      s(remounted)
+        .getMessages(chat.id)
+        .filter((m) => m.role === "user")
+    ).toHaveLength(1);
+
+    const again = createAgentStore();
+    s(again).setWorkspaceName("workspaces/acme");
+    expect(s(again).queuedUserMessage?.id).toBe(committed?.message.id);
+    expect(s(again).commitQueuedUserMessage(chat.id)?.message.id).toBe(
+      committed?.message.id
+    );
+    expect(
+      s(again)
+        .getMessages(chat.id)
+        .filter((m) => m.role === "user")
+    ).toHaveLength(1);
+    s(again).startChatRun(chat.id);
+    s(again).finishChatRun(chat.id);
+    expect(s(again).queuedUserMessage).toBeNull();
+    expect(
+      s(again).selectOrCreateChatForContext("projects/another")
+    ).not.toBeNull();
+
+    const completed = createAgentStore();
+    s(completed).setWorkspaceName("workspaces/acme");
+    expect(s(completed).queuedUserMessage).toBeNull();
+    expect(
+      s(completed)
+        .getMessages(chat.id)
+        .filter((m) => m.role === "user")
+    ).toHaveLength(1);
+  });
+
+  test("keeps a Project reference on one queued turn without changing the chat context", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chat = s(store).createChat({ context: "projects/orders" });
+    s(store).setDraft(chat.id, {
+      text: "Compare the policies",
+      resource: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+    });
+    s(store).queueUserMessage({
+      chatId: chat.id,
+      text: "Compare the policies",
+      page: { path: "/projects/orders", title: "Orders" },
+      resourceReference: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+    });
+
+    const remounted = createAgentStore();
+    s(remounted).setWorkspaceName("workspaces/acme");
+    expect(s(remounted).getChat(chat.id)?.context).toBe("projects/orders");
+    expect(s(remounted).getDraft(chat.id).resource?.name).toBe(
+      "projects/billing"
+    );
+    expect(s(remounted).queuedUserMessage?.resourceReference).toEqual({
+      kind: "project",
+      name: "projects/billing",
+      project: "projects/billing",
+      label: "Billing",
+    });
+    const committed = s(remounted).commitQueuedUserMessage(chat.id);
+    expect(committed?.message.metadata?.resourceReference?.name).toBe(
+      "projects/billing"
+    );
+    expect(s(remounted).getChat(chat.id)?.context).toBe("projects/orders");
+  });
+
+  test("makes older staged references visible and persists their inline range", async () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chat = s(store).createChat({ context: "projects/orders" });
+    const resource = {
+      kind: "project" as const,
+      name: "projects/billing",
+      project: "projects/billing",
+      label: "Billing",
+    };
+    s(store).setDraft(chat.id, { text: "Compare policies", resource });
+
+    expect(s(store).getDraft(chat.id)).toEqual({
+      text: "Compare policies @Billing ",
+      resource,
+      mention: { start: 17, end: 25 },
+    });
+    await vi.waitFor(() =>
+      expect(
+        localStorage.getItem(getAgentStateKey("workspaces/acme"))
+      ).toContain("Compare policies @Billing ")
+    );
+
+    const remounted = createAgentStore();
+    s(remounted).setWorkspaceName("workspaces/acme");
+    expect(s(remounted).getDraft(chat.id)).toEqual(s(store).getDraft(chat.id));
+  });
+
+  test("does not keep a canonical reference after its visible token is edited", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chat = s(store).createChat({ context: "projects/orders" });
+    s(store).setDraft(chat.id, {
+      text: "Compare @Biling",
+      resource: {
+        kind: "project",
+        name: "projects/billing",
+        project: "projects/billing",
+        label: "Billing",
+      },
+      mention: { start: 8, end: 15 },
+    });
+    expect(s(store).getDraft(chat.id)).toEqual({ text: "Compare @Biling" });
+  });
+
+  test("retains a queued turn after intermediate assistant text until the run finishes", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chatId = s(store).currentChatId!;
+    s(store).queueUserMessage({
+      chatId,
+      text: "What changed?",
+      page: { path: "/landing", title: "Home" },
+    });
+    s(store).commitQueuedUserMessage(chatId);
+    s(store).startChatRun(chatId);
+    s(store).addMessage({
+      chatId,
+      role: "assistant",
+      content: "Here is the answer.",
+    });
+
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName("workspaces/acme");
+    expect(s(reloaded).queuedUserMessage?.chatId).toBe(chatId);
+    expect(s(reloaded).getMessages(chatId)).toHaveLength(2);
+    expect(s(reloaded).commitQueuedUserMessage(chatId)?.message.id).toBe(
+      s(reloaded).getMessages(chatId)[0].id
+    );
+    expect(s(reloaded).getMessages(chatId)).toHaveLength(2);
+
+    s(reloaded).finishChatRun(chatId);
+    expect(s(reloaded).queuedUserMessage).toBeNull();
+  });
+
+  test("clears a committed queue when its run fails, is interrupted, or awaits input", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chatId = s(store).currentChatId!;
+    const queue = () => {
+      s(store).queueUserMessage({
+        chatId,
+        text: "Review this project",
+        page: { path: "/landing", title: "Home" },
+      });
+      s(store).commitQueuedUserMessage(chatId);
+      s(store).startChatRun(chatId);
+    };
+
+    queue();
+    s(store).interruptChatRun(chatId);
+    expect(s(store).queuedUserMessage).toBeNull();
+
+    queue();
+    s(store).finishChatRun(chatId, {
+      status: "error",
+      lastError: "Provider unavailable",
+    });
+    expect(s(store).queuedUserMessage).toBeNull();
+
+    queue();
+    s(store).awaitUser(chatId, {
+      toolCallId: "call-1",
+      prompt: "Which database?",
+      kind: "input",
+    });
+    expect(s(store).queuedUserMessage).toBeNull();
+  });
+
+  test("debounces draft-only cache writes while persisting messages and queues immediately", () => {
+    vi.useFakeTimers();
+    try {
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/acme");
+      const chatId = s(store).currentChatId!;
+      const write = vi.spyOn(mockStorage, "setItem");
+      write.mockClear();
+
+      s(store).setDraft(chatId, { text: "First" });
+      s(store).setDraft(chatId, { text: "First and second" });
+      expect(write).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(250);
+      expect(write).toHaveBeenCalledTimes(1);
+      expect(
+        localStorage.getItem(getAgentStateKey("workspaces/acme"))
+      ).toContain("First and second");
+
+      write.mockClear();
+      s(store).setDraft(chatId, { text: "Third" });
+      expect(write).not.toHaveBeenCalled();
+      s(store).queueUserMessage({
+        chatId,
+        text: "Ask now",
+        page: { path: "/landing", title: "Home" },
+      });
+      expect(write).toHaveBeenCalledTimes(1);
+      expect(
+        localStorage.getItem(getAgentStateKey("workspaces/acme"))
+      ).toContain("Third");
+      vi.advanceTimersByTime(250);
+      expect(write).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

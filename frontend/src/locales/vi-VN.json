@@ -54,7 +54,7 @@
       "references": "Bằng chứng"
     },
     "input-keyboard-hint": "Enter để gửi · Shift+Enter để xuống dòng",
-    "input-placeholder": "Hỏi AI bất cứ điều gì...",
+    "input-placeholder": "Hỏi AI hoặc nhập @ để chọn tài nguyên",
     "interrupted": "Bị gián đoạn",
     "interrupted-retry-hint": "Cuộc trò chuyện đã bị gián đoạn. Bạn có thể thử lại hoặc gửi tin nhắn mới.",
     "landing-starters": {
@@ -91,6 +91,7 @@
       "summary": "Các issue này cần bạn chú ý trong dự án này:",
       "unavailable": "Không thể tải các mục cần bạn chú ý trong dự án này."
     },
+    "project-reference-unavailable": "Dự án này không còn khả dụng hoặc bạn không có quyền truy cập.",
     "recent-activity": {
       "checking": "Đang kiểm tra hoạt động gần đây...",
       "empty": "Không có hoạt động quan trọng nào được ghi nhận trong 3 ngày qua.",
@@ -102,6 +103,15 @@
     },
     "rename-chat-placeholder": "Nhập tên cuộc trò chuyện",
     "reply": "Trả lời",
+    "resource-picker": {
+      "add-context": "Thêm ngữ cảnh",
+      "load-error": "Không thể tải dự án.",
+      "no-projects": "Không tìm thấy dự án có thể truy cập",
+      "one-reference-per-message": "Mỗi tin nhắn chỉ được chọn một tài nguyên tham chiếu. Hãy gửi câu hỏi riêng cho tài nguyên khác.",
+      "projects": "Dự án",
+      "retry": "Thử lại",
+      "search-projects": "Tìm dự án"
+    },
     "result": "Kết quả",
     "retry-last-chat-turn": "Thử lại",
     "self": "Trợ lý",
@@ -1659,7 +1669,7 @@
     }
   },
   "landing": {
-    "ai-placeholder": "Hỏi AI về thiết lập không gian làm việc, dự án hoặc quyền truy cập",
+    "ai-placeholder": "Hỏi về không gian làm việc này hoặc nhập @ để chọn tài nguyên",
     "ai-setup": {
       "action": "Cấu hình AI",
       "description": "Cấu hình nhà cung cấp và mô hình để sử dụng AI trong không gian làm việc này.",
@@ -2114,7 +2124,7 @@
     "home": {
       "active-issues": "Yêu cầu đang xử lý của bạn",
       "active-issues-unavailable": "Bạn không thể xem các yêu cầu trong dự án này.",
-      "ai-placeholder": "Hỏi AI để truy vấn, thay đổi hoặc thiết lập dự án này",
+      "ai-placeholder": "Hỏi về dự án này hoặc nhập @ để chọn tài nguyên",
       "archived-description": "Dự án này đã được lưu trữ và ở chế độ chỉ đọc.",
       "change-database": "Thay đổi cơ sở dữ liệu",
       "change-database-description": "Lập kế hoạch thay đổi cơ sở dữ liệu có kiểm soát trong dự án này.",

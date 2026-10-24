@@ -126,6 +126,86 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("shows the selected Project separately from the plain user question", () => {
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "Compare its policies",
+      metadata: {
+        resourceReference: {
+          kind: "project",
+          name: "projects/billing",
+          project: "projects/billing",
+          label: "Billing",
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-resource-reference]")?.textContent).toBe(
+      "common.project: Billing"
+    );
+    expect(container.textContent).toContain("Compare its policies");
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(useAgentStore.getState().currentChatId)[0].content
+    ).toBe(
+      "Compare its policies"
+    );
+
+    unmount();
+  });
+
+  test("highlights an inline resource mention without repeating the project label", () => {
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "Compare @Billing policies",
+      metadata: {
+        resourceReference: {
+          kind: "project",
+          name: "projects/billing",
+          project: "projects/billing",
+          label: "Billing",
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-message-mention]")?.textContent).toBe(
+      "@Billing"
+    );
+    expect(container.querySelector("[data-agent-resource-reference]")).toBeNull();
+    expect(container.textContent).toContain("Compare @Billing policies");
+    unmount();
+  });
+
+  test("does not highlight an arbitrary copy when the mention text occurs twice", () => {
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "Compare @Billing with @Billing",
+      metadata: {
+        resourceReference: {
+          kind: "project",
+          name: "projects/billing",
+          project: "projects/billing",
+          label: "Billing",
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-message-mention]")).toBeNull();
+    expect(container.querySelector("[data-agent-resource-reference]")).toBeNull();
+    expect(container.textContent).toContain("Compare @Billing with @Billing");
+    unmount();
+  });
+
   test("shows AI setup when the cached AI setting is disabled", () => {
     mocks.getSettingByName.mockImplementation((name) => {
       if (name !== Setting_SettingName.AI) return undefined;
