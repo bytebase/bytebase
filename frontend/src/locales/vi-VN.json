@@ -28,6 +28,11 @@
       "description": "AI chưa được cấu hình cho không gian làm việc này.",
       "title": "AI chưa được cấu hình"
     },
+    "api-permission-allow": "Chỉ cho phép lần này",
+    "api-permission-deny": "Từ chối",
+    "api-permission-expired": "Yêu cầu này không còn khả dụng. Hãy đề nghị trợ lý chuẩn bị lại.",
+    "api-permission-request": "Cho phép trợ lý thực hiện yêu cầu API này?",
+    "api-permission-title": "Yêu cầu quyền thực hiện",
     "archive-all-chats": "Lưu trữ tất cả cuộc trò chuyện",
     "archive-chat": "Lưu trữ cuộc trò chuyện",
     "archived-only-chats": "Xem các cuộc trò chuyện đã lưu trữ",
@@ -44,6 +49,7 @@
     "context-no-projects": "Không có dự án nào có thể truy cập",
     "context-select": "Chọn ngữ cảnh",
     "context-workspace": "Không gian làm việc",
+    "database-reference-unavailable": "Cơ sở dữ liệu này không còn khả dụng hoặc bạn không có quyền truy cập.",
     "delete-all-chats": "Xóa tất cả cuộc trò chuyện",
     "delete-all-chats-confirmation": "Bạn có chắc chắn muốn xóa tất cả cuộc trò chuyện đã lưu trữ không? Hành động này không thể hoàn tác.",
     "delete-chat": "Xóa cuộc trò chuyện",
@@ -92,6 +98,12 @@
       "unavailable": "Không thể tải các mục cần bạn chú ý trong dự án này."
     },
     "project-reference-unavailable": "Dự án này không còn khả dụng hoặc bạn không có quyền truy cập.",
+    "query-result": {
+      "returned-rows": "Số hàng trả về: {{count}}",
+      "showing-columns": "Hiển thị {{shown}} trong {{total}} cột",
+      "showing-results": "Hiển thị {{shown}} trong {{total}} bộ kết quả",
+      "showing-rows": "Hiển thị {{shown}} trong {{total}} hàng trả về"
+    },
     "recent-activity": {
       "checking": "Đang kiểm tra hoạt động gần đây...",
       "empty": "Không có hoạt động quan trọng nào được ghi nhận trong 3 ngày qua.",
@@ -105,11 +117,16 @@
     "reply": "Trả lời",
     "resource-picker": {
       "add-context": "Thêm ngữ cảnh",
+      "choose-project-for-databases": "Chọn dự án để duyệt cơ sở dữ liệu",
+      "databases": "Cơ sở dữ liệu",
+      "load-databases-error": "Không thể tải cơ sở dữ liệu.",
       "load-error": "Không thể tải dự án.",
+      "no-databases": "Không tìm thấy cơ sở dữ liệu có thể truy cập",
       "no-projects": "Không tìm thấy dự án có thể truy cập",
-      "one-reference-per-message": "Mỗi tin nhắn chỉ được chọn một tài nguyên tham chiếu. Hãy gửi câu hỏi riêng cho tài nguyên khác.",
       "projects": "Dự án",
+      "reference-limit": "Mỗi tin nhắn có thể tham chiếu một dự án và một cơ sở dữ liệu thuộc dự án đó. Để dùng cả hai, hãy chọn dự án trước. Gửi tin nhắn riêng để hỏi về tài nguyên khác.",
       "retry": "Thử lại",
+      "search-databases": "Tìm cơ sở dữ liệu",
       "search-projects": "Tìm dự án"
     },
     "result": "Kết quả",

@@ -19,7 +19,12 @@ vi.mock("./searchApi", () => ({
   getSchema: mocks.getSchema,
 }));
 
-import { __testOnly, callApi } from "./callApi";
+import {
+  __testOnly,
+  callApi,
+  dispatchPreparedApiCall,
+  prepareApiCall,
+} from "./callApi";
 
 const createResponse = ({
   status,
@@ -54,6 +59,94 @@ describe("callApi", () => {
     mocks.getEndpointPath.mockReturnValue("/bytebase.v1.SQLService/Query");
     mocks.getRequestSchema.mockReturnValue(undefined);
     mocks.getSchema.mockReturnValue(undefined);
+  });
+
+  test("prepares an exact canonical request without sending it", () => {
+    mocks.getEndpointPath.mockReturnValue(
+      "/bytebase.v1.ProjectService/UpdateProject"
+    );
+    const body = { project: { name: "projects/demo", title: "Before" } };
+
+    const result = prepareApiCall({
+      operationId: "ProjectService/UpdateProject",
+      body,
+    });
+    body.project.title = "After";
+
+    expect(result).toEqual({
+      kind: "prepared",
+      call: {
+        operationId: "bytebase.v1.ProjectService.UpdateProject",
+        path: "/bytebase.v1.ProjectService/UpdateProject",
+        body: JSON.stringify({
+          project: { name: "projects/demo", title: "Before" },
+        }),
+      },
+    });
+    if (result.kind === "prepared") {
+      expect(Object.isFrozen(result.call)).toBe(true);
+    }
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  test("dispatches the prepared payload without resolving the operation again", async () => {
+    mocks.getEndpointPath.mockReturnValue(
+      "/bytebase.v1.ProjectService/UpdateProject"
+    );
+    const result = prepareApiCall({
+      operationId: "ProjectService/UpdateProject",
+      body: { project: { name: "projects/demo", title: "Before" } },
+    });
+    expect(result.kind).toBe("prepared");
+    if (result.kind !== "prepared") return;
+    mocks.getEndpointPath.mockReturnValue(
+      "/bytebase.v1.ProjectService/DeleteProject"
+    );
+    mocks.fetch.mockResolvedValue(createResponse({ status: 200, body: {} }));
+
+    await dispatchPreparedApiCall(result.call);
+
+    expect(mocks.getEndpointPath).toHaveBeenCalledTimes(1);
+    expect(mocks.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/bytebase.v1.ProjectService/UpdateProject"),
+      expect.objectContaining({ body: result.call.body })
+    );
+  });
+
+  test("returns preparation failures as tool errors", () => {
+    mocks.getEndpointPath.mockReturnValue(undefined);
+
+    const result = prepareApiCall({ operationId: "MissingService/Write" });
+
+    expect(result).toEqual({
+      kind: "error",
+      result: JSON.stringify({
+        error:
+          "Unknown operation: MissingService/Write. Use search_api to find valid operations.",
+      }),
+    });
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  test("rejects malformed tool arguments without calling the API", () => {
+    const result = prepareApiCall({ operationId: 42 as never });
+
+    expect(result.kind).toBe("error");
+    expect(mocks.getEndpointPath).not.toHaveBeenCalled();
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  test("returns request serialization errors as tool errors", () => {
+    const body: Record<string, unknown> = {};
+    body.self = body;
+
+    const result = prepareApiCall({
+      operationId: "SQLService/Query",
+      body,
+    });
+
+    expect(result.kind).toBe("error");
+    expect(mocks.fetch).not.toHaveBeenCalled();
   });
 
   test("refreshes once and retries unauthenticated requests", async () => {

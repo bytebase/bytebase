@@ -11,11 +11,8 @@ import { useSelectionContext } from "./context";
 import { formatAsCSV, formatAsSQL, formatAsText } from "./copy-formats";
 
 /**
- * Right-click context menu for the result grid. Wraps the grid's scroll
- * container (passed as a single element via Base UI's `render` pattern) and
- * offers a plain "Copy", "Copy selected rows as CSV", and — for SQL engines —
- * "Copy selected rows as SQL". When copying is disallowed the children are
- * returned untouched.
+ * Right-click context menu for the result grid. Its trigger must be a DOM
+ * element because the result bodies expose imperative scroll handles via ref.
  */
 export function ResultCopyContextMenu({
   children,
@@ -24,8 +21,9 @@ export function ResultCopyContextMenu({
 }) {
   const { t } = useTranslation();
   const { state, disabled, copy, canCopyAsInsert } = useSelectionContext();
+  const trigger = <div className="flex min-h-0 w-full flex-1">{children}</div>;
 
-  if (disabled) return children;
+  if (disabled) return trigger;
 
   // Plain "Copy" honors any selection (cells / rows / columns). CSV and SQL are
   // row-oriented: they only narrow when rows are selected, so their scope and
@@ -36,7 +34,7 @@ export function ResultCopyContextMenu({
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger render={children} />
+      <ContextMenuTrigger render={trigger} />
       <ContextMenuContent>
         <ContextMenuItem
           onClick={() => copy(hasSelection ? "selected" : "all", formatAsText)}

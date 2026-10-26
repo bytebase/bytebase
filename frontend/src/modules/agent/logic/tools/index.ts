@@ -19,12 +19,19 @@ import type {
   ToolExecutionResult,
   ToolExecutor,
 } from "../types";
-import { callApi, type CallApiArgs } from "./callApi";
+import { apiCallNeedsConfirmation } from "./apiMethodClass";
+import {
+  dispatchPreparedApiCall,
+  prepareApiCall,
+  type CallApiArgs,
+} from "./callApi";
+import { createDatabaseCountTool } from "./databaseCount";
 import { createDatabaseOverviewTool } from "./databaseOverview";
 import { createDomActionTool, type DomActionArgs } from "./domAction";
 import { createIssueOverviewTool } from "./issueOverview";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool, type PageStateArgs } from "./pageState";
+import { createPendingApiCall } from "./pendingApiCall";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
 import { createProjectGovernanceOverviewTool } from "./projectGovernanceOverview";
 import { createProjectRecentActivityTool } from "./projectRecentActivity";
@@ -142,6 +149,7 @@ const READ_ONLY_TOOL_NAMES = new Set([
   "get_project_governance_overview",
   "get_issue_overview",
   "get_database_overview",
+  "get_database_count",
   "get_workspace_overview",
   "get_project_open_issues",
   "get_project_recent_activity",
@@ -167,6 +175,7 @@ const PROJECT_SCOPED_TOOL_NAMES = new Set([
   "get_project_governance_overview",
   "get_issue_overview",
   "get_database_overview",
+  "get_database_count",
   "get_project_open_issues",
   "get_project_recent_activity",
 ]);
@@ -347,6 +356,21 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
           },
         },
         required: ["databaseName"],
+      },
+    },
+    {
+      name: "get_database_count",
+      description: `Count the unfiltered total of active databases in ${referencedProject ? projectScope : "the Project or Workspace bound to this chat"}. With a selected @Database in the current turn, set scope to "referenced-instance" to count active databases on that database's canonical instance scope. A workspace instance may span projects; a project instance does not. This tool follows every ListDatabases page internally and returns only the count, never database records. It cannot choose an arbitrary instance or apply filters. If unavailable, do not report a partial count as exact.`,
+      parametersSchema: {
+        type: "object",
+        properties: {
+          scope: {
+            type: "string",
+            enum: ["context", "referenced-instance"],
+            description:
+              "Omit for the chat or referenced Project total. Use referenced-instance only for the current turn's selected @Database instance.",
+          },
+        },
       },
     },
     {
@@ -545,8 +569,10 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
 
 interface CreateToolExecutorOptions {
   chatId?: string;
+  userName?: string;
   context?: string;
   referencedProject?: string;
+  referencedDatabase?: string;
   onNavigate?: () => void;
   runMode?: AgentRunMode;
 }
@@ -603,6 +629,15 @@ export function createToolExecutor(
   });
   const databaseOverviewTool = createDatabaseOverviewTool({
     projectName,
+  });
+  const databaseCountTool = createDatabaseCountTool({
+    scopeName: projectName,
+    ...(options.referencedDatabase
+      ? {
+          referencedDatabase: options.referencedDatabase,
+          referencedProject,
+        }
+      : {}),
   });
   const workspaceOverviewTool = createWorkspaceOverviewTool({
     workspaceName: options.context,
@@ -668,8 +703,41 @@ export function createToolExecutor(
     switch (name) {
       case "search_api":
         return toToolResult(await searchApi(args as SearchApiArgs));
-      case "call_api":
-        return toToolResult(await callApi(args as unknown as CallApiArgs));
+      case "call_api": {
+        const apiArgs = args as unknown as CallApiArgs;
+        const prepared = prepareApiCall(apiArgs);
+        if (prepared.kind === "error") {
+          return toToolResult(prepared.result);
+        }
+        if (!apiCallNeedsConfirmation(prepared.call.operationId)) {
+          return toToolResult(await dispatchPreparedApiCall(prepared.call));
+        }
+        if (!options.chatId || !options.userName) {
+          return toToolResult(
+            JSON.stringify({
+              error: "Cannot request API permission without a signed-in chat.",
+            })
+          );
+        }
+        const { actionId } = createPendingApiCall({
+          chatId: options.chatId,
+          toolCallId,
+          userName: options.userName,
+          call: prepared.call,
+        });
+        return {
+          kind: "ask_user",
+          ask: {
+            kind: "confirm",
+            toolCallId,
+            prompt: prepared.call.operationId,
+            apiPermission: {
+              actionId,
+              operationId: prepared.call.operationId,
+            },
+          },
+        };
+      }
       case "navigate": {
         const result = await withPageMutationLock(
           options.chatId,
@@ -699,6 +767,8 @@ export function createToolExecutor(
         return toToolResult(await issueOverviewTool(args));
       case "get_database_overview":
         return toToolResult(await databaseOverviewTool(args));
+      case "get_database_count":
+        return toToolResult(await databaseCountTool(args));
       case "get_workspace_overview":
         return toToolResult(await workspaceOverviewTool());
       case "get_project_open_issues":

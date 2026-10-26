@@ -28,6 +28,11 @@
       "description": "このワークスペースでは AI が設定されていません。",
       "title": "AI 未設定"
     },
+    "api-permission-allow": "今回のみ許可",
+    "api-permission-deny": "拒否",
+    "api-permission-expired": "このリクエストは利用できなくなりました。AI アシスタントに再度準備するよう依頼してください。",
+    "api-permission-request": "AI アシスタントによるこの API リクエストの実行を許可しますか？",
+    "api-permission-title": "実行の許可を求める",
     "archive-all-chats": "すべてのチャットをアーカイブ",
     "archive-chat": "チャットをアーカイブ",
     "archived-only-chats": "アーカイブ済みのチャットを表示",
@@ -44,6 +49,7 @@
     "context-no-projects": "アクセス可能なプロジェクトがありません",
     "context-select": "コンテキストを選択",
     "context-workspace": "ワークスペース",
+    "database-reference-unavailable": "このデータベースは利用できないか、アクセス権がありません。",
     "delete-all-chats": "すべてのチャットを削除",
     "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",
     "delete-chat": "チャットを削除",
@@ -92,6 +98,12 @@
       "unavailable": "このプロジェクトで対応が必要な項目を読み込めません。"
     },
     "project-reference-unavailable": "このプロジェクトは利用できないか、アクセス権がありません。",
+    "query-result": {
+      "returned-rows": "返された行数: {{count}}",
+      "showing-columns": "{{total}} 列中 {{shown}} 列を表示",
+      "showing-results": "{{total}} 件の結果セット中 {{shown}} 件を表示",
+      "showing-rows": "返された {{total}} 行中 {{shown}} 行を表示"
+    },
     "recent-activity": {
       "checking": "最近のアクティビティを確認しています...",
       "empty": "過去 3 日間に重要なアクティビティは記録されていません。",
@@ -105,11 +117,16 @@
     "reply": "返信",
     "resource-picker": {
       "add-context": "コンテキストを追加",
+      "choose-project-for-databases": "データベースを参照するプロジェクトを選択",
+      "databases": "データベース",
+      "load-databases-error": "データベースを読み込めませんでした。",
       "load-error": "プロジェクトを読み込めませんでした。",
+      "no-databases": "アクセス可能なデータベースが見つかりません",
       "no-projects": "アクセス可能なプロジェクトが見つかりません",
-      "one-reference-per-message": "1 つのメッセージで参照できるリソースは 1 つだけです。別のリソースについては、別の質問を送信してください。",
       "projects": "プロジェクト",
+      "reference-limit": "1 つのメッセージでは、プロジェクト 1 件とそのデータベース 1 件を参照できます。両方を参照する場合は、先にプロジェクトを選択してください。別のリソースは別のメッセージで質問してください。",
       "retry": "再試行",
+      "search-databases": "データベースを検索",
       "search-projects": "プロジェクトを検索"
     },
     "result": "結果",

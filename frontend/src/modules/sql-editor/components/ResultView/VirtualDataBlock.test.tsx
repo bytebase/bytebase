@@ -225,4 +225,14 @@ describe("VirtualDataBlock", () => {
 
     expect(screen.getByTestId("detail-state")).toHaveTextContent("0:0:cell");
   });
+
+  test("keeps the copy context menu available on the shared vertical body", async () => {
+    const { container } = renderBlock();
+    const body = container.querySelector("[data-query-result-vertical-body]");
+    expect(body).not.toBeNull();
+
+    fireEvent.contextMenu(body as HTMLElement);
+
+    expect(await screen.findByText("common.copy-all")).toBeVisible();
+  });
 });

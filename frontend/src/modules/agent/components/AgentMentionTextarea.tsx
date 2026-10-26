@@ -15,16 +15,14 @@ import {
 
 type AgentMentionTextareaProps = Omit<TextareaProps, "ref" | "value"> & {
   value: string;
-  mention?: AgentMentionRange | null;
-  mentionLabel?: string;
+  mentions?: { range: AgentMentionRange; label: string }[];
   onDeleteMention?: (result: { text: string; caret: number }) => void;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
 };
 
 export function AgentMentionTextarea({
   value,
-  mention,
-  mentionLabel,
+  mentions = [],
   onDeleteMention,
   textareaRef,
   className,
@@ -33,9 +31,12 @@ export function AgentMentionTextarea({
   ...props
 }: AgentMentionTextareaProps) {
   const [mirrorStyle, setMirrorStyle] = useState<CSSProperties>({});
+  const orderedMentions = [...mentions].sort(
+    (a, b) => a.range.start - b.range.start
+  );
   const syncMirror = useCallback(() => {
     const textarea = textareaRef.current;
-    if (!textarea || !mention) return;
+    if (!textarea || mentions.length === 0) return;
     const style = window.getComputedStyle(textarea);
     setMirrorStyle({
       position: "absolute",
@@ -60,21 +61,26 @@ export function AgentMentionTextarea({
       wordBreak: "break-word",
       transform: `translate(${-textarea.scrollLeft}px, ${-textarea.scrollTop}px)`,
     });
-  }, [mention, textareaRef]);
+  }, [mentions.length, textareaRef]);
 
   useLayoutEffect(syncMirror, [syncMirror, value]);
 
   useEffect(() => {
     const textarea = textareaRef.current;
-    if (!textarea || !mention || typeof ResizeObserver === "undefined") return;
+    if (
+      !textarea ||
+      mentions.length === 0 ||
+      typeof ResizeObserver === "undefined"
+    )
+      return;
     const observer = new ResizeObserver(syncMirror);
     observer.observe(textarea);
     return () => observer.disconnect();
-  }, [mention, syncMirror, textareaRef]);
+  }, [mentions.length, syncMirror, textareaRef]);
 
   return (
     <div className="relative w-full">
-      {mention && (
+      {mentions.length > 0 && (
         <div
           aria-hidden="true"
           className={cn(
@@ -83,14 +89,21 @@ export function AgentMentionTextarea({
           )}
         >
           <div style={mirrorStyle}>
-            {value.slice(0, mention.start)}
-            <span
-              className="rounded-xs bg-accent/10 text-accent"
-              data-agent-inline-mention
-            >
-              {value.slice(mention.start, mention.end)}
-            </span>
-            {value.slice(mention.end)}
+            {orderedMentions.map(({ range }, index) => (
+              <span key={`${range.start}-${range.end}`}>
+                {value.slice(
+                  index === 0 ? 0 : orderedMentions[index - 1].range.end,
+                  range.start
+                )}
+                <span
+                  className="rounded-xs bg-accent/10 text-accent"
+                  data-agent-inline-mention
+                >
+                  {value.slice(range.start, range.end)}
+                </span>
+              </span>
+            ))}
+            {value.slice(orderedMentions[orderedMentions.length - 1].range.end)}
           </div>
         </div>
       )}
@@ -101,25 +114,28 @@ export function AgentMentionTextarea({
         value={value}
         className={cn(
           className,
-          mention &&
+          mentions.length > 0 &&
             "relative bg-transparent text-transparent caret-main disabled:bg-transparent"
         )}
         onKeyDown={(event) => {
           if (
             !event.nativeEvent.isComposing &&
             (event.key === "Backspace" || event.key === "Delete") &&
-            mention &&
-            mentionLabel &&
             onDeleteMention
           ) {
-            const result = deleteResourceMention(
-              value,
-              mention,
-              mentionLabel,
-              event.currentTarget.selectionStart,
-              event.currentTarget.selectionEnd,
-              event.key
-            );
+            const key = event.key as "Backspace" | "Delete";
+            const result = mentions
+              .map(({ range, label }) =>
+                deleteResourceMention(
+                  value,
+                  range,
+                  label,
+                  event.currentTarget.selectionStart,
+                  event.currentTarget.selectionEnd,
+                  key
+                )
+              )
+              .find((result) => result !== null);
             if (result) {
               event.preventDefault();
               onDeleteMention(result);

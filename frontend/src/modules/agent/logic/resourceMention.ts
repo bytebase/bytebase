@@ -5,9 +5,14 @@ import {
   issueNamePrefix,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
-import type { AgentMentionRange, AgentResourceReference } from "./types";
+import type {
+  AgentDraft,
+  AgentMentionRange,
+  AgentResourceMention,
+  AgentResourceReference,
+} from "./types";
 
-export type { AgentMentionRange } from "./types";
+export type { AgentMentionRange, AgentResourceMention } from "./types";
 
 export const formatResourceMention = (label: string) =>
   `@${label.trim().replace(/\s+/g, " ")}`;
@@ -230,6 +235,133 @@ export const normalizeAgentResourceReference = (
   }
 
   return { kind, name, project, label };
+};
+
+export const normalizeAgentResourceReferences = (
+  rawArray: unknown,
+  rawSingle?: unknown
+): AgentResourceReference[] => {
+  if (rawArray === undefined) {
+    const single = normalizeAgentResourceReference(rawSingle);
+    return single ? [single] : [];
+  }
+  if (!Array.isArray(rawArray) || rawArray.length < 1 || rawArray.length > 2) {
+    return [];
+  }
+  const references = rawArray.map(normalizeAgentResourceReference);
+  if (references.some((reference) => !reference)) return [];
+  if (references.length === 1) {
+    return [references[0]!];
+  }
+  const project = references.find((reference) => reference?.kind === "project");
+  const database = references.find(
+    (reference) => reference?.kind === "database"
+  );
+  return project && database && database.project === project.name
+    ? [project, database]
+    : [];
+};
+
+export const normalizeAgentResourceMentions = (
+  text: string,
+  raw: unknown
+): AgentResourceMention[] => {
+  if (!Array.isArray(raw) || raw.length < 1 || raw.length > 2) return [];
+  const mentions: AgentResourceMention[] = [];
+  for (const candidate of raw) {
+    if (typeof candidate !== "object" || candidate === null) return [];
+    const resource = normalizeAgentResourceReference(candidate.resource);
+    const range = candidate.range;
+    if (
+      !resource ||
+      typeof range !== "object" ||
+      range === null ||
+      !isResourceMentionRange(text, range, resource.label)
+    ) {
+      return [];
+    }
+    mentions.push({ resource, range });
+  }
+  if (
+    normalizeAgentResourceReferences(mentions.map(({ resource }) => resource))
+      .length !== mentions.length
+  ) {
+    return [];
+  }
+  mentions.sort((a, b) => a.range.start - b.range.start);
+  if (
+    mentions.some(
+      (mention, index) =>
+        index > 0 && mentions[index - 1].range.end > mention.range.start
+    )
+  ) {
+    return [];
+  }
+  return mentions;
+};
+
+export const getDraftResourceMentions = (
+  draft: AgentDraft
+): AgentResourceMention[] => {
+  if (draft.mentions !== undefined) {
+    return normalizeAgentResourceMentions(draft.text, draft.mentions);
+  }
+  const legacyResource =
+    draft.resource ??
+    (draft.project
+      ? {
+          kind: "project" as const,
+          name: draft.project.name,
+          project: draft.project.name,
+          label: draft.project.title,
+        }
+      : undefined);
+  return draft.mention && legacyResource
+    ? normalizeAgentResourceMentions(draft.text, [
+        { resource: legacyResource, range: draft.mention },
+      ])
+    : [];
+};
+
+export const canAddResourceMention = (
+  mentions: AgentResourceMention[],
+  resource: AgentResourceReference
+): boolean =>
+  normalizeAgentResourceReferences([
+    ...mentions.map((mention) => mention.resource),
+    resource,
+  ]).length ===
+  mentions.length + 1;
+
+export const updateDraftResourceMentions = (
+  previousText: string,
+  nextText: string,
+  mentions: AgentResourceMention[]
+): AgentResourceMention[] =>
+  mentions.flatMap(({ resource, range }) => {
+    const updated = updateResourceMentionRange(
+      previousText,
+      nextText,
+      range,
+      resource.label
+    );
+    return updated ? [{ resource, range: updated }] : [];
+  });
+
+export const hasUnboundResourceMention = (
+  text: string,
+  mentions: AgentResourceMention[]
+): boolean => {
+  for (let index = 0; index < text.length; index += 1) {
+    if (text[index] !== "@") continue;
+    if (
+      mentions.some(({ range }) => index >= range.start && index < range.end)
+    ) {
+      continue;
+    }
+    if (!/[\p{L}\p{N}_@]/u.test(text[index - 1] ?? "")) return true;
+  }
+  return false;
 };
 
 export const formatOutboundResourceReference = (

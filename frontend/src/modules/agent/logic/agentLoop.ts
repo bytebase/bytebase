@@ -125,7 +125,11 @@ export async function runAgentLoop(
 ): Promise<AgentLoopOutcome> {
   const conversation: Message[] = [...messages];
   const protoTools = tools.map(toolDefToProto);
+  const terminalTools = protoTools.filter(
+    (tool) => tool.name === "done" || tool.name === "ask_user"
+  );
   let totalTokensUsed = 0;
+  let awaitingTerminalCall = false;
 
   try {
     for (let i = 0; i < MAX_ITERATIONS; i++) {
@@ -138,7 +142,12 @@ export async function runAgentLoop(
       const response = await callWithRetry(
         () =>
           aiServiceClientConnect.chat(
-            { messages: protoMessages, toolDefinitions: protoTools },
+            {
+              messages: protoMessages,
+              toolDefinitions: awaitingTerminalCall
+                ? terminalTools
+                : protoTools,
+            },
             {
               signal,
               contextValues: createContextValues().set(silentContextKey, true),
@@ -150,6 +159,18 @@ export async function runAgentLoop(
       totalTokensUsed += response.usage?.totalTokens ?? 0;
 
       if (response.toolCalls.length > 0) {
+        if (
+          awaitingTerminalCall &&
+          response.toolCalls.some(
+            (call) => call.name !== "done" && call.name !== "ask_user"
+          )
+        ) {
+          const error = new Error(
+            "Agent called a non-terminal tool while finalizing its answer."
+          );
+          callbacks?.onError?.(error);
+          return { kind: "error", error, totalTokensUsed };
+        }
         const toolCalls: ToolCall[] = response.toolCalls.map((tc) => ({
           id: tc.id,
           name: tc.name,
@@ -267,6 +288,23 @@ export async function runAgentLoop(
           success: true,
           totalTokensUsed,
         };
+      }
+
+      if (
+        text &&
+        !awaitingTerminalCall &&
+        terminalTools.some((tool) => tool.name === "done")
+      ) {
+        conversation.push(
+          { role: "assistant", content: response.content },
+          {
+            role: "user",
+            content:
+              "Finalize your preceding answer by calling done({ text, success }), or call ask_user if input is required. Do not call any other tools or start another task.",
+          }
+        );
+        awaitingTerminalCall = true;
+        continue;
       }
 
       const error = new Error(

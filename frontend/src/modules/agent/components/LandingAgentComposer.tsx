@@ -2,15 +2,24 @@ import { Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { projectNamePrefix } from "@/lib/resourceName";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { extractDatabaseResourceName } from "@/utils/v1/database";
 import type { LandingStarterId } from "../logic/landingStarters";
 import {
   type AgentMentionRange,
+  canAddResourceMention,
   getMentionTriggerRange,
-  hasAdditionalResourceMention,
+  hasUnboundResourceMention,
   insertResourceMention,
-  updateResourceMentionRange,
+  normalizeAgentResourceReferences,
+  updateDraftResourceMentions,
 } from "../logic/resourceMention";
+import type {
+  AgentResourceMention,
+  AgentResourceReference,
+} from "../logic/types";
 import { selectHasRunningChat, useAgentStore } from "../store/agent";
 import { AgentMentionTextarea } from "./AgentMentionTextarea";
 import { AgentResourcePicker } from "./AgentResourcePicker";
@@ -33,11 +42,9 @@ export function LandingAgentComposer({
 }: LandingAgentComposerProps) {
   const { t } = useTranslation();
   const [prompt, setPrompt] = useState("");
-  const [stagedProject, setStagedProject] = useState<
-    Pick<Project, "name" | "title"> | undefined
-  >();
-  const [selectedMention, setSelectedMention] =
-    useState<AgentMentionRange | null>(null);
+  const [stagedMentions, setStagedMentions] = useState<AgentResourceMention[]>(
+    []
+  );
   const [resourcePickerOpen, setResourcePickerOpen] = useState(false);
   const mentionRangeRef = useRef<AgentMentionRange | null>(null);
   const pendingCaretRef = useRef<number | null>(null);
@@ -55,11 +62,11 @@ export function LandingAgentComposer({
       pendingCaretRef.current
     );
     pendingCaretRef.current = null;
-  }, [prompt, selectedMention]);
+  }, [prompt, stagedMentions]);
 
-  const selectMentionProject = (project: Project) => {
-    if (stagedProject && selectedMention) return;
-    const label = project.title || project.name;
+  const selectMentionResource = (resource: AgentResourceReference) => {
+    if (!canAddResourceMention(stagedMentions, resource)) return;
+    const label = resource.label;
     const inserted = insertResourceMention(
       prompt,
       mentionRangeRef.current,
@@ -67,18 +74,37 @@ export function LandingAgentComposer({
     );
     if (!inserted) return;
     setPrompt(inserted.text);
-    setSelectedMention(inserted.mention);
-    setStagedProject({ name: project.name, title: label });
+    setStagedMentions([
+      ...updateDraftResourceMentions(prompt, inserted.text, stagedMentions),
+      { resource, range: inserted.mention },
+    ]);
     pendingCaretRef.current = inserted.caret;
     mentionRangeRef.current = null;
     setResourcePickerOpen(false);
   };
 
-  const hasAdditionalMention = Boolean(
-    stagedProject &&
-      selectedMention &&
-      hasAdditionalResourceMention(prompt, selectedMention)
+  const selectMentionProject = (project: Project) =>
+    selectMentionResource({
+      kind: "project",
+      name: project.name,
+      project: project.name,
+      label: project.title || project.name,
+    });
+
+  const selectMentionDatabase = (database: Database) =>
+    selectMentionResource({
+      kind: "database",
+      name: database.name,
+      project: database.project,
+      label: extractDatabaseResourceName(database.name).databaseName,
+    });
+
+  const selectedProjectMention = stagedMentions.find(
+    ({ resource }) => resource.kind === "project"
   );
+  const hasAdditionalMention =
+    stagedMentions.length > 0 &&
+    hasUnboundResourceMention(prompt, stagedMentions);
 
   const selectChat = () => {
     const store = useAgentStore.getState();
@@ -102,25 +128,19 @@ export function LandingAgentComposer({
     const selected = selectChat();
     if (!selected) return;
     const { store, chat, page } = selected;
+    const references = normalizeAgentResourceReferences(
+      stagedMentions.map(({ resource }) => resource)
+    );
     store.queueUserMessage({
       chatId: chat.id,
       text,
       page,
-      ...(stagedProject
-        ? {
-            resourceReference: {
-              kind: "project" as const,
-              name: stagedProject.name,
-              project: stagedProject.name,
-              label: stagedProject.title,
-            },
-          }
-        : {}),
+      ...(references[0] ? { resourceReference: references[0] } : {}),
+      ...(references.length > 1 ? { resourceReferences: references } : {}),
     });
     store.open();
     setPrompt("");
-    setStagedProject(undefined);
-    setSelectedMention(null);
+    setStagedMentions([]);
   };
 
   const sendStarter = (starterId: LandingStarterId) => {
@@ -155,14 +175,17 @@ export function LandingAgentComposer({
       <div className="relative">
         <AgentMentionTextarea
           textareaRef={textareaRef}
-          mention={selectedMention}
-          mentionLabel={stagedProject?.title}
+          mentions={stagedMentions.map(({ resource, range }) => ({
+            range,
+            label: resource.label,
+          }))}
           onDeleteMention={({ text, caret }) => {
             pendingCaretRef.current = caret;
             mentionRangeRef.current = null;
+            setStagedMentions(
+              updateDraftResourceMentions(prompt, text, stagedMentions)
+            );
             setPrompt(text);
-            setSelectedMention(null);
-            setStagedProject(undefined);
             setResourcePickerOpen(false);
           }}
           size="md"
@@ -173,15 +196,13 @@ export function LandingAgentComposer({
           className="min-h-20 resize-none border-0 focus:border-0 focus:ring-0"
           onChange={(event) => {
             const nextText = event.target.value;
-            const nextMention = updateResourceMentionRange(
+            const nextMentions = updateDraftResourceMentions(
               prompt,
               nextText,
-              selectedMention,
-              stagedProject?.title ?? ""
+              stagedMentions
             );
             setPrompt(nextText);
-            setSelectedMention(nextMention);
-            if (!nextMention) setStagedProject(undefined);
+            setStagedMentions(nextMentions);
             const range = getMentionTriggerRange(
               nextText,
               event.target.selectionStart
@@ -232,8 +253,16 @@ export function LandingAgentComposer({
           onOpenChange={setResourcePickerOpen}
           anchorRef={textareaRef}
           workspaceName={workspaceName}
-          hasSelectedReference={Boolean(stagedProject && selectedMention)}
+          projectName={
+            contextName.startsWith(projectNamePrefix) ? contextName : undefined
+          }
+          selectedProjectName={selectedProjectMention?.resource.name}
+          hasSelectedReference={
+            stagedMentions.length > 1 ||
+            (stagedMentions.length === 1 && !selectedProjectMention)
+          }
           onSelectProject={selectMentionProject}
+          onSelectDatabase={selectMentionDatabase}
         />
       </div>
       <div className="flex flex-wrap items-end justify-between gap-2 px-3 pb-3">

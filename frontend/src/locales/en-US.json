@@ -28,6 +28,11 @@
       "description": "AI is not configured for this workspace.",
       "title": "AI Not Configured"
     },
+    "api-permission-allow": "Allow once",
+    "api-permission-deny": "Deny",
+    "api-permission-expired": "This request is no longer available. Ask the agent to prepare it again.",
+    "api-permission-request": "Allow the agent to run this API request?",
+    "api-permission-title": "Request permission",
     "archive-all-chats": "Archive all chats",
     "archive-chat": "Archive chat",
     "archived-only-chats": "View archived chats",
@@ -44,6 +49,7 @@
     "context-no-projects": "No accessible projects",
     "context-select": "Select context",
     "context-workspace": "Workspace",
+    "database-reference-unavailable": "This database is no longer available or you do not have access to it.",
     "delete-all-chats": "Delete all chats",
     "delete-all-chats-confirmation": "Are you sure you want to delete all archived chats? This action cannot be undone.",
     "delete-chat": "Delete chat",
@@ -92,6 +98,12 @@
       "unavailable": "Unable to load items needing your attention in this project."
     },
     "project-reference-unavailable": "This project is no longer available or you do not have access to it.",
+    "query-result": {
+      "returned-rows": "Rows returned: {{count}}",
+      "showing-columns": "Showing {{shown}} of {{total}} columns",
+      "showing-results": "Showing {{shown}} of {{total}} result sets",
+      "showing-rows": "Showing {{shown}} of {{total}} returned rows"
+    },
     "recent-activity": {
       "checking": "Checking recent activity...",
       "empty": "No meaningful activity was recorded in the last 3 days.",
@@ -105,11 +117,16 @@
     "reply": "Reply",
     "resource-picker": {
       "add-context": "Add context",
+      "choose-project-for-databases": "Choose a project to browse databases",
+      "databases": "Databases",
+      "load-databases-error": "Could not load databases.",
       "load-error": "Could not load projects.",
+      "no-databases": "No accessible databases found",
       "no-projects": "No accessible projects found",
-      "one-reference-per-message": "Only one reference per message. Send a separate question for another resource.",
       "projects": "Projects",
+      "reference-limit": "You can reference one project and one of its databases per message. To use both, select the project first. Ask about another resource in a separate message.",
       "retry": "Retry",
+      "search-databases": "Search databases",
       "search-projects": "Search projects"
     },
     "result": "Result",

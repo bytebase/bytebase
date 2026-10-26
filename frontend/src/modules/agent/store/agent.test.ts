@@ -833,6 +833,31 @@ describe("useAgentStore (Zustand)", () => {
     });
   });
 
+  test("preserves pending API permission metadata after rehydration", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chatId = s(store).currentChatId!;
+    s(store).awaitUser(chatId, {
+      toolCallId: "tool-write",
+      prompt: "bytebase.v1.ProjectService.UpdateProject",
+      kind: "confirm",
+      apiPermission: {
+        actionId: "action-1",
+        operationId: "bytebase.v1.ProjectService.UpdateProject",
+      },
+    });
+
+    const rehydratedStore = createAgentStore();
+    s(rehydratedStore).setWorkspaceName("workspaces/acme");
+    expect(s(rehydratedStore).getPendingAsk(chatId)).toMatchObject({
+      kind: "confirm",
+      apiPermission: {
+        actionId: "action-1",
+        operationId: "bytebase.v1.ProjectService.UpdateProject",
+      },
+    });
+  });
+
   test("normalizes invalid persisted choose asks to input", () => {
     localStorage.setItem(
       getAgentStateKey("workspaces/acme"),
@@ -1303,6 +1328,99 @@ describe("useAgentStore (Zustand)", () => {
       "projects/billing"
     );
     expect(s(remounted).getChat(chat.id)?.context).toBe("projects/orders");
+  });
+
+  test("persists a Project and its Database through draft, queue, and committed turn", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chat = s(store).createChat({ context: "workspaces/acme" });
+    const project = {
+      kind: "project" as const,
+      name: "projects/orders",
+      project: "projects/orders",
+      label: "Orders",
+    };
+    const database = {
+      kind: "database" as const,
+      name: "instances/main/databases/orders",
+      project: "projects/orders",
+      label: "orders_db",
+    };
+    const text = "Show @Orders and @orders_db";
+    s(store).setDraft(chat.id, {
+      text,
+      mentions: [
+        { resource: project, range: { start: 5, end: 12 } },
+        { resource: database, range: { start: 17, end: 27 } },
+      ],
+    });
+    s(store).queueUserMessage({
+      chatId: chat.id,
+      text,
+      page: { path: "/landing", title: "Workspace" },
+      resourceReferences: [database, project],
+    });
+
+    const remounted = createAgentStore();
+    s(remounted).setWorkspaceName("workspaces/acme");
+    expect(s(remounted).getDraft(chat.id).mentions).toEqual([
+      { resource: project, range: { start: 5, end: 12 } },
+      { resource: database, range: { start: 17, end: 27 } },
+    ]);
+    expect(s(remounted).queuedUserMessage?.resourceReferences).toEqual([
+      project,
+      database,
+    ]);
+    const committed = s(remounted).commitQueuedUserMessage(chat.id);
+    expect(committed?.message.metadata?.resourceReferences).toEqual([
+      project,
+      database,
+    ]);
+    expect(s(remounted).getChat(chat.id)?.context).toBe("workspaces/acme");
+  });
+
+  test("does not retain a mismatched Project and Database pair from cache", () => {
+    localStorage.setItem(
+      getAgentStateKey("workspaces/acme"),
+      JSON.stringify({
+        currentChatId: "chat-1",
+        chats: [
+          { id: "chat-1", title: "Existing", createdTs: 1, updatedTs: 2 },
+        ],
+        messagesByChatId: {
+          "chat-1": [
+            {
+              id: "turn-1",
+              chatId: "chat-1",
+              role: "user",
+              content: "Compare resources",
+              createdTs: 2,
+              metadata: {
+                resourceReferences: [
+                  {
+                    kind: "project",
+                    name: "projects/orders",
+                    project: "projects/orders",
+                    label: "Orders",
+                  },
+                  {
+                    kind: "database",
+                    name: "instances/main/databases/orders",
+                    project: "projects/other",
+                    label: "orders_db",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      })
+    );
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    expect(
+      s(store).getMessages("chat-1")[0].metadata?.resourceReferences
+    ).toBeUndefined();
   });
 
   test("makes older staged references visible and persists their inline range", async () => {

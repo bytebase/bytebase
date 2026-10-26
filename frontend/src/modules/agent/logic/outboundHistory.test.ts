@@ -55,6 +55,36 @@ describe("sanitizeOutboundHistory", () => {
     expect(outbound.content).not.toContain("A changed title");
   });
 
+  test("forwards a selected project and database together for the current turn", () => {
+    const message = userMessage({
+      resourceReferences: [
+        {
+          kind: "project",
+          name: "projects/orders",
+          project: "projects/orders",
+          label: "Orders",
+        },
+        {
+          kind: "database",
+          name: "instances/prod/databases/orders",
+          project: "projects/orders",
+          label: "Orders DB",
+        },
+      ],
+    });
+
+    const [outbound] = sanitizeOutboundHistory([message], "projects/other");
+
+    expect(message.content).toBe("What changed?");
+    expect(outbound.content).toContain('"kind":"project"');
+    expect(outbound.content).toContain('"kind":"database"');
+    expect(outbound.content).toContain('"name":"projects/orders"');
+    expect(outbound.content).toContain(
+      '"name":"instances/prod/databases/orders"'
+    );
+    expect(outbound.content).not.toContain("Orders DB");
+  });
+
   test("does not forward malformed cached references", () => {
     const message = userMessage({
       resourceReference: {
@@ -135,6 +165,100 @@ describe("buildOutboundHistory", () => {
         toolCalls: undefined,
       },
     ]);
+  });
+
+  test("keeps an unqualified project follow-up free of a database in another project", () => {
+    const databaseTurn = [
+      {
+        ...userMessage({
+          resourceReference: {
+            kind: "database" as const,
+            name: "instances/prod/databases/billing",
+            project: "projects/billing",
+            label: "billing",
+          },
+        }),
+        content: "Inspect @billing",
+      },
+      {
+        ...userMessage(),
+        id: "answer-1",
+        role: "assistant" as const,
+        content: "Billing is healthy.",
+      },
+      { ...userMessage(), id: "turn-2", content: "How many databases?" },
+    ];
+
+    expect(
+      buildOutboundHistory("system", databaseTurn, "projects/orders").map(
+        (message) => message.content
+      )
+    ).toEqual(["system", "How many databases?"]);
+  });
+
+  test("keeps an unqualified project follow-up free of a selected database in that project", () => {
+    const databaseTurn = [
+      {
+        ...userMessage({
+          resourceReference: {
+            kind: "database" as const,
+            name: "instances/prod/databases/orders",
+            project: "projects/orders",
+            label: "orders",
+          },
+        }),
+        content: "Inspect @orders",
+      },
+      {
+        ...userMessage(),
+        id: "answer-1",
+        role: "assistant" as const,
+        content: "Orders is active.",
+      },
+      { ...userMessage(), id: "turn-2", content: "What needs attention?" },
+    ];
+
+    expect(
+      buildOutboundHistory("system", databaseTurn, "projects/orders").map(
+        (message) => message.content
+      )
+    ).toEqual(["system", "What needs attention?"]);
+  });
+
+  test("keeps an unqualified follow-up free of a project and database pair", () => {
+    const multiReferenceTurn = [
+      userMessage({
+        resourceReferences: [
+          {
+            kind: "project" as const,
+            name: "projects/billing",
+            project: "projects/billing",
+            label: "Billing",
+          },
+          {
+            kind: "database" as const,
+            name: "instances/prod/databases/billing",
+            project: "projects/billing",
+            label: "billing-db",
+          },
+        ],
+      }),
+      {
+        ...userMessage(),
+        id: "answer-1",
+        role: "assistant" as const,
+        content: "Billing database is active.",
+      },
+      { ...userMessage(), id: "turn-2", content: "How many databases?" },
+    ];
+
+    expect(
+      buildOutboundHistory(
+        "system",
+        multiReferenceTurn,
+        "workspaces/default"
+      ).map((message) => message.content)
+    ).toEqual(["system", "How many databases?"]);
   });
 
   test("keeps unrelated chat-context turns while dropping an off-context project turn", () => {

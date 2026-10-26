@@ -3,6 +3,7 @@ import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
+import type { LayerFamily } from "@/components/ui/layer";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
@@ -45,6 +46,7 @@ type DatabaseTargetDisplayProps = {
   showInstance?: boolean;
   size?: DatabaseTargetDisplaySize;
   keyword?: string | readonly string[];
+  tooltipLayer?: LayerFamily;
 } & (
   | {
       database?: Database;
@@ -65,6 +67,7 @@ export function DatabaseTargetDisplay({
   showInstance = true,
   size = "sm",
   target,
+  tooltipLayer,
 }: DatabaseTargetDisplayProps) {
   const databasesByName = useAppStore((s) => s.databasesByName);
   const environmentList = useAppStore((s) => s.environmentList);
@@ -87,6 +90,7 @@ export function DatabaseTargetDisplay({
     return (
       <EllipsisText
         text={targetName}
+        tooltipLayer={tooltipLayer}
         className={cn(
           "truncate text-control-placeholder",
           classes.root,
@@ -121,6 +125,7 @@ export function DatabaseTargetDisplay({
       {shouldShowInstance && (
         <EllipsisText
           text={instanceTitle}
+          tooltipLayer={tooltipLayer}
           className={cn(
             "min-w-0 shrink-[2] truncate text-control-light",
             classes.instance
@@ -135,6 +140,7 @@ export function DatabaseTargetDisplay({
       {showEnvironment && environment?.title && (
         <Tooltip
           content={environment.title}
+          layer={tooltipLayer}
           render={
             <span
               className={cn(
@@ -149,6 +155,7 @@ export function DatabaseTargetDisplay({
       )}
       <EllipsisText
         text={databaseName}
+        tooltipLayer={tooltipLayer}
         className={cn("flex-1 truncate text-control", classes.database)}
       >
         <HighlightLabelText text={databaseName} keyword={keyword} />

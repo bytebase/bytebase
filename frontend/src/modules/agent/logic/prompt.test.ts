@@ -29,6 +29,39 @@ describe("buildSystemPrompt", () => {
     expect(prompt).not.toContain("Either works for mutations");
   });
 
+  test("uses a selected database in its owning project for only this turn", () => {
+    const prompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Orders",
+      context: "projects/orders",
+      referencedProject: "projects/billing",
+      referencedDatabase: "instances/prod/databases/billing",
+      runMode: "read-only",
+    });
+
+    expect(prompt).toContain(
+      "Selected database for this turn: instances/prod/databases/billing"
+    );
+    expect(prompt).toContain("owning project must match projects/billing");
+    expect(prompt).toContain("fresh get_database_overview result");
+    expect(prompt).toContain("does not change the chat context");
+    expect(prompt).toContain(
+      "only make changes when the member explicitly asks"
+    );
+    expect(prompt).toContain("search_api");
+    expect(prompt).toContain("call_api");
+    expect(prompt).toContain(
+      'use get_database_count with scope "referenced-instance"'
+    );
+    expect(prompt).toContain(
+      "A workspace instance may span projects; a project instance remains in its owning project"
+    );
+    expect(prompt).toContain(
+      "For other instance-specific or filtered counts, use search_api and call_api ListDatabases"
+    );
+    expect(prompt).not.toContain("Referenced project for this turn");
+  });
+
   test("names the chat context separately from the live page", () => {
     const prompt = buildSystemPrompt({
       path: "/projects/other/issues",
@@ -67,15 +100,45 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain(
       "For an unqualified list or count in a workspace-bound chat, use the whole chat workspace"
     );
-    expect(prompt).toContain("ListDatabases supports parent=workspaces/{id}");
     expect(prompt).toContain(
-      "follow every page token before reporting an exact total"
+      "For an unfiltered total of active databases in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
+    );
+    expect(prompt).toContain(
+      "For filtered counts or other instance scopes, use search_api and call_api ListDatabases"
+    );
+    expect(prompt).toContain(
+      "use search_api and call_api ListDatabases with the precise parent and filter"
     );
     expect(prompt).toContain(
       "ask which project only when the member requests a project-specific result without identifying one"
     );
     expect(prompt).not.toContain(
       "if it is a workspace and the request requires a specific project, ask which project"
+    );
+  });
+
+  test("uses a compact count for both chat-bound and referenced projects", () => {
+    const projectPrompt = buildSystemPrompt({
+      path: "/projects/orders",
+      title: "Orders",
+      context: "projects/orders",
+    });
+    const referencePrompt = buildSystemPrompt({
+      path: "/landing",
+      title: "Workspace",
+      context: "workspaces/demo",
+      referencedProject: "projects/orders",
+    });
+
+    expect(projectPrompt).toContain(
+      "For an unfiltered total of active databases in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
+    );
+    expect(referencePrompt).toContain(
+      "For an unfiltered total of active databases in the chat Workspace or Project, or the referenced Project for this turn, use get_database_count with its default scope"
+    );
+    expect(referencePrompt).toContain("referenced Project for this turn");
+    expect(referencePrompt).toContain(
+      "For other instance-specific or filtered counts, use search_api and call_api ListDatabases"
     );
   });
 

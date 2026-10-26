@@ -12,7 +12,9 @@ import {
   getMentionTriggerRange,
   insertResourceMention,
   isResourceMentionRange,
+  normalizeAgentResourceMentions,
   normalizeAgentResourceReference,
+  normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
 import type {
   AgentAskUserResponse,
@@ -80,6 +82,7 @@ export interface QueuedUserMessage {
   runMode?: AgentRunMode;
   starterId?: LandingStarterId;
   resourceReference?: AgentResourceReference;
+  resourceReferences?: AgentResourceReference[];
 }
 
 type QueueUserMessageInput = Omit<QueuedUserMessage, "id">;
@@ -127,6 +130,13 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
 
 const normalizeDraft = (raw: unknown): AgentDraft | null => {
   if (!isRecord(raw) || typeof raw.text !== "string") return null;
+  if (raw.mentions !== undefined) {
+    const mentions = normalizeAgentResourceMentions(raw.text, raw.mentions);
+    return {
+      text: raw.text,
+      ...(mentions.length > 0 ? { mentions } : {}),
+    };
+  }
   const project = isRecord(raw.project) ? raw.project : {};
   const projectName =
     typeof project.name === "string" ? project.name.trim() : "";
@@ -222,7 +232,8 @@ const normalizeQueuedUserMessage = (
   ) {
     return null;
   }
-  const resourceReference = normalizeAgentResourceReference(
+  const resourceReferences = normalizeAgentResourceReferences(
+    raw.resourceReferences,
     raw.resourceReference
   );
   return {
@@ -238,7 +249,12 @@ const normalizeQueuedUserMessage = (
       typeof raw.starterId === "string"
         ? (raw.starterId as LandingStarterId)
         : undefined,
-    ...(resourceReference ? { resourceReference } : {}),
+    ...(raw.resourceReferences === undefined && resourceReferences[0]
+      ? { resourceReference: resourceReferences[0] }
+      : {}),
+    ...(raw.resourceReferences !== undefined && resourceReferences.length > 0
+      ? { resourceReferences }
+      : {}),
   };
 };
 
@@ -248,6 +264,13 @@ const normalizeMessage = (
   fallbackTs: number
 ): AgentMessage => {
   const message = isRecord(raw) ? raw : {};
+  const metadata = isRecord(message.metadata) ? message.metadata : null;
+  const resourceReferences = metadata
+    ? normalizeAgentResourceReferences(
+        metadata.resourceReferences,
+        metadata.resourceReference
+      )
+    : [];
   return {
     id: typeof message.id === "string" ? message.id : uuidv4(),
     chatId:
@@ -270,12 +293,18 @@ const normalizeMessage = (
       : undefined,
     toolCallId:
       typeof message.toolCallId === "string" ? message.toolCallId : undefined,
-    metadata: isRecord(message.metadata)
+    metadata: metadata
       ? {
-          ...(message.metadata as AgentMessage["metadata"]),
-          resourceReference: normalizeAgentResourceReference(
-            message.metadata.resourceReference
-          ),
+          ...(metadata as AgentMessage["metadata"]),
+          resourceReference:
+            metadata.resourceReferences === undefined
+              ? resourceReferences[0]
+              : undefined,
+          resourceReferences:
+            metadata.resourceReferences !== undefined &&
+            resourceReferences.length > 0
+              ? resourceReferences
+              : undefined,
         }
       : undefined,
   };
@@ -331,6 +360,17 @@ const normalizePendingAsk = (raw: unknown): AgentPendingAsk | null => {
     toolCallId: pendingAsk.toolCallId,
     prompt: pendingAsk.prompt,
     kind,
+    ...(kind === "confirm" &&
+    isRecord(pendingAsk.apiPermission) &&
+    typeof pendingAsk.apiPermission.actionId === "string" &&
+    typeof pendingAsk.apiPermission.operationId === "string"
+      ? {
+          apiPermission: {
+            actionId: pendingAsk.apiPermission.actionId,
+            operationId: pendingAsk.apiPermission.operationId,
+          },
+        }
+      : {}),
     defaultValue:
       typeof pendingAsk.defaultValue === "string"
         ? pendingAsk.defaultValue
@@ -484,7 +524,10 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
 
     messagesByChatId[chat.id] = messages;
     const draft = normalizeDraft(rawDraftsByChatId[chat.id]);
-    if (draft && (draft.text || draft.project || draft.resource)) {
+    if (
+      draft &&
+      (draft.text || draft.project || draft.resource || draft.mentions)
+    ) {
       draftsByChatId[chat.id] = draft;
     }
   }
@@ -1034,7 +1077,12 @@ export const createAgentStore = () => {
           const normalized = normalizeDraft(draft);
           if (!normalized) return;
           set((state) => {
-            if (normalized.text || normalized.project || normalized.resource) {
+            if (
+              normalized.text ||
+              normalized.project ||
+              normalized.resource ||
+              normalized.mentions
+            ) {
               state.draftsByChatId[chatId] = normalized;
             } else {
               delete state.draftsByChatId[chatId];
@@ -1105,14 +1153,22 @@ export const createAgentStore = () => {
         },
 
         queueUserMessage: (message) => {
-          const resourceReference = normalizeAgentResourceReference(
-            message.resourceReference
+          const { resourceReference, resourceReferences, ...rest } = message;
+          const normalizedReferences = normalizeAgentResourceReferences(
+            resourceReferences,
+            resourceReference
           );
           set((state) => {
             state.queuedUserMessage = {
-              ...message,
+              ...rest,
               id: uuidv4(),
-              ...(resourceReference ? { resourceReference } : {}),
+              ...(resourceReferences === undefined && normalizedReferences[0]
+                ? { resourceReference: normalizedReferences[0] }
+                : {}),
+              ...(resourceReferences !== undefined &&
+              normalizedReferences.length > 0
+                ? { resourceReferences: normalizedReferences }
+                : {}),
             };
             state.queuedUserMessageInFlight = false;
           });
@@ -1161,9 +1217,11 @@ export const createAgentStore = () => {
                 createdTs: Date.now(),
                 role: "user",
                 content: queued.text,
-                metadata: queued.resourceReference
-                  ? { resourceReference: queued.resourceReference }
-                  : undefined,
+                metadata: queued.resourceReferences
+                  ? { resourceReferences: queued.resourceReferences }
+                  : queued.resourceReference
+                    ? { resourceReference: queued.resourceReference }
+                    : undefined,
               };
               chatMessages.push(committed);
               message = committed;

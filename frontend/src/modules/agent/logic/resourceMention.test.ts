@@ -1,12 +1,30 @@
 import { describe, expect, test } from "vitest";
 import {
+  canAddResourceMention,
   deleteResourceMention,
+  getDraftResourceMentions,
   getMentionTriggerRange,
   hasAdditionalResourceMention,
+  hasUnboundResourceMention,
   insertResourceMention,
   normalizeAgentResourceReference,
+  normalizeAgentResourceReferences,
+  updateDraftResourceMentions,
   updateResourceMentionRange,
 } from "./resourceMention";
+
+const projectReference = {
+  kind: "project" as const,
+  name: "projects/orders",
+  project: "projects/orders",
+  label: "Orders",
+};
+const databaseReference = {
+  kind: "database" as const,
+  name: "instances/main/databases/orders",
+  project: "projects/orders",
+  label: "orders_db",
+};
 
 describe("getMentionTriggerRange", () => {
   test("recognizes a mention at the caret after a word boundary", () => {
@@ -295,5 +313,87 @@ describe("normalizeAgentResourceReference", () => {
     ]) {
       expect(normalizeAgentResourceReference(raw)).toBeUndefined();
     }
+  });
+});
+
+describe("paired resource mentions", () => {
+  test("accepts one Project and its Database regardless of selection order", () => {
+    expect(
+      normalizeAgentResourceReferences([databaseReference, projectReference])
+    ).toEqual([projectReference, databaseReference]);
+    expect(
+      normalizeAgentResourceReferences(undefined, databaseReference)
+    ).toEqual([databaseReference]);
+    expect(
+      canAddResourceMention(
+        [{ resource: projectReference, range: { start: 0, end: 7 } }],
+        databaseReference
+      )
+    ).toBe(true);
+  });
+
+  test("rejects mismatched, duplicate, malformed, or excessive references", () => {
+    const otherDatabase = { ...databaseReference, project: "projects/other" };
+    expect(
+      normalizeAgentResourceReferences([projectReference, otherDatabase])
+    ).toEqual([]);
+    expect(
+      normalizeAgentResourceReferences([projectReference, projectReference])
+    ).toEqual([]);
+    expect(
+      normalizeAgentResourceReferences([
+        projectReference,
+        databaseReference,
+        otherDatabase,
+      ])
+    ).toEqual([]);
+    expect(
+      normalizeAgentResourceReferences(
+        [projectReference, {}],
+        databaseReference
+      )
+    ).toEqual([]);
+  });
+
+  test("tracks independent ranges through edits and atomically drops an edited binding", () => {
+    const initial = "@Orders inspect @orders_db";
+    const mentions = [
+      { resource: projectReference, range: { start: 0, end: 7 } },
+      { resource: databaseReference, range: { start: 16, end: 26 } },
+    ];
+    expect(getDraftResourceMentions({ text: initial, mentions })).toEqual(
+      mentions
+    );
+    expect(hasUnboundResourceMention(initial, mentions)).toBe(false);
+
+    const prefixed = `Please ${initial}`;
+    expect(updateDraftResourceMentions(initial, prefixed, mentions)).toEqual([
+      { resource: projectReference, range: { start: 7, end: 14 } },
+      { resource: databaseReference, range: { start: 23, end: 33 } },
+    ]);
+
+    const edited = "@Orders inspect @orders_d";
+    const remaining = updateDraftResourceMentions(initial, edited, mentions);
+    expect(remaining).toEqual([mentions[0]]);
+    expect(hasUnboundResourceMention(edited, remaining)).toBe(true);
+
+    expect(
+      updateDraftResourceMentions(initial, "inspect @orders_db", mentions)
+    ).toEqual([{ resource: databaseReference, range: { start: 8, end: 18 } }]);
+  });
+
+  test("recognizes a stray second mention but not an email address", () => {
+    const text = "@Orders inspect @orders_db and @another ed@example.com";
+    const mentions = [
+      { resource: projectReference, range: { start: 0, end: 7 } },
+      { resource: databaseReference, range: { start: 16, end: 26 } },
+    ];
+    expect(hasUnboundResourceMention(text, mentions)).toBe(true);
+    expect(
+      hasUnboundResourceMention(
+        "@Orders inspect @orders_db ed@example.com",
+        mentions
+      )
+    ).toBe(false);
   });
 });
