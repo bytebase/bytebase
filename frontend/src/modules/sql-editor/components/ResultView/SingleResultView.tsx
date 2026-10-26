@@ -1,4 +1,3 @@
-import { create } from "@bufbuild/protobuf";
 import { isEmpty } from "lodash-es";
 import {
   ArrowDownIcon,
@@ -51,11 +50,11 @@ import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   QueryOption_ExplainFormat,
-  QueryOptionSchema,
   type QueryResult,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import {
+  explainQueryOption,
   isVisualizerEngine,
   VISUALIZER_EXPLAIN_FORMATS,
 } from "@/utils/queryPlanEngines";
@@ -1012,16 +1011,13 @@ async function explainStatement(
   signal?: AbortSignal
 ): Promise<InlineQueryPlan | undefined> {
   if (!statement) return undefined;
-  const explainFormat = isVisualizerEngine(engine)
-    ? QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]]
-    : QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED;
   const context: SQLEditorDatabaseQueryContext = {
     id: uuidv4(),
     params: {
       ...params,
       statement,
       explain: true,
-      queryOption: create(QueryOptionSchema, { explainFormat }),
+      queryOption: explainQueryOption(engine),
     },
     status: "PENDING",
   };
