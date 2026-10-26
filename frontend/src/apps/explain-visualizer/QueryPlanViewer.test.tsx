@@ -429,8 +429,8 @@ describe("QueryPlanViewer on a measured plan", () => {
 describe("QueryPlanViewer with Bytebase's own metadata", () => {
   beforeEach(() => mockMatchMedia(false));
 
-  const describeTable = (relation: string) =>
-    relation === "orders"
+  const describeTable = ({ table }: { table: string }) =>
+    table === "orders"
       ? { rowCount: 120, indexes: [{ name: "orders_pkey", columns: "id", primary: true }] }
       : undefined;
 

@@ -243,6 +243,9 @@ vi.mock("@/utils/util", () => ({
 vi.mock("@/utils/v1/database", () => ({
   getDatabaseProject: (database: Database) => ({ name: database.project }),
   getInstanceResource: (database: Database) => database.instanceResource,
+  extractDatabaseResourceName: (name: string) => ({
+    databaseName: name.split("/").pop() ?? "",
+  }),
 }));
 
 vi.mock("@/utils/v1/sql", () => ({

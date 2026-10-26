@@ -7,6 +7,7 @@ import {
   type PlanNode,
   type PlanParseResult,
   type PlanProperty,
+  type PlanRelation,
   type PlanWarning,
   parseWithDepthLimit,
   planSelfCost,
@@ -644,10 +645,26 @@ function toOperatorName(relop: Element, operator: Element | undefined): string {
   return `${physical} (${logical})`;
 }
 
-/** The table the operator reads, bare, for a lookup of Bytebase's metadata. */
-function toOperatorRelation(operator: Element | undefined): string | undefined {
-  const table = firstChild(operator, "Object")?.getAttribute("Table");
-  return table ? unbracket(table) : undefined;
+/**
+ * The table the operator reads, with the qualifiers SQL Server wrote on it.
+ * It names the database on every object, including the connected one, so the
+ * lookup compares rather than refusing anything qualified.
+ */
+function toOperatorRelation(
+  operator: Element | undefined
+): PlanRelation | undefined {
+  const object = firstChild(operator, "Object");
+  const table = object?.getAttribute("Table");
+  if (!object || !table) return undefined;
+  const qualifier = (name: string) => {
+    const value = object.getAttribute(name);
+    return value ? unbracket(value) : undefined;
+  };
+  return {
+    table: unbracket(table),
+    database: qualifier("Database"),
+    schema: qualifier("Schema"),
+  };
 }
 
 /** What the operator works on, for the one line a card has room for. */

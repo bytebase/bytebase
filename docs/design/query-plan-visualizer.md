@@ -322,6 +322,13 @@ never do this. It turns "this scan is expensive" into a next step, with no AI
 involved, and it is the strongest reason for the plan to live inside Bytebase
 rather than in a tab that could have been any web page.
 
+**It has to be the same table.** The editor knows the connected database, and
+only that one. A plan can name another — SQL Server writes the database on every
+object it reads, and a query can cross databases — so a node whose table lives
+elsewhere says nothing rather than describing the local table that happens to
+share its name. The same holds for a name two schemas both use where the plan
+names no schema. The wrong table's indexes are worse than none.
+
 **Keep the plan portable.** Experts have tools they trust, so a **Copy plan**
 action stays, as it is in the viewer today (`PlanCopyButton`) and in every viewer
 we surveyed. Dropping it while retiring the pop-up page would be a quiet
@@ -580,9 +587,9 @@ Checked against `main` on 2026-10-26, after [#21652](https://github.com/bytebase
   by warning and never removed from node details. A run that planned every
   statement puts each statement's share of the script's estimated cost on its
   result tab. A node that reads a table Bytebase has synced shows that table's
-  size and its indexes, which no standalone viewer can do; a bare relation name
-  two schemas both use is left unanswered rather than answered with the wrong
-  table's indexes. §3.3 is closed.
+  size and its indexes, which no standalone viewer can do; a table in another
+  database, or a bare name two schemas both use, is left unanswered rather than
+  answered with the wrong table's indexes. §3.3 is closed.
 
 **Not yet**
 

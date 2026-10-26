@@ -417,7 +417,7 @@ describe("parsePostgresPlan relation", () => {
       "Index Name": "salary_pkey",
     });
 
-    expect(root.relation).toBe("salary");
+    expect(root.relation).toEqual({ table: "salary" });
     expect(root.subject).toBe("salary");
   });
 

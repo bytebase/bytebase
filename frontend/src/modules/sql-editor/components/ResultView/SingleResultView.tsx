@@ -66,7 +66,11 @@ import {
   isNoSQLQueryResult,
 } from "@/utils/sqlResult";
 import { STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW } from "@/utils/storage-keys";
-import { getDatabaseProject, getInstanceResource } from "@/utils/v1/database";
+import {
+  extractDatabaseResourceName,
+  getDatabaseProject,
+  getInstanceResource,
+} from "@/utils/v1/database";
 import { instanceV1AllowsExplain } from "@/utils/v1/instance";
 import { compareQueryRowValues, extractSQLRowValuePlain } from "@/utils/v1/sql";
 import { CopyAllButton } from "./CopyAllButton";
@@ -512,8 +516,12 @@ function SingleResultViewInner({
     autoFetch: false,
   });
   const describeTable = useMemo(
-    () => tableFactsLookup(databaseMetadata),
-    [databaseMetadata]
+    () =>
+      tableFactsLookup(
+        databaseMetadata,
+        extractDatabaseResourceName(database.name).databaseName
+      ),
+    [databaseMetadata, database.name]
   );
 
   const plan = result.queryPlan;

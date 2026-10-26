@@ -6,6 +6,7 @@ import {
   type PlanNode,
   type PlanParseResult,
   type PlanProperty,
+  type PlanRelation,
   type PlanWarning,
   parseWithDepthLimit,
   planSelfCost,
@@ -153,6 +154,12 @@ function stringValue(value: unknown): string | undefined {
   return typeof value === "string" && value ? value : undefined;
 }
 
+function toRelation(raw: JsonRecord): PlanRelation | undefined {
+  const table = stringValue(raw["Relation Name"]);
+  if (!table) return undefined;
+  return { table, schema: stringValue(raw["Schema"]) };
+}
+
 function toSubject(raw: JsonRecord): string | undefined {
   const relation = raw["Relation Name"];
   if (typeof relation === "string" && relation) return relation;
@@ -248,8 +255,9 @@ function toPlanNode(raw: JsonRecord, id: string, depth: number): PlanNode {
     nodeType,
     subject: toSubject(raw),
     // An index scan names the index as well, but it is the table a reader
-    // would want to know about.
-    relation: stringValue(raw["Relation Name"]),
+    // would want to know about. PostgreSQL cannot read across databases, so a
+    // plan never qualifies one.
+    relation: toRelation(raw),
     relationship: toRelationship(raw),
     startupCost: toNumber(raw["Startup Cost"]),
     totalCost,

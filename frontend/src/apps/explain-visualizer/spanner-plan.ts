@@ -170,8 +170,8 @@ function toPlanNode(
     subject: scanTarget || condition?.value || description || undefined,
     // An index scan's target is the index, not a table Bytebase can look up.
     relation:
-      stringField(metadata, "scan_type") === "TableScan"
-        ? scanTarget || undefined
+      stringField(metadata, "scan_type") === "TableScan" && scanTarget
+        ? { table: scanTarget }
         : undefined,
     relationship,
     properties,

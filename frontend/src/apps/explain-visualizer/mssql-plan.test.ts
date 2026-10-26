@@ -530,10 +530,16 @@ describe("parseMssqlPlan on an actual plan", () => {
 });
 
 describe("parseMssqlPlan relation", () => {
-  test("names the table bare, as the catalog has it", () => {
+  test("keeps the qualifiers SQL Server writes on the object", () => {
     const scan = byType(parseFixture(indexSeekKeyLookup), "Index Seek");
 
-    expect(scan.relation).toBe("orders");
+    // The database matters: a cross-database read must not be answered from
+    // the connected database's catalog.
+    expect(scan.relation).toEqual({
+      table: "orders",
+      database: "plandb",
+      schema: "dbo",
+    });
   });
 
   test("names no relation for an operator that reads no table", () => {

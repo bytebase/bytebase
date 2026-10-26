@@ -35,12 +35,12 @@ export interface PlanNode {
   /** Table or index the operation reads, when the engine names one. */
   readonly subject?: string;
   /**
-   * The table this operator reads, named as the catalog names it, where it
-   * reads one. Narrower than `subject`, which is whatever is worth printing on
-   * a card: a join condition, an index, a sort key. This is what a lookup of
-   * Bytebase's own metadata can be keyed on.
+   * The table this operator reads, where it reads one. Narrower than
+   * `subject`, which is whatever is worth printing on a card: a join
+   * condition, an index, a sort key. This is what a lookup of Bytebase's own
+   * metadata can be keyed on.
    */
-  readonly relation?: string;
+  readonly relation?: PlanRelation;
   /** How the parent consumes this node, such as "Inner" or "InitPlan 1". */
   readonly relationship?: string;
   /** Cost before the node returns its first row, including its subtree. */
@@ -238,6 +238,19 @@ export const PLAN_FULL_INDEX_SCAN: PlanWarning = {
   source: "heuristic",
 };
 
+/**
+ * A table an operator reads, as the plan names it.
+ *
+ * The qualifiers matter as much as the name: SQL Server writes the database on
+ * every object it reads, and a plan that reads `archive.dbo.orders` must not be
+ * answered with the connected database's own `orders`.
+ */
+export interface PlanRelation {
+  readonly table: string;
+  readonly database?: string;
+  readonly schema?: string;
+}
+
 /** One index on a table an operator reads, as Bytebase last synced it. */
 export interface PlanTableIndex {
   readonly name: string;
@@ -260,7 +273,9 @@ export interface PlanTableFacts {
 }
 
 /** Answers what Bytebase knows about a relation, where it knows anything. */
-export type PlanTableLookup = (relation: string) => PlanTableFacts | undefined;
+export type PlanTableLookup = (
+  relation: PlanRelation
+) => PlanTableFacts | undefined;
 
 /** Which number, if any, shades the diagram's node cards. */
 export type PlanHighlightMode = "off" | "cost" | "time" | "rows";
