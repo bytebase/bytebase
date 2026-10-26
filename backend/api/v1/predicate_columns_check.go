@@ -14,17 +14,17 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// refuseSensitivePredicateColumns refuses, before execution, statements whose
-// conditions read a column masked for user. The database evaluates conditions
-// on unmasked values, so the rows it returns, their count, and the time it
-// takes would reveal them.
-func refuseSensitivePredicateColumns(ctx context.Context, stores *store.Store, spans []*base.QuerySpan, instance *store.InstanceMessage, user *store.UserMessage) error {
+// sensitivePredicateRefusal returns the message to report for statements whose
+// conditions read a column masked for user, or "" if none do. The database
+// evaluates conditions on unmasked values, so the rows it returns, their
+// count, and the time it takes would reveal them.
+func sensitivePredicateRefusal(ctx context.Context, stores *store.Store, spans []*base.QuerySpan, instance *store.InstanceMessage, user *store.UserMessage) (string, error) {
 	if !isPredicateColumnsCheckEnabled(instance.Metadata.GetEngine()) {
-		return nil
+		return "", nil
 	}
 	sensitiveColumns, err := NewQueryResultMasker(stores).ExtractSensitivePredicateColumns(ctx, spans, instance, user)
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.New(err.Error()))
+		return "", connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
 	for _, columns := range sensitiveColumns {
 		if len(columns) == 0 {
@@ -35,9 +35,9 @@ func refuseSensitivePredicateColumns(ctx context.Context, stores *store.Store, s
 			names = append(names, column.String())
 		}
 		slices.Sort(names)
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("Using sensitive columns in query conditions is not allowed: %s", strings.Join(names, ", ")))
+		return "Using sensitive columns in query conditions is not allowed: " + strings.Join(names, ", "), nil
 	}
-	return nil
+	return "", nil
 }
 
 func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context, spans []*base.QuerySpan, instance *store.InstanceMessage, user *store.UserMessage) ([][]base.ColumnResource, error) {
