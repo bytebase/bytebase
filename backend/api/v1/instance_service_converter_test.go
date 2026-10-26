@@ -366,7 +366,7 @@ func TestDataSourceDestinationClassifiesEveryField(t *testing.T) {
 	}
 
 	classified := make(map[string]bool, len(inDestination)+len(notDestination))
-	for _, name := range append(append([]string{}, inDestination...), notDestination...) {
+	for _, name := range slices.Concat(inDestination, notDestination) {
 		require.False(t, classified[name], "field %q listed twice", name)
 		classified[name] = true
 	}
