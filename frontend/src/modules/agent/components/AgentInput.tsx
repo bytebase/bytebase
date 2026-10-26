@@ -12,8 +12,10 @@ import { router } from "@/app/router";
 import { Button } from "@/components/ui/button";
 import { projectNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { runAgentLoop } from "../logic/agentLoop";
 import {
   getAgentAIConfigurationEnabled,
@@ -27,14 +29,21 @@ import {
 import { buildOutboundHistory } from "../logic/outboundHistory";
 import { buildSystemPrompt } from "../logic/prompt";
 import {
+  canAddResourceMention,
+  getDraftResourceMentions,
   getMentionTriggerRange,
-  hasAdditionalResourceMention,
+  hasUnboundResourceMention,
   insertResourceMention,
-  updateResourceMentionRange,
+  normalizeAgentResourceReferences,
+  updateDraftResourceMentions,
 } from "../logic/resourceMention";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
 import { extractIssueOverviewEvidence } from "../logic/tools/issueOverview";
+import {
+  getPendingApiCallPreview,
+  resolvePendingApiCall,
+} from "../logic/tools/pendingApiCall";
 import { createProjectOpenIssuesTool } from "../logic/tools/projectOpenIssues";
 import { extractProjectOverviewEvidence } from "../logic/tools/projectOverview";
 import { getRecentActivity } from "../logic/tools/recentActivity";
@@ -73,21 +82,6 @@ const getCurrentPageSnapshot = () => ({
   path: router.currentRoute.value.fullPath,
   title: document.title,
 });
-
-const projectReferenceFromDraft = (draft: {
-  project?: { name: string; title: string };
-  resource?: AgentResourceReference;
-}): AgentResourceReference | undefined =>
-  draft.resource?.kind === "project"
-    ? draft.resource
-    : draft.project
-      ? {
-          kind: "project",
-          name: draft.project.name,
-          project: draft.project.name,
-          label: draft.project.title,
-        }
-      : undefined;
 
 interface RecentActivityEvent {
   actor: string;
@@ -235,6 +229,7 @@ export function AgentInput() {
   );
   const queuedUserMessage = useAgentStore((s) => s.queuedUserMessage);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
+  const currentUserName = useAppStore((s) => s.currentUser?.name ?? "");
   const context = currentChat?.context;
   const projectContext = context?.startsWith(projectNamePrefix)
     ? context
@@ -344,6 +339,7 @@ export function AgentInput() {
   const mentionRangeRef = useRef<{ start: number; end: number } | null>(null);
   const selectedMentionCaretRef = useRef<number | null>(null);
   const previousChatIdRef = useRef<string | null>(null);
+  const confirmationInFlightRef = useRef(false);
 
   const composerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -356,6 +352,16 @@ export function AgentInput() {
       ? (currentPendingAsk.options ?? [])
       : [];
   const isAwaitingConfirm = currentPendingAsk?.kind === "confirm";
+  const apiPermission = currentPendingAsk?.apiPermission;
+  const apiPermissionPreview =
+    apiPermission && currentChat && currentUserName
+      ? getPendingApiCallPreview({
+          actionId: apiPermission.actionId,
+          chatId: currentChat.id,
+          toolCallId: currentPendingAsk.toolCallId,
+          userName: currentUserName,
+        })
+      : undefined;
   const isAwaitingChoose =
     currentPendingAsk?.kind === "choose" && chooseOptions.length > 0;
   const input = currentPendingAsk ? askInput : (currentDraft?.text ?? "");
@@ -374,18 +380,14 @@ export function AgentInput() {
           workspace?.name
         ).id;
       const draft = store.getDraft(chatId);
-      const resource = draft.resource ?? projectReferenceFromDraft(draft);
-      const mention = resource
-        ? updateResourceMentionRange(
-            draft.text,
-            value,
-            draft.mention ?? null,
-            resource.label
-          )
-        : null;
+      const mentions = updateDraftResourceMentions(
+        draft.text,
+        value,
+        getDraftResourceMentions(draft)
+      );
       store.setDraft(chatId, {
         text: value,
-        ...(mention && resource ? { mention, resource } : {}),
+        ...(mentions.length > 0 ? { mentions } : {}),
       });
     },
     [currentPendingAsk, workspace?.name]
@@ -399,12 +401,17 @@ export function AgentInput() {
         : t("agent.input-placeholder");
   const confirmLabel = currentPendingAsk?.confirmLabel ?? t("agent.confirm");
   const cancelLabel = currentPendingAsk?.cancelLabel ?? t("agent.cancel");
-  const hasAdditionalMention = Boolean(
-    !currentPendingAsk &&
-      currentDraft?.mention &&
-      (currentDraft.resource || currentDraft.project) &&
-      hasAdditionalResourceMention(input, currentDraft.mention)
+  const draftMentions =
+    currentPendingAsk || !currentDraft
+      ? []
+      : getDraftResourceMentions(currentDraft);
+  const selectedProjectMention = draftMentions.find(
+    ({ resource }) => resource.kind === "project"
   );
+  const hasAdditionalMention =
+    !currentPendingAsk &&
+    draftMentions.length > 0 &&
+    hasUnboundResourceMention(input, draftMentions);
   const isSendDisabled =
     isCurrentChatRunning ||
     isAwaitingConfirm ||
@@ -424,7 +431,7 @@ export function AgentInput() {
     : context === workspace?.name
       ? workspace?.title || context
       : context;
-  const canMentionProject = Boolean(workspace?.name && !currentPendingAsk);
+  const canMentionResource = Boolean(workspace?.name && !currentPendingAsk);
 
   const selectContext = useCallback(
     (resource: string) => {
@@ -442,8 +449,8 @@ export function AgentInput() {
     [workspace?.name]
   );
 
-  const selectMentionProject = useCallback(
-    (project: Project) => {
+  const selectMentionResource = useCallback(
+    (resource: AgentResourceReference) => {
       const store = useAgentStore.getState();
       const chatId =
         store.currentChatId ??
@@ -453,25 +460,45 @@ export function AgentInput() {
           workspace?.name
         ).id;
       const draft = store.getDraft(chatId);
-      if (draft.resource || draft.project) return;
+      const mentions = getDraftResourceMentions(draft);
+      if (!canAddResourceMention(mentions, resource)) return;
       const range = mentionRangeRef.current;
-      const label = project.title || project.name;
+      const label = resource.label;
       const insertion = insertResourceMention(draft.text, range, label);
       if (!insertion) return;
       selectedMentionCaretRef.current = insertion.caret;
       store.setDraft(chatId, {
         text: insertion.text,
-        mention: insertion.mention,
-        resource: {
-          kind: "project",
-          name: project.name,
-          project: project.name,
-          label,
-        },
+        mentions: [
+          ...updateDraftResourceMentions(draft.text, insertion.text, mentions),
+          { resource, range: insertion.mention },
+        ],
       });
       mentionRangeRef.current = null;
     },
     [workspace?.name]
+  );
+
+  const selectMentionProject = useCallback(
+    (project: Project) =>
+      selectMentionResource({
+        kind: "project",
+        name: project.name,
+        project: project.name,
+        label: project.title || project.name,
+      }),
+    [selectMentionResource]
+  );
+
+  const selectMentionDatabase = useCallback(
+    (database: Database) =>
+      selectMentionResource({
+        kind: "database",
+        name: database.name,
+        project: database.project,
+        label: extractDatabaseResourceName(database.name).databaseName,
+      }),
+    [selectMentionResource]
   );
 
   useEffect(() => {
@@ -665,10 +692,19 @@ export function AgentInput() {
       const lastUserMessage = store
         .getMessages(chatId)
         .findLast((message) => message.role === "user");
+      const references = normalizeAgentResourceReferences(
+        lastUserMessage?.metadata?.resourceReferences,
+        lastUserMessage?.metadata?.resourceReference
+      );
+      const projectReference = references.find(
+        (reference) => reference.kind === "project"
+      );
+      const databaseReference = references.find(
+        (reference) => reference.kind === "database"
+      );
       const referencedProject =
-        lastUserMessage?.metadata?.resourceReference?.kind === "project"
-          ? lastUserMessage.metadata.resourceReference.name
-          : undefined;
+        projectReference?.name ?? databaseReference?.project;
+      const referencedDatabase = databaseReference?.name;
       const controller = new AbortController();
       const runToken = (runTokens.get(chatId) ?? 0) + 1;
       runTokens.set(chatId, runToken);
@@ -678,13 +714,16 @@ export function AgentInput() {
         ...page,
         context: store.getChat(chatId)?.context,
         referencedProject,
+        referencedDatabase,
         runMode,
       });
       const tools = getToolDefinitions({ runMode, referencedProject });
       const executor = createToolExecutor(router, {
         chatId,
+        userName: useAppStore.getState().currentUser?.name,
         context: store.getChat(chatId)?.context,
         referencedProject,
+        referencedDatabase,
         runMode,
         onNavigate: () => {
           useAgentStore
@@ -698,7 +737,7 @@ export function AgentInput() {
       try {
         const history = buildChatHistory(chatId, systemPrompt);
         let prefetchedProjectOverview: string | undefined;
-        if (referencedProject) {
+        if (projectReference && !databaseReference && referencedProject) {
           const preflightCallId = uuidv4();
           const result = await executor(
             "get_project_overview",
@@ -745,6 +784,74 @@ export function AgentInput() {
                   id: preflightCallId,
                   name: "get_project_overview",
                   arguments: "{}",
+                },
+              ],
+            },
+            {
+              role: "tool",
+              toolCallId: preflightCallId,
+              content: overviewResult,
+            }
+          );
+        } else if (referencedDatabase && referencedProject) {
+          const preflightCallId = uuidv4();
+          const args = { databaseName: referencedDatabase };
+          const result = await executor(
+            "get_database_overview",
+            args,
+            preflightCallId
+          ).catch(() => undefined);
+          if (
+            controller.signal.aborted ||
+            runToken !== runTokens.get(chatId) ||
+            !useAgentStore.getState().getChat(chatId)
+          ) {
+            return;
+          }
+          const overviewResult =
+            result?.kind === "tool_result" ? result.result : undefined;
+          let valid = false;
+          if (overviewResult) {
+            try {
+              const overview = JSON.parse(overviewResult) as {
+                project?: unknown;
+                database?: {
+                  status?: unknown;
+                  name?: unknown;
+                  state?: unknown;
+                };
+              };
+              valid =
+                overview.project === referencedProject &&
+                overview.database?.status === "available" &&
+                overview.database.name === referencedDatabase &&
+                overview.database.state === "ACTIVE";
+            } catch {
+              valid = false;
+            }
+          }
+          if (!valid || !overviewResult) {
+            useAgentStore.getState().addMessage({
+              chatId,
+              role: "assistant",
+              content: t("agent.database-reference-unavailable"),
+              metadata: { route: page.path, runId },
+            });
+            useAgentStore.getState().finishChatRun(chatId);
+            return;
+          }
+          overviewEvidence = mergeOverviewEvidence(
+            overviewEvidence,
+            extractDatabaseOverviewEvidence(overviewResult)
+          );
+          history.push(
+            {
+              role: "assistant",
+              toolCalls: [
+                {
+                  id: preflightCallId,
+                  name: "get_database_overview",
+                  arguments: JSON.stringify(args),
                 },
               ],
             },
@@ -1025,15 +1132,21 @@ export function AgentInput() {
       const lastUserMessage = store
         .getMessages(chatId)
         .findLast((message) => message.role === "user");
-      const hasProjectReference =
-        lastUserMessage?.metadata?.resourceReference?.kind === "project";
-      const effectiveRunMode = hasProjectReference ? "read-only" : runMode;
+      const references = normalizeAgentResourceReferences(
+        lastUserMessage?.metadata?.resourceReferences,
+        lastUserMessage?.metadata?.resourceReference
+      );
+      const hasResourceReference = references.some(
+        (reference) =>
+          reference.kind === "project" || reference.kind === "database"
+      );
+      const effectiveRunMode = hasResourceReference ? "read-only" : runMode;
       store.updateChatPage(chatId, currentPage);
       store.startChatRun(chatId, currentPage, {
         runId,
         runMode: effectiveRunMode,
       });
-      if (!hasProjectReference && starterId === "workspace-recent") {
+      if (!hasResourceReference && starterId === "workspace-recent") {
         await runRecentActivityStarter(
           chatId,
           currentPage,
@@ -1042,7 +1155,7 @@ export function AgentInput() {
         );
         return;
       }
-      if (!hasProjectReference && starterId === "project-open-recent") {
+      if (!hasResourceReference && starterId === "project-open-recent") {
         const projectName = store.getChat(chatId)?.context;
         if (projectName?.startsWith(projectNamePrefix)) {
           await runRecentActivityStarter(
@@ -1054,11 +1167,11 @@ export function AgentInput() {
           return;
         }
       }
-      if (!hasProjectReference && starterId === "workspace-attention") {
+      if (!hasResourceReference && starterId === "workspace-attention") {
         await runWorkspaceAttentionStarter(chatId, currentPage, runId);
         return;
       }
-      if (!hasProjectReference && starterId === "project-open-blockers") {
+      if (!hasResourceReference && starterId === "project-open-blockers") {
         const projectName = store.getChat(chatId)?.context;
         if (projectName?.startsWith(projectNamePrefix)) {
           await runProjectAttentionStarter(chatId, currentPage, runId);
@@ -1170,18 +1283,20 @@ export function AgentInput() {
 
     const text = submittedDraft.text.trim();
     if (!text) return;
-    const stagedReference = projectReferenceFromDraft(submittedDraft);
+    const mentions = getDraftResourceMentions(submittedDraft);
     if (
-      stagedReference &&
-      submittedDraft.mention &&
-      hasAdditionalResourceMention(submittedDraft.text, submittedDraft.mention)
-    ) {
+      mentions.length > 0 &&
+      hasUnboundResourceMention(submittedDraft.text, mentions)
+    )
       return;
-    }
+    const references = normalizeAgentResourceReferences(
+      mentions.map(({ resource }) => resource)
+    );
+    const stagedReference = references[0];
     const thread =
       stagedReference && !sourceThread.context
         ? store.selectOrCreateChatForContext(
-            stagedReference.name,
+            stagedReference.project,
             currentPage,
             workspace?.name
           )
@@ -1195,6 +1310,7 @@ export function AgentInput() {
       metadata: {
         route: currentPage.path,
         ...(stagedReference ? { resourceReference: stagedReference } : {}),
+        ...(references.length > 1 ? { resourceReferences: references } : {}),
       },
     });
     if (store.getDraft(sourceChatId) === submittedDraft) {
@@ -1239,8 +1355,52 @@ export function AgentInput() {
       if (
         !pendingAsk ||
         pendingAsk.kind !== "confirm" ||
+        confirmationInFlightRef.current ||
         store.isChatRunning(chat?.id)
       ) {
+        return;
+      }
+
+      if (pendingAsk.apiPermission && chat) {
+        confirmationInFlightRef.current = true;
+        try {
+          const chatId = chat.id;
+          const currentPage = getCurrentPageSnapshot();
+          if (await blockWhenAIIsNotConfigured(chatId)) return;
+
+          const currentStore = useAgentStore.getState();
+          if (
+            currentStore.getPendingAsk(chatId)?.apiPermission?.actionId !==
+              pendingAsk.apiPermission.actionId ||
+            currentStore.isChatRunning(chatId)
+          ) {
+            return;
+          }
+
+          const runMode = currentStore.getChat(chatId)?.runMode ?? "default";
+          currentStore.setChatStatus(chatId, "running");
+          const result = await resolvePendingApiCall({
+            actionId: pendingAsk.apiPermission.actionId,
+            chatId,
+            toolCallId: pendingAsk.toolCallId,
+            userName: useAppStore.getState().currentUser?.name ?? "",
+            approved: confirmed,
+          });
+          if (!currentStore.getChat(chatId)) return;
+          currentStore.addMessage({
+            chatId,
+            role: "tool",
+            toolCallId: pendingAsk.toolCallId,
+            content: result,
+            metadata: {
+              route: currentPage.path,
+              runId: chat.runId ?? undefined,
+            },
+          });
+          await startChatRun(chatId, currentPage, runMode);
+        } finally {
+          confirmationInFlightRef.current = false;
+        }
         return;
       }
 
@@ -1301,7 +1461,7 @@ export function AgentInput() {
   const handleTextareaKeydown = useCallback(
     (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.nativeEvent.isComposing) return;
-      if (resourcePickerOpen && canMentionProject) {
+      if (resourcePickerOpen && canMentionResource) {
         const range = getMentionTriggerRange(
           input,
           event.currentTarget.selectionStart
@@ -1335,7 +1495,7 @@ export function AgentInput() {
         void send();
       }
     },
-    [canMentionProject, input, resourcePickerOpen, send]
+    [canMentionResource, input, resourcePickerOpen, send]
   );
 
   // ---------------------------------------------------------------------------
@@ -1347,14 +1507,43 @@ export function AgentInput() {
       {/* Pending ask banner */}
       {currentPendingAsk && (
         <div className="mb-3 rounded-xs bg-warning/10 px-3 py-2 text-xs text-warning">
-          <div className="font-medium">{currentPendingAsk.prompt}</div>
-          <div className="mt-1">
-            {currentPendingAsk.kind === "confirm"
-              ? t("agent.pending-confirm-hint")
-              : currentPendingAsk.kind === "choose"
-                ? t("agent.pending-choose-hint")
-                : t("agent.pending-input-hint")}
-          </div>
+          {apiPermission ? (
+            <>
+              <div className="font-medium">
+                {t("agent.api-permission-title")}
+              </div>
+              {apiPermissionPreview ? (
+                <>
+                  <div className="mt-1">
+                    {t("agent.api-permission-request")}
+                  </div>
+                  <div className="mt-2 font-mono break-all">
+                    {apiPermissionPreview.operationId}
+                  </div>
+                  <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-xs border bg-background p-2 font-mono text-control">
+                    {JSON.stringify(
+                      JSON.parse(apiPermissionPreview.body),
+                      null,
+                      2
+                    )}
+                  </pre>
+                </>
+              ) : (
+                <div className="mt-1">{t("agent.api-permission-expired")}</div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="font-medium">{currentPendingAsk.prompt}</div>
+              <div className="mt-1">
+                {currentPendingAsk.kind === "confirm"
+                  ? t("agent.pending-confirm-hint")
+                  : currentPendingAsk.kind === "choose"
+                    ? t("agent.pending-choose-hint")
+                    : t("agent.pending-input-hint")}
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1405,21 +1594,23 @@ export function AgentInput() {
         <div className="flex flex-wrap gap-x-2 gap-y-2">
           <Button
             appearance="secondary"
-            size="md"
-            className="rounded-xs bg-accent px-3 py-2 text-sm text-accent-text hover:bg-accent-hover disabled:opacity-50"
-            disabled={isCurrentChatRunning}
+            size={apiPermission ? "sm" : "md"}
+            className="rounded-xs bg-accent text-accent-text hover:bg-accent-hover disabled:opacity-50"
+            disabled={
+              isCurrentChatRunning || (apiPermission && !apiPermissionPreview)
+            }
             onClick={() => submitConfirmation(true)}
           >
-            {confirmLabel}
+            {apiPermission ? t("agent.api-permission-allow") : confirmLabel}
           </Button>
           <Button
             appearance="secondary"
-            size="md"
-            className="rounded-xs border px-3 py-2 text-sm text-control hover:bg-control-bg disabled:opacity-50"
+            size={apiPermission ? "sm" : "md"}
+            className="rounded-xs border text-control hover:bg-control-bg disabled:opacity-50"
             disabled={isCurrentChatRunning}
             onClick={() => submitConfirmation(false)}
           >
-            {cancelLabel}
+            {apiPermission ? t("agent.api-permission-deny") : cancelLabel}
           </Button>
         </div>
       ) : isAwaitingChoose ? (
@@ -1460,17 +1651,25 @@ export function AgentInput() {
               size="md"
               textareaRef={textareaRef}
               value={input}
-              mention={currentPendingAsk ? null : currentDraft?.mention}
-              mentionLabel={
-                currentDraft?.resource?.label ?? currentDraft?.project?.title
-              }
+              mentions={draftMentions.map(({ resource, range }) => ({
+                range,
+                label: resource.label,
+              }))}
               onDeleteMention={({ text, caret }) => {
                 const store = useAgentStore.getState();
                 if (!store.currentChatId) return;
+                const draft = store.getDraft(store.currentChatId);
                 selectedMentionCaretRef.current = caret;
                 mentionRangeRef.current = null;
                 setResourcePickerOpen(false);
-                store.setDraft(store.currentChatId, { text });
+                store.setDraft(store.currentChatId, {
+                  text,
+                  mentions: updateDraftResourceMentions(
+                    draft.text,
+                    text,
+                    getDraftResourceMentions(draft)
+                  ),
+                });
               }}
               rows={1}
               className="block h-9 min-h-9 w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
@@ -1478,7 +1677,7 @@ export function AgentInput() {
               disabled={isCurrentChatRunning || isAIConfigurationBlocked}
               onChange={(event) => {
                 setInput(event.target.value);
-                if (!canMentionProject) {
+                if (!canMentionResource) {
                   mentionRangeRef.current = null;
                   setResourcePickerOpen(false);
                   return;
@@ -1492,16 +1691,20 @@ export function AgentInput() {
               }}
               onKeyDown={handleTextareaKeydown}
             />
-            {canMentionProject && workspace?.name ? (
+            {canMentionResource && workspace?.name ? (
               <AgentResourcePicker
                 open={resourcePickerOpen}
                 onOpenChange={setResourcePickerOpen}
                 anchorRef={textareaRef}
                 workspaceName={workspace.name}
-                hasSelectedReference={Boolean(
-                  currentDraft?.resource || currentDraft?.project
-                )}
+                projectName={projectContext}
+                selectedProjectName={selectedProjectMention?.resource.name}
+                hasSelectedReference={
+                  draftMentions.length > 1 ||
+                  (draftMentions.length === 1 && !selectedProjectMention)
+                }
                 onSelectProject={selectMentionProject}
+                onSelectDatabase={selectMentionDatabase}
               />
             ) : null}
           </div>

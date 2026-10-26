@@ -2,13 +2,25 @@ import { refreshTokens } from "@/api/refreshToken";
 import type { PropertyInfo, SchemaInfo } from "./gen/openapi-index";
 import { getEndpointPath, getRequestSchema, getSchema } from "./searchApi";
 
-const baseAddress = import.meta.env.BB_GRPC_LOCAL || window.location.origin;
+const baseAddress =
+  import.meta.env.BB_GRPC_LOCAL ||
+  (typeof window === "undefined" ? "" : window.location.origin);
 const REFRESH_PATH = "/bytebase.v1.AuthService/Refresh";
 
 export interface CallApiArgs {
   operationId: string;
   body?: Record<string, unknown>;
 }
+
+export interface PreparedApiCall {
+  readonly operationId: string;
+  readonly path: string;
+  readonly body: string;
+}
+
+export type PrepareApiCallResult =
+  | { kind: "prepared"; call: PreparedApiCall }
+  | { kind: "error"; result: string };
 
 interface ParsedApiResponse {
   status: number;
@@ -162,40 +174,75 @@ const fetchApi = async ({
   return parseResponse(response);
 };
 
-export async function callApi(args: CallApiArgs): Promise<string> {
-  if (!args.operationId) {
-    return JSON.stringify({
-      error:
-        "operationId is required. Use search_api to find valid operations.",
-    });
+export function prepareApiCall(args: CallApiArgs): PrepareApiCallResult {
+  if (typeof args.operationId !== "string" || !args.operationId) {
+    return {
+      kind: "error",
+      result: JSON.stringify({
+        error:
+          "operationId is required. Use search_api to find valid operations.",
+      }),
+    };
   }
 
   const path = getEndpointPath(args.operationId);
   if (!path) {
-    return JSON.stringify({
-      error: `Unknown operation: ${args.operationId}. Use search_api to find valid operations.`,
-    });
+    return {
+      kind: "error",
+      result: JSON.stringify({
+        error: `Unknown operation: ${args.operationId}. Use search_api to find valid operations.`,
+      }),
+    };
   }
 
+  const match = /^\/([^/]+)\/([^/]+)$/.exec(path);
+  if (!match) {
+    return {
+      kind: "error",
+      result: JSON.stringify({ error: `Invalid endpoint: ${path}` }),
+    };
+  }
+
+  try {
+    return {
+      kind: "prepared",
+      call: Object.freeze({
+        operationId: `${match[1]}.${match[2]}`,
+        path,
+        body: JSON.stringify(
+          coerceRequestBody(args.body ?? {}, getRequestSchema(args.operationId))
+        ),
+      }),
+    };
+  } catch (err) {
+    return {
+      kind: "error",
+      result: JSON.stringify({
+        error: `Failed to prepare ${args.operationId}: ${err instanceof Error ? err.message : String(err)}`,
+      }),
+    };
+  }
+}
+
+export async function dispatchPreparedApiCall(
+  call: PreparedApiCall
+): Promise<string> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30_000);
-  const body = JSON.stringify(
-    coerceRequestBody(args.body ?? {}, getRequestSchema(args.operationId))
-  );
 
   try {
     let result = await fetchApi({
-      path,
-      body,
+      path: call.path,
+      body: call.body,
       signal: controller.signal,
     });
 
-    if (result.status === 401 && path !== REFRESH_PATH) {
+    if (result.status === 401 && call.path !== REFRESH_PATH) {
       try {
         await refreshTokens();
         result = await fetchApi({
-          path,
-          body,
+          path: call.path,
+          body: call.body,
           signal: controller.signal,
         });
       } catch {
@@ -206,9 +253,16 @@ export async function callApi(args: CallApiArgs): Promise<string> {
     return JSON.stringify(result);
   } catch (err) {
     return JSON.stringify({
-      error: `Failed to call ${args.operationId}: ${err instanceof Error ? err.message : String(err)}`,
+      error: `Failed to call ${call.operationId}: ${err instanceof Error ? err.message : String(err)}`,
     });
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+export async function callApi(args: CallApiArgs): Promise<string> {
+  const result = prepareApiCall(args);
+  return result.kind === "error"
+    ? result.result
+    : dispatchPreparedApiCall(result.call);
 }

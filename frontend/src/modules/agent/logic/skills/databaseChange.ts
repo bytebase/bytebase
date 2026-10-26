@@ -10,14 +10,14 @@ Create database changes (DDL/DML) through Bytebase's review workflow. Supports s
 
 ## Prerequisites
 
-- Have \`bb.plans.create\`, \`bb.issues.create\`, \`bb.rollouts.create\` permissions
+- Have \`bb.plans.create\` and \`bb.issues.create\` permissions to propose a change; manual deployment also requires \`bb.rollouts.create\`
 - Know the target database(s)
 
 ## Workflow
 
 ### Step 1: Create sheet(s) with SQL
 
-SQL content must be **base64 encoded**. Engine field is **required**.
+Pass plain SQL as Sheet.content; \`call_api\` encodes it as base64 for the API. Engine field is **required**.
 
 \`\`\`
 search_api(operationId="SheetService/CreateSheet")
@@ -28,12 +28,10 @@ call_api(operationId="SheetService/CreateSheet", body={
   "sheet": {
     "title": "Add users table",
     "engine": "POSTGRES",
-    "content": "Q1JFQVRFIFRBQkxFIHVzZXJzIChpZCBJTlQgUFJJTUFSWSBLRVkpOw=="
+    "content": "CREATE TABLE users (id INT PRIMARY KEY);"
   }
 })
 \`\`\`
-
-Note: \`Q1JFQVRFIFRBQkxFIHVzZXJzIChpZCBJTlQgUFJJTUFSWSBLRVkpOw==\` decodes to \`CREATE TABLE users (id INT PRIMARY KEY);\`
 
 Use \`search_api(schema="Engine")\` to discover valid engine values.
 
@@ -118,17 +116,18 @@ call_api(operationId="IssueService/CreateIssue", body={
 })
 \`\`\`
 
-### Step 4: Create a rollout
+### Step 4: Review and deploy
+
+Verify the created issue and plan, including checks and target eligibility. Report any blockers instead of claiming that a proposal can be deployed. Do not create a rollout immediately after creating an issue: approval may be required, and an approved issue may create its rollout automatically.
+
+Only if the user explicitly requests deployment, the approval policy permits it, and no rollout already exists, create one using the plan as parent. Omitting \`target\` creates stages for every eligible target.
 
 \`\`\`
 search_api(operationId="RolloutService/CreateRollout")
 \`\`\`
 \`\`\`
 call_api(operationId="RolloutService/CreateRollout", body={
-  "parent": "projects/{project-id}",
-  "rollout": {
-    "plan": "projects/{project-id}/plans/{plan-id}"
-  }
+  "parent": "projects/{project-id}/plans/{plan-id}"
 })
 \`\`\`
 
@@ -147,6 +146,5 @@ call_api(operationId="RolloutService/CreateRollout", body={
 | sheet not found | Sheet doesn't exist | Create sheet first (Step 1) |
 | missing engine | Sheet without engine field | Add \`engine\` field to sheet |
 | plan not found | Plan doesn't exist | Create plan before issue |
-| invalid base64 | SQL not encoded | Base64 encode the SQL content |
 | targets must be array | Using string instead of array | Wrap target in array: \`["..."]\` |`,
 } as const;

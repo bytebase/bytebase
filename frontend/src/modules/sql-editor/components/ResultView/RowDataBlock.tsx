@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { QueryResultVerticalRow } from "@/components/QueryResultVerticalRow";
 import { MaskingReasonPopover } from "@/modules/sql-editor/components/MaskingReasonPopover";
 import type { MaskingReason } from "@/types/proto-es/v1/sql_service_pb";
 import type { ResultTableColumn } from "./types";
@@ -26,40 +26,23 @@ export function RowDataBlock({
   className,
 }: RowDataBlockProps) {
   return (
-    <div
+    <QueryResultVerticalRow
       data-testid="row-data-block"
-      className={cn(
-        "relative rounded-sm bg-control-bg/40 px-3 py-2",
-        className
-      )}
-    >
-      {actions}
-      {columns.map((column, columnIndex) => {
+      columns={columns}
+      renderColumnName={renderColumnName}
+      renderColumnAccessory={(_, columnIndex) => {
         const reason = getMaskingReason?.(columnIndex);
-        return (
-          <div
-            key={`${column.id}-${columnIndex}`}
-            className="flex items-start text-sm text-control-light"
-          >
-            <div className="flex min-w-28 items-center pt-1 text-left font-medium">
-              <div className="flex items-center gap-x-1">
-                {renderColumnName(column, columnIndex)}
-                {reason && (
-                  <MaskingReasonPopover
-                    reason={reason}
-                    statement={statement}
-                    database={database}
-                  />
-                )}
-              </div>
-              {": "}
-            </div>
-            <div className="min-w-0 flex-1">
-              {renderValue(column, columnIndex)}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+        return reason ? (
+          <MaskingReasonPopover
+            reason={reason}
+            statement={statement}
+            database={database}
+          />
+        ) : null;
+      }}
+      renderValue={renderValue}
+      actions={actions}
+      className={className}
+    />
   );
 }

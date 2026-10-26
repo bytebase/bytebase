@@ -58,8 +58,14 @@ export interface AgentMentionRange {
   end: number;
 }
 
+export interface AgentResourceMention {
+  resource: AgentResourceReference;
+  range: AgentMentionRange;
+}
+
 export interface AgentDraft {
   text: string;
+  mentions?: AgentResourceMention[];
   project?: {
     name: string;
     title: string;
@@ -76,6 +82,7 @@ export interface AgentMessageMetadata {
   runId?: string;
   evidence?: AgentAnswerEvidence;
   resourceReference?: AgentResourceReference;
+  resourceReferences?: AgentResourceReference[];
 }
 
 export interface AgentMessage extends Message {
@@ -115,6 +122,10 @@ export interface AgentPendingAsk {
   toolCallId: string;
   prompt: string;
   kind: AgentAskUserKind;
+  apiPermission?: {
+    actionId: string;
+    operationId: string;
+  };
   defaultValue?: string;
   confirmLabel?: string;
   cancelLabel?: string;

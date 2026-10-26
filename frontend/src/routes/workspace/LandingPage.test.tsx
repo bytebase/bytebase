@@ -135,32 +135,52 @@ vi.mock("@/modules/agent/components/AgentResourcePicker", () => ({
   AgentResourcePicker: ({
     open,
     hasSelectedReference,
+    selectedProjectName,
     onSelectProject,
+    onSelectDatabase,
   }: {
     open: boolean;
     hasSelectedReference: boolean;
+    selectedProjectName?: string;
     onSelectProject: (project: { name: string; title: string }) => void;
+    onSelectDatabase: (database: { name: string; project: string }) => void;
   }) =>
     open ? (
       hasSelectedReference ? (
         <p role="status">agent.resource-picker.one-reference-per-message</p>
       ) : (
         <>
+          {!selectedProjectName && (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  onSelectProject({ name: "projects/orders", title: "Orders" })
+                }
+              >
+                Select Orders project
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  onSelectProject({ name: "projects/billing", title: "Billing" })
+                }
+              >
+                Select Billing project
+              </button>
+            </>
+          )}
           <button
             type="button"
+            data-selected-project-name={selectedProjectName}
             onClick={() =>
-              onSelectProject({ name: "projects/orders", title: "Orders" })
+              onSelectDatabase({
+                name: "instances/primary/databases/orders",
+                project: selectedProjectName ?? "projects/orders",
+              })
             }
           >
-            Select Orders project
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              onSelectProject({ name: "projects/billing", title: "Billing" })
-            }
-          >
-            Select Billing project
+            Select Orders database
           </button>
         </>
       )
@@ -415,6 +435,43 @@ describe("LandingPage", () => {
     });
   });
 
+  test("stages a Database from @ without changing workspace chat context", () => {
+    render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+
+    fireEvent.change(prompt, {
+      target: { value: "Check @", selectionStart: 7 },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Select Orders database" }));
+
+    expect(prompt).toHaveValue("Check @orders ");
+    expect(document.querySelector("[data-agent-inline-mention]")).toHaveTextContent(
+      "@orders"
+    );
+    expect(screen.getByText("agent.context: Acme workspace")).toBeVisible();
+    expect(mocks.queueUserMessage).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+    expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
+      "workspaces/acme",
+      expect.objectContaining({ path: expect.any(String) }),
+      "workspaces/acme"
+    );
+    expect(mocks.queueUserMessage).toHaveBeenCalledWith({
+      chatId: "workspace-chat",
+      text: "Check @orders",
+      page: expect.objectContaining({ path: expect.any(String) }),
+      resourceReference: {
+        kind: "database",
+        name: "instances/primary/databases/orders",
+        project: "projects/orders",
+        label: "orders",
+      },
+    });
+  });
+
   test("clears the Project reference when its inline mention is removed", () => {
     render(<LandingPage />);
     const prompt = screen.getByRole("textbox", {
@@ -530,11 +587,13 @@ describe("LandingPage", () => {
     fireEvent.change(prompt, {
       target: { value: secondTrigger, selectionStart: secondTrigger.length },
     });
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "agent.resource-picker.one-reference-per-message"
-    );
+    expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.queryByRole("button", { name: "Select Billing project" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Select Orders database" })).toHaveAttribute(
+      "data-selected-project-name",
+      "projects/orders"
+    );
     expect(prompt).toHaveValue(secondTrigger);
     expect(document.querySelector("[data-agent-inline-mention]")).toHaveTextContent(
       "@Orders"
@@ -565,6 +624,46 @@ describe("LandingPage", () => {
           project: "projects/billing",
           label: "Billing",
         },
+      })
+    );
+  });
+
+  test("allows a database reference after a Project and sends both references", () => {
+    render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+    fireEvent.change(prompt, { target: { value: "Check @", selectionStart: 7 } });
+    fireEvent.click(screen.getByRole("button", { name: "Select Orders project" }));
+
+    const databaseTrigger = "Check @Orders and @";
+    fireEvent.change(prompt, {
+      target: { value: databaseTrigger, selectionStart: databaseTrigger.length },
+    });
+    const database = screen.getByRole("button", { name: "Select Orders database" });
+    expect(database).toHaveAttribute("data-selected-project-name", "projects/orders");
+    fireEvent.click(database);
+
+    expect(prompt).toHaveValue("Check @Orders and @orders ");
+    expect(screen.getByRole("button", { name: "agent.send" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+    expect(mocks.queueUserMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        text: "Check @Orders and @orders",
+        resourceReferences: [
+          {
+            kind: "project",
+            name: "projects/orders",
+            project: "projects/orders",
+            label: "Orders",
+          },
+          {
+            kind: "database",
+            name: "instances/primary/databases/orders",
+            project: "projects/orders",
+            label: "orders",
+          },
+        ],
       })
     );
   });

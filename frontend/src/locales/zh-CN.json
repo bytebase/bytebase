@@ -28,6 +28,11 @@
       "description": "此工作区尚未配置 AI。",
       "title": "AI 未配置"
     },
+    "api-permission-allow": "仅允许一次",
+    "api-permission-deny": "拒绝",
+    "api-permission-expired": "此请求已失效。请让 AI 助手重新准备。",
+    "api-permission-request": "允许 AI 助手执行此 API 请求吗？",
+    "api-permission-title": "请求执行许可",
     "archive-all-chats": "归档所有对话",
     "archive-chat": "归档对话",
     "archived-only-chats": "查看已归档对话",
@@ -44,6 +49,7 @@
     "context-no-projects": "没有可访问的项目",
     "context-select": "选择上下文",
     "context-workspace": "工作区",
+    "database-reference-unavailable": "此数据库已不可用，或你没有访问权限。",
     "delete-all-chats": "删除所有对话",
     "delete-all-chats-confirmation": "确定要删除所有已归档对话吗？此操作无法撤销。",
     "delete-chat": "删除对话",
@@ -92,6 +98,12 @@
       "unavailable": "无法加载此项目中需要你关注的事项。"
     },
     "project-reference-unavailable": "此项目已不可用，或你没有访问权限。",
+    "query-result": {
+      "returned-rows": "返回行数：{{count}}",
+      "showing-columns": "显示 {{total}} 列中的 {{shown}} 列",
+      "showing-results": "显示 {{total}} 个结果集中的 {{shown}} 个",
+      "showing-rows": "显示返回的 {{total}} 行中的 {{shown}} 行"
+    },
     "recent-activity": {
       "checking": "正在检查最近活动...",
       "empty": "过去 3 天内没有记录到重要活动。",
@@ -105,11 +117,16 @@
     "reply": "回复",
     "resource-picker": {
       "add-context": "添加上下文",
+      "choose-project-for-databases": "选择项目以浏览数据库",
+      "databases": "数据库",
+      "load-databases-error": "无法加载数据库。",
       "load-error": "无法加载项目。",
+      "no-databases": "未找到可访问的数据库",
       "no-projects": "未找到可访问的项目",
-      "one-reference-per-message": "每条消息只能引用一个资源。如需询问其他资源，请另发一条消息。",
       "projects": "项目",
+      "reference-limit": "每条消息可引用一个项目及该项目的一个数据库。如需同时引用两者，请先选择项目。如需询问其他资源，请另发消息。",
       "retry": "重试",
+      "search-databases": "搜索数据库",
       "search-projects": "搜索项目"
     },
     "result": "结果",

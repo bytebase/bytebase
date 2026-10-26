@@ -1,4 +1,5 @@
 import { ChevronRight } from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
@@ -27,13 +28,15 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 import { getAgentAIConfigurationEnabled } from "../logic/aiConfiguration";
 import {
   formatResourceMention,
-  normalizeAgentResourceReference,
+  isResourceMentionRange,
+  normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
 import type {
   AgentAnswerEvidence,
   AgentEvidence,
   AgentEvidenceReference,
   AgentMessage,
+  AgentResourceReference,
   ToolCall,
 } from "../logic/types";
 import {
@@ -192,6 +195,57 @@ function EvidenceReferences({ evidence }: { evidence?: AgentAnswerEvidence }) {
   );
 }
 
+function renderBoundMentions(
+  content: string,
+  references: AgentResourceReference[]
+): ReactNode {
+  const labels = new Map<string, { label: string; count: number }>();
+  for (const reference of references) {
+    const mention = formatResourceMention(reference.label);
+    const existing = labels.get(mention);
+    labels.set(mention, {
+      label: reference.label,
+      count: (existing?.count ?? 0) + 1,
+    });
+  }
+
+  const ranges: { start: number; end: number }[] = [];
+  for (const [mention, { label, count }] of labels) {
+    const matches: { start: number; end: number }[] = [];
+    let from = 0;
+    while (from < content.length) {
+      const start = content.indexOf(mention, from);
+      if (start < 0) break;
+      const range = { start, end: start + mention.length };
+      if (isResourceMentionRange(content, range, label)) matches.push(range);
+      from = range.end;
+    }
+    if (matches.length === count) ranges.push(...matches);
+  }
+
+  ranges.sort((a, b) => a.start - b.start);
+  if (ranges.length === 0) return content;
+
+  const parts: ReactNode[] = [];
+  let from = 0;
+  for (const range of ranges) {
+    if (range.start < from) continue;
+    parts.push(content.slice(from, range.start));
+    parts.push(
+      <span
+        key={range.start}
+        className="font-medium text-accent"
+        data-agent-message-mention
+      >
+        {content.slice(range.start, range.end)}
+      </span>
+    );
+    from = range.end;
+  }
+  parts.push(content.slice(from));
+  return parts;
+}
+
 export function AgentChat({ className }: AgentChatProps) {
   const { t } = useTranslation();
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -300,23 +354,17 @@ export function AgentChat({ className }: AgentChatProps) {
     >
       {displayMessages.map((msg) => {
         const isPending = msg.metadata?.pending === true;
-        const reference =
+        const references =
           msg.role === "user"
-            ? normalizeAgentResourceReference(msg.metadata?.resourceReference)
-            : undefined;
+            ? normalizeAgentResourceReferences(
+                msg.metadata?.resourceReferences,
+                msg.metadata?.resourceReference
+              )
+            : [];
         const content = msg.content ?? "";
-        const mentionText = reference
-          ? formatResourceMention(reference.label)
-          : "";
-        const firstMentionIndex = mentionText
-          ? content.indexOf(mentionText)
-          : -1;
-        const mentionIndex =
-          firstMentionIndex >= 0 &&
-          content.indexOf(mentionText, firstMentionIndex + mentionText.length) <
-            0
-            ? firstMentionIndex
-            : -1;
+        const projectReference = references.find(
+          (reference) => reference.kind === "project"
+        );
         const showTimestamp =
           msg.role === "user" ||
           (msg.role === "assistant" &&
@@ -338,30 +386,18 @@ export function AgentChat({ className }: AgentChatProps) {
             {msg.role === "user" ? (
               <div className="flex flex-col items-end">
                 <div className="flex w-fit max-w-full flex-col gap-y-1 rounded-sm bg-info/10 px-3 py-2 text-sm">
-                  <span>
-                    {mentionIndex < 0 ? (
-                      content
-                    ) : (
-                      <>
-                        {content.slice(0, mentionIndex)}
-                        <span
-                          className="font-medium text-accent"
-                          data-agent-message-mention
-                        >
-                          {mentionText}
-                        </span>
-                        {content.slice(mentionIndex + mentionText.length)}
-                      </>
+                  <span>{renderBoundMentions(content, references)}</span>
+                  {projectReference &&
+                    !content.includes(
+                      formatResourceMention(projectReference.label)
+                    ) && (
+                      <span
+                        className="text-xs text-control-light"
+                        data-agent-resource-reference
+                      >
+                        {t("common.project")}: {projectReference.label}
+                      </span>
                     )}
-                  </span>
-                  {reference?.kind === "project" && firstMentionIndex < 0 && (
-                    <span
-                      className="text-xs text-control-light"
-                      data-agent-resource-reference
-                    >
-                      {t("common.project")}: {reference.label}
-                    </span>
-                  )}
                 </div>
                 {showTimestamp && timestamp}
               </div>

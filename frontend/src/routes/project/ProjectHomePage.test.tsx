@@ -151,32 +151,52 @@ vi.mock("@/modules/agent/components/AgentResourcePicker", () => ({
   AgentResourcePicker: ({
     open,
     hasSelectedReference,
+    selectedProjectName,
     onSelectProject,
+    onSelectDatabase,
   }: {
     open: boolean;
     hasSelectedReference: boolean;
+    selectedProjectName?: string;
     onSelectProject: (project: { name: string; title: string }) => void;
+    onSelectDatabase: (database: { name: string; project: string }) => void;
   }) =>
     open ? (
       hasSelectedReference ? (
         <p role="status">agent.resource-picker.one-reference-per-message</p>
       ) : (
         <>
+          {!selectedProjectName && (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  onSelectProject({ name: "projects/second", title: "Second project" })
+                }
+              >
+                Select second project
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  onSelectProject({ name: "projects/third", title: "Third project" })
+                }
+              >
+                Select third project
+              </button>
+            </>
+          )}
           <button
             type="button"
+            data-selected-project-name={selectedProjectName}
             onClick={() =>
-              onSelectProject({ name: "projects/second", title: "Second project" })
+              onSelectDatabase({
+                name: "instances/primary/databases/app",
+                project: selectedProjectName ?? "projects/orders",
+              })
             }
           >
-            Select second project
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              onSelectProject({ name: "projects/third", title: "Third project" })
-            }
-          >
-            Select third project
+            Select app database
           </button>
         </>
       )
@@ -458,6 +478,49 @@ describe("ProjectHomePage", () => {
     });
   });
 
+  test("sends an @Database reference for one turn without changing project context", () => {
+    render(<ProjectHomePage projectId="orders" />);
+    const prompt = screen.getByRole("textbox", {
+      name: "project.home.ai-placeholder",
+    });
+
+    fireEvent.change(prompt, { target: { value: "Check @", selectionStart: 7 } });
+    fireEvent.click(screen.getByRole("button", { name: "Select app database" }));
+
+    expect(prompt).toHaveValue("Check @app ");
+    expect(document.querySelector("[data-agent-inline-mention]")).toHaveTextContent(
+      "@app"
+    );
+    expect(screen.getByText("agent.context: Order service")).toBeVisible();
+    expect(mocks.queueUserMessage).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+    expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
+      "projects/orders",
+      expect.objectContaining({ path: expect.any(String) }),
+      "workspaces/demo"
+    );
+    expect(mocks.queueUserMessage).toHaveBeenCalledWith({
+      chatId: "new-chat",
+      text: "Check @app",
+      page: expect.objectContaining({ path: expect.any(String) }),
+      resourceReference: {
+        kind: "database",
+        name: "instances/primary/databases/app",
+        project: "projects/orders",
+        label: "app",
+      },
+    });
+
+    fireEvent.change(prompt, { target: { value: "Check this project next" } });
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+    expect(mocks.queueUserMessage).toHaveBeenLastCalledWith({
+      chatId: "new-chat",
+      text: "Check this project next",
+      page: expect.objectContaining({ path: expect.any(String) }),
+    });
+  });
+
   test("clears the draft and staged Project reference when the project context changes", async () => {
     const view = render(<ProjectHomePage projectId="orders" />);
     const prompt = screen.getByRole("textbox", {
@@ -559,11 +622,13 @@ describe("ProjectHomePage", () => {
     fireEvent.change(prompt, {
       target: { value: secondTrigger, selectionStart: secondTrigger.length },
     });
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "agent.resource-picker.one-reference-per-message"
-    );
+    expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.queryByRole("button", { name: "Select third project" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Select app database" })).toHaveAttribute(
+      "data-selected-project-name",
+      "projects/second"
+    );
     expect(prompt).toHaveValue(secondTrigger);
     expect(document.querySelector("[data-agent-inline-mention]")).toHaveTextContent(
       "@Second project"
@@ -594,6 +659,46 @@ describe("ProjectHomePage", () => {
           project: "projects/third",
           label: "Third project",
         },
+      })
+    );
+  });
+
+  test("allows a database reference after a Project and sends both references", () => {
+    render(<ProjectHomePage projectId="orders" />);
+    const prompt = screen.getByRole("textbox", {
+      name: "project.home.ai-placeholder",
+    });
+    fireEvent.change(prompt, { target: { value: "Compare @", selectionStart: 9 } });
+    fireEvent.click(screen.getByRole("button", { name: "Select second project" }));
+
+    const databaseTrigger = "Compare @Second project and @";
+    fireEvent.change(prompt, {
+      target: { value: databaseTrigger, selectionStart: databaseTrigger.length },
+    });
+    const database = screen.getByRole("button", { name: "Select app database" });
+    expect(database).toHaveAttribute("data-selected-project-name", "projects/second");
+    fireEvent.click(database);
+
+    expect(prompt).toHaveValue("Compare @Second project and @app ");
+    expect(screen.getByRole("button", { name: "agent.send" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+    expect(mocks.queueUserMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        text: "Compare @Second project and @app",
+        resourceReferences: [
+          {
+            kind: "project",
+            name: "projects/second",
+            project: "projects/second",
+            label: "Second project",
+          },
+          {
+            kind: "database",
+            name: "instances/primary/databases/app",
+            project: "projects/second",
+            label: "app",
+          },
+        ],
       })
     );
   });

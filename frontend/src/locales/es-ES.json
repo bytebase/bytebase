@@ -28,6 +28,11 @@
       "description": "La IA no está configurada para este espacio de trabajo.",
       "title": "IA no configurada"
     },
+    "api-permission-allow": "Permitir una vez",
+    "api-permission-deny": "Denegar",
+    "api-permission-expired": "Esta solicitud ya no está disponible. Pídele al asistente que la prepare de nuevo.",
+    "api-permission-request": "¿Permitir que el asistente ejecute esta solicitud de API?",
+    "api-permission-title": "Solicitar permiso",
     "archive-all-chats": "Archivar todos los chats",
     "archive-chat": "Archivar chat",
     "archived-only-chats": "Ver chats archivados",
@@ -44,6 +49,7 @@
     "context-no-projects": "No hay proyectos accesibles",
     "context-select": "Seleccionar contexto",
     "context-workspace": "Espacio de trabajo",
+    "database-reference-unavailable": "Esta base de datos ya no está disponible o no tienes acceso a ella.",
     "delete-all-chats": "Eliminar todos los chats",
     "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
     "delete-chat": "Eliminar chat",
@@ -92,6 +98,12 @@
       "unavailable": "No se pueden cargar los elementos que necesitan tu atención en este proyecto."
     },
     "project-reference-unavailable": "Este proyecto ya no está disponible o no tienes acceso a él.",
+    "query-result": {
+      "returned-rows": "Filas devueltas: {{count}}",
+      "showing-columns": "Mostrando {{shown}} de {{total}} columnas",
+      "showing-results": "Mostrando {{shown}} de {{total}} conjuntos de resultados",
+      "showing-rows": "Mostrando {{shown}} de {{total}} filas devueltas"
+    },
     "recent-activity": {
       "checking": "Comprobando la actividad reciente...",
       "empty": "No se registró actividad importante en los últimos 3 días.",
@@ -105,11 +117,16 @@
     "reply": "Responder",
     "resource-picker": {
       "add-context": "Añadir contexto",
+      "choose-project-for-databases": "Elige un proyecto para explorar sus bases de datos",
+      "databases": "Bases de datos",
+      "load-databases-error": "No se pudieron cargar las bases de datos.",
       "load-error": "No se pudieron cargar los proyectos.",
+      "no-databases": "No se encontraron bases de datos accesibles",
       "no-projects": "No se encontraron proyectos accesibles",
-      "one-reference-per-message": "Solo se permite una referencia por mensaje. Envía otra pregunta para consultar otro recurso.",
       "projects": "Proyectos",
+      "reference-limit": "Puedes referenciar un proyecto y una de sus bases de datos por mensaje. Para usar ambos, selecciona primero el proyecto. Pregunta por otros recursos en otro mensaje.",
       "retry": "Reintentar",
+      "search-databases": "Buscar bases de datos",
       "search-projects": "Buscar proyectos"
     },
     "result": "Resultado",
