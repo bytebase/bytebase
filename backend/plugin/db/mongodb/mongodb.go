@@ -183,23 +183,34 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if queryContext.Explain {
-		return nil, errors.New("MongoDB does not support EXPLAIN")
-	}
-
 	statement = strings.Trim(statement, " \t\n\r\f;")
+	if queryContext.Explain {
+		explained, err := base.ExplainStatement(storepb.Engine_MONGODB, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
+		if err != nil {
+			return nil, err
+		}
+		statement = explained
+	}
 	startTime := time.Now()
 
 	gmClient := gomongo.NewClient(d.client)
 	var gmOpts []gomongo.ExecuteOption
-	if queryContext.Limit > 0 {
+	// A plan is one document, and a row limit on the query it plans would
+	// change the plan rather than the reading of it.
+	if !queryContext.Explain && queryContext.Limit > 0 {
 		gmOpts = append(gmOpts, gomongo.WithMaxRows(int64(queryContext.Limit)))
 	}
 	result, err := gmClient.Execute(ctx, d.databaseName, statement, gmOpts...)
 	if err != nil {
 		return nil, err
 	}
-	return d.convertGomongoResult(result, statement, startTime), nil
+	results := d.convertGomongoResult(result, statement, startTime)
+	if !queryContext.Explain {
+		for _, r := range results {
+			r.QueryPlan = db.TypedExplainPlan(mongodbparser.DescribeExplain(statement))
+		}
+	}
+	return results, nil
 }
 
 func (*Driver) convertGomongoResult(res *gomongo.Result, statement string, startTime time.Time) []*v1pb.QueryResult {

@@ -1,0 +1,2 @@
+XN Seq Scan on venue  (cost=0.00..2.02 rows=187 width=45)
+Filter: (venueseats IS NOT NULL)

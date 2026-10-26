@@ -236,6 +236,7 @@ export const instanceV1AllowsExplain = (
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [
     Engine.MYSQL,
+    Engine.MARIADB,
     Engine.TIDB,
     Engine.CLICKHOUSE,
     Engine.COCKROACHDB,
@@ -246,7 +247,11 @@ export const instanceV1AllowsExplain = (
     Engine.REDSHIFT,
     Engine.SNOWFLAKE,
     Engine.STARROCKS,
+    Engine.DORIS,
     Engine.SPANNER,
+    Engine.TRINO,
+    Engine.OCEANBASE,
+    Engine.MONGODB,
   ].includes(engine);
 };
 

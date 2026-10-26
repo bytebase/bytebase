@@ -60,6 +60,243 @@ from its output:
 printf 'SET SHOWPLAN_XML ON;\nGO\n<statement>\nGO\n' | sqlcmd -S localhost -U sa -C -d plandb -y 0
 ```
 
+## `cockroachdb/`
+
+Not an EXPLAIN format: CockroachDB has none that returns a document. These are
+the payloads behind the diagram link `EXPLAIN (DISTSQL)` prints beside its text
+plan, decoded by the driver, captured from CockroachDB 24.3. Processors with
+the streams between them, and no estimate of any kind — the row counts are in
+the text plan, not in the link.
+
+| File | Shape it covers |
+| --- | --- |
+| `scan-filter-group.json` | A read, a filter and an aggregator in one chain |
+| `index-join.json` | A bounded index read feeding a lookup join, each naming its own table |
+| `sort-limit.json` | A top-K sorter over a read whose spans cover everything |
+
+To add one, run `EXPLAIN (DISTSQL) <query>` through the driver with
+`QueryContext{Explain: true}` and `ExplainFormat_JSON`, which is what decodes
+the link.
+
+## `mongodb/`
+
+`explain()` output from MongoDB 5, captured through the driver so each file is
+exactly what Bytebase hands the viewer. The database name in a namespace is the
+one the test container generated, which is why it reads `test_1` rather than
+anything meaningful — these are verbatim.
+
+MongoDB's planner publishes no estimate at all, so the plans carry shape and
+index usage; only `executionStats` adds numbers, and only by running the query.
+
+| File | Shape it covers |
+| --- | --- |
+| `collection-scan.json` | A `COLLSCAN` with a filter — a query with no index to use |
+| `index-scan-sort.json` | `SORT` over `FETCH` over `IXSCAN`, with the index bounds |
+| `aggregate-group.json` | An aggregation's `stages` pipeline, whose `$cursor` holds the read's own plan |
+| `measured-collection-scan.json` | `explain("executionStats")`: the same tree with rows returned and documents examined |
+
+To add one, run the statement through the driver with
+`QueryContext{Explain: true}`, or in `mongosh`:
+
+```
+db.orders.find({ total: { $gt: 880 } }).explain()
+```
+
+## `mysql/`
+
+`EXPLAIN FORMAT=JSON` output against the same schema, with
+`orders_customer_id_idx` on `orders(customer_id)` and both tables analyzed.
+MySQL 8.0 and MariaDB 11.8 put the same shape under different keys, so one
+parser reads both and the `mariadb-` files are the second dialect's.
+
+| File | Server | Shape it covers |
+| --- | --- | --- |
+| `full-scan-filter.json` | MySQL | A query block over one scan — the smallest real plan |
+| `group-sort-join.json` | MySQL | An ordering over a grouping over a two-table join |
+| `derived-table.json` | MySQL | A derived table materialized from its own query block |
+| `union-distinct.json` | MySQL | A union result over two query specifications |
+| `mariadb-sort-temporary-join.json` | MariaDB | `filesort` and `temporary_table` where MySQL says `ordering_operation` and `grouping_operation` |
+| `mariadb-block-nl-join.json` | MariaDB | `block-nl-join`, a join wrapper holding the table it buffers |
+
+To add one:
+
+```bash
+docker exec <container> mysql -uroot -p<password> <database> -N -B -r \
+  -e "EXPLAIN FORMAT=JSON <query>" > mysql/<shape>.json
+```
+
+## `starrocks/`
+
+`EXPLAIN` output from StarRocks 3.4 against the same schema. StarRocks rejects
+every JSON spelling, so its text plan is what there is. A plan is a list of
+fragments joined where one sends to another's exchange, and within a fragment
+the operators are drawn as a tree, a second input introduced by `|----` and
+drawn in a branch behind a bar.
+
+`EXPLAIN COSTS` would state a cardinality on every operator rather than on the
+scans alone, but it is a different plan from the one a plain EXPLAIN returns,
+and the editor asks for the plain one.
+
+| File | Shape it covers |
+| --- | --- |
+| `single-scan.txt` | Two fragments: a scan sending to the exchange that reads it |
+| `scan-aggregate.txt` | A partial and a final aggregate either side of an exchange |
+| `join-exchange.txt` | A join whose two inputs each arrive over their own exchange |
+| `nested-join-branch.txt` | A join drawn inside another's `|----` branch, bars and all |
+
+To add one:
+
+```bash
+docker exec <container> mysql -h127.0.0.1 -P9030 -uroot <database> -N -B -r \
+  -e "EXPLAIN <query>" > starrocks/<shape>.txt
+```
+
+## `doris/`
+
+`EXPLAIN` output from Apache Doris 3.1 against the same schema, read by the
+StarRocks parser: StarRocks forked from Doris and their plans still agree on
+the fragments and the tree. Doris rejects every JSON spelling too, so its text
+plan is what there is.
+
+What differs is how an operator spells itself. Doris prefixes the vectorized
+operators with `V`, prints its own plan node id after the name, packs an
+operator's numbers onto one line, qualifies a scanned table with its database,
+and prints the statistics it planned from under a rule of equals signs.
+
+| File | Shape it covers |
+| --- | --- |
+| `single-scan.txt` | Two fragments, and the `avgRowSize=0.0` Doris prints with no column statistics |
+| `analyzed-join.txt` | The same tables once Doris had analyzed them, so it states rows and width — and groups a standalone cardinality by thousands |
+| `scan-aggregate.txt` | A partial and a final aggregate either side of an exchange |
+| `join-exchange.txt` | A broadcast join, and the statistics that follow the operator printed last |
+
+To add one, the same client as above against a Doris frontend.
+
+## `tidb/`
+
+`EXPLAIN FORMAT=tidb_json` output from TiDB 8.5 against the same schema. TiDB
+reports no cost in this format or any other the editor can ask for, so these
+plans carry rows alone.
+
+| File | Shape it covers |
+| --- | --- |
+| `table-reader-selection.json` | A reader over a coprocessor selection over a full scan |
+| `index-hash-join.json` | A join's build and probe sides, and an index lookup's own two reads |
+| `union-hash-agg.json` | A union under a hash aggregate |
+| `measured-hash-join.json` | `EXPLAIN ANALYZE`: actual rows, and the `executeInfo` string the parser does not read timings from |
+
+To add one, `EXPLAIN FORMAT=tidb_json` through the same client as above.
+
+## `oracle/`
+
+Oracle states a plan as rows of `PLAN_TABLE`, so these are what the driver
+renders those rows as — a JSON array, one object per operator, lower-cased
+column names, columns the optimizer said nothing about left out. Captured from
+Oracle Free 23ai against the same schema, with `orders_customer_id_idx` on
+`orders(customer_id)` and the schema analyzed. Numbers arrive as strings
+because that is how the Oracle driver returns `NUMBER`.
+
+| File | Shape it covers |
+| --- | --- |
+| `full-scan-filter.json` | A statement over one full scan — the smallest real plan |
+| `hash-join-group-sort.json` | An adaptive join: a hash join beside the nested loops and statistics collector Oracle keeps as the alternative |
+| `index-range-scan.json` | A table read by rowid from an index range scan |
+| `union-distinct.json` | `UNION-ALL` under the `HASH UNIQUE` that makes it distinct |
+
+To add one, `EXPLAIN PLAN SET STATEMENT_ID = '<id>' FOR <query>` and then select
+the columns `planStepsQuery` lists (see `backend/plugin/db/oracle/oracle.go`)
+from `PLAN_TABLE` where `statement_id = '<id>'`, ordered by `id`.
+
+## `clickhouse/`
+
+`EXPLAIN json = 1, indexes = 1` output from ClickHouse 24.8 against an `orders`
+table of 50,000 rows. ClickHouse publishes no cost or row estimate in any
+EXPLAIN it offers, so these plans carry shape, descriptions and index
+accounting alone.
+
+| File | Shape it covers |
+| --- | --- |
+| `read-filter-aggregate.json` | The pipeline from a read up through an aggregate, a sort and a limit |
+| `primary-key-range.json` | A read whose primary-key index entry reports the parts and granules it kept |
+| `join-two-tables.json` | A join over a table read and a table function, which names no table |
+
+To add one:
+
+```bash
+curl -s -u default:<password> --data-binary \
+  "EXPLAIN json = 1, indexes = 1 <query> FORMAT TSVRaw" http://localhost:8123/ \
+  > clickhouse/<shape>.json
+```
+
+`FORMAT TSVRaw` matters: the HTTP interface otherwise escapes the plan's
+newlines into a TSV cell, which is not what the driver hands the viewer.
+
+## `trino/`
+
+`EXPLAIN (FORMAT JSON)` output from Trino 482 against the `tpch` connector's
+`sf1` schema, which has statistics behind it. Trino returns the fragments it
+would distribute, keyed by number, so these files are objects rather than
+trees; the parser splices them at each `RemoteSource`.
+
+| File | Shape it covers |
+| --- | --- |
+| `scan-filter-project.json` | A single fragment whose one operator fuses a scan, a filter and a projection, each with its own estimate |
+| `join-aggregate-fragments.json` | Three fragments: a partial and a final aggregate either side of a join |
+| `sort-limit.json` | Two fragments of partial top-N under a final one |
+
+To add one:
+
+```bash
+docker exec <container> trino --server localhost:8080 --catalog tpch \
+  --schema sf1 --output-format TSV --execute "EXPLAIN (FORMAT JSON) <query>"
+```
+
+The client returns it as a quoted, escaped TSV cell; unescape it before saving.
+
+## `oceanbase/`
+
+`EXPLAIN FORMAT=JSON` output from OceanBase CE 4.3 against the same schema,
+with `orders_customer_id_idx` on `orders(customer_id)`. Each operator names its
+children under `CHILD_1`, `CHILD_2`, and `EST.TIME(us)` covers an operator and
+everything below it.
+
+| File | Shape it covers |
+| --- | --- |
+| `full-scan-filter.json` | One operator — the smallest real plan |
+| `hash-join-group-sort.json` | A sort over a group-by over a two-table hash join |
+| `index-lookup.json` | A range scan, which is not a read of a whole table |
+| `union-distinct.json` | A merge union with its two branches |
+
+To add one, `EXPLAIN FORMAT=JSON <query>` through `obclient -N -B -r`.
+
+## `redshift/`
+
+Redshift's text plan, which is the only plan it publishes. Unlike every other
+directory here these were not captured by this repository: Redshift runs
+nowhere but a cluster, so the four `XN` plans are AWS's own documented output
+over the TICKIT sample schema, which the affected-rows estimator in
+`backend/plugin/db/redshift/stats.go` already pins against.
+
+`postgres-same-grammar.txt` is the exception, and the point of it. Redshift
+inherited PostgreSQL's text format and prefixed its operators with `XN`, so a
+plan captured from a real PostgreSQL 17 server exercises the same indentation,
+the same cost tuple and the same attribute lines — which is what checks the
+grammar against output a server actually produced.
+
+| File | Server | Shape it covers |
+| --- | --- | --- |
+| `hash-join-broadcast.txt` | Redshift (AWS docs) | A broadcast join over two scans, the whole plan indented one space |
+| `three-way-join.txt` | Redshift (AWS docs) | A merge join under a hash join, with both distribution strategies |
+| `hash-aggregate.txt` | Redshift (AWS docs) | An aggregate over a scan |
+| `scan-filter.txt` | Redshift (AWS docs) | One scan and its filter |
+| `postgres-same-grammar.txt` | PostgreSQL 17 | The same grammar without the `XN` prefix, captured here |
+
+To add a PostgreSQL one:
+
+```bash
+psql -At -c "EXPLAIN <query>" > redshift/<shape>.txt
+```
+
 ## `spanner/`
 
 The Spanner emulator does not plan queries, so these are production Spanner

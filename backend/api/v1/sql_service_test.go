@@ -362,10 +362,25 @@ func TestValidateExplainFormat(t *testing.T) {
 		{name: "spanner json", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_JSON},
 		{name: "spanner has no text plan", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_TEXT, wantErr: true},
 		{name: "mysql text", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_TEXT},
-		{name: "mysql json is not implemented yet", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "mysql json", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_JSON},
+		{name: "mysql has no xml plan", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_XML, wantErr: true},
+		{name: "mariadb json", engine: storepb.Engine_MARIADB, format: v1pb.QueryOption_JSON},
+		{name: "tidb json", engine: storepb.Engine_TIDB, format: v1pb.QueryOption_JSON},
+		{name: "oceanbase json", engine: storepb.Engine_OCEANBASE, format: v1pb.QueryOption_JSON},
+		{name: "oracle json", engine: storepb.Engine_ORACLE, format: v1pb.QueryOption_JSON},
 		{name: "oracle xml is not implemented yet", engine: storepb.Engine_ORACLE, format: v1pb.QueryOption_XML, wantErr: true},
+		{name: "clickhouse json", engine: storepb.Engine_CLICKHOUSE, format: v1pb.QueryOption_JSON},
+		{name: "trino json", engine: storepb.Engine_TRINO, format: v1pb.QueryOption_JSON},
+		// CockroachDB's own EXPLAIN takes no JSON — the plan the driver reads is
+		// the one encoded in the diagram EXPLAIN (DISTSQL) links to.
+		{name: "cockroachdb json", engine: storepb.Engine_COCKROACHDB, format: v1pb.QueryOption_JSON},
+		{name: "starrocks json is a syntax error on the engine", engine: storepb.Engine_STARROCKS, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "doris text", engine: storepb.Engine_DORIS, format: v1pb.QueryOption_TEXT},
+		{name: "doris json is a syntax error on the engine too", engine: storepb.Engine_DORIS, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "hive json is not implemented yet", engine: storepb.Engine_HIVE, format: v1pb.QueryOption_JSON, wantErr: true},
 		{name: "redis explains nothing at all", engine: storepb.Engine_REDIS, format: v1pb.QueryOption_TEXT, wantErr: true},
-		{name: "mongodb explains nothing at all", engine: storepb.Engine_MONGODB, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "mongodb json", engine: storepb.Engine_MONGODB, format: v1pb.QueryOption_JSON},
+		{name: "mongodb has no text plan", engine: storepb.Engine_MONGODB, format: v1pb.QueryOption_TEXT, wantErr: true},
 		// A driver that ignores the explain flag runs the statement instead, and
 		// the explain path skips the read-only validation, so an unspecified
 		// format must be refused here too rather than reaching the driver.

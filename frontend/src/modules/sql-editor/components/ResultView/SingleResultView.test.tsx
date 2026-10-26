@@ -1073,19 +1073,17 @@ describe("SingleResultView explain visualizer", () => {
     expect(runQuery).not.toHaveBeenCalled();
   });
 
-  test("keeps multi-column explain output in the result table", () => {
+  const tabularPlan = (engine: Engine, format: QueryOption_ExplainFormat) =>
     render(
       <SingleResultView
         disallowCopyingData={false}
-        params={{ ...params, engine: Engine.MYSQL, explain: true }}
-        database={databaseForEngine(Engine.MYSQL)}
+        params={{ ...params, engine, explain: true }}
+        database={databaseForEngine(engine)}
         result={create(QueryResultSchema, {
           columnNames: ["table", "type"],
           columnTypeNames: ["TEXT", "TEXT"],
           statement: "EXPLAIN SELECT * FROM t",
-          queryPlan: create(QueryResult_QueryPlanSchema, {
-            format: QueryOption_ExplainFormat.TEXT,
-          }),
+          queryPlan: create(QueryResult_QueryPlanSchema, { format }),
           rows: [
             create(QueryRowSchema, {
               values: [
@@ -1103,10 +1101,29 @@ describe("SingleResultView explain visualizer", () => {
       />
     );
 
+  test("keeps multi-column explain output in the result table", () => {
+    // Snowflake has no parser, so there is no drawable plan to fetch and the
+    // grid is all there is to show.
+    tabularPlan(Engine.SNOWFLAKE, QueryOption_ExplainFormat.TEXT);
+
     expect(screen.queryByTestId("query-plan-result")).toBeNull();
     expect(screen.getByTestId("result-table")).toHaveTextContent(
       "table,typet,ALL"
     );
+  });
+
+  test("offers a MySQL tabular plan the visualizer, in whatever format it came back", () => {
+    // A tabular EXPLAIN can be re-explained as FORMAT=JSON, so it opens the
+    // viewer with Visualize rather than staying a grid. An omitted FORMAT is
+    // unknown rather than text, and is worth the same offer.
+    for (const format of [
+      QueryOption_ExplainFormat.TEXT,
+      QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED,
+    ]) {
+      const { unmount } = tabularPlan(Engine.MYSQL, format);
+      expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+      unmount();
+    }
   });
 
   test("SQL Server multi-column SHOWPLAN_ALL still opens the visualizer", () => {

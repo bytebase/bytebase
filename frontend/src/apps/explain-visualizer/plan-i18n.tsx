@@ -23,12 +23,48 @@ const ENGLISH = {
     "The query plan is not valid XML. SHOWPLAN_XML output is expected.",
   "error.mssql-no-plan":
     "The query plan XML is not a SQL Server showplan with at least one statement.",
+  "error.clickhouse-empty":
+    "ClickHouse returned no query plan for this statement.",
+  "error.clickhouse-invalid":
+    "The query plan is not valid JSON. EXPLAIN json = 1 output is expected.",
+  "error.clickhouse-no-plan":
+    'The ClickHouse query plan JSON does not contain a "Plan" object.',
+  "error.cockroachdb-empty":
+    "CockroachDB returned no query plan for this statement.",
+  "error.cockroachdb-invalid":
+    "The query plan is not valid JSON. The diagram EXPLAIN (DISTSQL) encodes is expected.",
+  "error.cockroachdb-no-plan":
+    'The query plan JSON contains no "processors" to draw.',
+  "error.mongodb-empty": "MongoDB returned no query plan for this statement.",
+  "error.mongodb-invalid":
+    "The query plan is not valid JSON. MongoDB's explain() output is expected.",
+  "error.mongodb-no-plan":
+    'The query plan JSON has neither a "queryPlanner" nor a "stages" pipeline to draw.',
+  "error.mysql-empty": "No query plan came back for this statement.",
+  "error.mysql-invalid":
+    "The query plan is not valid JSON. EXPLAIN FORMAT=JSON output is expected.",
+  "error.mysql-no-plan":
+    'The query plan JSON does not contain a "query_block" object.',
+  "error.oceanbase-empty":
+    "OceanBase returned no query plan for this statement.",
+  "error.oceanbase-invalid":
+    "The query plan is not valid JSON. OceanBase's EXPLAIN FORMAT=JSON output is expected.",
+  "error.oceanbase-no-plan":
+    "The query plan JSON names no operator, so there is nothing to draw.",
+  "error.oracle-empty": "Oracle returned no query plan for this statement.",
+  "error.oracle-invalid":
+    "The query plan is not valid JSON. Oracle's plan table is expected, as the server renders it.",
+  "error.oracle-no-plan":
+    "The query plan has no step without a parent, so it has no operator to start from.",
   "error.postgres-empty":
     "PostgreSQL returned no query plan for this statement.",
   "error.postgres-invalid":
     "The query plan is not valid JSON. EXPLAIN (FORMAT JSON) output is expected.",
   "error.postgres-no-plan":
     'The query plan JSON does not contain a "Plan" object.',
+  "error.redshift-empty": "Redshift returned no query plan for this statement.",
+  "error.redshift-no-plan":
+    "The query plan has no operator in it: a Redshift plan states a cost for every one.",
   "error.spanner-emulator":
     "Spanner returned no query plan for this statement. The Spanner emulator returns none for any statement, so explain it on a Spanner instance to see one.",
   "error.spanner-empty": "Spanner returned no query plan for this statement.",
@@ -36,6 +72,19 @@ const ENGLISH = {
     "The query plan is not valid JSON. A Spanner query plan is expected.",
   "error.spanner-no-plan":
     'The query plan JSON does not contain a "planNodes" list with an operator at its root.',
+  "error.starrocks-empty": "The statement produced no query plan to draw.",
+  "error.starrocks-no-plan":
+    "The query plan has no numbered operator in any of its fragments.",
+  "error.tidb-empty": "TiDB returned no query plan for this statement.",
+  "error.tidb-invalid":
+    "The query plan is not valid JSON. EXPLAIN FORMAT=tidb_json output is expected.",
+  "error.tidb-no-plan":
+    "The query plan JSON does not contain an operator at its root.",
+  "error.trino-empty": "Trino returned no query plan for this statement.",
+  "error.trino-invalid":
+    "The query plan is not valid JSON. Trino's EXPLAIN (FORMAT JSON) output is expected.",
+  "error.trino-no-plan":
+    "The query plan JSON contains no plan fragment to start from.",
   "error.too-deep":
     "The query plan is nested too deeply for this visualizer to draw.",
   "error.too-many-nodes":

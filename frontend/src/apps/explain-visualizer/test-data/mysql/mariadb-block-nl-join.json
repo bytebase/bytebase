@@ -1,0 +1,39 @@
+{
+  "query_block": {
+    "select_id": 1,
+    "cost": 200622.7147,
+    "filesort": {
+      "sort_key": "o.total desc",
+      "temporary_table": {
+        "nested_loop": [
+          {
+            "table": {
+              "table_name": "c",
+              "access_type": "ALL",
+              "loops": 1,
+              "rows": 5000,
+              "cost": 0.837822,
+              "filtered": 100
+            }
+          },
+          {
+            "block-nl-join": {
+              "table": {
+                "table_name": "o",
+                "access_type": "ALL",
+                "loops": 5000,
+                "rows": 50416,
+                "cost": 23418.33104,
+                "filtered": 100
+              },
+              "buffer_type": "flat",
+              "buffer_size": "256KiB",
+              "join_type": "BNL",
+              "attached_condition": "o.`status` = c.country"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

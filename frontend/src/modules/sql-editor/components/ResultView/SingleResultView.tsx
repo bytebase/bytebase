@@ -80,7 +80,11 @@ import { DetailPanel } from "./DetailPanel";
 import { DocumentJSONView } from "./DocumentJSONView";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
-import { canReplayStatement, planAvailability } from "./planAvailability";
+import {
+  canReplayStatement,
+  isTextPlanFormat,
+  planAvailability,
+} from "./planAvailability";
 import { tableFactsLookup } from "./planTableFacts";
 import {
   type InlineQueryPlan,
@@ -532,7 +536,11 @@ function SingleResultViewInner({
   const planInResult = useMemo(() => inlineQueryPlan(result), [result]);
   const canReplay =
     isVisualizerEngine(engine) &&
-    plan?.format === QueryOption_ExplainFormat.TEXT &&
+    !!plan &&
+    // Redshift's text plan is the one the viewer draws, so there is no other
+    // format to ask the server for.
+    !planInRows &&
+    isTextPlanFormat(plan.format) &&
     !plan.executed &&
     canReplayStatement(results, resultIndex);
   // Multi-column plans (SQL Server SHOWPLAN_ALL) keep their table unless the

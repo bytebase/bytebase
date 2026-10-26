@@ -15,6 +15,20 @@ export const VISUALIZER_EXPLAIN_FORMATS = {
   [Engine.POSTGRES]: "JSON",
   [Engine.MSSQL]: "XML",
   [Engine.SPANNER]: "JSON",
+  [Engine.MYSQL]: "JSON",
+  [Engine.MARIADB]: "JSON",
+  [Engine.TIDB]: "JSON",
+  [Engine.ORACLE]: "JSON",
+  [Engine.CLICKHOUSE]: "JSON",
+  [Engine.TRINO]: "JSON",
+  [Engine.OCEANBASE]: "JSON",
+  [Engine.MONGODB]: "JSON",
+  [Engine.COCKROACHDB]: "JSON",
+  // These three publish no plan as a document; their text plan is what there
+  // is.
+  [Engine.REDSHIFT]: "TEXT",
+  [Engine.STARROCKS]: "TEXT",
+  [Engine.DORIS]: "TEXT",
 } as const;
 
 export type VisualizerEngine = keyof typeof VISUALIZER_EXPLAIN_FORMATS;

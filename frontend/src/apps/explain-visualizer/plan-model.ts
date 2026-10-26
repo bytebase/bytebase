@@ -211,6 +211,25 @@ export function planSelfCost(
 }
 
 /**
+ * What an operator that states no cost of its own carries: its children's.
+ *
+ * Engines leave the cost off an operator that adds none — MySQL states one on
+ * the query block and on each table and nothing in between, Oracle leaves it
+ * off a step like `STATISTICS COLLECTOR` — and without this the operator above
+ * would keep that subtree's cost as its own and rank ahead of the operator
+ * that really spends it. Undefined when no child states a cost either, which
+ * is a plan with no costs rather than a plan that costs nothing.
+ */
+export function planSubtreeCost(
+  children: readonly PlanNode[]
+): number | undefined {
+  const costs = children
+    .map((child) => child.totalCost)
+    .filter((cost): cost is number => cost !== undefined);
+  return costs.length ? costs.reduce((sum, cost) => sum + cost, 0) : undefined;
+}
+
+/**
  * A node's measured time minus its children's, on the same rule as
  * `planSelfCost`: the time the operator itself spent, which is what a reader
  * can act on. Ranking the cumulative number would only ever find the root.
@@ -220,6 +239,20 @@ export function planSelfTime(
   children: readonly PlanNode[]
 ): number | undefined {
   return planSelfValue(actualTime, children, (child) => child.actualTime);
+}
+
+/**
+ * A key from an engine's plan as a label: `access_predicates` and `taskType`
+ * both read "Access predicates" and "Task type". Engines that already report
+ * their keys as prose, such as PostgreSQL's "Node Type", need none of this.
+ */
+export function planLabel(key: string): string {
+  const words = key
+    .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim();
+  if (!words) return key;
+  return words[0].toUpperCase() + words.slice(1).toLowerCase();
 }
 
 /** Warning for a read of a whole table, attached by each engine's parser. */

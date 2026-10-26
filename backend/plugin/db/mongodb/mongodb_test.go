@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -459,4 +460,86 @@ func TestQueryDoubleNotation(t *testing.T) {
 	require.Equal(t,
 		`{"_id":1129063441,"name":"repro user 1","created_at":1779696815227,"updated_at":1779803079861,"current_workspace_id":585723378473606}`,
 		jsonStr)
+}
+
+// TestQueryConnExplain pins the plan the query-plan viewer draws. MongoDB asks
+// for a plan with a cursor method rather than a keyword, and only the
+// queryPlanner verbosity describes the query without running it.
+func TestQueryConnExplain(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container, database := testcontainer.NewMongoDatabase(t)
+
+	driver := &Driver{}
+	opened, err := driver.Open(ctx, storepb.Engine_MONGODB, db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:     container.GetHost(),
+			Port:     container.GetPort(),
+			Username: container.GetUsername(),
+		},
+		ConnectionContext: db.ConnectionContext{DatabaseName: database},
+		Password:          container.GetPassword(),
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { opened.Close(ctx) })
+	require.NoError(t, opened.Ping(ctx))
+
+	_, err = opened.Execute(ctx, `db.orders.insertMany([
+		{"customer_id": 1, "total": 100}, {"customer_id": 2, "total": 900}
+	]);`, db.ExecuteOptions{})
+	require.NoError(t, err)
+
+	explain := func(statement string, asExplain bool) *v1pb.QueryResult {
+		t.Helper()
+		results, err := opened.QueryConn(ctx, nil, statement, db.QueryContext{
+			Explain:              asExplain,
+			Limit:                5000,
+			MaximumSQLResultSize: 1 << 30,
+			Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+		})
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		require.Empty(t, results[0].GetError())
+		return results[0]
+	}
+	planner := func(result *v1pb.QueryResult) map[string]any {
+		t.Helper()
+		require.Len(t, result.GetRows(), 1)
+		var plan map[string]any
+		require.NoError(t, json.Unmarshal([]byte(result.GetRows()[0].GetValues()[0].GetStringValue()), &plan))
+		queryPlanner, ok := plan["queryPlanner"].(map[string]any)
+		require.True(t, ok, "no queryPlanner in %v", plan)
+		return queryPlanner
+	}
+
+	const statement = `db.orders.find({total: {$gt: 500}})`
+	plan := explain(statement, true)
+	require.Equal(t, statement+`.explain("queryPlanner")`, plan.GetStatement())
+	require.Contains(t, planner(plan), "winningPlan")
+
+	// A statement that already asks for a plan keeps its query and loses its
+	// verbosity, so an explain request never runs what it plans.
+	replanned := explain(statement+`.explain("executionStats")`, true)
+	require.Equal(t, statement+`.explain("queryPlanner")`, replanned.GetStatement())
+	require.NotContains(t, planner(replanned), "executionStats")
+
+	// Run on a statement that explains itself reports the plan it returned.
+	ran := explain(statement+`.explain()`, false)
+	require.Equal(t, v1pb.QueryOption_JSON, ran.GetQueryPlan().GetFormat())
+	require.False(t, ran.GetQueryPlan().GetExecuted())
+
+	// A measured plan runs the query, which the result has to say.
+	measured := explain(statement+`.explain("executionStats")`, false)
+	require.Equal(t, v1pb.QueryOption_JSON, measured.GetQueryPlan().GetFormat())
+	require.True(t, measured.GetQueryPlan().GetExecuted())
+
+	// An ordinary query is no plan at all.
+	require.Nil(t, explain(statement, false).GetQueryPlan())
+
+	// A write has no plan, and planning it would mean running it.
+	_, err = opened.QueryConn(ctx, nil, `db.orders.insertOne({a: 1})`, db.QueryContext{
+		Explain: true, MaximumSQLResultSize: 1 << 30,
+		Option: &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+	})
+	require.ErrorContains(t, err, "insertOne")
 }

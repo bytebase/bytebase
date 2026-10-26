@@ -1,0 +1,39 @@
+PLAN FRAGMENT 0
+  OUTPUT EXPRS:
+    id[#0]
+    customer_id[#1]
+    total[#2]
+    status[#3]
+  PARTITION: UNPARTITIONED
+
+  HAS_COLO_PLAN_NODE: false
+
+  VRESULT SINK
+     MYSQL_PROTOCAL
+
+  1:VEXCHANGE
+     offset: 0
+     distribute expr lists: id[#0]
+
+PLAN FRAGMENT 1
+
+  PARTITION: HASH_PARTITIONED: id[#0]
+
+  HAS_COLO_PLAN_NODE: false
+
+  STREAM DATA SINK
+    EXCHANGE ID: 01
+    UNPARTITIONED
+
+  0:VOlapScanNode(85)
+     TABLE: qp.orders(orders), PREAGGREGATION: ON
+     PREDICATES: (total[#2] > 880)
+     partitions=1/1 (orders)
+     tablets=2/2, tabletList=1793041799804,1793041799806
+     cardinality=1, avgRowSize=0.0, numNodes=1
+     pushAggOp=NONE
+
+
+
+========== STATISTICS ==========
+planed with unknown column statistics
