@@ -43,8 +43,10 @@ issue body is `references/issue-template.md`; the ledger format is
   only additions. The one edit allowed is putting the uploaded screenshot into
   the description of an issue created in this run. Search before creating;
   one issue per mechanism.
-- **Build**: `-tags embed_frontend` without `release`, so the dev-signed license
-  validates.
+- **Build**: `frontend/tests/e2e/build-server.sh`: `-tags embed_frontend` without
+  `release`, so the dev-signed license validates, with dev-only product switches
+  (SQL review V2) set to their release values. The suite tests what release
+  builds ship.
 - **Evidence before claims**: every class cites the attempt error line, the
   screenshot you opened and what it shows (or that the attempt has none) and,
   for SPEC-ROT or PRODUCT, a commit. A gate without pasted evidence is not
