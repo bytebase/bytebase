@@ -4,7 +4,12 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { QueryResultSchema } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  QueryResult_QueryPlanSchema,
+  QueryResultSchema,
+  QueryRowSchema,
+  RowValueSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { ResultView } from "./ResultView";
 
 const { exportData } = vi.hoisted(() => ({
@@ -85,6 +90,7 @@ vi.mock("@/utils/iam/permission", () => ({
 vi.mock("@/utils/v1/database", () => ({
   extractDatabaseResourceName: () => ({ databaseName: "main" }),
   getDatabaseProject: () => "projects/prod",
+  getInstanceResource: () => ({ engine: Engine.POSTGRES }),
 }));
 
 vi.mock("./EmptyView", () => ({
@@ -174,5 +180,60 @@ describe("ResultView", () => {
         expect.objectContaining({ container: "customers" })
       );
     });
+  });
+
+  /** A PostgreSQL plan result whose root costs `totalCost`. */
+  const planResult = (totalCost: number) =>
+    create(QueryResultSchema, {
+      statement: "SELECT 1",
+      columnNames: ["QUERY PLAN"],
+      queryPlan: create(QueryResult_QueryPlanSchema, {}),
+      rows: [
+        create(QueryRowSchema, {
+          values: [
+            create(RowValueSchema, {
+              kind: {
+                case: "stringValue",
+                value: JSON.stringify([
+                  { Plan: { "Node Type": "Seq Scan", "Total Cost": totalCost } },
+                ]),
+              },
+            }),
+          ],
+        }),
+      ],
+    });
+
+  const tabs = () => screen.getAllByRole("tab").map((tab) => tab.textContent);
+
+  test("says which of several plans is the one to read", () => {
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={{ error: "", results: [planResult(90), planResult(10)] }}
+      />
+    );
+
+    expect(tabs()[0]).toContain("90%");
+    expect(tabs()[1]).toContain("10%");
+  });
+
+  test("leaves the tabs alone when the script's whole cost is unknown", () => {
+    render(
+      <ResultView
+        executeParams={executeParams}
+        database={database}
+        resultSet={{
+          error: "",
+          results: [
+            planResult(90),
+            create(QueryResultSchema, { statement: "SELECT 2" }),
+          ],
+        }}
+      />
+    );
+
+    expect(tabs().join()).not.toContain("%");
   });
 });

@@ -9,6 +9,7 @@ import {
   type PlanWarning,
   parseWithDepthLimit,
   planSelfCost,
+  planSelfTime,
 } from "./plan-model";
 
 /**
@@ -36,6 +37,9 @@ const PROMOTED_KEYS = new Set([
   "Plan Width",
   "Parent Relationship",
   "Subplan Name",
+  "Actual Total Time",
+  "Actual Rows",
+  "Actual Loops",
 ]);
 
 export const POSTGRES_PLAN_EMPTY_MESSAGE =
@@ -66,13 +70,43 @@ function toWarnings(nodeType: string, totalCost: number): PlanWarning[] {
     : [];
 }
 
-function toNumber(value: unknown): number {
+function optionalNumber(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
+  if (typeof value === "string" && value.trim()) {
     const parsed = Number(value);
     if (Number.isFinite(parsed)) return parsed;
   }
-  return 0;
+  return undefined;
+}
+
+function toNumber(value: unknown): number {
+  return optionalNumber(value) ?? 0;
+}
+
+/**
+ * What the node really did, on a plan produced by `EXPLAIN ANALYZE`.
+ *
+ * PostgreSQL reports a measured node's time and rows as averages per
+ * execution, so both are multiplied by the executions to reach the totals the
+ * model holds. Before PostgreSQL 18 the row average is a whole number, so that
+ * product is approximate to within half the loop count. A node the planner
+ * built but never ran reports zero loops, which is a real measurement of zero
+ * rows and zero time rather than a missing one.
+ */
+function toMeasurements(raw: JsonRecord): {
+  loops?: number;
+  actualRows?: number;
+  actualTime?: number;
+} {
+  const perLoopTime = optionalNumber(raw["Actual Total Time"]);
+  const perLoopRows = optionalNumber(raw["Actual Rows"]);
+  if (perLoopTime === undefined && perLoopRows === undefined) return {};
+  const loops = optionalNumber(raw["Actual Loops"]) ?? 1;
+  return {
+    loops,
+    actualRows: perLoopRows === undefined ? undefined : perLoopRows * loops,
+    actualTime: perLoopTime === undefined ? undefined : perLoopTime * loops,
+  };
 }
 
 function formatValue(value: unknown): string {
@@ -204,6 +238,7 @@ function toPlanNode(raw: JsonRecord, id: string, depth: number): PlanNode {
   const children = toChildren(raw, id, depth);
   const nodeType = toNodeType(raw);
   const totalCost = toNumber(raw["Total Cost"]);
+  const measured = toMeasurements(raw);
   return {
     id,
     nodeType,
@@ -214,6 +249,10 @@ function toPlanNode(raw: JsonRecord, id: string, depth: number): PlanNode {
     selfCost: planSelfCost(totalCost, children),
     rows: toNumber(raw["Plan Rows"]),
     width: toNumber(raw["Plan Width"]),
+    loops: measured.loops,
+    actualRows: measured.actualRows,
+    actualTime: measured.actualTime,
+    selfTime: planSelfTime(measured.actualTime, children),
     properties: toProperties(raw),
     warnings: toWarnings(nodeType, totalCost),
     children,

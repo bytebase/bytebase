@@ -83,7 +83,11 @@ describe("QueryPlanNodeDetails", () => {
         node={node({
           warnings: [
             PLAN_FULL_TABLE_SCAN,
-            { title: "No join predicate", detail: "Every row pairs up." },
+            {
+              title: "No join predicate",
+              detail: "Every row pairs up.",
+              source: "engine",
+            },
           ],
         })}
       />
@@ -156,5 +160,83 @@ describe("QueryPlanNodeDetails", () => {
     expect(screen.getByText("Split Range").nextSibling).toHaveTextContent(
       "true"
     );
+  });
+});
+
+describe("QueryPlanNodeDetails on a measured node", () => {
+  const measured = (overrides: Partial<PlanNode> = {}): PlanNode =>
+    node({
+      rows: 100,
+      actualRows: 2500,
+      actualTime: 12.5,
+      selfTime: 4,
+      loops: 5,
+      ...overrides,
+    });
+
+  test("puts what happened beside what the planner expected", () => {
+    render(<QueryPlanNodeDetails node={measured()} />);
+
+    expect(screen.getByText("Estimated rows").nextSibling).toHaveTextContent(
+      "100"
+    );
+    expect(screen.getByText("Actual rows").nextSibling).toHaveTextContent(
+      "2,500"
+    );
+    expect(screen.getByText("Loops").nextSibling).toHaveTextContent("5");
+    expect(screen.getByText("Actual time").nextSibling).toHaveTextContent(
+      "12.5 ms"
+    );
+  });
+
+  test("does the multiplication a row misestimate needs", () => {
+    // 100 rows expected on each of 5 loops is 500, and 2,500 came back.
+    render(<QueryPlanNodeDetails node={measured()} />);
+
+    expect(
+      screen.getByTestId("plan-details-row-estimate")
+    ).toHaveTextContent("Returned 5× more rows than the planner estimated.");
+  });
+
+  test("says when far fewer rows came back than were planned", () => {
+    render(
+      <QueryPlanNodeDetails
+        node={measured({ rows: 1000, loops: 1, actualRows: 10 })}
+      />
+    );
+
+    expect(
+      screen.getByTestId("plan-details-row-estimate")
+    ).toHaveTextContent("Returned 100× fewer rows than the planner estimated.");
+  });
+
+  test("states a node that returned nothing as that, not as a multiple", () => {
+    render(
+      <QueryPlanNodeDetails
+        node={measured({ rows: 500, loops: 1, actualRows: 0 })}
+      />
+    );
+
+    expect(screen.getByTestId("plan-details-row-estimate")).toHaveTextContent(
+      "Returned no rows, where the planner expected some."
+    );
+  });
+
+  test("stays quiet about an estimate that was close enough", () => {
+    render(
+      <QueryPlanNodeDetails
+        node={measured({ rows: 100, loops: 1, actualRows: 120 })}
+      />
+    );
+
+    expect(screen.queryByTestId("plan-details-row-estimate")).toBeNull();
+  });
+
+  test("leaves the measured rows off a node that was only planned", () => {
+    render(<QueryPlanNodeDetails node={node()} />);
+
+    expect(screen.queryByText("Actual rows")).toBeNull();
+    expect(screen.queryByText("Loops")).toBeNull();
+    expect(screen.queryByTestId("plan-details-row-estimate")).toBeNull();
   });
 });

@@ -3468,6 +3468,7 @@
     "open-in-new-tab": "Abrir en nueva pestaña",
     "opened-from-link": "Abierto desde enlace",
     "pending-query": "Consulta pendiente",
+    "plan-cost-share": "{{share}} del coste estimado del script",
     "plan-estimated": "Estimado",
     "plan-view": "Plan",
     "previous-row": "Fila anterior",
@@ -3488,6 +3489,7 @@
         "select-node": "Selecciona un nodo para ver sus detalles."
       },
       "diagram": {
+        "actual-rows": "filas reales {{count}}",
         "collapse": "Contraer {{count}} nodos bajo {{node}}",
         "cost": "coste {{cost}}",
         "estimated-rows": "{{count}} filas estimadas",
@@ -3495,7 +3497,9 @@
         "fit": "Ajustar a la vista",
         "nodes-hidden": "{{count}} nodos ocultos",
         "plan-cost-share": "{{share}} del coste del plan",
+        "plan-time-share": "{{share}} del tiempo del plan",
         "rows": "filas {{count}}",
+        "time": "tiempo {{time}} ms",
         "zoom-in": "Acercar",
         "zoom-out": "Alejar"
       },
@@ -3515,12 +3519,16 @@
         "unreadable": "No se pudo leer este plan de consulta"
       },
       "grid": {
+        "actual-rows": "Filas reales",
+        "actual-rows-hint": "Filas que el operador devolvió realmente, sumando todas sus ejecuciones",
         "added-cost": "Coste añadido",
         "added-cost-hint": "Coste que este nodo añade sobre sus hijos; algunos motores también cuentan aquí las repeticiones de una entrada, como bajo un bucle anidado. La barra muestra este coste como parte del plan.",
         "caption": "Nodos del plan en el orden en que el planificador los anida, con los padres antes que los hijos.",
         "estimated-rows": "Filas estimadas",
         "node": "Nodo",
         "rows": "Filas",
+        "self-time": "Tiempo propio",
+        "self-time-hint": "Milisegundos que este nodo tardó por encima de sus hijos, sumando todas sus ejecuciones. La barra muestra ese tiempo como parte del plan.",
         "total-cost": "Coste total",
         "width": "Anchura",
         "width-hint": "Anchura estimada de la fila en bytes"
@@ -3532,23 +3540,38 @@
         "off": "Desactivado",
         "off-hint": "Dejar todas las tarjetas de nodo sin sombrear",
         "rows": "Filas",
-        "rows-hint": "Sombrear según el número estimado de filas"
+        "rows-hint": "Sombrear según el número estimado de filas",
+        "time": "Tiempo",
+        "time-hint": "Sombrear según el tiempo que un nodo tardó por encima de sus hijos"
       },
       "legend": {
         "cost": "la barra de cada tarjeta indica la parte del coste estimado del plan correspondiente a ese nodo",
-        "rows": "una arista se hace más gruesa según las filas que se estima que devolverá su nodo hijo"
+        "rows": "una arista se hace más gruesa según las filas que se estima que devolverá su nodo hijo",
+        "time": "la barra de cada tarjeta indica la parte del tiempo medido del plan correspondiente a ese nodo"
       },
       "metric": {
+        "actual-rows": "Filas reales",
+        "actual-time": "Tiempo real",
         "added-cost": "Coste añadido",
         "bytes": "{{count}} bytes",
         "estimated-rows": "Filas estimadas",
+        "loops": "Ejecuciones",
+        "milliseconds": "{{count}} ms",
         "row-width": "Anchura de fila",
+        "rows-none": "No devolvió ninguna fila, aunque el planificador esperaba algunas.",
+        "rows-over": "Devolvió {{factor}}× más filas de las que estimó el planificador.",
+        "rows-under": "Devolvió {{factor}}× menos filas de las que estimó el planificador.",
         "startup-cost": "Coste inicial",
         "total-cost": "Coste total"
       },
       "summary": {
         "costliest": "Más costosos según el coste estimado",
-        "no-added-cost": "Ningún nodo de este plan añade un coste estimado propio."
+        "no-added-cost": "Ningún nodo de este plan añade un coste estimado propio.",
+        "no-added-time": "Ningún nodo de este plan consumió un tiempo propio medible.",
+        "no-ranking": "Este plan no indica coste ni tiempo, así que sus operadores no se pueden ordenar.",
+        "slowest-measured": "Más lentos según el tiempo medido",
+        "warning-operators": "{{count}} operadores",
+        "warnings": "Avisos"
       },
       "tab": {
         "diagram": "Diagrama",
@@ -3557,6 +3580,7 @@
       },
       "totals": {
         "estimated-cost": "coste estimado {{cost}}",
+        "measured-time": "tiempo medido {{time}} ms",
         "nodes": "{{count}} nodos"
       }
     },

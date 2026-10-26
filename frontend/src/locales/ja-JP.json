@@ -3468,6 +3468,7 @@
     "open-in-new-tab": "新しいタブで開く",
     "opened-from-link": "リンクから開く",
     "pending-query": "保留中のクエリ",
+    "plan-cost-share": "スクリプト全体の推定コストの {{share}}",
     "plan-estimated": "推定",
     "plan-view": "プラン",
     "previous-row": "前の行",
@@ -3488,6 +3489,7 @@
         "select-node": "詳細を表示するノードを選択してください。"
       },
       "diagram": {
+        "actual-rows": "実測 {{count}} 行",
         "collapse": "{{node}} 配下の {{count}} ノードを折りたたむ",
         "cost": "コスト {{cost}}",
         "estimated-rows": "推定 {{count}} 行",
@@ -3495,7 +3497,9 @@
         "fit": "全体を表示",
         "nodes-hidden": "{{count}} ノードを非表示",
         "plan-cost-share": "プランコストの {{share}}",
+        "plan-time-share": "プラン実行時間の {{share}}",
         "rows": "行数 {{count}}",
+        "time": "時間 {{time}} ms",
         "zoom-in": "拡大",
         "zoom-out": "縮小"
       },
@@ -3515,12 +3519,16 @@
         "unreadable": "このクエリプランを読み取れませんでした"
       },
       "grid": {
+        "actual-rows": "実測行数",
+        "actual-rows-hint": "この演算子が実際に返した行数（全実行回数の合計）",
         "added-cost": "追加コスト",
         "added-cost-hint": "このノードが子ノードに加えて追加するコストです。一部のエンジンでは、ネストループ配下などで入力の反復実行もここに含めます。バーはプラン全体に占めるこのコストの割合です。",
         "caption": "プランナーが入れ子にする順序で並べたプランノードです。親が子より先に表示されます。",
         "estimated-rows": "推定行数",
         "node": "ノード",
         "rows": "行数",
+        "self-time": "自ノード時間",
+        "self-time-hint": "このノードが子ノードに加えて要した時間（ミリ秒、全実行回数の合計）です。バーはプラン全体に占めるこの時間の割合です。",
         "total-cost": "総コスト",
         "width": "幅",
         "width-hint": "推定行幅（バイト）"
@@ -3532,23 +3540,38 @@
         "off": "オフ",
         "off-hint": "すべてのノードカードを色付けしない",
         "rows": "行数",
-        "rows-hint": "推定行数で色付け"
+        "rows-hint": "推定行数で色付け",
+        "time": "時間",
+        "time-hint": "ノードが子ノードに加えて要した時間で色付け"
       },
       "legend": {
         "cost": "各カードのバーは、そのノードがプランの推定コストに占める割合を示します",
-        "rows": "子ノードが返すと推定される行数に応じてエッジが太くなります"
+        "rows": "子ノードが返すと推定される行数に応じてエッジが太くなります",
+        "time": "各カードのバーは、そのノードがプランの実測時間に占める割合を示します"
       },
       "metric": {
+        "actual-rows": "実測行数",
+        "actual-time": "実測時間",
         "added-cost": "追加コスト",
         "bytes": "{{count}} バイト",
         "estimated-rows": "推定行数",
+        "loops": "実行回数",
+        "milliseconds": "{{count}} ms",
         "row-width": "行幅",
+        "rows-none": "プランナーは行を見込んでいましたが、1 行も返しませんでした。",
+        "rows-over": "プランナーの推定より {{factor}} 倍多い行を返しました。",
+        "rows-under": "プランナーの推定の {{factor}} 分の 1 の行しか返しませんでした。",
         "startup-cost": "開始コスト",
         "total-cost": "総コスト"
       },
       "summary": {
         "costliest": "推定コストの高い順",
-        "no-added-cost": "このプランには固有の推定コストを追加するノードがありません。"
+        "no-added-cost": "このプランには固有の推定コストを追加するノードがありません。",
+        "no-added-time": "このプランには固有の実測時間があるノードがありません。",
+        "no-ranking": "このプランはコストも時間も報告しないため、演算子を順位付けできません。",
+        "slowest-measured": "実測時間の長い順",
+        "warning-operators": "{{count}} 個の演算子",
+        "warnings": "警告"
       },
       "tab": {
         "diagram": "ダイアグラム",
@@ -3557,6 +3580,7 @@
       },
       "totals": {
         "estimated-cost": "推定コスト {{cost}}",
+        "measured-time": "実測時間 {{time}} ms",
         "nodes": "{{count}} ノード"
       }
     },

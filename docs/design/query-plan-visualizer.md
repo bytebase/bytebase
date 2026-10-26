@@ -341,6 +341,14 @@ A plan opened from a result is always an estimate, on every engine. Measured
 plans come from a typed `EXPLAIN ANALYZE` or its engine's equivalent, which is a
 deliberate act (§3.1).
 
+**What a measured plan is read for.** PostgreSQL reports a node's time and rows
+as averages over its executions, so both are multiplied out to totals before
+anything is ranked or compared. SQL Server's actual plan is read for rows alone:
+`ActualElapsedms` is cumulative on a row-mode operator but per operator on a
+batch-mode one, so a single plan can mean both and a ranking built on it would
+be wrong for half of it. Those plans rank by the estimated cost they always
+carry, with estimated and actual rows side by side on each node.
+
 **It explains the statement that ran, limits included.** The driver wraps an
 ordinary query with the result limit but skips that wrapper on the explain path
 (`pg.go:801-809`), so explaining the original text would plan an unbounded query
@@ -516,7 +524,7 @@ live servers, September 2026.
 
 ## 6. Status
 
-Checked against `main` on 2026-10-23, after [#21652](https://github.com/bytebase/bytebase/pull/21652), plus the §3.1 branch below.
+Checked against `main` on 2026-10-26, after [#21652](https://github.com/bytebase/bytebase/pull/21652), plus the §3.1 and §3.3 work on the branch below.
 
 **Landed**
 
@@ -552,8 +560,7 @@ Checked against `main` on 2026-10-23, after [#21652](https://github.com/bytebase
   operator; three tabs (Diagram, Table, Text) instead of five; the costliest
   operators ranked in the side panel; the legend on hover; the pop-up page
   deleted ([#21652](https://github.com/bytebase/bytebase/pull/21652)). The
-  ranking and the opening view use estimated cost and say so; ranking a
-  measured plan by measured time waits for measured plans, item 1 below.
+  ranking and the opening view use estimated cost and say so.
 
 - §3.1 — Explain at the top of Run's dropdown, on the statement as written,
   disabled with the reason without `bb.sql.explain`; it, `Ctrl/Cmd+E` and
@@ -562,7 +569,19 @@ Checked against `main` on 2026-10-23, after [#21652](https://github.com/bytebase
   explain, and there is no Explain analyze action; measured plans come from a
   typed `EXPLAIN ANALYZE`. §3.1 is closed.
 
+- §3.3 — the rest of the reading changes. A measured plan is ranked by the time
+  each operator spent — its own total less its children's — and says that is
+  what it ranked; the shading, the node cards and the table follow the same
+  number, and a plan reporting neither cost nor time says why it ranks nothing.
+  Planned and actual rows sit together on a node, with the misestimate spelled
+  out as a multiple once it is worth a line. One of Bytebase's own scan
+  heuristics reaches the summary panel only where the operator is a tenth of
+  the plan, while a diagnostic the engine itself reports always does, grouped
+  by warning and never removed from node details. A run that planned every
+  statement puts each statement's share of the script's estimated cost on its
+  result tab.
+
 **Not yet, in the order to do them**
 
-1. §3.3 — the rest of the reading changes: warning relevance, measured plans
-   with planned vs actual rows, cost share on the tab label.
+1. §3.3 — the node that names a table Bytebase already knows: its indexes and
+   row count on the node, which no standalone viewer can show.

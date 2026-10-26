@@ -21,7 +21,7 @@ import {
   findPlanNode,
   formatPlanCost,
   formatPlanCount,
-  type PlanEstimates,
+  formatPlanDuration,
   type PlanHighlightMode,
   type PlanNode,
   type PlanTree,
@@ -51,8 +51,8 @@ interface HighlightOption {
   readonly value: PlanHighlightMode;
   readonly label: QueryPlanTranslationKey;
   readonly hint: QueryPlanTranslationKey;
-  /** Whether a plan carries the estimate the option shades by. */
-  readonly available: (estimates: PlanEstimates) => boolean;
+  /** Whether a plan carries the number the option shades by. */
+  readonly available: (tree: PlanTree) => boolean;
 }
 
 const HIGHLIGHT_OPTIONS: readonly HighlightOption[] = [
@@ -63,18 +63,26 @@ const HIGHLIGHT_OPTIONS: readonly HighlightOption[] = [
     available: () => true,
   },
   {
+    // First where a plan has it: a measurement beats an estimate of the same
+    // thing, which is why the ranking goes by it too.
+    value: "time",
+    label: "highlight.time",
+    hint: "highlight.time-hint",
+    available: (tree) => tree.measured.time,
+  },
+  {
     value: "cost",
     label: "highlight.cost",
     // Total cost is cumulative, so shading by it would always make the root
     // darkest. Self cost is what the node adds on top of its children.
     hint: "highlight.cost-hint",
-    available: (estimates) => estimates.cost,
+    available: (tree) => tree.estimates.cost,
   },
   {
     value: "rows",
     label: "highlight.rows",
     hint: "highlight.rows-hint",
-    available: (estimates) => estimates.rows,
+    available: (tree) => tree.estimates.rows,
   },
 ];
 
@@ -130,6 +138,11 @@ function PlanTotalsLine({ tree, legend }: { tree: PlanTree; legend?: string }) {
         translate("totals.nodes", {
           count: formatPlanCount(tree.nodes.length),
         }),
+        tree.measured.time
+          ? translate("totals.measured-time", {
+              time: formatPlanDuration(tree.root.actualTime),
+            })
+          : undefined,
         tree.estimates.cost
           ? translate("totals.estimated-cost", {
               cost: formatPlanCost(tree.root.totalCost),
@@ -154,14 +167,19 @@ function PlanTotalsLine({ tree, legend }: { tree: PlanTree; legend?: string }) {
   );
 }
 
-/** What the diagram's bars and edge widths encode, for the estimates it has. */
+/** What the diagram's bars and edge widths encode, for the numbers it has. */
 function diagramLegend(
-  estimates: PlanEstimates,
+  tree: PlanTree,
   translate: QueryPlanTranslate
 ): string | undefined {
+  const bar = tree.measured.time
+    ? translate("legend.time")
+    : tree.estimates.cost
+      ? translate("legend.cost")
+      : undefined;
   const parts = [
-    estimates.cost ? translate("legend.cost") : undefined,
-    estimates.rows ? translate("legend.rows") : undefined,
+    bar,
+    tree.estimates.rows ? translate("legend.rows") : undefined,
   ].filter(Boolean);
   if (parts.length === 0) return undefined;
   const sentence = `${parts.join("; ")}.`;
@@ -349,9 +367,9 @@ export function QueryPlanViewer({
   const selectedNode = findPlanNode(tree, selectedId);
   const stacked = useMediaQuery(STACK_QUERY);
   const highlightOptions = HIGHLIGHT_OPTIONS.filter((option) =>
-    option.available(tree.estimates)
+    option.available(tree)
   );
-  const legend = diagramLegend(tree.estimates, translate);
+  const legend = diagramLegend(tree, translate);
 
   const selectNode = useCallback(
     (id: string) => {
@@ -379,8 +397,9 @@ export function QueryPlanViewer({
 
   const onRevealed = useCallback(() => setRevealId(undefined), []);
 
-  // Choosing a ranked operator also brings it into view on the diagram.
-  const summary = tree.estimates.cost ? (
+  // Choosing a ranked operator or a warning also brings it into view on the
+  // diagram. The panel draws nothing when the plan has neither.
+  const summary = (
     <QueryPlanSummary
       tree={tree}
       selectedId={selectedId}
@@ -389,7 +408,7 @@ export function QueryPlanViewer({
         if (tab === "diagram") setRevealId(id);
       }}
     />
-  ) : null;
+  );
 
   return (
     <Tabs

@@ -290,3 +290,118 @@ describe("parsePostgresPlan", () => {
     expect(warningsOf({ "Node Type": "Bitmap Heap Scan" })).toEqual([]);
   });
 });
+
+describe("parsePostgresPlan on a measured plan", () => {
+  // EXPLAIN (ANALYZE, FORMAT JSON) over a nested loop: PostgreSQL reports the
+  // inner side's time and rows as averages over its four executions.
+  const nestedLoopAnalyze = [
+    {
+      Plan: {
+        "Node Type": "Nested Loop",
+        "Join Type": "Inner",
+        "Startup Cost": 0.29,
+        "Total Cost": 48.46,
+        "Plan Rows": 10,
+        "Plan Width": 36,
+        "Actual Startup Time": 0.032,
+        "Actual Total Time": 1.234,
+        "Actual Rows": 12,
+        "Actual Loops": 1,
+        Plans: [
+          {
+            "Node Type": "Seq Scan",
+            "Parent Relationship": "Outer",
+            "Relation Name": "customers",
+            "Startup Cost": 0,
+            "Total Cost": 11.4,
+            "Plan Rows": 4,
+            "Plan Width": 20,
+            "Actual Total Time": 0.02,
+            "Actual Rows": 4,
+            "Actual Loops": 1,
+          },
+          {
+            "Node Type": "Index Scan",
+            "Parent Relationship": "Inner",
+            "Index Name": "orders_customer_id_idx",
+            "Relation Name": "orders",
+            "Startup Cost": 0.29,
+            "Total Cost": 9.2,
+            "Plan Rows": 3,
+            "Plan Width": 16,
+            "Actual Total Time": 0.25,
+            "Actual Rows": 3,
+            "Actual Loops": 4,
+          },
+        ],
+      },
+      "Execution Time": 1.3,
+    },
+  ];
+
+  test("multiplies an average over the executions it was averaged over", () => {
+    const { nodes } = parseFixture(nestedLoopAnalyze);
+    const inner = nodes[2];
+
+    expect(inner.nodeType).toBe("Index Scan");
+    expect(inner.loops).toBe(4);
+    expect(inner.actualRows).toBe(12);
+    expect(inner.actualTime).toBe(1);
+    // Nothing below it, so all of that time is its own.
+    expect(inner.selfTime).toBe(1);
+  });
+
+  test("leaves the parent only the time its children did not account for", () => {
+    const { root, measured, timeBasis } = parseFixture(nestedLoopAnalyze);
+
+    expect(root.actualTime).toBe(1.234);
+    expect(root.selfTime).toBeCloseTo(0.214);
+    expect(measured).toEqual({ time: true, rows: true });
+    expect(timeBasis).toBe(1.234);
+  });
+
+  test("records a node the planner built and never ran as a measured zero", () => {
+    const { nodes } = parseFixture([
+      {
+        Plan: {
+          "Node Type": "Nested Loop",
+          "Actual Total Time": 0.5,
+          "Actual Rows": 0,
+          "Actual Loops": 1,
+          Plans: [
+            {
+              "Node Type": "Seq Scan",
+              "Relation Name": "orders",
+              "Plan Rows": 100,
+              "Actual Total Time": 0,
+              "Actual Rows": 0,
+              "Actual Loops": 0,
+            },
+          ],
+        },
+      },
+    ]);
+
+    expect(nodes[1].loops).toBe(0);
+    expect(nodes[1].actualRows).toBe(0);
+    expect(nodes[1].actualTime).toBe(0);
+  });
+
+  test("keeps the measurements out of the property list, bar the ones it does not model", () => {
+    const { root } = parseFixture(nestedLoopAnalyze);
+
+    expect(propertyValue(root, "Actual Rows")).toBeUndefined();
+    expect(propertyValue(root, "Actual Total Time")).toBeUndefined();
+    expect(propertyValue(root, "Actual Loops")).toBeUndefined();
+    expect(propertyValue(root, "Actual Startup Time")).toBe("0.032");
+  });
+
+  test("leaves an estimate-only plan unmeasured", () => {
+    const { root, measured } = parseFixture(seqScanFilter);
+
+    expect(measured).toEqual({ time: false, rows: false });
+    expect(root.actualRows).toBeUndefined();
+    expect(root.selfTime).toBeUndefined();
+    expect(root.loops).toBeUndefined();
+  });
+});

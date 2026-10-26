@@ -1,8 +1,39 @@
 import { Alert } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { type QueryPlanTranslate, useQueryPlanTranslation } from "./plan-i18n";
-import { formatPlanCost, formatPlanCount, type PlanNode } from "./plan-model";
+import {
+  formatPlanCost,
+  formatPlanCount,
+  formatPlanDuration,
+  PLAN_ROW_ESTIMATE_NOTABLE_FACTOR,
+  type PlanNode,
+  planRowEstimateFactor,
+} from "./plan-model";
 import { PlanMetric } from "./plan-shared";
+
+/**
+ * How far the row estimate was out, in words, or undefined when it was close
+ * enough not to be worth a line.
+ */
+function rowEstimateNote(
+  node: PlanNode,
+  translate: QueryPlanTranslate
+): string | undefined {
+  const factor = planRowEstimateFactor(node);
+  if (factor === undefined) return undefined;
+  // A node that returned nothing has no multiple to state, and "∞× fewer" is
+  // not a number a reader can do anything with.
+  if (factor === 0) return translate("metric.rows-none");
+  if (factor >= PLAN_ROW_ESTIMATE_NOTABLE_FACTOR) {
+    return translate("metric.rows-over", { factor: formatPlanCount(factor) });
+  }
+  if (factor <= 1 / PLAN_ROW_ESTIMATE_NOTABLE_FACTOR) {
+    return translate("metric.rows-under", {
+      factor: formatPlanCount(1 / factor),
+    });
+  }
+  return undefined;
+}
 
 interface Props {
   readonly node: PlanNode | undefined;
@@ -35,6 +66,22 @@ function nodeMetrics(
       format: formatPlanCount,
     },
     {
+      label: translate("metric.actual-rows"),
+      value: node.actualRows,
+      format: formatPlanCount,
+    },
+    {
+      label: translate("metric.loops"),
+      value: node.loops,
+      format: formatPlanCount,
+    },
+    {
+      label: translate("metric.actual-time"),
+      value: node.actualTime,
+      format: (time: number) =>
+        translate("metric.milliseconds", { count: formatPlanDuration(time) }),
+    },
+    {
       label: translate("metric.row-width"),
       value: node.width,
       format: (width: number) =>
@@ -56,6 +103,7 @@ export function QueryPlanNodeDetails({ node }: Props) {
   }
 
   const metrics = nodeMetrics(node, translate);
+  const rowEstimate = rowEstimateNote(node, translate);
 
   return (
     <div className="flex flex-col gap-4">
@@ -102,6 +150,14 @@ export function QueryPlanNodeDetails({ node }: Props) {
               />
             ))}
           </dl>
+          {rowEstimate ? (
+            <p
+              data-testid="plan-details-row-estimate"
+              className="text-xs leading-4 text-control"
+            >
+              {rowEstimate}
+            </p>
+          ) : null}
         </>
       ) : null}
 

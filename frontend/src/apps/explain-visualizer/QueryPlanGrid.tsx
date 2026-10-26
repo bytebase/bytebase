@@ -13,10 +13,13 @@ import { planIndentPixels, planIndentStep } from "./plan-layout";
 import {
   formatPlanCost,
   formatPlanCount,
+  formatPlanDuration,
   type PlanRow,
   type PlanTree,
+  planHasSelfMetric,
+  planRankMetric,
   planRows,
-  planSelfCostShare,
+  planSelfShare,
 } from "./plan-model";
 import { PlanCostShareBar, SECONDARY_COLUMN_CLASS } from "./plan-shared";
 
@@ -170,27 +173,34 @@ const PlanGridRow = memo(function PlanGridRow({
         </div>
       </TableCell>
 
+      {planHasSelfMetric(tree) ? (
+        <TableCell className="py-2 pr-4 pl-2">
+          <div className="flex items-center justify-end gap-2">
+            <PlanCostShareBar
+              share={planSelfShare(node, tree)}
+              className="w-10 shrink-0 sm:w-16"
+            />
+            <span className="text-xs leading-4 text-main tabular-nums">
+              {planRankMetric(tree) === "time"
+                ? formatPlanDuration(node.selfTime)
+                : formatPlanCost(node.selfCost)}
+            </span>
+          </div>
+        </TableCell>
+      ) : null}
       {tree.estimates.cost ? (
-        <>
-          <TableCell className="py-2 pr-4 pl-2">
-            <div className="flex items-center justify-end gap-2">
-              <PlanCostShareBar
-                share={planSelfCostShare(node, tree)}
-                className="w-10 shrink-0 sm:w-16"
-              />
-              <span className="text-xs leading-4 text-main tabular-nums">
-                {formatPlanCost(node.selfCost)}
-              </span>
-            </div>
-          </TableCell>
-          <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
-            {formatPlanCost(node.totalCost)}
-          </TableCell>
-        </>
+        <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
+          {formatPlanCost(node.totalCost)}
+        </TableCell>
       ) : null}
       {tree.estimates.rows ? (
         <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
           {formatPlanCount(node.rows)}
+        </TableCell>
+      ) : null}
+      {tree.measured.rows ? (
+        <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
+          {formatPlanCount(node.actualRows)}
         </TableCell>
       ) : null}
       {tree.estimates.width ? (
@@ -204,6 +214,7 @@ const PlanGridRow = memo(function PlanGridRow({
 
 export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
   const translate = useQueryPlanTranslation();
+  const measured = planRankMetric(tree) === "time";
   const rows = useMemo(() => planRows(tree.root), [tree]);
   const step = useMemo(
     () => planIndentStep(Math.max(0, ...rows.map((row) => row.depth))),
@@ -279,24 +290,26 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
             <TableHead className={HEAD_CLASS}>
               {translate("grid.node")}
             </TableHead>
+            {planHasSelfMetric(tree) ? (
+              <TableHead
+                className={cn(HEAD_CLASS, "w-32 pl-2 text-right sm:w-48")}
+                title={translate(
+                  measured ? "grid.self-time-hint" : "grid.added-cost-hint"
+                )}
+              >
+                {translate(measured ? "grid.self-time" : "grid.added-cost")}
+              </TableHead>
+            ) : null}
             {tree.estimates.cost ? (
-              <>
-                <TableHead
-                  className={cn(HEAD_CLASS, "w-32 pl-2 text-right sm:w-48")}
-                  title={translate("grid.added-cost-hint")}
-                >
-                  {translate("grid.added-cost")}
-                </TableHead>
-                <TableHead
-                  className={cn(
-                    HEAD_CLASS,
-                    SECONDARY_COLUMN_CLASS,
-                    "text-right sm:w-28"
-                  )}
-                >
-                  {translate("grid.total-cost")}
-                </TableHead>
-              </>
+              <TableHead
+                className={cn(
+                  HEAD_CLASS,
+                  SECONDARY_COLUMN_CLASS,
+                  "text-right sm:w-28"
+                )}
+              >
+                {translate("grid.total-cost")}
+              </TableHead>
             ) : null}
             {tree.estimates.rows ? (
               <TableHead
@@ -308,6 +321,18 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
                 title={translate("grid.estimated-rows")}
               >
                 {translate("grid.rows")}
+              </TableHead>
+            ) : null}
+            {tree.measured.rows ? (
+              <TableHead
+                className={cn(
+                  HEAD_CLASS,
+                  SECONDARY_COLUMN_CLASS,
+                  "text-right sm:w-24"
+                )}
+                title={translate("grid.actual-rows-hint")}
+              >
+                {translate("grid.actual-rows")}
               </TableHead>
             ) : null}
             {tree.estimates.width ? (
