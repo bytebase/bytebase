@@ -218,14 +218,26 @@ vi.mock("@/utils/v1/instance", () => ({
     engine === Engine.POSTGRES || engine === Engine.MYSQL,
 }));
 
-vi.mock("@/stores/app", () => ({
-  useAppStore: {
-    getState: () => ({}),
-  },
-}));
+vi.mock("@/stores/app", () => {
+  // Zustand's hook is called with a selector and also carries getState. The
+  // plan view reads the database's synced metadata through it; an empty
+  // catalog is what a test that has not set one up should see.
+  const state = {
+    getDatabaseMetadata: () => ({ schemas: [] }),
+    getOrFetchDatabaseMetadata: async () => undefined,
+    metadataByName: {},
+  };
+  const useAppStore = (selector?: (s: typeof state) => unknown) =>
+    selector ? selector(state) : state;
+  useAppStore.getState = () => state;
+  return { useAppStore };
+});
 
 vi.mock("@/utils/util", () => ({
   isNullOrUndefined: (value: unknown) => value === null || value === undefined,
+  // Reached through the app store, which the plan view reads the database's
+  // synced metadata from.
+  isDev: () => false,
 }));
 
 vi.mock("@/utils/v1/database", () => ({

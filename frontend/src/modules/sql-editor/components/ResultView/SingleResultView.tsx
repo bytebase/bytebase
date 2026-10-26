@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useAppDatabaseMetadata } from "@/hooks/useAppDatabaseMetadata";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
@@ -76,6 +77,7 @@ import { DocumentJSONView } from "./DocumentJSONView";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
 import { canReplayStatement, planAvailability } from "./planAvailability";
+import { tableFactsLookup } from "./planTableFacts";
 import {
   type InlineQueryPlan,
   QueryPlanResultView,
@@ -503,6 +505,17 @@ function SingleResultViewInner({
     [flattenedTableView, result.masked]
   );
 
+  // The editor's panels already fetch this database's metadata, so the plan
+  // reads that cache rather than asking for it again; without it a node simply
+  // says nothing about its table.
+  const databaseMetadata = useAppDatabaseMetadata(database.name, {
+    autoFetch: false,
+  });
+  const describeTable = useMemo(
+    () => tableFactsLookup(databaseMetadata),
+    [databaseMetadata]
+  );
+
   const plan = result.queryPlan;
   const planInRows =
     isVisualizerEngine(engine) &&
@@ -612,6 +625,7 @@ function SingleResultViewInner({
               rawPlan={planInResult?.source ?? ""}
               initialPlan={planInRows ? planInResult : undefined}
               engine={isVisualizerEngine(engine) ? engine : undefined}
+              describeTable={describeTable}
               loadPlan={canReplay ? loadPlan : undefined}
               disallowCopyingData={disallowCopyingData}
             />
@@ -788,6 +802,7 @@ function SingleResultViewInner({
                 rawPlan=""
                 initialPlan={resultPlan}
                 engine={isVisualizerEngine(engine) ? engine : undefined}
+                describeTable={describeTable}
                 loadPlan={loadResultPlan}
                 estimated
                 onCancel={() => setLayout("TABLE")}

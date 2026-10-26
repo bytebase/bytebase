@@ -3578,6 +3578,14 @@
         "grid": "テーブル",
         "text": "テキスト"
       },
+      "table": {
+        "heading": "テーブル",
+        "indexes": "インデックス",
+        "no-indexes": "このテーブルにはインデックスがありません。",
+        "primary": "主キー",
+        "rows": "前回の同期時点で {{count}} 行",
+        "unique": "一意"
+      },
       "totals": {
         "estimated-cost": "推定コスト {{cost}}",
         "measured-time": "実測時間 {{time}} ms",

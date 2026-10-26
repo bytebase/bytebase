@@ -3578,6 +3578,14 @@
         "grid": "Table",
         "text": "Text"
       },
+      "table": {
+        "heading": "Table",
+        "indexes": "Indexes",
+        "no-indexes": "No indexes on this table.",
+        "primary": "primary",
+        "rows": "{{count}} rows at the last sync",
+        "unique": "unique"
+      },
       "totals": {
         "estimated-cost": "estimated cost {{cost}}",
         "measured-time": "measured time {{time}} ms",

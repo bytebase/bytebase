@@ -7,6 +7,8 @@ import {
   formatPlanDuration,
   PLAN_ROW_ESTIMATE_NOTABLE_FACTOR,
   type PlanNode,
+  type PlanTableFacts,
+  type PlanTableIndex,
   planRowEstimateFactor,
 } from "./plan-model";
 import { PlanMetric } from "./plan-shared";
@@ -37,6 +39,67 @@ function rowEstimateNote(
 
 interface Props {
   readonly node: PlanNode | undefined;
+  /** What Bytebase knows about the table this node reads, where it reads one. */
+  readonly table?: PlanTableFacts;
+}
+
+/** What marks an index out, where anything does. */
+function indexFlag(
+  index: PlanTableIndex,
+  translate: QueryPlanTranslate
+): string | undefined {
+  if (index.primary) return translate("table.primary");
+  if (index.unique) return translate("table.unique");
+  return undefined;
+}
+
+/**
+ * The table an operator reads, as Bytebase last synced it: how big it is and
+ * what indexes it already has, which is the difference between "this scan is
+ * expensive" and knowing what to do about it.
+ */
+function TableFacts({ table }: { table: PlanTableFacts }) {
+  const translate = useQueryPlanTranslation();
+  return (
+    <section data-testid="plan-details-table" className="flex flex-col gap-2">
+      <h3 className="text-xs leading-4 text-control-light">
+        {translate("table.heading")}
+      </h3>
+      {table.rowCount === undefined ? null : (
+        <p className="text-sm leading-5 text-main tabular-nums">
+          {translate("table.rows", {
+            count: formatPlanCount(table.rowCount),
+          })}
+        </p>
+      )}
+      {table.indexes.length === 0 ? (
+        <p className="text-sm leading-5 text-control-light">
+          {translate("table.no-indexes")}
+        </p>
+      ) : (
+        <>
+          <h4 className="text-xs leading-4 text-control-light">
+            {translate("table.indexes")}
+          </h4>
+          <ul className="flex flex-col gap-2">
+            {table.indexes.map((index) => {
+              const flag = indexFlag(index, translate);
+              return (
+                <li key={index.name} className="flex flex-col">
+                  <span className="truncate text-sm leading-5 text-main">
+                    {flag ? `${index.name} · ${flag}` : index.name}
+                  </span>
+                  <span className="font-mono text-xs leading-4 break-words text-control-light">
+                    {index.columns}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+    </section>
+  );
 }
 
 /** The node's estimates as labelled values, leaving out any it does not have. */
@@ -92,7 +155,7 @@ function nodeMetrics(
   );
 }
 
-export function QueryPlanNodeDetails({ node }: Props) {
+export function QueryPlanNodeDetails({ node, table }: Props) {
   const translate = useQueryPlanTranslation();
   if (!node) {
     return (
@@ -158,6 +221,13 @@ export function QueryPlanNodeDetails({ node }: Props) {
               {rowEstimate}
             </p>
           ) : null}
+        </>
+      ) : null}
+
+      {table ? (
+        <>
+          <Separator />
+          <TableFacts table={table} />
         </>
       ) : null}
 

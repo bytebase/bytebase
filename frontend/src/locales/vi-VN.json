@@ -3578,6 +3578,14 @@
         "grid": "Bảng",
         "text": "Văn bản"
       },
+      "table": {
+        "heading": "Bảng",
+        "indexes": "Chỉ mục",
+        "no-indexes": "Bảng này không có chỉ mục nào.",
+        "primary": "khóa chính",
+        "rows": "{{count}} hàng tại lần đồng bộ gần nhất",
+        "unique": "duy nhất"
+      },
       "totals": {
         "estimated-cost": "chi phí ước tính {{cost}}",
         "measured-time": "thời gian đo được {{time}} ms",

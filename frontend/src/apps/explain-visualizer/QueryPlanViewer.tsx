@@ -24,6 +24,8 @@ import {
   formatPlanDuration,
   type PlanHighlightMode,
   type PlanNode,
+  type PlanTableFacts,
+  type PlanTableLookup,
   type PlanTree,
   planCollapsedAncestor,
   planCostliestNodes,
@@ -42,6 +44,8 @@ interface Props {
   readonly textPlan?: string;
   /** Shown at the end of the tab row, such as a reminder that the plan is an estimate. */
   readonly note?: ReactNode;
+  /** What Bytebase knows about a table a node reads; nothing is shown without it. */
+  readonly describeTable?: PlanTableLookup;
   readonly disallowCopyingData?: boolean;
 }
 
@@ -195,11 +199,13 @@ function diagramLegend(
 function PlanWithDetails({
   stacked,
   node,
+  table,
   summary,
   children,
 }: {
   stacked: boolean;
   node: PlanNode | undefined;
+  table: PlanTableFacts | undefined;
   summary: ReactNode;
   children: ReactNode;
 }) {
@@ -220,7 +226,7 @@ function PlanWithDetails({
       <Panel defaultSize={stacked ? "40%" : "30%"} minSize="20%">
         <div className="flex h-full min-h-0 flex-col gap-4 overflow-auto p-4">
           {summary}
-          <QueryPlanNodeDetails node={node} />
+          <QueryPlanNodeDetails node={node} table={table} />
         </div>
       </Panel>
     </PanelGroup>
@@ -346,6 +352,7 @@ export function QueryPlanViewer({
   rawPlan,
   textPlan = rawPlan,
   note,
+  describeTable,
   disallowCopyingData = false,
 }: Props) {
   const translate = useQueryPlanTranslation();
@@ -365,6 +372,11 @@ export function QueryPlanViewer({
   const [revealId, setRevealId] = useState<string | undefined>();
 
   const selectedNode = findPlanNode(tree, selectedId);
+  const relation = selectedNode?.relation;
+  const selectedTable = useMemo(
+    () => (relation ? describeTable?.(relation) : undefined),
+    [describeTable, relation]
+  );
   const stacked = useMediaQuery(STACK_QUERY);
   const highlightOptions = HIGHLIGHT_OPTIONS.filter((option) =>
     option.available(tree)
@@ -440,6 +452,7 @@ export function QueryPlanViewer({
         <PlanWithDetails
           stacked={stacked}
           node={selectedNode}
+          table={selectedTable}
           summary={summary}
         >
           <div
@@ -482,6 +495,7 @@ export function QueryPlanViewer({
         <PlanWithDetails
           stacked={stacked}
           node={selectedNode}
+          table={selectedTable}
           summary={summary}
         >
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-4 px-4 py-2">

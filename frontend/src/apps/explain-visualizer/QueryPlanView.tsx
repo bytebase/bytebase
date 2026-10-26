@@ -16,6 +16,7 @@ import {
 import {
   PLAN_TOO_DEEP_MESSAGE,
   PLAN_TOO_MANY_NODES_MESSAGE,
+  type PlanTableLookup,
 } from "./plan-model";
 import { parsePlan } from "./plan-parsers";
 import {
@@ -54,6 +55,7 @@ interface Props {
   planSource: string;
   textPlanSource?: string;
   note?: ReactNode;
+  describeTable?: PlanTableLookup;
   translate?: QueryPlanTranslate;
   disallowCopyingData?: boolean;
 }
@@ -63,6 +65,7 @@ function QueryPlanViewContent({
   planSource,
   textPlanSource,
   note,
+  describeTable,
   disallowCopyingData = false,
 }: Props) {
   const translate = useQueryPlanTranslation();
@@ -96,6 +99,7 @@ function QueryPlanViewContent({
       rawPlan={planSource}
       textPlan={textPlanSource}
       note={note}
+      describeTable={describeTable}
       disallowCopyingData={disallowCopyingData}
     />
   );

@@ -240,3 +240,43 @@ describe("QueryPlanNodeDetails on a measured node", () => {
     expect(screen.queryByTestId("plan-details-row-estimate")).toBeNull();
   });
 });
+
+describe("QueryPlanNodeDetails on a table Bytebase knows", () => {
+  const facts = {
+    rowCount: 9488,
+    indexes: [
+      {
+        name: "salary_pkey",
+        columns: "emp_no, from_date",
+        primary: true,
+      },
+      { name: "salary_amount_key", columns: "amount", unique: true },
+    ],
+  };
+
+  test("turns an expensive scan into a next step", () => {
+    render(<QueryPlanNodeDetails node={node()} table={facts} />);
+
+    const section = screen.getByTestId("plan-details-table");
+    expect(section).toHaveTextContent("9,488 rows at the last sync");
+    expect(section).toHaveTextContent("salary_pkey · primary");
+    expect(section).toHaveTextContent("emp_no, from_date");
+    expect(section).toHaveTextContent("salary_amount_key · unique");
+  });
+
+  test("says a table has no indexes, which is the answer worth having", () => {
+    render(
+      <QueryPlanNodeDetails node={node()} table={{ rowCount: 9488, indexes: [] }} />
+    );
+
+    expect(screen.getByTestId("plan-details-table")).toHaveTextContent(
+      "No indexes on this table."
+    );
+  });
+
+  test("leaves the section out where Bytebase knows nothing", () => {
+    render(<QueryPlanNodeDetails node={node()} />);
+
+    expect(screen.queryByTestId("plan-details-table")).toBeNull();
+  });
+});

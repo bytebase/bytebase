@@ -579,9 +579,14 @@ Checked against `main` on 2026-10-26, after [#21652](https://github.com/bytebase
   the plan, while a diagnostic the engine itself reports always does, grouped
   by warning and never removed from node details. A run that planned every
   statement puts each statement's share of the script's estimated cost on its
-  result tab.
+  result tab. A node that reads a table Bytebase has synced shows that table's
+  size and its indexes, which no standalone viewer can do; a bare relation name
+  two schemas both use is left unanswered rather than answered with the wrong
+  table's indexes. §3.3 is closed.
 
-**Not yet, in the order to do them**
+**Not yet**
 
-1. §3.3 — the node that names a table Bytebase already knows: its indexes and
-   row count on the node, which no standalone viewer can show.
+Nothing: every section of this design is implemented. The one question §3.3
+left open is not code but evidence — whether the diagram should open zoomed on
+the costliest operator, as it does, or fit the whole graph and offer *Jump to
+operator*. That belongs to the §1 usability test.

@@ -528,3 +528,21 @@ describe("parseMssqlPlan on an actual plan", () => {
     expect(measured).toEqual({ time: false, rows: false });
   });
 });
+
+describe("parseMssqlPlan relation", () => {
+  test("names the table bare, as the catalog has it", () => {
+    const scan = byType(parseFixture(indexSeekKeyLookup), "Index Seek");
+
+    expect(scan.relation).toBe("orders");
+  });
+
+  test("names no relation for an operator that reads no table", () => {
+    const tree = parseFixture(
+      showplan(
+        '<StmtSimple StatementType="SELECT"><QueryPlan><RelOp NodeId="0" PhysicalOp="Sort" LogicalOp="Sort"><Sort/></RelOp></QueryPlan></StmtSimple>'
+      )
+    );
+
+    expect(byType(tree, "Sort").relation).toBeUndefined();
+  });
+});

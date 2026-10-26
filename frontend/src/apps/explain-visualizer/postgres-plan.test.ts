@@ -405,3 +405,26 @@ describe("parsePostgresPlan on a measured plan", () => {
     expect(root.loops).toBeUndefined();
   });
 });
+
+describe("parsePostgresPlan relation", () => {
+  const rootOf = (raw: Record<string, unknown>) =>
+    parseFixture([{ Plan: raw }]).root;
+
+  test("names the table a scan reads, not the index it reads it by", () => {
+    const root = rootOf({
+      "Node Type": "Index Scan",
+      "Relation Name": "salary",
+      "Index Name": "salary_pkey",
+    });
+
+    expect(root.relation).toBe("salary");
+    expect(root.subject).toBe("salary");
+  });
+
+  test("names no relation for a node that reads no table", () => {
+    expect(
+      rootOf({ "Node Type": "Hash Join", "Hash Cond": "(a.id = b.id)" })
+        .relation
+    ).toBeUndefined();
+  });
+});

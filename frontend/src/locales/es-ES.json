@@ -3578,6 +3578,14 @@
         "grid": "Tabla",
         "text": "Texto"
       },
+      "table": {
+        "heading": "Tabla",
+        "indexes": "Índices",
+        "no-indexes": "Esta tabla no tiene índices.",
+        "primary": "primaria",
+        "rows": "{{count}} filas en la última sincronización",
+        "unique": "único"
+      },
       "totals": {
         "estimated-cost": "coste estimado {{cost}}",
         "measured-time": "tiempo medido {{time}} ms",

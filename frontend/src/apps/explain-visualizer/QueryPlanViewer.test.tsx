@@ -55,11 +55,14 @@ const renderViewer = () =>
 /** Renders a plan the way the result pane does: parsed, beside its source. */
 const renderParsed = (
   parse: (source: string) => ReturnType<typeof parsePostgresPlan>,
-  source: string
+  source: string,
+  overrides: Partial<Parameters<typeof QueryPlanViewer>[0]> = {}
 ) => {
   const result = parse(source);
   if (!result.ok) throw new Error(result.message);
-  return render(<QueryPlanViewer tree={result.tree} rawPlan={source} />);
+  return render(
+    <QueryPlanViewer tree={result.tree} rawPlan={source} {...overrides} />
+  );
 };
 
 const openTab = (name: string) =>
@@ -420,5 +423,57 @@ describe("QueryPlanViewer on a measured plan", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Time" }));
     expect(screen.getAllByTestId("plan-node-tint").length).toBeGreaterThan(0);
+  });
+});
+
+describe("QueryPlanViewer with Bytebase's own metadata", () => {
+  beforeEach(() => mockMatchMedia(false));
+
+  const describeTable = (relation: string) =>
+    relation === "orders"
+      ? { rowCount: 120, indexes: [{ name: "orders_pkey", columns: "id", primary: true }] }
+      : undefined;
+
+  test("asks about the table the selected node reads", () => {
+    renderParsed(
+      parsePostgresPlan,
+      JSON.stringify([
+        {
+          Plan: {
+            "Node Type": "Seq Scan",
+            "Relation Name": "orders",
+            "Total Cost": 500,
+            "Plan Rows": 100,
+          },
+        },
+      ]),
+      { describeTable }
+    );
+
+    expect(screen.getByTestId("plan-details-table")).toHaveTextContent(
+      "120 rows at the last sync"
+    );
+    expect(screen.getByTestId("plan-details-table")).toHaveTextContent(
+      "orders_pkey · primary"
+    );
+  });
+
+  test("says nothing about a node that reads no table it knows", () => {
+    renderParsed(
+      parsePostgresPlan,
+      JSON.stringify([
+        {
+          Plan: {
+            "Node Type": "Seq Scan",
+            "Relation Name": "payments",
+            "Total Cost": 500,
+            "Plan Rows": 100,
+          },
+        },
+      ]),
+      { describeTable }
+    );
+
+    expect(screen.queryByTestId("plan-details-table")).toBeNull();
   });
 });

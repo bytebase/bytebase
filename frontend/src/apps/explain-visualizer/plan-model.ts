@@ -34,6 +34,13 @@ export interface PlanNode {
   readonly nodeType: string;
   /** Table or index the operation reads, when the engine names one. */
   readonly subject?: string;
+  /**
+   * The table this operator reads, named as the catalog names it, where it
+   * reads one. Narrower than `subject`, which is whatever is worth printing on
+   * a card: a join condition, an index, a sort key. This is what a lookup of
+   * Bytebase's own metadata can be keyed on.
+   */
+  readonly relation?: string;
   /** How the parent consumes this node, such as "Inner" or "InitPlan 1". */
   readonly relationship?: string;
   /** Cost before the node returns its first row, including its subtree. */
@@ -230,6 +237,30 @@ export const PLAN_FULL_INDEX_SCAN: PlanWarning = {
     "Reads every entry of this index. If the query needs only a few of them, a condition on the index's leading columns could avoid the full read.",
   source: "heuristic",
 };
+
+/** One index on a table an operator reads, as Bytebase last synced it. */
+export interface PlanTableIndex {
+  readonly name: string;
+  /** The indexed columns or expressions, in order, as one line. */
+  readonly columns: string;
+  readonly unique?: boolean;
+  readonly primary?: boolean;
+}
+
+/**
+ * What Bytebase already knows about a table an operator reads.
+ *
+ * No standalone plan viewer can show this: pev2 and its kind are handed a
+ * pasted file with no catalog behind it. It is what turns "this scan is
+ * expensive" into a next step.
+ */
+export interface PlanTableFacts {
+  readonly rowCount?: number;
+  readonly indexes: readonly PlanTableIndex[];
+}
+
+/** Answers what Bytebase knows about a relation, where it knows anything. */
+export type PlanTableLookup = (relation: string) => PlanTableFacts | undefined;
 
 /** Which number, if any, shades the diagram's node cards. */
 export type PlanHighlightMode = "off" | "cost" | "time" | "rows";

@@ -644,6 +644,12 @@ function toOperatorName(relop: Element, operator: Element | undefined): string {
   return `${physical} (${logical})`;
 }
 
+/** The table the operator reads, bare, for a lookup of Bytebase's metadata. */
+function toOperatorRelation(operator: Element | undefined): string | undefined {
+  const table = firstChild(operator, "Object")?.getAttribute("Table");
+  return table ? unbracket(table) : undefined;
+}
+
 /** What the operator works on, for the one line a card has room for. */
 function toOperatorSubject(operator: Element | undefined): string | undefined {
   const object = firstChild(operator, "Object");
@@ -796,6 +802,7 @@ function toOperatorNode(
     id,
     nodeType: toOperatorName(relop, operator),
     subject: toOperatorSubject(operator),
+    relation: toOperatorRelation(operator),
     relationship,
     totalCost,
     selfCost: planSelfCost(totalCost, children),

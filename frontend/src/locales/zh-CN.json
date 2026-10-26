@@ -3578,6 +3578,14 @@
         "grid": "表格",
         "text": "文本"
       },
+      "table": {
+        "heading": "表",
+        "indexes": "索引",
+        "no-indexes": "此表没有索引。",
+        "primary": "主键",
+        "rows": "上次同步时 {{count}} 行",
+        "unique": "唯一"
+      },
       "totals": {
         "estimated-cost": "预计成本 {{cost}}",
         "measured-time": "实测耗时 {{time}} ms",

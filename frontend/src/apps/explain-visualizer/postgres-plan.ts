@@ -149,6 +149,10 @@ const SUBJECT_CONDITION_KEYS = [
   "Presorted Key",
 ] as const;
 
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" && value ? value : undefined;
+}
+
 function toSubject(raw: JsonRecord): string | undefined {
   const relation = raw["Relation Name"];
   if (typeof relation === "string" && relation) return relation;
@@ -243,6 +247,9 @@ function toPlanNode(raw: JsonRecord, id: string, depth: number): PlanNode {
     id,
     nodeType,
     subject: toSubject(raw),
+    // An index scan names the index as well, but it is the table a reader
+    // would want to know about.
+    relation: stringValue(raw["Relation Name"]),
     relationship: toRelationship(raw),
     startupCost: toNumber(raw["Startup Cost"]),
     totalCost,
