@@ -40,6 +40,9 @@ import (
 var (
 	baseTableType = "BASE TABLE"
 	viewTableType = "VIEW"
+	// MariaDB-only TABLE_TYPE values. Both kinds share the table namespace.
+	mariaDBSystemVersionedTableType = "SYSTEM VERSIONED"
+	mariaDBSequenceTableType        = "SEQUENCE"
 
 	_ db.Driver = (*Driver)(nil)
 )
