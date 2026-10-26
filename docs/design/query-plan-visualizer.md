@@ -535,7 +535,7 @@ live servers, September 2026.
 
 ## 6. Status
 
-Checked against `main` on 2026-10-26, at [#21668](https://github.com/bytebase/bytebase/pull/21668).
+Checked against `main` on 2026-10-26, at [#21668](https://github.com/bytebase/bytebase/pull/21668), plus [#21669](https://github.com/bytebase/bytebase/pull/21669) below.
 
 **Landed**
 
@@ -603,7 +603,8 @@ Checked against `main` on 2026-10-26, at [#21668](https://github.com/bytebase/by
   whole request, Databricks records one where it recorded none, and a run cut
   off at its timeout carries the statement it was running. *Show in Editor* on a failed
   result reads through the `WITH result AS (…)` wrapper the row limit adds,
-  which it could not find in the editor before.
+  which it could not find in the editor before
+  ([#21669](https://github.com/bytebase/bytebase/pull/21669)).
 
 **Not yet**
 
