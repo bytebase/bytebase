@@ -871,8 +871,12 @@ func queryRetry(
 				return nil, nil, time.Duration(0), err
 			}
 		}
-		if err := refuseSensitivePredicateColumns(ctx, stores, spans, instance, user); err != nil {
+		refusal, err := sensitivePredicateRefusal(ctx, stores, spans, instance, user)
+		if err != nil {
 			return nil, nil, time.Duration(0), err
+		}
+		if refusal != "" {
+			return refusedQueryResults(refusal, originalStatement), nil, time.Duration(0), nil
 		}
 		if err := preExecuteMaskingCheck(ctx, stores, instance.Metadata.GetEngine(), database, spans); err != nil {
 			return nil, nil, time.Duration(0), err
@@ -932,8 +936,12 @@ func queryRetry(
 		// A table the first span did not find may surface a condition the
 		// pre-execution check could not see.
 		if maskingEnabled {
-			if err := refuseSensitivePredicateColumns(ctx, stores, spans, instance, user); err != nil {
+			refusal, err := sensitivePredicateRefusal(ctx, stores, spans, instance, user)
+			if err != nil {
 				return nil, nil, duration, err
+			}
+			if refusal != "" {
+				return refusedQueryResults(refusal, originalStatement), nil, duration, nil
 			}
 		}
 	}
@@ -967,6 +975,12 @@ func queryRetry(
 		}
 	}
 	return results, spans, duration, nil
+}
+
+// refusedQueryResults reports a refusal as the statement's error rather than
+// the request's, so every engine shows the message without an RPC code prefix.
+func refusedQueryResults(refusal, statement string) []*v1pb.QueryResult {
+	return []*v1pb.QueryResult{{Error: refusal, Statement: statement}}
 }
 
 // buildQuerySpans analyzes statements for access checks and masking.
