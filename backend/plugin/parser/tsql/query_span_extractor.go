@@ -3,6 +3,7 @@ package tsql
 import (
 	"context"
 	"reflect"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -1337,7 +1338,7 @@ func (q *omniQuerySpanExtractor) cloneForSubquery() *omniQuerySpanExtractor {
 			ignoreCaseSensitive: q.ignoreCaseSensitive,
 			gCtx:                q.gCtx,
 			ctes:                append([]*base.PseudoTable{}, q.ctes...),
-			outerTableSources:   append(append([]base.TableSource{}, q.outerTableSources...), q.tableSourcesFrom...),
+			outerTableSources:   slices.Concat(q.outerTableSources, q.tableSourcesFrom),
 			predicateColumns:    make(base.SourceColumnSet),
 			viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
 		},
