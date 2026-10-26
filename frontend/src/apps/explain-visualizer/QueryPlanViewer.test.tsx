@@ -55,11 +55,14 @@ const renderViewer = () =>
 /** Renders a plan the way the result pane does: parsed, beside its source. */
 const renderParsed = (
   parse: (source: string) => ReturnType<typeof parsePostgresPlan>,
-  source: string
+  source: string,
+  overrides: Partial<Parameters<typeof QueryPlanViewer>[0]> = {}
 ) => {
   const result = parse(source);
   if (!result.ok) throw new Error(result.message);
-  return render(<QueryPlanViewer tree={result.tree} rawPlan={source} />);
+  return render(
+    <QueryPlanViewer tree={result.tree} rawPlan={source} {...overrides} />
+  );
 };
 
 const openTab = (name: string) =>
@@ -231,11 +234,18 @@ describe("QueryPlanViewer", () => {
 
     // Nothing can be ranked or shaded.
     expect(tabNames()).toEqual(["Diagram", "Table", "Text"]);
-    expect(screen.queryByTestId("plan-summary")).toBeNull();
+    expect(screen.queryByTestId("plan-costliest")).toBeNull();
     expect(screen.queryByRole("group", { name: "Highlight" })).toBeNull();
     expect(screen.getByText("7 nodes")).toBeVisible();
     expect(screen.queryByLabelText(/card's bar/)).toBeNull();
     expect(screen.getAllByTestId("plan-node-card")).toHaveLength(7);
+    // With no cost to judge relevance by, the scan warnings still reach the
+    // panel rather than being dropped for want of a number to weigh them.
+    const warnings = screen.getAllByTestId("plan-summary-warning");
+    expect(warnings).toHaveLength(2);
+    expect(warnings[0]).toHaveTextContent("Full table scan");
+    expect(warnings[0]).toHaveTextContent("Albums");
+    expect(warnings[1]).toHaveTextContent("Full index scan");
   });
 
   test("indents an XML plan one element per line on the text tab", () => {
@@ -356,5 +366,114 @@ describe("QueryPlanViewer", () => {
     const note = screen.getByText("Estimated now");
     expect(note).toHaveClass("ml-auto");
     expect(note.closest('[role="tablist"]')).not.toBeNull();
+  });
+});
+
+describe("QueryPlanViewer on a measured plan", () => {
+  const measuredPlan = JSON.stringify([
+    {
+      Plan: {
+        "Node Type": "Nested Loop",
+        "Total Cost": 100,
+        "Plan Rows": 10,
+        "Actual Total Time": 24.5,
+        "Actual Rows": 10,
+        "Actual Loops": 1,
+        Plans: [
+          {
+            "Node Type": "Seq Scan",
+            "Parent Relationship": "Outer",
+            "Relation Name": "orders",
+            "Total Cost": 90,
+            "Plan Rows": 4,
+            "Actual Total Time": 20,
+            "Actual Rows": 4,
+            "Actual Loops": 1,
+          },
+        ],
+      },
+    },
+  ]);
+
+  beforeEach(() => mockMatchMedia(false));
+
+  test("offers shading by the time it measured, ahead of the estimate", () => {
+    renderParsed(parsePostgresPlan, measuredPlan);
+
+    expect(
+      within(screen.getByRole("group", { name: "Highlight" }))
+        .getAllByRole("button")
+        .map((option) => option.textContent)
+    ).toEqual(["Off", "Time", "Cost", "Rows"]);
+  });
+
+  test("reports the measured total and says the bars follow it", () => {
+    renderParsed(parsePostgresPlan, measuredPlan);
+
+    expect(
+      screen.getByText("2 nodes · measured time 24.5 ms · estimated cost 100")
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /share of the plan's measured time/ })
+    ).toBeVisible();
+  });
+
+  test("shades by measured time once asked", () => {
+    renderParsed(parsePostgresPlan, measuredPlan);
+
+    fireEvent.click(screen.getByRole("button", { name: "Time" }));
+    expect(screen.getAllByTestId("plan-node-tint").length).toBeGreaterThan(0);
+  });
+});
+
+describe("QueryPlanViewer with Bytebase's own metadata", () => {
+  beforeEach(() => mockMatchMedia(false));
+
+  const describeTable = ({ table }: { table: string }) =>
+    table === "orders"
+      ? { rowCount: 120, indexes: [{ name: "orders_pkey", columns: "id", primary: true }] }
+      : undefined;
+
+  test("asks about the table the selected node reads", () => {
+    renderParsed(
+      parsePostgresPlan,
+      JSON.stringify([
+        {
+          Plan: {
+            "Node Type": "Seq Scan",
+            "Relation Name": "orders",
+            "Total Cost": 500,
+            "Plan Rows": 100,
+          },
+        },
+      ]),
+      { describeTable }
+    );
+
+    expect(screen.getByTestId("plan-details-table")).toHaveTextContent(
+      "120 rows at the last sync"
+    );
+    expect(screen.getByTestId("plan-details-table")).toHaveTextContent(
+      "orders_pkey · primary"
+    );
+  });
+
+  test("says nothing about a node that reads no table it knows", () => {
+    renderParsed(
+      parsePostgresPlan,
+      JSON.stringify([
+        {
+          Plan: {
+            "Node Type": "Seq Scan",
+            "Relation Name": "payments",
+            "Total Cost": 500,
+            "Plan Rows": 100,
+          },
+        },
+      ]),
+      { describeTable }
+    );
+
+    expect(screen.queryByTestId("plan-details-table")).toBeNull();
   });
 });

@@ -3,6 +3,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import { QueryOption_ExplainFormat } from "@/types/proto-es/v1/sql_service_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -30,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   keyboardShortcutStr: vi.fn((s: string) => s),
   emit: vi.fn(),
   useProductIntro: vi.fn(),
+  canExplain: true,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -77,7 +79,16 @@ vi.mock("@/utils", () => ({
   isSavedQueryWritableV1: mocks.isSavedQueryWritableV1,
   canCreateSavedQueryInProject: mocks.canCreateSavedQueryInProject,
   keyboardShortcutStr: mocks.keyboardShortcutStr,
+  instanceV1AllowsExplain: (engine: Engine) => engine !== Engine.REDIS,
   isDev: () => true,
+}));
+
+vi.mock("@/utils/iam/permission", () => ({
+  hasProjectPermissionV2: () => mocks.canExplain,
+}));
+
+vi.mock("@/utils/v1/database", () => ({
+  getDatabaseProject: () => ({ name: "projects/p1" }),
 }));
 
 vi.mock("@/modules/sql-editor/model/events", () => ({
@@ -149,11 +160,26 @@ vi.mock("./OpenAIButton", () => ({
   OpenAIButton: () => <div data-testid="openai-button" />,
 }));
 vi.mock("./QueryContextSettingPopover", () => ({
-  QueryContextSettingPopover: ({ disabled }: { disabled?: boolean }) => (
+  QueryContextSettingPopover: ({
+    disabled,
+    explainDisabledReason,
+    onExplain,
+  }: {
+    disabled?: boolean;
+    explainDisabledReason?: string;
+    onExplain?: () => void;
+  }) => (
     <div
       data-testid="query-context-setting-popover"
       data-disabled={String(disabled)}
-    />
+      data-explain-disabled-reason={explainDisabledReason}
+    >
+      {onExplain && (
+        <button type="button" onClick={onExplain}>
+          explain
+        </button>
+      )}
+    </div>
   ),
 }));
 vi.mock("./SharePopoverBody", () => ({
@@ -249,6 +275,7 @@ beforeEach(async () => {
     t: (key: string, fallback?: string) => fallback ?? key,
   });
   mocks.isSavedQueryWritableV1.mockReturnValue(true);
+  mocks.canExplain = true;
   ({ EditorAction } = await import("./EditorAction"));
 });
 
@@ -282,6 +309,59 @@ describe("EditorAction", () => {
       })
     );
 
+    unmount();
+  });
+
+  test("Run's dropdown explains what Run would run, in the drawable format", () => {
+    setup();
+    const onExecute = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <EditorAction onExecute={onExecute} />
+    );
+    render();
+    const button = (label: string) =>
+      Array.from(container.querySelectorAll("button")).find(
+        (el) => el.textContent === label
+      );
+
+    act(() => button("explain")?.click());
+    expect(onExecute).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        statement: "SELECT 1",
+        explain: true,
+        queryOption: expect.objectContaining({
+          explainFormat: QueryOption_ExplainFormat.JSON,
+        }),
+      })
+    );
+    unmount();
+  });
+
+  test("Run's dropdown says why Explain is off without bb.sql.explain", () => {
+    setup();
+    mocks.canExplain = false;
+    const { container, render, unmount } = renderIntoContainer(
+      <EditorAction onExecute={vi.fn()} />
+    );
+    render();
+    expect(
+      container
+        .querySelector("[data-testid='query-context-setting-popover']")
+        ?.getAttribute("data-explain-disabled-reason")
+    ).toBe("sql-editor.query-plan-requires-explain");
+    unmount();
+  });
+
+  test("Run's dropdown leaves Explain out for an engine without one", () => {
+    setup({ engine: Engine.REDIS });
+    const { container, render, unmount } = renderIntoContainer(
+      <EditorAction onExecute={vi.fn()} />
+    );
+    render();
+    const labels = Array.from(container.querySelectorAll("button")).map(
+      (el) => el.textContent
+    );
+    expect(labels).not.toContain("explain");
     unmount();
   });
 

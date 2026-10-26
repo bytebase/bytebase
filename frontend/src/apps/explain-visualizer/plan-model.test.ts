@@ -11,21 +11,30 @@ import {
   isJsonRecord,
   PLAN_EDGE_MAX_WIDTH,
   PLAN_EDGE_MIN_WIDTH,
+  PLAN_FULL_TABLE_SCAN,
   PLAN_TOO_DEEP_MESSAGE,
   PLAN_TOO_MANY_NODES_MESSAGE,
+  PLAN_WARNING_RELEVANT_SHARE,
   type PlanNode,
   type PlanProperty,
   type PlanTree,
+  type PlanWarning,
   parseWithDepthLimit,
   planCollapsedAncestor,
   planCostliestNodes,
   planDescendantCount,
   planEdgeWidth,
+  planHasSelfMetric,
   planHighlightIntensity,
+  planRankMetric,
   planRevealNode,
+  planRowEstimateFactor,
   planRows,
   planSelfCost,
   planSelfCostShare,
+  planSelfShare,
+  planSelfTime,
+  planWarningGroups,
 } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
 import cteNestedLoopInitplan from "./test-data/postgres/cte-nested-loop-initplan.json";
@@ -524,5 +533,194 @@ describe("planCostliestNodes", () => {
 
   test("is empty for a plan the planner costs at nothing", () => {
     expect(planCostliestNodes(buildPlanTree(node("0")))).toEqual([]);
+  });
+});
+
+/** A node the way a plan that ran describes one. */
+const timedNode = (
+  id: string,
+  overrides: Partial<PlanNode> = {},
+  children: PlanNode[] = []
+): PlanNode =>
+  node(
+    id,
+    { actualRows: 0, actualTime: 0, selfTime: 0, loops: 1, ...overrides },
+    children
+  );
+
+const engineWarning = (title: string): PlanWarning => ({
+  title,
+  detail: "SQL Server flagged this while compiling the plan.",
+  source: "engine",
+});
+
+describe("planSelfTime", () => {
+  test("takes the children's measured time off a cumulative one", () => {
+    expect(
+      planSelfTime(10, [
+        timedNode("0.0", { actualTime: 4 }),
+        timedNode("0.1", { actualTime: 3 }),
+      ])
+    ).toBe(3);
+  });
+
+  test("clamps a node that stopped its children early at zero", () => {
+    expect(planSelfTime(1, [timedNode("0.0", { actualTime: 9 })])).toBe(0);
+  });
+
+  test("is undefined for a node the plan did not measure", () => {
+    expect(planSelfTime(undefined, [])).toBeUndefined();
+  });
+});
+
+describe("measured plans", () => {
+  const measuredTree = () =>
+    buildPlanTree(
+      timedNode("0", { actualTime: 100, selfTime: 10, selfCost: 90 }, [
+        timedNode("0.0", { actualTime: 70, selfTime: 70, selfCost: 5 }),
+        timedNode("0.1", { actualTime: 20, selfTime: 20, selfCost: 5 }),
+      ])
+    );
+
+  test("records which measurements the plan carries", () => {
+    expect(measuredTree().measured).toEqual({ time: true, rows: true });
+    expect(buildPlanTree(node("0")).measured).toEqual({
+      time: false,
+      rows: false,
+    });
+  });
+
+  test("ranks by measured time, not by the planner's cost", () => {
+    const tree = measuredTree();
+    expect(planRankMetric(tree)).toBe("time");
+    // The root is the costliest by estimate and the least of the work in fact.
+    expect(planCostliestNodes(tree).map((entry) => entry.id)).toEqual([
+      "0.0",
+      "0.1",
+      "0",
+    ]);
+  });
+
+  test("takes every share from the metric the plan is ranked on", () => {
+    const tree = measuredTree();
+    expect(planSelfShare(tree.nodes[1], tree)).toBeCloseTo(0.7);
+    // Cost shares stay available for the surfaces that print a cost.
+    expect(planSelfCostShare(tree.nodes[1], tree)).toBeCloseTo(0.05);
+  });
+
+  test("keeps the time basis at or above the self times it adds up", () => {
+    const limited = buildPlanTree(
+      timedNode("0", { actualTime: 1, selfTime: 0 }, [
+        timedNode("0.0", { actualTime: 40, selfTime: 40 }),
+      ])
+    );
+    expect(limited.timeBasis).toBe(40);
+    expect(planSelfShare(limited.nodes[1], limited)).toBe(1);
+  });
+
+  test("shades by measured time where asked", () => {
+    const tree = measuredTree();
+    expect(planHighlightIntensity(tree.nodes[1], tree, "time")).toBe(1);
+    expect(planHighlightIntensity(tree.nodes[0], tree, "time")).toBeCloseTo(
+      Math.sqrt(10 / 70)
+    );
+  });
+
+  test("gives an unmeasured plan no ranking by time", () => {
+    const tree = buildPlanTree(node("0", { selfCost: 5 }));
+    expect(planRankMetric(tree)).toBe("cost");
+    expect(planHasSelfMetric(tree)).toBe(true);
+    expect(planHasSelfMetric(buildPlanTree(bareNode("0")))).toBe(false);
+  });
+});
+
+describe("planRowEstimateFactor", () => {
+  test("multiplies the per-execution estimate out by the executions", () => {
+    // 5 rows expected each time round a 10-loop nested loop, 500 returned.
+    expect(
+      planRowEstimateFactor(
+        timedNode("0", { rows: 5, loops: 10, actualRows: 500 })
+      )
+    ).toBe(10);
+  });
+
+  test("reads below one when the node returned fewer rows than planned", () => {
+    expect(
+      planRowEstimateFactor(timedNode("0", { rows: 100, actualRows: 25 }))
+    ).toBe(0.25);
+  });
+
+  test("is undefined without a measurement, or without an estimate to compare", () => {
+    expect(planRowEstimateFactor(node("0", { rows: 10 }))).toBeUndefined();
+    expect(
+      planRowEstimateFactor(timedNode("0", { rows: 0, actualRows: 10 }))
+    ).toBeUndefined();
+  });
+});
+
+describe("planWarningGroups", () => {
+  // One plan: a scan that is most of it, a scan that is a rounding error, and
+  // a diagnostic on a node the planner thinks costs nothing.
+  const mixedTree = () =>
+    buildPlanTree(
+      node("0", { selfCost: 10 }, [
+        node("0.0", { selfCost: 85, warnings: [PLAN_FULL_TABLE_SCAN] }),
+        node("0.1", { selfCost: 5, warnings: [PLAN_FULL_TABLE_SCAN] }),
+        node("0.2", {
+          selfCost: 0,
+          warnings: [engineWarning("Columns with no statistics")],
+        }),
+      ])
+    );
+
+  test("keeps an engine diagnostic whatever the node costs", () => {
+    expect(
+      planWarningGroups(mixedTree()).map((group) => [
+        group.warning.title,
+        group.nodes.map((entry) => entry.id),
+      ])
+    ).toEqual([
+      ["Full table scan", ["0.0"]],
+      ["Columns with no statistics", ["0.2"]],
+    ]);
+  });
+
+  test("drops one of our scan heuristics on a node that costs little", () => {
+    const share = planSelfShare(mixedTree().nodes[2], mixedTree());
+    expect(share).toBeLessThan(PLAN_WARNING_RELEVANT_SHARE);
+    expect(
+      planWarningGroups(mixedTree()).flatMap((group) =>
+        group.nodes.map((entry) => entry.id)
+      )
+    ).not.toContain("0.1");
+  });
+
+  test("groups a warning several nodes report, the worst of them first", () => {
+    const tree = buildPlanTree(
+      node("0", {}, [
+        node("0.0", { selfCost: 20, warnings: [PLAN_FULL_TABLE_SCAN] }),
+        node("0.1", { selfCost: 80, warnings: [PLAN_FULL_TABLE_SCAN] }),
+      ])
+    );
+    expect(planWarningGroups(tree)).toHaveLength(1);
+    expect(planWarningGroups(tree)[0].nodes.map((entry) => entry.id)).toEqual([
+      "0.1",
+      "0.0",
+    ]);
+  });
+
+  test("keeps every warning when the plan has no number to weigh them by", () => {
+    const tree = buildPlanTree({
+      ...bareNode("0", [
+        { ...bareNode("0.0"), warnings: [PLAN_FULL_TABLE_SCAN] },
+      ]),
+    });
+    expect(planWarningGroups(tree).map((group) => group.warning.title)).toEqual(
+      ["Full table scan"]
+    );
+  });
+
+  test("is empty for a plan nothing is wrong with", () => {
+    expect(planWarningGroups(buildPlanTree(node("0")))).toEqual([]);
   });
 });

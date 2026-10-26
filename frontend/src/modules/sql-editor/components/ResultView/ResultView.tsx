@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import { InfoIcon, LoaderCircle } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatPlanShare } from "@/apps/explain-visualizer/plan-model";
 import {
   DataExportButton,
   type DataExportRequest,
@@ -33,10 +34,12 @@ import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import {
   extractDatabaseResourceName,
   getDatabaseProject,
+  getInstanceResource,
 } from "@/utils/v1/database";
 import { ExportGrantLookupStatus } from "../ExportGrantLookupStatus";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
+import { planCostShares } from "./resultPlans";
 import { SingleResultView } from "./SingleResultView";
 import type { ResultViewPresentation } from "./types";
 
@@ -180,6 +183,13 @@ export function ResultView({
 
   const tabName = (index: number) => `${t("common.query")} #${index + 1}`;
 
+  // Which of several plans is the one to read. Only a run that planned every
+  // statement knows the whole script's cost, so most runs show no share.
+  const costShares = useMemo(
+    () => planCostShares(filteredResults, getInstanceResource(database).engine),
+    [filteredResults, database]
+  );
+
   const supportFormats = useMemo(
     () => [
       ExportFormat.CSV,
@@ -287,22 +297,43 @@ export function ResultView({
             >
               <div className="flex items-center justify-between gap-x-2">
                 <TabsList>
-                  {filteredResults.map((result, i) => (
-                    <Tooltip
-                      key={i}
-                      content={result.statement}
-                      popupClassName="ph-no-capture"
-                    >
-                      <TabsTrigger value={tabName(i)}>
-                        <div className="flex items-center gap-x-2 mb-1">
-                          <span>{tabName(i)}</span>
-                          {result.error && (
-                            <InfoIcon className="size-4 text-warning" />
-                          )}
-                        </div>
-                      </TabsTrigger>
-                    </Tooltip>
-                  ))}
+                  {filteredResults.map((result, i) => {
+                    const share = costShares?.[i];
+                    return (
+                      <Tooltip
+                        key={i}
+                        content={
+                          share === undefined ? (
+                            result.statement
+                          ) : (
+                            <span className="flex flex-col gap-1">
+                              <span>
+                                {t("sql-editor.plan-cost-share", {
+                                  share: formatPlanShare(share),
+                                })}
+                              </span>
+                              <span>{result.statement}</span>
+                            </span>
+                          )
+                        }
+                        popupClassName="ph-no-capture"
+                      >
+                        <TabsTrigger value={tabName(i)}>
+                          <div className="flex items-center gap-x-2 mb-1">
+                            <span>{tabName(i)}</span>
+                            {share === undefined ? null : (
+                              <span className="text-xs text-control-light tabular-nums">
+                                {formatPlanShare(share)}
+                              </span>
+                            )}
+                            {result.error && (
+                              <InfoIcon className="size-4 text-warning" />
+                            )}
+                          </div>
+                        </TabsTrigger>
+                      </Tooltip>
+                    );
+                  })}
                 </TabsList>
                 {showExport ? (
                   <div className="mb-1">

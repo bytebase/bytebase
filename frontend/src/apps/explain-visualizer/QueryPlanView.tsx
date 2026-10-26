@@ -1,13 +1,11 @@
 import { type ReactNode, useMemo } from "react";
 import { Alert } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { VisualizerEngine } from "@/utils/queryPlanEngines";
 import {
   MSSQL_PLAN_EMPTY_MESSAGE,
   MSSQL_PLAN_INVALID_XML_MESSAGE,
   MSSQL_PLAN_NO_PLAN_MESSAGE,
-  parseMssqlPlan,
 } from "./mssql-plan";
 import {
   QueryPlanI18nProvider,
@@ -18,28 +16,21 @@ import {
 import {
   PLAN_TOO_DEEP_MESSAGE,
   PLAN_TOO_MANY_NODES_MESSAGE,
-  type PlanParseResult,
+  type PlanTableLookup,
 } from "./plan-model";
+import { parsePlan } from "./plan-parsers";
 import {
   POSTGRES_PLAN_EMPTY_MESSAGE,
   POSTGRES_PLAN_INVALID_JSON_MESSAGE,
   POSTGRES_PLAN_NO_PLAN_MESSAGE,
-  parsePostgresPlan,
 } from "./postgres-plan";
 import { QueryPlanViewer } from "./QueryPlanViewer";
 import {
-  parseSpannerPlan,
   SPANNER_PLAN_EMPTY_MESSAGE,
   SPANNER_PLAN_EMULATOR_MESSAGE,
   SPANNER_PLAN_INVALID_JSON_MESSAGE,
   SPANNER_PLAN_NO_PLAN_MESSAGE,
 } from "./spanner-plan";
-
-const PARSERS: Record<VisualizerEngine, (source: string) => PlanParseResult> = {
-  [Engine.POSTGRES]: parsePostgresPlan,
-  [Engine.MSSQL]: parseMssqlPlan,
-  [Engine.SPANNER]: parseSpannerPlan,
-};
 
 const STATUS_CLASS =
   "flex h-full min-h-0 w-full flex-col gap-4 overflow-auto bg-background p-4";
@@ -64,6 +55,7 @@ interface Props {
   planSource: string;
   textPlanSource?: string;
   note?: ReactNode;
+  describeTable?: PlanTableLookup;
   translate?: QueryPlanTranslate;
   disallowCopyingData?: boolean;
 }
@@ -73,11 +65,12 @@ function QueryPlanViewContent({
   planSource,
   textPlanSource,
   note,
+  describeTable,
   disallowCopyingData = false,
 }: Props) {
   const translate = useQueryPlanTranslation();
   const result = useMemo(
-    () => PARSERS[engine](planSource),
+    () => parsePlan(engine, planSource),
     [engine, planSource]
   );
 
@@ -106,6 +99,7 @@ function QueryPlanViewContent({
       rawPlan={planSource}
       textPlan={textPlanSource}
       note={note}
+      describeTable={describeTable}
       disallowCopyingData={disallowCopyingData}
     />
   );
