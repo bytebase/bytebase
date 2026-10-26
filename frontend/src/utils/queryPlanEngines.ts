@@ -1,4 +1,9 @@
+import { create } from "@bufbuild/protobuf";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  QueryOption_ExplainFormat,
+  QueryOptionSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 
 /**
  * The engines the query-plan visualizer draws, each with the explain output it
@@ -17,3 +22,14 @@ export type VisualizerEngine = keyof typeof VISUALIZER_EXPLAIN_FORMATS;
 export const isVisualizerEngine = (
   engine: Engine
 ): engine is VisualizerEngine => engine in VISUALIZER_EXPLAIN_FORMATS;
+
+/**
+ * The options of an explain request: the format the visualizer draws where the
+ * engine has one, and the engine's default otherwise.
+ */
+export const explainQueryOption = (engine: Engine) =>
+  create(QueryOptionSchema, {
+    explainFormat: isVisualizerEngine(engine)
+      ? QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]]
+      : QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED,
+  });
