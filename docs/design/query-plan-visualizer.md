@@ -1,6 +1,6 @@
 # Query plan visualizer
 
-**Status:** partly implemented, see §6 · **Scope:** SQL Editor · Code references are to `main` at `7664688752` unless a PR is named.
+**Status:** implemented, see §6 · **Scope:** SQL Editor · Code references are to `main` at `7664688752`, the commit this design was written against, unless a PR is named; line numbers have since moved.
 
 Bytebase draws query plans, but few users reach the drawing. This covers the
 whole journey: how you ask for a plan, when you get a picture, how you read it,
@@ -368,8 +368,10 @@ cover a different query.
 That requires every driver that rewrites a statement to record what it actually
 ran. SQL Server and Spanner did not until
 [#21476](https://github.com/bytebase/bytebase/pull/21476) and
-[#21481](https://github.com/bytebase/bytebase/pull/21481); the timed-out case
-still waits on the timeout response carrying its statement.
+[#21481](https://github.com/bytebase/bytebase/pull/21481), and Redis, DynamoDB
+and Databricks named the wrong statement or none at all. A run the server cuts
+off at its timeout now names the statement it was running as well, which no
+driver can do for a statement it never finished.
 
 **Say which one it is.** Measured and estimated carry a one-word badge at the
 end of the viewer's tab row, and the estimated badge's tooltip says *"A new
@@ -456,10 +458,12 @@ Two ways that boundary leaked, both in `checkDatabaseAccess`
   engine folds case; one Bytebase does not track as a database — Oracle's
   `SYS`, Snowflake's `SNOWFLAKE` — is left to the connected database's check. A
   typed `EXPLAIN ANALYZE` carries an `ExplainAnalyze` mark on its span and needs
-  the inner statement's permission as well. SQL Server's `SET STATISTICS XML
-  ON` also executes and returns a plan, and still passes on `bb.sql.select`
-  alone: the explain recognizer knows only SHOWPLAN. That is the one permission
-  item still open here.
+  the inner statement's permission as well, and so does SQL Server's `SET
+  STATISTICS XML ON`, which executes the statement and returns its plan beside
+  its rows. Which plan options a batch has turned on is read from the parsed
+  `SET` statement and carried across the batch, so a statement after one is
+  marked too
+  ([#21648](https://github.com/bytebase/bytebase/pull/21648)).
 - **A data access grant exempted it**
   ([#21619](https://github.com/bytebase/bytebase/pull/21619)). The check
   returned early for a granted target before the permission was evaluated, so a
@@ -531,7 +535,7 @@ live servers, September 2026.
 
 ## 6. Status
 
-Checked against `main` on 2026-10-26, after [#21652](https://github.com/bytebase/bytebase/pull/21652), plus the §3.1 and §3.3 work on the branch below.
+Checked against `main` on 2026-10-26, at [#21668](https://github.com/bytebase/bytebase/pull/21668).
 
 **Landed**
 
@@ -574,7 +578,9 @@ Checked against `main` on 2026-10-26, after [#21652](https://github.com/bytebase
   right-click → Explain, in the editor and the admin terminal, ask for the
   drawable format, so the picture takes one call. No limit is added to an
   explain, and there is no Explain analyze action; measured plans come from a
-  typed `EXPLAIN ANALYZE`. §3.1 is closed.
+  typed `EXPLAIN ANALYZE`
+  ([#21666](https://github.com/bytebase/bytebase/pull/21666),
+  [#21668](https://github.com/bytebase/bytebase/pull/21668)). §3.1 is closed.
 
 - §3.3 — the rest of the reading changes. A measured plan is ranked by the time
   each operator spent — its own total less its children's — and says that is
@@ -589,7 +595,15 @@ Checked against `main` on 2026-10-26, after [#21652](https://github.com/bytebase
   result tab. A node that reads a table Bytebase has synced shows that table's
   size and its indexes, which no standalone viewer can do; a table in another
   database, or a bare name two schemas both use, is left unanswered rather than
-  answered with the wrong table's indexes. §3.3 is closed.
+  answered with the wrong table's indexes
+  ([#21668](https://github.com/bytebase/bytebase/pull/21668)). §3.3 is closed.
+
+- §3.4 — every driver that runs a statement records that statement: Redis no
+  longer shifts them by a blank line, DynamoDB no longer gives every result the
+  whole request, Databricks records one where it recorded none, and a run cut
+  off at its timeout carries the statement it was running. *Show in Editor* on a failed
+  result reads through the `WITH result AS (…)` wrapper the row limit adds,
+  which it could not find in the editor before.
 
 **Not yet**
 
