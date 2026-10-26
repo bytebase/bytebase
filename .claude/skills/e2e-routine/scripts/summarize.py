@@ -3,10 +3,11 @@
 
     summarize.py <results-dir>   -> writes summary.json and summary.md there, prints summary.md
 
-Buckets (see references/triage.md for what to do with each):
+Buckets (the truth table and the action for each are in references/triage.md):
   failed        unexpected on every attempt           -> verify: product regression or spec rot
-  flaky         failed, then passed on a retry        -> flakes ledger
-  lock_flipped  test.fail() lock that now passes      -> the bug was fixed; remove the lock
+  flaky         failed, then passed on a retry        -> rerun alone; a flake only if green there
+  lock_flipped  test.fail() lock passed every attempt -> the bug was fixed; remove the lock
+  lock_unstable test.fail() lock passed some attempts -> the locked bug is intermittent; keep the lock
   lock_holding  test.fail() lock still failing        -> not red
   infra         no test ran, or every test died on a boot/license/browser signature
                 (a lost server whose server.log holds a Go crash is a failed row instead)
@@ -93,15 +94,50 @@ def first_line(msg):
     return ""
 
 
-def pick_evidence(results):
-    """The files that show the failure the entry reports: the screenshots (one
-    per open page) and aria snapshot of the latest failed attempt that has
-    them, and the trace of a failed attempt (Playwright traces the first retry
-    only). A passing retry's trace shows the pass, so it is never the evidence."""
-    failed = [(i, r) for i, r in enumerate(results) if r.get("status") not in ("passed", "skipped")]
+def anomalous(results, expected):
+    """The attempts whose status is not the test's expected one: the failures
+    of an ordinary test, the passes (or timeouts) of a test.fail() lock
+    (references/triage.md, "Buckets")."""
+    return [(i, r) for i, r in enumerate(results) if r.get("status") not in (expected, "skipped")]
+
+
+def attempt_error(results, expected):
+    """The latest anomalous attempt's error as (first line, whole message). An
+    unexpected pass carries no error, so it is named for what it is."""
+    odd = anomalous(results, expected)
+    if not odd:
+        # A holding lock: what it still fails with, as expected.
+        odd = [(i, r) for i, r in enumerate(results) if (r.get("error") or {}).get("message")]
+        if not odd:
+            return "", ""
+    r = odd[-1][1]
+    msg = re.sub(r"\x1b\[[0-9;]*m", "", (r.get("error") or {}).get("message") or "")
+    if msg:
+        return first_line(msg), msg
+    if r.get("status") == "passed":
+        return f"Expected to fail, but passed (attempt {odd[-1][0] + 1} of {len(results)})", ""
+    return r.get("status") or "", ""
+
+
+def hint(bucket, message, expected):
+    # Playwright puts the strict-mode cause lines below the assertion's first line.
+    if "strict mode violation" in message:
+        return "a locator matches several elements: a spec defect, never timing (SPEC-ROT)"
+    if expected == "failed" and bucket in ("failed", "flaky"):
+        return "a test.fail() lock timed out: the test now hangs, which is not the locked bug"
+    return None
+
+
+def pick_evidence(results, expected="passed"):
+    """The files that show what the entry reports: the screenshots (one per
+    open page) and aria snapshot of the latest anomalous attempt that has
+    them, and the trace of an anomalous attempt (Playwright traces the first
+    retry only). An attempt that went as expected shows nothing wrong, so it is
+    never the evidence."""
+    odd = anomalous(results, expected)
 
     def latest(name):
-        for i, r in reversed(failed):
+        for i, r in reversed(odd):
             paths = sorted({a["path"] for a in r.get("attachments", [])
                             if a.get("name") == name and a.get("path") and os.path.exists(a["path"])})
             if paths:
@@ -129,15 +165,23 @@ def walk(suite, file_title, out):
 
 
 def classify(test):
+    """The bucket per the truth table in references/triage.md ("Buckets")."""
     status = test.get("status")  # expected | unexpected | flaky | skipped
     expected = test.get("expectedStatus")  # passed | failed | skipped
     if status == "skipped":
         return "skipped"
-    if status == "flaky":
-        return "flaky"
-    if expected == "failed":
-        return "lock_holding" if status == "expected" else "lock_flipped"
-    return "passed" if status == "expected" else "failed"
+    if expected != "failed":
+        return {"expected": "passed", "flaky": "flaky"}.get(status, "failed")
+    statuses = [r.get("status") for r in test.get("results", [])]
+    passes = statuses.count("passed")
+    if passes and passes == len(statuses):
+        return "lock_flipped"
+    if passes:
+        return "lock_unstable"
+    if status == "expected":
+        return "lock_holding"
+    # No pass, yet not the expected failure on every attempt: a timeout.
+    return "flaky" if "failed" in statuses else "failed"
 
 
 def infra_signature(text):
@@ -159,8 +203,8 @@ def main(results_dir):
         exit_code = int(open(ep).read().strip() or 0)
 
     summary = {"meta": meta, "exit_code": exit_code, "totals": {}, "failed": [], "flaky": [],
-               "lock_flipped": [], "lock_holding": [], "skipped": [], "not_run": [], "infra": None,
-               "incomplete": None, "errors": []}
+               "lock_flipped": [], "lock_unstable": [], "lock_holding": [], "skipped": [], "not_run": [],
+               "infra": None, "incomplete": None, "errors": []}
 
     if not os.path.exists(report_path):
         log_tail = ""
@@ -194,10 +238,8 @@ def main(results_dir):
         if bucket == "skipped":
             counts["not_run" if not deliberate else "skipped_deliberate"] += 1
         results = test.get("results", [])
-        # The latest attempt that carries an error: for a flaky test the final
-        # attempt passed and has none, and the failure is the evidence.
-        errored = [r for r in results if (r.get("error") or {}).get("message")]
-        err = first_line(errored[-1]["error"]["message"]) if errored else ""
+        expected = test.get("expectedStatus") or "passed"
+        err, message = attempt_error(results, expected)
         entry = {
             "file": file_title,
             "title": spec.get("title"),
@@ -208,13 +250,14 @@ def main(results_dir):
             "duration_ms": sum(r.get("durationMs", r.get("duration", 0)) or 0 for r in results),
             "error": err,
             "infra_signature": infra_signature(err),
-            "evidence": pick_evidence(results),
+            "evidence": pick_evidence(results, expected),
+            "hint": hint(bucket, message, expected),
             "annotations": [a.get("type") for a in test.get("annotations", [])],
         }
         if bucket == "skipped" and not deliberate:
             entry["blocked_by"] = last_failed_in_file.get(file_title)
             summary["not_run"].append(entry)
-        elif bucket in ("failed", "flaky", "lock_flipped", "lock_holding", "skipped"):
+        elif bucket in ("failed", "flaky", "lock_flipped", "lock_unstable", "lock_holding", "skipped"):
             summary[bucket].append(entry)
 
     stats = report.get("stats", {})
@@ -225,6 +268,7 @@ def main(results_dir):
         "failed": counts["failed"],
         "flaky": counts["flaky"],
         "lock_flipped": counts["lock_flipped"],
+        "lock_unstable": counts["lock_unstable"],
         "lock_holding": counts["lock_holding"],
         "skipped": counts["skipped"],
         "not_run": counts["not_run"],
@@ -380,12 +424,13 @@ def write(results_dir, s):
         lines += [f"**INCOMPLETE**: {s['incomplete']['reason']}; {s['incomplete']['not_run']} test(s) never ran. Not a green run.", ""]
     if t:
         lines += [f"{t['passed']} passed, {t['failed']} failed, {t['flaky']} flaky, {t['lock_flipped']} lock flipped, "
-                  f"{t['lock_holding']} lock holding, {t.get('not_run', 0)} did not run, "
+                  f"{t.get('lock_unstable', 0)} lock unstable, {t['lock_holding']} lock holding, {t.get('not_run', 0)} did not run, "
                   f"{t.get('skipped_deliberate', t['skipped'])} skipped on purpose, {t['tests']} total, {t['duration_s']}s", ""]
     for bucket, head in (("failed", "Failed (every attempt)"), ("flaky", "Flaky (passed on retry)"),
                          ("lost_to_infra", "Lost to the environment (not triaged; they rerun once it is fixed)"),
                          ("lost_to_crash", "Lost to the server crash (not triaged; they rerun once the crash is fixed)"),
                          ("lock_flipped", "Locks that now pass"),
+                         ("lock_unstable", "Locks that pass only sometimes (the locked bug is intermittent)"),
                          ("not_run", "Did not run (not covered by this run)"), ("skipped", "Skipped on purpose")):
         if s.get(bucket):
             lines += [f"## {head}", ""]
@@ -396,7 +441,9 @@ def write(results_dir, s):
                     lines.append(f"  - {e['error']}")
                 if bucket == "not_run":
                     lines.append(f"  - blocked by: {e.get('blocked_by') or 'the run ending early'}")
-                if bucket in ("failed", "flaky", "lock_flipped"):
+                if e.get("hint"):
+                    lines.append(f"  - hint: {e['hint']}")
+                if bucket in ("failed", "flaky", "lock_flipped", "lock_unstable"):
                     lines.append(f"  - screenshots: {evidence_line(e.get('evidence') or NO_EVIDENCE, results_dir)}")
             lines.append("")
     if s.get("errors"):
@@ -419,9 +466,17 @@ def record_pre_run_failure(results_dir, kind, detail, cause="infra"):
     if os.path.exists(mp):
         meta = json.load(open(mp))
     else:
-        repo = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", ".."))
-        sha = subprocess.run(["git", "-C", repo, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
-        meta = {"run_id": os.path.basename(os.path.normpath(results_dir)), "sha": sha, "short_sha": sha[:10]}
+        here = os.path.dirname(os.path.abspath(__file__))
+        repo = os.path.abspath(os.path.join(here, "..", "..", "..", ".."))
+        # The same rule as run-suite.sh: the main commit under test, else HEAD
+        # marked off main (references/ledger.md).
+        sha = subprocess.run(["bash", "-c", 'source "$1"; tested_sha', "_", os.path.join(here, "lib.sh")],
+                             capture_output=True, text=True).stdout.strip()
+        on_main = bool(sha)
+        if not sha:
+            sha = subprocess.run(["git", "-C", repo, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+        meta = {"run_id": os.path.basename(os.path.normpath(results_dir)), "sha": sha, "short_sha": sha[:10],
+                "on_main": on_main}
         json.dump(meta, open(mp, "w"))
     summary = {"meta": meta, "exit_code": None, "totals": {}, "failed": [], "flaky": [],
                "lock_flipped": [], "lock_holding": [], "skipped": [], "not_run": [],
