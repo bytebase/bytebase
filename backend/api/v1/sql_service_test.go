@@ -4,9 +4,11 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -667,4 +669,28 @@ func TestRemapBackupTableColumns(t *testing.T) {
 	require.Equal(t, want, span.SourceColumns)
 	require.Equal(t, want, span.PredicateColumns)
 	require.Equal(t, want, span.Results[0].SourceColumns)
+}
+
+func TestResultForTimeoutNamesTheStatementItCutOff(t *testing.T) {
+	t.Parallel()
+	results := resultForTimeout("SELECT * FROM t", &queryTimeoutError{timeout: 30 * time.Second})
+	require.Len(t, results, 1)
+	require.Equal(t, "SELECT * FROM t", results[0].Statement)
+	require.Equal(t, "timeout reached: 30s", results[0].Error)
+}
+
+func TestResultForTimeoutLeavesAnEngineErrorAlone(t *testing.T) {
+	t.Parallel()
+	// Only a run the server cut off has no result of its own; an engine error
+	// already reaches the editor as the driver reported it.
+	require.Nil(t, resultForTimeout("SELECT * FROM t", errors.New("syntax error")))
+	require.Nil(t, resultForTimeout("SELECT * FROM t", nil))
+}
+
+func TestResultForTimeoutUnwrapsAWrappedTimeout(t *testing.T) {
+	t.Parallel()
+	err := errors.Wrap(&queryTimeoutError{timeout: time.Second}, "failed to query")
+	results := resultForTimeout("SELECT 1", err)
+	require.Len(t, results, 1)
+	require.Equal(t, "SELECT 1", results[0].Statement)
 }

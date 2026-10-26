@@ -114,6 +114,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			result.Rows = append(result.Rows, queryRow)
 		}
 		result.Latency = durationpb.New(time.Since(startTime))
+		result.Statement = stmt.Text
 		result.RowsCount = int64(len(result.Rows))
 		results = append(results, result)
 	}
