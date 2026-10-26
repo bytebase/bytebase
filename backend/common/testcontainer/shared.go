@@ -23,6 +23,9 @@ var (
 	sharedMSSQL    = startOnce(getMSSQLContainer)
 	sharedTiDB     = startOnce(getTiDBContainer)
 	sharedMongo    = startOnce(getMongoDBContainer)
+	sharedMariaDB  = startOnce(mariaDBStarter("mariadb:11.8.8"))
+	// 10.7 is the oldest MariaDB release Bytebase supports.
+	sharedMariaDB107 = startOnce(mariaDBStarter("mariadb:10.7.8"))
 
 	startedMu sync.Mutex
 	started   []*Container
@@ -103,6 +106,14 @@ func SharedTiDBContainer(t testing.TB) *Container { return shared(t, sharedTiDB)
 // each with NewMongoDatabase.
 func SharedMongoDBContainer(t testing.TB) *Container { return shared(t, sharedMongo) }
 
+// SharedMariaDBContainer is SharedPgContainer for MariaDB 11.8; tests take a
+// database each with NewMariaDBDatabase.
+func SharedMariaDBContainer(t testing.TB) *Container { return shared(t, sharedMariaDB) }
+
+// SharedMariaDB107Container is SharedMariaDBContainer for MariaDB 10.7, the
+// oldest supported release; tests take a database each with NewMariaDB107Database.
+func SharedMariaDB107Container(t testing.TB) *Container { return shared(t, sharedMariaDB107) }
+
 // NewPgDatabase creates an empty database for the test on the shared
 // PostgreSQL container and returns its name with a superuser handle to it.
 // Anything cluster-wide the test creates, such as a role, should be named
@@ -139,7 +150,24 @@ func createPgDatabase(t testing.TB, container *Container) (string, *sql.DB) {
 // container and returns the container with the database's name.
 func NewTiDBDatabase(t testing.TB) (*Container, string) {
 	t.Helper()
-	container := SharedTiDBContainer(t)
+	return createMySQLProtocolDatabase(t, SharedTiDBContainer(t))
+}
+
+// NewMariaDBDatabase creates an empty database for the test on the shared
+// MariaDB container and returns the container with the database's name.
+func NewMariaDBDatabase(t testing.TB) (*Container, string) {
+	t.Helper()
+	return createMySQLProtocolDatabase(t, SharedMariaDBContainer(t))
+}
+
+// NewMariaDB107Database is NewMariaDBDatabase on the shared MariaDB 10.7 container.
+func NewMariaDB107Database(t testing.TB) (*Container, string) {
+	t.Helper()
+	return createMySQLProtocolDatabase(t, SharedMariaDB107Container(t))
+}
+
+func createMySQLProtocolDatabase(t testing.TB, container *Container) (*Container, string) {
+	t.Helper()
 	name := newDatabaseName()
 	_, err := container.GetDB().Exec("CREATE DATABASE " + name)
 	require.NoError(t, err)
