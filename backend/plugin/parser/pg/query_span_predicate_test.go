@@ -1,0 +1,294 @@
+package pg
+
+import (
+	"context"
+	"slices"
+	"testing"
+
+	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/bytebase/omni/pg/ast"
+	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+)
+
+func predicateColumnNames(columns base.SourceColumnSet) []string {
+	names := []string{}
+	for column := range columns {
+		if column.Column != "" {
+			names = append(names, column.Table+"."+column.Column)
+		}
+	}
+	slices.Sort(names)
+	return names
+}
+
+func TestGetQuerySpanPredicateColumns(t *testing.T) {
+	testCases := []struct {
+		name      string
+		statement string
+		want      []string
+	}{
+		{"where", "SELECT id FROM t WHERE ssn = '1'", []string{"t.ssn"}},
+		{"where function", "SELECT id FROM t WHERE ascii(substr(ssn, 1, 1)) > 70", []string{"t.ssn"}},
+		{"row comparison", "SELECT id FROM t WHERE (ssn, id) > ('1', 0)", []string{"t.id", "t.ssn"}},
+		{"join on", "SELECT o.amt FROM o JOIN t ON t.id = o.id AND t.ssn = '1'", []string{"o.id", "t.id", "t.ssn"}},
+		{"left join on", "SELECT o.amt FROM o LEFT JOIN t ON t.id = o.id AND t.ssn = '1'", []string{"o.id", "t.id", "t.ssn"}},
+		{"join using", "SELECT a.id FROM t a JOIN t b USING (ssn)", []string{"t.ssn"}},
+		{"having", "SELECT id FROM t GROUP BY id HAVING max(ssn) > '1'", []string{"t.ssn"}},
+		{"in subquery", "SELECT amt FROM o WHERE id IN (SELECT id FROM t WHERE ssn = '1')", []string{"o.id", "t.id", "t.ssn"}},
+		{"subquery output", "SELECT amt FROM o WHERE '1' = (SELECT max(ssn) FROM t)", []string{"t.ssn"}},
+		{"correlated exists", "SELECT amt FROM o WHERE EXISTS (SELECT 1 FROM t WHERE t.id = o.id AND t.ssn = '1')", []string{"o.id", "t.id", "t.ssn"}},
+		{"subquery in select list", "SELECT (SELECT count(*) FROM t WHERE ssn = '1') AS c", []string{"t.ssn"}},
+		{"derived table", "SELECT id FROM (SELECT * FROM t WHERE ssn = '1') s", []string{"t.ssn"}},
+		{"derived table output", "SELECT s.id FROM (SELECT id, ssn AS x FROM t) s WHERE s.x = '1'", []string{"t.ssn"}},
+		{"lateral subquery", "SELECT o.amt FROM o, LATERAL (SELECT 1 FROM t WHERE t.id = o.id AND t.ssn = '1') l", []string{"o.id", "t.id", "t.ssn"}},
+		{"cte", "WITH c AS (SELECT id FROM t WHERE ssn = '1') SELECT id FROM c", []string{"t.ssn"}},
+		{"cte output", "WITH c AS (SELECT id, ssn FROM t) SELECT id FROM c WHERE ssn = '1'", []string{"t.ssn"}},
+		{"set operation arm", "SELECT id FROM t WHERE ssn = '1' UNION SELECT id FROM o", []string{"t.ssn"}},
+		{"except filters by the other branch", "SELECT 'guess' AS x EXCEPT SELECT ssn FROM t", []string{"t.ssn"}},
+		{"intersect filters by the other branch", "SELECT 'guess' AS x INTERSECT ALL SELECT ssn FROM t", []string{"t.ssn"}},
+		{"union filters nothing", "SELECT 'guess' AS x UNION SELECT ssn FROM t", []string{}},
+		{"explain analyze", "EXPLAIN ANALYZE SELECT id FROM t WHERE ssn = '1'", []string{"t.ssn"}},
+		{"aggregate filter", "SELECT sum(id) FILTER (WHERE ssn = '1') AS x FROM t", []string{"t.ssn"}},
+		{"natural join", "SELECT 1 FROM t NATURAL JOIN (SELECT '1'::text AS ssn) x", []string{"t.ssn"}},
+		{"full join using", "SELECT id FROM t FULL JOIN o USING (id) WHERE id > 0", []string{"o.id", "t.id"}},
+		{"limit subquery", "SELECT id FROM t LIMIT (SELECT count(*) FROM t WHERE ssn = '1')", []string{"t.ssn"}},
+		{"limit value", "SELECT id FROM t LIMIT (SELECT CASE WHEN ssn = 'guess' THEN 1 ELSE 0 END FROM t LIMIT 1)", []string{"t.ssn"}},
+		{"set operation limit", "SELECT 1 AS x UNION ALL SELECT 2 LIMIT (SELECT CASE WHEN ssn = 'guess' THEN 1 ELSE 0 END FROM t LIMIT 1)", []string{"t.ssn"}},
+		{"set-returning function in from", "SELECT count(*) AS c FROM t CROSS JOIN LATERAL generate_series(1, ascii(substr(t.ssn, 1, 1)))", []string{"t.ssn"}},
+		{"set-returning function in select list", "SELECT generate_series(1, ascii(substr(ssn, 1, 1))) AS g FROM t", []string{"t.ssn"}},
+		{"scalar function in select list", "SELECT upper(ssn) AS u FROM t", []string{}},
+		{"unknown function", "SELECT id FROM t WHERE levenshtein(ssn, 'a') > 0", []string{"t.ssn"}},
+		{"unknown function in from", "SELECT t.id FROM t, LATERAL unknown_rows(t.ssn) f WHERE f.a = 1", []string{"t.ssn"}},
+		{"select list only", "SELECT ssn FROM t", []string{}},
+		{"condition in select list", "SELECT CASE WHEN ssn = '1' THEN 1 END AS x FROM t", []string{}},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			span := spanFor(t, tc.statement, healthySchema())
+			require.Equal(t, tc.want, predicateColumnNames(span.PredicateColumns))
+		})
+	}
+}
+
+func TestGetQuerySpanPredicateColumnsOfFunctionBodies(t *testing.T) {
+	schema := healthySchema()
+	// * over an unknown function fails analysis of the body that uses it.
+	unanalyzable := "(SELECT * FROM o CROSS JOIN unknown_rows() u) o JOIN t ON t.id = o.id AND t.ssn = guess"
+	schema.Schemas[0].Functions = []*metadatapb.FunctionMetadata{
+		{Name: "probe", Definition: "CREATE FUNCTION public.probe(guess text) RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT t.id FROM t WHERE t.ssn = guess; END; $$"},
+		{Name: "probe_sql", Definition: "CREATE FUNCTION public.probe_sql(guess text) RETURNS SETOF int LANGUAGE sql AS $$ SELECT id FROM t WHERE ssn = guess $$"},
+		{Name: "probe_fixed", Definition: "CREATE FUNCTION public.probe_fixed() RETURNS SETOF int LANGUAGE sql AS $$ SELECT id FROM t WHERE ssn = 'guess' $$"},
+		{Name: "probe_multi", Definition: "CREATE FUNCTION public.probe_multi() RETURNS int LANGUAGE sql AS $$ SELECT pg_sleep(0) FROM t WHERE ssn = 'guess'; SELECT 1 $$"},
+		{Name: "probe_perform", Definition: "CREATE FUNCTION public.probe_perform() RETURNS int LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_sleep(0) FROM t WHERE ssn = 'guess'; RETURN 1; END; $$"},
+		{Name: "probe_if", Definition: "CREATE FUNCTION public.probe_if() RETURNS int LANGUAGE plpgsql AS $$ BEGIN IF (SELECT ssn FROM t LIMIT 1) = 'guess' THEN RETURN 1; END IF; RETURN 0; END; $$"},
+		{Name: "probe_variable", Definition: "CREATE FUNCTION public.probe_variable() RETURNS int LANGUAGE plpgsql AS $$ DECLARE v text; BEGIN SELECT ssn INTO v FROM t WHERE id = 1; IF v = 'guess' THEN RETURN 1; END IF; RETURN 0; END; $$"},
+		{Name: "probe_update", Definition: "CREATE FUNCTION public.probe_update() RETURNS int LANGUAGE sql AS $$ UPDATE t SET id = id WHERE ssn = 'guess'; SELECT 1 $$"},
+		{Name: "probe_exec", Definition: "CREATE FUNCTION public.probe_exec() RETURNS int LANGUAGE plpgsql AS $$ BEGIN DELETE FROM t WHERE ssn = 'guess'; RETURN 1; END; $$"},
+		{Name: "probe_table", Definition: "CREATE FUNCTION public.probe_table() RETURNS TABLE(id int) LANGUAGE sql AS $$ SELECT id FROM t WHERE ssn = 'guess' $$"},
+		{Name: "probe_record", Definition: "CREATE FUNCTION public.probe_record() RETURNS int LANGUAGE plpgsql AS $$ DECLARE r record; BEGIN SELECT ssn INTO r FROM t LIMIT 1; IF r.ssn = 'guess' THEN RETURN 1; END IF; RETURN 0; END; $$"},
+		{Name: "probe_execute", Definition: "CREATE FUNCTION public.probe_execute() RETURNS int LANGUAGE plpgsql AS $$ BEGIN EXECUTE 'SELECT pg_sleep(0) FROM t ' || 'WHERE ssn = ''guess'''; RETURN 1; END; $$"},
+		{Name: "probe_count", Definition: "CREATE FUNCTION public.probe_count() RETURNS int LANGUAGE sql AS $$ SELECT count(*)::int FROM t WHERE ssn = 'guess' $$"},
+		{Name: "probe_bool", Definition: "CREATE FUNCTION public.probe_bool() RETURNS boolean LANGUAGE sql AS $$ SELECT EXISTS (SELECT 1 FROM t WHERE ssn = 'guess') $$"},
+		{Name: "probe_raise", Definition: "CREATE FUNCTION public.probe_raise() RETURNS int LANGUAGE plpgsql AS $$ DECLARE v text; BEGIN SELECT ssn INTO v FROM t LIMIT 1; RAISE EXCEPTION '%', v; END; $$"},
+		// The overload that reads ssn loads first, so a body chosen by name alone
+		// would be the harmless one.
+		{Name: "probe_over", Definition: "CREATE FUNCTION public.probe_over(x text) RETURNS boolean LANGUAGE sql AS $$ SELECT EXISTS (SELECT 1 FROM t WHERE ssn = x) $$"},
+		{Name: "probe_over", Definition: "CREATE FUNCTION public.probe_over(x int) RETURNS boolean LANGUAGE sql AS $$ SELECT true $$"},
+		// A missing return type makes the catalog install these as stand-ins.
+		{Name: "probe_stand_in", Definition: "CREATE FUNCTION public.probe_stand_in(x text) RETURNS SETOF missing_tbl LANGUAGE sql AS $$ SELECT * FROM t WHERE ssn = x $$"},
+		{Name: "probe_stand_in", Definition: "CREATE FUNCTION public.probe_stand_in(x int) RETURNS SETOF missing_tbl LANGUAGE sql AS $$ SELECT * FROM o $$"},
+		{Name: "probe_stand_in_pl", Definition: "CREATE FUNCTION public.probe_stand_in_pl(x text) RETURNS SETOF missing_tbl LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT * FROM t WHERE ssn = x; END; $$"},
+		{Name: "probe_discard", Definition: "CREATE FUNCTION public.probe_discard() RETURNS int LANGUAGE sql AS $$ SELECT pg_sleep(CASE WHEN ssn = 'guess' THEN 0 ELSE 0 END) FROM t; SELECT 1 $$"},
+		{Name: "probe_declare", Definition: "CREATE FUNCTION public.probe_declare() RETURNS int LANGUAGE plpgsql AS $$ DECLARE v text := (SELECT ssn FROM t LIMIT 1); BEGIN RAISE EXCEPTION '%', v; END; $$"},
+		{Name: "proc_check", Definition: "CREATE PROCEDURE public.proc_check(x text) LANGUAGE plpgsql AS $$ BEGIN IF x = 'guess' THEN RAISE EXCEPTION 'hit'; END IF; END; $$"},
+		{Name: "probe_call_subquery", Definition: "CREATE FUNCTION public.probe_call_subquery() RETURNS int LANGUAGE plpgsql AS $$ BEGIN CALL proc_check((SELECT ssn FROM t LIMIT 1)); RETURN 1; END; $$"},
+		{Name: "probe_call", Definition: "CREATE FUNCTION public.probe_call() RETURNS int LANGUAGE plpgsql AS $$ DECLARE v text; BEGIN SELECT ssn INTO v FROM t LIMIT 1; CALL proc_check(v); RETURN 1; END; $$"},
+		// The last SELECT reads a table the snapshot lacks, so the body fails analysis.
+		{Name: "probe_failing", Definition: "CREATE FUNCTION public.probe_failing() RETURNS SETOF record LANGUAGE sql AS $$ SELECT pg_sleep(0) FROM t WHERE ssn = 'guess'; SELECT * FROM missing_tbl $$"},
+		{Name: "probe_for", Definition: "CREATE FUNCTION public.probe_for() RETURNS SETOF int LANGUAGE plpgsql AS $$ BEGIN FOR i IN 1..(SELECT ascii(ssn) FROM t LIMIT 1) LOOP RETURN NEXT i; END LOOP; END; $$"},
+		{Name: "probe_join", Definition: "CREATE FUNCTION public.probe_join(guess text) RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT o.id FROM " + unanalyzable + "; END; $$"},
+		{Name: "probe_join_sql", Definition: "CREATE FUNCTION public.probe_join_sql(guess text) RETURNS SETOF int LANGUAGE sql AS $$ SELECT o.id FROM " + unanalyzable + " $$"},
+	}
+	testCases := []struct {
+		statement string
+		want      []string
+	}{
+		{"SELECT count(*) AS c FROM probe('guess')", []string{"t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_sql('guess')", []string{"t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_fixed()", []string{"t.ssn"}},
+		{"SELECT probe_multi() AS x", []string{"t.ssn"}},
+		{"SELECT probe_perform() AS x", []string{"t.ssn"}},
+		{"SELECT probe_if() AS x", []string{"t.ssn"}},
+		{"SELECT probe_variable() AS x", []string{"t.id", "t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_for()", []string{"t.ssn"}},
+		{"SELECT probe_update() AS x", []string{"t.ssn"}},
+		{"SELECT probe_record() AS x", []string{"t.ssn"}},
+		{"SELECT probe_raise() AS x", []string{"t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_stand_in('guess')", []string{"t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_stand_in_pl('guess')", []string{"t.ssn"}},
+		{"SELECT probe_discard() AS x", []string{"t.ssn"}},
+		{"SELECT probe_declare() AS x", []string{"t.ssn"}},
+		{"SELECT probe_call() AS x", []string{"t.ssn"}},
+		{"SELECT probe_call_subquery() AS x", []string{"t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_failing() AS f(a int)", []string{"t.ssn"}},
+		{"SELECT probe_over('guess') AS b", []string{"t.ssn"}},
+		{"SELECT probe_over(1) AS b", []string{}},
+		{"SELECT * FROM o CROSS JOIN unknown_rows() u WHERE probe_over(1)", []string{"t.ssn"}},
+		// omni leaves a set operation's LIMIT out of its tree.
+		{"SELECT 1 AS x UNION ALL SELECT 2 LIMIT probe_count()", []string{"t.ssn"}},
+		{"SELECT * FROM o CROSS JOIN unknown_rows() u WHERE probe_bool()", []string{"t.ssn"}},
+		{"SELECT * FROM o CROSS JOIN unknown_rows() u WHERE public.probe_bool()", []string{"t.ssn"}},
+		{"SELECT probe_execute() AS x", []string{"t.ssn"}},
+		{"SELECT probe_exec() AS x", []string{"t.ssn"}},
+		// * over an unknown function sends the outer query to the fallback.
+		{"SELECT * FROM probe_table() p CROSS JOIN unknown_rows() u", []string{"t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_join('guess')", []string{"o.id", "t.id", "t.ssn"}},
+		{"SELECT count(*) AS c FROM probe_join_sql('guess')", []string{"o.id", "t.id", "t.ssn"}},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.statement, func(t *testing.T) {
+			span := spanFor(t, tc.statement, schema)
+			require.Equal(t, tc.want, predicateColumnNames(span.PredicateColumns))
+		})
+	}
+}
+
+func TestGetQuerySpanResultLineage(t *testing.T) {
+	testCases := []struct {
+		name      string
+		statement string
+		want      []string
+	}{
+		{"set operation in subquery", "SELECT s.a FROM (SELECT ssn AS a FROM t UNION SELECT email FROM t) s", []string{"t.email", "t.ssn"}},
+		{"set operation in cte", "WITH c AS (SELECT ssn FROM t UNION SELECT email FROM t) SELECT ssn FROM c", []string{"t.email", "t.ssn"}},
+		{"except returns left branch rows", "SELECT s.a FROM (SELECT ssn AS a FROM t EXCEPT SELECT email FROM t) s", []string{"t.ssn"}},
+		{"window before column in subquery", "SELECT s.x FROM (SELECT row_number() OVER (ORDER BY ssn) AS rn, email AS x FROM t) s", []string{"t.email"}},
+		{"full join using column", "SELECT id FROM t FULL JOIN o USING (id)", []string{"o.id", "t.id"}},
+		{"aggregate order by", "SELECT string_agg(email, ',' ORDER BY ssn) AS x FROM t", []string{"t.email", "t.ssn"}},
+		{"unknown function in from", "SELECT f.a FROM t CROSS JOIN LATERAL unknown_rows(t.ssn) f", []string{"t.ssn"}},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			span := spanFor(t, tc.statement, healthySchema())
+			require.Len(t, span.Results, 1)
+			require.Equal(t, tc.want, predicateColumnNames(span.Results[0].SourceColumns))
+		})
+	}
+}
+
+func TestGetQuerySpanResultLineageOfFunctionBodies(t *testing.T) {
+	schema := healthySchema()
+	schema.Schemas[0].Functions = []*metadatapb.FunctionMetadata{
+		{Name: "read_cursor", Definition: "CREATE FUNCTION public.read_cursor() RETURNS text LANGUAGE plpgsql AS $$ DECLARE c CURSOR FOR SELECT ssn FROM t; v text; BEGIN OPEN c; FETCH c INTO v; RETURN v; END; $$"},
+		{Name: "loop_cursor", Definition: "CREATE FUNCTION public.loop_cursor() RETURNS SETOF text LANGUAGE plpgsql AS $$ DECLARE c CURSOR FOR SELECT ssn FROM t; BEGIN FOR r IN c LOOP RETURN NEXT r.ssn; END LOOP; END; $$"},
+		{Name: "returning_sql", Definition: "CREATE FUNCTION public.returning_sql() RETURNS SETOF text LANGUAGE sql AS $$ UPDATE t SET id = id RETURNING ssn $$"},
+		{Name: "returning_table", Definition: "CREATE FUNCTION public.returning_table() RETURNS TABLE(i int, e text, s text) LANGUAGE sql AS $$ DELETE FROM t WHERE false RETURNING * $$"},
+		{Name: "returning_pl", Definition: "CREATE FUNCTION public.returning_pl() RETURNS text LANGUAGE plpgsql AS $$ DECLARE v text; BEGIN UPDATE t SET id = id WHERE id = 1 RETURNING ssn INTO v; RETURN v; END; $$"},
+	}
+	testCases := []struct {
+		statement string
+		want      []string
+	}{
+		{"SELECT read_cursor() AS x", []string{"t.ssn"}},
+		{"SELECT loop_cursor() AS x", []string{"t.ssn"}},
+		{"SELECT returning_sql() AS x", []string{"t.ssn"}},
+		{"SELECT returning_pl() AS x", []string{"t.ssn"}},
+		{"SELECT r.s FROM returning_table() r", []string{"t.ssn"}},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.statement, func(t *testing.T) {
+			span := spanFor(t, tc.statement, schema)
+			require.Len(t, span.Results, 1)
+			require.Equal(t, tc.want, predicateColumnNames(span.Results[0].SourceColumns))
+		})
+	}
+}
+
+func TestGetQuerySpanKeepsSQLBodyAccesses(t *testing.T) {
+	schema := degradedSchema()
+	schema.Schemas[0].Functions = []*metadatapb.FunctionMetadata{
+		{Name: "probe_sql", Definition: "CREATE FUNCTION public.probe_sql() RETURNS int LANGUAGE sql AS $$ SELECT 1 FROM t WHERE secret = 'guess' $$"},
+	}
+	span := spanFor(t, "SELECT probe_sql() AS x", schema)
+	require.Contains(t, span.SourceColumns, base.ColumnResource{Database: "db", Schema: "public", Table: "t"})
+	require.NotNil(t, span.UnresolvedColumnsError, "t, read only in the body's condition, was synced with no columns")
+}
+
+func TestGetQuerySpanFallbackKeepsFunctionAccesses(t *testing.T) {
+	schema := degradedSchema()
+	schema.Schemas[0].Functions = []*metadatapb.FunctionMetadata{
+		{Name: "probe_t", Definition: "CREATE FUNCTION public.probe_t() RETURNS TABLE(id int) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT 1 FROM t WHERE secret = 'guess'; END; $$"},
+	}
+	// * over an unknown function sends the statement to the fallback.
+	span := spanFor(t, "SELECT * FROM probe_t() p CROSS JOIN unknown_rows() u", schema)
+	require.Contains(t, span.SourceColumns, base.ColumnResource{Database: "db", Schema: "public", Table: "t"})
+	require.NotNil(t, span.UnresolvedColumnsError, "t, read only inside the function, was synced with no columns")
+}
+
+func newFallbackTestExtractor(t *testing.T) *omniQuerySpanExtractor {
+	t.Helper()
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{healthySchema()})
+	e := newOmniQuerySpanExtractor("db", nil, base.GetQuerySpanContext{GetDatabaseMetadataFunc: getter, ListDatabaseNamesFunc: lister})
+	e.ctx = context.Background()
+	require.NoError(t, e.initCatalog())
+	return e
+}
+
+func TestCollectFallbackPredicateColumns(t *testing.T) {
+	testCases := []struct {
+		name      string
+		statement string
+		want      []string
+	}{
+		{"where", "SELECT id FROM t WHERE ssn = '1'", []string{"t.ssn"}},
+		{"qualified reference matches its table", "SELECT o.amt FROM o JOIN t ON o.id = t.id WHERE o.amt > 0", []string{"o.amt", "o.id", "t.id"}},
+		{"unqualified reference matches every table", "SELECT 1 FROM o JOIN t USING (id) WHERE id > 0", []string{"o.id", "t.id"}},
+		{"reused alias matches every table it names", "SELECT 1 FROM t x WHERE EXISTS (SELECT 1 FROM o x WHERE x.id = 1)", []string{"o.id", "t.id"}},
+		{"subquery in a condition reads every name in it", "SELECT 1 FROM o WHERE EXISTS (WITH c AS (SELECT id FROM t WHERE ssn = '1') SELECT 1 FROM c)", []string{"o.id", "t.id", "t.ssn"}},
+		{"cte column alias", "WITH c(a, b) AS (SELECT id, ssn FROM t) SELECT a FROM c WHERE b = '1'", []string{"t.ssn"}},
+		{"recursive cte column alias", "WITH RECURSIVE c(a, n) AS (SELECT ssn, 1 FROM t UNION ALL SELECT a, n + 1 FROM c WHERE n < 3) SELECT a FROM c", []string{}},
+		{"derived column alias", "SELECT 1 FROM (SELECT id, ssn FROM t) s(a, b) WHERE s.b = '1'", []string{"t.ssn"}},
+		{"output name", "SELECT 1 FROM (SELECT ssn AS x FROM t) s WHERE x = '1'", []string{"t.ssn"}},
+		{"whole row", "SELECT 1 FROM t WHERE t::text LIKE '%1%'", []string{"t.email", "t.id", "t.ssn"}},
+		{"aliased whole row", "SELECT 1 FROM t x WHERE ROW(x.*) IS NOT NULL", []string{"t.email", "t.id", "t.ssn"}},
+		{"join using", "SELECT 1 FROM t a JOIN t b USING (ssn)", []string{"t.ssn"}},
+		{"having", "SELECT id FROM t GROUP BY id HAVING max(ssn) > '1'", []string{"t.ssn"}},
+		{"aggregate filter", "SELECT count(*) FILTER (WHERE ssn = '1') FROM t", []string{"t.ssn"}},
+		{"natural join reads both sides", "SELECT 1 FROM o NATURAL JOIN (SELECT id FROM t) x", []string{"o.amt", "o.id", "t.id"}},
+		{"select list only", "SELECT ssn FROM t", []string{}},
+		{"except filters by the other branch", "SELECT 'guess' EXCEPT SELECT ssn FROM t", []string{"t.ssn"}},
+		{"intersect over star", "SELECT 1, 'a', 'b' INTERSECT SELECT * FROM t", []string{"t.email", "t.id", "t.ssn"}},
+		{"union filters nothing", "SELECT 'guess' UNION SELECT ssn FROM t", []string{}},
+		{"limit value", "SELECT * FROM t LIMIT (SELECT CASE WHEN ssn = 'guess' THEN 1 ELSE 0 END FROM t LIMIT 1)", []string{"t.ssn"}},
+		{"function in from", "SELECT * FROM t CROSS JOIN LATERAL generate_series(1, ascii(substr(t.ssn, 1, 1))) g", []string{"t.ssn"}},
+		{"set-returning function in select list", "SELECT generate_series(1, ascii(substr(ssn, 1, 1))) FROM t", []string{"t.ssn"}},
+		{"scalar function in select list", "SELECT upper(ssn) FROM t", []string{}},
+	}
+	accesses := base.SourceColumnSet{
+		{Database: "db", Schema: "public", Table: "t"}: true,
+		{Database: "db", Schema: "public", Table: "o"}: true,
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newFallbackTestExtractor(t)
+			stmts, err := ParsePg(tc.statement)
+			require.NoError(t, err)
+			e.collectFallbackPredicateColumns(stmts[0].AST, accesses)
+			require.Equal(t, tc.want, predicateColumnNames(e.predicateColumns))
+		})
+	}
+}
+
+func TestGetQuerySpanFallbackKeepsPredicateColumns(t *testing.T) {
+	// * over the unknown columns of a function fails omni's analysis.
+	statement := "SELECT * FROM o JOIN t ON t.id = o.id AND t.ssn = '1' CROSS JOIN unknown_rows() f"
+	stmts, err := ParsePg(statement)
+	require.NoError(t, err)
+	_, err = newFallbackTestExtractor(t).analyzeSelect(stmts[0].AST.(*ast.SelectStmt))
+	require.Error(t, err, "the statement must fail analysis to reach the fallback")
+
+	span := spanFor(t, statement, healthySchema())
+	require.Equal(t, []string{"o.id", "t.id", "t.ssn"}, predicateColumnNames(span.PredicateColumns))
+}
