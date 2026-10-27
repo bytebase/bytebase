@@ -3,6 +3,7 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { describe, expect, test } from "vitest";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
+  type IssueComment,
   IssueComment_ReviewMetadataSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
@@ -26,6 +27,7 @@ import {
   groupMarkersByLine,
   groupThreads,
   isShownInEditor,
+  needsActivityCard,
   resolveAnchorState,
   selectEditorThreads,
   sheetSha256OfName,
@@ -268,6 +270,57 @@ describe("isShownInEditor", () => {
         plan().specs,
         () => current(25, 25),
         () => 20
+      )
+    ).toBe(false);
+  });
+});
+
+describe("needsActivityCard", () => {
+  const finding = (
+    id: string,
+    opts: { resolved?: boolean; superseded?: boolean } = {}
+  ) =>
+    create(IssueCommentSchema, {
+      ...root(id, { resolved: opts.resolved }),
+      reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
+        runType: ReviewRun_Type.RULE,
+        superseded: opts.superseded ?? false,
+      }),
+    });
+  const threadOf = (rootComment: IssueComment, replies: IssueComment[] = []) =>
+    groupThreads([rootComment, ...replies])[0];
+
+  test("a finding the editor shows needs no card, unless someone replied", () => {
+    expect(needsActivityCard(threadOf(finding("shown")), true)).toBe(false);
+    expect(
+      needsActivityCard(
+        threadOf(finding("talked"), [reply("r", "talked", 2)]),
+        true
+      )
+    ).toBe(true);
+  });
+
+  test("a finding the editor cannot show keeps its card", () => {
+    expect(needsActivityCard(threadOf(finding("hidden")), false)).toBe(true);
+  });
+
+  test("a resolved superseded result is history, a reopened one is not", () => {
+    expect(
+      needsActivityCard(
+        threadOf(finding("old", { resolved: true, superseded: true })),
+        false
+      )
+    ).toBe(false);
+    expect(
+      needsActivityCard(
+        threadOf(finding("reopened", { superseded: true })),
+        false
+      )
+    ).toBe(true);
+    expect(
+      needsActivityCard(
+        threadOf(finding("reopened-shown", { superseded: true })),
+        true
       )
     ).toBe(false);
   });

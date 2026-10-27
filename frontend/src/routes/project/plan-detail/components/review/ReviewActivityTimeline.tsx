@@ -60,6 +60,7 @@ import {
   type CommentThread,
   groupThreads,
   isShownInEditor,
+  needsActivityCard,
   targetSha256OfSpec,
 } from "../threads/threadModel";
 import { usePreviewEndLines } from "../threads/useUnresolvedThreadCounts";
@@ -113,9 +114,7 @@ export function ReviewActivityTimeline({
     setExpanded(false);
   }, [page.pageKey]);
 
-  // Under SQL Review V2, Activity records each run as one line. A finding
-  // keeps its own card only when people replied to it, which makes it a
-  // conversation, or when the editor cannot show it.
+  // Under SQL Review V2, Activity records each run as one line.
   const placements = usePlanDetailStore((s) => s.placements);
   const placementTargets = usePlanDetailStore((s) => s.placementTargets);
   const previewEndLines = usePreviewEndLines(
@@ -126,19 +125,21 @@ export function ReviewActivityTimeline({
     if (!sqlReviewV2Enabled()) return undefined;
     return (root: IssueComment) => {
       const thread = threads.find((candidate) => candidate.root === root);
-      if (thread && thread.replies.length > 0) return true;
-      if (root.reviewMetadata?.superseded) return false;
-      return !isShownInEditor(
-        root,
-        plan.specs,
-        (commentName, specId, sheetSha256) =>
-          placementOf(
-            { placements, placementTargets },
-            commentName,
-            specId,
-            sheetSha256
-          ),
-        (specId) => previewEndLines.get(specId)
+      if (!thread) return true;
+      return needsActivityCard(
+        thread,
+        isShownInEditor(
+          root,
+          plan.specs,
+          (commentName, specId, sheetSha256) =>
+            placementOf(
+              { placements, placementTargets },
+              commentName,
+              specId,
+              sheetSha256
+            ),
+          (specId) => previewEndLines.get(specId)
+        )
       );
     };
   }, [placementTargets, placements, plan.specs, previewEndLines, threads]);

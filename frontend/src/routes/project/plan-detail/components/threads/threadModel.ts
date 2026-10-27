@@ -255,6 +255,19 @@ export function isShownInEditor(
   );
 }
 
+// Under SQL Review V2, Activity records each run as one line, so a finding
+// keeps its own card only where nothing else shows it: people replied to it,
+// or the editor cannot show it. A result a later run superseded is history
+// unless someone reopened it, since an open thread holds the rollout.
+export function needsActivityCard(
+  thread: CommentThread,
+  shownInEditor: boolean
+): boolean {
+  if (thread.replies.length > 0) return true;
+  if (thread.root.reviewMetadata?.superseded && thread.resolved) return false;
+  return !shownInEditor;
+}
+
 export const isEditorThreadVisible = (
   entry: EditorThread,
   previewEndLine: number | undefined
