@@ -84,11 +84,22 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	if err != nil {
 		return nil, err
 	}
+	// A blank or comment-only tail is not a statement to run, and on an explain
+	// request it would be planned as one.
+	stmts = base.FilterEmptyStatements(stmts)
 
 	for _, stmt := range stmts {
+		text := stmt.Text
+		if queryContext.Explain {
+			explained, err := base.ExplainStatement(storepb.Engine_DATABRICKS, text, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
+			if err != nil {
+				return nil, err
+			}
+			text = explained
+		}
 		result := &v1pb.QueryResult{}
 		startTime := time.Now()
-		dataArr, colInfo, err := d.execStatementSync(ctx, stmt.Text, int64(queryContext.Limit))
+		dataArr, colInfo, err := d.execStatementSync(ctx, text, int64(queryContext.Limit))
 		if err != nil {
 			return nil, err
 		}
@@ -114,7 +125,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			result.Rows = append(result.Rows, queryRow)
 		}
 		result.Latency = durationpb.New(time.Since(startTime))
-		result.Statement = stmt.Text
+		result.Statement = text
 		result.RowsCount = int64(len(result.Rows))
 		results = append(results, result)
 	}

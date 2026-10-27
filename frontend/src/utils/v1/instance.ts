@@ -240,6 +240,7 @@ export const instanceV1AllowsExplain = (
     Engine.TIDB,
     Engine.CLICKHOUSE,
     Engine.COCKROACHDB,
+    Engine.DATABRICKS,
     Engine.HIVE,
     Engine.MSSQL,
     Engine.ORACLE,

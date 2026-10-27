@@ -55,6 +55,10 @@ func TestExplainResultFormat(t *testing.T) {
 		{name: "mongodb json", engine: storepb.Engine_MONGODB, format: v1pb.QueryOption_JSON, want: v1pb.QueryOption_JSON, isPlan: true},
 		{name: "cockroachdb json", engine: storepb.Engine_COCKROACHDB, format: v1pb.QueryOption_JSON, want: v1pb.QueryOption_JSON, isPlan: true},
 		{name: "cockroachdb default", engine: storepb.Engine_COCKROACHDB, want: v1pb.QueryOption_TEXT, isPlan: true},
+		{name: "databricks default", engine: storepb.Engine_DATABRICKS, want: v1pb.QueryOption_TEXT, isPlan: true},
+		{name: "snowflake json", engine: storepb.Engine_SNOWFLAKE, format: v1pb.QueryOption_JSON, want: v1pb.QueryOption_JSON, isPlan: true},
+		{name: "snowflake default", engine: storepb.Engine_SNOWFLAKE, want: v1pb.QueryOption_TEXT, isPlan: true},
+		{name: "hive json", engine: storepb.Engine_HIVE, format: v1pb.QueryOption_JSON, want: v1pb.QueryOption_JSON, isPlan: true},
 		{name: "bigquery dry run", engine: storepb.Engine_BIGQUERY},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -63,6 +67,28 @@ func TestExplainResultFormat(t *testing.T) {
 			require.Equal(t, tc.isPlan, isPlan)
 		})
 	}
+}
+
+// TestSupportedExplainFormats pins which engines are refused an explain request
+// outright. An explain request skips the read-only validation an ordinary query
+// gets, on the understanding that the driver turns the statement into a plan, so
+// an engine whose driver would run the statement as written has to report no
+// format at all.
+func TestSupportedExplainFormats(t *testing.T) {
+	for _, engine := range []storepb.Engine{
+		storepb.Engine_REDIS,
+		storepb.Engine_DYNAMODB,
+		storepb.Engine_CASSANDRA,
+		storepb.Engine_COSMOSDB,
+		storepb.Engine_ELASTICSEARCH,
+	} {
+		require.Emptyf(t, SupportedExplainFormats(engine), "%v", engine)
+	}
+	// Databricks plans a statement through its own SQL, so it takes the text
+	// plan every engine without a reader of its own reports.
+	require.Equal(t,
+		[]v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT},
+		SupportedExplainFormats(storepb.Engine_DATABRICKS))
 }
 
 // TestTypedExplainPlan pins how an engine parser's answer about the caller's own

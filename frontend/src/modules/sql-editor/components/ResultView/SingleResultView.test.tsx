@@ -1102,9 +1102,9 @@ describe("SingleResultView explain visualizer", () => {
     );
 
   test("keeps multi-column explain output in the result table", () => {
-    // Snowflake has no parser, so there is no drawable plan to fetch and the
-    // grid is all there is to show.
-    tabularPlan(Engine.SNOWFLAKE, QueryOption_ExplainFormat.TEXT);
+    // Databricks explains in Spark's own FORMATTED text, which has no parser,
+    // so there is no drawable plan to fetch and the grid is all there is.
+    tabularPlan(Engine.DATABRICKS, QueryOption_ExplainFormat.TEXT);
 
     expect(screen.queryByTestId("query-plan-result")).toBeNull();
     expect(screen.getByTestId("result-table")).toHaveTextContent(

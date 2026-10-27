@@ -7,20 +7,41 @@ import (
 
 func init() {
 	base.RegisterExplainStatementFunc(storepb.Engine_CLICKHOUSE, clickhouseExplainStatement)
-	base.RegisterExplainStatementFunc(storepb.Engine_HIVE, explainStatement)
+	base.RegisterExplainStatementFunc(storepb.Engine_DATABRICKS, databricksExplainStatement)
+	base.RegisterExplainStatementFunc(storepb.Engine_HIVE, hiveExplainStatement)
 }
 
-// explainStatement implements base.ExplainStatement for the engines parsed only
-// as text here. With no AST to ask which statement an EXPLAIN plans, a statement
-// that already asks for a plan runs as the user wrote it; that keeps a request
-// from planning a plan, which is what the rest of this package can promise.
-// Hive returns one plan format whatever the caller asked for; the driver
-// capability table offers it the default plan only.
-func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
+// hiveExplainStatement asks Hive for the structured plan the query-plan viewer
+// draws. FORMATTED answers with one JSON object, whose CBOPlan is the plan
+// Calcite built; every other format of Hive's EXPLAIN is a tree of lines.
+//
+// With no AST to ask which statement an EXPLAIN plans, a statement that already
+// asks for a plan runs as the user wrote it; that keeps a request from planning
+// a plan, which is what the rest of this package can promise.
+func hiveExplainStatement(statement string, format base.ExplainFormat) (string, error) {
 	if base.StartsWithExplain(statement) {
 		return statement, nil
 	}
+	if format == base.ExplainFormatJSON {
+		return "EXPLAIN FORMATTED " + statement, nil
+	}
 	return "EXPLAIN " + statement, nil
+}
+
+// databricksExplainStatement asks for Spark's FORMATTED plan, which is a tree
+// of numbered operators followed by a block of detail for each, where a plain
+// EXPLAIN prints one tree with every operator's arguments inline. Databricks
+// SQL is Spark SQL, and FORMATTED has been there since Spark 3.0.
+//
+// Databricks prints this one plan whatever the caller asks for. A statement
+// that already asks for a plan runs as the user wrote it, keeping the mode it
+// named; EXPLAIN never executes what it plans, so the planned form of a write
+// is a plan of that write.
+func databricksExplainStatement(statement string, _ base.ExplainFormat) (string, error) {
+	if base.StartsWithExplain(statement) {
+		return statement, nil
+	}
+	return "EXPLAIN FORMATTED " + statement, nil
 }
 
 // clickhouseExplainStatement asks ClickHouse for the structured plan the

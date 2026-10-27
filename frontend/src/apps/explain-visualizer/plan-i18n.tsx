@@ -36,6 +36,11 @@ const ENGLISH = {
     "The query plan is not valid JSON. The diagram EXPLAIN (DISTSQL) encodes is expected.",
   "error.cockroachdb-no-plan":
     'The query plan JSON contains no "processors" to draw.',
+  "error.hive-empty": "Hive returned no query plan for this statement.",
+  "error.hive-invalid":
+    "The query plan is not valid JSON. Hive's EXPLAIN FORMATTED output is expected.",
+  "error.hive-no-plan":
+    "The query plan has no CBO plan to draw. Hive states one only when its cost-based optimizer planned the statement.",
   "error.mongodb-empty": "MongoDB returned no query plan for this statement.",
   "error.mongodb-invalid":
     "The query plan is not valid JSON. MongoDB's explain() output is expected.",
@@ -66,6 +71,12 @@ const ENGLISH = {
   "error.redshift-empty": "Redshift returned no query plan for this statement.",
   "error.redshift-no-plan":
     "The query plan has no operator in it: a Redshift plan states a cost for every one.",
+  "error.snowflake-empty":
+    "Snowflake returned no query plan for this statement.",
+  "error.snowflake-invalid":
+    "The query plan is not valid JSON. Snowflake's EXPLAIN USING JSON output is expected.",
+  "error.snowflake-no-plan":
+    "The query plan JSON contains no operation to start from.",
   "error.spanner-emulator":
     "Spanner returned no query plan for this statement. The Spanner emulator returns none for any statement, so explain it on a Spanner instance to see one.",
   "error.spanner-empty": "Spanner returned no query plan for this statement.",

@@ -28,7 +28,7 @@ This ordering is a judgment call, not a measurement.
 ## 2. Background / problem
 
 The editor explained on 12 engines and drew a picture for 3 (PostgreSQL, SQL
-Server, Spanner); it now explains on 17 and draws for 15 (§3.4). Reaching the
+Server, Spanner); it now explains on 18 and draws for 17 (§3.4). Reaching the
 picture takes five steps: Ctrl/Cmd+E → plan rows in the grid → click a small
 "Visualize Explain" link → Bytebase runs `EXPLAIN` a second time for JSON → a
 separate browser tab opens.
@@ -353,6 +353,9 @@ regression.
 | **Redshift** | one `Query()`, on demand, cached | graph, drawn from the text plan | none — `EXPLAIN` never analyzes |
 | **StarRocks** | one `Query()`, on demand, cached | graph, drawn from the text plan | none — `EXPLAIN ANALYZE` executes |
 | **Doris** | one `Query()`, on demand, cached | graph, drawn from the text plan by the StarRocks parser | none — Doris has no `EXPLAIN ANALYZE` |
+| **Snowflake** | one `Query()`, on demand, cached | graph, with pruning in place of estimates | none — `EXPLAIN` compiles without running, whichever format it names |
+| **Hive** | one `Query()`, on demand, cached | graph, with rows and row widths, no costs | none in the editor |
+| **Databricks** | one `Query()`, on demand, cached | text: Spark's `EXPLAIN FORMATTED` has no parser yet | none — `EXPLAIN` never executes what it plans |
 | **Hive, Snowflake** | one `Query()`, on demand, cached | text | per engine, text at most |
 
 A plan opened from a result is always an estimate, on every engine. Measured
@@ -396,18 +399,25 @@ statistics, and if the slow run was caused by stale statistics that have since
 refreshed, the plan shown is the *good* one, and the reader concludes the query
 was never the problem. That is the inverted failure this wording exists to stop.
 
-**Two of the seventeen engines the editor explains have no parser**, so for
-those the plan is text. Showing a text plan as formatted text instead of grid
-rows is a small change with wide reach.
+**One of the eighteen engines the editor explains has no parser**, so there the
+plan is text. Databricks is that one, and it is the engine this section had
+listed as explaining nothing at all: its driver runs whatever SQL it is handed,
+so the capability table refused explain requests to keep an unplanned statement
+from running — an explain request skips the read-only validation an ordinary
+query gets. It now asks for Spark's `EXPLAIN FORMATTED`, a numbered tree
+followed by a block of detail per operator, which is the shape the Redshift and
+StarRocks parsers already read, so the graph is a parser away rather than a
+question to answer.
 
-**Hive's
-`EXPLAIN FORMATTED` does**, and is the next graph to add: it returns the stages
-of a Tez DAG, each holding its vertices' operator trees, so it is a third shape
-again rather than another tree to walk, and pinning it needs a warehouse with
-statistics behind it — a plan whose every operator reports "Column stats: NONE"
-is not a fixture worth keeping. **Snowflake's `EXPLAIN USING JSON` also does**,
-but it runs nowhere but Snowflake, and a parser written against documentation
-rather than output is how a viewer learns to draw a plan no server emits.
+**Hive and Snowflake draw, and neither publishes what this section assumed.**
+Hive's `EXPLAIN FORMATTED` answers with one JSON object whose `CBOPlan` is
+Calcite's own plan: a flat list of operators, each naming the ones it reads,
+beside the Tez stages that were the reason to defer it. The stages are a third
+shape again; the CBO plan is a tree to walk. Hive states it only where its
+cost-based optimizer planned the statement, and where it does not the viewer
+shows the plan as text. Snowflake's `EXPLAIN USING JSON` runs nowhere but
+Snowflake, so its fixture is the output Snowflake publishes rather than a
+capture through the driver, which is recorded beside the fixture.
 
 **What each new engine's plans do and do not carry.** Oracle states a plan as
 rows of `PLAN_TABLE` rather than as a document, and no EXPLAIN option of its
@@ -418,6 +428,18 @@ table lookup exactly. ClickHouse publishes no cost or row estimate in any
 EXPLAIN it offers, so its plans rank nothing and shade by rows, but with
 `indexes = 1` each read reports the parts and granules its indexes let it skip,
 which is what a ClickHouse plan is read for.
+
+Snowflake estimates neither cost nor rows. What it states instead is how much
+of each table the query would read — the micro-partitions assigned out of the
+table's total, and the bytes they hold — so its plans rank nothing, and a scan
+assigned every partition of a table with more than one carries the full-scan
+warning. Hive states a row count and an average row width per operator, and a
+cost on its joins alone, which on a table nothing has analyzed reads "not
+available"; so its plans rank nothing either and shade by rows. Both are read
+from documents Calcite and Snowflake write for their own tooling, which is why
+each parser turns an edge list around rather than walking a tree: Snowflake
+names each operation's parents, Hive leaves an operator's one input out and
+means the operator declared before it.
 
 Neither MySQL nor MariaDB names
 the stored table a `table` entry reads — it prints the alias where the statement
