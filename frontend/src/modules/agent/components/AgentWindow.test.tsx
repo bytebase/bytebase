@@ -80,7 +80,21 @@ vi.mock("../logic/chatContext", () => ({
 }));
 
 vi.mock("./AgentChat", () => ({
-  AgentChat: () => <div data-testid="agent-chat" />,
+  AgentChat: ({
+    contextLabel,
+    onSelectSuggestion,
+  }: {
+    contextLabel?: string;
+    onSelectSuggestion?: (starterId: "project-open-blockers") => void;
+  }) => (
+    <div data-testid="agent-chat" data-context-label={contextLabel}>
+      <button
+        type="button"
+        data-testid="agent-empty-suggestion"
+        onClick={() => onSelectSuggestion?.("project-open-blockers")}
+      />
+    </div>
+  ),
 }));
 
 vi.mock("./AgentInput", () => ({
@@ -182,6 +196,41 @@ afterEach(() => {
 });
 
 describe("AgentWindow", () => {
+  test("prefills a landing prompt for the current context without sending it", () => {
+    const chat = useAgentStore.getState().ensureCurrentChat(
+      undefined,
+      "projects/orders"
+    );
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    expect(
+      document.body.querySelector('[data-testid="agent-chat"]')
+    ).toHaveAttribute("data-context-label", "Order service");
+    act(() => {
+      (document.body.querySelector('[data-testid="agent-empty-suggestion"]') as HTMLButtonElement).click();
+    });
+    expect(useAgentStore.getState().getDraft(chat.id).text).toBe(
+      "agent.landing-starters.project-open-blockers"
+    );
+    expect(useAgentStore.getState().getMessages(chat.id)).toEqual([]);
+    unmount();
+  });
+
+  test("does not replace an existing draft with a suggested prompt", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    store.setDraft(chat.id, { text: "Unfinished question" });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    act(() => {
+      (document.body.querySelector('[data-testid="agent-empty-suggestion"]') as HTMLButtonElement).click();
+    });
+    expect(store.getDraft(chat.id).text).toBe("Unfinished question");
+    unmount();
+  });
+
   test("uses the compact rail below the roomy agent-window width", () => {
     useAgentStore.setState({ size: { width: 700, height: 450 } });
 

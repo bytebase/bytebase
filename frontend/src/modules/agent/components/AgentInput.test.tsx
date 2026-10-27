@@ -369,6 +369,30 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test("focuses the composer after an empty-chat suggestion fills its draft", () => {
+    const chat = useAgentStore.getState().createChat({
+      context: "projects/orders",
+    });
+    const focusActionRef = createRef<(() => void) | null>();
+    const view = renderIntoContainer(
+      <AgentInput focusActionRef={focusActionRef} />
+    );
+    view.render();
+
+    act(() => {
+      useAgentStore.getState().setDraft(chat.id, {
+        text: "What needs my attention in this project?",
+      });
+      focusActionRef.current?.();
+    });
+
+    const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("What needs my attention in this project?");
+    expect(document.activeElement).toBe(textarea);
+    expect(useAgentStore.getState().getMessages(chat.id)).toEqual([]);
+    view.unmount();
+  });
+
   test("uses a growing textarea without a row cap", () => {
     const { container, render, unmount } = renderIntoContainer(<AgentInput />);
 

@@ -1,5 +1,10 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { databaseServiceClientConnect } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types/iam";
+import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
 import { getApiAuthorization } from "./apiMethodClass";
 import type { PreparedApiCall } from "./callApi";
 
@@ -8,6 +13,7 @@ type Scope = { kind: "workspace" } | { kind: "project"; name: string };
 
 const resourceFields = new Set(["parent", "name", "resource", "project"]);
 const resourceListFields = new Set(["names", "issues"]);
+const databaseNamePattern = /^(instances\/[^/]+\/databases\/[^/]+)(?:\/.*)?$/;
 
 const collectResourceNames = (value: unknown, names: Set<string>): void => {
   if (Array.isArray(value)) {
@@ -28,15 +34,67 @@ const collectResourceNames = (value: unknown, names: Set<string>): void => {
   }
 };
 
-const scopesForCall = (call: PreparedApiCall): Scope[] | undefined => {
+const resourceNamesForCall = (
+  call: PreparedApiCall,
+  body: unknown
+): Set<string> | undefined => {
+  if (
+    call.path === "/bytebase.v1.DatabaseService/BatchSyncDatabases" ||
+    call.path === "/bytebase.v1.IssueService/BatchUpdateIssuesStatus"
+  ) {
+    const field = call.path.endsWith("BatchSyncDatabases") ? "names" : "issues";
+    const targets =
+      body && typeof body === "object" && !Array.isArray(body)
+        ? (body as Record<string, unknown>)[field]
+        : undefined;
+    if (
+      !Array.isArray(targets) ||
+      targets.length === 0 ||
+      !targets.every((target) => typeof target === "string" && target)
+    ) {
+      return undefined;
+    }
+    // These RPCs authorize target resources rather than their request parent.
+    return new Set(targets);
+  }
+
+  const names = new Set<string>();
+  collectResourceNames(body, names);
+  return names;
+};
+
+const currentDatabaseProject = async (
+  name: string
+): Promise<string | undefined> => {
+  try {
+    const database = await databaseServiceClientConnect.getDatabase(
+      create(GetDatabaseRequestSchema, { name }),
+      { contextValues: createContextValues().set(silentContextKey, true) }
+    );
+    if (
+      database.name !== name ||
+      !/^projects\/[^/]+$/.test(database.project) ||
+      database.project === "projects/-"
+    ) {
+      return undefined;
+    }
+    return database.project;
+  } catch {
+    return undefined;
+  }
+};
+
+const scopesForCall = async (
+  call: PreparedApiCall
+): Promise<Scope[] | undefined> => {
   let body: unknown;
   try {
     body = JSON.parse(call.body);
   } catch {
     return undefined;
   }
-  const names = new Set<string>();
-  collectResourceNames(body, names);
+  const names = resourceNamesForCall(call, body);
+  if (!names) return undefined;
   if (names.size === 0) {
     // The backend authorizes parent-less top-level lists at workspace scope.
     return /\.List[^/]+$/.test(call.operationId)
@@ -44,7 +102,6 @@ const scopesForCall = (call: PreparedApiCall): Scope[] | undefined => {
       : undefined;
   }
 
-  const state = useAppStore.getState();
   const scopes = new Map<string, Scope>();
   for (const name of names) {
     const project = name.match(/^projects\/([^/]+)(?:\/|$)/);
@@ -60,8 +117,9 @@ const scopesForCall = (call: PreparedApiCall): Scope[] | undefined => {
       scopes.set("workspace", { kind: "workspace" });
       continue;
     }
-    if (/^instances\/[^/]+\/databases\/[^/]+$/.test(name)) {
-      const projectName = state.databasesByName[name]?.project;
+    const databaseName = name.match(databaseNamePattern)?.[1];
+    if (databaseName) {
+      const projectName = await currentDatabaseProject(databaseName);
       if (!projectName) return undefined;
       scopes.set(projectName, { kind: "project", name: projectName });
       continue;
@@ -110,7 +168,7 @@ export const checkPreparedApiPermission = async (
     }
   }
 
-  const scopes = scopesForCall(call);
+  const scopes = await scopesForCall(call);
   if (!scopes?.length) return { kind: "allowed" };
 
   const state = useAppStore.getState();

@@ -121,6 +121,7 @@ beforeEach(async () => {
     chats: initialState.chats,
     messagesByChatId: initialState.messagesByChatId,
     pendingAskByChatId: initialState.pendingAskByChatId,
+    draftsByChatId: initialState.draftsByChatId,
     currentChatId: initialState.currentChatId,
     abortControllersByChatId: {},
   });
@@ -144,6 +145,101 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("shows project landing prompts in an empty project chat and prefills without sending", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const onSelectSuggestion = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AgentChat
+        contextLabel="Sample project"
+        onSelectSuggestion={onSelectSuggestion}
+      />
+    );
+    render();
+
+    expect(container.querySelector("[data-agent-empty-chat]")?.textContent).toContain(
+      "Sample project"
+    );
+    expect(
+      Array.from(container.querySelectorAll("[data-agent-empty-suggestion]"))
+        .map((item) => item.getAttribute("data-starter-id"))
+    ).toEqual([
+      "project-open-blockers",
+      "project-open-recent",
+      "project-propose-change",
+    ]);
+
+    act(() => {
+      (container.querySelector('[data-starter-id="project-open-blockers"]') as HTMLButtonElement).click();
+    });
+    expect(onSelectSuggestion).toHaveBeenCalledWith("project-open-blockers");
+    expect(store.getMessages(chat.id)).toEqual([]);
+    unmount();
+  });
+
+  test("uses workspace landing prompts and hides the empty state after a message", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/example" });
+    const { container, render, unmount } = renderIntoContainer(
+      <AgentChat contextLabel="Example workspace" onSelectSuggestion={vi.fn()} />
+    );
+    render();
+    expect(
+      Array.from(container.querySelectorAll("[data-agent-empty-suggestion]"))
+        .map((item) => item.getAttribute("data-starter-id"))
+    ).toEqual([
+      "workspace-attention",
+      "workspace-recent",
+      "workspace-governance",
+    ]);
+
+    act(() => {
+      store.addMessage({ chatId: chat.id, role: "user", content: "Hello" });
+    });
+    expect(container.querySelector("[data-agent-empty-chat]")).toBeNull();
+    unmount();
+  });
+
+  test("does not offer prompts that would replace an unsent draft", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/example" });
+    store.setDraft(chat.id, { text: "My unfinished question" });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-empty-chat]")).not.toBeNull();
+    expect(container.querySelector("[data-agent-empty-suggestion]")).toBeNull();
+    unmount();
+  });
+
+  test("does not show starter prompts while a new chat is running", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.setChatStatus(chat.id, "running");
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    expect(container.querySelector("[data-agent-empty-chat]")).toBeNull();
+    unmount();
+  });
+
+  test("starts a new empty chat at the top so its context and heading stay visible", () => {
+    const store = useAgentStore.getState();
+    store.addMessage({ role: "user", content: "Previous question" });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const chatPanel = container.firstElementChild as HTMLDivElement;
+    Object.defineProperty(chatPanel, "scrollHeight", { value: 500 });
+    chatPanel.scrollTop = 250;
+
+    act(() => {
+      store.createChat({ context: "projects/sample" });
+    });
+
+    expect(chatPanel.scrollTop).toBe(0);
+    expect(container.querySelector("[data-agent-empty-chat]")).not.toBeNull();
+    unmount();
+  });
+
   test("shows a canceled clarification without the running-request warning", () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat();

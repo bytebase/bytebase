@@ -58,6 +58,11 @@
     "delete-all-chats-confirmation": "确定要删除所有已归档对话吗？此操作无法撤销。",
     "delete-chat": "删除对话",
     "delete-chat-confirmation": "确定要删除此对话吗？此操作无法撤销。",
+    "empty-chat": {
+      "project-heading": "我能为这个项目做些什么？",
+      "suggestions": "推荐问题",
+      "workspace-heading": "我能为这个工作区做些什么？"
+    },
     "evidence": {
       "database": "数据库",
       "issue": "issue",

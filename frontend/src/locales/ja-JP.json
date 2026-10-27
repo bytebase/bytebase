@@ -58,6 +58,11 @@
     "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",
     "delete-chat": "チャットを削除",
     "delete-chat-confirmation": "このチャットを削除しますか？この操作は元に戻せません。",
+    "empty-chat": {
+      "project-heading": "このプロジェクトについて、何をお手伝いできますか？",
+      "suggestions": "おすすめの質問",
+      "workspace-heading": "このワークスペースについて、何をお手伝いできますか？"
+    },
     "evidence": {
       "database": "データベース",
       "issue": "issue",

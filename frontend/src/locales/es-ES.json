@@ -58,6 +58,11 @@
     "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
     "delete-chat": "Eliminar chat",
     "delete-chat-confirmation": "¿Está seguro de que desea eliminar este chat? Esta acción no se puede deshacer.",
+    "empty-chat": {
+      "project-heading": "¿Cómo puedo ayudar con este proyecto?",
+      "suggestions": "Preguntas sugeridas",
+      "workspace-heading": "¿Cómo puedo ayudar con este espacio de trabajo?"
+    },
     "evidence": {
       "database": "base de datos",
       "issue": "issue",

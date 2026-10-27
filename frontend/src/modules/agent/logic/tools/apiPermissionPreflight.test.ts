@@ -1,8 +1,11 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { silentContextKey } from "@/api/context-key";
 
 const getState = vi.hoisted(() => vi.fn());
+const getDatabase = vi.hoisted(() => vi.fn());
 vi.mock("@/stores/app", () => ({ useAppStore: { getState } }));
+vi.mock("@/api", () => ({ databaseServiceClientConnect: { getDatabase } }));
 
 import { checkPreparedApiPermission } from "./apiPermissionPreflight";
 
@@ -34,6 +37,10 @@ describe("checkPreparedApiPermission", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getState.mockReturnValue(state);
+    getDatabase.mockResolvedValue({
+      name: "instances/i/databases/db",
+      project: "projects/example",
+    });
     state.hasWorkspacePermission.mockReturnValue(false);
     state.hasProjectPermission.mockReturnValue(false);
   });
@@ -100,7 +107,8 @@ describe("checkPreparedApiPermission", () => {
     });
   });
 
-  it("does not deny a database API when its owning project is unknown", async () => {
+  it("leaves authorization to the API when database ownership cannot be read", async () => {
+    getDatabase.mockRejectedValueOnce(new Error("unavailable"));
     expect(
       await checkPreparedApiPermission({
         operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
@@ -108,13 +116,34 @@ describe("checkPreparedApiPermission", () => {
         body: '{"database":{"name":"instances/i/databases/db"}}',
       })
     ).toEqual({ kind: "allowed" });
+    expect(state.hasProjectPermission).not.toHaveBeenCalled();
   });
 
-  it("checks the cached owning project for a database update", async () => {
+  it("checks the current owning project for an uncached database update", async () => {
+    const result = await checkPreparedApiPermission({
+      operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
+      path: "/bytebase.v1.DatabaseService/UpdateDatabase",
+      body: '{"database":{"name":"instances/i/databases/db"}}',
+    });
+    expect(getDatabase).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "instances/i/databases/db" }),
+      expect.anything()
+    );
+    expect(
+      getDatabase.mock.calls[0][1].contextValues.get(silentContextKey)
+    ).toBe(true);
+    expect(state.hasProjectPermission).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "projects/example" }),
+      "bb.databases.update"
+    );
+    expect(result.kind).toBe("denied");
+  });
+
+  it("uses current database ownership rather than a stale cache", async () => {
     getState.mockReturnValue({
       ...state,
       databasesByName: {
-        "instances/i/databases/db": { project: "projects/example" },
+        "instances/i/databases/db": { project: "projects/old" },
       },
     });
     const result = await checkPreparedApiPermission({
@@ -127,6 +156,87 @@ describe("checkPreparedApiPermission", () => {
       "bb.databases.update"
     );
     expect(result.kind).toBe("denied");
+  });
+
+  it("checks database subresources against their current owning project", async () => {
+    const result = await checkPreparedApiPermission({
+      operationId: "bytebase.v1.DatabaseCatalogService.UpdateDatabaseCatalog",
+      path: "/bytebase.v1.DatabaseCatalogService/UpdateDatabaseCatalog",
+      body: '{"catalog":{"name":"instances/i/databases/db/catalog"}}',
+    });
+    expect(getDatabase).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "instances/i/databases/db" }),
+      expect.anything()
+    );
+    expect(state.hasProjectPermission).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "projects/example" }),
+      "bb.databaseCatalogs.update"
+    );
+    expect(result.kind).toBe("denied");
+  });
+
+  it("does not deny when the database lookup returns a different resource", async () => {
+    getDatabase.mockResolvedValueOnce({
+      name: "instances/i/databases/other",
+      project: "projects/example",
+    });
+    expect(
+      await checkPreparedApiPermission({
+        operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
+        path: "/bytebase.v1.DatabaseService/UpdateDatabase",
+        body: '{"database":{"name":"instances/i/databases/db"}}',
+      })
+    ).toEqual({ kind: "allowed" });
+    expect(state.hasProjectPermission).not.toHaveBeenCalled();
+  });
+
+  it("authorizes database sync against target projects, not its instance parent", async () => {
+    state.hasProjectPermission.mockReturnValue(true);
+    expect(
+      await checkPreparedApiPermission({
+        operationId: "bytebase.v1.DatabaseService.BatchSyncDatabases",
+        path: "/bytebase.v1.DatabaseService/BatchSyncDatabases",
+        body: '{"parent":"instances/i","names":["instances/i/databases/db"]}',
+      })
+    ).toEqual({ kind: "allowed" });
+    expect(state.hasProjectPermission).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "projects/example" }),
+      "bb.databases.sync"
+    );
+    expect(state.hasWorkspacePermission).not.toHaveBeenCalled();
+  });
+
+  it("leaves a mixed database batch to the API when one target cannot be resolved", async () => {
+    getDatabase.mockImplementation(async ({ name }: { name: string }) => {
+      if (name === "instances/i/databases/missing") {
+        throw new Error("unavailable");
+      }
+      return { name, project: "projects/example" };
+    });
+    expect(
+      await checkPreparedApiPermission({
+        operationId: "bytebase.v1.DatabaseService.BatchSyncDatabases",
+        path: "/bytebase.v1.DatabaseService/BatchSyncDatabases",
+        body: '{"parent":"instances/i","names":["instances/i/databases/db","instances/i/databases/missing"]}',
+      })
+    ).toEqual({ kind: "allowed" });
+    expect(state.hasProjectPermission).not.toHaveBeenCalled();
+  });
+
+  it("authorizes issue status updates against issues, not the wildcard parent", async () => {
+    state.hasProjectPermission.mockReturnValue(true);
+    expect(
+      await checkPreparedApiPermission({
+        operationId: "bytebase.v1.IssueService.BatchUpdateIssuesStatus",
+        path: "/bytebase.v1.IssueService/BatchUpdateIssuesStatus",
+        body: '{"parent":"projects/-","issues":["projects/example/issues/1"],"status":"OPEN"}',
+      })
+    ).toEqual({ kind: "allowed" });
+    expect(state.hasProjectPermission).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "projects/example" }),
+      "bb.issues.update"
+    );
+    expect(state.hasWorkspacePermission).not.toHaveBeenCalled();
   });
 
   it("checks both update and create permission for allowMissing", async () => {

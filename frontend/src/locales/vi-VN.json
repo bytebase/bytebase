@@ -58,6 +58,11 @@
     "delete-all-chats-confirmation": "Bạn có chắc chắn muốn xóa tất cả cuộc trò chuyện đã lưu trữ không? Hành động này không thể hoàn tác.",
     "delete-chat": "Xóa cuộc trò chuyện",
     "delete-chat-confirmation": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.",
+    "empty-chat": {
+      "project-heading": "Tôi có thể hỗ trợ gì cho dự án này?",
+      "suggestions": "Câu hỏi gợi ý",
+      "workspace-heading": "Tôi có thể hỗ trợ gì cho không gian làm việc này?"
+    },
     "evidence": {
       "database": "cơ sở dữ liệu",
       "issue": "issue",

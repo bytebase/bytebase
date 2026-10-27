@@ -228,8 +228,10 @@ const mergeOverviewEvidence = (
 
 export function AgentInput({
   retryActionRef,
+  focusActionRef,
 }: {
   retryActionRef?: RefObject<(() => void) | null>;
+  focusActionRef?: RefObject<(() => void) | null>;
 }) {
   const { t, i18n } = useTranslation();
   // Zustand selectors
@@ -361,6 +363,15 @@ export function AgentInput({
 
   const composerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!focusActionRef) return;
+    const focus = () => textareaRef.current?.focus();
+    focusActionRef.current = focus;
+    return () => {
+      if (focusActionRef.current === focus) focusActionRef.current = null;
+    };
+  }, [focusActionRef]);
 
   // Derived values
   const isCurrentChatRunning = currentChat?.status === "running";
