@@ -377,3 +377,27 @@ statement it has not run.
 | File | Shape it covers |
 | --- | --- |
 | `filtered-aggregate.json` | Two stages: the input reads a table, aggregates and writes a shuffle, and the output reads that shuffle and writes the query's rows |
+
+## `databricks/`
+
+`EXPLAIN FORMATTED` output from Spark 3.5.3, which is what Databricks SQL runs,
+against `customers`, `orders` and a partitioned `events`. Databricks itself is
+reachable from neither a dev box nor CI; the statement is identical and the
+layout is Spark's own, though a Databricks runtime may name operators these
+fixtures do not show. The plan states neither cost nor rows: `EXPLAIN COST`
+reports those, and only for the logical plan.
+
+| File | Shape it covers |
+| --- | --- |
+| `single-scan.txt` | A filter over a read, with the predicate pushed into it |
+| `broadcast-join.txt` | A broadcast hash join under two aggregates and an exchange, with the build side's own exchange |
+| `union-all.txt` | A union of two reads, the one tree with two branches |
+| `sort-limit.txt` | A sort with its fetch, as `TakeOrderedAndProject` |
+| `partition-filter.txt` | A read of a partitioned table, stating the partitions it skipped |
+| `exists-subquery.txt` | An EXISTS turned into a left semi join |
+
+To add one, `EXPLAIN FORMATTED <statement>` through the same client. Spark
+suffixes each column with the expression id of the session that planned it, so
+a re-capture renumbers them; the tests match the shape of those values rather
+than the numbers.
+

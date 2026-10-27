@@ -18,6 +18,10 @@ import {
   COCKROACHDB_PLAN_NO_PLAN_MESSAGE,
 } from "./cockroachdb-plan";
 import {
+  DATABRICKS_PLAN_EMPTY_MESSAGE,
+  DATABRICKS_PLAN_NO_PLAN_MESSAGE,
+} from "./databricks-plan";
+import {
   HIVE_PLAN_EMPTY_MESSAGE,
   HIVE_PLAN_INVALID_JSON_MESSAGE,
   HIVE_PLAN_NO_PLAN_MESSAGE,
@@ -141,6 +145,8 @@ const PARSE_ERROR_KEYS = new Map<string, QueryPlanTranslationKey>([
   [HIVE_PLAN_EMPTY_MESSAGE, "error.hive-empty"],
   [HIVE_PLAN_INVALID_JSON_MESSAGE, "error.hive-invalid"],
   [HIVE_PLAN_NO_PLAN_MESSAGE, "error.hive-no-plan"],
+  [DATABRICKS_PLAN_EMPTY_MESSAGE, "error.databricks-empty"],
+  [DATABRICKS_PLAN_NO_PLAN_MESSAGE, "error.databricks-no-plan"],
   [COCKROACHDB_PLAN_EMPTY_MESSAGE, "error.cockroachdb-empty"],
   [COCKROACHDB_PLAN_INVALID_JSON_MESSAGE, "error.cockroachdb-invalid"],
   [COCKROACHDB_PLAN_NO_PLAN_MESSAGE, "error.cockroachdb-no-plan"],

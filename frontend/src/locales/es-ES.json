@@ -3611,6 +3611,8 @@
         "cockroachdb-empty": "CockroachDB no devolvió ningún plan de consulta para esta sentencia.",
         "cockroachdb-invalid": "El plan de consulta no es JSON válido. Se espera el diagrama que codifica EXPLAIN (DISTSQL).",
         "cockroachdb-no-plan": "El JSON del plan de consulta no contiene \"processors\" que dibujar.",
+        "databricks-empty": "Databricks no devolvió ningún plan de consulta para esta sentencia.",
+        "databricks-no-plan": "El plan de consulta no contiene un plan físico. Se espera la salida de EXPLAIN FORMATTED.",
         "hive-empty": "Hive no devolvió ningún plan de consulta para esta sentencia.",
         "hive-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMATTED de Hive.",
         "hive-no-plan": "El plan de consulta no tiene un plan de CBO que dibujar. Hive solo lo indica cuando su optimizador basado en costes planificó la sentencia.",

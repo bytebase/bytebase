@@ -3611,6 +3611,8 @@
         "cockroachdb-empty": "CockroachDB 未返回此语句的查询计划。",
         "cockroachdb-invalid": "查询计划不是有效的 JSON。需要 EXPLAIN (DISTSQL) 编码的图示。",
         "cockroachdb-no-plan": "查询计划 JSON 不包含可绘制的 \"processors\"。",
+        "databricks-empty": "Databricks 未返回此语句的查询计划。",
+        "databricks-no-plan": "查询计划中没有物理计划。需要 EXPLAIN FORMATTED 输出。",
         "hive-empty": "Hive 未返回此语句的查询计划。",
         "hive-invalid": "查询计划不是有效的 JSON。需要 Hive EXPLAIN FORMATTED 输出。",
         "hive-no-plan": "查询计划中没有可绘制的 CBO 计划。只有基于代价的优化器为该语句生成计划时，Hive 才会输出它。",

@@ -3611,6 +3611,8 @@
         "cockroachdb-empty": "CockroachDB はこのステートメントのクエリプランを返しませんでした。",
         "cockroachdb-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN (DISTSQL) が埋め込む図が必要です。",
         "cockroachdb-no-plan": "クエリプラン JSON に描画できる \"processors\" がありません。",
+        "databricks-empty": "Databricks はこのステートメントのクエリプランを返しませんでした。",
+        "databricks-no-plan": "クエリプランに物理プランがありません。EXPLAIN FORMATTED の出力が必要です。",
         "hive-empty": "Hive はこのステートメントのクエリプランを返しませんでした。",
         "hive-invalid": "クエリプランが有効な JSON ではありません。Hive の EXPLAIN FORMATTED の出力が必要です。",
         "hive-no-plan": "クエリプランに描画できる CBO プランがありません。Hive はコストベースオプティマイザーがステートメントをプランした場合にのみ出力します。",
