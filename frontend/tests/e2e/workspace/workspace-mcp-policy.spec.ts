@@ -276,3 +276,34 @@ test.describe("MCP access policy capability ladder", () => {
     }
   });
 });
+
+// #21527 retired the "Ignore masking exemptions" toggle from the access policy:
+// an MCP session applies the caller's own masking provisioning exactly as the
+// console does, so the editor holds nothing but the mode cards.
+test.describe("The policy editor holds only the mode cards (X4)", () => {
+  test("Edit policy offers the three modes and no masking control", async ({
+    page,
+  }) => {
+    await setCapability("READ_ONLY");
+    await gotoMCPPage(page);
+    await page.getByRole("button", { name: COPY.policy.edit }).click();
+
+    await expect(
+      page.getByRole("radiogroup", { name: "Access policy" })
+    ).toBeVisible();
+    for (const mode of ["disabled", "read-only", "read-write"] as const) {
+      await expect(
+        page.getByRole("radio", { name: new RegExp(`^${COPY.policy.mode[mode].title}`) })
+      ).toBeVisible();
+    }
+    await expect(page.getByRole("switch")).toHaveCount(0);
+    await expect(page.getByRole("checkbox")).toHaveCount(0);
+    await expect(page.getByText(/masking exemption/i)).toHaveCount(0);
+    // Nothing to save until a different mode is picked.
+    await expect(
+      page.getByRole("button", { name: COPY.policy.save })
+    ).toBeDisabled();
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(chip(page, "Read-only")).toBeVisible();
+  });
+});

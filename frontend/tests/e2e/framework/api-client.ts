@@ -140,13 +140,17 @@ export class BytebaseApiClient {
   // OAuth2 dynamic client registration (RFC 7591), the call an MCP client makes
   // before sending its user to the consent page. The backend accepts only
   // localhost, known hosted-client, and allowlisted app-scheme redirect URIs.
+  // grantTypes defaults server-side to ["authorization_code"]; a refresh token
+  // is issued only to a client that also registered "refresh_token".
   async registerOAuth2Client(
     clientName: string,
     redirectURIs: string[],
+    grantTypes?: string[],
   ): Promise<{ client_id: string }> {
     return this.request<{ client_id: string }>("POST", "/api/oauth2/register", {
       client_name: clientName,
       redirect_uris: redirectURIs,
+      ...(grantTypes && { grant_types: grantTypes }),
     });
   }
 
@@ -373,7 +377,14 @@ export class BytebaseApiClient {
 
   // Instances
   async getInstance(instanceName: string) {
-    return this.request<{ name: string; dataSources: { id: string; port: string; host: string }[] }>("GET", `/v1/${instanceName}`);
+    return this.request<{ name: string; dataSources: { id: string; type?: string; port: string; host: string; username?: string }[] }>("GET", `/v1/${instanceName}`);
+  }
+
+  // Soft-delete a workspace instance created by a test. `force` moves its
+  // databases to the default project first, which is what a workspace-level
+  // instance needs before it can go.
+  async deleteInstance(instanceName: string): Promise<void> {
+    await this.request<unknown>("DELETE", `/v1/${instanceName}?force=true`);
   }
 
   // Set the instance's database sync allowlist (Instance.sync_databases). A
@@ -487,10 +498,20 @@ export class BytebaseApiClient {
   }
 
   // Workload Identities
-  async createWorkloadIdentity(parent: string, workloadIdentityId: string, title: string, provider: string, issuer: string, subject: string) {
+  async createWorkloadIdentity(
+    parent: string,
+    workloadIdentityId: string,
+    title: string,
+    config: {
+      providerType: "GITHUB" | "GITLAB" | "OIDC";
+      issuerUrl: string;
+      allowedAudiences: string[];
+      subjectPattern: string;
+    },
+  ) {
     return this.request<{ name: string; email: string }>("POST",
       `/v1/${parent}/workloadIdentities?workloadIdentityId=${workloadIdentityId}`,
-      { title, provider, attestationAuthority: { oidcAuthority: { issuer } }, subjectAttributes: { subject } });
+      { title, workloadIdentityConfig: config });
   }
 
   async deleteWorkloadIdentity(email: string) {
@@ -1024,5 +1045,69 @@ export class BytebaseApiClient {
     const client = new BytebaseApiClient({ baseURL, credentials: { email, password } });
     await client.login(email, password);
     return client;
+  }
+
+  // Remove one member from a workspace role binding, re-reading the policy so
+  // the write carries a current etag. Inverse of addWorkspaceRoleMember.
+  async removeWorkspaceRoleMember(workspace: string, email: string, role: string): Promise<void> {
+    const policy = await this.getWorkspaceIamPolicy(workspace);
+    const member = `user:${email}`;
+    const bindings = (policy.bindings ?? []).map((b) =>
+      b.role === role ? { ...b, members: (b.members ?? []).filter((m) => m !== member) } : b,
+    );
+    await this.setWorkspaceIamPolicy(workspace, { ...policy, bindings });
+  }
+
+  // Replace Plan.specs (AIP-134 PATCH with update_mask=specs). An accepted
+  // specs update transfers last-plan-editor attribution to this client's user,
+  // so call it on a client logged in as the user who should become the editor.
+  async updatePlanSpecs(
+    planName: string,
+    specs: { id: string; changeDatabaseConfig?: { targets?: string[]; sheet?: string } }[],
+  ): Promise<{ name: string; lastPlanEditor?: string }> {
+    return this.request("PATCH", `/v1/${planName}?updateMask=specs`, { name: planName, specs });
+  }
+
+  // Authorization-code exchange with PKCE. Form-encoded per RFC 6749, so it
+  // bypasses the JSON request helper.
+  async exchangeOAuth2Code(params: {
+    clientId: string;
+    code: string;
+    codeVerifier: string;
+    redirectUri: string;
+  }): Promise<{ access_token?: string; refresh_token?: string; token_type?: string; error?: string; error_description?: string }> {
+    const resp = await fetch(`${this.baseURL}/api/oauth2/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        code: params.code,
+        code_verifier: params.codeVerifier,
+        client_id: params.clientId,
+        redirect_uri: params.redirectUri,
+      }),
+    });
+    return resp.json();
+  }
+
+  // One MCP `initialize` round trip with a bearer token, to prove a consented
+  // grant opens an MCP session. Returns the HTTP status and the raw body (the
+  // server streams JSON-RPC as SSE).
+  async mcpInitialize(accessToken: string): Promise<{ status: number; body: string }> {
+    const resp = await fetch(`${this.baseURL}/mcp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "e2e", version: "0" } },
+      }),
+    });
+    return { status: resp.status, body: await resp.text() };
   }
 }
