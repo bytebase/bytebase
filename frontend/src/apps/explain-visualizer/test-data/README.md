@@ -348,11 +348,10 @@ are written inline in the test, which is where a plan no server emitted belongs.
 ## `hive/`
 
 `EXPLAIN FORMATTED` output from Hive 4.0.0, HiveServer2 with its embedded
-metastore, against `customers` and `orders`. Each file is the single line the
-driver returns rather than pretty-printed JSON: the plan the parser reads is the
-`CBOPlan` *string* inside the object, so indenting the outside would not make it
-readable. Hive states a `CBOPlan` only where its cost-based optimizer planned
-the statement.
+metastore, against `customers` and `orders`. The repository's formatter indents
+the outer object; the plan the parser reads stays one escaped line within it,
+the `CBOPlan` *string*, which is how Hive answers. It states that string only
+where its cost-based optimizer planned the statement.
 
 | File | Shape it covers |
 | --- | --- |
