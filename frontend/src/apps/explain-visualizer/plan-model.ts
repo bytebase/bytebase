@@ -162,6 +162,24 @@ const PLAN_MAX_NODES = 1000;
 
 export const PLAN_TOO_MANY_NODES_MESSAGE = `The query plan has more than ${PLAN_MAX_NODES} operators, which is more than this visualizer draws.`;
 
+/** Raised by a size budget and caught by `parseWithDepthLimit` alone. */
+const PLAN_TOO_MANY_NODES = new Error(PLAN_TOO_MANY_NODES_MESSAGE);
+
+/**
+ * A budget for a parser that expands a graph into a tree. A node that several
+ * paths reach is drawn under each of them, so the copies multiply with the
+ * paths — a flow of 35 processors in two-way stages expands into 262,143 of
+ * them. Counting the finished tree would mean building every copy first, so a
+ * parser that splices calls this for each node it draws and stops there.
+ */
+export function planSizeBudget(): () => void {
+  let drawn = 0;
+  return () => {
+    drawn += 1;
+    if (drawn > PLAN_MAX_NODES) throw PLAN_TOO_MANY_NODES;
+  };
+}
+
 /**
  * A parser's tree from `build`, or the depth message when it went too deep or
  * the node-cap message when it is too large to draw.
@@ -174,8 +192,13 @@ export function parseWithDepthLimit(build: () => PlanNode): PlanParseResult {
     }
     return { ok: true, tree };
   } catch (error) {
-    if (error !== PLAN_TOO_DEEP) throw error;
-    return { ok: false, message: PLAN_TOO_DEEP_MESSAGE };
+    if (error === PLAN_TOO_DEEP) {
+      return { ok: false, message: PLAN_TOO_DEEP_MESSAGE };
+    }
+    if (error === PLAN_TOO_MANY_NODES) {
+      return { ok: false, message: PLAN_TOO_MANY_NODES_MESSAGE };
+    }
+    throw error;
   }
 }
 

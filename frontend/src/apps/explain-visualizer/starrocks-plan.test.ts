@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   PLAN_TOO_DEEP_MESSAGE,
+  PLAN_TOO_MANY_NODES_MESSAGE,
   type PlanNode,
   type PlanTree,
 } from "./plan-model";
@@ -24,6 +25,30 @@ const nestedPlan = (depth: number): string =>
     "PLAN FRAGMENT 0",
     ...Array.from({ length: depth }, (_, level) => `  ${level}:Project`),
   ].join("\n");
+
+/**
+ * `stages` fragments, each joining two exchanges that both read the next one,
+ * so every path through the plan splices the rest of it again and the tree
+ * doubles per fragment: 30 would be 2^31 nodes if they were all built first.
+ */
+const repartitionedPlan = (stages: number): string => {
+  const lines: string[] = [];
+  for (let stage = 0; stage < stages; stage += 1) {
+    lines.push(`PLAN FRAGMENT ${stage}`);
+    if (stage > 0) lines.push(`  EXCHANGE ID: 0${stage}`);
+    lines.push(
+      "  0:HASH JOIN",
+      `  |----${stage + 1}:EXCHANGE`,
+      `  ${stage + 1}:EXCHANGE`
+    );
+  }
+  lines.push(
+    `PLAN FRAGMENT ${stages}`,
+    `  EXCHANGE ID: 0${stages}`,
+    "  0:OlapScanNode"
+  );
+  return lines.join("\n");
+};
 
 const parse = (source: string): PlanTree => {
   const result = parseStarrocksPlan(source);
@@ -213,6 +238,18 @@ describe("parseStarrocksPlan", () => {
       table: "customers",
     });
     expect(propertyValue(printedLast, "Detail")).toBeUndefined();
+  });
+
+  test("gives up on a plan that expands past the operators it draws", () => {
+    // Without a budget this builds every copy before anything counts them,
+    // which for 30 fragments means over two billion nodes.
+    expect(parseStarrocksPlan(repartitionedPlan(30))).toEqual({
+      ok: false,
+      message: PLAN_TOO_MANY_NODES_MESSAGE,
+    });
+    // A plan small enough to draw still draws every path through it: each
+    // fragment is a join and two exchanges over two copies of the next.
+    expect(parse(repartitionedPlan(3)).nodes).toHaveLength(29);
   });
 
   test("gives up past the depth it can draw", () => {

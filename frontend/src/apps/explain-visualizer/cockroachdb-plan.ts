@@ -11,6 +11,7 @@ import {
   type PlanWarning,
   parseWithDepthLimit,
   planLabel,
+  planSizeBudget,
 } from "./plan-model";
 
 /**
@@ -125,6 +126,8 @@ function toProperties(
 /**
  * @param seen - The processors on the path to this one. A flow whose streams
  * form a cycle would never finish; the rest of it still draws.
+ * @param count - The size budget, since a processor that feeds several others
+ * is drawn under each of them.
  */
 function toPlanNode(
   processors: readonly JsonRecord[],
@@ -132,9 +135,11 @@ function toPlanNode(
   index: number,
   id: string,
   seen: Set<number>,
-  depth: number
+  depth: number,
+  count: () => void
 ): PlanNode {
   checkPlanDepth(depth);
+  count();
   seen.add(index);
   const raw = processors[index];
   const children = (feeders.get(index) ?? [])
@@ -146,7 +151,8 @@ function toPlanNode(
         source,
         `${id}.${position}`,
         seen,
-        depth + 1
+        depth + 1,
+        count
       )
     );
   seen.delete(index);
@@ -200,7 +206,8 @@ export function parseCockroachdbPlan(source: string): PlanParseResult {
     return { ok: false, message: COCKROACHDB_PLAN_NO_PLAN_MESSAGE };
   }
 
+  const count = planSizeBudget();
   return parseWithDepthLimit(() =>
-    toPlanNode(processors, feeders, root, "0", new Set(), 0)
+    toPlanNode(processors, feeders, root, "0", new Set(), 0, count)
   );
 }

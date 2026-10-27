@@ -540,7 +540,11 @@ the statement type, so this is the only case left to that single check.
 **Slow and large plans.** The on-demand call can take as long as any query: show
 a skeleton, allow cancel, time out rather than hang. Past a node cap the Plan view
 falls back to Text instead of drawing something unreadable — SSMS degrades the
-same way, at 2 MB.
+same way, at 2 MB. Where a parser splices a graph into a tree — CockroachDB's
+processors, StarRocks' and Doris's fragments — the cap is counted as the nodes
+are drawn rather than once the tree is built: a node that several paths reach
+is drawn under each of them, so the copies multiply with the paths and a flow
+of 35 processors expands into 262,143 of them.
 
 **When the plan cannot be drawn or fetched.** A plan we fail to parse falls back
 to Text rather than erroring; engines change their output between versions, and

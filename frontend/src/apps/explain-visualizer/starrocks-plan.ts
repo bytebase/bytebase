@@ -7,6 +7,7 @@ import {
   type PlanRelation,
   parseWithDepthLimit,
   planLabel,
+  planSizeBudget,
 } from "./plan-model";
 
 /**
@@ -140,15 +141,19 @@ function numberOf(
  * the fragments are drawn as the one tree they describe.
  * @param seen - The exchanges already spliced on this path, since a plan whose
  * fragments fed each other would never finish.
+ * @param count - The size budget, since a fragment read by two exchanges is
+ * drawn under each of them.
  */
 function toPlanNode(
   parsed: Parsed,
   exchanges: ReadonlyMap<string, Parsed>,
   id: string,
   seen: Set<string>,
-  depth: number
+  depth: number,
+  count: () => void
 ): PlanNode {
   checkPlanDepth(depth);
+  count();
   const children = [...parsed.children];
   const source = exchanges.get(parsed.id);
   if (source && !seen.has(parsed.id)) {
@@ -156,7 +161,7 @@ function toPlanNode(
     children.push(source);
   }
   const drawn = children.map((child, index) =>
-    toPlanNode(child, exchanges, `${id}.${index}`, seen, depth + 1)
+    toPlanNode(child, exchanges, `${id}.${index}`, seen, depth + 1, count)
   );
   if (source) seen.delete(parsed.id);
 
@@ -265,7 +270,8 @@ export function parseStarrocksPlan(source: string): PlanParseResult {
     if (each.sink && each.root) exchanges.set(each.sink, each.root);
   }
 
+  const count = planSizeBudget();
   return parseWithDepthLimit(() =>
-    toPlanNode(root, exchanges, "0", new Set(), 0)
+    toPlanNode(root, exchanges, "0", new Set(), 0, count)
   );
 }

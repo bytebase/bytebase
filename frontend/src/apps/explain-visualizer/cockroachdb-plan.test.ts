@@ -8,6 +8,7 @@ import {
 import {
   PLAN_FULL_TABLE_SCAN,
   PLAN_TOO_DEEP_MESSAGE,
+  PLAN_TOO_MANY_NODES_MESSAGE,
   type PlanNode,
   type PlanTree,
 } from "./plan-model";
@@ -24,6 +25,32 @@ const nestedPlan = (depth: number): string => {
     sourceProc: index,
     destProc: index + 1,
   }));
+  return JSON.stringify({ processors, edges });
+};
+
+/**
+ * `stages` stages of two processors, each feeding both of the stage before it,
+ * which is the shape a repartitioning join takes. Every path through it draws
+ * the whole subgraph again, so the tree doubles per stage: 30 stages would be
+ * 2^31 nodes if the parser built them all before counting.
+ */
+const repartitionedPlan = (stages: number): string => {
+  const processors: unknown[] = [
+    { core: { title: "Response/-1", details: [] } },
+  ];
+  const edges: unknown[] = [];
+  let previous = [0];
+  for (let stage = 0; stage < stages; stage += 1) {
+    const current = [processors.length, processors.length + 1];
+    for (const index of current) {
+      processors.push({ core: { title: `Stage/${index}`, details: [] } });
+    }
+    for (const source of current) {
+      for (const destProc of previous)
+        edges.push({ sourceProc: source, destProc });
+    }
+    previous = current;
+  }
   return JSON.stringify({ processors, edges });
 };
 
@@ -164,6 +191,17 @@ describe("parseCockroachdbPlan", () => {
       ok: false,
       message: COCKROACHDB_PLAN_NO_PLAN_MESSAGE,
     });
+  });
+
+  test("gives up on a flow that expands past the operators it draws", () => {
+    // Without a budget this builds every copy before anything counts them,
+    // which for 30 stages means over two billion nodes.
+    expect(parseCockroachdbPlan(repartitionedPlan(30))).toEqual({
+      ok: false,
+      message: PLAN_TOO_MANY_NODES_MESSAGE,
+    });
+    // A flow small enough to draw still draws every path through it.
+    expect(parse(repartitionedPlan(4)).nodes).toHaveLength(31);
   });
 
   test("gives up past the depth it can draw", () => {
