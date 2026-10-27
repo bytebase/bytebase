@@ -66,24 +66,31 @@ export function PlanReviewSection() {
     );
   }
 
-  if (issue.approvalStatus === ApprovalStatus.CHECKING) {
-    return (
-      <div className="flex items-center gap-x-2 p-4 text-sm text-control-placeholder">
-        <div className="size-4 animate-spin rounded-full border-2 border-control-border border-t-accent" />
-        <span>
-          {t("custom-approval.issue-review.generating-approval-flow")}
-        </span>
-      </div>
-    );
-  }
+  const generatingFlow = (
+    <div className="flex items-center gap-x-2 p-4 text-sm text-control-placeholder">
+      <div className="size-4 animate-spin rounded-full border-2 border-control-border border-t-accent" />
+      <span>{t("custom-approval.issue-review.generating-approval-flow")}</span>
+    </div>
+  );
+  const generating = issue.approvalStatus === ApprovalStatus.CHECKING;
+  if (generating && !reviewState) return generatingFlow;
 
+  // The automated reviewers stay reachable while the approval flow is being
+  // generated: a failed evaluation is retried by rerunning the plan checks.
   return (
     <div className="flex flex-col">
-      <PlanReviewSectionHeader issue={issue} />
-      {/* ReviewApprovalFlow renders the "no approval required" note itself when
-          the approval is skipped / has no roles, so no guard is needed here. */}
-      <ReviewApprovalFlow issue={issue} />
-      <ReviewRejectionBanner comments={comments} issue={issue} />
+      {generating ? (
+        generatingFlow
+      ) : (
+        <>
+          <PlanReviewSectionHeader issue={issue} />
+          {/* ReviewApprovalFlow renders the "no approval required" note itself
+              when the approval is skipped / has no roles, so no guard is
+              needed here. */}
+          <ReviewApprovalFlow issue={issue} />
+          <ReviewRejectionBanner comments={comments} issue={issue} />
+        </>
+      )}
       {reviewState && <AutomatedReviewSection state={reviewState} />}
       <ReviewActivityTimeline
         comments={comments}
