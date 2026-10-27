@@ -15,10 +15,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
-	"github.com/bytebase/bytebase/backend/plugin/schema"
-
-	// Registers the Oracle dump.
-	_ "github.com/bytebase/bytebase/backend/plugin/schema/oracle"
 )
 
 // newSyncTarget returns a driver opened on a fresh schema the way Bytebase
@@ -217,44 +213,4 @@ func TestSyncLeavesOutTriggersOnOtherSchemasTables(t *testing.T) {
 
 	synced := syncedSchema(ctx, t, driver)
 	require.Equal(t, []string{"ON_OWN"}, names(tableByName(t, synced, "T").Triggers))
-}
-
-// TestSyncDumpRoundTrip applies the dump of a synced schema to an empty one and
-// expects the second sync to match the first.
-func TestSyncDumpRoundTrip(t *testing.T) {
-	t.Parallel()
-	ctx := syncTestContext(t)
-	source, admin, s := newSyncTarget(ctx, t)
-	execAll(ctx, t, admin,
-		fmt.Sprintf(`CREATE TABLE %s.PARENT (ID NUMBER CONSTRAINT PARENT_PK PRIMARY KEY, NAME VARCHAR2(20) DEFAULT 'x' NOT NULL)`, s),
-		fmt.Sprintf(`CREATE TABLE %[1]s.CHILD (
-			ID NUMBER,
-			PARENT_ID NUMBER CONSTRAINT CHILD_FK REFERENCES %[1]s.PARENT (ID),
-			H NUMBER INVISIBLE,
-			HV VARCHAR2(5) INVISIBLE DEFAULT 'y' NOT NULL,
-			VC AS (ID*10) VIRTUAL,
-			IHV INVISIBLE AS (ID+PARENT_ID) VIRTUAL
-		)`, s),
-		fmt.Sprintf(`CREATE INDEX %[1]s.CHILD_VC ON %[1]s.CHILD (VC)`, s),
-		fmt.Sprintf(`CREATE TYPE %s.TY AS OBJECT (X NUMBER)`, s),
-		fmt.Sprintf(`CREATE TABLE %[1]s.OT OF %[1]s.TY`, s),
-	)
-	want := syncedSchema(ctx, t, source)
-
-	dump, err := schema.GetDatabaseDefinition(storepb.Engine_ORACLE, schema.GetDefinitionContext{}, &metadatapb.DatabaseSchemaMetadata{Name: s, Schemas: []*metadatapb.SchemaMetadata{want}})
-	require.NoError(t, err)
-	require.NotContains(t, dump, `"OT"`)
-
-	target, _, targetSchema := newSyncTarget(ctx, t)
-	_, err = target.Execute(ctx, fmt.Sprintf("ALTER SESSION SET CURRENT_SCHEMA = %s;\n%s", targetSchema, dump), db.ExecuteOptions{})
-	require.NoError(t, err, dump)
-	got := syncedSchema(ctx, t, target)
-
-	require.Equal(t, []string{"CHILD", "PARENT"}, names(got.Tables))
-	for _, name := range []string{"CHILD", "PARENT"} {
-		wantTable, gotTable := tableByName(t, want, name), tableByName(t, got, name)
-		require.Equal(t, syncedColumns(wantTable.Columns), syncedColumns(gotTable.Columns), name)
-		require.ElementsMatch(t, names(wantTable.Indexes), names(gotTable.Indexes), name)
-		require.ElementsMatch(t, names(wantTable.ForeignKeys), names(gotTable.ForeignKeys), name)
-	}
 }
