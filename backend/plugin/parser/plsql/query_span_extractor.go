@@ -219,6 +219,11 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbMeta
 	if table != nil {
 		var columns []string
 		for _, column := range table.GetProto().GetColumns() {
+			// SELECT * leaves out invisible columns; listing one would shift
+			// every column after it in the result, and masking with it.
+			if column.IsInvisible {
+				continue
+			}
 			columns = append(columns, column.Name)
 		}
 		return &base.PhysicalTable{

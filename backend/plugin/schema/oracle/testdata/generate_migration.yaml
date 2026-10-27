@@ -8247,3 +8247,193 @@
       "serviceName": "FREEPDB1"
     }
   expected: "CREATE TABLE \"COMPLEX_TYPES\" (\n    \"ID\" NUMBER NOT NULL,\n    \"XML_DATA\" XMLTYPE,\n    \"TIMESTAMP_TZ\" TIMESTAMP(6) WITH TIME ZONE DEFAULT SYSTIMESTAMP,\n    \"INTERVAL_DS\" INTERVAL DAY(2) TO SECOND(6),\n    \"RAW_DATA\" RAW(100),\n    \"LONG_RAW_DATA\" LONG RAW\n);\nALTER TABLE \"COMPLEX_TYPES\" ADD CONSTRAINT \"SYS_C0000001\" PRIMARY KEY (ID);\nCOMMENT ON TABLE \"COMPLEX_TYPES\" IS 'Advanced data types testing table\nSupports: XMLType, Timestamps with timezone, Intervals, RAW data\nPerformance: Optimized for OLTP workloads @ 10K+ TPS\nSecurity: Row-level security enabled, audit trails maintained';\nCOMMENT ON COLUMN \"COMPLEX_TYPES\".\"XML_DATA\" IS 'XMLType column for structured XML storage\nExample: <?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root><item id=\"1\" name=\"test\">Content</item></root>';\nCOMMENT ON COLUMN \"COMPLEX_TYPES\".\"TIMESTAMP_TZ\" IS 'Timestamp with timezone: YYYY-MM-DD HH24:MI:SS.FF TZR\nDefault: SYSTIMESTAMP (system timestamp with session timezone)';\nCOMMENT ON COLUMN \"COMPLEX_TYPES\".\"INTERVAL_DS\" IS 'Interval Day to Second: +/-DD HH:MI:SS.FFFFFF\nRange: +/-999999999 days, precision up to nanoseconds';\n\nCOMMENT ON TABLE \"MULTILANG_CONTENT\" IS 'Multilingual content: English, Español, 中文, العربية, Русский, 日本語';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TITLE_EN\" IS 'English title field';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TITLE_ES\" IS 'Título en español';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TITLE_ZH\" IS '中文标题字段 - 支持简体和繁体中文';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"CONTENT_TEXT\" IS 'Content field supporting:\n1. HTML tags: <b>bold</b>, <i>italic</i>, <a href=\"http://example.com\">links</a>\n2. Markdown: **bold**, *italic*, [link](url), backtick-code-backtick\n3. Special symbols: © ® ™ § ¶ † ‡ • … ‰ ′ ″\n4. Emojis: \U0001F600 \U0001F603 \U0001F604 \U0001F601 \U0001F680 ⭐ \U0001F389 \U0001F4AF\n5. Mathematical: ∀x∈ℝ: x² ≥ 0, ∑(i=1 to n) i = n(n+1)/2';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TAGS\" IS 'XML tags: <tag type=\"category\" value=\"news\"/><tag type=\"priority\" value=\"high\"/>End of XML';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TITLE_EN\" IS 'English title field';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TITLE_ES\" IS 'Título en español';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TITLE_ZH\" IS '中文标题字段 - 支持简体和繁体中文';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"CONTENT_TEXT\" IS 'Content field supporting:\n1. HTML tags: <b>bold</b>, <i>italic</i>, <a href=\"http://example.com\">links</a>\n2. Markdown: **bold**, *italic*, [link](url), backtick-code-backtick\n3. Special symbols: © ® ™ § ¶ † ‡ • … ‰ ′ ″\n4. Emojis: \U0001F600 \U0001F603 \U0001F604 \U0001F601 \U0001F680 ⭐ \U0001F389 \U0001F4AF\n5. Mathematical: ∀x∈ℝ: x² ≥ 0, ∑(i=1 to n) i = n(n+1)/2';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TAGS\" IS 'XML tags: <tag type=\"category\" value=\"news\"/><tag type=\"priority\" value=\"high\"/>End of XML';\nCOMMENT ON TABLE \"SPECIAL_DATA\" IS 'Table containing \"special\" data with various formats & types';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"DATA_VALUE\" IS 'Data value field - supports NULL, empty strings, and ''quoted'' content';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"METADATA_JSON\" IS 'JSON metadata: {\"key\": \"value\", \"array\": [1,2,3]}';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"UNICODE_TEXT\" IS 'Unicode text support:\nLine 1: Basic ASCII text\nLine 2: Special chars !@#$%^&*()_+-={}[]|;:,.<>?\nLine 3: Math symbols ≤ ≥ ± × ÷ ∑ ∏ ∆ π\nLine 4: Currencies $ € £ ¥ ₹';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"BINARY_DATA\" IS 'Binary data storage\\nSupports: images, documents, archives\\tTab-separated info\\r\\nWindows line endings';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"CATEGORY\" IS 'Category field: use % for wildcard searches, _ for single char matching';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"STATUS\" IS 'Status field - values: ''ACTIVE'', ''INACTIVE'', ''PENDING''; DROP TABLE users; --';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"DATA_VALUE\" IS 'Data value field - supports NULL, empty strings, and ''quoted'' content';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"METADATA_JSON\" IS 'JSON metadata: {\"key\": \"value\", \"array\": [1,2,3]}';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"UNICODE_TEXT\" IS 'Unicode text support:\nLine 1: Basic ASCII text\nLine 2: Special chars !@#$%^&*()_+-={}[]|;:,.<>?\nLine 3: Math symbols ≤ ≥ ± × ÷ ∑ ∏ ∆ π\nLine 4: Currencies $ € £ ¥ ₹';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"BINARY_DATA\" IS 'Binary data storage\\nSupports: images, documents, archives\\tTab-separated info\\r\\nWindows line endings';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"CATEGORY\" IS 'Category field: use % for wildcard searches, _ for single char matching';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"STATUS\" IS 'Status field - values: ''ACTIVE'', ''INACTIVE'', ''PENDING''; DROP TABLE users; --';\n"
+- description: Invisible and virtual columns, and object tables the migration leaves alone
+  oldMetadata: |
+    {
+      "name": "TESTSCHEMA",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "OT",
+              "skip_dump": true,
+              "columns": [
+                {
+                  "name": "X",
+                  "position": 1,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ]
+            },
+            {
+              "name": "T",
+              "columns": [
+                {
+                  "name": "A",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "VC",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"+1"
+                  }
+                },
+                {
+                  "name": "H",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "is_invisible": true
+                },
+                {
+                  "name": "S",
+                  "position": 4,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  newMetadata: |
+    {
+      "name": "TESTSCHEMA",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "OT",
+              "skip_dump": true,
+              "columns": [
+                {
+                  "name": "X",
+                  "position": 1,
+                  "type": "NUMBER",
+                  "nullable": true
+                },
+                {
+                  "name": "Y",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ]
+            },
+            {
+              "name": "OT2",
+              "skip_dump": true,
+              "columns": [
+                {
+                  "name": "X",
+                  "position": 1,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ]
+            },
+            {
+              "name": "T",
+              "columns": [
+                {
+                  "name": "A",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "VC",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"+2"
+                  }
+                },
+                {
+                  "name": "H",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true
+                },
+                {
+                  "name": "S",
+                  "position": 4,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"*3"
+                  }
+                },
+                {
+                  "name": "N",
+                  "position": 5,
+                  "type": "NUMBER",
+                  "is_invisible": true,
+                  "default": "5"
+                },
+                {
+                  "name": "NV",
+                  "position": 6,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "is_invisible": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"-1"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "T2",
+              "columns": [
+                {
+                  "name": "A",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "H",
+                  "position": 2,
+                  "type": "VARCHAR2(10 BYTE)",
+                  "nullable": true,
+                  "is_invisible": true
+                },
+                {
+                  "name": "VC",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"+1"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |
+    ALTER TABLE "T" ADD "N" NUMBER INVISIBLE DEFAULT 5 NOT NULL;
+    ALTER TABLE "T" ADD "NV" NUMBER INVISIBLE GENERATED ALWAYS AS ("A"-1) VIRTUAL;
+    CREATE TABLE "T2" (
+        "A" NUMBER NOT NULL,
+        "H" VARCHAR2(10 BYTE) INVISIBLE,
+        "VC" NUMBER GENERATED ALWAYS AS ("A"+1) VIRTUAL
+    );
+
+    ALTER TABLE "T" MODIFY ("VC" AS ("A"+2));
+    ALTER TABLE "T" MODIFY ("H" VISIBLE);
+    ALTER TABLE "T" DROP COLUMN "S";
+    ALTER TABLE "T" ADD "S" NUMBER GENERATED ALWAYS AS ("A"*3) VIRTUAL;

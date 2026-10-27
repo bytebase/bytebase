@@ -796,6 +796,15 @@ func generateCreateTable(schemaName, tableName string, table *metadatapb.TableMe
 func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff) string {
 	var buf strings.Builder
 
+	// Oracle cannot turn a stored column into a virtual one or back, so the
+	// column is dropped and added again.
+	oldGeneration, newGeneration := colDiff.OldColumn.Generation, colDiff.NewColumn.Generation
+	if (oldGeneration == nil) != (newGeneration == nil) {
+		writeDropColumn(&buf, schemaName, tableName, colDiff.OldColumn.Name)
+		writeAddColumn(&buf, schemaName, tableName, colDiff.NewColumn)
+		return buf.String()
+	}
+
 	// In Oracle, we need to handle different aspects of column changes separately
 
 	// If type changed, alter the column type
@@ -828,6 +837,18 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 				writeAlterColumnSetDefault(&buf, schemaName, tableName, colDiff.NewColumn.Name, defaultExpr)
 			}
 		}
+	}
+
+	if newGeneration != nil && oldGeneration.Expression != newGeneration.Expression {
+		writeModifyColumn(&buf, schemaName, tableName, colDiff.NewColumn.Name, "AS ("+newGeneration.Expression+")")
+	}
+
+	if colDiff.OldColumn.IsInvisible != colDiff.NewColumn.IsInvisible {
+		visibility := "VISIBLE"
+		if colDiff.NewColumn.IsInvisible {
+			visibility = "INVISIBLE"
+		}
+		writeModifyColumn(&buf, schemaName, tableName, colDiff.NewColumn.Name, visibility)
 	}
 
 	return buf.String()
@@ -1046,17 +1067,44 @@ func writeAddColumn(out *strings.Builder, schema, table string, column *metadata
 	_, _ = out.WriteString(column.Name)
 	_, _ = out.WriteString(`" `)
 	_, _ = out.WriteString(column.Type)
+	writeColumnAttributes(out, column)
 
-	defaultExpr := getDefaultExpression(column)
-	if defaultExpr != "" {
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeColumnAttributes writes what follows a column's type in CREATE TABLE
+// and ADD: visibility, then the virtual expression or the default, then NOT NULL.
+func writeColumnAttributes(out *strings.Builder, column *metadatapb.ColumnMetadata) {
+	if column.IsInvisible {
+		_, _ = out.WriteString(` INVISIBLE`)
+	}
+	if column.Generation != nil {
+		_, _ = out.WriteString(virtualColumnClause(column.Generation))
+	} else if defaultExpr := getDefaultExpression(column); defaultExpr != "" {
 		_, _ = out.WriteString(` DEFAULT `)
 		_, _ = out.WriteString(defaultExpr)
 	}
 	if !column.Nullable {
 		_, _ = out.WriteString(` NOT NULL`)
 	}
+}
 
-	_, _ = out.WriteString(`;`)
+// writeModifyColumn writes ALTER TABLE ... MODIFY ("column" clause).
+func writeModifyColumn(out *strings.Builder, schema, table, column, clause string) {
+	_, _ = out.WriteString(`ALTER TABLE `)
+	if schema != "" {
+		_, _ = out.WriteString(`"`)
+		_, _ = out.WriteString(schema)
+		_, _ = out.WriteString(`".`)
+	}
+	_, _ = out.WriteString(`"`)
+	_, _ = out.WriteString(table)
+	_, _ = out.WriteString(`" MODIFY ("`)
+	_, _ = out.WriteString(column)
+	_, _ = out.WriteString(`" `)
+	_, _ = out.WriteString(clause)
+	_, _ = out.WriteString(`);`)
 	_, _ = out.WriteString("\n")
 }
 
@@ -1461,16 +1509,7 @@ func writeMigrationCreateTable(out *strings.Builder, schema, table string, colum
 		_, _ = out.WriteString(col.Name)
 		_, _ = out.WriteString("\" ")
 		_, _ = out.WriteString(col.Type)
-
-		defaultExpr := getDefaultExpression(col)
-		if defaultExpr != "" {
-			_, _ = out.WriteString(" DEFAULT ")
-			_, _ = out.WriteString(defaultExpr)
-		}
-
-		if !col.Nullable {
-			_, _ = out.WriteString(" NOT NULL")
-		}
+		writeColumnAttributes(out, col)
 	}
 
 	// Write check constraints

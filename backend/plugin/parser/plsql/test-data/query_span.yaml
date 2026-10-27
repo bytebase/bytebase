@@ -2351,3 +2351,62 @@
           table: T
           column: ""
     predicatecolumns: []
+- description: SELECT * leaves out invisible columns
+  statement: SELECT * FROM T_HIDDEN;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T_HIDDEN",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "H",
+                  "isInvisible":  true
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: PUBLIC
+              schema: ""
+              table: T_HIDDEN
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: PUBLIC
+              schema: ""
+              table: T_HIDDEN
+              column: B
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: PUBLIC
+          schema: ""
+          table: T_HIDDEN
+          column: ""
+    predicatecolumns: []

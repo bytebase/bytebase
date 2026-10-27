@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -23,6 +24,7 @@ var (
 	sharedMSSQL    = startOnce(getMSSQLContainer)
 	sharedTiDB     = startOnce(getTiDBContainer)
 	sharedMongo    = startOnce(getMongoDBContainer)
+	sharedOracle   = startOnce(getOracleContainer)
 	sharedMariaDB  = startOnce(mariaDBStarter("mariadb:11.8.8"))
 	// 10.7 is the oldest MariaDB release Bytebase supports.
 	sharedMariaDB107 = startOnce(mariaDBStarter("mariadb:10.7.8"))
@@ -113,6 +115,28 @@ func SharedMariaDBContainer(t testing.TB) *Container { return shared(t, sharedMa
 // SharedMariaDB107Container is SharedMariaDBContainer for MariaDB 10.7, the
 // oldest supported release; tests take a database each with NewMariaDB107Database.
 func SharedMariaDB107Container(t testing.TB) *Container { return shared(t, sharedMariaDB107) }
+
+// SharedOracleContainer is SharedPgContainer for Oracle; tests take a schema
+// each with NewOracleSchema. Its admin user is a DBA.
+func SharedOracleContainer(t testing.TB) *Container { return shared(t, sharedOracle) }
+
+// NewOracleSchema creates an empty schema for the test on the shared Oracle
+// container and returns the container with the schema's name. An Oracle schema
+// is a user; this one may own the tables and materialized views the admin
+// creates in it.
+func NewOracleSchema(t testing.TB) (*Container, string) {
+	t.Helper()
+	container := SharedOracleContainer(t)
+	name := strings.ToUpper(newDatabaseName())
+	for _, statement := range []string{
+		fmt.Sprintf(`CREATE USER %s IDENTIFIED BY "%s" QUOTA UNLIMITED ON USERS`, name, container.GetPassword()),
+		fmt.Sprintf(`GRANT CREATE SESSION, CREATE TABLE, CREATE MATERIALIZED VIEW TO %s`, name),
+	} {
+		_, err := container.GetDB().Exec(statement)
+		require.NoError(t, err)
+	}
+	return container, name
+}
 
 // NewPgDatabase creates an empty database for the test on the shared
 // PostgreSQL container and returns its name with a superuser handle to it.
