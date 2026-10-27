@@ -1780,12 +1780,54 @@
     "add-spec-pending-draft": "Save or discard the pending change before adding another",
     "ai-review": {
       "failed-to-run": "Could not start the AI review",
-      "finished": "Finished",
-      "not-run": "Not run yet",
-      "queued": "Queued",
       "run": "Run AI review",
-      "save-first": "Save or discard your edits to run the AI review.",
-      "status-unknown": "Status not available"
+      "run-again-description": "A run makes model calls for every database it reviews and may find different issues. Its findings replace the last run's, including the ones people resolved.",
+      "run-again-title": "Run the AI review again?",
+      "save-first": "Save or discard your edits to run the AI review."
+    },
+    "automated-review": {
+      "checks": "Plan check",
+      "details": "Details",
+      "failed": "Couldn't run",
+      "failed-to-rerun": "Could not start the review",
+      "ghost": "Online migration dry run",
+      "n-databases_one": "{{count}} database",
+      "n-databases_other": "{{count}} databases",
+      "n-errors_one": "{{count}} error",
+      "n-errors_other": "{{count}} errors",
+      "n-open": "{{count}} open",
+      "n-warnings_one": "{{count}} warning",
+      "n-warnings_other": "{{count}} warnings",
+      "needs-attention": "{{count}} of {{total}} needs attention",
+      "no-findings": "No findings",
+      "not-run": "Not run yet",
+      "nothing-needs-attention": "Nothing needs attention",
+      "opens-in-sql": "Click to step through them in the SQL.",
+      "out-of-date": "out of date",
+      "outdated": "SQL changed after this run",
+      "passed": "passed",
+      "passed-on_one": "Passed on {{count}} database",
+      "passed-on_other": "Passed on {{count}} databases",
+      "policy": "Review policy",
+      "project-rules": "Project rules: {{on}} of {{total}} on",
+      "report": "Statement report",
+      "rerun": "Rerun",
+      "rerun-all": "Re-run all",
+      "rerun-all-description_one": "This reruns the plan checks and Standard rules. {{count}} Standard rules finding people resolved will come back as open.",
+      "rerun-all-description_other": "This reruns the plan checks and Standard rules. {{count}} Standard rules findings people resolved will come back as open.",
+      "rerun-all-title": "Re-run all checks?",
+      "rerun-reopens_one": "{{count}} finding people resolved will come back as open and need resolving again.",
+      "rerun-reopens_other": "{{count}} findings people resolved will come back as open and need resolving again.",
+      "rerun-rule-title": "Rerun Standard rules?",
+      "retry": "Retry",
+      "running": "Running",
+      "sampled": "a sample of {{count}} of {{total}} databases",
+      "scope": "Reviewed {{databases}}",
+      "scope-label": "What this review covered",
+      "scope-with-engines": "Reviewed {{databases}} ({{engines}})",
+      "self": "Automated review",
+      "summary-part": "{{reviewer}}: {{status}}",
+      "workspace-rules": "Workspace rules: {{on}} of {{total}} on"
     },
     "blocker": {
       "clears-on-its-own": "Clears on its own"
@@ -1800,12 +1842,49 @@
       "started": "Plan checks started"
     },
     "create-plan": "Create Plan",
+    "deploy-waiting": {
+      "approval": "Approval",
+      "approval-from": "Approval from {{role}}",
+      "approval-rejected": "Approval rejected",
+      "auto-create": "Bytebase creates the rollout when all of these pass.",
+      "creating-rollout": "Everything passed; creating the rollout…",
+      "manual-rollout": "Bytebase doesn't create this plan's rollout automatically; deploy it once these pass.",
+      "open-discussions_one": "{{count}} open discussion",
+      "open-discussions_other": "{{count}} open discussions",
+      "overridden_one": "{{count}} P0 finding in {{reviewer}} was resolved without a change",
+      "overridden_other": "{{count}} P0 findings in {{reviewer}} were resolved without a change",
+      "ready-to-deploy": "Everything passed; ready to deploy.",
+      "reviewer-failed": "{{reviewer}} couldn't run",
+      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-not-run": "{{reviewer}} has not run",
+      "reviewer-outdated": "SQL changed after {{reviewer}} ran",
+      "reviewer-running": "{{reviewer}} is running",
+      "show": "Show",
+      "submit": "Submit for review",
+      "waiting-on": "Waiting on",
+      "worth-a-look": "Does not hold the rollout, but worth a look"
+    },
     "description": {
       "placeholder": "Add description"
     },
     "draft-update-permission-required": "You can view this draft, but you need bb.issues.update to edit issue labels or submit it for review.",
     "editor": {
       "save-changes-before-continuing": "Please save or cancel your changes before continuing"
+    },
+    "findings": {
+      "n-more": "{{count}} more",
+      "n-overridden": "{{count}} P0 resolved without a change",
+      "n-priority": "{{count}} {{priority}}",
+      "n-resolved": "{{count}} resolved",
+      "name-at-line": "{{name}} (L{{line}})",
+      "name-times": "{{name}} ×{{count}}",
+      "separator": ", ",
+      "set": {
+        "earlier": "earlier runs",
+        "open": "open",
+        "overridden": "P0 resolved without a change",
+        "resolved": "resolved"
+      }
     },
     "ghost": {
       "configure": "Configure",
@@ -1829,19 +1908,18 @@
       "checking": "Checking…",
       "checks-failing": "Checks failing",
       "deployed": "Deployed",
+      "gate-automated-review-passed": "Automated review passed",
       "gate-checks-failed": "Some checks were not successful",
       "gate-checks-failed-sub": "{{failing}} failing, {{passed}} passed",
       "gate-checks-passed": "All checks passed",
       "gate-checks-passed-sub": "{{count}} passed",
       "gate-checks-running": "Checks are running",
       "gate-checks-running-sub": "{{running}} running, {{passed}} passed",
+      "gate-no-open-discussions": "No open discussions",
       "gate-review-approved": "Changes approved",
       "gate-review-pending": "Review in progress",
       "gate-review-rejected": "Changes requested",
       "gate-threads-open-sub": "Resolve every thread to create the rollout",
-      "gate-threads-open_one": "{{count}} unresolved thread",
-      "gate-threads-open_other": "{{count}} unresolved threads",
-      "gate-threads-resolved": "All threads resolved",
       "incomplete": "Incomplete",
       "preparing-rollout": "Preparing rollout…",
       "rejected": "Rejected",
@@ -1888,11 +1966,15 @@
         "add-a-comment": "Add a comment...",
         "created-this-plan": "created this plan",
         "marked-ready-for-review": "marked this plan ready for review",
+        "n-findings_one": "{{count}} finding",
+        "n-findings_other": "{{count}} findings",
         "n-hidden-events_one": "{{count}} hidden event",
         "n-hidden-events_other": "{{count}} hidden events",
+        "reviewed-the-sql": "reviewed the SQL",
         "self": "Activity",
         "show-all": "Show all"
       },
+      "approval-after-submit": "Approval starts when you submit for review.",
       "approval-flow": {
         "and-n-more_one": "and {{count}} more",
         "and-n-more_other": "and {{count}} more",
@@ -1968,6 +2050,7 @@
         "n-replies-hidden_other": "{{count}} replies hidden",
         "n-replies_one": "{{count}} reply",
         "n-replies_other": "{{count}} replies",
+        "open": "Open",
         "priority": {
           "p0": "The SQL is wrong and must change.",
           "p1": "Dangerous but legitimate. A person must accept it.",
@@ -1985,8 +2068,10 @@
         "threads-on-line_one": "{{count}} thread on this line",
         "threads-on-line_other": "{{count}} threads on this line",
         "walker": {
+          "clear-filter": "Step through every open thread",
           "count_one": "{{count}} unresolved thread on this version",
           "count_other": "{{count}} unresolved threads on this version",
+          "filter": "{{reviewer}} · {{state}}",
           "next": "Next unresolved thread",
           "position": "Thread {{index}} of {{count}}",
           "previous": "Previous unresolved thread",
@@ -2000,16 +2085,6 @@
       "description_one": "Roll back 1 selected task from rollout #{{rolloutId}}.",
       "description_other": "Roll back {{count}} selected tasks from rollout #{{rolloutId}}.",
       "title": "Rollback rollout #{{rolloutId}}"
-    },
-    "rule-review": {
-      "failed": "SQL review failed",
-      "load-failed": "The SQL review status could not be loaded.",
-      "no-open-findings": "No open findings",
-      "not-run": "SQL review not run",
-      "open-findings_one": "{{count}} open finding",
-      "open-findings_other": "{{count}} open findings",
-      "queued": "SQL review queued",
-      "running": "SQL review running"
     },
     "run": "Run checks",
     "select-isolation-level": "Select isolation level",
@@ -2035,9 +2110,14 @@
       "reopen-confirm": "Reopen this plan?",
       "reopen-review-confirm": "Reopen this review?"
     },
+    "statement-summary": {
+      "affected-rows_one": "~{{count}} row affected",
+      "affected-rows_other": "~{{count}} rows affected"
+    },
     "submit-review-anyway": "Submit anyway",
     "subtitle": "Draft database changes and run pre-checks before creating an issue for approval.",
     "summary": {
+      "approved-by": "Approved by {{names}}",
       "last-approved-by": "Last approved by {{name}}",
       "n-changes": "{{n}} changes",
       "n-database-groups": "{{n}} database groups",
@@ -2048,7 +2128,8 @@
       "n-passed": "{{n}} passed",
       "n-unresolved-threads_one": "{{count}} unresolved thread",
       "n-unresolved-threads_other": "{{count}} unresolved threads",
-      "n-warning": "{{n}} warning"
+      "n-warning": "{{n}} warning",
+      "no-approval-required": "No approval required"
     },
     "targets": {
       "no-targets-found": "No targets found",

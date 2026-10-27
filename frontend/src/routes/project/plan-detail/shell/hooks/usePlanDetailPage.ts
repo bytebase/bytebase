@@ -44,6 +44,7 @@ import { unknownPlan } from "@/types/v1/issue/plan";
 import { unknownProject } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
 import { setDocumentTitle } from "@/utils";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { isTaskActivelyTransitioning } from "@/utils/v1/issue/rollout";
 import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
@@ -168,7 +169,9 @@ type PhaseSelection = {
 
 // The phase to focus by default: an explicit URL selection wins — a stage/task
 // selection already resolves to an explicit deploy phase in useRouteSelection —
-// otherwise the furthest-progressed phase the plan has reached.
+// otherwise the furthest-progressed phase the plan has reached. Under SQL
+// Review V2 that is Deploy only once the rollout exists: findings and threads
+// also hold the rollout, and the page cannot see every gate.
 const getCurrentPhase = (
   snapshot: PlanDetailPageSnapshot,
   selection: PhaseSelection
@@ -177,7 +180,11 @@ const getCurrentPhase = (
   if (isPlanDetailPhase(routePhase)) {
     return routePhase;
   }
-  if (snapshot.rollout || isRolloutExpected(snapshot)) {
+  const hasRollout = !!snapshot.rollout && !snapshot.issue?.draft;
+  if (
+    hasRollout ||
+    (!sqlReviewV2Enabled() && !snapshot.rollout && isRolloutExpected(snapshot))
+  ) {
     return PLAN_DETAIL_PHASE_DEPLOY;
   }
   if (snapshot.issue) {

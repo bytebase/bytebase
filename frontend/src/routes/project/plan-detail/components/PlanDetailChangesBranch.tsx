@@ -115,6 +115,7 @@ import {
   getInstanceResource,
   hasProjectPermissionV2,
 } from "@/utils";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { getStatementSize } from "@/utils/sheet";
 import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
@@ -151,7 +152,6 @@ import {
 } from "../utils/targets";
 import { PlanChangeReference } from "./PlanChangeReference";
 import { PlanDetailAggregateChecks } from "./PlanDetailAggregateChecks";
-import { PlanDetailAIReview } from "./PlanDetailAIReview";
 import { PlanDetailDraftChecks } from "./PlanDetailDraftChecks";
 import { PlanDetailStatementSection } from "./PlanDetailStatementSection";
 import { PlanDetailTabItem, PlanDetailTabStrip } from "./PlanDetailTabStrip";
@@ -716,8 +716,10 @@ export function PlanDetailChangesBranch({
         </div>
       </div>
 
-      {!page.isCreating && !specHasRelease && <PlanDetailAggregateChecks />}
-      <PlanDetailAIReview />
+      {/* Under SQL Review V2 the checks are reviewers in the Review section. */}
+      {!page.isCreating && !specHasRelease && !sqlReviewV2Enabled() && (
+        <PlanDetailAggregateChecks />
+      )}
 
       <TargetSelectorSheet
         currentTargets={currentTargets}

@@ -1,4 +1,4 @@
-import { Code2, Loader2, MessageSquareMore, Rocket } from "lucide-react";
+import { Check, Code2, Loader2, MessageSquareMore, Rocket } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useOnKeyChange } from "@/hooks/useOnKeyChange";
 import { cn } from "@/lib/utils";
-import { IssueStatus } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getRolloutStatus } from "@/utils";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
@@ -21,31 +21,32 @@ import { getReviewBadge } from "../utils/reviewBadge";
 import { DeployBranch } from "./components/deploy/DeployBranch";
 import { PlanDetailChangesBranch } from "./components/PlanDetailChangesBranch";
 import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
+import { PlanDetailDeployWaiting } from "./components/PlanDetailDeployWaiting";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
 import { useUnresolvedThreadTotal } from "./components/threads/useUnresolvedThreadCounts";
 import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
 import { usePlacementSync } from "./hooks/usePlacementSync";
+import { usePlanReviewState } from "./hooks/usePlanReviewState";
 import { SqlReviewV2Provider } from "./hooks/useSqlReviewV2";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import { planPhaseAnchorId } from "./shell/focusPhase";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
-import { PlanDetailProvider } from "./shell/PlanDetailContext";
+import {
+  PlanDetailProvider,
+  usePlanDetailContext,
+} from "./shell/PlanDetailContext";
 import {
   buildChangesSummary,
   buildDeploySummary,
   buildReviewSummary,
+  buildReviewSummaryV2,
 } from "./utils/phaseSummary";
+import { rowNeedsAttention } from "./utils/planGates";
 import { isReleaseBackedPlan } from "./utils/spec";
 
 type PhaseStatus = "completed" | "closed" | "active" | "future";
-
-function phaseLineClass(from: PhaseStatus, to: PhaseStatus): string {
-  if (from === "completed" && (to === "completed" || to === "active"))
-    return "bg-success";
-  return "bg-control-border";
-}
 
 export function ProjectPlanDetailPage(props: {
   projectId: string;
@@ -112,140 +113,12 @@ function ProjectPlanDetailPageInner({
     taskId,
   });
   useIssueCommentThreadsSync(page.issue, page.aiReviewRun);
-  const unresolvedThreads = useUnresolvedThreadTotal(page.issue?.name);
   usePlacementSync({
     issueName: page.issue?.name,
     projectId,
     ready: page.ready,
     specs: page.plan.specs,
   });
-  const isGitOpsPlan = useMemo(
-    () => isReleaseBackedPlan(page.plan.specs),
-    [page.plan.specs]
-  );
-  // CI/CD UI (sheet-backed) plans always surface the review phase — even
-  // before an issue exists it shows as an upcoming step. Only GitOps
-  // release-backed plans, which bypass review entirely, hide it.
-  const reviewVisible = !isGitOpsPlan;
-  const selectPhase = page.expandPhase;
-
-  const phaseConfigs = useMemo(() => {
-    const hasIssue = !!page.issue;
-    const isDraftIssue = page.issue?.draft === true;
-    const hasSubmittedIssue = hasIssue && !isDraftIssue;
-    const effectiveRollout = isDraftIssue ? undefined : page.rollout;
-    const hasRollout = !!effectiveRollout;
-    const isIssueClosed =
-      page.issue?.status === IssueStatus.CANCELED ||
-      page.issue?.status === IssueStatus.DONE;
-    const allTasks =
-      effectiveRollout?.stages.flatMap((stage) => stage.tasks) ?? [];
-    const allDone =
-      allTasks.length > 0 &&
-      allTasks.every(
-        (task) =>
-          task.status === Task_Status.DONE ||
-          task.status === Task_Status.SKIPPED
-      );
-
-    let review: PhaseStatus = "future";
-    if (hasSubmittedIssue) {
-      if (page.issue?.status === IssueStatus.CANCELED) {
-        review = "closed";
-      } else {
-        review = hasRollout || isIssueClosed ? "completed" : "active";
-      }
-    }
-
-    const changesStatus: PhaseStatus =
-      page.isCreating || (reviewVisible && !hasSubmittedIssue && !hasRollout)
-        ? "active"
-        : "completed";
-    const deployStatus: PhaseStatus = hasRollout
-      ? allDone
-        ? "completed"
-        : "active"
-      : "future";
-
-    const changesBadge =
-      changesStatus === "active" && !page.isCreating
-        ? {
-            label: page.issue?.draft
-              ? t("common.draft")
-              : t("plan.lifecycle.incomplete"),
-            variant: page.issue?.draft
-              ? ("default" as const)
-              : ("destructive" as const),
-          }
-        : undefined;
-    const rawReviewBadge = getReviewBadge({
-      hasIssue: hasSubmittedIssue,
-      issueStatus: page.issue?.status,
-      hasRollout,
-      approvalStatus: page.issue?.approvalStatus,
-    });
-    const reviewBadge = rawReviewBadge
-      ? {
-          label: t(rawReviewBadge.labelKey),
-          variant: rawReviewBadge.variant,
-        }
-      : undefined;
-    const deployBadge = (() => {
-      if (deployStatus !== "active" || !effectiveRollout) return undefined;
-      const rolloutStatus = getRolloutStatus(effectiveRollout);
-      if (rolloutStatus === Task_Status.FAILED) {
-        return { label: t("common.failed"), variant: "destructive" as const };
-      }
-      if (
-        rolloutStatus === Task_Status.RUNNING ||
-        rolloutStatus === Task_Status.PENDING
-      ) {
-        return {
-          label: t("common.in-progress"),
-          variant: "secondary" as const,
-        };
-      }
-      if (rolloutStatus === Task_Status.CANCELED) {
-        return { label: t("common.canceled"), variant: "default" as const };
-      }
-      // A NOT_STARTED aggregate can still mean earlier stages already finished
-      // (partially deployed) — at the phase level that's progress, not idle.
-      if (
-        allTasks.some(
-          (task) =>
-            task.status === Task_Status.DONE ||
-            task.status === Task_Status.SKIPPED
-        )
-      ) {
-        return {
-          label: t("common.in-progress"),
-          variant: "secondary" as const,
-        };
-      }
-      return { label: t("common.not-started"), variant: "default" as const };
-    })();
-
-    return {
-      changes: {
-        status: changesStatus,
-        badge: changesBadge,
-        lineClass: phaseLineClass(
-          changesStatus,
-          reviewVisible ? review : deployStatus
-        ),
-      },
-      review: {
-        status: review,
-        badge: reviewBadge,
-        lineClass: phaseLineClass(review, deployStatus),
-      },
-      deploy: {
-        status: deployStatus,
-        badge: deployBadge,
-      },
-    };
-  }, [page.isCreating, page.issue, page.rollout, reviewVisible, t]);
-
   // Route-driven spec changes reset during render, so the first paint after a
   // Back/Forward or tab navigation already shows the destination spec. The
   // keyed provider remounts this subtree when the plan itself changes.
@@ -291,82 +164,10 @@ function ProjectPlanDetailPageInner({
             <PlanDetailHeaderDetails />
 
             <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
-              {/* No row gap here: each PhaseSection's pb-6 carries the spacing,
-                  which the connector line fills so it stays continuous. */}
-              <div className="flex min-w-0 flex-col pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
-                <PhaseSection
-                  anchorId={planPhaseAnchorId("changes")}
-                  badge={phaseConfigs.changes.badge}
-                  expanded={page.activePhases.has("changes")}
-                  icon={<Code2 className="size-3 md:size-4" />}
-                  lineClass={phaseConfigs.changes.lineClass}
-                  label={t("plan.navigator.changes")}
-                  onSelect={() => selectPhase("changes")}
-                  status={phaseConfigs.changes.status}
-                  onToggle={() => page.togglePhase("changes")}
-                  summary={buildChangesSummary(page.plan, t)}
-                >
-                  <PlanDetailChangesBranch
-                    onSelectedSpecIdChange={setSelectedSpecId}
-                    selectedSpecId={effectiveSelectedSpecId}
-                  />
-                </PhaseSection>
-
-                {reviewVisible && (
-                  <PhaseSection
-                    anchorId={planPhaseAnchorId("review")}
-                    badge={phaseConfigs.review.badge}
-                    expanded={page.activePhases.has("review")}
-                    icon={<MessageSquareMore className="size-3 md:size-4" />}
-                    lineClass={phaseConfigs.review.lineClass}
-                    label={t("plan.navigator.review")}
-                    onSelect={() => selectPhase("review")}
-                    status={phaseConfigs.review.status}
-                    onToggle={() => page.togglePhase("review")}
-                    summary={buildReviewSummary(
-                      page.issue,
-                      t,
-                      unresolvedThreads
-                    )}
-                    future={
-                      <p className="mt-0.5 text-sm text-control-placeholder">
-                        {t("plan.phase.review-description")}
-                      </p>
-                    }
-                  >
-                    <PlanReviewSection />
-                  </PhaseSection>
-                )}
-
-                <PhaseSection
-                  anchorId={planPhaseAnchorId("deploy")}
-                  badge={phaseConfigs.deploy.badge}
-                  expanded={page.activePhases.has("deploy")}
-                  icon={<Rocket className="size-3 md:size-4" />}
-                  isLast
-                  label={t("plan.navigator.deploy")}
-                  status={phaseConfigs.deploy.status}
-                  onSelect={() => selectPhase("deploy")}
-                  onToggle={() => page.togglePhase("deploy")}
-                  summary={buildDeploySummary(
-                    page.issue?.draft ? undefined : page.rollout,
-                    t
-                  )}
-                  future={
-                    page.issue?.draft ? (
-                      <p className="mt-0.5 text-sm text-control-placeholder">
-                        {sqlReviewV2Enabled()
-                          ? t("plan.phase.deploy-description-v2")
-                          : t("plan.phase.deploy-description")}
-                      </p>
-                    ) : (
-                      <PlanDetailDeployFuture />
-                    )
-                  }
-                >
-                  <DeployBranch />
-                </PhaseSection>
-              </div>
+              <PlanPhaseRail
+                onSelectedSpecIdChange={setSelectedSpecId}
+                selectedSpecId={effectiveSelectedSpecId}
+              />
             </main>
           </div>
 
@@ -413,10 +214,256 @@ function ProjectPlanDetailPageInner({
   );
 }
 
+// The three phases. Before the rollout exists, Changes and Review form one
+// loop and Deploy lists what the rollout waits on; afterwards Deploy leads.
+function PlanPhaseRail({
+  onSelectedSpecIdChange,
+  selectedSpecId,
+}: {
+  onSelectedSpecIdChange: (specId: string) => void;
+  selectedSpecId: string;
+}) {
+  const { t } = useTranslation();
+  const page = usePlanDetailContext();
+  const unresolvedThreads = useUnresolvedThreadTotal(page.issue?.name);
+  const reviewState = usePlanReviewState();
+  const isGitOpsPlan = useMemo(
+    () => isReleaseBackedPlan(page.plan.specs),
+    [page.plan.specs]
+  );
+  // CI/CD UI (sheet-backed) plans always surface the review phase — even
+  // before an issue exists it shows as an upcoming step. Only GitOps
+  // release-backed plans, which bypass review entirely, hide it.
+  const reviewVisible = !isGitOpsPlan;
+  const selectPhase = page.expandPhase;
+  // The machine reviews run on drafts too, so under SQL Review V2 Review is
+  // open from the first save of an issue.
+  const reviewFromDraft = !!reviewState;
+
+  const phaseConfigs = useMemo(() => {
+    const hasIssue = !!page.issue;
+    const isDraftIssue = page.issue?.draft === true;
+    const hasSubmittedIssue = hasIssue && !isDraftIssue;
+    const effectiveRollout = isDraftIssue ? undefined : page.rollout;
+    const hasRollout = !!effectiveRollout;
+    const isIssueClosed =
+      page.issue?.status === IssueStatus.CANCELED ||
+      page.issue?.status === IssueStatus.DONE;
+    const allTasks =
+      effectiveRollout?.stages.flatMap((stage) => stage.tasks) ?? [];
+    const allDone =
+      allTasks.length > 0 &&
+      allTasks.every(
+        (task) =>
+          task.status === Task_Status.DONE ||
+          task.status === Task_Status.SKIPPED
+      );
+
+    let review: PhaseStatus = "future";
+    if (hasSubmittedIssue || (reviewFromDraft && hasIssue)) {
+      if (page.issue?.status === IssueStatus.CANCELED) {
+        review = "closed";
+      } else {
+        review = hasRollout || isIssueClosed ? "completed" : "active";
+      }
+    }
+
+    const changesStatus: PhaseStatus =
+      page.isCreating || (reviewVisible && !hasSubmittedIssue && !hasRollout)
+        ? "active"
+        : "completed";
+    const deployStatus: PhaseStatus = hasRollout
+      ? allDone
+        ? "completed"
+        : "active"
+      : "future";
+
+    const changesBadge =
+      changesStatus === "active" && !page.isCreating
+        ? {
+            label: page.issue?.draft
+              ? t("common.draft")
+              : t("plan.lifecycle.incomplete"),
+            variant: page.issue?.draft
+              ? ("default" as const)
+              : ("destructive" as const),
+          }
+        : undefined;
+    const rawReviewBadge = getReviewBadge({
+      hasIssue: hasSubmittedIssue,
+      issueStatus: page.issue?.status,
+      hasRollout,
+      approvalStatus: page.issue?.approvalStatus,
+    });
+    // "Skipped" names the approval outcome, not the review; under SQL Review
+    // V2 the summary says "No approval required" instead.
+    const reviewBadge =
+      rawReviewBadge &&
+      !(
+        reviewFromDraft && page.issue?.approvalStatus === ApprovalStatus.SKIPPED
+      )
+        ? {
+            label: t(rawReviewBadge.labelKey),
+            variant: rawReviewBadge.variant,
+          }
+        : undefined;
+    const deployBadge = (() => {
+      if (deployStatus !== "active" || !effectiveRollout) return undefined;
+      const rolloutStatus = getRolloutStatus(effectiveRollout);
+      if (rolloutStatus === Task_Status.FAILED) {
+        return { label: t("common.failed"), variant: "destructive" as const };
+      }
+      if (
+        rolloutStatus === Task_Status.RUNNING ||
+        rolloutStatus === Task_Status.PENDING
+      ) {
+        return {
+          label: t("common.in-progress"),
+          variant: "secondary" as const,
+        };
+      }
+      if (rolloutStatus === Task_Status.CANCELED) {
+        return { label: t("common.canceled"), variant: "default" as const };
+      }
+      // A NOT_STARTED aggregate can still mean earlier stages already finished
+      // (partially deployed) — at the phase level that's progress, not idle.
+      if (
+        allTasks.some(
+          (task) =>
+            task.status === Task_Status.DONE ||
+            task.status === Task_Status.SKIPPED
+        )
+      ) {
+        return {
+          label: t("common.in-progress"),
+          variant: "secondary" as const,
+        };
+      }
+      return { label: t("common.not-started"), variant: "default" as const };
+    })();
+
+    return {
+      changes: { status: changesStatus, badge: changesBadge },
+      review: { status: review, badge: reviewBadge },
+      deploy: { status: deployStatus, badge: deployBadge },
+    };
+  }, [
+    page.isCreating,
+    page.issue,
+    page.rollout,
+    reviewFromDraft,
+    reviewVisible,
+    t,
+  ]);
+
+  // A small dot on the Review node marks findings or discussions that need
+  // someone.
+  const reviewNeedsAttention =
+    !!reviewState &&
+    (reviewState.rows.some(rowNeedsAttention) ||
+      reviewState.openDiscussions > 0);
+  const reviewSummary = reviewState
+    ? buildReviewSummaryV2(
+        page.issue,
+        t,
+        reviewState.rows,
+        reviewState.openDiscussions
+      )
+    : buildReviewSummary(page.issue, t, unresolvedThreads);
+
+  let deployFuture: ReactNode;
+  // A closed issue waits on nothing, so Deploy describes the phase instead.
+  if (reviewState && page.issue?.status === IssueStatus.OPEN && !isGitOpsPlan) {
+    deployFuture = (
+      <PlanDetailDeployWaiting
+        issue={page.issue}
+        plan={page.plan}
+        state={reviewState}
+      />
+    );
+  } else if (page.issue?.draft) {
+    deployFuture = (
+      <p className="mt-0.5 text-sm text-control-light">
+        {sqlReviewV2Enabled()
+          ? t("plan.phase.deploy-description-v2")
+          : t("plan.phase.deploy-description")}
+      </p>
+    );
+  } else {
+    deployFuture = <PlanDetailDeployFuture />;
+  }
+
+  return (
+    // No row gap here: each PhaseSection's pb-6 carries the spacing, which
+    // the connector line fills so it stays continuous.
+    <div className="flex min-w-0 flex-col pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
+      <PhaseSection
+        anchorId={planPhaseAnchorId("changes")}
+        badge={phaseConfigs.changes.badge}
+        expanded={page.activePhases.has("changes")}
+        icon={<Code2 className="size-3 md:size-4" />}
+        label={t("plan.navigator.changes")}
+        onSelect={() => selectPhase("changes")}
+        status={phaseConfigs.changes.status}
+        onToggle={() => page.togglePhase("changes")}
+        summary={buildChangesSummary(page.plan, t, {
+          includeChecks: !reviewState,
+        })}
+      >
+        <PlanDetailChangesBranch
+          onSelectedSpecIdChange={onSelectedSpecIdChange}
+          selectedSpecId={selectedSpecId}
+        />
+      </PhaseSection>
+
+      {reviewVisible && (
+        <PhaseSection
+          anchorId={planPhaseAnchorId("review")}
+          attention={reviewNeedsAttention}
+          badge={phaseConfigs.review.badge}
+          expanded={page.activePhases.has("review")}
+          icon={<MessageSquareMore className="size-3 md:size-4" />}
+          label={t("plan.navigator.review")}
+          onSelect={() => selectPhase("review")}
+          status={phaseConfigs.review.status}
+          onToggle={() => page.togglePhase("review")}
+          summary={reviewSummary}
+          future={
+            <p className="mt-0.5 text-sm text-control-light">
+              {t("plan.phase.review-description")}
+            </p>
+          }
+        >
+          <PlanReviewSection />
+        </PhaseSection>
+      )}
+
+      <PhaseSection
+        anchorId={planPhaseAnchorId("deploy")}
+        badge={phaseConfigs.deploy.badge}
+        expanded={page.activePhases.has("deploy")}
+        icon={<Rocket className="size-3 md:size-4" />}
+        isLast
+        label={t("plan.navigator.deploy")}
+        status={phaseConfigs.deploy.status}
+        onSelect={() => selectPhase("deploy")}
+        onToggle={() => page.togglePhase("deploy")}
+        summary={buildDeploySummary(
+          page.issue?.draft ? undefined : page.rollout,
+          t
+        )}
+        future={deployFuture}
+      >
+        <DeployBranch />
+      </PhaseSection>
+    </div>
+  );
+}
+
 function PhaseSection({
+  attention = false,
   badge,
   label,
-  lineClass,
   icon,
   future,
   isLast = false,
@@ -428,12 +475,12 @@ function PhaseSection({
   onSelect,
   anchorId,
 }: {
+  attention?: boolean;
   badge?: {
     label: string;
     variant: "default" | "secondary" | "warning" | "success" | "destructive";
   };
   label: string;
-  lineClass?: string;
   icon: ReactNode;
   future?: ReactNode;
   isLast?: boolean;
@@ -446,14 +493,16 @@ function PhaseSection({
   anchorId?: string;
 }) {
   const { t } = useTranslation();
+  // Finished is quiet, in progress is outlined, and only something that needs
+  // a person gets saturated color: the attention dot.
   const dotClass =
     status === "completed"
-      ? "bg-success text-accent-text ring-[3px] ring-success/15 md:ring-4"
+      ? "bg-control-bg text-control-light"
       : status === "closed"
         ? "bg-control-placeholder text-accent-text"
         : status === "active"
-          ? "bg-accent text-accent-text ring-[3px] ring-accent/15 md:ring-4"
-          : "border-2 border-dashed border-control-border text-control-placeholder";
+          ? "border-2 border-accent bg-background text-accent"
+          : "border-2 border-dashed border-control-border bg-control-bg text-control-light";
 
   return (
     <div className={cn("flex scroll-mt-16", isLast && "mb-48")} id={anchorId}>
@@ -468,25 +517,34 @@ function PhaseSection({
               dotClass
             )}
           >
-            {icon}
+            {status === "completed" ? (
+              <Check className="size-3 md:size-4" />
+            ) : (
+              icon
+            )}
           </div>
+          {attention && (
+            <span
+              aria-hidden="true"
+              className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background bg-warning"
+              data-testid="phase-attention"
+            />
+          )}
         </div>
-        {/* -mt-1 tucks the rail under the node's halo so it reads as connected. */}
+        {/* -mt-1 tucks the rail under the node so it reads as connected. */}
         {!isLast && (
-          <div className={cn("-mt-1 w-0.5 flex-1 min-h-[20px]", lineClass)} />
+          <div className="-mt-1 min-h-[20px] w-0.5 flex-1 bg-block-border" />
         )}
       </div>
 
       <div className="min-w-0 flex-1 pb-6">
         {status === "future" ? (
           <div className="py-0.5">
-            <span className="textlabel uppercase text-control-placeholder">
+            <span className="textlabel uppercase text-control-light">
               {label}
             </span>
             {future ?? (
-              <div className="mt-0.5 text-sm text-control-placeholder">
-                {summary}
-              </div>
+              <div className="mt-0.5 text-sm text-control-light">{summary}</div>
             )}
           </div>
         ) : !expanded ? (
@@ -495,7 +553,7 @@ function PhaseSection({
               <span className="textlabel uppercase">{label}</span>
               {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
               <div className="flex-1" />
-              <span className="shrink-0 text-xs text-control-placeholder">
+              <span className="shrink-0 text-xs text-control-light">
                 {t("plan.phase.show-details")}
               </span>
             </div>
@@ -506,11 +564,11 @@ function PhaseSection({
         ) : (
           <div className="flex flex-col">
             <div className="flex items-center gap-2 py-0.5">
-              <span className="textlabel uppercase text-accent">{label}</span>
+              <span className="textlabel uppercase text-main">{label}</span>
               {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
               <div className="flex-1" />
               <span
-                className="shrink-0 cursor-pointer text-xs text-control-placeholder hover:text-control"
+                className="shrink-0 cursor-pointer text-xs text-control-light hover:text-control"
                 onClick={onToggle}
               >
                 {t("plan.phase.hide-details")}

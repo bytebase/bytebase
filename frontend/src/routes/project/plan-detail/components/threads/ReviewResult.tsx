@@ -97,7 +97,7 @@ export function ReviewPriorityBadge({
   );
 }
 
-function priorityStyle(
+export function priorityStyle(
   t: TFunction,
   priority: IssueComment_ReviewMetadata_Priority
 ): { description: string; variant: BadgeProps["variant"] } | undefined {

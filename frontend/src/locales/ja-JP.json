@@ -1780,12 +1780,54 @@
     "add-spec-pending-draft": "新しい変更を追加する前に、保留中の変更を保存または破棄してください",
     "ai-review": {
       "failed-to-run": "AI レビューを開始できませんでした",
-      "finished": "完了",
-      "not-run": "未実行",
-      "queued": "待機中",
       "run": "AI レビューを実行",
-      "save-first": "AI レビューを実行するには、編集内容を保存または破棄してください。",
-      "status-unknown": "状態を取得できません"
+      "run-again-description": "実行するたびにレビュー対象の各データベースでモデルを呼び出すため、結果が異なる場合があります。新しい検出事項は、解決済みのものを含め前回の結果を置き換えます。",
+      "run-again-title": "AI レビューを再実行しますか？",
+      "save-first": "AI レビューを実行するには、編集内容を保存または破棄してください。"
+    },
+    "automated-review": {
+      "checks": "プランチェック",
+      "details": "詳細",
+      "failed": "実行できませんでした",
+      "failed-to-rerun": "レビューを開始できませんでした",
+      "ghost": "オンラインマイグレーションのドライラン",
+      "n-databases_one": "{{count}} 個のデータベース",
+      "n-databases_other": "{{count}} 個のデータベース",
+      "n-errors_one": "{{count}} 件のエラー",
+      "n-errors_other": "{{count}} 件のエラー",
+      "n-open": "未解決 {{count}} 件",
+      "n-warnings_one": "{{count}} 件の警告",
+      "n-warnings_other": "{{count}} 件の警告",
+      "needs-attention": "{{total}} 件中 {{count}} 件に対応が必要",
+      "no-findings": "検出事項なし",
+      "not-run": "未実行",
+      "nothing-needs-attention": "対応が必要な項目はありません",
+      "opens-in-sql": "クリックすると SQL 内で順に確認できます。",
+      "out-of-date": "古い結果",
+      "outdated": "この実行後に SQL が変更されました",
+      "passed": "合格",
+      "passed-on_one": "{{count}} 個のデータベースで合格",
+      "passed-on_other": "{{count}} 個のデータベースで合格",
+      "policy": "レビューポリシー",
+      "project-rules": "プロジェクトのルール：{{total}} 件中 {{on}} 件が有効",
+      "report": "ステートメントレポート",
+      "rerun": "再実行",
+      "rerun-all": "すべて再実行",
+      "rerun-all-description_one": "プランチェックと Standard rules を再実行します。Standard rules の解決済みの検出事項 {{count}} 件が未解決に戻ります。",
+      "rerun-all-description_other": "プランチェックと Standard rules を再実行します。Standard rules の解決済みの検出事項 {{count}} 件が未解決に戻ります。",
+      "rerun-all-title": "すべて再実行しますか？",
+      "rerun-reopens_one": "解決済みの検出事項 {{count}} 件が未解決に戻り、再度対応が必要になります。",
+      "rerun-reopens_other": "解決済みの検出事項 {{count}} 件が未解決に戻り、再度対応が必要になります。",
+      "rerun-rule-title": "Standard rules を再実行しますか？",
+      "retry": "再試行",
+      "running": "実行中",
+      "sampled": "{{total}} 個中 {{count}} 個のデータベースを抽出",
+      "scope": "{{databases}} をレビュー",
+      "scope-label": "このレビューの対象",
+      "scope-with-engines": "{{databases}}（{{engines}}）をレビュー",
+      "self": "自動レビュー",
+      "summary-part": "{{reviewer}}: {{status}}",
+      "workspace-rules": "ワークスペースのルール：{{total}} 件中 {{on}} 件が有効"
     },
     "blocker": {
       "clears-on-its-own": "自動的に解消されます"
@@ -1800,12 +1842,49 @@
       "started": "プランチェックを開始しました"
     },
     "create-plan": "プランを作成",
+    "deploy-waiting": {
+      "approval": "承認",
+      "approval-from": "{{role}} の承認",
+      "approval-rejected": "承認が却下されました",
+      "auto-create": "これらがすべて合格すると、Bytebase がロールアウトを作成します。",
+      "creating-rollout": "すべて合格しました。ロールアウトを作成しています…",
+      "manual-rollout": "このプランのロールアウトは自動作成されません。上記がすべて通過したら手動でデプロイしてください。",
+      "open-discussions_one": "未解決のディスカッション {{count}} 件",
+      "open-discussions_other": "未解決のディスカッション {{count}} 件",
+      "overridden_one": "{{reviewer}} の P0 の検出事項 {{count}} 件が変更されずに解決されました",
+      "overridden_other": "{{reviewer}} の P0 の検出事項 {{count}} 件が変更されずに解決されました",
+      "ready-to-deploy": "すべて通過しました。デプロイできます。",
+      "reviewer-failed": "{{reviewer}} を実行できませんでした",
+      "reviewer-findings": "{{reviewer}}：{{findings}}",
+      "reviewer-not-run": "{{reviewer}} は未実行です",
+      "reviewer-outdated": "{{reviewer}} の実行後に SQL が変更されました",
+      "reviewer-running": "{{reviewer}} を実行中",
+      "show": "表示",
+      "submit": "レビューに提出",
+      "waiting-on": "待機中の項目",
+      "worth-a-look": "ロールアウトは止めませんが、確認をおすすめします"
+    },
     "description": {
       "placeholder": "説明を追加"
     },
     "draft-update-permission-required": "この下書きは表示できますが、イシューラベルの編集やレビューへの提出には bb.issues.update が必要です。",
     "editor": {
       "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください"
+    },
+    "findings": {
+      "n-more": "他 {{count}} 件",
+      "n-overridden": "変更せずに解決した P0 {{count}} 件",
+      "n-priority": "{{priority}} {{count}} 件",
+      "n-resolved": "解決済み {{count}} 件",
+      "name-at-line": "{{name}}（L{{line}}）",
+      "name-times": "{{name}} ×{{count}}",
+      "separator": "、",
+      "set": {
+        "earlier": "以前の実行",
+        "open": "未解決",
+        "overridden": "変更せずに解決した P0",
+        "resolved": "解決済み"
+      }
     },
     "ghost": {
       "configure": "設定",
@@ -1829,19 +1908,18 @@
       "checking": "チェック中…",
       "checks-failing": "チェック失敗",
       "deployed": "デプロイ済み",
+      "gate-automated-review-passed": "自動レビューに合格",
       "gate-checks-failed": "一部のチェックが失敗しました",
       "gate-checks-failed-sub": "{{failing}} 件失敗、{{passed}} 件成功",
       "gate-checks-passed": "すべてのチェックに合格",
       "gate-checks-passed-sub": "{{count}} 件成功",
       "gate-checks-running": "チェックを実行中",
       "gate-checks-running-sub": "{{running}} 件実行中、{{passed}} 件成功",
+      "gate-no-open-discussions": "未解決のディスカッションはありません",
       "gate-review-approved": "変更が承認されました",
       "gate-review-pending": "レビュー中",
       "gate-review-rejected": "変更がリクエストされました",
       "gate-threads-open-sub": "すべてのスレッドを解決するとロールアウトが作成されます",
-      "gate-threads-open_one": "未解決のスレッド {{count}} 件",
-      "gate-threads-open_other": "未解決のスレッド {{count}} 件",
-      "gate-threads-resolved": "すべてのスレッドが解決済み",
       "incomplete": "未完了",
       "preparing-rollout": "ロールアウトを準備中…",
       "rejected": "却下されました",
@@ -1888,11 +1966,15 @@
         "add-a-comment": "コメントを追加...",
         "created-this-plan": "がこのプランを作成しました",
         "marked-ready-for-review": "がこのプランをレビュー準備完了にしました",
+        "n-findings_one": "検出事項 {{count}} 件",
+        "n-findings_other": "検出事項 {{count}} 件",
         "n-hidden-events_one": "{{count}} 件の非表示イベント",
         "n-hidden-events_other": "{{count}} 件の非表示イベント",
+        "reviewed-the-sql": "が SQL をレビューしました",
         "self": "アクティビティ",
         "show-all": "すべて表示"
       },
+      "approval-after-submit": "レビューに提出すると承認が始まります。",
       "approval-flow": {
         "and-n-more_one": "他 {{count}} 名",
         "and-n-more_other": "他 {{count}} 名",
@@ -1968,6 +2050,7 @@
         "n-replies-hidden_other": "{{count}} 件の返信が非表示",
         "n-replies_one": "{{count}} 件の返信",
         "n-replies_other": "{{count}} 件の返信",
+        "open": "未解決",
         "priority": {
           "p0": "SQL に誤りがあり、修正が必要です。",
           "p1": "危険ですが正当な変更です。担当者による承認が必要です。",
@@ -1985,8 +2068,10 @@
         "threads-on-line_one": "この行に {{count}} 件のスレッド",
         "threads-on-line_other": "この行に {{count}} 件のスレッド",
         "walker": {
+          "clear-filter": "すべての未解決スレッドを順に表示",
           "count_one": "このバージョンに未解決のスレッドが {{count}} 件",
           "count_other": "このバージョンに未解決のスレッドが {{count}} 件",
+          "filter": "{{reviewer}} · {{state}}",
           "next": "次の未解決スレッド",
           "position": "{{count}} 件中 {{index}} 件目",
           "previous": "前の未解決スレッド",
@@ -2000,16 +2085,6 @@
       "description_one": "ロールアウト #{{rolloutId}} の選択したタスク 1 件をロールバックします。",
       "description_other": "ロールアウト #{{rolloutId}} の選択したタスク {{count}} 件をロールバックします。",
       "title": "ロールアウト #{{rolloutId}} のロールバック"
-    },
-    "rule-review": {
-      "failed": "SQL レビューに失敗しました",
-      "load-failed": "SQL レビューの状態を読み込めませんでした。",
-      "no-open-findings": "未解決の指摘はありません",
-      "not-run": "SQL レビュー未実行",
-      "open-findings_one": "未解決の指摘 {{count}} 件",
-      "open-findings_other": "未解決の指摘 {{count}} 件",
-      "queued": "SQL レビュー待機中",
-      "running": "SQL レビュー実行中"
     },
     "run": "再チェック",
     "select-isolation-level": "分離レベルを選択",
@@ -2035,9 +2110,14 @@
       "reopen-confirm": "このプランを再開きますか？",
       "reopen-review-confirm": "このレビューを再開しますか？"
     },
+    "statement-summary": {
+      "affected-rows_one": "約 {{count}} 行に影響",
+      "affected-rows_other": "約 {{count}} 行に影響"
+    },
     "submit-review-anyway": "それでも提出する",
     "subtitle": "承認のためにイシューを作成する前に、データベースの変更を下書きし、事前チェックを実行します。",
     "summary": {
+      "approved-by": "{{names}} が承認",
       "last-approved-by": "{{name}} が最後に承認",
       "n-changes": "{{n}} 件の変更",
       "n-database-groups": "{{n}} 個のデータベースグループ",
@@ -2048,7 +2128,8 @@
       "n-passed": "{{n}} 件合格",
       "n-unresolved-threads_one": "未解決のスレッド {{count}} 件",
       "n-unresolved-threads_other": "未解決のスレッド {{count}} 件",
-      "n-warning": "{{n}} 件の警告"
+      "n-warning": "{{n}} 件の警告",
+      "no-approval-required": "承認不要"
     },
     "targets": {
       "no-targets-found": "対象が見つかりません",
