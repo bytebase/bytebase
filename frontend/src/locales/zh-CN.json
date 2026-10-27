@@ -3635,6 +3635,20 @@
         "estimated-cost": "预计成本 {{cost}}",
         "measured-time": "实测耗时 {{time}} ms",
         "nodes": "{{count}} 个节点"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "该连接在匹配之前需要在计算分片之间搬运数据。将两张表都按连接列分布，或把较小的表设为 ALL，可以让连接在数据所在之处完成。",
+          "title": "数据重分布"
+        },
+        "full-index-scan": {
+          "detail": "读取该索引的每一条记录。如果查询只需要其中少数几条，为索引的前导列加上条件就可以避免整体读取。",
+          "title": "全索引扫描"
+        },
+        "full-table-scan": {
+          "detail": "读取该表的每一行。如果查询只需要其中少数几行，在过滤列上建立索引就可以避免整表读取。",
+          "title": "全表扫描"
+        }
       }
     },
     "query-time": "查询时间",

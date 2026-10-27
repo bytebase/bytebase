@@ -20,11 +20,29 @@ export interface PlanProperty {
 /** Where a warning came from, which decides whether relevance can hide it. */
 export type PlanWarningSource = "engine" | "heuristic";
 
-/** Something about a node worth a reader's attention, and what it means. */
+/** A warning this viewer raises itself, named by the words it shows for it. */
+export type PlanWarningKey =
+  | "full-table-scan"
+  | "full-index-scan"
+  | "data-redistribution";
+
+/**
+ * Something about a node worth a reader's attention, and what it means.
+ *
+ * This viewer's own advice names a key and the viewer holds its words, so they
+ * are read in the reader's language. A warning the engine itself reported
+ * carries the engine's words, as the plan's own operator names do.
+ */
 export interface PlanWarning {
-  readonly title: string;
-  readonly detail: string;
   readonly source: PlanWarningSource;
+  readonly key?: PlanWarningKey;
+  readonly title?: string;
+  readonly detail?: string;
+}
+
+/** What one warning is, for grouping and for telling two of them apart. */
+export function planWarningIdentity(warning: PlanWarning): string {
+  return warning.key ?? warning.title ?? "";
 }
 
 export interface PlanNode {
@@ -257,17 +275,13 @@ export function planLabel(key: string): string {
 
 /** Warning for a read of a whole table, attached by each engine's parser. */
 export const PLAN_FULL_TABLE_SCAN: PlanWarning = {
-  title: "Full table scan",
-  detail:
-    "Reads every row of this table. If the query needs only a few of them, an index on the filtered columns could avoid the full read.",
+  key: "full-table-scan",
   source: "heuristic",
 };
 
 /** Warning for a read of a whole index, attached by each engine's parser. */
 export const PLAN_FULL_INDEX_SCAN: PlanWarning = {
-  title: "Full index scan",
-  detail:
-    "Reads every entry of this index. If the query needs only a few of them, a condition on the index's leading columns could avoid the full read.",
+  key: "full-index-scan",
   source: "heuristic",
 };
 
@@ -682,9 +696,10 @@ export function planWarningGroups(tree: PlanTree): PlanWarningGroup[] {
       ) {
         continue;
       }
-      const group = groups.get(warning.title);
+      const identity = planWarningIdentity(warning);
+      const group = groups.get(identity);
       if (group) group.nodes.push(node);
-      else groups.set(warning.title, { warning, nodes: [node] });
+      else groups.set(identity, { warning, nodes: [node] });
     }
   }
   return [...groups.values()].map(({ warning, nodes }) => ({

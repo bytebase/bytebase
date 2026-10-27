@@ -3635,6 +3635,20 @@
         "estimated-cost": "estimated cost {{cost}}",
         "measured-time": "measured time {{time}} ms",
         "nodes": "{{count}} nodes"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "This join moves rows between slices before it can match them. Distributing both tables on their join column, or making the smaller one ALL, lets the join run where the rows already are.",
+          "title": "Data redistribution"
+        },
+        "full-index-scan": {
+          "detail": "Reads every entry of this index. If the query needs only a few of them, a condition on the index's leading columns could avoid the full read.",
+          "title": "Full index scan"
+        },
+        "full-table-scan": {
+          "detail": "Reads every row of this table. If the query needs only a few of them, an index on the filtered columns could avoid the full read.",
+          "title": "Full table scan"
+        }
       }
     },
     "query-time": "Query time",

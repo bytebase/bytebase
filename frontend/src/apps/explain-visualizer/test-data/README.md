@@ -94,6 +94,11 @@ index usage; only `executionStats` adds numbers, and only by running the query.
 | `index-scan-sort.json` | `SORT` over `FETCH` over `IXSCAN`, with the index bounds |
 | `aggregate-group.json` | An aggregation's `stages` pipeline, whose `$cursor` holds the read's own plan |
 | `measured-collection-scan.json` | `explain("executionStats")`: the same tree with rows returned and documents examined |
+| `slot-based-index-scan.json` | The slot-based engine's shape: the tree under `winningPlan.queryPlan`, beside the plan it compiled for itself |
+
+The slot-based one is from MongoDB 7, which runs the classic engine by
+default; `db.adminCommand({ setParameter: 1, internalQueryFrameworkControl:
+"trySbeEngine" })` is what makes it choose the other one.
 
 To add one, run the statement through the driver with
 `QueryContext{Explain: true}`, or in `mongosh`:

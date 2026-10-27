@@ -1,4 +1,5 @@
 import { createContext, type ReactNode, useContext } from "react";
+import type { PlanWarning } from "./plan-model";
 
 const ENGLISH = {
   "copy.copied": "Copied",
@@ -159,6 +160,15 @@ const ENGLISH = {
   "totals.estimated-cost": "estimated cost {{cost}}",
   "totals.measured-time": "measured time {{time}} ms",
   "totals.nodes": "{{count}} nodes",
+  "warning.data-redistribution.detail":
+    "This join moves rows between slices before it can match them. Distributing both tables on their join column, or making the smaller one ALL, lets the join run where the rows already are.",
+  "warning.data-redistribution.title": "Data redistribution",
+  "warning.full-index-scan.detail":
+    "Reads every entry of this index. If the query needs only a few of them, a condition on the index's leading columns could avoid the full read.",
+  "warning.full-index-scan.title": "Full index scan",
+  "warning.full-table-scan.detail":
+    "Reads every row of this table. If the query needs only a few of them, an index on the filtered columns could avoid the full read.",
+  "warning.full-table-scan.title": "Full table scan",
 } as const;
 
 export type QueryPlanTranslationKey = keyof typeof ENGLISH;
@@ -196,4 +206,22 @@ export function QueryPlanI18nProvider({
 
 export function useQueryPlanTranslation(): QueryPlanTranslate {
   return useContext(QueryPlanI18nContext) ?? fallbackTranslate;
+}
+
+/**
+ * The words a warning is shown in. This viewer's own advice is read in the
+ * reader's language; a warning the engine reported keeps the engine's words,
+ * as the plan's own operator names and values do.
+ */
+export function planWarningText(
+  warning: PlanWarning,
+  translate: QueryPlanTranslate
+): { title: string; detail: string } {
+  if (!warning.key) {
+    return { title: warning.title ?? "", detail: warning.detail ?? "" };
+  }
+  return {
+    title: translate(`warning.${warning.key}.title`),
+    detail: translate(`warning.${warning.key}.detail`),
+  };
 }

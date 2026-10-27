@@ -199,7 +199,12 @@ function planTreeOf(
     planner && isJsonRecord(planner.winningPlan)
       ? planner.winningPlan
       : undefined;
-  return winning ? { root: winning, namespace } : undefined;
+  if (!winning) return undefined;
+  // The slot-based engine reports the operator tree under `queryPlan`, beside
+  // the plan it compiled for its own machine. The classic engine puts the tree
+  // itself here, and which engine ran is not the reader's question.
+  const root = isJsonRecord(winning.queryPlan) ? winning.queryPlan : winning;
+  return { root, namespace };
 }
 
 /**

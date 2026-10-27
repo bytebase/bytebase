@@ -3,6 +3,7 @@ import {
   PLAN_TOO_DEEP_MESSAGE,
   type PlanNode,
   type PlanTree,
+  planWarningIdentity,
 } from "./plan-model";
 import {
   parseRedshiftPlan,
@@ -87,8 +88,10 @@ describe("parseRedshiftPlan", () => {
     const merge = byId(parse(threeWayJoin), "0.0");
 
     expect(propertyValue(broadcast, "Distribution")).toBe("DS_BCAST_INNER");
-    expect(broadcast.warnings.map((warning) => warning.title)).toEqual([
-      "Data redistribution",
+    // The viewer holds this warning's words, so what the parser attaches is
+    // which warning it is.
+    expect(broadcast.warnings.map(planWarningIdentity)).toEqual([
+      "data-redistribution",
     ]);
     // DS_DIST_NONE is the join that did not have to move anything.
     expect(propertyValue(merge, "Distribution")).toBe("DS_DIST_NONE");

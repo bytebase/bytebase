@@ -3635,6 +3635,20 @@
         "estimated-cost": "coste estimado {{cost}}",
         "measured-time": "tiempo medido {{time}} ms",
         "nodes": "{{count}} nodos"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "Esta unión mueve filas entre segmentos antes de poder emparejarlas. Distribuir ambas tablas por su columna de unión, o hacer ALL la más pequeña, permite que la unión se ejecute donde ya están las filas.",
+          "title": "Redistribución de datos"
+        },
+        "full-index-scan": {
+          "detail": "Lee todas las entradas de este índice. Si la consulta solo necesita unas pocas, una condición sobre las columnas iniciales del índice evitaría la lectura completa.",
+          "title": "Exploración completa del índice"
+        },
+        "full-table-scan": {
+          "detail": "Lee todas las filas de esta tabla. Si la consulta solo necesita unas pocas, un índice sobre las columnas filtradas evitaría la lectura completa.",
+          "title": "Exploración completa de la tabla"
+        }
       }
     },
     "query-time": "Tiempo de consulta",

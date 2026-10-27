@@ -60,9 +60,7 @@ const REDISTRIBUTING = new Set([
 ]);
 
 const DATA_REDISTRIBUTION: PlanWarning = {
-  title: "Data redistribution",
-  detail:
-    "This join moves rows between slices before it can match them. Distributing both tables on their join column, or making the smaller one ALL, lets the join run where the rows already are.",
+  key: "data-redistribution",
   source: "heuristic",
 };
 

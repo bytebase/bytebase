@@ -15,6 +15,7 @@ import aggregateGroup from "./test-data/mongodb/aggregate-group.json";
 import collectionScan from "./test-data/mongodb/collection-scan.json";
 import indexScanSort from "./test-data/mongodb/index-scan-sort.json";
 import measuredCollectionScan from "./test-data/mongodb/measured-collection-scan.json";
+import slotBasedIndexScan from "./test-data/mongodb/slot-based-index-scan.json";
 
 /** A chain of `depth` stages, which is what drives the depth limit. */
 const nestedPlan = (depth: number): string => {
@@ -55,6 +56,18 @@ describe("parseMongodbPlan", () => {
     expect(tree.root.subject).toBe('{"total":{"$gt":880}}');
     expect(tree.root.warnings).toEqual([PLAN_FULL_TABLE_SCAN]);
     expect(propertyValue(tree.root, "Direction")).toBe("forward");
+  });
+
+  test("reads the tree the slot-based engine wraps", () => {
+    // MongoDB's slot-based engine reports the operator tree under
+    // `winningPlan.queryPlan`, beside the plan it compiled for itself; the
+    // classic engine puts the tree directly under `winningPlan`. Taking the
+    // wrapper for the tree draws one nameless node and hides the read.
+    const tree = parseFixture(slotBasedIndexScan);
+
+    expect(outline(tree)).toEqual(["0 FETCH", "0.0 IXSCAN"]);
+    expect(propertyValue(byId(tree, "0.0"), "Index name")).toBe("customerId_1");
+    expect(tree.root.warnings).toEqual([]);
   });
 
   test("ranks nothing, because MongoDB's planner publishes no estimate", () => {

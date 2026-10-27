@@ -3635,6 +3635,20 @@
         "estimated-cost": "chi phí ước tính {{cost}}",
         "measured-time": "thời gian đo được {{time}} ms",
         "nodes": "{{count}} nút"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "Phép nối này phải chuyển các hàng giữa các phân mảnh trước khi khớp được chúng. Phân phối cả hai bảng theo cột nối, hoặc đặt bảng nhỏ hơn thành ALL, để phép nối chạy ngay tại nơi đã có dữ liệu.",
+          "title": "Tái phân phối dữ liệu"
+        },
+        "full-index-scan": {
+          "detail": "Đọc mọi mục của chỉ mục này. Nếu truy vấn chỉ cần một vài mục, một điều kiện trên các cột dẫn đầu của chỉ mục có thể tránh được việc đọc toàn bộ.",
+          "title": "Quét toàn bộ chỉ mục"
+        },
+        "full-table-scan": {
+          "detail": "Đọc mọi hàng của bảng này. Nếu truy vấn chỉ cần một vài hàng, một chỉ mục trên các cột lọc có thể tránh được việc đọc toàn bộ.",
+          "title": "Quét toàn bộ bảng"
+        }
       }
     },
     "query-time": "Thời gian truy vấn",

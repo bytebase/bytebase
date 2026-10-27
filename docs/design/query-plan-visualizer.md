@@ -441,7 +441,11 @@ not its timings: MongoDB labels the per-stage time an estimate itself, and on a
 query that finishes quickly every stage reports zero, so a ranking built on it
 would be arbitrary. An aggregation explains to a pipeline rather than a tree,
 read backwards so the stage producing the result is the root and the `$cursor`
-feeding it becomes the read's own plan below.
+feeding it becomes the read's own plan below. Which engine ran the query is not
+the reader's question, but it changes where the plan sits: the slot-based
+engine reports the operator tree under `winningPlan.queryPlan`, beside the plan
+it compiled for its own machine, where the classic engine puts the tree
+itself.
 
 **Attaching a measured plan to an ordinary run is deferred.** Two engines could:
 Spanner has a run mode returning rows and plan and real timings in one execution,
