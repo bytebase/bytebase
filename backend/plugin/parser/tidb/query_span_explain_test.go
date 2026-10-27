@@ -2,6 +2,7 @@ package tidb
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -13,7 +14,7 @@ import (
 func TestExplainAnalyzeDigestRejected(t *testing.T) {
 	span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{},
 		base.Statement{Text: "EXPLAIN ANALYZE 'sqldigest'"}, "db", "", false)
-	require.ErrorContains(t, err, "EXPLAIN ANALYZE by digest is not supported")
+	require.ErrorContains(t, err, "EXPLAIN by digest or connection is not supported")
 	require.Nil(t, span)
 }
 
@@ -130,7 +131,7 @@ func TestExplainAnalyzeAccessTables(t *testing.T) {
 			name:      "plain explain permits mixed tables",
 			statement: "EXPLAIN SELECT * FROM t JOIN information_schema.tables ON TRUE",
 			queryType: base.Explain,
-			sources:   base.SourceColumnSet{},
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true},
 		},
 		{
 			name:      "analyze still rejects mixed tables",
@@ -147,13 +148,13 @@ func TestExplainAnalyzeAccessTables(t *testing.T) {
 			name:      "plain explain",
 			statement: "EXPLAIN SELECT * FROM t",
 			queryType: base.Explain,
-			sources:   base.SourceColumnSet{},
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true},
 		},
 		{
 			name:      "analyzed write remains dml",
 			statement: "EXPLAIN ANALYZE DELETE FROM t WHERE id = 1",
 			queryType: base.DML,
-			sources:   base.SourceColumnSet{},
+			sources:   base.SourceColumnSet{{Database: "db", Table: "t"}: true},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -167,6 +168,7 @@ func TestExplainAnalyzeAccessTables(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.Equal(t, tc.queryType, span.Type)
+			require.Equal(t, strings.HasPrefix(tc.statement, "EXPLAIN ANALYZE"), span.ExplainAnalyze)
 			require.Equal(t, tc.sources, span.SourceColumns)
 			require.Empty(t, span.Results)
 		})

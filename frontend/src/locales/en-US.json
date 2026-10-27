@@ -22,13 +22,17 @@
     }
   },
   "agent": {
-    "active-only-chats": "View active chats",
     "ai-not-configured": {
       "configure": "Configure",
       "contact-admin": "Contact your workspace admin to configure AI.",
       "description": "AI is not configured for this workspace.",
       "title": "AI Not Configured"
     },
+    "api-permission-allow": "Allow once",
+    "api-permission-deny": "Deny",
+    "api-permission-expired": "This request is no longer available. Ask the agent to prepare it again.",
+    "api-permission-request": "Allow the agent to run this API request?",
+    "api-permission-title": "Request permission",
     "archive-all-chats": "Archive all chats",
     "archive-chat": "Archive chat",
     "archived-only-chats": "View archived chats",
@@ -45,6 +49,7 @@
     "context-no-projects": "No accessible projects",
     "context-select": "Select context",
     "context-workspace": "Workspace",
+    "database-reference-unavailable": "This database is no longer available or you do not have access to it.",
     "delete-all-chats": "Delete all chats",
     "delete-all-chats-confirmation": "Are you sure you want to delete all archived chats? This action cannot be undone.",
     "delete-chat": "Delete chat",
@@ -55,7 +60,7 @@
       "references": "Evidence"
     },
     "input-keyboard-hint": "Enter to send · Shift+Enter for a new line",
-    "input-placeholder": "Ask AI anything...",
+    "input-placeholder": "Ask AI anything or type @ to select a resource",
     "interrupted": "Interrupted",
     "interrupted-retry-hint": "The conversation was interrupted. You can retry or send a new message.",
     "landing-starters": {
@@ -92,6 +97,13 @@
       "summary": "These issues need your attention in this project:",
       "unavailable": "Unable to load items needing your attention in this project."
     },
+    "project-reference-unavailable": "This project is no longer available or you do not have access to it.",
+    "query-result": {
+      "returned-rows": "Rows returned: {{count}}",
+      "showing-columns": "Showing {{shown}} of {{total}} columns",
+      "showing-results": "Showing {{shown}} of {{total}} result sets",
+      "showing-rows": "Showing {{shown}} of {{total}} returned rows"
+    },
     "recent-activity": {
       "checking": "Checking recent activity...",
       "empty": "No meaningful activity was recorded in the last 3 days.",
@@ -103,6 +115,20 @@
     },
     "rename-chat-placeholder": "Enter chat name",
     "reply": "Reply",
+    "resource-picker": {
+      "add-context": "Add context",
+      "choose-project-for-databases": "Choose a project to browse databases",
+      "databases": "Databases",
+      "load-databases-error": "Could not load databases.",
+      "load-error": "Could not load projects.",
+      "no-databases": "No accessible databases found",
+      "no-projects": "No accessible projects found",
+      "projects": "Projects",
+      "reference-limit": "You can reference one project and one of its databases per message. To use both, select the project first. Ask about another resource in a separate message.",
+      "retry": "Retry",
+      "search-databases": "Search databases",
+      "search-projects": "Search projects"
+    },
     "result": "Result",
     "retry-last-chat-turn": "Retry",
     "self": "Agent",
@@ -1660,7 +1686,7 @@
     }
   },
   "landing": {
-    "ai-placeholder": "Ask AI about workspace setup, projects, or access",
+    "ai-placeholder": "Ask about this workspace or type @ to select a resource",
     "ai-setup": {
       "action": "Configure AI",
       "description": "Configure a provider and model to use AI in this workspace.",
@@ -1754,12 +1780,54 @@
     "add-spec-pending-draft": "Save or discard the pending change before adding another",
     "ai-review": {
       "failed-to-run": "Could not start the AI review",
-      "finished": "Finished",
-      "not-run": "Not run yet",
-      "queued": "Queued",
       "run": "Run AI review",
-      "save-first": "Save or discard your edits to run the AI review.",
-      "status-unknown": "Status not available"
+      "run-again-description": "A run makes model calls for every database it reviews and may find different issues. Its findings replace the last run's, including the ones people resolved.",
+      "run-again-title": "Run the AI review again?",
+      "save-first": "Save or discard your edits to run the AI review."
+    },
+    "automated-review": {
+      "checks": "Plan check",
+      "details": "Details",
+      "failed": "Couldn't run",
+      "failed-to-rerun": "Could not start the review",
+      "ghost": "Online migration dry run",
+      "n-databases_one": "{{count}} database",
+      "n-databases_other": "{{count}} databases",
+      "n-errors_one": "{{count}} error",
+      "n-errors_other": "{{count}} errors",
+      "n-open": "{{count}} open",
+      "n-warnings_one": "{{count}} warning",
+      "n-warnings_other": "{{count}} warnings",
+      "needs-attention": "{{count}} of {{total}} needs attention",
+      "no-findings": "No findings",
+      "not-run": "Not run yet",
+      "nothing-needs-attention": "Nothing needs attention",
+      "opens-in-sql": "Click to step through them in the SQL.",
+      "out-of-date": "out of date",
+      "outdated": "SQL changed after this run",
+      "passed": "passed",
+      "passed-on_one": "Passed on {{count}} database",
+      "passed-on_other": "Passed on {{count}} databases",
+      "policy": "Review policy",
+      "project-rules": "Project rules: {{on}} of {{total}} on",
+      "report": "Statement report",
+      "rerun": "Rerun",
+      "rerun-all": "Re-run all",
+      "rerun-all-description_one": "This reruns the plan checks and Standard rules. {{count}} Standard rules finding people resolved will come back as open.",
+      "rerun-all-description_other": "This reruns the plan checks and Standard rules. {{count}} Standard rules findings people resolved will come back as open.",
+      "rerun-all-title": "Re-run all checks?",
+      "rerun-reopens_one": "{{count}} finding people resolved will come back as open and need resolving again.",
+      "rerun-reopens_other": "{{count}} findings people resolved will come back as open and need resolving again.",
+      "rerun-rule-title": "Rerun Standard rules?",
+      "retry": "Retry",
+      "running": "Running",
+      "sampled": "a sample of {{count}} of {{total}} databases",
+      "scope": "Reviewed {{databases}}",
+      "scope-label": "What this review covered",
+      "scope-with-engines": "Reviewed {{databases}} ({{engines}})",
+      "self": "Automated review",
+      "summary-part": "{{reviewer}}: {{status}}",
+      "workspace-rules": "Workspace rules: {{on}} of {{total}} on"
     },
     "blocker": {
       "clears-on-its-own": "Clears on its own"
@@ -1774,12 +1842,49 @@
       "started": "Plan checks started"
     },
     "create-plan": "Create Plan",
+    "deploy-waiting": {
+      "approval": "Approval",
+      "approval-from": "Approval from {{role}}",
+      "approval-rejected": "Approval rejected",
+      "auto-create": "Bytebase creates the rollout when all of these pass.",
+      "creating-rollout": "Everything passed; creating the rollout…",
+      "manual-rollout": "Bytebase doesn't create this plan's rollout automatically; deploy it once these pass.",
+      "open-discussions_one": "{{count}} open discussion",
+      "open-discussions_other": "{{count}} open discussions",
+      "overridden_one": "{{count}} P0 finding in {{reviewer}} was resolved without a change",
+      "overridden_other": "{{count}} P0 findings in {{reviewer}} were resolved without a change",
+      "ready-to-deploy": "Everything passed; ready to deploy.",
+      "reviewer-failed": "{{reviewer}} couldn't run",
+      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-not-run": "{{reviewer}} has not run",
+      "reviewer-outdated": "SQL changed after {{reviewer}} ran",
+      "reviewer-running": "{{reviewer}} is running",
+      "show": "Show",
+      "submit": "Submit for review",
+      "waiting-on": "Waiting on",
+      "worth-a-look": "Does not hold the rollout, but worth a look"
+    },
     "description": {
       "placeholder": "Add description"
     },
     "draft-update-permission-required": "You can view this draft, but you need bb.issues.update to edit issue labels or submit it for review.",
     "editor": {
       "save-changes-before-continuing": "Please save or cancel your changes before continuing"
+    },
+    "findings": {
+      "n-more": "{{count}} more",
+      "n-overridden": "{{count}} P0 resolved without a change",
+      "n-priority": "{{count}} {{priority}}",
+      "n-resolved": "{{count}} resolved",
+      "name-at-line": "{{name}} (L{{line}})",
+      "name-times": "{{name}} ×{{count}}",
+      "separator": ", ",
+      "set": {
+        "earlier": "earlier runs",
+        "open": "open",
+        "overridden": "P0 resolved without a change",
+        "resolved": "resolved"
+      }
     },
     "ghost": {
       "configure": "Configure",
@@ -1803,19 +1908,18 @@
       "checking": "Checking…",
       "checks-failing": "Checks failing",
       "deployed": "Deployed",
+      "gate-automated-review-passed": "Automated review passed",
       "gate-checks-failed": "Some checks were not successful",
       "gate-checks-failed-sub": "{{failing}} failing, {{passed}} passed",
       "gate-checks-passed": "All checks passed",
       "gate-checks-passed-sub": "{{count}} passed",
       "gate-checks-running": "Checks are running",
       "gate-checks-running-sub": "{{running}} running, {{passed}} passed",
+      "gate-no-open-discussions": "No open discussions",
       "gate-review-approved": "Changes approved",
       "gate-review-pending": "Review in progress",
       "gate-review-rejected": "Changes requested",
       "gate-threads-open-sub": "Resolve every thread to create the rollout",
-      "gate-threads-open_one": "{{count}} unresolved thread",
-      "gate-threads-open_other": "{{count}} unresolved threads",
-      "gate-threads-resolved": "All threads resolved",
       "incomplete": "Incomplete",
       "preparing-rollout": "Preparing rollout…",
       "rejected": "Rejected",
@@ -1863,11 +1967,15 @@
         "add-a-comment": "Add a comment...",
         "created-this-plan": "created this plan",
         "marked-ready-for-review": "marked this plan ready for review",
+        "n-findings_one": "{{count}} finding",
+        "n-findings_other": "{{count}} findings",
         "n-hidden-events_one": "{{count}} hidden event",
         "n-hidden-events_other": "{{count}} hidden events",
+        "reviewed-the-sql": "reviewed the SQL",
         "self": "Activity",
         "show-all": "Show all"
       },
+      "approval-after-submit": "Approval starts when you submit for review.",
       "approval-flow": {
         "and-n-more_one": "and {{count}} more",
         "and-n-more_other": "and {{count}} more",
@@ -1943,6 +2051,7 @@
         "n-replies-hidden_other": "{{count}} replies hidden",
         "n-replies_one": "{{count}} reply",
         "n-replies_other": "{{count}} replies",
+        "open": "Open",
         "priority": {
           "p0": "The SQL is wrong and must change.",
           "p1": "Dangerous but legitimate. A person must accept it.",
@@ -1960,8 +2069,10 @@
         "threads-on-line_one": "{{count}} thread on this line",
         "threads-on-line_other": "{{count}} threads on this line",
         "walker": {
+          "clear-filter": "Step through every open thread",
           "count_one": "{{count}} unresolved thread on this version",
           "count_other": "{{count}} unresolved threads on this version",
+          "filter": "{{reviewer}} · {{state}}",
           "next": "Next unresolved thread",
           "position": "Thread {{index}} of {{count}}",
           "previous": "Previous unresolved thread",
@@ -1975,16 +2086,6 @@
       "description_one": "Roll back 1 selected task from rollout #{{rolloutId}}.",
       "description_other": "Roll back {{count}} selected tasks from rollout #{{rolloutId}}.",
       "title": "Rollback rollout #{{rolloutId}}"
-    },
-    "rule-review": {
-      "failed": "SQL review failed",
-      "load-failed": "The SQL review status could not be loaded.",
-      "no-open-findings": "No open findings",
-      "not-run": "SQL review not run",
-      "open-findings_one": "{{count}} open finding",
-      "open-findings_other": "{{count}} open findings",
-      "queued": "SQL review queued",
-      "running": "SQL review running"
     },
     "run": "Run checks",
     "select-isolation-level": "Select isolation level",
@@ -2010,12 +2111,17 @@
       "reopen-confirm": "Reopen this plan?",
       "reopen-review-confirm": "Reopen this review?"
     },
+    "statement-summary": {
+      "affected-rows_one": "~{{count}} row affected",
+      "affected-rows_other": "~{{count}} rows affected"
+    },
     "status-scope": {
       "description": "Filter by the current status of the plan's tasks",
       "waiting": "Waiting"
     },
     "submit-review-anyway": "Submit anyway",
     "summary": {
+      "approved-by": "Approved by {{names}}",
       "last-approved-by": "Last approved by {{name}}",
       "n-changes": "{{n}} changes",
       "n-database-groups": "{{n}} database groups",
@@ -2026,7 +2132,8 @@
       "n-passed": "{{n}} passed",
       "n-unresolved-threads_one": "{{count}} unresolved thread",
       "n-unresolved-threads_other": "{{count}} unresolved threads",
-      "n-warning": "{{n}} warning"
+      "n-warning": "{{n}} warning",
+      "no-approval-required": "No approval required"
     },
     "targets": {
       "no-targets-found": "No targets found",
@@ -2119,7 +2226,7 @@
     "home": {
       "active-issues": "Your active issues",
       "active-issues-unavailable": "Issues are not available to you in this project.",
-      "ai-placeholder": "Ask AI to query, change, or set up this project",
+      "ai-placeholder": "Ask about this project or type @ to select a resource",
       "archived-description": "This project is archived and read-only.",
       "change-database": "Change a database",
       "change-database-description": "Plan a governed database change in this project.",
@@ -3421,6 +3528,7 @@
     "data-explorer-sql-filter-placeholder": "Enter a query predicate, e.g. WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
     "download-as-file": "Download as {{file}}",
+    "dry-run": "Dry run",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hour": "{{hours}} hour",
@@ -3430,6 +3538,8 @@
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "explain": "Explain",
+    "explain-hint": "Show the plan without running the query",
     "explore-data": "Explore data",
     "export-available-via-issue": "Export available via issue \"{{title}}\"",
     "export-available-via-n-grants": "Export available via {{count}} access grants:",
@@ -3467,23 +3577,28 @@
     "open-in-new-tab": "Open in new tab",
     "opened-from-link": "Opened from link",
     "pending-query": "Pending query",
+    "plan-cost-share": "{{share}} of the script's estimated cost",
+    "plan-estimated": "Estimated",
+    "plan-view": "Plan",
     "previous-row": "Previous Row",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },
     "query-history-not-found": "Query history not found or no longer accessible",
+    "query-plan-estimated": "A new plan, made just now. It may differ from the plan that ran.",
     "query-plan-load-failed": "Failed to load the query plan",
+    "query-plan-requires-explain": "Needs the bb.sql.explain permission on this project",
     "query-plan-viewer": {
       "copy": {
         "copied": "Copied",
         "failed": "Copy failed",
-        "plan": "Copy plan",
-        "query": "Copy query"
+        "plan": "Copy plan"
       },
       "details": {
         "select-node": "Select a node to see its details."
       },
       "diagram": {
+        "actual-rows": "actual rows {{count}}",
         "collapse": "Collapse {{count}} nodes under {{node}}",
         "cost": "cost {{cost}}",
         "estimated-rows": "{{count}} estimated rows",
@@ -3491,31 +3606,72 @@
         "fit": "Fit to view",
         "nodes-hidden": "{{count}} nodes hidden",
         "plan-cost-share": "{{share}} of plan cost",
+        "plan-time-share": "{{share}} of plan time",
         "rows": "rows {{count}}",
+        "time": "time {{time}} ms",
         "zoom-in": "Zoom in",
         "zoom-out": "Zoom out"
       },
       "error": {
+        "clickhouse-empty": "ClickHouse returned no query plan for this statement.",
+        "clickhouse-invalid": "The query plan is not valid JSON. EXPLAIN json = 1 output is expected.",
+        "clickhouse-no-plan": "The ClickHouse query plan JSON does not contain a \"Plan\" object.",
+        "cockroachdb-empty": "CockroachDB returned no query plan for this statement.",
+        "cockroachdb-invalid": "The query plan is not valid JSON. The diagram EXPLAIN (DISTSQL) encodes is expected.",
+        "cockroachdb-no-plan": "The query plan JSON contains no \"processors\" to draw.",
+        "hive-empty": "Hive returned no query plan for this statement.",
+        "hive-invalid": "The query plan is not valid JSON. Hive's EXPLAIN FORMATTED output is expected.",
+        "hive-no-plan": "The query plan has no CBO plan to draw. Hive states one only when its cost-based optimizer planned the statement.",
+        "mongodb-empty": "MongoDB returned no query plan for this statement.",
+        "mongodb-invalid": "The query plan is not valid JSON. MongoDB's explain() output is expected.",
+        "mongodb-no-plan": "The query plan JSON has neither a \"queryPlanner\" nor a \"stages\" pipeline to draw.",
         "mssql-empty": "SQL Server returned no query plan for this statement.",
         "mssql-invalid": "The query plan is not valid XML. SHOWPLAN_XML output is expected.",
         "mssql-no-plan": "The query plan XML is not a SQL Server showplan with at least one statement.",
+        "mysql-empty": "No query plan came back for this statement.",
+        "mysql-invalid": "The query plan is not valid JSON. EXPLAIN FORMAT=JSON output is expected.",
+        "mysql-no-plan": "The query plan JSON does not contain a \"query_block\" object.",
+        "oceanbase-empty": "OceanBase returned no query plan for this statement.",
+        "oceanbase-invalid": "The query plan is not valid JSON. OceanBase's EXPLAIN FORMAT=JSON output is expected.",
+        "oceanbase-no-plan": "The query plan JSON names no operator, so there is nothing to draw.",
+        "oracle-empty": "Oracle returned no query plan for this statement.",
+        "oracle-invalid": "The query plan is not valid JSON. Oracle's plan table is expected, as the server renders it.",
+        "oracle-no-plan": "The query plan has no step without a parent, so it has no operator to start from.",
         "postgres-empty": "PostgreSQL returned no query plan for this statement.",
         "postgres-invalid": "The query plan is not valid JSON. EXPLAIN (FORMAT JSON) output is expected.",
         "postgres-no-plan": "The query plan JSON does not contain a \"Plan\" object.",
+        "redshift-empty": "Redshift returned no query plan for this statement.",
+        "redshift-no-plan": "The query plan has no operator in it: a Redshift plan states a cost for every one.",
+        "snowflake-empty": "Snowflake returned no query plan for this statement.",
+        "snowflake-invalid": "The query plan is not valid JSON. Snowflake's EXPLAIN USING JSON output is expected.",
+        "snowflake-no-plan": "The query plan JSON contains no operation to start from.",
         "spanner-empty": "Spanner returned no query plan for this statement.",
         "spanner-emulator": "Spanner returned no query plan for this statement. The Spanner emulator returns none for any statement, so explain it on a Spanner instance to see one.",
         "spanner-invalid": "The query plan is not valid JSON. A Spanner query plan is expected.",
         "spanner-no-plan": "The query plan JSON does not contain a \"planNodes\" list with an operator at its root.",
+        "starrocks-empty": "The statement produced no query plan to draw.",
+        "starrocks-no-plan": "The query plan has no numbered operator in any of its fragments.",
+        "tidb-empty": "TiDB returned no query plan for this statement.",
+        "tidb-invalid": "The query plan is not valid JSON. EXPLAIN FORMAT=tidb_json output is expected.",
+        "tidb-no-plan": "The query plan JSON does not contain an operator at its root.",
         "too-deep": "The query plan is nested too deeply for this visualizer to draw.",
+        "too-many-nodes": "The query plan has more operators than this visualizer draws, so it is shown as text.",
+        "trino-empty": "Trino returned no query plan for this statement.",
+        "trino-invalid": "The query plan is not valid JSON. Trino's EXPLAIN (FORMAT JSON) output is expected.",
+        "trino-no-plan": "The query plan JSON contains no plan fragment to start from.",
         "unreadable": "This query plan could not be read"
       },
       "grid": {
+        "actual-rows": "Actual rows",
+        "actual-rows-hint": "Rows the operator really returned, over all its runs together",
         "added-cost": "Added cost",
         "added-cost-hint": "Cost this node adds on top of its children; some engines also count an input's repeats here, as under a nested loop. The bar is that cost as a share of the plan.",
         "caption": "Plan nodes in the order the planner nests them, parents before children.",
         "estimated-rows": "Estimated rows",
         "node": "Node",
         "rows": "Rows",
+        "self-time": "Self time",
+        "self-time-hint": "Milliseconds this node took on top of its children, over all its runs. The bar is that time as a share of the plan.",
         "total-cost": "Total cost",
         "width": "Width",
         "width-hint": "Estimated row width in bytes"
@@ -3527,51 +3683,70 @@
         "off": "Off",
         "off-hint": "Leave every node card unshaded",
         "rows": "Rows",
-        "rows-hint": "Shade by the estimated row count"
+        "rows-hint": "Shade by the estimated row count",
+        "time": "Time",
+        "time-hint": "Shade by the time a node took on top of its children"
       },
       "legend": {
         "cost": "each card's bar is that node's share of the plan's estimated cost",
-        "rows": "an edge thickens with the rows its child is estimated to return"
+        "rows": "an edge thickens with the rows its child is estimated to return",
+        "time": "each card's bar is that node's share of the plan's measured time"
       },
       "metric": {
+        "actual-rows": "Actual rows",
+        "actual-time": "Actual time",
         "added-cost": "Added cost",
         "bytes": "{{count}} bytes",
         "estimated-rows": "Estimated rows",
+        "loops": "Loops",
+        "milliseconds": "{{count}} ms",
         "row-width": "Row width",
+        "rows-none": "Returned no rows, where the planner expected some.",
+        "rows-over": "Returned {{factor}}× more rows than the planner estimated.",
+        "rows-under": "Returned {{factor}}× fewer rows than the planner estimated.",
         "startup-cost": "Startup cost",
         "total-cost": "Total cost"
       },
-      "query": {
-        "missing": "The statement was not captured with this plan."
-      },
       "summary": {
-        "added-cost": "Added cost",
-        "cost-by-operation": "Cost by operation",
-        "cost-by-operation-description": "Every node type in the plan and what it costs in total.",
-        "cost-ranges": "Cost ranges",
-        "cost-ranges-description": "Each node spans its startup cost — the cost before its first row — to its total cost, both of which include everything below it. Darker spans carry more of the plan's cost. Costs are not a schedule: two inputs of a join overlap here but run one after the other.",
-        "costliest": "Costliest operators",
-        "costliest-description": "Ranked by the cost a node adds on top of its children. Where an input runs repeatedly, as under a nested loop, some engines count the repeats in the node that reruns it rather than in the input itself.",
-        "count": "Count",
-        "estimate-note": "The statement was planned but not run, so every figure here is an optimizer estimate rather than a measurement. Cost units are arbitrary and comparable only within this plan.",
-        "estimated-rows-returned": "Estimated rows returned",
+        "costliest": "Costliest by estimated cost",
         "no-added-cost": "No node in this plan adds an estimated cost of its own.",
-        "nodes": "Nodes",
-        "operation": "Operation",
-        "share": "Share",
-        "timeline-node": "{{name}}, cost {{startup}} to {{total}}, {{share}} of plan cost",
-        "total-estimated-cost": "Total estimated cost"
+        "no-added-time": "No node in this plan took measurable time of its own.",
+        "no-ranking": "This plan reports no cost or time, so its operators cannot be ranked.",
+        "slowest-measured": "Slowest by measured time",
+        "warning-operators": "{{count}} operators",
+        "warnings": "Warnings"
       },
       "tab": {
         "diagram": "Diagram",
-        "grid": "Grid",
-        "query": "Query",
-        "summary": "Summary",
+        "grid": "Table",
         "text": "Text"
+      },
+      "table": {
+        "heading": "Table",
+        "indexes": "Indexes",
+        "no-indexes": "No indexes on this table.",
+        "primary": "primary",
+        "rows": "{{count}} rows at the last sync",
+        "unique": "unique"
       },
       "totals": {
         "estimated-cost": "estimated cost {{cost}}",
+        "measured-time": "measured time {{time}} ms",
         "nodes": "{{count}} nodes"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "This join moves rows between slices before it can match them. Distributing both tables on their join column, or making the smaller one ALL, lets the join run where the rows already are.",
+          "title": "Data redistribution"
+        },
+        "full-index-scan": {
+          "detail": "Reads every entry of this index. If the query needs only a few of them, a condition on the index's leading columns could avoid the full read.",
+          "title": "Full index scan"
+        },
+        "full-table-scan": {
+          "detail": "Reads every row of this table. If the query needs only a few of them, an index on the filtered columns could avoid the full read.",
+          "title": "Full table scan"
+        }
       }
     },
     "query-time": "Query time",

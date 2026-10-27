@@ -1,0 +1,24 @@
+{
+  "ID": 0,
+  "OPERATOR": "MERGE UNION DISTINCT",
+  "NAME": "",
+  "EST.ROWS": 5050,
+  "EST.TIME(us)": 2829,
+  "output": "output([UNION([1])])",
+  "CHILD_1": {
+    "ID": 1,
+    "OPERATOR": "TABLE FULL SCAN",
+    "NAME": "customers",
+    "EST.ROWS": 50,
+    "EST.TIME(us)": 250,
+    "output": "output([customers.id])"
+  },
+  "CHILD_2": {
+    "ID": 2,
+    "OPERATOR": "TABLE FULL SCAN",
+    "NAME": "orders",
+    "EST.ROWS": 5000,
+    "EST.TIME(us)": 2244,
+    "output": "output([orders.id])"
+  }
+}

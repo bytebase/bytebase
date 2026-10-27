@@ -4,11 +4,15 @@ Playwright-based end-to-end tests for Bytebase. Starts a disposable Bytebase ser
 
 ## Prerequisites
 
-1. **Bytebase binary with embedded frontend:**
+1. **Bytebase binary with embedded frontend**, from the repository root:
    ```bash
-   pnpm --dir frontend release
-   go build -tags embed_frontend -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go
+   (cd frontend && pnpm release)
+   bash frontend/tests/e2e/build-server.sh
    ```
+   `build-server.sh` builds a dev binary, so the dev license validates, with
+   dev-only product switches set to their release values: the suite tests what
+   release builds ship. Today that switch is SQL review V2, which a plain dev
+   build turns on; the suite covers SQL review V1.
 
 2. **`psql` client** on PATH — required for DDL setup (the Bytebase query API is read-only; tests connect directly to the sample Postgres via Unix socket).
 
@@ -47,47 +51,36 @@ pnpm exec playwright test masking-exemption
 | `BYTEBASE_STARTUP_TIMEOUT` | No | `300000` (5 min) | Server startup timeout in ms |
 | `BYTEBASE_HEADED` | No | — | Set to `1` for headed browser |
 | `BYTEBASE_BROWSER_CHANNEL` | No | — | Drive a locally installed browser channel (e.g. `chrome`) instead of the downloaded Chromium; skips the Chromium auto-install. Useful when the download is unavailable (offline). |
-| `BYTEBASE_E2E_LICENSE` | **Yes** | — | Enterprise license JWT (see below) |
+| `BYTEBASE_E2E_LICENSE` | No | dev license from `frontend/.env.dev` | Enterprise license JWT override (see below) |
 | `CI` | No | — | Enables CI-specific reporter |
 
-### Enterprise license (`BYTEBASE_E2E_LICENSE`)
+### Enterprise license
 
 The suite exercises enterprise-only features (masking, JIT drawer, approval
 rules, query-data-policy gates like `disableExport` / `disableCopyData`,
-database groups). A license is **required** — without `BYTEBASE_E2E_LICENSE`
-the run fails fast in global setup. There is no free-plan fallback.
+database groups) and does not run on the free plan. Global setup installs a
+license before any spec runs, resolved in this order:
 
-The license JWT is signed by Bytebase's license RSA key — ask
-Bytebase ops for a dev/test license. **Never commit it to the repo
-or paste it into chat / issue trackers / memory files.**
+1. `BYTEBASE_E2E_LICENSE`, when set.
+2. The `BB_DEV_ENTERPRISE_LICENSE` line in `frontend/.env.dev`: the dev-signed
+   enterprise license the dev build offers in its profile menu.
 
-Recommended local options (pick one):
+So a plain `pnpm exec playwright test` works with no extra setup. The dev
+license is signed with the dev key, which only a binary built **without** the
+`release` tag accepts; the build command above is that binary. A license
+signed with the production key needs a `-tags embed_frontend,release` build
+and `BYTEBASE_E2E_LICENSE`.
 
-```bash
-# (a) Out-of-repo file + on-demand env (recommended)
-mkdir -p ~/.config/bytebase
-chmod 700 ~/.config/bytebase
-echo '<your-jwt>' > ~/.config/bytebase/e2e-license
-chmod 600 ~/.config/bytebase/e2e-license
+Never print a license into logs, chat, issue trackers or memory files, and
+never commit a production-signed one.
 
-# Then when running the suite:
-BYTEBASE_E2E_LICENSE=$(cat ~/.config/bytebase/e2e-license) \
-  pnpm exec playwright test
+## Nightly routine
 
-# (b) direnv (auto-loaded on cd into the repo)
-echo 'export BYTEBASE_E2E_LICENSE=$(cat ~/.config/bytebase/e2e-license)' \
-  >> .envrc
-direnv allow
-
-# (c) Shell rc / login profile (always available)
-# Add to ~/.zshrc.local or similar gitignored file:
-export BYTEBASE_E2E_LICENSE='<your-jwt>'
-```
-
-Do **not** put the JWT in `frontend/.env*` or any file inside the
-repo, even if gitignored — too easy to accidentally commit, and
-`.env*` files inside repos are commonly opened by IDEs / pasted
-into screenshots.
+The suite is in no CI workflow. A cloud scheduled task runs it nightly against
+`main` with [`.claude/skills/e2e-routine`](../../../.claude/skills/e2e-routine/SKILL.md):
+build, run, classify each red test, attribute an owner, file or propose Linear
+issues, and record the run on the `claude/e2e-ledger` branch. The same skill
+runs locally from a worktree (`/e2e-routine`).
 
 ## Directory Layout
 

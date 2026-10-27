@@ -1,0 +1,30 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Expression",
+      "Description": "(Project names + Projection)",
+      "Plans": [
+        {
+          "Node Type": "Expression",
+          "Plans": [
+            {
+              "Node Type": "ReadFromMergeTree",
+              "Description": "default.orders",
+              "Indexes": [
+                {
+                  "Type": "PrimaryKey",
+                  "Keys": ["id"],
+                  "Condition": "and((id in (-Inf, 200]), (id in [100, +Inf)))",
+                  "Initial Parts": 1,
+                  "Selected Parts": 1,
+                  "Initial Granules": 6,
+                  "Selected Granules": 1
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

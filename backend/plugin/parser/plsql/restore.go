@@ -186,7 +186,8 @@ func (g *generator) generateDelete() {
 func (g *generator) restorableColumns() []string {
 	var columns []string
 	for _, column := range g.table.GetProto().GetColumns() {
-		if column.GetGeneration() != nil {
+		// The backup is copied with SELECT t.*, which has no invisible columns.
+		if column.GetGeneration() != nil || column.IsInvisible {
 			continue
 		}
 		columns = append(columns, column.Name)

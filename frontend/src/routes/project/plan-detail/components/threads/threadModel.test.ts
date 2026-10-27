@@ -3,6 +3,7 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { describe, expect, test } from "vitest";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
+  type IssueComment,
   IssueComment_ReviewMetadataSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
@@ -25,6 +26,8 @@ import {
   formatLineRange,
   groupMarkersByLine,
   groupThreads,
+  isShownInEditor,
+  needsActivityCard,
   resolveAnchorState,
   selectEditorThreads,
   sheetSha256OfName,
@@ -201,6 +204,125 @@ describe("resolveAnchorState", () => {
         undefined
       )
     ).toBe("UNAVAILABLE");
+  });
+});
+
+describe("isShownInEditor", () => {
+  const noPlacement = () => undefined;
+  const noPreview = () => undefined;
+
+  test("shows a thread placed CURRENT on its spec's sheet", () => {
+    expect(
+      isShownInEditor(
+        root("here", { anchor: anchor(3, 4) }),
+        plan().specs,
+        noPlacement,
+        noPreview
+      )
+    ).toBe(true);
+  });
+
+  test("hides a thread past the loaded head of an oversized statement", () => {
+    expect(
+      isShownInEditor(
+        root("far", { anchor: anchor(30, 31) }),
+        plan().specs,
+        noPlacement,
+        () => 20
+      )
+    ).toBe(false);
+    expect(
+      isShownInEditor(
+        root("near", { anchor: anchor(19, 20) }),
+        plan().specs,
+        noPlacement,
+        () => 20
+      )
+    ).toBe(true);
+  });
+
+  test("hides a thread with no anchor, an outdated placement, or an unplaced revision", () => {
+    expect(
+      isShownInEditor(root("whole"), plan().specs, noPlacement, noPreview)
+    ).toBe(false);
+    expect(
+      isShownInEditor(
+        root("outdated", { anchor: anchor(3, 3) }),
+        plan().specs,
+        () => OUTDATED,
+        noPreview
+      )
+    ).toBe(false);
+    expect(
+      isShownInEditor(
+        root("pending", { anchor: anchor(3, 3, OTHER_SHA) }),
+        plan().specs,
+        noPlacement,
+        noPreview
+      )
+    ).toBe(false);
+  });
+
+  test("follows a computed placement to its current line", () => {
+    expect(
+      isShownInEditor(
+        root("moved", { anchor: anchor(3, 3, OTHER_SHA) }),
+        plan().specs,
+        () => current(25, 25),
+        () => 20
+      )
+    ).toBe(false);
+  });
+});
+
+describe("needsActivityCard", () => {
+  const finding = (
+    id: string,
+    opts: { resolved?: boolean; superseded?: boolean } = {}
+  ) =>
+    create(IssueCommentSchema, {
+      ...root(id, { resolved: opts.resolved }),
+      reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
+        runType: ReviewRun_Type.RULE,
+        superseded: opts.superseded ?? false,
+      }),
+    });
+  const threadOf = (rootComment: IssueComment, replies: IssueComment[] = []) =>
+    groupThreads([rootComment, ...replies])[0];
+
+  test("a finding the editor shows needs no card, unless someone replied", () => {
+    expect(needsActivityCard(threadOf(finding("shown")), true)).toBe(false);
+    expect(
+      needsActivityCard(
+        threadOf(finding("talked"), [reply("r", "talked", 2)]),
+        true
+      )
+    ).toBe(true);
+  });
+
+  test("a finding the editor cannot show keeps its card", () => {
+    expect(needsActivityCard(threadOf(finding("hidden")), false)).toBe(true);
+  });
+
+  test("a resolved superseded result is history, a reopened one is not", () => {
+    expect(
+      needsActivityCard(
+        threadOf(finding("old", { resolved: true, superseded: true })),
+        false
+      )
+    ).toBe(false);
+    expect(
+      needsActivityCard(
+        threadOf(finding("reopened", { superseded: true })),
+        false
+      )
+    ).toBe(true);
+    expect(
+      needsActivityCard(
+        threadOf(finding("reopened-shown", { superseded: true })),
+        true
+      )
+    ).toBe(false);
   });
 });
 

@@ -2240,7 +2240,7 @@ export function DataSourceForm({
               >
                 {showExtraParameters || extraConnectionParamsList.length > 0 ? (
                   <>
-                    <FormControlGroup className="mt-2">
+                    <FormControlGroup>
                       {allowEdit && (
                         <FormControlRow>
                           <Input

@@ -1,0 +1,59 @@
+{
+  "explainVersion": "1",
+  "queryPlanner": {
+    "namespace": "test_1.orders",
+    "indexFilterSet": false,
+    "parsedQuery": { "customer_id": { "$eq": 42 } },
+    "queryHash": "B106C1A2",
+    "planCacheKey": "4D4EE1D0",
+    "maxIndexedOrSolutionsReached": false,
+    "maxIndexedAndSolutionsReached": false,
+    "maxScansToExplodeReached": false,
+    "winningPlan": {
+      "stage": "SORT",
+      "sortPattern": { "total": -1 },
+      "memLimit": 104857600,
+      "type": "simple",
+      "inputStage": {
+        "stage": "FETCH",
+        "inputStage": {
+          "stage": "IXSCAN",
+          "keyPattern": { "customer_id": 1 },
+          "indexName": "customer_id_1",
+          "isMultiKey": false,
+          "multiKeyPaths": { "customer_id": [] },
+          "isUnique": false,
+          "isSparse": false,
+          "isPartial": false,
+          "indexVersion": 2,
+          "direction": "forward",
+          "indexBounds": { "customer_id": ["[42, 42]"] }
+        }
+      }
+    },
+    "rejectedPlans": []
+  },
+  "command": {
+    "find": "orders",
+    "filter": { "customer_id": 42 },
+    "sort": { "total": -1 },
+    "$db": "test_1"
+  },
+  "serverInfo": {
+    "host": "9814f86922bc",
+    "port": 27017,
+    "version": "5.0.31",
+    "gitVersion": "973237567d45610d6976d5d489dfaaef6a52c2f9"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600
+  },
+  "ok": 1
+}

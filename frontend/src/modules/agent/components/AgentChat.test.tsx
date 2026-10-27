@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -52,6 +52,24 @@ function createMockStorage(): Storage {
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
+}));
+
+vi.mock("@tanstack/react-virtual", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-virtual")>()),
+  useVirtualizer: (options: {
+    count: number;
+    estimateSize: (index: number) => number;
+  }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: options.count }, (_, index) => ({
+        index,
+        key: index,
+        start: index * options.estimateSize(index),
+      })),
+    getTotalSize: () => options.count * options.estimateSize(0),
+    measureElement: () => undefined,
+    scrollToIndex: vi.fn(),
+  }),
 }));
 
 vi.mock("@/app/router", async (importOriginal) => ({
@@ -121,7 +139,192 @@ beforeEach(async () => {
   ({ AgentChat } = await import("./AgentChat"));
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("AgentChat", () => {
+  test("shows the selected Project separately from the plain user question", () => {
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "Compare its policies",
+      metadata: {
+        resourceReference: {
+          kind: "project",
+          name: "projects/billing",
+          project: "projects/billing",
+          label: "Billing",
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-resource-reference]")?.textContent).toBe(
+      "common.project: Billing"
+    );
+    expect(container.textContent).toContain("Compare its policies");
+    expect(
+      useAgentStore
+        .getState()
+        .getMessages(useAgentStore.getState().currentChatId)[0].content
+    ).toBe(
+      "Compare its policies"
+    );
+
+    unmount();
+  });
+
+  test("highlights an inline resource mention without repeating the project label", () => {
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "Compare @Billing policies",
+      metadata: {
+        resourceReference: {
+          kind: "project",
+          name: "projects/billing",
+          project: "projects/billing",
+          label: "Billing",
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-message-mention]")?.textContent).toBe(
+      "@Billing"
+    );
+    expect(container.querySelector("[data-agent-resource-reference]")).toBeNull();
+    expect(container.textContent).toContain("Compare @Billing policies");
+    unmount();
+  });
+
+  test("highlights a bound Project and Database together", () => {
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "How many tables in @Billing @orders?",
+      metadata: {
+        resourceReferences: [
+          {
+            kind: "project",
+            name: "projects/billing",
+            project: "projects/billing",
+            label: "Billing",
+          },
+          {
+            kind: "database",
+            name: "instances/prod/databases/orders",
+            project: "projects/billing",
+            label: "orders",
+          },
+        ],
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(
+      Array.from(container.querySelectorAll("[data-agent-message-mention]")).map(
+        (element) => element.textContent
+      )
+    ).toEqual(["@Billing", "@orders"]);
+    expect(container.querySelector("[data-agent-resource-reference]")).toBeNull();
+    expect(container.textContent).toContain("How many tables in @Billing @orders?");
+    unmount();
+  });
+
+  test("does not guess which repeated mention has a single binding", () => {
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "Compare @orders with @orders in @Billing",
+      metadata: {
+        resourceReferences: [
+          {
+            kind: "project",
+            name: "projects/billing",
+            project: "projects/billing",
+            label: "Billing",
+          },
+          {
+            kind: "database",
+            name: "instances/prod/databases/orders",
+            project: "projects/billing",
+            label: "orders",
+          },
+        ],
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(
+      Array.from(container.querySelectorAll("[data-agent-message-mention]")).map(
+        (element) => element.textContent
+      )
+    ).toEqual(["@Billing"]);
+    unmount();
+  });
+
+  test("highlights both bindings when the Project and Database share a label", () => {
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "Compare @orders and @orders",
+      metadata: {
+        resourceReferences: [
+          {
+            kind: "project",
+            name: "projects/orders",
+            project: "projects/orders",
+            label: "orders",
+          },
+          {
+            kind: "database",
+            name: "instances/prod/databases/orders",
+            project: "projects/orders",
+            label: "orders",
+          },
+        ],
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(
+      Array.from(container.querySelectorAll("[data-agent-message-mention]")).map(
+        (element) => element.textContent
+      )
+    ).toEqual(["@orders", "@orders"]);
+    unmount();
+  });
+
+  test("does not highlight an arbitrary copy when the mention text occurs twice", () => {
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "Compare @Billing with @Billing",
+      metadata: {
+        resourceReference: {
+          kind: "project",
+          name: "projects/billing",
+          project: "projects/billing",
+          label: "Billing",
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-message-mention]")).toBeNull();
+    expect(container.querySelector("[data-agent-resource-reference]")).toBeNull();
+    expect(container.textContent).toContain("Compare @Billing with @Billing");
+    unmount();
+  });
+
   test("shows AI setup when the cached AI setting is disabled", () => {
     mocks.getSettingByName.mockImplementation((name) => {
       if (name !== Setting_SettingName.AI) return undefined;
@@ -519,6 +722,42 @@ describe("AgentChat", () => {
     unmount();
   });
 
+  test("shows yesterday and the local time for a message from yesterday", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-22T04:03:00Z"));
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "How do I connect a database?",
+    });
+    vi.setSystemTime(new Date("2026-10-23T04:03:00Z"));
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const timestamp = container.querySelector("[data-agent-message-timestamp]");
+    expect(timestamp?.textContent).toBe("Yesterday 12:03 PM");
+
+    unmount();
+  });
+
+  test("shows today and the local time for a recent message", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-23T03:03:00Z"));
+    useAgentStore.getState().addMessage({
+      role: "user",
+      content: "How do I connect a database?",
+    });
+    vi.setSystemTime(new Date("2026-10-23T04:03:00Z"));
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const timestamp = container.querySelector("[data-agent-message-timestamp]");
+    expect(timestamp?.textContent).toBe("Today 11:03 AM");
+
+    unmount();
+  });
+
   test("renders a pending starter as one compact status instead of progress cards", () => {
     const chat = useAgentStore.getState().ensureCurrentChat();
     useAgentStore.getState().setChatStatus(chat.id, "running");
@@ -638,6 +877,63 @@ describe("AgentChat", () => {
     expect(assistantMessage.toolCalls).toHaveLength(2);
     expect(container.textContent).toContain("first-result");
     expect(container.textContent).toContain("second-result");
+
+    unmount();
+  });
+
+  test("shows the SQL query result for its call without exposing other call results", () => {
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      toolCalls: [
+        {
+          id: "list-1",
+          name: "call_api",
+          arguments: JSON.stringify({
+            operationId: "DatabaseService/ListDatabases",
+          }),
+        },
+        {
+          id: "query-1",
+          name: "call_api",
+          arguments: JSON.stringify({ operationId: "SQLService/Query" }),
+        },
+      ],
+    });
+    useAgentStore.getState().addMessage({
+      role: "tool",
+      toolCallId: "list-1",
+      content: JSON.stringify({ status: 200, response: { databases: [] } }),
+    });
+    useAgentStore.getState().addMessage({
+      role: "tool",
+      toolCallId: "query-1",
+      content: JSON.stringify({
+        status: 200,
+        response: {
+          results: [
+            {
+              columnNames: ["value"],
+              rows: [{ values: [{ stringValue: "query-cell" }] }],
+              rowsCount: "1",
+            },
+          ],
+        },
+      }),
+    });
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: "The query returned one row.",
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    const grids = container.querySelectorAll(
+      "[data-agent-query-result] [data-query-result-table-grid]"
+    );
+    expect(grids).toHaveLength(1);
+    expect(grids[0]?.textContent).toContain("query-cell");
+    expect(container.textContent).toContain("The query returned one row.");
 
     unmount();
   });

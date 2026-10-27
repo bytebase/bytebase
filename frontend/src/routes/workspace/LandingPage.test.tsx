@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => ({
   searchProjects: vi.fn(),
   listInstances: vi.fn(),
   listDatabases: vi.fn(),
+  workspace: { name: "workspaces/acme", title: "Acme workspace" },
   dev: true,
   isSaaSMode: false,
 }));
@@ -85,7 +86,7 @@ vi.mock("@/hooks/useAppState", () => ({
     permission === "bb.auditLogs.search"
       ? mocks.canSearchAuditLogs
       : mocks.canConfigureAI,
-  useWorkspace: () => ({ name: "workspaces/acme", title: "Acme workspace" }),
+  useWorkspace: () => mocks.workspace,
 }));
 
 vi.mock("@/hooks/useRecentVisit", () => ({
@@ -130,6 +131,62 @@ vi.mock("@/modules/agent/components/LandingStarterSelector", () => ({
   ),
 }));
 
+vi.mock("@/modules/agent/components/AgentResourcePicker", () => ({
+  AgentResourcePicker: ({
+    open,
+    hasSelectedReference,
+    selectedProjectName,
+    onSelectProject,
+    onSelectDatabase,
+  }: {
+    open: boolean;
+    hasSelectedReference: boolean;
+    selectedProjectName?: string;
+    onSelectProject: (project: { name: string; title: string }) => void;
+    onSelectDatabase: (database: { name: string; project: string }) => void;
+  }) =>
+    open ? (
+      hasSelectedReference ? (
+        <p role="status">agent.resource-picker.one-reference-per-message</p>
+      ) : (
+        <>
+          {!selectedProjectName && (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  onSelectProject({ name: "projects/orders", title: "Orders" })
+                }
+              >
+                Select Orders project
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  onSelectProject({ name: "projects/billing", title: "Billing" })
+                }
+              >
+                Select Billing project
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            data-selected-project-name={selectedProjectName}
+            onClick={() =>
+              onSelectDatabase({
+                name: "instances/primary/databases/orders",
+                project: selectedProjectName ?? "projects/orders",
+              })
+            }
+          >
+            Select Orders database
+          </button>
+        </>
+      )
+    ) : null,
+}));
+
 vi.mock("./WorkspaceLandingGettingStarted", () => ({
   WorkspaceLandingGettingStarted: () => null,
 }));
@@ -161,6 +218,7 @@ beforeEach(() => {
   mocks.isSaaSMode = false;
   mocks.queuedUserMessage = null;
   mocks.lastVisitProjectPath = "";
+  mocks.workspace = { name: "workspaces/acme", title: "Acme workspace" };
   mocks.selectOrCreateChatForContext.mockClear();
   mocks.openAgent.mockClear();
   mocks.queueUserMessage.mockClear();
@@ -217,6 +275,24 @@ describe("LandingPage", () => {
       starterId: "workspace-setup-first",
     });
     expect(mocks.openAgent).toHaveBeenCalledOnce();
+  });
+
+  test("keeps starters available while composing without discarding the draft", () => {
+    render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+    fireEvent.change(prompt, { target: { value: "My unfinished question" } });
+
+    fireEvent.click(screen.getByTestId("landing-starter-primary"));
+
+    expect(prompt).toHaveValue("My unfinished question");
+    expect(mocks.queueUserMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringMatching(/^agent\.landing-starters\./),
+        runMode: "read-only",
+      })
+    );
   });
 
   test("updates workspace starters when setup resources are found", async () => {
@@ -299,7 +375,7 @@ describe("LandingPage", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "landing.ai-placeholder" }), {
       target: { value: "  Show the projects in this workspace  " },
     });
-    expect(screen.queryByTestId("landing-starter-primary")).not.toBeInTheDocument();
+    expect(screen.getByTestId("landing-starter-primary")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
 
     expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
@@ -314,6 +390,312 @@ describe("LandingPage", () => {
     });
     expect(mocks.openAgent).toHaveBeenCalledOnce();
     expect(screen.getByRole("textbox", { name: "landing.ai-placeholder" })).toHaveValue("");
+  });
+
+  test("stages a Project from @ as a one-turn workspace-chat reference", () => {
+    render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+
+    fireEvent.change(prompt, {
+      target: { value: "Check @", selectionStart: 7 },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Select Orders project" }));
+
+    expect(prompt).toHaveValue("Check @Orders ");
+    expect(document.querySelector("[data-agent-inline-mention]")).toHaveTextContent(
+      "@Orders"
+    );
+    expect(screen.getByText("agent.context: Acme workspace")).toBeVisible();
+    expect(screen.queryByTestId("agent-project-reference")).toBeNull();
+    expect(screen.getByTestId("landing-starter-primary")).toBeVisible();
+    expect(mocks.queueUserMessage).not.toHaveBeenCalled();
+
+    fireEvent.change(prompt, {
+      target: { value: "Check @Orders database status" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+
+    expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
+      "workspaces/acme",
+      expect.objectContaining({ path: expect.any(String) }),
+      "workspaces/acme"
+    );
+    expect(mocks.queueUserMessage).toHaveBeenCalledWith({
+      chatId: "workspace-chat",
+      text: "Check @Orders database status",
+      page: expect.objectContaining({ path: expect.any(String) }),
+      resourceReference: {
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+        label: "Orders",
+      },
+    });
+  });
+
+  test("stages a Database from @ without changing workspace chat context", () => {
+    render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+
+    fireEvent.change(prompt, {
+      target: { value: "Check @", selectionStart: 7 },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Select Orders database" }));
+
+    expect(prompt).toHaveValue("Check @orders ");
+    expect(document.querySelector("[data-agent-inline-mention]")).toHaveTextContent(
+      "@orders"
+    );
+    expect(screen.getByText("agent.context: Acme workspace")).toBeVisible();
+    expect(mocks.queueUserMessage).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+    expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
+      "workspaces/acme",
+      expect.objectContaining({ path: expect.any(String) }),
+      "workspaces/acme"
+    );
+    expect(mocks.queueUserMessage).toHaveBeenCalledWith({
+      chatId: "workspace-chat",
+      text: "Check @orders",
+      page: expect.objectContaining({ path: expect.any(String) }),
+      resourceReference: {
+        kind: "database",
+        name: "instances/primary/databases/orders",
+        project: "projects/orders",
+        label: "orders",
+      },
+    });
+  });
+
+  test("clears the Project reference when its inline mention is removed", () => {
+    render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+    fireEvent.change(prompt, { target: { value: "@", selectionStart: 1 } });
+    fireEvent.click(screen.getByRole("button", { name: "Select Orders project" }));
+
+    expect(prompt).toHaveValue("@Orders ");
+    fireEvent.change(prompt, { target: { value: "Show project status" } });
+    expect(document.querySelector("[data-agent-inline-mention]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+
+    expect(screen.getByText("agent.context: Acme workspace")).toBeVisible();
+    expect(screen.getByTestId("landing-starter-primary")).toBeVisible();
+    expect(mocks.queueUserMessage).toHaveBeenLastCalledWith({
+      chatId: "workspace-chat",
+      text: "Show project status",
+      page: expect.objectContaining({ path: expect.any(String) }),
+    });
+  });
+
+  test("Backspace after a selected Project removes the whole mention and its separator", () => {
+    render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    }) as HTMLTextAreaElement;
+    fireEvent.change(prompt, { target: { value: "Check @", selectionStart: 7 } });
+    fireEvent.click(screen.getByRole("button", { name: "Select Orders project" }));
+
+    expect(prompt).toHaveValue("Check @Orders ");
+    prompt.setSelectionRange(prompt.value.length, prompt.value.length);
+    fireEvent.keyDown(prompt, { key: "Backspace" });
+
+    expect(prompt).toHaveValue("Check ");
+    expect(prompt.selectionStart).toBe(6);
+    expect(document.querySelector("[data-agent-inline-mention]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+    expect(mocks.queueUserMessage).toHaveBeenLastCalledWith({
+      chatId: "workspace-chat",
+      text: "Check",
+      page: expect.objectContaining({ path: expect.any(String) }),
+    });
+  });
+
+  test.each([
+    { name: "Option+Backspace", key: "Backspace", altKey: true },
+    { name: "Command+Backspace", key: "Backspace", metaKey: true },
+    { name: "Control+Delete", key: "Delete", ctrlKey: true },
+  ])("$name inside a selected Project removes the whole mention", (shortcut) => {
+    render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    }) as HTMLTextAreaElement;
+    fireEvent.change(prompt, { target: { value: "Check @", selectionStart: 7 } });
+    fireEvent.click(screen.getByRole("button", { name: "Select Orders project" }));
+
+    prompt.setSelectionRange(9, 9);
+    fireEvent.keyDown(prompt, shortcut);
+
+    expect(prompt).toHaveValue("Check ");
+    expect(prompt.selectionStart).toBe(6);
+    expect(document.querySelector("[data-agent-inline-mention]")).toBeNull();
+  });
+
+  test("clears the draft and Project reference when the workspace changes", async () => {
+    const view = render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+    fireEvent.change(prompt, { target: { value: "Check @", selectionStart: 7 } });
+    fireEvent.click(screen.getByRole("button", { name: "Select Orders project" }));
+    expect(prompt).toHaveValue("Check @Orders ");
+    expect(document.querySelector("[data-agent-inline-mention]")).toHaveTextContent(
+      "@Orders"
+    );
+
+    mocks.workspace = { name: "workspaces/other", title: "Other workspace" };
+    view.rerender(<LandingPage />);
+
+    const newPrompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+    await waitFor(() => expect(newPrompt).toHaveValue(""));
+    expect(document.querySelector("[data-agent-inline-mention]")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Select Orders project" })).toBeNull();
+    expect(screen.getByRole("button", { name: "agent.send" })).toBeDisabled();
+    expect(screen.getByText("agent.context: Other workspace")).toBeVisible();
+
+    fireEvent.change(newPrompt, { target: { value: "Show workspace status" } });
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+    expect(mocks.selectOrCreateChatForContext).toHaveBeenCalledWith(
+      "workspaces/other",
+      expect.objectContaining({ path: expect.any(String) }),
+      "workspaces/other"
+    );
+    expect(mocks.queueUserMessage).toHaveBeenLastCalledWith({
+      chatId: "workspace-chat",
+      text: "Show workspace status",
+      page: expect.objectContaining({ path: expect.any(String) }),
+    });
+  });
+
+  test("blocks a second Project reference until the first mention is removed", () => {
+    render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+    fireEvent.change(prompt, { target: { value: "Check @", selectionStart: 7 } });
+    fireEvent.click(screen.getByRole("button", { name: "Select Orders project" }));
+
+    const secondTrigger = "Check @Orders and @";
+    fireEvent.change(prompt, {
+      target: { value: secondTrigger, selectionStart: secondTrigger.length },
+    });
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Select Billing project" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Select Orders database" })).toHaveAttribute(
+      "data-selected-project-name",
+      "projects/orders"
+    );
+    expect(prompt).toHaveValue(secondTrigger);
+    expect(document.querySelector("[data-agent-inline-mention]")).toHaveTextContent(
+      "@Orders"
+    );
+    expect(screen.getByRole("button", { name: "agent.send" })).toBeDisabled();
+
+    fireEvent.keyDown(prompt, { key: "Escape" });
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("button", { name: "agent.send" })).toBeDisabled();
+
+    const replacementTrigger = "Check and @";
+    fireEvent.change(prompt, {
+      target: { value: replacementTrigger, selectionStart: replacementTrigger.length },
+    });
+    expect(screen.queryByText("agent.resource-picker.one-reference-per-message")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Select Billing project" }));
+    expect(prompt).toHaveValue("Check and @Billing ");
+    expect(screen.getByRole("button", { name: "agent.send" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+    expect(mocks.queueUserMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        text: "Check and @Billing",
+        resourceReference: {
+          kind: "project",
+          name: "projects/billing",
+          project: "projects/billing",
+          label: "Billing",
+        },
+      })
+    );
+  });
+
+  test("allows a database reference after a Project and sends both references", () => {
+    render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+    fireEvent.change(prompt, { target: { value: "Check @", selectionStart: 7 } });
+    fireEvent.click(screen.getByRole("button", { name: "Select Orders project" }));
+
+    const databaseTrigger = "Check @Orders and @";
+    fireEvent.change(prompt, {
+      target: { value: databaseTrigger, selectionStart: databaseTrigger.length },
+    });
+    const database = screen.getByRole("button", { name: "Select Orders database" });
+    expect(database).toHaveAttribute("data-selected-project-name", "projects/orders");
+    fireEvent.click(database);
+
+    expect(prompt).toHaveValue("Check @Orders and @orders ");
+    expect(screen.getByRole("button", { name: "agent.send" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+    expect(mocks.queueUserMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        text: "Check @Orders and @orders",
+        resourceReferences: [
+          {
+            kind: "project",
+            name: "projects/orders",
+            project: "projects/orders",
+            label: "Orders",
+          },
+          {
+            kind: "database",
+            name: "instances/primary/databases/orders",
+            project: "projects/orders",
+            label: "orders",
+          },
+        ],
+      })
+    );
+  });
+
+  test("keeps an email address literal instead of opening the Project picker", () => {
+    render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+    fireEvent.change(prompt, {
+      target: { value: "ed@example.com", selectionStart: 14 },
+    });
+
+    expect(prompt).toHaveValue("ed@example.com");
+    expect(
+      screen.queryByRole("button", { name: "Select Orders project" })
+    ).not.toBeInTheDocument();
+  });
+
+  test("does not send an @ trigger while the Project picker is open", () => {
+    render(<LandingPage />);
+    const prompt = screen.getByRole("textbox", {
+      name: "landing.ai-placeholder",
+    });
+    fireEvent.change(prompt, { target: { value: "@", selectionStart: 1 } });
+
+    expect(
+      screen.getByRole("button", { name: "Select Orders project" })
+    ).toBeVisible();
+    expect(fireEvent.keyDown(prompt, { key: "Enter", shiftKey: true })).toBe(true);
+    expect(fireEvent.keyDown(prompt, { key: "Enter" })).toBe(false);
+    expect(mocks.queueUserMessage).not.toHaveBeenCalled();
   });
 
   test("shows the keyboard hint and sends only on unmodified Enter", () => {

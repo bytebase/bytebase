@@ -102,7 +102,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	if queryType != base.Select {
 		return &base.QuerySpan{
 			Type:          queryType,
-			SourceColumns: base.SourceColumnSet{},
+			SourceColumns: accessTables,
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}

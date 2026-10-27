@@ -3,6 +3,7 @@ package plsql
 import (
 	"context"
 	"reflect"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -218,14 +219,19 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbMeta
 
 	if table != nil {
 		var columns []string
+		invisibleColumns := make(map[string]bool)
 		for _, column := range table.GetProto().GetColumns() {
 			columns = append(columns, column.Name)
+			if column.IsInvisible {
+				invisibleColumns[column.Name] = true
+			}
 		}
 		return &base.PhysicalTable{
-			Server:   "",
-			Database: databaseName,
-			Name:     table.GetProto().Name,
-			Columns:  columns,
+			Server:           "",
+			Database:         databaseName,
+			Name:             table.GetProto().Name,
+			Columns:          columns,
+			InvisibleColumns: invisibleColumns,
 		}, nil
 	}
 
@@ -342,9 +348,13 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 
 	queryType := omniQueryType(raw.Stmt, allSystem)
 	if queryType != base.Select {
+		sourceColumns := make(base.SourceColumnSet)
+		for _, resource := range accessTables {
+			sourceColumns[base.ColumnResource{Database: resource.Database, Table: resource.Table}] = true
+		}
 		return &base.QuerySpan{
 			Type:          queryType,
-			SourceColumns: base.SourceColumnSet{},
+			SourceColumns: sourceColumns,
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
@@ -366,7 +376,6 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 		}
 		columnSet[column] = true
 	}
-
 	selectStmt, ok := raw.Stmt.(*oracleast.SelectStmt)
 	if !ok {
 		return nil, errors.Errorf("expected SELECT statement, got %T", raw.Stmt)
@@ -582,14 +591,28 @@ func collectOmniAccessTables(defaultDatabase string, stmt oracleast.StmtNode) (l
 		}
 		local = append(local, resource)
 	}
+	addTarget := func(name *oracleast.ObjectName) {
+		if name != nil {
+			addResource(name, name.DBLink)
+		}
+	}
 	oracleast.Inspect(stmt, func(node oracleast.Node) bool {
 		switch node := node.(type) {
 		case *oracleast.TableRef:
 			addResource(node.Name, omniTableLink(node))
 		case *oracleast.ContainersExpr:
-			if node.Name != nil {
-				addResource(node.Name, node.Name.DBLink)
-			}
+			addTarget(node.Name)
+		// A DML target is an ObjectName, not a TableRef, so it is named here.
+		case *oracleast.InsertStmt:
+			addTarget(node.Table)
+		case *oracleast.InsertIntoClause:
+			addTarget(node.Table)
+		case *oracleast.UpdateStmt:
+			addTarget(node.Table)
+		case *oracleast.DeleteStmt:
+			addTarget(node.Table)
+		case *oracleast.MergeStmt:
+			addTarget(node.Target)
 		default:
 		}
 		return true
@@ -1486,7 +1509,18 @@ func (q *omniQuerySpanExtractor) getOmniFieldColumnSource(schemaName, tableName,
 	return base.SourceColumnSet{}
 }
 
+// expandOmniAsterisk returns the columns * stands for. It leaves out invisible
+// columns, as Oracle does; including one would shift every result after it,
+// and the masking applied to each.
 func (q *omniQuerySpanExtractor) expandOmniAsterisk(schemaName, tableName string) ([]base.QuerySpanResult, error) {
+	results, err := q.expandOmniAsteriskWithInvisible(schemaName, tableName)
+	if err != nil {
+		return nil, err
+	}
+	return slices.DeleteFunc(results, func(result base.QuerySpanResult) bool { return result.Invisible }), nil
+}
+
+func (q *omniQuerySpanExtractor) expandOmniAsteriskWithInvisible(schemaName, tableName string) ([]base.QuerySpanResult, error) {
 	findInTableSource := func(tableSource base.TableSource) ([]base.QuerySpanResult, bool) {
 		if schemaName != "" && schemaName != tableSource.GetDatabaseName() {
 			return nil, false
@@ -1645,6 +1679,7 @@ func cloneQuerySpanResult(result base.QuerySpanResult) base.QuerySpanResult {
 		Name:          result.Name,
 		SourceColumns: cloneSourceColumnSet(result.SourceColumns),
 		IsPlainField:  result.IsPlainField,
+		Invisible:     result.Invisible,
 	}
 }
 

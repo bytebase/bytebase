@@ -25,6 +25,10 @@ Bytebase is the standard for database development. Every product and engineering
 - Use American English. Avoid collection names ending in `List`.
 - Annotating an RPC `mcp_method_class = READ` or `WRITE` also changes what the MCP Access policy page promises, and nothing enforces that. Before changing one, read [mcp-capability-ladder.md](docs/design/mcp-capability-ladder.md#keeping-the-rows-true).
 
+## Customer information
+
+The repository and its pull requests are public. Never identify a Bytebase customer or user in code, comments, test fixtures, docs, commit messages, or PR titles, bodies, and screenshots. That covers company names, their employees' names and emails, their domains, and the instance, database, and host names, schemas, SQL, or data copied from their environments. Describe the case generically, such as "a customer with 10k databases", and reference the Linear issue for details. Use placeholders such as `example.com` in fixtures, and redact screenshots.
+
 ## Code comments
 
 - Use names and structure to explain what code does. Reserve comments for non-obvious intent, invariants, ordering constraints, external behavior, and public API contracts.

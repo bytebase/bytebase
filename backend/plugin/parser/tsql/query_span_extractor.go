@@ -3,6 +3,7 @@ package tsql
 import (
 	"context"
 	"reflect"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -432,6 +433,8 @@ type omniQuerySpanExtractor struct {
 	*querySpanExtractor
 	// source is the original SQL text, used to slice expression names via Loc.
 	source string
+	// setOption is the statement when it is a SET of session options.
+	setOption *ast.SetOptionStmt
 }
 
 func newOmniQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *omniQuerySpanExtractor {
@@ -486,6 +489,9 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	if d, ok := root.(*ast.DeclareStmt); ok {
 		populateOmniTempTables(d, q.gCtx.TempTables)
 	}
+	if set, ok := root.(*ast.SetOptionStmt); ok {
+		q.setOption = set
+	}
 	if c, ok := root.(*ast.CreateTableStmt); ok {
 		populateOmniCreateTempTable(c, q.gCtx.TempTables)
 	}
@@ -504,7 +510,7 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	if queryType != base.Select || !isSelect {
 		return &base.QuerySpan{
 			Type:          queryType,
-			SourceColumns: base.SourceColumnSet{},
+			SourceColumns: accessTables,
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
@@ -576,6 +582,9 @@ func (q *omniQuerySpanExtractor) extractFromSelectStmt(sel *ast.SelectStmt) (*ba
 		return nil, err
 	}
 	if err := q.collectPredicatesInScope(sel.HavingClause); err != nil {
+		return nil, err
+	}
+	if err := q.collectRowCountPredicates(sel); err != nil {
 		return nil, err
 	}
 
@@ -766,6 +775,44 @@ func (q *omniQuerySpanExtractor) collectPredicatesInScope(expr ast.Node) error {
 	}
 }
 
+// collectRowCountPredicates records what TOP, OFFSET, and FETCH read, since
+// they decide how many rows come back, and the conditions of subqueries in
+// ORDER BY. The ORDER BY keys themselves only order the rows.
+func (q *omniQuerySpanExtractor) collectRowCountPredicates(sel *ast.SelectStmt) error {
+	if sel.Top != nil {
+		if err := q.collectPredicatesInScope(sel.Top.Count); err != nil {
+			return err
+		}
+	}
+	if err := q.collectPredicatesInScope(sel.OffsetClause); err != nil {
+		return err
+	}
+	if sel.FetchClause != nil {
+		if err := q.collectPredicatesInScope(sel.FetchClause.Count); err != nil {
+			return err
+		}
+	}
+	if sel.OrderByClause == nil {
+		return nil
+	}
+	var err error
+	ast.Inspect(sel.OrderByClause, func(n ast.Node) bool {
+		if err != nil {
+			return false
+		}
+		sub, ok := n.(*ast.SelectStmt)
+		if !ok {
+			return true
+		}
+		clone := q.cloneForSubquery()
+		if _, err = clone.extractFromSelectStmt(sub); err == nil {
+			q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, clone.predicateColumns)
+		}
+		return false
+	})
+	return err
+}
+
 func (q *omniQuerySpanExtractor) mergeSubqueryIntoPredicates(body ast.Node) error {
 	sel, ok := body.(*ast.SelectStmt)
 	if !ok {
@@ -807,6 +854,15 @@ func (q *omniQuerySpanExtractor) extractFromSetOp(sel *ast.SelectStmt) (*base.Ps
 	right, err := q.extractFromSelectStmt(sel.Rarg)
 	if err != nil {
 		return nil, err
+	}
+	if sel.Op == ast.SetOpIntersect || sel.Op == ast.SetOpExcept {
+		// INTERSECT and EXCEPT keep a row by whether the other arm has it, so
+		// both arms' output columns decide which rows come back.
+		for _, arm := range []base.TableSource{left, right} {
+			for _, c := range arm.GetQuerySpanResult() {
+				q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, c.SourceColumns)
+			}
+		}
 	}
 	merged, err := unionTableSources(left, right)
 	if err != nil {
@@ -871,8 +927,8 @@ func (q *omniQuerySpanExtractor) extractCTEBody(cteName string, body *ast.Select
 		}
 	}
 
-	// Non-set-op CTE: extract directly.
-	if body.Op == ast.SetOpNone || (body.Larg == nil && body.Rarg == nil) {
+	// Only UNION can be recursive; extract every other CTE directly.
+	if body.Op != ast.SetOpUnion || (body.Larg == nil && body.Rarg == nil) {
 		clone := newClone()
 		pseudo, err := clone.extractFromSelectStmt(body)
 		if err != nil {
@@ -991,18 +1047,25 @@ func unsupportedNodeError(message string, node ast.Node) error {
 }
 
 func (q *omniQuerySpanExtractor) extractFromJoin(j *ast.JoinClause) ([]base.TableSource, error) {
+	tableSourcesSnapshot := len(q.tableSourcesFrom)
+	defer func() { q.tableSourcesFrom = q.tableSourcesFrom[:tableSourcesSnapshot] }()
 	left, err := q.extractTableSource(j.Left)
 	if err != nil {
 		return nil, err
 	}
 	if j.Type == ast.JoinCrossApply || j.Type == ast.JoinOuterApply {
-		tableSourcesSnapshot := len(q.tableSourcesFrom)
 		q.tableSourcesFrom = append(q.tableSourcesFrom, left...)
-		defer func() { q.tableSourcesFrom = q.tableSourcesFrom[:tableSourcesSnapshot] }()
 	}
 	right, err := q.extractTableSource(j.Right)
 	if err != nil {
 		return nil, err
+	}
+	if j.Condition != nil {
+		q.tableSourcesFrom = append(q.tableSourcesFrom[:tableSourcesSnapshot], left...)
+		q.tableSourcesFrom = append(q.tableSourcesFrom, right...)
+		if err := q.collectPredicatesInScope(j.Condition); err != nil {
+			return nil, err
+		}
 	}
 	return append(left, right...), nil
 }
@@ -1096,6 +1159,8 @@ func (q *omniQuerySpanExtractor) resolveTableValuedFunction(fn *ast.FuncCallExpr
 	if err != nil {
 		return nil, err
 	}
+	// The arguments decide how many rows the function returns.
+	q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, argSources.SourceColumns)
 	columns := make([]base.QuerySpanResult, 0, len(columnNames))
 	for _, name := range columnNames {
 		columns = append(columns, base.QuerySpanResult{
@@ -1332,7 +1397,7 @@ func (q *omniQuerySpanExtractor) cloneForSubquery() *omniQuerySpanExtractor {
 			ignoreCaseSensitive: q.ignoreCaseSensitive,
 			gCtx:                q.gCtx,
 			ctes:                append([]*base.PseudoTable{}, q.ctes...),
-			outerTableSources:   append(append([]base.TableSource{}, q.outerTableSources...), q.tableSourcesFrom...),
+			outerTableSources:   slices.Concat(q.outerTableSources, q.tableSourcesFrom),
 			predicateColumns:    make(base.SourceColumnSet),
 			viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
 		},
@@ -1878,6 +1943,15 @@ func collectOmniAccessTables(root ast.Node, currentDatabase, currentSchema strin
 	return out
 }
 
+func walkTableList(list *ast.List, db, schema string, out base.SourceColumnSet) {
+	if list == nil {
+		return
+	}
+	for _, it := range list.Items {
+		walkAccessTables(it, db, schema, out)
+	}
+}
+
 func walkAccessTables(n ast.Node, db, schema string, out base.SourceColumnSet) {
 	if n == nil {
 		return
@@ -1909,6 +1983,27 @@ func walkAccessTables(n ast.Node, db, schema string, out base.SourceColumnSet) {
 		if v.Rarg != nil {
 			walkAccessTables(v.Rarg, db, schema, out)
 		}
+		if v.OrderByClause != nil {
+			for _, it := range v.OrderByClause.Items {
+				walkAccessTables(it, db, schema, out)
+			}
+		}
+	case *ast.OrderByItem:
+		walkAccessTables(v.Expr, db, schema, out)
+	case *ast.InsertStmt:
+		walkAccessTables(v.Relation, db, schema, out)
+		walkAccessTables(v.Source, db, schema, out)
+	case *ast.UpdateStmt:
+		walkAccessTables(v.Relation, db, schema, out)
+		walkTableList(v.FromClause, db, schema, out)
+		walkAccessTables(v.WhereClause, db, schema, out)
+	case *ast.DeleteStmt:
+		walkAccessTables(v.Relation, db, schema, out)
+		walkTableList(v.FromClause, db, schema, out)
+		walkAccessTables(v.WhereClause, db, schema, out)
+	case *ast.MergeStmt:
+		walkAccessTables(v.Target, db, schema, out)
+		walkAccessTables(v.Source, db, schema, out)
 	case *ast.WithClause:
 		if v.CTEs != nil {
 			for _, it := range v.CTEs.Items {

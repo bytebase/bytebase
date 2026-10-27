@@ -40,6 +40,9 @@ import (
 var (
 	baseTableType = "BASE TABLE"
 	viewTableType = "VIEW"
+	// MariaDB-only TABLE_TYPE values. Both kinds share the table namespace.
+	mariaDBSystemVersionedTableType = "SYSTEM VERSIONED"
+	mariaDBSequenceTableType        = "SEQUENCE"
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -634,6 +637,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 				}
 				if err := rows.Err(); err != nil {
 					return nil, err
+				}
+				if !queryContext.Explain {
+					r.QueryPlan = db.TypedExplainPlan(mysqlparser.DescribeExplain(statement))
 				}
 				return r, nil
 			}

@@ -44,6 +44,7 @@ import {
 import { GetSheetRequestSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import { unknownDatabase } from "@/types/v1/database";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 import { getStatementSize, MAX_UPLOAD_FILE_SIZE_MB } from "@/utils/sheet";
 import { getInstanceResource } from "@/utils/v1/database";
@@ -63,6 +64,7 @@ import {
   setLocalSheetStatement,
 } from "../utils/localSheet";
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
+import { statementSummary } from "../utils/statementSummary";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
 import { StatementThreadsLayer } from "./threads/StatementThreadsLayer";
 import {
@@ -225,6 +227,24 @@ export function PlanDetailStatementSection({
     () => getSQLAdviceMarkers(planCheckRuns),
     [planCheckRuns]
   );
+  // Under SQL Review V2 the summary report is not a check; it describes the
+  // statement here.
+  const summary = useMemo(
+    () => (sqlReviewV2Enabled() ? statementSummary(planCheckRuns) : undefined),
+    [planCheckRuns]
+  );
+  const summaryText = summary
+    ? [
+        summary.types.join(", "),
+        summary.affectedRows > 0n
+          ? t("plan.statement-summary.affected-rows", {
+              count: Number(summary.affectedRows),
+            })
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
 
   useEffect(() => {
     if (!isEditing) {
@@ -569,6 +589,14 @@ export function PlanDetailStatementSection({
         >
           <span>{statementTitle}</span>
           {isEmpty && <span className="text-error">*</span>}
+          {summaryText && !isEmpty && (
+            <span
+              className="ml-2 text-xs font-normal normal-case text-control-light"
+              data-testid="statement-summary"
+            >
+              {summaryText}
+            </span>
+          )}
         </div>
         <Input
           ref={inputRef}

@@ -7,7 +7,6 @@ import {
   GripVertical,
   Layers,
   Link,
-  Send,
   Settings,
   ShieldCheck,
   SquareStack,
@@ -66,7 +65,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
 import { WorkspacePageLayout } from "@/components/WorkspacePageLayout";
 import {
   useOptionalCurrentUser,
@@ -80,12 +78,8 @@ import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
 } from "@/lib/productIntro";
-import { LandingStarterSelector } from "@/modules/agent/components/LandingStarterSelector";
+import { LandingAgentComposer } from "@/modules/agent/components/LandingAgentComposer";
 import { getLandingStarterIds } from "@/modules/agent/logic/landingStarters";
-import {
-  selectHasRunningChat,
-  useAgentStore,
-} from "@/modules/agent/store/agent";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
@@ -468,14 +462,9 @@ export function LandingPage(_: Record<string, never> = {}) {
   const { t } = useTranslation();
   const hasAuditLogFeature = usePlanFeature(PlanFeature.FEATURE_AUDIT_LOG);
   const [showConfigDrawer, setShowConfigDrawer] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState("");
   const workspace = useWorkspace();
   const aiEnabled = useAppStore((state) => state.serverInfo?.aiEnabled);
   const canConfigureAI = useWorkspacePermission("bb.settings.set");
-  const hasRunningChat = useAgentStore(selectHasRunningChat);
-  const hasQueuedMessage = useAgentStore(
-    (state) => state.queuedUserMessage !== null
-  );
 
   const currentUser = useOptionalCurrentUser();
   const email = currentUser?.email ?? "";
@@ -570,52 +559,6 @@ export function LandingPage(_: Record<string, never> = {}) {
     canViewRecentActivity: hasAuditLogFeature && canSearchAuditLogs,
   });
 
-  const sendAIMessage = () => {
-    const text = aiPrompt.trim();
-    if (!text || !aiEnabled || !workspace?.name) return;
-    const store = useAgentStore.getState();
-    if (selectHasRunningChat(store) || store.queuedUserMessage) return;
-    const page = {
-      path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
-      title: document.title,
-    };
-    const chat = store.selectOrCreateChatForContext(
-      workspace.name,
-      page,
-      workspace.name
-    );
-    if (!chat) return;
-    store.queueUserMessage({ chatId: chat.id, text, page });
-    store.open();
-    setAiPrompt("");
-  };
-
-  const sendLandingStarter = (
-    starterId: (typeof landingStarterIds)[number]
-  ) => {
-    if (!aiEnabled || !workspace?.name) return;
-    const store = useAgentStore.getState();
-    if (selectHasRunningChat(store) || store.queuedUserMessage) return;
-    const page = {
-      path: `${window.location.pathname}${window.location.search}${window.location.hash}`,
-      title: document.title,
-    };
-    const chat = store.selectOrCreateChatForContext(
-      workspace.name,
-      page,
-      workspace.name
-    );
-    if (!chat) return;
-    store.queueUserMessage({
-      chatId: chat.id,
-      text: t(`agent.landing-starters.${starterId}`),
-      page,
-      runMode: "read-only",
-      starterId,
-    });
-    store.open();
-  };
-
   return (
     <>
       <WorkspacePageLayout>
@@ -627,62 +570,14 @@ export function LandingPage(_: Record<string, never> = {}) {
           </header>
 
           {landingAgentEnabled && aiEnabled && workspace?.name && (
-            <form
-              className="min-w-0 rounded-sm border border-accent/60 bg-background focus-within:border-accent focus-within:ring-1 focus-within:ring-accent"
-              onSubmit={(event) => {
-                event.preventDefault();
-                sendAIMessage();
-              }}
-            >
-              {!aiPrompt.trim() && (
-                <div className="px-3 pt-2">
-                  <LandingStarterSelector
-                    starterIds={landingStarterIds}
-                    disabled={hasRunningChat || hasQueuedMessage}
-                    onSelect={sendLandingStarter}
-                  />
-                </div>
-              )}
-              <Textarea
-                size="md"
-                rows={2}
-                value={aiPrompt}
-                aria-label={t("landing.ai-placeholder")}
-                placeholder={`${t("landing.ai-placeholder")} · ${t("agent.input-keyboard-hint")}`}
-                className="min-h-20 resize-none border-0 focus:border-0 focus:ring-0"
-                onChange={(event) => setAiPrompt(event.target.value)}
-                onKeyDown={(event) => {
-                  if (
-                    event.key === "Enter" &&
-                    !event.shiftKey &&
-                    !event.altKey &&
-                    !event.ctrlKey &&
-                    !event.metaKey &&
-                    !event.nativeEvent.isComposing
-                  ) {
-                    event.preventDefault();
-                    sendAIMessage();
-                  }
-                }}
-              />
-              <div className="flex flex-wrap items-end justify-between gap-2 px-3 pb-3">
-                <div className="flex min-w-0 flex-1 items-center text-xs text-control-light">
-                  <span className="min-w-0 max-w-full truncate">
-                    {t("agent.context")}: {workspace.title}
-                  </span>
-                </div>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={
-                    !aiPrompt.trim() || hasRunningChat || hasQueuedMessage
-                  }
-                >
-                  <Send className="size-4" />
-                  {t("agent.send")}
-                </Button>
-              </div>
-            </form>
+            <LandingAgentComposer
+              key={workspace.name}
+              contextName={workspace.name}
+              contextTitle={workspace.title}
+              workspaceName={workspace.name}
+              placeholder={t("landing.ai-placeholder")}
+              starterIds={landingStarterIds}
+            />
           )}
 
           {aiEnabled === false && canConfigureAI && !isSaaSMode && (

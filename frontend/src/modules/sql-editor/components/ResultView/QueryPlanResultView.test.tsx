@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { QueryPlanResultView } from "./QueryPlanResultView";
@@ -11,24 +11,22 @@ vi.mock("@/apps/explain-visualizer/QueryPlanView", () => ({
   QueryPlanView: ({
     planSource,
     textPlanSource,
-    planQuery,
+    note,
     translate,
     disallowCopyingData,
-    syncSelectionWithHash,
   }: {
     planSource: string;
     textPlanSource?: string;
-    planQuery?: string;
+    note?: React.ReactNode;
     translate: (key: "tab.text") => string;
     disallowCopyingData?: boolean;
-    syncSelectionWithHash?: boolean;
   }) => (
     <div
       data-testid="inline-query-plan"
       data-copy-disabled={disallowCopyingData}
-      data-hash-sync={syncSelectionWithHash}
     >
-      {planQuery}:{planSource}:{textPlanSource}:{translate("tab.text")}
+      {planSource}:{textPlanSource}:{translate("tab.text")}
+      {note ? <span>{note}</span> : null}
     </div>
   ),
 }));
@@ -53,29 +51,24 @@ describe("QueryPlanResultView", () => {
       <QueryPlanResultView
         engine={Engine.POSTGRES}
         rawPlan="raw plan"
-        initialPlan={{ source: "structured plan", statement: "SELECT 1" }}
+        initialPlan={{ source: "structured plan" }}
         disallowCopyingData
       />
     );
 
     expect(screen.getByTestId("inline-query-plan")).toHaveTextContent(
-      "SELECT 1:structured plan:raw plan:sql-editor.query-plan-viewer.tab.text"
+      "structured plan:raw plan:sql-editor.query-plan-viewer.tab.text"
     );
     expect(screen.queryByRole("tab")).toBeNull();
     expect(screen.getByTestId("inline-query-plan")).toHaveAttribute(
       "data-copy-disabled",
       "true"
     );
-    expect(screen.getByTestId("inline-query-plan")).toHaveAttribute(
-      "data-hash-sync",
-      "false"
-    );
   });
 
-  test("loads a drawable plan immediately and opens on its text tab", async () => {
+  test("loads a drawable plan immediately and hands the viewer its text plan", async () => {
     const loadPlan = vi.fn().mockResolvedValue({
       source: "structured plan",
-      statement: "EXPLAIN SELECT 1",
     });
     render(
       <QueryPlanResultView
@@ -95,7 +88,7 @@ describe("QueryPlanResultView", () => {
   });
 
   test("does not reload when only the loader identity changes", async () => {
-    const plan = { source: "structured plan", statement: "EXPLAIN SELECT 1" };
+    const plan = { source: "structured plan" };
     const first = vi.fn().mockResolvedValue(plan);
     const second = vi.fn().mockResolvedValue(plan);
     const { rerender } = render(
@@ -157,5 +150,74 @@ describe("QueryPlanResultView", () => {
       )
     );
     expect(screen.getByText("formatted:text plan")).toBeInTheDocument();
+  });
+
+  test("loads a text plan on demand when no picture is available", async () => {
+    const loadPlan = vi
+      .fn()
+      .mockResolvedValue({ source: "Seq Scan on t" });
+    render(<QueryPlanResultView rawPlan="" loadPlan={loadPlan} estimated />);
+
+    expect(screen.getByText("common.loading")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("formatted:Seq Scan on t")).toBeInTheDocument()
+    );
+    expect(screen.getByText("sql-editor.plan-estimated")).toBeInTheDocument();
+    expect(screen.queryAllByRole("tab")).toHaveLength(1);
+    expect(loadPlan).toHaveBeenCalledWith(expect.any(AbortSignal));
+  });
+
+  test("cancel aborts the load and hands control back", () => {
+    const onCancel = vi.fn();
+    let signal: AbortSignal | undefined;
+    const loadPlan = vi.fn((requested: AbortSignal) => {
+      signal = requested;
+      return new Promise<undefined>(() => {});
+    });
+    render(
+      <QueryPlanResultView rawPlan="" loadPlan={loadPlan} onCancel={onCancel} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "common.cancel" }));
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(signal?.aborted).toBe(true);
+  });
+
+  test("shows the engine's reason when the load fails", async () => {
+    render(
+      <QueryPlanResultView
+        rawPlan=""
+        loadPlan={vi
+          .fn()
+          .mockRejectedValue(new Error("permission denied to access resources"))}
+      />
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "permission denied to access resources"
+      )
+    );
+  });
+
+  test("puts the estimate note in the drawable viewer's tab row", async () => {
+    const loadPlan = vi
+      .fn()
+      .mockResolvedValue({ source: "structured plan" });
+    render(
+      <QueryPlanResultView
+        engine={Engine.POSTGRES}
+        rawPlan=""
+        loadPlan={loadPlan}
+        estimated
+      />
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("inline-query-plan")).toHaveTextContent(
+        "sql-editor.plan-estimated"
+      )
+    );
   });
 });

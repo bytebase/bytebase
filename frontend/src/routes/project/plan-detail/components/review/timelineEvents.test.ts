@@ -4,8 +4,11 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { describe, expect, test } from "vitest";
 import {
   IssueComment_Approval_Status,
+  IssueComment_ReviewMetadataSchema,
   IssueComment_ReviewSubmissionSchema,
+  IssueComment_ThreadState,
   IssueCommentSchema,
+  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { buildTimelineEntries } from "./timelineEvents";
 
@@ -98,5 +101,52 @@ describe("buildTimelineEntries", () => {
     });
 
     expect(entries.map((entry) => entry.id)).toEqual(["c-submit"]);
+  });
+
+  test("folds each run's findings into one line and keeps only the cards asked for", () => {
+    const finding = (
+      name: string,
+      runType: ReviewRun_Type,
+      seconds: bigint,
+      nanos = 0
+    ) =>
+      create(IssueCommentSchema, {
+        name,
+        threadState: IssueComment_ThreadState.OPEN,
+        createTime: create(TimestampSchema, { seconds, nanos }),
+        reviewMetadata: create(IssueComment_ReviewMetadataSchema, { runType }),
+      });
+    const entries = buildTimelineEntries({
+      comments: [
+        finding("r1", ReviewRun_Type.RULE, 10n, 0),
+        finding("r2", ReviewRun_Type.RULE, 10n, 1000),
+        userComment("u", "hello"),
+        finding("r3", ReviewRun_Type.RULE, 60n),
+        finding("a1", ReviewRun_Type.AI, 61n),
+      ],
+      keepFindingCard: (root) => root.name === "r2",
+    });
+    expect(
+      entries.map((entry) =>
+        entry.source.type === "review-run"
+          ? `run:${entry.source.findings.map((f) => f.name).join("+")}`
+          : entry.id
+      )
+    ).toEqual(["run:r1+r2", "r2", "u", "run:r3", "run:a1"]);
+  });
+
+  test("without the log, every finding stays its own entry", () => {
+    const entries = buildTimelineEntries({
+      comments: [
+        create(IssueCommentSchema, {
+          name: "r1",
+          threadState: IssueComment_ThreadState.OPEN,
+          reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
+            runType: ReviewRun_Type.RULE,
+          }),
+        }),
+      ],
+    });
+    expect(entries.map((entry) => entry.source.type)).toEqual(["comment"]);
   });
 });

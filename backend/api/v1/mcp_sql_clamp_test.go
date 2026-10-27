@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -378,7 +379,7 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			require.Contains(t, err.Error(), row.reason)
 			require.Contains(t, err.Error(), "READ_ONLY",
 				"the denial must name the ceiling that refused")
-			require.Contains(t, err.Error(), "raise the MCP ceiling",
+			require.Contains(t, err.Error(), "raise the MCP ceiling under "+auth.MCPCeilingLocation,
 				"the denial must name the way out")
 			require.Contains(t, err.Error(), "Bytebase console",
 				"the denial must name where the human can do it instead")

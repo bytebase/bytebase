@@ -442,9 +442,9 @@ func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, proce
 	}
 	return nil, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 		"%s is a %v method and this workspace's MCP capability ceiling is %v, which serves %s. "+
-			"Ask a workspace admin to raise the MCP ceiling in the workspace settings, "+
+			"Ask a workspace admin to raise the MCP ceiling under %s, "+
 			"or perform this action signed in to the Bytebase console instead",
-		procedure, class, settings.Capability, describeServedClasses(served)))
+		procedure, class, settings.Capability, describeServedClasses(served), auth.MCPCeilingLocation))
 }
 
 // describeServedClasses renders a mode's serving list for a denial message.
@@ -582,10 +582,13 @@ func grantIssueRefusal(issueType v1pb.Issue_Type) (reason, wayOut string) {
 	case v1pb.Issue_ACCESS_GRANT:
 		reason = fmt.Sprintf("an ACCESS_GRANT issue is filed by %s, not created directly",
 			v1connect.AccessGrantServiceCreateAccessGrantProcedure)
-		return reason, "Request the access with that method instead"
+		return reason, "Request the access with the request_access_grant tool instead"
+	case v1pb.Issue_ROLE_GRANT:
+		reason = "a ROLE_GRANT issue changes the project's IAM policy once approved, and MCP sessions " +
+			"cannot change IAM policy, whatever the approval rules say"
+		return reason, "To run a read-only statement, request an access grant with the request_access_grant tool; " +
+			"to get a role, request it signed in to the Bytebase console"
 	default:
-		return fmt.Sprintf(
-			"a %v issue completes on creation whenever the workspace approval rule produces no template, "+
-				"which grants access with no human step", issueType), mcpConsoleWayOut
+		return fmt.Sprintf("MCP sessions create DATABASE_CHANGE issues only, not %v", issueType), mcpConsoleWayOut
 	}
 }

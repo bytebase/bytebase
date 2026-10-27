@@ -22,13 +22,17 @@
     }
   },
   "agent": {
-    "active-only-chats": "Ver chats activos",
     "ai-not-configured": {
       "configure": "Configurar",
       "contact-admin": "Contacte al administrador de su espacio de trabajo para configurar la IA.",
       "description": "La IA no está configurada para este espacio de trabajo.",
       "title": "IA no configurada"
     },
+    "api-permission-allow": "Permitir una vez",
+    "api-permission-deny": "Denegar",
+    "api-permission-expired": "Esta solicitud ya no está disponible. Pídele al asistente que la prepare de nuevo.",
+    "api-permission-request": "¿Permitir que el asistente ejecute esta solicitud de API?",
+    "api-permission-title": "Solicitar permiso",
     "archive-all-chats": "Archivar todos los chats",
     "archive-chat": "Archivar chat",
     "archived-only-chats": "Ver chats archivados",
@@ -45,6 +49,7 @@
     "context-no-projects": "No hay proyectos accesibles",
     "context-select": "Seleccionar contexto",
     "context-workspace": "Espacio de trabajo",
+    "database-reference-unavailable": "Esta base de datos ya no está disponible o no tienes acceso a ella.",
     "delete-all-chats": "Eliminar todos los chats",
     "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
     "delete-chat": "Eliminar chat",
@@ -55,7 +60,7 @@
       "references": "Evidencia"
     },
     "input-keyboard-hint": "Enter para enviar · Shift+Enter para un salto de línea",
-    "input-placeholder": "Pregunta algo a la IA...",
+    "input-placeholder": "Pregunta a la IA o escribe @ para seleccionar un recurso",
     "interrupted": "Interrumpido",
     "interrupted-retry-hint": "La conversación fue interrumpida. Puede reintentar o enviar un nuevo mensaje.",
     "landing-starters": {
@@ -92,6 +97,13 @@
       "summary": "Estos issues requieren tu atención en este proyecto:",
       "unavailable": "No se pueden cargar los elementos que necesitan tu atención en este proyecto."
     },
+    "project-reference-unavailable": "Este proyecto ya no está disponible o no tienes acceso a él.",
+    "query-result": {
+      "returned-rows": "Filas devueltas: {{count}}",
+      "showing-columns": "Mostrando {{shown}} de {{total}} columnas",
+      "showing-results": "Mostrando {{shown}} de {{total}} conjuntos de resultados",
+      "showing-rows": "Mostrando {{shown}} de {{total}} filas devueltas"
+    },
     "recent-activity": {
       "checking": "Comprobando la actividad reciente...",
       "empty": "No se registró actividad importante en los últimos 3 días.",
@@ -103,6 +115,20 @@
     },
     "rename-chat-placeholder": "Ingrese el nombre del chat",
     "reply": "Responder",
+    "resource-picker": {
+      "add-context": "Añadir contexto",
+      "choose-project-for-databases": "Elige un proyecto para explorar sus bases de datos",
+      "databases": "Bases de datos",
+      "load-databases-error": "No se pudieron cargar las bases de datos.",
+      "load-error": "No se pudieron cargar los proyectos.",
+      "no-databases": "No se encontraron bases de datos accesibles",
+      "no-projects": "No se encontraron proyectos accesibles",
+      "projects": "Proyectos",
+      "reference-limit": "Puedes referenciar un proyecto y una de sus bases de datos por mensaje. Para usar ambos, selecciona primero el proyecto. Pregunta por otros recursos en otro mensaje.",
+      "retry": "Reintentar",
+      "search-databases": "Buscar bases de datos",
+      "search-projects": "Buscar proyectos"
+    },
     "result": "Resultado",
     "retry-last-chat-turn": "Reintentar",
     "self": "Asistente",
@@ -1660,7 +1686,7 @@
     }
   },
   "landing": {
-    "ai-placeholder": "Pregunta a la IA sobre la configuración del espacio de trabajo, los proyectos o el acceso",
+    "ai-placeholder": "Pregunta sobre este espacio de trabajo o escribe @ para seleccionar un recurso",
     "ai-setup": {
       "action": "Configurar IA",
       "description": "Configura un proveedor y un modelo para usar la IA en este espacio de trabajo.",
@@ -1754,12 +1780,54 @@
     "add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
     "ai-review": {
       "failed-to-run": "No se pudo iniciar la revisión con IA",
-      "finished": "Finalizada",
-      "not-run": "Aún no se ha ejecutado",
-      "queued": "En cola",
       "run": "Ejecutar revisión con IA",
-      "save-first": "Guarda o descarta tus cambios para ejecutar la revisión con IA.",
-      "status-unknown": "Estado no disponible"
+      "run-again-description": "Cada ejecución llama al modelo por cada base de datos revisada y puede encontrar problemas distintos. Sus hallazgos sustituyen a los de la ejecución anterior, incluidos los que ya se resolvieron.",
+      "run-again-title": "¿Ejecutar de nuevo la revisión con IA?",
+      "save-first": "Guarda o descarta tus cambios para ejecutar la revisión con IA."
+    },
+    "automated-review": {
+      "checks": "Comprobación del plan",
+      "details": "Detalles",
+      "failed": "No se pudo ejecutar",
+      "failed-to-rerun": "No se pudo iniciar la revisión",
+      "ghost": "Simulación de migración en línea",
+      "n-databases_one": "{{count}} base de datos",
+      "n-databases_other": "{{count}} bases de datos",
+      "n-errors_one": "{{count}} error",
+      "n-errors_other": "{{count}} errores",
+      "n-open": "{{count}} abiertos",
+      "n-warnings_one": "{{count}} advertencia",
+      "n-warnings_other": "{{count}} advertencias",
+      "needs-attention": "{{count}} de {{total}} requieren atención",
+      "no-findings": "Sin hallazgos",
+      "not-run": "Aún no se ha ejecutado",
+      "nothing-needs-attention": "Nada requiere atención",
+      "opens-in-sql": "Haz clic para recorrerlos en el SQL.",
+      "out-of-date": "desactualizado",
+      "outdated": "El SQL cambió después de esta ejecución",
+      "passed": "aprobado",
+      "passed-on_one": "Aprobado en {{count}} base de datos",
+      "passed-on_other": "Aprobado en {{count}} bases de datos",
+      "policy": "Política de revisión",
+      "project-rules": "Reglas del proyecto: {{on}} de {{total}} activas",
+      "report": "Informe de sentencias",
+      "rerun": "Volver a ejecutar",
+      "rerun-all": "Volver a ejecutar todo",
+      "rerun-all-description_one": "Se vuelven a ejecutar las comprobaciones del plan y Standard rules. {{count}} hallazgo ya resuelto de Standard rules volverá a quedar abierto.",
+      "rerun-all-description_other": "Se vuelven a ejecutar las comprobaciones del plan y Standard rules. {{count}} hallazgos ya resueltos de Standard rules volverán a quedar abiertos.",
+      "rerun-all-title": "¿Volver a ejecutar todas las comprobaciones?",
+      "rerun-reopens_one": "{{count}} hallazgo ya resuelto volverá a quedar abierto y habrá que resolverlo de nuevo.",
+      "rerun-reopens_other": "{{count}} hallazgos ya resueltos volverán a quedar abiertos y habrá que resolverlos de nuevo.",
+      "rerun-rule-title": "¿Volver a ejecutar Standard rules?",
+      "retry": "Reintentar",
+      "running": "En ejecución",
+      "sampled": "una muestra de {{count}} de {{total}} bases de datos",
+      "scope": "Se revisó {{databases}}",
+      "scope-label": "Qué cubrió esta revisión",
+      "scope-with-engines": "Se revisó {{databases}} ({{engines}})",
+      "self": "Revisión automática",
+      "summary-part": "{{reviewer}}: {{status}}",
+      "workspace-rules": "Reglas del espacio de trabajo: {{on}} de {{total}} activas"
     },
     "blocker": {
       "clears-on-its-own": "Se resuelve solo"
@@ -1774,12 +1842,49 @@
       "started": "Se iniciaron las verificaciones del plan"
     },
     "create-plan": "Crear plan",
+    "deploy-waiting": {
+      "approval": "Aprobación",
+      "approval-from": "Aprobación de {{role}}",
+      "approval-rejected": "Aprobación rechazada",
+      "auto-create": "Bytebase crea el despliegue cuando todo esto se cumple.",
+      "creating-rollout": "Todo aprobado; creando el despliegue…",
+      "manual-rollout": "Bytebase no crea automáticamente el despliegue de este plan; despliégalo cuando todo esto se cumpla.",
+      "open-discussions_one": "{{count}} conversación abierta",
+      "open-discussions_other": "{{count}} conversaciones abiertas",
+      "overridden_one": "{{count}} hallazgo P0 de {{reviewer}} se resolvió sin cambios",
+      "overridden_other": "{{count}} hallazgos P0 de {{reviewer}} se resolvieron sin cambios",
+      "ready-to-deploy": "Todo superado; listo para desplegar.",
+      "reviewer-failed": "{{reviewer}} no se pudo ejecutar",
+      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-not-run": "{{reviewer}} aún no se ha ejecutado",
+      "reviewer-outdated": "El SQL cambió después de ejecutar {{reviewer}}",
+      "reviewer-running": "{{reviewer}} en ejecución",
+      "show": "Mostrar",
+      "submit": "Enviar a revisión",
+      "waiting-on": "En espera de",
+      "worth-a-look": "No detiene el despliegue, pero conviene revisarlo"
+    },
     "description": {
       "placeholder": "Agregar descripción"
     },
     "draft-update-permission-required": "Puedes ver este borrador, pero necesitas bb.issues.update para editar etiquetas de problema o enviarlo a revisión.",
     "editor": {
       "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
+    },
+    "findings": {
+      "n-more": "{{count}} más",
+      "n-overridden": "{{count}} P0 resueltos sin cambios",
+      "n-priority": "{{count}} {{priority}}",
+      "n-resolved": "{{count}} resueltos",
+      "name-at-line": "{{name}} (L{{line}})",
+      "name-times": "{{name}} ×{{count}}",
+      "separator": ", ",
+      "set": {
+        "earlier": "ejecuciones anteriores",
+        "open": "abiertos",
+        "overridden": "P0 resueltos sin cambios",
+        "resolved": "resueltos"
+      }
     },
     "ghost": {
       "configure": "Configurar",
@@ -1803,19 +1908,18 @@
       "checking": "Comprobando…",
       "checks-failing": "Comprobaciones fallidas",
       "deployed": "Desplegado",
+      "gate-automated-review-passed": "La revisión automática se aprobó",
       "gate-checks-failed": "Algunas comprobaciones fallaron",
       "gate-checks-failed-sub": "{{failing}} con errores, {{passed}} correctas",
       "gate-checks-passed": "Todas las comprobaciones correctas",
       "gate-checks-passed-sub": "{{count}} correctas",
       "gate-checks-running": "Comprobaciones en curso",
       "gate-checks-running-sub": "{{running}} en curso, {{passed}} correctas",
+      "gate-no-open-discussions": "No hay conversaciones abiertas",
       "gate-review-approved": "Cambios aprobados",
       "gate-review-pending": "Revisión en curso",
       "gate-review-rejected": "Cambios solicitados",
       "gate-threads-open-sub": "Resuelve todos los hilos para crear el rollout",
-      "gate-threads-open_one": "{{count}} hilo sin resolver",
-      "gate-threads-open_other": "{{count}} hilos sin resolver",
-      "gate-threads-resolved": "Todos los hilos resueltos",
       "incomplete": "Incompleto",
       "preparing-rollout": "Preparando despliegue…",
       "rejected": "Rechazado",
@@ -1863,11 +1967,15 @@
         "add-a-comment": "Añadir un comentario...",
         "created-this-plan": "creó este plan",
         "marked-ready-for-review": "marcó este plan como listo para revisión",
+        "n-findings_one": "{{count}} hallazgo",
+        "n-findings_other": "{{count}} hallazgos",
         "n-hidden-events_one": "{{count}} evento oculto",
         "n-hidden-events_other": "{{count}} eventos ocultos",
+        "reviewed-the-sql": "revisó el SQL",
         "self": "Actividad",
         "show-all": "Mostrar todo"
       },
+      "approval-after-submit": "La aprobación empieza cuando envías a revisión.",
       "approval-flow": {
         "and-n-more_one": "y {{count}} más",
         "and-n-more_other": "y {{count}} más",
@@ -1943,6 +2051,7 @@
         "n-replies-hidden_other": "{{count}} respuestas ocultas",
         "n-replies_one": "{{count}} respuesta",
         "n-replies_other": "{{count}} respuestas",
+        "open": "Abierto",
         "priority": {
           "p0": "El SQL es incorrecto y debe cambiar.",
           "p1": "Peligroso pero legítimo. Una persona debe aceptarlo.",
@@ -1960,8 +2069,10 @@
         "threads-on-line_one": "{{count}} hilo en esta línea",
         "threads-on-line_other": "{{count}} hilos en esta línea",
         "walker": {
+          "clear-filter": "Recorrer todos los hilos abiertos",
           "count_one": "{{count}} hilo sin resolver en esta versión",
           "count_other": "{{count}} hilos sin resolver en esta versión",
+          "filter": "{{reviewer}} · {{state}}",
           "next": "Siguiente hilo sin resolver",
           "position": "Hilo {{index}} de {{count}}",
           "previous": "Hilo sin resolver anterior",
@@ -1975,16 +2086,6 @@
       "description_one": "Revertir 1 tarea seleccionada del rollout #{{rolloutId}}.",
       "description_other": "Revertir {{count}} tareas seleccionadas del rollout #{{rolloutId}}.",
       "title": "Revertir rollout #{{rolloutId}}"
-    },
-    "rule-review": {
-      "failed": "La revisión SQL falló",
-      "load-failed": "No se pudo cargar el estado de la revisión SQL.",
-      "no-open-findings": "No hay hallazgos abiertos",
-      "not-run": "Revisión SQL no ejecutada",
-      "open-findings_one": "{{count}} hallazgo abierto",
-      "open-findings_other": "{{count}} hallazgos abiertos",
-      "queued": "Revisión SQL en cola",
-      "running": "Revisión SQL en curso"
     },
     "run": "Volver a verificar",
     "select-isolation-level": "Seleccionar nivel de aislamiento",
@@ -2010,12 +2111,17 @@
       "reopen-confirm": "¿Reabrir este plan?",
       "reopen-review-confirm": "¿Reabrir esta revisión?"
     },
+    "statement-summary": {
+      "affected-rows_one": "~{{count}} fila afectada",
+      "affected-rows_other": "~{{count}} filas afectadas"
+    },
     "status-scope": {
       "description": "Filtrar por el estado actual de las tareas del plan",
       "waiting": "En espera"
     },
     "submit-review-anyway": "Enviar de todos modos",
     "summary": {
+      "approved-by": "Aprobado por {{names}}",
       "last-approved-by": "Última aprobación por {{name}}",
       "n-changes": "{{n}} cambios",
       "n-database-groups": "{{n}} grupos de bases de datos",
@@ -2026,7 +2132,8 @@
       "n-passed": "{{n}} aprobadas",
       "n-unresolved-threads_one": "{{count}} hilo sin resolver",
       "n-unresolved-threads_other": "{{count}} hilos sin resolver",
-      "n-warning": "{{n}} advertencia"
+      "n-warning": "{{n}} advertencia",
+      "no-approval-required": "No requiere aprobación"
     },
     "targets": {
       "no-targets-found": "No se encontraron objetivos",
@@ -2119,7 +2226,7 @@
     "home": {
       "active-issues": "Tus solicitudes activas",
       "active-issues-unavailable": "No puedes ver las solicitudes de este proyecto.",
-      "ai-placeholder": "Pide a la IA que consulte, cambie o configure este proyecto",
+      "ai-placeholder": "Pregunta sobre este proyecto o escribe @ para seleccionar un recurso",
       "archived-description": "Este proyecto está archivado y es de solo lectura.",
       "change-database": "Cambiar una base de datos",
       "change-database-description": "Planifica un cambio de base de datos controlado en este proyecto.",
@@ -3421,6 +3528,7 @@
     "data-explorer-sql-filter-placeholder": "Introduce un predicado de consulta, p. ej. WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en <environment></environment>, envíe un Plan de Cambio de Datos para su aprobación.",
     "download-as-file": "Descargar como {{file}}",
+    "dry-run": "Simulación",
     "duration-day": "{{days}} día",
     "duration-days": "{{days}} días",
     "duration-hour": "{{hours}} hora",
@@ -3430,6 +3538,8 @@
     "expire-at": "Expira el {{time}}",
     "expire-in": "Expira en {{time}}",
     "expired": "Expirado",
+    "explain": "Explicar",
+    "explain-hint": "Muestra el plan sin ejecutar la consulta",
     "explore-data": "Explorar datos",
     "export-available-via-issue": "Exportación disponible vía issue \"{{title}}\"",
     "export-available-via-n-grants": "Exportación disponible vía {{count}} concesiones de acceso:",
@@ -3467,23 +3577,28 @@
     "open-in-new-tab": "Abrir en nueva pestaña",
     "opened-from-link": "Abierto desde enlace",
     "pending-query": "Consulta pendiente",
+    "plan-cost-share": "{{share}} del coste estimado del script",
+    "plan-estimated": "Estimado",
+    "plan-view": "Plan",
     "previous-row": "Fila anterior",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."
     },
     "query-history-not-found": "Historial de consultas no encontrado o ya no accesible",
+    "query-plan-estimated": "Un plan nuevo, calculado ahora mismo. Puede diferir del plan que se ejecutó.",
     "query-plan-load-failed": "No se pudo cargar el plan de consulta",
+    "query-plan-requires-explain": "Requiere el permiso bb.sql.explain en este proyecto",
     "query-plan-viewer": {
       "copy": {
         "copied": "Copiado",
         "failed": "Error al copiar",
-        "plan": "Copiar plan",
-        "query": "Copiar consulta"
+        "plan": "Copiar plan"
       },
       "details": {
         "select-node": "Selecciona un nodo para ver sus detalles."
       },
       "diagram": {
+        "actual-rows": "filas reales {{count}}",
         "collapse": "Contraer {{count}} nodos bajo {{node}}",
         "cost": "coste {{cost}}",
         "estimated-rows": "{{count}} filas estimadas",
@@ -3491,31 +3606,72 @@
         "fit": "Ajustar a la vista",
         "nodes-hidden": "{{count}} nodos ocultos",
         "plan-cost-share": "{{share}} del coste del plan",
+        "plan-time-share": "{{share}} del tiempo del plan",
         "rows": "filas {{count}}",
+        "time": "tiempo {{time}} ms",
         "zoom-in": "Acercar",
         "zoom-out": "Alejar"
       },
       "error": {
+        "clickhouse-empty": "ClickHouse no devolvió ningún plan de consulta para esta sentencia.",
+        "clickhouse-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN json = 1.",
+        "clickhouse-no-plan": "El JSON del plan de consulta de ClickHouse no contiene un objeto \"Plan\".",
+        "cockroachdb-empty": "CockroachDB no devolvió ningún plan de consulta para esta sentencia.",
+        "cockroachdb-invalid": "El plan de consulta no es JSON válido. Se espera el diagrama que codifica EXPLAIN (DISTSQL).",
+        "cockroachdb-no-plan": "El JSON del plan de consulta no contiene \"processors\" que dibujar.",
+        "hive-empty": "Hive no devolvió ningún plan de consulta para esta sentencia.",
+        "hive-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMATTED de Hive.",
+        "hive-no-plan": "El plan de consulta no tiene un plan de CBO que dibujar. Hive solo lo indica cuando su optimizador basado en costes planificó la sentencia.",
+        "mongodb-empty": "MongoDB no devolvió ningún plan de consulta para esta sentencia.",
+        "mongodb-invalid": "El plan de consulta no es JSON válido. Se espera la salida de explain() de MongoDB.",
+        "mongodb-no-plan": "El JSON del plan de consulta no tiene ni \"queryPlanner\" ni una tubería \"stages\" que dibujar.",
         "mssql-empty": "SQL Server no devolvió ningún plan de consulta para esta sentencia.",
         "mssql-invalid": "El plan de consulta no es XML válido. Se espera la salida de SHOWPLAN_XML.",
         "mssql-no-plan": "El XML del plan de consulta no es un showplan de SQL Server con al menos una sentencia.",
+        "mysql-empty": "No se devolvió ningún plan de consulta para esta sentencia.",
+        "mysql-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMAT=JSON.",
+        "mysql-no-plan": "El JSON del plan de consulta no contiene un objeto \"query_block\".",
+        "oceanbase-empty": "OceanBase no devolvió ningún plan de consulta para esta sentencia.",
+        "oceanbase-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMAT=JSON de OceanBase.",
+        "oceanbase-no-plan": "El JSON del plan de consulta no nombra ningún operador, así que no hay nada que dibujar.",
+        "oracle-empty": "Oracle no devolvió ningún plan de consulta para esta sentencia.",
+        "oracle-invalid": "El plan de consulta no es JSON válido. Se espera la tabla de planes de Oracle, tal como la representa el servidor.",
+        "oracle-no-plan": "El plan de consulta no tiene ningún paso sin padre, así que no hay un operador por el que empezar.",
         "postgres-empty": "PostgreSQL no devolvió ningún plan de consulta para esta sentencia.",
         "postgres-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN (FORMAT JSON).",
         "postgres-no-plan": "El JSON del plan de consulta no contiene un objeto \"Plan\".",
+        "redshift-empty": "Redshift no devolvió ningún plan de consulta para esta sentencia.",
+        "redshift-no-plan": "El plan de consulta no contiene ningún operador: un plan de Redshift indica un coste para cada uno.",
+        "snowflake-empty": "Snowflake no devolvió ningún plan de consulta para esta sentencia.",
+        "snowflake-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN USING JSON de Snowflake.",
+        "snowflake-no-plan": "El JSON del plan de consulta no contiene ninguna operación por la que empezar.",
         "spanner-empty": "Spanner no devolvió ningún plan de consulta para esta sentencia.",
         "spanner-emulator": "Spanner no devolvió ningún plan de consulta para esta sentencia. El emulador de Spanner no devuelve ninguno para ninguna sentencia; explíquela en una instancia de Spanner para ver uno.",
         "spanner-invalid": "El plan de consulta no es JSON válido. Se espera un plan de consulta de Spanner.",
         "spanner-no-plan": "El JSON del plan de consulta no contiene una lista \"planNodes\" con un operador en la raíz.",
+        "starrocks-empty": "La sentencia no produjo ningún plan de consulta que dibujar.",
+        "starrocks-no-plan": "El plan de consulta no tiene ningún operador numerado en ninguno de sus fragmentos.",
+        "tidb-empty": "TiDB no devolvió ningún plan de consulta para esta sentencia.",
+        "tidb-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN FORMAT=tidb_json.",
+        "tidb-no-plan": "El JSON del plan de consulta no contiene un operador en la raíz.",
         "too-deep": "El plan de consulta está demasiado anidado para que este visualizador pueda dibujarlo.",
+        "too-many-nodes": "El plan de consulta tiene más operadores de los que este visualizador dibuja, así que se muestra como texto.",
+        "trino-empty": "Trino no devolvió ningún plan de consulta para esta sentencia.",
+        "trino-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN (FORMAT JSON) de Trino.",
+        "trino-no-plan": "El JSON del plan de consulta no contiene ningún fragmento por el que empezar.",
         "unreadable": "No se pudo leer este plan de consulta"
       },
       "grid": {
+        "actual-rows": "Filas reales",
+        "actual-rows-hint": "Filas que el operador devolvió realmente, sumando todas sus ejecuciones",
         "added-cost": "Coste añadido",
         "added-cost-hint": "Coste que este nodo añade sobre sus hijos; algunos motores también cuentan aquí las repeticiones de una entrada, como bajo un bucle anidado. La barra muestra este coste como parte del plan.",
         "caption": "Nodos del plan en el orden en que el planificador los anida, con los padres antes que los hijos.",
         "estimated-rows": "Filas estimadas",
         "node": "Nodo",
         "rows": "Filas",
+        "self-time": "Tiempo propio",
+        "self-time-hint": "Milisegundos que este nodo tardó por encima de sus hijos, sumando todas sus ejecuciones. La barra muestra ese tiempo como parte del plan.",
         "total-cost": "Coste total",
         "width": "Anchura",
         "width-hint": "Anchura estimada de la fila en bytes"
@@ -3527,51 +3683,70 @@
         "off": "Desactivado",
         "off-hint": "Dejar todas las tarjetas de nodo sin sombrear",
         "rows": "Filas",
-        "rows-hint": "Sombrear según el número estimado de filas"
+        "rows-hint": "Sombrear según el número estimado de filas",
+        "time": "Tiempo",
+        "time-hint": "Sombrear según el tiempo que un nodo tardó por encima de sus hijos"
       },
       "legend": {
         "cost": "la barra de cada tarjeta indica la parte del coste estimado del plan correspondiente a ese nodo",
-        "rows": "una arista se hace más gruesa según las filas que se estima que devolverá su nodo hijo"
+        "rows": "una arista se hace más gruesa según las filas que se estima que devolverá su nodo hijo",
+        "time": "la barra de cada tarjeta indica la parte del tiempo medido del plan correspondiente a ese nodo"
       },
       "metric": {
+        "actual-rows": "Filas reales",
+        "actual-time": "Tiempo real",
         "added-cost": "Coste añadido",
         "bytes": "{{count}} bytes",
         "estimated-rows": "Filas estimadas",
+        "loops": "Ejecuciones",
+        "milliseconds": "{{count}} ms",
         "row-width": "Anchura de fila",
+        "rows-none": "No devolvió ninguna fila, aunque el planificador esperaba algunas.",
+        "rows-over": "Devolvió {{factor}}× más filas de las que estimó el planificador.",
+        "rows-under": "Devolvió {{factor}}× menos filas de las que estimó el planificador.",
         "startup-cost": "Coste inicial",
         "total-cost": "Coste total"
       },
-      "query": {
-        "missing": "La sentencia no se guardó con este plan."
-      },
       "summary": {
-        "added-cost": "Coste añadido",
-        "cost-by-operation": "Coste por operación",
-        "cost-by-operation-description": "Cada tipo de nodo del plan y su coste total.",
-        "cost-ranges": "Rangos de coste",
-        "cost-ranges-description": "Cada nodo abarca desde su coste inicial —el coste antes de su primera fila— hasta su coste total; ambos incluyen todo lo que hay debajo. Los intervalos más oscuros contienen más coste del plan. Los costes no son un calendario: dos entradas de una unión se solapan aquí, pero se ejecutan una tras otra.",
-        "costliest": "Operadores más costosos",
-        "costliest-description": "Ordenados por el coste que un nodo añade sobre sus hijos. Cuando una entrada se ejecuta repetidamente, como bajo un bucle anidado, algunos motores cuentan las repeticiones en el nodo que la vuelve a ejecutar y no en la propia entrada.",
-        "count": "Cantidad",
-        "estimate-note": "La sentencia se planificó, pero no se ejecutó, por lo que todas las cifras son estimaciones del optimizador y no mediciones. Las unidades de coste son arbitrarias y solo comparables dentro de este plan.",
-        "estimated-rows-returned": "Filas devueltas estimadas",
+        "costliest": "Más costosos según el coste estimado",
         "no-added-cost": "Ningún nodo de este plan añade un coste estimado propio.",
-        "nodes": "Nodos",
-        "operation": "Operación",
-        "share": "Proporción",
-        "timeline-node": "{{name}}, coste de {{startup}} a {{total}}, {{share}} del coste del plan",
-        "total-estimated-cost": "Coste total estimado"
+        "no-added-time": "Ningún nodo de este plan consumió un tiempo propio medible.",
+        "no-ranking": "Este plan no indica coste ni tiempo, así que sus operadores no se pueden ordenar.",
+        "slowest-measured": "Más lentos según el tiempo medido",
+        "warning-operators": "{{count}} operadores",
+        "warnings": "Avisos"
       },
       "tab": {
         "diagram": "Diagrama",
-        "grid": "Cuadrícula",
-        "query": "Consulta",
-        "summary": "Resumen",
+        "grid": "Tabla",
         "text": "Texto"
+      },
+      "table": {
+        "heading": "Tabla",
+        "indexes": "Índices",
+        "no-indexes": "Esta tabla no tiene índices.",
+        "primary": "primaria",
+        "rows": "{{count}} filas en la última sincronización",
+        "unique": "único"
       },
       "totals": {
         "estimated-cost": "coste estimado {{cost}}",
+        "measured-time": "tiempo medido {{time}} ms",
         "nodes": "{{count}} nodos"
+      },
+      "warning": {
+        "data-redistribution": {
+          "detail": "Esta unión mueve filas entre segmentos antes de poder emparejarlas. Distribuir ambas tablas por su columna de unión, o hacer ALL la más pequeña, permite que la unión se ejecute donde ya están las filas.",
+          "title": "Redistribución de datos"
+        },
+        "full-index-scan": {
+          "detail": "Lee todas las entradas de este índice. Si la consulta solo necesita unas pocas, una condición sobre las columnas iniciales del índice evitaría la lectura completa.",
+          "title": "Exploración completa del índice"
+        },
+        "full-table-scan": {
+          "detail": "Lee todas las filas de esta tabla. Si la consulta solo necesita unas pocas, un índice sobre las columnas filtradas evitaría la lectura completa.",
+          "title": "Exploración completa de la tabla"
+        }
       }
     },
     "query-time": "Tiempo de consulta",

@@ -1,4 +1,14 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { projectServiceClientConnect } from "@/api";
 import type { AppRouterInstance } from "@/app/router";
+import { silentContextKey } from "@/api/context-key";
+import {
+  getNameParentTokens,
+  projectNamePrefix,
+} from "@/stores/modules/v1/common";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import { getSkill, type GetSkillArgs } from "../skills";
 import type {
   AgentAskUserKind,
@@ -9,12 +19,19 @@ import type {
   ToolExecutionResult,
   ToolExecutor,
 } from "../types";
-import { callApi, type CallApiArgs } from "./callApi";
+import { apiCallNeedsConfirmation } from "./apiMethodClass";
+import {
+  dispatchPreparedApiCall,
+  prepareApiCall,
+  type CallApiArgs,
+} from "./callApi";
+import { createDatabaseCountTool } from "./databaseCount";
 import { createDatabaseOverviewTool } from "./databaseOverview";
 import { createDomActionTool, type DomActionArgs } from "./domAction";
 import { createIssueOverviewTool } from "./issueOverview";
 import { createNavigateTool } from "./navigate";
 import { createPageStateTool, type PageStateArgs } from "./pageState";
+import { createPendingApiCall } from "./pendingApiCall";
 import { createProjectOpenIssuesTool } from "./projectOpenIssues";
 import { createProjectGovernanceOverviewTool } from "./projectGovernanceOverview";
 import { createProjectRecentActivityTool } from "./projectRecentActivity";
@@ -132,6 +149,7 @@ const READ_ONLY_TOOL_NAMES = new Set([
   "get_project_governance_overview",
   "get_issue_overview",
   "get_database_overview",
+  "get_database_count",
   "get_workspace_overview",
   "get_project_open_issues",
   "get_project_recent_activity",
@@ -141,13 +159,42 @@ const READ_ONLY_TOOL_NAMES = new Set([
   "ask_user",
   "done",
 ]);
+const REFERENCED_PROJECT_TOOL_NAMES = new Set([
+  ...READ_ONLY_TOOL_NAMES,
+  "search_api",
+  "call_api",
+]);
 
 const READ_ONLY_TOOL_ERROR =
-  "This tool is not available during this starter. Inspect the current page or ask the user to send a follow-up message to take action.";
+  "This tool is not available during a read-only request. Ask a follow-up question to take action.";
+const REFERENCED_PROJECT_TOOL_ERROR =
+  "This tool is not available for a referenced-project turn. Use the available API tools or ask a follow-up question without the reference.";
+
+const PROJECT_SCOPED_TOOL_NAMES = new Set([
+  "get_project_overview",
+  "get_project_governance_overview",
+  "get_issue_overview",
+  "get_database_overview",
+  "get_database_count",
+  "get_project_open_issues",
+  "get_project_recent_activity",
+]);
+
+const isCanonicalProjectName = (value: string | undefined): value is string =>
+  !!value && getNameParentTokens(value, [projectNamePrefix]).length === 1;
 
 export function getToolDefinitions(
-  options: { runMode?: AgentRunMode } = {}
+  options: { runMode?: AgentRunMode; referencedProject?: string } = {}
 ): ToolDefinition[] {
+  const referencedProject = isCanonicalProjectName(options.referencedProject)
+    ? options.referencedProject
+    : undefined;
+  const projectScope = referencedProject
+    ? `the selected referenced project (${referencedProject}) for this turn`
+    : "the project bound to this chat";
+  const projectScopeRestriction = referencedProject
+    ? "This tool cannot read any other project; the chat context remains unchanged."
+    : "This tool cannot read another project.";
   const tools: ToolDefinition[] = [
     {
       name: "search_api",
@@ -189,7 +236,9 @@ export function getToolDefinitions(
     },
     {
       name: "call_api",
-      description: `Execute a Bytebase API endpoint. **Use search_api first to get operationId and schema.**
+      description: referencedProject
+        ? `Call a Bytebase API for this turn. Use search_api first to inspect the operation and request schema. Use ${referencedProject} for project-scoped requests. Ask the member to split a question that needs another project. Calls use the signed-in member's existing permissions and may change data; do not make changes unless the member explicitly asks. Follow nextPageToken when a complete result is needed.`
+        : `Execute a Bytebase API endpoint. **Use search_api first to get operationId and schema.**
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -267,8 +316,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_project_overview",
-      description:
-        "Get a bounded snapshot of the project bound to this chat. The result includes the current member's relevant open Issues, open database-change Issues, and accessible databases, with partial or unavailable facets made explicit. Use this before recommending what to do next or describing current project readiness. Answer the member's actual question from the returned evidence, rather than listing generic capabilities. This tool has no parameters and cannot read another project.",
+      description: `Get a bounded snapshot of ${projectScope}. The result includes the current member's relevant open Issues, open database-change Issues, and accessible databases, with partial or unavailable facets made explicit. Use this before recommending what to do next or describing current project readiness. Answer the member's actual question from the returned evidence, rather than listing generic capabilities. This tool has no parameters. ${projectScopeRestriction}`,
       parametersSchema: {
         type: "object",
         properties: {},
@@ -276,8 +324,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_project_governance_overview",
-      description:
-        "Get a bounded snapshot of how Database Changes are governed in the project bound to this chat. The result includes the project's approval, plan-check, SQL-review, approver, and rollout-concurrency settings, plus the number of configured database-change and fallback approval rules. Approval-rule conditions are evaluated per Database Change, so rule counts do not prove that a rule applies to a particular change. This tool has no parameters and cannot read another project.",
+      description: `Get a bounded snapshot of how Database Changes are governed in ${projectScope}. The result includes the project's approval, plan-check, SQL-review, approver, and rollout-concurrency settings, plus the number of configured database-change and fallback approval rules. Approval-rule conditions are evaluated per Database Change, so rule counts do not prove that a rule applies to a particular change. This tool has no parameters. ${projectScopeRestriction}`,
       parametersSchema: {
         type: "object",
         properties: {},
@@ -285,15 +332,13 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_issue_overview",
-      description:
-        "Get a bounded, read-only overview of one Issue in the project bound to this chat. It includes the Issue's approval state, linked Plan and plan-check state, rule and AI review-run state, plus Rollout and up to ten task-run statuses when available. Pass a canonical Issue name from this project. Each facet explicitly reports whether it is available, not configured, not started, or unavailable. A review run marked not started has no recorded run; this does not establish whether that review is configured or applicable. This tool cannot read another project or take action.",
+      description: `Get a bounded, read-only overview of one Issue in ${projectScope}. It includes the Issue's approval state, linked Plan and plan-check state, rule and AI review-run state, plus Rollout and up to ten task-run statuses when available. Pass a canonical Issue name from this project. Each facet explicitly reports whether it is available, not configured, not started, or unavailable. A review run marked not started has no recorded run; this does not establish whether that review is configured or applicable. ${projectScopeRestriction} This tool cannot take action.`,
       parametersSchema: {
         type: "object",
         properties: {
           issueName: {
             type: "string",
-            description:
-              "Canonical Issue resource name in the chat-bound project, for example projects/my-project/issues/123.",
+            description: `Canonical Issue resource name in ${projectScope}, for example projects/my-project/issues/123.`,
           },
         },
         required: ["issueName"],
@@ -301,18 +346,31 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_database_overview",
-      description:
-        "Get a bounded, read-only overview of one database in the project bound to this chat. It includes the database state, instance, effective environment, last applied release, DML prior-backup readiness (`dmlPriorBackupAvailable`), and sync status. This readiness does not prove that a recoverable backup exists. Pass a canonical database name from this project. Each resource facet explicitly reports whether it is available, not configured, or unavailable. This tool reads only DatabaseService.GetDatabase; it does not inspect existing backups or recovery points, schema, metadata, labels, data-source configuration, or sync errors, and cannot take action.",
+      description: `Get a bounded, read-only overview of one database in ${projectScope}. It includes the database state, instance, effective environment, last applied release, DML prior-backup readiness (\`dmlPriorBackupAvailable\`), and sync status. This readiness does not prove that a recoverable backup exists. Pass a canonical database name from this project. Each resource facet explicitly reports whether it is available, not configured, or unavailable. This tool reads only DatabaseService.GetDatabase; it does not inspect existing backups or recovery points, schema, metadata, labels, data-source configuration, or sync errors, and cannot take action. ${projectScopeRestriction}`,
       parametersSchema: {
         type: "object",
         properties: {
           databaseName: {
             type: "string",
-            description:
-              "Canonical database resource name in the chat-bound project, for example projects/my-project/instances/prod/databases/app.",
+            description: `Canonical database resource name in ${projectScope}, for example projects/my-project/instances/prod/databases/app.`,
           },
         },
         required: ["databaseName"],
+      },
+    },
+    {
+      name: "get_database_count",
+      description: `Count the unfiltered total of active databases in ${referencedProject ? projectScope : "the Project or Workspace bound to this chat"}. With a selected @Database in the current turn, set scope to "referenced-instance" to count active databases on that database's canonical instance scope. A workspace instance may span projects; a project instance does not. This tool follows every ListDatabases page internally and returns only the count, never database records. It cannot choose an arbitrary instance or apply filters. If unavailable, do not report a partial count as exact.`,
+      parametersSchema: {
+        type: "object",
+        properties: {
+          scope: {
+            type: "string",
+            enum: ["context", "referenced-instance"],
+            description:
+              "Omit for the chat or referenced Project total. Use referenced-instance only for the current turn's selected @Database instance.",
+          },
+        },
       },
     },
     {
@@ -326,8 +384,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_project_open_issues",
-      description:
-        "List the current user's open Bytebase Issues in the Project bound to this chat. The result includes Issues awaiting the user's approval and Issues the user created. This tool has no parameters and cannot read another Project.",
+      description: `List the current user's open Bytebase Issues in ${projectScope}. The result includes Issues awaiting the user's approval and Issues the user created. This tool has no parameters. ${projectScopeRestriction}`,
       parametersSchema: {
         type: "object",
         properties: {},
@@ -335,8 +392,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_project_recent_activity",
-      description:
-        "List the newest recorded activity for the project bound to this chat. The result contains at most five safe summaries with the time, actor, action, resource, and outcome. It excludes audit-log request and response data. This tool has no parameters and cannot read another project.",
+      description: `List the newest recorded activity for ${projectScope}. The result contains at most five safe summaries with the time, actor, action, resource, and outcome. It excludes audit-log request and response data. This tool has no parameters. ${projectScopeRestriction}`,
       parametersSchema: {
         type: "object",
         properties: {},
@@ -495,13 +551,17 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
   ];
 
+  if (referencedProject) {
+    return tools.filter((tool) => REFERENCED_PROJECT_TOOL_NAMES.has(tool.name));
+  }
   if (options.runMode === "read-only") {
     return tools.filter((tool) => READ_ONLY_TOOL_NAMES.has(tool.name));
   }
   return tools.filter(
     (tool) =>
-      tool.name !== "get_project_open_issues" &&
-      tool.name !== "get_project_recent_activity" &&
+      (Boolean(referencedProject) || tool.name !== "get_project_open_issues") &&
+      (Boolean(referencedProject) ||
+        tool.name !== "get_project_recent_activity") &&
       tool.name !== "get_workspace_attention" &&
       tool.name !== "get_workspace_recent_activity"
   );
@@ -509,7 +569,10 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
 
 interface CreateToolExecutorOptions {
   chatId?: string;
+  userName?: string;
   context?: string;
+  referencedProject?: string;
+  referencedDatabase?: string;
   onNavigate?: () => void;
   runMode?: AgentRunMode;
 }
@@ -545,29 +608,42 @@ export function createToolExecutor(
   router: AppRouterInstance,
   options: CreateToolExecutorOptions = {}
 ): ToolExecutor {
+  const referencedProject = isCanonicalProjectName(options.referencedProject)
+    ? options.referencedProject
+    : undefined;
+  const projectName = referencedProject ?? options.context;
   const navigateTool = createNavigateTool(router);
   const pageStateTool = createPageStateTool(router);
   const domActionTool = createDomActionTool(router);
   const projectOpenIssuesTool = createProjectOpenIssuesTool({
-    projectName: options.context,
+    projectName,
   });
   const projectOverviewTool = createProjectOverviewTool({
-    projectName: options.context,
+    projectName,
   });
   const projectGovernanceOverviewTool = createProjectGovernanceOverviewTool({
-    projectName: options.context,
+    projectName,
   });
   const issueOverviewTool = createIssueOverviewTool({
-    projectName: options.context,
+    projectName,
   });
   const databaseOverviewTool = createDatabaseOverviewTool({
-    projectName: options.context,
+    projectName,
+  });
+  const databaseCountTool = createDatabaseCountTool({
+    scopeName: projectName,
+    ...(options.referencedDatabase
+      ? {
+          referencedDatabase: options.referencedDatabase,
+          referencedProject,
+        }
+      : {}),
   });
   const workspaceOverviewTool = createWorkspaceOverviewTool({
     workspaceName: options.context,
   });
   const projectRecentActivityTool = createProjectRecentActivityTool({
-    projectName: options.context,
+    projectName,
   });
   const workspaceRecentActivityTool = createWorkspaceRecentActivityTool({
     workspaceName: options.context,
@@ -575,21 +651,93 @@ export function createToolExecutor(
   const workspaceAttentionTool = createWorkspaceAttentionTool({
     workspaceName: options.context,
   });
+  let referencedProjectAccess: Promise<boolean> | undefined;
+  const hasReferencedProjectAccess = (): Promise<boolean> => {
+    if (!referencedProject) return Promise.resolve(true);
+    referencedProjectAccess ??= projectServiceClientConnect
+      .getProject(
+        create(GetProjectRequestSchema, { name: referencedProject }),
+        { contextValues: createContextValues().set(silentContextKey, true) }
+      )
+      .then(
+        (project) =>
+          project.name === referencedProject && project.state === State.ACTIVE
+      )
+      .catch(() => false);
+    return referencedProjectAccess;
+  };
 
   return async (
     name: string,
     args: Record<string, unknown>,
     toolCallId: string
   ): Promise<ToolExecutionResult> => {
-    if (options.runMode === "read-only" && !READ_ONLY_TOOL_NAMES.has(name)) {
-      return toToolResult(JSON.stringify({ error: READ_ONLY_TOOL_ERROR }));
+    const allowedTools = referencedProject
+      ? REFERENCED_PROJECT_TOOL_NAMES
+      : READ_ONLY_TOOL_NAMES;
+    if (
+      (options.runMode === "read-only" || referencedProject) &&
+      !allowedTools.has(name)
+    ) {
+      return toToolResult(
+        JSON.stringify({
+          error: referencedProject
+            ? REFERENCED_PROJECT_TOOL_ERROR
+            : READ_ONLY_TOOL_ERROR,
+        })
+      );
+    }
+    if (
+      referencedProject &&
+      (PROJECT_SCOPED_TOOL_NAMES.has(name) || name === "call_api") &&
+      !(await hasReferencedProjectAccess())
+    ) {
+      return toToolResult(
+        JSON.stringify({
+          error:
+            "The referenced project is unavailable or you do not have access.",
+        })
+      );
     }
 
     switch (name) {
       case "search_api":
         return toToolResult(await searchApi(args as SearchApiArgs));
-      case "call_api":
-        return toToolResult(await callApi(args as unknown as CallApiArgs));
+      case "call_api": {
+        const apiArgs = args as unknown as CallApiArgs;
+        const prepared = prepareApiCall(apiArgs);
+        if (prepared.kind === "error") {
+          return toToolResult(prepared.result);
+        }
+        if (!apiCallNeedsConfirmation(prepared.call.operationId)) {
+          return toToolResult(await dispatchPreparedApiCall(prepared.call));
+        }
+        if (!options.chatId || !options.userName) {
+          return toToolResult(
+            JSON.stringify({
+              error: "Cannot request API permission without a signed-in chat.",
+            })
+          );
+        }
+        const { actionId } = createPendingApiCall({
+          chatId: options.chatId,
+          toolCallId,
+          userName: options.userName,
+          call: prepared.call,
+        });
+        return {
+          kind: "ask_user",
+          ask: {
+            kind: "confirm",
+            toolCallId,
+            prompt: prepared.call.operationId,
+            apiPermission: {
+              actionId,
+              operationId: prepared.call.operationId,
+            },
+          },
+        };
+      }
       case "navigate": {
         const result = await withPageMutationLock(
           options.chatId,
@@ -619,6 +767,8 @@ export function createToolExecutor(
         return toToolResult(await issueOverviewTool(args));
       case "get_database_overview":
         return toToolResult(await databaseOverviewTool(args));
+      case "get_database_count":
+        return toToolResult(await databaseCountTool(args));
       case "get_workspace_overview":
         return toToolResult(await workspaceOverviewTool());
       case "get_project_open_issues":

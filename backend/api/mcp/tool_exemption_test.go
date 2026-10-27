@@ -141,7 +141,7 @@ func writtenExemptions(t *testing.T, call decisionCall) []any {
 func salaryGrant() map[string]any {
 	return map[string]any{
 		"project": "projects/hr", "member": "user:bob@example.com", "database": "instances/prod/databases/hr",
-		"schema": "public", "table": "employee", "column": "salary",
+		"schema": "public", "table": "employee", "columns": []string{"salary"},
 		"expireTime": "2026-10-27T00:00:00Z", "reason": "payroll audit",
 	}
 }
@@ -241,9 +241,10 @@ func TestGrantMaskingExemptionSaysWhenATableIsInAnySchema(t *testing.T) {
 		arguments map[string]any
 		want      string
 	}{
-		"a table":  {map[string]any{"table": "employee"}, `Database "hr", any schema, table "employee"`},
-		"a column": {map[string]any{"table": "employee", "column": "salary"}, `Database "hr", any schema, column "salary" in "employee"`},
-		"a schema": {map[string]any{"schema": "public"}, `Database "hr", schema "public"`},
+		"a table":     {map[string]any{"table": "employee"}, `Database "hr", any schema, table "employee"`},
+		"a column":    {map[string]any{"table": "employee", "columns": []string{"salary"}}, `Database "hr", any schema, column "salary" in "employee"`},
+		"two columns": {map[string]any{"table": "employee", "columns": []string{"first_name", "last_name"}}, `Database "hr", any schema, 2 columns in "employee": "first_name", "last_name"`},
+		"a schema":    {map[string]any{"schema": "public"}, `Database "hr", schema "public"`},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := &policyMock{databaseProject: "projects/hr"}
@@ -258,6 +259,25 @@ func TestGrantMaskingExemptionSaysWhenATableIsInAnySchema(t *testing.T) {
 			require.Contains(t, user.lastParams(t).Message, tc.want)
 		})
 	}
+}
+
+func TestGrantMaskingExemptionCoversSeveralColumnsInOneEntry(t *testing.T) {
+	mock := &policyMock{databaseProject: "projects/hr"}
+	user := &asker{answer: confirmAnswer(true)}
+	session := connectToPolicyServer(t, mock, &mcp.ClientOptions{ElicitationHandler: user.handle})
+
+	grant := salaryGrant()
+	grant["columns"] = []string{"first_name", "last_name"}
+	res := callExemptionTool(t, session, "grant_masking_exemption", grant)
+	require.False(t, res.IsError, resultText(t, res))
+	require.Equal(t, int32(1), user.asked.Load())
+	require.Contains(t, user.lastParams(t).Message, "\n"+`Database "hr", 2 columns in "public"."employee": "first_name", "last_name"`+"\n")
+	calls := mock.calls()
+	require.Len(t, calls, 1)
+	require.Equal(t, map[string]any{
+		"expression":  `request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.instance_id == "prod" && resource.database_name == "hr" && resource.schema_name == "public" && resource.table_name == "employee" && resource.column_name in ["first_name", "last_name"])`,
+		"description": "payroll audit",
+	}, writtenExemptions(t, calls[0])[0].(map[string]any)["condition"], "the columns are one entry, in the list form the console writes")
 }
 
 func TestGrantMaskingExemptionForEveryDatabaseIsExplicit(t *testing.T) {
@@ -308,7 +328,7 @@ func TestGrantMaskingExemptionRefusesBadArguments(t *testing.T) {
 		"no scope":              {base, "needs a scope: database, or allDatabases set to true"},
 		"both scopes":           {with(map[string]any{"database": "instances/prod/databases/hr", "allDatabases": true}), "not both"},
 		"narrowing without one": {with(map[string]any{"allDatabases": true, "table": "employee"}), "they need database"},
-		"column without table":  {with(map[string]any{"database": "instances/prod/databases/hr", "column": "salary"}), "column needs table"},
+		"columns without table": {with(map[string]any{"database": "instances/prod/databases/hr", "columns": []string{"salary"}}), "columns need table"},
 		"a malformed time":      {with(map[string]any{"allDatabases": true, "expireTime": "next week"}), "invalid expireTime"},
 		"a malformed database":  {with(map[string]any{"database": "hr"}), "invalid database"},
 		"no member":             {map[string]any{"project": "projects/hr", "member": " ", "allDatabases": true}, "invalid member"},
@@ -371,7 +391,7 @@ func TestMaskingExemptionToolsBindTheAnswerToTheArguments(t *testing.T) {
 	first := call("grant_masking_exemption", salaryGrant(), nil, "")
 	require.True(t, first.NeedsInput())
 	wider := salaryGrant()
-	delete(wider, "column")
+	delete(wider, "columns")
 	stale := call("grant_masking_exemption", wider, accept, first.RequestState)
 	require.True(t, stale.IsError, resultText(t, stale))
 	require.Contains(t, resultText(t, stale), "STALE_CONFIRMATION", "an answer resent with a wider scope is not what the user confirmed")
@@ -521,6 +541,10 @@ func TestRevokeMaskingExemptionShowsTheScopeBeforeTheExpiry(t *testing.T) {
 			`Condition "resource.instance_id == \"prod\" && resource.database_name == \"hr\"", until "2026-10-27T00:00:00.000Z"`,
 		},
 		"an expiry only": {`request.time < timestamp("2026-10-27T00:00:00.000Z")`, `Condition "" (all databases), until "2026-10-27T00:00:00.000Z"`},
+		"a column list": {
+			`request.time < timestamp("2026-10-27T00:00:00.000Z") && (resource.table_name == "employee" && resource.column_name in ["first_name", "last_name"])`,
+			`Condition "resource.table_name == \"employee\" && resource.column_name in [\"first_name\", \"last_name\"]", until "2026-10-27T00:00:00.000Z"`,
+		},
 		"an expiry last": {
 			`resource.database_name == "hr" && request.time < timestamp("2026-10-27T00:00:00.000Z")`,
 			`Condition "resource.database_name == \"hr\" && request.time < timestamp(\"2026-10-27T00:00:00.000Z\")"`,
@@ -598,7 +622,7 @@ func TestMaskingExemptionFormsShowTheScopeInClaudeCodesDialog(t *testing.T) {
 	for _, columns := range []int{80, 120} {
 		t.Run(fmt.Sprintf("%d columns", columns), func(t *testing.T) {
 			member := "serviceAccount:deploy@hr-analytics-prod.service.bytebase.com"
-			view := grantView(&exemptionGrant{project: "projects/hr", member: member, database: "d", instanceID: longest, databaseName: longest, table: "t", column: "c"}, columns)
+			view := grantView(&exemptionGrant{project: "projects/hr", member: member, database: "d", instanceID: longest, databaseName: longest, table: "t", columns: []string{"c"}}, columns)
 			require.Len(t, view, 4, "%q", view)
 			require.True(t, strings.HasPrefix(view[0], fmt.Sprintf("Exempt %q", member)), "a %d-character member shows whole, its project included: %q", len(member), view)
 			require.Equal(t, fmt.Sprintf("Instance %q", longest), view[1], "the longest instance ID shows whole")

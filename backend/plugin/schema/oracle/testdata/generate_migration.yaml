@@ -8247,3 +8247,491 @@
       "serviceName": "FREEPDB1"
     }
   expected: "CREATE TABLE \"COMPLEX_TYPES\" (\n    \"ID\" NUMBER NOT NULL,\n    \"XML_DATA\" XMLTYPE,\n    \"TIMESTAMP_TZ\" TIMESTAMP(6) WITH TIME ZONE DEFAULT SYSTIMESTAMP,\n    \"INTERVAL_DS\" INTERVAL DAY(2) TO SECOND(6),\n    \"RAW_DATA\" RAW(100),\n    \"LONG_RAW_DATA\" LONG RAW\n);\nALTER TABLE \"COMPLEX_TYPES\" ADD CONSTRAINT \"SYS_C0000001\" PRIMARY KEY (ID);\nCOMMENT ON TABLE \"COMPLEX_TYPES\" IS 'Advanced data types testing table\nSupports: XMLType, Timestamps with timezone, Intervals, RAW data\nPerformance: Optimized for OLTP workloads @ 10K+ TPS\nSecurity: Row-level security enabled, audit trails maintained';\nCOMMENT ON COLUMN \"COMPLEX_TYPES\".\"XML_DATA\" IS 'XMLType column for structured XML storage\nExample: <?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root><item id=\"1\" name=\"test\">Content</item></root>';\nCOMMENT ON COLUMN \"COMPLEX_TYPES\".\"TIMESTAMP_TZ\" IS 'Timestamp with timezone: YYYY-MM-DD HH24:MI:SS.FF TZR\nDefault: SYSTIMESTAMP (system timestamp with session timezone)';\nCOMMENT ON COLUMN \"COMPLEX_TYPES\".\"INTERVAL_DS\" IS 'Interval Day to Second: +/-DD HH:MI:SS.FFFFFF\nRange: +/-999999999 days, precision up to nanoseconds';\n\nCOMMENT ON TABLE \"MULTILANG_CONTENT\" IS 'Multilingual content: English, Español, 中文, العربية, Русский, 日本語';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TITLE_EN\" IS 'English title field';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TITLE_ES\" IS 'Título en español';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TITLE_ZH\" IS '中文标题字段 - 支持简体和繁体中文';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"CONTENT_TEXT\" IS 'Content field supporting:\n1. HTML tags: <b>bold</b>, <i>italic</i>, <a href=\"http://example.com\">links</a>\n2. Markdown: **bold**, *italic*, [link](url), backtick-code-backtick\n3. Special symbols: © ® ™ § ¶ † ‡ • … ‰ ′ ″\n4. Emojis: \U0001F600 \U0001F603 \U0001F604 \U0001F601 \U0001F680 ⭐ \U0001F389 \U0001F4AF\n5. Mathematical: ∀x∈ℝ: x² ≥ 0, ∑(i=1 to n) i = n(n+1)/2';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TAGS\" IS 'XML tags: <tag type=\"category\" value=\"news\"/><tag type=\"priority\" value=\"high\"/>End of XML';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TITLE_EN\" IS 'English title field';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TITLE_ES\" IS 'Título en español';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TITLE_ZH\" IS '中文标题字段 - 支持简体和繁体中文';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"CONTENT_TEXT\" IS 'Content field supporting:\n1. HTML tags: <b>bold</b>, <i>italic</i>, <a href=\"http://example.com\">links</a>\n2. Markdown: **bold**, *italic*, [link](url), backtick-code-backtick\n3. Special symbols: © ® ™ § ¶ † ‡ • … ‰ ′ ″\n4. Emojis: \U0001F600 \U0001F603 \U0001F604 \U0001F601 \U0001F680 ⭐ \U0001F389 \U0001F4AF\n5. Mathematical: ∀x∈ℝ: x² ≥ 0, ∑(i=1 to n) i = n(n+1)/2';\nCOMMENT ON COLUMN \"MULTILANG_CONTENT\".\"TAGS\" IS 'XML tags: <tag type=\"category\" value=\"news\"/><tag type=\"priority\" value=\"high\"/>End of XML';\nCOMMENT ON TABLE \"SPECIAL_DATA\" IS 'Table containing \"special\" data with various formats & types';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"DATA_VALUE\" IS 'Data value field - supports NULL, empty strings, and ''quoted'' content';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"METADATA_JSON\" IS 'JSON metadata: {\"key\": \"value\", \"array\": [1,2,3]}';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"UNICODE_TEXT\" IS 'Unicode text support:\nLine 1: Basic ASCII text\nLine 2: Special chars !@#$%^&*()_+-={}[]|;:,.<>?\nLine 3: Math symbols ≤ ≥ ± × ÷ ∑ ∏ ∆ π\nLine 4: Currencies $ € £ ¥ ₹';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"BINARY_DATA\" IS 'Binary data storage\\nSupports: images, documents, archives\\tTab-separated info\\r\\nWindows line endings';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"CATEGORY\" IS 'Category field: use % for wildcard searches, _ for single char matching';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"STATUS\" IS 'Status field - values: ''ACTIVE'', ''INACTIVE'', ''PENDING''; DROP TABLE users; --';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"DATA_VALUE\" IS 'Data value field - supports NULL, empty strings, and ''quoted'' content';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"METADATA_JSON\" IS 'JSON metadata: {\"key\": \"value\", \"array\": [1,2,3]}';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"UNICODE_TEXT\" IS 'Unicode text support:\nLine 1: Basic ASCII text\nLine 2: Special chars !@#$%^&*()_+-={}[]|;:,.<>?\nLine 3: Math symbols ≤ ≥ ± × ÷ ∑ ∏ ∆ π\nLine 4: Currencies $ € £ ¥ ₹';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"BINARY_DATA\" IS 'Binary data storage\\nSupports: images, documents, archives\\tTab-separated info\\r\\nWindows line endings';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"CATEGORY\" IS 'Category field: use % for wildcard searches, _ for single char matching';\nCOMMENT ON COLUMN \"SPECIAL_DATA\".\"STATUS\" IS 'Status field - values: ''ACTIVE'', ''INACTIVE'', ''PENDING''; DROP TABLE users; --';\n"
+- description: Invisible and virtual columns, and object tables the migration leaves alone
+  oldMetadata: |
+    {
+      "name": "TESTSCHEMA",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "CHILD",
+              "columns": [
+                {
+                  "name": "ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "S_REF",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "nullable": true
+                },
+                {
+                  "name": "A_REF",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "CHILD_FK",
+                  "columns": [
+                    "S_REF",
+                    "A_REF"
+                  ],
+                  "referenced_table": "T",
+                  "referenced_columns": [
+                    "S",
+                    "A"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "OT",
+              "skip_dump": true,
+              "columns": [
+                {
+                  "name": "X",
+                  "position": 1,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ]
+            },
+            {
+              "name": "T",
+              "columns": [
+                {
+                  "name": "A",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "VC",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"+1"
+                  }
+                },
+                {
+                  "name": "H",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "is_invisible": true
+                },
+                {
+                  "name": "S",
+                  "position": 4,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "comment": "S comment"
+                },
+                {
+                  "name": "VT",
+                  "position": 5,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"+5"
+                  }
+                },
+                {
+                  "name": "R",
+                  "position": 6,
+                  "type": "NUMBER"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "T_A",
+                  "expressions": [
+                    "\"A\""
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "T_S",
+                  "expressions": [
+                    "\"S\""
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "T_VC",
+                  "expressions": [
+                    "\"VC\""
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "T_SA_UK",
+                  "expressions": [
+                    "S",
+                    "A"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "T_S_CK",
+                  "expression": "\"S\" > 0"
+                },
+                {
+                  "name": "T_VC_CK",
+                  "expression": "\"VC\" > 0"
+                },
+                {
+                  "name": "T_SA_CK",
+                  "expression": "\"S\" >= \"A\""
+                },
+                {
+                  "name": "T_VCS_CK",
+                  "expression": "\"VC\" <= \"S\" + 100"
+                },
+                {
+                  "name": "VC_NN",
+                  "expression": "\"VC\" IS NOT NULL"
+                },
+                {
+                  "name": "R_NN",
+                  "expression": "\"R\" IS NOT NULL"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  newMetadata: |
+    {
+      "name": "TESTSCHEMA",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "CHILD",
+              "columns": [
+                {
+                  "name": "ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "S_REF",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "nullable": true
+                },
+                {
+                  "name": "A_REF",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "CHILD_FK",
+                  "columns": [
+                    "S_REF",
+                    "A_REF"
+                  ],
+                  "referenced_table": "T",
+                  "referenced_columns": [
+                    "S",
+                    "A"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "OT",
+              "skip_dump": true,
+              "columns": [
+                {
+                  "name": "X",
+                  "position": 1,
+                  "type": "NUMBER",
+                  "nullable": true
+                },
+                {
+                  "name": "Y",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ]
+            },
+            {
+              "name": "OT2",
+              "skip_dump": true,
+              "columns": [
+                {
+                  "name": "X",
+                  "position": 1,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ]
+            },
+            {
+              "name": "T",
+              "columns": [
+                {
+                  "name": "A",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "VC",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"+2"
+                  }
+                },
+                {
+                  "name": "H",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true
+                },
+                {
+                  "name": "S",
+                  "position": 4,
+                  "type": "NUMBER",
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"*3"
+                  },
+                  "comment": "S comment"
+                },
+                {
+                  "name": "N",
+                  "position": 5,
+                  "type": "NUMBER",
+                  "is_invisible": true,
+                  "default": "5"
+                },
+                {
+                  "name": "NV",
+                  "position": 6,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "is_invisible": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"-1"
+                  }
+                },
+                {
+                  "name": "VT",
+                  "position": 7,
+                  "type": "VARCHAR2(40 BYTE)",
+                  "nullable": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "TO_CHAR(\"A\")"
+                  }
+                },
+                {
+                  "name": "R",
+                  "position": 8,
+                  "type": "NUMBER",
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"*7"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "T_A",
+                  "expressions": [
+                    "\"A\""
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "T_S",
+                  "expressions": [
+                    "\"S\""
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "T_VC",
+                  "expressions": [
+                    "\"VC\""
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "T_SA_UK",
+                  "expressions": [
+                    "S",
+                    "A"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "T_S_CK",
+                  "expression": "\"S\" > 0"
+                },
+                {
+                  "name": "T_VC_CK",
+                  "expression": "\"VC\" > 0"
+                },
+                {
+                  "name": "T_SA_CK",
+                  "expression": "\"S\" >= \"A\""
+                },
+                {
+                  "name": "T_VCS_CK",
+                  "expression": "\"VC\" <= \"S\" + 100"
+                },
+                {
+                  "name": "VC_NN",
+                  "expression": "\"VC\" IS NOT NULL"
+                },
+                {
+                  "name": "R_NN",
+                  "expression": "\"R\" IS NOT NULL"
+                }
+              ]
+            },
+            {
+              "name": "T2",
+              "columns": [
+                {
+                  "name": "A",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "H",
+                  "position": 2,
+                  "type": "VARCHAR2(10 BYTE)",
+                  "nullable": true,
+                  "is_invisible": true
+                },
+                {
+                  "name": "VC",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true,
+                  "generation": {
+                    "type": "TYPE_VIRTUAL",
+                    "expression": "\"A\"+1"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "NEWCHILD",
+              "columns": [
+                {
+                  "name": "ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "S_REF",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "nullable": true
+                },
+                {
+                  "name": "A_REF",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "nullable": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "NEWCHILD_FK",
+                  "columns": [
+                    "S_REF",
+                    "A_REF"
+                  ],
+                  "referenced_table": "T",
+                  "referenced_columns": [
+                    "S",
+                    "A"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |
+    ALTER TABLE "T" ADD "N" NUMBER INVISIBLE DEFAULT 5 NOT NULL;
+    ALTER TABLE "T" ADD "NV" NUMBER INVISIBLE GENERATED ALWAYS AS ("A"-1) VIRTUAL;
+    CREATE TABLE "T2" (
+        "A" NUMBER NOT NULL,
+        "H" VARCHAR2(10 BYTE) INVISIBLE,
+        "VC" NUMBER GENERATED ALWAYS AS ("A"+1) VIRTUAL
+    );
+
+    CREATE TABLE "NEWCHILD" (
+        "ID" NUMBER NOT NULL,
+        "S_REF" NUMBER,
+        "A_REF" NUMBER
+    );
+
+    ALTER TABLE "CHILD" DROP CONSTRAINT "CHILD_FK";
+    ALTER TABLE "T" DROP CONSTRAINT "T_S_CK";
+    ALTER TABLE "T" DROP CONSTRAINT "T_VC_CK";
+    ALTER TABLE "T" DROP CONSTRAINT "T_SA_CK";
+    ALTER TABLE "T" DROP CONSTRAINT "T_VCS_CK";
+    ALTER TABLE "T" DROP CONSTRAINT "VC_NN";
+    ALTER TABLE "T" DROP CONSTRAINT "R_NN";
+    DROP INDEX "T_S";
+    DROP INDEX "T_VC";
+    ALTER TABLE "T" DROP CONSTRAINT "T_SA_UK";
+    ALTER TABLE "T" MODIFY ("VC" NUMBER AS ("A"+2));
+    ALTER TABLE "T" MODIFY ("VC" CONSTRAINT "VC_NN" NOT NULL);
+    ALTER TABLE "T" MODIFY ("H" VISIBLE);
+    ALTER TABLE "T" DROP COLUMN "S";
+    ALTER TABLE "T" ADD "S" NUMBER GENERATED ALWAYS AS ("A"*3) VIRTUAL NOT NULL;
+    COMMENT ON COLUMN "T"."S" IS 'S comment';
+    ALTER TABLE "T" MODIFY ("VT" VARCHAR2(40 BYTE) AS (TO_CHAR("A")));
+    ALTER TABLE "T" DROP COLUMN "R";
+    ALTER TABLE "T" ADD "R" NUMBER GENERATED ALWAYS AS ("A"*7) VIRTUAL;
+    ALTER TABLE "T" MODIFY ("R" CONSTRAINT "R_NN" NOT NULL);
+    CREATE INDEX "T_S" ON "T" ("S" ASC);
+    CREATE INDEX "T_VC" ON "T" ("VC" ASC);
+    ALTER TABLE "T" ADD CONSTRAINT "T_SA_UK" UNIQUE (S, A);
+    ALTER TABLE "T" ADD CONSTRAINT "T_S_CK" CHECK ("S" > 0);
+    ALTER TABLE "T" ADD CONSTRAINT "T_VC_CK" CHECK ("VC" > 0);
+    ALTER TABLE "T" ADD CONSTRAINT "T_SA_CK" CHECK ("S" >= "A");
+    ALTER TABLE "T" ADD CONSTRAINT "T_VCS_CK" CHECK ("VC" <= "S" + 100);
+    ALTER TABLE "CHILD" ADD CONSTRAINT "CHILD_FK" FOREIGN KEY ("S_REF", "A_REF") REFERENCES "T" ("S", "A");
+    ALTER TABLE "NEWCHILD" ADD CONSTRAINT "NEWCHILD_FK" FOREIGN KEY ("S_REF", "A_REF") REFERENCES "T" ("S", "A");
