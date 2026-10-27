@@ -292,6 +292,7 @@ vi.mock("./QueryPlanResultView", () => ({
     rawPlan,
     initialPlan,
     loadPlan,
+    estimated,
     disallowCopyingData,
   }: {
     rawPlan: string;
@@ -299,6 +300,7 @@ vi.mock("./QueryPlanResultView", () => ({
     loadPlan?: () => Promise<
       { source: string } | undefined
     >;
+    estimated?: boolean;
     disallowCopyingData?: boolean;
   }) => {
     const [plan, setPlan] = useState(initialPlan);
@@ -306,6 +308,7 @@ vi.mock("./QueryPlanResultView", () => ({
       <div
         data-testid="query-plan-result"
         data-copy-disabled={disallowCopyingData}
+        data-estimated={estimated ? "true" : "false"}
       >
         <span data-testid="raw-plan">{rawPlan}</span>
         {plan ? <span data-testid="inline-plan">{plan.source}</span> : null}
@@ -1195,6 +1198,47 @@ describe("SingleResultView plan view", () => {
         {...overrides}
       />
     );
+
+  test("draws the plan an engine stated beside the rows, without fetching", () => {
+    // BigQuery reports the stages its job ran, so the Plan view has the plan
+    // already: nothing is explained again, and what it shows is a record of the
+    // run that returned these rows rather than an estimate made since.
+    const content = JSON.stringify([{ id: 0, name: "S00: Input" }]);
+    renderRows(Engine.BIGQUERY, {
+      result: create(QueryResultSchema, {
+        statement: "SELECT * FROM t",
+        columnNames: ["id"],
+        columnTypeNames: ["INT"],
+        rows: [
+          create(QueryRowSchema, {
+            values: [
+              create(RowValueSchema, {
+                kind: { case: "stringValue", value: "1" },
+              }),
+            ],
+          }),
+        ],
+        queryPlan: create(QueryResult_QueryPlanSchema, {
+          format: QueryOption_ExplainFormat.JSON,
+          executed: true,
+          content,
+        }),
+      }),
+    });
+
+    // The rows are the query's data, so the table is what opens.
+    expect(screen.getByTestId("result-table")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("sql-editor.plan-view"));
+
+    expect(screen.getByTestId("inline-plan")).toHaveTextContent("S00: Input");
+    expect(screen.getByTestId("query-plan-result")).toHaveAttribute(
+      "data-estimated",
+      "false"
+    );
+    // No button to load one: there is nothing left to ask the server for.
+    expect(screen.queryByRole("button", { name: "common.plan" })).toBeNull();
+    expect(runQuery).not.toHaveBeenCalled();
+  });
 
   test("offers Plan beside Table and Vertical and shows the plan in place", () => {
     renderRows(Engine.POSTGRES);

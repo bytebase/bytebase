@@ -3,6 +3,11 @@ import { Alert } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import type { VisualizerEngine } from "@/utils/queryPlanEngines";
 import {
+  BIGQUERY_PLAN_EMPTY_MESSAGE,
+  BIGQUERY_PLAN_INVALID_JSON_MESSAGE,
+  BIGQUERY_PLAN_NO_PLAN_MESSAGE,
+} from "./bigquery-plan";
+import {
   CLICKHOUSE_PLAN_EMPTY_MESSAGE,
   CLICKHOUSE_PLAN_INVALID_JSON_MESSAGE,
   CLICKHOUSE_PLAN_NO_PLAN_MESSAGE,
@@ -115,6 +120,9 @@ const PARSE_ERROR_KEYS = new Map<string, QueryPlanTranslationKey>([
   [ORACLE_PLAN_EMPTY_MESSAGE, "error.oracle-empty"],
   [ORACLE_PLAN_INVALID_JSON_MESSAGE, "error.oracle-invalid"],
   [ORACLE_PLAN_NO_PLAN_MESSAGE, "error.oracle-no-plan"],
+  [BIGQUERY_PLAN_EMPTY_MESSAGE, "error.bigquery-empty"],
+  [BIGQUERY_PLAN_INVALID_JSON_MESSAGE, "error.bigquery-invalid"],
+  [BIGQUERY_PLAN_NO_PLAN_MESSAGE, "error.bigquery-no-plan"],
   [CLICKHOUSE_PLAN_EMPTY_MESSAGE, "error.clickhouse-empty"],
   [CLICKHOUSE_PLAN_INVALID_JSON_MESSAGE, "error.clickhouse-invalid"],
   [CLICKHOUSE_PLAN_NO_PLAN_MESSAGE, "error.clickhouse-no-plan"],

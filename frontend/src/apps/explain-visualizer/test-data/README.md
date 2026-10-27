@@ -363,3 +363,17 @@ where its cost-based optimizer planned the statement.
 | `no-cbo-plan.json` | `hive.cbo.enable=false`: the Tez stages alone, with no `CBOPlan`, which the viewer shows as text |
 
 To add one, `EXPLAIN FORMATTED` through the same client.
+
+## `bigquery/`
+
+The stages of a BigQuery job as the driver encodes them: BigQuery's own REST
+names for `ExplainQueryStage`, with its durations as milliseconds. BigQuery is
+reachable from neither a dev box nor CI, so this is the driver's own output for
+the stage list in `backend/plugin/db/bigquery/query_plan_test.go`, which holds
+the shape a job reports — regenerate it from there rather than editing it. Every
+plan here is measured, being the record of a run; BigQuery states none for a
+statement it has not run.
+
+| File | Shape it covers |
+| --- | --- |
+| `filtered-aggregate.json` | Two stages: the input reads a table, aggregates and writes a shuffle, and the output reads that shuffle and writes the query's rows |

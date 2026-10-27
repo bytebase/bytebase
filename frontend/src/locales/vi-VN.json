@@ -3521,6 +3521,9 @@
         "zoom-out": "Thu nhỏ"
       },
       "error": {
+        "bigquery-empty": "BigQuery không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "bigquery-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần các giai đoạn của một job BigQuery.",
+        "bigquery-no-plan": "Kế hoạch truy vấn không có giai đoạn nào để bắt đầu.",
         "clickhouse-empty": "ClickHouse không trả về kế hoạch truy vấn cho câu lệnh này.",
         "clickhouse-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN json = 1.",
         "clickhouse-no-plan": "JSON của kế hoạch truy vấn ClickHouse không chứa đối tượng \"Plan\".",

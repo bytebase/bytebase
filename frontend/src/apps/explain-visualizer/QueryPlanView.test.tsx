@@ -37,6 +37,7 @@ describe("QueryPlanView", () => {
     [Engine.TIDB]: "tidb",
     [Engine.ORACLE]: "oracle",
     [Engine.CLICKHOUSE]: "clickhouse",
+    [Engine.BIGQUERY]: "bigquery",
     [Engine.TRINO]: "trino",
     [Engine.OCEANBASE]: "oceanbase",
     [Engine.MONGODB]: "mongodb",

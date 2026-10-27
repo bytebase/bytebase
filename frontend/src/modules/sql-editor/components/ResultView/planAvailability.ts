@@ -41,6 +41,12 @@ export function planAvailability({
   engineExplains: boolean;
   canExplain: boolean;
 }): PlanAvailability {
+  // A plan the engine stated beside the result is in hand: the Plan view draws
+  // it without asking the server for anything, so neither the engine's explain
+  // support nor the permission to explain gates it.
+  if (result.queryPlan?.content) {
+    return "offered";
+  }
   if (result.queryPlan || !engineExplains || !result.statement) {
     return "absent";
   }

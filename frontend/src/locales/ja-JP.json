@@ -3521,6 +3521,9 @@
         "zoom-out": "縮小"
       },
       "error": {
+        "bigquery-empty": "BigQuery はこのステートメントのクエリプランを返しませんでした。",
+        "bigquery-invalid": "クエリプランが有効な JSON ではありません。BigQuery ジョブのステージが必要です。",
+        "bigquery-no-plan": "クエリプランに開始できるステージがありません。",
         "clickhouse-empty": "ClickHouse はこのステートメントのクエリプランを返しませんでした。",
         "clickhouse-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN json = 1 の出力が必要です。",
         "clickhouse-no-plan": "ClickHouse のクエリプラン JSON に \"Plan\" オブジェクトがありません。",

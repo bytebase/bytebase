@@ -1,5 +1,6 @@
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { VisualizerEngine } from "@/utils/queryPlanEngines";
+import { parseBigqueryPlan } from "./bigquery-plan";
 import { parseClickhousePlan } from "./clickhouse-plan";
 import { parseCockroachdbPlan } from "./cockroachdb-plan";
 import { parseHivePlan } from "./hive-plan";
@@ -50,6 +51,9 @@ const PARSERS: Record<VisualizerEngine, (source: string) => PlanParseResult> = {
   [Engine.SNOWFLAKE]: parseSnowflakePlan,
   // Hive answers with Calcite's own plan, as a JSON string within the JSON.
   [Engine.HIVE]: parseHivePlan,
+  // BigQuery's plan is the stages of the job that returned the rows, so it is
+  // measured rather than estimated.
+  [Engine.BIGQUERY]: parseBigqueryPlan,
   // The text plans drawn here, because none of these engines publishes
   // anything else. StarRocks forked from Doris and their plans still agree on
   // the fragments and the tree, so one parser reads both.
