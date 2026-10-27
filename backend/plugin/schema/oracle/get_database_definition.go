@@ -58,8 +58,17 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *metadatapb.Databas
 	functionMap := make(map[string]*metadatapb.FunctionMetadata)
 	procedureMap := make(map[string]*metadatapb.ProcedureMetadata)
 
-	// Add tables to graph
+	// SkipDump marks object and XMLType tables: CREATE TABLE ... OF needs the
+	// object type, which the metadata does not carry.
+	var tables []*metadatapb.TableMetadata
 	for _, table := range schema.Tables {
+		if !table.SkipDump {
+			tables = append(tables, table)
+		}
+	}
+
+	// Add tables to graph
+	for _, table := range tables {
 		tableID := getObjectID(databaseName, table.Name)
 		tableMap[tableID] = table
 		graph.AddNode(tableID)
@@ -111,7 +120,7 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *metadatapb.Databas
 	}
 
 	// Add foreign key dependencies between tables
-	for _, table := range schema.Tables {
+	for _, table := range tables {
 		tableID := getObjectID(databaseName, table.Name)
 		for _, fk := range table.ForeignKeys {
 			if fk.ReferencedTable != table.Name { // Avoid self-references
@@ -125,7 +134,7 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *metadatapb.Databas
 	orderedList, err := graph.TopologicalSort()
 	if err != nil {
 		// If there are cycles, fall back to original order
-		for _, table := range schema.Tables {
+		for _, table := range tables {
 			if err := writeTable(&buf, table); err != nil {
 				return "", err
 			}
@@ -186,6 +195,9 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *metadatapb.Databas
 }
 
 func GetTableDefinition(_ string, table *metadatapb.TableMetadata, _ []*metadatapb.SequenceMetadata) (string, error) {
+	if table.SkipDump {
+		return "", nil
+	}
 	var buf strings.Builder
 	if err := writeTable(&buf, table); err != nil {
 		return "", err
@@ -584,6 +596,22 @@ func writeColumn(buf *strings.Builder, column *metadatapb.ColumnMetadata) error 
 	if _, err := buf.WriteString(column.Type); err != nil {
 		return err
 	}
+	if column.IsInvisible {
+		if _, err := buf.WriteString(` INVISIBLE`); err != nil {
+			return err
+		}
+	}
+	if column.Generation != nil {
+		if _, err := buf.WriteString(virtualColumnClause(column.Generation)); err != nil {
+			return err
+		}
+		if !column.Nullable {
+			if _, err := buf.WriteString(` NOT NULL`); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 	// Skip collation for Oracle as it causes issues with standard string size settings
 	// if column.Collation != "" {
 	//	if _, err := buf.WriteString(` COLLATE "`); err != nil {
@@ -716,6 +744,12 @@ func writeView(buf *strings.Builder, view *metadatapb.ViewMetadata) error {
 	// An INSTEAD OF trigger carries the view's DML behavior, so it belongs with
 	// the view the way writeTable emits a table's triggers.
 	return writeTriggers(buf, view.Triggers)
+}
+
+// virtualColumnClause writes the clause that follows a virtual column's type
+// and visibility.
+func virtualColumnClause(generation *metadatapb.GenerationMetadata) string {
+	return " GENERATED ALWAYS AS (" + generation.Expression + ") VIRTUAL"
 }
 
 // writeMaterializedView writes a CREATE MATERIALIZED VIEW statement
