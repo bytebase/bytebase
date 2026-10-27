@@ -239,6 +239,9 @@ func (x *QueryResult_QueryPlan) Equal(y *QueryResult_QueryPlan) bool {
 	if x.Executed != y.Executed {
 		return false
 	}
+	if x.Content != y.Content {
+		return false
+	}
 	return true
 }
 
